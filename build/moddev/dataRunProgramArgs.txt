@@ -7,7 +7,7 @@ forgedatadev
 --assetIndex
 17
 --assetsDir
-/home/francesco/.gradle/caches/neoformruntime/assets
+C:\\Users\\Gianfilippo\\.gradle\\caches\\neoformruntime\\assets
 --gameDir
 .
 --fml.fmlVersion
@@ -24,6 +24,6 @@ forgedatadev
 devmod
 --all
 --output
-/home/francesco/IdeaProjects/devMod/src/generated/resources
+"C:\\Users\\Gianfilippo\\Desktop\\mod test1\\devMod\\src\\generated\\resources"
 --existing
-/home/francesco/IdeaProjects/devMod/src/main/resources
+"C:\\Users\\Gianfilippo\\Desktop\\mod test1\\devMod\\src\\main\\resources"

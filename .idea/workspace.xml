@@ -86,11 +86,33 @@
   }
 }</component>
   <component name="RunManager" selected="Gradle.devMod [runClient]">
+    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="Client" type="Application" factoryName="Application">
       <option name="MAIN_CLASS_NAME" value="net.neoforged.devlaunch.Main" />
       <module name="devMod.main" />
-      <option name="PROGRAM_PARAMETERS" value="@$PROJECT_DIR$/build/moddev/clientRunProgramArgs.txt" />
-      <option name="VM_PARAMETERS" value="@$PROJECT_DIR$/build/moddev/clientRunVmArgs.txt -Dfml.modFolders=devmod%%$PROJECT_DIR$/build/classes/java/main:devmod%%$PROJECT_DIR$/build/resources/main" />
+      <option name="PROGRAM_PARAMETERS" value="&quot;@C:\\Users\\Gianfilippo\\Desktop\\mod test1\\devMod\\build\\moddev\\clientRunProgramArgs.txt&quot;" />
+      <option name="VM_PARAMETERS" value="&quot;@C:\\Users\\Gianfilippo\\Desktop\\mod test1\\devMod\\build\\moddev\\clientRunVmArgs.txt&quot; &quot;-Dfml.modFolders=devmod%%C:\\Users\\Gianfilippo\\Desktop\\mod test1\\devMod\\build\\classes\\java\\main;devmod%%C:\\Users\\Gianfilippo\\Desktop\\mod test1\\devMod\\build\\resources\\main&quot;" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/run" />
       <method v="2">
         <option name="Make" enabled="true" />
@@ -99,8 +121,8 @@
     <configuration name="Data" type="Application" factoryName="Application">
       <option name="MAIN_CLASS_NAME" value="net.neoforged.devlaunch.Main" />
       <module name="devMod.main" />
-      <option name="PROGRAM_PARAMETERS" value="@$PROJECT_DIR$/build/moddev/dataRunProgramArgs.txt" />
-      <option name="VM_PARAMETERS" value="@$PROJECT_DIR$/build/moddev/dataRunVmArgs.txt -Dfml.modFolders=devmod%%$PROJECT_DIR$/build/classes/java/main:devmod%%$PROJECT_DIR$/build/resources/main" />
+      <option name="PROGRAM_PARAMETERS" value="&quot;@C:\\Users\\Gianfilippo\\Desktop\\mod test1\\devMod\\build\\moddev\\dataRunProgramArgs.txt&quot;" />
+      <option name="VM_PARAMETERS" value="&quot;@C:\\Users\\Gianfilippo\\Desktop\\mod test1\\devMod\\build\\moddev\\dataRunVmArgs.txt&quot; &quot;-Dfml.modFolders=devmod%%C:\\Users\\Gianfilippo\\Desktop\\mod test1\\devMod\\build\\classes\\java\\main;devmod%%C:\\Users\\Gianfilippo\\Desktop\\mod test1\\devMod\\build\\resources\\main&quot;" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/run" />
       <method v="2">
         <option name="Make" enabled="true" />
@@ -109,8 +131,8 @@
     <configuration name="GameTestServer" type="Application" factoryName="Application">
       <option name="MAIN_CLASS_NAME" value="net.neoforged.devlaunch.Main" />
       <module name="devMod.main" />
-      <option name="PROGRAM_PARAMETERS" value="@$PROJECT_DIR$/build/moddev/gameTestServerRunProgramArgs.txt" />
-      <option name="VM_PARAMETERS" value="@$PROJECT_DIR$/build/moddev/gameTestServerRunVmArgs.txt -Dfml.modFolders=devmod%%$PROJECT_DIR$/build/classes/java/main:devmod%%$PROJECT_DIR$/build/resources/main" />
+      <option name="PROGRAM_PARAMETERS" value="&quot;@C:\\Users\\Gianfilippo\\Desktop\\mod test1\\devMod\\build\\moddev\\gameTestServerRunProgramArgs.txt&quot;" />
+      <option name="VM_PARAMETERS" value="&quot;@C:\\Users\\Gianfilippo\\Desktop\\mod test1\\devMod\\build\\moddev\\gameTestServerRunVmArgs.txt&quot; &quot;-Dfml.modFolders=devmod%%C:\\Users\\Gianfilippo\\Desktop\\mod test1\\devMod\\build\\classes\\java\\main;devmod%%C:\\Users\\Gianfilippo\\Desktop\\mod test1\\devMod\\build\\resources\\main&quot;" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/run" />
       <method v="2">
         <option name="Make" enabled="true" />
@@ -119,8 +141,8 @@
     <configuration name="Server" type="Application" factoryName="Application">
       <option name="MAIN_CLASS_NAME" value="net.neoforged.devlaunch.Main" />
       <module name="devMod.main" />
-      <option name="PROGRAM_PARAMETERS" value="@$PROJECT_DIR$/build/moddev/serverRunProgramArgs.txt" />
-      <option name="VM_PARAMETERS" value="@$PROJECT_DIR$/build/moddev/serverRunVmArgs.txt -Dfml.modFolders=devmod%%$PROJECT_DIR$/build/classes/java/main:devmod%%$PROJECT_DIR$/build/resources/main" />
+      <option name="PROGRAM_PARAMETERS" value="&quot;@C:\\Users\\Gianfilippo\\Desktop\\mod test1\\devMod\\build\\moddev\\serverRunProgramArgs.txt&quot;" />
+      <option name="VM_PARAMETERS" value="&quot;@C:\\Users\\Gianfilippo\\Desktop\\mod test1\\devMod\\build\\moddev\\serverRunVmArgs.txt&quot; &quot;-Dfml.modFolders=devmod%%C:\\Users\\Gianfilippo\\Desktop\\mod test1\\devMod\\build\\classes\\java\\main;devmod%%C:\\Users\\Gianfilippo\\Desktop\\mod test1\\devMod\\build\\resources\\main&quot;" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/run" />
       <method v="2">
         <option name="Make" enabled="true" />
@@ -168,33 +190,6 @@
       <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
       <DebugAllEnabled>false</DebugAllEnabled>
       <RunAsTest>false</RunAsTest>
-      <method v="2" />
-    </configuration>
-    <configuration default="true" type="JetRunConfigurationType">
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="" />
-      <option name="IS_MODULE_SDK" value="false" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="" />
-      <option name="SCRIPT_NAME" value="" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
     <recent_temporary>
