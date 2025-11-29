@@ -1,0 +1,14 @@
+{
+  "itemGroup.devmod": "Example Mod Tab",
+  "block.devmod.example_block": "Example Block",
+  "item.devmod.example_item": "Example Item",
+  "devmod.configuration.title": "mob config viewer Configs",
+  "devmod.configuration.section.devmod.common.toml": "mob config viewer Configs",
+  "devmod.configuration.section.devmod.common.toml.title": "mob config viewer Configs",
+  "devmod.configuration.items": "Item List",
+  "devmod.configuration.logDirtBlock": "Log Dirt Block",
+  "devmod.configuration.magicNumberIntroduction": "Magic Number Text",
+  "devmod.configuration.magicNumber": "Magic Number",
+  "item.devmod.viewer_item": "Mob Configurator Stick",
+  "itemGroup.devmod": "Mob Viewer Tab"
+}

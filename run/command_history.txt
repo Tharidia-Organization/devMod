@@ -1,0 +1,16 @@
+/kill all
+/gamemode survival
+/gamemode creative
+/time set night
+/gamemode survival
+/gamemode c
+/gamemode creative
+/gamemode survival
+/gamemode creative
+/kill all
+/kill @a
+/kill @e
+/gamemode survival
+/gamemode creative
+/gamemode survival
+/gamemode creative
