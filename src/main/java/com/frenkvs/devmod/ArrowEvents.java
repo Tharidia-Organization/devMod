@@ -26,8 +26,10 @@ public class ArrowEvents {
 
         // Se siamo sul Client (grafica), non calcoliamo nulla, lasciamo fare al server
         if (arrow.level().isClientSide) {
+            System.out.println("Arrow hit detected on client side!");
             HitResult result = event.getRayTraceResult();
             Vec3 hitPos = result.getLocation();
+            System.out.println("Hit position: " + hitPos.x + ", " + hitPos.y + ", " + hitPos.z);
             WorldRenderEvents.addArrowHit(hitPos.x, hitPos.y, hitPos.z);
             return;
         }

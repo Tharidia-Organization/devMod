@@ -40,6 +40,7 @@ public class WorldRenderEvents {
         if (Minecraft.getInstance().level == null) return;
         long currentTime = Minecraft.getInstance().level.getGameTime();
         arrowHits.add(new ArrowHit(x, y, z, currentTime));
+        System.out.println("Added arrow hit at: " + x + ", " + y + ", " + z + " | Total hits: " + arrowHits.size());
     }
 
     private static boolean isHostileMob(Mob mob) {
@@ -119,6 +120,7 @@ public class WorldRenderEvents {
 
         // Render blue squares for active arrow hits
         if (!arrowHits.isEmpty()) {
+            System.out.println("Rendering " + arrowHits.size() + " arrow hits");
             renderArrowHits(event.getPoseStack(), cameraPos);
         }
 
@@ -243,22 +245,26 @@ public class WorldRenderEvents {
         
         for (ArrowHit hit : arrowHits) {
             double x = hit.x - cameraPos.x;
-            double y = hit.y - cameraPos.y + 0.15; // Small offset to prevent ground clipping
+            double y = hit.y - cameraPos.y + 2.0; // Larger offset for visibility
             double z = hit.z - cameraPos.z;
             
-            float size = 0.5f; // Blue square size
-            int blue = 255;
-            int alpha = 200; // Semi-transparent
+            float size = 5.0f; // MUCH bigger for testing (10 blocks wide)
+            int red = 255;     // Bright red for maximum visibility
+            int green = 0;
+            int blue = 0;
+            int alpha = 255;   // Fully opaque
             
-            // Draw a flat blue square facing upward
+            System.out.println("Drawing square at relative: " + x + ", " + y + ", " + z);
+            
+            // Draw a flat red square facing upward
             bufferBuilder.addVertex(matrix, (float)(x - size), (float)y, (float)(z - size))
-                .setColor(0, 0, blue, alpha);
+                .setColor(red, green, blue, alpha);
             bufferBuilder.addVertex(matrix, (float)(x + size), (float)y, (float)(z - size))
-                .setColor(0, 0, blue, alpha);
+                .setColor(red, green, blue, alpha);
             bufferBuilder.addVertex(matrix, (float)(x + size), (float)y, (float)(z + size))
-                .setColor(0, 0, blue, alpha);
+                .setColor(red, green, blue, alpha);
             bufferBuilder.addVertex(matrix, (float)(x - size), (float)y, (float)(z + size))
-                .setColor(0, 0, blue, alpha);
+                .setColor(red, green, blue, alpha);
         }
         
         BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
