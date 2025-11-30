@@ -1,5 +1,10 @@
-package com.frenkvs.devmod;
+package com.frenkvs.devmod.network.handler;
 
+import com.frenkvs.devmod.config.WeaponStats;
+import com.frenkvs.devmod.event.client.WorldRenderEvents;
+import com.frenkvs.devmod.manager.MobConfigManager;
+import com.frenkvs.devmod.manager.WeaponConfigManager;
+import com.frenkvs.devmod.network.payload.*;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;

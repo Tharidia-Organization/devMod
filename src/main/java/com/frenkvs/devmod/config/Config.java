@@ -1,6 +1,4 @@
-package com.frenkvs.devmod;
-
-import java.util.List;
+package com.frenkvs.devmod.config;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;

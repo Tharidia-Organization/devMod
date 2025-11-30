@@ -1,5 +1,6 @@
-package com.frenkvs.devmod;
+package com.frenkvs.devmod.event.client;
 
+import com.frenkvs.devmod.config.ModConfig;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;

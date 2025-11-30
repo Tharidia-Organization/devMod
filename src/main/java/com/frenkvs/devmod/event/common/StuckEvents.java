@@ -1,5 +1,7 @@
-package com.frenkvs.devmod;
+package com.frenkvs.devmod.event.common;
 
+import com.frenkvs.devmod.config.ModConfig;
+import com.frenkvs.devmod.network.payload.PathRenderPayload;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;

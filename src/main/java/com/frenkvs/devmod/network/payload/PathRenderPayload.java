@@ -1,4 +1,4 @@
-package com.frenkvs.devmod;
+package com.frenkvs.devmod.network.payload;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.core.BlockPos;

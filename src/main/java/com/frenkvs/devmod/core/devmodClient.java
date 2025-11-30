@@ -1,5 +1,6 @@
-package com.frenkvs.devmod;
+package com.frenkvs.devmod.core;
 
+import com.frenkvs.devmod.devmod;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;

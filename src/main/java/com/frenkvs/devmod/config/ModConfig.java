@@ -1,4 +1,4 @@
-package com.frenkvs.devmod;
+package com.frenkvs.devmod.config;
 
 public class ModConfig {
     // --- VISIBILITÀ GENERALE ---
