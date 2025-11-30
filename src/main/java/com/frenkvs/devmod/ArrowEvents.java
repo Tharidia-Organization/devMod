@@ -25,7 +25,12 @@ public class ArrowEvents {
         if (!(event.getEntity() instanceof AbstractArrow arrow)) return;
 
         // Se siamo sul Client (grafica), non calcoliamo nulla, lasciamo fare al server
-        if (arrow.level().isClientSide) return;
+        if (arrow.level().isClientSide) {
+            HitResult result = event.getRayTraceResult();
+            Vec3 hitPos = result.getLocation();
+            WorldRenderEvents.addArrowHit(hitPos.x, hitPos.y, hitPos.z);
+            return;
+        }
 
         ServerLevel level = (ServerLevel) arrow.level();
         HitResult result = event.getRayTraceResult();
@@ -34,9 +39,6 @@ public class ArrowEvents {
         // 2. EFFETTO VISIVO (Goal: Ben visibile)
         // Creiamo un'esplosione di particelle nel punto esatto dell'impatto
         // "FLASH" è molto visibile, come un piccolo fulmine
-        level.sendParticles(ParticleTypes.FLASH, hitPos.x, hitPos.y, hitPos.z, 1, 0, 0, 0, 0);
-        // Aggiungiamo un po' di fumo dorato (TOTEM_OF_UNDYING) per renderlo epico
-        level.sendParticles(ParticleTypes.TOTEM_OF_UNDYING, hitPos.x, hitPos.y, hitPos.z, 10, 0.2, 0.2, 0.2, 0.1);
 
         // 3. SUONO D'IMPATTO
         level.playSound(null, hitPos.x, hitPos.y, hitPos.z, SoundEvents.AMETHYST_BLOCK_HIT, SoundSource.PLAYERS, 1.0f, 2.0f);

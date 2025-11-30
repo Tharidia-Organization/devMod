@@ -21,6 +21,38 @@ import org.joml.Matrix4f;
 @EventBusSubscriber(modid = "devmod", value = Dist.CLIENT)
 public class WorldRenderEvents {
 
+    // Arrow hit tracking system
+    private static final java.util.List<ArrowHit> arrowHits = new java.util.ArrayList<>();
+    
+    private static class ArrowHit {
+        final double x, y, z;
+        final long timestamp;
+        
+        ArrowHit(double x, double y, double z, long timestamp) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.timestamp = timestamp;
+        }
+    }
+    
+    public static void addArrowHit(double x, double y, double z) {
+        if (Minecraft.getInstance().level == null) return;
+        long currentTime = Minecraft.getInstance().level.getGameTime();
+        arrowHits.add(new ArrowHit(x, y, z, currentTime));
+    }
+
+    private static boolean isHostileMob(Mob mob) {
+        // Controlla se il mob è ostile basandosi sul suo tipo
+        String mobName = mob.getType().toString().toLowerCase();
+        return mobName.contains("zombie") || mobName.contains("skeleton") || mobName.contains("creeper") ||
+               mobName.contains("spider") || mobName.contains("enderman") || mobName.contains("witch") ||
+               mobName.contains("piglin") || mobName.contains("ghast") || mobName.contains("blaze") ||
+               mobName.contains("wither") || mobName.contains("dragon") || mobName.contains("slime") ||
+               mobName.contains("pillager") || mobName.contains("vindicator") || mobName.contains("ravager") ||
+               mobName.contains("evoker") || mobName.contains("vex") || mobName.contains("illusioner");
+    }
+
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
         // Se l'utente ha disattivato il render nelle impostazioni, ci fermiamo subito
@@ -38,7 +70,7 @@ public class WorldRenderEvents {
 
         for (Entity entity : mc.level.entitiesForRendering()) {
             if (entity instanceof Mob mob) {
-                if (mob.distanceToSqr(mc.player) > 1600) continue;
+                if (mob.distanceToSqr(mc.player) > Math.pow(ModConfig.renderDistanceChunks * 16, 2)) continue;
 
                 // 1. RAGGIO DI VISTA (Follow Range)
                 double followRange = 0;
@@ -47,10 +79,13 @@ public class WorldRenderEvents {
                 }
 
                 if (followRange > 0 && followRange <= 64) {
-                    double x = mob.getX() - cameraPos.x;
-                    double y = mob.getY() - cameraPos.y + mob.getBbHeight() / 2.0;
-                    double z = mob.getZ() - cameraPos.z;
-                    spheresToRender.add(new SphereData(x, y, z, followRange, ModConfig.followRangeColor));
+                    boolean isHostile = isHostileMob(mob);
+                    if ((isHostile && ModConfig.renderHostileAggro) || (!isHostile && ModConfig.renderFriendlyAggro)) {
+                        double x = mob.getX() - cameraPos.x;
+                        double y = mob.getY() - cameraPos.y + mob.getBbHeight() / 2.0;
+                        double z = mob.getZ() - cameraPos.z;
+                        spheresToRender.add(new SphereData(x, y, z, followRange, ModConfig.followRangeColor));
+                    }
                 }
 
                 // 2. CERCHIO GIALLO (Linea) - Attacco
@@ -67,12 +102,24 @@ public class WorldRenderEvents {
                 }
 
                 if (attackReach > 0) {
-                    double x = mob.getX() - cameraPos.x;
-                    double y = mob.getY() - cameraPos.y + mob.getBbHeight() / 2.0;
-                    double z = mob.getZ() - cameraPos.z;
-                    spheresToRender.add(new SphereData(x, y, z, attackReach, 0xFFFFFF00));
+                    boolean isHostile = isHostileMob(mob);
+                    if ((isHostile && ModConfig.renderHostileAttack) || (!isHostile && ModConfig.renderFriendlyAttack)) {
+                        double x = mob.getX() - cameraPos.x;
+                        double y = mob.getY() - cameraPos.y + mob.getBbHeight() / 2.0;
+                        double z = mob.getZ() - cameraPos.z;
+                        spheresToRender.add(new SphereData(x, y, z, attackReach, 0xFFFFFF00));
+                    }
                 }
             }
+        }
+
+        // Clean up expired arrow hits (older than 5 seconds = 100 ticks)
+        long currentTime = Minecraft.getInstance().level.getGameTime();
+        arrowHits.removeIf(hit -> currentTime - hit.timestamp > 100);
+
+        // Render blue squares for active arrow hits
+        if (!arrowHits.isEmpty()) {
+            renderArrowHits(event.getPoseStack(), cameraPos);
         }
 
         if (spheresToRender.isEmpty()) return;
@@ -182,5 +229,41 @@ public class WorldRenderEvents {
                     .setColor(red, green, blue, alpha);
             }
         }
+    }
+
+    private static void renderArrowHits(PoseStack poseStack, Vec3 cameraPos) {
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableDepthTest();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        
+        BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        
+        Matrix4f matrix = poseStack.last().pose();
+        
+        for (ArrowHit hit : arrowHits) {
+            double x = hit.x - cameraPos.x;
+            double y = hit.y - cameraPos.y + 0.15; // Small offset to prevent ground clipping
+            double z = hit.z - cameraPos.z;
+            
+            float size = 0.5f; // Blue square size
+            int blue = 255;
+            int alpha = 200; // Semi-transparent
+            
+            // Draw a flat blue square facing upward
+            bufferBuilder.addVertex(matrix, (float)(x - size), (float)y, (float)(z - size))
+                .setColor(0, 0, blue, alpha);
+            bufferBuilder.addVertex(matrix, (float)(x + size), (float)y, (float)(z - size))
+                .setColor(0, 0, blue, alpha);
+            bufferBuilder.addVertex(matrix, (float)(x + size), (float)y, (float)(z + size))
+                .setColor(0, 0, blue, alpha);
+            bufferBuilder.addVertex(matrix, (float)(x - size), (float)y, (float)(z + size))
+                .setColor(0, 0, blue, alpha);
+        }
+        
+        BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+        
+        RenderSystem.enableDepthTest();
+        RenderSystem.disableBlend();
     }
 }

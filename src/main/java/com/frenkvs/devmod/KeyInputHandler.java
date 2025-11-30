@@ -11,7 +11,7 @@ import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import org.lwjgl.glfw.GLFW;
 
-@EventBusSubscriber(modid = "devmod", value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = "devmod", value = Dist.CLIENT)
 public class KeyInputHandler {
 
     // Tasto K (Impostazioni Mob)
@@ -38,7 +38,7 @@ public class KeyInputHandler {
         event.register(OPEN_WEAPON_EDITOR_KEY); // Registra la M
     }
 
-    @EventBusSubscriber(modid = "devmod", value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
+    @EventBusSubscriber(modid = "devmod", value = Dist.CLIENT)
     public static class GameEvents {
         @SubscribeEvent
         public static void onKeyInput(InputEvent.Key event) {
