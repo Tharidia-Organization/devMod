@@ -65,7 +65,7 @@ public class NetworkHandler {
                                 payload.armor(),
                                 payload.attackRange()
                         );
-                        player.sendSystemMessage(Component.literal("§6[GLOBALE] §fSalvate impostazioni future per: " + typeToUpdate.toShortString()));
+                        player.sendSystemMessage(Component.literal("§6[GLOBALE] §fSalvate impostazioni RAM."));
                     }
 
                     // --- APPLICAZIONE AI MOB ESISTENTI ---
