@@ -8,7 +8,7 @@ import net.minecraft.network.chat.Component;
 public class SettingsScreen extends Screen {
 
     public SettingsScreen() {
-        super(Component.literal("Impostazioni Mob Viewer"));
+        super(Component.translatable("devmod.settings.title"));
     }
 
     @Override
@@ -20,43 +20,34 @@ public class SettingsScreen extends Screen {
 
         // 1. Toggle Overlay (Scritte HUD)
         this.addRenderableWidget(Button.builder(
-                        Component.literal("Overlay HUD: " + (ModConfig.showOverlay ? "ATTIVO" : "SPENTO")),
+                        Component.translatable("devmod.settings.overlay", Component.translatable(ModConfig.showOverlay ? "devmod.settings.enabled" : "devmod.settings.disabled")),
                         button -> {
                             ModConfig.showOverlay = !ModConfig.showOverlay;
-                            button.setMessage(Component.literal("Overlay HUD: " + (ModConfig.showOverlay ? "ATTIVO" : "SPENTO")));
+                            button.setMessage(Component.translatable("devmod.settings.overlay", Component.translatable(ModConfig.showOverlay ? "devmod.settings.enabled" : "devmod.settings.disabled")));
                         })
                 .pos(x, y).size(w, h).build());
 
-        // 2. Toggle Rendering (Cerchi/Blocchi)
+        // 2. Toggle Rendering (Sfere)
         this.addRenderableWidget(Button.builder(
-                        Component.literal("Render Mondo: " + (ModConfig.showRender ? "ATTIVO" : "SPENTO")),
+                        Component.translatable("devmod.settings.render", Component.translatable(ModConfig.showRender ? "devmod.settings.enabled" : "devmod.settings.disabled")),
                         button -> {
                             ModConfig.showRender = !ModConfig.showRender;
-                            button.setMessage(Component.literal("Render Mondo: " + (ModConfig.showRender ? "ATTIVO" : "SPENTO")));
+                            button.setMessage(Component.translatable("devmod.settings.render", Component.translatable(ModConfig.showRender ? "devmod.settings.enabled" : "devmod.settings.disabled")));
                         })
                 .pos(x, y + 25).size(w, h).build());
 
-        // 3. Render Mode (Blocchi vs Cerchio)
+        // 3. Colore Vista
         this.addRenderableWidget(Button.builder(
-                        Component.literal("Stile: " + (ModConfig.renderAsBlocks ? "GRIGLIA BLOCCHI" : "CERCHIO SEMPLICE")),
+                        Component.translatable("devmod.settings.color", Component.translatable(ModConfig.getColorTranslationKey())),
                         button -> {
-                            ModConfig.renderAsBlocks = !ModConfig.renderAsBlocks;
-                            button.setMessage(Component.literal("Stile: " + (ModConfig.renderAsBlocks ? "GRIGLIA BLOCCHI" : "CERCHIO SEMPLICE")));
+                            ModConfig.cycleColor();
+                            button.setMessage(Component.translatable("devmod.settings.color", Component.translatable(ModConfig.getColorTranslationKey())));
                         })
                 .pos(x, y + 50).size(w, h).build());
 
-        // 4. Colore Overlay
-        this.addRenderableWidget(Button.builder(
-                        Component.literal("Colore Vista: " + ModConfig.getColorName()),
-                        button -> {
-                            ModConfig.cycleColor();
-                            button.setMessage(Component.literal("Colore Vista: " + ModConfig.getColorName()));
-                        })
-                .pos(x, y + 75).size(w, h).build());
-
         // Chiudi
-        this.addRenderableWidget(Button.builder(Component.literal("CHIUDI"), b -> this.onClose())
-                .pos(x, y + 120).size(w, h).build());
+        this.addRenderableWidget(Button.builder(Component.translatable("devmod.settings.close"), b -> this.onClose())
+                .pos(x, y + 95).size(w, h).build());
     }
 
     @Override

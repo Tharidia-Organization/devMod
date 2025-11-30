@@ -4,16 +4,18 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import net.minecraft.client.renderer.GameRenderer;
 import org.joml.Matrix4f;
 
 @EventBusSubscriber(modid = "devmod", value = Dist.CLIENT)
@@ -31,6 +33,9 @@ public class WorldRenderEvents {
 
         Vec3 cameraPos = event.getCamera().getPosition();
 
+        // Collect all spheres to render (like wall function collects claims)
+        java.util.List<SphereData> spheresToRender = new java.util.ArrayList<>();
+
         for (Entity entity : mc.level.entitiesForRendering()) {
             if (entity instanceof Mob mob) {
                 if (mob.distanceToSqr(mc.player) > 1600) continue;
@@ -42,16 +47,11 @@ public class WorldRenderEvents {
                 }
 
                 if (followRange > 0 && followRange <= 64) {
-                    if (ModConfig.renderAsBlocks) {
-                        // Modalità BLOCCHI
-                        renderAggroBlocks(event.getPoseStack(), mob, followRange, cameraPos, mc.level);
-                    } else {
-                        // Modalità CERCHIO SEMPLICE
-                        renderCircle(event.getPoseStack(), mob, followRange, cameraPos, ModConfig.followRangeColor);
-                    }
+                    double x = mob.getX() - cameraPos.x;
+                    double y = mob.getY() - cameraPos.y + mob.getBbHeight() / 2.0;
+                    double z = mob.getZ() - cameraPos.z;
+                    spheresToRender.add(new SphereData(x, y, z, followRange, ModConfig.followRangeColor));
                 }
-
-                // ... (parte rossa uguale)
 
                 // 2. CERCHIO GIALLO (Linea) - Attacco
                 double attackReach = 0;
@@ -67,99 +67,120 @@ public class WorldRenderEvents {
                 }
 
                 if (attackReach > 0) {
-                    // Usiamo il giallo fisso o un altro colore se vuoi
-                    renderCircle(event.getPoseStack(), mob, attackReach, cameraPos, 0xFFFFFF00);
+                    double x = mob.getX() - cameraPos.x;
+                    double y = mob.getY() - cameraPos.y + mob.getBbHeight() / 2.0;
+                    double z = mob.getZ() - cameraPos.z;
+                    spheresToRender.add(new SphereData(x, y, z, attackReach, 0xFFFFFF00));
                 }
             }
         }
+
+        if (spheresToRender.isEmpty()) return;
+
+        // Render all spheres in one batch (like wall function)
+        renderAllSpheres(event.getPoseStack(), spheresToRender);
     }
 
-    // Disegna la griglia di blocchi (usa il colore configurato)
-    private static void renderAggroBlocks(PoseStack poseStack, Mob mob, double range, Vec3 cameraPos, Level level) {
-        VertexConsumer builder = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.lines());
-        BlockPos mobPos = mob.blockPosition();
-        int r = (int) Math.ceil(range);
-        double rangeSqr = range * range;
+    private static record SphereData(double x, double y, double z, double radius, int color) {}
 
-        // Estraiamo i componenti ARGB dal colore configurato
-        int color = ModConfig.followRangeColor;
+    private static void renderAllSpheres(PoseStack poseStack, java.util.List<SphereData> spheres) {
+        // Setup rendering system for wireframe lines
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableCull();
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthMask(false);
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        RenderSystem.lineWidth(2.0f); // Make lines thicker
+
+        BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.DEBUG_LINES, DefaultVertexFormat.POSITION_COLOR);
+
+        poseStack.pushPose();
+        Matrix4f matrix = poseStack.last().pose();
+
+        // Render all spheres as wireframes
+        for (SphereData sphere : spheres) {
+            renderSphereWireframe(bufferBuilder, matrix, sphere.x(), sphere.y(), sphere.z(), sphere.radius(), sphere.color());
+        }
+
+        BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+
+        // Restore render state
+        RenderSystem.depthMask(true);
+        RenderSystem.enableCull();
+        RenderSystem.disableBlend();
+        RenderSystem.lineWidth(1.0f);
+
+        poseStack.popPose();
+    }
+
+    private static void renderSphereWireframe(BufferBuilder bufferBuilder, Matrix4f matrix,
+                                              double offsetX, double offsetY, double offsetZ,
+                                              double radius, int color) {
         float alpha = ((color >> 24) & 0xFF) / 255f;
-        if (alpha == 0) alpha = 1.0f; // Fix se non c'è alpha
+        if (alpha == 0) alpha = 0.9f; // More visible for wireframe
         float red = ((color >> 16) & 0xFF) / 255f;
         float green = ((color >> 8) & 0xFF) / 255f;
         float blue = (color & 0xFF) / 255f;
+        
+        // Make colors darker for wireframe
+        red *= 0.8f;
+        green *= 0.8f;
+        blue *= 0.8f;
 
-        poseStack.pushPose();
-        poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-        Matrix4f matrix = poseStack.last().pose();
-
-        for (int x = -r; x <= r; x++) {
-            for (int z = -r; z <= r; z++) {
-                if (x*x + z*z > rangeSqr) continue;
-                for (int y = -1; y <= 1; y++) {
-                    BlockPos targetPos = mobPos.offset(x, y, z);
-                    if (!level.getBlockState(targetPos).isAir()) {
-                        drawBox(builder, matrix, targetPos, red, green, blue, 0.5f);
-                    }
-                }
+        // Parametri per buona qualità
+        int latitudeSegments = 12;
+        int longitudeSegments = 16;
+        float r = (float) radius;
+        
+        // Draw latitude lines (horizontal circles)
+        for (int lat = 0; lat <= latitudeSegments; lat++) {
+            double theta = (lat * Math.PI) / latitudeSegments;
+            float sinTheta = (float) Math.sin(theta);
+            float cosTheta = (float) Math.cos(theta);
+            
+            for (int lon = 0; lon < longitudeSegments; lon++) {
+                double phi1 = (lon * 2 * Math.PI) / longitudeSegments;
+                double phi2 = ((lon + 1) * 2 * Math.PI) / longitudeSegments;
+                
+                float x1 = sinTheta * (float) Math.cos(phi1) * r + (float)offsetX;
+                float y1 = cosTheta * r + (float)offsetY;
+                float z1 = sinTheta * (float) Math.sin(phi1) * r + (float)offsetZ;
+                
+                float x2 = sinTheta * (float) Math.cos(phi2) * r + (float)offsetX;
+                float y2 = cosTheta * r + (float)offsetY;
+                float z2 = sinTheta * (float) Math.sin(phi2) * r + (float)offsetZ;
+                
+                bufferBuilder.addVertex(matrix, x1, y1, z1)
+                    .setColor(red, green, blue, alpha);
+                bufferBuilder.addVertex(matrix, x2, y2, z2)
+                    .setColor(red, green, blue, alpha);
             }
         }
-        poseStack.popPose();
-    }
-
-    // Metodo generico per disegnare cerchi (usato sia per vista che attacco)
-    private static void renderCircle(PoseStack poseStack, Mob mob, double radius, Vec3 cameraPos, int color) {
-        VertexConsumer builder = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.lines());
-
-        float alpha = ((color >> 24) & 0xFF) / 255f;
-        if (alpha == 0) alpha = 1.0f;
-        float red = ((color >> 16) & 0xFF) / 255f;
-        float green = ((color >> 8) & 0xFF) / 255f;
-        float blue = (color & 0xFF) / 255f;
-
-        poseStack.pushPose();
-        double x = mob.getX() - cameraPos.x;
-        double y = mob.getY() - cameraPos.y + 0.1;
-        double z = mob.getZ() - cameraPos.z;
-        poseStack.translate(x, y, z);
-
-        Matrix4f matrix = poseStack.last().pose();
-        int segments = 48;
-
-        for (int i = 0; i < segments; i++) {
-            double angle1 = (i * 2 * Math.PI) / segments;
-            double angle2 = ((i + 1) * 2 * Math.PI) / segments;
-
-            float x1 = (float) (Math.cos(angle1) * radius);
-            float z1 = (float) (Math.sin(angle1) * radius);
-            float x2 = (float) (Math.cos(angle2) * radius);
-            float z2 = (float) (Math.sin(angle2) * radius);
-
-            builder.addVertex(matrix, x1, 0, z1).setColor(red, green, blue, alpha).setNormal(0, 1, 0);
-            builder.addVertex(matrix, x2, 0, z2).setColor(red, green, blue, alpha).setNormal(0, 1, 0);
+        
+        // Draw longitude lines (vertical circles)
+        for (int lon = 0; lon < longitudeSegments; lon++) {
+            double phi = (lon * 2 * Math.PI) / longitudeSegments;
+            float cosPhi = (float) Math.cos(phi);
+            float sinPhi = (float) Math.sin(phi);
+            
+            for (int lat = 0; lat < latitudeSegments; lat++) {
+                double theta1 = (lat * Math.PI) / latitudeSegments;
+                double theta2 = ((lat + 1) * Math.PI) / latitudeSegments;
+                
+                float x1 = (float) Math.sin(theta1) * cosPhi * r + (float)offsetX;
+                float y1 = (float) Math.cos(theta1) * r + (float)offsetY;
+                float z1 = (float) Math.sin(theta1) * sinPhi * r + (float)offsetZ;
+                
+                float x2 = (float) Math.sin(theta2) * cosPhi * r + (float)offsetX;
+                float y2 = (float) Math.cos(theta2) * r + (float)offsetY;
+                float z2 = (float) Math.sin(theta2) * sinPhi * r + (float)offsetZ;
+                
+                bufferBuilder.addVertex(matrix, x1, y1, z1)
+                    .setColor(red, green, blue, alpha);
+                bufferBuilder.addVertex(matrix, x2, y2, z2)
+                    .setColor(red, green, blue, alpha);
+            }
         }
-        poseStack.popPose();
-    }
-
-    private static void drawBox(VertexConsumer builder, Matrix4f matrix, BlockPos pos, float r, float g, float b, float a) {
-        float x = pos.getX(); float y = pos.getY(); float z = pos.getZ();
-        // Disegno semplificato del cubo
-        builder.addVertex(matrix, x, y+1, z).setColor(r, g, b, a).setNormal(0, 1, 0);
-        builder.addVertex(matrix, x+1, y+1, z).setColor(r, g, b, a).setNormal(0, 1, 0);
-        builder.addVertex(matrix, x+1, y+1, z).setColor(r, g, b, a).setNormal(0, 1, 0);
-        builder.addVertex(matrix, x+1, y+1, z+1).setColor(r, g, b, a).setNormal(0, 1, 0);
-        builder.addVertex(matrix, x+1, y+1, z+1).setColor(r, g, b, a).setNormal(0, 1, 0);
-        builder.addVertex(matrix, x, y+1, z+1).setColor(r, g, b, a).setNormal(0, 1, 0);
-        builder.addVertex(matrix, x, y+1, z+1).setColor(r, g, b, a).setNormal(0, 1, 0);
-        builder.addVertex(matrix, x, y+1, z).setColor(r, g, b, a).setNormal(0, 1, 0);
-        // Base
-        builder.addVertex(matrix, x, y, z).setColor(r, g, b, a).setNormal(0, 1, 0);
-        builder.addVertex(matrix, x+1, y, z).setColor(r, g, b, a).setNormal(0, 1, 0);
-        builder.addVertex(matrix, x+1, y, z).setColor(r, g, b, a).setNormal(0, 1, 0);
-        builder.addVertex(matrix, x+1, y, z+1).setColor(r, g, b, a).setNormal(0, 1, 0);
-        builder.addVertex(matrix, x+1, y, z+1).setColor(r, g, b, a).setNormal(0, 1, 0);
-        builder.addVertex(matrix, x, y, z+1).setColor(r, g, b, a).setNormal(0, 1, 0);
-        builder.addVertex(matrix, x, y, z+1).setColor(r, g, b, a).setNormal(0, 1, 0);
-        builder.addVertex(matrix, x, y, z).setColor(r, g, b, a).setNormal(0, 1, 0);
     }
 }
