@@ -24,7 +24,6 @@ public class DamageHandler {
 
             // 3. Calcolo Moltiplicatore
             float multiplier = 1.0f;
-            String partName = "CORPO";
             int color = 0xFFFFFF;
 
             // 4. Calcolo Danni Finali
@@ -44,13 +43,13 @@ public class DamageHandler {
 
             // 6. Applica
             event.setAmount(newDamage);
-
+            // TODO Separate normal damage and percing damage
             // 7. Feedback Visivo
             if (attacker instanceof ServerPlayer player) {
                 String dmgText = String.format("%.1f", newDamage);
                 String penText = stats.armorPenetration > 0 ? " [Pen]" : "";
 
-                player.displayClientMessage(Component.literal("§7Hit: §" + getChar(color) + partName + " §fDmg: " + dmgText + penText), true);
+                player.displayClientMessage(Component.literal("§7Hit: §" + getChar(color) + "§fDmg: " + dmgText + penText), true);
             }
         }
     }
