@@ -120,9 +120,6 @@ public class NetworkHandler {
                 if (stack.isEmpty()) return;
 
                 WeaponStats stats = new WeaponStats();
-                stats.headMult = payload.head();
-                stats.bodyMult = payload.body();
-                stats.legsMult = payload.legs();
                 stats.armorPenetration = payload.pen();
                 stats.baseDamageBonus = payload.bonus();
 
