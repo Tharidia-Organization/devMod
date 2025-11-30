@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -37,6 +38,31 @@ public class WorldRenderEvents {
 
     public static void addAggroLine(int source, int target) {
         activeLines.add(new AggroLine(source, target));
+    }
+    // ---------------------------
+
+    // --- SISTEMA PATH RENDERING ---
+    private static class MobPathData {
+        java.util.List<BlockPos> pathNodes;
+        BlockPos endNode;
+        BlockPos stuckPos;
+        long lastUpdate;
+        
+        MobPathData(java.util.List<BlockPos> nodes, BlockPos end, BlockPos stuck) {
+            this.pathNodes = nodes;
+            this.endNode = end;
+            this.stuckPos = stuck;
+            this.lastUpdate = System.currentTimeMillis();
+        }
+    }
+
+    private static final java.util.Map<Integer, MobPathData> mobPaths = new java.util.HashMap<>();
+
+    public static void updateMobPath(int mobId, java.util.List<BlockPos> pathNodes, BlockPos endNode, BlockPos stuckPos) {
+        mobPaths.put(mobId, new MobPathData(pathNodes, endNode, stuckPos));
+        // Debug log
+        /*System.out.println("[DevMod] Received path data for mob " + mobId + ": " +
+            pathNodes.size() + " nodes, endNode=" + endNode + ", stuckPos=" + stuckPos);*/
     }
     // ---------------------------
 
@@ -154,6 +180,11 @@ public class WorldRenderEvents {
             renderArrowHits(event.getPoseStack(), cameraPos);
         }
 
+        // Render mob paths
+        if (!mobPaths.isEmpty()) {
+            renderMobPaths(event.getPoseStack(), cameraPos);
+        }
+
         if (spheresToRender.isEmpty()) return;
 
         // Render all spheres in one batch (like wall function)
@@ -164,6 +195,9 @@ public class WorldRenderEvents {
             // QUESTA È LA RIGA CHE MANCAVA:
             PoseStack poseStack = event.getPoseStack();
 
+            // Imposta spessore linea più spesso per le linee aggro
+            RenderSystem.lineWidth(4.0f);
+            
             VertexConsumer builder = mc.renderBuffers().bufferSource().getBuffer(RenderType.lines());
             poseStack.pushPose();
             poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
@@ -197,6 +231,9 @@ public class WorldRenderEvents {
                 }
             }
             poseStack.popPose();
+            
+            // Ripristina spessore linea di default
+            RenderSystem.lineWidth(1.0f);
         }
     }
 
@@ -394,5 +431,90 @@ public class WorldRenderEvents {
         if (mob.getMainHandItem().getItem() instanceof TridentItem) return 20.0;
 
         return 0.0;
+    }
+
+    private static void renderMobPaths(PoseStack poseStack, Vec3 cameraPos) {
+        Minecraft mc = Minecraft.getInstance();
+        long currentTime = System.currentTimeMillis();
+        
+        // Clean up old paths (older than 2 seconds)
+        mobPaths.entrySet().removeIf(entry -> currentTime - entry.getValue().lastUpdate > 2000);
+        
+        if (mobPaths.isEmpty()) return;
+        
+        // Setup render state
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthMask(false);
+        RenderSystem.disableCull();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        
+        poseStack.pushPose();
+        poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
+        
+        BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        Matrix4f matrix = poseStack.last().pose();
+        
+        for (MobPathData pathData : mobPaths.values()) {
+            // Render path nodes (green squares)
+            if (pathData.pathNodes != null) {
+                for (BlockPos pos : pathData.pathNodes) {
+                    addBlockSquare(bufferBuilder, matrix, pos, 0, 255, 0, 180); // Green
+                }
+            }
+            
+            // Render end node (cyan blue square)
+            if (pathData.endNode != null) {
+                addBlockSquare(bufferBuilder, matrix, pathData.endNode, 0, 150, 255, 220); // Cyan blue
+            }
+            
+            // Render stuck position (red pulsing square)
+            if (pathData.stuckPos != null) {
+                // Pulsing effect
+                float pulse = (float) (Math.sin(currentTime / 200.0) * 0.5 + 0.5);
+                int alpha = (int) (150 + pulse * 105);
+                addBlockSquare(bufferBuilder, matrix, pathData.stuckPos, 255, 0, 0, alpha); // Red
+            }
+        }
+        
+        BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+        
+        poseStack.popPose();
+        
+        // Restore render state
+        RenderSystem.depthMask(true);
+        RenderSystem.enableCull();
+        RenderSystem.disableBlend();
+    }
+
+    private static void addBlockSquare(BufferBuilder bufferBuilder, Matrix4f matrix, BlockPos pos, int red, int green, int blue, int alpha) {
+        // Position on top of the block
+        float x = pos.getX();
+        float y = pos.getY() + 0.25f; // 0.25 blocks above to avoid z-fighting
+        float z = pos.getZ();
+        
+        // Draw a square on top of the block (1x1)
+        // We need to draw both sides to be visible from any angle
+        
+        // Top face (visible from above)
+        bufferBuilder.addVertex(matrix, x, y, z)
+            .setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(matrix, x + 1, y, z)
+            .setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(matrix, x + 1, y, z + 1)
+            .setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(matrix, x, y, z + 1)
+            .setColor(red, green, blue, alpha);
+        
+        // Bottom face (visible from below)
+        bufferBuilder.addVertex(matrix, x, y, z + 1)
+            .setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(matrix, x + 1, y, z + 1)
+            .setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(matrix, x + 1, y, z)
+            .setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(matrix, x, y, z)
+            .setColor(red, green, blue, alpha);
     }
 }

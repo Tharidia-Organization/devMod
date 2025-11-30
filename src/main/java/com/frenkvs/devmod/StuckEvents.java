@@ -1,8 +1,10 @@
 package com.frenkvs.devmod;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.Style;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
@@ -12,8 +14,11 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @EventBusSubscriber(modid = "devmod", bus = EventBusSubscriber.Bus.GAME)
@@ -48,9 +53,9 @@ public class StuckEvents {
             if (nav.getPath() != null && !nav.isDone()) {
                 StuckTracker tracker = stuckMap.computeIfAbsent(mob.getId(), id -> new StuckTracker(mob.blockPosition()));
 
-                // Disegniamo il path ogni 10 tick (0.5 secondi) per evitare troppo lag
+                // Inviamo i dati del path ai client ogni 10 tick (0.5 secondi)
                 if (tracker.pathDisplayCooldown <= 0) {
-                    showPathParticles(level, nav.getPath());
+                    sendPathToClients(level, mob, nav.getPath(), null);
                     tracker.pathDisplayCooldown = 10;
                 } else {
                     tracker.pathDisplayCooldown--;
@@ -79,21 +84,35 @@ public class StuckEvents {
                 // SE È BLOCCATO
                 if (tracker.stuckTicks > thresholdTicks) {
 
-                    // A) Effetto Visivo HEATMAP (Fiamme)
-                    level.sendParticles(ParticleTypes.FLAME,
-                            currentPos.getX() + 0.5, currentPos.getY() + 0.2, currentPos.getZ() + 0.5,
-                            5, 0.2, 0.2, 0.2, 0.01
-                    );
+                    // A) Invia visualizzazione stuck ai client
+                    sendPathToClients(level, mob, nav.getPath(), currentPos);
 
                     // B) Debug in Chat (Se attivo nel menu) - Solo una volta ogni 2 secondi per non spammare
                     if (ModConfig.showStuckChat && tracker.stuckTicks % 40 == 0) {
-                        String msg = "§c[DEBUG] Stuck: " + mob.getName().getString() +
-                                " @ " + currentPos.toShortString();
+                        // Crea messaggio cliccabile per teleportarsi
+                        Component coordText = Component.literal(currentPos.toShortString())
+                                .setStyle(Style.EMPTY
+                                        .withColor(0xFFFF55)
+                                        .withUnderlined(true)
+                                        .withClickEvent(new ClickEvent(
+                                                ClickEvent.Action.RUN_COMMAND,
+                                                "/tp @s " + currentPos.getX() + " " + currentPos.getY() + " " + currentPos.getZ()
+                                        ))
+                                        .withHoverEvent(new HoverEvent(
+                                                HoverEvent.Action.SHOW_TEXT,
+                                                Component.literal("§aClick to teleport")
+                                        ))
+                                );
+
+                        Component fullMsg = Component.literal("§c[DEBUG] Stuck: ")
+                                .append(Component.literal(mob.getName().getString()).withColor(0xFF5555))
+                                .append(Component.literal(" @ "))
+                                .append(coordText);
 
                         // Manda il messaggio a tutti i player vicini (raggio 50 blocchi)
                         for (ServerPlayer player : level.players()) {
                             if (player.distanceToSqr(mob) < 2500) { // 50^2
-                                player.displayClientMessage(Component.literal(msg), false);
+                                player.displayClientMessage(fullMsg, false);
                             }
                         }
                     }
@@ -106,27 +125,35 @@ public class StuckEvents {
         }
     }
 
-    // Metodo helper per disegnare il percorso con particelle verdi/blu
-    private static void showPathParticles(ServerLevel level, Path path) {
+    // Metodo helper per inviare i dati del path ai client per il rendering
+    private static void sendPathToClients(ServerLevel level, Mob mob, Path path, BlockPos stuckPos) {
         if (path == null) return;
 
-        // Disegna particelle su ogni "nodo" (punto di svolta) del percorso
+        // Raccogli tutti i nodi del path
+        List<BlockPos> pathNodes = new ArrayList<>();
         for (int i = 0; i < path.getNodeCount(); i++) {
             net.minecraft.world.level.pathfinder.Node node = path.getNode(i);
-
-            // Usiamo particelle "HAPPY_VILLAGER" (verdi/smeraldo) perché si vedono bene
-            level.sendParticles(ParticleTypes.HAPPY_VILLAGER,
-                    node.x + 0.5, node.y + 0.5, node.z + 0.5,
-                    1, 0, 0, 0, 0 // Quantità 1, velocità 0
-            );
+            pathNodes.add(new BlockPos(node.x, node.y, node.z));
         }
 
-        // Evidenzia la destinazione finale con particelle diverse (es. SOUL_FIRE_FLAME)
+        // Ottieni il nodo finale
+        BlockPos endNode = null;
         if (path.getEndNode() != null) {
-            level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME,
-                    path.getEndNode().x + 0.5, path.getEndNode().y + 1.0, path.getEndNode().z + 0.5,
-                    3, 0, 0, 0, 0.05
-            );
+            endNode = new BlockPos(path.getEndNode().x, path.getEndNode().y, path.getEndNode().z);
+        }
+
+        // Debug: verifica che abbiamo dati da inviare
+        if (pathNodes.isEmpty() && endNode == null && stuckPos == null) {
+            return;
+        }
+
+        // Crea e invia il payload a tutti i player vicini
+        PathRenderPayload payload = new PathRenderPayload(pathNodes, endNode, stuckPos, mob.getId());
+        
+        for (ServerPlayer player : level.players()) {
+            if (player.distanceToSqr(mob) < 10000) { // 100 blocchi di raggio
+                PacketDistributor.sendToPlayer(player, payload);
+            }
         }
     }
 

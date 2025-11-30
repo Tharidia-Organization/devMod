@@ -41,6 +41,7 @@ public class NetworkHandler {
                 EquipMobPayload.TYPE, EquipMobPayload.STREAM_CODEC, NetworkHandler::handleEquipData
         );
         event.registrar("4").playToClient(AggroLinkPayload.TYPE, AggroLinkPayload.STREAM_CODEC, NetworkHandler::handleAggroLink);
+        event.registrar("5").playToClient(PathRenderPayload.TYPE, PathRenderPayload.STREAM_CODEC, NetworkHandler::handlePathRender);
     }
 
     // =================================================================================
@@ -164,6 +165,13 @@ public class NetworkHandler {
         context.enqueueWork(() -> {
             // Aggiungiamo la linea al sistema di rendering
             WorldRenderEvents.addAggroLine(payload.sourceId(), payload.targetId());
+        });
+    }
+
+    private static void handlePathRender(PathRenderPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            // Aggiungiamo i dati del path al sistema di rendering
+            WorldRenderEvents.updateMobPath(payload.mobId(), payload.pathNodes(), payload.endNode(), payload.stuckPos());
         });
     }
 
