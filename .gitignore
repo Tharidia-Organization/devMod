@@ -26,3 +26,117 @@ replay_pid*
 /run/
 /.idea/
 /gradle/
+/.gradle/9.2.0/checksums/checksums.lock
+/.gradle/9.2.0/executionHistory/executionHistory.bin
+/.gradle/9.2.0/executionHistory/executionHistory.lock
+/.gradle/9.2.0/fileHashes/fileHashes.bin
+/.gradle/9.2.0/fileHashes/fileHashes.lock
+/.gradle/9.2.0/fileHashes/resourceHashesCache.bin
+/.gradle/buildOutputCleanup/buildOutputCleanup.lock
+/.gradle/configuration-cache/5b319aa3-af2d-4163-8289-726e81db82c4/.globals.work.bin
+/.gradle/configuration-cache/5b319aa3-af2d-4163-8289-726e81db82c4/.strings.work.bin
+/.gradle/configuration-cache/5b319aa3-af2d-4163-8289-726e81db82c4/_.work.bin
+/.gradle/configuration-cache/5b319aa3-af2d-4163-8289-726e81db82c4/buildfingerprint.bin
+/.gradle/configuration-cache/5b319aa3-af2d-4163-8289-726e81db82c4/classloaderscopes.bin
+/.gradle/configuration-cache/5b319aa3-af2d-4163-8289-726e81db82c4/entry.bin
+/.gradle/configuration-cache/5b319aa3-af2d-4163-8289-726e81db82c4/projectfingerprint.bin
+/.gradle/configuration-cache/5b319aa3-af2d-4163-8289-726e81db82c4/work.bin
+/.gradle/configuration-cache/5wxvyxs33e8czts5z1z3jgupi/candidates.bin
+/.gradle/configuration-cache/8c13c7b2-027a-4684-8f48-5947db47926f/.globals.work.bin
+/.gradle/configuration-cache/8c13c7b2-027a-4684-8f48-5947db47926f/.strings.work.bin
+/.gradle/configuration-cache/8c13c7b2-027a-4684-8f48-5947db47926f/_.work.bin
+/.gradle/configuration-cache/8c13c7b2-027a-4684-8f48-5947db47926f/buildfingerprint.bin
+/.gradle/configuration-cache/8c13c7b2-027a-4684-8f48-5947db47926f/classloaderscopes.bin
+/.gradle/configuration-cache/8c13c7b2-027a-4684-8f48-5947db47926f/entry.bin
+/.gradle/configuration-cache/8c13c7b2-027a-4684-8f48-5947db47926f/projectfingerprint.bin
+/.gradle/configuration-cache/8c13c7b2-027a-4684-8f48-5947db47926f/work.bin
+/.gradle/configuration-cache/9pwnu40kwii2qidkpavc4jexm/candidates.bin
+/.gradle/configuration-cache/5152a604-ac1f-487d-b98e-16213e604caf/.globals.work.bin
+/.gradle/configuration-cache/5152a604-ac1f-487d-b98e-16213e604caf/.strings.work.bin
+/.gradle/configuration-cache/5152a604-ac1f-487d-b98e-16213e604caf/_.work.bin
+/.gradle/configuration-cache/5152a604-ac1f-487d-b98e-16213e604caf/buildfingerprint.bin
+/.gradle/configuration-cache/5152a604-ac1f-487d-b98e-16213e604caf/classloaderscopes.bin
+/.gradle/configuration-cache/5152a604-ac1f-487d-b98e-16213e604caf/entry.bin
+/.gradle/configuration-cache/5152a604-ac1f-487d-b98e-16213e604caf/projectfingerprint.bin
+/.gradle/configuration-cache/5152a604-ac1f-487d-b98e-16213e604caf/work.bin
+/.gradle/configuration-cache/7250ddnwnkl88jampdmc5bmir/candidates.bin
+/.gradle/configuration-cache/9760cfb0-5ac8-440c-a96c-98ddc43c6dd5/.globals.work.bin
+/.gradle/configuration-cache/9760cfb0-5ac8-440c-a96c-98ddc43c6dd5/.strings.work.bin
+/.gradle/configuration-cache/9760cfb0-5ac8-440c-a96c-98ddc43c6dd5/_.work.bin
+/.gradle/configuration-cache/9760cfb0-5ac8-440c-a96c-98ddc43c6dd5/buildfingerprint.bin
+/.gradle/configuration-cache/9760cfb0-5ac8-440c-a96c-98ddc43c6dd5/classloaderscopes.bin
+/.gradle/configuration-cache/9760cfb0-5ac8-440c-a96c-98ddc43c6dd5/entry.bin
+/.gradle/configuration-cache/9760cfb0-5ac8-440c-a96c-98ddc43c6dd5/projectfingerprint.bin
+/.gradle/configuration-cache/9760cfb0-5ac8-440c-a96c-98ddc43c6dd5/work.bin
+/.gradle/configuration-cache/81022ae1-081a-4509-857c-3947fc47ff76/.globals.work.bin
+/.gradle/configuration-cache/81022ae1-081a-4509-857c-3947fc47ff76/.strings.work.bin
+/.gradle/configuration-cache/81022ae1-081a-4509-857c-3947fc47ff76/_.work.bin
+/.gradle/configuration-cache/81022ae1-081a-4509-857c-3947fc47ff76/buildfingerprint.bin
+/.gradle/configuration-cache/81022ae1-081a-4509-857c-3947fc47ff76/classloaderscopes.bin
+/.gradle/configuration-cache/81022ae1-081a-4509-857c-3947fc47ff76/entry.bin
+/.gradle/configuration-cache/81022ae1-081a-4509-857c-3947fc47ff76/projectfingerprint.bin
+/.gradle/configuration-cache/81022ae1-081a-4509-857c-3947fc47ff76/work.bin
+/.gradle/configuration-cache/a8ebf81c-86b5-4b1c-896a-494b95aad696/.globals.work.bin
+/.gradle/configuration-cache/a8ebf81c-86b5-4b1c-896a-494b95aad696/.strings.work.bin
+/.gradle/configuration-cache/a8ebf81c-86b5-4b1c-896a-494b95aad696/_.work.bin
+/.gradle/configuration-cache/a8ebf81c-86b5-4b1c-896a-494b95aad696/build.work.bin
+/.gradle/configuration-cache/a8ebf81c-86b5-4b1c-896a-494b95aad696/buildfingerprint.bin
+/.gradle/configuration-cache/a8ebf81c-86b5-4b1c-896a-494b95aad696/classloaderscopes.bin
+/.gradle/configuration-cache/a8ebf81c-86b5-4b1c-896a-494b95aad696/entry.bin
+/.gradle/configuration-cache/a8ebf81c-86b5-4b1c-896a-494b95aad696/projectfingerprint.bin
+/.gradle/configuration-cache/a8ebf81c-86b5-4b1c-896a-494b95aad696/work.bin
+/.gradle/configuration-cache/barxekz2wm4tengcjlo66jwlu/candidates.bin
+/.gradle/configuration-cache/cws2235ch67wnlubkghqtw84u/candidates.bin
+/.gradle/configuration-cache/ebb834c6-dd6a-4391-a0c7-c5bfca324909/.globals.work.bin
+/.gradle/configuration-cache/ebb834c6-dd6a-4391-a0c7-c5bfca324909/.strings.work.bin
+/.gradle/configuration-cache/ebb834c6-dd6a-4391-a0c7-c5bfca324909/_.work.bin
+/.gradle/configuration-cache/ebb834c6-dd6a-4391-a0c7-c5bfca324909/buildfingerprint.bin
+/.gradle/configuration-cache/ebb834c6-dd6a-4391-a0c7-c5bfca324909/classloaderscopes.bin
+/.gradle/configuration-cache/ebb834c6-dd6a-4391-a0c7-c5bfca324909/entry.bin
+/.gradle/configuration-cache/ebb834c6-dd6a-4391-a0c7-c5bfca324909/projectfingerprint.bin
+/.gradle/configuration-cache/ebb834c6-dd6a-4391-a0c7-c5bfca324909/work.bin
+/.gradle/configuration-cache/configuration-cache.lock
+/.gradle/file-system.probe
+/.idea/gradle.xml
+/.idea/material_theme_project_new.xml
+/.idea/workspace.xml
+/build/moddev/clientLegacyClasspath.txt
+/build/moddev/clientRunProgramArgs.txt
+/build/moddev/clientRunVmArgs.txt
+/build/moddev/dataLegacyClasspath.txt
+/build/moddev/dataRunProgramArgs.txt
+/build/moddev/dataRunVmArgs.txt
+/build/moddev/gameTestServerLegacyClasspath.txt
+/build/moddev/gameTestServerRunVmArgs.txt
+/build/moddev/minecraft_assets.properties
+/build/moddev/serverLegacyClasspath.txt
+/build/moddev/serverRunVmArgs.txt
+/build/reports/problems/problems-report.html
+/build/tmp/compileJava/previous-compilation-data.bin
+/build/tmp/createMinecraftArtifacts/nfrt_artifact_manifest.properties
+/build/tmp/downloadAssets/nfrt_artifact_manifest.properties
+/run/logs/debug-1.log.gz
+/run/logs/debug-2.log.gz
+/run/logs/debug-3.log.gz
+/run/logs/debug-4.log.gz
+/run/logs/debug-5.log.gz
+/run/saves/New World/advancements/380df991-f603-344c-a090-369bad2a924a.json
+/run/saves/New World/data/raids.dat
+/run/saves/New World/DIM1/data/raids_end.dat
+/run/saves/New World/DIM-1/data/raids.dat
+/run/saves/New World/entities/r.0.0.mca
+/run/saves/New World/entities/r.0.-1.mca
+/run/saves/New World/entities/r.-1.0.mca
+/run/saves/New World/entities/r.-1.-1.mca
+/run/saves/New World/playerdata/380df991-f603-344c-a090-369bad2a924a.dat
+/run/saves/New World/playerdata/380df991-f603-344c-a090-369bad2a924a.dat_old
+/run/saves/New World/region/r.0.0.mca
+/run/saves/New World/region/r.0.-1.mca
+/run/saves/New World/region/r.-1.0.mca
+/run/saves/New World/region/r.-1.-1.mca
+/run/saves/New World/stats/380df991-f603-344c-a090-369bad2a924a.json
+/run/saves/New World/level.dat
+/run/saves/New World/level.dat_old
+/run/command_history.txt
+/run/options.txt
+/run/usercache.json
