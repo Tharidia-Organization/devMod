@@ -17,6 +17,10 @@ import com.mojang.blaze3d.vertex.*;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.GameRenderer;
 import org.joml.Matrix4f;
+import net.minecraft.world.entity.monster.*;
+import net.minecraft.world.item.BowItem;
+import net.minecraft.world.item.CrossbowItem;
+import net.minecraft.world.item.TridentItem;
 
 @EventBusSubscriber(modid = "devmod", value = Dist.CLIENT)
 public class WorldRenderEvents {
@@ -110,6 +114,17 @@ public class WorldRenderEvents {
                         double z = mob.getZ() - cameraPos.z;
                         spheresToRender.add(new SphereData(x, y, z, attackReach, 0xFFFFFF00));
                     }
+                }
+                // 3. ATTACCO RANGED (Viola) - ADATTATO AL NUOVO SISTEMA
+                double rangedDist = getRangedAttackRange(mob);
+                if (rangedDist > 0) {
+                    // Invece di renderCircle, aggiungiamo i dati alla lista spheresToRender
+                    double x = mob.getX() - cameraPos.x;
+                    double y = mob.getY() - cameraPos.y + mob.getBbHeight() / 2.0;
+                    double z = mob.getZ() - cameraPos.z;
+
+                    // Colore Viola: 0xFFAA00FF
+                    spheresToRender.add(new SphereData(x, y, z, rangedDist, 0xFFAA00FF));
                 }
             }
         }
@@ -271,5 +286,20 @@ public class WorldRenderEvents {
         
         RenderSystem.enableDepthTest();
         RenderSystem.disableBlend();
+    }
+    private static double getRangedAttackRange(Mob mob) {
+        if (mob instanceof AbstractSkeleton) return 15.0;
+        if (mob instanceof Pillager) return 24.0;
+        if (mob instanceof Blaze) return 48.0;
+        if (mob instanceof Ghast) return 64.0;
+        if (mob instanceof Witch) return 10.0;
+        if (mob instanceof Guardian) return 15.0;
+
+        // Controllo armi generiche
+        if (mob.getMainHandItem().getItem() instanceof BowItem) return 20.0;
+        if (mob.getMainHandItem().getItem() instanceof CrossbowItem) return 24.0;
+        if (mob.getMainHandItem().getItem() instanceof TridentItem) return 20.0;
+
+        return 0.0;
     }
 }
