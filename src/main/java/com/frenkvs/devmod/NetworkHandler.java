@@ -40,6 +40,7 @@ public class NetworkHandler {
         event.registrar("3").playToServer(
                 EquipMobPayload.TYPE, EquipMobPayload.STREAM_CODEC, NetworkHandler::handleEquipData
         );
+        event.registrar("4").playToClient(AggroLinkPayload.TYPE, AggroLinkPayload.STREAM_CODEC, NetworkHandler::handleAggroLink);
     }
 
     // =================================================================================
@@ -156,6 +157,13 @@ public class NetworkHandler {
                     player.sendSystemMessage(Component.literal("§a[Equip] §fOggetti aggiornati su: " + mob.getName().getString()));
                 }
             }
+        });
+    }
+
+    private static void handleAggroLink(AggroLinkPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            // Aggiungiamo la linea al sistema di rendering
+            WorldRenderEvents.addAggroLine(payload.sourceId(), payload.targetId());
         });
     }
 

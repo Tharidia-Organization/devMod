@@ -1,11 +1,15 @@
 package com.frenkvs.devmod;
 
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.minecraft.world.phys.AABB;
+import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 @EventBusSubscriber(modid = "devmod", bus = EventBusSubscriber.Bus.GAME)
 public class GlobalMobEvents {
@@ -39,6 +43,29 @@ public class GlobalMobEvents {
                             mob.setHealth(mob.getMaxHealth());
                         }
                     }
+                }
+            }
+        }
+    }
+    // --- RILEVAMENTO "CHIAMATA AI RINFORZI" ---
+    @SubscribeEvent
+    public static void onTargetChange(LivingChangeTargetEvent event) {
+        if (event.getEntity().level().isClientSide) return;
+
+        // Se un mob (es. Zombi B) decide di attaccare il giocatore...
+        if (event.getEntity() instanceof Mob newAggroMob && event.getNewAboutToBeSetTarget() instanceof ServerPlayer player) {
+
+            // ...controlliamo se c'è un "Informatore" vicino (es. Zombi A colpito dal player)
+            AABB searchBox = newAggroMob.getBoundingBox().inflate(20.0);
+            java.util.List<Mob> nearbyAllies = newAggroMob.level().getEntitiesOfClass(Mob.class, searchBox,
+                    m -> m != newAggroMob && m.getType() == newAggroMob.getType());
+
+            for (Mob ally : nearbyAllies) {
+                // Se questo alleato è stato colpito dal giocatore di recente
+                if (ally.getLastHurtByMob() == player && (ally.tickCount - ally.getLastHurtByMobTimestamp()) < 100) {
+                    // Inviamo il pacchetto per disegnare la linea
+                    PacketDistributor.sendToAllPlayers(new AggroLinkPayload(ally.getId(), newAggroMob.getId()));
+                    break;
                 }
             }
         }

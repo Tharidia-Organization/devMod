@@ -25,6 +25,21 @@ import net.minecraft.world.item.TridentItem;
 @EventBusSubscriber(modid = "devmod", value = Dist.CLIENT)
 public class WorldRenderEvents {
 
+    // --- SISTEMA LINEE AGGRO ---
+    private static class AggroLine {
+        int sourceId;
+        int targetId;
+        int age;
+        AggroLine(int s, int t) { sourceId = s; targetId = t; age = 0; }
+    }
+
+    private static final java.util.List<AggroLine> activeLines = new java.util.ArrayList<>();
+
+    public static void addAggroLine(int source, int target) {
+        activeLines.add(new AggroLine(source, target));
+    }
+    // ---------------------------
+
     // Arrow hit tracking system
     private static final java.util.List<ArrowHit> arrowHits = new java.util.ArrayList<>();
     
@@ -143,6 +158,46 @@ public class WorldRenderEvents {
 
         // Render all spheres in one batch (like wall function)
         renderAllSpheres(event.getPoseStack(), spheresToRender);
+
+        // --- RENDER LINEE AGGRO ---
+        if (!activeLines.isEmpty()) {
+            // QUESTA È LA RIGA CHE MANCAVA:
+            PoseStack poseStack = event.getPoseStack();
+
+            VertexConsumer builder = mc.renderBuffers().bufferSource().getBuffer(RenderType.lines());
+            poseStack.pushPose();
+            poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
+            Matrix4f matrix = poseStack.last().pose();
+
+            java.util.Iterator<AggroLine> it = activeLines.iterator();
+            while (it.hasNext()) {
+                AggroLine line = it.next();
+                line.age++;
+
+                // Rimuovi dopo 2 secondi (40 tick)
+                if (line.age > 40) {
+                    it.remove();
+                    continue;
+                }
+
+                Entity source = mc.level.getEntity(line.sourceId);
+                Entity target = mc.level.getEntity(line.targetId);
+
+                if (source != null && target != null) {
+                    float alpha = 1.0f - (line.age / 40.0f);
+
+                    Vec3 sPos = source.position().add(0, source.getBbHeight() / 2, 0);
+                    Vec3 tPos = target.position().add(0, target.getBbHeight() / 2, 0);
+
+                    // Disegna linea Arancione/Rossa
+                    builder.addVertex(matrix, (float)sPos.x, (float)sPos.y, (float)sPos.z)
+                            .setColor(1.0f, 0.2f, 0.0f, alpha).setNormal(0, 1, 0);
+                    builder.addVertex(matrix, (float)tPos.x, (float)tPos.y, (float)tPos.z)
+                            .setColor(1.0f, 0.2f, 0.0f, alpha).setNormal(0, 1, 0);
+                }
+            }
+            poseStack.popPose();
+        }
     }
 
     private static record SphereData(double x, double y, double z, double radius, int color) {}
