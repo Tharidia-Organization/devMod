@@ -17,7 +17,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 
 import java.text.DecimalFormat;
 
-@EventBusSubscriber(modid = "devmod", bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = "devmod", value = Dist.CLIENT)
 public class ClientModEvents {
 
     private static final DecimalFormat df = new DecimalFormat("#.##");

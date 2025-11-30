@@ -3,12 +3,16 @@ package com.frenkvs.devmod;
 public class ModConfig {
     // VISIBILITÀ
     public static boolean showOverlay = true;       // Mostra scritte a schermo
-    public static boolean showRender = true;        // Mostra cerchi/blocchi a terra
+    public static boolean showRender = true;        // Mostra sfere semitrasparenti
 
-    // MODALITÀ DI RENDER
-    // true = Illumina i blocchi (Griglia rossa)
-    // false = Disegna il cerchio semplice (Linea)
-    public static boolean renderAsBlocks = true;
+    // CONTROLLO RENDER PER TIPO DI MOB
+    public static boolean renderFriendlyAggro = true;    // Mostra raggio aggio mob amichevoli
+    public static boolean renderFriendlyAttack = true;   // Mostra raggio attacco mob amichevoli
+    public static boolean renderHostileAggro = true;     // Mostra raggio aggio mob ostili
+    public static boolean renderHostileAttack = true;    // Mostra raggio attacco mob ostili
+
+    // DISTANZA DI RENDER
+    public static int renderDistanceChunks = 8;  // Distanza di render in chunks (1-10)
 
     // COLORI (In formato ARGB Hex)
     // 0xFFFF0000 = Rosso, 0xFFFFFF00 = Giallo, 0xFF00FF00 = Verde, 0xFF00FFFF = Ciano
@@ -30,5 +34,14 @@ public class ModConfig {
         if (followRangeColor == 0xFF00FFFF) return "Ciano";
         if (followRangeColor == 0xFF0000FF) return "Blu";
         return "Sconosciuto";
+    }
+
+    public static String getColorTranslationKey() {
+        if (followRangeColor == 0xFFFF0000) return "devmod.color.red";
+        if (followRangeColor == 0xFFFFFF00) return "devmod.color.yellow";
+        if (followRangeColor == 0xFF00FF00) return "devmod.color.green";
+        if (followRangeColor == 0xFF00FFFF) return "devmod.color.cyan";
+        if (followRangeColor == 0xFF0000FF) return "devmod.color.blue";
+        return "devmod.color.unknown";
     }
 }
