@@ -26,11 +26,14 @@ public class ArrowEvents {
 
         // Se siamo sul Client (grafica), non calcoliamo nulla, lasciamo fare al server
         if (arrow.level().isClientSide) {
-            System.out.println("Arrow hit detected on client side!");
             HitResult result = event.getRayTraceResult();
             Vec3 hitPos = result.getLocation();
-            System.out.println("Hit position: " + hitPos.x + ", " + hitPos.y + ", " + hitPos.z);
-            WorldRenderEvents.addArrowHit(hitPos.x, hitPos.y, hitPos.z);
+            
+            // Calculate arrow speed at impact
+            Vec3 velocity = arrow.getDeltaMovement();
+            double speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z);
+            
+            WorldRenderEvents.addArrowHit(hitPos.x, hitPos.y, hitPos.z, speed);
             return;
         }
 
@@ -46,50 +49,5 @@ public class ArrowEvents {
         level.playSound(null, hitPos.x, hitPos.y, hitPos.z, SoundEvents.AMETHYST_BLOCK_HIT, SoundSource.PLAYERS, 1.0f, 2.0f);
 
 
-        // 4. CALCOLO PARTE DEL CORPO (Solo se colpiamo un'entità)
-        if (result.getType() == HitResult.Type.ENTITY) {
-            EntityHitResult entityResult = (EntityHitResult) result;
-            Entity target = entityResult.getEntity();
-
-            // Chi ha sparato la freccia? (Per mandargli il messaggio)
-            if (arrow.getOwner() instanceof ServerPlayer shooter && target instanceof LivingEntity victim) {
-
-                // --- MATEMATICA DEL CORPO ---
-                double feetY = victim.getY();
-                double headY = feetY + victim.getBbHeight() * 0.85; // Altezza occhi circa
-                double hitY = hitPos.y;
-
-                String bodyPart;
-                int color; // Codice colore per il messaggio
-
-                if (hitY >= headY) {
-                    bodyPart = "TESTA (HEADSHOT!)";
-                    color = 0xFF5555; // Rosso
-
-                    // Suono speciale "DING" per headshot
-                    level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(), SoundEvents.ARROW_HIT_PLAYER, SoundSource.PLAYERS, 1.0f, 1.5f);
-
-                } else if (hitY <= feetY + (victim.getBbHeight() * 0.3)) {
-                    bodyPart = "GAMBE";
-                    color = 0x55FFFF; // Azzurro
-                } else {
-                    bodyPart = "TORSO";
-                    color = 0x55FF55; // Verde
-                }
-
-                // 5. MESSAGGIO OVERLAY (Action Bar - quella sopra l'inventario)
-                shooter.sendSystemMessage(Component.literal("§7Colpito: §f" + victim.getName().getString() + " §7su: §" + getChatColorChar(color) + bodyPart));
-
-                // Messaggio visivo veloce sopra la hotbar
-                shooter.displayClientMessage(Component.literal("🎯 " + bodyPart), true);
-            }
-        }
-    }
-
-    // Piccolo aiuto per convertire i colori in codici chat Minecraft (es. Rosso -> 'c')
-    private static char getChatColorChar(int color) {
-        if (color == 0xFF5555) return 'c'; // Red
-        if (color == 0x55FFFF) return 'b'; // Aqua
-        return 'a'; // Green
     }
 }

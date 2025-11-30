@@ -14,7 +14,7 @@ public class WeaponEditorScreen extends Screen {
     private final ItemStack stack;
     private boolean editGlobal = false; // false = Modifica SOLO questa spada, true = TUTTE
 
-    private EditBox headField, bodyField, legsField, penField, bonusField, nameField;
+    private EditBox penField, bonusField, nameField;
 
     public WeaponEditorScreen() {
         super(Component.literal("Editor Armi"));
@@ -40,20 +40,6 @@ public class WeaponEditorScreen extends Screen {
 
         // Campi di testo
         WeaponStats current = WeaponConfigManager.getStats(stack);
-
-        addLabel(x, y, "Head Mult:");
-        headField = new EditBox(font, x + 100, y, w, h, Component.literal("Head"));
-        this.addRenderableWidget(headField);
-
-        y += 25;
-        addLabel(x, y, "Body Mult:");
-        bodyField = new EditBox(font, x + 100, y, w, h, Component.literal("Body"));
-        this.addRenderableWidget(bodyField);
-
-        y += 25;
-        addLabel(x, y, "Legs Mult:");
-        legsField = new EditBox(font, x + 100, y, w, h, Component.literal("Legs"));
-        this.addRenderableWidget(legsField);
 
         y += 25;
         addLabel(x, y, "Armor Pen:");
@@ -94,24 +80,18 @@ public class WeaponEditorScreen extends Screen {
         // Recuperiamo le statistiche attuali dell'arma
         WeaponStats stats = WeaponConfigManager.getStats(stack);
 
-        headField.setValue(String.valueOf(stats.headMult));
-        bodyField.setValue(String.valueOf(stats.bodyMult));
-        legsField.setValue(String.valueOf(stats.legsMult));
         penField.setValue(String.valueOf(stats.armorPenetration));
         bonusField.setValue(String.valueOf(stats.baseDamageBonus));
     }
 
     private void save() {
         try {
-            float head = Float.parseFloat(headField.getValue());
-            float body = Float.parseFloat(bodyField.getValue());
-            float legs = Float.parseFloat(legsField.getValue());
             float pen = Float.parseFloat(penField.getValue());
             float bonus = Float.parseFloat(bonusField.getValue());
             String name = nameField.getValue();
 
             // Inviamo il pacchetto al server
-            PacketDistributor.sendToServer(new UpdateWeaponPayload(editGlobal, head, body, legs, pen, bonus, name));
+            PacketDistributor.sendToServer(new UpdateWeaponPayload(editGlobal, pen, bonus, name));
 
             this.onClose(); // Chiudiamo la finestra
         } catch (Exception e) {

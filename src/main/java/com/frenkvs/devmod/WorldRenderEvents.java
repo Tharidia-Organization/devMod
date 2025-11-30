@@ -31,20 +31,21 @@ public class WorldRenderEvents {
     private static class ArrowHit {
         final double x, y, z;
         final long timestamp;
+        final double speed;
         
-        ArrowHit(double x, double y, double z, long timestamp) {
+        ArrowHit(double x, double y, double z, long timestamp, double speed) {
             this.x = x;
             this.y = y;
             this.z = z;
             this.timestamp = timestamp;
+            this.speed = speed;
         }
     }
     
-    public static void addArrowHit(double x, double y, double z) {
+    public static void addArrowHit(double x, double y, double z, double speed) {
         if (Minecraft.getInstance().level == null) return;
         long currentTime = Minecraft.getInstance().level.getGameTime();
-        arrowHits.add(new ArrowHit(x, y, z, currentTime));
-        System.out.println("Added arrow hit at: " + x + ", " + y + ", " + z + " | Total hits: " + arrowHits.size());
+        arrowHits.add(new ArrowHit(x, y, z, currentTime, speed));
     }
 
     private static boolean isHostileMob(Mob mob) {
@@ -135,7 +136,6 @@ public class WorldRenderEvents {
 
         // Render blue squares for active arrow hits
         if (!arrowHits.isEmpty()) {
-            System.out.println("Rendering " + arrowHits.size() + " arrow hits");
             renderArrowHits(event.getPoseStack(), cameraPos);
         }
 
@@ -254,35 +254,73 @@ public class WorldRenderEvents {
         RenderSystem.disableDepthTest();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         
-        BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-        
-        Matrix4f matrix = poseStack.last().pose();
+        Minecraft mc = Minecraft.getInstance();
         
         for (ArrowHit hit : arrowHits) {
-            double x = hit.x - cameraPos.x;
-            double y = hit.y - cameraPos.y + 2.0; // Larger offset for visibility
-            double z = hit.z - cameraPos.z;
+            poseStack.pushPose();
             
-            float size = 5.0f; // MUCH bigger for testing (10 blocks wide)
-            int red = 255;     // Bright red for maximum visibility
-            int green = 0;
-            int blue = 0;
-            int alpha = 255;   // Fully opaque
+            // Translate to hit position
+            poseStack.translate(hit.x - cameraPos.x, hit.y - cameraPos.y + 0.1, hit.z - cameraPos.z);
             
-            System.out.println("Drawing square at relative: " + x + ", " + y + ", " + z);
+            // Billboard rotation - make square face the camera
+            poseStack.mulPose(mc.gameRenderer.getMainCamera().rotation());
             
-            // Draw a flat red square facing upward
-            bufferBuilder.addVertex(matrix, (float)(x - size), (float)y, (float)(z - size))
+            BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+            Matrix4f matrix = poseStack.last().pose();
+            
+            float size = 0.3f; // Small square size (0.6 blocks wide)
+            
+            // Map speed to color gradient: light blue (min speed) -> red (max speed)
+            // Normal arrow speeds range from ~1.0 (slow) to ~3.5 (fast), max possible ~4.0
+            double minSpeed = 1.0;
+            double maxSpeed = 3.2;
+            double normalizedSpeed = Math.max(0, Math.min(1, (hit.speed - minSpeed) / (maxSpeed - minSpeed)));
+            
+            // Color interpolation: light blue -> cyan -> green -> yellow -> red
+            int red, green, blue;
+            if (normalizedSpeed < 0.25) {
+                // Light blue to cyan
+                double t = normalizedSpeed * 4;
+                red = 0;
+                green = (int)(128 + 127 * t);
+                blue = 255;
+            } else if (normalizedSpeed < 0.5) {
+                // Cyan to green
+                double t = (normalizedSpeed - 0.25) * 4;
+                red = 0;
+                green = 255;
+                blue = (int)(255 * (1 - t));
+            } else if (normalizedSpeed < 0.75) {
+                // Green to yellow
+                double t = (normalizedSpeed - 0.5) * 4;
+                red = (int)(255 * t);
+                green = 255;
+                blue = 0;
+            } else {
+                // Yellow to red
+                double t = (normalizedSpeed - 0.75) * 4;
+                red = 255;
+                green = (int)(255 * (1 - t));
+                blue = 0;
+            }
+            
+            int alpha = 220;   // Semi-transparent
+            
+            // Draw billboard square (always faces camera)
+            // Bottom-left, Bottom-right, Top-right, Top-left
+            bufferBuilder.addVertex(matrix, -size, -size, 0)
                 .setColor(red, green, blue, alpha);
-            bufferBuilder.addVertex(matrix, (float)(x + size), (float)y, (float)(z - size))
+            bufferBuilder.addVertex(matrix, size, -size, 0)
                 .setColor(red, green, blue, alpha);
-            bufferBuilder.addVertex(matrix, (float)(x + size), (float)y, (float)(z + size))
+            bufferBuilder.addVertex(matrix, size, size, 0)
                 .setColor(red, green, blue, alpha);
-            bufferBuilder.addVertex(matrix, (float)(x - size), (float)y, (float)(z + size))
+            bufferBuilder.addVertex(matrix, -size, size, 0)
                 .setColor(red, green, blue, alpha);
+            
+            BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+            
+            poseStack.popPose();
         }
-        
-        BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
         
         RenderSystem.enableDepthTest();
         RenderSystem.disableBlend();

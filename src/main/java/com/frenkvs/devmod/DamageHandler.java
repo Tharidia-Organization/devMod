@@ -8,6 +8,7 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import org.jetbrains.annotations.NotNull;
 
 @EventBusSubscriber(modid = "devmod", bus = EventBusSubscriber.Bus.GAME)
 public class DamageHandler {
@@ -16,23 +17,7 @@ public class DamageHandler {
     public static void onDamage(LivingIncomingDamageEvent event) {
         if (event.getEntity() instanceof LivingEntity victim && event.getSource().getEntity() instanceof LivingEntity attacker) {
 
-            ItemStack weapon = ItemStack.EMPTY;
-            HitHelper.BodyPart part = HitHelper.BodyPart.BODY;
-            boolean isRanged = false;
-
-            // 1. Identifichiamo l'arma e la parte colpita
-            if (event.getSource().getDirectEntity() instanceof AbstractArrow arrow) {
-                // RANGED
-                isRanged = true;
-                // Le frecce non hanno un "itemstack" facile, ma possiamo stimare dal proprietario o usare default
-                // Per semplicità qui usiamo l'arma in mano all'attaccante se è un arco
-                weapon = attacker.getMainHandItem();
-                part = HitHelper.getBodyPart(victim, arrow.getY());
-            } else {
-                // MELEE
-                weapon = attacker.getMainHandItem();
-                part = HitHelper.rayTraceBodyPart(attacker, victim);
-            }
+            ItemStack weapon = getItemStack(event, attacker);
 
             // 2. Recuperiamo le Statistiche (Globali o Specifiche)
             WeaponStats stats = WeaponConfigManager.getStats(weapon);
@@ -41,12 +26,6 @@ public class DamageHandler {
             float multiplier = 1.0f;
             String partName = "CORPO";
             int color = 0xFFFFFF;
-
-            switch (part) {
-                case HEAD -> { multiplier = stats.headMult; partName = "TESTA"; color = 0xFF5555; }
-                case BODY -> { multiplier = stats.bodyMult; partName = "TORSO"; color = 0x55FF55; }
-                case LEGS -> { multiplier = stats.legsMult; partName = "GAMBE"; color = 0x55FFFF; }
-            }
 
             // 4. Calcolo Danni Finali
             float originalDamage = event.getAmount();
@@ -74,6 +53,24 @@ public class DamageHandler {
                 player.displayClientMessage(Component.literal("§7Hit: §" + getChar(color) + partName + " §fDmg: " + dmgText + penText), true);
             }
         }
+    }
+
+    private static @NotNull ItemStack getItemStack(LivingIncomingDamageEvent event, LivingEntity attacker) {
+        ItemStack weapon;
+        boolean isRanged = false;
+
+        // 1. Identifichiamo l'arma e la parte colpita
+        if (event.getSource().getDirectEntity() instanceof AbstractArrow arrow) {
+            // RANGED
+            isRanged = true;
+            // Le frecce non hanno un "itemstack" facile, ma possiamo stimare dal proprietario o usare default
+            // Per semplicità qui usiamo l'arma in mano all'attaccante se è un arco
+            weapon = attacker.getMainHandItem();
+        } else {
+            // MELEE
+            weapon = attacker.getMainHandItem();
+        }
+        return weapon;
     }
 
     private static char getChar(int color) {
