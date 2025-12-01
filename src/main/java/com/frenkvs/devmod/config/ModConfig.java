@@ -7,7 +7,7 @@ public class ModConfig {
 
     // --- NUOVE OPZIONI PER STUCK & PATH ---
     public static boolean enableStuckDebug = false; // Attiva il controllo "Stuck"
-    public static boolean showMobPath = false;      // Mostra il percorso del mob con particelle
+    public static boolean showMobPath = true;       // Mostra il percorso del mob con particelle (DEFAULT TRUE for server compatibility)
     public static int stuckThresholdSeconds = 3;    // Secondi prima di considerare il mob bloccato
     public static boolean showStuckChat = false;    // Scrive in chat quando un mob si blocca
 

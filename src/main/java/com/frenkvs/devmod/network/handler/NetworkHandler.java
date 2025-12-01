@@ -1,7 +1,6 @@
 package com.frenkvs.devmod.network.handler;
 
 import com.frenkvs.devmod.config.WeaponStats;
-import com.frenkvs.devmod.event.client.WorldRenderEvents;
 import com.frenkvs.devmod.manager.MobConfigManager;
 import com.frenkvs.devmod.manager.WeaponConfigManager;
 import com.frenkvs.devmod.network.payload.*;
@@ -28,7 +27,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import java.util.ArrayList;
 import java.util.List;
 
-@EventBusSubscriber(modid = "devmod", bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = "devmod")
 public class NetworkHandler {
 
     @SubscribeEvent
@@ -47,6 +46,10 @@ public class NetworkHandler {
         );
         event.registrar("4").playToClient(AggroLinkPayload.TYPE, AggroLinkPayload.STREAM_CODEC, NetworkHandler::handleAggroLink);
         event.registrar("5").playToClient(PathRenderPayload.TYPE, PathRenderPayload.STREAM_CODEC, NetworkHandler::handlePathRender);
+        // Canale 6: Config Sync (Client -> Server)
+        event.registrar("6").playToServer(
+                ConfigSyncPayload.TYPE, ConfigSyncPayload.STREAM_CODEC, NetworkHandler::handleConfigSync
+        );
     }
 
     // =================================================================================
@@ -168,15 +171,27 @@ public class NetworkHandler {
 
     private static void handleAggroLink(AggroLinkPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
-            // Aggiungiamo la linea al sistema di rendering
-            WorldRenderEvents.addAggroLine(payload.sourceId(), payload.targetId());
+            // Client-only: This is safe because handler is registered as playToClient
+            com.frenkvs.devmod.network.handler.ClientNetworkHandler.handleAggroLink(payload);
         });
     }
 
     private static void handlePathRender(PathRenderPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
-            // Aggiungiamo i dati del path al sistema di rendering
-            WorldRenderEvents.updateMobPath(payload.mobId(), payload.pathNodes(), payload.endNode(), payload.stuckPos());
+            // Client-only: This is safe because this handler is registered as playToClient
+            com.frenkvs.devmod.network.handler.ClientNetworkHandler.handlePathRender(payload);
+        });
+    }
+
+    private static void handleConfigSync(ConfigSyncPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer player) {
+                // Update server-side config for this player's view
+                com.frenkvs.devmod.config.ModConfig.showMobPath = payload.showMobPath();
+                player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                    "§a[Config] §fPath rendering: " + (payload.showMobPath() ? "§aON" : "§cOFF")
+                ));
+            }
         });
     }
 

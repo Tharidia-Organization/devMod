@@ -1,11 +1,14 @@
 package com.frenkvs.devmod.client.screen;
 
 import com.frenkvs.devmod.config.ModConfig;
+import com.frenkvs.devmod.network.payload.ConfigSyncPayload;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 public class SettingsScreen extends Screen {
 
@@ -72,6 +75,11 @@ public class SettingsScreen extends Screen {
                 b -> {
                     ModConfig.showMobPath = !ModConfig.showMobPath;
                     b.setMessage(Component.literal("Mostra Path AI: " + (ModConfig.showMobPath ? "ON" : "OFF")));
+                    
+                    // Send config sync packet to server
+                    if (Minecraft.getInstance().player != null) {
+                        PacketDistributor.sendToServer(new ConfigSyncPayload(ModConfig.showMobPath));
+                    }
                 }).pos(x2, y + 20).size(w + 20, h).build());
 
         // 6. Debug in Chat (Messaggi scritti)

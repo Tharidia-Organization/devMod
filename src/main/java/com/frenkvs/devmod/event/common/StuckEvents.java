@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@EventBusSubscriber(modid = "devmod", bus = EventBusSubscriber.Bus.GAME)
+@EventBusSubscriber(modid = "devmod")
 public class StuckEvents {
 
     private static final Map<Integer, StuckTracker> stuckMap = new HashMap<>();
@@ -42,7 +42,14 @@ public class StuckEvents {
     @SubscribeEvent
     public static void onEntityTick(EntityTickEvent.Post event) {
         // Se la funzione è spenta nel config, non fare nulla e risparmia calcoli
-        if (!ModConfig.enableStuckDebug && !ModConfig.showMobPath) return;
+        if (!ModConfig.enableStuckDebug && !ModConfig.showMobPath) {
+            // Debug: Log why we're skipping (only once per 200 ticks to avoid spam)
+            if (event.getEntity().tickCount % 200 == 0 && event.getEntity() instanceof Mob) {
+                System.out.println("[DevMod Server] Path rendering disabled: enableStuckDebug=" + 
+                    ModConfig.enableStuckDebug + ", showMobPath=" + ModConfig.showMobPath);
+            }
+            return;
+        }
 
         if (event.getEntity().level().isClientSide || !(event.getEntity() instanceof Mob mob)) return;
 
@@ -146,17 +153,27 @@ public class StuckEvents {
 
         // Debug: verifica che abbiamo dati da inviare
         if (pathNodes.isEmpty() && endNode == null && stuckPos == null) {
+            System.out.println("[DevMod Server] No path data to send for mob " + mob.getId());
             return;
         }
 
         // Crea e invia il payload a tutti i player vicini
         PathRenderPayload payload = new PathRenderPayload(pathNodes, endNode, stuckPos, mob.getId());
         
+        System.out.println("[DevMod Server] Sending PathRender packet for mob " + mob.getId() + 
+            " with " + pathNodes.size() + " nodes to nearby players");
+        
+        int sentCount = 0;
         for (ServerPlayer player : level.players()) {
             if (player.distanceToSqr(mob) < 10000) { // 100 blocchi di raggio
                 PacketDistributor.sendToPlayer(player, payload);
+                sentCount++;
+                System.out.println("[DevMod Server] Sent to player: " + player.getName().getString() + 
+                    " (distance: " + Math.sqrt(player.distanceToSqr(mob)) + " blocks)");
             }
         }
+        
+        System.out.println("[DevMod Server] Total packets sent: " + sentCount);
     }
 
     @SubscribeEvent

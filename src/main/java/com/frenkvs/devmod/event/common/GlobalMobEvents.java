@@ -13,7 +13,7 @@ import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-@EventBusSubscriber(modid = "devmod", bus = EventBusSubscriber.Bus.GAME)
+@EventBusSubscriber(modid = "devmod")
 public class GlobalMobEvents {
 
     @SubscribeEvent

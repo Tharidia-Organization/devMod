@@ -11,7 +11,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import org.jetbrains.annotations.NotNull;
 
-@EventBusSubscriber(modid = "devmod", bus = EventBusSubscriber.Bus.GAME)
+@EventBusSubscriber(modid = "devmod")
 public class DamageHandler {
 
     @SubscribeEvent

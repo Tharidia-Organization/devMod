@@ -1,4 +1,4 @@
-package com.frenkvs.devmod.event.common;
+package com.frenkvs.devmod.event.client;
 
 import com.frenkvs.devmod.client.screen.MobConfigScreen;
 import com.frenkvs.devmod.devmod;

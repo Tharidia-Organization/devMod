@@ -11,7 +11,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
 
-@EventBusSubscriber(modid = "devmod", bus = EventBusSubscriber.Bus.GAME)
+@EventBusSubscriber(modid = "devmod")
 public class ArrowEvents {
 
     @SubscribeEvent
