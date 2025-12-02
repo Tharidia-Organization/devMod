@@ -23,10 +23,10 @@ public class ModConfig {
     public static int allMobsLoSRadius = 24;
 
     // --- CONTROLLO RENDER PER TIPO DI MOB ---
-    public static boolean renderFriendlyAggro = false;    // Mostra raggio aggio mob amichevoli
-    public static boolean renderFriendlyAttack = false;   // Mostra raggio attacco mob amichevoli
-    public static boolean renderHostileAggro = false;     // Mostra raggio aggio mob ostili
-    public static boolean renderHostileAttack = false;    // Mostra raggio attacco mob ostili
+    public static boolean renderFriendlyAggro = true;    // Mostra raggio aggio mob amichevoli
+    public static boolean renderFriendlyAttack = true;   // Mostra raggio attacco mob amichevoli
+    public static boolean renderHostileAggro = true;     // Mostra raggio aggio mob ostili
+    public static boolean renderHostileAttack = true;    // Mostra raggio attacco mob ostili
 
     // --- DISTANZA DI RENDER ---
     public static int renderDistanceChunks = 8;  // Distanza di render in chunks (1-10)
