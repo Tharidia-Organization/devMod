@@ -1,5 +1,7 @@
 package com.frenkvs.devmod.network.handler;
 
+import com.frenkvs.devmod.AnchorEvents;
+import com.frenkvs.devmod.MarkerPayload;
 import com.frenkvs.devmod.config.WeaponStats;
 import com.frenkvs.devmod.event.client.WorldRenderEvents;
 import com.frenkvs.devmod.manager.MobConfigManager;
@@ -47,9 +49,25 @@ public class NetworkHandler {
         );
         event.registrar("4").playToClient(AggroLinkPayload.TYPE, AggroLinkPayload.STREAM_CODEC, NetworkHandler::handleAggroLink);
         event.registrar("5").playToClient(PathRenderPayload.TYPE, PathRenderPayload.STREAM_CODEC, NetworkHandler::handlePathRender);
-    }
 
-    // =================================================================================
+
+
+// --- NUOVO CANALE 6 PER I MARKER ---
+        event.registrar("6").playToClient(
+            MarkerPayload.TYPE, MarkerPayload.STREAM_CODEC, NetworkHandler::handleMarkerData
+    );
+}
+
+// --- NUOVO GESTORE DATI MARKER (Lato Client) ---
+private static void handleMarkerData(MarkerPayload payload, IPayloadContext context) {
+    context.enqueueWork(() -> {
+        // Passiamo i dati ricevuti direttamente alla classe che disegna
+        AnchorEvents.updateMarkerCache(payload.positions());
+    });
+}
+
+
+// =================================================================================
     // 1. LOGICA MODIFICA MOSTRI (Vita, Danno, Reach, Globale/Specifico)
     // =================================================================================
     private static void handleMobData(UpdateMobStatsPayload payload, IPayloadContext context) {

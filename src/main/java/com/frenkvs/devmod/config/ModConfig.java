@@ -11,6 +11,10 @@ public class ModConfig {
     public static int stuckThresholdSeconds = 3;    // Secondi prima di considerare il mob bloccato
     public static boolean showStuckChat = false;    // Scrive in chat quando un mob si blocca
 
+    // --- ANCHOR & MARKERS (NUOVO SISTEMA SEPARATO) ---
+    public static boolean showAnchors = false;    // Mostra Entità con NAME TAG (ArmorStand, Mob, ecc)
+    public static boolean showMarkers = false;    // Mostra entità MARKER (Blocco Verde)
+
     // --- CONTROLLO RENDER PER TIPO DI MOB ---
     public static boolean renderFriendlyAggro = true;    // Mostra raggio aggio mob amichevoli
     public static boolean renderFriendlyAttack = true;   // Mostra raggio attacco mob amichevoli

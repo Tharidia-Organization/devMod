@@ -51,7 +51,21 @@ public class SettingsScreen extends Screen {
                         })
                 .pos(x, y + 40).size(w, h).build());
 
+        // BOTTONE 1: Entità con nome (Anchor)
+        this.addRenderableWidget(Button.builder(
+                Component.literal("EntityNameTag: " + (ModConfig.showAnchors ? "ON" : "OFF")),
+                b -> {
+                    ModConfig.showAnchors = !ModConfig.showAnchors;
+                    b.setMessage(Component.literal("Anchor Points: " + (ModConfig.showAnchors ? "ON" : "OFF")));
+                }).pos(x, y + 65).size(w, h).build());
 
+        // BOTTONE 2: Markers (NUOVO)
+        this.addRenderableWidget(Button.builder(
+                Component.literal("Mostra Markers: " + (ModConfig.showMarkers ? "ON" : "OFF")),
+                b -> {
+                    ModConfig.showMarkers = !ModConfig.showMarkers;
+                    b.setMessage(Component.literal("Mostra Markers: " + (ModConfig.showMarkers ? "ON" : "OFF")));
+                }).pos(x, y + 85).size(w, h).build());
         // =================================================================
         // COLONNA DESTRA: NUOVE Opzioni Debug (Stuck & Path) <--- NUOVO!
         // =================================================================
