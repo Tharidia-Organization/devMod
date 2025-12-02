@@ -64,6 +64,7 @@ private static void handleMarkerData(MarkerPayload payload, IPayloadContext cont
         // Passiamo i dati ricevuti direttamente alla classe che disegna
         AnchorEvents.updateMarkerCache(payload.positions());
     });
+
 }
 
 

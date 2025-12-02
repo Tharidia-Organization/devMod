@@ -17,25 +17,47 @@ public record PathRenderPayload(
         int mobId
 ) implements CustomPacketPayload {
 
-    public static final CustomPacketPayload.Type<PathRenderPayload> TYPE =
-            new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("devmod", "path_render"));
+    public static final Type<PathRenderPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath("devmod", "path_render"));
 
-    public static final StreamCodec<ByteBuf, PathRenderPayload> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.collection(ArrayList::new, BlockPos.STREAM_CODEC),
-            PathRenderPayload::pathNodes,
-            BlockPos.STREAM_CODEC.apply(ByteBufCodecs::optional).map(
-                    opt -> opt.orElse(null),
-                    pos -> java.util.Optional.ofNullable(pos)
-            ),
-            PathRenderPayload::endNode,
-            BlockPos.STREAM_CODEC.apply(ByteBufCodecs::optional).map(
-                    opt -> opt.orElse(null),
-                    pos -> java.util.Optional.ofNullable(pos)
-            ),
-            PathRenderPayload::stuckPos,
-            ByteBufCodecs.INT,
-            PathRenderPayload::mobId,
-            PathRenderPayload::new
+    // Codec Manuale (Più sicuro e compatibile)
+    public static final StreamCodec<ByteBuf, PathRenderPayload> STREAM_CODEC = StreamCodec.of(
+            (buffer, val) -> {
+                // 1. Scrivi la lista dei nodi
+                buffer.writeInt(val.pathNodes.size());
+                for (BlockPos pos : val.pathNodes) {
+                    buffer.writeLong(pos.asLong());
+                }
+
+                // 2. Scrivi EndNode (può essere null)
+                buffer.writeBoolean(val.endNode != null);
+                if (val.endNode != null) buffer.writeLong(val.endNode.asLong());
+
+                // 3. Scrivi StuckPos (può essere null)
+                buffer.writeBoolean(val.stuckPos != null);
+                if (val.stuckPos != null) buffer.writeLong(val.stuckPos.asLong());
+
+                // 4. Mob ID
+                buffer.writeInt(val.mobId);
+            },
+            (buffer) -> {
+                // 1. Leggi Lista
+                int size = buffer.readInt();
+                List<BlockPos> nodes = new ArrayList<>(size);
+                for (int i = 0; i < size; i++) {
+                    nodes.add(BlockPos.of(buffer.readLong()));
+                }
+
+                // 2. Leggi EndNode
+                BlockPos endNode = buffer.readBoolean() ? BlockPos.of(buffer.readLong()) : null;
+
+                // 3. Leggi StuckPos
+                BlockPos stuckPos = buffer.readBoolean() ? BlockPos.of(buffer.readLong()) : null;
+
+                // 4. Mob ID
+                int mobId = buffer.readInt();
+
+                return new PathRenderPayload(nodes, endNode, stuckPos, mobId);
+            }
     );
 
     @Override

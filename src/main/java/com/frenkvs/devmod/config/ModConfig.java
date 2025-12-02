@@ -2,8 +2,9 @@ package com.frenkvs.devmod.config;
 
 public class ModConfig {
     // --- VISIBILITÀ GENERALE ---
-    public static boolean showOverlay = true;       // Mostra scritte a schermo
-    public static boolean showRender = true;        // Mostra sfere semitrasparenti
+    public static boolean showOverlay = false;       // Mostra scritte a schermo
+    public static boolean showRender = false;        // Mostra sfere semitrasparenti
+    public static boolean showArrowHits = true;     // NUOVO: Controlla solo i colpi delle frecce
 
     // --- NUOVE OPZIONI PER STUCK & PATH ---
     public static boolean enableStuckDebug = false; // Attiva il controllo "Stuck"
@@ -15,11 +16,17 @@ public class ModConfig {
     public static boolean showAnchors = false;    // Mostra Entità con NAME TAG (ArmorStand, Mob, ecc)
     public static boolean showMarkers = false;    // Mostra entità MARKER (Blocco Verde)
 
+    // --- LINE OF SIGHT (LoS) ---
+    public static boolean showLoS = false;
+    public static boolean showAllMobsLoS = false;
+    public static int losDistance = 16;           // Lunghezza dei raggi laser
+    public static int allMobsLoSRadius = 24;
+
     // --- CONTROLLO RENDER PER TIPO DI MOB ---
-    public static boolean renderFriendlyAggro = true;    // Mostra raggio aggio mob amichevoli
-    public static boolean renderFriendlyAttack = true;   // Mostra raggio attacco mob amichevoli
-    public static boolean renderHostileAggro = true;     // Mostra raggio aggio mob ostili
-    public static boolean renderHostileAttack = true;    // Mostra raggio attacco mob ostili
+    public static boolean renderFriendlyAggro = false;    // Mostra raggio aggio mob amichevoli
+    public static boolean renderFriendlyAttack = false;   // Mostra raggio attacco mob amichevoli
+    public static boolean renderHostileAggro = false;     // Mostra raggio aggio mob ostili
+    public static boolean renderHostileAttack = false;    // Mostra raggio attacco mob ostili
 
     // --- DISTANZA DI RENDER ---
     public static int renderDistanceChunks = 8;  // Distanza di render in chunks (1-10)
