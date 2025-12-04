@@ -43,6 +43,11 @@ public class SettingsScreen extends Screen {
         y += step;
         this.addRenderableWidget(Button.builder(Component.literal("Render Sfere: " + (ModConfig.showRender ? "ON" : "OFF")), b -> { ModConfig.showRender = !ModConfig.showRender; b.setMessage(Component.literal("Render Sfere: " + (ModConfig.showRender ? "ON" : "OFF"))); }).pos(xL, y).size(btnW, btnH).build());
         y += step;
+        this.addRenderableWidget(Button.builder(Component.literal("Sphere Mode: " + (ModConfig.sphereRenderMode == ModConfig.SphereRenderMode.FILLED ? "FILLED" : "WIREFRAME")), b -> { 
+            ModConfig.sphereRenderMode = ModConfig.sphereRenderMode == ModConfig.SphereRenderMode.FILLED ? ModConfig.SphereRenderMode.WIREFRAME : ModConfig.SphereRenderMode.FILLED;
+            b.setMessage(Component.literal("Sphere Mode: " + (ModConfig.sphereRenderMode == ModConfig.SphereRenderMode.FILLED ? "FILLED" : "WIREFRAME"))); 
+        }).pos(xL, y).size(btnW, btnH).build());
+        y += step;
         this.addRenderableWidget(Button.builder(Component.translatable("devmod.settings.color", Component.translatable(ModConfig.getColorTranslationKey())), b -> { ModConfig.cycleColor(); b.setMessage(Component.translatable("devmod.settings.color", Component.translatable(ModConfig.getColorTranslationKey()))); }).pos(xL, y).size(btnW, btnH).build());
         y += step + 5; // Spazietto
 

@@ -1,6 +1,11 @@
 package com.frenkvs.devmod.config;
 
 public class ModConfig {
+    public enum SphereRenderMode {
+        WIREFRAME,
+        FILLED
+    }
+    
     // --- VISIBILITÀ GENERALE ---
     public static boolean showOverlay = false;       // Mostra scritte a schermo
     public static boolean showRender = false;        // Mostra sfere semitrasparenti
@@ -27,6 +32,9 @@ public class ModConfig {
     public static boolean renderFriendlyAttack = true;   // Mostra raggio attacco mob amichevoli
     public static boolean renderHostileAggro = true;     // Mostra raggio aggio mob ostili
     public static boolean renderHostileAttack = true;    // Mostra raggio attacco mob ostili
+    
+    // --- MODO DI RENDER SPHERE ---
+    public static SphereRenderMode sphereRenderMode = SphereRenderMode.WIREFRAME;
 
     // --- DISTANZA DI RENDER ---
     public static int renderDistanceChunks = 8;  // Distanza di render in chunks (1-10)

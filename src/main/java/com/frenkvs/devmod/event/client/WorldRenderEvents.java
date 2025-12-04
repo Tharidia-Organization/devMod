@@ -5,6 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
@@ -43,14 +44,34 @@ public class WorldRenderEvents {
 
     // --- PATH RENDERING (NUOVO) ---
     private static class MobPathData {
-        List<BlockPos> nodes; BlockPos endNode; BlockPos stuckPos; int age;
-        MobPathData(List<BlockPos> n, BlockPos e, BlockPos s) { nodes = n; endNode = e; stuckPos = s; age = 0; }
+        List<BlockPos> nodes; BlockPos endNode; BlockPos stuckPos; long lastUpdate;
+        MobPathData(List<BlockPos> n, BlockPos e, BlockPos s) { 
+            nodes = n; 
+            endNode = e; 
+            stuckPos = s; 
+            lastUpdate = System.currentTimeMillis();
+        }
     }
     private static final Map<Integer, MobPathData> activePaths = new HashMap<>();
 
     // Questo è il metodo che il NetworkHandler cercava!
     public static void updateMobPath(int mobId, List<BlockPos> nodes, BlockPos endNode, BlockPos stuckPos) {
-        activePaths.put(mobId, new MobPathData(nodes, endNode, stuckPos));
+        // Debug logging
+        System.out.println("Path update: mobId=" + mobId + ", nodes=" + (nodes != null ? nodes.size() : 0) + 
+                          ", endNode=" + endNode + ", stuckPos=" + stuckPos);
+        System.out.println("Active paths before update: " + activePaths.keySet());
+        
+        // If path is empty or null, and no endNode/stuckPos, remove it immediately (mob reached destination)
+        if ((nodes == null || nodes.isEmpty()) && endNode == null && stuckPos == null) {
+            activePaths.remove(mobId);
+            System.out.println("Removed path for mob " + mobId + " (reached destination)");
+        } else {
+            MobPathData data = new MobPathData(nodes, endNode, stuckPos);
+            activePaths.put(mobId, data);
+            System.out.println("Added/updated path for mob " + mobId);
+        }
+        
+        System.out.println("Active paths after update: " + activePaths.keySet());
     }
 
     // --- RENDER LOOP ---
@@ -70,7 +91,7 @@ public class WorldRenderEvents {
         if (ModConfig.showArrowHits && !arrowHits.isEmpty()) renderArrowHits(poseStack, cameraPos);
 
         // 2. PATH RENDERING (NUOVO)
-        if (ModConfig.showMobPath && !activePaths.isEmpty()) {
+        if (ModConfig.showMobPath) {
             renderPaths(poseStack, cameraPos);
         }
 
@@ -88,50 +109,201 @@ public class WorldRenderEvents {
     // --- METODI DI DISEGNO ---
 
     private static void renderPaths(PoseStack poseStack, Vec3 cameraPos) {
-        VertexConsumer builder = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.lines());
+        if (activePaths.isEmpty()) {
+            return;
+        }
+        
+        // Clean up old paths (remove paths not updated for 30 seconds)
+        long currentTime = System.currentTimeMillis();
+        activePaths.entrySet().removeIf(entry -> {
+            if (currentTime - entry.getValue().lastUpdate > 30000) {
+                System.out.println("Removed stale path for mob " + entry.getKey());
+                return true;
+            }
+            return false;
+        });
+        
+        if (activePaths.isEmpty()) {
+            return;
+        }
+        
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableCull();
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthMask(false);
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder bufferBuilder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
         poseStack.pushPose();
         poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
         Matrix4f matrix = poseStack.last().pose();
 
-        Iterator<Map.Entry<Integer, MobPathData>> it = activePaths.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry<Integer, MobPathData> entry = it.next();
+        // Render all paths without any age-based removal
+        for (Map.Entry<Integer, MobPathData> entry : activePaths.entrySet()) {
             MobPathData data = entry.getValue();
-            data.age++;
-            if (data.age > 40) { it.remove(); continue; } // Rimuovi dopo 2 secondi se non aggiornato
 
-            // Disegna linee del percorso (VERDE)
+            // Render path segments as wide strips (green)
             if (data.nodes != null && !data.nodes.isEmpty()) {
                 for (int i = 0; i < data.nodes.size() - 1; i++) {
                     BlockPos p1 = data.nodes.get(i);
                     BlockPos p2 = data.nodes.get(i+1);
-                    builder.addVertex(matrix, p1.getX()+0.5f, p1.getY()+0.5f, p1.getZ()+0.5f).setColor(0.0f, 1.0f, 0.0f, 1.0f).setNormal(0, 1, 0);
-                    builder.addVertex(matrix, p2.getX()+0.5f, p2.getY()+0.5f, p2.getZ()+0.5f).setColor(0.0f, 1.0f, 0.0f, 1.0f).setNormal(0, 1, 0);
+                    renderPathStrip(bufferBuilder, matrix, p1, p2, 0.0f, 1.0f, 0.0f, 0.7f);
                 }
             }
 
-            // Disegna linea verso destinazione finale (BLU)
-            if (data.endNode != null && !data.nodes.isEmpty()) {
-                BlockPos last = data.nodes.get(data.nodes.size()-1);
-                builder.addVertex(matrix, last.getX()+0.5f, last.getY()+0.5f, last.getZ()+0.5f).setColor(0.0f, 0.0f, 1.0f, 1.0f).setNormal(0, 1, 0);
-                builder.addVertex(matrix, data.endNode.getX()+0.5f, data.endNode.getY()+0.5f, data.endNode.getZ()+0.5f).setColor(0.0f, 0.0f, 1.0f, 1.0f).setNormal(0, 1, 0);
+            // Render destination block as a filled cube (gold/yellow)
+            if (data.endNode != null) {
+                BlockPos dest = data.endNode;
+                renderDestinationBlock(bufferBuilder, matrix, dest, 1.0f, 1.0f, 0.0f, 0.8f);
+                
+                // Also draw line from last path node to destination
+                if (!data.nodes.isEmpty()) {
+                    BlockPos last = data.nodes.get(data.nodes.size()-1);
+                    renderPathStrip(bufferBuilder, matrix, last, dest, 1.0f, 1.0f, 0.0f, 0.6f);
+                }
             }
 
-            // Disegna indicatore STUCK (ROSSO)
+            // Render stuck indicator as red X
             if (data.stuckPos != null) {
-                // Disegna una croce rossa sul blocco dove si è bloccato
-                float x = data.stuckPos.getX() + 0.5f;
-                float y = data.stuckPos.getY() + 0.5f;
-                float z = data.stuckPos.getZ() + 0.5f;
-                builder.addVertex(matrix, x-0.5f, y, z-0.5f).setColor(1.0f, 0.0f, 0.0f, 1.0f).setNormal(0, 1, 0);
-                builder.addVertex(matrix, x+0.5f, y, z+0.5f).setColor(1.0f, 0.0f, 0.0f, 1.0f).setNormal(0, 1, 0);
-                builder.addVertex(matrix, x-0.5f, y, z+0.5f).setColor(1.0f, 0.0f, 0.0f, 1.0f).setNormal(0, 1, 0);
-                builder.addVertex(matrix, x+0.5f, y, z-0.5f).setColor(1.0f, 0.0f, 0.0f, 1.0f).setNormal(0, 1, 0);
+                renderStuckIndicator(bufferBuilder, matrix, data.stuckPos, 1.0f, 0.0f, 0.0f, 0.9f);
             }
         }
+        
+        com.mojang.blaze3d.vertex.MeshData mesh = bufferBuilder.build();
+        if (mesh != null) {
+            BufferUploader.drawWithShader(mesh);
+        }
         poseStack.popPose();
+        RenderSystem.depthMask(true);
+        RenderSystem.enableCull();
+        RenderSystem.disableBlend();
     }
 
+    private static void renderPathStrip(BufferBuilder bufferBuilder, Matrix4f matrix, 
+                                          BlockPos p1, BlockPos p2, 
+                                          float r, float g, float b, float a) {
+        float x1 = p1.getX() + 0.5f;
+        float y1 = p1.getY() + 0.02f; // Small offset to prevent Z-fighting
+        float z1 = p1.getZ() + 0.5f;
+        float x2 = p2.getX() + 0.5f;
+        float y2 = p2.getY() + 0.02f;
+        float z2 = p2.getZ() + 0.5f;
+        
+        // Check if this is a vertical segment
+        if (Math.abs(x2 - x1) < 0.1f && Math.abs(z2 - z1) < 0.1f) {
+            // Vertical segment - render as a pillar
+            float minY = Math.min(y1, y2);
+            float maxY = Math.max(y1, y2);
+            float size = 0.15f;
+            
+            // Draw 4 sides of the pillar
+            // North
+            bufferBuilder.addVertex(matrix, x1 - size, minY, z1 + size).setColor(r, g, b, a);
+            bufferBuilder.addVertex(matrix, x1 + size, minY, z1 + size).setColor(r, g, b, a);
+            bufferBuilder.addVertex(matrix, x1 + size, maxY, z1 + size).setColor(r, g, b, a);
+            bufferBuilder.addVertex(matrix, x1 - size, maxY, z1 + size).setColor(r, g, b, a);
+            
+            // South
+            bufferBuilder.addVertex(matrix, x1 + size, minY, z1 - size).setColor(r, g, b, a);
+            bufferBuilder.addVertex(matrix, x1 - size, minY, z1 - size).setColor(r, g, b, a);
+            bufferBuilder.addVertex(matrix, x1 - size, maxY, z1 - size).setColor(r, g, b, a);
+            bufferBuilder.addVertex(matrix, x1 + size, maxY, z1 - size).setColor(r, g, b, a);
+            
+            // East
+            bufferBuilder.addVertex(matrix, x1 + size, minY, z1 - size).setColor(r, g, b, a);
+            bufferBuilder.addVertex(matrix, x1 + size, minY, z1 + size).setColor(r, g, b, a);
+            bufferBuilder.addVertex(matrix, x1 + size, maxY, z1 + size).setColor(r, g, b, a);
+            bufferBuilder.addVertex(matrix, x1 + size, maxY, z1 - size).setColor(r, g, b, a);
+            
+            // West
+            bufferBuilder.addVertex(matrix, x1 - size, minY, z1 + size).setColor(r, g, b, a);
+            bufferBuilder.addVertex(matrix, x1 - size, minY, z1 - size).setColor(r, g, b, a);
+            bufferBuilder.addVertex(matrix, x1 - size, maxY, z1 - size).setColor(r, g, b, a);
+            bufferBuilder.addVertex(matrix, x1 - size, maxY, z1 + size).setColor(r, g, b, a);
+            return;
+        }
+        
+        // Horizontal segment - calculate perpendicular direction for width
+        float dx = x2 - x1;
+        float dz = z2 - z1;
+        float len = (float) Math.sqrt(dx * dx + dz * dz);
+        if (len < 0.01f) return; // Skip if points are too close
+        
+        // Normalize and get perpendicular
+        dx /= len;
+        dz /= len;
+        float perpX = -dz * 0.25f; // Half block width
+        float perpZ = dx * 0.25f;
+        
+        // Draw quad strip
+        bufferBuilder.addVertex(matrix, x1 - perpX, y1, z1 - perpZ).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x1 + perpX, y1, z1 + perpZ).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x2 + perpX, y2, z2 + perpZ).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x2 - perpX, y2, z2 - perpZ).setColor(r, g, b, a);
+    }
+    
+    private static void renderDestinationBlock(BufferBuilder bufferBuilder, Matrix4f matrix,
+                                               BlockPos pos, float r, float g, float b, float a) {
+        float x = pos.getX() + 0.5f;
+        float y = pos.getY() + 0.02f;
+        float z = pos.getZ() + 0.5f;
+        float size = 0.4f;
+        
+        // Top face
+        bufferBuilder.addVertex(matrix, x - size, y, z - size).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x + size, y, z - size).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x + size, y, z + size).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x - size, y, z + size).setColor(r, g, b, a);
+        
+        // Sides (short walls)
+        float height = 0.1f;
+        // North side
+        bufferBuilder.addVertex(matrix, x - size, y, z + size).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x + size, y, z + size).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x + size, y + height, z + size).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x - size, y + height, z + size).setColor(r, g, b, a);
+        
+        // South side
+        bufferBuilder.addVertex(matrix, x + size, y, z - size).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x - size, y, z - size).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x - size, y + height, z - size).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x + size, y + height, z - size).setColor(r, g, b, a);
+        
+        // East side
+        bufferBuilder.addVertex(matrix, x + size, y, z - size).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x + size, y, z + size).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x + size, y + height, z + size).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x + size, y + height, z - size).setColor(r, g, b, a);
+        
+        // West side
+        bufferBuilder.addVertex(matrix, x - size, y, z + size).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x - size, y, z - size).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x - size, y + height, z - size).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x - size, y + height, z + size).setColor(r, g, b, a);
+    }
+    
+    private static void renderStuckIndicator(BufferBuilder bufferBuilder, Matrix4f matrix,
+                                             BlockPos pos, float r, float g, float b, float a) {
+        float x = pos.getX() + 0.5f;
+        float y = pos.getY() + 0.02f;
+        float z = pos.getZ() + 0.5f;
+        float size = 0.3f;
+        float height = 0.05f;
+        
+        // Draw X shape on ground
+        bufferBuilder.addVertex(matrix, x - size, y, z - size).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x - size + 0.1f, y, z - size + 0.1f).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x + size - 0.1f, y, z + size - 0.1f).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x + size, y, z + size).setColor(r, g, b, a);
+        
+        bufferBuilder.addVertex(matrix, x + size, y, z - size).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x + size - 0.1f, y, z - size + 0.1f).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x - size + 0.1f, y, z + size - 0.1f).setColor(r, g, b, a);
+        bufferBuilder.addVertex(matrix, x - size, y, z + size).setColor(r, g, b, a);
+    }
+    
     private static void renderAggroLines(PoseStack poseStack, Vec3 cameraPos, Minecraft mc) {
         VertexConsumer builder = mc.renderBuffers().bufferSource().getBuffer(RenderType.lines());
         poseStack.pushPose();
@@ -209,6 +381,36 @@ public class WorldRenderEvents {
     // Helper SFERE (Compatto)
     private static record SphereData(double x, double y, double z, double radius, int color) {}
     private static void renderAllSpheres(PoseStack poseStack, List<SphereData> spheres) {
+        if (ModConfig.sphereRenderMode == ModConfig.SphereRenderMode.FILLED) {
+            renderAllSpheresFilled(poseStack, spheres);
+        } else {
+            renderAllSpheresWireframe(poseStack, spheres);
+        }
+    }
+    
+    private static void renderAllSpheresFilled(PoseStack poseStack, List<SphereData> spheres) {
+        RenderSystem.enableBlend(); RenderSystem.defaultBlendFunc(); RenderSystem.disableCull();
+        RenderSystem.enableDepthTest(); RenderSystem.depthMask(false);
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder bufferBuilder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        Matrix4f matrix = poseStack.last().pose();
+
+        for (SphereData s : spheres) {
+            float a = 0.15f;
+            float red = ((s.color >> 16) & 0xFF) / 255f;
+            float grn = ((s.color >> 8) & 0xFF) / 255f;
+            float blu = (s.color & 0xFF) / 255f;
+
+            renderSphereFilled(bufferBuilder, matrix, s.x, s.y, s.z, s.radius, red, grn, blu, a);
+        }
+
+        BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+        RenderSystem.depthMask(true); RenderSystem.enableCull(); RenderSystem.disableBlend();
+    }
+    
+    private static void renderAllSpheresWireframe(PoseStack poseStack, List<SphereData> spheres) {
         RenderSystem.enableBlend(); RenderSystem.defaultBlendFunc(); RenderSystem.disableCull(); RenderSystem.enableDepthTest(); RenderSystem.depthMask(false);
         RenderSystem.setShader(GameRenderer::getPositionColorShader); RenderSystem.lineWidth(2.0f);
         BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.DEBUG_LINES, DefaultVertexFormat.POSITION_COLOR);
@@ -230,6 +432,63 @@ public class WorldRenderEvents {
                 b.addVertex(m, (float)Math.sin(t1)*cp*r+(float)x, (float)Math.cos(t1)*r+(float)y, (float)Math.sin(t1)*sp*r+(float)z).setColor(red, grn, blu, a);
                 b.addVertex(m, (float)Math.sin(t2)*cp*r+(float)x, (float)Math.cos(t2)*r+(float)y, (float)Math.sin(t2)*sp*r+(float)z).setColor(red, grn, blu, a); } }
     }
+    private static void renderSphereFilled(BufferBuilder bufferBuilder, Matrix4f matrix,
+                                       double x, double y, double z, double radius,
+                                       float red, float green, float blue, float alpha) {
+        int latitudes = 8;
+        int longitudes = 16;
+
+        float cx = (float) x;
+        float cy = (float) y;
+        float cz = (float) z;
+        float r = (float) radius;
+
+        for (int lat = 0; lat < latitudes; lat++) {
+            float theta1 = lat * (float) Math.PI / latitudes;
+            float theta2 = (lat + 1) * (float) Math.PI / latitudes;
+
+            for (int lon = 0; lon < longitudes; lon++) {
+                float phi1 = lon * 2 * (float) Math.PI / longitudes;
+                float phi2 = (lon + 1) * 2 * (float) Math.PI / longitudes;
+
+                float x1 = r * (float) (Math.sin(theta1) * Math.cos(phi1));
+                float y1 = r * (float) Math.cos(theta1);
+                float z1 = r * (float) (Math.sin(theta1) * Math.sin(phi1));
+
+                float x2 = r * (float) (Math.sin(theta1) * Math.cos(phi2));
+                float y2 = r * (float) Math.cos(theta1);
+                float z2 = r * (float) (Math.sin(theta1) * Math.sin(phi2));
+
+                float x3 = r * (float) (Math.sin(theta2) * Math.cos(phi2));
+                float y3 = r * (float) Math.cos(theta2);
+                float z3 = r * (float) (Math.sin(theta2) * Math.sin(phi2));
+
+                float x4 = r * (float) (Math.sin(theta2) * Math.cos(phi1));
+                float y4 = r * (float) Math.cos(theta2);
+                float z4 = r * (float) (Math.sin(theta2) * Math.sin(phi1));
+
+                quadSimple(bufferBuilder, matrix,
+                    cx + x1, cy + y1, cz + z1,
+                    cx + x2, cy + y2, cz + z2,
+                    cx + x3, cy + y3, cz + z3,
+                    cx + x4, cy + y4, cz + z4,
+                    red, green, blue, alpha);
+            }
+        }
+    }
+    
+    private static void quadSimple(BufferBuilder bufferBuilder, Matrix4f matrix,
+                                   float x1, float y1, float z1,
+                                   float x2, float y2, float z2,
+                                   float x3, float y3, float z3,
+                                   float x4, float y4, float z4,
+                                   float red, float green, float blue, float alpha) {
+        bufferBuilder.addVertex(matrix, x1, y1, z1).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(matrix, x2, y2, z2).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(matrix, x3, y3, z3).setColor(red, green, blue, alpha);
+        bufferBuilder.addVertex(matrix, x4, y4, z4).setColor(red, green, blue, alpha);
+    }
+    
     private static boolean isHostileMob(Mob mob) {
         String n = mob.getType().toString().toLowerCase();
         return n.contains("zombie")||n.contains("skeleton")||n.contains("creeper")||n.contains("spider")||n.contains("enderman")||n.contains("witch")||n.contains("piglin")||n.contains("ghast")||n.contains("blaze")||n.contains("wither")||n.contains("dragon")||n.contains("slime")||n.contains("pillager")||n.contains("vindicator")||n.contains("ravager")||n.contains("evoker")||n.contains("vex")||n.contains("illusioner");
