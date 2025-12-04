@@ -94,6 +94,14 @@ public class WorldRenderEvents {
         if (ModConfig.showRender && !activeLines.isEmpty()) {
             renderAggroLines(poseStack, cameraPos, mc);
         }
+        
+        // 5. MOB INFO PANEL
+        if (mc.hitResult != null && mc.hitResult.getType() == net.minecraft.world.phys.HitResult.Type.ENTITY) {
+            net.minecraft.world.phys.EntityHitResult entityHit = (net.minecraft.world.phys.EntityHitResult) mc.hitResult;
+            if (entityHit.getEntity() instanceof net.minecraft.world.entity.LivingEntity livingEntity) {
+                MobInfoPanel.renderMobInfoPanel(poseStack, livingEntity, cameraPos, event.getPartialTick().getGameTimeDeltaPartialTick(false));
+            }
+        }
     }
 
     // --- METODI DI DISEGNO ---
