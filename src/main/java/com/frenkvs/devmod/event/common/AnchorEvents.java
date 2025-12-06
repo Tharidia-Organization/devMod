@@ -1,12 +1,11 @@
-package com.frenkvs.devmod;
+package com.frenkvs.devmod.event.common;
 
 import com.frenkvs.devmod.config.ModConfig;
+import com.frenkvs.devmod.permission.PermissionManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Marker;
 import net.minecraft.world.entity.player.Player;
@@ -16,14 +15,12 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
-import net.neoforged.neoforge.event.tick.LevelTickEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
 import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@EventBusSubscriber(modid = "devmod") // Rimosso "value = Dist.CLIENT" perché contiene logica anche Server
+@EventBusSubscriber(modid = "devmod", value = Dist.CLIENT) // BACK to Dist.CLIENT - will split server logic
 public class AnchorEvents {
 
     // MEMORIA CLIENT: Qui salviamo le posizioni ricevute dal server
@@ -34,42 +31,13 @@ public class AnchorEvents {
         markerCache = newPositions;
     }
 
-    // --- LOGICA SERVER: Invia i dati ---
-    @SubscribeEvent
-    public static void onServerTick(LevelTickEvent.Post event) {
-        // Eseguiamo solo su ServerLevel, ogni 20 tick (1 secondo) per non laggare
-        if (event.getLevel().isClientSide || event.getLevel().getGameTime() % 20 != 0) return;
-
-        // Se non è abilitato globalmente nel config server (opzionale), esci
-        // Ma per ora controlliamo se ci sono player connessi
-        ServerLevel level = (ServerLevel) event.getLevel();
-        if (level.players().isEmpty()) return;
-
-        // Cerca tutti i Marker nel mondo
-        // Ottimizzazione: in un server vero dovremmo cercare solo vicino ai player,
-        // ma per devmod va bene cercare globalmente per ora.
-        List<? extends Marker> markers = level.getEntities(net.minecraft.world.entity.EntityType.MARKER, m -> true);
-
-        List<Vec3> positions = new ArrayList<>();
-        for (Marker m : markers) {
-            positions.add(m.position());
-        }
-
-        // Invia il pacchetto a TUTTI i giocatori
-        if (!positions.isEmpty()) {
-            PacketDistributor.sendToAllPlayers(new MarkerPayload(positions));
-        }
-    }
-
+    
     // --- LOGICA CLIENT: Disegna ---
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
-        // Se siamo sul server, esci (questo evento scatta solo su client ma per sicurezza)
-        // Nota: Dist.CLIENT è stato rimosso dalla classe, quindi dobbiamo controllare qui.
-        try {
-            if (Minecraft.getInstance().level == null) return;
-        } catch (Exception e) { return; } // Siamo sul server dedicato
-
+        // Check if player has OP level 4 or higher
+        if (!PermissionManager.isClientOp()) return;
+        
         if (!ModConfig.showAnchors && !ModConfig.showMarkers) return;
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
 

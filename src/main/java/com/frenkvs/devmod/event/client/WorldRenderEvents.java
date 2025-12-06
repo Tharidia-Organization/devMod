@@ -1,6 +1,7 @@
 package com.frenkvs.devmod.event.client;
 
 import com.frenkvs.devmod.config.ModConfig;
+import com.frenkvs.devmod.permission.PermissionManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
@@ -67,6 +68,9 @@ public class WorldRenderEvents {
     // --- RENDER LOOP ---
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
+        // Check if player has OP level 4 or higher
+        if (!PermissionManager.isClientOp()) return;
+        
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
 
         Minecraft mc = Minecraft.getInstance();

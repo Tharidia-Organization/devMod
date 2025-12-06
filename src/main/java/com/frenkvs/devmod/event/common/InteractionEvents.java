@@ -2,6 +2,7 @@ package com.frenkvs.devmod.event.common;
 
 import com.frenkvs.devmod.client.screen.MobConfigScreen;
 import com.frenkvs.devmod.devmod;
+import com.frenkvs.devmod.permission.PermissionManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.InteractionHand; // <--- Importante
 import net.minecraft.world.InteractionResult;
@@ -16,6 +17,9 @@ public class InteractionEvents {
 
     @SubscribeEvent
     public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        // Check if player has OP level 4 or higher
+        if (!PermissionManager.isClientOp()) return;
+        
         // 1. SICUREZZA: Esegui solo sul lato Client (evita errori strani in singleplayer)
         if (!event.getLevel().isClientSide()) return;
 

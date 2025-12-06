@@ -1,6 +1,7 @@
 package com.frenkvs.devmod.event.client;
 
 import com.frenkvs.devmod.config.ModConfig;
+import com.frenkvs.devmod.permission.PermissionManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
@@ -33,6 +34,9 @@ public class MobInfoPanel {
     private static final float MAX_DISTANCE = 15.0f; // Max render distance
     
     public static void renderMobInfoPanel(PoseStack poseStack, LivingEntity entity, Vec3 cameraPos, float partialTick) {
+        // Check if player has OP level 4 or higher
+        if (!PermissionManager.isClientOp()) return;
+        
         if (!ModConfig.showAnchors) {
             System.out.println("Mob info panel disabled - showAnchors is false");
             return;

@@ -2,6 +2,7 @@ package com.frenkvs.devmod.client.input;
 
 import com.frenkvs.devmod.client.screen.SettingsScreen;
 import com.frenkvs.devmod.client.screen.WeaponEditorScreen;
+import com.frenkvs.devmod.permission.PermissionManager;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -44,6 +45,8 @@ public class KeyInputHandler {
     public static class GameEvents {
         @SubscribeEvent
         public static void onKeyInput(InputEvent.Key event) {
+            // Check if player has OP level 4 or higher
+            if (!PermissionManager.isClientOp()) return;
 
             // Se premi K
             if (OPEN_SETTINGS_KEY.consumeClick()) {

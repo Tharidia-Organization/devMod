@@ -1,9 +1,8 @@
 package com.frenkvs.devmod.network.handler;
 
-import com.frenkvs.devmod.AnchorEvents;
-import com.frenkvs.devmod.MarkerPayload;
 import com.frenkvs.devmod.config.WeaponStats;
 import com.frenkvs.devmod.event.client.WorldRenderEvents;
+import com.frenkvs.devmod.event.common.AnchorEvents;
 import com.frenkvs.devmod.manager.MobConfigManager;
 import com.frenkvs.devmod.manager.WeaponConfigManager;
 import com.frenkvs.devmod.network.payload.*;
@@ -30,7 +29,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import java.util.ArrayList;
 import java.util.List;
 
-@EventBusSubscriber(modid = "devmod", bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = "devmod")
 public class NetworkHandler {
 
     @SubscribeEvent
@@ -62,7 +61,7 @@ public class NetworkHandler {
 private static void handleMarkerData(MarkerPayload payload, IPayloadContext context) {
     context.enqueueWork(() -> {
         // Passiamo i dati ricevuti direttamente alla classe che disegna
-        AnchorEvents.updateMarkerCache(payload.positions());
+        com.frenkvs.devmod.event.common.AnchorEvents.updateMarkerCache(payload.positions());
     });
 
 }
@@ -74,6 +73,12 @@ private static void handleMarkerData(MarkerPayload payload, IPayloadContext cont
     private static void handleMobData(UpdateMobStatsPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer player) {
+                // Check if player has OP level 4 or higher
+                if (!player.hasPermissions(4)) {
+                    player.sendSystemMessage(Component.literal("§cNon hai i permessi per usare questo comando!"));
+                    return;
+                }
+                
                 ServerLevel level = player.serverLevel();
                 Entity targetEntity = level.getEntity(payload.entityId());
 
@@ -142,6 +147,12 @@ private static void handleMarkerData(MarkerPayload payload, IPayloadContext cont
     private static void handleWeaponData(UpdateWeaponPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer player) {
+                // Check if player has OP level 4 or higher
+                if (!player.hasPermissions(4)) {
+                    player.sendSystemMessage(Component.literal("§cNon hai i permessi per usare questo comando!"));
+                    return;
+                }
+                
                 ItemStack stack = player.getMainHandItem();
                 if (stack.isEmpty()) return;
 
@@ -169,6 +180,12 @@ private static void handleMarkerData(MarkerPayload payload, IPayloadContext cont
     private static void handleEquipData(EquipMobPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer player) {
+                // Check if player has OP level 4 or higher
+                if (!player.hasPermissions(4)) {
+                    player.sendSystemMessage(Component.literal("§cNon hai i permessi per usare questo comando!"));
+                    return;
+                }
+                
                 Entity target = player.serverLevel().getEntity(payload.entityId());
                 if (target instanceof Mob mob) {
 
