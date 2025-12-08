@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.config;
 
+import com.frenkvs.devmod.event.common.BuilderState;
 import net.minecraft.core.BlockPos; // Importante per il metro!
 
 public class ModConfig {
@@ -7,6 +8,7 @@ public class ModConfig {
         WIREFRAME,
         FILLED
     }
+    public enum ShapeType { CIRCLE, ELLIPSE, SPHERE }
 
     // --- VISIBILITÀ GENERALE ---
     public static boolean showOverlay = false;       // Mostra scritte a schermo
@@ -61,24 +63,31 @@ public class ModConfig {
     public static BlockPos measurePos2 = null; // Punto B
     public static boolean showMeasureLines = true;
 
-    // --- GRIGLIA VERTICALE ---
+    // --- GRIGLIA VERTICALE (MODIFICATO PER LOCK TOTALE) ---
     public static boolean showVerticalLevels = false;
     public static int gridRadius = 10;
     public static int gridSpacingY = 4;
     public static int gridFloorsUp = 2;
     public static int gridFloorsDown = 1;
-    public static boolean gridLockY = false;
-    public static double lockedYValue = 0.0;
-
+    public static boolean gridLockPos = false; // Ora blocca TUTTA la posizione
+    public static double lockedX, lockedY, lockedZ;
     // --- GUIDA CERCHIO ---
     public static boolean showCircleGuide = false;
     public static int circleRadius = 5;
-    public static boolean circleLockY = false;
-    public static int circleY = 64;
-    // Coordinate fisse del centro del cerchio
     public static int circleCenterX = 0;
     public static int circleCenterY = 0;
     public static int circleCenterZ = 0;
+
+    // --- GUIDA FORME (Cerchio, Ellisse, Sfera) ---
+    public static boolean showShapeGuide = false;
+    public static ShapeType currentShape = ShapeType.CIRCLE; // Tipo di forma attiva
+    public static int shapeRadius = 5;      // Raggio A
+    public static int shapeRadiusB = 3;     // Raggio B (per ellissi)
+    public static int shapeCenterX, shapeCenterY, shapeCenterZ; // Centro fisso
+
+    // --- RILEVATORE BUCHI (LEAK DETECTOR) ---
+    public static boolean showLeakDetector = false;
+    public static int leakRadius = 10; // Raggio di scansione
 
     // ========================================================================
 
