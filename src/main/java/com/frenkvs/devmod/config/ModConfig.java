@@ -1,45 +1,75 @@
 package com.frenkvs.devmod.config;
 
+import net.minecraft.core.BlockPos;
+
 public class ModConfig {
-    // --- VISIBILITÀ GENERALE ---
-    public static boolean showOverlay = true;       // Mostra scritte a schermo
-    public static boolean showRender = true;        // Mostra sfere semitrasparenti
+    // --- VISIBILITÀ ---
+    public static boolean showOverlay = true;
+    public static boolean showRender = true;
+    public static boolean showArrowHits = true;
 
-    // --- NUOVE OPZIONI PER STUCK & PATH ---
-    public static boolean enableStuckDebug = false; // Attiva il controllo "Stuck"
-    public static boolean showMobPath = true;       // Mostra il percorso del mob con particelle (DEFAULT TRUE for server compatibility)
-    public static int stuckThresholdSeconds = 3;    // Secondi prima di considerare il mob bloccato
-    public static boolean showStuckChat = false;    // Scrive in chat quando un mob si blocca
+    // --- DEBUG & PATH ---
+    public static boolean enableStuckDebug = false;
+    public static boolean showMobPath = true;
+    public static int stuckThresholdSeconds = 3;
+    public static boolean showStuckChat = false;
 
-    // --- CONTROLLO RENDER PER TIPO DI MOB ---
-    public static boolean renderFriendlyAggro = true;    // Mostra raggio aggio mob amichevoli
-    public static boolean renderFriendlyAttack = true;   // Mostra raggio attacco mob amichevoli
-    public static boolean renderHostileAggro = true;     // Mostra raggio aggio mob ostili
-    public static boolean renderHostileAttack = true;    // Mostra raggio attacco mob ostili
+    // --- ANCHOR & MARKERS ---
+    public static boolean showAnchors = false;
+    public static boolean showMarkers = false;
 
-    // --- DISTANZA DI RENDER ---
-    public static int renderDistanceChunks = 8;  // Distanza di render in chunks (1-10)
+    // --- RENDER MOB ---
+    public static boolean renderFriendlyAggro = true;
+    public static boolean renderFriendlyAttack = true;
+    public static boolean renderHostileAggro = true;
+    public static boolean renderHostileAttack = true;
+    public static int renderDistanceChunks = 8;
 
-    // --- COLORI (In formato ARGB Hex) ---
-    // 0xFFFF0000 = Rosso, 0xFFFFFF00 = Giallo, 0xFF00FF00 = Verde, 0xFF00FFFF = Ciano
-    public static int followRangeColor = 0xFFFF0000; // Default Rosso
+    // --- COLORI ---
+    public static int followRangeColor = 0xFFFF0000;
 
-    // Metodo per ciclare i colori nel menu
+    // --- FREE CAMERA ---
+    public static boolean freeCamEnabled = false;
+    public static double fcX, fcY, fcZ;
+    public static float fcYaw, fcPitch;
+    public static float fcSpeed = 1.0f;
+
+    // --- MISURATORE ---
+    public static boolean enableMeasureTool = true;
+    public static BlockPos measurePos1 = null;
+    public static BlockPos measurePos2 = null;
+    public static boolean showMeasureLines = true;
+
+    // --- GRIGLIA VERTICALE ---
+    public static boolean showVerticalLevels = false;
+    public static int gridRadius = 10;
+    public static int gridSpacingY = 4;
+    public static int gridFloorsUp = 2;
+    public static int gridFloorsDown = 1;
+    public static boolean gridLockY = false;
+    public static double lockedYValue = 0.0;
+
+    // --- GUIDA CERCHIO (MODIFICATO) ---
+    public static boolean showCircleGuide = false;
+    public static int circleRadius = 5;
+    // Coordinate fisse del centro del cerchio
+    public static int circleCenterX = 0;
+    public static int circleCenterY = 0;
+    public static int circleCenterZ = 0;
+
+    // --- LINE OF SIGHT ---
+    public static boolean showLoS = false;
+    public static boolean showAllMobsLoS = false;
+    public static int losDistance = 16;
+    public static int allMobsLoSRadius = 24;
+
+    // --- METODI ---
     public static void cycleColor() {
-        if (followRangeColor == 0xFFFF0000) followRangeColor = 0xFFFFFF00; // Rosso -> Giallo
-        else if (followRangeColor == 0xFFFFFF00) followRangeColor = 0xFF00FF00; // Giallo -> Verde
-        else if (followRangeColor == 0xFF00FF00) followRangeColor = 0xFF00FFFF; // Verde -> Ciano
-        else if (followRangeColor == 0xFF00FFFF) followRangeColor = 0xFF0000FF; // Ciano -> Blu
-        else followRangeColor = 0xFFFF0000; // Blu -> Rosso
-    }
-
-    public static String getColorName() {
-        if (followRangeColor == 0xFFFF0000) return "Rosso";
-        if (followRangeColor == 0xFFFFFF00) return "Giallo";
-        if (followRangeColor == 0xFF00FF00) return "Verde";
-        if (followRangeColor == 0xFF00FFFF) return "Ciano";
-        if (followRangeColor == 0xFF0000FF) return "Blu";
-        return "Sconosciuto";
+        if (followRangeColor == 0xFFFF0000) followRangeColor = 0xFFFFFF00;
+        else if (followRangeColor == 0xFFFFFF00) followRangeColor = 0xFF00FF00;
+        else if (followRangeColor == 0xFF00FF00) followRangeColor = 0xFF00FFFF;
+        else if (followRangeColor == 0xFF00FFFF) followRangeColor = 0xFF0000FF;
+        else followRangeColor = 0xFFFF0000;
     }
 
     public static String getColorTranslationKey() {

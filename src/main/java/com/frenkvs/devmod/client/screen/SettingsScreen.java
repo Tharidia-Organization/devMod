@@ -16,26 +16,26 @@ public class SettingsScreen extends Screen {
         super(Component.translatable("devmod.settings.title"));
     }
 
-    // Il metodo init() viene chiamato ogni volta che apri il menu (Tasto K).
-    // È QUI che dobbiamo dire al gioco "Aggiungi questi bottoni allo schermo".
     @Override
     protected void init() {
         int w = 120; // Larghezza standard bottone
-        int h = 16;  // Altezza standard bottone
+        int h = 20;  // Altezza standard bottone (Standard Minecraft è 20, non 16)
         int x = 10;  // Margine sinistro
-        int y = 30;  // Margine dall'alto (ho abbassato un po' per il titolo)
+        int y = 30;  // Margine dall'alto
+        int step = 25; // Spazio verticale tra i bottoni (DEFINITO ORA)
 
         // =================================================================
-        // COLONNA SINISTRA: Opzioni Visive Generali (C'erano già)
+        // COLONNA SINISTRA
         // =================================================================
 
-        // 1. Overlay (Scritte a schermo)
+        // 1. Overlay
         this.addRenderableWidget(Button.builder(
                 Component.literal("Overlay HUD: " + (ModConfig.showOverlay ? "ON" : "OFF")),
                 b -> {
                     ModConfig.showOverlay = !ModConfig.showOverlay;
                     b.setMessage(Component.literal("Overlay HUD: " + (ModConfig.showOverlay ? "ON" : "OFF")));
                 }).pos(x, y).size(w, h).build());
+        y += step;
 
         // 2. Render Sfere
         this.addRenderableWidget(Button.builder(
@@ -43,7 +43,8 @@ public class SettingsScreen extends Screen {
                 b -> {
                     ModConfig.showRender = !ModConfig.showRender;
                     b.setMessage(Component.literal("Render Sfere: " + (ModConfig.showRender ? "ON" : "OFF")));
-                }).pos(x, y + 20).size(w, h).build());
+                }).pos(x, y).size(w, h).build());
+        y += step;
 
         // 3. Colore
         this.addRenderableWidget(Button.builder(
@@ -52,53 +53,67 @@ public class SettingsScreen extends Screen {
                             ModConfig.cycleColor();
                             button.setMessage(Component.translatable("devmod.settings.color", Component.translatable(ModConfig.getColorTranslationKey())));
                         })
-                .pos(x, y + 40).size(w, h).build());
+                .pos(x, y).size(w, h).build());
+        y += step;
+
+        // 4. CONFIGURA GRIGLIA (Il bottone che dava errore)
+        // Ho corretto le variabili xL e btnW usando x e w
+        this.addRenderableWidget(Button.builder(
+                        Component.literal("Griglia & Tool..."),
+                        b -> {
+                            Minecraft.getInstance().setScreen(new VerticalGridConfigScreen(this));
+                        })
+                .pos(x, y)
+                .size(w, h)
+                .build());
 
 
         // =================================================================
-        // COLONNA DESTRA: NUOVE Opzioni Debug (Stuck & Path) <--- NUOVO!
+        // COLONNA DESTRA
         // =================================================================
-        // Calcoliamo la posizione X della colonna destra (spostata di 140 pixel)
-        int x2 = x + w + 20;
+        int x2 = x + w + 20; // Posizione X colonna destra
+        int yRight = 30;     // Reset Y per la colonna destra
 
-        // 4. Stuck Detector (Rileva mob bloccati)
+        // 5. Stuck Detector
         this.addRenderableWidget(Button.builder(
                 Component.literal("Stuck Detector: " + (ModConfig.enableStuckDebug ? "ON" : "OFF")),
                 b -> {
                     ModConfig.enableStuckDebug = !ModConfig.enableStuckDebug;
                     b.setMessage(Component.literal("Stuck Detector: " + (ModConfig.enableStuckDebug ? "ON" : "OFF")));
-                }).pos(x2, y).size(w + 20, h).build());
+                }).pos(x2, yRight).size(w + 20, h).build());
+        yRight += step;
 
-        // 5. Mostra Path AI (Visualizza il percorso)
+        // 6. Mostra Path AI (CON LOGICA NETWORK TUA)
         this.addRenderableWidget(Button.builder(
                 Component.literal("Mostra Path AI: " + (ModConfig.showMobPath ? "ON" : "OFF")),
                 b -> {
                     ModConfig.showMobPath = !ModConfig.showMobPath;
                     b.setMessage(Component.literal("Mostra Path AI: " + (ModConfig.showMobPath ? "ON" : "OFF")));
-                    
-                    // Send config sync packet to server
+
+                    // TUA LOGICA MANTENUTA: Send config sync packet to server
                     if (Minecraft.getInstance().player != null) {
                         PacketDistributor.sendToServer(new ConfigSyncPayload(ModConfig.showMobPath));
                     }
-                }).pos(x2, y + 20).size(w + 20, h).build());
+                }).pos(x2, yRight).size(w + 20, h).build());
+        yRight += step;
 
-        // 6. Debug in Chat (Messaggi scritti)
+        // 7. Debug Chat
         this.addRenderableWidget(Button.builder(
                 Component.literal("Debug Chat: " + (ModConfig.showStuckChat ? "ON" : "OFF")),
                 b -> {
                     ModConfig.showStuckChat = !ModConfig.showStuckChat;
                     b.setMessage(Component.literal("Debug Chat: " + (ModConfig.showStuckChat ? "ON" : "OFF")));
-                }).pos(x2, y + 40).size(w + 20, h).build());
+                }).pos(x2, yRight).size(w + 20, h).build());
+        yRight += step;
 
-        // 7. Slider Tempo (Quanto tempo prima di dire "Stuck")
-        // Qui usiamo la classe personalizzata TimeSlider definita in fondo al file
-        this.addRenderableWidget(new TimeSlider(x2, y + 65, w + 20, h, ModConfig.stuckThresholdSeconds));
+        // 8. Slider Tempo
+        this.addRenderableWidget(new TimeSlider(x2, yRight, w + 20, h, ModConfig.stuckThresholdSeconds));
 
 
         // =================================================================
-        // PARTE INFERIORE: Distanze Aggro/Attack (Spostate più in basso)
+        // PARTE INFERIORE (Aggro/Attack)
         // =================================================================
-        int group2Y = y + 100; // Spazio verticale maggiore per separare i gruppi
+        int group2Y = 140; // Spostiamo giù per non sovrapporre
 
         // Friendly Aggro
         this.addRenderableWidget(Button.builder(
@@ -114,15 +129,15 @@ public class SettingsScreen extends Screen {
                 button -> {
                     ModConfig.renderFriendlyAttack = !ModConfig.renderFriendlyAttack;
                     button.setMessage(Component.literal("Attack Friendly: " + (ModConfig.renderFriendlyAttack ? "ON" : "OFF")));
-                }).pos(x, group2Y + 20).size(w, h).build());
+                }).pos(x, group2Y + step).size(w, h).build());
 
-        // Hostile Aggro
+        // Hostile Aggro (Colonna destra parte bassa)
         this.addRenderableWidget(Button.builder(
                 Component.literal("Aggro Hostile: " + (ModConfig.renderHostileAggro ? "ON" : "OFF")),
                 button -> {
                     ModConfig.renderHostileAggro = !ModConfig.renderHostileAggro;
                     button.setMessage(Component.literal("Aggro Hostile: " + (ModConfig.renderHostileAggro ? "ON" : "OFF")));
-                }).pos(x, group2Y + 40).size(w, h).build());
+                }).pos(x2, group2Y).size(w, h).build());
 
         // Hostile Attack
         this.addRenderableWidget(Button.builder(
@@ -130,61 +145,39 @@ public class SettingsScreen extends Screen {
                 button -> {
                     ModConfig.renderHostileAttack = !ModConfig.renderHostileAttack;
                     button.setMessage(Component.literal("Attack Hostile: " + (ModConfig.renderHostileAttack ? "ON" : "OFF")));
-                }).pos(x, group2Y + 60).size(w, h).build());
+                }).pos(x2, group2Y + step).size(w, h).build());
 
         // Render Distance Slider
-        int sliderY = group2Y + 90;
-        this.addRenderableWidget(new RenderDistanceSlider(x, sliderY, w, h, ModConfig.renderDistanceChunks));
+        int sliderY = group2Y + (step * 2) + 10;
+        this.addRenderableWidget(new RenderDistanceSlider(this.width / 2 - 100, sliderY, 200, h, ModConfig.renderDistanceChunks));
 
         // Bottone Chiudi
         this.addRenderableWidget(Button.builder(Component.translatable("devmod.settings.close"), b -> this.onClose())
-                .pos(width - w - 10, height - h - 10).size(w, h).build());
+                .pos(this.width / 2 - 50, this.height - 25).size(100, h).build());
     }
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
+        this.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
         guiGraphics.drawCenteredString(font, this.title, width / 2, 10, 0xFFFFFF);
+        super.render(guiGraphics, mouseX, mouseY, partialTick);
     }
 
-    // --- CLASSI INTERNE (Slider personalizzati) ---
+    // --- CLASSI INTERNE ---
 
-    // Slider per la distanza di render (Esistente)
     private static class RenderDistanceSlider extends AbstractSliderButton {
         public RenderDistanceSlider(int x, int y, int width, int height, int initialValue) {
             super(x, y, width, height, Component.literal("Render Dist: " + initialValue + " chunks"), (initialValue - 1) / 9.0);
         }
-
-        @Override
-        protected void updateMessage() {
-            int value = (int) (this.value * 9) + 1;
-            this.setMessage(Component.literal("Render Dist: " + value + " chunks"));
-            applyValue();
-        }
-
-        @Override
-        protected void applyValue() {
-            ModConfig.renderDistanceChunks = (int) (this.value * 9) + 1;
-        }
+        @Override protected void updateMessage() { int value = (int) (this.value * 9) + 1; this.setMessage(Component.literal("Render Dist: " + value + " chunks")); applyValue(); }
+        @Override protected void applyValue() { ModConfig.renderDistanceChunks = (int) (this.value * 9) + 1; }
     }
 
-    // NUOVO: Slider per il tempo di Stuck (3s, 4s, 5s...)
     private static class TimeSlider extends AbstractSliderButton {
         public TimeSlider(int x, int y, int width, int height, int initialVal) {
-            // (initialVal - 1) / 9.0 serve a posizionare la levetta nel punto giusto all'apertura
             super(x, y, width, height, Component.literal("Stuck Time: " + initialVal + "s"), (initialVal - 1) / 9.0);
         }
-        @Override
-        protected void updateMessage() {
-            // Converte la posizione della levetta (0.0 - 1.0) in secondi (1 - 10)
-            int val = (int)(this.value * 9) + 1;
-            this.setMessage(Component.literal("Stuck Time: " + val + "s"));
-            applyValue();
-        }
-        @Override
-        protected void applyValue() {
-            // Salva il valore nella configurazione
-            ModConfig.stuckThresholdSeconds = (int)(this.value * 9) + 1;
-        }
+        @Override protected void updateMessage() { int val = (int)(this.value * 9) + 1; this.setMessage(Component.literal("Stuck Time: " + val + "s")); applyValue(); }
+        @Override protected void applyValue() { ModConfig.stuckThresholdSeconds = (int)(this.value * 9) + 1; }
     }
 }
