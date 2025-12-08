@@ -26,7 +26,7 @@ public class KeyInputHandler {
             "key.categories.devmod"
     );
 
-    // NUOVO Tasto M (Editor Armi)
+    // Tasto M (Editor Armi)
     public static final KeyMapping OPEN_WEAPON_EDITOR_KEY = new KeyMapping(
             "key.devmod.weapon_editor",
             KeyConflictContext.IN_GAME,
@@ -35,10 +35,20 @@ public class KeyInputHandler {
             "key.categories.devmod"
     );
 
+    // Tasto V (FreeCam)
+    public static final KeyMapping TOGGLE_FREECAM_KEY = new KeyMapping(
+            "key.devmod.freecam",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_V,
+            "key.categories.devmod"
+    );
+
     @SubscribeEvent
     public static void registerKeys(RegisterKeyMappingsEvent event) {
         event.register(OPEN_SETTINGS_KEY);
-        event.register(OPEN_WEAPON_EDITOR_KEY); // Registra la M
+        event.register(OPEN_WEAPON_EDITOR_KEY);
+        event.register(TOGGLE_FREECAM_KEY);
     }
 
     @EventBusSubscriber(modid = "devmod", value = Dist.CLIENT)
@@ -63,6 +73,12 @@ public class KeyInputHandler {
                                 net.minecraft.network.chat.Component.literal("§cDevi avere un oggetto in mano!"), true);
                     }
                 }
+            }
+
+            // Se premi V (Free Cam)
+            if (TOGGLE_FREECAM_KEY.consumeClick()) {
+                // CORRETTO: Usa i punti al posto degli slash
+                com.frenkvs.devmod.manager.FreeCamHandler.toggle();
             }
         }
     }

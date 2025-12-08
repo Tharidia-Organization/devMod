@@ -1,15 +1,17 @@
 package com.frenkvs.devmod.config;
 
+import net.minecraft.core.BlockPos; // Importante per il metro!
+
 public class ModConfig {
     public enum SphereRenderMode {
         WIREFRAME,
         FILLED
     }
-    
+
     // --- VISIBILITÀ GENERALE ---
     public static boolean showOverlay = false;       // Mostra scritte a schermo
     public static boolean showRender = false;        // Mostra sfere semitrasparenti
-    public static boolean showArrowHits = true;     // NUOVO: Controlla solo i colpi delle frecce
+    public static boolean showArrowHits = true;      // Controlla solo i colpi delle frecce
 
     // --- NUOVE OPZIONI PER STUCK & PATH ---
     public static boolean enableStuckDebug = false; // Attiva il controllo "Stuck"
@@ -32,7 +34,7 @@ public class ModConfig {
     public static boolean renderFriendlyAttack = true;   // Mostra raggio attacco mob amichevoli
     public static boolean renderHostileAggro = true;     // Mostra raggio aggio mob ostili
     public static boolean renderHostileAttack = true;    // Mostra raggio attacco mob ostili
-    
+
     // --- MODO DI RENDER SPHERE ---
     public static SphereRenderMode sphereRenderMode = SphereRenderMode.WIREFRAME;
 
@@ -40,8 +42,45 @@ public class ModConfig {
     public static int renderDistanceChunks = 8;  // Distanza di render in chunks (1-10)
 
     // --- COLORI (In formato ARGB Hex) ---
-    // 0xFFFF0000 = Rosso, 0xFFFFFF00 = Giallo, 0xFF00FF00 = Verde, 0xFF00FFFF = Ciano
     public static int followRangeColor = 0xFFFF0000; // Default Rosso
+
+    // ========================================================================
+    //    AGGIUNTE PER I TOOL DA BUILDER E FREECAM (Necessarie per compilare)
+    // ========================================================================
+
+    // --- FREECAM ---
+    public static boolean freeCamEnabled = false;
+    public static float fcSpeed = 1.0f;
+    // Coordinate (usate se vogliamo salvare la posizione o per compatibilità)
+    public static double fcX, fcY, fcZ;
+    public static float fcYaw, fcPitch;
+
+    // --- MISURATORE (METRO) ---
+    public static boolean enableMeasureTool = true;
+    public static BlockPos measurePos1 = null; // Punto A
+    public static BlockPos measurePos2 = null; // Punto B
+    public static boolean showMeasureLines = true;
+
+    // --- GRIGLIA VERTICALE ---
+    public static boolean showVerticalLevels = false;
+    public static int gridRadius = 10;
+    public static int gridSpacingY = 4;
+    public static int gridFloorsUp = 2;
+    public static int gridFloorsDown = 1;
+    public static boolean gridLockY = false;
+    public static double lockedYValue = 0.0;
+
+    // --- GUIDA CERCHIO ---
+    public static boolean showCircleGuide = false;
+    public static int circleRadius = 5;
+    public static boolean circleLockY = false;
+    public static int circleY = 64;
+    // Coordinate fisse del centro del cerchio
+    public static int circleCenterX = 0;
+    public static int circleCenterY = 0;
+    public static int circleCenterZ = 0;
+
+    // ========================================================================
 
     // Metodo per ciclare i colori nel menu
     public static void cycleColor() {
