@@ -1,0 +1,366 @@
+package com.frenkvs.devmod.quest;
+
+import com.frenkvs.devmod.DevMod;
+import com.frenkvs.devmod.endurance.ClientQuestCache;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.Font;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+
+/**
+ * HUD Overlay compatto per visualizzare la task rapida.
+ * Posizione: basso a destra.
+ *
+ * Mostra:
+ * - Nome quest corrente
+ * - Progress (es. 2/5 tasks)
+ * - Prossima task (testo breve)
+ * - Nota rapida (se presente)
+ * - Hint per keybind [ ] \
+ *
+ * Features:
+ * - Animazione di completamento task
+ * - Sincronizzazione con QuestEditorScreen
+ */
+@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
+@SuppressWarnings("null")
+public class QuestHudOverlay {
+
+    private static final ResourceLocation LAYER_ID =
+        ResourceLocation.fromNamespaceAndPath("devmod", "quest_hud");
+
+    // === Colori UI (stile coerente con ImpactHudOverlay) ===
+    private static final int PANEL_BG = 0xCC1A1A2E;           // Blu scuro 80% opacity
+    private static final int PANEL_BORDER = 0xFF4CAF50;       // Verde (per quest)
+    private static final int PANEL_BORDER_GLOW = 0x554CAF50;  // Glow border
+
+    private static final int TEXT_TITLE = 0xFF81C784;         // Verde chiaro
+    private static final int TEXT_NORMAL = 0xFFFFFFFF;        // Bianco
+    private static final int TEXT_TASK = 0xFFFFD54F;          // Giallo/Oro (task corrente)
+    private static final int TEXT_NOTE = 0xFFB0BEC5;          // Grigio chiaro (nota)
+    private static final int TEXT_PROGRESS = 0xFF64B5F6;      // Blu chiaro (progress)
+    private static final int TEXT_COMPLETED = 0xFF4CAF50;     // Verde (completata)
+    private static final int TEXT_HINT = 0xFF666666;          // Grigio scuro (hint)
+
+    // === Dimensioni ===
+    private static final int PANEL_PADDING = 6;
+    private static final int LINE_HEIGHT = 10;
+    private static final int PANEL_WIDTH = 180;
+    private static final int MARGIN_RIGHT = 10;
+    private static final int MARGIN_BOTTOM = 10;
+
+    // === Toggle ===
+    private static boolean enabled = true;
+    private static boolean minimized = false;
+
+    // === Animation ===
+    private static long lastCompletionTime = 0;
+    private static String lastCompletedTaskName = "";
+    private static final long COMPLETION_ANIMATION_DURATION = 2000; // 2 seconds
+
+    // Cache for change detection
+    private static int lastTaskIndex = -1;
+    private static String lastQuestId = "";
+
+    @SubscribeEvent
+    public static void registerGuiLayers(RegisterGuiLayersEvent event) {
+        event.registerAbove(
+            VanillaGuiLayers.HOTBAR,
+            LAYER_ID,
+            QuestHudOverlay::render
+        );
+
+        // Register change listener for animations
+        QuestManager.INSTANCE.addChangeListener(QuestHudOverlay::onQuestChanged);
+    }
+
+    /**
+     * Called when quest data changes (for animation triggers).
+     */
+    private static void onQuestChanged() {
+        QuestData quest = QuestManager.INSTANCE.getActiveQuest();
+        if (quest == null) return;
+
+        // Detect task completion
+        int currentIndex = quest.getCurrentTaskIndex();
+        String questId = quest.getId();
+
+        if (questId.equals(lastQuestId) && currentIndex > lastTaskIndex && lastTaskIndex >= 0) {
+            // Task was completed - trigger animation
+            QuestTask completedTask = quest.getTasks().get(lastTaskIndex);
+            if (completedTask != null && completedTask.isCompleted()) {
+                lastCompletedTaskName = completedTask.getDescription();
+                lastCompletionTime = System.currentTimeMillis();
+            }
+        }
+
+        lastTaskIndex = currentIndex;
+        lastQuestId = questId;
+    }
+
+    /**
+     * Metodo di rendering principale.
+     */
+    private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
+        if (!enabled) return;
+
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.options.hideGui) return;
+
+        // Nascondi se c'è una Endurance Quest attiva (per evitare sovrapposizioni)
+        if (ClientQuestCache.hasActiveQuest()) return;
+
+        QuestData activeQuest = QuestManager.INSTANCE.getActiveQuest();
+        if (activeQuest == null) return;
+
+        Font font = mc.font;
+        int screenWidth = graphics.guiWidth();
+        int screenHeight = graphics.guiHeight();
+
+        // Calcola dimensioni pannello
+        int panelHeight = calculatePanelHeight(activeQuest, font);
+        int panelX = screenWidth - PANEL_WIDTH - MARGIN_RIGHT;
+        int panelY = screenHeight - panelHeight - MARGIN_BOTTOM - 40; // 40px sopra hotbar
+
+        // Render completion animation (if active)
+        renderCompletionAnimation(graphics, font, panelX, panelY - 20);
+
+        // Render pannello
+        renderQuestPanel(graphics, font, activeQuest, panelX, panelY, PANEL_WIDTH, panelHeight);
+    }
+
+    /**
+     * Renderizza l'animazione di completamento task.
+     */
+    private static void renderCompletionAnimation(GuiGraphics g, Font font, int x, int y) {
+        long elapsed = System.currentTimeMillis() - lastCompletionTime;
+        if (elapsed > COMPLETION_ANIMATION_DURATION || lastCompletedTaskName.isEmpty()) return;
+
+        // Calculate animation progress (0.0 to 1.0)
+        float progress = (float) elapsed / COMPLETION_ANIMATION_DURATION;
+
+        // Fade out in the second half
+        float alpha = progress < 0.5f ? 1.0f : 1.0f - (progress - 0.5f) * 2.0f;
+
+        // Slide up animation
+        int offsetY = (int) (progress * -10);
+
+        // Scale animation (pulse effect at start)
+        float scale = progress < 0.2f ? 1.0f + (0.2f - progress) * 0.5f : 1.0f;
+
+        // Render completion message
+        String message = "\u2713 " + truncateText(lastCompletedTaskName, font, PANEL_WIDTH - 20);
+        int color = applyAlpha(TEXT_COMPLETED, alpha);
+
+        // Apply transformations
+        g.pose().pushPose();
+        g.pose().translate(x + PANEL_WIDTH / 2.0f, y + offsetY, 0);
+        g.pose().scale(scale, scale, 1.0f);
+        g.pose().translate(-font.width(message) / 2.0f, 0, 0);
+
+        g.drawString(font, message, 0, 0, color, true);
+
+        g.pose().popPose();
+    }
+
+    /**
+     * Renderizza il pannello quest compatto.
+     */
+    private static void renderQuestPanel(GuiGraphics g, Font font, QuestData quest,
+                                          int x, int y, int width, int height) {
+        // Sfondo con bordo
+        renderPanelBackground(g, x, y, width, height);
+
+        int textX = x + PANEL_PADDING;
+        int textY = y + PANEL_PADDING;
+
+        if (minimized) {
+            // Modalità minimizzata: solo icona e nome
+            String title = "\u2605 " + truncateText(quest.getName(), font, width - PANEL_PADDING * 2 - 20);
+            g.drawString(font, title, textX, textY, TEXT_TITLE, false);
+
+            // Progress compatto
+            String progress = quest.getProgressSummary();
+            int progressWidth = font.width(progress);
+            g.drawString(font, progress, x + width - PANEL_PADDING - progressWidth, textY, TEXT_PROGRESS, false);
+            return;
+        }
+
+        // === Header: Nome Quest + Progress ===
+        String questName = "\u2605 " + truncateText(quest.getName(), font, width - PANEL_PADDING * 2 - 40);
+        g.drawString(font, questName, textX, textY, TEXT_TITLE, false);
+
+        String progress = quest.getProgressSummary();
+        int progressWidth = font.width(progress);
+        g.drawString(font, progress, x + width - PANEL_PADDING - progressWidth, textY, TEXT_PROGRESS, false);
+        textY += LINE_HEIGHT + 2;
+
+        // Linea separatore
+        g.fill(x + 4, textY, x + width - 4, textY + 1, PANEL_BORDER & 0x55FFFFFF);
+        textY += 4;
+
+        // === Task Corrente ===
+        QuestTask currentTask = quest.getCurrentTask();
+        if (currentTask != null) {
+            // Label "Task rapida:"
+            g.drawString(font, "Task rapida:", textX, textY, TEXT_NORMAL, false);
+            textY += LINE_HEIGHT;
+
+            // Descrizione task (con freccia animata)
+            long time = System.currentTimeMillis();
+            String arrow = (time / 500) % 2 == 0 ? "\u25B6 " : "\u25B7 "; // Alternating arrow
+            String taskDesc = arrow + truncateText(currentTask.getDescription(), font, width - PANEL_PADDING * 2 - 10);
+            g.drawString(font, taskDesc, textX + 4, textY, TEXT_TASK, false);
+            textY += LINE_HEIGHT + 2;
+
+            // Nota task (se presente)
+            if (currentTask.hasNote()) {
+                String noteText = "\u270E " + truncateText(currentTask.getNote(), font, width - PANEL_PADDING * 2 - 10);
+                g.drawString(font, noteText, textX + 4, textY, TEXT_NOTE, false);
+                textY += LINE_HEIGHT;
+            }
+        } else {
+            // Quest completata con animazione
+            long time = System.currentTimeMillis();
+            int pulseAlpha = (int) (200 + 55 * Math.sin(time / 300.0));
+            int completedColor = (pulseAlpha << 24) | (TEXT_COMPLETED & 0x00FFFFFF);
+            g.drawString(font, "\u2713 Quest completata!", textX, textY, completedColor, false);
+            textY += LINE_HEIGHT;
+        }
+
+        // === Nota Quest (se presente, in fondo) ===
+        if (quest.hasQuestNote()) {
+            textY += 2;
+            g.fill(x + 4, textY, x + width - 4, textY + 1, PANEL_BORDER & 0x33FFFFFF);
+            textY += 4;
+
+            String questNote = "\u270D " + truncateText(quest.getQuestNote(), font, width - PANEL_PADDING * 2 - 10);
+            g.drawString(font, questNote, textX, textY, TEXT_NOTE, false);
+            textY += LINE_HEIGHT;
+        }
+
+        // === Hint keybind (sempre in fondo) ===
+        textY += 2;
+        String hint = "[ Editor  ] Completa  \\ Toggle";
+        g.drawString(font, hint, textX, textY, TEXT_HINT, false);
+    }
+
+    /**
+     * Renderizza sfondo pannello con bordo.
+     */
+    private static void renderPanelBackground(GuiGraphics g, int x, int y, int width, int height) {
+        // Glow esterno
+        g.fill(x - 1, y - 1, x + width + 1, y + height + 1, PANEL_BORDER_GLOW);
+
+        // Sfondo principale
+        g.fill(x, y, x + width, y + height, PANEL_BG);
+
+        // Bordo
+        g.fill(x, y, x + width, y + 1, PANEL_BORDER);                    // Top
+        g.fill(x, y + height - 1, x + width, y + height, PANEL_BORDER);  // Bottom
+        g.fill(x, y, x + 1, y + height, PANEL_BORDER);                   // Left
+        g.fill(x + width - 1, y, x + width, y + height, PANEL_BORDER);   // Right
+    }
+
+    /**
+     * Calcola altezza dinamica del pannello.
+     */
+    private static int calculatePanelHeight(QuestData quest, Font font) {
+        if (minimized) {
+            return PANEL_PADDING * 2 + LINE_HEIGHT;
+        }
+
+        int height = PANEL_PADDING * 2;
+        height += LINE_HEIGHT + 2;  // Header
+        height += 4;                // Separator
+
+        QuestTask currentTask = quest.getCurrentTask();
+        if (currentTask != null) {
+            height += LINE_HEIGHT;      // "Task rapida:" label
+            height += LINE_HEIGHT + 2;  // Task description
+            if (currentTask.hasNote()) {
+                height += LINE_HEIGHT;  // Task note
+            }
+        } else {
+            height += LINE_HEIGHT;      // "Quest completata"
+        }
+
+        if (quest.hasQuestNote()) {
+            height += 6;                // Separator
+            height += LINE_HEIGHT;      // Quest note
+        }
+
+        height += LINE_HEIGHT + 2;      // Hint keybind
+
+        return height;
+    }
+
+    /**
+     * Tronca il testo se supera la larghezza massima.
+     */
+    private static String truncateText(String text, Font font, int maxWidth) {
+        if (font.width(text) <= maxWidth) {
+            return text;
+        }
+
+        String ellipsis = "...";
+        int ellipsisWidth = font.width(ellipsis);
+
+        StringBuilder sb = new StringBuilder();
+        for (char c : text.toCharArray()) {
+            if (font.width(sb.toString() + c) + ellipsisWidth > maxWidth) {
+                break;
+            }
+            sb.append(c);
+        }
+        return sb + ellipsis;
+    }
+
+    /**
+     * Applica alpha a un colore ARGB.
+     */
+    private static int applyAlpha(int color, float alpha) {
+        int a = (int) (((color >> 24) & 0xFF) * alpha);
+        return (a << 24) | (color & 0x00FFFFFF);
+    }
+
+    // === Public API ===
+
+    public static void setEnabled(boolean value) {
+        enabled = value;
+    }
+
+    public static boolean isEnabled() {
+        return enabled;
+    }
+
+    public static void toggle() {
+        enabled = !enabled;
+    }
+
+    public static void setMinimized(boolean value) {
+        minimized = value;
+    }
+
+    public static boolean isMinimized() {
+        return minimized;
+    }
+
+    public static void toggleMinimized() {
+        minimized = !minimized;
+    }
+
+    /**
+     * Trigger a completion animation manually (for external calls).
+     */
+    public static void triggerCompletionAnimation(String taskName) {
+        lastCompletedTaskName = taskName;
+        lastCompletionTime = System.currentTimeMillis();
+    }
+}

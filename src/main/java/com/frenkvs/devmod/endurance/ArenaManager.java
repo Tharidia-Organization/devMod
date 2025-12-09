@@ -1,0 +1,351 @@
+package com.frenkvs.devmod.endurance;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * Manages arena creation, barriers, and cleanup for Endurance Quests.
+ * Arenas are 64x64 blocks (4 chunks) with invisible barriers.
+ */
+public class ArenaManager {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ArenaManager.class);
+
+    // Default arena configuration
+    public static final int DEFAULT_ARENA_SIZE = 64; // 4 chunks
+    public static final int ARENA_HEIGHT = 32; // Barrier height
+    public static final int FLOOR_OFFSET = -1; // Floor below player
+
+    // Active arenas
+    private final Map<UUID, Arena> activeArenas = new ConcurrentHashMap<>();
+
+    // Arena by position (for quick lookup)
+    private final Map<ServerLevel, List<Arena>> arenasByLevel = new ConcurrentHashMap<>();
+
+    /**
+     * Represents an arena instance.
+     */
+    public static class Arena {
+        private final UUID id;
+        private final ServerLevel level;
+        private final BlockPos center;
+        private final int size;
+        private final AABB bounds;
+        private final long createdAt;
+
+        // Arena state
+        private boolean barrierActive = true;
+        private final Set<BlockPos> modifiedBlocks = new HashSet<>();
+
+        public Arena(ServerLevel level, BlockPos center, int size) {
+            this.id = UUID.randomUUID();
+            this.level = level;
+            this.center = center;
+            this.size = size;
+            this.createdAt = System.currentTimeMillis();
+
+            // Calculate bounds
+            int halfSize = size / 2;
+            this.bounds = new AABB(
+                center.getX() - halfSize, center.getY() - 5, center.getZ() - halfSize,
+                center.getX() + halfSize, center.getY() + ARENA_HEIGHT, center.getZ() + halfSize
+            );
+        }
+
+        public UUID getId() { return id; }
+        public ServerLevel getLevel() { return level; }
+        public BlockPos getCenter() { return center; }
+        public int getSize() { return size; }
+        public AABB getBounds() { return bounds; }
+        public long getCreatedAt() { return createdAt; }
+        public boolean isBarrierActive() { return barrierActive; }
+
+        public void setBarrierActive(boolean active) {
+            this.barrierActive = active;
+        }
+
+        public void addModifiedBlock(BlockPos pos) {
+            modifiedBlocks.add(pos.immutable());
+        }
+
+        public Set<BlockPos> getModifiedBlocks() {
+            return Collections.unmodifiableSet(modifiedBlocks);
+        }
+
+        /**
+         * Check if a position is inside this arena.
+         */
+        public boolean contains(Vec3 pos) {
+            return bounds.contains(pos);
+        }
+
+        /**
+         * Check if a position is inside this arena.
+         */
+        public boolean contains(BlockPos pos) {
+            return bounds.contains(pos.getX(), pos.getY(), pos.getZ());
+        }
+
+        /**
+         * Get a random spawn position within the arena.
+         */
+        public BlockPos getRandomSpawnPos(Random random) {
+            int halfSize = size / 2 - 2; // Keep away from walls
+            int x = center.getX() + random.nextInt(halfSize * 2) - halfSize;
+            int z = center.getZ() + random.nextInt(halfSize * 2) - halfSize;
+            return new BlockPos(x, center.getY(), z);
+        }
+
+        /**
+         * Get spawn positions distributed around the arena.
+         */
+        public List<BlockPos> getDistributedSpawnPositions(int count) {
+            List<BlockPos> positions = new ArrayList<>();
+            int halfSize = size / 2 - 3;
+
+            // Distribute evenly in a grid pattern
+            int gridSize = (int) Math.ceil(Math.sqrt(count));
+            int spacing = (halfSize * 2) / (gridSize + 1);
+
+            for (int i = 0; i < count; i++) {
+                int gridX = i % gridSize;
+                int gridZ = i / gridSize;
+
+                int x = center.getX() - halfSize + spacing + (gridX * spacing);
+                int z = center.getZ() - halfSize + spacing + (gridZ * spacing);
+
+                positions.add(new BlockPos(x, center.getY(), z));
+            }
+
+            return positions;
+        }
+    }
+
+    /**
+     * Create a new arena at the specified location.
+     */
+    public Arena createArena(ServerLevel level, BlockPos playerPos, int size) {
+        // Find suitable center position (flat area)
+        BlockPos center = findSuitableCenter(level, playerPos, size);
+        if (center == null) {
+            center = playerPos; // Fallback to player position
+        }
+
+        Arena arena = new Arena(level, center, size);
+
+        // Build the arena
+        buildArenaFloor(arena);
+        buildArenaBarriers(arena);
+
+        // IMPORTANT: Clear all pre-existing mobs from arena area before registering
+        clearPreExistingMobs(arena);
+
+        // Register arena
+        activeArenas.put(arena.getId(), arena);
+        arenasByLevel.computeIfAbsent(level, k -> new ArrayList<>()).add(arena);
+
+        LOGGER.info("[EnduranceQuest] Created arena {} at {} (size: {}x{})",
+            arena.getId(), center, size, size);
+
+        return arena;
+    }
+
+    /**
+     * Remove all pre-existing mobs from the arena area.
+     * Called when arena is first created to ensure a clean battlefield.
+     */
+    private void clearPreExistingMobs(Arena arena) {
+        ServerLevel level = arena.getLevel();
+        int removedCount = 0;
+
+        // Get all mobs in arena bounds
+        List<net.minecraft.world.entity.Entity> entities = level.getEntities(
+            (net.minecraft.world.entity.Entity) null,
+            arena.getBounds(),
+            entity -> entity instanceof net.minecraft.world.entity.Mob
+        );
+
+        for (net.minecraft.world.entity.Entity entity : entities) {
+            if (entity instanceof net.minecraft.world.entity.Mob mob) {
+                // Remove the mob (discard = no drops, no death event)
+                mob.discard();
+                removedCount++;
+            }
+        }
+
+        if (removedCount > 0) {
+            LOGGER.info("[EnduranceQuest] Cleared {} pre-existing mobs from arena area", removedCount);
+        }
+    }
+
+    /**
+     * Find a suitable flat area for the arena.
+     */
+    private BlockPos findSuitableCenter(ServerLevel level, BlockPos start, int size) {
+        // For simplicity, use a position slightly above ground at player location
+        // In a real implementation, you'd scan for flat terrain
+
+        // Find ground level
+        BlockPos groundCheck = start;
+        while (groundCheck.getY() > level.getMinBuildHeight() &&
+               level.getBlockState(groundCheck).isAir()) {
+            groundCheck = groundCheck.below();
+        }
+
+        // Position arena floor at ground level + 1
+        return new BlockPos(start.getX(), groundCheck.getY() + 1, start.getZ());
+    }
+
+    /**
+     * Build arena floor (stone brick platform).
+     */
+    private void buildArenaFloor(Arena arena) {
+        ServerLevel level = arena.getLevel();
+        BlockPos center = arena.getCenter();
+        int halfSize = arena.getSize() / 2;
+
+        BlockState floorBlock = Blocks.STONE_BRICKS.defaultBlockState();
+
+        for (int x = -halfSize; x <= halfSize; x++) {
+            for (int z = -halfSize; z <= halfSize; z++) {
+                BlockPos pos = center.offset(x, FLOOR_OFFSET, z);
+                level.setBlock(pos, floorBlock, 3);
+                arena.addModifiedBlock(pos);
+            }
+        }
+    }
+
+    /**
+     * Build invisible barriers around the arena.
+     */
+    private void buildArenaBarriers(Arena arena) {
+        ServerLevel level = arena.getLevel();
+        BlockPos center = arena.getCenter();
+        int halfSize = arena.getSize() / 2;
+
+        BlockState barrier = Blocks.BARRIER.defaultBlockState();
+
+        // Build walls
+        for (int y = 0; y < ARENA_HEIGHT; y++) {
+            for (int i = -halfSize; i <= halfSize; i++) {
+                // North wall
+                BlockPos north = center.offset(i, y, -halfSize);
+                level.setBlock(north, barrier, 3);
+                arena.addModifiedBlock(north);
+
+                // South wall
+                BlockPos south = center.offset(i, y, halfSize);
+                level.setBlock(south, barrier, 3);
+                arena.addModifiedBlock(south);
+
+                // East wall
+                BlockPos east = center.offset(halfSize, y, i);
+                level.setBlock(east, barrier, 3);
+                arena.addModifiedBlock(east);
+
+                // West wall
+                BlockPos west = center.offset(-halfSize, y, i);
+                level.setBlock(west, barrier, 3);
+                arena.addModifiedBlock(west);
+            }
+        }
+
+        // Build ceiling
+        for (int x = -halfSize; x <= halfSize; x++) {
+            for (int z = -halfSize; z <= halfSize; z++) {
+                BlockPos pos = center.offset(x, ARENA_HEIGHT, z);
+                level.setBlock(pos, barrier, 3);
+                arena.addModifiedBlock(pos);
+            }
+        }
+    }
+
+    /**
+     * Destroy an arena and restore the area.
+     */
+    public void destroyArena(Arena arena) {
+        if (arena == null) return;
+
+        ServerLevel level = arena.getLevel();
+
+        // Remove all modified blocks
+        for (BlockPos pos : arena.getModifiedBlocks()) {
+            level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+        }
+
+        // Unregister arena
+        activeArenas.remove(arena.getId());
+        List<Arena> levelArenas = arenasByLevel.get(level);
+        if (levelArenas != null) {
+            levelArenas.remove(arena);
+        }
+
+        LOGGER.info("[EnduranceQuest] Destroyed arena {}", arena.getId());
+    }
+
+    /**
+     * Teleport a player to the center of an arena.
+     */
+    public void teleportToArena(ServerPlayer player, Arena arena) {
+        BlockPos center = arena.getCenter();
+        player.teleportTo(center.getX() + 0.5, center.getY(), center.getZ() + 0.5);
+    }
+
+    /**
+     * Check if a position is inside any active arena.
+     */
+    public Optional<Arena> getArenaAt(ServerLevel level, Vec3 pos) {
+        List<Arena> levelArenas = arenasByLevel.get(level);
+        if (levelArenas != null) {
+            for (Arena arena : levelArenas) {
+                if (arena.contains(pos)) {
+                    return Optional.of(arena);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Get arena by ID.
+     */
+    public Optional<Arena> getArena(UUID arenaId) {
+        return Optional.ofNullable(activeArenas.get(arenaId));
+    }
+
+    /**
+     * Get all active arenas.
+     */
+    public Collection<Arena> getAllArenas() {
+        return Collections.unmodifiableCollection(activeArenas.values());
+    }
+
+    /**
+     * Toggle barrier visibility for an arena.
+     */
+    public void setBarrierActive(Arena arena, boolean active) {
+        arena.setBarrierActive(active);
+        // In a real implementation, you might use structure void or similar
+        // for "passable" barriers, or particle effects to show boundary
+    }
+
+    /**
+     * Clean up all arenas (server shutdown).
+     */
+    public void cleanupAll() {
+        for (Arena arena : new ArrayList<>(activeArenas.values())) {
+            destroyArena(arena);
+        }
+        activeArenas.clear();
+        arenasByLevel.clear();
+    }
+}

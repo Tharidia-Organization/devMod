@@ -1,19 +1,26 @@
 package com.frenkvs.devmod;
 
+import com.frenkvs.devmod.integration.ModIntegrationManager;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.slf4j.Logger;
+import java.util.Objects;
 
 @Mod("devmod")
-public class devmod {
+public class DevMod {
 
     // Logger
     public static final Logger LOGGER = LogUtils.getLogger();
@@ -25,7 +32,10 @@ public class devmod {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
 
     // 2. REGISTRO DELLE TAB CREATIVE
-    public static final DeferredRegister<CreativeModeTab> CREATIVE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
+    public static final DeferredRegister<CreativeModeTab> CREATIVE_TABS = DeferredRegister.create(
+            Objects.requireNonNull(Registries.CREATIVE_MODE_TAB),
+            MODID
+    );
 
     // 3. OGGETTO "VIEWER_ITEM"
     public static final DeferredHolder<Item, Item> VIEWER_ITEM = ITEMS.register("viewer_item", () -> new Item(new Item.Properties()));
@@ -33,17 +43,67 @@ public class devmod {
     // 4. TAB CREATIVA (CORRETTA)
     // L'errore era qui: dentro < > deve esserci "CreativeModeTab", non "EXAMPLE_TAB"
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> EXAMPLE_TAB = CREATIVE_TABS.register("example_tab", () -> CreativeModeTab.builder()
-            .title(Component.translatable("itemGroup." + MODID))
+            .title(Objects.requireNonNull(Component.translatable("itemGroup." + MODID)))
             .withTabsBefore(CreativeModeTabs.COMBAT)
-            .icon(() -> VIEWER_ITEM.get().getDefaultInstance())
+            .icon(() -> Objects.requireNonNull(VIEWER_ITEM.get().getDefaultInstance()))
             .displayItems((parameters, output) -> {
-                output.accept(VIEWER_ITEM.get());
+                output.accept(Objects.requireNonNull(VIEWER_ITEM.get()));
             }).build());
 
-    public devmod(IEventBus modEventBus) {
-        ITEMS.register(modEventBus);
-        CREATIVE_TABS.register(modEventBus);
+    public DevMod(IEventBus modEventBus, ModContainer modContainer) {
+        IEventBus eventBus = Objects.requireNonNull(modEventBus);
+        ITEMS.register(eventBus);
+        CREATIVE_TABS.register(eventBus);
 
-        LOGGER.info("Mob Config Viewer caricato correttamente!");
+        // Registra la configurazione
+        modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+
+        // Inizializza integrazione mod esterne (Pehkui, Better Combat, ecc.)
+        ModIntegrationManager.init();
+
+        // Registra keybinds solo lato client
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            eventBus.addListener(DevMod::registerKeyMappings);
+            LOGGER.info("[DevMod] Client keybind registration scheduled");
+        }
+
+        LOGGER.info("DevMod caricato correttamente!");
+    }
+
+    private static void registerKeyMappings(RegisterKeyMappingsEvent event) {
+        LOGGER.info("[DevMod] Registering keybinds including N for QA Testing");
+        event.register(Objects.requireNonNull(KeyInputHandler.OPEN_SETTINGS_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.OPEN_WEAPON_EDITOR_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_DEBUG_OVERLAY_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_LIGHT_OVERLAY_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_HEATMAP_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_ROOM_BOUNDS_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_PATHFINDING_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_LOS_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_VERTICAL_LEVELS_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_SAFE_SPOT_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.OPEN_DASHBOARD_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_ATTRIBUTE_MONITOR_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_FPS_TRACKER_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_PROFILER_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.OPEN_QA_TESTING_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.OPEN_TESTING_HUB_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_BOSS_PHASE_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_ENTITY_DENSITY_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_SKILL_EFFICACY_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_SPAWNABILITY_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_QUEST_HUD_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.QUEST_COMPLETE_TASK_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.OPEN_QUEST_EDITOR_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_ECONOMY_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_CHUNK_PERF_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.OPEN_ENDURANCE_QUEST_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.QUEST_CONTINUE_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.QUEST_EXIT_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_HELP_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.OPEN_RADIAL_MENU_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.INSPECT_MOB_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.TEST_SCREEN_SHAKE_KEY));
+        LOGGER.info("[DevMod] All keybinds registered successfully");
     }
 }

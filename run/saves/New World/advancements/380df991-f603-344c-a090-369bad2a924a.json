@@ -26,7 +26,8 @@
       "minecraft:spider": "2025-11-29 21:04:06 +0100",
       "minecraft:zombie": "2025-11-29 18:47:30 +0100",
       "minecraft:creeper": "2025-11-29 21:15:59 +0100",
-      "minecraft:wither": "2025-11-29 21:50:18 +0100"
+      "minecraft:wither": "2025-11-29 21:50:18 +0100",
+      "minecraft:zombie_villager": "2025-12-03 01:50:54 +0100"
     },
     "done": false
   },
@@ -171,6 +172,18 @@
   "minecraft:recipes/misc/paper": {
     "criteria": {
       "has_reeds": "2025-11-29 23:09:11 +0100"
+    },
+    "done": true
+  },
+  "minecraft:recipes/misc/firework_rocket_simple": {
+    "criteria": {
+      "has_gunpowder": "2025-12-02 22:48:25 +0100"
+    },
+    "done": true
+  },
+  "minecraft:recipes/redstone/tnt": {
+    "criteria": {
+      "has_gunpowder": "2025-12-02 22:48:25 +0100"
     },
     "done": true
   },

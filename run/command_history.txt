@@ -1,5 +1,3 @@
-/kill all
-/gamemode survival
 /gamemode creative
 /time set night
 /gamemode survival
@@ -14,6 +12,39 @@
 /gamemode creative
 /gamemode survival
 /gamemode creative
+/time set night
+/time set noon
+/effect give Dev minecraft:night_vision infinite 9 true
+/time set night
+/gamerule doWeatherCycle false
+/weather clear
+/time set night
+/gamerule doWeatherCycle false
+/gamerule doMobSpawning false
+/time set night
+/kill @a
+/kill @
 /kill @e
+/effect give Dev minecraft:night_vision infinite 9 true
+/time set night
+/time set noon
+/time set night
+/devtest
+/devtest info
+/devtest debug
+/devtest debugbox 100
+/devtest debugbox 10
+/devtest hud toggle
+/give @p bow
+/time set day
+/devtest qa
+/effect give @e minecraft:glowing infinite
+/tp @e
+/tp @e Dev
 /gamemode survival
 /gamemode creative
+/devdebug entity_brains
+/devdebug entity_pathing
+/gamemode survival
+/gamemode creative
+/devdebug entity_goals

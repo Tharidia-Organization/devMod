@@ -1,0 +1,304 @@
+================================================================================
+DevMod GameTest Analysis - Complete Documentation Package
+================================================================================
+
+Generated: December 6, 2025
+Codebase: Minecraft NeoForge 1.21 Mod (17,188 LOC across 81 Java files)
+Current Test Coverage: ~1.8% (312 lines of test code)
+Target Test Coverage: 60%+ on critical components
+
+================================================================================
+DELIVERABLES
+================================================================================
+
+1. GAMETEST_ANALYSIS.md (1,563 lines)
+   - Comprehensive component-by-component testing strategy
+   - 60+ specific test cases documented with requirements
+   - Edge cases and failure mode analysis
+   - Test infrastructure recommendations
+   - Roadmap for 4-week implementation
+
+2. GAMETEST_SUMMARY.md (Quick Reference)
+   - Priority-ordered component list (1-5)
+   - Test count and complexity estimates
+   - 4-week implementation schedule
+   - 5 highest-impact tests to implement first
+   - Testing patterns and validation checklist
+   - Component dependency graph
+
+3. This File (TESTING_ROADMAP.txt)
+   - Quick navigation guide
+   - Key statistics and metrics
+
+================================================================================
+KEY FINDINGS
+================================================================================
+
+CRITICAL COMPONENTS NEEDING TESTS:
+  1. DamageHandler (589 lines) - 18 tests needed
+  2. HitHelper (440 lines) - 12 tests needed  
+  3. Configuration Managers (197 lines) - 17 tests needed
+  4. Network Payloads (163 lines) - 12 tests needed
+  5. Telemetry System (1344 lines) - 14 tests needed
+
+TOTAL RECOMMENDED TESTS: 60+ test cases
+ESTIMATED TEST CODE: 1,500-2,000 lines
+ESTIMATED EFFORT: 4-5 weeks (1 developer)
+
+CURRENT GAPS:
+  ✗ No melee/ranged damage tests
+  ✗ No body part detection accuracy tests
+  ✗ No network serialization tests
+  ✗ No JSON persistence tests
+  ✗ No thread safety tests
+  ✗ No integration tests (Pehkui, Better Combat)
+  
+EXISTING (PARTIAL):
+  ✓ WeaponStats default values
+  ✓ WeaponStats NBT serialization
+  ✓ Batch lifecycle management
+  ✓ HitContext cleanup (code only, not validated)
+
+================================================================================
+CRITICAL SYSTEMS (PRIORITY 1 - MUST TEST)
+================================================================================
+
+1. CORE DAMAGE CALCULATION
+   Location: /src/main/java/com/frenkvs/devmod/DamageHandler.java
+   Location: /src/main/java/com/frenkvs/devmod/HitHelper.java
+   
+   Critical Paths:
+   - Melee damage: 10 base * multiplier[1.5-2.5] = final damage
+   - Ranged damage: arrow Y-coordinate → body part
+   - Body part detection: AABB raycast with 95% target accuracy
+   - Armor penetration: damage += (armor * pen * 0.5)
+   
+   Required Tests: 18 tests
+   Risk Level: CRITICAL (affects all damage in combat system)
+
+2. CONFIGURATION MANAGEMENT
+   Location: /src/main/java/com/frenkvs/devmod/{Mob|Weapon}ConfigManager.java
+   
+   Critical Paths:
+   - Fallback chain: specific NBT > global map > defaults
+   - JSON I/O: serialize EntityType→ResourceLocation mapping
+   - NBT persistence: ItemStack custom data round-trip
+   
+   Required Tests: 17 tests
+   Risk Level: HIGH (zero data loss requirement)
+
+3. NETWORK COMMUNICATION
+   Location: /src/main/java/com/frenkvs/devmod/{Update|Equip}*Payload.java
+   
+   Critical Paths:
+   - StreamCodec serialization: 3 payload types, 7-13 fields each
+   - Float precision: multipliers must survive network round-trip
+   - Boolean/String encoding: proper codec selection
+   
+   Required Tests: 12 tests
+   Risk Level: CRITICAL (untrusted input, multiplayer safety)
+
+================================================================================
+QUICK START: TOP 5 TESTS TO IMPLEMENT FIRST
+================================================================================
+
+Test 1: damageMultiplierApplication (~15 mins)
+  - CRITICAL - Foundation for all damage tests
+  - 10 base damage * 2.0x head mult = 20 final
+  - File: DevModGameTests.java
+  - Run: ./gradlew runGameTestServer
+
+Test 2: bodyPartDetectionAccuracy (~30 mins)
+  - CRITICAL - 95% accuracy required
+  - AABB raycast with multiple angles
+  - Fallback pitch-based detection
+  - File: DevModGameTests.java
+
+Test 3: networkPayloadRoundTrip (~30 mins)
+  - CRITICAL - 3 payload types
+  - Float precision (2.5f, 0.7f, etc)
+  - Boolean/String encoding
+  - File: DevModGameTests.java
+
+Test 4: configFallbackChain (~20 mins)
+  - HIGH - Specific > Global > Defaults
+  - Multiple items independent
+  - NBT custom data handling
+  - File: DevModGameTests.java
+
+Test 5: mobConfigPersistence (~30 mins)
+  - HIGH - JSON I/O verification
+  - Save 5 entity types
+  - Load from disk, verify exact match
+  - Auto-save on modification
+  - File: DevModGameTests.java
+
+TOTAL TIME: ~2 hours for first 5 tests (establishes pattern)
+
+================================================================================
+EDGE CASES & CRITICAL FAILURES TO TEST
+================================================================================
+
+1. Null Safety (applies to all components)
+   - DamageHandler with null event.getSource()
+   - HitHelper with null attacker
+   - Config with null ItemStack
+   - Should log error, not crash
+
+2. Float Precision (affects gameplay accuracy)
+   - Damage multiplier: 0.7f vs 0.70000012f
+   - Network serialization round-trip
+   - Scale calculations (Pehkui 1.005x)
+   - Use epsilon comparison (1e-6), not ==
+
+3. Thread Safety (affects stability)
+   - HitContext concurrent store/retrieve/cleanup
+   - TelemetryService ConcurrentHashMap operations
+   - 100+ concurrent damage events
+   - No ConcurrentModificationException, no data loss
+
+4. Memory Leaks (affects server stability over time)
+   - HitHelper cache max 1000 entries, cleanup every 5s
+   - HitContext TTL 100ms, auto-cleanup
+   - Weak references to entities must allow GC
+   - Monitor heap growth with 10K entity tracker
+
+5. Config Load Order (affects initialization)
+   - WeaponStats defaults depend on Config
+   - Test with/without Config loaded
+   - Fallback values when Config missing
+   - Test late Config reload
+
+================================================================================
+TESTING INFRASTRUCTURE
+================================================================================
+
+Test Framework:
+  - Minecraft GameTest Framework (built-in)
+  - Location: /src/main/java/com/frenkvs/devmod/gametest/
+  - Existing tests: DevModGameTests.java (312 lines)
+  - Run: ./gradlew runGameTestServer
+  - Results: build/gametest-results/
+
+Template Requirements:
+  - empty.nbt: 3x3x3 platform (basic tests)
+  - empty_5x5.nbt: 5x5x5 platform (entity tests)
+  - Location: src/main/resources/data/devmod/structures/
+
+Mock Objects Needed:
+  - LivingEntity (health, attributes, position)
+  - ItemStack (enchantments, NBT custom data)
+  - ByteBuf (for network payload tests)
+  - Config instance (fallback values)
+  - ModList (for integration tests)
+
+Test Batches (organized for CI):
+  - batch="core": CRITICAL tests (required=true)
+  - batch="config": Configuration tests
+  - batch="entities": Mob/Entity tests
+  - batch="network": Network payload tests
+  - batch="integration": Soft dependency tests (optional)
+
+CI Integration:
+  - Run ./gradlew runGameTestServer on every PR
+  - Fail build if batch="core" has failures
+  - Monitor performance regression (<5%)
+  - Generate coverage reports
+
+================================================================================
+FILE STRUCTURE
+================================================================================
+
+Key Files to Test:
+  /src/main/java/com/frenkvs/devmod/
+    ├─ DamageHandler.java (589 lines) ← CRITICAL
+    ├─ HitHelper.java (440 lines) ← CRITICAL
+    ├─ HitContext.java (68 lines)
+    ├─ WeaponStats.java (56 lines)
+    ├─ WeaponConfigManager.java (64 lines)
+    ├─ MobConfigManager.java (133 lines)
+    ├─ NetworkHandler.java (219 lines)
+    ├─ UpdateMobStatsPayload.java (47 lines)
+    ├─ UpdateWeaponPayload.java (55 lines)
+    ├─ EquipMobPayload.java (61 lines)
+    ├─ integration/
+    │  ├─ ModIntegrationManager.java (151 lines)
+    │  ├─ PehkuiIntegration.java (172 lines)
+    │  └─ BetterCombatIntegration.java (177 lines)
+    ├─ telemetry/
+    │  ├─ TelemetryService.java (1344 lines)
+    │  └─ TelemetryEvents.java (80 lines)
+    ├─ hud/
+    │  ├─ ImpactData.java (269 lines)
+    │  └─ DamageBreakdown.java (100+ lines)
+    └─ gametest/
+       └─ DevModGameTests.java (312 lines) ← EXPAND THIS
+
+================================================================================
+SUCCESS METRICS
+================================================================================
+
+Phase 1 (Week 1): Foundation
+  Target: 19 tests pass, 0 failures
+  Metrics: 
+    - Damage calculation accuracy (target: 99.9%)
+    - Body part detection (target: 95% accuracy)
+    - Network serialization (target: 100% round-trip)
+
+Phase 2 (Week 2): Configuration
+  Target: 17 tests pass, 0 failures
+  Metrics:
+    - JSON I/O correctness (target: 100%)
+    - Config priority (target: zero cross-contamination)
+    - Backwards compatibility (target: load old files without error)
+
+Phase 3 (Week 3): Advanced
+  Target: 16 tests pass, 0 failures
+  Metrics:
+    - Cache hit rate (target: 80%+)
+    - Thread safety (target: no race conditions)
+    - Evasion detection (target: within 150ms window)
+
+Phase 4 (Week 4): Polish
+  Target: 10+ tests pass
+  Metrics:
+    - Performance regression <5%
+    - Integration coverage (target: 60%+)
+    - Documentation (target: 100% of tests)
+
+Final Coverage Target: 60%+ on CRITICAL components
+  - DamageHandler: 70%+ (24 of 35 methods)
+  - HitHelper: 70%+ (18 of 26 methods)
+  - Config Managers: 80%+ (16 of 20 methods)
+  - Network Payloads: 100% (all serialization)
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Read GAMETEST_ANALYSIS.md for detailed requirements
+2. Review GAMETEST_SUMMARY.md for quick reference
+3. Start with Test 1 (damageMultiplierApplication)
+4. Run ./gradlew runGameTestServer to validate
+5. Add tests incrementally, following 4-week roadmap
+6. Monitor code coverage and performance metrics
+7. Integrate into CI/CD pipeline
+
+================================================================================
+CONTACT & QUESTIONS
+================================================================================
+
+This analysis provides:
+  ✓ Complete inventory of testable components
+  ✓ Specific test cases for each component
+  ✓ Priority ranking (60 tests total)
+  ✓ Edge case identification
+  ✓ 4-week implementation schedule
+  ✓ Testing patterns and best practices
+
+For questions about specific tests, refer to:
+  - GAMETEST_ANALYSIS.md sections I-VI
+  - Existing tests in DevModGameTests.java
+  - Minecraft GameTest documentation
+
+================================================================================

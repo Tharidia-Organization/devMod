@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.frenkvs.devmod.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+  ],
+  "client": [
+    "GameRendererMixin",
+    "CameraShakeMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -48,8 +48,8 @@ authors="Frenk012, Vassago" #optional
 description='''Mod to render mob info and implement quick config views and edito for weapones.'''
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.
-#[[mixins]]
-#config="devmod.mixins.json"
+[[mixins]]
+config="devmod.mixins.json"
 
 # The [[accessTransformers]] block allows you to declare where your AT file is.
 # If this block is omitted, a fallback attempt will be made to load an AT from META-INF/accesstransformer.cfg

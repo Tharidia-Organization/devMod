@@ -1,0 +1,302 @@
+package com.frenkvs.devmod.endurance;
+
+import com.frenkvs.devmod.util.I18n;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.network.PacketDistributor;
+import org.lwjgl.glfw.GLFW;
+
+/**
+ * Death screen for Endurance Quest with respawn options.
+ * Displayed when player dies during a quest, offering:
+ * - Respawn and continue (-100 points penalty)
+ * - Give up and collect partial rewards
+ */
+@OnlyIn(Dist.CLIENT)
+@SuppressWarnings("null")
+public class QuestDeathScreen extends Screen {
+
+    // === Colors ===
+    private static final int COLOR_BG = 0xEE0a0a14;
+    private static final int COLOR_PANEL_BG = 0xDD1a0a0a;
+    private static final int COLOR_BORDER = 0xFFFF0000;
+    private static final int COLOR_BORDER_GLOW = 0x44FF0000;
+    private static final int COLOR_TEXT = 0xFFFFFFFF;
+    private static final int COLOR_TEXT_DIM = 0xFFAAAAAA;
+    private static final int COLOR_DEATH = 0xFFFF4444;
+    private static final int COLOR_SUCCESS = 0xFF4CAF50;
+    private static final int COLOR_WARNING = 0xFFFFAB00;
+    private static final int COLOR_GOLD = 0xFFFFD700;
+
+    // === Dimensions ===
+    private static final int PANEL_WIDTH = 340;
+    private static final int PANEL_HEIGHT = 280;
+
+    // === Animation ===
+    private static final long FADE_IN_DURATION = 500;
+    private static final long SKULL_PULSE_PERIOD = 1500;
+
+    // === Data ===
+    private final int currentWave;
+    private final int totalWaves;
+    private final boolean endlessMode;
+    private final int pointsEarned;
+    private final int deathsThisRun;
+
+    // === State ===
+    private long openTime;
+    private boolean soundPlayed = false;
+    private Button respawnButton;
+    private Button giveUpButton;
+
+    public QuestDeathScreen() {
+        super(I18n.translate("devmod.endurance.you_died"));
+
+        // Capture data from ClientQuestCache
+        this.currentWave = ClientQuestCache.getCurrentWave();
+        this.totalWaves = ClientQuestCache.getTotalWaves();
+        this.endlessMode = ClientQuestCache.isEndlessMode();
+        this.pointsEarned = ClientQuestCache.getPointsEarned();
+        this.deathsThisRun = ClientQuestCache.getDeaths();
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        openTime = System.currentTimeMillis();
+
+        int centerX = width / 2;
+        int centerY = height / 2;
+        int panelX = centerX - PANEL_WIDTH / 2;
+        int panelY = centerY - PANEL_HEIGHT / 2;
+
+        // Respawn button
+        respawnButton = Button.builder(
+                I18n.translate("devmod.endurance.respawn_cost"),
+                btn -> respawnAndContinue())
+            .bounds(panelX + 20, panelY + PANEL_HEIGHT - 75, PANEL_WIDTH - 40, 28)
+            .build();
+        addRenderableWidget(respawnButton);
+
+        // Give up button
+        giveUpButton = Button.builder(
+                I18n.translate("devmod.endurance.give_up"),
+                btn -> giveUpAndCollect())
+            .bounds(panelX + 20, panelY + PANEL_HEIGHT - 40, PANEL_WIDTH - 40, 28)
+            .build();
+        addRenderableWidget(giveUpButton);
+
+        // Initially hidden for animation
+        respawnButton.visible = false;
+        giveUpButton.visible = false;
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+
+        long elapsed = System.currentTimeMillis() - openTime;
+
+        // Show buttons after fade in
+        if (elapsed > FADE_IN_DURATION + 300) {
+            respawnButton.visible = true;
+            giveUpButton.visible = true;
+        }
+    }
+
+    @Override
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        long elapsed = System.currentTimeMillis() - openTime;
+        float fadeProgress = Math.min(1.0f, elapsed / (float) FADE_IN_DURATION);
+
+        // Play death sound once
+        if (!soundPlayed && elapsed > 100 && minecraft != null) {
+            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.TOTEM_USE, 0.5f, 0.8f));
+            soundPlayed = true;
+        }
+
+        // Darken background
+        int bgAlpha = (int) (0xEE * fadeProgress);
+        graphics.fill(0, 0, width, height, (bgAlpha << 24) | 0x0a0a14);
+
+        int centerX = width / 2;
+        int centerY = height / 2;
+        int panelX = centerX - PANEL_WIDTH / 2;
+        int panelY = centerY - PANEL_HEIGHT / 2;
+
+        // Panel with glow
+        renderPanel(graphics, panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, fadeProgress);
+
+        // Content
+        if (fadeProgress > 0.3f) {
+            float contentAlpha = (fadeProgress - 0.3f) / 0.7f;
+            renderContent(graphics, panelX, panelY, contentAlpha, elapsed);
+        }
+
+        // ESC blocked message
+        if (shouldShowEscMessage()) {
+            long escElapsed = System.currentTimeMillis() - lastEscPressTime;
+            float escAlpha = 1.0f - (escElapsed / (float) ESC_MESSAGE_DURATION);
+            int escColor = applyAlpha(COLOR_WARNING, escAlpha);
+            graphics.drawCenteredString(font, I18n.translate("devmod.endurance.must_choose").getString(), centerX, panelY + PANEL_HEIGHT + 15, escColor);
+        }
+
+        super.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+    private void renderPanel(GuiGraphics g, int x, int y, int w, int h, float alpha) {
+        int bgAlpha = (int) (0xDD * alpha);
+        int borderAlpha = (int) (0xFF * alpha);
+        int glowAlpha = (int) (0x44 * alpha);
+
+        // Glow
+        g.fill(x - 2, y - 2, x + w + 2, y + h + 2, (glowAlpha << 24) | 0xFF0000);
+
+        // Background
+        g.fill(x, y, x + w, y + h, (bgAlpha << 24) | 0x1a0a0a);
+
+        // Border
+        int borderColor = (borderAlpha << 24) | 0xFF0000;
+        g.fill(x, y, x + w, y + 2, borderColor);           // Top
+        g.fill(x, y + h - 2, x + w, y + h, borderColor);   // Bottom
+        g.fill(x, y, x + 2, y + h, borderColor);           // Left
+        g.fill(x + w - 2, y, x + w, y + h, borderColor);   // Right
+    }
+
+    private void renderContent(GuiGraphics g, int panelX, int panelY, float alpha, long elapsed) {
+        int textAlpha = (int) (255 * alpha);
+
+        // Pulsing skull effect
+        float pulse = (float) (Math.sin(elapsed / (double) SKULL_PULSE_PERIOD * Math.PI * 2) * 0.3 + 0.7);
+        int skullColor = applyAlpha(COLOR_DEATH, alpha * pulse);
+
+        // Skull icon (Unicode)
+        String skull = "☠";
+        int skullX = panelX + PANEL_WIDTH / 2 - font.width(skull) * 2;
+        g.pose().pushPose();
+        g.pose().translate(skullX, panelY + 20, 0);
+        g.pose().scale(4.0f, 4.0f, 1.0f);
+        g.drawString(font, skull, 0, 0, skullColor, true);
+        g.pose().popPose();
+
+        int y = panelY + 75;
+
+        // "YOU DIED" text
+        g.drawCenteredString(font, I18n.translate("devmod.endurance.you_died").getString(), panelX + PANEL_WIDTH / 2, y, applyAlpha(COLOR_DEATH, alpha));
+        y += 25;
+
+        // Wave info
+        String waveText = endlessMode
+            ? I18n.translate("devmod.endurance.wave").getString() + " " + currentWave + " (" + I18n.translate("devmod.endurance.endless_mode").getString() + ")"
+            : I18n.translate("devmod.endurance.wave").getString() + " " + currentWave + " / " + totalWaves;
+        g.drawCenteredString(font, waveText, panelX + PANEL_WIDTH / 2, y, applyAlpha(COLOR_TEXT_DIM, alpha));
+        y += 18;
+
+        // Points earned
+        String pointsText = I18n.translate("devmod.endurance.points").getString() + ": " + pointsEarned;
+        g.drawCenteredString(font, pointsText, panelX + PANEL_WIDTH / 2, y, applyAlpha(COLOR_GOLD, alpha));
+        y += 18;
+
+        // Deaths this run
+        String deathsText = I18n.translate("devmod.endurance.deaths").getString() + ": " + deathsThisRun;
+        g.drawCenteredString(font, deathsText, panelX + PANEL_WIDTH / 2, y, applyAlpha(COLOR_WARNING, alpha));
+        y += 30;
+
+        // Separator
+        int sepColor = applyAlpha(0x44FFFFFF, alpha);
+        g.fill(panelX + 30, y, panelX + PANEL_WIDTH - 30, y + 1, sepColor);
+        y += 15;
+
+        // Options explanation
+        g.drawCenteredString(font, I18n.ui("choose_fate").getString(), panelX + PANEL_WIDTH / 2, y, applyAlpha(COLOR_TEXT, alpha));
+        y += 18;
+
+        // Respawn info
+        g.drawString(font, "• " + I18n.ui("respawn_info").getString(), panelX + 30, y, applyAlpha(COLOR_SUCCESS, alpha));
+        y += 12;
+        g.drawString(font, "  " + I18n.translate("devmod.endurance.respawn_cost").getString(), panelX + 30, y, applyAlpha(COLOR_WARNING, alpha));
+        y += 18;
+
+        // Give up info
+        g.drawString(font, "• " + I18n.ui("giveup_info").getString(), panelX + 30, y, applyAlpha(COLOR_DEATH, alpha));
+        y += 12;
+        g.drawString(font, "  " + I18n.translate("devmod.endurance.points").getString() + ": " + Math.max(0, pointsEarned), panelX + 30, y, applyAlpha(COLOR_GOLD, alpha));
+    }
+
+    private int applyAlpha(int color, float alpha) {
+        int a = (int) (((color >> 24) & 0xFF) * alpha);
+        if (a < 0) a = (int)(255 * alpha);
+        return (a << 24) | (color & 0x00FFFFFF);
+    }
+
+    private void respawnAndContinue() {
+        PacketDistributor.sendToServer(
+            new QuestActionPayload(QuestActionPayload.Action.CONTINUE_AFTER_DEATH)
+        );
+        if (minecraft != null) {
+            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.PLAYER_LEVELUP, 1.0f));
+            minecraft.setScreen(null);
+        }
+    }
+
+    private void giveUpAndCollect() {
+        PacketDistributor.sendToServer(
+            new QuestActionPayload(QuestActionPayload.Action.GIVE_UP_AFTER_DEATH)
+        );
+        if (minecraft != null) {
+            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0f));
+            minecraft.setScreen(null);
+        }
+    }
+
+    // Track ESC press for feedback
+    private long lastEscPressTime = 0;
+    private static final long ESC_MESSAGE_DURATION = 2000;
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // F11 = Respawn
+        if (keyCode == GLFW.GLFW_KEY_F11) {
+            respawnAndContinue();
+            return true;
+        }
+        // F12 = Give up
+        if (keyCode == GLFW.GLFW_KEY_F12) {
+            giveUpAndCollect();
+            return true;
+        }
+        // Block ESC from closing - show feedback instead
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            lastEscPressTime = System.currentTimeMillis();
+            // Play a subtle "denied" sound
+            if (minecraft != null) {
+                minecraft.getSoundManager().play(SimpleSoundInstance.forUI(
+                    SoundEvents.NOTE_BLOCK_BASS.value(), 0.5f, 0.5f));
+            }
+            return true; // Consume but don't close
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    /**
+     * Check if ESC message should be displayed.
+     */
+    private boolean shouldShowEscMessage() {
+        return System.currentTimeMillis() - lastEscPressTime < ESC_MESSAGE_DURATION;
+    }
+
+    @Override
+    public boolean isPauseScreen() {
+        return false;
+    }
+
+    @Override
+    public boolean shouldCloseOnEsc() {
+        return false; // Force player to make a choice
+    }
+}

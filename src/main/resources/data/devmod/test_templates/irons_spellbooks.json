@@ -1,0 +1,137 @@
+{
+  "modId": "irons_spellbooks",
+  "displayName": "Iron's Spellbooks",
+  "templateName": "Iron's Spellbooks Tests",
+
+  "magicSchools": [
+    {"id": "fire", "name": "Fire", "description": "Burning damage, explosions, area denial"},
+    {"id": "ice", "name": "Ice", "description": "Freezing, slowness, cold damage"},
+    {"id": "lightning", "name": "Lightning", "description": "Chain damage, stuns, electric shocks"},
+    {"id": "holy", "name": "Holy", "description": "Healing, smiting undead, protection"},
+    {"id": "ender", "name": "Ender", "description": "Teleportation, void damage, dimensional magic"},
+    {"id": "blood", "name": "Blood", "description": "Life steal, sacrificial magic, debuffs"},
+    {"id": "evocation", "name": "Evocation", "description": "Summoning, conjuration, minions"},
+    {"id": "nature", "name": "Nature", "description": "Poison, thorns, animal companions"},
+    {"id": "eldritch", "name": "Eldritch", "description": "Cosmic horror, madness, ancient power"}
+  ],
+
+  "armorSets": [
+    "wandering_magician", "pumpkin", "pyromancer", "electromancer",
+    "archevoker", "cultist", "cryomancer", "shadowwalker",
+    "priest", "plagued", "netherite_battlemage"
+  ],
+
+  "mobs": [
+    {"id": "dead_king", "name": "Dead King", "type": "Boss", "spawnLocation": "Catacombs"},
+    {"id": "archevoker", "name": "Archevoker", "type": "Hostile", "spawnLocation": "Evoker Fort"},
+    {"id": "cryomancer", "name": "Cryomancer", "type": "Hostile", "spawnLocation": "Mountain Tower"},
+    {"id": "pyromancer", "name": "Pyromancer", "type": "Hostile", "spawnLocation": "Various"},
+    {"id": "necromancer", "name": "Necromancer", "type": "Hostile", "spawnLocation": "Catacombs"},
+    {"id": "priest", "name": "Priest", "type": "Hostile", "spawnLocation": "Priest House"},
+    {"id": "keeper", "name": "Keeper", "type": "Neutral", "spawnLocation": "Ancient Battleground"}
+  ],
+
+  "structures": [
+    "evoker_fort", "mountain_tower", "priest_house",
+    "ancient_battleground", "catacombs", "wizard_tower", "mangrove_hut"
+  ],
+
+  "craftingStations": [
+    {"id": "scroll_forge", "name": "Scroll Forge", "description": "Create spell scrolls", "priority": "HIGH"},
+    {"id": "arcane_anvil", "name": "Arcane Anvil", "description": "Inscribe spells and upgrade spellbooks", "priority": "HIGH"},
+    {"id": "alchemist_cauldron", "name": "Alchemist Cauldron", "description": "Magical brewing", "priority": "MEDIUM"}
+  ],
+
+  "spellbookTiers": [
+    {"id": "iron", "name": "Iron Spellbook", "material": "Iron", "spellSlots": 4, "priority": "HIGH"},
+    {"id": "diamond", "name": "Diamond Spellbook", "material": "Diamond", "spellSlots": 8, "priority": "MEDIUM"},
+    {"id": "netherite", "name": "Netherite Spellbook", "material": "Netherite", "spellSlots": 12, "priority": "MEDIUM"}
+  ],
+
+  "coreTests": [
+    {
+      "id": "mana_system",
+      "category": "Core",
+      "name": "Mana System",
+      "description": "Test the mana regeneration and consumption system",
+      "steps": "1. Cast any spell to consume mana\n2. Wait for mana to regenerate\n3. Verify mana bar displays correctly\n4. Test mana regeneration rate\n5. Verify spell fails when out of mana",
+      "priority": "HIGH",
+      "progressCondition": "interacted"
+    },
+    {
+      "id": "spell_casting",
+      "category": "Core",
+      "name": "Basic Spell Casting",
+      "description": "Cast spells using spellbooks and scrolls",
+      "steps": "1. Equip a spellbook with spells\n2. Cast a spell using right-click\n3. Verify spell animation plays\n4. Verify damage numbers display\n5. Test spell cooldowns",
+      "priority": "HIGH",
+      "progressCondition": "killed_mobs",
+      "progressThreshold": 1
+    },
+    {
+      "id": "spell_slots",
+      "category": "Core",
+      "name": "Spell Slot Management",
+      "description": "Test equipping and switching between spell slots",
+      "steps": "1. Open spellbook inventory\n2. Assign spells to different slots\n3. Switch between slots in combat\n4. Verify hotbar displays spell icons\n5. Test spell slot limits",
+      "priority": "MEDIUM",
+      "progressCondition": "interacted"
+    },
+    {
+      "id": "spell_levels",
+      "category": "Core",
+      "name": "Spell Level Scaling",
+      "description": "Test damage scaling with spell levels",
+      "steps": "1. Obtain same spell at different levels\n2. Compare damage output\n3. Verify higher levels deal more damage\n4. Test mana cost scaling\n5. Verify level displays in tooltip",
+      "priority": "MEDIUM",
+      "progressCondition": "interacted"
+    }
+  ],
+
+  "customTests": [
+    {
+      "id": "all_schools",
+      "category": "Schools",
+      "name": "Master of All Schools",
+      "description": "Use spells from all 9 magic schools",
+      "steps": "1. Collect spells from each school:\n   - Fire, Ice, Lightning\n   - Holy, Ender, Blood\n   - Evocation, Nature, Eldritch\n2. Cast at least one spell from each\n3. Compare effectiveness against different enemies",
+      "priority": "LOW",
+      "progressCondition": "killed_mobs",
+      "progressThreshold": 20
+    },
+    {
+      "id": "armor_general",
+      "category": "Armor",
+      "name": "Wizard Armor Basics",
+      "description": "Test wizard armor protection and bonuses",
+      "steps": "1. Equip any wizard armor set\n2. Take damage and verify protection\n3. Check mana bonuses\n4. Verify school-specific bonuses\n5. Test set bonuses when full set equipped",
+      "priority": "HIGH",
+      "progressCondition": "armor_used"
+    },
+    {
+      "id": "dead_king_boss",
+      "category": "Bosses",
+      "name": "Dead King Boss Fight",
+      "description": "Defeat the Dead King boss in Catacombs",
+      "steps": "1. Find Catacombs structure\n2. Navigate to boss room\n3. Fight the Dead King\n4. Dodge phase transitions\n5. Loot unique drops",
+      "priority": "HIGH",
+      "progressCondition": "killed_mobs",
+      "progressThreshold": 1
+    },
+    {
+      "id": "imbue_weapon",
+      "category": "Imbue",
+      "name": "Weapon Imbuing",
+      "description": "Apply magical imbues to weapons",
+      "steps": "1. Obtain an imbue scroll\n2. Apply to a sword/axe\n3. Test the imbued weapon\n4. Verify damage type changes\n5. Test imbue duration",
+      "priority": "MEDIUM",
+      "progressCondition": "interacted"
+    }
+  ],
+
+  "compatibleMods": ["pehkui", "better_combat", "epic_fight"],
+  "generateSchoolTests": true,
+  "generateArmorTests": true,
+  "generateMobTests": true,
+  "generateStructureTests": true
+}
