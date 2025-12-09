@@ -13,6 +13,7 @@ import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,7 +29,16 @@ import java.util.concurrent.ConcurrentHashMap;
  * - Players
  * - Bosses
  *
- * Updates periodically (not every tick) for performance.
+ * PERFORMANCE FIX: Uses incremental processing - scans one room per tick
+ * instead of all rooms at once. This prevents TPS drops when many rooms
+ * are configured or structures generate many entities.
+ *
+ * Processing cycle:
+ * - Tick 1: Scan room 0
+ * - Tick 2: Scan room 1
+ * - ...
+ * - Tick N: Scan room N-1, finalize global stats
+ * - Tick N+1: Start new cycle
  */
 public class RoomEntityCounter {
     public static final RoomEntityCounter INSTANCE = new RoomEntityCounter();
@@ -36,12 +46,20 @@ public class RoomEntityCounter {
     // Entity counts per room
     private final Map<String, RoomEntityStats> roomStats = new ConcurrentHashMap<>();
 
-    // Update interval (ticks)
-    private static final int UPDATE_INTERVAL_TICKS = 20; // Update every second
-    private int tickCounter = 0;
+    // PERFORMANCE FIX: Incremental processing state
+    private int currentRoomIndex = 0;
+    private List<RoomDefinition> cachedRooms = new ArrayList<>();
+    private long lastRoomCacheTime = 0;
+    private static final long ROOM_CACHE_DURATION_MS = 5000; // Re-cache rooms every 5 seconds
 
     // Global stats (all entities in current dimension)
     private volatile GlobalEntityStats globalStats = new GlobalEntityStats();
+
+    // Accumulator for incremental global stats (built up across ticks)
+    private GlobalEntityStats pendingGlobalStats = new GlobalEntityStats();
+
+    // Player area scanning state
+    private boolean playerAreasPending = false;
 
     private RoomEntityCounter() {}
 
@@ -92,117 +110,156 @@ public class RoomEntityCounter {
         public volatile int roomsWithEntities = 0;
         public volatile String busiestRoom = "";
         public volatile int busiestRoomCount = 0;
+
+        public void reset() {
+            totalEntities = 0;
+            totalHostile = 0;
+            totalPassive = 0;
+            totalPlayers = 0;
+            totalNpcs = 0;
+            roomsWithEntities = 0;
+            busiestRoom = "";
+            busiestRoomCount = 0;
+        }
     }
 
     /**
-     * Called every server tick. Performs entity counting periodically.
+     * Called every server tick. Uses INCREMENTAL processing.
+     * Instead of scanning all rooms in one tick, scans ONE room per tick.
      */
     public void tick(ServerLevel level) {
-        tickCounter++;
-        if (tickCounter < UPDATE_INTERVAL_TICKS) {
+        // Refresh room cache periodically
+        long now = System.currentTimeMillis();
+        if (now - lastRoomCacheTime > ROOM_CACHE_DURATION_MS || cachedRooms.isEmpty()) {
+            cachedRooms = new ArrayList<>(RoomService.INSTANCE.getRoomDefinitions());
+            lastRoomCacheTime = now;
+            // Reset cycle when rooms change
+            currentRoomIndex = 0;
+            pendingGlobalStats.reset();
+            playerAreasPending = false;
+        }
+
+        // If no rooms configured, just do player area scan
+        if (cachedRooms.isEmpty()) {
+            scanPlayerAreas(level);
             return;
         }
-        tickCounter = 0;
 
-        updateEntityCounts(level);
+        // Process ONE room per tick
+        if (currentRoomIndex < cachedRooms.size()) {
+            RoomDefinition room = cachedRooms.get(currentRoomIndex);
+            scanSingleRoom(level, room);
+            currentRoomIndex++;
+        } else if (!playerAreasPending) {
+            // After all rooms, scan player areas (one tick)
+            scanPlayerAreas(level);
+            playerAreasPending = true;
+        } else {
+            // Cycle complete - finalize and publish global stats
+            globalStats = pendingGlobalStats;
+
+            // Reset for next cycle
+            pendingGlobalStats = new GlobalEntityStats();
+            currentRoomIndex = 0;
+            playerAreasPending = false;
+        }
     }
 
     /**
-     * Updates entity counts for all rooms and global stats.
+     * Scan a single room and update its stats.
+     * Called once per tick for incremental processing.
      */
-    private void updateEntityCounts(ServerLevel level) {
-        // Reset global stats
-        GlobalEntityStats newGlobal = new GlobalEntityStats();
+    private void scanSingleRoom(ServerLevel level, RoomDefinition room) {
+        RoomEntityStats stats = roomStats.computeIfAbsent(room.id(), k -> new RoomEntityStats());
+        stats.reset();
 
-        // Get all rooms
-        List<RoomDefinition> rooms = RoomService.INSTANCE.getRoomDefinitions();
+        // Get bounding box for the room
+        BlockPos min = room.min();
+        BlockPos max = room.max();
+        AABB roomBox = new AABB(
+            Math.min(min.getX(), max.getX()),
+            Math.min(min.getY(), max.getY()),
+            Math.min(min.getZ(), max.getZ()),
+            Math.max(min.getX(), max.getX()) + 1,
+            Math.max(min.getY(), max.getY()) + 1,
+            Math.max(min.getZ(), max.getZ()) + 1
+        );
 
-        // Track per-room stats
-        for (RoomDefinition room : rooms) {
-            RoomEntityStats stats = roomStats.computeIfAbsent(room.id(), k -> new RoomEntityStats());
-            stats.reset();
+        // Query entities in the room
+        List<Entity> entitiesInRoom = level.getEntities(null, roomBox);
 
-            // Get bounding box for the room from min/max coordinates
-            BlockPos min = room.min();
-            BlockPos max = room.max();
-            AABB roomBox = new AABB(
-                Math.min(min.getX(), max.getX()),
-                Math.min(min.getY(), max.getY()),
-                Math.min(min.getZ(), max.getZ()),
-                Math.max(min.getX(), max.getX()) + 1,
-                Math.max(min.getY(), max.getY()) + 1,
-                Math.max(min.getZ(), max.getZ()) + 1
-            );
+        for (Entity entity : entitiesInRoom) {
+            stats.totalEntities++;
 
-            // Query entities in the room
-            List<Entity> entitiesInRoom = level.getEntities(null, roomBox);
-
-            for (Entity entity : entitiesInRoom) {
-                stats.totalEntities++;
-
-                if (entity instanceof Player) {
-                    stats.players++;
-                    newGlobal.totalPlayers++;
-                } else if (entity instanceof Monster) {
-                    stats.hostileMobs++;
-                    newGlobal.totalHostile++;
-                    // Check for bosses (high HP mobs)
-                    if (entity instanceof LivingEntity living) {
-                        if (living.getMaxHealth() >= 100) {
-                            stats.bosses++;
-                        }
+            if (entity instanceof Player) {
+                stats.players++;
+                pendingGlobalStats.totalPlayers++;
+            } else if (entity instanceof Monster) {
+                stats.hostileMobs++;
+                pendingGlobalStats.totalHostile++;
+                // Check for bosses (high HP mobs)
+                if (entity instanceof LivingEntity living) {
+                    if (living.getMaxHealth() >= 100) {
+                        stats.bosses++;
                     }
-                } else if (entity instanceof Animal) {
-                    stats.passiveMobs++;
-                    newGlobal.totalPassive++;
-                } else if (entity instanceof Villager) {
-                    stats.npcs++;
-                    newGlobal.totalNpcs++;
-                } else if (entity instanceof Mob) {
-                    // Other mobs (golems, etc.)
-                    stats.passiveMobs++;
-                    newGlobal.totalPassive++;
                 }
-            }
-
-            newGlobal.totalEntities += stats.totalEntities;
-            if (stats.totalEntities > 0) {
-                newGlobal.roomsWithEntities++;
-            }
-            if (stats.totalEntities > newGlobal.busiestRoomCount) {
-                newGlobal.busiestRoomCount = stats.totalEntities;
-                newGlobal.busiestRoom = room.id();
+            } else if (entity instanceof Animal) {
+                stats.passiveMobs++;
+                pendingGlobalStats.totalPassive++;
+            } else if (entity instanceof Villager) {
+                stats.npcs++;
+                pendingGlobalStats.totalNpcs++;
+            } else if (entity instanceof Mob) {
+                // Other mobs (golems, etc.)
+                stats.passiveMobs++;
+                pendingGlobalStats.totalPassive++;
             }
         }
 
-        // Also count entities not in any room (fallback to chunk-based counting)
-        // This is a lightweight count of all entities in loaded chunks around players
+        // Update global accumulators
+        pendingGlobalStats.totalEntities += stats.totalEntities;
+        if (stats.totalEntities > 0) {
+            pendingGlobalStats.roomsWithEntities++;
+        }
+        if (stats.totalEntities > pendingGlobalStats.busiestRoomCount) {
+            pendingGlobalStats.busiestRoomCount = stats.totalEntities;
+            pendingGlobalStats.busiestRoom = room.id();
+        }
+    }
+
+    /**
+     * Scan areas around players not in configured rooms.
+     * Uses smaller scan radius (16 blocks) for performance.
+     */
+    private void scanPlayerAreas(ServerLevel level) {
         for (ServerPlayer player : level.players()) {
             String playerRoom = RoomService.INSTANCE.resolveRoom(level, player.blockPosition());
-            if (!roomStats.containsKey(playerRoom)) {
-                // Count entities around player in non-room area
-                AABB scanBox = player.getBoundingBox().inflate(32);
-                List<Entity> nearbyEntities = level.getEntities(player, scanBox);
 
-                RoomEntityStats fallbackStats = roomStats.computeIfAbsent(playerRoom, k -> new RoomEntityStats());
-                fallbackStats.reset();
+            // Skip if player is in a configured room (already scanned)
+            if (roomStats.containsKey(playerRoom) && !playerRoom.equals("unknown")) {
+                continue;
+            }
 
-                for (Entity entity : nearbyEntities) {
-                    fallbackStats.totalEntities++;
-                    if (entity instanceof Monster) {
-                        fallbackStats.hostileMobs++;
-                    } else if (entity instanceof Animal) {
-                        fallbackStats.passiveMobs++;
-                    } else if (entity instanceof Villager) {
-                        fallbackStats.npcs++;
-                    } else if (entity instanceof Player) {
-                        fallbackStats.players++;
-                    }
+            // PERFORMANCE FIX: Reduced scan radius from 32 to 16 blocks
+            AABB scanBox = player.getBoundingBox().inflate(16);
+            List<Entity> nearbyEntities = level.getEntities(player, scanBox);
+
+            RoomEntityStats fallbackStats = roomStats.computeIfAbsent(playerRoom, k -> new RoomEntityStats());
+            fallbackStats.reset();
+
+            for (Entity entity : nearbyEntities) {
+                fallbackStats.totalEntities++;
+                if (entity instanceof Monster) {
+                    fallbackStats.hostileMobs++;
+                } else if (entity instanceof Animal) {
+                    fallbackStats.passiveMobs++;
+                } else if (entity instanceof Villager) {
+                    fallbackStats.npcs++;
+                } else if (entity instanceof Player) {
+                    fallbackStats.players++;
                 }
             }
         }
-
-        globalStats = newGlobal;
     }
 
     /**
@@ -240,7 +297,10 @@ public class RoomEntityCounter {
     public void clear() {
         roomStats.clear();
         globalStats = new GlobalEntityStats();
-        tickCounter = 0;
+        pendingGlobalStats = new GlobalEntityStats();
+        cachedRooms.clear();
+        currentRoomIndex = 0;
+        playerAreasPending = false;
     }
 
     /**
@@ -269,5 +329,13 @@ public class RoomEntityCounter {
         }
 
         return worstRoom.isEmpty() ? "None" : worstRoom + " (" + maxHostile + " hostile)";
+    }
+
+    /**
+     * Gets current processing progress (for debugging).
+     */
+    public String getProcessingStatus() {
+        return String.format("Room %d/%d, PlayerAreas=%s",
+            currentRoomIndex, cachedRooms.size(), playerAreasPending);
     }
 }

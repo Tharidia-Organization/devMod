@@ -1117,7 +1117,32 @@ public class MobConfigScreen extends Screen {
             return true;
         }
 
-        // Preset buttons
+        // Action buttons - CHECK THESE FIRST (they overlap with presets area)
+        int btnW = 70;
+        int btnH = 22;
+        int btnGap = 8;
+        int btnsX = panelX + PANEL_WIDTH - 160;
+
+        // Apply
+        if (AxiomRenderer.isMouseOver(mx, my, btnsX, bottomY + 20, btnW, btnH)) {
+            save();
+            return true;
+        }
+
+        // Equipment
+        if (AxiomRenderer.isMouseOver(mx, my, btnsX + btnW + btnGap, bottomY + 20, btnW, btnH)) {
+            Minecraft.getInstance().setScreen(new MobEquipmentScreen(mob, this));
+            return true;
+        }
+
+        // Reset
+        int resetX = btnsX + (btnW * 2 + btnGap - 50) / 2;
+        if (AxiomRenderer.isMouseOver(mx, my, resetX, bottomY - 2, 50, 16)) {
+            resetToOriginal();
+            return true;
+        }
+
+        // Preset buttons (checked after action buttons due to overlap)
         int presetX = panelX + 165;
         int presetY = bottomY - 5 + 12;
         int presetW = 55;
@@ -1168,31 +1193,6 @@ public class MobConfigScreen extends Screen {
                 }
                 return true;
             }
-        }
-
-        // Action buttons
-        int btnW = 70;
-        int btnH = 22;
-        int btnGap = 8;
-        int btnsX = panelX + PANEL_WIDTH - 160;
-
-        // Apply
-        if (AxiomRenderer.isMouseOver(mx, my, btnsX, bottomY + 20, btnW, btnH)) {
-            save();
-            return true;
-        }
-
-        // Equipment
-        if (AxiomRenderer.isMouseOver(mx, my, btnsX + btnW + btnGap, bottomY + 20, btnW, btnH)) {
-            Minecraft.getInstance().setScreen(new MobEquipmentScreen(mob, this));
-            return true;
-        }
-
-        // Reset
-        int resetX = btnsX + (btnW * 2 + btnGap - 50) / 2;
-        if (AxiomRenderer.isMouseOver(mx, my, resetX, bottomY - 2, 50, 16)) {
-            resetToOriginal();
-            return true;
         }
 
         return super.mouseClicked(mouseX, mouseY, button);

@@ -18,7 +18,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
-import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+// EntityJoinLevelEvent handling moved to DeferredEntityProcessor for performance
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingFallEvent;
@@ -45,6 +45,9 @@ public class TelemetryEvents {
 
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
+        // Clear deferred processor queue
+        DeferredEntityProcessor.INSTANCE.clear();
+
         // PERFORMANCE FIX: Gracefully shutdown async telemetry writer
         // Ensures all pending writes are flushed before server shutdown
         TelemetryService.INSTANCE.shutdown();
@@ -55,6 +58,10 @@ public class TelemetryEvents {
     public static void onServerTick(ServerTickEvent.Pre event) {
         // Cleanup expired hit context entries EVERY tick (critical for hit consistency)
         com.frenkvs.devmod.HitContext.cleanup();
+
+        // PERFORMANCE FIX: Process deferred entity spawns EVERY tick
+        // This distributes spawn processing load across ticks to prevent TPS drops
+        DeferredEntityProcessor.INSTANCE.tickSpawnQueue();
 
         // PERFORMANCE FIX: Run telemetry operations based on config interval (default 20 ticks = 1 second)
         // Reduces CPU usage by 95% for telemetry background tasks
@@ -198,12 +205,9 @@ public class TelemetryEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onEntityJoin(EntityJoinLevelEvent event) {
-        if (event.getLevel().isClientSide()) return;
-        if (!(event.getEntity() instanceof LivingEntity living)) return;
-        TelemetryService.INSTANCE.logSpawn((net.minecraft.server.level.ServerLevel) event.getLevel(), living, "join");
-    }
+    // NOTE: EntityJoinLevelEvent spawn logging moved to DeferredEntityProcessor
+    // This prevents TPS drops when structures generate many entities at once.
+    // See GlobalMobEvents.onEntityJoin() -> DeferredEntityProcessor.queueSpawn()
 
     @SubscribeEvent
     public static void onEntityLeave(EntityLeaveLevelEvent event) {

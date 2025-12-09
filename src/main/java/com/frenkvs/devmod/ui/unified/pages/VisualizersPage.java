@@ -22,7 +22,15 @@ public class VisualizersPage implements SettingsPage {
 
     private static final int ROW_HEIGHT = 24;
     private static final int SECTION_SPACING = 16;
-    // Use UIConstants.Size.TOGGLE_WIDTH and TOGGLE_HEIGHT for consistency
+    private static final int SCROLLBAR_WIDTH = 6;
+
+    // Scrolling state
+    private int scrollOffset = 0;
+    private int maxScrollOffset = 0;
+    private int visibleHeight = 0;
+    private int totalContentHeight = 0;
+    private boolean isDraggingScrollbar = false;
+    private int lastContentX, lastContentY, lastContentWidth, lastContentHeight;
 
     // Light level settings
     private int lightLevelRadius;
@@ -54,7 +62,25 @@ public class VisualizersPage implements SettingsPage {
 
     @Override
     public void render(GuiGraphics graphics, Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
-        int currentY = y;
+        // Store dimensions for scroll calculations
+        lastContentX = x;
+        lastContentY = y;
+        lastContentWidth = width;
+        lastContentHeight = height;
+        visibleHeight = height;
+
+        // Calculate total content height
+        totalContentHeight = calculateContentHeight();
+        maxScrollOffset = Math.max(0, totalContentHeight - visibleHeight);
+
+        // Clamp scroll offset
+        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
+
+        // Enable scissoring to clip content outside bounds
+        graphics.enableScissor(x, y, x + width, y + height);
+
+        // Apply scroll offset to starting Y position
+        int currentY = y - scrollOffset;
 
         // === SECTION: Light Level Overlay ===
         AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Light Level Overlay [L]");
@@ -180,6 +206,57 @@ public class VisualizersPage implements SettingsPage {
         // Hint
         currentY += 8;
         AxiomRenderer.drawHint(graphics, font, x, currentY, "Keybinds shown in brackets work in-game.");
+
+        // Disable scissoring
+        graphics.disableScissor();
+
+        // Render scrollbar if content exceeds visible area
+        if (totalContentHeight > visibleHeight) {
+            renderScrollbar(graphics, x + width - SCROLLBAR_WIDTH - 2, y, SCROLLBAR_WIDTH, height);
+        }
+    }
+
+    /**
+     * Calculate total content height for scrolling.
+     */
+    private int calculateContentHeight() {
+        int h = 0;
+        // Light Level section
+        h += ROW_HEIGHT; // header
+        h += ROW_HEIGHT; // toggle
+        h += ROW_HEIGHT; // slider
+        h += 8 + SECTION_SPACING; // separator
+
+        // Heatmaps section
+        h += ROW_HEIGHT; // header
+        h += 20 * 8; // 8 heatmap toggles (20px each)
+        h += 8 + SECTION_SPACING; // separator
+
+        // Spatial Analysis section
+        h += ROW_HEIGHT; // header
+        h += ROW_HEIGHT * 2; // 2 toggles
+        h += 8 + SECTION_SPACING; // separator
+
+        // Performance section
+        h += ROW_HEIGHT; // header
+        h += ROW_HEIGHT; // slider
+        h += 16; // hint
+        h += 8 + 20; // final hint
+
+        return h;
+    }
+
+    /**
+     * Render the scrollbar.
+     */
+    private void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height) {
+        graphics.fill(x, y, x + barWidth, y + height, UIConstants.Background.INPUT);
+        float visibleRatio = (float) visibleHeight / totalContentHeight;
+        int thumbHeight = Math.max(20, (int) (height * visibleRatio));
+        float scrollRatio = maxScrollOffset > 0 ? (float) scrollOffset / maxScrollOffset : 0;
+        int thumbY = y + (int) ((height - thumbHeight) * scrollRatio);
+        int thumbColor = isDraggingScrollbar ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
+        graphics.fill(x, thumbY, x + barWidth, thumbY + thumbHeight, thumbColor);
     }
 
     private int renderToggleRow(GuiGraphics graphics, Font font, int x, int y, int width,
@@ -245,8 +322,27 @@ public class VisualizersPage implements SettingsPage {
     public boolean mouseClicked(double mouseX, double mouseY, int button, int contentX, int contentY, int contentWidth) {
         if (button != 0) return false;
 
-        int rowWidth = contentWidth - 20;
-        int y = contentY;
+        // Check if click is within content area
+        if (mouseX < contentX || mouseX > contentX + contentWidth ||
+            mouseY < contentY || mouseY > contentY + lastContentHeight) {
+            return false;
+        }
+
+        // Check scrollbar click
+        if (totalContentHeight > visibleHeight) {
+            int scrollbarX = contentX + contentWidth - SCROLLBAR_WIDTH - 2;
+            if (mouseX >= scrollbarX && mouseX <= scrollbarX + SCROLLBAR_WIDTH + 2) {
+                isDraggingScrollbar = true;
+                float clickRatio = (float)(mouseY - contentY) / lastContentHeight;
+                scrollOffset = (int)(maxScrollOffset * clickRatio);
+                scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
+                return true;
+            }
+        }
+
+        int rowWidth = contentWidth - 20 - SCROLLBAR_WIDTH;
+        // Apply scroll offset for hit detection
+        int y = contentY - scrollOffset;
 
         // Skip section header
         y += ROW_HEIGHT;
@@ -429,6 +525,13 @@ public class VisualizersPage implements SettingsPage {
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (button == 0) {
+            // Scrollbar drag
+            if (isDraggingScrollbar && maxScrollOffset > 0) {
+                float dragRatio = (float)(mouseY - lastContentY) / lastContentHeight;
+                scrollOffset = (int)(maxScrollOffset * dragRatio);
+                scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
+                return true;
+            }
             if (draggingLightSlider) {
                 setRadiusFromSliderPosition((int) mouseX, sliderContentX, sliderWidth);
                 return true;
@@ -444,6 +547,10 @@ public class VisualizersPage implements SettingsPage {
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         if (button == 0) {
+            if (isDraggingScrollbar) {
+                isDraggingScrollbar = false;
+                return true;
+            }
             if (draggingLightSlider) {
                 draggingLightSlider = false;
                 return true;
@@ -457,6 +564,13 @@ public class VisualizersPage implements SettingsPage {
             }
         }
         return false;
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        scrollOffset -= (int) (scrollY * 20);
+        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
+        return true;
     }
 
     @Override

@@ -19,6 +19,15 @@ public class CombatSettingsPage implements SettingsPage {
 
     private static final int ROW_HEIGHT = 20;
     private static final int SECTION_SPACING = 16;
+    private static final int SCROLLBAR_WIDTH = 6;
+
+    // Scrolling state
+    private int scrollOffset = 0;
+    private int maxScrollOffset = 0;
+    private int visibleHeight = 0;
+    private int totalContentHeight = 0;
+    private boolean isDraggingScrollbar = false;
+    private int lastContentY, lastContentHeight;
 
     @Override
     public SettingsCategory getCategory() {
@@ -32,7 +41,20 @@ public class CombatSettingsPage implements SettingsPage {
 
     @Override
     public void render(GuiGraphics graphics, Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
-        int currentY = y;
+        // Store dimensions for scroll calculations
+        lastContentY = y;
+        lastContentHeight = height;
+        visibleHeight = height;
+
+        // Calculate total content height
+        totalContentHeight = calculateContentHeight();
+        maxScrollOffset = Math.max(0, totalContentHeight - visibleHeight);
+        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
+
+        // Enable scissoring
+        graphics.enableScissor(x, y, x + width, y + height);
+
+        int currentY = y - scrollOffset;
         Minecraft mc = Minecraft.getInstance();
 
         // === Current Weapon Section ===
@@ -100,6 +122,36 @@ public class CombatSettingsPage implements SettingsPage {
 
         // Hint
         AxiomRenderer.drawHint(graphics, font, x, currentY, "Press M in-game to edit weapon stats");
+
+        // Disable scissoring
+        graphics.disableScissor();
+
+        // Render scrollbar if needed
+        if (totalContentHeight > visibleHeight) {
+            renderScrollbar(graphics, x + width - SCROLLBAR_WIDTH - 2, y, SCROLLBAR_WIDTH, height);
+        }
+    }
+
+    private int calculateContentHeight() {
+        int h = 0;
+        h += ROW_HEIGHT + 4; // Current Weapon header
+        h += ROW_HEIGHT; // Weapon name or "No weapon"
+        h += ROW_HEIGHT * 5; // 5 stat rows (or hint)
+        h += SECTION_SPACING * 2; // Separator + spacing
+        h += ROW_HEIGHT + 4; // Quick Actions header
+        h += UIConstants.Size.BUTTON_HEIGHT + 8; // Button
+        h += 20; // Hint
+        return h;
+    }
+
+    private void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height) {
+        graphics.fill(x, y, x + barWidth, y + height, UIConstants.Background.INPUT);
+        float visibleRatio = (float) visibleHeight / totalContentHeight;
+        int thumbHeight = Math.max(20, (int) (height * visibleRatio));
+        float scrollRatio = maxScrollOffset > 0 ? (float) scrollOffset / maxScrollOffset : 0;
+        int thumbY = y + (int) ((height - thumbHeight) * scrollRatio);
+        int thumbColor = isDraggingScrollbar ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
+        graphics.fill(x, thumbY, x + barWidth, thumbY + thumbHeight, thumbColor);
     }
 
     private int renderStatRow(GuiGraphics graphics, Font font, int x, int y, int width,
@@ -116,11 +168,23 @@ public class CombatSettingsPage implements SettingsPage {
     public boolean mouseClicked(double mouseX, double mouseY, int button, int contentX, int contentY, int contentWidth) {
         if (button != 0) return false;
 
+        // Check scrollbar click
+        if (totalContentHeight > visibleHeight) {
+            int scrollbarX = contentX + contentWidth - SCROLLBAR_WIDTH - 2;
+            if (mouseX >= scrollbarX && mouseX <= scrollbarX + SCROLLBAR_WIDTH + 2) {
+                isDraggingScrollbar = true;
+                float clickRatio = (float)(mouseY - contentY) / lastContentHeight;
+                scrollOffset = (int)(maxScrollOffset * clickRatio);
+                scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
+                return true;
+            }
+        }
+
         Minecraft mc = Minecraft.getInstance();
         ItemStack heldItem = mc.player != null ? mc.player.getMainHandItem() : ItemStack.EMPTY;
 
-        // Calculate button position - must match render() exactly
-        int buttonY = calculateButtonY(contentY, heldItem.isEmpty());
+        // Calculate button position with scroll offset
+        int buttonY = calculateButtonY(contentY - scrollOffset, heldItem.isEmpty());
         int buttonWidth = 160;
         int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
 
@@ -132,37 +196,48 @@ public class CombatSettingsPage implements SettingsPage {
         return false;
     }
 
-    /**
-     * Calculate button Y position consistently for both render and click detection.
-     * This ensures the clickable area matches the rendered button position.
-     */
     private int calculateButtonY(int startY, boolean noWeapon) {
         int currentY = startY;
-
-        // Section header "Current Weapon"
-        currentY += ROW_HEIGHT + 4;
-
-        // Weapon info section
+        currentY += ROW_HEIGHT + 4; // Section header
         if (noWeapon) {
-            currentY += ROW_HEIGHT;  // "No weapon in hand" text
-            currentY += ROW_HEIGHT + SECTION_SPACING;  // Hint + spacing
+            currentY += ROW_HEIGHT + ROW_HEIGHT + SECTION_SPACING;
         } else {
-            currentY += ROW_HEIGHT;  // Weapon name
-            currentY += ROW_HEIGHT * 5;  // 5 stat rows
-            currentY += SECTION_SPACING;  // Spacing after stats
+            currentY += ROW_HEIGHT + ROW_HEIGHT * 5 + SECTION_SPACING;
         }
-
-        // Separator
-        currentY += SECTION_SPACING;
-
-        // Section header "Quick Actions"
-        currentY += ROW_HEIGHT + 4;
-
+        currentY += SECTION_SPACING; // Separator
+        currentY += ROW_HEIGHT + 4; // Quick Actions header
         return currentY;
     }
 
     @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        scrollOffset -= (int) (scrollY * 20);
+        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
+        return true;
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (isDraggingScrollbar) {
+            isDraggingScrollbar = false;
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (isDraggingScrollbar && maxScrollOffset > 0) {
+            float dragRatio = (float)(mouseY - lastContentY) / lastContentHeight;
+            scrollOffset = (int)(maxScrollOffset * dragRatio);
+            scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
+            return true;
+        }
+        return false;
+    }
+
+    @Override
     public int getContentHeight() {
-        return 300;
+        return calculateContentHeight();
     }
 }

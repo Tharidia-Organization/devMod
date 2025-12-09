@@ -26,9 +26,17 @@ public class DebugOverlaysPage implements SettingsPage {
 
     private static final int ROW_HEIGHT = 24;
     private static final int SECTION_SPACING = 16;
+    private static final int SCROLLBAR_WIDTH = 6;
 
-    // Toggle states (read from actual renderers)
+    // Scrolling state
     private int scrollOffset = 0;
+    private int maxScrollOffset = 0;
+    private int visibleHeight = 0;
+    private int totalContentHeight = 0;
+
+    // Scroll drag state
+    private boolean isDraggingScrollbar = false;
+    private int lastContentX, lastContentY, lastContentWidth, lastContentHeight;
 
     @Override
     public SettingsCategory getCategory() {
@@ -42,7 +50,25 @@ public class DebugOverlaysPage implements SettingsPage {
 
     @Override
     public void render(GuiGraphics graphics, Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
-        int currentY = y;
+        // Store dimensions for scroll calculations
+        lastContentX = x;
+        lastContentY = y;
+        lastContentWidth = width;
+        lastContentHeight = height;
+        visibleHeight = height;
+
+        // Calculate total content height
+        totalContentHeight = calculateContentHeight();
+        maxScrollOffset = Math.max(0, totalContentHeight - visibleHeight);
+
+        // Clamp scroll offset
+        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
+
+        // Enable scissoring to clip content outside bounds
+        graphics.enableScissor(x, y, x + width, y + height);
+
+        // Apply scroll offset to starting Y position
+        int currentY = y - scrollOffset;
 
         // ==========================================
         // Section: Minecraft Native Debug API
@@ -153,6 +179,65 @@ public class DebugOverlaysPage implements SettingsPage {
         boolean enableAllHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x + buttonWidth + buttonSpacing, currentY, buttonWidth, buttonHeight);
         AxiomRenderer.drawButton(graphics, font, x + buttonWidth + buttonSpacing, currentY, buttonWidth, buttonHeight,
             "Enable All", enableAllHovered, false);
+
+        // Disable scissoring
+        graphics.disableScissor();
+
+        // Render scrollbar if content exceeds visible area
+        if (totalContentHeight > visibleHeight) {
+            renderScrollbar(graphics, x + width - SCROLLBAR_WIDTH - 2, y, SCROLLBAR_WIDTH, height);
+        }
+    }
+
+    /**
+     * Calculate total content height for scrolling.
+     */
+    private int calculateContentHeight() {
+        int height = 0;
+
+        // Section: Minecraft Native Debug API
+        height += 14; // Header
+        height += ROW_HEIGHT * 8; // 8 native toggles
+        height += SECTION_SPACING;
+
+        // Section: Core Debug Tools
+        height += 14; // Header
+        height += ROW_HEIGHT * 2; // 2 toggles
+        height += SECTION_SPACING;
+
+        // Section: Custom AI Tools
+        height += 14; // Header
+        height += ROW_HEIGHT * 2; // 2 toggles
+        height += SECTION_SPACING;
+
+        // Section: Spatial Analysis
+        height += 14; // Header
+        height += ROW_HEIGHT; // 1 toggle
+        height += SECTION_SPACING;
+
+        // Section: Quick Actions
+        height += 14; // Header
+        height += UIConstants.Size.BUTTON_HEIGHT + 10; // Buttons
+
+        return height;
+    }
+
+    /**
+     * Render the scrollbar.
+     */
+    private void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height) {
+        // Track background
+        graphics.fill(x, y, x + barWidth, y + height, UIConstants.Background.INPUT);
+
+        // Calculate thumb size and position
+        float visibleRatio = (float) visibleHeight / totalContentHeight;
+        int thumbHeight = Math.max(20, (int) (height * visibleRatio));
+        float scrollRatio = (float) scrollOffset / maxScrollOffset;
+        int thumbY = y + (int) ((height - thumbHeight) * scrollRatio);
+
+        // Thumb
+        int thumbColor = isDraggingScrollbar ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
+        graphics.fill(x, thumbY, x + barWidth, thumbY + thumbHeight, thumbColor);
     }
 
     /**
@@ -221,8 +306,28 @@ public class DebugOverlaysPage implements SettingsPage {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button, int contentX, int contentY, int contentWidth) {
-        int rowWidth = contentWidth - 20;
-        int y = contentY;
+        // Check if click is within content area
+        if (mouseX < contentX || mouseX > contentX + contentWidth ||
+            mouseY < contentY || mouseY > contentY + lastContentHeight) {
+            return false;
+        }
+
+        // Check scrollbar click
+        if (totalContentHeight > visibleHeight) {
+            int scrollbarX = contentX + contentWidth - SCROLLBAR_WIDTH - 2;
+            if (mouseX >= scrollbarX && mouseX <= scrollbarX + SCROLLBAR_WIDTH) {
+                isDraggingScrollbar = true;
+                // Jump to clicked position
+                float clickRatio = (float)(mouseY - contentY) / lastContentHeight;
+                scrollOffset = (int)(maxScrollOffset * clickRatio);
+                scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
+                return true;
+            }
+        }
+
+        int rowWidth = contentWidth - 20 - SCROLLBAR_WIDTH;
+        // Apply scroll offset to Y coordinate for hit detection
+        int y = contentY - scrollOffset;
 
         // ==========================================
         // Native Debug API section
@@ -417,13 +522,35 @@ public class DebugOverlaysPage implements SettingsPage {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        scrollOffset -= (int) (scrollY * 10);
-        scrollOffset = Math.max(0, scrollOffset);
+        // Scroll speed: 20 pixels per scroll unit
+        scrollOffset -= (int) (scrollY * 20);
+        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
         return true;
     }
 
     @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (isDraggingScrollbar) {
+            isDraggingScrollbar = false;
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (isDraggingScrollbar && maxScrollOffset > 0) {
+            // Calculate new scroll position based on mouse Y
+            float dragRatio = (float)(mouseY - lastContentY) / lastContentHeight;
+            scrollOffset = (int)(maxScrollOffset * dragRatio);
+            scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
+            return true;
+        }
+        return false;
+    }
+
+    @Override
     public int getContentHeight() {
-        return 500; // Increased for native debug section
+        return calculateContentHeight();
     }
 }

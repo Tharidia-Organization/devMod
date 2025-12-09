@@ -11,10 +11,10 @@ java.base/sun.security.util=cpw.mods.securejarhandler
 --add-exports
 jdk.naming.dns/com.sun.jndi.dns=java.naming
 -XstartOnFirstThread
--Dlog4j2.configurationFile=/Users/erik/Downloads/devMod/build/moddev/clientLog4j2.xml
+-Dlog4j2.configurationFile=/Users/erik/Desktop/DevMod/devMod/build/moddev/clientLog4j2.xml
 -Djava.net.preferIPv6Addresses=system
 -DignoreList=mixinextras-neoforge-0.5.0.jar,client-extra,neoforge-
--DlegacyClassPath.file=/Users/erik/Downloads/devMod/build/moddev/clientLegacyClasspath.txt
+-DlegacyClassPath.file=/Users/erik/Desktop/DevMod/devMod/build/moddev/clientLegacyClasspath.txt
 -Dneoforge.enableGameTest=true
 -Dneoforge.enabledGameTestNamespaces=devmod
 -Dforge.logging.markers=REGISTRIES
