@@ -267,7 +267,9 @@ public class DevModGameTests {
             5.5,            // damage
             40.0,           // maxHealth
             4.0,            // armor
-            2.5             // attackRange
+            2.5,            // attackRange
+            0.25,           // speed
+            0.5             // knockbackResist
         );
 
         // Serialize to buffer
@@ -292,6 +294,10 @@ public class DevModGameTests {
             "armor mismatch");
         helper.assertTrue(Math.abs(decoded.attackRange() - original.attackRange()) < EPSILON,
             "attackRange mismatch");
+        helper.assertTrue(Math.abs(decoded.speed() - original.speed()) < EPSILON,
+            "speed mismatch");
+        helper.assertTrue(Math.abs(decoded.knockbackResist() - original.knockbackResist()) < EPSILON,
+            "knockbackResist mismatch");
 
         buffer.release();
         helper.succeed();
@@ -375,7 +381,9 @@ public class DevModGameTests {
             0.001,              // Small damage
             Double.MAX_VALUE / 2,  // Very large health
             -5.0,               // Negative armor (edge case)
-            0.0                 // Zero attack range
+            0.0,                // Zero attack range
+            0.0001,             // Very small speed
+            1.0                 // Max knockback resist
         );
 
         ByteBuf buffer = Unpooled.buffer();

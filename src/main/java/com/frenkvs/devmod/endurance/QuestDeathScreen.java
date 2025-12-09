@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.endurance;
 
+import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -21,17 +22,17 @@ import org.lwjgl.glfw.GLFW;
 @SuppressWarnings("null")
 public class QuestDeathScreen extends Screen {
 
-    // === Colors ===
-    private static final int COLOR_BG = 0xEE0a0a14;
-    private static final int COLOR_PANEL_BG = 0xDD1a0a0a;
-    private static final int COLOR_BORDER = 0xFFFF0000;
-    private static final int COLOR_BORDER_GLOW = 0x44FF0000;
-    private static final int COLOR_TEXT = 0xFFFFFFFF;
-    private static final int COLOR_TEXT_DIM = 0xFFAAAAAA;
-    private static final int COLOR_DEATH = 0xFFFF4444;
-    private static final int COLOR_SUCCESS = 0xFF4CAF50;
-    private static final int COLOR_WARNING = 0xFFFFAB00;
-    private static final int COLOR_GOLD = 0xFFFFD700;
+    // === Colors - Thematic death screen (red theme) ===
+    private static final int COLOR_BG = 0xEE0a0a14;           // Dark red-tinted background
+    private static final int COLOR_PANEL_BG = 0xDD1a0a0a;     // Dark panel
+    private static final int COLOR_BORDER = UIConstants.Accent.RED;
+    private static final int COLOR_BORDER_GLOW = UIConstants.setAlpha(UIConstants.Accent.RED, 0x44);
+    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY;
+    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY;
+    private static final int COLOR_DEATH = UIConstants.Accent.RED;
+    private static final int COLOR_SUCCESS = UIConstants.Accent.GREEN;
+    private static final int COLOR_WARNING = UIConstants.Accent.ORANGE;
+    private static final int COLOR_GOLD = UIConstants.Accent.GOLD;
 
     // === Dimensions ===
     private static final int PANEL_WIDTH = 340;
@@ -138,12 +139,19 @@ public class QuestDeathScreen extends Screen {
             renderContent(graphics, panelX, panelY, contentAlpha, elapsed);
         }
 
-        // ESC blocked message
+        // Keybind hints
+        if (fadeProgress > 0.8f) {
+            float hintAlpha = (fadeProgress - 0.8f) / 0.2f;
+            int hintColor = applyAlpha(UIConstants.Text.MUTED, hintAlpha);
+            graphics.drawCenteredString(font, I18n.translate("devmod.death.keybind_hint").getString(), centerX, panelY + PANEL_HEIGHT + 5, hintColor);
+        }
+
+        // ESC blocked message (overlays the hint when ESC is pressed)
         if (shouldShowEscMessage()) {
             long escElapsed = System.currentTimeMillis() - lastEscPressTime;
             float escAlpha = 1.0f - (escElapsed / (float) ESC_MESSAGE_DURATION);
             int escColor = applyAlpha(COLOR_WARNING, escAlpha);
-            graphics.drawCenteredString(font, I18n.translate("devmod.endurance.must_choose").getString(), centerX, panelY + PANEL_HEIGHT + 15, escColor);
+            graphics.drawCenteredString(font, I18n.translate("devmod.endurance.must_choose").getString(), centerX, panelY + PANEL_HEIGHT + 18, escColor);
         }
 
         super.render(graphics, mouseX, mouseY, partialTick);
@@ -208,7 +216,7 @@ public class QuestDeathScreen extends Screen {
         y += 30;
 
         // Separator
-        int sepColor = applyAlpha(0x44FFFFFF, alpha);
+        int sepColor = applyAlpha(UIConstants.Border.SEPARATOR, alpha);
         g.fill(panelX + 30, y, panelX + PANEL_WIDTH - 30, y + 1, sepColor);
         y += 15;
 

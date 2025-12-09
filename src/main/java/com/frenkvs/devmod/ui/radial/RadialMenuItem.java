@@ -1,0 +1,219 @@
+package com.frenkvs.devmod.ui.radial;
+
+import net.minecraft.world.item.ItemStack;
+
+import javax.annotation.Nullable;
+
+/**
+ * Represents a single item in a radial menu category.
+ * Wraps a RadialAction with display properties.
+ */
+public class RadialMenuItem {
+    private final String name;
+    private final RadialAction action;
+    private final String iconEmoji;
+    @Nullable
+    private final ItemStack iconStack;
+
+    // Custom properties for advanced items
+    private boolean visible = true;
+    private int customColor = -1;  // -1 means use category color
+
+    public RadialMenuItem(String name, RadialAction action, String iconEmoji, @Nullable ItemStack iconStack) {
+        this.name = name;
+        this.action = action;
+        this.iconEmoji = iconEmoji;
+        this.iconStack = iconStack;
+    }
+
+    /**
+     * Execute the action associated with this item
+     */
+    public void execute() {
+        if (action.isAvailable()) {
+            action.execute();
+        }
+    }
+
+    /**
+     * Check if item is a toggle type
+     */
+    public boolean isToggle() {
+        return action.isToggle();
+    }
+
+    /**
+     * Check if item is currently active (for toggles)
+     */
+    public boolean isActive() {
+        return action.isActive();
+    }
+
+    /**
+     * Check if item action is available
+     */
+    public boolean isAvailable() {
+        return action.isAvailable();
+    }
+
+    /**
+     * Check if this item navigates to a subcategory
+     */
+    public boolean isSubcategoryLink() {
+        return action instanceof SubcategoryAction;
+    }
+
+    /**
+     * Get the subcategory this item links to (if applicable)
+     */
+    @Nullable
+    public RadialCategory getLinkedSubcategory() {
+        if (action instanceof SubcategoryAction subAction) {
+            return subAction.getSubcategory();
+        }
+        return null;
+    }
+
+    // === Getters and Setters ===
+
+    public String getName() {
+        return name;
+    }
+
+    public RadialAction getAction() {
+        return action;
+    }
+
+    public String getDescription() {
+        return action.getDescription();
+    }
+
+    public String getIconEmoji() {
+        // Prefer action's emoji if set, otherwise use item's
+        String actionEmoji = action.getIconEmoji();
+        return actionEmoji != null && !actionEmoji.equals("●") ? actionEmoji : iconEmoji;
+    }
+
+    @Nullable
+    public ItemStack getIconStack() {
+        // Prefer action's icon stack if set, otherwise use item's
+        ItemStack actionStack = action.getIconStack();
+        return actionStack != null ? actionStack : iconStack;
+    }
+
+    public boolean isVisible() {
+        return visible;
+    }
+
+    public RadialMenuItem setVisible(boolean visible) {
+        this.visible = visible;
+        return this;
+    }
+
+    public int getCustomColor() {
+        return customColor;
+    }
+
+    public RadialMenuItem setCustomColor(int color) {
+        this.customColor = color;
+        return this;
+    }
+
+    public boolean hasCustomColor() {
+        return customColor != -1;
+    }
+
+    // === Inner class for subcategory action reference ===
+
+    /**
+     * Interface to check for subcategory actions without coupling
+     */
+    private interface SubcategoryAction {
+        RadialCategory getSubcategory();
+    }
+
+    // === Static factory methods ===
+
+    /**
+     * Create a toggle item
+     */
+    public static RadialMenuItem toggle(String name, String emoji,
+                                         java.util.function.BooleanSupplier getter,
+                                         java.util.function.Consumer<Boolean> setter,
+                                         String description) {
+        return new RadialMenuItem(name,
+            RadialAction.toggle(name, description, emoji, getter, setter),
+            emoji, null);
+    }
+
+    /**
+     * Create a toggle item with ItemStack icon
+     */
+    public static RadialMenuItem toggle(String name, String emoji, ItemStack icon,
+                                         java.util.function.BooleanSupplier getter,
+                                         java.util.function.Consumer<Boolean> setter,
+                                         String description) {
+        return new RadialMenuItem(name,
+            RadialAction.toggle(name, description, emoji, icon, getter, setter),
+            emoji, icon);
+    }
+
+    /**
+     * Create an action item (one-shot, not toggle)
+     */
+    public static RadialMenuItem action(String name, String emoji, Runnable action, String description) {
+        return new RadialMenuItem(name,
+            RadialAction.custom(name, description, emoji, action),
+            emoji, null);
+    }
+
+    /**
+     * Create an action item with ItemStack icon
+     */
+    public static RadialMenuItem action(String name, String emoji, ItemStack icon,
+                                         Runnable action, String description) {
+        return new RadialMenuItem(name,
+            RadialAction.custom(name, description, emoji, icon, action),
+            emoji, icon);
+    }
+
+    /**
+     * Create a command item
+     */
+    public static RadialMenuItem command(String name, String emoji, String command, String description) {
+        return new RadialMenuItem(name,
+            RadialAction.command(name, description, emoji, command),
+            emoji, null);
+    }
+
+    /**
+     * Create a command item with ItemStack icon
+     */
+    public static RadialMenuItem command(String name, String emoji, ItemStack icon, String command, String description) {
+        return new RadialMenuItem(name,
+            RadialAction.command(name, description, emoji, icon, command),
+            emoji, icon);
+    }
+
+    /**
+     * Create a screen-opening item
+     */
+    public static RadialMenuItem screen(String name, String emoji,
+                                         java.util.function.Supplier<net.minecraft.client.gui.screens.Screen> screenFactory,
+                                         String description) {
+        return new RadialMenuItem(name,
+            RadialAction.screen(name, description, emoji, screenFactory),
+            emoji, null);
+    }
+
+    /**
+     * Create a screen-opening item with ItemStack icon
+     */
+    public static RadialMenuItem screen(String name, String emoji, ItemStack icon,
+                                         java.util.function.Supplier<net.minecraft.client.gui.screens.Screen> screenFactory,
+                                         String description) {
+        return new RadialMenuItem(name,
+            RadialAction.screen(name, description, emoji, icon, screenFactory),
+            emoji, icon);
+    }
+}

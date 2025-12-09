@@ -28,7 +28,7 @@ import org.lwjgl.glfw.GLFW;
  * <p><b>NOTE:</b> Input event handling is in {@code KeyInputEvents.java} (top-level class)
  * because NeoForge does NOT scan inner classes for @EventBusSubscriber annotations.</p>
  *
- * @see com.frenkvs.devmod.ui.RadialMenuScreen
+ * @see com.frenkvs.devmod.ui.radial.RadialMenuScreenV2
  * @see com.frenkvs.devmod.rendering.RenderEvents#handleKeyBindings
  */
 public class KeyInputHandler {
@@ -52,7 +52,7 @@ public class KeyInputHandler {
      * <p><b>Default key:</b> G</p>
      * <p><b>Mnemonic:</b> G = "Go to menu" / General access</p>
      *
-     * @see com.frenkvs.devmod.ui.RadialMenuScreen
+     * @see com.frenkvs.devmod.ui.radial.RadialMenuScreenV2
      */
     public static final KeyMapping OPEN_RADIAL_MENU_KEY = new KeyMapping(
             "key.devmod.radial_menu",

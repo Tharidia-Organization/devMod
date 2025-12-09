@@ -2654,7 +2654,8 @@ public class WeaponEditorScreen extends Screen {
     }
 
     private void reset() {
-        // Reset stats
+        // Reset stats - clear existing sliders first to avoid duplicates
+        statSliders.clear();
         initStatSliders();
         for (StatSlider stat : statSliders) {
             if (stat.inputField != null) {

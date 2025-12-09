@@ -24,6 +24,7 @@ import java.util.List;
 
 /**
  * In-game UI per definire Room Bounds.
+ * Uses standard UIConstants for consistent theming.
  *
  * Permette di:
  * - Impostare Punto A (angolo min) dalla posizione del player
@@ -39,15 +40,15 @@ public class RoomBoundsEditorScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomBoundsEditorScreen.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    // === Colori UI ===
-    private static final int PANEL_BG = 0xDD1A1A2E;
-    private static final int PANEL_BORDER = 0xFF4CAF50;
-    private static final int TEXT_TITLE = 0xFF81C784;
-    private static final int TEXT_NORMAL = 0xFFFFFFFF;
-    private static final int TEXT_DIM = 0xFFAAAAAA;
-    private static final int TEXT_ACCENT = 0xFF4CAF50;
-    private static final int TEXT_WARNING = 0xFFFF9800;
-    private static final int TEXT_ERROR = 0xFFFF5252;
+    // === Colori UI - Standardized to UIConstants ===
+    private static final int PANEL_BG = UIConstants.Background.PANEL_SOLID;
+    private static final int PANEL_BORDER = UIConstants.Border.DEFAULT;  // Blue instead of green
+    private static final int TEXT_TITLE = UIConstants.Text.TITLE;  // Cyan
+    private static final int TEXT_NORMAL = UIConstants.Text.PRIMARY;
+    private static final int TEXT_DIM = UIConstants.Text.SECONDARY;
+    private static final int TEXT_ACCENT = UIConstants.Accent.BLUE;  // Blue instead of green
+    private static final int TEXT_WARNING = UIConstants.Accent.ORANGE;
+    private static final int TEXT_ERROR = UIConstants.Accent.RED;
 
     // === Dimensioni ===
     private static final int PANEL_WIDTH = 320;

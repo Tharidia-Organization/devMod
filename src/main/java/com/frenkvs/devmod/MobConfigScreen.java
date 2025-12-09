@@ -3,16 +3,13 @@ package com.frenkvs.devmod;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.util.I18n;
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.core.Holder;
-import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -36,15 +33,15 @@ import javax.annotation.Nonnull;
 @SuppressWarnings("null")
 public class MobConfigScreen extends Screen {
 
-    // Layout constants
-    private static final int PANEL_WIDTH = 420;
-    private static final int PANEL_HEIGHT = 340;
-    private static final int PREVIEW_SIZE = 140;
-    private static final int SLIDER_WIDTH = 160;
+    // Layout constants - aligned with WeaponEditorScreen standard
+    private static final int PANEL_WIDTH = 450;
+    private static final int PANEL_HEIGHT = 400;
+    private static final int PREVIEW_SIZE = 120;
+    private static final int SLIDER_WIDTH = 180;
     private static final int SLIDER_HEIGHT = 12;
     private static final int ROW_HEIGHT = 26;
-    private static final int TAB_WIDTH = 70;
-    private static final int TAB_HEIGHT = 22;
+    private static final int TAB_WIDTH = 80;
+    private static final int TAB_HEIGHT = 24;
 
     // Slider max values - configurable for different use cases
     // These are generous maximums; actual mob values rarely exceed half
@@ -196,7 +193,7 @@ public class MobConfigScreen extends Screen {
         // Update animations
         updateAnimations();
 
-        // Background
+        // Standard background - same as WeaponEditorScreen
         AxiomRenderer.drawScreenBackground(graphics, this.width, this.height);
 
         int panelX = (this.width - PANEL_WIDTH) / 2;
@@ -226,8 +223,8 @@ public class MobConfigScreen extends Screen {
         int slidersY = contentY + 5;
         drawSliders(graphics, slidersX, slidersY);
 
-        // Bottom: Mode toggle, presets, and buttons
-        int bottomY = panelY + PANEL_HEIGHT - 70;
+        // Bottom: Mode toggle, presets, and buttons - more space with larger panel
+        int bottomY = panelY + PANEL_HEIGHT - 80;
         drawBottomSection(graphics, panelX, bottomY);
 
         // Tooltips (render last, before dialog)
@@ -375,10 +372,10 @@ public class MobConfigScreen extends Screen {
         float maxDim = Math.max(mobHeight, mobWidth);
         int scale = (int) (Math.min(50, 100 / maxDim) * previewZoom);
 
-        // Create rotation quaternion
+        // Create rotation quaternion - fix upside down by inverting X rotation
         Quaternionf rotation = new Quaternionf()
             .rotateY((float) Math.toRadians(-rotationY))
-            .rotateX((float) Math.toRadians(rotationX));
+            .rotateX((float) Math.toRadians(-rotationX));
 
         try {
             // Render entity
@@ -544,48 +541,50 @@ public class MobConfigScreen extends Screen {
     }
 
     private void drawBottomSection(GuiGraphics graphics, int panelX, int y) {
-        // Mode toggle (left side)
+        // Separator line above bottom section
+        graphics.fill(panelX + 10, y - 8, panelX + PANEL_WIDTH - 10, y - 7, UIConstants.Border.SEPARATOR);
+
+        // Row 1: Mode toggle (left) and Presets label (right of mode)
         int modeX = panelX + 15;
-        boolean modeHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, modeX, y, 140, 20);
+        boolean modeHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, modeX, y, 120, 22);
 
-        // Mode background
-        if (modeHovered) {
-            graphics.fill(modeX - 2, y - 2, modeX + 142, y + 22, UIConstants.Background.HOVER);
-        }
+        // Mode button styled like WeaponEditor toggle
+        int modeBg = modeHovered ? UIConstants.Background.HOVER : UIConstants.Background.INPUT;
+        graphics.fill(modeX, y, modeX + 120, y + 22, modeBg);
+        AxiomRenderer.drawBorder(graphics, modeX, y, 120, 22, UIConstants.Border.MUTED);
 
-        graphics.drawString(font, "Mode:", modeX, y + 2, UIConstants.Text.SECONDARY, false);
+        // Left accent bar for mode
+        int modeAccent = isGlobalMode ? UIConstants.Accent.ORANGE : UIConstants.Accent.BLUE;
+        graphics.fill(modeX, y, modeX + 3, y + 22, modeAccent);
 
-        String modeText = isGlobalMode ? "§6GLOBAL" : "SPECIFIC";
-        graphics.drawString(font, modeText, modeX + 40, y + 2, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, "Mode:", modeX + 8, y + 3, UIConstants.Text.SECONDARY, false);
+        String modeText = isGlobalMode ? "GLOBAL" : "SPECIFIC";
+        int modeColor = isGlobalMode ? UIConstants.Accent.ORANGE : UIConstants.Text.PRIMARY;
+        graphics.drawString(font, modeText, modeX + 8, y + 12, modeColor, false);
 
-        String modeHint = isGlobalMode ? "(All spawns)" : "(This mob)";
-        graphics.drawString(font, modeHint, modeX + 40, y + 12, UIConstants.Text.MUTED, false);
+        // Presets section (to the right of mode)
+        drawPresets(graphics, panelX + 150, y - 3);
 
-        // Presets (center)
-        drawPresets(graphics, panelX + 165, y - 5);
-
-        // Action buttons (right side)
+        // Row 2: Action buttons at bottom
+        int btnY = y + 48;
         int btnW = 70;
         int btnH = 22;
         int btnGap = 8;
-        int btnsX = panelX + PANEL_WIDTH - 160;
 
-        // Apply button
-        boolean applyHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, btnsX, y + 20, btnW, btnH);
-        drawStyledButton(graphics, btnsX, y + 20, btnW, btnH, "Apply", applyHovered, UIConstants.Accent.GREEN);
+        // Reset button (left)
+        int resetX = panelX + 15;
+        boolean resetHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, resetX, btnY, 55, btnH);
+        drawStyledButton(graphics, resetX, btnY, 55, btnH, "Reset", resetHovered, UIConstants.Accent.RED);
 
-        // Equipment button
-        int equipX = btnsX + btnW + btnGap;
-        boolean equipHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, equipX, y + 20, btnW, btnH);
-        drawStyledButton(graphics, equipX, y + 20, btnW, btnH, "Equip...", equipHovered, UIConstants.Accent.BLUE);
+        // Apply button (right side)
+        int applyX = panelX + PANEL_WIDTH - btnW - btnGap - btnW - 15;
+        boolean applyHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, applyX, btnY, btnW, btnH);
+        drawStyledButton(graphics, applyX, btnY, btnW, btnH, "Apply", applyHovered, UIConstants.Accent.GREEN);
 
-        // Reset button (small, above)
-        int resetX = btnsX + (btnW * 2 + btnGap - 50) / 2;
-        boolean resetHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, resetX, y - 2, 50, 16);
-        if (resetHovered) {
-            graphics.fill(resetX, y - 2, resetX + 50, y + 14, UIConstants.Background.HOVER);
-        }
-        graphics.drawString(font, "§7[Reset]", resetX + 5, y, resetHovered ? UIConstants.Text.PRIMARY : UIConstants.Text.MUTED, false);
+        // Equipment button (far right)
+        int equipX = applyX + btnW + btnGap;
+        boolean equipHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, equipX, btnY, btnW, btnH);
+        drawStyledButton(graphics, equipX, btnY, btnW, btnH, "Equip...", equipHovered, UIConstants.Accent.BLUE);
     }
 
     private void drawPresets(GuiGraphics graphics, int x, int y) {
@@ -716,10 +715,10 @@ public class MobConfigScreen extends Screen {
         int bannerWidth = PANEL_WIDTH;
         int bannerHeight = 24;
 
-        // Warning colors - amber/orange theme
-        int bgColor = 0xEE8B4513; // Dark orange/brown
-        int borderColor = 0xFFFF8C00; // Dark orange
-        int textColor = 0xFFFFD700; // Gold
+        // Warning colors - using UIConstants
+        int bgColor = UIConstants.setAlpha(UIConstants.Accent.ORANGE, 0xEE);
+        int borderColor = UIConstants.Accent.ORANGE;
+        int textColor = UIConstants.Accent.GOLD;
 
         // Pulsing effect for attention
         long time = System.currentTimeMillis();
@@ -1109,42 +1108,45 @@ public class MobConfigScreen extends Screen {
             commitNumericInput();
         }
 
-        // Mode toggle
-        int bottomY = panelY + PANEL_HEIGHT - 70;
-        if (AxiomRenderer.isMouseOver(mx, my, panelX + 15, bottomY, 140, 20)) {
+        // Mode toggle (matches new drawBottomSection layout)
+        int bottomY = panelY + PANEL_HEIGHT - 80;
+        int modeX = panelX + 15;
+        if (AxiomRenderer.isMouseOver(mx, my, modeX, bottomY, 120, 22)) {
             isGlobalMode = !isGlobalMode;
             lastGlobalMode = isGlobalMode;
             return true;
         }
 
-        // Action buttons - CHECK THESE FIRST (they overlap with presets area)
+        // Action buttons - Row 2 at bottomY + 48
+        int btnY = bottomY + 48;
         int btnW = 70;
         int btnH = 22;
         int btnGap = 8;
-        int btnsX = panelX + PANEL_WIDTH - 160;
 
-        // Apply
-        if (AxiomRenderer.isMouseOver(mx, my, btnsX, bottomY + 20, btnW, btnH)) {
-            save();
-            return true;
-        }
-
-        // Equipment
-        if (AxiomRenderer.isMouseOver(mx, my, btnsX + btnW + btnGap, bottomY + 20, btnW, btnH)) {
-            Minecraft.getInstance().setScreen(new MobEquipmentScreen(mob, this));
-            return true;
-        }
-
-        // Reset
-        int resetX = btnsX + (btnW * 2 + btnGap - 50) / 2;
-        if (AxiomRenderer.isMouseOver(mx, my, resetX, bottomY - 2, 50, 16)) {
+        // Reset button (left)
+        int resetX = panelX + 15;
+        if (AxiomRenderer.isMouseOver(mx, my, resetX, btnY, 55, btnH)) {
             resetToOriginal();
             return true;
         }
 
-        // Preset buttons (checked after action buttons due to overlap)
-        int presetX = panelX + 165;
-        int presetY = bottomY - 5 + 12;
+        // Apply button
+        int applyX = panelX + PANEL_WIDTH - btnW - btnGap - btnW - 15;
+        if (AxiomRenderer.isMouseOver(mx, my, applyX, btnY, btnW, btnH)) {
+            save();
+            return true;
+        }
+
+        // Equipment button
+        int equipX = applyX + btnW + btnGap;
+        if (AxiomRenderer.isMouseOver(mx, my, equipX, btnY, btnW, btnH)) {
+            Minecraft.getInstance().setScreen(new MobEquipmentScreen(mob, this));
+            return true;
+        }
+
+        // Preset buttons (coordinates match drawPresets)
+        int presetX = panelX + 150;
+        int presetY = bottomY - 3 + 12;
         int presetW = 55;
         int presetH = 16;
         int gap = 4;
@@ -1498,7 +1500,7 @@ public class MobConfigScreen extends Screen {
 
     private void save() {
         PacketDistributor.sendToServer(new UpdateMobStatsPayload(
-            isGlobalMode, mob.getId(), followRange, damage, health, armor, attackRange));
+            isGlobalMode, mob.getId(), followRange, damage, health, armor, attackRange, speed, knockbackResist));
 
         if (minecraft != null && minecraft.player != null) {
             // Show pending message - actual result will be shown by ClientConfigFeedback
@@ -1667,16 +1669,16 @@ public class MobConfigScreen extends Screen {
 
     @Override
     public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        graphics.fill(0, 0, this.width, this.height, 0xC0101010);
+        // Don't render default background - we use AxiomRenderer.drawScreenBackground() in render()
     }
 
     @Override
     protected void renderBlurredBackground(float partialTick) {
-        // Disabled
+        // Disabled - blur handled by init()
     }
 
     @Override
     protected void renderMenuBackground(GuiGraphics graphics) {
-        graphics.fill(0, 0, this.width, this.height, 0xC0101010);
+        // Don't render default background
     }
 }

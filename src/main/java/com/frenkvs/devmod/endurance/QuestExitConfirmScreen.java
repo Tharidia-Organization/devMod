@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.endurance;
 
+import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -9,16 +10,17 @@ import net.neoforged.neoforge.network.PacketDistributor;
 /**
  * Confirmation screen before exiting an Endurance Quest.
  * Prevents accidental exits by requiring explicit confirmation.
+ * Uses standard UIConstants for consistent theming.
  */
 @SuppressWarnings("null")
 public class QuestExitConfirmScreen extends Screen {
 
-    // Colors
-    private static final int COLOR_BG = 0xDD1a1a2e;
-    private static final int COLOR_BORDER = 0xFFFF5722;
-    private static final int COLOR_TEXT = 0xFFFFFFFF;
-    private static final int COLOR_WARNING = 0xFFFFAB91;
-    private static final int COLOR_DANGER = 0xFFFF5252;
+    // Colors - standardized to UIConstants
+    private static final int COLOR_BG = UIConstants.Background.PANEL_SOLID;
+    private static final int COLOR_BORDER = UIConstants.Border.DEFAULT;  // Blue instead of orange
+    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY;
+    private static final int COLOR_WARNING = UIConstants.Accent.ORANGE;
+    private static final int COLOR_DANGER = UIConstants.Accent.RED;
 
     // Dimensions
     private static final int PANEL_WIDTH = 300;

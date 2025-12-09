@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.endurance;
 
+import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.gui.GuiGraphics;
@@ -25,27 +26,27 @@ public class EnduranceQuestScreen extends Screen {
     private static final int QUEST_CARD_HEIGHT = 80;
     private static final int QUEST_CARD_MARGIN = 5;
 
-    // Colors
-    private static final int COLOR_BG = 0xDD1a1a2e;
-    private static final int COLOR_SIDEBAR_BG = 0xDD16213e;
-    private static final int COLOR_CARD_BG = 0xDD0f3460;
-    private static final int COLOR_CARD_HOVER = 0xDD1a5490;
-    private static final int COLOR_CARD_SELECTED = 0xDD2a74b0;
-    private static final int COLOR_ACCENT = 0xFFe94560;
-    private static final int COLOR_TEXT = 0xFFFFFFFF;
-    private static final int COLOR_TEXT_DIM = 0xFFAAAAAA;
-    private static final int COLOR_SUCCESS = 0xFF4ade80;
-    private static final int COLOR_WARNING = 0xFFfbbf24;
-    private static final int COLOR_DANGER = 0xFFef4444;
+    // Colors - standardized to UIConstants
+    private static final int COLOR_BG = UIConstants.Background.PANEL;
+    private static final int COLOR_SIDEBAR_BG = UIConstants.Background.HEADER;
+    private static final int COLOR_CARD_BG = UIConstants.Background.INPUT;
+    private static final int COLOR_CARD_HOVER = UIConstants.Background.HOVER;
+    private static final int COLOR_CARD_SELECTED = UIConstants.Background.ACTIVE;
+    private static final int COLOR_ACCENT = UIConstants.Border.DEFAULT;  // Blue instead of pink
+    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY;
+    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY;
+    private static final int COLOR_SUCCESS = UIConstants.Accent.GREEN;
+    private static final int COLOR_WARNING = UIConstants.Accent.GOLD;
+    private static final int COLOR_DANGER = UIConstants.Accent.RED;
 
-    // Tier colors
+    // Tier colors - using UIConstants where applicable
     private static final Map<EnduranceQuestRegistry.MobTier, Integer> TIER_COLORS = Map.of(
-        EnduranceQuestRegistry.MobTier.TRIVIAL, 0xFF94a3b8,
-        EnduranceQuestRegistry.MobTier.EASY, 0xFF4ade80,
-        EnduranceQuestRegistry.MobTier.MEDIUM, 0xFFfbbf24,
-        EnduranceQuestRegistry.MobTier.HARD, 0xFFf97316,
-        EnduranceQuestRegistry.MobTier.ELITE, 0xFFa855f7,
-        EnduranceQuestRegistry.MobTier.BOSS, 0xFFef4444
+        EnduranceQuestRegistry.MobTier.TRIVIAL, UIConstants.Text.MUTED,
+        EnduranceQuestRegistry.MobTier.EASY, UIConstants.Accent.GREEN,
+        EnduranceQuestRegistry.MobTier.MEDIUM, UIConstants.Accent.GOLD,
+        EnduranceQuestRegistry.MobTier.HARD, UIConstants.Accent.ORANGE,
+        EnduranceQuestRegistry.MobTier.ELITE, UIConstants.Accent.PURPLE,
+        EnduranceQuestRegistry.MobTier.BOSS, UIConstants.Accent.RED
     );
 
     // State
@@ -190,6 +191,12 @@ public class EnduranceQuestScreen extends Screen {
         // Background
         graphics.fill(0, 0, width, height, COLOR_BG);
 
+        // If showing intro overlay, only render that (not the main content)
+        if (showIntroOverlay) {
+            renderIntroOverlay(graphics, mouseX, mouseY);
+            return; // Skip rendering everything else
+        }
+
         // Sidebar
         renderSidebar(graphics, mouseX, mouseY);
 
@@ -232,19 +239,12 @@ public class EnduranceQuestScreen extends Screen {
                 errorMessage = null;
             }
         }
-
-        // Intro overlay for first-time users (rendered on top)
-        if (showIntroOverlay) {
-            renderIntroOverlay(graphics, mouseX, mouseY);
-        }
     }
 
     /**
      * Render intro overlay explaining Endurance Quest to new users.
      */
     private void renderIntroOverlay(GuiGraphics graphics, int mouseX, int mouseY) {
-        // Darken background
-        graphics.fill(0, 0, width, height, 0xCC000000);
 
         int panelW = 400;
         int panelH = 280;
@@ -253,7 +253,7 @@ public class EnduranceQuestScreen extends Screen {
 
         // Panel background
         graphics.fill(panelX - 2, panelY - 2, panelX + panelW + 2, panelY + panelH + 2, COLOR_ACCENT);
-        graphics.fill(panelX, panelY, panelX + panelW, panelY + panelH, 0xFF1a1a2e);
+        graphics.fill(panelX, panelY, panelX + panelW, panelY + panelH, UIConstants.Background.PANEL_SOLID);
 
         int y = panelY + 15;
         int centerX = panelX + panelW / 2;
@@ -263,7 +263,7 @@ public class EnduranceQuestScreen extends Screen {
         y += 25;
 
         // Separator
-        graphics.fill(panelX + 20, y, panelX + panelW - 20, y + 1, 0x44FFFFFF);
+        graphics.fill(panelX + 20, y, panelX + panelW - 20, y + 1, UIConstants.Border.SEPARATOR);
         y += 15;
 
         // Description
@@ -292,7 +292,7 @@ public class EnduranceQuestScreen extends Screen {
         boolean btnHovered = mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= y && mouseY <= y + 22;
 
         // Button
-        int btnColor = btnHovered ? 0xFF2a74b0 : 0xFF0f3460;
+        int btnColor = btnHovered ? UIConstants.Background.ACTIVE : UIConstants.Background.INPUT;
         graphics.fill(btnX, y, btnX + btnW, y + 22, btnColor);
         graphics.fill(btnX, y, btnX + btnW, y + 1, COLOR_ACCENT);
         graphics.fill(btnX, y + 21, btnX + btnW, y + 22, COLOR_ACCENT);
@@ -333,7 +333,7 @@ public class EnduranceQuestScreen extends Screen {
             boolean isSelected = ns.equals(selectedNamespace);
             boolean isHovered = mouseX >= 10 && mouseX <= SIDEBAR_WIDTH - 10 && mouseY >= y && mouseY < y + 14;
 
-            int bgColor = isSelected ? COLOR_ACCENT : (isHovered ? 0x44FFFFFF : 0x00000000);
+            int bgColor = isSelected ? COLOR_ACCENT : (isHovered ? UIConstants.Border.SEPARATOR : 0x00000000);
             if (bgColor != 0) {
                 graphics.fill(10, y - 1, SIDEBAR_WIDTH - 10, y + 13, bgColor);
             }
@@ -356,7 +356,7 @@ public class EnduranceQuestScreen extends Screen {
         boolean allTiersSelected = selectedTier == null;
         boolean allTiersHovered = mouseX >= 10 && mouseX <= SIDEBAR_WIDTH - 10 && mouseY >= y && mouseY < y + 14;
         if (allTiersSelected || allTiersHovered) {
-            graphics.fill(10, y - 1, SIDEBAR_WIDTH - 10, y + 13, allTiersSelected ? COLOR_ACCENT : 0x44FFFFFF);
+            graphics.fill(10, y - 1, SIDEBAR_WIDTH - 10, y + 13, allTiersSelected ? COLOR_ACCENT : UIConstants.Border.SEPARATOR);
         }
         graphics.drawString(font, "All Difficulties", 15, y, COLOR_TEXT);
         y += 16;
@@ -365,7 +365,7 @@ public class EnduranceQuestScreen extends Screen {
             boolean isSelected = tier == selectedTier;
             boolean isHovered = mouseX >= 10 && mouseX <= SIDEBAR_WIDTH - 10 && mouseY >= y && mouseY < y + 14;
 
-            int bgColor = isSelected ? TIER_COLORS.get(tier) : (isHovered ? 0x44FFFFFF : 0x00000000);
+            int bgColor = isSelected ? TIER_COLORS.get(tier) : (isHovered ? UIConstants.Border.SEPARATOR : 0x00000000);
             if (bgColor != 0) {
                 graphics.fill(10, y - 1, SIDEBAR_WIDTH - 10, y + 13, bgColor);
             }
@@ -410,7 +410,7 @@ public class EnduranceQuestScreen extends Screen {
         if (maxScroll > 0) {
             int scrollbarHeight = (int) ((float) listHeight / (listHeight + maxScroll) * listHeight);
             int scrollbarY = listY + (int) ((float) scrollOffset / maxScroll * (listHeight - scrollbarHeight));
-            graphics.fill(listX + listWidth - 5, listY, listX + listWidth, listY + listHeight, 0x44FFFFFF);
+            graphics.fill(listX + listWidth - 5, listY, listX + listWidth, listY + listHeight, UIConstants.Border.SEPARATOR);
             graphics.fill(listX + listWidth - 5, scrollbarY, listX + listWidth, scrollbarY + scrollbarHeight, COLOR_ACCENT);
         }
     }
@@ -473,7 +473,7 @@ public class EnduranceQuestScreen extends Screen {
         y += 25;
 
         // Divider
-        graphics.fill(panelX + 10, y, panelX + panelWidth - 10, y + 1, 0x44FFFFFF);
+        graphics.fill(panelX + 10, y, panelX + panelWidth - 10, y + 1, UIConstants.Border.SEPARATOR);
         y += 10;
 
         // Stats

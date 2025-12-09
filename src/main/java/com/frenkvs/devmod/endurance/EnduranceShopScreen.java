@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.endurance;
 
+import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -19,31 +20,31 @@ public class EnduranceShopScreen extends Screen {
     private static final int ITEM_HEIGHT = 70;
     private static final int ITEM_MARGIN = 5;
 
-    // Colors
-    private static final int COLOR_BG = 0xDD1a1a2e;
-    private static final int COLOR_CATEGORY_BG = 0xDD16213e;
-    private static final int COLOR_ITEM_BG = 0xDD0f3460;
-    private static final int COLOR_ITEM_HOVER = 0xDD1a5490;
-    private static final int COLOR_ITEM_DISABLED = 0xDD333333;
-    private static final int COLOR_ACCENT = 0xFFFFD700;  // Gold for tokens
-    private static final int COLOR_TEXT = 0xFFFFFFFF;
-    private static final int COLOR_TEXT_DIM = 0xFFAAAAAA;
-    private static final int COLOR_SUCCESS = 0xFF4ade80;
-    private static final int COLOR_ERROR = 0xFFef4444;
+    // Colors - Standardized to UIConstants
+    private static final int COLOR_BG = UIConstants.Background.PANEL;
+    private static final int COLOR_CATEGORY_BG = UIConstants.Background.HEADER;
+    private static final int COLOR_ITEM_BG = UIConstants.Background.INPUT;
+    private static final int COLOR_ITEM_HOVER = UIConstants.Background.HOVER;
+    private static final int COLOR_ITEM_DISABLED = UIConstants.Text.DISABLED;
+    private static final int COLOR_ACCENT = UIConstants.Accent.GOLD;  // Gold for tokens
+    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY;
+    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY;
+    private static final int COLOR_SUCCESS = UIConstants.Accent.GREEN;
+    private static final int COLOR_ERROR = UIConstants.Accent.RED;
 
     // Category colors matching ShopCategory
     private static final Map<RewardSystem.ShopCategory, Integer> CATEGORY_COLORS = Map.of(
-        RewardSystem.ShopCategory.STATS, 0xFF55FF55,
-        RewardSystem.ShopCategory.PERKS, 0xFF5555FF,
-        RewardSystem.ShopCategory.UTILITY, 0xFFFFFF55,
-        RewardSystem.ShopCategory.COSMETICS, 0xFFFF55FF
+        RewardSystem.ShopCategory.STATS, UIConstants.Accent.GREEN,
+        RewardSystem.ShopCategory.PERKS, UIConstants.Accent.BLUE,
+        RewardSystem.ShopCategory.UTILITY, UIConstants.Accent.GOLD,
+        RewardSystem.ShopCategory.COSMETICS, UIConstants.Accent.PURPLE
     );
 
     // Currency colors
     private static final Map<RewardSystem.Currency, Integer> CURRENCY_COLORS = Map.of(
-        RewardSystem.Currency.TOKENS, 0xFFFFD700,
-        RewardSystem.Currency.PRESTIGE, 0xFFFF00FF,
-        RewardSystem.Currency.BLOOD_GEMS, 0xFFFF3333
+        RewardSystem.Currency.TOKENS, UIConstants.Accent.GOLD,
+        RewardSystem.Currency.PRESTIGE, UIConstants.Accent.PURPLE,
+        RewardSystem.Currency.BLOOD_GEMS, UIConstants.Accent.RED
     );
 
     // State
@@ -205,7 +206,7 @@ public class EnduranceShopScreen extends Screen {
         if (maxScroll > 0) {
             int scrollbarHeight = (int) ((float) listHeight / (listHeight + maxScroll) * listHeight);
             int scrollbarY = listY + (int) ((float) scrollOffset / maxScroll * (listHeight - scrollbarHeight));
-            graphics.fill(listX + listWidth - 5, listY, listX + listWidth, listY + listHeight, 0x44FFFFFF);
+            graphics.fill(listX + listWidth - 5, listY, listX + listWidth, listY + listHeight, UIConstants.Border.SEPARATOR);
             graphics.fill(listX + listWidth - 5, scrollbarY, listX + listWidth, scrollbarY + scrollbarHeight, COLOR_ACCENT);
         }
     }
@@ -222,7 +223,7 @@ public class EnduranceShopScreen extends Screen {
         if (maxedOut) {
             bgColor = COLOR_ITEM_DISABLED;
         } else if (isSelected) {
-            bgColor = 0xDD2a74b0;
+            bgColor = UIConstants.Background.ACTIVE;
         } else if (isHovered) {
             bgColor = COLOR_ITEM_HOVER;
         } else {
@@ -282,7 +283,7 @@ public class EnduranceShopScreen extends Screen {
         y += 25;
 
         // Divider
-        graphics.fill(panelX + 10, y, panelX + panelWidth - 10, y + 1, 0x44FFFFFF);
+        graphics.fill(panelX + 10, y, panelX + panelWidth - 10, y + 1, UIConstants.Border.SEPARATOR);
         y += 10;
 
         // Description (word wrap)

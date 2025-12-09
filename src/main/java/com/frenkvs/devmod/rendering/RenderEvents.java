@@ -692,7 +692,7 @@ public class RenderEvents {
         // ` (BACKTICK): Open Radial Menu - PRIMARY ACCESS to all DevMod tools
         while (KeyInputHandler.OPEN_RADIAL_MENU_KEY.consumeClick()) {
             if (!screenOpen) {
-                mc.setScreen(new com.frenkvs.devmod.ui.RadialMenuScreen());
+                mc.setScreen(new com.frenkvs.devmod.ui.radial.RadialMenuScreenV3());
             }
         }
 

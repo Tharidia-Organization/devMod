@@ -244,6 +244,8 @@ public class NetworkHandler {
                 double maxHealth = security.validateHealth(payload.maxHealth());
                 double armor = security.validateArmor(payload.armor());
                 double attackRange = security.validateFollowRange(payload.attackRange());
+                double speed = Math.max(0, Math.min(payload.speed(), 2.0)); // Clamp speed 0-2
+                double knockbackResist = Math.max(0, Math.min(payload.knockbackResist(), 1.0)); // Clamp 0-1
 
                 ServerLevel level = player.serverLevel();
                 Entity targetEntity = level.getEntity(payload.entityId());
@@ -285,7 +287,9 @@ public class NetworkHandler {
                         applyAttribute(mob, Attributes.FOLLOW_RANGE, followRange, attributesToSync);
                         applyAttribute(mob, Attributes.ATTACK_DAMAGE, damage, attributesToSync);
                         applyAttribute(mob, Attributes.ARMOR, armor, attributesToSync);
-                        applyAttribute(mob, Attributes.LUCK, attackRange, attributesToSync);
+                        applyAttribute(mob, Attributes.ENTITY_INTERACTION_RANGE, attackRange, attributesToSync);
+                        applyAttribute(mob, Attributes.MOVEMENT_SPEED, speed, attributesToSync);
+                        applyAttribute(mob, Attributes.KNOCKBACK_RESISTANCE, knockbackResist, attributesToSync);
 
                         AttributeInstance healthAttr = mob.getAttribute(Attributes.MAX_HEALTH);
                         if (healthAttr != null) {
