@@ -1,6 +1,8 @@
 package com.frenkvs.devmod.network.handler;
 
 import com.frenkvs.devmod.config.WeaponStats;
+import com.frenkvs.devmod.event.client.WorldRenderEvents;
+import com.frenkvs.devmod.event.common.AnchorEvents;
 import com.frenkvs.devmod.manager.MobConfigManager;
 import com.frenkvs.devmod.manager.WeaponConfigManager;
 import com.frenkvs.devmod.network.payload.*;
@@ -46,18 +48,37 @@ public class NetworkHandler {
         );
         event.registrar("4").playToClient(AggroLinkPayload.TYPE, AggroLinkPayload.STREAM_CODEC, NetworkHandler::handleAggroLink);
         event.registrar("5").playToClient(PathRenderPayload.TYPE, PathRenderPayload.STREAM_CODEC, NetworkHandler::handlePathRender);
-        // Canale 6: Config Sync (Client -> Server)
-        event.registrar("6").playToServer(
-                ConfigSyncPayload.TYPE, ConfigSyncPayload.STREAM_CODEC, NetworkHandler::handleConfigSync
-        );
-    }
 
-    // =================================================================================
+
+
+// --- NUOVO CANALE 6 PER I MARKER ---
+        event.registrar("6").playToClient(
+            MarkerPayload.TYPE, MarkerPayload.STREAM_CODEC, NetworkHandler::handleMarkerData
+    );
+}
+
+// --- NUOVO GESTORE DATI MARKER (Lato Client) ---
+private static void handleMarkerData(MarkerPayload payload, IPayloadContext context) {
+    context.enqueueWork(() -> {
+        // Passiamo i dati ricevuti direttamente alla classe che disegna
+        com.frenkvs.devmod.event.common.AnchorEvents.updateMarkerCache(payload.positions());
+    });
+
+}
+
+
+// =================================================================================
     // 1. LOGICA MODIFICA MOSTRI (Vita, Danno, Reach, Globale/Specifico)
     // =================================================================================
     private static void handleMobData(UpdateMobStatsPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer player) {
+                // Check if player has OP level 4 or higher
+                if (!player.hasPermissions(4)) {
+                    player.sendSystemMessage(Component.literal("§cNon hai i permessi per usare questo comando!"));
+                    return;
+                }
+                
                 ServerLevel level = player.serverLevel();
                 Entity targetEntity = level.getEntity(payload.entityId());
 
@@ -126,6 +147,12 @@ public class NetworkHandler {
     private static void handleWeaponData(UpdateWeaponPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer player) {
+                // Check if player has OP level 4 or higher
+                if (!player.hasPermissions(4)) {
+                    player.sendSystemMessage(Component.literal("§cNon hai i permessi per usare questo comando!"));
+                    return;
+                }
+                
                 ItemStack stack = player.getMainHandItem();
                 if (stack.isEmpty()) return;
 
@@ -153,6 +180,12 @@ public class NetworkHandler {
     private static void handleEquipData(EquipMobPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer player) {
+                // Check if player has OP level 4 or higher
+                if (!player.hasPermissions(4)) {
+                    player.sendSystemMessage(Component.literal("§cNon hai i permessi per usare questo comando!"));
+                    return;
+                }
+                
                 Entity target = player.serverLevel().getEntity(payload.entityId());
                 if (target instanceof Mob mob) {
 
@@ -171,27 +204,15 @@ public class NetworkHandler {
 
     private static void handleAggroLink(AggroLinkPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
-            // Client-only: This is safe because handler is registered as playToClient
-            com.frenkvs.devmod.network.handler.ClientNetworkHandler.handleAggroLink(payload);
+            // Aggiungiamo la linea al sistema di rendering
+            WorldRenderEvents.addAggroLine(payload.sourceId(), payload.targetId());
         });
     }
 
     private static void handlePathRender(PathRenderPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
-            // Client-only: This is safe because this handler is registered as playToClient
-            com.frenkvs.devmod.network.handler.ClientNetworkHandler.handlePathRender(payload);
-        });
-    }
-
-    private static void handleConfigSync(ConfigSyncPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            if (context.player() instanceof ServerPlayer player) {
-                // Update server-side config for this player's view
-                com.frenkvs.devmod.config.ModConfig.showMobPath = payload.showMobPath();
-                player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                    "§a[Config] §fPath rendering: " + (payload.showMobPath() ? "§aON" : "§cOFF")
-                ));
-            }
+            // Aggiungiamo i dati del path al sistema di rendering
+            WorldRenderEvents.updateMobPath(payload.mobId(), payload.pathNodes(), payload.endNode(), payload.stuckPos());
         });
     }
 

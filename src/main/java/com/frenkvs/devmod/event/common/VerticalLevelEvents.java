@@ -1,4 +1,4 @@
-package com.frenkvs.devmod;
+package com.frenkvs.devmod.event.common;
 
 import com.frenkvs.devmod.config.ModConfig;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -7,6 +7,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -14,267 +16,265 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
 
+import java.util.*;
+
 @EventBusSubscriber(modid = "devmod", value = Dist.CLIENT)
 public class VerticalLevelEvents {
 
+    // Cache per il Leak Detector (per non ricalcolare ogni frame e laggare)
+    private static final Set<BlockPos> safeAirBlocks = new HashSet<>();
+    private static final Set<BlockPos> leakBlocks = new HashSet<>();
+    private static int scanTimer = 0;
+
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
-        // Usiamo AFTER_TRANSLUCENT per disegnare dopo che il mondo è stato renderizzato
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
 
-        // Controllo rapido per non sprecare risorse se tutto è spento
         boolean showGrid = ModConfig.showVerticalLevels;
-        boolean showMeasure = ModConfig.measurePos1 != null;
-        boolean showCircle = ModConfig.showCircleGuide;
+        boolean showMeasure = ModConfig.enableMeasureTool && (ModConfig.measurePos1 != null);
+        boolean showShape = ModConfig.showShapeGuide;
+        boolean showLeaks = ModConfig.showLeakDetector;
 
-        if (!showGrid && !showMeasure && !showCircle) return;
+        if (!showGrid && !showMeasure && !showShape && !showLeaks) return;
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
+        // AGGIORNAMENTO LOGICA LEAK DETECTOR (Ogni 10 tick = 0.5s)
+        if (showLeaks) {
+            scanTimer++;
+            if (scanTimer > 10) {
+                updateLeakScan(mc);
+                scanTimer = 0;
+            }
+        } else {
+            // Pulisce la memoria se spento
+            if (!safeAirBlocks.isEmpty()) safeAirBlocks.clear();
+            if (!leakBlocks.isEmpty()) leakBlocks.clear();
+        }
+
         Vec3 cameraPos = event.getCamera().getPosition();
         PoseStack poseStack = event.getPoseStack();
 
-        // --- SETUP COMUNE ---
         poseStack.pushPose();
         poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
         Matrix4f matrix = poseStack.last().pose();
 
         Tesselator tesselator = Tesselator.getInstance();
-        BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.DEBUG_LINES, DefaultVertexFormat.POSITION_COLOR);
 
-        // =============================================================
-        // 1. RENDER GRIGLIA (Opaca e bloccata dai muri)
-        // =============================================================
-        if (showGrid) {
-            // IMPOSTAZIONI PER NON VEDERE ATTRAVERSO I BLOCCHI
-            RenderSystem.enableDepthTest();  // Attiva il controllo profondità (i muri nascondono le linee)
-            RenderSystem.depthMask(true);    // Scrive nella profondità
+        // 1. FASE LINEE (Grid, Sfera Wire)
+        if (showGrid || (showShape && ModConfig.currentShape == ModConfig.ShapeType.SPHERE)) {
+            setupRenderState(true);
+            BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.DEBUG_LINES, DefaultVertexFormat.POSITION_COLOR);
+
+            if (showGrid) renderVerticalGrid(buffer, matrix, mc);
+            if (showShape && ModConfig.currentShape == ModConfig.ShapeType.SPHERE) renderShapeGuide(buffer, matrix, true);
+
+            try { BufferUploader.drawWithShader(buffer.buildOrThrow()); } catch (Exception ignored) {}
+        }
+
+        // 2. FASE X-RAY (Metro)
+        if (showMeasure) {
+            setupRenderState(false);
+            BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.DEBUG_LINES, DefaultVertexFormat.POSITION_COLOR);
+            renderTapeMeasure(buffer, matrix, mc);
+            try { BufferUploader.drawWithShader(buffer.buildOrThrow()); } catch (Exception ignored) {}
+        }
+
+        // 3. FASE VOXEL/RIEMPIMENTO (Shape Filled, Leak Detector)
+        if ((showShape && ModConfig.currentShape != ModConfig.ShapeType.SPHERE) || showLeaks) {
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
+            RenderSystem.disableCull();
+            RenderSystem.enableDepthTest();
+            RenderSystem.depthMask(false);
             RenderSystem.setShader(GameRenderer::getPositionColorShader);
-            RenderSystem.lineWidth(3.0f);    // Linee più spesse (era 1.0 o 2.0)
 
-            // Disegniamo la griglia con alpha più alto (colori più forti)
-            renderVerticalGrid(buffer, matrix, mc);
+            BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 
-            // Forziamo il disegno SUBITO per la griglia, così possiamo cambiare impostazioni per il metro
+            if (showShape && ModConfig.currentShape != ModConfig.ShapeType.SPHERE) {
+                renderShapeGuide(buffer, matrix, false);
+            }
+
+            // Renderizza i blocchi calcolati
+            if (showLeaks) {
+                renderCachedLeaks(buffer, matrix);
+            }
+
             try { BufferUploader.drawWithShader(buffer.buildOrThrow()); } catch (Exception ignored) {}
-
-            // Riapriamo il buffer per le prossime cose
-            buffer = tesselator.begin(VertexFormat.Mode.DEBUG_LINES, DefaultVertexFormat.POSITION_COLOR);
+            RenderSystem.depthMask(true);
         }
-
-        // =============================================================
-        // 2. RENDER METRO / MISURATORE (Visibile ovunque)
-        // =============================================================
-        if (showMeasure) {
-            // IMPOSTAZIONI PER VEDERE ATTRAVERSO TUTTO (X-RAY)
-            RenderSystem.disableDepthTest(); // Il metro si vede sempre
-            RenderSystem.lineWidth(2.0f);
-
-            renderMeasurement(buffer, matrix, mc);
-        }
-
-        // =============================================================
-        // 3. RENDER GUIDA CERCHIO
-        // =============================================================
-        if (showCircle) {
-            RenderSystem.enableDepthTest(); // Anche il cerchio lo blocchiamo coi muri (come la griglia)
-            RenderSystem.lineWidth(2.0f);
-            renderVoxelCircle(buffer, matrix);
-        }
-
-        // Disegna tutto quello che è rimasto nel buffer
-        try {
-            BufferUploader.drawWithShader(buffer.buildOrThrow());
-        } catch (Exception ignored) {}
 
         poseStack.popPose();
 
-        // =============================================================
-        // 4. TESTO FLUTTUANTE (Distanza Metro)
-        // =============================================================
-        if (ModConfig.measurePos1 != null && ModConfig.measurePos2 != null) {
-            renderDistanceText(event.getPoseStack(), cameraPos);
-        }
-
-        // Ripristino stato originale Minecraft
         RenderSystem.enableDepthTest();
         RenderSystem.enableCull();
         RenderSystem.disableBlend();
         RenderSystem.lineWidth(1.0f);
+
+        if (showMeasure) renderMetricsText(event.getPoseStack(), cameraPos, mc);
     }
 
-    // --- LOGICA GRIGLIA (COLORI PIÙ FORTI) ---
-    private static void renderVerticalGrid(BufferBuilder builder, Matrix4f matrix, Minecraft mc) {
-        double baseX = Math.floor(mc.player.getX());
-        double baseZ = Math.floor(mc.player.getZ());
-        double centerY = ModConfig.gridLockY ? ModConfig.lockedYValue : Math.floor(mc.player.getY());
-        int radius = ModConfig.gridRadius;
+    // =============================================================
+    // 💧 LEAK DETECTOR (ALGORITMO FLOOD FILL)
+    // =============================================================
+    private static void updateLeakScan(Minecraft mc) {
+        safeAirBlocks.clear();
+        leakBlocks.clear();
 
-        // Alpha aumentato a 0.8f o 1.0f per renderlo "Solido"
-        drawGridPlane(builder, matrix, baseX, centerY, baseZ, radius, 0.0f, 1.0f, 0.0f, 1.0f); // Verde pieno
+        BlockPos startPos = mc.player.blockPosition();
+        int maxRadius = ModConfig.leakRadius;
+        int maxBlocks = 2000; // Limite sicurezza per non crashare
 
-        for (int i = 1; i <= ModConfig.gridFloorsUp; i++) {
-            double y = centerY + (i * ModConfig.gridSpacingY);
-            // Giallo/Rosso molto visibile
-            drawGridPlane(builder, matrix, baseX, y, baseZ, radius, 1.0f, Math.max(0, 1.0f - i * 0.2f), 0.0f, 0.8f);
-        }
-        for (int i = 1; i <= ModConfig.gridFloorsDown; i++) {
-            double y = centerY - (i * ModConfig.gridSpacingY);
-            // Blu visibile
-            drawGridPlane(builder, matrix, baseX, y, baseZ, radius, 0.0f, 0.5f, 1.0f, 0.8f);
-        }
-    }
+        Queue<BlockPos> queue = new LinkedList<>();
+        queue.add(startPos);
+        safeAirBlocks.add(startPos);
 
-    private static void drawGridPlane(BufferBuilder builder, Matrix4f matrix, double x, double y, double z, int r, float red, float green, float blue, float alpha) {
-        for (int i = -r; i <= r; i++) {
-            // Asse X
-            builder.addVertex(matrix, (float)(x - r), (float)y, (float)(z + i)).setColor(red, green, blue, alpha);
-            builder.addVertex(matrix, (float)(x + r), (float)y, (float)(z + i)).setColor(red, green, blue, alpha);
-            // Asse Z
-            builder.addVertex(matrix, (float)(x + i), (float)y, (float)(z - r)).setColor(red, green, blue, alpha);
-            builder.addVertex(matrix, (float)(x + i), (float)y, (float)(z + r)).setColor(red, green, blue, alpha);
-        }
-    }
+        while (!queue.isEmpty()) {
+            if (safeAirBlocks.size() + leakBlocks.size() > maxBlocks) break;
 
-    // --- LOGICA METRO ---
-    private static void renderMeasurement(BufferBuilder builder, Matrix4f matrix, Minecraft mc) {
-        BlockPos p1 = ModConfig.measurePos1;
-        BlockPos p2 = ModConfig.measurePos2;
+            BlockPos current = queue.poll();
 
-        if (p1 == null) return; // Sicurezza
+            // Controlla i 6 vicini
+            for (Direction dir : Direction.values()) {
+                BlockPos neighbor = current.relative(dir);
 
-        // Disegna Box Punto A (Verde Lime)
-        drawBox(builder, matrix, p1, 0.2f, 1.0f, 0.2f, 1.0f);
+                // Se abbiamo già visitato, salta
+                if (safeAirBlocks.contains(neighbor) || leakBlocks.contains(neighbor)) continue;
 
-        if (p2 != null) {
-            // Disegna Box Punto B (Rosso)
-            drawBox(builder, matrix, p2, 1.0f, 0.2f, 0.2f, 1.0f);
+                // Calcola distanza
+                double dist = Math.sqrt(neighbor.distSqr(startPos));
 
-            // Linea di collegamento (Bianca Spessa)
-            builder.addVertex(matrix, p1.getX() + 0.5f, p1.getY() + 0.5f, p1.getZ() + 0.5f)
-                    .setColor(1.0f, 1.0f, 1.0f, 1.0f);
-            builder.addVertex(matrix, p2.getX() + 0.5f, p2.getY() + 0.5f, p2.getZ() + 0.5f)
-                    .setColor(1.0f, 1.0f, 1.0f, 1.0f);
-        } else {
-            // Linea elastica verso il cursore (Anteprima Gialla)
-            Vec3 playerEye = mc.player.getEyePosition(1.0f);
-            Vec3 lookVec = mc.player.getViewVector(1.0f).scale(10.0); // Raggio di 10 blocchi
-            Vec3 target = playerEye.add(lookVec);
+                // Se è un blocco solido, è un muro, ci fermiamo
+                if (mc.level.getBlockState(neighbor).isSolidRender(mc.level, neighbor)) continue;
 
-            // Se stiamo guardando un blocco, attacchiamo la linea lì
-            if (mc.hitResult != null && mc.hitResult.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
-                BlockPos lookPos = ((net.minecraft.world.phys.BlockHitResult) mc.hitResult).getBlockPos();
-                target = new Vec3(lookPos.getX() + 0.5, lookPos.getY() + 0.5, lookPos.getZ() + 0.5);
-                // Box anteprima semitrasparente
-                drawBox(builder, matrix, lookPos, 1.0f, 1.0f, 0.0f, 0.4f);
-            }
-
-            builder.addVertex(matrix, p1.getX() + 0.5f, p1.getY() + 0.5f, p1.getZ() + 0.5f)
-                    .setColor(1.0f, 1.0f, 0.0f, 1.0f);
-            builder.addVertex(matrix, (float)target.x, (float)target.y, (float)target.z)
-                    .setColor(1.0f, 1.0f, 0.0f, 1.0f);
-        }
-    }
-
-    // --- LOGICA CERCHIO VOXEL ---
-    private static void renderVoxelCircle(BufferBuilder builder, Matrix4f matrix) {
-        int cx = ModConfig.circleCenterX;
-        int cy = ModConfig.circleCenterY;
-        int cz = ModConfig.circleCenterZ;
-        int r = ModConfig.circleRadius;
-
-        for (int x = -r; x <= r; x++) {
-            for (int z = -r; z <= r; z++) {
-                double dist = Math.sqrt(x*x + z*z);
-                if (dist >= r - 0.5 && dist < r + 0.5) {
-                    drawBlockHighlight(builder, matrix, cx + x, cy, cz + z, 0.0f, 1.0f, 1.0f, 0.8f);
+                // Se è ARIA (o non solido):
+                if (dist > maxRadius) {
+                    // È uscito dal raggio -> è una PERDITA (LEAK)
+                    leakBlocks.add(neighbor);
+                } else {
+                    // È ancora dentro -> è ARIA SICURA
+                    safeAirBlocks.add(neighbor);
+                    queue.add(neighbor);
                 }
             }
         }
-        drawBlockHighlight(builder, matrix, cx, cy, cz, 1.0f, 1.0f, 0.0f, 0.8f);
     }
 
-    // --- UTILITIES DISEGNO ---
-    private static void drawBox(BufferBuilder builder, Matrix4f matrix, BlockPos pos, float r, float g, float b, float a) {
-        // Disegna un cubo completo (wireframe) attorno al blocco
+    private static void renderCachedLeaks(BufferBuilder builder, Matrix4f matrix) {
+        // Disegna aria sicura (Ciano chiarissimo)
+        for (BlockPos pos : safeAirBlocks) {
+            drawFilledBox(builder, matrix, pos, 0.0f, 1.0f, 1.0f, 0.05f); // Quasi invisibile
+        }
+        // Disegna perdite (Rosso acceso)
+        for (BlockPos pos : leakBlocks) {
+            drawFilledBox(builder, matrix, pos, 1.0f, 0.0f, 0.0f, 0.5f); // Ben visibile
+        }
+    }
+
+    // =============================================================
+    // ALTRE LOGICHE (Invariate ma incluse per completezza)
+    // =============================================================
+
+    private static void renderShapeGuide(BufferBuilder builder, Matrix4f matrix, boolean drawLines) {
+        int cx = ModConfig.shapeCenterX; int cy = ModConfig.shapeCenterY; int cz = ModConfig.shapeCenterZ;
+        int rA = ModConfig.shapeRadius; int rB = (ModConfig.currentShape == ModConfig.ShapeType.ELLIPSE) ? ModConfig.shapeRadiusB : rA;
+
+        if (!drawLines) drawFilledBlock(builder, matrix, cx, cy, cz, 1.0f, 1.0f, 0.0f, 0.8f);
+
+        if (ModConfig.currentShape == ModConfig.ShapeType.SPHERE && drawLines) {
+            for (int x = -rA; x <= rA; x++) for (int y = -rA; y <= rA; y++) for (int z = -rA; z <= rA; z++) {
+                if (Math.sqrt(x*x + y*y + z*z) >= rA - 0.5 && Math.sqrt(x*x + y*y + z*z) < rA + 0.5)
+                    drawBox(builder, matrix, new BlockPos(cx + x, cy + y, cz + z), 0.0f, 1.0f, 1.0f, 0.5f);
+            }
+        } else if (!drawLines) {
+            for (int x = -rA; x <= rA; x++) for (int z = -rB; z <= rB; z++) {
+                double n = (double)(x*x)/(rA*rA) + (double)(z*z)/(rB*rB);
+                if (n >= 0.75 && n <= 1.25) drawFilledBlock(builder, matrix, cx + x, cy, cz + z, 0.0f, 1.0f, 1.0f, 0.6f);
+            }
+        }
+    }
+
+    private static void renderVerticalGrid(BufferBuilder builder, Matrix4f matrix, Minecraft mc) {
+        double bx = ModConfig.gridLockPos ? ModConfig.lockedX : Math.floor(mc.player.getX());
+        double by = ModConfig.gridLockPos ? ModConfig.lockedY : Math.floor(mc.player.getY());
+        double bz = ModConfig.gridLockPos ? ModConfig.lockedZ : Math.floor(mc.player.getZ());
+        int r = ModConfig.gridRadius;
+        drawGridPlane(builder, matrix, bx, by, bz, r, 0.0f, 1.0f, 0.0f, 0.8f);
+        for (int i = 1; i <= ModConfig.gridFloorsUp; i++) drawGridPlane(builder, matrix, bx, by + (i * ModConfig.gridSpacingY), bz, r, 1.0f, 0.5f, 0.0f, 0.6f);
+        for (int i = 1; i <= ModConfig.gridFloorsDown; i++) drawGridPlane(builder, matrix, bx, by - (i * ModConfig.gridSpacingY), bz, r, 0.0f, 0.5f, 1.0f, 0.6f);
+    }
+
+    private static void renderTapeMeasure(BufferBuilder buffer, Matrix4f matrix, Minecraft mc) {
+        BlockPos p1 = ModConfig.measurePos1; BlockPos p2 = ModConfig.measurePos2;
+        if (p1 == null) return;
+        drawBox(buffer, matrix, p1, 0.2f, 1.0f, 0.2f, 1.0f);
+        BlockPos t = (p2 != null) ? p2 : getPlayerLookingAtBlock(mc);
+        if (t != null) {
+            drawBox(buffer, matrix, t, 1.0f, 1.0f, 0.0f, 0.5f);
+            if (p2 != null) drawBox(buffer, matrix, p2, 1.0f, 0.2f, 0.2f, 1.0f);
+            drawLine(buffer, matrix, p1.getX()+0.5f, p1.getY()+0.5f, p1.getZ()+0.5f, t.getX()+0.5f, t.getY()+0.5f, t.getZ()+0.5f, 1.0f, 1.0f, 1.0f, 1.0f);
+        }
+    }
+
+    private static BlockPos getPlayerLookingAtBlock(Minecraft mc) {
+        if (mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.BLOCK) return ((net.minecraft.world.phys.BlockHitResult) mc.hitResult).getBlockPos();
+        return null;
+    }
+
+    // --- HELPER DISEGNO ---
+    private static void setupRenderState(boolean depthTest) {
+        RenderSystem.enableBlend(); RenderSystem.defaultBlendFunc();
+        if (depthTest) { RenderSystem.enableDepthTest(); RenderSystem.depthMask(true); } else { RenderSystem.disableDepthTest(); }
+        RenderSystem.disableCull(); RenderSystem.setShader(GameRenderer::getPositionColorShader); RenderSystem.lineWidth(3.0f);
+    }
+    private static void drawGridPlane(BufferBuilder b, Matrix4f m, double x, double y, double z, int r, float red, float green, float blue, float alpha) {
+        for (int i = -r; i <= r; i++) {
+            b.addVertex(m, (float)(x-r), (float)y, (float)(z+i)).setColor(red,green,blue,alpha); b.addVertex(m, (float)(x+r), (float)y, (float)(z+i)).setColor(red,green,blue,alpha);
+            b.addVertex(m, (float)(x+i), (float)y, (float)(z-r)).setColor(red,green,blue,alpha); b.addVertex(m, (float)(x+i), (float)y, (float)(z+r)).setColor(red,green,blue,alpha);
+        }
+    }
+    private static void drawBox(BufferBuilder b, Matrix4f m, BlockPos pos, float r, float g, float bl, float a) {
         float x = pos.getX(); float y = pos.getY(); float z = pos.getZ();
-
-        // Base e Top
-        drawRect(builder, matrix, x, y, z, x+1, y, z+1, r, g, b, a);       // Base
-        drawRect(builder, matrix, x, y+1, z, x+1, y+1, z+1, r, g, b, a);   // Top
-
-        // Colonne verticali
-        drawLine(builder, matrix, x, y, z, x, y+1, z, r, g, b, a);
-        drawLine(builder, matrix, x+1, y, z, x+1, y+1, z, r, g, b, a);
-        drawLine(builder, matrix, x, y, z+1, x, y+1, z+1, r, g, b, a);
-        drawLine(builder, matrix, x+1, y, z+1, x+1, y+1, z+1, r, g, b, a);
+        drawRect(b, m, x, y, z, x+1, y, z+1, r, g, bl, a); drawRect(b, m, x, y+1, z, x+1, y+1, z+1, r, g, bl, a);
+        drawLine(b, m, x, y, z, x, y+1, z, r, g, bl, a); drawLine(b, m, x+1, y, z, x+1, y+1, z, r, g, bl, a);
+        drawLine(b, m, x, y, z+1, x, y+1, z+1, r, g, bl, a); drawLine(b, m, x+1, y, z+1, x+1, y+1, z+1, r, g, bl, a);
     }
-
-    private static void drawBlockHighlight(BufferBuilder builder, Matrix4f matrix, int x, int y, int z, float r, float g, float b, float a) {
-        // Disegna solo il contorno superiore del blocco (tappeto)
-        drawRect(builder, matrix, x, y+0.02f, z, x+1, y+0.02f, z+1, r, g, b, a);
-        // Croce centrale
-        drawLine(builder, matrix, x, y+0.02f, z, x+1, y+0.02f, z+1, r, g, b, a);
-        drawLine(builder, matrix, x+1, y+0.02f, z, x, y+0.02f, z+1, r, g, b, a);
+    private static void drawFilledBox(BufferBuilder b, Matrix4f m, BlockPos pos, float r, float g, float bl, float a) {
+        float x = pos.getX(); float y = pos.getY(); float z = pos.getZ(); float x2=x+1; float y2=y+1; float z2=z+1;
+        b.addVertex(m,x,y2,z).setColor(r,g,bl,a); b.addVertex(m,x,y2,z2).setColor(r,g,bl,a); b.addVertex(m,x2,y2,z2).setColor(r,g,bl,a); b.addVertex(m,x2,y2,z).setColor(r,g,bl,a);
+        b.addVertex(m,x,y,z).setColor(r,g,bl,a); b.addVertex(m,x2,y,z).setColor(r,g,bl,a); b.addVertex(m,x2,y,z2).setColor(r,g,bl,a); b.addVertex(m,x,y,z2).setColor(r,g,bl,a);
+        b.addVertex(m,x,y,z).setColor(r,g,bl,a); b.addVertex(m,x,y2,z).setColor(r,g,bl,a); b.addVertex(m,x2,y2,z).setColor(r,g,bl,a); b.addVertex(m,x2,y,z).setColor(r,g,bl,a);
+        b.addVertex(m,x,y,z2).setColor(r,g,bl,a); b.addVertex(m,x2,y,z2).setColor(r,g,bl,a); b.addVertex(m,x2,y2,z2).setColor(r,g,bl,a); b.addVertex(m,x,y2,z2).setColor(r,g,bl,a);
+        b.addVertex(m,x,y,z).setColor(r,g,bl,a); b.addVertex(m,x,y,z2).setColor(r,g,bl,a); b.addVertex(m,x,y2,z2).setColor(r,g,bl,a); b.addVertex(m,x,y2,z).setColor(r,g,bl,a);
+        b.addVertex(m,x2,y,z).setColor(r,g,bl,a); b.addVertex(m,x2,y2,z).setColor(r,g,bl,a); b.addVertex(m,x2,y2,z2).setColor(r,g,bl,a); b.addVertex(m,x2,y,z2).setColor(r,g,bl,a);
     }
-
+    private static void drawFilledBlock(BufferBuilder b, Matrix4f m, int x, int y, int z, float r, float g, float bl, float a) {
+        float yH = y + 0.05f;
+        b.addVertex(m, x, yH, z).setColor(r, g, bl, a); b.addVertex(m, x, yH, z+1).setColor(r, g, bl, a);
+        b.addVertex(m, x+1, yH, z+1).setColor(r, g, bl, a); b.addVertex(m, x+1, yH, z).setColor(r, g, bl, a);
+    }
     private static void drawRect(BufferBuilder b, Matrix4f m, float x1, float y1, float z1, float x2, float y2, float z2, float r, float g, float bl, float a) {
-        b.addVertex(m, x1, y1, z1).setColor(r, g, bl, a); b.addVertex(m, x2, y1, z1).setColor(r, g, bl, a);
-        b.addVertex(m, x2, y1, z1).setColor(r, g, bl, a); b.addVertex(m, x2, y2, z2).setColor(r, g, bl, a);
-        b.addVertex(m, x2, y2, z2).setColor(r, g, bl, a); b.addVertex(m, x1, y2, z2).setColor(r, g, bl, a);
-        b.addVertex(m, x1, y2, z2).setColor(r, g, bl, a); b.addVertex(m, x1, y1, z1).setColor(r, g, bl, a);
+        drawLine(b, m, x1, y1, z1, x2, y1, z1, r, g, bl, a); drawLine(b, m, x2, y1, z1, x2, y2, z2, r, g, bl, a);
+        drawLine(b, m, x2, y2, z2, x1, y2, z2, r, g, bl, a); drawLine(b, m, x1, y2, z2, x1, y1, z1, r, g, bl, a);
     }
-
     private static void drawLine(BufferBuilder b, Matrix4f m, float x1, float y1, float z1, float x2, float y2, float z2, float r, float g, float bl, float a) {
-        b.addVertex(m, x1, y1, z1).setColor(r, g, bl, a);
-        b.addVertex(m, x2, y2, z2).setColor(r, g, bl, a);
+        b.addVertex(m, x1, y1, z1).setColor(r, g, bl, a); b.addVertex(m, x2, y2, z2).setColor(r, g, bl, a);
     }
-
-    // --- TESTO FLUTTUANTE ---
-    private static void renderDistanceText(PoseStack poseStack, Vec3 camPos) {
-        BlockPos p1 = ModConfig.measurePos1;
-        BlockPos p2 = ModConfig.measurePos2;
-
-        // Calcolo centro linea
-        double midX = (p1.getX() + p2.getX()) / 2.0 + 0.5;
-        double midY = (p1.getY() + p2.getY()) / 2.0 + 0.5;
-        double midZ = (p1.getZ() + p2.getZ()) / 2.0 + 0.5;
-
-        double dist = Math.sqrt(p1.distSqr(p2));
-
-        // Calcolo delta X Y Z
-        int dx = Math.abs(p1.getX() - p2.getX()) + 1;
-        int dy = Math.abs(p1.getY() - p2.getY()) + 1;
-        int dz = Math.abs(p1.getZ() - p2.getZ()) + 1;
-
-        String textLine1 = String.format("Dist: %.1f m", dist);
-        String textLine2 = String.format("Box: %d x %d x %d", dx, dy, dz);
-
-        poseStack.pushPose();
-        poseStack.translate(midX - camPos.x, midY - camPos.y + 0.8, midZ - camPos.z); // Più in alto
-        poseStack.mulPose(Minecraft.getInstance().getEntityRenderDispatcher().cameraOrientation());
-        poseStack.scale(-0.025f, -0.025f, 0.025f);
-
-        Font font = Minecraft.getInstance().font;
-        float w1 = font.width(textLine1) / 2.0f;
-        float w2 = font.width(textLine2) / 2.0f;
-
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableDepthTest(); // Il testo si legge sempre
-
-        // Sfondo nero semitrasparente per leggere meglio
-        int bg = 0x80000000;
-
-        font.drawInBatch(textLine1, -w1, -5, 0xFFFFFFFF, false, poseStack.last().pose(), Minecraft.getInstance().renderBuffers().bufferSource(), Font.DisplayMode.NORMAL, bg, 15728880);
-        font.drawInBatch(textLine2, -w2, 5, 0xFFFFFF00, false, poseStack.last().pose(), Minecraft.getInstance().renderBuffers().bufferSource(), Font.DisplayMode.NORMAL, bg, 15728880);
-
-        RenderSystem.enableDepthTest();
-        RenderSystem.disableBlend();
-
-        poseStack.popPose();
+    private static void renderMetricsText(PoseStack poseStack, Vec3 camPos, Minecraft mc) {
+        BlockPos p1 = ModConfig.measurePos1; BlockPos p2 = ModConfig.measurePos2;
+        BlockPos t = (p2 != null) ? p2 : getPlayerLookingAtBlock(mc);
+        if (t == null) return;
+        double dist = Math.sqrt(p1.distSqr(t));
+        int dx = Math.abs(p1.getX() - t.getX()) + 1; int dy = Math.abs(p1.getY() - t.getY()) + 1; int dz = Math.abs(p1.getZ() - t.getZ()) + 1;
+        double midX = (p1.getX() + t.getX()) / 2.0 + 0.5; double midY = (p1.getY() + t.getY()) / 2.0 + 0.5; double midZ = (p1.getZ() + t.getZ()) / 2.0 + 0.5;
+        poseStack.pushPose(); poseStack.translate(midX - camPos.x, midY - camPos.y + 0.5, midZ - camPos.z);
+        poseStack.mulPose(mc.getEntityRenderDispatcher().cameraOrientation()); poseStack.scale(-0.025f, -0.025f, 0.025f);
+        Font font = mc.font;
+        RenderSystem.disableDepthTest(); RenderSystem.enableBlend(); RenderSystem.defaultBlendFunc();
+        String l1 = String.format("Dist: %.1fm", dist); String l2 = String.format("Box: %dx%dx%d", dx, dy, dz);
+        font.drawInBatch(l1, -font.width(l1)/2.0f, -10, -1, false, poseStack.last().pose(), mc.renderBuffers().bufferSource(), Font.DisplayMode.NORMAL, 0x80000000, 15728880);
+        font.drawInBatch(l2, -font.width(l2)/2.0f, 0, 0xFFFFFF00, false, poseStack.last().pose(), mc.renderBuffers().bufferSource(), Font.DisplayMode.NORMAL, 0x80000000, 15728880);
+        RenderSystem.enableDepthTest(); poseStack.popPose();
     }
 }

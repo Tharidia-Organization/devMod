@@ -20,13 +20,16 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-@EventBusSubscriber(modid = "devmod")
+@EventBusSubscriber(modid = "devmod", bus = EventBusSubscriber.Bus.GAME)
 public class StuckEvents {
 
     private static final Map<Integer, StuckTracker> stuckMap = new HashMap<>();
+    private static final Set<Integer> clearedPaths = new HashSet<>(); // Track which paths have been cleared
 
     private static class StuckTracker {
         BlockPos lastPos;
@@ -42,14 +45,7 @@ public class StuckEvents {
     @SubscribeEvent
     public static void onEntityTick(EntityTickEvent.Post event) {
         // Se la funzione è spenta nel config, non fare nulla e risparmia calcoli
-        if (!ModConfig.enableStuckDebug && !ModConfig.showMobPath) {
-            // Debug: Log why we're skipping (only once per 200 ticks to avoid spam)
-            if (event.getEntity().tickCount % 200 == 0 && event.getEntity() instanceof Mob) {
-                System.out.println("[DevMod Server] Path rendering disabled: enableStuckDebug=" + 
-                    ModConfig.enableStuckDebug + ", showMobPath=" + ModConfig.showMobPath);
-            }
-            return;
-        }
+        if (!ModConfig.enableStuckDebug && !ModConfig.showMobPath) return;
 
         if (event.getEntity().level().isClientSide || !(event.getEntity() instanceof Mob mob)) return;
 
@@ -61,6 +57,9 @@ public class StuckEvents {
             // Se ha un percorso e non è finito
             if (nav.getPath() != null && !nav.isDone()) {
                 StuckTracker tracker = stuckMap.computeIfAbsent(mob.getId(), id -> new StuckTracker(mob.blockPosition()));
+                
+                // Remove from cleared set when mob starts pathing again
+                clearedPaths.remove(mob.getId());
 
                 // Inviamo i dati del path ai client ogni 10 tick (0.5 secondi)
                 if (tracker.pathDisplayCooldown <= 0) {
@@ -69,6 +68,12 @@ public class StuckEvents {
                 } else {
                     tracker.pathDisplayCooldown--;
                 }
+            } else if (nav.isDone() || nav.getPath() == null) {
+                // Clear path when navigation is done, but only once
+                if (!clearedPaths.contains(mob.getId())) {
+                    sendPathToClients(level, mob, null, null);
+                    clearedPaths.add(mob.getId());
+                }
             }
         }
 
@@ -76,6 +81,11 @@ public class StuckEvents {
         if (ModConfig.enableStuckDebug) {
             // Se non ha path, puliamo e usciamo
             if (nav.isDone() || nav.getPath() == null) {
+                // Send clear path packet to remove visualization, but only once
+                if (ModConfig.showMobPath && !clearedPaths.contains(mob.getId())) {
+                    sendPathToClients(level, mob, null, null);
+                    clearedPaths.add(mob.getId());
+                }
                 stuckMap.remove(mob.getId());
                 return;
             }
@@ -136,7 +146,20 @@ public class StuckEvents {
 
     // Metodo helper per inviare i dati del path ai client per il rendering
     private static void sendPathToClients(ServerLevel level, Mob mob, Path path, BlockPos stuckPos) {
-        if (path == null) return;
+        if (path == null && stuckPos == null) {
+            // Debug: check if clear packets are being sent
+            System.out.println("Sending clear path packet for mob " + mob.getId());
+            
+            // Send clear packet with empty list, not null
+            PathRenderPayload payload = new PathRenderPayload(new ArrayList<>(), null, null, mob.getId());
+            
+            for (ServerPlayer player : level.players()) {
+                if (player.distanceToSqr(mob) < 10000) { // 100 blocchi di raggio
+                    PacketDistributor.sendToPlayer(player, payload);
+                }
+            }
+            return;
+        }
 
         // Raccogli tutti i nodi del path
         List<BlockPos> pathNodes = new ArrayList<>();
@@ -153,33 +176,26 @@ public class StuckEvents {
 
         // Debug: verifica che abbiamo dati da inviare
         if (pathNodes.isEmpty() && endNode == null && stuckPos == null) {
-            System.out.println("[DevMod Server] No path data to send for mob " + mob.getId());
             return;
         }
 
         // Crea e invia il payload a tutti i player vicini
         PathRenderPayload payload = new PathRenderPayload(pathNodes, endNode, stuckPos, mob.getId());
         
-        System.out.println("[DevMod Server] Sending PathRender packet for mob " + mob.getId() + 
-            " with " + pathNodes.size() + " nodes to nearby players");
+        System.out.println("Sending path packet for mob " + mob.getId() + " with " + pathNodes.size() + " nodes");
         
-        int sentCount = 0;
         for (ServerPlayer player : level.players()) {
             if (player.distanceToSqr(mob) < 10000) { // 100 blocchi di raggio
                 PacketDistributor.sendToPlayer(player, payload);
-                sentCount++;
-                System.out.println("[DevMod Server] Sent to player: " + player.getName().getString() + 
-                    " (distance: " + Math.sqrt(player.distanceToSqr(mob)) + " blocks)");
             }
         }
-        
-        System.out.println("[DevMod Server] Total packets sent: " + sentCount);
     }
 
     @SubscribeEvent
     public static void onEntityLeave(EntityLeaveLevelEvent event) {
         if (event.getEntity() instanceof Mob) {
             stuckMap.remove(event.getEntity().getId());
+            clearedPaths.remove(event.getEntity().getId());
         }
     }
 }

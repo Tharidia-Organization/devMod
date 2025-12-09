@@ -3,152 +3,180 @@ package com.frenkvs.devmod.client.screen;
 import com.frenkvs.devmod.config.ModConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.AbstractSliderButton;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import com.mojang.blaze3d.systems.RenderSystem;
+
+// Importiamo i componenti Sci-Fi dal menu principale
+import com.frenkvs.devmod.client.screen.SettingsScreen.SciFiButton;
+import com.frenkvs.devmod.client.screen.SettingsScreen.SciFiSlider;
 
 public class VerticalGridConfigScreen extends Screen {
 
     private final Screen parent;
+    private static final int PANEL_WIDTH = 380;
+    private static final int PANEL_HEIGHT = 400;
 
     public VerticalGridConfigScreen(Screen parent) {
-        super(Component.literal("Configurazione Griglia Verticale"));
+        super(Component.literal("Builder Tools"));
         this.parent = parent;
     }
 
     @Override
+    public boolean isPauseScreen() { return false; }
+
+    @Override
     protected void init() {
+        int panelLeft = (this.width - PANEL_WIDTH) / 2;
+        int panelTop = (this.height - PANEL_HEIGHT) / 2;
+        int x = panelLeft + (PANEL_WIDTH / 2) - 100; // Centrato
+        int y = panelTop + 45;
         int w = 200;
         int h = 20;
-        int x = this.width / 2 - w / 2;
-        int y = 30;
         int step = 25;
 
-        // 1. GRIGLIA VERTICALE
-        this.addRenderableWidget(Button.builder(
-                Component.literal("Stato Griglia: " + (ModConfig.showVerticalLevels ? "§aATTIVA" : "§cDISATTIVA")),
+        // 1. GRIGLIA & LOCK
+        this.addRenderableWidget(new SciFiButton(x, y, w, h,
+                Component.literal("Griglia: " + (ModConfig.showVerticalLevels ? "§aON" : "§cOFF")),
                 b -> {
                     ModConfig.showVerticalLevels = !ModConfig.showVerticalLevels;
-                    b.setMessage(Component.literal("Stato Griglia: " + (ModConfig.showVerticalLevels ? "§aATTIVA" : "§cDISATTIVA")));
-                }).pos(x, y).size(w, h).build());
+                    b.setMessage(Component.literal("Griglia: " + (ModConfig.showVerticalLevels ? "§aON" : "§cOFF")));
+                }));
+        y += step;
 
+        this.addRenderableWidget(new SciFiButton(x, y, w, h,
+                Component.literal("Posizione: " + (ModConfig.gridLockPos ? "§eBLOCCATA" : "§7DINAMICA")),
+                b -> {
+                    ModConfig.gridLockPos = !ModConfig.gridLockPos;
+                    if (ModConfig.gridLockPos && Minecraft.getInstance().player != null) {
+                        ModConfig.lockedX = Math.floor(Minecraft.getInstance().player.getX());
+                        ModConfig.lockedY = Math.floor(Minecraft.getInstance().player.getY());
+                        ModConfig.lockedZ = Math.floor(Minecraft.getInstance().player.getZ());
+                    }
+                    b.setMessage(Component.literal("Posizione: " + (ModConfig.gridLockPos ? "§eBLOCCATA" : "§7DINAMICA")));
+                }));
         y += step + 5;
 
-        // 2. Lock Y
-        this.addRenderableWidget(Button.builder(
-                Component.literal("Blocca Altezza (Lock Y): " + (ModConfig.gridLockY ? "§aON" : "§cOFF")),
+        // SLIDERS GRIGLIA
+        this.addRenderableWidget(new SimpleSciFiSlider(x, y, w, h, "Spaziatura Piani: ", 1.0, 20.0, (double)ModConfig.gridSpacingY, v -> ModConfig.gridSpacingY = v.intValue()));
+        y += step + 20;
+
+        // 2. GUIDA FORME
+        this.addRenderableWidget(new SciFiButton(x, y, w, h,
+                Component.literal("Guida Forma: " + (ModConfig.showShapeGuide ? "§aON" : "§cOFF")),
                 b -> {
-                    ModConfig.gridLockY = !ModConfig.gridLockY;
-                    if (ModConfig.gridLockY && Minecraft.getInstance().player != null) {
-                        ModConfig.lockedYValue = Math.floor(Minecraft.getInstance().player.getY());
+                    ModConfig.showShapeGuide = !ModConfig.showShapeGuide;
+                    if (ModConfig.showShapeGuide && Minecraft.getInstance().player != null) {
+                        ModConfig.shapeCenterX = (int) Math.floor(Minecraft.getInstance().player.getX());
+                        ModConfig.shapeCenterY = (int) Math.floor(Minecraft.getInstance().player.getY());
+                        ModConfig.shapeCenterZ = (int) Math.floor(Minecraft.getInstance().player.getZ());
                     }
-                    b.setMessage(Component.literal("Blocca Altezza (Lock Y): " + (ModConfig.gridLockY ? "§aON" : "§cOFF")));
-                }).pos(x, y).size(w, h).build());
-
+                    b.setMessage(Component.literal("Guida Forma: " + (ModConfig.showShapeGuide ? "§aON" : "§cOFF")));
+                }));
         y += step;
 
-        // 3. Spaziatura
-        this.addRenderableWidget(new GridSpacingSlider(x, y, w, h, ModConfig.gridSpacingY));
-        y += step;
-
-        // 4. Raggio Griglia
-        this.addRenderableWidget(new GridRadiusSlider(x, y, w, h, ModConfig.gridRadius));
-        y += step;
-
-        // 5. Piani Sopra
-        this.addRenderableWidget(new GridFloorsUpSlider(x, y, w, h, ModConfig.gridFloorsUp));
-        y += step;
-
-        // 6. Piani Sotto
-        this.addRenderableWidget(new GridFloorsDownSlider(x, y, w, h, ModConfig.gridFloorsDown));
-        y += step;
-
-        // --- TOOL EXTRA ---
-
-        Button separator = Button.builder(Component.literal("--- TOOL EXTRA ---"), b -> {}).pos(x, y).size(w, 15).build();
-        separator.active = false;
-        this.addRenderableWidget(separator);
-        y += 20;
-
-        // 7. Toggle Cerchio (MODIFICATO)
-        this.addRenderableWidget(Button.builder(
-                Component.literal("Guida Cerchio: " + (ModConfig.showCircleGuide ? "§aON" : "§cOFF") + " (R: " + ModConfig.circleRadius + ")"),
+        this.addRenderableWidget(new SciFiButton(x, y, w, h,
+                Component.literal("Tipo: §b" + ModConfig.currentShape.name()),
                 b -> {
-                    ModConfig.showCircleGuide = !ModConfig.showCircleGuide;
+                    int next = (ModConfig.currentShape.ordinal() + 1) % ModConfig.ShapeType.values().length;
+                    ModConfig.currentShape = ModConfig.ShapeType.values()[next];
+                    b.setMessage(Component.literal("Tipo: §b" + ModConfig.currentShape.name()));
+                }));
+        y += step + 5;
 
-                    // SE ATTIVIAMO, SALVIAMO LA POSIZIONE ATTUALE COME CENTRO FISSO
-                    if (ModConfig.showCircleGuide && Minecraft.getInstance().player != null) {
-                        ModConfig.circleCenterX = (int) Math.floor(Minecraft.getInstance().player.getX());
-                        ModConfig.circleCenterY = (int) Math.floor(Minecraft.getInstance().player.getY());
-                        ModConfig.circleCenterZ = (int) Math.floor(Minecraft.getInstance().player.getZ());
-                    }
-
-                    b.setMessage(Component.literal("Guida Cerchio: " + (ModConfig.showCircleGuide ? "§aON" : "§cOFF") + " (R: " + ModConfig.circleRadius + ")"));
-                }).pos(x, y).size(w, h).build());
-
+        // SLIDER RAGGI
+        this.addRenderableWidget(new SimpleSciFiSlider(x, y, w, h, "Raggio A (Main): ", 1.0, 50.0, (double)ModConfig.shapeRadius, v -> ModConfig.shapeRadius = v.intValue()));
         y += step;
+        this.addRenderableWidget(new SimpleSciFiSlider(x, y, w, h, "Raggio B (Ellisse): ", 1.0, 50.0, (double)ModConfig.shapeRadiusB, v -> ModConfig.shapeRadiusB = v.intValue()));
+        y += step + 20;
 
-        // 8. Slider Raggio Cerchio
-        this.addRenderableWidget(new CircleRadiusSlider(x, y, w, h, ModConfig.circleRadius));
-
-        y += step;
-
-        // 9. Reset Misuratore
-        this.addRenderableWidget(Button.builder(
-                Component.literal("Resetta Misuratore"),
+        // 3. RILEVATORE BUCHI
+        this.addRenderableWidget(new SciFiButton(x, y, w, h,
+                Component.literal("Trova Buchi: " + (ModConfig.showLeakDetector ? "§cON" : "§aOFF")),
                 b -> {
-                    ModConfig.measurePos1 = null;
-                    ModConfig.measurePos2 = null;
-                    if(Minecraft.getInstance().player != null) {
-                        Minecraft.getInstance().player.displayClientMessage(Component.literal("§eMisuratore Resettato."), true);
-                    }
-                }).pos(x, y).size(w, h).build());
+                    ModConfig.showLeakDetector = !ModConfig.showLeakDetector;
+                    b.setMessage(Component.literal("Trova Buchi: " + (ModConfig.showLeakDetector ? "§cON" : "§aOFF")));
+                }));
+        y += step + 20;
 
-        y += step + 10;
+        // 4. METRO / RESET
+        this.addRenderableWidget(new SciFiButton(x, y, w, h,
+                Component.literal("Resetta Metro"),
+                b -> {
+                    ModConfig.measurePos1 = null; ModConfig.measurePos2 = null;
+                    if(Minecraft.getInstance().player != null) Minecraft.getInstance().player.displayClientMessage(Component.literal("§eMetro resettato."), true);
+                }));
 
-        this.addRenderableWidget(Button.builder(Component.literal("INDIETRO"), b -> this.onClose())
-                .pos(x, y).size(w, h).build());
+        // INDIETRO
+        this.addRenderableWidget(new SciFiButton(panelLeft + (PANEL_WIDTH - 100) / 2, panelTop + PANEL_HEIGHT - 40, 100, 22, Component.literal("§l§f[ BACK ]"), b -> this.onClose()));
     }
 
     @Override
-    public void onClose() {
-        Minecraft.getInstance().setScreen(parent);
-    }
+    public void onClose() { Minecraft.getInstance().setScreen(parent); }
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
-        guiGraphics.drawCenteredString(font, this.title, width / 2, 10, 0xFFFFFF);
-        if (ModConfig.showCircleGuide) {
-            guiGraphics.drawCenteredString(font, "§bCerchio fissato a: " + ModConfig.circleCenterX + ", " + ModConfig.circleCenterY + ", " + ModConfig.circleCenterZ, width / 2, 25, 0xFFFFFF);
+        int panelLeft = (this.width - PANEL_WIDTH) / 2;
+        int panelTop = (this.height - PANEL_HEIGHT) / 2;
+
+        guiGraphics.fill(panelLeft, panelTop, panelLeft + PANEL_WIDTH, panelTop + PANEL_HEIGHT, 0xFF1A1A2E);
+        int borderColor = 0xFF00AAFF;
+        guiGraphics.fill(panelLeft, panelTop, panelLeft + PANEL_WIDTH, panelTop + 2, borderColor);
+        guiGraphics.fill(panelLeft, panelTop + PANEL_HEIGHT - 2, panelLeft + PANEL_WIDTH, panelTop + PANEL_HEIGHT, borderColor);
+        guiGraphics.fill(panelLeft, panelTop, panelLeft + 2, panelTop + PANEL_HEIGHT, borderColor);
+        guiGraphics.fill(panelLeft + PANEL_WIDTH - 2, panelTop, panelLeft + PANEL_WIDTH, panelTop + PANEL_HEIGHT, borderColor);
+
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        guiGraphics.drawCenteredString(font, "§6§l[ BUILDER TOOLS CONFIG ]", this.width / 2, panelTop + 10, 0xFFFFFFFF);
+
+        if (ModConfig.showShapeGuide) {
+            guiGraphics.drawCenteredString(font, "§7Centro Forma: " + ModConfig.shapeCenterX + ", " + ModConfig.shapeCenterY + ", " + ModConfig.shapeCenterZ, width / 2, panelTop + 245, 0xAAAAAA);
         }
+
+        if (ModConfig.showVerticalLevels && ModConfig.gridLockPos) {
+            guiGraphics.drawCenteredString(font, "§eGriglia Bloccata a: " + (int)ModConfig.lockedX + ", " + (int)ModConfig.lockedY + ", " + (int)ModConfig.lockedZ, width / 2, panelTop + 90, 0xFFFFFF00);
+        }
+
         super.render(guiGraphics, mouseX, mouseY, partialTick);
     }
 
-    private static class GridSpacingSlider extends AbstractSliderButton {
-        public GridSpacingSlider(int x, int y, int width, int height, int val) { super(x, y, width, height, Component.literal("Spaziatura Piani: " + val), (val - 1) / 19.0); }
-        @Override protected void updateMessage() { int val = (int)(this.value * 19) + 1; setMessage(Component.literal("Spaziatura Piani: " + val)); applyValue(); }
-        @Override protected void applyValue() { ModConfig.gridSpacingY = (int)(this.value * 19) + 1; }
-    }
-    private static class GridRadiusSlider extends AbstractSliderButton {
-        public GridRadiusSlider(int x, int y, int width, int height, int val) { super(x, y, width, height, Component.literal("Raggio Griglia: " + val), (val - 5) / 59.0); }
-        @Override protected void updateMessage() { int val = (int)(this.value * 59) + 5; setMessage(Component.literal("Raggio Griglia: " + val)); applyValue(); }
-        @Override protected void applyValue() { ModConfig.gridRadius = (int)(this.value * 59) + 5; }
-    }
-    private static class GridFloorsUpSlider extends AbstractSliderButton {
-        public GridFloorsUpSlider(int x, int y, int width, int height, int val) { super(x, y, width, height, Component.literal("Piani Sopra: " + val), val / 10.0); }
-        @Override protected void updateMessage() { int val = (int)(this.value * 10); setMessage(Component.literal("Piani Sopra: " + val)); applyValue(); }
-        @Override protected void applyValue() { ModConfig.gridFloorsUp = (int)(this.value * 10); }
-    }
-    private static class GridFloorsDownSlider extends AbstractSliderButton {
-        public GridFloorsDownSlider(int x, int y, int width, int height, int val) { super(x, y, width, height, Component.literal("Piani Sotto: " + val), val / 10.0); }
-        @Override protected void updateMessage() { int val = (int)(this.value * 10); setMessage(Component.literal("Piani Sotto: " + val)); applyValue(); }
-        @Override protected void applyValue() { ModConfig.gridFloorsDown = (int)(this.value * 10); }
-    }
-    private static class CircleRadiusSlider extends AbstractSliderButton {
-        public CircleRadiusSlider(int x, int y, int width, int height, int val) { super(x, y, width, height, Component.literal("Raggio Cerchio: " + val), (val - 1) / 49.0); }
-        @Override protected void updateMessage() { int val = (int)(this.value * 49) + 1; setMessage(Component.literal("Raggio Cerchio: " + val)); applyValue(); }
-        @Override protected void applyValue() { ModConfig.circleRadius = (int)(this.value * 49) + 1; }
+    // --- CORREZIONE CLASSE SLIDER ---
+    // Questa classe ora gestisce correttamente la conversione da 0.0-1.0 ai valori reali (es. 1-20)
+    // PRIMA di salvare nel config, evitando il reset a 0.
+    private static class SimpleSciFiSlider extends SciFiSlider {
+        private final String prefix;
+        private final double min, max;
+        private final java.util.function.Consumer<Double> realApplier;
+
+        public SimpleSciFiSlider(int x, int y, int width, int height, String prefix, double min, double max, double current, java.util.function.Consumer<Double> applier) {
+            // Passiamo 'null' al padre come applier, così gestiamo noi il salvataggio manuale
+            super(x, y, width, height,
+                    Component.literal(prefix + (int)current),
+                    (current - min) / (max - min),
+                    null);
+
+            this.prefix = prefix;
+            this.min = min;
+            this.max = max;
+            this.realApplier = applier;
+            this.updateMessage();
+        }
+
+        @Override
+        protected void updateMessage() {
+            // Solo aggiornamento visivo
+            int val = (int)(min + (max - min) * value);
+            setMessage(Component.literal(prefix + val));
+        }
+
+        @Override
+        protected void applyValue() {
+            // Qui calcoliamo il valore REALE e lo salviamo
+            this.updateMessage();
+            int val = (int)(min + (max - min) * value);
+            if (realApplier != null) {
+                realApplier.accept((double)val);
+            }
+        }
     }
 }

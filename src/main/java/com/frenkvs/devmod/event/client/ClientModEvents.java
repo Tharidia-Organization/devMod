@@ -1,6 +1,7 @@
 package com.frenkvs.devmod.event.client;
 
 import com.frenkvs.devmod.config.ModConfig;
+import com.frenkvs.devmod.permission.PermissionManager;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -32,6 +33,9 @@ public class ClientModEvents {
 
         @Override
         public void render(GuiGraphics guiGraphics, DeltaTracker deltaTracker) {
+            // Check if player has OP level 4 or higher
+            if (!PermissionManager.isClientOp()) return;
+            
             if (!ModConfig.showOverlay) return;
 
             Minecraft mc = Minecraft.getInstance();
