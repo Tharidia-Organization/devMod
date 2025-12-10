@@ -196,13 +196,16 @@ public class IntegratedTestHud {
             graphics.fill(x + 4, textY, x + PANEL_WIDTH - 4, textY + 1, PANEL_BORDER & 0x55FFFFFF);
             textY += 4;
 
-            // Test name (truncated)
+            // Test name (truncated - keep at least 6 chars for readability)
             String testName = linkedTest.getName();
-            if (font.width(testName) > PANEL_WIDTH - PANEL_PADDING * 2 - 10) {
-                while (font.width(testName + "..") > PANEL_WIDTH - PANEL_PADDING * 2 - 10 && testName.length() > 5) {
+            int maxTestNameWidth = PANEL_WIDTH - PANEL_PADDING * 2 - 10;
+            if (font.width(testName) > maxTestNameWidth) {
+                String ellipsis = "...";
+                int minChars = Math.min(6, testName.length());
+                while (font.width(testName + ellipsis) > maxTestNameWidth && testName.length() > minChars) {
                     testName = testName.substring(0, testName.length() - 1);
                 }
-                testName += "..";
+                testName += ellipsis;
             }
             graphics.drawString(font, "\u25B6 " + testName, textX, textY, TEXT_NORMAL, false);
             textY += LINE_HEIGHT;

@@ -20,11 +20,11 @@ import java.util.stream.Collectors;
 public class EnduranceQuestScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestScreen.class);
 
-    // Layout constants
-    private static final int SIDEBAR_WIDTH = 200;
+    // Layout constants - using UIConstants for consistency
+    private static final int SIDEBAR_WIDTH = UIConstants.Size.SIDEBAR_WIDTH;
     private static final int HEADER_HEIGHT = 40;
     private static final int QUEST_CARD_HEIGHT = 80;
-    private static final int QUEST_CARD_MARGIN = 5;
+    private static final int QUEST_CARD_MARGIN = UIConstants.Spacing.GAP_SMALL;
 
     // Colors - standardized to UIConstants
     private static final int COLOR_BG = UIConstants.Background.PANEL;
@@ -103,6 +103,9 @@ public class EnduranceQuestScreen extends Screen {
     protected void init() {
         super.init();
 
+        // Notify onboarding overlay that Endurance Quest was opened
+        com.frenkvs.devmod.hud.OnboardingOverlay.onEnduranceQuestOpened();
+
         // Request personal records from server
         net.neoforged.neoforge.network.PacketDistributor.sendToServer(new RequestPersonalRecordsPayload());
 
@@ -123,26 +126,36 @@ public class EnduranceQuestScreen extends Screen {
         });
         addRenderableWidget(searchBox);
 
-        // Start Quest button
+        // Start Quest button (primary CTA - use large height)
         addRenderableWidget(Button.builder(I18n.ui("start_quest"), btn -> startSelectedQuest())
-            .bounds(width - 130, height - 40, 120, 30)
+            .bounds(width - UIConstants.Size.BUTTON_WIDTH_MEDIUM - 10, height - 40,
+                    UIConstants.Size.BUTTON_WIDTH_MEDIUM, UIConstants.Size.BUTTON_HEIGHT_LARGE)
+            .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.tooltip.start_quest")))
             .build());
 
-        // Settings buttons
+        // Settings buttons (icon buttons for +/-)
         addRenderableWidget(Button.builder(I18n.ui("minus_symbol"), btn -> adjustWaves(-1))
-            .bounds(width - 200, height - 80, 20, 20)
+            .bounds(width - SIDEBAR_WIDTH, height - 80,
+                    UIConstants.Size.BUTTON_WIDTH_ICON, UIConstants.Size.BUTTON_HEIGHT)
+            .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.tooltip.decrease_waves")))
             .build());
         addRenderableWidget(Button.builder(I18n.ui("plus_symbol"), btn -> adjustWaves(1))
-            .bounds(width - 130, height - 80, 20, 20)
+            .bounds(width - UIConstants.Size.BUTTON_WIDTH_MEDIUM - 10, height - 80,
+                    UIConstants.Size.BUTTON_WIDTH_ICON, UIConstants.Size.BUTTON_HEIGHT)
+            .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.tooltip.increase_waves")))
             .build());
 
         addRenderableWidget(Button.builder(I18n.translate("devmod.endurance.endless_off"), btn -> toggleEndless(btn))
-            .bounds(width - 200, height - 55, 100, 20)
+            .bounds(width - SIDEBAR_WIDTH, height - 55,
+                    UIConstants.Size.BUTTON_WIDTH_SMALL, UIConstants.Size.BUTTON_HEIGHT)
+            .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.tooltip.endless_mode")))
             .build());
 
-        // Shop button
+        // Shop button (secondary action - use large height for consistency)
         addRenderableWidget(Button.builder(I18n.ui("shop"), btn -> openShop())
-            .bounds(10, height - 40, 80, 30)
+            .bounds(UIConstants.Spacing.PANEL_MARGIN, height - 40,
+                    UIConstants.Size.BUTTON_WIDTH_SMALL - 20, UIConstants.Size.BUTTON_HEIGHT_LARGE)
+            .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.tooltip.shop")))
             .build());
     }
 
@@ -393,13 +406,17 @@ public class EnduranceQuestScreen extends Screen {
         int listWidth = width - SIDEBAR_WIDTH - 250;
         int listHeight = height - HEADER_HEIGHT - 60;
 
+        // Account for scrollbar width to prevent content shifting
+        boolean hasScrollbar = maxScroll > 0;
+        int effectiveListWidth = hasScrollbar ? listWidth - 8 : listWidth;
+
         // Clip area
         graphics.enableScissor(listX, listY, listX + listWidth, listY + listHeight);
 
         int y = listY - scrollOffset;
         for (EnduranceQuestRegistry.MobQuestConfig quest : filteredQuests) {
             if (y + QUEST_CARD_HEIGHT > listY && y < listY + listHeight) {
-                renderQuestCard(graphics, quest, listX, y, listWidth, mouseX, mouseY);
+                renderQuestCard(graphics, quest, listX, y, effectiveListWidth, mouseX, mouseY);
             }
             y += QUEST_CARD_HEIGHT + QUEST_CARD_MARGIN;
         }
@@ -407,7 +424,7 @@ public class EnduranceQuestScreen extends Screen {
         graphics.disableScissor();
 
         // Scrollbar
-        if (maxScroll > 0) {
+        if (hasScrollbar) {
             int scrollbarHeight = (int) ((float) listHeight / (listHeight + maxScroll) * listHeight);
             int scrollbarY = listY + (int) ((float) scrollOffset / maxScroll * (listHeight - scrollbarHeight));
             graphics.fill(listX + listWidth - 5, listY, listX + listWidth, listY + listHeight, UIConstants.Border.SEPARATOR);
@@ -459,45 +476,80 @@ public class EnduranceQuestScreen extends Screen {
         int panelWidth = 220;
         int panelHeight = height - HEADER_HEIGHT - 120;
 
-        graphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, COLOR_SIDEBAR_BG);
+        // Ensure minimum height for content visibility
+        int minRequiredHeight = 220; // Minimum content height needed
+        int effectivePanelHeight = Math.max(panelHeight, minRequiredHeight);
+
+        graphics.fill(panelX, panelY, panelX + panelWidth, panelY + effectivePanelHeight, COLOR_SIDEBAR_BG);
+
+        // Enable scissor to clip content to panel bounds
+        int maxY = panelY + effectivePanelHeight - 5; // Leave small margin at bottom
 
         int y = panelY + 10;
 
         // Quest name
-        graphics.drawCenteredString(font, selectedQuest.displayName, panelX + panelWidth / 2, y, COLOR_TEXT);
+        if (y < maxY) {
+            graphics.drawCenteredString(font, selectedQuest.displayName, panelX + panelWidth / 2, y, COLOR_TEXT);
+        }
         y += 20;
 
         // Tier with color
         int tierColor = TIER_COLORS.get(selectedQuest.tier);
-        graphics.drawCenteredString(font, selectedQuest.tier.name() + " Difficulty", panelX + panelWidth / 2, y, tierColor);
+        if (y < maxY) {
+            graphics.drawCenteredString(font, selectedQuest.tier.name() + " Difficulty", panelX + panelWidth / 2, y, tierColor);
+        }
         y += 25;
 
         // Divider
-        graphics.fill(panelX + 10, y, panelX + panelWidth - 10, y + 1, UIConstants.Border.SEPARATOR);
+        if (y < maxY) {
+            graphics.fill(panelX + 10, y, panelX + panelWidth - 10, y + 1, UIConstants.Border.SEPARATOR);
+        }
         y += 10;
 
-        // Stats
-        graphics.drawString(font, "Wave Configuration:", panelX + 10, y, COLOR_ACCENT);
+        // Stats - Wave Configuration
+        if (y < maxY) {
+            graphics.drawString(font, "Wave Configuration:", panelX + 10, y, COLOR_ACCENT);
+        }
         y += 14;
-        graphics.drawString(font, String.format("  Base count: %d", selectedQuest.baseCountPerWave), panelX + 10, y, COLOR_TEXT_DIM);
+        if (y < maxY) {
+            graphics.drawString(font, String.format("  Base count: %d", selectedQuest.baseCountPerWave), panelX + 10, y, COLOR_TEXT_DIM);
+        }
         y += 12;
-        graphics.drawString(font, String.format("  Scaling: +%.1f/wave", selectedQuest.countScalingPerWave), panelX + 10, y, COLOR_TEXT_DIM);
+        if (y < maxY) {
+            graphics.drawString(font, String.format("  Scaling: +%.1f/wave", selectedQuest.countScalingPerWave), panelX + 10, y, COLOR_TEXT_DIM);
+        }
         y += 12;
-        graphics.drawString(font, String.format("  Max per wave: %d", selectedQuest.maxPerWave), panelX + 10, y, COLOR_TEXT_DIM);
+        if (y < maxY) {
+            graphics.drawString(font, String.format("  Max per wave: %d", selectedQuest.maxPerWave), panelX + 10, y, COLOR_TEXT_DIM);
+        }
         y += 20;
 
-        graphics.drawString(font, "Rewards:", panelX + 10, y, COLOR_ACCENT);
+        // Rewards
+        if (y < maxY) {
+            graphics.drawString(font, "Rewards:", panelX + 10, y, COLOR_ACCENT);
+        }
         y += 14;
-        graphics.drawString(font, String.format("  Per kill: %d pts", selectedQuest.pointsPerKill), panelX + 10, y, COLOR_SUCCESS);
+        if (y < maxY) {
+            graphics.drawString(font, String.format("  Per kill: %d pts", selectedQuest.pointsPerKill), panelX + 10, y, COLOR_SUCCESS);
+        }
         y += 12;
-        graphics.drawString(font, String.format("  Wave bonus: %d pts", selectedQuest.bonusPointsForWaveClear), panelX + 10, y, COLOR_SUCCESS);
+        if (y < maxY) {
+            graphics.drawString(font, String.format("  Wave bonus: %d pts", selectedQuest.bonusPointsForWaveClear), panelX + 10, y, COLOR_SUCCESS);
+        }
         y += 20;
 
-        graphics.drawString(font, "Spawn Info:", panelX + 10, y, COLOR_ACCENT);
+        // Spawn Info
+        if (y < maxY) {
+            graphics.drawString(font, "Spawn Info:", panelX + 10, y, COLOR_ACCENT);
+        }
         y += 14;
-        graphics.drawString(font, String.format("  Group spawn: %s", selectedQuest.canSpawnInGroups ? "Yes" : "No"), panelX + 10, y, COLOR_TEXT_DIM);
+        if (y < maxY) {
+            graphics.drawString(font, String.format("  Group spawn: %s", selectedQuest.canSpawnInGroups ? "Yes" : "No"), panelX + 10, y, COLOR_TEXT_DIM);
+        }
         y += 12;
-        graphics.drawString(font, String.format("  Elite chance: %.0f%%", selectedQuest.eliteChance * 100), panelX + 10, y, COLOR_WARNING);
+        if (y < maxY) {
+            graphics.drawString(font, String.format("  Elite chance: %.0f%%", selectedQuest.eliteChance * 100), panelX + 10, y, COLOR_WARNING);
+        }
     }
 
     private void renderSettingsPanel(GuiGraphics graphics) {

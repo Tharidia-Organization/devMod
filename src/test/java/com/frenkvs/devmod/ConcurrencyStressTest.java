@@ -66,7 +66,7 @@ public class ConcurrencyStressTest {
     @Test
     @DisplayName("100 player concurrent WeaponStats access")
     void testConcurrentWeaponStatsAccess() throws InterruptedException {
-        System.out.println("=== Starting Concurrent WeaponStats Test ===");
+        // Test starting: Concurrent WeaponStats Test
         System.out.println("Players: " + PLAYER_COUNT + ", Actions per player: " + ACTIONS_PER_PLAYER);
 
         CountDownLatch startLatch = new CountDownLatch(1);
@@ -128,7 +128,7 @@ public class ConcurrencyStressTest {
     @Test
     @DisplayName("100 player concurrent AtomicInteger/AtomicBoolean operations")
     void testConcurrentAtomicOperations() throws InterruptedException {
-        System.out.println("\n=== Starting Concurrent Atomic Operations Test ===");
+        System.out.println("[Concurrent Atomic Operations Test]");
         System.out.println("Players: " + PLAYER_COUNT + ", Actions per player: " + ACTIONS_PER_PLAYER);
 
         // Simulate TutorialManager-like atomic variables
@@ -201,7 +201,7 @@ public class ConcurrencyStressTest {
     @Test
     @DisplayName("100 player concurrent ConcurrentHashMap operations")
     void testConcurrentMapOperations() throws InterruptedException {
-        System.out.println("\n=== Starting Concurrent Map Operations Test ===");
+        System.out.println("[Concurrent Map Operations Test]");
         System.out.println("Players: " + PLAYER_COUNT + ", Actions per player: " + ACTIONS_PER_PLAYER);
 
         // Simulate WeaponConfigManager and MobConfigManager concurrent access
@@ -277,7 +277,7 @@ public class ConcurrencyStressTest {
     @Test
     @DisplayName("100 player concurrent CopyOnWriteArrayList operations")
     void testConcurrentListOperations() throws InterruptedException {
-        System.out.println("\n=== Starting Concurrent List Operations Test ===");
+        System.out.println("[Concurrent List Operations Test]");
         System.out.println("Players: " + PLAYER_COUNT + ", Actions per player: " + ACTIONS_PER_PLAYER);
 
         // Simulate TutorialManager achievements list
@@ -345,7 +345,7 @@ public class ConcurrencyStressTest {
     @Test
     @DisplayName("100 player mixed concurrent operations stress test")
     void testMixedConcurrentOperations() throws InterruptedException {
-        System.out.println("\n=== Starting Mixed Concurrent Operations Stress Test ===");
+        System.out.println("[Mixed Concurrent Operations Stress Test]");
         System.out.println("Players: " + PLAYER_COUNT + ", Actions per player: " + ACTIONS_PER_PLAYER);
 
         // All shared data structures
@@ -435,7 +435,7 @@ public class ConcurrencyStressTest {
 
         executor.shutdown();
 
-        System.out.println("\n--- Final State ---");
+        System.out.println("[Final State]");
         System.out.println("Total XP: " + totalXP.get());
         System.out.println("Level: " + level.get());
         System.out.println("Weapon configs: " + weaponConfigs.size());
@@ -454,14 +454,14 @@ public class ConcurrencyStressTest {
     }
 
     private void printResults(String testName, boolean completed) {
-        System.out.println("\n--- " + testName + " Results ---");
+        System.out.println("[" + testName + " Results]");
         System.out.println("Completed: " + completed);
         System.out.println("Success count: " + successCount.get());
         System.out.println("Error count: " + errorCount.get());
         System.out.println("Race conditions: " + hasRaceCondition.get());
         if (!errors.isEmpty()) {
             System.out.println("Errors:");
-            errors.forEach(e -> System.out.println("  - " + e));
+            errors.forEach(e -> System.out.println("  " + e));
         }
     }
 }

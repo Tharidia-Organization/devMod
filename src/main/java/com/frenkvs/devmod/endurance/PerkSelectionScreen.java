@@ -35,11 +35,18 @@ public class PerkSelectionScreen extends Screen {
     private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY;
     private static final int COLOR_ACCENT = UIConstants.Accent.BLUE;  // Blue instead of purple
 
-    // === Dimensions ===
-    private static final int CARD_WIDTH = 200;
-    private static final int CARD_HEIGHT = 220;  // Increased from 180 to fit longer descriptions
-    private static final int CARD_SPACING = 20;
+    // === Dimensions (base values, may be scaled down for small screens) ===
+    private static final int BASE_CARD_WIDTH = 200;
+    private static final int BASE_CARD_HEIGHT = 220;  // Increased from 180 to fit longer descriptions
+    private static final int BASE_CARD_SPACING = 20;
+    private static final int MIN_CARD_WIDTH = 150;  // Minimum card width before switching layout
     private static final int MAX_DESCRIPTION_LINES = 6;  // Allow more description lines
+    private static final int SIDE_MARGIN = 20;  // Minimum margin on each side
+
+    // Calculated dimensions (responsive)
+    private int cardWidth;
+    private int cardHeight;
+    private int cardSpacing;
 
     // === Animation ===
     private static final long FADE_IN_DURATION = 400;
@@ -69,30 +76,82 @@ public class PerkSelectionScreen extends Screen {
         openTime = System.currentTimeMillis();
         perkButtons.clear();
 
-        int totalWidth = choices.size() * CARD_WIDTH + (choices.size() - 1) * CARD_SPACING;
+        // Calculate responsive card dimensions
+        calculateCardDimensions();
+
+        int totalWidth = choices.size() * cardWidth + (choices.size() - 1) * cardSpacing;
         int startX = (width - totalWidth) / 2;
-        int cardY = height / 2 - CARD_HEIGHT / 2 + 20;
+        int cardY = height / 2 - cardHeight / 2 + 20;
 
         for (int i = 0; i < choices.size(); i++) {
             final int index = i;
-            int cardX = startX + i * (CARD_WIDTH + CARD_SPACING);
+            int cardX = startX + i * (cardWidth + cardSpacing);
+
+            // Calculate button dimensions proportionally to card size
+            int buttonMargin = Math.max(10, cardWidth / 8); // Proportional margin
+            int buttonWidth = Math.max(60, cardWidth - buttonMargin * 2);
+            int buttonHeight = Math.min(25, cardHeight / 8);
+            int buttonY = cardY + cardHeight - buttonHeight - 10;
 
             Button btn = Button.builder(
                     I18n.ui("perk.select"),
                     b -> selectPerk(index))
-                .bounds(cardX + 25, cardY + CARD_HEIGHT - 35, CARD_WIDTH - 50, 25)
+                .bounds(cardX + buttonMargin, buttonY, buttonWidth, buttonHeight)
                 .build();
             btn.visible = false;
             addRenderableWidget(btn);
             perkButtons.add(btn);
         }
 
-        // Skip button (bottom)
+        // Skip button (bottom - prominent height for visibility)
         addRenderableWidget(Button.builder(
                 I18n.ui("perk.skip"),
                 b -> skipPerk())
-            .bounds(width / 2 - 60, height - 50, 120, 25)
+            .bounds(width / 2 - UIConstants.Size.BUTTON_WIDTH_MEDIUM / 2, height - 50,
+                    UIConstants.Size.BUTTON_WIDTH_MEDIUM, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
             .build());
+    }
+
+    /**
+     * Calculate responsive card dimensions based on screen size.
+     * Ensures cards never overlap by recalculating spacing based on actual widths.
+     */
+    private void calculateCardDimensions() {
+        int numCards = choices.size();
+        if (numCards == 0) numCards = 1;
+
+        // Available width for cards (leaving margins)
+        int availableWidth = width - (SIDE_MARGIN * 2);
+
+        // Calculate maximum card width that fits with base spacing
+        int maxCardWidth = (availableWidth - (numCards - 1) * BASE_CARD_SPACING) / numCards;
+
+        // Use base dimensions if they fit, otherwise scale down
+        if (maxCardWidth >= BASE_CARD_WIDTH) {
+            cardWidth = BASE_CARD_WIDTH;
+            cardSpacing = BASE_CARD_SPACING;
+        } else if (maxCardWidth >= MIN_CARD_WIDTH) {
+            cardWidth = maxCardWidth;
+            // Recalculate spacing to ensure no overlap: spacing = (availableWidth - numCards * cardWidth) / (numCards - 1)
+            if (numCards > 1) {
+                cardSpacing = Math.max(4, (availableWidth - numCards * cardWidth) / (numCards - 1));
+            } else {
+                cardSpacing = 0;
+            }
+        } else {
+            // Very small screen - use minimum width and calculate remaining spacing
+            cardWidth = MIN_CARD_WIDTH;
+            if (numCards > 1) {
+                // Calculate actual spacing available, minimum 4px to prevent overlap
+                cardSpacing = Math.max(4, (availableWidth - numCards * MIN_CARD_WIDTH) / (numCards - 1));
+            } else {
+                cardSpacing = 0;
+            }
+        }
+
+        // Scale height proportionally
+        float scale = (float) cardWidth / BASE_CARD_WIDTH;
+        cardHeight = (int) (BASE_CARD_HEIGHT * scale);
     }
 
     @Override
@@ -132,9 +191,9 @@ public class PerkSelectionScreen extends Screen {
         }
 
         // Perk cards
-        int totalWidth = choices.size() * CARD_WIDTH + (choices.size() - 1) * CARD_SPACING;
+        int totalWidth = choices.size() * cardWidth + (choices.size() - 1) * cardSpacing;
         int startX = (width - totalWidth) / 2;
-        int cardY = height / 2 - CARD_HEIGHT / 2 + 20;
+        int cardY = height / 2 - cardHeight / 2 + 20;
 
         // Track hovered card for comparison panel
         hoveredIndex = -1;
@@ -143,10 +202,10 @@ public class PerkSelectionScreen extends Screen {
             long cardDelay = FADE_IN_DURATION + i * CARD_STAGGER;
             if (elapsed > cardDelay) {
                 float cardProgress = Math.min(1.0f, (elapsed - cardDelay) / 300f);
-                int cardX = startX + i * (CARD_WIDTH + CARD_SPACING);
+                int cardX = startX + i * (cardWidth + cardSpacing);
 
-                boolean isHovered = mouseX >= cardX && mouseX <= cardX + CARD_WIDTH
-                    && mouseY >= cardY && mouseY <= cardY + CARD_HEIGHT;
+                boolean isHovered = mouseX >= cardX && mouseX <= cardX + cardWidth
+                    && mouseY >= cardY && mouseY <= cardY + cardHeight;
                 boolean isSelected = selectedIndex == i;
 
                 if (isHovered) {
@@ -178,10 +237,10 @@ public class PerkSelectionScreen extends Screen {
         if (hovered) scale = 1.02f;
         if (selected) scale = 1.05f;
 
-        int cardW = (int) (CARD_WIDTH * scale);
-        int cardH = (int) (CARD_HEIGHT * scale);
-        int cardX = x + (CARD_WIDTH - cardW) / 2;
-        int cardY = y + (CARD_HEIGHT - cardH) / 2;
+        int cardW = (int) (cardWidth * scale);
+        int cardH = (int) (cardHeight * scale);
+        int cardX = x + (cardWidth - cardW) / 2;
+        int cardY = y + (cardHeight - cardH) / 2;
 
         // Background
         int bgColor = selected ? COLOR_CARD_SELECTED : (hovered ? COLOR_CARD_HOVER : COLOR_CARD_BG);
@@ -294,13 +353,15 @@ public class PerkSelectionScreen extends Screen {
             int dotColor = applyAlpha(perk.tierColor() | 0xFF000000, alpha);
             g.fill(panelX + 8, lineY + 3, panelX + 14, lineY + 9, dotColor);
 
-            // Perk name (truncated)
+            // Perk name (truncated - keep at least 6 chars for readability)
             String name = perk.name();
             if (font.width(name) > 100) {
-                while (font.width(name + "..") > 100 && name.length() > 3) {
+                String ellipsis = "...";
+                int minChars = Math.min(6, name.length());
+                while (font.width(name + ellipsis) > 100 && name.length() > minChars) {
                     name = name.substring(0, name.length() - 1);
                 }
-                name += "..";
+                name += ellipsis;
             }
             int nameColor = isHovered ? applyAlpha(COLOR_TEXT, alpha) : applyAlpha(COLOR_TEXT_DIM, alpha);
             g.drawString(font, name, panelX + 18, lineY, nameColor);
@@ -371,14 +432,14 @@ public class PerkSelectionScreen extends Screen {
         }
 
         // Check card clicks - directly select the perk
-        int totalWidth = choices.size() * CARD_WIDTH + (choices.size() - 1) * CARD_SPACING;
+        int totalWidth = choices.size() * cardWidth + (choices.size() - 1) * cardSpacing;
         int startX = (width - totalWidth) / 2;
-        int cardY = height / 2 - CARD_HEIGHT / 2 + 20;
+        int cardY = height / 2 - cardHeight / 2 + 20;
 
         for (int i = 0; i < choices.size(); i++) {
-            int cardX = startX + i * (CARD_WIDTH + CARD_SPACING);
-            if (mouseX >= cardX && mouseX <= cardX + CARD_WIDTH
-                && mouseY >= cardY && mouseY <= cardY + CARD_HEIGHT) {
+            int cardX = startX + i * (cardWidth + cardSpacing);
+            if (mouseX >= cardX && mouseX <= cardX + cardWidth
+                && mouseY >= cardY && mouseY <= cardY + cardHeight) {
                 // Directly select the perk when clicking anywhere on the card
                 selectPerk(i);
                 return true;

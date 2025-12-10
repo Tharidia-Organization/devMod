@@ -703,7 +703,12 @@ public class RadialMenuScreenV3 extends Screen {
         rootCategories.add(quest);
 
         categoryAnimations = new float[rootCategories.size()];
-        itemAnimations = new float[20];
+        // Calculate max items across all categories for proper animation array size
+        int maxItems = rootCategories.stream()
+            .mapToInt(cat -> cat.getItems().size())
+            .max()
+            .orElse(10);
+        itemAnimations = new float[Math.max(maxItems, 10)];
     }
 
     private RadialMenuItem createMobEditorItem() {
@@ -783,6 +788,7 @@ public class RadialMenuScreenV3 extends Screen {
         }
 
         renderCategories(graphics);
+        renderFavoritesRing(graphics);
         renderCenterHub(graphics, mouseX, mouseY);
 
         if (selectedCategoryIndex >= 0 && selectedCategoryIndex < getActiveCategories().size()) {
@@ -1134,13 +1140,28 @@ public class RadialMenuScreenV3 extends Screen {
         // Inner ring for depth
         renderRing(graphics, centerX, centerY, centerButtonRadius - 4, centerButtonRadius - 3, 0xFF404060);
 
+        // Determine if we're in a subcategory (navigable back)
+        boolean inSubcategory = currentCategory != null && currentCategory.hasParent();
+
         // Static icon (no bounce)
-        String centerIcon = hovered ? "✕" : (searchMode ? "🔍" : "⚡");
-        int iconColor = hovered ? 0xFFFF6666 : 0xFF8080FF;
+        String centerIcon;
+        int iconColor;
+        if (hovered) {
+            centerIcon = inSubcategory ? "←" : "✕";
+            iconColor = inSubcategory ? 0xFF80AAFF : 0xFFFF6666;
+        } else {
+            centerIcon = searchMode ? "🔍" : "⚡";
+            iconColor = 0xFF8080FF;
+        }
         graphics.drawCenteredString(font, centerIcon, centerX, centerY - 4, iconColor);
 
-        // Label - brighter
-        String label = hovered ? "Close" : (searchMode ? "Search" : "DevMod");
+        // Label - brighter, shows "Back" when in subcategory
+        String label;
+        if (hovered) {
+            label = inSubcategory ? "Back" : "Close";
+        } else {
+            label = searchMode ? "Search" : "DevMod";
+        }
         int labelColor = hovered ? 0xFFFFFFFF : 0xFFCCCCDD;
         graphics.drawCenteredString(font, label, centerX, centerY + 8, labelColor);
     }
@@ -1275,14 +1296,16 @@ public class RadialMenuScreenV3 extends Screen {
                 graphics.drawCenteredString(font, item.getIconEmoji(), itemX, itemY - 12, iconColor);
             }
 
-            // Name - truncate if too long
+            // Name - truncate if too long (keep at least 6 chars for readability)
             String name = item.getName();
             int maxWidth = 56;
             if (font.width(name) > maxWidth) {
-                while (font.width(name + "..") > maxWidth && name.length() > 3) {
+                String ellipsis = "...";
+                int minChars = Math.min(6, name.length());
+                while (font.width(name + ellipsis) > maxWidth && name.length() > minChars) {
                     name = name.substring(0, name.length() - 1);
                 }
-                name += "..";
+                name += ellipsis;
             }
             int nameColor = itemSelected ? theme.textPrimary : (isActive ? theme.active : theme.textSecondary);
             graphics.drawCenteredString(font, name, itemX, itemY + 4, nameColor);

@@ -61,41 +61,41 @@ public class OnboardingOverlay {
     private static boolean waitingForAction = false;
     private static float pulseAnimation = 0;
 
-    // Tutorial steps
+    // Tutorial steps - using i18n keys
     // NOTE: Key placeholders like [KEY] are replaced at runtime with actual bindings
     private static final TutorialStep[] STEPS = {
         new TutorialStep(
-            "Welcome to DevMod!",
-            "Let's learn the basics.",
-            "Press [KEY] to open the Radial Menu",
+            "devmod.tutorial.step1.title",
+            "devmod.tutorial.step1.desc",
+            "devmod.tutorial.step1.instruction",
             KeyInputHandler.OPEN_RADIAL_MENU_KEY,
             TutorialAction.OPEN_RADIAL_MENU
         ),
         new TutorialStep(
-            "Radial Menu",
-            "This is your command center for all DevMod tools.",
-            "Select any category by clicking or pressing 1-6",
+            "devmod.tutorial.step2.title",
+            "devmod.tutorial.step2.desc",
+            "devmod.tutorial.step2.instruction",
             null,
             TutorialAction.SELECT_CATEGORY
         ),
         new TutorialStep(
-            "Toggle an Overlay",
-            "Try enabling a debug overlay.",
-            "Click on any overlay toggle in the menu",
+            "devmod.tutorial.step3.title",
+            "devmod.tutorial.step3.desc",
+            "devmod.tutorial.step3.instruction",
             null,
             TutorialAction.TOGGLE_OVERLAY
         ),
         new TutorialStep(
-            "Explore More!",
-            "Use the Radial Menu to access all DevMod features.",
-            "Open the menu again with [KEY] and explore!",
-            KeyInputHandler.OPEN_RADIAL_MENU_KEY,
-            TutorialAction.OPEN_RADIAL_MENU
+            "devmod.tutorial.step4.title",
+            "devmod.tutorial.step4.desc",
+            "devmod.tutorial.step4.instruction",
+            KeyInputHandler.OPEN_ENDURANCE_QUEST_KEY,
+            TutorialAction.OPEN_ENDURANCE_QUEST
         ),
         new TutorialStep(
-            "You're Ready!",
-            "You now know the basics of DevMod.",
-            "Press ESC or click 'Done' to finish the tutorial",
+            "devmod.tutorial.step5.title",
+            "devmod.tutorial.step5.desc",
+            "devmod.tutorial.step5.instruction",
             null,
             TutorialAction.COMPLETE
         )
@@ -106,6 +106,7 @@ public class OnboardingOverlay {
         SELECT_CATEGORY,
         TOGGLE_OVERLAY,
         OPEN_HELP,
+        OPEN_ENDURANCE_QUEST,
         COMPLETE
     }
 
@@ -184,20 +185,22 @@ public class OnboardingOverlay {
         y += progressBarHeight + 8;
 
         // Step counter
-        String stepText = "Step " + (currentStep + 1) + " of " + STEPS.length;
+        String stepText = I18n.translate("devmod.tutorial.step_counter", currentStep + 1, STEPS.length).getString();
         graphics.drawString(font, stepText, contentX, y, MUTED_COLOR, false);
         y += LINE_HEIGHT + 4;
 
-        // Title
-        graphics.drawString(font, "§l" + step.title, contentX, y, TITLE_COLOR, false);
+        // Title (translate from i18n key)
+        String title = I18n.translate(step.title).getString();
+        graphics.drawString(font, "§l" + title, contentX, y, TITLE_COLOR, false);
         y += LINE_HEIGHT + 2;
 
-        // Description
-        graphics.drawString(font, step.description, contentX, y, TEXT_COLOR, false);
+        // Description (translate from i18n key)
+        String description = I18n.translate(step.description).getString();
+        graphics.drawString(font, description, contentX, y, TEXT_COLOR, false);
         y += LINE_HEIGHT + 8;
 
-        // Instruction with pulsing highlight
-        String instruction = step.instruction;
+        // Instruction with pulsing highlight (translate from i18n key)
+        String instruction = I18n.translate(step.instruction).getString();
 
         // Replace [KEY] placeholder with actual keybind name
         if (step.keyHint != null && !step.keyHint.isUnbound()) {
@@ -205,18 +208,31 @@ public class OnboardingOverlay {
             instruction = instruction.replace("[KEY]", "[" + keyName + "]");
         } else if (step.keyHint != null) {
             // Key is unbound - show "UNBOUND" to prompt user to set it
-            instruction = instruction.replace("[KEY]", "[UNBOUND - set in Controls]");
+            String unboundText = I18n.translate("devmod.tutorial.key_unbound").getString();
+            instruction = instruction.replace("[KEY]", "[" + unboundText + "]");
+        }
+
+        // Truncate instruction if too long (keep at least 20 chars for readability)
+        String displayInstruction = "▶ " + instruction;
+        int maxInstructionWidth = contentWidth;
+        if (font.width(displayInstruction) > maxInstructionWidth) {
+            int minChars = Math.min(20, instruction.length());
+            while (font.width("▶ " + instruction + "...") > maxInstructionWidth && instruction.length() > minChars) {
+                instruction = instruction.substring(0, instruction.length() - 1);
+            }
+            displayInstruction = "▶ " + instruction + "...";
         }
 
         // Draw instruction with highlight
         int highlightAlpha = (int) (150 + pulse * 100);
         int highlightColor = (highlightAlpha << 24) | (HINT_COLOR & 0x00FFFFFF);
         graphics.fill(contentX - 4, y - 2, contentX + contentWidth + 4, y + LINE_HEIGHT + 2, 0x40000000);
-        graphics.drawString(font, "▶ " + instruction, contentX, y, highlightColor, false);
+        graphics.drawString(font, displayInstruction, contentX, y, highlightColor, false);
         y += LINE_HEIGHT + 10;
 
         // Skip/Done button hint
-        graphics.drawString(font, "§8[ESC] Skip tutorial", contentX, y, MUTED_COLOR, false);
+        String skipHint = I18n.translate("devmod.tutorial.skip_hint").getString();
+        graphics.drawString(font, "§8" + skipHint, contentX, y, MUTED_COLOR, false);
     }
 
     private static int calculatePanelHeight(Font font, TutorialStep step) {
@@ -274,6 +290,18 @@ public class OnboardingOverlay {
         if (active && currentStep < STEPS.length) {
             TutorialStep step = STEPS[currentStep];
             if (step.requiredAction == TutorialAction.OPEN_HELP) {
+                advanceStep();
+            }
+        }
+    }
+
+    /**
+     * Called when user opens the Endurance Quest screen.
+     */
+    public static void onEnduranceQuestOpened() {
+        if (active && currentStep < STEPS.length) {
+            TutorialStep step = STEPS[currentStep];
+            if (step.requiredAction == TutorialAction.OPEN_ENDURANCE_QUEST) {
                 advanceStep();
             }
         }

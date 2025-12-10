@@ -120,6 +120,9 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+    // Allow test classes to access main source classes (for non-Minecraft unit tests)
+    testImplementation sourceSets.main.output
+
     // NOTE: Removed Caffeine dependency (replaced with ConcurrentHashMap-based cache in HitHelper)
     // This avoids ModDevPlugin 2.0 compatibility issues with external dependencies
 

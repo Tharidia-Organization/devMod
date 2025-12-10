@@ -409,19 +409,48 @@ public class ComboSystem {
 
         /**
          * Check and award combo milestone bonuses.
+         * Note: Uses awardMilestoneBonus instead of registerAction to avoid
+         * incrementing the combo counter for milestone rewards themselves.
          */
         private void checkComboMilestones() {
             if (currentCombo == 5) {
-                registerAction(ActionType.COMBO_5, 0);
+                awardMilestoneBonus(ActionType.COMBO_5);
             } else if (currentCombo == 10) {
-                registerAction(ActionType.COMBO_10, 0);
+                awardMilestoneBonus(ActionType.COMBO_10);
             } else if (currentCombo == 25) {
-                registerAction(ActionType.COMBO_25, 0);
+                awardMilestoneBonus(ActionType.COMBO_25);
             } else if (currentCombo == 50) {
-                registerAction(ActionType.COMBO_50, 0);
+                awardMilestoneBonus(ActionType.COMBO_50);
             } else if (currentCombo == 100) {
-                registerAction(ActionType.COMBO_100, 0);
+                awardMilestoneBonus(ActionType.COMBO_100);
             }
+        }
+
+        /**
+         * Award milestone bonus without affecting combo count.
+         */
+        private void awardMilestoneBonus(ActionType milestone) {
+            long now = System.currentTimeMillis();
+
+            // Calculate style gain (without combo increment)
+            float varietyMultiplier = 1.0f + (varietyBonus * 0.01f);
+            int styleGain = (int) (milestone.stylePoints * varietyMultiplier);
+
+            styleScore += styleGain;
+            totalStyleEarned += styleGain;
+            lastStyleGainTime = now;
+
+            // Update rank
+            StyleRank newRank = StyleRank.fromScore(styleScore);
+            boolean rankUp = newRank.ordinal() > currentRank.ordinal();
+            currentRank = newRank;
+            if (newRank.ordinal() > highestRank.ordinal()) {
+                highestRank = newRank;
+            }
+
+            // Create announcement
+            ActionAnnouncement announcement = new ActionAnnouncement(milestone, styleGain, rankUp ? newRank : null);
+            addAnnouncement(announcement);
         }
 
         private void addAnnouncement(ActionAnnouncement announcement) {

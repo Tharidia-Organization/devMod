@@ -170,10 +170,12 @@ public class EnduranceQuestOverlay {
         questName = questName.replaceAll("[^\\w\\s-]", "").trim();
         int maxNameWidth = width - PANEL_PADDING * 2 - 60; // Lascia spazio per punti
         if (font.width(questName) > maxNameWidth) {
-            while (font.width(questName + "...") > maxNameWidth && questName.length() > 3) {
+            String ellipsis = "...";
+            int minChars = Math.min(6, questName.length()); // Keep at least 6 chars for readability
+            while (font.width(questName + ellipsis) > maxNameWidth && questName.length() > minChars) {
                 questName = questName.substring(0, questName.length() - 1);
             }
-            questName = questName + "...";
+            questName = questName + ellipsis;
         }
         g.drawString(font, "\u2694 " + questName, textX, textY, TEXT_TITLE, true); // ⚔ icon
 
@@ -395,11 +397,22 @@ public class EnduranceQuestOverlay {
             height += LINE_HEIGHT + 2;
         }
 
-        // Modifiers (estimate 1-2 lines)
+        // Modifiers - calculate actual line count based on text width
         List<String> modifiers = data.waveModifiers();
         if (!modifiers.isEmpty()) {
-            int modCount = modifiers.size();
-            height += LINE_HEIGHT * (modCount > 3 ? 2 : 1) + 2;
+            // Estimate modifier lines based on total character width
+            // "Modifiers: " label + icons + names + spacing
+            int estimatedWidth = 60; // "Modifiers: " label
+            int lines = 1;
+            for (String modName : modifiers) {
+                int modWidth = modName.length() * 7 + 20; // icon + name + spacing
+                if (estimatedWidth + modWidth > PANEL_WIDTH - PANEL_PADDING * 2 - 40) {
+                    lines++;
+                    estimatedWidth = 0;
+                }
+                estimatedWidth += modWidth;
+            }
+            height += LINE_HEIGHT * lines + 2;
         }
 
         if (showDetails) {

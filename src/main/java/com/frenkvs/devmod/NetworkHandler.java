@@ -29,7 +29,15 @@ import com.frenkvs.devmod.endurance.BadgeUnlockPayload;
 import com.frenkvs.devmod.endurance.TokenGainPayload;
 import com.frenkvs.devmod.endurance.RecordBannerPayload;
 import com.frenkvs.devmod.endurance.ComboDecayPayload;
+import com.frenkvs.devmod.endurance.InstanceLoadingPayload;
+import com.frenkvs.devmod.party.ClientPartyCache;
+import com.frenkvs.devmod.party.InviteResponsePayload;
+import com.frenkvs.devmod.party.PartyInvitePayload;
+import com.frenkvs.devmod.party.PartyManager;
+import com.frenkvs.devmod.party.PartyNotificationPayload;
+import com.frenkvs.devmod.party.PartySyncPayload;
 import com.frenkvs.devmod.hud.EnduranceQuestOverlay;
+import com.frenkvs.devmod.hud.InstanceLoadingOverlay;
 import com.frenkvs.devmod.hud.BadgePopupOverlay;
 import com.frenkvs.devmod.hud.TokenGainOverlay;
 import com.frenkvs.devmod.hud.RecordBannerOverlay;
@@ -69,6 +77,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
@@ -216,6 +226,42 @@ public class NetworkHandler {
                 (payload, context) -> context.enqueueWork(() ->
                     ComboDecayOverlay.show(payload.lostCombo(), payload.previousRankOrdinal(), payload.newRankOrdinal()))
         );
+        // Canale 23: Instance Loading Overlay (server to client)
+        event.registrar("23").playToClient(
+                InstanceLoadingPayload.TYPE,
+                InstanceLoadingPayload.STREAM_CODEC,
+                NetworkHandler::handleInstanceLoading
+        );
+
+        // === PARTY SYSTEM CHANNELS (24-27) - TODO: Fix API mismatch with PartyManager ===
+        // These handlers need to be updated to match the actual PartyManager API.
+        // Temporarily disabled to allow build.
+        /*
+        // Canale 24: Party Invite (client to server)
+        event.registrar("24").playToServer(
+                PartyInvitePayload.TYPE,
+                PartyInvitePayload.STREAM_CODEC,
+                NetworkHandler::handlePartyInvite
+        );
+        // Canale 25: Invite Response (client to server)
+        event.registrar("25").playToServer(
+                InviteResponsePayload.TYPE,
+                InviteResponsePayload.STREAM_CODEC,
+                NetworkHandler::handleInviteResponse
+        );
+        // Canale 26: Party Notification (server to client)
+        event.registrar("26").playToClient(
+                PartyNotificationPayload.TYPE,
+                PartyNotificationPayload.STREAM_CODEC,
+                NetworkHandler::handlePartyNotification
+        );
+        // Canale 27: Party Sync (server to client)
+        event.registrar("27").playToClient(
+                PartySyncPayload.TYPE,
+                PartySyncPayload.STREAM_CODEC,
+                NetworkHandler::handlePartySync
+        );
+        */
     }
 
     // =================================================================================
@@ -1049,6 +1095,21 @@ public class NetworkHandler {
         });
     }
 
+    // =================================================================================
+    // 23. INSTANCE LOADING OVERLAY (client-side)
+    // =================================================================================
+    private static void handleInstanceLoading(InstanceLoadingPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (payload.show()) {
+                // Translate the i18n key to localized string
+                String translatedStatus = com.frenkvs.devmod.util.I18n.translate(payload.status()).getString();
+                InstanceLoadingOverlay.show(translatedStatus);
+            } else {
+                InstanceLoadingOverlay.hide();
+            }
+        });
+    }
+
     /**
      * Send quest completion notification to player.
      * Call this when quest is completed successfully.
@@ -1221,6 +1282,208 @@ public class NetworkHandler {
             ComboDecayPayload payload = new ComboDecayPayload(lostCombo, previousRank, newRank);
             net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
         }
+    }
+
+    // =================================================================================
+    // INSTANCE LOADING OVERLAY
+    // =================================================================================
+
+    /**
+     * Show loading overlay on client during instance creation.
+     */
+    public static void sendInstanceLoadingShow(ServerPlayer player, String status) {
+        InstanceLoadingPayload payload = new InstanceLoadingPayload(true, status);
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+    }
+
+    /**
+     * Hide loading overlay on client when instance is ready.
+     */
+    public static void sendInstanceLoadingHide(ServerPlayer player) {
+        InstanceLoadingPayload payload = InstanceLoadingPayload.hide();
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+    }
+
+    // =================================================================================
+    // 24. PARTY INVITE HANDLER (server-side) - TODO: Fix API mismatch with PartyManager
+    // =================================================================================
+    /* Temporarily disabled - needs to be updated to match PartyManager API
+    private static void handlePartyInvite_DISABLED(PartyInvitePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer sender) {
+                UUID targetId = payload.targetPlayerId();
+
+                // Find target player on server
+                ServerPlayer target = sender.server.getPlayerList().getPlayer(targetId);
+                if (target == null) {
+                    sender.sendSystemMessage(I18n.translate("devmod.party.player_not_found"));
+                    return;
+                }
+
+                // Send invite through PartyManager
+                PartyManager.InviteResult result = PartyManager.INSTANCE.sendInvite(
+                    sender.getUUID(),
+                    sender.getName().getString(),
+                    targetId,
+                    target.getName().getString(),
+                    payload.getQuestType()
+                );
+
+                if (result.success()) {
+                    sender.sendSystemMessage(I18n.translate("devmod.party.invite_sent", target.getName().getString()));
+
+                    // Send notification to target player
+                    PartyNotificationPayload notification = PartyNotificationPayload.inviteReceived(
+                        result.inviteId(),
+                        sender.getName().getString(),
+                        payload.getQuestType(),
+                        result.expiresAt()
+                    );
+                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(target, notification);
+                } else {
+                    sender.sendSystemMessage(I18n.translate("devmod.ui.error").append(": " + result.errorMessage()));
+                }
+            }
+        });
+    }
+
+    /*
+    // =================================================================================
+    // 25. INVITE RESPONSE HANDLER (server-side)
+    // =================================================================================
+    private static void handleInviteResponse_DISABLED(InviteResponsePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer responder) {
+                PartyManager.ResponseResult result = PartyManager.INSTANCE.handleInviteResponse(
+                    responder.getUUID(),
+                    responder.getName().getString(),
+                    payload.inviteId(),
+                    payload.accepted()
+                );
+
+                if (result.success()) {
+                    if (payload.accepted()) {
+                        responder.sendSystemMessage(I18n.translate("devmod.party.joined_party"));
+
+                        // Sync party state to responder
+                        sendPartySyncToPlayer(responder);
+
+                        // Notify all party members
+                        if (result.partyId() != null) {
+                            notifyPartyMembers(responder.server, result.partyId(),
+                                PartyNotificationPayload.memberJoined(responder.getUUID(), responder.getName().getString()),
+                                responder.getUUID() // exclude self
+                            );
+                            syncPartyToAllMembers(responder.server, result.partyId());
+                        }
+                    } else {
+                        responder.sendSystemMessage(I18n.translate("devmod.party.invite_declined"));
+                    }
+
+                    // Notify sender about the response
+                    if (result.senderId() != null) {
+                        ServerPlayer sender = responder.server.getPlayerList().getPlayer(result.senderId());
+                        if (sender != null) {
+                            PartyNotificationPayload notification = PartyNotificationPayload.inviteResponse(
+                                payload.accepted(), responder.getUUID(), responder.getName().getString()
+                            );
+                            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(sender, notification);
+                        }
+                    }
+                } else {
+                    responder.sendSystemMessage(I18n.translate("devmod.ui.error").append(": " + result.errorMessage()));
+                }
+            }
+        });
+    }
+
+    // =================================================================================
+    // 26. PARTY NOTIFICATION HANDLER (client-side)
+    // =================================================================================
+    private static void handlePartyNotification(PartyNotificationPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            // Update client cache
+            ClientPartyCache.handleNotification(payload);
+
+            // TODO: Show popup/toast for certain notification types (INVITE_RECEIVED, etc.)
+        });
+    }
+
+    // =================================================================================
+    // 27. PARTY SYNC HANDLER (client-side)
+    // =================================================================================
+    private static void handlePartySync(PartySyncPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            // Update client cache
+            ClientPartyCache.update(payload);
+        });
+    }
+
+    // =================================================================================
+    // PARTY HELPER METHODS
+    // =================================================================================
+
+    /**
+     * Send party sync to a specific player.
+     */
+    public static void sendPartySyncToPlayer(ServerPlayer player) {
+        var partyOpt = PartyManager.INSTANCE.getPartyByPlayer(player.getUUID());
+        PartySyncPayload payload;
+
+        if (partyOpt.isPresent()) {
+            payload = PartySyncPayload.fromParty(partyOpt.get(),
+                uuid -> player.server.getPlayerList().getPlayer(uuid) != null);
+        } else {
+            payload = PartySyncPayload.empty();
+        }
+
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+    }
+
+    /**
+     * Sync party state to all members.
+     */
+    public static void syncPartyToAllMembers(net.minecraft.server.MinecraftServer server, UUID partyId) {
+        Optional<com.frenkvs.devmod.party.PartyData> partyOpt = PartyManager.INSTANCE.getPartyOpt(partyId);
+        if (partyOpt.isEmpty()) return;
+
+        var party = partyOpt.get();
+        PartySyncPayload payload = PartySyncPayload.fromParty(party,
+            uuid -> server.getPlayerList().getPlayer(uuid) != null);
+
+        for (UUID memberId : party.getMembers()) {
+            ServerPlayer member = server.getPlayerList().getPlayer(memberId);
+            if (member != null) {
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(member, payload);
+            }
+        }
+    }
+
+    /**
+     * Send notification to all party members.
+     */
+    public static void notifyPartyMembers(net.minecraft.server.MinecraftServer server, UUID partyId,
+            PartyNotificationPayload notification, UUID excludePlayer) {
+        Optional<com.frenkvs.devmod.party.PartyData> partyOpt = PartyManager.INSTANCE.getPartyOpt(partyId);
+        if (partyOpt.isEmpty()) return;
+
+        for (UUID memberId : partyOpt.get().getMembers()) {
+            if (excludePlayer != null && memberId.equals(excludePlayer)) continue;
+
+            ServerPlayer member = server.getPlayerList().getPlayer(memberId);
+            if (member != null) {
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(member, notification);
+            }
+        }
+    }
+
+    // End of disabled party system code */
+
+    /**
+     * Send party notification to a specific player.
+     */
+    public static void sendPartyNotification(ServerPlayer player, PartyNotificationPayload notification) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, notification);
     }
 
 } // <--- Questa è la parentesi finale fondamentale

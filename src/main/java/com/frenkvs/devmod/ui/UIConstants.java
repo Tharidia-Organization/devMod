@@ -30,7 +30,7 @@ public final class UIConstants {
     public static final class Border {
         public static final int DEFAULT = 0xFF3D5AFE;       // Blu elettrico (Impact main)
         public static final int LIGHT = 0xFF5C7AFF;         // Variante più chiara
-        public static final int ACCENT = 0xFF3D5AFE;        // Accent = main border
+        public static final int ACCENT = 0xFF00FFFF;        // Cyan (bordo accent/hover)
         public static final int SEPARATOR = 0x803D5AFE;     // Separatore 50% alpha
         public static final int GLOW = 0x553D5AFE;          // Glow border
         public static final int MUTED = 0xFF2A2A4A;         // Bordo attenuato
@@ -97,8 +97,12 @@ public final class UIConstants {
         public static final int BUTTON_WIDTH = 200;
         public static final int BUTTON_WIDTH_SMALL = 100;
         public static final int BUTTON_WIDTH_WIDE = 240;
+        public static final int BUTTON_WIDTH_MEDIUM = 120;
+        public static final int BUTTON_WIDTH_ICON = 20;        // For +/- buttons
         public static final int BUTTON_HEIGHT = 20;
         public static final int BUTTON_HEIGHT_COMPACT = 18;
+        public static final int BUTTON_HEIGHT_PROMINENT = 28;  // For important actions
+        public static final int BUTTON_HEIGHT_LARGE = 30;      // For primary CTA
         public static final int TAB_WIDTH = 80;
         public static final int TAB_HEIGHT = 20;
         public static final int INPUT_WIDTH = 80;
@@ -107,8 +111,14 @@ public final class UIConstants {
         public static final int LABEL_WIDTH = 90;
         public static final int PANEL_WIDTH = 220;
         public static final int PANEL_WIDTH_WIDE = 260;
+        public static final int SIDEBAR_WIDTH = 200;           // Standard sidebar width
+        public static final int CATEGORY_WIDTH = 150;          // Category list width
         public static final int TOGGLE_WIDTH = 40;
         public static final int TOGGLE_HEIGHT = 16;
+        // Modal dialog panel sizes
+        public static final int DIALOG_WIDTH_SMALL = 300;      // Confirmation dialogs
+        public static final int DIALOG_WIDTH_MEDIUM = 380;     // Checkpoint/death screens
+        public static final int DIALOG_WIDTH_LARGE = 420;      // Completion screens
         private Size() {}
     }
 

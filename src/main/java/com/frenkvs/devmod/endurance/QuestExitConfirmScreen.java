@@ -22,8 +22,8 @@ public class QuestExitConfirmScreen extends Screen {
     private static final int COLOR_WARNING = UIConstants.Accent.ORANGE;
     private static final int COLOR_DANGER = UIConstants.Accent.RED;
 
-    // Dimensions
-    private static final int PANEL_WIDTH = 300;
+    // Dimensions - using UIConstants for consistency
+    private static final int PANEL_WIDTH = UIConstants.Size.DIALOG_WIDTH_SMALL;
     private static final int PANEL_HEIGHT = 150;
 
     private final Screen parentScreen;
@@ -42,14 +42,16 @@ public class QuestExitConfirmScreen extends Screen {
         int panelX = centerX - PANEL_WIDTH / 2;
         int panelY = centerY - PANEL_HEIGHT / 2;
 
-        // Confirm Exit button
+        // Confirm Exit button (danger action - prominent height)
         addRenderableWidget(Button.builder(I18n.ui("yes_exit_quest"), btn -> confirmExit())
-            .bounds(panelX + 20, panelY + PANEL_HEIGHT - 45, 120, 25)
+            .bounds(panelX + 20, panelY + PANEL_HEIGHT - 45,
+                    UIConstants.Size.BUTTON_WIDTH_MEDIUM, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
             .build());
 
-        // Cancel button
+        // Cancel button (safe action - prominent height)
         addRenderableWidget(Button.builder(I18n.ui("cancel"), btn -> cancel())
-            .bounds(panelX + PANEL_WIDTH - 140, panelY + PANEL_HEIGHT - 45, 120, 25)
+            .bounds(panelX + PANEL_WIDTH - UIConstants.Size.BUTTON_WIDTH_MEDIUM - 20, panelY + PANEL_HEIGHT - 45,
+                    UIConstants.Size.BUTTON_WIDTH_MEDIUM, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
             .build());
     }
 

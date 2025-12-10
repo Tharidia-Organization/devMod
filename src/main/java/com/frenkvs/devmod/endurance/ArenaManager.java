@@ -111,7 +111,7 @@ public class ArenaManager {
          */
         public List<BlockPos> getDistributedSpawnPositions(int count) {
             List<BlockPos> positions = new ArrayList<>();
-            int halfSize = size / 2 - 3;
+            int halfSize = Math.max(1, size / 2 - 3); // Ensure at least 1 to avoid issues with tiny arenas
 
             // Distribute evenly in a grid pattern
             int gridSize = (int) Math.ceil(Math.sqrt(count));
@@ -119,12 +119,22 @@ public class ArenaManager {
 
             Random random = new Random();
 
+            // Calculate arena boundaries for clamping (1 block inside walls)
+            int minX = center.getX() - size / 2 + 1;
+            int maxX = center.getX() + size / 2 - 1;
+            int minZ = center.getZ() - size / 2 + 1;
+            int maxZ = center.getZ() + size / 2 - 1;
+
             for (int i = 0; i < count; i++) {
                 int gridX = i % gridSize;
                 int gridZ = i / gridSize;
 
                 int baseX = center.getX() - halfSize + spacing + (gridX * spacing);
                 int baseZ = center.getZ() - halfSize + spacing + (gridZ * spacing);
+
+                // Clamp to arena bounds to prevent spawns outside arena
+                baseX = Math.max(minX, Math.min(maxX, baseX));
+                baseZ = Math.max(minZ, Math.min(maxZ, baseZ));
 
                 // Find a valid spawn position (with floor below and air above)
                 BlockPos validPos = findValidSpawnPosition(baseX, baseZ, random);
@@ -137,8 +147,13 @@ public class ArenaManager {
             int attempts = 0;
             while (positions.size() < count && attempts < count * 3) {
                 attempts++;
-                int x = center.getX() + random.nextInt(halfSize * 2) - halfSize;
-                int z = center.getZ() + random.nextInt(halfSize * 2) - halfSize;
+                int x = center.getX() + random.nextInt(Math.max(1, halfSize * 2)) - halfSize;
+                int z = center.getZ() + random.nextInt(Math.max(1, halfSize * 2)) - halfSize;
+
+                // Clamp to arena bounds
+                x = Math.max(minX, Math.min(maxX, x));
+                z = Math.max(minZ, Math.min(maxZ, z));
+
                 BlockPos validPos = findValidSpawnPosition(x, z, random);
                 if (validPos != null && !positions.contains(validPos)) {
                     positions.add(validPos);

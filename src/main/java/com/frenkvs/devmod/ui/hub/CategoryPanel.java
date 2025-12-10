@@ -231,14 +231,16 @@ public class CategoryPanel implements HubPanel {
         int dotColor = test.getStatus().getColor();
         graphics.fill(rx, ry + 5, rx + 6, ry + 11, dotColor);
 
-        // Test name (troncato)
+        // Test name (troncato - keep at least 6 chars for readability)
         String name = test.getName();
         int maxNameWidth = rwidth - 14;
         if (font.width(name) > maxNameWidth) {
-            while (font.width(name + "...") > maxNameWidth && name.length() > 3) {
+            String ellipsis = "...";
+            int minChars = Math.min(6, name.length());
+            while (font.width(name + ellipsis) > maxNameWidth && name.length() > minChars) {
                 name = name.substring(0, name.length() - 1);
             }
-            name += "...";
+            name += ellipsis;
         }
 
         int textColor = selected ? UIConstants.Text.ACCENT : UIConstants.Text.SECONDARY;

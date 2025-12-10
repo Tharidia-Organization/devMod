@@ -581,11 +581,12 @@ public class UnifiedSettingsScreen extends Screen {
             graphics.drawString(font, searchQuery + (searchFocused ? "_" : ""), x + 6, y + 6, UIConstants.Text.PRIMARY, false);
         }
 
-        // Clear button if has text
+        // Clear button if has text (larger hit area for better usability)
         if (!searchQuery.isEmpty()) {
-            int clearX = x + boxWidth - 14;
-            boolean clearHovered = mouseX >= clearX && mouseX < clearX + 10 && mouseY >= y && mouseY < y + SEARCH_HEIGHT;
-            graphics.drawString(font, "x", clearX, y + 6, clearHovered ? UIConstants.Status.ERROR : UIConstants.Text.MUTED, false);
+            int clearX = x + boxWidth - 16;
+            int clearHitWidth = 16; // Larger hit area than visual "x"
+            boolean clearHovered = mouseX >= clearX && mouseX < clearX + clearHitWidth && mouseY >= y && mouseY < y + SEARCH_HEIGHT;
+            graphics.drawString(font, "x", clearX + 3, y + 6, clearHovered ? UIConstants.Status.ERROR : UIConstants.Text.MUTED, false);
         }
     }
 
@@ -789,8 +790,8 @@ public class UnifiedSettingsScreen extends Screen {
             if (mouseX >= PADDING && mouseX < PADDING + searchBoxWidth &&
                 mouseY >= y && mouseY < y + SEARCH_HEIGHT) {
 
-                // Clear button
-                if (!searchQuery.isEmpty() && mouseX >= PADDING + searchBoxWidth - 14) {
+                // Clear button (larger hit area matching render)
+                if (!searchQuery.isEmpty() && mouseX >= PADDING + searchBoxWidth - 16) {
                     searchQuery = "";
                     return true;
                 }

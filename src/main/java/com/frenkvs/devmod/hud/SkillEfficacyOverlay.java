@@ -155,9 +155,11 @@ public class SkillEfficacyOverlay {
             name = Character.toUpperCase(name.charAt(0)) + name.substring(1);
         }
 
-        // Truncate if needed
+        // Truncate if needed (keep at least 6 chars for readability)
         if (name.length() > maxLen) {
-            name = name.substring(0, maxLen - 2) + "..";
+            int minChars = Math.min(6, maxLen - 3);
+            int truncateAt = Math.max(minChars, maxLen - 3);
+            name = name.substring(0, truncateAt) + "...";
         }
 
         return name;

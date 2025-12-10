@@ -253,11 +253,13 @@ public class TestDetailPanel implements HubPanel {
                 int textWidth = cw - font.width(checkbox) - 8;
 
                 if (font.width(stepText) > textWidth) {
-                    // Wrapping semplice
-                    while (font.width(stepText) > textWidth && stepText.length() > 10) {
+                    // Truncate with ellipsis - keep at least 10 chars for readability
+                    String ellipsis = "...";
+                    int minChars = Math.min(10, stepText.length());
+                    while (font.width(stepText + ellipsis) > textWidth && stepText.length() > minChars) {
                         stepText = stepText.substring(0, stepText.length() - 1);
                     }
-                    stepText += "...";
+                    stepText = stepText + ellipsis;
                 }
 
                 graphics.drawString(font, stepText, textX, stepY, UIConstants.Text.SECONDARY, false);

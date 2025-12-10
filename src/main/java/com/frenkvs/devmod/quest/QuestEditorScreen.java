@@ -647,12 +647,12 @@ public class QuestEditorScreen extends ModScreen {
     private String truncate(String text, int maxWidth) {
         if (font.width(text) <= maxWidth) return text;
         String ellipsis = "...";
-        StringBuilder sb = new StringBuilder();
-        for (char c : text.toCharArray()) {
-            if (font.width(sb.toString() + c + ellipsis) > maxWidth) break;
-            sb.append(c);
+        int minChars = Math.min(6, text.length()); // Keep at least 6 chars for readability
+        String truncated = text;
+        while (font.width(truncated + ellipsis) > maxWidth && truncated.length() > minChars) {
+            truncated = truncated.substring(0, truncated.length() - 1);
         }
-        return sb + ellipsis;
+        return truncated + ellipsis;
     }
 
     // === Endurance Quest Modal Methods ===

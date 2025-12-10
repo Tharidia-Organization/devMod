@@ -15,10 +15,10 @@ import java.util.*;
  */
 public class EnduranceShopScreen extends Screen {
 
-    // Layout constants
-    private static final int CATEGORY_WIDTH = 150;
+    // Layout constants - using UIConstants for consistency
+    private static final int CATEGORY_WIDTH = UIConstants.Size.CATEGORY_WIDTH;
     private static final int ITEM_HEIGHT = 70;
-    private static final int ITEM_MARGIN = 5;
+    private static final int ITEM_MARGIN = UIConstants.Spacing.GAP_SMALL + 1;
 
     // Colors - Standardized to UIConstants
     private static final int COLOR_BG = UIConstants.Background.PANEL;
@@ -74,24 +74,29 @@ public class EnduranceShopScreen extends Screen {
         // Load items for selected category
         updateCategoryItems();
 
-        // Category buttons
+        // Category buttons (prominent height for navigation)
         int catY = 50;
         for (RewardSystem.ShopCategory category : RewardSystem.ShopCategory.values()) {
             final RewardSystem.ShopCategory cat = category;
             addRenderableWidget(Button.builder(I18n.ui("shop.category." + category.name().toLowerCase()), btn -> selectCategory(cat))
-                .bounds(10, catY, CATEGORY_WIDTH - 20, 25)
+                .bounds(UIConstants.Spacing.PANEL_MARGIN, catY,
+                        CATEGORY_WIDTH - UIConstants.Spacing.PANEL_MARGIN * 2, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
                 .build());
-            catY += 30;
+            catY += UIConstants.Size.BUTTON_HEIGHT_PROMINENT + UIConstants.Spacing.GAP_SMALL;
         }
 
-        // Back button
+        // Back button (secondary action)
         addRenderableWidget(Button.builder(I18n.ui("back"), btn -> goBack())
-            .bounds(10, height - 40, 80, 25)
+            .bounds(UIConstants.Spacing.PANEL_MARGIN, height - 40,
+                    UIConstants.Size.BUTTON_WIDTH_SMALL - 20, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
+            .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.tooltip.back")))
             .build());
 
-        // Purchase button
+        // Purchase button (primary CTA)
         addRenderableWidget(Button.builder(I18n.ui("purchase"), btn -> purchaseSelected())
-            .bounds(width - 110, height - 40, 100, 25)
+            .bounds(width - UIConstants.Size.BUTTON_WIDTH_SMALL - 10, height - 40,
+                    UIConstants.Size.BUTTON_WIDTH_SMALL, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
+            .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.tooltip.purchase")))
             .build());
     }
 

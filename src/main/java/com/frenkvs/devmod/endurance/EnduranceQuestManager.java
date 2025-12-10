@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.endurance;
 
+import com.frenkvs.devmod.instance.DynamicDimensionManager;
 import com.frenkvs.devmod.util.I18n;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -52,7 +53,28 @@ public class EnduranceQuestManager {
 
     private boolean initialized = false;
 
+    // Instance dimension mode flag - when true, quests run in isolated temporary dimensions
+    private boolean useInstanceDimensions = false;
+
     private EnduranceQuestManager() {}
+
+    // ========== Instance Dimension Mode ==========
+
+    /**
+     * Enable or disable instance dimension mode.
+     * When enabled, quests run in isolated temporary dimensions instead of overworld arenas.
+     */
+    public void setUseInstanceDimensions(boolean use) {
+        this.useInstanceDimensions = use;
+        LOGGER.info("[EnduranceQuest] Instance dimension mode: {}", use ? "ENABLED" : "DISABLED");
+    }
+
+    /**
+     * Check if instance dimension mode is enabled.
+     */
+    public boolean isUseInstanceDimensions() {
+        return useInstanceDimensions;
+    }
 
     /**
      * Initialize the manager. Should be called during server start.
@@ -172,36 +194,50 @@ public class EnduranceQuestManager {
     public StartQuestResult startQuest(ServerPlayer player, ResourceLocation mobId, QuestSettings settings) {
         UUID playerId = player.getUUID();
 
-        // Check if player already has an active quest
-        if (activeSessions.containsKey(playerId)) {
-            return new StartQuestResult(false, I18n.translate("devmod.endurance.active_quest").getString(), null);
-        }
-
-        // Get quest template
+        // Get quest template first (before any state modification)
         EnduranceQuest template = questTemplates.get(mobId);
         if (template == null) {
             return new StartQuestResult(false, "Unknown quest type: " + mobId, null);
         }
 
-        // Create new quest instance
+        // Create new quest instance upfront (before atomic check)
         EnduranceQuest quest = new EnduranceQuest(template.getMobConfig());
         quest.setTotalWaves(settings.totalWaves);
         quest.setEndlessMode(settings.endlessMode);
 
-        // Create arena
+        // Create placeholder session for atomic insert
+        // NOTE: Arena is null here - will be set after successful creation
+        ActiveQuestSession placeholderSession = new ActiveQuestSession(playerId, quest, null, System.currentTimeMillis());
+
+        // ATOMIC: Use putIfAbsent to prevent race condition
+        // This ensures only one thread can start a quest for this player
+        ActiveQuestSession existingSession = activeSessions.putIfAbsent(playerId, placeholderSession);
+        if (existingSession != null) {
+            return new StartQuestResult(false, I18n.translate("devmod.endurance.active_quest").getString(), null);
+        }
+
+        // === INSTANCE DIMENSION MODE ===
+        if (useInstanceDimensions) {
+            return startQuestInInstanceDimension(player, mobId, quest, settings);
+        }
+
+        // === LEGACY OVERWORLD ARENA MODE ===
+        // Create arena in current dimension
         ServerLevel level = player.serverLevel();
         ArenaManager.Arena arena = arenaManager.createArena(level, player.blockPosition(), settings.arenaSize);
 
         if (arena == null) {
+            // CLEANUP: Remove placeholder session on failure
+            activeSessions.remove(playerId);
             return new StartQuestResult(false, "Failed to create arena", null);
         }
 
         // Start the quest
         quest.start(arena.getId());
 
-        // Create session (will store original inventory and gamemode)
+        // Create the real session with arena and replace placeholder
         ActiveQuestSession session = new ActiveQuestSession(playerId, quest, arena, System.currentTimeMillis());
-        activeSessions.put(playerId, session);
+        activeSessions.put(playerId, session); // Replaces placeholder
 
         // Prepare player for quest: save state, set survival, clear inventory, give kit
         preparePlayerForQuest(player, session);
@@ -228,6 +264,128 @@ public class EnduranceQuestManager {
     }
 
     /**
+     * Start a quest in an isolated instance dimension.
+     * This is the new preferred method using the Instance Dimension System.
+     *
+     * IMPORTANT: This method is NON-BLOCKING. It returns immediately with a "pending" status
+     * and the quest setup is completed asynchronously when the instance is ready.
+     */
+    private StartQuestResult startQuestInInstanceDimension(ServerPlayer player, ResourceLocation mobId,
+                                                           EnduranceQuest quest, QuestSettings settings) {
+        UUID playerId = player.getUUID();
+
+        // Get the placeholder session that was atomically inserted in startQuest()
+        // Mark it as pending for async completion
+        ActiveQuestSession pendingSession = activeSessions.get(playerId);
+        if (pendingSession == null) {
+            // This should never happen - startQuest already inserted the placeholder
+            LOGGER.error("[EnduranceQuest] No placeholder session found for instance quest start");
+            return new StartQuestResult(false, "Internal error: missing session", null);
+        }
+        pendingSession.setPending(true);
+
+        // Show loading overlay on client
+        com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingShow(player, "Creating dimension...");
+
+        // Notify player that instance is being created (chat backup)
+        player.sendSystemMessage(net.minecraft.network.chat.Component.literal("[DevMod] Creating instance dimension...")
+            .withStyle(ChatFormatting.YELLOW));
+
+        // Use InstanceArenaManager to create the instance and arena asynchronously
+        var future = InstanceArenaManager.INSTANCE.startInstanceQuest(player, mobId, settings);
+
+        // Handle completion asynchronously - NO BLOCKING
+        future.thenAccept(result -> {
+            // This runs on the server thread (guaranteed by createDimensionAsync)
+            completeInstanceQuestSetup(player, playerId, mobId, quest, settings, result);
+        });
+
+        // Return immediately with pending status
+        return new StartQuestResult(true, "Creating instance dimension...", pendingSession);
+    }
+
+    /**
+     * Complete the quest setup after instance dimension is created.
+     * Called asynchronously when the instance is ready.
+     */
+    private void completeInstanceQuestSetup(ServerPlayer player, UUID playerId, ResourceLocation mobId,
+                                            EnduranceQuest quest, QuestSettings settings,
+                                            InstanceArenaManager.InstanceQuestResult result) {
+        // Verify player is still online
+        if (player.getServer() == null || player.getServer().getPlayerList().getPlayer(playerId) == null) {
+            LOGGER.warn("[EnduranceQuest] Player {} disconnected during instance creation", playerId);
+            activeSessions.remove(playerId);
+            if (result.success() && result.instanceId() != null) {
+                InstanceArenaManager.INSTANCE.forceEndPlayerQuest(playerId);
+            }
+            return;
+        }
+
+        // Check if instance creation failed
+        if (!result.success()) {
+            LOGGER.error("[EnduranceQuest] Instance creation failed for player {}: {}",
+                player.getName().getString(), result.message());
+            activeSessions.remove(playerId);
+            // Hide loading overlay and show error
+            com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingHide(player);
+            player.sendSystemMessage(net.minecraft.network.chat.Component.literal("[DevMod] Failed to create instance: " + result.message())
+                .withStyle(ChatFormatting.RED));
+            return;
+        }
+
+        // Get the arena from the instance
+        ArenaManager.Arena arena = result.arena();
+        if (arena == null) {
+            LOGGER.error("[EnduranceQuest] Instance created but arena is null for player {}",
+                player.getName().getString());
+            activeSessions.remove(playerId);
+            // Hide loading overlay and show error
+            com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingHide(player);
+            player.sendSystemMessage(net.minecraft.network.chat.Component.literal("[DevMod] Instance created but arena is null")
+                .withStyle(ChatFormatting.RED));
+            if (result.instanceId() != null) {
+                InstanceArenaManager.INSTANCE.forceEndPlayerQuest(playerId);
+            }
+            return;
+        }
+
+        // Hide loading overlay - quest is starting!
+        com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingHide(player);
+
+        // Start the quest
+        quest.start(arena.getId());
+
+        // Create the real session with instance ID reference
+        ActiveQuestSession session = new ActiveQuestSession(playerId, quest, arena, System.currentTimeMillis());
+        session.setInstanceId(result.instanceId());
+        activeSessions.put(playerId, session); // Replace pending session
+
+        // Prepare player for quest: save state, set survival, clear inventory, give kit
+        preparePlayerForQuest(player, session);
+
+        // Player is already teleported by InstanceArenaManager
+
+        // Initialize all subsystems (Combo, Mutator, Perk, Reward) BEFORE starting wave
+        EnduranceEventHandler.onQuestStart(player, session);
+
+        // INTEGRATION: Start telemetry dungeon session for tracking
+        String dungeonId = "endurance_instance_" + mobId.toString().replace(":", "_");
+        TelemetryService.INSTANCE.startDungeonSession(player, dungeonId);
+
+        // Start the first wave
+        WaveManager.INSTANCE.startWave(session);
+
+        // Notify subsystems that wave 1 has started
+        EnduranceEventHandler.onWaveStart(player, session, quest.getCurrentWave());
+
+        LOGGER.info("[EnduranceQuest] Player {} started INSTANCE quest: {} (instance: {})",
+            player.getName().getString(), quest.getDisplayName(), result.instanceId());
+
+        player.sendSystemMessage(net.minecraft.network.chat.Component.literal("[DevMod] Quest started in instance dimension!")
+            .withStyle(ChatFormatting.GREEN));
+    }
+
+    /**
      * Get active quest session for a player.
      */
     public Optional<ActiveQuestSession> getActiveSession(UUID playerId) {
@@ -249,21 +407,28 @@ public class EnduranceQuestManager {
         ActiveQuestSession session = activeSessions.remove(playerId);
 
         if (session != null) {
+            // Handle pending sessions (instance still being created)
+            if (session.isPending()) {
+                LOGGER.info("[EnduranceQuest] Player {} abandoned pending quest before instance was ready",
+                    player.getName().getString());
+                // Force cleanup of any in-progress instance creation
+                if (session.getInstanceId() != null) {
+                    InstanceArenaManager.INSTANCE.forceEndPlayerQuest(playerId);
+                }
+                player.sendSystemMessage(net.minecraft.network.chat.Component.literal("[DevMod] Quest cancelled.")
+                    .withStyle(ChatFormatting.YELLOW));
+                return;
+            }
+
             session.quest.fail(true);
 
-            // Restore player's original state (inventory, game mode)
-            restorePlayerAfterQuest(player, session);
-
-            // Cleanup wave state and boss fight systems
+            // Cleanup wave state and boss fight systems FIRST (while player is still in arena)
             cleanupQuestSystems(session);
 
-            // Cleanup arena
-            arenaManager.destroyArena(session.arena);
-
-            // Cleanup subsystems and award partial rewards
+            // Cleanup subsystems and award partial rewards BEFORE teleport
             EnduranceEventHandler.onQuestEnd(player, session, false);
 
-            // INTEGRATION: End telemetry dungeon session
+            // INTEGRATION: End telemetry dungeon session BEFORE teleport
             TelemetryService.INSTANCE.endDungeonSession(player, "abandoned");
 
             // Update stats
@@ -272,10 +437,20 @@ public class EnduranceQuestManager {
             // Send empty sync to clear client HUD
             PacketDistributor.sendToPlayer(player, QuestSyncPayload.empty());
 
-            // Notify player
+            // Notify player BEFORE teleport (message will still be visible)
             player.sendSystemMessage(I18n.translate("devmod.endurance.quest_abandoned",
                 session.quest.getCurrentWave(), session.quest.getPointsEarnedThisSession())
                 .withStyle(ChatFormatting.YELLOW));
+
+            // === NOW do the state restoration and cleanup ===
+            // For Instance mode: cleanupArenaOrInstance triggers teleport + full state restore
+            // For Legacy mode: restorePlayerAfterQuest handles it locally
+
+            // Restore player's original state (no-op for Instance mode)
+            restorePlayerAfterQuest(player, session);
+
+            // Cleanup arena/instance (triggers teleport + recovery for Instance mode)
+            cleanupArenaOrInstance(session, false);
 
             LOGGER.info("[EnduranceQuest] Player {} abandoned quest: {}",
                 player.getName().getString(), session.quest.getDisplayName());
@@ -290,6 +465,13 @@ public class EnduranceQuestManager {
         ActiveQuestSession session = activeSessions.get(playerId);
 
         if (session != null) {
+            // Ignore deaths during pending sessions (instance still being created)
+            if (session.isPending()) {
+                LOGGER.debug("[EnduranceQuest] Ignoring death for player {} - session is pending",
+                    player.getName().getString());
+                return;
+            }
+
             session.quest.fail(false);
 
             // Don't remove session immediately - allow respawn option
@@ -337,8 +519,17 @@ public class EnduranceQuestManager {
                 session.quest.continueAfterDeath();
                 session.setAwaitingRespawnChoice(false);
 
-                // Teleport back to arena
-                arenaManager.teleportToArena(player, session.arena);
+                // Teleport back to arena (handle both instance and legacy modes)
+                if (session.isInInstanceDimension()) {
+                    // Instance mode: use DynamicDimensionManager
+                    DynamicDimensionManager.INSTANCE.teleportToInstance(player, session.getInstanceId());
+                } else if (session.arena != null && arenaManager != null) {
+                    // Legacy mode: use arenaManager
+                    arenaManager.teleportToArena(player, session.arena);
+                } else {
+                    LOGGER.error("[EnduranceQuest] Cannot teleport player {} - no arena or instance available",
+                        player.getName().getString());
+                }
 
                 // Restart the wave (respawn mobs)
                 WaveManager.INSTANCE.startWave(session);
@@ -356,24 +547,23 @@ public class EnduranceQuestManager {
                 // End quest
                 activeSessions.remove(playerId);
 
-                // Restore player's original state (inventory, game mode)
-                restorePlayerAfterQuest(player, session);
-
-                // Cleanup wave state and boss fight systems
+                // Cleanup wave state and boss fight systems FIRST
                 cleanupQuestSystems(session);
 
-                arenaManager.destroyArena(session.arena);
-
-                // Cleanup subsystems and award partial rewards
+                // Cleanup subsystems and award partial rewards BEFORE teleport
                 EnduranceEventHandler.onQuestEnd(player, session, false);
 
-                // INTEGRATION: End telemetry dungeon session
+                // INTEGRATION: End telemetry dungeon session BEFORE teleport
                 TelemetryService.INSTANCE.endDungeonSession(player, "death_give_up");
 
                 updatePlayerStats(playerId, session.quest, false);
 
                 // Send empty sync to clear client HUD
                 PacketDistributor.sendToPlayer(player, QuestSyncPayload.empty());
+
+                // === NOW do the state restoration and cleanup ===
+                restorePlayerAfterQuest(player, session);
+                cleanupArenaOrInstance(session, false);
 
                 LOGGER.info("[EnduranceQuest] Player {} gave up after death", player.getName().getString());
             }
@@ -392,18 +582,13 @@ public class EnduranceQuestManager {
                 // Quest fully completed!
                 activeSessions.remove(player.getUUID());
 
-                // Restore player's original state (inventory, game mode)
-                restorePlayerAfterQuest(player, session);
-
-                // Cleanup wave state and boss fight systems
+                // Cleanup wave state and boss fight systems FIRST
                 cleanupQuestSystems(session);
 
-                arenaManager.destroyArena(session.arena);
-
-                // Cleanup subsystems and award full rewards
+                // Cleanup subsystems and award full rewards BEFORE teleport
                 EnduranceEventHandler.onQuestEnd(player, session, true);
 
-                // INTEGRATION: End telemetry dungeon session with success
+                // INTEGRATION: End telemetry dungeon session with success BEFORE teleport
                 TelemetryService.INSTANCE.endDungeonSession(player, "completed");
 
                 updatePlayerStats(player.getUUID(), session.quest, true);
@@ -413,6 +598,10 @@ public class EnduranceQuestManager {
 
                 LOGGER.info("[EnduranceQuest] Player {} COMPLETED quest: {}!",
                     player.getName().getString(), session.quest.getDisplayName());
+
+                // === NOW do the state restoration and cleanup ===
+                restorePlayerAfterQuest(player, session);
+                cleanupArenaOrInstance(session, true);
             }
         }
     }
@@ -445,19 +634,13 @@ public class EnduranceQuestManager {
         ActiveQuestSession session = activeSessions.remove(playerId);
 
         if (session != null && session.quest.getState() == EnduranceQuestState.WAVE_COMPLETE) {
-            // Restore player's original state (inventory, game mode)
-            restorePlayerAfterQuest(player, session);
-
-            // Cleanup wave state and boss fight systems
+            // Cleanup wave state and boss fight systems FIRST
             cleanupQuestSystems(session);
 
-            // Partial completion - save progress
-            arenaManager.destroyArena(session.arena);
-
-            // Cleanup subsystems and award partial rewards for completed waves
+            // Cleanup subsystems and award partial rewards BEFORE teleport
             EnduranceEventHandler.onQuestEnd(player, session, false);
 
-            // INTEGRATION: End telemetry dungeon session with checkpoint exit
+            // INTEGRATION: End telemetry dungeon session BEFORE teleport
             TelemetryService.INSTANCE.endDungeonSession(player, "checkpoint_exit");
 
             updatePlayerStats(playerId, session.quest, false);
@@ -467,6 +650,10 @@ public class EnduranceQuestManager {
 
             LOGGER.info("[EnduranceQuest] Player {} exited at checkpoint (wave {})",
                 player.getName().getString(), session.quest.getCurrentWave());
+
+            // === NOW do the state restoration and cleanup ===
+            restorePlayerAfterQuest(player, session);
+            cleanupArenaOrInstance(session, false);
         }
     }
 
@@ -626,15 +813,26 @@ public class EnduranceQuestManager {
     /**
      * Prepare a player for the quest: save current state, set survival mode,
      * clear inventory, and give a starter kit.
+     *
+     * NOTE: When using Instance Dimension mode, inventory/state is saved by RecoverySystem
+     * BEFORE this method is called. We only save to session for legacy (overworld arena) mode.
      */
     private void preparePlayerForQuest(ServerPlayer player, ActiveQuestSession session) {
-        // Save original game mode
+        // Save original game mode (always needed for both modes)
         session.setOriginalGameMode(player.gameMode.getGameModeForPlayer());
 
-        // Save inventory (main inventory, armor, offhand)
-        ListTag inventoryTag = new ListTag();
-        player.getInventory().save(inventoryTag);
-        session.setSavedInventory(inventoryTag);
+        // Only save inventory locally for LEGACY mode (non-instance)
+        // In Instance mode, RecoverySystem already saved a full snapshot
+        if (!session.isInInstanceDimension()) {
+            ListTag inventoryTag = new ListTag();
+            player.getInventory().save(inventoryTag);
+            session.setSavedInventory(inventoryTag);
+            LOGGER.info("[EnduranceQuest] Prepared player {} for quest (saved {} inventory slots, was in {} mode)",
+                player.getName().getString(), inventoryTag.size(), session.getOriginalGameMode());
+        } else {
+            LOGGER.info("[EnduranceQuest] Prepared player {} for INSTANCE quest (state saved by RecoverySystem)",
+                player.getName().getString());
+        }
 
         // Clear the player's inventory completely
         player.getInventory().clearContent();
@@ -649,9 +847,6 @@ public class EnduranceQuestManager {
         player.setHealth(player.getMaxHealth());
         player.getFoodData().setFoodLevel(20);
         player.getFoodData().setSaturation(5.0f);
-
-        LOGGER.info("[EnduranceQuest] Prepared player {} for quest (saved {} inventory slots, was in {} mode)",
-            player.getName().getString(), inventoryTag.size(), session.getOriginalGameMode());
     }
 
     /**
@@ -690,8 +885,21 @@ public class EnduranceQuestManager {
 
     /**
      * Restore a player's original state after the quest ends.
+     *
+     * NOTE: When using Instance Dimension mode, full state restoration (including inventory,
+     * position, effects) is handled by RecoverySystem via InstanceManager.endInstanceQuest().
+     * This method only performs local restoration for LEGACY mode.
      */
     private void restorePlayerAfterQuest(ServerPlayer player, ActiveQuestSession session) {
+        // In Instance mode, RecoverySystem handles FULL restoration (inventory, position, etc.)
+        // DO NOT touch player state here - let RecoverySystem do it atomically
+        if (session.isInInstanceDimension()) {
+            LOGGER.debug("[EnduranceQuest] Instance mode: skipping local restore (RecoverySystem handles it)");
+            return;
+        }
+
+        // === LEGACY MODE: Full local restoration ===
+
         // Clear quest inventory
         player.getInventory().clearContent();
 
@@ -730,6 +938,30 @@ public class EnduranceQuestManager {
         BossWaveSystem.INSTANCE.endBossFight(arenaId, false);
 
         LOGGER.debug("[EnduranceQuest] Cleaned up quest systems for arena {}", arenaId);
+    }
+
+    /**
+     * Cleanup the arena or instance dimension when a quest ends.
+     * If the session used an instance dimension, destroys the instance.
+     * Otherwise, destroys the legacy overworld arena.
+     *
+     * @param session The quest session to cleanup
+     * @param success Whether the quest was completed successfully
+     */
+    private void cleanupArenaOrInstance(ActiveQuestSession session, boolean success) {
+        if (session.isInInstanceDimension()) {
+            // Instance dimension mode - use InstanceArenaManager for cleanup
+            UUID instanceId = session.getInstanceId();
+            if (instanceId != null) {
+                InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, success);
+                LOGGER.debug("[EnduranceQuest] Scheduled instance {} for destruction (success: {})",
+                    instanceId, success);
+            }
+        } else {
+            // Legacy overworld arena mode
+            arenaManager.destroyArena(session.arena);
+            LOGGER.debug("[EnduranceQuest] Destroyed legacy arena {}", session.arena.getId());
+        }
     }
 
     /**
@@ -825,6 +1057,12 @@ public class EnduranceQuestManager {
         private int killsInCurrentWave = 0;
         private boolean awaitingRespawnChoice = false;
 
+        // Instance dimension ID (null if using legacy overworld arena)
+        private UUID instanceId;
+
+        // Pending flag - true while instance is being created asynchronously
+        private boolean pending = false;
+
         // Saved player state (to restore after quest)
         private GameType originalGameMode;
         private ListTag savedInventory;
@@ -870,6 +1108,15 @@ public class EnduranceQuestManager {
         public void setSavedArmor(ListTag armor) { this.savedArmor = armor; }
         public ListTag getSavedOffhand() { return savedOffhand; }
         public void setSavedOffhand(ListTag offhand) { this.savedOffhand = offhand; }
+
+        // Instance dimension getters/setters
+        public UUID getInstanceId() { return instanceId; }
+        public void setInstanceId(UUID instanceId) { this.instanceId = instanceId; }
+        public boolean isInInstanceDimension() { return instanceId != null; }
+
+        // Pending state (while instance is being created)
+        public boolean isPending() { return pending; }
+        public void setPending(boolean pending) { this.pending = pending; }
     }
 
     /**

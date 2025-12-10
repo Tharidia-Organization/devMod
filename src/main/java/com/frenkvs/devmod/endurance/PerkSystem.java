@@ -315,17 +315,20 @@ public class PerkSystem {
     private void initializePerks() {
         // === OFFENSE PERKS ===
 
-        registerPerk(new Perk("sharp_blades", "Sharp Blades", "+15% damage", PerkTier.COMMON, PerkCategory.OFFENSE,
-            true, 5, ctx -> ctx.session.addDamageMultiplier(0.15f * ctx.stackCount)));
+        // NOTE: Stackable perks use fixed per-stack bonuses (not multiplied by stackCount)
+        // because the callback is called each time the perk is acquired, not once for all stacks
 
-        registerPerk(new Perk("fury", "Fury", "+10% attack speed", PerkTier.COMMON, PerkCategory.OFFENSE,
-            true, 5, ctx -> ctx.session.addAttackSpeedMultiplier(0.10f * ctx.stackCount)));
+        registerPerk(new Perk("sharp_blades", "Sharp Blades", "+15% damage per stack", PerkTier.COMMON, PerkCategory.OFFENSE,
+            true, 5, ctx -> ctx.session.addDamageMultiplier(0.15f)));
 
-        registerPerk(new Perk("critical_eye", "Critical Eye", "+10% crit chance", PerkTier.UNCOMMON, PerkCategory.OFFENSE,
-            true, 3, ctx -> ctx.session.addCritChance(0.10f * ctx.stackCount)));
+        registerPerk(new Perk("fury", "Fury", "+10% attack speed per stack", PerkTier.COMMON, PerkCategory.OFFENSE,
+            true, 5, ctx -> ctx.session.addAttackSpeedMultiplier(0.10f)));
 
-        registerPerk(new Perk("executioner", "Executioner", "+50% crit damage", PerkTier.RARE, PerkCategory.OFFENSE,
-            true, 2, ctx -> ctx.session.addCritDamage(0.50f * ctx.stackCount)));
+        registerPerk(new Perk("critical_eye", "Critical Eye", "+10% crit chance per stack", PerkTier.UNCOMMON, PerkCategory.OFFENSE,
+            true, 3, ctx -> ctx.session.addCritChance(0.10f)));
+
+        registerPerk(new Perk("executioner", "Executioner", "+50% crit damage per stack", PerkTier.RARE, PerkCategory.OFFENSE,
+            true, 2, ctx -> ctx.session.addCritDamage(0.50f)));
 
         registerPerk(new Perk("berserker", "Berserker", "+5% damage per 10% missing HP", PerkTier.EPIC, PerkCategory.OFFENSE,
             false, 1, ctx -> {
@@ -340,17 +343,19 @@ public class PerkSystem {
 
         // === DEFENSE PERKS ===
 
-        registerPerk(new Perk("tough_skin", "Tough Skin", "-10% damage taken", PerkTier.COMMON, PerkCategory.DEFENSE,
-            true, 5, ctx -> ctx.session.addDamageReduction(0.10f * ctx.stackCount)));
+        registerPerk(new Perk("tough_skin", "Tough Skin", "-10% damage taken per stack", PerkTier.COMMON, PerkCategory.DEFENSE,
+            true, 5, ctx -> ctx.session.addDamageReduction(0.10f)));
 
         registerPerk(new Perk("vitality", "Vitality", "+2 max hearts", PerkTier.UNCOMMON, PerkCategory.DEFENSE,
             true, 5, ctx -> {
                 var attr = ctx.player.getAttribute(Attributes.MAX_HEALTH);
                 if (attr != null) {
-                    ResourceLocation modId = ResourceLocation.fromNamespaceAndPath("devmod", "vitality_" + ctx.stackCount);
+                    // Each stack uses a unique modifier ID so they don't conflict
+                    // Only add the INCREMENTAL bonus (4.0 HP per new stack, not cumulative)
+                    ResourceLocation modId = ResourceLocation.fromNamespaceAndPath("devmod", "vitality_stack_" + ctx.stackCount);
                     AttributeModifier mod = new AttributeModifier(
                         modId,
-                        4.0 * ctx.stackCount,
+                        4.0, // Fixed per-stack bonus, not multiplied by stackCount
                         AttributeModifier.Operation.ADD_VALUE
                     );
                     attr.addTransientModifier(mod);
@@ -374,21 +379,21 @@ public class PerkSystem {
 
         // === UTILITY PERKS ===
 
-        registerPerk(new Perk("swift_feet", "Swift Feet", "+15% movement speed", PerkTier.COMMON, PerkCategory.UTILITY,
-            true, 3, ctx -> ctx.session.addMovementSpeedMultiplier(0.15f * ctx.stackCount)));
+        registerPerk(new Perk("swift_feet", "Swift Feet", "+15% movement speed per stack", PerkTier.COMMON, PerkCategory.UTILITY,
+            true, 3, ctx -> ctx.session.addMovementSpeedMultiplier(0.15f)));
 
         registerPerk(new Perk("treasure_hunter", "Treasure Hunter", "+25% reward points", PerkTier.UNCOMMON, PerkCategory.UTILITY,
             true, 3, ctx -> {
                 // Applied to rewards
             }));
 
-        registerPerk(new Perk("combo_master", "Combo Master", "-25% combo decay rate", PerkTier.RARE, PerkCategory.COMBO,
-            true, 3, ctx -> ctx.session.addComboDecayReduction(0.25f * ctx.stackCount)));
+        registerPerk(new Perk("combo_master", "Combo Master", "-25% combo decay rate per stack", PerkTier.RARE, PerkCategory.COMBO,
+            true, 3, ctx -> ctx.session.addComboDecayReduction(0.25f)));
 
         // === VAMPIRIC PERKS ===
 
-        registerPerk(new Perk("lifesteal", "Lifesteal", "Heal for 5% of damage dealt", PerkTier.UNCOMMON, PerkCategory.VAMPIRIC,
-            true, 4, ctx -> ctx.session.addLifesteal(0.05f * ctx.stackCount)));
+        registerPerk(new Perk("lifesteal", "Lifesteal", "Heal for 5% of damage dealt per stack", PerkTier.UNCOMMON, PerkCategory.VAMPIRIC,
+            true, 4, ctx -> ctx.session.addLifesteal(0.05f)));
 
         registerPerk(new Perk("blood_frenzy", "Blood Frenzy", "Killing enemies heals 2 HP", PerkTier.RARE, PerkCategory.VAMPIRIC,
             true, 3, null)); // Applied on kill
@@ -398,14 +403,14 @@ public class PerkSystem {
 
         // === ELEMENTAL PERKS ===
 
-        registerPerk(new Perk("fire_aspect", "Blazing Strikes", "20% chance to ignite enemies", PerkTier.UNCOMMON, PerkCategory.ELEMENTAL,
-            true, 3, ctx -> ctx.session.addFireChance(0.20f * ctx.stackCount)));
+        registerPerk(new Perk("fire_aspect", "Blazing Strikes", "20% chance to ignite enemies per stack", PerkTier.UNCOMMON, PerkCategory.ELEMENTAL,
+            true, 3, ctx -> ctx.session.addFireChance(0.20f)));
 
-        registerPerk(new Perk("frost_touch", "Frost Touch", "20% chance to slow enemies", PerkTier.UNCOMMON, PerkCategory.ELEMENTAL,
-            true, 3, ctx -> ctx.session.addFreezeChance(0.20f * ctx.stackCount)));
+        registerPerk(new Perk("frost_touch", "Frost Touch", "20% chance to slow enemies per stack", PerkTier.UNCOMMON, PerkCategory.ELEMENTAL,
+            true, 3, ctx -> ctx.session.addFreezeChance(0.20f)));
 
-        registerPerk(new Perk("lightning_strike", "Lightning Strike", "10% chance to chain lightning", PerkTier.RARE, PerkCategory.ELEMENTAL,
-            true, 2, ctx -> ctx.session.addLightningChance(0.10f * ctx.stackCount)));
+        registerPerk(new Perk("lightning_strike", "Lightning Strike", "10% chance to chain lightning per stack", PerkTier.RARE, PerkCategory.ELEMENTAL,
+            true, 2, ctx -> ctx.session.addLightningChance(0.10f)));
 
         registerPerk(new Perk("elemental_mastery", "Elemental Mastery", "All elemental effects +50%", PerkTier.EPIC, PerkCategory.ELEMENTAL,
             false, 1, ctx -> {
@@ -416,8 +421,8 @@ public class PerkSystem {
 
         // === COMBO/STYLE PERKS ===
 
-        registerPerk(new Perk("showoff", "Showoff", "+25% style points", PerkTier.COMMON, PerkCategory.COMBO,
-            true, 4, ctx -> ctx.session.addStyleMultiplier(0.25f * ctx.stackCount)));
+        registerPerk(new Perk("showoff", "Showoff", "+25% style points per stack", PerkTier.COMMON, PerkCategory.COMBO,
+            true, 4, ctx -> ctx.session.addStyleMultiplier(0.25f)));
 
         registerPerk(new Perk("momentum", "Momentum", "Combo hits increase damage (max +50%)", PerkTier.RARE, PerkCategory.COMBO,
             false, 1, ctx -> {
@@ -431,16 +436,16 @@ public class PerkSystem {
 
         // === CURSE PERKS (risk/reward) ===
 
-        registerPerk(new Perk("curse_fragility", "Curse: Fragility", "+50% damage taken, +50% rewards", PerkTier.UNCOMMON, PerkCategory.CURSE,
+        registerPerk(new Perk("curse_fragility", "Curse: Fragility", "+50% damage taken per stack, +50% rewards", PerkTier.UNCOMMON, PerkCategory.CURSE,
             true, 2, ctx -> {
-                ctx.session.addDamageReduction(-0.5f * ctx.stackCount);
-                ctx.session.addCurse(ctx.stackCount);
+                ctx.session.addDamageReduction(-0.5f);
+                ctx.session.addCurse(1);
             }));
 
-        registerPerk(new Perk("curse_weakness", "Curse: Weakness", "-25% damage, +50% rewards", PerkTier.UNCOMMON, PerkCategory.CURSE,
+        registerPerk(new Perk("curse_weakness", "Curse: Weakness", "-25% damage per stack, +50% rewards", PerkTier.UNCOMMON, PerkCategory.CURSE,
             true, 2, ctx -> {
-                ctx.session.addDamageMultiplier(-0.25f * ctx.stackCount);
-                ctx.session.addCurse(ctx.stackCount);
+                ctx.session.addDamageMultiplier(-0.25f);
+                ctx.session.addCurse(1);
             }));
 
         registerPerk(new Perk("curse_doom", "Curse: Doom", "Take 1 damage/second, +100% rewards", PerkTier.RARE, PerkCategory.CURSE,
@@ -506,19 +511,43 @@ public class PerkSystem {
     }
 
     /**
-     * End session and clean up.
+     * End session and clean up all perk effects.
      */
     public PerkSession endSession(ServerPlayer player) {
         PerkSession session = activeSessions.remove(player.getUUID());
         if (session != null) {
-            // Remove applied attribute modifiers
+            // Remove applied attribute modifiers from all relevant attributes
             for (AttributeModifier mod : session.getAppliedModifiers()) {
+                // Try removing from MAX_HEALTH (vitality perk)
                 var healthAttr = player.getAttribute(Attributes.MAX_HEALTH);
                 if (healthAttr != null) {
                     healthAttr.removeModifier(mod);
                 }
+                // Try removing from other attributes that perks might modify
+                var speedAttr = player.getAttribute(Attributes.MOVEMENT_SPEED);
+                if (speedAttr != null) {
+                    speedAttr.removeModifier(mod);
+                }
+                var attackSpeedAttr = player.getAttribute(Attributes.ATTACK_SPEED);
+                if (attackSpeedAttr != null) {
+                    attackSpeedAttr.removeModifier(mod);
+                }
             }
-            LOGGER.info("[PerkSystem] Session ended for player {} - {} perks acquired",
+
+            // Remove any perk-related potion effects that might still be active
+            player.removeEffect(MobEffects.REGENERATION);
+            player.removeEffect(MobEffects.MOVEMENT_SPEED);
+            player.removeEffect(MobEffects.DAMAGE_BOOST);
+            player.removeEffect(MobEffects.DAMAGE_RESISTANCE);
+
+            // Reset player health to max (after attribute cleanup) to avoid issues
+            // with health being above new max health
+            float maxHealth = player.getMaxHealth();
+            if (player.getHealth() > maxHealth) {
+                player.setHealth(maxHealth);
+            }
+
+            LOGGER.info("[PerkSystem] Session ended for player {} - {} perks acquired, all effects removed",
                 player.getName().getString(), session.getTotalPerksAcquired());
         }
         return session;

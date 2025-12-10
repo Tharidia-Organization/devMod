@@ -2777,7 +2777,11 @@ public class WeaponEditorScreen extends Screen {
     }
 
     private void apply() {
-        // Apply stats (body part multipliers)
+        // Apply stats (body part multipliers) - guard against missing sliders
+        if (statSliders.size() < 5) {
+            showStatus("Error: Stats not initialized", UIConstants.Status.ERROR);
+            return;
+        }
         float head = statSliders.get(0).value;
         float body = statSliders.get(1).value;
         float legs = statSliders.get(2).value;

@@ -130,10 +130,12 @@ public class QuickToolsPanel implements HubPanel {
         String label = tool.getLabel();
         int maxLabelWidth = rwidth - font.width(hotkey) - 50;
         if (font.width(label) > maxLabelWidth) {
-            while (font.width(label + "..") > maxLabelWidth && label.length() > 3) {
+            String ellipsis = "...";
+            int minChars = Math.min(6, label.length()); // Keep at least 6 chars for readability
+            while (font.width(label + ellipsis) > maxLabelWidth && label.length() > minChars) {
                 label = label.substring(0, label.length() - 1);
             }
-            label += "..";
+            label += ellipsis;
         }
         graphics.drawString(font, label, labelX, ry + 5, labelColor, false);
 

@@ -76,19 +76,24 @@ public class QuestDeathScreen extends Screen {
         int panelX = centerX - PANEL_WIDTH / 2;
         int panelY = centerY - PANEL_HEIGHT / 2;
 
-        // Respawn button
+        // Respawn button (primary action - prominent height)
+        int buttonWidth = PANEL_WIDTH - UIConstants.Spacing.PANEL_MARGIN * 5;
         respawnButton = Button.builder(
                 I18n.translate("devmod.endurance.respawn_cost"),
                 btn -> respawnAndContinue())
-            .bounds(panelX + 20, panelY + PANEL_HEIGHT - 75, PANEL_WIDTH - 40, 28)
+            .bounds(panelX + 20, panelY + PANEL_HEIGHT - 75,
+                    buttonWidth, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
+            .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.tooltip.respawn")))
             .build();
         addRenderableWidget(respawnButton);
 
-        // Give up button
+        // Give up button (secondary action - prominent height)
         giveUpButton = Button.builder(
                 I18n.translate("devmod.endurance.give_up"),
                 btn -> giveUpAndCollect())
-            .bounds(panelX + 20, panelY + PANEL_HEIGHT - 40, PANEL_WIDTH - 40, 28)
+            .bounds(panelX + 20, panelY + PANEL_HEIGHT - 40,
+                    buttonWidth, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
+            .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.tooltip.give_up")))
             .build();
         addRenderableWidget(giveUpButton);
 

@@ -504,15 +504,15 @@ public class MobConfigScreen extends Screen {
         // Track background
         graphics.fill(trackX, sliderY, trackX + trackW, sliderY + trackH, UIConstants.Background.INPUT);
 
-        // Original value marker
-        float origPercent = (float) (original / maxVal);
+        // Original value marker (guard against division by zero)
+        float origPercent = maxVal > 0 ? (float) (original / maxVal) : 0f;
         int origMarkerX = trackX + (int) (trackW * Math.min(1, origPercent));
         graphics.fill(origMarkerX - 1, sliderY, origMarkerX + 1, sliderY + trackH, 0x80FFFFFF);
 
-        // Value fill
-        float percent = (float) (value / maxVal);
+        // Value fill (guard against division by zero)
+        float percent = maxVal > 0 ? (float) (value / maxVal) : 0f;
         int fillW = (int) (trackW * Math.min(1, percent));
-        if (fillW > 0) {
+        if (fillW > 0 && trackW > 0) {
             // Gradient fill
             for (int i = 0; i < fillW; i++) {
                 float t = (float) i / trackW;
@@ -669,13 +669,15 @@ public class MobConfigScreen extends Screen {
                 int borderColor = hovered ? UIConstants.Accent.GOLD : UIConstants.Border.MUTED;
                 AxiomRenderer.drawBorder(graphics, px, py, userPresetW, userPresetH, borderColor);
 
-                // Name (truncated)
+                // Name (truncated - keep at least 3 chars for compact display)
                 String name = userPresetNames[i];
                 if (font.width(name) > userPresetW - 4) {
-                    while (font.width(name + "..") > userPresetW - 4 && name.length() > 1) {
+                    String ellipsis = "..";
+                    int minChars = Math.min(3, name.length()); // Compact: 3 chars minimum
+                    while (font.width(name + ellipsis) > userPresetW - 4 && name.length() > minChars) {
                         name = name.substring(0, name.length() - 1);
                     }
-                    name = name + "..";
+                    name = name + ellipsis;
                 }
                 graphics.drawString(font, name, px + 2, py + 3, UIConstants.Text.SECONDARY, false);
             }

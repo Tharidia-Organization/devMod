@@ -101,13 +101,15 @@ public class TestProgressPanel extends FloatingPanel {
         int y = 0;
         int lineHeight = 10;
 
-        // Test corrente
+        // Test corrente (keep at least 6 chars for readability)
         String testText = currentTestName;
         if (mc.font.width(testText) > contentWidth) {
-            while (mc.font.width(testText + "...") > contentWidth && testText.length() > 5) {
+            String ellipsis = "...";
+            int minChars = Math.min(6, testText.length());
+            while (mc.font.width(testText + ellipsis) > contentWidth && testText.length() > minChars) {
                 testText = testText.substring(0, testText.length() - 1);
             }
-            testText += "...";
+            testText += ellipsis;
         }
         graphics.drawString(mc.font, testText, 0, y, UIConstants.Text.PRIMARY, false);
         y += lineHeight;
@@ -174,13 +176,15 @@ public class TestProgressPanel extends FloatingPanel {
         int y = 0;
         int lineHeight = 10;
 
-        // Test corrente
+        // Test corrente (keep at least 6 chars for readability)
         String testText = currentTestName;
         if (font.width(testText) > contentWidth) {
-            while (font.width(testText + "...") > contentWidth && testText.length() > 5) {
+            String ellipsis = "...";
+            int minChars = Math.min(6, testText.length());
+            while (font.width(testText + ellipsis) > contentWidth && testText.length() > minChars) {
                 testText = testText.substring(0, testText.length() - 1);
             }
-            testText += "...";
+            testText += ellipsis;
         }
         renderText3D(poseStack, bufferSource, font, testText, 0, y, applyAlpha(UIConstants.Text.PRIMARY, alpha));
         y += lineHeight;

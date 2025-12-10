@@ -15,19 +15,31 @@ import java.util.List;
 /**
  * Keybinds settings page - displays all mod keybindings.
  * Shows key assignments and descriptions for quick reference.
+ * Implements proper scrolling with visible scrollbar.
  */
 public class KeybindsPage implements SettingsPage {
 
     private static final int ROW_HEIGHT = 20;
     private static final int SECTION_SPACING = 12;
     private static final int KEY_BADGE_WIDTH = 40;
+    private static final int SCROLLBAR_WIDTH = 6;
+    private static final int HINT_HEIGHT = 24; // Reserved space for bottom hint
 
     // Keybind entries organized by category
     private record KeybindEntry(String name, String key, String description) {}
     private record KeybindSection(String title, List<KeybindEntry> entries) {}
 
     private final List<KeybindSection> sections = new ArrayList<>();
+
+    // Scroll state
     private int scrollOffset = 0;
+    private int maxScrollOffset = 0;
+    private int visibleHeight = 0;
+    private int totalContentHeight = 0;
+    private boolean isDraggingScrollbar = false;
+
+    // Cached dimensions for scroll calculations
+    private int lastContentY, lastContentHeight;
 
     @Override
     public SettingsCategory getCategory() {
@@ -42,6 +54,7 @@ public class KeybindsPage implements SettingsPage {
     @Override
     public void init() {
         sections.clear();
+        scrollOffset = 0; // Reset scroll on init
 
         // Core Controls
         List<KeybindEntry> core = new ArrayList<>();
@@ -115,6 +128,28 @@ public class KeybindsPage implements SettingsPage {
 
     @Override
     public void render(GuiGraphics graphics, Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+        // Cache dimensions for scroll calculations
+        lastContentY = y;
+        lastContentHeight = height;
+
+        // Calculate scroll bounds
+        visibleHeight = height - HINT_HEIGHT; // Reserve space for hint
+        totalContentHeight = calculateTotalContentHeight();
+        maxScrollOffset = Math.max(0, totalContentHeight - visibleHeight);
+
+        // Clamp scroll offset
+        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
+
+        // Determine effective content width (accounting for scrollbar)
+        int effectiveWidth = width;
+        boolean needsScrollbar = totalContentHeight > visibleHeight;
+        if (needsScrollbar) {
+            effectiveWidth = width - SCROLLBAR_WIDTH - 4;
+        }
+
+        // Enable scissoring to clip content
+        graphics.enableScissor(x, y, x + width, y + visibleHeight);
+
         int currentY = y - scrollOffset;
 
         for (KeybindSection section : sections) {
@@ -125,7 +160,7 @@ public class KeybindsPage implements SettingsPage {
             }
 
             // Stop if below visible area
-            if (currentY > y + height) {
+            if (currentY > y + visibleHeight) {
                 break;
             }
 
@@ -137,8 +172,8 @@ public class KeybindsPage implements SettingsPage {
 
             // Keybind entries
             for (KeybindEntry entry : section.entries) {
-                if (currentY >= y - ROW_HEIGHT && currentY <= y + height) {
-                    renderKeybindRow(graphics, font, x, currentY, width, entry, mouseX, mouseY);
+                if (currentY >= y - ROW_HEIGHT && currentY <= y + visibleHeight) {
+                    renderKeybindRow(graphics, font, x, currentY, effectiveWidth, entry, mouseX, mouseY);
                 }
                 currentY += ROW_HEIGHT;
             }
@@ -146,18 +181,48 @@ public class KeybindsPage implements SettingsPage {
             currentY += SECTION_SPACING;
         }
 
-        // Hint at bottom - more visible instruction
-        int hintY = y + height - 20;
-        if (hintY > y) {
-            // Draw background for better visibility
-            graphics.fill(x - 4, hintY - 4, x + width + 4, hintY + 14, UIConstants.Background.HEADER);
-            graphics.drawString(font, "ℹ To rebind keys: ESC → Options → Controls → DevMod", x, hintY, UIConstants.Text.SECONDARY, false);
+        // Disable scissoring
+        graphics.disableScissor();
+
+        // Render scrollbar if needed
+        if (needsScrollbar) {
+            renderScrollbar(graphics, x + width - SCROLLBAR_WIDTH - 2, y, SCROLLBAR_WIDTH, visibleHeight);
         }
+
+        // Hint at bottom - fixed position below scrollable content
+        int hintY = y + height - HINT_HEIGHT + 4;
+        // Draw background for better visibility
+        graphics.fill(x - 4, hintY - 4, x + width + 4, hintY + 14, UIConstants.Background.HEADER);
+        graphics.drawString(font, "ℹ To rebind keys: ESC → Options → Controls → DevMod", x, hintY, UIConstants.Text.SECONDARY, false);
+    }
+
+    /**
+     * Render the scrollbar track and thumb.
+     */
+    private void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height) {
+        // Track background
+        graphics.fill(x, y, x + barWidth, y + height, UIConstants.Background.INPUT);
+
+        // Calculate thumb size and position
+        float visibleRatio = (float) visibleHeight / totalContentHeight;
+        int thumbHeight = Math.max(20, (int) (height * visibleRatio));
+
+        int thumbY;
+        if (maxScrollOffset > 0) {
+            float scrollRatio = (float) scrollOffset / maxScrollOffset;
+            thumbY = y + (int) ((height - thumbHeight) * scrollRatio);
+        } else {
+            thumbY = y;
+        }
+
+        // Thumb
+        int thumbColor = isDraggingScrollbar ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
+        graphics.fill(x, thumbY, x + barWidth, thumbY + thumbHeight, thumbColor);
     }
 
     private void renderKeybindRow(GuiGraphics graphics, Font font, int x, int y, int width,
                                    KeybindEntry entry, int mouseX, int mouseY) {
-        int rowWidth = width - 20;
+        int rowWidth = width - 10;
         boolean hovered = mouseX >= x && mouseX < x + rowWidth && mouseY >= y && mouseY < y + ROW_HEIGHT;
 
         // Hover background
@@ -182,35 +247,105 @@ public class KeybindsPage implements SettingsPage {
         int nameX = badgeX + actualBadgeWidth + 10;
         graphics.drawString(font, entry.name, nameX, y + 2, UIConstants.Text.PRIMARY, false);
 
-        // Description (muted, to the right)
+        // Description (muted, to the right) - only if space allows
         int descX = nameX + font.width(entry.name) + 16;
-        if (descX + font.width(entry.description) < x + rowWidth) {
-            graphics.drawString(font, entry.description, descX, y + 2, UIConstants.Text.MUTED, false);
+        int availableWidth = x + rowWidth - descX;
+        if (availableWidth > 50) {
+            String desc = entry.description;
+            // Truncate description if too long (keep at least 6 chars for readability)
+            if (font.width(desc) > availableWidth) {
+                String ellipsis = "...";
+                int minChars = Math.min(6, desc.length());
+                while (font.width(desc + ellipsis) > availableWidth && desc.length() > minChars) {
+                    desc = desc.substring(0, desc.length() - 1);
+                }
+                desc = desc + ellipsis;
+            }
+            graphics.drawString(font, desc, descX, y + 2, UIConstants.Text.MUTED, false);
         }
     }
 
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button, int contentX, int contentY, int contentWidth) {
-        // No interactive elements in this page
-        return false;
-    }
-
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        int maxScroll = getContentHeight() - 200;
-        scrollOffset -= (int) (scrollY * 15);
-        scrollOffset = Math.max(0, Math.min(scrollOffset, Math.max(0, maxScroll)));
-        return true;
-    }
-
-    @Override
-    public int getContentHeight() {
+    /**
+     * Calculate total height of all content.
+     */
+    private int calculateTotalContentHeight() {
         int total = 0;
         for (KeybindSection section : sections) {
             total += ROW_HEIGHT; // Section header
             total += section.entries.size() * ROW_HEIGHT; // Entries
             total += SECTION_SPACING;
         }
-        return total + 40; // Extra padding
+        return total;
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button, int contentX, int contentY, int contentWidth) {
+        // Check if click is within content area
+        if (mouseX < contentX || mouseX > contentX + contentWidth ||
+            mouseY < contentY || mouseY > contentY + lastContentHeight) {
+            return false;
+        }
+
+        // Check scrollbar click
+        if (totalContentHeight > visibleHeight) {
+            int scrollbarX = contentX + contentWidth - SCROLLBAR_WIDTH - 2;
+            if (mouseX >= scrollbarX && mouseX <= scrollbarX + SCROLLBAR_WIDTH + 2) {
+                isDraggingScrollbar = true;
+                // Calculate thumb dimensions for accurate click position
+                float visibleRatio = (float) visibleHeight / totalContentHeight;
+                int thumbHeight = Math.max(20, (int) (visibleHeight * visibleRatio));
+                int trackHeight = visibleHeight - thumbHeight;
+
+                // Jump to clicked position (centering thumb on click)
+                if (trackHeight > 0) {
+                    float clickRatio = (float)(mouseY - contentY - thumbHeight / 2) / trackHeight;
+                    clickRatio = Math.max(0, Math.min(1, clickRatio));
+                    scrollOffset = (int)(maxScrollOffset * clickRatio);
+                }
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        scrollOffset -= (int) (scrollY * 20);
+        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
+        return true;
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (isDraggingScrollbar) {
+            isDraggingScrollbar = false;
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (isDraggingScrollbar && maxScrollOffset > 0) {
+            // Calculate thumb dimensions for accurate drag
+            float visibleRatio = (float) visibleHeight / totalContentHeight;
+            int thumbHeight = Math.max(20, (int) (visibleHeight * visibleRatio));
+            int trackHeight = visibleHeight - thumbHeight;
+
+            if (trackHeight > 0) {
+                // Center thumb on mouse position
+                float dragRatio = (float)(mouseY - lastContentY - thumbHeight / 2) / trackHeight;
+                dragRatio = Math.max(0, Math.min(1, dragRatio));
+                scrollOffset = (int)(maxScrollOffset * dragRatio);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public int getContentHeight() {
+        return calculateTotalContentHeight() + HINT_HEIGHT;
     }
 }

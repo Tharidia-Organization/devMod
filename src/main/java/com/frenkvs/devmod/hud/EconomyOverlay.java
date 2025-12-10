@@ -490,10 +490,12 @@ public class EconomyOverlay {
 
     private static String truncateString(String str, Font font, int maxWidth) {
         if (font.width(str) <= maxWidth) return str;
-        while (font.width(str + "..") > maxWidth && str.length() > 3) {
+        String ellipsis = "...";
+        int minChars = Math.min(6, str.length()); // Keep at least 6 chars for readability
+        while (font.width(str + ellipsis) > maxWidth && str.length() > minChars) {
             str = str.substring(0, str.length() - 1);
         }
-        return str + "..";
+        return str + ellipsis;
     }
 
     private static String formatDuration(long ms) {

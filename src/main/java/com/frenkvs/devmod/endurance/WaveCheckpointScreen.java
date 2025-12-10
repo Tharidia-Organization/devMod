@@ -42,8 +42,8 @@ public class WaveCheckpointScreen extends Screen {
     private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY;
     private static final int COLOR_ACCENT = UIConstants.Accent.BLUE;  // Blue instead of orange
 
-    // === Dimensions ===
-    private static final int PANEL_WIDTH = 380;
+    // === Dimensions - using UIConstants for consistency ===
+    private static final int PANEL_WIDTH = UIConstants.Size.DIALOG_WIDTH_MEDIUM;
     private static final int PANEL_HEIGHT = 260;
 
     // === Animation Timing (ms) ===
@@ -103,19 +103,22 @@ public class WaveCheckpointScreen extends Screen {
         int panelX = centerX - PANEL_WIDTH / 2;
         int panelY = centerY - PANEL_HEIGHT / 2;
 
-        // Continue button
+        // Continue button (primary CTA)
         String continueText = endlessMode
             ? I18n.translate("devmod.endurance.starting_wave", waveNumber + 1).getString()
             : I18n.translate("devmod.endurance.wave").getString() + " " + (waveNumber + 1) + "/" + totalWaves;
 
+        int buttonWidth = (PANEL_WIDTH - 60) / 2; // Two buttons with gap
         continueButton = Button.builder(I18n.literal(continueText), btn -> continueToNextWave())
-            .bounds(panelX + 25, panelY + PANEL_HEIGHT - 55, 155, 28)
+            .bounds(panelX + 25, panelY + PANEL_HEIGHT - 55,
+                    buttonWidth, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
             .build();
         addRenderableWidget(continueButton);
 
-        // Exit button
+        // Exit button (secondary action)
         exitButton = Button.builder(I18n.translate("devmod.ui.exit_collect"), btn -> exitAndCollect())
-            .bounds(panelX + PANEL_WIDTH - 180, panelY + PANEL_HEIGHT - 55, 155, 28)
+            .bounds(panelX + PANEL_WIDTH - buttonWidth - 25, panelY + PANEL_HEIGHT - 55,
+                    buttonWidth, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
             .build();
         addRenderableWidget(exitButton);
 
@@ -401,17 +404,17 @@ public class WaveCheckpointScreen extends Screen {
         int bgColor = applyAlpha(UIConstants.Background.INPUT, alpha);
         g.fill(barX, y + 10, barX + barWidth, y + 10 + barHeight, bgColor);
 
-        // Animated fill
-        float targetProgress = (float) waveNumber / totalWaves;
+        // Animated fill (guard against division by zero)
+        float targetProgress = totalWaves > 0 ? (float) waveNumber / totalWaves : 0f;
         long animElapsed = elapsed - RANK_REVEAL_DELAY - 200;
         float fillProgress = Math.min(targetProgress, targetProgress * (animElapsed / 500.0f));
 
         int fillWidth = (int) (barWidth * fillProgress);
         int fillColor = applyAlpha(COLOR_BORDER, alpha);
 
-        // Gradient fill effect
+        // Gradient fill effect (guard against division by zero)
         for (int i = 0; i < fillWidth; i++) {
-            float gradProgress = (float) i / barWidth;
+            float gradProgress = barWidth > 0 ? (float) i / barWidth : 0f;
             int lineColor = lerpColor(applyAlpha(COLOR_ACCENT, alpha), fillColor, gradProgress);
             g.fill(barX + i, y + 10, barX + i + 1, y + 10 + barHeight, lineColor);
         }

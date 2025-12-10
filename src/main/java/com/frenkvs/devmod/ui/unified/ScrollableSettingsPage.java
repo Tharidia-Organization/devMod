@@ -121,10 +121,16 @@ public abstract class ScrollableSettingsPage implements SettingsPage {
             int scrollbarX = contentX + contentWidth - SCROLLBAR_WIDTH - 2;
             if (mouseX >= scrollbarX && mouseX <= scrollbarX + SCROLLBAR_WIDTH + 2) {
                 isDraggingScrollbar = true;
-                // Jump to clicked position
-                float clickRatio = (float)(mouseY - contentY) / contentHeight;
-                scrollOffset = (int)(maxScrollOffset * clickRatio);
-                scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
+                // Calculate thumb dimensions for accurate click positioning
+                float visibleRatio = (float) visibleHeight / totalContentHeight;
+                int thumbHeight = Math.max(20, (int) (contentHeight * visibleRatio));
+                int trackHeight = contentHeight - thumbHeight;
+                if (trackHeight > 0) {
+                    // Jump to clicked position (centering thumb on click)
+                    float clickRatio = (float)(mouseY - contentY - thumbHeight / 2) / trackHeight;
+                    clickRatio = Math.max(0, Math.min(1, clickRatio));
+                    scrollOffset = (int)(maxScrollOffset * clickRatio);
+                }
                 return true;
             }
         }
@@ -153,9 +159,16 @@ public abstract class ScrollableSettingsPage implements SettingsPage {
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         if (isDraggingScrollbar && maxScrollOffset > 0) {
-            float dragRatio = (float)(mouseY - contentY) / contentHeight;
-            scrollOffset = (int)(maxScrollOffset * dragRatio);
-            scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
+            // Calculate thumb dimensions for accurate drag
+            float visibleRatio = (float) visibleHeight / totalContentHeight;
+            int thumbHeight = Math.max(20, (int) (contentHeight * visibleRatio));
+            int trackHeight = contentHeight - thumbHeight;
+            if (trackHeight > 0) {
+                // Center thumb on mouse position during drag
+                float dragRatio = (float)(mouseY - contentY - thumbHeight / 2) / trackHeight;
+                dragRatio = Math.max(0, Math.min(1, dragRatio));
+                scrollOffset = (int)(maxScrollOffset * dragRatio);
+            }
             return true;
         }
         return false;

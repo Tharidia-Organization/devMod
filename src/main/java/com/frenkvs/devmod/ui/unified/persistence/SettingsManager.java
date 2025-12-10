@@ -286,6 +286,14 @@ public class SettingsManager {
             LOGGER.warn("[DevMod] Could not reset EnduranceQuestManager: {}", e.getMessage());
         }
 
+        // Reset TestingSession (QA testing quests)
+        try {
+            com.frenkvs.devmod.testing.TestingSession.INSTANCE.resetSession();
+            LOGGER.debug("[DevMod] TestingSession reset");
+        } catch (Exception e) {
+            LOGGER.warn("[DevMod] Could not reset TestingSession: {}", e.getMessage());
+        }
+
         // Delete config files to ensure fresh start
         deleteConfigFile(ConfigPaths.getTesterProfileFile());
         deleteConfigFile(ConfigPaths.getTesterProgressFile());

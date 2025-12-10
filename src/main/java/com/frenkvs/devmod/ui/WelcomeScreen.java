@@ -90,21 +90,26 @@ public class WelcomeScreen extends Screen {
         super.init();
         openTime = System.currentTimeMillis();
 
+        // Responsive panel dimensions - ensure fit on small screens
+        int actualPanelWidth = Math.min(PANEL_WIDTH, width - 20);
+        int actualPanelHeight = Math.min(PANEL_HEIGHT, height - 20);
         int centerX = width / 2;
         int centerY = height / 2;
-        int panelX = centerX - PANEL_WIDTH / 2;
-        int panelY = centerY - PANEL_HEIGHT / 2;
+        int panelX = centerX - actualPanelWidth / 2;
+        int panelY = centerY - actualPanelHeight / 2;
 
-        // Tutorial button
+        // Tutorial button - positioned relative to actual panel width
+        int buttonWidth = Math.min(170, (actualPanelWidth - 50) / 2);
+        int buttonY = panelY + actualPanelHeight - 75;
         tutorialButton = Button.builder(I18n.ui("start_tutorial"), btn -> startTutorial())
-            .bounds(panelX + 35, panelY + PANEL_HEIGHT - 75, 170, 28)
+            .bounds(panelX + 35, buttonY, buttonWidth, 28)
             .build();
         addRenderableWidget(tutorialButton);
         tutorialButton.visible = false;
 
-        // Skip button
+        // Skip button - positioned relative to actual panel width
         skipButton = Button.builder(I18n.ui("skip_know_this"), btn -> skip())
-            .bounds(panelX + PANEL_WIDTH - 205, panelY + PANEL_HEIGHT - 75, 170, 28)
+            .bounds(panelX + actualPanelWidth - buttonWidth - 35, buttonY, buttonWidth, 28)
             .build();
         addRenderableWidget(skipButton);
         skipButton.visible = false;

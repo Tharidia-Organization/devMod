@@ -104,10 +104,11 @@ public class TelemetryStatusOverlay {
         String statusText = recording ? "REC" : "PAUSED";
         graphics.drawString(font, statusText, dotX + 10, dotY - 1, recording ? RECORDING_COLOR : PAUSED_COLOR, false);
 
-        // Room info
+        // Room info (keep at least 6 chars for readability)
         String roomText = currentRoom != null && !currentRoom.isEmpty() ? currentRoom : "No room";
         if (roomText.length() > 14) {
-            roomText = roomText.substring(0, 12) + "..";
+            int truncateAt = Math.max(6, 11); // Keep at least 6 chars
+            roomText = roomText.substring(0, truncateAt) + "...";
         }
         graphics.drawString(font, roomText, panelX + 6, panelY + 16, TEXT_MUTED, false);
 

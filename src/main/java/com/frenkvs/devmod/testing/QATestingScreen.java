@@ -457,11 +457,12 @@ public class QATestingScreen extends Screen {
                 graphics.fill(PADDING - 2, y - 2, SIDEBAR_WIDTH - PADDING + 2, y + 22, UIConstants.Background.HOVER);
             }
 
-            // Truncate long category names
+            // Truncate long category names (keep at least 6 chars for readability)
             String displayCategory = category;
             int maxCategoryWidth = SIDEBAR_WIDTH - PADDING * 2 - 50; // Leave room for progress
             if (font.width(displayCategory) > maxCategoryWidth) {
-                while (font.width(displayCategory + "...") > maxCategoryWidth && displayCategory.length() > 5) {
+                int minChars = Math.min(6, category.length());
+                while (font.width(displayCategory + "...") > maxCategoryWidth && displayCategory.length() > minChars) {
                     displayCategory = displayCategory.substring(0, displayCategory.length() - 1);
                 }
                 displayCategory += "...";

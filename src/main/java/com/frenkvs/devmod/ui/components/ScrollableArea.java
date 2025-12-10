@@ -118,11 +118,17 @@ public class ScrollableArea {
                 dragStartOffset = scrollOffset;
                 return true;
             }
-            // Click on track - jump to position
+            // Click on track - jump to position (centering thumb on click)
             int trackHeight = height - 4;
-            float clickRatio = (float) (mouseY - y - 2) / trackHeight;
-            scrollOffset = (int) (clickRatio * getMaxScroll());
-            clampScrollOffset();
+            int thumbHeight = getScrollbarThumbHeight();
+            int effectiveTrackHeight = trackHeight - thumbHeight;
+            if (effectiveTrackHeight > 0) {
+                // Center thumb on click position
+                float clickRatio = (float) (mouseY - y - 2 - thumbHeight / 2) / effectiveTrackHeight;
+                clickRatio = Math.max(0, Math.min(1, clickRatio)); // Clamp to valid range
+                scrollOffset = (int) (clickRatio * getMaxScroll());
+                clampScrollOffset();
+            }
             return true;
         }
         return false;

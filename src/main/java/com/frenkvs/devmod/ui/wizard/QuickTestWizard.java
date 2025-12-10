@@ -87,8 +87,11 @@ public class QuickTestWizard extends Screen {
         // Background
         AxiomRenderer.drawScreenBackground(graphics, width, height);
 
-        int panelX = (width - PANEL_WIDTH) / 2;
-        int panelY = (height - PANEL_HEIGHT) / 2;
+        // Responsive panel dimensions - ensure fit on small screens
+        int panelWidth = Math.min(PANEL_WIDTH, width - 20);
+        int panelHeight = Math.min(PANEL_HEIGHT, height - 20);
+        int panelX = (width - panelWidth) / 2;
+        int panelY = (height - panelHeight) / 2;
 
         // Main panel
         drawMainPanel(graphics, panelX, panelY);
@@ -261,7 +264,7 @@ public class QuickTestWizard extends Screen {
                 }
 
                 String mobName = mob.displayName != null ? mob.displayName : mob.mobId.toString();
-                if (mobName.length() > 25) mobName = mobName.substring(0, 23) + "..";
+                if (mobName.length() > 25) mobName = mobName.substring(0, 22) + "...";
                 graphics.drawString(font, mobName, leftCol + 8, itemY + 6,
                     selected ? UIConstants.Text.ACCENT : UIConstants.Text.PRIMARY, false);
             }

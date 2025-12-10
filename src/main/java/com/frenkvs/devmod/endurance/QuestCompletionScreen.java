@@ -33,9 +33,14 @@ public class QuestCompletionScreen extends Screen {
     private static final int COLOR_SUCCESS = UIConstants.Accent.GREEN;
     private static final int COLOR_BONUS = UIConstants.Accent.CYAN;
 
-    // === Dimensions ===
-    private static final int PANEL_WIDTH = 420;
-    private static final int PANEL_HEIGHT = 380;
+    // === Dimensions (base values, may be scaled for small screens) - using UIConstants ===
+    private static final int BASE_PANEL_WIDTH = UIConstants.Size.DIALOG_WIDTH_LARGE;
+    private static final int BASE_PANEL_HEIGHT = 380;
+    private static final int MIN_PANEL_WIDTH = UIConstants.Size.DIALOG_WIDTH_SMALL;
+
+    // Calculated panel dimensions (set in init)
+    private int PANEL_WIDTH = BASE_PANEL_WIDTH;
+    private int PANEL_HEIGHT = BASE_PANEL_HEIGHT;
 
     // === Animation (optimized for snappier UX) ===
     private static final long FADE_IN_DURATION = 300;
@@ -61,14 +66,21 @@ public class QuestCompletionScreen extends Screen {
         super.init();
         openTime = System.currentTimeMillis();
 
+        // Calculate responsive panel dimensions
+        int maxWidth = width - 40; // 20px margin on each side
+        int maxHeight = height - 60; // 30px margin top/bottom
+        PANEL_WIDTH = Math.max(MIN_PANEL_WIDTH, Math.min(BASE_PANEL_WIDTH, maxWidth));
+        PANEL_HEIGHT = Math.max(MIN_PANEL_WIDTH, Math.min(BASE_PANEL_HEIGHT, maxHeight));
+
         int centerX = width / 2;
         int panelY = (height - PANEL_HEIGHT) / 2;
 
-        // Continue button (bottom of panel)
+        // Continue button (primary CTA - prominent height)
         addRenderableWidget(Button.builder(
                 Component.literal("Continue"),
                 btn -> closeScreen())
-            .bounds(centerX - 60, panelY + PANEL_HEIGHT - 40, 120, 28)
+            .bounds(centerX - UIConstants.Size.BUTTON_WIDTH_MEDIUM / 2, panelY + PANEL_HEIGHT - 40,
+                    UIConstants.Size.BUTTON_WIDTH_MEDIUM, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
             .build());
     }
 
@@ -271,10 +283,18 @@ public class QuestCompletionScreen extends Screen {
             g.drawCenteredString(font, "-- ACHIEVEMENTS UNLOCKED --", centerX, y, applyAlpha(UIConstants.Accent.GOLD, alpha));
             y += 14;
 
+            int maxY = panelY + PANEL_HEIGHT - 60;
+            int achievementsShown = 0;
             for (String achievement : achievements) {
+                if (y > maxY) {
+                    // Show indicator for remaining achievements
+                    int remaining = achievements.size() - achievementsShown;
+                    g.drawCenteredString(font, "+" + remaining + " more...", centerX, y, applyAlpha(UIConstants.Text.MUTED, alpha));
+                    break;
+                }
                 g.drawCenteredString(font, "\u2605 " + achievement, centerX, y, applyAlpha(UIConstants.Accent.ORANGE, alpha));
                 y += 11;
-                if (y > panelY + PANEL_HEIGHT - 60) break;
+                achievementsShown++;
             }
         }
     }

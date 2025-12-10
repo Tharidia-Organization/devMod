@@ -92,14 +92,19 @@ public class VisualizersPage implements SettingsPage {
                 LightLevelOverlay.INSTANCE.isEnabled());
 
         // Radius slider
+        // Calculate effective width accounting for scrollbar if present
+        int effectiveWidth = totalContentHeight > visibleHeight ? width - SCROLLBAR_WIDTH - 8 : width;
         graphics.drawString(font, "Radius: " + lightLevelRadius + " blocks", x, currentY + 4, UIConstants.Text.SECONDARY, false);
-        int sliderX = x + 120;
-        this.sliderWidth = Math.min(width - 140, 200);
+        int labelWidth = 120;
+        int buttonsWidth = 56; // Two 20px buttons + 8px gap + 8px margin
+        int sliderX = x + labelWidth;
+        // Calculate slider width to fit: label + slider + buttons within effective width
+        this.sliderWidth = Math.max(60, Math.min(effectiveWidth - labelWidth - buttonsWidth, 200));
         this.sliderContentX = sliderX;
         renderSlider(graphics, sliderX, currentY + 2, this.sliderWidth, 12,
                 (lightLevelRadius - 4) / 28.0f, mouseX, mouseY);
 
-        // [-] [+] buttons
+        // [-] [+] buttons - positioned after slider with proper spacing
         int minusBtnX = sliderX + sliderWidth + 8;
         int plusBtnX = minusBtnX + 24;
         boolean minusHovered = isMouseOver(mouseX, mouseY, minusBtnX, currentY, 20, 16);
@@ -182,15 +187,19 @@ public class VisualizersPage implements SettingsPage {
         currentY += ROW_HEIGHT;
 
         // View Distance slider
+        // Calculate effective width accounting for scrollbar if present (reuse from earlier)
         graphics.drawString(font, "View Distance: " + viewDistance + " blocks", x, currentY + 4, UIConstants.Text.SECONDARY, false);
-        int vdSliderX = x + 140;
-        this.viewDistSliderWidth = Math.min(width - 160, 180);
+        int vdLabelWidth = 140;
+        int vdButtonsWidth = 56; // Two 20px buttons + 8px gap + 8px margin
+        int vdSliderX = x + vdLabelWidth;
+        // Calculate slider width to fit: label + slider + buttons within effective width
+        this.viewDistSliderWidth = Math.max(60, Math.min(effectiveWidth - vdLabelWidth - vdButtonsWidth, 180));
         this.viewDistSliderX = vdSliderX;
         float vdPercentage = (float) (viewDistance - SettingsData.VisualizerSettings.MIN_RENDER_DISTANCE) /
                              (SettingsData.VisualizerSettings.MAX_RENDER_DISTANCE - SettingsData.VisualizerSettings.MIN_RENDER_DISTANCE);
         renderSlider(graphics, vdSliderX, currentY + 2, this.viewDistSliderWidth, 12, vdPercentage, mouseX, mouseY);
 
-        // [-] [+] buttons for view distance
+        // [-] [+] buttons for view distance - positioned after slider with proper spacing
         int vdMinusBtnX = vdSliderX + viewDistSliderWidth + 8;
         int vdPlusBtnX = vdMinusBtnX + 24;
         boolean vdMinusHovered = isMouseOver(mouseX, mouseY, vdMinusBtnX, currentY, 20, 16);
@@ -333,9 +342,15 @@ public class VisualizersPage implements SettingsPage {
             int scrollbarX = contentX + contentWidth - SCROLLBAR_WIDTH - 2;
             if (mouseX >= scrollbarX && mouseX <= scrollbarX + SCROLLBAR_WIDTH + 2) {
                 isDraggingScrollbar = true;
-                float clickRatio = (float)(mouseY - contentY) / lastContentHeight;
-                scrollOffset = (int)(maxScrollOffset * clickRatio);
-                scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
+                // Calculate thumb dimensions for accurate click position
+                float visibleRatio = (float) visibleHeight / totalContentHeight;
+                int thumbHeight = Math.max(20, (int) (visibleHeight * visibleRatio));
+                int trackHeight = visibleHeight - thumbHeight;
+                if (trackHeight > 0) {
+                    float clickRatio = (float)(mouseY - contentY - thumbHeight / 2) / trackHeight;
+                    clickRatio = Math.max(0, Math.min(1, clickRatio));
+                    scrollOffset = (int)(maxScrollOffset * clickRatio);
+                }
                 return true;
             }
         }
@@ -527,9 +542,15 @@ public class VisualizersPage implements SettingsPage {
         if (button == 0) {
             // Scrollbar drag
             if (isDraggingScrollbar && maxScrollOffset > 0) {
-                float dragRatio = (float)(mouseY - lastContentY) / lastContentHeight;
-                scrollOffset = (int)(maxScrollOffset * dragRatio);
-                scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
+                // Calculate thumb dimensions for accurate drag
+                float visibleRatio = (float) visibleHeight / totalContentHeight;
+                int thumbHeight = Math.max(20, (int) (visibleHeight * visibleRatio));
+                int trackHeight = visibleHeight - thumbHeight;
+                if (trackHeight > 0) {
+                    float dragRatio = (float)(mouseY - lastContentY - thumbHeight / 2) / trackHeight;
+                    dragRatio = Math.max(0, Math.min(1, dragRatio));
+                    scrollOffset = (int)(maxScrollOffset * dragRatio);
+                }
                 return true;
             }
             if (draggingLightSlider) {
