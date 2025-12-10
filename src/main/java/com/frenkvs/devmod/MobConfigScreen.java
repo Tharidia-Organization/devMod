@@ -193,8 +193,7 @@ public class MobConfigScreen extends Screen {
         // Update animations
         updateAnimations();
 
-        // Standard background - same as WeaponEditorScreen
-        AxiomRenderer.drawScreenBackground(graphics, this.width, this.height);
+        // No opaque background - transparent like WeaponEditorScreen
 
         int panelX = (this.width - PANEL_WIDTH) / 2;
         int panelY = (this.height - PANEL_HEIGHT) / 2;
@@ -372,10 +371,10 @@ public class MobConfigScreen extends Screen {
         float maxDim = Math.max(mobHeight, mobWidth);
         int scale = (int) (Math.min(50, 100 / maxDim) * previewZoom);
 
-        // Create rotation quaternion - fix upside down by inverting X rotation
+        // Create rotation quaternion for proper mob orientation
         Quaternionf rotation = new Quaternionf()
-            .rotateY((float) Math.toRadians(-rotationY))
-            .rotateX((float) Math.toRadians(-rotationX));
+            .rotateY((float) Math.toRadians(rotationY))
+            .rotateX((float) Math.toRadians(rotationX));
 
         try {
             // Render entity

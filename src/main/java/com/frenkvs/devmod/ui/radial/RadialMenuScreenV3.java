@@ -26,19 +26,15 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 /**
- * RADIAL MENU V3 - THE ULTIMATE EDITION
+ * RADIAL MENU V3 - CLEAN & USABLE EDITION
  *
- * Mind-blowing new features:
- * - Floating particle effects with physics
- * - Smart context-aware suggestions based on what you're doing
- * - Fuzzy search with live filtering (type to search!)
- * - Usage statistics & "Most Used" quick-access ring
- * - Gesture recognition (mouse swipe patterns)
- * - Preview thumbnails showing overlay effects
- * - Smooth morphing transitions between states
- * - Favorites system with drag-drop feel
- * - Ambient glow that reacts to selection
- * - Sound design with pitch variation
+ * Focus on usability:
+ * - Clean, readable layout with proper spacing
+ * - Large clickable areas - no overlap
+ * - Fast, non-distracting animations
+ * - Fuzzy search (type to filter)
+ * - Optional favorites in center ring
+ * - Keyboard shortcuts for power users
  */
 public class RadialMenuScreenV3 extends Screen {
 
@@ -126,10 +122,9 @@ public class RadialMenuScreenV3 extends Screen {
         initializeCategories();
         loadUsageStats();
         loadFavorites();
-        analyzeContext();
         openTime = System.currentTimeMillis();
         cacheTargetEntity();
-        spawnOpeningParticles();
+        // Removed: particles, gestures, context analysis for cleaner UX
     }
 
     private void loadConfig() {
@@ -760,72 +755,38 @@ public class RadialMenuScreenV3 extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Update all systems
+        // Update animations
         updateAnimations(partialTick);
-        updateParticles();
 
         if (closing && openAnimation < 0.05f) {
             onClose();
             return;
         }
 
-        // Track gesture
-        if (GLFW.glfwGetMouseButton(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_MOUSE_BUTTON_MIDDLE) == GLFW.GLFW_PRESS) {
-            recordGesturePoint(mouseX, mouseY);
-            gestureActive = true;
-        } else if (gestureActive) {
-            gestureActive = false;
-            gesturePoints.clear();
-        }
-
         updateSelection(mouseX, mouseY);
 
-        // Dynamic glow based on selection
-        if (selectedCategoryIndex >= 0 && selectedCategoryIndex < rootCategories.size()) {
-            glowColor = rootCategories.get(selectedCategoryIndex).getColor();
-            targetGlowIntensity = 0.8f;
-        } else {
-            targetGlowIntensity = 0.4f;
-        }
-        glowIntensity = Mth.lerp(0.1f, glowIntensity, targetGlowIntensity);
-
-        // Render
+        // Render background
         renderBackground(graphics);
-        renderParticles(graphics);
-        renderAmbientGlow(graphics);
 
         var pose = graphics.pose();
         pose.pushPose();
 
-        float scale = easeOutElastic(openAnimation);
+        // Simple smooth scale animation (no elastic bounce, no rotation)
+        float scale = easeOutQuad(openAnimation);
         pose.translate(centerX, centerY, 0);
         pose.scale(scale, scale, 1f);
         pose.translate(-centerX, -centerY, 0);
 
-        // Subtle rotation based on selection
-        if (selectedCategoryIndex >= 0) {
-            float targetRot = selectedCategoryIndex * 0.02f;
-            rotationOffset = Mth.lerp(0.1f, rotationOffset, targetRot);
-        }
-        pose.translate(centerX, centerY, 0);
-        pose.mulPose(com.mojang.math.Axis.ZP.rotation(rotationOffset));
-        pose.translate(-centerX, -centerY, 0);
-
+        // Subtle glow on selected category only
         if (selectedCategoryIndex >= 0) {
             renderCategoryGlow(graphics, selectedCategoryIndex);
         }
 
         renderCategories(graphics);
-        renderFavoritesRing(graphics);
         renderCenterHub(graphics, mouseX, mouseY);
 
         if (selectedCategoryIndex >= 0 && selectedCategoryIndex < getActiveCategories().size()) {
             renderCategoryItems(graphics, getActiveCategories().get(selectedCategoryIndex));
-        }
-
-        // Context suggestions
-        if (!contextSuggestions.isEmpty() && selectedCategoryIndex < 0) {
-            renderContextSuggestions(graphics);
         }
 
         if (config.showTooltips) {
@@ -847,12 +808,6 @@ public class RadialMenuScreenV3 extends Screen {
         }
 
         renderThemeIndicator(graphics);
-
-        // Spawn trail particles on hover
-        if (selectedItemIndex >= 0 && selectedCategoryIndex >= 0) {
-            RadialCategory cat = rootCategories.get(selectedCategoryIndex);
-            spawnTrailParticle(mouseX, mouseY, cat.getColor());
-        }
     }
 
     // ================================================================
@@ -921,23 +876,9 @@ public class RadialMenuScreenV3 extends Screen {
 
         selectedCategoryIndex = -1;
         selectedItemIndex = -1;
-        selectedFavoriteIndex = -1;
 
+        // Center button area - no selection
         if (distance < centerButtonRadius) {
-            return;
-        }
-
-        // Check favorites ring first
-        if (distance < favoritesRadius + 20 && distance > favoritesRadius - 20 && !favorites.isEmpty()) {
-            double angle = Math.atan2(dy, dx);
-            if (angle < 0) angle += Math.PI * 2;
-
-            double segmentAngle = (Math.PI * 2) / favorites.size();
-            double startOffset = -Math.PI / 2 - segmentAngle / 2;
-            double adjustedAngle = angle - startOffset;
-            if (adjustedAngle < 0) adjustedAngle += Math.PI * 2;
-
-            selectedFavoriteIndex = (int)(adjustedAngle / segmentAngle) % favorites.size();
             return;
         }
 
@@ -954,6 +895,7 @@ public class RadialMenuScreenV3 extends Screen {
 
         selectedCategoryIndex = (int)(adjustedAngle / segmentAngle) % numCategories;
 
+        // Select item if mouse is beyond the outer ring
         if (distance > outerRadius && selectedCategoryIndex >= 0) {
             RadialCategory cat = categories.get(selectedCategoryIndex);
             int numItems = cat.getItems().size();
@@ -968,10 +910,9 @@ public class RadialMenuScreenV3 extends Screen {
             }
         }
 
-        // Play selection sound
+        // Play selection sound on category change
         if (config.enableSounds && selectedCategoryIndex != prevSelectedCategory && selectedCategoryIndex >= 0) {
-            float pitch = 0.9f + (selectedCategoryIndex * 0.05f);
-            playSound(pitch, 0.3f);
+            playSound(1.0f, 0.25f);
         }
     }
 
@@ -1148,9 +1089,9 @@ public class RadialMenuScreenV3 extends Screen {
     // ================================================================
 
     private void renderBackground(GuiGraphics graphics) {
-        RadialMenuConfig.ColorTheme theme = config.theme;
-        int alpha = (int)(0x90 * openAnimation);
-        graphics.fill(0, 0, width, height, (alpha << 24) | (theme.bgDark & 0x00FFFFFF));
+        // Solid dark background - more opaque for visibility
+        int alpha = (int)(0xE0 * openAnimation); // Much more opaque (224/255 vs 144/255)
+        graphics.fill(0, 0, width, height, (alpha << 24) | 0x0D0D15);
     }
 
     private void renderCategoryGlow(GuiGraphics graphics, int categoryIndex) {
@@ -1182,42 +1123,26 @@ public class RadialMenuScreenV3 extends Screen {
         float hoverAnim = hovered ? Math.min(1f, categoryHoverAnim + 0.1f) : Math.max(0f, categoryHoverAnim - 0.05f);
         categoryHoverAnim = hoverAnim;
 
-        // Spinning outer ring
-        float spinAngle = pulsePhase * 0.5f;
-        for (int i = 0; i < 6; i++) {
-            double angle = spinAngle + i * Math.PI / 3;
-            int dotX = (int)(centerX + Math.cos(angle) * (centerButtonRadius + 5));
-            int dotY = (int)(centerY + Math.sin(angle) * (centerButtonRadius + 5));
-            int dotAlpha = (int)(0x60 * (1 + 0.3f * Math.sin(pulsePhase + i)));
-            renderCircle(graphics, dotX, dotY, 3, (dotAlpha << 24) | (theme.textHighlight & 0x00FFFFFF));
-        }
+        // Solid opaque center button - structured look
+        int bgColor = hovered ? 0xFF353555 : 0xF0252540;
+        renderCircle(graphics, centerX, centerY, centerButtonRadius, bgColor);
 
-        int glowAlpha = (int)(0x40 * (1 + 0.3f * Math.sin(pulsePhase)));
-        renderRing(graphics, centerX, centerY, centerButtonRadius + 3, centerButtonRadius + 8,
-            (glowAlpha << 24) | (theme.textHighlight & 0x00FFFFFF));
+        // Strong outer border (thicker)
+        int borderColor = hovered ? 0xFF6080FF : 0xFF505070;
+        renderRing(graphics, centerX, centerY, centerButtonRadius - 3, centerButtonRadius, borderColor);
 
-        int innerColor = hovered ? theme.selected : theme.bgDark;
-        int outerColor = hovered ? theme.hover : theme.bgLight;
-        renderGradientCircle(graphics, centerX, centerY, centerButtonRadius, innerColor, outerColor);
+        // Inner ring for depth
+        renderRing(graphics, centerX, centerY, centerButtonRadius - 4, centerButtonRadius - 3, 0xFF404060);
 
-        int borderColor = hovered ? theme.textHighlight : theme.border;
-        renderRing(graphics, centerX, centerY, centerButtonRadius - 1, centerButtonRadius + 1, borderColor);
-
-        // Animated center icon
+        // Static icon (no bounce)
         String centerIcon = hovered ? "✕" : (searchMode ? "🔍" : "⚡");
-        int iconColor = hovered ? 0xFFFF6666 : theme.textHighlight;
+        int iconColor = hovered ? 0xFFFF6666 : 0xFF8080FF;
+        graphics.drawCenteredString(font, centerIcon, centerX, centerY - 4, iconColor);
 
-        // Icon bounce animation
-        float bounce = (float)Math.sin(pulsePhase * 2) * 2;
-        graphics.drawCenteredString(font, centerIcon, centerX, centerY - 8 + (int)bounce, iconColor);
-
+        // Label - brighter
         String label = hovered ? "Close" : (searchMode ? "Search" : "DevMod");
-        graphics.drawCenteredString(font, label, centerX, centerY + 4, theme.textSecondary);
-
-        // Favorites count
-        if (!favorites.isEmpty() && !hovered) {
-            graphics.drawCenteredString(font, "★" + favorites.size(), centerX, centerY + 14, 0xFFFFD700);
-        }
+        int labelColor = hovered ? 0xFFFFFFFF : 0xFFCCCCDD;
+        graphics.drawCenteredString(font, label, centerX, centerY + 8, labelColor);
     }
 
     private void renderCategories(GuiGraphics graphics) {
@@ -1227,6 +1152,9 @@ public class RadialMenuScreenV3 extends Screen {
         double segmentAngle = (Math.PI * 2) / numCategories;
         double startOffset = -Math.PI / 2;
 
+        // Draw inner ring border first (solid line around center)
+        renderRing(graphics, centerX, centerY, innerRadius - 2, innerRadius, 0xFF303050);
+
         for (int i = 0; i < numCategories; i++) {
             RadialCategory cat = categories.get(i);
             boolean selected = (i == selectedCategoryIndex);
@@ -1235,41 +1163,43 @@ public class RadialMenuScreenV3 extends Screen {
             double startAngle = startOffset + (i - 0.5) * segmentAngle;
             double endAngle = startAngle + segmentAngle;
 
-            int baseColor = selected ? blendColors(theme.bgLight, cat.getColor(), 0.15f) : theme.bgDark;
-            int segColor = blendColors(baseColor, cat.getColor(), anim * 0.2f);
+            // Solid segment fill - more opaque
+            int baseColor = selected ? 0xEE252540 : 0xDD1a1a30;
+            int segColor = selected ? blendColors(baseColor, cat.getColor(), 0.25f) : baseColor;
             renderArcSegment(graphics, centerX, centerY, innerRadius, outerRadius, startAngle, endAngle, segColor);
 
-            if (anim > 0.01f) {
-                int glowColorVal = (cat.getColor() & 0x00FFFFFF) | ((int)(0x60 * anim) << 24);
-                renderArcOutline(graphics, centerX, centerY, outerRadius + (int)(5 * anim), startAngle, endAngle, glowColorVal, 2);
-            }
+            // Strong outer border
+            int borderCol = selected ? cat.getColor() : 0xFF404060;
+            renderArcOutline(graphics, centerX, centerY, outerRadius, startAngle, endAngle, borderCol, 2);
 
-            int borderCol = selected ? cat.getColor() : theme.border;
-            renderArcOutline(graphics, centerX, centerY, outerRadius, startAngle, endAngle, borderCol, 1);
+            // Divider lines between segments
+            double dividerAngle = startAngle;
+            int divX1 = (int)(centerX + Math.cos(dividerAngle) * innerRadius);
+            int divY1 = (int)(centerY + Math.sin(dividerAngle) * innerRadius);
+            int divX2 = (int)(centerX + Math.cos(dividerAngle) * outerRadius);
+            int divY2 = (int)(centerY + Math.sin(dividerAngle) * outerRadius);
+            drawLine(graphics, divX1, divY1, divX2, divY2, 0xFF404060);
 
             double midAngle = startOffset + i * segmentAngle;
             int iconX = (int)(centerX + Math.cos(midAngle) * itemRadius);
             int iconY = (int)(centerY + Math.sin(midAngle) * itemRadius);
 
-            float iconScale = 1f + 0.15f * anim;
-            var pose = graphics.pose();
-            pose.pushPose();
-            pose.translate(iconX, iconY - 6, 0);
-            pose.scale(iconScale, iconScale, 1f);
-            pose.translate(-iconX, -(iconY - 6), 0);
+            // Render icon (no scaling animation)
+            renderCategoryIcon(graphics, cat, iconX, iconY - 8, selected);
 
-            renderCategoryIcon(graphics, cat, iconX, iconY - 10, selected);
+            // Category name - brighter text
+            int textColor = selected ? 0xFFFFFFFF : 0xFFBBBBCC;
+            graphics.drawCenteredString(font, cat.getName(), iconX, iconY + 6, textColor);
 
-            pose.popPose();
-
-            int textColor = blendColors(theme.textSecondary, cat.getColor(), anim);
-            graphics.drawCenteredString(font, cat.getName(), iconX, iconY + 4, textColor);
-
+            // Active items badge
             int activeCount = cat.countActiveItems();
             if (activeCount > 0) {
-                renderBadge(graphics, iconX + 18, iconY - 12, activeCount, theme.active);
+                renderBadge(graphics, iconX + 20, iconY - 14, activeCount, theme.active);
             }
         }
+
+        // Draw outer ring border (solid line around entire wheel)
+        renderRing(graphics, centerX, centerY, outerRadius, outerRadius + 2, 0xFF505070);
     }
 
     private void renderCategoryIcon(GuiGraphics graphics, RadialCategory cat, int x, int y, boolean selected) {
@@ -1298,8 +1228,9 @@ public class RadialMenuScreenV3 extends Screen {
         double catStartAngle = startOffset + (selectedCategoryIndex - 0.5) * segmentAngle;
         double itemAngleStep = segmentAngle / numItems;
 
-        float categoryAnim = selectedCategoryIndex < categoryAnimations.length ?
-            categoryAnimations[selectedCategoryIndex] : 1f;
+        // Larger radius for better spacing between items
+        int baseRadius = outerRadius + 55;
+        int itemSize = 34; // Larger clickable area
 
         for (int i = 0; i < numItems; i++) {
             RadialMenuItem item = items.get(i);
@@ -1307,77 +1238,63 @@ public class RadialMenuScreenV3 extends Screen {
 
             boolean itemSelected = (i == selectedItemIndex);
             boolean isActive = item.isToggle() && item.isActive();
-            boolean isFav = isFavorite(item, category);
             float itemAnim = i < itemAnimations.length ? itemAnimations[i] : 0;
 
             double itemAngle = catStartAngle + (i + 0.5) * itemAngleStep;
 
-            float stagger = Math.min(1f, categoryAnim * 2f - (i * 0.15f));
-            stagger = Math.max(0f, stagger);
-            float appearScale = config.enableAnimations ? easeOutBack(stagger) : 1f;
+            // Position with slight expansion on hover
+            int itemX = (int)(centerX + Math.cos(itemAngle) * (baseRadius + 6 * itemAnim));
+            int itemY = (int)(centerY + Math.sin(itemAngle) * (baseRadius + 6 * itemAnim));
 
-            int baseRadius = outerRadius + 45;
-            int itemX = (int)(centerX + Math.cos(itemAngle) * (baseRadius + 8 * itemAnim));
-            int itemY = (int)(centerY + Math.sin(itemAngle) * (baseRadius + 8 * itemAnim));
+            int itemRadiusSize = itemSize + (int)(4 * itemAnim);
 
-            var pose = graphics.pose();
-            pose.pushPose();
-            pose.translate(itemX, itemY, 0);
-            pose.scale(appearScale, appearScale, 1f);
-            pose.translate(-itemX, -itemY, 0);
-
-            int itemRadiusSize = 30 + (int)(4 * itemAnim);
-
+            // Solid opaque background - structured look
+            int bgColor = itemSelected ? 0xFF303050 : 0xF0202035;
             if (isActive) {
-                float pulse = 0.6f + 0.4f * (float)Math.sin(pulsePhase + i * 0.5f);
-                int glowAlpha = (int)(0x40 * pulse);
-                renderRadialGradient(graphics, itemX, itemY, itemRadiusSize + 10,
-                    (glowAlpha << 24) | (theme.active & 0x00FFFFFF), 0x00000000);
+                bgColor = blendColors(bgColor, theme.active, 0.25f);
             }
+            // Draw solid circle background
+            renderCircle(graphics, itemX, itemY, itemRadiusSize, bgColor);
 
-            int bgColor = itemSelected ? blendColors(theme.hover, category.getColor(), 0.2f) : 0xCC151525;
-            if (item.hasCustomColor()) {
-                bgColor = blendColors(bgColor, item.getCustomColor(), 0.3f);
-            }
-            renderGradientCircle(graphics, itemX, itemY, itemRadiusSize, bgColor,
-                blendColors(bgColor, 0xFF000000, 0.3f));
-
-            int borderColor = isActive ? theme.active : (itemSelected ? category.getColor() : theme.border);
-            int borderWidth = itemSelected ? 2 : 1;
+            // Strong visible border
+            int borderColor = isActive ? theme.active : (itemSelected ? category.getColor() : 0xFF505070);
+            int borderWidth = itemSelected ? 3 : 2;
             renderRing(graphics, itemX, itemY, itemRadiusSize - borderWidth, itemRadiusSize, borderColor);
 
-            // Favorite star
-            if (isFav) {
-                graphics.drawString(font, "★", itemX + itemRadiusSize - 8, itemY - itemRadiusSize + 2, 0xFFFFD700);
+            // Inner subtle highlight for depth
+            if (itemSelected) {
+                renderRing(graphics, itemX, itemY, itemRadiusSize - borderWidth - 1, itemRadiusSize - borderWidth,
+                    blendColors(category.getColor(), 0xFFFFFFFF, 0.3f));
             }
 
-            if (editMode && itemSelected) {
-                renderRing(graphics, itemX, itemY, itemRadiusSize + 2, itemRadiusSize + 4, 0xFFFF4444);
+            // Icon only (no emoji - just ItemStack for clarity, or simple dot)
+            if (item.getIconStack() != null) {
+                graphics.renderItem(item.getIconStack(), itemX - 8, itemY - 16);
+            } else {
+                int iconColor = itemSelected ? theme.textPrimary : theme.textSecondary;
+                graphics.drawCenteredString(font, item.getIconEmoji(), itemX, itemY - 12, iconColor);
             }
 
-            renderItemIcon(graphics, item, itemX, itemY - 12, itemSelected);
-
+            // Name - truncate if too long
             String name = item.getName();
-            if (font.width(name) > 50) {
-                while (font.width(name + "..") > 50 && name.length() > 3) {
+            int maxWidth = 56;
+            if (font.width(name) > maxWidth) {
+                while (font.width(name + "..") > maxWidth && name.length() > 3) {
                     name = name.substring(0, name.length() - 1);
                 }
                 name += "..";
             }
             int nameColor = itemSelected ? theme.textPrimary : (isActive ? theme.active : theme.textSecondary);
-            graphics.drawCenteredString(font, name, itemX, itemY + 1, nameColor);
+            graphics.drawCenteredString(font, name, itemX, itemY + 4, nameColor);
 
+            // Toggle status indicator - simple and clear
             if (item.isToggle()) {
-                String status = isActive ? "● ON" : "○ OFF";
-                int statusColor = isActive ? theme.active : 0xFF886666;
-                graphics.drawCenteredString(font, status, itemX, itemY + 14, statusColor);
+                String status = isActive ? "ON" : "OFF";
+                int statusColor = isActive ? theme.active : 0xFF666666;
+                graphics.drawCenteredString(font, status, itemX, itemY + 16, statusColor);
             } else if (item.isSubcategoryLink()) {
-                graphics.drawCenteredString(font, "→", itemX, itemY + 14, theme.textSecondary);
-            } else {
-                graphics.drawCenteredString(font, "▶", itemX, itemY + 14, theme.textSecondary);
+                graphics.drawCenteredString(font, "▸", itemX, itemY + 16, theme.textSecondary);
             }
-
-            pose.popPose();
         }
     }
 
@@ -1440,12 +1357,10 @@ public class RadialMenuScreenV3 extends Screen {
         int textAlpha = (int)(0xAA * helpAlpha);
         int helpColor = (textAlpha << 24) | (theme.textSecondary & 0x00FFFFFF);
 
-        String helpLine1 = searchMode ? "§eSearch Mode §7- Type to filter, Enter to select, Esc to close" :
-            (editMode ? "§c[EDIT MODE] §7Shift+Click to favorite" : "§7Move mouse to select, Click to activate");
-        String helpLine2 = "§8[/] Search §8[T] Theme §8[MMB+Drag] Gesture §8[Shift] Edit §8[Circle] Cycle Theme";
+        String helpLine = searchMode ? "§eSearch §7- Type to filter, Enter to select, Esc to cancel" :
+            "§7Click to select §8| §7[/] Search §8| §7[T] Theme";
 
-        graphics.drawCenteredString(font, helpLine1, width / 2, height - 35, helpColor);
-        graphics.drawCenteredString(font, helpLine2, width / 2, height - 22, helpColor);
+        graphics.drawCenteredString(font, helpLine, width / 2, height - 25, helpColor);
     }
 
     private void renderBreadcrumb(GuiGraphics graphics) {
@@ -1801,6 +1716,10 @@ public class RadialMenuScreenV3 extends Screen {
         }
     }
 
+    private float easeOutQuad(float t) {
+        return 1 - (1 - t) * (1 - t);
+    }
+
     private float easeOutBack(float t) {
         float c1 = 1.70158f;
         float c3 = c1 + 1;
@@ -1891,6 +1810,25 @@ public class RadialMenuScreenV3 extends Screen {
             buffer.addVertex(matrix, cx + cos * innerRadius, cy + sin * innerRadius, 0).setColor(r, g, b, a);
             buffer.addVertex(matrix, cx + cos * outerRadius, cy + sin * outerRadius, 0).setColor(r, g, b, a);
         }
+
+        BufferUploader.drawWithShader(buffer.buildOrThrow());
+        RenderSystem.disableBlend();
+    }
+
+    private void drawLine(GuiGraphics graphics, int x1, int y1, int x2, int y2, int color) {
+        RenderSystem.enableBlend();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+
+        BufferBuilder buffer = Tesselator.getInstance().begin(VertexFormat.Mode.DEBUG_LINES, DefaultVertexFormat.POSITION_COLOR);
+        Matrix4f matrix = graphics.pose().last().pose();
+
+        float a = ((color >> 24) & 0xFF) / 255f;
+        float r = ((color >> 16) & 0xFF) / 255f;
+        float g = ((color >> 8) & 0xFF) / 255f;
+        float b = (color & 0xFF) / 255f;
+
+        buffer.addVertex(matrix, x1, y1, 0).setColor(r, g, b, a);
+        buffer.addVertex(matrix, x2, y2, 0).setColor(r, g, b, a);
 
         BufferUploader.drawWithShader(buffer.buildOrThrow());
         RenderSystem.disableBlend();

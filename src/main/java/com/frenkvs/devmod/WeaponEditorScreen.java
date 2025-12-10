@@ -105,6 +105,7 @@ public class WeaponEditorScreen extends Screen {
 
     // History panel
     private boolean showHistoryPanel = false;
+    private int historyScrollOffset = 0;
 
     // Export/Import
     private boolean showExportImportMenu = false;
@@ -121,6 +122,7 @@ public class WeaponEditorScreen extends Screen {
 
     // Templates
     private boolean showTemplateMenu = false;
+    private int templateScrollOffset = 0;
 
     // Durability tab
     private EditBox durabilityField;
@@ -1515,7 +1517,7 @@ public class WeaponEditorScreen extends Screen {
     private void renderTemplateMenu(GuiGraphics graphics, int panelX, int menuY, int mouseX, int mouseY) {
         int menuX = panelX + 100;
         int menuW = 200;
-        int menuH = 140;
+        int menuH = 180; // Increased height for more items
 
         // Background
         graphics.fill(menuX, menuY, menuX + menuW, menuY + menuH, UIConstants.Background.PANEL);
@@ -1547,28 +1549,53 @@ public class WeaponEditorScreen extends Screen {
             y += 20;
         }
 
-        // Show other templates
+        // Show other templates with scrolling
         graphics.drawString(font, "All Templates:", menuX + 10, y, UIConstants.Text.SECONDARY, false);
         y += 12;
 
         Map<String, ItemEditorDataManager.TemplateData> templates = ItemEditorDataManager.INSTANCE.getTemplates();
-        int count = 0;
-        for (ItemEditorDataManager.TemplateData template : templates.values()) {
-            if (count >= 5) break;
-            boolean itemHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, menuX + 10, y, menuW - 20, 14);
+        List<ItemEditorDataManager.TemplateData> templateList = new ArrayList<>(templates.values());
+        int visibleItems = 7; // Max visible items
+        int itemHeight = 15;
+        int listStartY = y;
+
+        // Clamp scroll offset
+        int maxScroll = Math.max(0, templateList.size() - visibleItems);
+        templateScrollOffset = Math.max(0, Math.min(maxScroll, templateScrollOffset));
+
+        for (int i = 0; i < Math.min(visibleItems, templateList.size() - templateScrollOffset); i++) {
+            int idx = i + templateScrollOffset;
+            if (idx >= templateList.size()) break;
+            ItemEditorDataManager.TemplateData template = templateList.get(idx);
+            boolean itemHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, menuX + 10, y, menuW - 30, 14);
             if (itemHovered) {
-                graphics.fill(menuX + 10, y, menuX + menuW - 10, y + 14, UIConstants.Background.HOVER);
+                graphics.fill(menuX + 10, y, menuX + menuW - 20, y + 14, UIConstants.Background.HOVER);
             }
             graphics.drawString(font, template.name, menuX + 15, y + 3, UIConstants.Text.PRIMARY, false);
-            y += 15;
-            count++;
+            y += itemHeight;
+        }
+
+        // Draw scrollbar if needed
+        if (templateList.size() > visibleItems) {
+            int scrollbarX = menuX + menuW - 12;
+            int scrollbarHeight = visibleItems * itemHeight;
+            int thumbHeight = Math.max(20, scrollbarHeight * visibleItems / templateList.size());
+            int thumbY = listStartY + (int) ((float) templateScrollOffset / maxScroll * (scrollbarHeight - thumbHeight));
+
+            // Scrollbar track
+            graphics.fill(scrollbarX, listStartY, scrollbarX + 6, listStartY + scrollbarHeight, UIConstants.Background.INPUT);
+            // Scrollbar thumb
+            graphics.fill(scrollbarX, thumbY, scrollbarX + 6, thumbY + thumbHeight, UIConstants.Accent.GREEN);
+
+            // Scroll hint
+            graphics.drawString(font, "↕", scrollbarX - 1, menuY + menuH - 14, UIConstants.Text.MUTED, false);
         }
     }
 
     private void renderHistoryPanel(GuiGraphics graphics, int panelX, int menuY, int mouseX, int mouseY) {
         int menuX = panelX + 15;
         int menuW = 200;
-        int menuH = 160;
+        int menuH = 180;
 
         // Background
         graphics.fill(menuX, menuY, menuX + menuW, menuY + menuH, UIConstants.Background.PANEL);
@@ -1582,19 +1609,25 @@ public class WeaponEditorScreen extends Screen {
         graphics.fill(closeX, menuY + 5, closeX + 14, menuY + 19, closeHovered ? UIConstants.Accent.RED : UIConstants.Background.INPUT);
         graphics.drawString(font, "X", closeX + 3, menuY + 8, UIConstants.Text.WHITE, false);
 
-        // History entries
+        // History entries with scrolling
         List<ItemEditorDataManager.HistoryEntry> history = ItemEditorDataManager.INSTANCE.getHistory();
-        int y = menuY + 25;
+        int listY = menuY + 25;
+        int itemHeight = 16;
+        int visibleItems = 8;
 
         if (history.isEmpty()) {
-            graphics.drawString(font, "No history yet", menuX + 10, y, UIConstants.Text.MUTED, false);
+            graphics.drawString(font, "No history yet", menuX + 10, listY, UIConstants.Text.MUTED, false);
         } else {
-            // Show last 8 entries (most recent first)
-            int startIdx = Math.max(0, history.size() - 8);
-            for (int i = history.size() - 1; i >= startIdx; i--) {
-                ItemEditorDataManager.HistoryEntry entry = history.get(i);
-                int itemY = y + (history.size() - 1 - i) * 16;
-                if (itemY > menuY + menuH - 20) break;
+            // Clamp scroll offset
+            int maxScroll = Math.max(0, history.size() - visibleItems);
+            historyScrollOffset = Math.max(0, Math.min(maxScroll, historyScrollOffset));
+
+            // Display entries (most recent first, with scroll)
+            for (int i = 0; i < Math.min(visibleItems, history.size() - historyScrollOffset); i++) {
+                int idx = history.size() - 1 - i - historyScrollOffset;
+                if (idx < 0) break;
+                ItemEditorDataManager.HistoryEntry entry = history.get(idx);
+                int itemY = listY + i * itemHeight;
 
                 // Timestamp (short format)
                 String time = new java.text.SimpleDateFormat("HH:mm").format(new java.util.Date(entry.timestamp));
@@ -1604,6 +1637,19 @@ public class WeaponEditorScreen extends Screen {
                 String actionText = entry.action;
                 if (actionText.length() > 18) actionText = actionText.substring(0, 16) + "..";
                 graphics.drawString(font, actionText, menuX + 40, itemY, UIConstants.Text.PRIMARY, false);
+            }
+
+            // Draw scrollbar if needed
+            if (history.size() > visibleItems) {
+                int scrollbarX = menuX + menuW - 12;
+                int scrollbarHeight = visibleItems * itemHeight;
+                int thumbHeight = Math.max(20, scrollbarHeight * visibleItems / history.size());
+                int thumbY = listY + (int) ((float) historyScrollOffset / maxScroll * (scrollbarHeight - thumbHeight));
+
+                // Scrollbar track
+                graphics.fill(scrollbarX, listY, scrollbarX + 6, listY + scrollbarHeight, UIConstants.Background.INPUT);
+                // Scrollbar thumb
+                graphics.fill(scrollbarX, thumbY, scrollbarX + 6, thumbY + thumbHeight, UIConstants.Accent.CYAN);
             }
         }
 
@@ -1625,7 +1671,7 @@ public class WeaponEditorScreen extends Screen {
     private void renderPresetMenu(GuiGraphics graphics, int panelX, int menuY, int mouseX, int mouseY) {
         int menuX = panelX + PANEL_WIDTH - 200;
         int menuW = 185;
-        int menuH = 130;
+        int menuH = 180; // Increased height
 
         // Background
         graphics.fill(menuX, menuY, menuX + menuW, menuY + menuH, UIConstants.Background.PANEL);
@@ -1651,30 +1697,53 @@ public class WeaponEditorScreen extends Screen {
         graphics.fill(saveBtnX, y + 15, saveBtnX + 40, y + 31, saveHovered ? UIConstants.Accent.GREEN : UIConstants.Background.INPUT);
         graphics.drawString(font, "Save", saveBtnX + 8, y + 19, UIConstants.Text.WHITE, false);
 
-        // Preset list
+        // Preset list with scrolling
         y += 40;
         graphics.drawString(font, "Load:", menuX + 10, y, UIConstants.Text.SECONDARY, false);
         y += 12;
+        int listStartY = y;
 
         List<ItemEditorDataManager.PresetData> savedPresets = ItemEditorDataManager.INSTANCE.getPresets();
+        int visibleItems = 6; // Increased visible items
+        int itemHeight = 18;
+
         if (savedPresets.isEmpty()) {
             graphics.drawString(font, "No presets saved", menuX + 10, y, UIConstants.Text.MUTED, false);
         } else {
-            for (int i = presetScrollOffset; i < Math.min(presetScrollOffset + 3, savedPresets.size()); i++) {
-                ItemEditorDataManager.PresetData preset = savedPresets.get(i);
-                int itemY = y + (i - presetScrollOffset) * 18;
+            // Clamp scroll offset
+            int maxScroll = Math.max(0, savedPresets.size() - visibleItems);
+            presetScrollOffset = Math.max(0, Math.min(maxScroll, presetScrollOffset));
 
-                boolean itemHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, menuX + 10, itemY, menuW - 40, 16);
+            for (int i = 0; i < Math.min(visibleItems, savedPresets.size() - presetScrollOffset); i++) {
+                int idx = i + presetScrollOffset;
+                if (idx >= savedPresets.size()) break;
+                ItemEditorDataManager.PresetData preset = savedPresets.get(idx);
+                int itemY = y + i * itemHeight;
+
+                boolean itemHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, menuX + 10, itemY, menuW - 50, 16);
                 if (itemHovered) {
-                    graphics.fill(menuX + 10, itemY, menuX + menuW - 30, itemY + 16, UIConstants.Background.HOVER);
+                    graphics.fill(menuX + 10, itemY, menuX + menuW - 40, itemY + 16, UIConstants.Background.HOVER);
                 }
                 graphics.drawString(font, preset.name, menuX + 15, itemY + 4, UIConstants.Text.PRIMARY, false);
 
                 // Delete button
-                int delX = menuX + menuW - 25;
+                int delX = menuX + menuW - 35;
                 boolean delHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, delX, itemY, 14, 14);
                 graphics.fill(delX, itemY + 1, delX + 14, itemY + 15, delHovered ? UIConstants.Accent.RED : UIConstants.Background.INPUT);
                 graphics.drawString(font, "X", delX + 3, itemY + 4, UIConstants.Text.WHITE, false);
+            }
+
+            // Draw scrollbar if needed
+            if (savedPresets.size() > visibleItems) {
+                int scrollbarX = menuX + menuW - 12;
+                int scrollbarHeight = visibleItems * itemHeight;
+                int thumbHeight = Math.max(20, scrollbarHeight * visibleItems / savedPresets.size());
+                int thumbY = listStartY + (int) ((float) presetScrollOffset / maxScroll * (scrollbarHeight - thumbHeight));
+
+                // Scrollbar track
+                graphics.fill(scrollbarX, listStartY, scrollbarX + 6, listStartY + scrollbarHeight, UIConstants.Background.INPUT);
+                // Scrollbar thumb
+                graphics.fill(scrollbarX, thumbY, scrollbarX + 6, thumbY + thumbHeight, UIConstants.Accent.PURPLE);
             }
         }
     }
@@ -1848,7 +1917,7 @@ public class WeaponEditorScreen extends Screen {
     private boolean handlePresetMenuClick(int mx, int my, int panelX, int menuY) {
         int menuX = panelX + PANEL_WIDTH - 200;
         int menuW = 185;
-        int menuH = 130;
+        int menuH = 180;
 
         // Click outside closes menu
         if (!AxiomRenderer.isMouseOver(mx, my, menuX, menuY, menuW, menuH)) {
@@ -1873,22 +1942,27 @@ public class WeaponEditorScreen extends Screen {
             return true;
         }
 
-        // Preset list clicks
+        // Preset list clicks with scroll support
         y += 52;
         List<ItemEditorDataManager.PresetData> savedPresets = ItemEditorDataManager.INSTANCE.getPresets();
-        for (int i = presetScrollOffset; i < Math.min(presetScrollOffset + 3, savedPresets.size()); i++) {
-            ItemEditorDataManager.PresetData preset = savedPresets.get(i);
-            int itemY = y + (i - presetScrollOffset) * 18;
+        int visibleItems = 6;
+        int itemHeight = 18;
+
+        for (int i = 0; i < Math.min(visibleItems, savedPresets.size() - presetScrollOffset); i++) {
+            int idx = i + presetScrollOffset;
+            if (idx >= savedPresets.size()) break;
+            ItemEditorDataManager.PresetData preset = savedPresets.get(idx);
+            int itemY = y + i * itemHeight;
 
             // Delete button
-            int delX = menuX + menuW - 25;
+            int delX = menuX + menuW - 35;
             if (AxiomRenderer.isMouseOver(mx, my, delX, itemY, 14, 14)) {
                 deletePresetData(preset.name);
                 return true;
             }
 
             // Load preset (click on name)
-            if (AxiomRenderer.isMouseOver(mx, my, menuX + 10, itemY, menuW - 40, 16)) {
+            if (AxiomRenderer.isMouseOver(mx, my, menuX + 10, itemY, menuW - 50, 16)) {
                 loadPresetData(preset);
                 return true;
             }
@@ -1903,7 +1977,7 @@ public class WeaponEditorScreen extends Screen {
     private boolean handleTemplateMenuClick(int mx, int my, int panelX, int menuY) {
         int menuX = panelX + 100;
         int menuW = 200;
-        int menuH = 140;
+        int menuH = 180;
 
         // Close button (X)
         int closeX = menuX + menuW - 20;
@@ -1932,18 +2006,21 @@ public class WeaponEditorScreen extends Screen {
             y += 20;
         }
 
-        // All templates list
+        // All templates list with scroll support
         y += 12; // "All Templates:" label
         Map<String, ItemEditorDataManager.TemplateData> templates = ItemEditorDataManager.INSTANCE.getTemplates();
-        int count = 0;
-        for (ItemEditorDataManager.TemplateData template : templates.values()) {
-            if (count >= 5) break;
-            if (AxiomRenderer.isMouseOver(mx, my, menuX + 10, y, menuW - 20, 14)) {
-                applyTemplate(template);
+        List<ItemEditorDataManager.TemplateData> templateList = new ArrayList<>(templates.values());
+        int visibleItems = 7;
+        int itemHeight = 15;
+
+        for (int i = 0; i < Math.min(visibleItems, templateList.size() - templateScrollOffset); i++) {
+            int idx = i + templateScrollOffset;
+            if (idx >= templateList.size()) break;
+            if (AxiomRenderer.isMouseOver(mx, my, menuX + 10, y, menuW - 30, 14)) {
+                applyTemplate(templateList.get(idx));
                 return true;
             }
-            y += 15;
-            count++;
+            y += itemHeight;
         }
 
         return false;
@@ -2362,6 +2439,30 @@ public class WeaponEditorScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        // Template menu scroll
+        if (showTemplateMenu) {
+            Map<String, ItemEditorDataManager.TemplateData> templates = ItemEditorDataManager.INSTANCE.getTemplates();
+            int maxScroll = Math.max(0, templates.size() - 7);
+            templateScrollOffset = Math.max(0, Math.min(maxScroll, templateScrollOffset - (int) scrollY));
+            return true;
+        }
+
+        // History panel scroll
+        if (showHistoryPanel) {
+            List<ItemEditorDataManager.HistoryEntry> history = ItemEditorDataManager.INSTANCE.getHistory();
+            int maxScroll = Math.max(0, history.size() - 8);
+            historyScrollOffset = Math.max(0, Math.min(maxScroll, historyScrollOffset - (int) scrollY));
+            return true;
+        }
+
+        // Preset menu scroll
+        if (showPresetMenu) {
+            List<ItemEditorDataManager.PresetData> presets = ItemEditorDataManager.INSTANCE.getPresets();
+            int maxScroll = Math.max(0, presets.size() - 6);
+            presetScrollOffset = Math.max(0, Math.min(maxScroll, presetScrollOffset - (int) scrollY));
+            return true;
+        }
+
         if (currentTab == Tab.ENCHANTS) {
             if (showEnchantPicker) {
                 // Scroll the picker
