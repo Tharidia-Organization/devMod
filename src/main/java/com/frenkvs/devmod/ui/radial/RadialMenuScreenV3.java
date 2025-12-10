@@ -36,6 +36,7 @@ import java.util.*;
  * - Optional favorites in center ring
  * - Keyboard shortcuts for power users
  */
+@SuppressWarnings("null") // Minecraft API null annotations
 public class RadialMenuScreenV3 extends Screen {
 
     // === Configuration ===
@@ -58,14 +59,12 @@ public class RadialMenuScreenV3 extends Screen {
     private int selectedItemIndex = -1;
     private int selectedFavoriteIndex = -1;
     private int prevSelectedCategory = -1;
-    private int prevSelectedItem = -1;
     private int centerX, centerY;
 
     // === Animation State ===
     private float openAnimation = 0f;
     private float categoryHoverAnim = 0f;
     private float pulsePhase = 0f;
-    private float rotationOffset = 0f;
     private float[] categoryAnimations;
     private float[] itemAnimations;
     private float[] favoriteAnimations;
@@ -73,17 +72,8 @@ public class RadialMenuScreenV3 extends Screen {
     private long openTime;
 
     // === Advanced Animation ===
-    private float glowIntensity = 0f;
-    private float targetGlowIntensity = 0.5f;
-    private int glowColor = 0xFF00AAFF;
     private float wavePhase = 0f;
     private float morphProgress = 0f;
-    private int morphFromCategory = -1;
-
-    // === Particle System ===
-    private final List<Particle> particles = new ArrayList<>();
-    private final Random random = new Random();
-    private long lastParticleSpawn = 0;
 
     // === Search System ===
     private boolean searchMode = false;
@@ -98,16 +88,6 @@ public class RadialMenuScreenV3 extends Screen {
 
     // === Usage Statistics ===
     private final Map<String, Integer> usageStats = new HashMap<>();
-    private List<RadialMenuItem> mostUsedItems = new ArrayList<>();
-
-    // === Context Awareness ===
-    private final List<RadialMenuItem> contextSuggestions = new ArrayList<>();
-    private String currentContext = "";
-
-    // === Gesture Recognition ===
-    private final List<GesturePoint> gesturePoints = new ArrayList<>();
-    private long lastGestureTime = 0;
-    private boolean gestureActive = false;
 
     // === Edit Mode ===
     private boolean editMode = false;
@@ -138,116 +118,9 @@ public class RadialMenuScreenV3 extends Screen {
 
     private void cacheTargetEntity() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.hitResult != null && mc.hitResult.getType() == net.minecraft.world.phys.HitResult.Type.ENTITY) {
-            cachedTargetEntity = ((net.minecraft.world.phys.EntityHitResult) mc.hitResult).getEntity();
-        }
-    }
-
-    // ================================================================
-    // PARTICLE SYSTEM
-    // ================================================================
-
-    private void spawnOpeningParticles() {
-        for (int i = 0; i < 30; i++) {
-            double angle = random.nextDouble() * Math.PI * 2;
-            double speed = 2 + random.nextDouble() * 3;
-            int color = config.theme.categoryColors[random.nextInt(config.theme.categoryColors.length)];
-            particles.add(new Particle(
-                centerX, centerY,
-                (float)(Math.cos(angle) * speed),
-                (float)(Math.sin(angle) * speed),
-                color,
-                0.8f + random.nextFloat() * 0.4f,
-                3 + random.nextFloat() * 4
-            ));
-        }
-    }
-
-    private void spawnSelectionParticles(int x, int y, int color) {
-        for (int i = 0; i < 8; i++) {
-            double angle = random.nextDouble() * Math.PI * 2;
-            double speed = 1 + random.nextDouble() * 2;
-            particles.add(new Particle(
-                x, y,
-                (float)(Math.cos(angle) * speed),
-                (float)(Math.sin(angle) * speed),
-                color,
-                0.6f + random.nextFloat() * 0.3f,
-                2 + random.nextFloat() * 2
-            ));
-        }
-    }
-
-    private void spawnTrailParticle(int x, int y, int color) {
-        if (System.currentTimeMillis() - lastParticleSpawn > 30) {
-            particles.add(new Particle(
-                x + random.nextInt(10) - 5,
-                y + random.nextInt(10) - 5,
-                (random.nextFloat() - 0.5f) * 0.5f,
-                (random.nextFloat() - 0.5f) * 0.5f - 0.3f,
-                color,
-                0.4f + random.nextFloat() * 0.2f,
-                2 + random.nextFloat() * 2
-            ));
-            lastParticleSpawn = System.currentTimeMillis();
-        }
-    }
-
-    private void updateParticles() {
-        Iterator<Particle> it = particles.iterator();
-        while (it.hasNext()) {
-            Particle p = it.next();
-            p.update();
-            if (p.isDead()) {
-                it.remove();
-            }
-        }
-    }
-
-    // ================================================================
-    // CONTEXT AWARENESS
-    // ================================================================
-
-    private void analyzeContext() {
-        contextSuggestions.clear();
-        Minecraft mc = Minecraft.getInstance();
-
-        // Context: Looking at a mob
-        if (cachedTargetEntity instanceof net.minecraft.world.entity.Mob) {
-            currentContext = "mob_targeted";
-            // Suggest mob-related tools
-            addContextSuggestion("Mob Debug", "👾");
-            addContextSuggestion("Line of Sight", "👀");
-            addContextSuggestion("Pathfinding", "🛤");
-        }
-        // Context: In combat (low health or holding weapon)
-        else if (mc.player != null && mc.player.getHealth() < mc.player.getMaxHealth() * 0.5f) {
-            currentContext = "combat";
-            addContextSuggestion("Boss Phases", "👹");
-            addContextSuggestion("Safe Spots", "🛡");
-        }
-        // Context: Building (holding blocks)
-        else if (mc.player != null && mc.player.getMainHandItem().getItem() instanceof net.minecraft.world.item.BlockItem) {
-            currentContext = "building";
-            addContextSuggestion("Light Levels", "💡");
-            addContextSuggestion("Room Bounds", "🏠");
-        }
-        // Default context
-        else {
-            currentContext = "general";
-            // Show most used
-            updateMostUsed();
-        }
-    }
-
-    private void addContextSuggestion(String itemName, String emoji) {
-        for (RadialCategory cat : rootCategories) {
-            for (RadialMenuItem item : cat.getItems()) {
-                if (item.getName().equals(itemName)) {
-                    contextSuggestions.add(item);
-                    return;
-                }
-            }
+        var hitResult = mc.hitResult;
+        if (hitResult != null && hitResult.getType() == net.minecraft.world.phys.HitResult.Type.ENTITY) {
+            cachedTargetEntity = ((net.minecraft.world.phys.EntityHitResult) hitResult).getEntity();
         }
     }
 
@@ -317,28 +190,7 @@ public class RadialMenuScreenV3 extends Screen {
     private void recordUsage(RadialMenuItem item) {
         String key = item.getName();
         usageStats.put(key, usageStats.getOrDefault(key, 0) + 1);
-        updateMostUsed();
         // In production, save to config file
-    }
-
-    private void updateMostUsed() {
-        mostUsedItems.clear();
-        List<Map.Entry<String, Integer>> sorted = new ArrayList<>(usageStats.entrySet());
-        sorted.sort((a, b) -> b.getValue() - a.getValue());
-
-        int count = 0;
-        for (Map.Entry<String, Integer> entry : sorted) {
-            if (count >= 5) break;
-            for (RadialCategory cat : rootCategories) {
-                for (RadialMenuItem item : cat.getItems()) {
-                    if (item.getName().equals(entry.getKey())) {
-                        mostUsedItems.add(item);
-                        count++;
-                        break;
-                    }
-                }
-            }
-        }
     }
 
     // ================================================================
@@ -366,127 +218,17 @@ public class RadialMenuScreenV3 extends Screen {
         if (favorites.size() < MAX_FAVORITES) {
             favorites.add(new FavoriteItem(key, item, category));
             playSound(1.3f);
-            spawnSelectionParticles(centerX, centerY, 0xFFFFD700);
         }
-    }
-
-    private boolean isFavorite(RadialMenuItem item, RadialCategory category) {
-        String key = category.getId() + ":" + item.getName();
-        return favorites.stream().anyMatch(f -> f.key.equals(key));
-    }
-
-    // ================================================================
-    // GESTURE RECOGNITION
-    // ================================================================
-
-    private void recordGesturePoint(int x, int y) {
-        long now = System.currentTimeMillis();
-        if (now - lastGestureTime > 500) {
-            gesturePoints.clear();
-        }
-        gesturePoints.add(new GesturePoint(x, y, now));
-        lastGestureTime = now;
-
-        if (gesturePoints.size() > 50) {
-            gesturePoints.remove(0);
-        }
-
-        // Detect gestures when enough points
-        if (gesturePoints.size() >= 10) {
-            detectGesture();
-        }
-    }
-
-    private void detectGesture() {
-        if (gesturePoints.size() < 10) return;
-
-        // Calculate total direction
-        GesturePoint first = gesturePoints.get(0);
-        GesturePoint last = gesturePoints.get(gesturePoints.size() - 1);
-
-        double dx = last.x - first.x;
-        double dy = last.y - first.y;
-        double distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance < 50) return; // Too short
-
-        // Detect swipe direction
-        double angle = Math.atan2(dy, dx);
-
-        // Swipe right = next category
-        if (Math.abs(angle) < Math.PI / 4 && distance > 100) {
-            nextCategory();
-            gesturePoints.clear();
-        }
-        // Swipe left = previous category
-        else if (Math.abs(angle - Math.PI) < Math.PI / 4 || Math.abs(angle + Math.PI) < Math.PI / 4) {
-            if (distance > 100) {
-                prevCategory();
-                gesturePoints.clear();
-            }
-        }
-        // Swipe up = toggle search
-        else if (angle < -Math.PI / 4 && angle > -3 * Math.PI / 4 && distance > 80) {
-            searchMode = !searchMode;
-            if (!searchMode) {
-                searchQuery.setLength(0);
-                searchResults.clear();
-            }
-            gesturePoints.clear();
-            playSound(1.1f);
-        }
-
-        // Circle gesture = cycle theme
-        if (isCircleGesture()) {
-            config.cycleTheme();
-            gesturePoints.clear();
-            playSound(1.4f);
-            spawnOpeningParticles();
-        }
-    }
-
-    private boolean isCircleGesture() {
-        if (gesturePoints.size() < 20) return false;
-
-        // Calculate centroid
-        double cx = 0, cy = 0;
-        for (GesturePoint p : gesturePoints) {
-            cx += p.x;
-            cy += p.y;
-        }
-        cx /= gesturePoints.size();
-        cy /= gesturePoints.size();
-
-        // Check if points form a circle around centroid
-        double avgRadius = 0;
-        for (GesturePoint p : gesturePoints) {
-            avgRadius += Math.sqrt((p.x - cx) * (p.x - cx) + (p.y - cy) * (p.y - cy));
-        }
-        avgRadius /= gesturePoints.size();
-
-        if (avgRadius < 40) return false;
-
-        // Check variance
-        double variance = 0;
-        for (GesturePoint p : gesturePoints) {
-            double r = Math.sqrt((p.x - cx) * (p.x - cx) + (p.y - cy) * (p.y - cy));
-            variance += (r - avgRadius) * (r - avgRadius);
-        }
-        variance /= gesturePoints.size();
-
-        return variance < avgRadius * avgRadius * 0.2;
     }
 
     private void nextCategory() {
         selectedCategoryIndex = (selectedCategoryIndex + 1) % rootCategories.size();
-        morphFromCategory = prevSelectedCategory;
         morphProgress = 0f;
         playSound(1.05f);
     }
 
     private void prevCategory() {
         selectedCategoryIndex = (selectedCategoryIndex - 1 + rootCategories.size()) % rootCategories.size();
-        morphFromCategory = prevSelectedCategory;
         morphProgress = 0f;
         playSound(0.95f);
     }
@@ -874,7 +616,7 @@ public class RadialMenuScreenV3 extends Screen {
 
     private void updateSelection(int mouseX, int mouseY) {
         prevSelectedCategory = selectedCategoryIndex;
-        prevSelectedItem = selectedItemIndex;
+        int prevSelectedFavorite = selectedFavoriteIndex;
 
         double dx = mouseX - centerX;
         double dy = mouseY - centerY;
@@ -882,6 +624,7 @@ public class RadialMenuScreenV3 extends Screen {
 
         selectedCategoryIndex = -1;
         selectedItemIndex = -1;
+        selectedFavoriteIndex = -1;
 
         // Center button area - no selection
         if (distance < centerButtonRadius) {
@@ -890,6 +633,24 @@ public class RadialMenuScreenV3 extends Screen {
 
         double angle = Math.atan2(dy, dx);
         if (angle < 0) angle += Math.PI * 2;
+
+        // Check favorites ring first (between center and inner radius)
+        if (!favorites.isEmpty() && distance >= centerButtonRadius && distance < innerRadius) {
+            int numFavorites = favorites.size();
+            double favSegmentAngle = (Math.PI * 2) / numFavorites;
+            double favStartOffset = -Math.PI / 2;
+
+            double favAdjustedAngle = angle - favStartOffset;
+            if (favAdjustedAngle < 0) favAdjustedAngle += Math.PI * 2;
+
+            selectedFavoriteIndex = (int)(favAdjustedAngle / favSegmentAngle) % numFavorites;
+
+            // Play sound on favorite hover change
+            if (config.enableSounds && selectedFavoriteIndex != prevSelectedFavorite && selectedFavoriteIndex >= 0) {
+                playSound(1.2f, 0.2f);
+            }
+            return;
+        }
 
         List<RadialCategory> categories = getActiveCategories();
         int numCategories = categories.size();
@@ -927,47 +688,12 @@ public class RadialMenuScreenV3 extends Screen {
     }
 
     // ================================================================
-    // RENDERING - PARTICLES
-    // ================================================================
-
-    private void renderParticles(GuiGraphics graphics) {
-        for (Particle p : particles) {
-            int alpha = (int)(p.alpha * 255);
-            int color = (alpha << 24) | (p.color & 0x00FFFFFF);
-            renderCircle(graphics, (int)p.x, (int)p.y, (int)p.size, color);
-        }
-    }
-
-    // ================================================================
-    // RENDERING - AMBIENT GLOW
-    // ================================================================
-
-    private void renderAmbientGlow(GuiGraphics graphics) {
-        // Pulsing ambient glow around the menu
-        float pulse = 0.7f + 0.3f * (float)Math.sin(pulsePhase);
-        int glowAlpha = (int)(0x20 * glowIntensity * pulse);
-        int color = (glowAlpha << 24) | (glowColor & 0x00FFFFFF);
-
-        renderRadialGradient(graphics, centerX, centerY, outerRadius + 80, color, 0x00000000);
-
-        // Wave effect
-        for (int i = 0; i < 3; i++) {
-            float waveOffset = (wavePhase + i * (float)(Math.PI * 2 / 3)) % (float)(Math.PI * 2);
-            float waveRadius = outerRadius + 30 + 50 * (float)Math.sin(waveOffset);
-            int waveAlpha = (int)(0x10 * (1 - Math.abs(Math.sin(waveOffset))));
-            renderRing(graphics, centerX, centerY, (int)waveRadius - 2, (int)waveRadius + 2,
-                (waveAlpha << 24) | (glowColor & 0x00FFFFFF));
-        }
-    }
-
-    // ================================================================
     // RENDERING - FAVORITES RING
     // ================================================================
 
     private void renderFavoritesRing(GuiGraphics graphics) {
         if (favorites.isEmpty()) return;
 
-        RadialMenuConfig.ColorTheme theme = config.theme;
         int numFavorites = favorites.size();
         double segmentAngle = (Math.PI * 2) / numFavorites;
         double startOffset = -Math.PI / 2;
@@ -996,41 +722,6 @@ public class RadialMenuScreenV3 extends Screen {
                 graphics.pose().popPose();
             } else {
                 graphics.drawCenteredString(font, "★", favX, favY - 4, 0xFFFFD700);
-            }
-        }
-    }
-
-    // ================================================================
-    // RENDERING - CONTEXT SUGGESTIONS
-    // ================================================================
-
-    private void renderContextSuggestions(GuiGraphics graphics) {
-        RadialMenuConfig.ColorTheme theme = config.theme;
-
-        String contextLabel = switch (currentContext) {
-            case "mob_targeted" -> "§aMob Detected - Suggested:";
-            case "combat" -> "§cIn Combat - Suggested:";
-            case "building" -> "§eBuilding - Suggested:";
-            default -> "§7Quick Access:";
-        };
-
-        int startY = centerY - outerRadius - 60;
-        graphics.drawCenteredString(font, contextLabel, centerX, startY, 0xFFFFFFFF);
-
-        int suggX = centerX - (contextSuggestions.size() * 25) / 2;
-        for (int i = 0; i < Math.min(5, contextSuggestions.size()); i++) {
-            RadialMenuItem item = contextSuggestions.get(i);
-            int x = suggX + i * 50;
-            int y = startY + 15;
-
-            boolean isActive = item.isToggle() && item.isActive();
-            int bgColor = isActive ? 0xAA00FF88 : 0xAA333355;
-            renderCircle(graphics, x, y, 18, bgColor);
-
-            if (item.getIconStack() != null) {
-                graphics.renderItem(item.getIconStack(), x - 8, y - 8);
-            } else {
-                graphics.drawCenteredString(font, item.getIconEmoji(), x, y - 4, 0xFFFFFFFF);
             }
         }
     }
@@ -1119,8 +810,6 @@ public class RadialMenuScreenV3 extends Screen {
     }
 
     private void renderCenterHub(GuiGraphics graphics, int mouseX, int mouseY) {
-        RadialMenuConfig.ColorTheme theme = config.theme;
-
         double dx = mouseX - centerX;
         double dy = mouseY - centerY;
         double distance = Math.sqrt(dx * dx + dy * dy);
@@ -1179,7 +868,6 @@ public class RadialMenuScreenV3 extends Screen {
         for (int i = 0; i < numCategories; i++) {
             RadialCategory cat = categories.get(i);
             boolean selected = (i == selectedCategoryIndex);
-            float anim = i < categoryAnimations.length ? categoryAnimations[i] : 0;
 
             double startAngle = startOffset + (i - 0.5) * segmentAngle;
             double endAngle = startAngle + segmentAngle;
@@ -1318,20 +1006,6 @@ public class RadialMenuScreenV3 extends Screen {
             } else if (item.isSubcategoryLink()) {
                 graphics.drawCenteredString(font, "▸", itemX, itemY + 16, theme.textSecondary);
             }
-        }
-    }
-
-    private void renderItemIcon(GuiGraphics graphics, RadialMenuItem item, int x, int y, boolean selected) {
-        RadialMenuConfig.ColorTheme theme = config.theme;
-        int iconColor = selected ? theme.textPrimary : theme.textSecondary;
-
-        boolean useItemStack = config.iconMode == RadialMenuConfig.IconMode.ITEMSTACK ||
-            (config.iconMode == RadialMenuConfig.IconMode.AUTO && item.getIconStack() != null);
-
-        if (useItemStack && item.getIconStack() != null) {
-            graphics.renderItem(item.getIconStack(), x - 8, y - 4);
-        } else {
-            graphics.drawCenteredString(font, item.getIconEmoji(), x, y, iconColor);
         }
     }
 
@@ -1549,14 +1223,12 @@ public class RadialMenuScreenV3 extends Screen {
         if (keyCode == GLFW.GLFW_KEY_T) {
             config.cycleTheme();
             playSound(1.2f);
-            spawnOpeningParticles();
             return true;
         }
 
         if (keyCode >= GLFW.GLFW_KEY_1 && keyCode <= GLFW.GLFW_KEY_6) {
             int num = keyCode - GLFW.GLFW_KEY_1;
             if (num < getActiveCategories().size()) {
-                morphFromCategory = selectedCategoryIndex;
                 morphProgress = 0f;
                 selectedCategoryIndex = num;
             }
@@ -1667,9 +1339,10 @@ public class RadialMenuScreenV3 extends Screen {
         OnboardingOverlay.onCategorySelected();
 
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player != null && item.isToggle()) {
+        var player = mc.player;
+        if (player != null && item.isToggle()) {
             String statusKey = item.isActive() ? "devmod.status.on" : "devmod.status.off";
-            mc.player.displayClientMessage(
+            player.displayClientMessage(
                 I18n.translate("devmod.message.item_toggled", item.getName(),
                     I18n.translate(statusKey).getString()),
                 true);
@@ -1679,9 +1352,6 @@ public class RadialMenuScreenV3 extends Screen {
             float pitch = item.isToggle() ? (item.isActive() ? 1.2f : 0.8f) : 1.0f;
             playSound(pitch);
         }
-
-        // Spawn particles on activation
-        spawnSelectionParticles(centerX, centerY, category.getColor());
 
         if (config.closeOnToggle && !item.isToggle()) {
             closing = true;
@@ -1743,18 +1413,6 @@ public class RadialMenuScreenV3 extends Screen {
         return 1 - (1 - t) * (1 - t);
     }
 
-    private float easeOutBack(float t) {
-        float c1 = 1.70158f;
-        float c3 = c1 + 1;
-        return (float)(1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2));
-    }
-
-    private float easeOutElastic(float t) {
-        if (t == 0 || t == 1) return t;
-        float p = 0.3f;
-        return (float)(Math.pow(2, -10 * t) * Math.sin((t - p / 4) * (2 * Math.PI) / p) + 1);
-    }
-
     private int blendColors(int color1, int color2, float t) {
         t = Mth.clamp(t, 0f, 1f);
         int a1 = (color1 >> 24) & 0xFF, r1 = (color1 >> 16) & 0xFF, g1 = (color1 >> 8) & 0xFF, b1 = color1 & 0xFF;
@@ -1775,16 +1433,6 @@ public class RadialMenuScreenV3 extends Screen {
             int r2 = (int)(radius * (float)(ring + 1) / rings);
             int color = blendColors(centerColor, edgeColor, t1);
             renderRing(graphics, cx, cy, r1, r2, color);
-        }
-    }
-
-    private void renderGradientCircle(GuiGraphics graphics, int cx, int cy, int radius, int innerColor, int outerColor) {
-        int rings = 6;
-        for (int ring = 0; ring < rings; ring++) {
-            float t = (float)ring / rings;
-            int r = (int)(radius * (1 - t));
-            int color = blendColors(outerColor, innerColor, t);
-            renderCircle(graphics, cx, cy, r, color);
         }
     }
 
@@ -1923,40 +1571,6 @@ public class RadialMenuScreenV3 extends Screen {
     // INNER CLASSES
     // ================================================================
 
-    private static class Particle {
-        float x, y;
-        float vx, vy;
-        int color;
-        float alpha;
-        float size;
-        float decay;
-
-        Particle(float x, float y, float vx, float vy, int color, float alpha, float size) {
-            this.x = x;
-            this.y = y;
-            this.vx = vx;
-            this.vy = vy;
-            this.color = color;
-            this.alpha = alpha;
-            this.size = size;
-            this.decay = 0.02f + (float)Math.random() * 0.02f;
-        }
-
-        void update() {
-            x += vx;
-            y += vy;
-            vx *= 0.98f;
-            vy *= 0.98f;
-            vy += 0.05f; // gravity
-            alpha -= decay;
-            size *= 0.98f;
-        }
-
-        boolean isDead() {
-            return alpha <= 0 || size < 0.5f;
-        }
-    }
-
     private static class SearchResult {
         final RadialMenuItem item;
         final RadialCategory category;
@@ -1978,17 +1592,6 @@ public class RadialMenuScreenV3 extends Screen {
             this.key = key;
             this.item = item;
             this.category = category;
-        }
-    }
-
-    private static class GesturePoint {
-        final int x, y;
-        final long time;
-
-        GesturePoint(int x, int y, long time) {
-            this.x = x;
-            this.y = y;
-            this.time = time;
         }
     }
 }

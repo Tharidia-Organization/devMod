@@ -302,7 +302,7 @@ public class L6EndToEndFlowTest {
      */
     static void selectPerk(GameSimulation sim, PlayerData player, String perkName) {
         player.activePerks.add(perkName);
-        player.perkStacks.merge(perkName, 1, Integer::sum);
+        player.perkStacks.merge(perkName, 1, (prev, inc) -> (prev == null ? 0 : prev) + (inc == null ? 0 : inc));
         sim.log(player.name + " selected perk: " + perkName +
             " (stack: " + player.perkStacks.get(perkName) + ")");
     }
@@ -340,7 +340,7 @@ public class L6EndToEndFlowTest {
         sim.totalTokensEarned.addAndGet(rewards.totalTokens);
 
         // Prestige for completing all waves
-        if (!instance.endless && session.currentWave >= instance.totalWaves) {
+        if (instance != null && !instance.endless && session.currentWave >= instance.totalWaves) {
             int prestige = instance.totalWaves / 5;
             wallet.prestige.addAndGet(prestige);
             rewards.prestigeEarned = prestige;
@@ -610,7 +610,6 @@ public class L6EndToEndFlowTest {
 
             // Add members to same instance
             InstanceData instance = sim.instances.get(instanceId);
-            QuestSession leaderSession = sim.activeSessions.get(leader.id);
 
             for (PlayerData member : List.of(member1, member2, member3)) {
                 // Create session for member
@@ -747,6 +746,7 @@ public class L6EndToEndFlowTest {
 
             // First quest to earn tokens
             UUID instance1 = startQuest(sim, player, 5, false);
+            assertNotNull(instance1);
             QuestSession session1 = sim.activeSessions.get(player.id);
             for (int i = 0; i < 5; i++) {
                 simulateWave(sim, player, session1, i == 4);
@@ -769,6 +769,7 @@ public class L6EndToEndFlowTest {
 
             // Second quest
             UUID instance2 = startQuest(sim, player, 5, false);
+            assertNotNull(instance2);
             QuestSession session2 = sim.activeSessions.get(player.id);
             for (int i = 0; i < 5; i++) {
                 simulateWave(sim, player, session2, i == 4);

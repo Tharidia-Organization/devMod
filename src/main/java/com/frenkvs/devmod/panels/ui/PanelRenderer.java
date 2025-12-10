@@ -19,22 +19,22 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Renderizza i FloatingPanel nel mondo 3D.
+ * Renders FloatingPanels in the 3D world.
  *
- * Caratteristiche:
- * - Billboard orientation (sempre rivolto alla camera)
- * - Supporto per alpha e scale animati
- * - Rendering di sfondo, bordi, header, contenuto
- * - Stile coerente con Axiom UI
+ * Features:
+ * - Billboard orientation (always facing camera)
+ * - Support for animated alpha and scale
+ * - Rendering of background, borders, header, content
+ * - Style consistent with Axiom UI
  */
 public class PanelRenderer {
 
     public static final PanelRenderer INSTANCE = new PanelRenderer();
 
     // === Scale Configuration ===
-    private static final float BASE_SCALE = 0.015f;       // Scala base pannello
-    private static final float MIN_SCALE = 0.008f;        // Scala minima (lontano)
-    private static final float MAX_SCALE = 0.025f;        // Scala massima (vicino)
+    private static final float BASE_SCALE = 0.015f;       // Base panel scale
+    private static final float MIN_SCALE = 0.008f;        // Minimum scale (far)
+    private static final float MAX_SCALE = 0.025f;        // Maximum scale (near)
     private static final float SCALE_DISTANCE_NEAR = 3.0f;
     private static final float SCALE_DISTANCE_FAR = 20.0f;
 
@@ -63,13 +63,13 @@ public class PanelRenderer {
     private PanelRenderer() {}
 
     /**
-     * Renderizza un pannello nel mondo 3D.
+     * Render a panel in the 3D world.
      *
-     * @param poseStack Stack di trasformazioni
-     * @param bufferSource Buffer per rendering
-     * @param cameraPos Posizione camera
-     * @param panel Pannello da renderizzare
-     * @param partialTick Tick parziale
+     * @param poseStack Transform stack
+     * @param bufferSource Buffer for rendering
+     * @param cameraPos Camera position
+     * @param panel Panel to render
+     * @param partialTick Partial tick
      */
     public void renderPanel(PoseStack poseStack, MultiBufferSource bufferSource,
                             Vec3 cameraPos, FloatingPanel panel, float partialTick) {
@@ -79,7 +79,7 @@ public class PanelRenderer {
         Vec3 panelPos = panel.getWorldPosition();
         double distance = panelPos.distanceTo(cameraPos);
 
-        // Calcola scala basata sulla distanza
+        // Calculate scale based on distance
         float distanceScale = calculateDistanceScale(distance);
         float finalScale = BASE_SCALE * distanceScale * panel.getCurrentScale();
 
@@ -94,7 +94,7 @@ public class PanelRenderer {
         // Setup transform
         poseStack.pushPose();
 
-        // Trasla alla posizione relativa alla camera
+        // Translate to position relative to camera
         Vec3 relativePos = panelPos.subtract(cameraPos);
         poseStack.translate(relativePos.x, relativePos.y, relativePos.z);
 
@@ -103,21 +103,21 @@ public class PanelRenderer {
         float yaw = (float) Math.atan2(toCamera.x, toCamera.z);
         poseStack.mulPose(new Quaternionf().rotationY(yaw));
 
-        // Scala e flip Y
+        // Scale and flip Y
         poseStack.scale(finalScale, -finalScale, finalScale);
 
-        // Dimensioni pannello
+        // Panel dimensions
         int width = panel.getWidth();
         int height = panel.getHeight();
 
-        // Centra il pannello
+        // Center the panel
         poseStack.translate(-width / 2.0f, -height / 2.0f, 0);
 
-        // Renderizza componenti
+        // Render components
         renderBackground(poseStack, bufferSource, width, height, panel, alpha);
         renderHeader(poseStack, bufferSource, font, width, panel, alpha);
 
-        // Contenuto solo se non minimizzato
+        // Content only if not minimized
         if (!panel.isMinimized()) {
             renderContent(poseStack, bufferSource, font, width, height, panel, alpha);
         }
@@ -126,7 +126,7 @@ public class PanelRenderer {
     }
 
     /**
-     * Calcola la scala basata sulla distanza dalla camera.
+     * Calculates scale based on distance from camera.
      */
     private float calculateDistanceScale(double distance) {
         if (distance <= SCALE_DISTANCE_NEAR) {
@@ -136,14 +136,14 @@ public class PanelRenderer {
             return MIN_SCALE / BASE_SCALE;
         }
 
-        // Interpolazione lineare
+        // Linear interpolation
         float t = (float) ((distance - SCALE_DISTANCE_NEAR) / (SCALE_DISTANCE_FAR - SCALE_DISTANCE_NEAR));
         float scale = MAX_SCALE + (MIN_SCALE - MAX_SCALE) * t;
         return scale / BASE_SCALE;
     }
 
     /**
-     * Calcola il fade alpha basato sulla distanza (soft culling).
+     * Calculates fade alpha based on distance (soft culling).
      * Panels start fading at FADE_START_DISTANCE and are fully transparent at FADE_END_DISTANCE.
      */
     private float calculateDistanceFade(double distance) {
@@ -160,22 +160,22 @@ public class PanelRenderer {
     }
 
     /**
-     * Renderizza lo sfondo del pannello.
+     * Renders the panel background.
      */
     private void renderBackground(PoseStack poseStack, MultiBufferSource bufferSource,
                                    int width, int height, FloatingPanel panel, float alpha) {
         Matrix4f matrix = poseStack.last().pose();
         VertexConsumer consumer = bufferSource.getBuffer(RenderType.debugQuads());
 
-        // Sfondo principale
+        // Main background
         int bgColor = applyAlpha(BG_COLOR, alpha * 0.95f);
         drawQuad(consumer, matrix, 0, 0, width, height, 0.001f, bgColor);
 
-        // Bordo
+        // Border
         VertexConsumer lineConsumer = bufferSource.getBuffer(RenderType.lines());
         int borderColor = panel.isHovered() ? applyAlpha(BORDER_HOVER, alpha) : applyAlpha(BORDER_COLOR, alpha);
 
-        // Accent color per pannelli pinnati o hovered
+        // Accent color for pinned or hovered panels
         if (panel.isPinned()) {
             borderColor = applyAlpha(PIN_COLOR, alpha);
         } else if (panel.isHovered()) {
@@ -186,7 +186,7 @@ public class PanelRenderer {
     }
 
     /**
-     * Renderizza l'header del pannello.
+     * Renders the panel header.
      */
     private void renderHeader(PoseStack poseStack, MultiBufferSource bufferSource, Font font,
                                int width, FloatingPanel panel, float alpha) {
@@ -197,12 +197,12 @@ public class PanelRenderer {
         int headerBg = applyAlpha(HEADER_BG, alpha * 0.9f);
         drawQuad(consumer, matrix, 0, 0, width, HEADER_HEIGHT, 0.0005f, headerBg);
 
-        // Separatore header
+        // Header separator
         VertexConsumer lineConsumer = bufferSource.getBuffer(RenderType.lines());
         int sepColor = applyAlpha(BORDER_COLOR, alpha * 0.5f);
         drawHLine(lineConsumer, matrix, poseStack, 0, HEADER_HEIGHT, width, sepColor);
 
-        // Titolo (with caching to avoid repeated font.width() calls)
+        // Title (with caching to avoid repeated font.width() calls)
         poseStack.pushPose();
         poseStack.translate(PADDING, 4, -0.5f);
 
@@ -219,7 +219,7 @@ public class PanelRenderer {
     }
 
     /**
-     * Renderizza le icone dell'header (pin, close).
+     * Renders the header icons (pin, close).
      */
     private void renderHeaderIcons(PoseStack poseStack, MultiBufferSource bufferSource, Font font,
                                     int width, FloatingPanel panel, float alpha) {
@@ -245,21 +245,21 @@ public class PanelRenderer {
     }
 
     /**
-     * Renderizza il contenuto del pannello.
-     * Delega al metodo renderContent3D del pannello specifico.
+     * Renders the panel content.
+     * Delegates to the specific panel's renderContent3D method.
      */
     private void renderContent(PoseStack poseStack, MultiBufferSource bufferSource, Font font,
                                 int width, int height, FloatingPanel panel, float alpha) {
         poseStack.pushPose();
 
-        // Area contenuto (sotto l'header)
+        // Content area (below header)
         float contentY = HEADER_HEIGHT + PADDING;
         int contentHeight = (int) (height - HEADER_HEIGHT - PADDING * 2);
         int contentWidth = (int) (width - PADDING * 2);
 
         poseStack.translate(PADDING, contentY, -0.3f);
 
-        // Delega il rendering al pannello specifico
+        // Delegate rendering to the specific panel
         panel.renderContent3D(poseStack, bufferSource, font, contentWidth, contentHeight, alpha);
 
         poseStack.popPose();
@@ -268,7 +268,7 @@ public class PanelRenderer {
     // === Utility Methods ===
 
     /**
-     * Renderizza testo 3D.
+     * Renders 3D text.
      */
     private void renderText3D(PoseStack poseStack, MultiBufferSource bufferSource, Font font,
                                String text, float x, float y, int color) {
@@ -292,7 +292,7 @@ public class PanelRenderer {
     }
 
     /**
-     * Disegna un quad filled.
+     * Draws a filled quad.
      */
     private void drawQuad(VertexConsumer consumer, Matrix4f matrix,
                           float x, float y, float w, float h, float z, int color) {
@@ -308,7 +308,7 @@ public class PanelRenderer {
     }
 
     /**
-     * Disegna un bordo rettangolare.
+     * Draws a rectangular border.
      */
     private void drawBorder(VertexConsumer consumer, Matrix4f matrix, PoseStack poseStack,
                             float x, float y, float w, float h, int color) {
@@ -332,7 +332,7 @@ public class PanelRenderer {
     }
 
     /**
-     * Disegna una linea orizzontale.
+     * Draws a horizontal line.
      */
     private void drawHLine(VertexConsumer consumer, Matrix4f matrix, PoseStack poseStack,
                            float x, float y, float w, int color) {
@@ -346,7 +346,7 @@ public class PanelRenderer {
     }
 
     /**
-     * Applica alpha a un colore ARGB.
+     * Applies alpha to an ARGB color.
      */
     private int applyAlpha(int argb, float alphaMultiplier) {
         int originalAlpha = (argb >> 24) & 0xFF;

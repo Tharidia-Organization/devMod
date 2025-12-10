@@ -13,6 +13,7 @@ import java.util.Map;
  * Network payload to sync player wallet data from server to client.
  * Sent when player opens the shop or when currency changes.
  */
+@SuppressWarnings({"null", "unused"})
 public record ShopSyncPayload(
     int tokens,
     int prestige,

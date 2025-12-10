@@ -192,16 +192,16 @@ public class VerticalLevelsVisualizer {
 
     private void renderZones(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix,
                             @Nonnull PoseStack.Pose pose, @Nonnull RoomZones room, @Nonnull Vec3 cameraPos) {
-        // Floor zone (verde)
+        // Floor zone (green)
         renderZonePlane(consumer, matrix, pose, room, room.minY, room.floorMax, 0.0f, 0.8f, 0.0f);
 
-        // Mid zone (giallo)
+        // Mid zone (yellow)
         renderZonePlane(consumer, matrix, pose, room, room.floorMax, room.midMax, 0.8f, 0.8f, 0.0f);
 
-        // High zone (rosso)
+        // High zone (red)
         renderZonePlane(consumer, matrix, pose, room, room.midMax, room.maxY, 0.8f, 0.0f, 0.0f);
 
-        // Labels al centro di ogni zona - use short timeout to auto-expire when disabled
+        // Labels at the center of each zone - use short timeout to auto-expire when disabled
         double centerX = (room.minX + room.maxX) / 2.0;
         double centerZ = (room.minZ + room.maxZ) / 2.0;
 
@@ -230,20 +230,20 @@ public class VerticalLevelsVisualizer {
         float yB = (float) yBottom;
         float yT = (float) yTop;
 
-        // Renderizza solo il bordo di ogni zona (wireframe)
-        // Piano inferiore
+        // Render only the border of each zone (wireframe)
+        // Bottom plane
         line(consumer, matrix, pose, minX, yB, minZ, maxX, yB, minZ, r, g, b, a);
         line(consumer, matrix, pose, maxX, yB, minZ, maxX, yB, maxZ, r, g, b, a);
         line(consumer, matrix, pose, maxX, yB, maxZ, minX, yB, maxZ, r, g, b, a);
         line(consumer, matrix, pose, minX, yB, maxZ, minX, yB, minZ, r, g, b, a);
 
-        // Piano superiore
+        // Top plane
         line(consumer, matrix, pose, minX, yT, minZ, maxX, yT, minZ, r, g, b, a);
         line(consumer, matrix, pose, maxX, yT, minZ, maxX, yT, maxZ, r, g, b, a);
         line(consumer, matrix, pose, maxX, yT, maxZ, minX, yT, maxZ, r, g, b, a);
         line(consumer, matrix, pose, minX, yT, maxZ, minX, yT, minZ, r, g, b, a);
 
-        // Bordi verticali (solo agli angoli)
+        // Vertical edges (corners only)
         line(consumer, matrix, pose, minX, yB, minZ, minX, yT, minZ, r, g, b, a);
         line(consumer, matrix, pose, maxX, yB, minZ, maxX, yT, minZ, r, g, b, a);
         line(consumer, matrix, pose, maxX, yB, maxZ, maxX, yT, maxZ, r, g, b, a);

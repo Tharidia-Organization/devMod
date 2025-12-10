@@ -18,6 +18,8 @@ import net.minecraft.client.Minecraft;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
+
 import com.frenkvs.devmod.util.ConfigPaths;
 
 import java.io.IOException;
@@ -33,6 +35,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
@@ -518,6 +521,7 @@ public class TestingSession {
     /**
      * Generates a complete test report in Markdown format.
      */
+    @Nonnull
     public String generateReport() {
         StringBuilder sb = new StringBuilder();
 
@@ -579,7 +583,7 @@ public class TestingSession {
             sb.append("```\n");
         }
 
-        return sb.toString();
+        return Objects.requireNonNull(sb.toString());
     }
 
     /**

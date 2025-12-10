@@ -10,8 +10,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +20,7 @@ import java.util.Map;
  * Achievement-style QA Testing Screen.
  * Displays tests organized by category with visual progress tracking.
  */
+@SuppressWarnings("null") // Minecraft API null annotations
 public class QATestingScreen extends Screen {
 
     // Layout constants
@@ -179,7 +180,7 @@ public class QATestingScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Draw solid opaque background directly - this covers the blurred world behind
         graphics.fill(0, 0, this.width, this.height, 0xFF1A1A1A);
 
@@ -628,7 +629,6 @@ public class QATestingScreen extends Screen {
 
         int contentY = detailsY + 30;
         int contentX = detailsX + PADDING;
-        int maxWidth = detailsWidth - PADDING * 2;
 
         // Test name
         graphics.drawString(font, selectedTest.getName(), contentX, contentY, UIConstants.Text.WHITE, false);
@@ -917,7 +917,7 @@ public class QATestingScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void renderBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Override to disable the default blurred background completely
         // Just fill with solid color, no blur
         graphics.fill(0, 0, this.width, this.height, 0xFF1A1A1A);
@@ -935,7 +935,7 @@ public class QATestingScreen extends Screen {
      * Override to prevent dimming as well
      */
     @Override
-    protected void renderMenuBackground(GuiGraphics graphics) {
+    protected void renderMenuBackground(@Nonnull GuiGraphics graphics) {
         // Just solid background, no dimming or blur
         graphics.fill(0, 0, this.width, this.height, 0xFF1A1A1A);
     }
@@ -944,7 +944,7 @@ public class QATestingScreen extends Screen {
      * Override renderTransparentBackground to provide a solid color background
      */
     @Override
-    public void renderTransparentBackground(GuiGraphics graphics) {
+    public void renderTransparentBackground(@Nonnull GuiGraphics graphics) {
         // Solid color instead of transparent/blurred
         graphics.fill(0, 0, this.width, this.height, 0xFF1A1A1A);
     }

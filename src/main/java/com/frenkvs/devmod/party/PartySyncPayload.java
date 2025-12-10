@@ -22,7 +22,8 @@ public record PartySyncPayload(
     List<PartyMemberInfo> members,
     int questTypeOrdinal,
     int stateOrdinal,
-    UUID instanceId          // null (zero UUID) if not in quest
+    UUID instanceId,         // null (zero UUID) if not in quest
+    String selectedMobId     // ResourceLocation as string (e.g., "minecraft:zombie"), empty if not set
 ) implements CustomPacketPayload {
 
     // Security limits
@@ -56,6 +57,7 @@ public record PartySyncPayload(
         buf.writeVarInt(payload.questTypeOrdinal);
         buf.writeVarInt(payload.stateOrdinal);
         buf.writeUUID(payload.instanceId != null ? payload.instanceId : new UUID(0, 0));
+        buf.writeUtf(payload.selectedMobId != null ? payload.selectedMobId : "");
     }
 
     private static PartySyncPayload decode(RegistryFriendlyByteBuf buf) {
@@ -81,13 +83,19 @@ public record PartySyncPayload(
         int questTypeOrdinal = buf.readVarInt();
         int stateOrdinal = buf.readVarInt();
         UUID instanceId = buf.readUUID();
+        String selectedMobId = buf.readUtf(MAX_NAME_LENGTH);
 
         // Convert zero UUID back to null
         if (instanceId.getMostSignificantBits() == 0 && instanceId.getLeastSignificantBits() == 0) {
             instanceId = null;
         }
 
-        return new PartySyncPayload(hasParty, partyId, leaderId, members, questTypeOrdinal, stateOrdinal, instanceId);
+        // Convert empty string to null
+        if (selectedMobId.isEmpty()) {
+            selectedMobId = null;
+        }
+
+        return new PartySyncPayload(hasParty, partyId, leaderId, members, questTypeOrdinal, stateOrdinal, instanceId, selectedMobId);
     }
 
     @Override
@@ -115,6 +123,42 @@ public record PartySyncPayload(
             return values[stateOrdinal];
         }
         return PartyData.PartyState.FORMING;
+    }
+
+    /**
+     * Get the selected mob ID as ResourceLocation.
+     * Returns null if no mob is selected.
+     */
+    public ResourceLocation getSelectedMobResourceLocation() {
+        if (selectedMobId == null || selectedMobId.isEmpty()) {
+            return null;
+        }
+        return ResourceLocation.tryParse(selectedMobId);
+    }
+
+    /**
+     * Get the display name of the selected mob.
+     * Returns "Zombie" (default) if none selected.
+     */
+    public String getSelectedMobDisplayName() {
+        if (selectedMobId == null || selectedMobId.isEmpty()) {
+            return "Zombie";
+        }
+        // Extract the path part and capitalize
+        ResourceLocation loc = ResourceLocation.tryParse(selectedMobId);
+        if (loc == null) return "Zombie";
+        String path = loc.getPath();
+        // Convert snake_case to Title Case
+        String[] parts = path.split("_");
+        StringBuilder sb = new StringBuilder();
+        for (String part : parts) {
+            if (!part.isEmpty()) {
+                if (sb.length() > 0) sb.append(" ");
+                sb.append(Character.toUpperCase(part.charAt(0)));
+                if (part.length() > 1) sb.append(part.substring(1));
+            }
+        }
+        return sb.toString();
     }
 
     /**
@@ -147,6 +191,7 @@ public record PartySyncPayload(
             List.of(),
             0,
             0,
+            null,
             null
         );
     }
@@ -170,6 +215,10 @@ public record PartySyncPayload(
             memberInfos.add(new PartyMemberInfo(memberId, name, isReady, isLeader, isOnline));
         }
 
+        // Get selected mob ID as string (or null)
+        ResourceLocation mobId = party.getSelectedMobId();
+        String mobIdString = mobId != null ? mobId.toString() : null;
+
         return new PartySyncPayload(
             true,
             party.getPartyId(),
@@ -177,7 +226,8 @@ public record PartySyncPayload(
             memberInfos,
             party.getQuestType().ordinal(),
             party.getState().ordinal(),
-            party.getInstanceId()
+            party.getInstanceId(),
+            mobIdString
         );
     }
 

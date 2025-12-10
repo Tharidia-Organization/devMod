@@ -30,7 +30,7 @@ public class WorldRenderEvents {
 
     @SubscribeEvent
     public static void onRenderLevel(@Nonnull RenderLevelStageEvent event) {
-        // Se l'utente ha disattivato il render nelle impostazioni, ci fermiamo subito
+        // If the user has disabled rendering in settings, stop immediately
         if (!ModConfig.showRender) return;
 
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
@@ -42,7 +42,7 @@ public class WorldRenderEvents {
 
         Vec3 cameraPos = Objects.requireNonNull(event.getCamera().getPosition());
 
-        // NUOVA FEATURE: Render delle sfere 3D per il debug overlay (tasto G)
+        // NEW FEATURE: Render 3D spheres for debug overlay (G key)
         if (com.frenkvs.devmod.rendering.DebugRenderer.INSTANCE.isEnabled()) {
             renderDebugSpheres(event.getPoseStack(), cameraPos, level);
         }
@@ -91,7 +91,7 @@ public class WorldRenderEvents {
             if (entity instanceof Mob mob) {
                 if (mob.distanceToSqr(Objects.requireNonNull(mc.player)) > 1600) continue;
 
-                // 1. RAGGIO DI VISTA (Follow Range)
+                // 1. VIEW RANGE (Follow Range)
                 double followRange = 0;
                 if (mob.getAttribute(Objects.requireNonNull(Attributes.FOLLOW_RANGE)) != null) {
                     followRange = mob.getAttributeValue(Attributes.FOLLOW_RANGE);
@@ -99,36 +99,36 @@ public class WorldRenderEvents {
 
                 if (followRange > 0 && followRange <= 64) {
                     if (ModConfig.renderAsBlocks) {
-                        // Modalità BLOCCHI
+                        // BLOCKS mode
                         renderAggroBlocks(Objects.requireNonNull(event.getPoseStack()), mob, followRange, cameraPos, level);
                     } else {
-                        // Modalità CERCHIO SEMPLICE
+                        // SIMPLE CIRCLE mode
                         renderCircle(Objects.requireNonNull(event.getPoseStack()), mob, followRange, cameraPos, ModConfig.followRangeColor);
                     }
                 }
 
-                // ... (parte rossa uguale)
+                // ... (red part unchanged)
 
-                // 2. CERCHIO GIALLO (Linea) - Attacco
+                // 2. YELLOW CIRCLE (Line) - Attack
                 double attackReach = 0;
 
-                // Prima controlliamo se abbiamo impostato un valore custom
+                // First check if we have a custom value set
                 if (mob.getAttribute(Objects.requireNonNull(Attributes.ENTITY_INTERACTION_RANGE)) != null) {
                     attackReach = mob.getAttributeValue(Attributes.ENTITY_INTERACTION_RANGE);
                 }
 
-                // Se è ancora 0 (o quasi), usiamo la formula vanilla di fallback
+                // If it's still 0 (or almost), use vanilla fallback formula
                 if (attackReach <= 0.1) {
                     attackReach = mob.getBbWidth() * 2.0 + 1.0;
                 }
 
                 if (attackReach > 0) {
-                    // Usiamo il giallo fisso o un altro colore se vuoi
+                    // Use fixed yellow or another color if desired
                     renderCircle(Objects.requireNonNull(event.getPoseStack()), mob, attackReach, cameraPos, 0xFFFFFF00);
                 }
 
                 // 3. BODY PART HITBOXES DEBUG (HEAD, ARMS, BODY, LEGS)
-                // Renderizza le hitbox colorate delle parti del corpo (solo se abilitato)
+                // Render colored body part hitboxes (only if enabled)
                 if (ModConfig.showBodyPartBoxes) {
                     renderBodyPartHitboxes(Objects.requireNonNull(event.getPoseStack()), mob, cameraPos);
                 }
@@ -136,7 +136,7 @@ public class WorldRenderEvents {
         }
     }
 
-    // Disegna la griglia di blocchi (usa il colore configurato)
+    // Draw the block grid (uses configured color)
     // PERFORMANCE: Limita range massima a 16 blocchi per evitare freeze
     private static void renderAggroBlocks(@Nonnull PoseStack poseStack, @Nonnull Mob mob, double range, @Nonnull Vec3 cameraPos, @Nonnull Level level) {
         // PERFORMANCE: Clamp range to prevent massive loops
@@ -147,10 +147,10 @@ public class WorldRenderEvents {
         int r = (int) Math.ceil(range);
         double rangeSqr = range * range;
 
-        // Estraiamo i componenti ARGB dal colore configurato
+        // Extract ARGB components from configured color
         int color = ModConfig.followRangeColor;
         float alpha = ((color >> 24) & 0xFF) / 255f;
-        if (alpha == 0) alpha = 1.0f; // Fix se non c'è alpha
+        if (alpha == 0) alpha = 1.0f; // Fix if no alpha
         float red = ((color >> 16) & 0xFF) / 255f;
         float green = ((color >> 8) & 0xFF) / 255f;
         float blue = (color & 0xFF) / 255f;
@@ -173,7 +173,7 @@ public class WorldRenderEvents {
         poseStack.popPose();
     }
 
-    // Metodo generico per disegnare cerchi (usato sia per vista che attacco)
+    // Generic method for drawing circles (used for both view and attack)
     private static void renderCircle(@Nonnull PoseStack poseStack, @Nonnull Mob mob, double radius, @Nonnull Vec3 cameraPos, int color) {
         VertexConsumer builder = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(Objects.requireNonNull(RenderType.lines()));
 
@@ -209,7 +209,7 @@ public class WorldRenderEvents {
 
     private static void drawBox(@Nonnull VertexConsumer builder, @Nonnull Matrix4f matrix, @Nonnull BlockPos pos, float r, float g, float b, float a) {
         float x = pos.getX(); float y = pos.getY(); float z = pos.getZ();
-        // Disegno semplificato del cubo
+        // Simplified cube drawing
         builder.addVertex(matrix, x, y+1, z).setColor(r, g, b, a).setNormal(0, 1, 0);
         builder.addVertex(matrix, x+1, y+1, z).setColor(r, g, b, a).setNormal(0, 1, 0);
         builder.addVertex(matrix, x+1, y+1, z).setColor(r, g, b, a).setNormal(0, 1, 0);
@@ -230,11 +230,11 @@ public class WorldRenderEvents {
     }
 
     /**
-     * Renderizza le hitbox delle body parts (HEAD, ARMS, BODY, LEGS).
+     * Renders body part hitboxes (HEAD, ARMS, BODY, LEGS).
      *
      * MULTIPART ENTITY SUPPORT:
-     * Se l'entità è multipart (es. EnderDragon) usa le sue hitbox native
-     * invece di calcolare hitbox generiche sovrapposte.
+     * If the entity is multipart (e.g. EnderDragon) use its native hitboxes
+     * instead of calculating generic overlapping hitboxes.
      */
     private static void renderBodyPartHitboxes(@Nonnull PoseStack poseStack, @Nonnull LivingEntity entity, @Nonnull Vec3 cameraPos) {
         VertexConsumer builder = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.lines());
@@ -242,21 +242,21 @@ public class WorldRenderEvents {
         poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
         Matrix4f matrix = poseStack.last().pose();
 
-        // MULTIPART ENTITY CHECK: EnderDragon e altre entità con parti native
+        // MULTIPART ENTITY CHECK: EnderDragon and other entities with native parts
         if (entity instanceof EnderDragon dragon) {
             renderDragonParts(builder, matrix, dragon);
             poseStack.popPose();
             return;
         }
 
-        // GENERIC MULTIPART CHECK: Altre entità con getParts()
+        // GENERIC MULTIPART CHECK: Other entities with getParts()
         if (entity.isMultipartEntity() && entity.getParts() != null && entity.getParts().length > 0) {
             renderMultipartEntity(builder, matrix, entity);
             poseStack.popPose();
             return;
         }
 
-        // STANDARD ENTITY: usa la logica generica di body part calculation
+        // STANDARD ENTITY: use generic body part calculation logic
         AABB mainBox = entity.getBoundingBox();
         Vec3 center = mainBox.getCenter();
         double width = mainBox.getXsize();
@@ -365,7 +365,7 @@ public class WorldRenderEvents {
     }
 
     /**
-     * Disegna un AABB con linee colorate (12 edges del box)
+     * Draws an AABB with colored lines (12 box edges)
      */
     private static void drawAABB(@Nonnull VertexConsumer builder, @Nonnull Matrix4f matrix, @Nonnull AABB box, float r, float g, float b, float a) {
         float minX = (float) box.minX;
@@ -407,8 +407,8 @@ public class WorldRenderEvents {
     }
 
     /**
-     * Renderizza le parti native dell'EnderDragon con colori specifici per parte.
-     * L'EnderDragon ha 8 parti: head, neck (x3), body, tail (x3), wing (x2)
+     * Renders the native parts of the EnderDragon with specific colors per part.
+     * The EnderDragon has 8 parts: head, neck (x3), body, tail (x3), wing (x2)
      */
     private static void renderDragonParts(@Nonnull VertexConsumer builder, @Nonnull Matrix4f matrix, @Nonnull EnderDragon dragon) {
         EnderDragonPart[] parts = dragon.getSubEntities();
@@ -445,8 +445,8 @@ public class WorldRenderEvents {
     }
 
     /**
-     * Renderizza le parti native di qualsiasi entità multipart generica.
-     * Usa colori diversi per ogni parte basandosi sull'indice.
+     * Renders the native parts of any generic multipart entity.
+     * Uses different colors for each part based on index.
      */
     private static void renderMultipartEntity(@Nonnull VertexConsumer builder, @Nonnull Matrix4f matrix, @Nonnull LivingEntity entity) {
         net.minecraft.world.entity.Entity[] parts = entity.getParts();
@@ -474,75 +474,75 @@ public class WorldRenderEvents {
     }
 
     /**
-     * Renderizza le sfere 3D di aggro per mob VICINI quando il debug overlay è attivo.
-     * Rendering diretto OGNI FRAME per movimento fluido - NO BATCHING, NO CLEAR.
+     * Renders 3D aggro spheres for NEARBY mobs when debug overlay is active.
+     * Direct rendering EVERY FRAME for smooth movement - NO BATCHING, NO CLEAR.
      *
-     * PERFORMANCE: Limita a mob entro 48 blocchi per evitare freeze
+     * PERFORMANCE: Limits to mobs within 48 blocks to avoid freezing
      *
      * DISTANCE-BASED ALPHA FADE:
-     * - Sfere vicine alla camera diventano più trasparenti per ridurre l'effetto "muro opaco"
-     * - Alpha fade quadratico: più vicino = più trasparente
-     * - Questo risolve il problema di sovrapposizione quando ci si trova dentro più sfere
+     * - Spheres near the camera become more transparent to reduce the "opaque wall" effect
+     * - Quadratic alpha fade: closer = more transparent
+     * - This solves the overlap problem when inside multiple spheres
      */
     private static void renderDebugSpheres(PoseStack poseStack, Vec3 cameraPos, net.minecraft.client.multiplayer.ClientLevel level) {
         var bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
-        final double MAX_RENDER_DIST_SQ = 48.0 * 48.0; // Limite distanza
+        final double MAX_RENDER_DIST_SQ = 48.0 * 48.0; // Distance limit
 
-        // Itera su mob VICINI per performance
+        // Iterate over NEARBY mobs for performance
         for (Entity entity : level.entitiesForRendering()) {
             if (!(entity instanceof Mob mob)) continue;
 
-            // Skip mob lontani
+            // Skip distant mobs
             if (mob.distanceToSqr(mc.player) > MAX_RENDER_DIST_SQ) continue;
 
-            // Ottieni il FOLLOW_RANGE
+            // Get the FOLLOW_RANGE
             var rangeAttr = mob.getAttribute(Attributes.FOLLOW_RANGE);
             if (rangeAttr == null) continue;
 
             double aggroRange = rangeAttr.getValue();
             if (aggroRange <= 0) continue;
 
-            // Centro della sfera (centro del mob) in coordinate ASSOLUTE
+            // Sphere center (mob center) in ABSOLUTE coordinates
             Vec3 mobAbsPos = mob.position().add(0, mob.getBbHeight() / 2.0, 0);
 
-            // Converti in coordinate RELATIVE alla camera
+            // Convert to coordinates RELATIVE to camera
             Vec3 mobRelativePos = mobAbsPos.subtract(cameraPos);
 
-            // DISTANCE-BASED ALPHA FADE per ridurre sovrapposizione
-            // Calcola distanza dalla camera al centro della sfera
+            // DISTANCE-BASED ALPHA FADE to reduce overlap
+            // Calculate distance from camera to sphere center
             double distanceToCamera = cameraPos.distanceTo(mobAbsPos);
 
-            // Calcola fade factor basato sulla distanza rispetto al raggio della sfera
-            // - Se camera è al centro della sfera: distanceToCamera = 0 → fade = 0 → alpha = 0 (invisibile)
-            // - Se camera è sulla superficie: distanceToCamera = aggroRange → fade = 1 → alpha = max
-            // - Se camera è lontana: distanceToCamera > aggroRange → fade = 1 → alpha = max
+            // Calculate fade factor based on distance relative to sphere radius
+            // - If camera is at sphere center: distanceToCamera = 0 → fade = 0 → alpha = 0 (invisible)
+            // - If camera is on surface: distanceToCamera = aggroRange → fade = 1 → alpha = max
+            // - If camera is far: distanceToCamera > aggroRange → fade = 1 → alpha = max
             double fadeDistance = Math.min(distanceToCamera / aggroRange, 1.0);
 
-            // Fade quadratico per transizione smooth (x^3 per rendere ancora più trasparenti le sfere vicine)
+            // Quadratic fade for smooth transition (x^3 to make nearby spheres even more transparent)
             double fadeFactor = fadeDistance * fadeDistance * fadeDistance;
 
-            // Alpha base 0.35 (ridotto da 0.5) + fade dinamico
-            // Quando sei DENTRO la sfera (distanceToCamera < aggroRange) → alpha molto basso
-            // Quando sei FUORI (distanceToCamera >= aggroRange) → alpha normale
+            // Base alpha 0.35 (reduced from 0.5) + dynamic fade
+            // When INSIDE the sphere (distanceToCamera < aggroRange) → very low alpha
+            // When OUTSIDE (distanceToCamera >= aggroRange) → normal alpha
             float baseAlpha = 0.35f;
             float alpha = baseAlpha * (float) fadeFactor;
 
-            // Minimo alpha 0.05 per mantenere un minimo di visibilità anche quando sei dentro
+            // Minimum alpha 0.05 to maintain some visibility even when inside
             alpha = Math.max(alpha, 0.05f);
 
-            // Colore cyan semi-trasparente
+            // Semi-transparent cyan color
             float red = 0.0f;
             float green = 1.0f;
             float blue = 1.0f;
 
-            // Applica trasformazione PoseStack per posizionamento corretto
+            // Apply PoseStack transformation for correct positioning
             poseStack.pushPose();
             poseStack.translate(mobRelativePos.x, mobRelativePos.y, mobRelativePos.z);
 
-            // Renderizza la sfera con centro a (0,0,0) - la trasformazione è già applicata
+            // Render sphere with center at (0,0,0) - transformation already applied
             com.frenkvs.devmod.rendering.SphereRenderer.renderSphereFilled(
                 poseStack, bufferSource, Vec3.ZERO, aggroRange, red, green, blue, alpha
             );

@@ -1,26 +1,26 @@
 package com.frenkvs.devmod.panels.core;
 
 /**
- * Stati del lifecycle di un FloatingPanel.
+ * Lifecycle states of a FloatingPanel.
  *
  * State Machine:
- * SPAWNING -> VISIBLE -> MINIMIZED (opzionale) -> DESPAWNING -> REMOVED
+ * SPAWNING -> VISIBLE -> MINIMIZED (optional) -> DESPAWNING -> REMOVED
  *                ^____________|
  */
 public enum PanelState {
-    /** Pannello in fase di spawn, fade-in e scale-up */
+    /** Panel spawning, fade-in and scale-up phase */
     SPAWNING(200, true),
 
-    /** Pannello completamente visibile e interattivo */
+    /** Panel fully visible and interactive */
     VISIBLE(0, true),
 
-    /** Pannello minimizzato (solo titolo visibile) */
+    /** Panel minimized (only title visible) */
     MINIMIZED(0, true),
 
-    /** Pannello in fase di rimozione, fade-out */
+    /** Panel removal phase, fade-out */
     DESPAWNING(300, false),
 
-    /** Pannello rimosso, pronto per garbage collection */
+    /** Panel removed, ready for garbage collection */
     REMOVED(0, false);
 
     private final long transitionDurationMs;
@@ -32,35 +32,35 @@ public enum PanelState {
     }
 
     /**
-     * Durata della transizione in questo stato (ms).
+     * Transition duration in this state (ms).
      */
     public long getTransitionDuration() {
         return transitionDurationMs;
     }
 
     /**
-     * Se il pannello accetta interazioni in questo stato.
+     * Whether the panel accepts interactions in this state.
      */
     public boolean isInteractive() {
         return interactive;
     }
 
     /**
-     * Se il pannello dovrebbe essere renderizzato.
+     * Whether the panel should be rendered.
      */
     public boolean shouldRender() {
         return this != REMOVED;
     }
 
     /**
-     * Se il pannello e' in una fase di transizione animata.
+     * Whether the panel is in an animated transition phase.
      */
     public boolean isTransitioning() {
         return this == SPAWNING || this == DESPAWNING;
     }
 
     /**
-     * Ottiene lo stato successivo nella transizione.
+     * Gets the next state in the transition.
      */
     public PanelState getNextState() {
         return switch (this) {

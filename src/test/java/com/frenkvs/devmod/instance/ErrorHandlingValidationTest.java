@@ -474,7 +474,7 @@ class ErrorHandlingValidationTest {
             int optionalFailures = 0;
 
             // All required succeed
-            for (String comp : requiredComponents) {
+            for (@SuppressWarnings("unused") String comp : requiredComponents) {
                 requiredSuccesses++;
             }
 

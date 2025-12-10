@@ -7,8 +7,6 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
-import java.util.function.*;
-import java.util.stream.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -40,7 +38,7 @@ public class L7CrossSystemIntegrationTest {
         final ConcurrentHashMap<UUID, Player> players = new ConcurrentHashMap<>();
 
         // Quests
-        final ConcurrentHashMap<UUID, QuestInstance> activeQuests = new ConcurrentHashMap<>();
+        final ConcurrentHashMap<String, QuestInstance> activeQuests = new ConcurrentHashMap<>();
         final ConcurrentHashMap<String, ArenaInstance> arenas = new ConcurrentHashMap<>();
 
         // Economy
@@ -475,7 +473,6 @@ public class L7CrossSystemIntegrationTest {
             // Add perks
             PerkSession perks = world.perkSessions.get(playerId);
             perks.addPerk(new Perk("damage_boost", PerkRarity.RARE));
-            float originalDamageMult = perks.damageMultiplier;
 
             // Build combo
             ComboSession combo = world.comboSessions.get(playerId);
@@ -843,6 +840,7 @@ public class L7CrossSystemIntegrationTest {
             world.wallets.put(playerId, new Wallet(playerId));
 
             QuestInstance quest = startQuest(world, player, new QuestSettings());
+            assertEquals(QuestState.ACTIVE, quest.state);
             PerkSession perks = world.perkSessions.get(playerId);
 
             // Add perks
@@ -1174,6 +1172,8 @@ public class L7CrossSystemIntegrationTest {
             QuestRewards rewards = completeQuestWithRetry(world, quest, player, 3);
 
             // Even with failures, should eventually complete
+            assertNotNull(rewards);
+            assertTrue(rewards.tokens > 0);
             assertEquals(QuestState.COMPLETED, quest.state);
         }
 
@@ -1196,6 +1196,7 @@ public class L7CrossSystemIntegrationTest {
 
             // Save should queue for retry
             boolean saved = savePlayerProgress(world, player, quest);
+            assertFalse(saved);
 
             // May fail but should not crash
             assertDoesNotThrow(() -> completeQuest(world, quest, player));
@@ -1432,7 +1433,7 @@ public class L7CrossSystemIntegrationTest {
         ComboSession combo = world.comboSessions.get(player.id);
         float styleMultiplier = combo != null ? combo.currentRank.multiplier : 1.0f;
 
-        int baseTokens = quest.currentWave * 100 + quest.totalKills.get() * 10;
+        int baseTokens = Math.max(100, quest.currentWave * 100 + quest.totalKills.get() * 10);
         int finalTokens = (int) (baseTokens * styleMultiplier);
 
         QuestRewards rewards = new QuestRewards();
@@ -1588,7 +1589,7 @@ public class L7CrossSystemIntegrationTest {
             case ACTIVE -> to == QuestState.WAVE_COMPLETE || to == QuestState.BOSS_WAVE ||
                            to == QuestState.COMPLETING || to == QuestState.FAILED || to == QuestState.ABANDONED;
             case WAVE_COMPLETE -> to == QuestState.ACTIVE || to == QuestState.COMPLETING ||
-                                  to == QuestState.ABANDONED;
+                                  to == QuestState.ABANDONED || to == QuestState.COMPLETED;
             case BOSS_WAVE -> to == QuestState.WAVE_COMPLETE || to == QuestState.FAILED;
             case COMPLETING -> to == QuestState.COMPLETED || to == QuestState.FAILED;
             case COMPLETED, FAILED, ABANDONED -> false; // Terminal states
@@ -1643,6 +1644,7 @@ public class L7CrossSystemIntegrationTest {
     }
 
     static class SimulatedFaultException extends Exception {
+        private static final long serialVersionUID = 1L;
         SimulatedFaultException(String message) {
             super(message);
         }

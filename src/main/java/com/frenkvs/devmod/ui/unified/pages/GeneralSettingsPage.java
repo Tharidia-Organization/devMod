@@ -12,6 +12,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import javax.annotation.Nonnull;
+
 /**
  * General settings page with toggle controls for overlay visibility, render mode, and colors.
  * Integrates with ModConfig for persistent settings.
@@ -70,7 +72,7 @@ public class GeneralSettingsPage implements SettingsPage {
     }
 
     @Override
-    public void render(GuiGraphics graphics, Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+    public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
         int currentY = y;
 
         // === SECTION: Visibility ===
@@ -173,8 +175,8 @@ public class GeneralSettingsPage implements SettingsPage {
     /**
      * Draws a styled action button.
      */
-    private void drawActionButton(GuiGraphics graphics, Font font, int x, int y, int w, int h,
-                                   String text, boolean hovered, int accentColor) {
+    private void drawActionButton(GuiGraphics graphics, @Nonnull Font font, int x, int y, int w, int h,
+                                   @Nonnull String text, boolean hovered, int accentColor) {
         // Background
         int bgColor = hovered ? UIConstants.setAlpha(accentColor, 60) : UIConstants.Background.INPUT;
         graphics.fill(x, y, x + w, y + h, bgColor);
@@ -193,7 +195,7 @@ public class GeneralSettingsPage implements SettingsPage {
         graphics.drawString(font, text, textX, textY, hovered ? UIConstants.Text.WHITE : UIConstants.Text.PRIMARY, false);
     }
 
-    private void renderToggleRow(GuiGraphics graphics, Font font, int x, int y, int width,
+    private void renderToggleRow(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
                                   String label, String description, boolean enabled, int mouseX, int mouseY) {
         // Check if mouse is over entire row (for visual feedback)
         boolean rowHovered = isMouseOver(mouseX, mouseY, x, y, width, ROW_HEIGHT);

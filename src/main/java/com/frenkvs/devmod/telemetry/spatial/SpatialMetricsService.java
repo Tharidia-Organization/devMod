@@ -2,7 +2,6 @@ package com.frenkvs.devmod.telemetry.spatial;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 
@@ -22,14 +21,17 @@ import java.util.function.BiConsumer;
  * Service for tracking spatial metrics and environmental hazards.
  * Extracted from TelemetryService for better separation of concerns.
  *
- * Features:
- * - M42: Choke point detection (quit positions)
- * - M52: Entity density per room
- * - M13: Invisible collision detection
- * - M14: Parkour fall points
+ * <p>Features:
+ * <ul>
+ * <li>M42: Choke point detection (quit positions)</li>
+ * <li>M52: Entity density per room</li>
+ * <li>M13: Invisible collision detection</li>
+ * <li>M14: Parkour fall points</li>
+ * </ul>
  *
- * Thread-safe for concurrent access from multiple server threads.
+ * <p>Thread-safe for concurrent access from multiple server threads.
  */
+@SuppressWarnings("null") // Map.merge BiFunction boxing
 public class SpatialMetricsService {
     public static final SpatialMetricsService INSTANCE = new SpatialMetricsService();
 
@@ -132,7 +134,7 @@ public class SpatialMetricsService {
         if (tracker == null) return null;
         return new EntityDensityInfo(
             roomId, tracker.currentEntityCount, tracker.peakEntityCount,
-            new HashMap<>(tracker.entityTypeCount)
+            new HashMap<>(tracker.entityTypeCount), tracker.isStale()
         );
     }
 
@@ -304,7 +306,8 @@ public class SpatialMetricsService {
         String roomId,
         int currentCount,
         int peakCount,
-        Map<String, Integer> typeBreakdown
+        Map<String, Integer> typeBreakdown,
+        boolean stale
     ) {}
 
     // ===== Internal Classes =====
@@ -313,6 +316,8 @@ public class SpatialMetricsService {
      * Internal entity density tracker.
      */
     private static final class EntityDensityTracker {
+        private static final long STALE_THRESHOLD_MS = 10_000; // 10 seconds
+
         int peakEntityCount = 0;
         int currentEntityCount = 0;
         long lastUpdateMs = 0;
@@ -326,6 +331,10 @@ public class SpatialMetricsService {
             entityTypeCount.clear();
             entityTypeCount.putAll(typeBreakdown);
             lastUpdateMs = nowMs;
+        }
+
+        boolean isStale() {
+            return lastUpdateMs > 0 && System.currentTimeMillis() - lastUpdateMs > STALE_THRESHOLD_MS;
         }
     }
 }

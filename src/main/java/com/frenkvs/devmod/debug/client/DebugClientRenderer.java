@@ -14,6 +14,7 @@ import org.joml.Matrix4f;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -152,11 +153,12 @@ public class DebugClientRenderer {
      * Render entity pathing - shows actual navigation paths from server.
      */
     private void renderPathing(PoseStack poseStack, MultiBufferSource bufferSource, Vec3 cameraPos) {
-        VertexConsumer lines = bufferSource.getBuffer(RenderType.lines());
+        RenderType lineType = Objects.requireNonNull(RenderType.lines());
+        VertexConsumer lines = bufferSource.getBuffer(lineType);
 
         poseStack.pushPose();
         poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
         for (EntityPathingPayload data : pathingData.values()) {
             List<EntityPathingPayload.PathNode> nodes = data.nodes();
@@ -224,8 +226,6 @@ public class DebugClientRenderer {
         if (mc.player == null) return;
 
         for (EntityGoalsPayload data : goalsData.values()) {
-            Vec3 pos = new Vec3(data.posX(), data.posY() + 2.0, data.posZ());
-
             // Build goal text
             StringBuilder sb = new StringBuilder();
             sb.append("§e").append(data.entityName()).append("§r\n");
@@ -249,10 +249,11 @@ public class DebugClientRenderer {
 
             // Render as floating text (would need font renderer integration)
             // For now, draw a marker at the entity
-            VertexConsumer lines = bufferSource.getBuffer(RenderType.lines());
+            RenderType lineType = Objects.requireNonNull(RenderType.lines());
+            VertexConsumer lines = bufferSource.getBuffer(lineType);
             poseStack.pushPose();
             poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-            Matrix4f matrix = poseStack.last().pose();
+            Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
             boolean hasRunning = data.goals().stream().anyMatch(EntityGoalsPayload.GoalInfo::isRunning) ||
                                 data.targetGoals().stream().anyMatch(EntityGoalsPayload.GoalInfo::isRunning);
@@ -273,11 +274,12 @@ public class DebugClientRenderer {
      * Render POI markers.
      */
     private void renderPOI(PoseStack poseStack, MultiBufferSource bufferSource, Vec3 cameraPos) {
-        VertexConsumer lines = bufferSource.getBuffer(RenderType.lines());
+        RenderType lineType = Objects.requireNonNull(RenderType.lines());
+        VertexConsumer lines = bufferSource.getBuffer(lineType);
 
         poseStack.pushPose();
         poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
         for (POIPayload.POIInfo poi : poiData.values()) {
             // Color based on POI type
@@ -308,11 +310,12 @@ public class DebugClientRenderer {
      * Render raid centers.
      */
     private void renderRaids(PoseStack poseStack, MultiBufferSource bufferSource, Vec3 cameraPos) {
-        VertexConsumer lines = bufferSource.getBuffer(RenderType.lines());
+        RenderType lineType = Objects.requireNonNull(RenderType.lines());
+        VertexConsumer lines = bufferSource.getBuffer(lineType);
 
         poseStack.pushPose();
         poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
         for (RaidsPayload.RaidInfo raid : raidsData.values()) {
             float r = raid.isActive() ? 1.0f : 0.5f;
@@ -339,6 +342,7 @@ public class DebugClientRenderer {
     private void drawLine(VertexConsumer consumer, Matrix4f matrix,
                          float x1, float y1, float z1, float x2, float y2, float z2,
                          float r, float g, float b, float a) {
+        Matrix4f safeMatrix = Objects.requireNonNull(matrix);
         float dx = x2 - x1;
         float dy = y2 - y1;
         float dz = z2 - z1;
@@ -346,8 +350,8 @@ public class DebugClientRenderer {
         if (len == 0) len = 1;
         dx /= len; dy /= len; dz /= len;
 
-        consumer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a).setNormal(dx, dy, dz);
-        consumer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a).setNormal(dx, dy, dz);
+        consumer.addVertex(safeMatrix, x1, y1, z1).setColor(r, g, b, a).setNormal(dx, dy, dz);
+        consumer.addVertex(safeMatrix, x2, y2, z2).setColor(r, g, b, a).setNormal(dx, dy, dz);
     }
 
     private void drawBox(VertexConsumer consumer, Matrix4f matrix,

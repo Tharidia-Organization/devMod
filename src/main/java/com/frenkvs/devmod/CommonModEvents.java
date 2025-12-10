@@ -18,41 +18,45 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
+import java.util.Objects;
+
 @EventBusSubscriber(modid = MODID)
 public class CommonModEvents {
 	private static final Logger LOGGER = LogUtils.getLogger();
 
     @SubscribeEvent
     public static void modifyEntityAttributes(EntityAttributeModificationEvent event) {
-        LOGGER.info("Inizio scansione entità per ENTITY_INTERACTION_RANGE...");
-        LOGGER.info("Numero di tipi di entità disponibili: {}", event.getTypes().size());
+        LOGGER.info("Starting entity scan for ENTITY_INTERACTION_RANGE...");
+        LOGGER.info("Number of available entity types: {}", event.getTypes().size());
         int successCount = 0;
         int failCount = 0;
+        var interactionRange = Objects.requireNonNull(Attributes.ENTITY_INTERACTION_RANGE);
 
-        // Scansiona TUTTI i tipi di entità che hanno attributi
-        for (EntityType<? extends LivingEntity> type : event.getTypes()) {
-            // Prova ad aggiungere l'attributo ENTITY_INTERACTION_RANGE
-            // Se già presente, getAttributeValue non è null
-            if (!event.has(type, Attributes.ENTITY_INTERACTION_RANGE)) {
+        // Scan ALL entity types that have attributes
+        for (EntityType<? extends LivingEntity> typeRaw : event.getTypes()) {
+            EntityType<? extends LivingEntity> type = Objects.requireNonNull(typeRaw);
+            // Try to add the ENTITY_INTERACTION_RANGE attribute
+            // If already present, getAttributeValue is not null
+            if (!event.has(type, interactionRange)) {
                 try {
-                    event.add(type, Attributes.ENTITY_INTERACTION_RANGE, 0.0);
+                    event.add(type, interactionRange, 0.0);
                     successCount++;
 
-                    // Log solo i primi 5 successi per debug
+                    // Log only the first 5 successes for debug
                     if (successCount <= 5) {
-                        LOGGER.info("Aggiunto ENTITY_INTERACTION_RANGE a: {}", EntityType.getKey(type));
+                        LOGGER.info("Added ENTITY_INTERACTION_RANGE to: {}", EntityType.getKey(type));
                     }
                 } catch (Exception e) {
-                    // Attributo già presente o errore, skip
+                    // Attribute already present or error, skip
                     failCount++;
-                    LOGGER.debug("Impossibile aggiungere attributo a {}: {}", EntityType.getKey(type), e.getMessage());
+                    LOGGER.debug("Unable to add attribute to {}: {}", EntityType.getKey(type), e.getMessage());
                 }
             } else {
                 failCount++;
             }
         }
 
-        LOGGER.info("Fine scansione. Aggiunti ENTITY_INTERACTION_RANGE: {} | Già presenti (Skipped): {}", successCount, failCount);
+        LOGGER.info("Scan complete. Added ENTITY_INTERACTION_RANGE: {} | Already present (Skipped): {}", successCount, failCount);
     }
 
     /**

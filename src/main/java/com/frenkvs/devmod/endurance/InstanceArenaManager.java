@@ -28,6 +28,7 @@ import java.util.concurrent.TimeoutException;
  * - Parallel instances for multiple players
  * - Automatic cleanup on disconnect/crash
  */
+@SuppressWarnings({"null", "unused"})
 public class InstanceArenaManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceArenaManager.class);
     public static final InstanceArenaManager INSTANCE = new InstanceArenaManager();
@@ -196,6 +197,7 @@ public class InstanceArenaManager {
     /**
      * Build barriers for the instance arena.
      */
+    @SuppressWarnings("NullableProblems") // BlockPos and BlockState are always non-null here
     private void buildInstanceArenaBarriers(ServerLevel level, BlockPos center, int size, ArenaManager.Arena arena) {
         int halfSize = size / 2;
         net.minecraft.world.level.block.state.BlockState barrier =

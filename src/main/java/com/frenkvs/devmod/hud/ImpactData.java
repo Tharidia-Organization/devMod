@@ -13,35 +13,35 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Contiene i dati dell'ultimo impatto per l'HUD.
- * Thread-safe e con auto-expire dopo DISPLAY_DURATION_MS.
+ * Contains data for the last impact for the HUD.
+ * Thread-safe with auto-expire after DISPLAY_DURATION_MS.
  *
- * MULTIPLAYER-SAFE: I dati sono isolati per UUID dell'attaccante.
- * Ogni client vede solo i propri impatti, non quelli di altri giocatori.
+ * MULTIPLAYER-SAFE: Data is isolated by attacker UUID.
+ * Each client sees only their own impacts, not other players'.
  */
 public class ImpactData {
 
-    // Map thread-safe: UUID attaccante -> ultimo impatto di quel giocatore
-    // Questo isola i dati per ogni giocatore in multiplayer
+    // Thread-safe map: attacker UUID -> last impact for that player
+    // This isolates data for each player in multiplayer
     private static final Map<UUID, ImpactData> IMPACTS_BY_PLAYER = new ConcurrentHashMap<>();
 
-    // Cleanup automatico per evitare memory leak (rimuove entries scadute)
+    // Automatic cleanup to prevent memory leak (removes expired entries)
     private static long lastCleanup = 0;
-    private static final long CLEANUP_INTERVAL_MS = 10000; // Cleanup ogni 10 secondi
+    private static final long CLEANUP_INTERVAL_MS = 10000; // Cleanup every 10 seconds
 
-    // Durata visualizzazione HUD dopo aver smesso di guardare il pannello
-    public static final long DISPLAY_DURATION_MS = 3000; // 3 secondi dopo aver distolto lo sguardo
-    private static final long FADE_DURATION_MS = 500;    // Fade out ultimi 500ms
+    // HUD display duration after stopping to look at the panel
+    public static final long DISPLAY_DURATION_MS = 3000; // 3 seconds after looking away
+    private static final long FADE_DURATION_MS = 500;    // Fade out last 500ms
 
-    // Timestamp di quando il player ha smesso di guardare il pannello HUD
+    // Timestamp of when the player stopped looking at the HUD panel
     private volatile long stoppedLookingTimestamp = -1;
-    // Flag se il giocatore sta guardando il pannello
+    // Flag if the player is looking at the panel
     private volatile boolean isBeingObserved = false;
 
-    // === Dati impatto ===
+    // === Impact data ===
     public final long timestamp;
-    public final UUID attackerUUID; // UUID dell'attaccante per isolamento multiplayer
-    public final WeakReference<LivingEntity> targetRef; // WeakRef per evitare memory leak
+    public final UUID attackerUUID; // Attacker UUID for multiplayer isolation
+    public final WeakReference<LivingEntity> targetRef; // WeakRef to prevent memory leak
     public final String targetName;
     public final BodyPart bodyPart;
     public final float bodyPartMultiplier;
@@ -49,26 +49,26 @@ public class ImpactData {
     public final String attackSource;
     public final boolean isRanged;
 
-    // === Posizione impatto 3D ===
-    @Nullable public final Vec3 hitPoint;       // Punto esatto di collisione
-    @Nullable public final Vec3 slashDirection; // Direzione dello slash (per animazione)
+    // === 3D Impact Position ===
+    @Nullable public final Vec3 hitPoint;       // Exact collision point
+    @Nullable public final Vec3 slashDirection; // Slash direction (for animation)
 
-    // === Dati Pehkui (nullable se non presente) ===
+    // === Pehkui Data (nullable if not present) ===
     @Nullable public final Float pehkuiVisualScale;
     @Nullable public final Float pehkuiHitboxScale;
 
-    // === Dati Better Combat (nullable se non presente) ===
+    // === Better Combat Data (nullable if not present) ===
     @Nullable public final String betterCombatAttackName;
 
-    // === Danno Reale (aggiornato post-armor/enchants) ===
-    private volatile float actualDamageDealt = -1f;  // -1 = non ancora disponibile
+    // === Actual Damage (updated post-armor/enchants) ===
+    private volatile float actualDamageDealt = -1f;  // -1 = not yet available
     private volatile float healthBefore = -1f;
     private volatile float healthAfter = -1f;
 
     /**
-     * Costruttore completo per uso interno.
+     * Complete constructor for internal use.
      *
-     * @param attackerUUID UUID dell'attaccante (per isolamento multiplayer)
+     * @param attackerUUID Attacker's UUID (for multiplayer isolation)
      */
     public ImpactData(UUID attackerUUID, LivingEntity target, BodyPart part, float multiplier,
                       DamageBreakdown breakdown, String attackSource, boolean isRanged,
@@ -84,7 +84,7 @@ public class ImpactData {
         this.attackSource = attackSource;
         this.isRanged = isRanged;
 
-        // Posizione impatto 3D
+        // 3D impact position
         this.hitPoint = hitPoint;
         this.slashDirection = slashDirection;
 
@@ -97,7 +97,7 @@ public class ImpactData {
     }
 
     /**
-     * Costruttore con hit point (senza BC).
+     * Constructor with hit point (without BC).
      */
     public ImpactData(UUID attackerUUID, LivingEntity target, BodyPart part, float multiplier,
                       DamageBreakdown breakdown, String attackSource, boolean isRanged,
@@ -106,18 +106,18 @@ public class ImpactData {
     }
 
     /**
-     * Costruttore semplificato (senza posizione e BC).
+     * Simplified constructor (without position and BC).
      */
     public ImpactData(UUID attackerUUID, LivingEntity target, BodyPart part, float multiplier,
                       DamageBreakdown breakdown, String attackSource, boolean isRanged) {
         this(attackerUUID, target, part, multiplier, breakdown, attackSource, isRanged, null, null, null);
     }
 
-    // === Static methods per accesso globale (multiplayer-safe) ===
+    // === Static methods for global access (multiplayer-safe) ===
 
     /**
-     * Salva un nuovo impatto per l'attaccante specificato.
-     * In multiplayer, ogni giocatore ha i propri dati isolati.
+     * Stores a new impact for the specified attacker.
+     * In multiplayer, each player has their own isolated data.
      */
     public static void store(ImpactData data) {
         if (data == null || data.attackerUUID == null) return;
@@ -126,21 +126,21 @@ public class ImpactData {
     }
 
     /**
-     * Ottiene l'ultimo impatto del giocatore locale, o null se scaduto/non presente.
-     * Questo metodo è MULTIPLAYER-SAFE: ogni client vede solo i propri impatti.
+     * Gets the latest impact of the local player, or null if expired/not present.
+     * This method is MULTIPLAYER-SAFE: each client sees only their own impacts.
      *
-     * NOTA: Questo metodo è safe da chiamare su server dedicati (ritorna null).
+     * NOTE: This method is safe to call on dedicated servers (returns null).
      */
     @Nullable
     public static ImpactData get() {
-        // SERVER-SAFE: Non caricare Minecraft.class su dedicated server
+        // SERVER-SAFE: Don't load Minecraft.class on dedicated server
         if (!FMLEnvironment.dist.isClient()) return null;
         return getForLocalPlayer();
     }
 
     /**
-     * Client-only helper per ottenere l'UUID del player locale.
-     * Isolato in metodo separato per evitare classloading di Minecraft su server.
+     * Client-only helper to get the local player's UUID.
+     * Isolated in separate method to avoid classloading Minecraft on server.
      */
     @Nullable
     private static ImpactData getForLocalPlayer() {
@@ -150,7 +150,7 @@ public class ImpactData {
     }
 
     /**
-     * Ottiene l'ultimo impatto per uno specifico giocatore.
+     * Gets the last impact for a specific player.
      */
     @Nullable
     public static ImpactData getForPlayer(UUID playerUUID) {
@@ -159,7 +159,7 @@ public class ImpactData {
         ImpactData data = IMPACTS_BY_PLAYER.get(playerUUID);
         if (data == null) return null;
 
-        // Controlla scadenza
+        // Check expiration
         if (data.isExpired()) {
             IMPACTS_BY_PLAYER.remove(playerUUID, data);
             return null;
@@ -168,19 +168,19 @@ public class ImpactData {
     }
 
     /**
-     * Pulisce l'impatto del giocatore locale.
+     * Clears the local player's impact.
      *
-     * NOTA: Questo metodo è safe da chiamare su server dedicati (no-op).
+     * NOTE: This method is safe to call on dedicated servers (no-op).
      */
     public static void clear() {
-        // SERVER-SAFE: Non caricare Minecraft.class su dedicated server
+        // SERVER-SAFE: Don't load Minecraft.class on dedicated server
         if (!FMLEnvironment.dist.isClient()) return;
         clearForLocalPlayer();
     }
 
     /**
-     * Client-only helper per pulire l'impatto del player locale.
-     * Isolato in metodo separato per evitare classloading di Minecraft su server.
+     * Client-only helper to clear the local player's impact.
+     * Isolated in separate method to avoid classloading Minecraft on server.
      */
     private static void clearForLocalPlayer() {
         net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
@@ -190,7 +190,7 @@ public class ImpactData {
     }
 
     /**
-     * Pulisce l'impatto per uno specifico giocatore.
+     * Clears the impact for a specific player.
      */
     public static void clearForPlayer(UUID playerUUID) {
         if (playerUUID != null) {
@@ -199,14 +199,14 @@ public class ImpactData {
     }
 
     /**
-     * Pulisce tutti gli impatti (es. al cambio mondo/disconnessione).
+     * Clears all impacts (e.g., on world change/disconnection).
      */
     public static void clearAll() {
         IMPACTS_BY_PLAYER.clear();
     }
 
     /**
-     * Rimuove periodicamente entries scadute per evitare memory leak.
+     * Periodically removes expired entries to avoid memory leaks.
      */
     private static void maybeCleanup() {
         long now = System.currentTimeMillis();
@@ -221,59 +221,59 @@ public class ImpactData {
     // === Instance methods ===
 
     /**
-     * Aggiorna lo stato di osservazione del pannello HUD.
-     * Chiamato ogni frame dal renderer.
-     * @param observed true se il crosshair è sopra il pannello
+     * Updates the observation state of the HUD panel.
+     * Called every frame by the renderer.
+     * @param observed true if the crosshair is over the panel
      */
     public void setObserved(boolean observed) {
         if (this.isBeingObserved && !observed) {
-            // Il giocatore ha appena distolto lo sguardo - inizia il timer
+            // The player just looked away - start the timer
             this.stoppedLookingTimestamp = System.currentTimeMillis();
         } else if (observed) {
-            // Il giocatore sta guardando - resetta il timer
+            // The player is looking - reset the timer
             this.stoppedLookingTimestamp = -1;
         }
         this.isBeingObserved = observed;
     }
 
     /**
-     * Verifica se il giocatore sta osservando il pannello.
+     * Checks if the player is observing the panel.
      */
     public boolean isBeingObserved() {
         return isBeingObserved;
     }
 
     /**
-     * Controlla se l'impatto è scaduto.
-     * Non scade mai finché il giocatore guarda il pannello.
+     * Checks if the impact has expired.
+     * Never expires as long as the player is looking at the panel.
      */
     public boolean isExpired() {
-        // Se sta guardando, non scade mai
+        // If currently observing, never expires
         if (isBeingObserved) {
             return false;
         }
 
-        // Se non ha mai smesso di guardare (primo frame), usa timestamp originale
+        // If never stopped looking (first frame), use original timestamp
         if (stoppedLookingTimestamp < 0) {
             return System.currentTimeMillis() - timestamp > DISPLAY_DURATION_MS;
         }
 
-        // Altrimenti, conta da quando ha smesso di guardare
+        // Otherwise, count from when they stopped looking
         return System.currentTimeMillis() - stoppedLookingTimestamp > DISPLAY_DURATION_MS;
     }
 
     /**
-     * Calcola l'alpha per il fade-out.
-     * Rimane a 1.0 finché il giocatore guarda il pannello.
-     * @return 1.0 = opaco, 0.0 = trasparente
+     * Calculates the alpha for fade-out.
+     * Remains at 1.0 as long as the player is looking at the panel.
+     * @return 1.0 = opaque, 0.0 = transparent
      */
     public float getRemainingAlpha() {
-        // Se sta guardando, sempre opaco
+        // If being observed, always opaque
         if (isBeingObserved) {
             return 1.0f;
         }
 
-        // Calcola elapsed da quando ha smesso di guardare
+        // Calculate elapsed time since stopped looking
         long referenceTime;
         if (stoppedLookingTimestamp > 0) {
             referenceTime = stoppedLookingTimestamp;
@@ -287,7 +287,7 @@ public class ImpactData {
             return 0f;
         }
 
-        // Fade out negli ultimi FADE_DURATION_MS
+        // Fade out in the last FADE_DURATION_MS
         long fadeStart = DISPLAY_DURATION_MS - FADE_DURATION_MS;
         if (elapsed > fadeStart) {
             float fadeProgress = (elapsed - fadeStart) / (float) FADE_DURATION_MS;
@@ -298,7 +298,7 @@ public class ImpactData {
     }
 
     /**
-     * Ottiene il target se ancora valido (non garbage collected).
+     * Gets the target if still valid (not garbage collected).
      */
     @Nullable
     public LivingEntity getTarget() {
@@ -306,21 +306,21 @@ public class ImpactData {
     }
 
     /**
-     * Verifica se Pehkui ha modificato l'entità.
+     * Checks if Pehkui has modified the entity.
      */
     public boolean hasPehkuiModification() {
         return pehkuiVisualScale != null && Math.abs(pehkuiVisualScale - 1.0f) > 0.01f;
     }
 
     /**
-     * Verifica se l'attacco proviene da Better Combat.
+     * Checks if the attack comes from Better Combat.
      */
     public boolean isBetterCombatAttack() {
         return betterCombatAttackName != null && !betterCombatAttackName.isEmpty();
     }
 
     /**
-     * Ottiene una descrizione formattata dell'attacco.
+     * Gets a formatted description of the attack.
      */
     public String getFormattedAttackSource() {
         if (isBetterCombatAttack()) {
@@ -330,7 +330,7 @@ public class ImpactData {
     }
 
     /**
-     * Ottiene il colore del body part per la UI.
+     * Gets the body part color for the UI.
      */
     public int getBodyPartColor() {
         return switch (bodyPart) {
@@ -342,7 +342,7 @@ public class ImpactData {
     }
 
     /**
-     * Ottiene il codice colore Minecraft per il body part.
+     * Gets the Minecraft color code for the body part.
      */
     public String getBodyPartColorCode() {
         return switch (bodyPart) {
@@ -353,10 +353,10 @@ public class ImpactData {
         };
     }
 
-    // === Metodi per danno reale ===
+    // === Methods for actual damage ===
 
     /**
-     * Imposta i dati del danno reale (chiamato da LivingDamageEvent.Post).
+     * Sets the actual damage data (called from LivingDamageEvent.Post).
      */
     public void setActualDamage(float healthBefore, float healthAfter, float actualDamage) {
         this.healthBefore = healthBefore;
@@ -365,37 +365,37 @@ public class ImpactData {
     }
 
     /**
-     * Ottiene il danno reale effettivamente inflitto.
-     * @return danno reale, o -1 se non ancora disponibile
+     * Gets the actual damage dealt.
+     * @return actual damage, or -1 if not yet available
      */
     public float getActualDamageDealt() {
         return actualDamageDealt;
     }
 
     /**
-     * Verifica se il danno reale è stato registrato.
+     * Checks if actual damage has been recorded.
      */
     public boolean hasActualDamage() {
         return actualDamageDealt >= 0;
     }
 
     /**
-     * Ottiene la vita del target prima del colpo.
+     * Gets the target's health before the hit.
      */
     public float getHealthBefore() {
         return healthBefore;
     }
 
     /**
-     * Ottiene la vita del target dopo il colpo.
+     * Gets the target's health after the hit.
      */
     public float getHealthAfter() {
         return healthAfter;
     }
 
     /**
-     * Calcola la differenza tra danno calcolato e danno reale.
-     * Positivo = armatura/effetti hanno ridotto, Negativo = danno amplificato
+     * Calculates the difference between calculated and actual damage.
+     * Positive = armor/effects reduced it, Negative = damage amplified
      */
     public float getDamageReduction() {
         if (!hasActualDamage()) return 0;

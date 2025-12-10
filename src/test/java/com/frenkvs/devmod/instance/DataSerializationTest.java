@@ -96,21 +96,25 @@ public class DataSerializationTest {
             Map<String, Object> map = new LinkedHashMap<>();
             // No "players" key added
 
-            @SuppressWarnings("unchecked")
+            // Test null case - should result in empty set
+            Set<UUID> nullResult = parsePlayerIds(map);
+            assertTrue(nullResult.isEmpty(), "Null players list should produce empty set");
+
+            // Add a player id to ensure branch coverage when not null
+            map.put("players", List.of(UUID.randomUUID().toString()));
+            Set<UUID> populatedResult = parsePlayerIds(map);
+            assertEquals(1, populatedResult.size(), "Populated list should have one player");
+        }
+
+        /** Helper to parse player IDs from map with null safety */
+        @SuppressWarnings("unchecked")
+        private Set<UUID> parsePlayerIds(Map<String, Object> map) {
             List<String> playerIds = (List<String>) map.get("players");
-
-            // Should be null, and code should handle it
-            assertNull(playerIds);
-
-            // Simulate safe handling
-            Set<UUID> currentPlayers = ConcurrentHashMap.newKeySet();
+            Set<UUID> result = ConcurrentHashMap.newKeySet();
             if (playerIds != null) {
-                for (String pid : playerIds) {
-                    currentPlayers.add(UUID.fromString(pid));
-                }
+                playerIds.forEach(id -> result.add(UUID.fromString(id)));
             }
-
-            assertTrue(currentPlayers.isEmpty());
+            return result;
         }
 
         @Test

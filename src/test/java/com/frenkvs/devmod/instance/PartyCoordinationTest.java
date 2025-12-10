@@ -1,7 +1,5 @@
 package com.frenkvs.devmod.instance;
 
-import com.frenkvs.devmod.instance.InstanceState;
-import com.frenkvs.devmod.instance.PlayerInstanceState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -44,10 +42,12 @@ public class PartyCoordinationTest {
 
             assertNull(partyLeaderId);
             assertTrue(partyMembers.isEmpty());
+            assertFalse(partyMembers.contains(playerId), "Solo player should not be in party members list");
 
             // Solo player is their own "leader"
             boolean isInParty = partyLeaderId != null;
             assertFalse(isInParty);
+            assertNotEquals(playerId, partyLeaderId, "Solo player has no party leader");
         }
 
         @Test
@@ -659,32 +659,37 @@ public class PartyCoordinationTest {
         @Test
         @DisplayName("Null party leader handling")
         void testNullPartyLeader() {
-            UUID partyLeaderId = null;
             UUID playerId = UUID.randomUUID();
+            UUID partyLeaderId = null;
+            Set<UUID> partyMembers = new HashSet<>();
 
             boolean isInParty = partyLeaderId != null;
             assertFalse(isInParty);
+            assertFalse(partyMembers.contains(playerId), "Player should not be in any party");
 
             // Player is solo, not in party
             boolean isSolo = !isInParty;
             assertTrue(isSolo);
+            assertNotEquals(playerId, partyLeaderId, "Solo player cannot be their own party leader when null");
         }
 
         @Test
         @DisplayName("Empty party members list")
         void testEmptyPartyMembers() {
             List<UUID> partyMembers = new ArrayList<>();
+            AtomicInteger iterationCount = new AtomicInteger(0);
 
             assertTrue(partyMembers.isEmpty());
             assertEquals(0, partyMembers.size());
 
-            // Safe iteration
+            // Safe iteration - verify empty list doesn't throw and doesn't execute body
             assertDoesNotThrow(() -> {
                 for (UUID member : partyMembers) {
-                    // Never executes
-                    fail("Should not iterate empty list");
+                    iterationCount.incrementAndGet();
+                    assertNotNull(member, "Member should not be null if iterated");
                 }
             });
+            assertEquals(0, iterationCount.get(), "Should not iterate empty list");
         }
 
         @Test

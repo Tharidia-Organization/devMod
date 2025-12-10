@@ -9,7 +9,6 @@ import net.minecraft.world.item.ItemStack;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -92,11 +91,11 @@ public class EconomyMetricsService {
         for (ItemStack stack : contents) {
             if (!stack.isEmpty()) {
                 String itemId = stack.getItem().toString();
-                stats.itemsFound.merge(itemId, stack.getCount(), Integer::sum);
+                stats.itemsFound.merge(itemId, stack.getCount(), (a, b) -> a + b);
 
                 // Also track in room drops
                 itemDropsPerRoom.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>())
-                        .merge(itemId, stack.getCount(), Integer::sum);
+                        .merge(itemId, stack.getCount(), (a, b) -> a + b);
             }
         }
 
@@ -127,7 +126,7 @@ public class EconomyMetricsService {
 
         // Track per player
         itemPickupsPerPlayer.computeIfAbsent(player.getUUID(), k -> new ConcurrentHashMap<>())
-                .merge(itemId, count, Integer::sum);
+                .merge(itemId, count, (a, b) -> a + b);
 
         // Track global acquisition stats
         ItemAcquisitionStats stats = itemAcquisitionStats.computeIfAbsent(itemId, k -> new ItemAcquisitionStats());
@@ -175,12 +174,12 @@ public class EconomyMetricsService {
 
         // Track drops per room
         itemDropsPerRoom.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>())
-                .merge(itemId, count, Integer::sum);
+                .merge(itemId, count, (a, b) -> a + b);
 
         // Update acquisition stats
         ItemAcquisitionStats stats = itemAcquisitionStats.computeIfAbsent(itemId, k -> new ItemAcquisitionStats());
         stats.totalDropped += count;
-        stats.dropSources.merge(mobType, count, Integer::sum);
+        stats.dropSources.merge(mobType, count, (a, b) -> a + b);
 
         totalItemsDropped += count;
 

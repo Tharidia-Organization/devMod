@@ -8,76 +8,76 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Rappresenta una singola istanza di pannello 3D nel mondo.
- * Gestisce posizione, lifecycle (fade in/out), e rendering.
+ * Represents a single 3D panel instance in the world.
+ * Manages position, lifecycle (fade in/out), and rendering.
  *
- * Ogni pannello è associato a un impatto specifico e contiene:
- * - Posizione del punto di impatto originale
- * - Posizione del pannello (offset dal hit point)
- * - Dati dell'impatto (ImpactData)
- * - Timestamp per gestione lifecycle
+ * Each panel is associated with a specific impact and contains:
+ * - Original impact point position
+ * - Panel position (offset from hit point)
+ * - Impact data (ImpactData)
+ * - Timestamp for lifecycle management
  */
 @SuppressWarnings("null") // Minecraft API methods are not annotated but never return null in practice
 public class Impact3DPanel {
 
-    // === Configurazione Lifecycle ===
-    private static final long LIFETIME_MS = 4000;        // Durata totale: 4 secondi
+    // === Lifecycle Configuration ===
+    private static final long LIFETIME_MS = 4000;        // Total duration: 4 seconds
     private static final long FADE_IN_MS = 500;          // Fade in: 500ms (smoother)
     private static final long FADE_OUT_MS = 1000;        // Fade out: 1000ms (gentler)
     private static final long FADE_OUT_START = LIFETIME_MS - FADE_OUT_MS;
 
-    // === Dati Pannello ===
-    private final Vec3 hitPoint;           // Punto di impatto originale
-    private Vec3 panelPosition;            // Posizione del pannello nel mondo
-    private final ImpactData data;         // Dati dell'impatto
-    private final long spawnTime;          // Timestamp di creazione
+    // === Panel Data ===
+    private final Vec3 hitPoint;           // Original impact point
+    private Vec3 panelPosition;            // Panel position in the world
+    private final ImpactData data;         // Impact data
+    private final long spawnTime;          // Creation timestamp
 
-    // === Stato ===
+    // === State ===
     private boolean expired = false;
 
     /**
-     * Crea un nuovo pannello 3D.
+     * Creates a new 3D panel.
      *
-     * @param hitPoint Punto di impatto nel mondo
-     * @param data Dati dell'impatto
-     * @param cameraPos Posizione della camera (per calcolare offset pannello)
+     * @param hitPoint Impact point in the world
+     * @param data Impact data
+     * @param cameraPos Camera position (to calculate panel offset)
      */
     public Impact3DPanel(Vec3 hitPoint, ImpactData data, Vec3 cameraPos) {
         this.hitPoint = hitPoint;
         this.data = data;
         this.spawnTime = System.currentTimeMillis();
 
-        // Calcola posizione iniziale del pannello
+        // Calculate initial panel position
         this.panelPosition = Impact3DRenderer.INSTANCE.calculatePanelPosition(hitPoint, cameraPos);
     }
 
     /**
-     * Aggiorna lo stato del pannello ogni tick client.
+     * Updates the panel state every client tick.
      *
-     * @param level Livello client
-     * @param player Player locale
-     * @param partialTick Tick parziale per interpolazione
+     * @param level Client level
+     * @param player Local player
+     * @param partialTick Partial tick for interpolation
      */
     public void update(ClientLevel level, LocalPlayer player, float partialTick) {
         long elapsed = System.currentTimeMillis() - spawnTime;
 
-        // Controlla scadenza
+        // Check expiration
         if (elapsed > LIFETIME_MS) {
             expired = true;
             return;
         }
 
-        // Opzionale: aggiorna posizione pannello se deve seguire qualcosa
-        // Per ora la posizione è fissa al momento della creazione
+        // Optional: update panel position if it should follow something
+        // For now the position is fixed at creation time
     }
 
     /**
-     * Renderizza il pannello nel mondo.
+     * Renders the panel in the world.
      *
-     * @param poseStack Stack di trasformazioni
-     * @param bufferSource Buffer per il rendering
-     * @param camera Camera attiva
-     * @param partialTick Tick parziale
+     * @param poseStack Transformation stack
+     * @param bufferSource Rendering buffer
+     * @param camera Active camera
+     * @param partialTick Partial tick
      */
     public void render(PoseStack poseStack, MultiBufferSource bufferSource,
                        Camera camera, float partialTick) {
@@ -101,14 +101,14 @@ public class Impact3DPanel {
     }
 
     /**
-     * Calcola l'alpha corrente basata sul lifecycle.
+     * Calculates current alpha based on lifecycle.
      *
-     * Curva di alpha:
+     * Alpha curve:
      * - 0-200ms: fade in (0 -> 1)
-     * - 200-3200ms: alpha piena (1)
+     * - 200-3200ms: full alpha (1)
      * - 3200-4000ms: fade out (1 -> 0)
      *
-     * @return Alpha tra 0.0 e 1.0
+     * @return Alpha between 0.0 and 1.0
      */
     private float calculateAlpha() {
         long elapsed = System.currentTimeMillis() - spawnTime;
@@ -121,7 +121,7 @@ public class Impact3DPanel {
             return (float) elapsed / FADE_IN_MS;
         }
 
-        // Alpha piena
+        // Full alpha
         if (elapsed < FADE_OUT_START) {
             return 1.0f;
         }
@@ -132,49 +132,49 @@ public class Impact3DPanel {
     }
 
     /**
-     * Verifica se il pannello è scaduto e deve essere rimosso.
+     * Checks if the panel has expired and should be removed.
      */
     public boolean isExpired() {
         return expired || (System.currentTimeMillis() - spawnTime > LIFETIME_MS);
     }
 
     /**
-     * Ottiene il punto di impatto originale.
+     * Gets the original impact point.
      */
     public Vec3 getHitPoint() {
         return hitPoint;
     }
 
     /**
-     * Ottiene la posizione del pannello.
+     * Gets the panel position.
      */
     public Vec3 getPanelPosition() {
         return panelPosition;
     }
 
     /**
-     * Ottiene i dati dell'impatto.
+     * Gets the impact data.
      */
     public ImpactData getData() {
         return data;
     }
 
     /**
-     * Ottiene il timestamp di spawn.
+     * Gets the spawn timestamp.
      */
     public long getSpawnTime() {
         return spawnTime;
     }
 
     /**
-     * Ottiene l'età del pannello in millisecondi.
+     * Gets the panel age in milliseconds.
      */
     public long getAge() {
         return System.currentTimeMillis() - spawnTime;
     }
 
     /**
-     * Calcola la distanza dalla camera.
+     * Calculates distance from camera.
      */
     public double getDistanceFromCamera(Vec3 cameraPos) {
         return panelPosition.distanceTo(cameraPos);

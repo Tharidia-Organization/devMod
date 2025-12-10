@@ -326,11 +326,20 @@ public class InstanceSystemLogicTest {
 
             // The correct pattern: check for null BEFORE calling remove
             // This mirrors what the actual code does in InstanceArenaManager.endInstanceQuest()
-            if (arenaId != null) {
-                arenaToInstance.remove(arenaId);
+            assertTrue(arenaToInstance.isEmpty(), "No removals should occur when arenaId is null");
+
+            // Also validate the branch where an arena mapping exists
+            UUID existingInstanceId = UUID.randomUUID();
+            UUID existingArenaId = UUID.randomUUID();
+            instanceToArena.put(existingInstanceId, existingArenaId);
+            arenaToInstance.put(existingArenaId, existingInstanceId);
+
+            UUID removedArenaId = instanceToArena.remove(existingInstanceId);
+            assertNotNull(removedArenaId);
+            if (removedArenaId != null) {
+                arenaToInstance.remove(removedArenaId);
+                assertFalse(arenaToInstance.containsKey(removedArenaId), "Arena mapping should be removed when present");
             }
-            // If arenaId is null, we simply don't call remove - this is the safe pattern
-            assertTrue(true, "Cleanup handled null gracefully by checking before remove");
         }
 
         @Test
@@ -471,7 +480,7 @@ public class InstanceSystemLogicTest {
             // Instance mode session
             if (instanceSession.isInInstanceDimension()) {
                 // Should skip local restore
-                assertTrue(true, "Instance mode should skip local restore");
+                assertTrue(useInstanceDimensions, "Instance mode should skip local restore");
             } else {
                 fail("Instance session should be detected as in instance dimension");
             }

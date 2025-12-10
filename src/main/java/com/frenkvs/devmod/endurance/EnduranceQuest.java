@@ -8,6 +8,7 @@ import java.util.UUID;
  * Represents a single Endurance Quest instance for a specific mob type.
  * Each quest is a standalone challenge where the player fights waves of that mob.
  */
+@SuppressWarnings({"null", "unused"}) // Minecraft APIs lack null annotations
 public class EnduranceQuest {
 
     private final UUID questId;
@@ -246,10 +247,21 @@ public class EnduranceQuest {
     }
 
     /**
-     * Get mob count for current wave.
+     * Get mob count for current wave (single player).
      */
     public int getCurrentWaveMobCount() {
         return mobConfig.getMobCountForWave(currentWave);
+    }
+
+    /**
+     * Get mob count for current wave with player scaling.
+     *
+     * @param playerCount Number of players in the party
+     * @param questType Quest type for difficulty multiplier
+     * @return Scaled mob count
+     */
+    public int getCurrentWaveMobCount(int playerCount, QuestType questType) {
+        return mobConfig.getMobCountForWave(currentWave, playerCount, questType);
     }
 
     /**

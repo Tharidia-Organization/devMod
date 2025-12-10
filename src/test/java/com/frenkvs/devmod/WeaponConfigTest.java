@@ -2,7 +2,6 @@ package com.frenkvs.devmod;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.io.TempDir;
@@ -222,7 +221,7 @@ public class WeaponConfigTest {
         @DisplayName("Default stats should be independent per weapon")
         void testIndependentDefaultStats() {
             MockWeaponStats sword = configManager.getStatsFor("minecraft:diamond_sword");
-            MockWeaponStats axe = configManager.getStatsFor("minecraft:diamond_axe");
+            configManager.getStatsFor("minecraft:diamond_axe");
 
             // Modify sword
             sword.baseDamageBonus = 5f;

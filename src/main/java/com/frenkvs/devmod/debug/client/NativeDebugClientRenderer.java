@@ -14,7 +14,6 @@ import net.minecraft.world.entity.animal.Bee;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.raid.Raid;
 import net.minecraft.world.entity.raid.Raids;
-import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
@@ -31,6 +30,7 @@ import org.joml.Matrix4f;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Client-side renderer for native Minecraft debug features.
@@ -115,14 +115,17 @@ public class NativeDebugClientRenderer {
                                             Vec3 camPos, Minecraft mc) {
         if (mc.level == null || mc.player == null) return;
 
-        BlockPos playerPos = mc.player.blockPosition();
-        AABB searchBox = new AABB(playerPos).inflate(SEARCH_RADIUS);
+        var level = Objects.requireNonNull(mc.level);
+        var player = Objects.requireNonNull(mc.player);
+
+        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
+        AABB searchBox = Objects.requireNonNull(new AABB(playerPos).inflate(SEARCH_RADIUS));
 
         // Get mobs from server level (singleplayer only)
         var server = mc.getSingleplayerServer();
         if (server == null) return;
 
-        var serverLevel = server.getLevel(mc.level.dimension());
+        var serverLevel = server.getLevel(Objects.requireNonNull(level.dimension()));
         if (serverLevel == null) return;
 
         // Copy to list to avoid ConcurrentModificationException
@@ -146,11 +149,12 @@ public class NativeDebugClientRenderer {
      */
     private static void renderPath(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
                                     Vec3 camPos, Path path, Mob mob) {
-        VertexConsumer lineConsumer = bufferSource.getBuffer(RenderType.lines());
+        RenderType lineType = Objects.requireNonNull(RenderType.lines());
+        VertexConsumer lineConsumer = bufferSource.getBuffer(lineType);
 
         poseStack.pushPose();
         poseStack.translate(-camPos.x, -camPos.y, -camPos.z);
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
         // Draw path nodes
         int nodeCount = path.getNodeCount();
@@ -200,9 +204,10 @@ public class NativeDebugClientRenderer {
         // Draw target position
         BlockPos target = path.getTarget();
         if (target != null) {
-            float tx = target.getX() + 0.5f;
-            float ty = target.getY() + 0.1f;
-            float tz = target.getZ() + 0.5f;
+            BlockPos nonNullTarget = Objects.requireNonNull(target);
+            float tx = nonNullTarget.getX() + 0.5f;
+            float ty = nonNullTarget.getY() + 0.1f;
+            float tz = nonNullTarget.getZ() + 0.5f;
             drawBox(lineConsumer, matrix, tx - 0.3f, ty, tz - 0.3f, tx + 0.3f, ty + 0.6f, tz + 0.3f,
                     0.0f, 1.0f, 1.0f, 1.0f); // Cyan for target
         }
@@ -217,14 +222,17 @@ public class NativeDebugClientRenderer {
                                           Vec3 camPos, Minecraft mc) {
         if (mc.level == null || mc.player == null) return;
 
+        var level = Objects.requireNonNull(mc.level);
+        var player = Objects.requireNonNull(mc.player);
+
         var server = mc.getSingleplayerServer();
         if (server == null) return;
 
-        var serverLevel = server.getLevel(mc.level.dimension());
+        var serverLevel = server.getLevel(Objects.requireNonNull(level.dimension()));
         if (serverLevel == null) return;
 
-        BlockPos playerPos = mc.player.blockPosition();
-        AABB searchBox = new AABB(playerPos).inflate(SEARCH_RADIUS);
+        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
+        AABB searchBox = Objects.requireNonNull(new AABB(playerPos).inflate(SEARCH_RADIUS));
 
         // Copy to list to avoid ConcurrentModificationException
         List<Mob> mobs;
@@ -272,13 +280,15 @@ public class NativeDebugClientRenderer {
 
         poseStack.pushPose();
         poseStack.translate(dx, dy, dz);
-        poseStack.mulPose(mc.getEntityRenderDispatcher().cameraOrientation());
+        poseStack.mulPose(Objects.requireNonNull(mc.getEntityRenderDispatcher().cameraOrientation()));
         poseStack.scale(-0.025f, -0.025f, 0.025f);
 
         float yOffset = 0;
         for (String line : goalLines) {
-            mc.font.drawInBatch(line, -mc.font.width(line) / 2.0f, yOffset, 0xFFFFFF,
-                    false, poseStack.last().pose(), bufferSource,
+            String safeLine = Objects.requireNonNull(line);
+            Matrix4f textMatrix = Objects.requireNonNull(poseStack.last().pose());
+            mc.font.drawInBatch(safeLine, -mc.font.width(safeLine) / 2.0f, yOffset, 0xFFFFFF,
+                    false, textMatrix, Objects.requireNonNull(bufferSource),
                     net.minecraft.client.gui.Font.DisplayMode.NORMAL, 0x40000000, 15728880);
             yOffset += 10;
         }
@@ -293,20 +303,24 @@ public class NativeDebugClientRenderer {
                                             Vec3 camPos, Minecraft mc) {
         if (mc.level == null || mc.player == null) return;
 
+        var level = Objects.requireNonNull(mc.level);
+        var player = Objects.requireNonNull(mc.player);
+
         var server = mc.getSingleplayerServer();
         if (server == null) return;
 
-        var serverLevel = server.getLevel(mc.level.dimension());
+        var serverLevel = server.getLevel(Objects.requireNonNull(level.dimension()));
         if (serverLevel == null) return;
 
-        VertexConsumer lineConsumer = bufferSource.getBuffer(RenderType.lines());
+        RenderType lineType = Objects.requireNonNull(RenderType.lines());
+        VertexConsumer lineConsumer = bufferSource.getBuffer(lineType);
 
         poseStack.pushPose();
         poseStack.translate(-camPos.x, -camPos.y, -camPos.z);
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
-        BlockPos playerPos = mc.player.blockPosition();
-        AABB searchBox = new AABB(playerPos).inflate(SEARCH_RADIUS);
+        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
+        AABB searchBox = Objects.requireNonNull(new AABB(playerPos).inflate(SEARCH_RADIUS));
 
         // Copy to list to avoid ConcurrentModificationException
         List<Mob> mobs;
@@ -324,8 +338,9 @@ public class NativeDebugClientRenderer {
             float mz = (float) mobPos.z;
 
             // Draw line to target if aggressive
-            if (mob.getTarget() != null) {
-                Vec3 targetPos = mob.getTarget().position();
+            var target = mob.getTarget();
+            if (target != null) {
+                Vec3 targetPos = target.position();
                 // Red line to target
                 drawLine(lineConsumer, matrix, mx, my, mz,
                         (float) targetPos.x, (float) targetPos.y + 1.0f, (float) targetPos.z,
@@ -356,19 +371,23 @@ public class NativeDebugClientRenderer {
                                    Vec3 camPos, Minecraft mc) {
         if (mc.level == null || mc.player == null) return;
 
+        var level = Objects.requireNonNull(mc.level);
+        var player = Objects.requireNonNull(mc.player);
+
         var server = mc.getSingleplayerServer();
         if (server == null) return;
 
-        var serverLevel = server.getLevel(mc.level.dimension());
+        var serverLevel = server.getLevel(Objects.requireNonNull(level.dimension()));
         if (serverLevel == null) return;
 
-        VertexConsumer lineConsumer = bufferSource.getBuffer(RenderType.lines());
+        RenderType lineType = Objects.requireNonNull(RenderType.lines());
+        VertexConsumer lineConsumer = bufferSource.getBuffer(lineType);
 
         poseStack.pushPose();
         poseStack.translate(-camPos.x, -camPos.y, -camPos.z);
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
-        BlockPos playerPos = mc.player.blockPosition();
+        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
 
         // Collect POIs into a list first to avoid lambda issues
         List<net.minecraft.world.entity.ai.village.poi.PoiRecord> poiList = serverLevel.getPoiManager().getInRange(
@@ -379,8 +398,8 @@ public class NativeDebugClientRenderer {
         ).toList();
 
         for (var record : poiList) {
-            BlockPos pos = record.getPos();
-            String typeName = record.getPoiType().getRegisteredName();
+            BlockPos pos = Objects.requireNonNull(record.getPos());
+            String typeName = Objects.requireNonNull(record.getPoiType().getRegisteredName());
 
             // Draw a box at the POI
             float x1 = pos.getX();
@@ -413,22 +432,26 @@ public class NativeDebugClientRenderer {
                                      Vec3 camPos, Minecraft mc) {
         if (mc.level == null || mc.player == null) return;
 
+        var level = Objects.requireNonNull(mc.level);
+        var player = Objects.requireNonNull(mc.player);
+
         var server = mc.getSingleplayerServer();
         if (server == null) return;
 
-        var serverLevel = server.getLevel(mc.level.dimension());
+        var serverLevel = server.getLevel(Objects.requireNonNull(level.dimension()));
         if (serverLevel == null) return;
 
         Raids raids = serverLevel.getRaids();
         if (raids == null) return;
 
-        VertexConsumer lineConsumer = bufferSource.getBuffer(RenderType.lines());
+        RenderType lineType = Objects.requireNonNull(RenderType.lines());
+        VertexConsumer lineConsumer = bufferSource.getBuffer(lineType);
 
         poseStack.pushPose();
         poseStack.translate(-camPos.x, -camPos.y, -camPos.z);
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
-        BlockPos playerPos = mc.player.blockPosition();
+        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
         Raid nearestRaid = raids.getNearbyRaid(playerPos, 128);
 
         if (nearestRaid != null && nearestRaid.isActive()) {
@@ -462,20 +485,24 @@ public class NativeDebugClientRenderer {
                                     Vec3 camPos, Minecraft mc) {
         if (mc.level == null || mc.player == null) return;
 
+        var level = Objects.requireNonNull(mc.level);
+        var player = Objects.requireNonNull(mc.player);
+
         var server = mc.getSingleplayerServer();
         if (server == null) return;
 
-        var serverLevel = server.getLevel(mc.level.dimension());
+        var serverLevel = server.getLevel(Objects.requireNonNull(level.dimension()));
         if (serverLevel == null) return;
 
-        BlockPos playerPos = mc.player.blockPosition();
-        AABB searchBox = new AABB(playerPos).inflate(SEARCH_RADIUS);
+        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
+        AABB searchBox = Objects.requireNonNull(new AABB(playerPos).inflate(SEARCH_RADIUS));
 
-        VertexConsumer lineConsumer = bufferSource.getBuffer(RenderType.lines());
+        RenderType lineType = Objects.requireNonNull(RenderType.lines());
+        VertexConsumer lineConsumer = bufferSource.getBuffer(lineType);
 
         poseStack.pushPose();
         poseStack.translate(-camPos.x, -camPos.y, -camPos.z);
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
         // Copy to list to avoid ConcurrentModificationException
         List<Bee> bees;
@@ -493,24 +520,26 @@ public class NativeDebugClientRenderer {
             float bz = (float) beePos.z;
 
             // Draw bee's home hive connection if it has one (yellow line)
-            if (bee.getHivePos() != null) {
-                BlockPos hivePos = bee.getHivePos();
+            BlockPos hivePos = bee.getHivePos();
+            if (hivePos != null) {
+                BlockPos hive = Objects.requireNonNull(hivePos);
                 drawLine(lineConsumer, matrix, bx, by, bz,
-                        hivePos.getX() + 0.5f, hivePos.getY() + 0.5f, hivePos.getZ() + 0.5f,
+                        hive.getX() + 0.5f, hive.getY() + 0.5f, hive.getZ() + 0.5f,
                         1.0f, 0.8f, 0.0f, 1.0f);
 
                 // Draw a small box at the hive
                 drawBox(lineConsumer, matrix,
-                        hivePos.getX(), hivePos.getY(), hivePos.getZ(),
-                        hivePos.getX() + 1, hivePos.getY() + 1, hivePos.getZ() + 1,
+                        hive.getX(), hive.getY(), hive.getZ(),
+                        hive.getX() + 1, hive.getY() + 1, hive.getZ() + 1,
                         1.0f, 0.8f, 0.0f, 1.0f);
             }
 
             // Draw flower target if bee has one (pink line)
-            if (bee.getSavedFlowerPos() != null) {
-                BlockPos flowerPos = bee.getSavedFlowerPos();
+            BlockPos flowerPos = bee.getSavedFlowerPos();
+            if (flowerPos != null) {
+                BlockPos flower = Objects.requireNonNull(flowerPos);
                 drawLine(lineConsumer, matrix, bx, by, bz,
-                        flowerPos.getX() + 0.5f, flowerPos.getY() + 0.5f, flowerPos.getZ() + 0.5f,
+                        flower.getX() + 0.5f, flower.getY() + 0.5f, flower.getZ() + 0.5f,
                         1.0f, 0.4f, 0.7f, 1.0f);
             }
 
@@ -536,27 +565,28 @@ public class NativeDebugClientRenderer {
                                           Vec3 camPos, Minecraft mc) {
         if (mc.level == null || mc.player == null) return;
 
+        var level = Objects.requireNonNull(mc.level);
+        var player = Objects.requireNonNull(mc.player);
+
         var server = mc.getSingleplayerServer();
         if (server == null) return;
 
-        ServerLevel serverLevel = server.getLevel(mc.level.dimension());
+        ServerLevel serverLevel = server.getLevel(Objects.requireNonNull(level.dimension()));
         if (serverLevel == null) return;
 
-        VertexConsumer lineConsumer = bufferSource.getBuffer(RenderType.lines());
+        RenderType lineType = Objects.requireNonNull(RenderType.lines());
+        VertexConsumer lineConsumer = bufferSource.getBuffer(lineType);
 
         poseStack.pushPose();
         poseStack.translate(-camPos.x, -camPos.y, -camPos.z);
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
-        BlockPos playerPos = mc.player.blockPosition();
+        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
         SectionPos sectionPos = SectionPos.of(playerPos);
-
-        // Get structures in nearby chunks
-        StructureManager structureManager = serverLevel.structureManager();
 
         for (int dx = -2; dx <= 2; dx++) {
             for (int dz = -2; dz <= 2; dz++) {
-                ChunkAccess chunk = serverLevel.getChunk(sectionPos.x() + dx, sectionPos.z() + dz, ChunkStatus.FULL, false);
+                ChunkAccess chunk = serverLevel.getChunk(sectionPos.x() + dx, sectionPos.z() + dz, Objects.requireNonNull(ChunkStatus.FULL), false);
                 if (chunk == null) continue;
 
                 var structureStarts = chunk.getAllStarts();
@@ -586,26 +616,30 @@ public class NativeDebugClientRenderer {
                                           Vec3 camPos, Minecraft mc) {
         if (mc.level == null || mc.player == null) return;
 
+        var level = Objects.requireNonNull(mc.level);
+        var player = Objects.requireNonNull(mc.player);
+
         var server = mc.getSingleplayerServer();
         if (server == null) return;
 
-        var serverLevel = server.getLevel(mc.level.dimension());
+        var serverLevel = server.getLevel(Objects.requireNonNull(level.dimension()));
         if (serverLevel == null) return;
 
-        VertexConsumer lineConsumer = bufferSource.getBuffer(RenderType.lines());
+        RenderType lineType = Objects.requireNonNull(RenderType.lines());
+        VertexConsumer lineConsumer = bufferSource.getBuffer(lineType);
 
         poseStack.pushPose();
         poseStack.translate(-camPos.x, -camPos.y, -camPos.z);
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
-        BlockPos playerPos = mc.player.blockPosition();
+        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
 
         // Search for sculk sensors nearby and draw their detection spheres
         int range = 24;
         for (int dx = -range; dx <= range; dx++) {
             for (int dy = -range / 2; dy <= range / 2; dy++) {
                 for (int dz = -range; dz <= range; dz++) {
-                    BlockPos pos = playerPos.offset(dx, dy, dz);
+                    BlockPos pos = Objects.requireNonNull(playerPos.offset(dx, dy, dz));
                     var blockState = serverLevel.getBlockState(pos);
 
                     // Check if it's a sculk sensor or calibrated sculk sensor
@@ -634,6 +668,7 @@ public class NativeDebugClientRenderer {
     private static void drawLine(VertexConsumer consumer, Matrix4f matrix,
                                   float x1, float y1, float z1, float x2, float y2, float z2,
                                   float r, float g, float b, float a) {
+        Matrix4f safeMatrix = Objects.requireNonNull(matrix);
         float dx = x2 - x1;
         float dy = y2 - y1;
         float dz = z2 - z1;
@@ -644,29 +679,30 @@ public class NativeDebugClientRenderer {
         float ny = dy / length;
         float nz = dz / length;
 
-        consumer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a).setNormal(nx, ny, nz);
-        consumer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a).setNormal(nx, ny, nz);
+        consumer.addVertex(safeMatrix, x1, y1, z1).setColor(r, g, b, a).setNormal(nx, ny, nz);
+        consumer.addVertex(safeMatrix, x2, y2, z2).setColor(r, g, b, a).setNormal(nx, ny, nz);
     }
 
     private static void drawBox(VertexConsumer consumer, Matrix4f matrix,
                                  float x1, float y1, float z1, float x2, float y2, float z2,
                                  float r, float g, float b, float a) {
+        Matrix4f safeMatrix = Objects.requireNonNull(matrix);
         // Bottom
-        drawLine(consumer, matrix, x1, y1, z1, x2, y1, z1, r, g, b, a);
-        drawLine(consumer, matrix, x2, y1, z1, x2, y1, z2, r, g, b, a);
-        drawLine(consumer, matrix, x2, y1, z2, x1, y1, z2, r, g, b, a);
-        drawLine(consumer, matrix, x1, y1, z2, x1, y1, z1, r, g, b, a);
+        drawLine(consumer, safeMatrix, x1, y1, z1, x2, y1, z1, r, g, b, a);
+        drawLine(consumer, safeMatrix, x2, y1, z1, x2, y1, z2, r, g, b, a);
+        drawLine(consumer, safeMatrix, x2, y1, z2, x1, y1, z2, r, g, b, a);
+        drawLine(consumer, safeMatrix, x1, y1, z2, x1, y1, z1, r, g, b, a);
 
         // Top
-        drawLine(consumer, matrix, x1, y2, z1, x2, y2, z1, r, g, b, a);
-        drawLine(consumer, matrix, x2, y2, z1, x2, y2, z2, r, g, b, a);
-        drawLine(consumer, matrix, x2, y2, z2, x1, y2, z2, r, g, b, a);
-        drawLine(consumer, matrix, x1, y2, z2, x1, y2, z1, r, g, b, a);
+        drawLine(consumer, safeMatrix, x1, y2, z1, x2, y2, z1, r, g, b, a);
+        drawLine(consumer, safeMatrix, x2, y2, z1, x2, y2, z2, r, g, b, a);
+        drawLine(consumer, safeMatrix, x2, y2, z2, x1, y2, z2, r, g, b, a);
+        drawLine(consumer, safeMatrix, x1, y2, z2, x1, y2, z1, r, g, b, a);
 
         // Verticals
-        drawLine(consumer, matrix, x1, y1, z1, x1, y2, z1, r, g, b, a);
-        drawLine(consumer, matrix, x2, y1, z1, x2, y2, z1, r, g, b, a);
-        drawLine(consumer, matrix, x2, y1, z2, x2, y2, z2, r, g, b, a);
-        drawLine(consumer, matrix, x1, y1, z2, x1, y2, z2, r, g, b, a);
+        drawLine(consumer, safeMatrix, x1, y1, z1, x1, y2, z1, r, g, b, a);
+        drawLine(consumer, safeMatrix, x2, y1, z1, x2, y2, z1, r, g, b, a);
+        drawLine(consumer, safeMatrix, x2, y1, z2, x2, y2, z2, r, g, b, a);
+        drawLine(consumer, safeMatrix, x1, y1, z2, x1, y2, z2, r, g, b, a);
     }
 }

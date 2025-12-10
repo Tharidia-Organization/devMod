@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Rappresenta una quest con le sue task.
+ * Represents a quest with its tasks.
  */
 public class QuestData {
 
@@ -68,7 +68,7 @@ public class QuestData {
     }
 
     /**
-     * Restituisce la task corrente (prossima da completare).
+     * Returns the current task (next to complete).
      */
     public QuestTask getCurrentTask() {
         if (tasks.isEmpty() || currentTaskIndex >= tasks.size()) {
@@ -78,8 +78,8 @@ public class QuestData {
     }
 
     /**
-     * Avanza alla prossima task.
-     * @return true se c'è una prossima task, false se la quest è completa
+     * Advances to the next task.
+     * @return true if there is a next task, false if the quest is complete
      */
     public boolean advanceToNextTask() {
         if (currentTaskIndex < tasks.size() - 1) {
@@ -99,7 +99,7 @@ public class QuestData {
     }
 
     /**
-     * Calcola la percentuale di completamento.
+     * Calculates completion percentage.
      */
     public float getCompletionPercentage() {
         if (tasks.isEmpty()) return 0f;
@@ -111,7 +111,7 @@ public class QuestData {
     }
 
     /**
-     * Controlla se la quest è completa.
+     * Checks if the quest is complete.
      */
     public boolean isComplete() {
         for (QuestTask task : tasks) {
@@ -133,7 +133,7 @@ public class QuestData {
     }
 
     /**
-     * Restituisce un riassunto della progress (es. "2/5 tasks").
+     * Returns a progress summary (e.g., "2/5 tasks").
      */
     public String getProgressSummary() {
         if (questType == QuestType.ENDURANCE) {

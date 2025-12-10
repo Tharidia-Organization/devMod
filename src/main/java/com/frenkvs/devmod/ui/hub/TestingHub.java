@@ -18,14 +18,14 @@ import javax.annotation.Nonnull;
 import java.util.Set;
 
 /**
- * Hub centrale unificato per testing.
- * Combina: selezione test, quick tools, progress tracking.
+ * Central unified hub for testing.
+ * Combines: test selection, quick tools, progress tracking.
  *
- * Layout a 3 pannelli:
- * - Sinistra: CategoryPanel (categorie + test list + search)
- * - Centro: TestDetailPanel (dettagli test selezionato)
- * - Destra: QuickToolsPanel (toggle overlay + editor shortcuts)
- * - Footer: ProgressFooter (barra progresso + azioni)
+ * 3-panel layout:
+ * - Left: CategoryPanel (categories + test list + search)
+ * - Center: TestDetailPanel (selected test details)
+ * - Right: QuickToolsPanel (toggle overlay + editor shortcuts)
+ * - Footer: ProgressFooter (progress bar + actions)
  */
 @SuppressWarnings("null")
 public class TestingHub extends Screen {
@@ -66,19 +66,19 @@ public class TestingHub extends Screen {
 
     @Override
     protected void init() {
-        // Calcola dimensioni responsive
+        // Calculate responsive dimensions
         hubWidth = calculateHubWidth();
         hubHeight = calculateHubHeight();
         hubX = (width - hubWidth) / 2;
         hubY = (height - hubHeight) / 2;
 
-        // Verifica se mostrare session start
+        // Check if should show session start
         showSessionStart = !state.isSessionActive() && !state.hasExistingSession();
 
         if (showSessionStart) {
             initSessionStartUI();
         } else {
-            // Se c'è sessione esistente ma non attiva, riprendi
+            // If there's an existing but inactive session, resume
             if (!state.isSessionActive() && state.hasExistingSession()) {
                 state.resumeSession();
             }
@@ -87,7 +87,7 @@ public class TestingHub extends Screen {
     }
 
     private void initSessionStartUI() {
-        // Campo nome tester centrato
+        // Centered tester name field
         int fieldWidth = 200;
         int fieldX = hubX + (hubWidth - fieldWidth) / 2;
         int fieldY = hubY + hubHeight / 2 - 30;
@@ -100,7 +100,7 @@ public class TestingHub extends Screen {
     }
 
     private void initPanels() {
-        // Calcola larghezze pannelli
+        // Calculate panel widths
         int categoryWidth = Math.max(180, (int)(hubWidth * 0.22f));
         int toolsWidth = Math.max(170, (int)(hubWidth * 0.25f));
         int detailWidth = hubWidth - categoryWidth - toolsWidth - PANEL_GAP * 2;
@@ -108,7 +108,7 @@ public class TestingHub extends Screen {
         int contentY = hubY + HEADER_HEIGHT;
         int contentHeight = hubHeight - HEADER_HEIGHT - FOOTER_HEIGHT;
 
-        // Inizializza pannelli
+        // Initialize panels
         categoryPanel = new CategoryPanel(
             hubX, contentY, categoryWidth, contentHeight,
             font, state,
@@ -139,7 +139,7 @@ public class TestingHub extends Screen {
             this::onMinimize
         );
 
-        // Carica stato precedente
+        // Load previous state
         if (state.hasActiveTest()) {
             detailPanel.setTest(state.getCurrentTest());
         }
@@ -149,7 +149,7 @@ public class TestingHub extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Background scuro
+        // Dark background
         AxiomRenderer.drawScreenBackground(graphics, this.width, this.height);
 
         if (showSessionStart) {
@@ -163,7 +163,7 @@ public class TestingHub extends Screen {
     }
 
     private void renderSessionStart(GuiGraphics graphics, int mouseX, int mouseY) {
-        // Pannello centrale per avvio sessione
+        // Central panel for session start
         int panelWidth = 350;
         int panelHeight = 200;
         int panelX = (width - panelWidth) / 2;
@@ -174,18 +174,18 @@ public class TestingHub extends Screen {
         int contentX = panelX + UIConstants.Spacing.PANEL_PADDING;
         int contentY = panelY + UIConstants.Spacing.HEADER_HEIGHT + UIConstants.Spacing.PANEL_PADDING + 10;
 
-        // Istruzioni
+        // Instructions
         graphics.drawString(font, "Welcome to DevMod QA Testing!", contentX, contentY, UIConstants.Text.PRIMARY, false);
         contentY += 16;
 
         graphics.drawString(font, "Enter your name to start tracking tests.", contentX, contentY, UIConstants.Text.SECONDARY, false);
         contentY += 30;
 
-        // Label per nome
+        // Name label
         graphics.drawString(font, "Tester Name:", contentX, contentY + 6, UIConstants.Text.SECONDARY, false);
         contentY += 40;
 
-        // Bottoni
+        // Buttons
         int buttonWidth = 120;
         int buttonGap = 20;
         int buttonsX = panelX + (panelWidth - buttonWidth * 2 - buttonGap) / 2;
@@ -194,7 +194,7 @@ public class TestingHub extends Screen {
         boolean startHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, buttonsX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT);
         AxiomRenderer.drawButton(graphics, font, buttonsX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, "Start New", startHovered, false);
 
-        // Resume (se disponibile)
+        // Resume (if available)
         if (TestingSession.INSTANCE.hasExistingSession()) {
             int resumeX = buttonsX + buttonWidth + buttonGap;
             boolean resumeHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, resumeX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT);
@@ -210,7 +210,7 @@ public class TestingHub extends Screen {
         // Header
         renderHeader(graphics, mouseX, mouseY);
 
-        // Pannelli con focus indicator
+        // Panels with focus indicator
         if (categoryPanel != null) {
             categoryPanel.render(graphics, mouseX, mouseY, partialTick);
             if (currentFocus == PanelFocus.CATEGORIES) {
@@ -255,10 +255,10 @@ public class TestingHub extends Screen {
         // Background header
         graphics.fill(hubX, hubY, hubX + hubWidth, hubY + HEADER_HEIGHT, UIConstants.Background.HEADER);
 
-        // Bordo inferiore
+        // Bottom border
         graphics.fill(hubX, hubY + HEADER_HEIGHT - 1, hubX + hubWidth, hubY + HEADER_HEIGHT, UIConstants.Border.DEFAULT);
 
-        // Titolo
+        // Title
         graphics.drawString(font, "DEVMOD TESTING HUB", hubX + 12, hubY + 10, UIConstants.Text.TITLE, false);
 
         // Session info
@@ -296,19 +296,19 @@ public class TestingHub extends Screen {
             return super.keyPressed(keyCode, scanCode, modifiers);
         }
 
-        // ESC: Minimizza invece di chiudere
+        // ESC: Minimize instead of closing
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
             minimizeToHud();
             return true;
         }
 
-        // Tab: Cicla focus tra pannelli
+        // Tab: Cycle focus between panels
         if (keyCode == GLFW.GLFW_KEY_TAB) {
             cycleFocus(Screen.hasShiftDown() ? -1 : 1);
             return true;
         }
 
-        // 1/2/3: Verdetto rapido se c'è test attivo
+        // 1/2/3: Quick verdict if there's an active test
         if (state.hasActiveTest()) {
             if (keyCode == GLFW.GLFW_KEY_1) {
                 onVerdictGiven(state.getCurrentTest(), Verdict.PASS);
@@ -324,7 +324,7 @@ public class TestingHub extends Screen {
             }
         }
 
-        // Delega ai pannelli
+        // Delegate to panels
         if (categoryPanel != null && currentFocus == PanelFocus.CATEGORIES) {
             if (categoryPanel.keyPressed(keyCode, scanCode, modifiers)) return true;
         }
@@ -372,7 +372,7 @@ public class TestingHub extends Screen {
             }
         }
 
-        // Pannelli
+        // Panels
         if (categoryPanel != null && categoryPanel.isMouseOver(mx, my)) {
             currentFocus = PanelFocus.CATEGORIES;
             return categoryPanel.mouseClicked(mouseX, mouseY, button);
@@ -477,7 +477,7 @@ public class TestingHub extends Screen {
         if (footer != null) footer.refresh();
         if (categoryPanel != null) categoryPanel.refresh();
 
-        // Avanza al prossimo test
+        // Advance to next test
         state.advanceToNextTest();
         if (state.hasActiveTest()) {
             if (detailPanel != null) {
@@ -506,7 +506,7 @@ public class TestingHub extends Screen {
                 if (mc.player != null && !mc.player.getMainHandItem().isEmpty()) {
                     mc.setScreen(new WeaponEditorScreen());
                 } else {
-                    // Mostra messaggio
+                    // Show message
                     showNotification("Hold an item in your main hand first!");
                 }
             }
@@ -539,7 +539,7 @@ public class TestingHub extends Screen {
         state.startSession(name);
         showSessionStart = false;
 
-        // Reinizializza con i pannelli
+        // Reinitialize with panels
         this.clearWidgets();
         initPanels();
     }
@@ -567,7 +567,7 @@ public class TestingHub extends Screen {
     }
 
     /**
-     * Chiamato quando l'utente preme K mentre l'hub è minimizzato.
+     * Called when the user presses K while the hub is minimized.
      */
     public static void restoreFromHud() {
         TestingHubState.INSTANCE.setMinimized(false);
@@ -595,7 +595,7 @@ public class TestingHub extends Screen {
     }
 
     private void showNotification(String message) {
-        // Usa action bar di Minecraft per feedback
+        // Use Minecraft's action bar for feedback
         if (minecraft != null && minecraft.player != null) {
             minecraft.player.displayClientMessage(Component.literal(message), true);
         }

@@ -3,37 +3,37 @@ package com.frenkvs.devmod.panels.context;
 import com.frenkvs.devmod.ui.UIConstants;
 
 /**
- * Modi di contesto che determinano quali pannelli mostrare automaticamente.
+ * Context modes that determine which panels to show automatically.
  *
- * Il sistema rileva automaticamente il contesto basandosi su:
- * - Eventi di combattimento recenti
- * - Sessione di testing attiva
- * - Interazioni con entita'
- * - Input utente esplicito
+ * The system automatically detects context based on:
+ * - Recent combat events
+ * - Active testing session
+ * - Entity interactions
+ * - Explicit user input
  */
 public enum ContextMode {
 
     /**
-     * Modalita' combattimento: attivata quando il player e' in combattimento.
-     * Mostra: CombatPanel, EntityInfoPanel per target
+     * Combat mode: activated when the player is in combat.
+     * Shows: CombatPanel, EntityInfoPanel for target
      */
     COMBAT("Combat", UIConstants.Status.ERROR, true, false, true),
 
     /**
-     * Modalita' esplorazione: default quando non in combattimento o test.
-     * Mostra: EntityInfoPanel on hover, ToolStatusPanel
+     * Explore mode: default when not in combat or testing.
+     * Shows: EntityInfoPanel on hover, ToolStatusPanel
      */
     EXPLORE("Explore", UIConstants.Status.INFO, true, true, false),
 
     /**
-     * Modalita' testing: attivata durante sessione di test.
-     * Mostra: TestProgressPanel, ToolStatusPanel, riduce altri pannelli
+     * Testing mode: activated during a test session.
+     * Shows: TestProgressPanel, ToolStatusPanel, reduces other panels
      */
     TEST("Test", UIConstants.Status.SUCCESS, true, true, true),
 
     /**
-     * Modalita' custom: l'utente controlla manualmente tutti i pannelli.
-     * Nessun pannello automatico.
+     * Custom mode: user manually controls all panels.
+     * No automatic panels.
      */
     CUSTOM("Custom", UIConstants.Text.MUTED, false, false, false);
 
@@ -53,70 +53,70 @@ public enum ContextMode {
     }
 
     /**
-     * Nome visualizzato nel UI.
+     * Name displayed in UI.
      */
     public String getDisplayName() {
         return displayName;
     }
 
     /**
-     * Colore associato a questo modo.
+     * Color associated with this mode.
      */
     public int getColor() {
         return color;
     }
 
     /**
-     * Se mostrare automaticamente EntityInfoPanel per entita' target.
+     * Whether to automatically show EntityInfoPanel for target entities.
      */
     public boolean showsAutoEntityInfo() {
         return autoEntityInfo;
     }
 
     /**
-     * Se mostrare il pannello stato tool.
+     * Whether to show the tool status panel.
      */
     public boolean showsToolStatus() {
         return showToolStatus;
     }
 
     /**
-     * Se mostrare il pannello progresso (test/combat).
+     * Whether to show the progress panel (test/combat).
      */
     public boolean showsProgressPanel() {
         return showProgressPanel;
     }
 
     /**
-     * Se questo modo gestisce automaticamente i pannelli.
+     * Whether this mode automatically manages panels.
      */
     public boolean isAutomatic() {
         return this != CUSTOM;
     }
 
     /**
-     * Ottiene la priorita' dei pannelli in questo modo.
-     * Priorita' piu' alta = pannelli rimangono piu' a lungo.
+     * Gets the panel priority in this mode.
+     * Higher priority = panels persist longer.
      */
     public int getPanelPriority() {
         return switch (this) {
-            case COMBAT -> 3;   // Alta priorita' - pannelli combat persistono
-            case TEST -> 2;     // Media-alta - test info importante
-            case EXPLORE -> 1;  // Normale
-            case CUSTOM -> 0;   // Bassa - utente gestisce tutto
+            case COMBAT -> 3;   // High priority - combat panels persist
+            case TEST -> 2;     // Medium-high - test info is important
+            case EXPLORE -> 1;  // Normal
+            case CUSTOM -> 0;   // Low - user manages everything
         };
     }
 
     /**
-     * Tempo di auto-hide per EntityInfoPanel in questo modo (ms).
-     * 0 = non nascondere automaticamente.
+     * Auto-hide time for EntityInfoPanel in this mode (ms).
+     * 0 = don't auto-hide.
      */
     public long getEntityInfoTimeout() {
         return switch (this) {
-            case COMBAT -> 0;       // Non nascondere in combat
-            case TEST -> 10000;     // 10 secondi
-            case EXPLORE -> 5000;   // 5 secondi
-            case CUSTOM -> 0;       // Manuale
+            case COMBAT -> 0;       // Don't hide in combat
+            case TEST -> 10000;     // 10 seconds
+            case EXPLORE -> 5000;   // 5 seconds
+            case CUSTOM -> 0;       // Manual
         };
     }
 }

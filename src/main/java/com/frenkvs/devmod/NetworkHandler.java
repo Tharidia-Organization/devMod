@@ -30,12 +30,17 @@ import com.frenkvs.devmod.endurance.TokenGainPayload;
 import com.frenkvs.devmod.endurance.RecordBannerPayload;
 import com.frenkvs.devmod.endurance.ComboDecayPayload;
 import com.frenkvs.devmod.endurance.InstanceLoadingPayload;
+import com.frenkvs.devmod.party.ArrivalConfirmPayload;
+import com.frenkvs.devmod.party.CancelSequencePayload;
 import com.frenkvs.devmod.party.ClientPartyCache;
 import com.frenkvs.devmod.party.InviteResponsePayload;
 import com.frenkvs.devmod.party.PartyInvitePayload;
 import com.frenkvs.devmod.party.PartyManager;
 import com.frenkvs.devmod.party.PartyNotificationPayload;
 import com.frenkvs.devmod.party.PartySyncPayload;
+import com.frenkvs.devmod.party.QuestSequencePayload;
+import com.frenkvs.devmod.party.QuestStartSequence;
+import com.frenkvs.devmod.hud.QuestSequenceOverlay;
 import com.frenkvs.devmod.hud.EnduranceQuestOverlay;
 import com.frenkvs.devmod.hud.InstanceLoadingOverlay;
 import com.frenkvs.devmod.hud.BadgePopupOverlay;
@@ -89,173 +94,193 @@ public class NetworkHandler {
 
     @SubscribeEvent
     public static void register(RegisterPayloadHandlersEvent event) {
-        // Canale 1: Statistiche Mostri
+        // Channel 1: Monster Statistics
         event.registrar("1").playToServer(
                 UpdateMobStatsPayload.TYPE,
                 UpdateMobStatsPayload.STREAM_CODEC,
                 NetworkHandler::handleMobData
         );
-        // Canale 2: Statistiche Armi
+        // Channel 2: Weapon Statistics
         event.registrar("2").playToServer(
                 UpdateWeaponPayload.TYPE,
                 UpdateWeaponPayload.STREAM_CODEC,
                 NetworkHandler::handleWeaponData
         );
-        // Canale 3: Equipaggiamento Mostri
+        // Channel 3: Monster Equipment
         event.registrar("3").playToServer(
                 EquipMobPayload.TYPE,
                 EquipMobPayload.STREAM_CODEC,
                 NetworkHandler::handleEquipData
         );
-        // Canale 4: Modifica Item Completa (durabilità, incantesimi, attributi)
+        // Channel 4: Complete Item Modification (durability, enchantments, attributes)
         event.registrar("4").playToServer(
                 ModifyItemPayload.TYPE,
                 ModifyItemPayload.STREAM_CODEC,
                 NetworkHandler::handleItemModification
         );
-        // Canale 5: Endurance Quest - Start
+        // Channel 5: Endurance Quest - Start
         event.registrar("5").playToServer(
                 StartQuestPayload.TYPE,
                 StartQuestPayload.STREAM_CODEC,
                 NetworkHandler::handleStartEnduranceQuest
         );
-        // Canale 6: Endurance Quest - Actions (respawn, checkpoint, abandon)
+        // Channel 6: Endurance Quest - Actions (respawn, checkpoint, abandon)
         event.registrar("6").playToServer(
                 QuestActionPayload.TYPE,
                 QuestActionPayload.STREAM_CODEC,
                 NetworkHandler::handleQuestAction
         );
-        // Canale 7: Endurance Quest - Sync (server to client)
+        // Channel 7: Endurance Quest - Sync (server to client)
         event.registrar("7").playToClient(
                 QuestSyncPayload.TYPE,
                 QuestSyncPayload.STREAM_CODEC,
                 NetworkHandler::handleQuestSync
         );
-        // Canale 8: Endurance Quest - Shop Purchase
+        // Channel 8: Endurance Quest - Shop Purchase
         event.registrar("8").playToServer(
                 ShopPurchasePayload.TYPE,
                 ShopPurchasePayload.STREAM_CODEC,
                 NetworkHandler::handleShopPurchase
         );
-        // Canale 9: Endurance Quest - Shop Sync (server to client)
+        // Channel 9: Endurance Quest - Shop Sync (server to client)
         event.registrar("9").playToClient(
                 ShopSyncPayload.TYPE,
                 ShopSyncPayload.STREAM_CODEC,
                 NetworkHandler::handleShopSync
         );
-        // Canale 10: Request Shop Sync (client to server)
+        // Channel 10: Request Shop Sync (client to server)
         event.registrar("10").playToServer(
                 RequestShopSyncPayload.TYPE,
                 RequestShopSyncPayload.STREAM_CODEC,
                 NetworkHandler::handleRequestShopSync
         );
-        // Canale 11: Mob Config Confirmation (server to client)
+        // Channel 11: Mob Config Confirmation (server to client)
         event.registrar("11").playToClient(
                 MobConfigConfirmPayload.TYPE,
                 MobConfigConfirmPayload.STREAM_CODEC,
                 NetworkHandler::handleMobConfigConfirm
         );
-        // Canale 12: Quest Death Screen (server to client)
+        // Channel 12: Quest Death Screen (server to client)
         event.registrar("12").playToClient(
                 QuestDeathPayload.TYPE,
                 QuestDeathPayload.STREAM_CODEC,
                 NetworkHandler::handleQuestDeath
         );
-        // Canale 13: Perk Choices (server to client)
+        // Channel 13: Perk Choices (server to client)
         event.registrar("13").playToClient(
                 PerkChoicesPayload.TYPE,
                 PerkChoicesPayload.STREAM_CODEC,
                 NetworkHandler::handlePerkChoices
         );
-        // Canale 14: Perk Selection (client to server)
+        // Channel 14: Perk Selection (client to server)
         event.registrar("14").playToServer(
                 PerkSelectionPayload.TYPE,
                 PerkSelectionPayload.STREAM_CODEC,
                 NetworkHandler::handlePerkSelection
         );
-        // Canale 15: Quest Completion (server to client)
+        // Channel 15: Quest Completion (server to client)
         event.registrar("15").playToClient(
                 QuestCompletionPayload.TYPE,
                 QuestCompletionPayload.STREAM_CODEC,
                 NetworkHandler::handleQuestCompletion
         );
-        // Canale 16: Personal Records Sync (server to client)
+        // Channel 16: Personal Records Sync (server to client)
         event.registrar("16").playToClient(
                 PersonalRecordsSyncPayload.TYPE,
                 PersonalRecordsSyncPayload.STREAM_CODEC,
                 NetworkHandler::handlePersonalRecordsSync
         );
-        // Canale 17: Request Personal Records (client to server)
+        // Channel 17: Request Personal Records (client to server)
         event.registrar("17").playToServer(
                 RequestPersonalRecordsPayload.TYPE,
                 RequestPersonalRecordsPayload.STREAM_CODEC,
                 NetworkHandler::handleRequestPersonalRecords
         );
-        // Canale 18: Boss Alert (server to client)
+        // Channel 18: Boss Alert (server to client)
         event.registrar("18").playToClient(
                 BossAlertPayload.TYPE,
                 BossAlertPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() ->
                     EnduranceQuestOverlay.onBossAlert(payload.alertDurationMs(), payload.bossType()))
         );
-        // Canale 19: Badge Unlock (server to client)
+        // Channel 19: Badge Unlock (server to client)
         event.registrar("19").playToClient(
                 BadgeUnlockPayload.TYPE,
                 BadgeUnlockPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() ->
                     BadgePopupOverlay.showBadge(payload.badgeName(), payload.rarity()))
         );
-        // Canale 20: Token Gain Animation (server to client)
+        // Channel 20: Token Gain Animation (server to client)
         event.registrar("20").playToClient(
                 TokenGainPayload.TYPE,
                 TokenGainPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() ->
                     TokenGainOverlay.show(payload.amount()))
         );
-        // Canale 21: Record Banner (server to client)
+        // Channel 21: Record Banner (server to client)
         event.registrar("21").playToClient(
                 RecordBannerPayload.TYPE,
                 RecordBannerPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() ->
                     RecordBannerOverlay.showRecord(payload.recordType(), payload.recordValue()))
         );
-        // Canale 22: Combo Decay Feedback (server to client)
+        // Channel 22: Combo Decay Feedback (server to client)
         event.registrar("22").playToClient(
                 ComboDecayPayload.TYPE,
                 ComboDecayPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() ->
                     ComboDecayOverlay.show(payload.lostCombo(), payload.previousRankOrdinal(), payload.newRankOrdinal()))
         );
-        // Canale 23: Instance Loading Overlay (server to client)
+        // Channel 23: Instance Loading Overlay (server to client)
         event.registrar("23").playToClient(
                 InstanceLoadingPayload.TYPE,
                 InstanceLoadingPayload.STREAM_CODEC,
                 NetworkHandler::handleInstanceLoading
         );
 
+        // === QUEST SEQUENCE CHANNELS (28-30) ===
+        // Channel 28: Quest Sequence Status (server -> client)
+        event.registrar("28").playToClient(
+                QuestSequencePayload.TYPE,
+                QuestSequencePayload.STREAM_CODEC,
+                NetworkHandler::handleQuestSequence
+        );
+        // Channel 29: Arrival Confirm (client -> server)
+        event.registrar("29").playToServer(
+                ArrivalConfirmPayload.TYPE,
+                ArrivalConfirmPayload.STREAM_CODEC,
+                NetworkHandler::handleArrivalConfirm
+        );
+        // Channel 30: Cancel Sequence (client -> server)
+        event.registrar("30").playToServer(
+                CancelSequencePayload.TYPE,
+                CancelSequencePayload.STREAM_CODEC,
+                NetworkHandler::handleCancelSequence
+        );
+
         // === PARTY SYSTEM CHANNELS (24-27) - TODO: Fix API mismatch with PartyManager ===
         // These handlers need to be updated to match the actual PartyManager API.
         // Temporarily disabled to allow build.
         /*
-        // Canale 24: Party Invite (client to server)
+        // Channel 24: Party Invite (client to server)
         event.registrar("24").playToServer(
                 PartyInvitePayload.TYPE,
                 PartyInvitePayload.STREAM_CODEC,
                 NetworkHandler::handlePartyInvite
         );
-        // Canale 25: Invite Response (client to server)
+        // Channel 25: Invite Response (client to server)
         event.registrar("25").playToServer(
                 InviteResponsePayload.TYPE,
                 InviteResponsePayload.STREAM_CODEC,
                 NetworkHandler::handleInviteResponse
         );
-        // Canale 26: Party Notification (server to client)
+        // Channel 26: Party Notification (server to client)
         event.registrar("26").playToClient(
                 PartyNotificationPayload.TYPE,
                 PartyNotificationPayload.STREAM_CODEC,
                 NetworkHandler::handlePartyNotification
         );
-        // Canale 27: Party Sync (server to client)
+        // Channel 27: Party Sync (server to client)
         event.registrar("27").playToClient(
                 PartySyncPayload.TYPE,
                 PartySyncPayload.STREAM_CODEC,
@@ -265,7 +290,7 @@ public class NetworkHandler {
     }
 
     // =================================================================================
-    // 1. LOGICA MODIFICA MOSTRI (Vita, Danno, Reach, Globale/Specifico)
+    // 1. MOB MODIFICATION LOGIC (Health, Damage, Reach, Global/Specific)
     // =================================================================================
     private static void handleMobData(UpdateMobStatsPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
@@ -299,7 +324,7 @@ public class NetworkHandler {
                 if (targetEntity instanceof Mob targetMob) {
                     EntityType<?> typeToUpdate = targetMob.getType();
 
-                    // --- SALVATAGGIO CONFIGURAZIONE GLOBALE ---
+                    // --- SAVE GLOBAL CONFIGURATION ---
                     if (payload.isGlobal()) {
                         MobConfigManager.setGlobalStats(
                                 typeToUpdate,
@@ -311,7 +336,7 @@ public class NetworkHandler {
                         player.sendSystemMessage(I18n.translate("devmod.network.mob_global_saved", typeToUpdate.toShortString()));
                     }
 
-                    // --- APPLICAZIONE AI MOB ESISTENTI ---
+                    // --- APPLICATION TO EXISTING MOBS ---
                     int count = 0;
 
                     // PERFORMANCE FIX: Use getEntitiesOfClass with AABB limit instead of getAllEntities
@@ -325,7 +350,7 @@ public class NetworkHandler {
                     for (Mob mob : level.getEntitiesOfClass(Mob.class, searchBox,
                         m -> m.getType() == typeToUpdate)) {
 
-                        // Se è specifico, salta tutti tranne quello giusto
+                        // If specific, skip all except the right one
                         if (!payload.isGlobal() && mob.getId() != payload.entityId()) continue;
 
                         List<AttributeInstance> attributesToSync = new ArrayList<>();
@@ -341,7 +366,7 @@ public class NetworkHandler {
                         if (healthAttr != null) {
                             healthAttr.setBaseValue(maxHealth);
                             attributesToSync.add(healthAttr);
-                            // Curiamo il mob se necessario
+                            // Heal the mob if necessary
                             if (payload.isGlobal() || mob.getId() == payload.entityId()) {
                                 mob.setHealth(mob.getMaxHealth());
                             }
@@ -385,7 +410,7 @@ public class NetworkHandler {
     }
 
     // =================================================================================
-    // 2. LOGICA MODIFICA ARMI
+    // 2. WEAPON MODIFICATION LOGIC
     // =================================================================================
     private static void handleWeaponData(UpdateWeaponPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
@@ -436,7 +461,7 @@ public class NetworkHandler {
     }
 
     // =================================================================================
-    // 3. LOGICA EQUIPAGGIAMENTO
+    // 3. EQUIPMENT LOGIC
     // =================================================================================
     private static void handleEquipData(EquipMobPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
@@ -472,7 +497,7 @@ public class NetworkHandler {
     }
 
     // =================================================================================
-    // 4. LOGICA MODIFICA ITEM (Durabilità, Incantesimi, Attributi)
+    // 4. ITEM MODIFICATION LOGIC (Durability, Enchantments, Attributes)
     // =================================================================================
     private static void handleItemModification(ModifyItemPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
@@ -703,7 +728,7 @@ public class NetworkHandler {
     }
 
     // =================================================================================
-    // METODI HELPER (Devono stare DENTRO la classe, prima dell'ultima parentesi graffa)
+    // HELPER METHODS (Must be INSIDE the class, before the closing brace)
     // =================================================================================
 
     /**
@@ -739,7 +764,7 @@ public class NetworkHandler {
         }
     }
 
-    // ECCO IL METODO CHE TI DAVA ERRORE: ORA È DENTRO LA CLASSE
+    // HERE IS THE METHOD THAT WAS GIVING YOU ERROR: NOW IT'S INSIDE THE CLASS
     private static void applyAttribute(Mob mob, net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute> attr, double value, List<AttributeInstance> syncList) {
         AttributeInstance instance = mob.getAttribute(attr);
         if (instance != null) {
@@ -749,7 +774,7 @@ public class NetworkHandler {
     }
 
     // =================================================================================
-    // 5. LOGICA ENDURANCE QUEST
+    // 5. ENDURANCE QUEST LOGIC
     // =================================================================================
     private static void handleStartEnduranceQuest(StartQuestPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
@@ -806,7 +831,7 @@ public class NetworkHandler {
     }
 
     // =================================================================================
-    // 6. LOGICA QUEST ACTIONS (respawn, checkpoint, abandon)
+    // 6. QUEST ACTIONS LOGIC (respawn, checkpoint, abandon)
     // =================================================================================
     private static void handleQuestAction(QuestActionPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
@@ -1486,4 +1511,50 @@ public class NetworkHandler {
         net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, notification);
     }
 
-} // <--- Questa è la parentesi finale fondamentale
+    // =================================================================================
+    // QUEST SEQUENCE HANDLERS (28-30)
+    // =================================================================================
+
+    /**
+     * Handle quest sequence status update (server -> client).
+     */
+    private static void handleQuestSequence(QuestSequencePayload payload, net.neoforged.neoforge.network.handling.IPayloadContext context) {
+        context.enqueueWork(() -> {
+            QuestSequenceOverlay.INSTANCE.update(payload);
+        });
+    }
+
+    /**
+     * Handle arrival confirmation (client -> server).
+     */
+    private static void handleArrivalConfirm(ArrivalConfirmPayload payload, net.neoforged.neoforge.network.handling.IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer player) {
+                // Use new method that verifies player position in arena
+                var server = player.getServer();
+                if (server != null) {
+                    QuestStartSequence.INSTANCE.confirmArrival(payload.partyId(), player.getUUID(), server);
+                }
+            }
+        });
+    }
+
+    /**
+     * Handle cancel sequence request (client -> server).
+     */
+    private static void handleCancelSequence(CancelSequencePayload payload, net.neoforged.neoforge.network.handling.IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer player) {
+                boolean cancelled = QuestStartSequence.INSTANCE.cancelSequence(
+                    payload.partyId(),
+                    player.getUUID(),
+                    "Cancelled by leader"
+                );
+                if (!cancelled) {
+                    player.sendSystemMessage(I18n.translate("devmod.party.cannot_cancel"));
+                }
+            }
+        });
+    }
+
+} // <--- This is the essential closing brace

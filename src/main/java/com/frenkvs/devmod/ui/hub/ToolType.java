@@ -13,9 +13,9 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * Enum che rappresenta i tool/overlay disponibili nel TestingHub.
- * Ogni tool ha un hotkey, un metodo per verificare se è attivo,
- * e un metodo per togglarlo.
+ * Enum representing the available tools/overlays in the TestingHub.
+ * Each tool has a hotkey, a method to check if it's active,
+ * and a method to toggle it.
  */
 public enum ToolType {
     DEBUG("Debug Overlay", "G",

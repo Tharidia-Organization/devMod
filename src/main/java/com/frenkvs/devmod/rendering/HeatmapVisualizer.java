@@ -40,27 +40,27 @@ public class HeatmapVisualizer {
         STUCK(0xFFFF8000),      // Arancione
         AGGRO_DROP(0xFF8000FF), // Viola
         KITING(0xFF00FFFF),     // Ciano
-        LIGHT_SPAWNABLE(0xFFFF0000), // Rosso (può spawnare)
+        LIGHT_SPAWNABLE(0xFFFF0000), // Red (can spawn)
         LIGHT_DARK(0xFFFF8800); // Arancione (buio ma non spawn)
 
         final int baseColor;
         HeatmapType(int color) { this.baseColor = color; }
     }
 
-    // Dati per ogni tipo di heatmap
+    // Data for each heatmap type
     private final Map<HeatmapType, Map<BlockPos, Integer>> heatmapData = new ConcurrentHashMap<>();
     private final Map<HeatmapType, Boolean> enabled = new ConcurrentHashMap<>();
     private final Map<HeatmapType, Integer> maxCounts = new ConcurrentHashMap<>();
 
-    // MEMORY LEAK FIX: Track quando è stata disabilitata per auto-clear
+    // MEMORY LEAK FIX: Track when it was disabled for auto-clear
     private long disabledSince = 0;
-    private static final long AUTO_CLEAR_DELAY_MS = 300_000; // 5 minuti
+    private static final long AUTO_CLEAR_DELAY_MS = 300_000; // 5 minutes
 
-    // MEMORY LEAK FIX #2: Limite massimo punti per heatmap per evitare accumulo infinito
+    // MEMORY LEAK FIX #2: Maximum points per heatmap to avoid infinite accumulation
     private static final int MAX_POINTS_PER_HEATMAP = 10_000;
 
     private HeatmapVisualizer() {
-        // Inizializza tutti i tipi come disabilitati
+        // Initialize all types as disabled
         for (HeatmapType type : HeatmapType.values()) {
             enabled.put(type, false);
             heatmapData.put(type, new ConcurrentHashMap<>());
@@ -148,11 +148,11 @@ public class HeatmapVisualizer {
     }
 
     /**
-     * Render delle heatmap abilitate
-     * MEMORY LEAK FIX: Auto-clear se disabilitato da più di 5 minuti
+     * Render enabled heatmaps
+     * MEMORY LEAK FIX: Auto-clear if disabled for more than 5 minutes
      */
     public void render(PoseStack poseStack, MultiBufferSource buffer, Vec3 cameraPos) {
-        // MEMORY LEAK FIX: Pulisci dati se disabilitato da troppo tempo
+        // MEMORY LEAK FIX: Clear data if disabled for too long
         clearIfDisabledFor(AUTO_CLEAR_DELAY_MS);
 
         for (HeatmapType type : HeatmapType.values()) {
@@ -199,17 +199,17 @@ public class HeatmapVisualizer {
             double dz = pos.getZ() + 0.5 - cameraPos.z;
             if (dx*dx + dy*dy + dz*dz > maxDistSqr) continue;
 
-            // Calcola intensità normalizzata (0.0 - 1.0)
+            // Calculate normalized intensity (0.0 - 1.0)
             float intensity = Math.min(1.0f, (float) count / maxCount);
 
-            // Colore gradiente basato su intensità
+            // Gradient color based on intensity
             int color = getGradientColor(intensity, type);
             float r = ((color >> 16) & 0xFF) / 255f;
             float g = ((color >> 8) & 0xFF) / 255f;
             float b = (color & 0xFF) / 255f;
-            float a = 0.3f + intensity * 0.4f; // Alpha 0.3-0.7 basato su intensità
+            float a = 0.3f + intensity * 0.4f; // Alpha 0.3-0.7 based on intensity
 
-            // Renderizza un blocco semi-trasparente sopra il pavimento
+            // Render a semi-transparent block above the floor
             AABB box = new AABB(pos.getX(), pos.getY() + 1.01, pos.getZ(),
                                pos.getX() + 1, pos.getY() + 1.01 + intensity * 0.5, pos.getZ() + 1);
             renderSolidBox(consumer, matrix, pose, box, r, g, b, a);
@@ -272,7 +272,7 @@ public class HeatmapVisualizer {
         float maxY = (float) box.maxY;
         float maxZ = (float) box.maxZ;
 
-        // Top face only (più leggero per heatmap)
+        // Top face only (lighter for heatmap)
         consumer.addVertex(matrix, minX, maxY, minZ).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
         consumer.addVertex(matrix, minX, maxY, maxZ).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
         consumer.addVertex(matrix, maxX, maxY, maxZ).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
@@ -280,7 +280,7 @@ public class HeatmapVisualizer {
     }
 
     /**
-     * Verifica se almeno una heatmap è attiva
+     * Checks if at least one heatmap is active
      */
     public boolean hasActiveHeatmaps() {
         return enabled.values().stream().anyMatch(Boolean::booleanValue);
@@ -323,13 +323,13 @@ public class HeatmapVisualizer {
             return 0;
         }
 
-        // Combina tutti i dati delle room in un'unica mappa
+        // Combine all room data into a single map
         Map<BlockPos, Integer> combined = new ConcurrentHashMap<>();
         for (Map<BlockPos, Integer> roomData : sourceData.values()) {
             roomData.forEach((pos, count) -> combined.merge(pos, count, Integer::sum));
         }
 
-        // Imposta i dati nel visualizer
+        // Set data in the visualizer
         setData(type, combined);
         return combined.size();
     }

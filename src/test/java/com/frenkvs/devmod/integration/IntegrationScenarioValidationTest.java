@@ -477,6 +477,8 @@ class IntegrationScenarioValidationTest {
             awaitingRespawnChoice = true;
 
             assertTrue(awaitingRespawnChoice);
+            // After confirmation we expect the flag to remain set until a choice is made
+            assertTrue(awaitingRespawnChoice, "Awaiting respawn choice should stay true after death");
         }
 
         @Test
@@ -499,6 +501,7 @@ class IntegrationScenarioValidationTest {
             boolean awaitingRespawnChoice = true;
             boolean continueQuest = false;
 
+            assertTrue(awaitingRespawnChoice, "Awaiting choice should be set when death occurs");
             if (!continueQuest) {
                 // Full cleanup triggered
                 List<String> cleanupSteps = Arrays.asList(
@@ -510,7 +513,10 @@ class IntegrationScenarioValidationTest {
                     "Cleanup arena/instance"
                 );
                 assertEquals(6, cleanupSteps.size());
+                awaitingRespawnChoice = false;
             }
+
+            assertFalse(awaitingRespawnChoice, "Flag should be cleared after give up cleanup");
         }
 
         @Test
@@ -557,6 +563,7 @@ class IntegrationScenarioValidationTest {
             int partialTokens = wavesCompleted * 15; // ~50% of normal rate
             assertTrue(partialTokens > 0);
             assertEquals(75, partialTokens);
+            assertEquals(500, pointsEarned);
         }
     }
 

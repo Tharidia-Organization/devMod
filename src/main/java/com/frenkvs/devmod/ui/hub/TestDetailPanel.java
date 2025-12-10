@@ -10,11 +10,11 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 /**
- * Pannello centrale che mostra i dettagli del test selezionato:
- * - Nome e descrizione
- * - Istruzioni step-by-step
- * - Tool richiesti
- * - Bottoni verdetto (PASS/FAIL/SKIP)
+ * Central panel showing selected test details:
+ * - Name and description
+ * - Step-by-step instructions
+ * - Required tools
+ * - Verdict buttons (PASS/FAIL/SKIP)
  */
 public class TestDetailPanel implements HubPanel {
 
@@ -23,7 +23,7 @@ public class TestDetailPanel implements HubPanel {
     private final TestingHubState state;
     private final BiConsumer<TestCase, Verdict> onVerdictGiven;
 
-    // Test corrente
+    // Current test
     private TestCase currentTest = null;
     private boolean showCompletion = false;
 
@@ -38,7 +38,7 @@ public class TestDetailPanel implements HubPanel {
     private static final int BUTTON_WIDTH = 80;
     private static final int BUTTON_GAP = 12;
 
-    // Scroll per istruzioni lunghe
+    // Scroll for long instructions
     private int instructionScroll = 0;
     private int maxInstructionScroll = 0;
 
@@ -77,7 +77,7 @@ public class TestDetailPanel implements HubPanel {
     }
 
     public void updateToolStatus(ToolType tool, boolean enabled) {
-        // Trigger re-render con nuovo stato tool
+        // Trigger re-render with new tool state
     }
 
     @Override
@@ -135,11 +135,11 @@ public class TestDetailPanel implements HubPanel {
         renderStatusRow(graphics, contentX, contentY, contentWidth);
         contentY += LINE_HEIGHT + 8;
 
-        // Separatore
+        // Separator
         AxiomRenderer.drawSeparator(graphics, contentX, contentY, contentWidth);
         contentY += 8;
 
-        // === DESCRIZIONE ===
+        // === DESCRIPTION ===
         graphics.drawString(font, "Description:", contentX, contentY, UIConstants.Text.TITLE, false);
         contentY += LINE_HEIGHT + 2;
 
@@ -166,7 +166,7 @@ public class TestDetailPanel implements HubPanel {
     }
 
     private void renderHeader(GuiGraphics graphics, int cx, int cy, int cw) {
-        // Nome test
+        // Test name
         String name = currentTest.getName();
         if (font.width(name) > cw - 60) {
             name = name.substring(0, Math.min(name.length(), 40)) + "...";
@@ -178,7 +178,7 @@ public class TestDetailPanel implements HubPanel {
         int priorityWidth = font.width(priority);
         graphics.drawString(font, priority, cx + cw - priorityWidth, cy + 4, currentTest.getPriority().getColor(), false);
 
-        // Sottoline
+        // Underline
         graphics.fill(cx, cy + HEADER_HEIGHT - 4, cx + cw, cy + HEADER_HEIGHT - 3, UIConstants.Border.SEPARATOR);
     }
 
@@ -223,7 +223,7 @@ public class TestDetailPanel implements HubPanel {
     private int renderInstructions(GuiGraphics graphics, int cx, int cy, int cw, int maxHeight) {
         String[] steps = currentTest.getInstructions().split("\n");
 
-        // Scissor per scroll
+        // Scissor for scroll
         graphics.enableScissor(cx, cy, cx + cw, cy + maxHeight);
 
         int stepY = cy - instructionScroll;
@@ -247,7 +247,7 @@ public class TestDetailPanel implements HubPanel {
             if (stepY >= cy - 20 && stepY < cy + maxHeight + 20) {
                 graphics.drawString(font, checkbox, cx, stepY, checkColor, false);
 
-                // Step text (wrappato se necessario)
+                // Step text (wrapped if necessary)
                 String stepText = step;
                 int textX = cx + font.width(checkbox) + 4;
                 int textWidth = cw - font.width(checkbox) - 8;
@@ -294,7 +294,7 @@ public class TestDetailPanel implements HubPanel {
 
             toolX += font.width(badge + status) + 16;
 
-            // Nuova riga se necessario
+            // New line if necessary
             if (toolX > cx + cw - 100) {
                 toolX = cx + 4;
                 cy += LINE_HEIGHT + 2;
@@ -317,7 +317,7 @@ public class TestDetailPanel implements HubPanel {
             int bgColor = hovered ? UIConstants.Background.HOVER : UIConstants.Background.INPUT;
             graphics.fill(bx, buttonsY, bx + BUTTON_WIDTH, buttonsY + BUTTON_HEIGHT, bgColor);
 
-            // Border con colore verdetto
+            // Border with verdict color
             int borderColor = hovered ? verdict.getColor() : UIConstants.Border.DEFAULT;
             AxiomRenderer.drawBorder(graphics, bx, buttonsY, BUTTON_WIDTH, BUTTON_HEIGHT, borderColor);
 
@@ -327,7 +327,7 @@ public class TestDetailPanel implements HubPanel {
             int labelColor = hovered ? verdict.getColor() : UIConstants.Text.PRIMARY;
             graphics.drawString(font, label, bx + (BUTTON_WIDTH - labelWidth) / 2, buttonsY + 8, labelColor, false);
 
-            // Hotkey hint sotto
+            // Hotkey hint below
             String hotkey = "[" + verdict.getHotkey() + "]";
             int hotkeyWidth = font.width(hotkey);
             graphics.drawString(font, hotkey, bx + (BUTTON_WIDTH - hotkeyWidth) / 2, buttonsY + BUTTON_HEIGHT + 2, UIConstants.Text.MUTED, false);

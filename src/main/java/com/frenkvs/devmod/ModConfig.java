@@ -1,38 +1,38 @@
 package com.frenkvs.devmod;
 
 public class ModConfig {
-    // VISIBILITÀ
-    public static boolean showOverlay = true;       // Mostra scritte a schermo
-    public static boolean showRender = false;       // Mostra cerchi/blocchi a terra (default OFF per performance)
+    // VISIBILITY
+    public static boolean showOverlay = true;       // Show on-screen text
+    public static boolean showRender = false;       // Show circles/blocks on ground (default OFF for performance)
 
     // BODY PART HITBOXES
-    // Toggle per mostrare le hitbox colorate delle body parts (HEAD, ARMS, BODY, LEGS)
-    public static boolean showBodyPartBoxes = false; // Default OFF - attivabile con Shift+G
+    // Toggle to show colored hitboxes for body parts (HEAD, ARMS, BODY, LEGS)
+    public static boolean showBodyPartBoxes = false; // Default OFF - can be enabled with Shift+G
 
-    // MODALITÀ DI RENDER
-    // true = Illumina i blocchi (Griglia rossa) - PESANTE!
-    // false = Disegna il cerchio semplice (Linea) - più leggero
+    // RENDER MODE
+    // true = Illuminate blocks (Red grid) - HEAVY!
+    // false = Draw simple circle (Line) - lighter
     public static boolean renderAsBlocks = false;
 
-    // COLORI (In formato ARGB Hex)
-    // 0xFFFF0000 = Rosso, 0xFFFFFF00 = Giallo, 0xFF00FF00 = Verde, 0xFF00FFFF = Ciano
-    public static int followRangeColor = 0xFFFF0000; // Default Rosso
+    // COLORS (In ARGB Hex format)
+    // 0xFFFF0000 = Red, 0xFFFFFF00 = Yellow, 0xFF00FF00 = Green, 0xFF00FFFF = Cyan
+    public static int followRangeColor = 0xFFFF0000; // Default Red
 
-    // Metodo per ciclare i colori nel menu
+    // Method to cycle colors in the menu
     public static void cycleColor() {
-        if (followRangeColor == 0xFFFF0000) followRangeColor = 0xFFFFFF00; // Rosso -> Giallo
-        else if (followRangeColor == 0xFFFFFF00) followRangeColor = 0xFF00FF00; // Giallo -> Verde
-        else if (followRangeColor == 0xFF00FF00) followRangeColor = 0xFF00FFFF; // Verde -> Ciano
-        else if (followRangeColor == 0xFF00FFFF) followRangeColor = 0xFF0000FF; // Ciano -> Blu
-        else followRangeColor = 0xFFFF0000; // Blu -> Rosso
+        if (followRangeColor == 0xFFFF0000) followRangeColor = 0xFFFFFF00; // Red -> Yellow
+        else if (followRangeColor == 0xFFFFFF00) followRangeColor = 0xFF00FF00; // Yellow -> Green
+        else if (followRangeColor == 0xFF00FF00) followRangeColor = 0xFF00FFFF; // Green -> Cyan
+        else if (followRangeColor == 0xFF00FFFF) followRangeColor = 0xFF0000FF; // Cyan -> Blue
+        else followRangeColor = 0xFFFF0000; // Blue -> Red
     }
 
     public static String getColorName() {
-        if (followRangeColor == 0xFFFF0000) return "Rosso";
-        if (followRangeColor == 0xFFFFFF00) return "Giallo";
-        if (followRangeColor == 0xFF00FF00) return "Verde";
-        if (followRangeColor == 0xFF00FFFF) return "Ciano";
-        if (followRangeColor == 0xFF0000FF) return "Blu";
-        return "Sconosciuto";
+        if (followRangeColor == 0xFFFF0000) return "Red";
+        if (followRangeColor == 0xFFFFFF00) return "Yellow";
+        if (followRangeColor == 0xFF00FF00) return "Green";
+        if (followRangeColor == 0xFF00FFFF) return "Cyan";
+        if (followRangeColor == 0xFF0000FF) return "Blue";
+        return "Unknown";
     }
 }

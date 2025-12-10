@@ -22,18 +22,18 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import java.util.List;
 
 /**
- * HUD Overlay per Endurance Quest.
+ * HUD Overlay for Endurance Quest.
  *
- * Mostra durante una quest attiva:
- * - Wave corrente / totale (o "Endless" se in modalità infinita)
- * - Mob rimasti nella wave (con progress bar)
- * - Modificatori attivi della wave (icone/nomi)
- * - Timer sessione e punti accumulati
- * - Kill count e damage dealt/taken
- * - Combo e Style rank (DMC-style)
+ * Displays during an active quest:
+ * - Current wave / total (or "Endless" if in endless mode)
+ * - Remaining mobs in wave (with progress bar)
+ * - Active wave modifiers (icons/names)
+ * - Session timer and accumulated points
+ * - Kill count and damage dealt/taken
+ * - Combo and Style rank (DMC-style)
  *
- * Posizione: alto a sinistra (sotto boss bars)
- * Stile: Compatto, semi-trasparente, coerente con altri overlay DevMod
+ * Position: top-left (below boss bars)
+ * Style: Compact, semi-transparent, consistent with other DevMod overlays
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 @SuppressWarnings("null")
@@ -42,22 +42,22 @@ public class EnduranceQuestOverlay {
     private static final ResourceLocation LAYER_ID =
         ResourceLocation.fromNamespaceAndPath("devmod", "endurance_quest_hud");
 
-    // === Colori UI ===
-    private static final int PANEL_BG = 0xDD1A1A2E;           // Blu scuro 87% opacity
-    private static final int PANEL_BORDER = 0xFFFF5722;       // Arancione (endurance)
+    // === UI Colors ===
+    private static final int PANEL_BG = 0xDD1A1A2E;           // Dark blue 87% opacity
+    private static final int PANEL_BORDER = 0xFFFF5722;       // Orange (endurance)
     private static final int PANEL_BORDER_GLOW = 0x44FF5722;  // Glow border
 
-    private static final int TEXT_TITLE = 0xFFFFAB91;         // Arancione chiaro (wave)
-    private static final int TEXT_NORMAL = 0xFFFFFFFF;        // Bianco
-    private static final int TEXT_ACCENT = 0xFFFF5722;        // Arancione (highlight)
-    private static final int TEXT_DIM = 0xFFAAAAAA;           // Grigio (secondary)
-    private static final int TEXT_DANGER = 0xFFFF5252;        // Rosso (damage taken)
-    private static final int TEXT_SUCCESS = 0xFF4CAF50;       // Verde (kills)
+    private static final int TEXT_TITLE = 0xFFFFAB91;         // Light orange (wave)
+    private static final int TEXT_NORMAL = 0xFFFFFFFF;        // White
+    private static final int TEXT_ACCENT = 0xFFFF5722;        // Orange (highlight)
+    private static final int TEXT_DIM = 0xFFAAAAAA;           // Gray (secondary)
+    private static final int TEXT_DANGER = 0xFFFF5252;        // Red (damage taken)
+    private static final int TEXT_SUCCESS = 0xFF4CAF50;       // Green (kills)
 
-    private static final int PROGRESS_BG = 0xFF333333;        // Sfondo barra
-    private static final int PROGRESS_FILL = 0xFFFF5722;      // Arancione (riempimento)
+    private static final int PROGRESS_BG = 0xFF333333;        // Progress bar background
+    private static final int PROGRESS_FILL = 0xFFFF5722;      // Orange (fill)
 
-    // === Dimensioni ===
+    // === Dimensions ===
     private static final int PANEL_PADDING = 8;
     private static final int LINE_HEIGHT = 11;
     private static final int PANEL_WIDTH = 200;
@@ -68,7 +68,7 @@ public class EnduranceQuestOverlay {
 
     // === Toggle ===
     private static boolean enabled = true;
-    private static boolean showDetails = true; // Mostra stats dettagliate
+    private static boolean showDetails = true; // Show detailed stats
 
     // === Animation ===
     private static long waveCompleteAnimTime = 0;
@@ -78,7 +78,7 @@ public class EnduranceQuestOverlay {
     // === Wave Counter Banner ===
     private static final int WAVE_BANNER_HEIGHT = 32;
     private static final int WAVE_BANNER_BG = 0xBB1A1A2E;     // Semi-transparent
-    private static final int WAVE_NUMBER_COLOR = 0xFFFF5722;   // Arancione brillante
+    private static final int WAVE_NUMBER_COLOR = 0xFFFF5722;   // Bright orange
 
     // === State Watcher for Checkpoint Screen ===
     private static boolean checkpointScreenShown = false;
@@ -101,7 +101,7 @@ public class EnduranceQuestOverlay {
     }
 
     /**
-     * Metodo di rendering principale.
+     * Main rendering method.
      */
     private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
         if (!enabled) return;
@@ -151,24 +151,24 @@ public class EnduranceQuestOverlay {
     }
 
     /**
-     * Renderizza il pannello principale.
+     * Renders the main panel.
      */
     private static void renderPanel(GuiGraphics g, Font font, int x, int y, int width, int height,
                                      QuestSyncPayload data) {
-        // Sfondo con bordo
+        // Background with border
         renderPanelBackground(g, x, y, width, height);
 
         int textX = x + PANEL_PADDING;
         int textY = y + PANEL_PADDING;
 
-        // === Header: Nome Quest (troncato se necessario) ===
+        // === Header: Quest Name (truncated if needed) ===
         String questName = data.questName();
         if (questName == null || questName.isEmpty()) {
             questName = "Endurance Quest";
         }
-        // Rimuovi caratteri problematici e tronca
+        // Remove problematic characters and truncate
         questName = questName.replaceAll("[^\\w\\s-]", "").trim();
-        int maxNameWidth = width - PANEL_PADDING * 2 - 60; // Lascia spazio per punti
+        int maxNameWidth = width - PANEL_PADDING * 2 - 60; // Leave space for points
         if (font.width(questName) > maxNameWidth) {
             String ellipsis = "...";
             int minChars = Math.min(6, questName.length()); // Keep at least 6 chars for readability
@@ -179,13 +179,13 @@ public class EnduranceQuestOverlay {
         }
         g.drawString(font, "\u2694 " + questName, textX, textY, TEXT_TITLE, true); // ⚔ icon
 
-        // Punti nell'header a destra
+        // Points in header on the right
         String pointsText = data.pointsEarned() + " pts";
         int pointsWidth = font.width(pointsText);
         g.drawString(font, pointsText, x + width - PANEL_PADDING - pointsWidth, textY, TEXT_ACCENT, false);
         textY += LINE_HEIGHT + 4;
 
-        // === Wave Progress (su riga separata) ===
+        // === Wave Progress (on separate row) ===
         String waveText;
         if (data.endlessMode()) {
             waveText = "Wave " + data.currentWave() + " (Endless)";
@@ -194,20 +194,20 @@ public class EnduranceQuestOverlay {
         }
         g.drawString(font, waveText, textX, textY, TEXT_NORMAL, false);
 
-        // Kills a destra sulla stessa riga
+        // Kills on the right of the same row
         String killsText = data.mobsKilled() + " kills";
         int killsWidth = font.width(killsText);
         g.drawString(font, killsText, x + width - PANEL_PADDING - killsWidth, textY, TEXT_SUCCESS, false);
         textY += LINE_HEIGHT + 4;
 
-        // === Progress Bar (Mob nella wave) ===
+        // === Progress Bar (Mobs in wave) ===
         int killed = data.mobsKilledInWave();
         int total = data.totalMobsInWave();
         float progress = total > 0 ? (float) killed / total : 0;
 
         renderProgressBar(g, textX, textY, width - PANEL_PADDING * 2, PROGRESS_BAR_HEIGHT, progress);
 
-        // Progress text sopra la barra
+        // Progress text above the bar
         String mobText = killed + " / " + total + " mobs";
         int mobTextWidth = font.width(mobText);
         g.drawString(font, mobText, textX + (width - PANEL_PADDING * 2 - mobTextWidth) / 2,
@@ -245,13 +245,13 @@ public class EnduranceQuestOverlay {
             textY += LINE_HEIGHT + 2;
         }
 
-        // === Stats Dettagliate ===
+        // === Detailed Stats ===
         if (showDetails) {
-            // Linea separatore
+            // Separator line
             g.fill(x + 4, textY, x + width - 4, textY + 1, PANEL_BORDER & 0x55FFFFFF);
             textY += 4;
 
-            // Timer sessione
+            // Session timer
             long duration = data.sessionDurationMs();
             String timeText = formatDuration(duration);
             g.drawString(font, "Time: " + timeText, textX, textY, TEXT_DIM, false);
@@ -261,13 +261,13 @@ public class EnduranceQuestOverlay {
             String killText = "Kills: " + data.mobsKilled();
             g.drawString(font, killText, textX, textY, TEXT_SUCCESS, false);
 
-            // Damage dealt/taken a destra
+            // Damage dealt/taken on the right
             String dmgText = "DMG: " + data.damageDealt() + "/" + data.damageTaken();
             int dmgWidth = font.width(dmgText);
             g.drawString(font, dmgText, x + width - PANEL_PADDING - dmgWidth, textY, TEXT_DIM, false);
             textY += LINE_HEIGHT;
 
-            // Deaths questa sessione (se > 0)
+            // Deaths this session (if > 0)
             if (data.deaths() > 0) {
                 g.drawString(font, "Deaths: " + data.deaths(), textX, textY, TEXT_DANGER, false);
                 textY += LINE_HEIGHT;
@@ -281,16 +281,16 @@ public class EnduranceQuestOverlay {
     }
 
     /**
-     * Renderizza sfondo pannello con bordo.
+     * Renders panel background with border.
      */
     private static void renderPanelBackground(GuiGraphics g, int x, int y, int width, int height) {
-        // Glow esterno
+        // Outer glow
         g.fill(x - 1, y - 1, x + width + 1, y + height + 1, PANEL_BORDER_GLOW);
 
-        // Sfondo principale
+        // Main background
         g.fill(x, y, x + width, y + height, PANEL_BG);
 
-        // Bordo
+        // Border
         g.fill(x, y, x + width, y + 1, PANEL_BORDER);                    // Top
         g.fill(x, y + height - 1, x + width, y + height, PANEL_BORDER);  // Bottom
         g.fill(x, y, x + 1, y + height, PANEL_BORDER);                   // Left
@@ -298,7 +298,7 @@ public class EnduranceQuestOverlay {
     }
 
     /**
-     * Renderizza la progress bar.
+     * Renders the progress bar.
      */
     private static void renderProgressBar(GuiGraphics g, int x, int y, int width, int height, float progress) {
         // Background
@@ -314,38 +314,38 @@ public class EnduranceQuestOverlay {
     }
 
     /**
-     * Renderizza il wave banner prominente al centro-alto dello schermo.
-     * Mostra numero wave grande e ben visibile.
+     * Renders the prominent wave banner at the top-center of the screen.
+     * Shows a large and visible wave number.
      */
     private static void renderWaveBanner(GuiGraphics g, Font font, int screenWidth, QuestSyncPayload data) {
-        // Banner posizionato al centro-alto
+        // Banner positioned at top-center
         int bannerWidth = 160;
         int bannerX = (screenWidth - bannerWidth) / 2;
         int bannerY = 5;
 
-        // Sfondo semi-trasparente
+        // Semi-transparent background
         g.fill(bannerX, bannerY, bannerX + bannerWidth, bannerY + WAVE_BANNER_HEIGHT, WAVE_BANNER_BG);
 
-        // Bordi arancioni
+        // Orange borders
         g.fill(bannerX, bannerY, bannerX + bannerWidth, bannerY + 2, PANEL_BORDER);
         g.fill(bannerX, bannerY + WAVE_BANNER_HEIGHT - 2, bannerX + bannerWidth, bannerY + WAVE_BANNER_HEIGHT, PANEL_BORDER);
 
-        // Wave number grande al centro
+        // Large wave number at center
         String waveNum = String.valueOf(data.currentWave());
 
-        // Scala il numero della wave per renderlo prominente
+        // Scale the wave number to make it prominent
         g.pose().pushPose();
         float scale = 2.0f;
         int numWidth = font.width(waveNum);
 
-        // Numero grande centrato
+        // Large centered number
         g.pose().translate(bannerX + bannerWidth / 2.0f, bannerY + 4, 0);
         g.pose().scale(scale, scale, 1.0f);
         g.pose().translate(-numWidth / 2.0f, 0, 0);
         g.drawString(font, waveNum, 0, 0, WAVE_NUMBER_COLOR, true);
         g.pose().popPose();
 
-        // Label sotto il numero (solo se endless o per mostrare totale)
+        // Label below the number (only if endless or to show total)
         if (!data.endlessMode()) {
             String totalLabel = "/ " + data.totalWaves();
             int labelWidth = font.width(totalLabel);
@@ -360,7 +360,7 @@ public class EnduranceQuestOverlay {
     }
 
     /**
-     * Renderizza animazione completamento wave.
+     * Renders wave completion animation.
      */
     private static void renderWaveCompleteAnimation(GuiGraphics g, Font font, int x, int y) {
         long elapsed = System.currentTimeMillis() - waveCompleteAnimTime;
@@ -384,7 +384,7 @@ public class EnduranceQuestOverlay {
     }
 
     /**
-     * Calcola altezza dinamica del pannello.
+     * Calculates dynamic panel height.
      */
     private static int calculatePanelHeight(QuestSyncPayload data) {
         int height = PANEL_PADDING * 2;
@@ -430,7 +430,7 @@ public class EnduranceQuestOverlay {
     }
 
     /**
-     * Formatta durata in mm:ss.
+     * Formats duration as mm:ss.
      */
     private static String formatDuration(long millis) {
         long seconds = millis / 1000;
@@ -440,7 +440,7 @@ public class EnduranceQuestOverlay {
     }
 
     /**
-     * Applica alpha a un colore ARGB.
+     * Applies alpha to an ARGB color.
      */
     private static int applyAlpha(int color, float alpha) {
         int a = (int) (((color >> 24) & 0xFF) * alpha);
@@ -448,24 +448,24 @@ public class EnduranceQuestOverlay {
     }
 
     /**
-     * Restituisce colore per nome di modificatore.
+     * Returns color for modifier name.
      */
     private static int getModifierColor(String modName) {
         return switch (modName.toLowerCase()) {
-            case "swift" -> 0xFF64B5F6;       // Blu chiaro
-            case "empowered" -> 0xFFFF5252;   // Rosso
-            case "fortified" -> 0xFF4CAF50;   // Verde
-            case "armored" -> 0xFF9E9E9E;     // Grigio
-            case "blazing" -> 0xFFFF9800;     // Arancione
-            case "phantom" -> 0xFF7C4DFF;     // Viola
-            case "regenerating" -> 0xFFE91E63;// Rosa
-            case "horde" -> 0xFFFFEB3B;       // Giallo
-            default -> 0xFFFFFFFF;            // Bianco
+            case "swift" -> 0xFF64B5F6;       // Light blue
+            case "empowered" -> 0xFFFF5252;   // Red
+            case "fortified" -> 0xFF4CAF50;   // Green
+            case "armored" -> 0xFF9E9E9E;     // Gray
+            case "blazing" -> 0xFFFF9800;     // Orange
+            case "phantom" -> 0xFF7C4DFF;     // Purple
+            case "regenerating" -> 0xFFE91E63;// Pink
+            case "horde" -> 0xFFFFEB3B;       // Yellow
+            default -> 0xFFFFFFFF;            // White
         };
     }
 
     /**
-     * Restituisce icona per nome di modificatore.
+     * Returns icon for modifier name.
      */
     private static String getModifierIcon(String modName) {
         return switch (modName.toLowerCase()) {

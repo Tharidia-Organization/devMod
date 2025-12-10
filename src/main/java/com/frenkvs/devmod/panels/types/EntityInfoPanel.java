@@ -19,17 +19,17 @@ import net.minecraft.world.phys.Vec3;
 import javax.annotation.Nullable;
 
 /**
- * Pannello che mostra informazioni dettagliate su un'entita'.
+ * Panel that shows detailed information about an entity.
  *
- * Informazioni visualizzate:
- * - Nome e tipo entita'
- * - Health bar e valori
- * - Attributi (attack damage, armor)
- * - Effetti attivi
+ * Information displayed:
+ * - Name and entity type
+ * - Health bar and values
+ * - Attributes (attack damage, armor)
+ * - Active effects
  */
 public class EntityInfoPanel extends FloatingPanel {
 
-    // Cache dei dati per evitare lookup ogni frame
+    // Data cache to avoid lookups every frame
     private String entityName = "";
     private String entityType = "";
     private float currentHealth = 0;
@@ -39,10 +39,10 @@ public class EntityInfoPanel extends FloatingPanel {
     private int effectCount = 0;
     private long lastUpdateTick = 0;
 
-    private static final int UPDATE_INTERVAL_TICKS = 5; // Aggiorna ogni 5 tick
+    private static final int UPDATE_INTERVAL_TICKS = 5; // Update every 5 ticks
 
     /**
-     * Crea un pannello info per l'entita' specificata.
+     * Creates an info panel for the specified entity.
      */
     public EntityInfoPanel(Entity target) {
         super(PanelType.ENTITY_INFO, new EntityTracker(target));
@@ -50,7 +50,7 @@ public class EntityInfoPanel extends FloatingPanel {
     }
 
     /**
-     * Crea un pannello con offset custom.
+     * Creates a panel with custom offset.
      */
     public EntityInfoPanel(Entity target, Vec3 offset) {
         super(PanelType.ENTITY_INFO, new EntityTracker(target));
@@ -64,7 +64,7 @@ public class EntityInfoPanel extends FloatingPanel {
     public void tick() {
         super.tick();
 
-        // Aggiorna i dati periodicamente
+        // Update data periodically
         long currentTick = System.currentTimeMillis() / 50; // ~20 ticks/sec
         if (currentTick - lastUpdateTick >= UPDATE_INTERVAL_TICKS) {
             updateEntityData();
@@ -73,7 +73,7 @@ public class EntityInfoPanel extends FloatingPanel {
     }
 
     /**
-     * Aggiorna i dati cached dell'entita'.
+     * Updates the entity's cached data.
      */
     private void updateEntityData() {
         if (tracker == null) return;
@@ -88,7 +88,7 @@ public class EntityInfoPanel extends FloatingPanel {
             currentHealth = living.getHealth();
             maxHealth = living.getMaxHealth();
 
-            // Attributi
+            // Attributes
             if (living.getAttribute(Attributes.ATTACK_DAMAGE) != null) {
                 attackDamage = (float) living.getAttributeValue(Attributes.ATTACK_DAMAGE);
             }
@@ -102,8 +102,8 @@ public class EntityInfoPanel extends FloatingPanel {
 
     @Override
     public void renderContent(GuiGraphics graphics, int contentWidth, int contentHeight) {
-        // Nota: questo metodo e' per rendering 2D
-        // Il rendering 3D effettivo e' gestito da PanelRenderer
+        // Note: this method is for 2D rendering
+        // The actual 3D rendering is handled by PanelRenderer
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.font == null) return;
@@ -111,11 +111,11 @@ public class EntityInfoPanel extends FloatingPanel {
         int y = 0;
         int lineHeight = 10;
 
-        // Nome entita'
+        // Entity name
         graphics.drawString(mc.font, entityName, 0, y, UIConstants.Text.PRIMARY, false);
         y += lineHeight + 2;
 
-        // Tipo
+        // Type
         graphics.drawString(mc.font, entityType, 0, y, UIConstants.Text.MUTED, false);
         y += lineHeight + 4;
 
@@ -154,7 +154,7 @@ public class EntityInfoPanel extends FloatingPanel {
     }
 
     /**
-     * Ottiene il colore della health bar basato sulla percentuale.
+     * Gets the health bar color based on percentage.
      */
     private int getHealthColor(float percent) {
         if (percent > 0.6f) return UIConstants.Status.SUCCESS;
@@ -168,11 +168,11 @@ public class EntityInfoPanel extends FloatingPanel {
         int y = 0;
         int lineHeight = 10;
 
-        // Nome entita'
+        // Entity name
         renderText3D(poseStack, bufferSource, font, entityName, 0, y, applyAlpha(UIConstants.Text.PRIMARY, alpha));
         y += lineHeight + 2;
 
-        // Tipo
+        // Type
         renderText3D(poseStack, bufferSource, font, entityType, 0, y, applyAlpha(UIConstants.Text.MUTED, alpha));
         y += lineHeight + 4;
 
@@ -248,7 +248,7 @@ public class EntityInfoPanel extends FloatingPanel {
     }
 
     /**
-     * Verifica se il target e' un player.
+     * Checks if the target is a player.
      */
     public boolean isTargetPlayer() {
         Entity target = getTargetEntity();
@@ -256,7 +256,7 @@ public class EntityInfoPanel extends FloatingPanel {
     }
 
     /**
-     * Verifica se il target e' un mob ostile.
+     * Checks if the target is a hostile mob.
      */
     public boolean isTargetHostile() {
         Entity target = getTargetEntity();

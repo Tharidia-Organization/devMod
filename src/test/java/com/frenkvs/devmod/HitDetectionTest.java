@@ -6,7 +6,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -526,6 +525,7 @@ public class HitDetectionTest {
             BodyPart part = computeBodyPart(hit.y, 0, 1.8);
             // Due to aiming slightly up, should hit head area
             assertTrue(hit.y > 1.35, "Hit Y should be in head region: " + hit.y);
+            assertEquals(BodyPart.HEAD, part);
         }
 
         @Test

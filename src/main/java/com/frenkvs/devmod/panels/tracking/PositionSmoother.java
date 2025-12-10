@@ -3,13 +3,13 @@ package com.frenkvs.devmod.panels.tracking;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Utility per smoothing di posizioni 3D con vari algoritmi.
+ * Utility for smoothing 3D positions with various algorithms.
  *
- * Supporta:
- * - Interpolazione lineare (lerp)
- * - Smoothing esponenziale
- * - Spring physics (molla)
- * - Critically damped spring (nessuna oscillazione)
+ * Supports:
+ * - Linear interpolation (lerp)
+ * - Exponential smoothing
+ * - Spring physics
+ * - Critically damped spring (no oscillation)
  */
 public class PositionSmoother {
 
@@ -24,16 +24,16 @@ public class PositionSmoother {
     private float springDamping = 10f;
 
     /**
-     * Algoritmi di smoothing disponibili.
+     * Available smoothing algorithms.
      */
     public enum SmoothingMode {
-        /** Interpolazione lineare semplice */
+        /** Simple linear interpolation */
         LINEAR,
-        /** Smoothing esponenziale (piu' naturale) */
+        /** Exponential smoothing (more natural) */
         EXPONENTIAL,
-        /** Fisica a molla (puo' oscillare) */
+        /** Spring physics (may oscillate) */
         SPRING,
-        /** Molla critically damped (smooth senza oscillazioni) */
+        /** Critically damped spring (smooth without oscillations) */
         CRITICALLY_DAMPED
     }
 
@@ -47,11 +47,11 @@ public class PositionSmoother {
     }
 
     /**
-     * Aggiorna la posizione verso il target.
+     * Updates position towards the target.
      *
-     * @param target Posizione target
-     * @param deltaTime Tempo trascorso in secondi (tipicamente 0.05 per tick)
-     * @return Nuova posizione smoothed
+     * @param target Target position
+     * @param deltaTime Elapsed time in seconds (typically 0.05 per tick)
+     * @return New smoothed position
      */
     public Vec3 update(Vec3 target, float deltaTime) {
         currentPosition = switch (mode) {
@@ -65,7 +65,7 @@ public class PositionSmoother {
     }
 
     /**
-     * Interpolazione lineare: si muove di una frazione fissa verso il target.
+     * Linear interpolation: moves by a fixed fraction towards the target.
      */
     private Vec3 updateLinear(Vec3 target, float deltaTime) {
         Vec3 diff = target.subtract(currentPosition);
@@ -74,7 +74,7 @@ public class PositionSmoother {
     }
 
     /**
-     * Smoothing esponenziale: piu' veloce quando lontano, rallenta avvicinandosi.
+     * Exponential smoothing: faster when far away, slows down when approaching.
      */
     private Vec3 updateExponential(Vec3 target, float deltaTime) {
         // Formula: pos = pos + (target - pos) * (1 - e^(-factor * dt))
@@ -84,7 +84,7 @@ public class PositionSmoother {
     }
 
     /**
-     * Fisica a molla: puo' oscillare attorno al target.
+     * Spring physics: may oscillate around the target.
      */
     private Vec3 updateSpring(Vec3 target, float deltaTime) {
         // F = -k * x - d * v (spring force + damping)
@@ -99,8 +99,8 @@ public class PositionSmoother {
     }
 
     /**
-     * Critically damped spring: smooth e veloce senza oscillazioni.
-     * Usato per UI dove non vuoi "bouncing".
+     * Critically damped spring: smooth and fast without oscillations.
+     * Used for UI where you don't want bouncing.
      */
     private Vec3 updateCriticallyDamped(Vec3 target, float deltaTime) {
         // Damping critico: d = 2 * sqrt(k)
@@ -117,7 +117,7 @@ public class PositionSmoother {
     }
 
     /**
-     * Imposta immediatamente la posizione (senza smoothing).
+     * Sets position immediately (without smoothing).
      */
     public void setPosition(Vec3 position) {
         this.currentPosition = position;
@@ -125,7 +125,7 @@ public class PositionSmoother {
     }
 
     /**
-     * Resetta la velocita' (ferma il movimento).
+     * Resets velocity (stops movement).
      */
     public void resetVelocity() {
         this.velocity = Vec3.ZERO;
@@ -166,7 +166,7 @@ public class PositionSmoother {
     }
 
     /**
-     * Configura per movimento UI standard (smooth, no bounce).
+     * Configures for standard UI movement (smooth, no bounce).
      */
     public void configureForUI() {
         this.mode = SmoothingMode.CRITICALLY_DAMPED;
@@ -174,7 +174,7 @@ public class PositionSmoother {
     }
 
     /**
-     * Configura per tracking entita' (segue fluidamente).
+     * Configures for entity tracking (follows smoothly).
      */
     public void configureForEntityTracking() {
         this.mode = SmoothingMode.EXPONENTIAL;
@@ -182,7 +182,7 @@ public class PositionSmoother {
     }
 
     /**
-     * Configura per effetti di combattimento (reattivo).
+     * Configures for combat effects (reactive).
      */
     public void configureForCombat() {
         this.mode = SmoothingMode.EXPONENTIAL;
@@ -190,14 +190,14 @@ public class PositionSmoother {
     }
 
     /**
-     * Calcola la distanza dal target.
+     * Calculates distance from target.
      */
     public double distanceFromTarget(Vec3 target) {
         return currentPosition.distanceTo(target);
     }
 
     /**
-     * Verifica se la posizione e' "settled" (vicina al target e quasi ferma).
+     * Checks if position is "settled" (close to target and nearly stopped).
      */
     public boolean isSettled(Vec3 target, double positionThreshold, double velocityThreshold) {
         return currentPosition.distanceTo(target) < positionThreshold

@@ -3,14 +3,12 @@ package com.frenkvs.devmod.quest;
 import com.frenkvs.devmod.util.ConfigPaths;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
-import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,8 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Singleton manager per le quest.
- * Gestisce lo stato delle quest e la persistenza.
+ * Singleton manager for quests.
+ * Manages quest state and persistence.
  */
 public class QuestManager {
     public static final QuestManager INSTANCE = new QuestManager();
@@ -30,13 +28,13 @@ public class QuestManager {
     private QuestData activeQuest;
     private boolean dirty = false;
 
-    // Listeners per notificare cambiamenti (per UI sync)
+    // Listeners to notify changes (for UI sync)
     private final List<Runnable> changeListeners = new ArrayList<>();
 
     private QuestManager() {}
 
     /**
-     * Aggiunge una quest.
+     * Adds a quest.
      */
     public void addQuest(QuestData quest) {
         quests.add(quest);
@@ -48,7 +46,7 @@ public class QuestManager {
     }
 
     /**
-     * Rimuove una quest.
+     * Removes a quest.
      */
     public void removeQuest(String questId) {
         quests.removeIf(q -> q.getId().equals(questId));
@@ -60,14 +58,14 @@ public class QuestManager {
     }
 
     /**
-     * Restituisce la quest attiva.
+     * Returns the active quest.
      */
     public QuestData getActiveQuest() {
         return activeQuest;
     }
 
     /**
-     * Imposta la quest attiva.
+     * Sets the active quest.
      */
     public void setActiveQuest(QuestData quest) {
         if (quests.contains(quest)) {
@@ -77,7 +75,7 @@ public class QuestManager {
     }
 
     /**
-     * Imposta la quest attiva per ID.
+     * Sets the active quest by ID.
      */
     public void setActiveQuestById(String questId) {
         for (QuestData q : quests) {
@@ -90,21 +88,21 @@ public class QuestManager {
     }
 
     /**
-     * Restituisce tutte le quest.
+     * Returns all quests.
      */
     public List<QuestData> getAllQuests() {
         return new ArrayList<>(quests);
     }
 
     /**
-     * Restituisce la task corrente della quest attiva.
+     * Returns the current task of the active quest.
      */
     public QuestTask getCurrentTask() {
         return activeQuest != null ? activeQuest.getCurrentTask() : null;
     }
 
     /**
-     * Completa la task corrente e avanza alla prossima.
+     * Completes the current task and advances to the next one.
      */
     public void completeCurrentTask() {
         if (activeQuest != null) {
@@ -115,7 +113,7 @@ public class QuestManager {
     }
 
     /**
-     * Imposta una nota sulla task corrente.
+     * Sets a note on the current task.
      */
     public void setCurrentTaskNote(String note) {
         QuestTask task = getCurrentTask();
@@ -127,7 +125,7 @@ public class QuestManager {
     }
 
     /**
-     * Imposta una nota sulla quest attiva.
+     * Sets a note on the active quest.
      */
     public void setActiveQuestNote(String note) {
         if (activeQuest != null) {
@@ -138,14 +136,14 @@ public class QuestManager {
     }
 
     /**
-     * Restituisce la nota della task corrente.
+     * Returns the current task's note.
      */
     public String getCurrentTaskNote() {
         QuestTask task = getCurrentTask();
         return task != null ? task.getNote() : "";
     }
 
-    // === Persistenza ===
+    // === Persistence ===
 
     public void markDirty() {
         dirty = true;
@@ -156,7 +154,7 @@ public class QuestManager {
     }
 
     /**
-     * Salva le quest su disco.
+     * Saves quests to disk.
      */
     public void save() {
         if (!dirty) return;
@@ -181,7 +179,7 @@ public class QuestManager {
     }
 
     /**
-     * Carica le quest da disco.
+     * Loads quests from disk.
      */
     public void load() {
         Path file = ConfigPaths.getQuestDataFile();
@@ -216,13 +214,13 @@ public class QuestManager {
     }
 
     /**
-     * Crea una quest demo per test.
+     * Creates a demo quest for testing.
      */
     private void createDemoQuest() {
         QuestData demo = new QuestData("demo_quest", "Quest Tutorial");
-        demo.addTask(new QuestTask("task_1", "Apri il menu DevMod (premi M)"));
-        demo.addTask(new QuestTask("task_2", "Esplora le impostazioni debug"));
-        demo.addTask(new QuestTask("task_3", "Testa un'arma su un mob"));
+        demo.addTask(new QuestTask("task_1", "Open the DevMod menu (press M)"));
+        demo.addTask(new QuestTask("task_2", "Explore debug settings"));
+        demo.addTask(new QuestTask("task_3", "Test a weapon on a mob"));
         addQuest(demo);
         LOGGER.info("[DevMod] Created demo quest");
     }
@@ -258,7 +256,7 @@ public class QuestManager {
         }
     }
 
-    // === Classe interna per serializzazione ===
+    // === Internal class for serialization ===
 
     private static class QuestSaveData {
         List<QuestData> quests;

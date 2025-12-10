@@ -16,14 +16,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
- * Servizio per la gestione delle sessioni di combattimento.
+ * Service for managing fight sessions.
  *
- * Traccia:
- * - Sessioni di fight per room (inizio, durata, partecipanti)
- * - Kill count per tipo di mob
+ * Tracks:
+ * - Fight sessions per room (start, duration, participants)
+ * - Kill count per mob type
  * - Death count per player
- * - TTK (Time To Kill) per tipo di entità
- * - Burst damage (max damage in finestra temporale)
+ * - TTK (Time To Kill) per entity type
+ * - Burst damage (max damage in time window)
  */
 // Minecraft API (getGameProfile) guaranteed non-null for ServerPlayer
 @SuppressWarnings("null")
@@ -31,7 +31,7 @@ public class FightSessionService {
     public static final FightSessionService INSTANCE = new FightSessionService();
 
     private final Map<String, FightSession> activeFights = new ConcurrentHashMap<>();
-    private static final long FIGHT_TIMEOUT_MS = 10_000; // 10s di inattività chiude il fight
+    private static final long FIGHT_TIMEOUT_MS = 10_000; // 10s of inactivity closes the fight
 
     private FightSessionService() {}
 
@@ -40,8 +40,8 @@ public class FightSessionService {
     // ============================================
 
     /**
-     * Registra un hit in una sessione di combattimento.
-     * Crea la sessione se non esiste.
+     * Registers a hit in a combat session.
+     * Creates the session if it doesn't exist.
      */
     public void registerHit(String room, String worldId, Entity attacker, LivingEntity target, boolean isKill) {
         long now = System.currentTimeMillis();
@@ -51,7 +51,7 @@ public class FightSessionService {
         session.lastHitMs = now;
         session.hits++;
 
-        // Aggiungi player alla lista partecipanti
+        // Add player to participants list
         if (attacker instanceof ServerPlayer player) {
             session.players.add(player.getGameProfile().getName());
         }
@@ -59,7 +59,7 @@ public class FightSessionService {
             session.players.add(player.getGameProfile().getName());
         }
 
-        // Registra kill
+        // Register kill
         if (isKill) {
             if (target instanceof ServerPlayer) {
                 session.playerDeaths++;
@@ -72,7 +72,7 @@ public class FightSessionService {
     }
 
     /**
-     * Registra burst damage (per tracking picchi di dps).
+     * Registers burst damage (for tracking DPS spikes).
      */
     public void registerBurstDamage(String room, double damage) {
         FightSession session = activeFights.get(room);
@@ -82,7 +82,7 @@ public class FightSessionService {
     }
 
     /**
-     * Registra TTK per un'entità morta.
+     * Registers TTK for a dead entity.
      */
     public void registerTTK(String room, LivingEntity entity, long ttkMs) {
         FightSession session = activeFights.get(room);
@@ -95,7 +95,7 @@ public class FightSessionService {
     }
 
     /**
-     * Registra HP residuo dopo un hit (per statistiche medie).
+     * Registers remaining HP after a hit (for average statistics).
      */
     public void registerHpAfterHit(String room, LivingEntity target, double hpAfter) {
         FightSession session = activeFights.get(room);
@@ -111,8 +111,8 @@ public class FightSessionService {
     }
 
     /**
-     * Tick per chiudere le sessioni inattive.
-     * Chiamare ogni server tick o periodicamente.
+     * Tick to close inactive sessions.
+     * Call every server tick or periodically.
      */
     public void tick(Consumer<FightSessionResult> onFightEnd) {
         long now = System.currentTimeMillis();
@@ -132,7 +132,7 @@ public class FightSessionService {
     }
 
     /**
-     * Ottiene le sessioni attive.
+     * Gets active sessions.
      */
     public List<FightSessionSummary> getActiveFightSummaries() {
         List<FightSessionSummary> summaries = new ArrayList<>();
@@ -150,7 +150,7 @@ public class FightSessionService {
     }
 
     /**
-     * Verifica se c'è un fight attivo in una room.
+     * Checks if there's an active fight in a room.
      */
     public boolean isFightActive(String room) {
         return activeFights.containsKey(room);
@@ -230,7 +230,7 @@ public class FightSessionService {
     }
 
     /**
-     * Aggregato per Time To Kill.
+     * Aggregate for Time To Kill.
      */
     public record TTKAggregate(long count, long totalMs, long maxMs) {
         public TTKAggregate add(long ms) {
@@ -243,7 +243,7 @@ public class FightSessionService {
     }
 
     /**
-     * Summary di una fight session attiva.
+     * Summary of an active fight session.
      */
     public record FightSessionSummary(
         String room,
@@ -263,7 +263,7 @@ public class FightSessionService {
     }
 
     /**
-     * Risultato finale di una fight session completata.
+     * Final result of a completed fight session.
      */
     public record FightSessionResult(
         String room,
@@ -294,7 +294,7 @@ public class FightSessionService {
         }
 
         /**
-         * Serializza in formato JSON.
+         * Serializes to JSON format.
          */
         public String toJson() {
             StringBuilder sb = new StringBuilder();

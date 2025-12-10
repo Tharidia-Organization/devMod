@@ -15,7 +15,6 @@ import net.minecraft.world.entity.raid.Raids;
 import net.minecraft.world.level.pathfinder.Node;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -92,8 +92,8 @@ public class DebugDataCollector {
      * Uses the REAL path from mob.getNavigation().getPath()
      */
     private void collectAndSendPathingData(ServerPlayer player, ServerLevel level) {
-        BlockPos playerPos = player.blockPosition();
-        AABB searchBox = new AABB(playerPos).inflate(ENTITY_SEARCH_RADIUS);
+        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
+        AABB searchBox = Objects.requireNonNull(new AABB(playerPos).inflate(ENTITY_SEARCH_RADIUS));
 
         for (Mob mob : level.getEntitiesOfClass(Mob.class, searchBox)) {
             PathNavigation nav = mob.getNavigation();
@@ -122,9 +122,10 @@ public class DebugDataCollector {
                 double targetX, targetY, targetZ;
                 BlockPos targetPos = path.getTarget();
                 if (targetPos != null) {
-                    targetX = targetPos.getX() + 0.5;
-                    targetY = targetPos.getY();
-                    targetZ = targetPos.getZ() + 0.5;
+                    BlockPos nonNullTarget = Objects.requireNonNull(targetPos);
+                    targetX = nonNullTarget.getX() + 0.5;
+                    targetY = nonNullTarget.getY();
+                    targetZ = nonNullTarget.getZ() + 0.5;
                 } else {
                     Node endNode = path.getEndNode();
                     if (endNode != null) {
@@ -133,10 +134,11 @@ public class DebugDataCollector {
                         targetZ = endNode.z + 0.5;
                     } else {
                         // Fallback to mob's target entity position
-                        if (mob.getTarget() != null) {
-                            targetX = mob.getTarget().getX();
-                            targetY = mob.getTarget().getY();
-                            targetZ = mob.getTarget().getZ();
+                        var mobTarget = mob.getTarget();
+                        if (mobTarget != null) {
+                            targetX = mobTarget.getX();
+                            targetY = mobTarget.getY();
+                            targetZ = mobTarget.getZ();
                         } else {
                             continue; // Skip if no valid target
                         }
@@ -164,8 +166,8 @@ public class DebugDataCollector {
      * Shows both regular goals and target goals.
      */
     private void collectAndSendGoalsData(ServerPlayer player, ServerLevel level) {
-        BlockPos playerPos = player.blockPosition();
-        AABB searchBox = new AABB(playerPos).inflate(ENTITY_SEARCH_RADIUS);
+        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
+        AABB searchBox = Objects.requireNonNull(new AABB(playerPos).inflate(ENTITY_SEARCH_RADIUS));
 
         for (Mob mob : level.getEntitiesOfClass(Mob.class, searchBox)) {
             List<EntityGoalsPayload.GoalInfo> goals = extractGoals(mob.goalSelector);
@@ -209,7 +211,7 @@ public class DebugDataCollector {
      * Collect and send POI (Points of Interest) data.
      */
     private void collectAndSendPOIData(ServerPlayer player, ServerLevel level) {
-        BlockPos playerPos = player.blockPosition();
+        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
         PoiManager poiManager = level.getPoiManager();
 
         List<POIPayload.POIInfo> pois = new ArrayList<>();
@@ -223,7 +225,7 @@ public class DebugDataCollector {
         );
 
         poiStream.forEach(record -> {
-            BlockPos pos = record.getPos();
+            BlockPos pos = Objects.requireNonNull(record.getPos());
             String typeName = record.getPoiType().getRegisteredName();
 
             pois.add(new POIPayload.POIInfo(
@@ -250,7 +252,7 @@ public class DebugDataCollector {
 
         // Iterate through raid IDs to find active raids
         // In 1.21.1, we need to check raids near the player
-        BlockPos playerPos = player.blockPosition();
+        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
         Raid nearestRaid = raids.getNearbyRaid(playerPos, 128);
 
         if (nearestRaid != null && nearestRaid.isActive()) {
@@ -263,7 +265,7 @@ public class DebugDataCollector {
                 center.getZ() + 0.5,
                 0, // Bad omen level - not directly accessible in 1.21.1
                 nearestRaid.getGroupsSpawned(),
-                nearestRaid.getNumGroups(level.getDifficulty()),
+                nearestRaid.getNumGroups(Objects.requireNonNull(level.getDifficulty())),
                 nearestRaid.isActive(),
                 nearestRaid.isVictory()
             ));

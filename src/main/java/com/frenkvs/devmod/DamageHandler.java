@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -36,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 public class DamageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(DamageHandler.class);
 
-    // Scheduled executor per evasion check (sostituisce Thread.sleep)
+    // Scheduled executor for evasion check (replaces Thread.sleep)
     private static final ScheduledExecutorService EVASION_SCHEDULER =
         Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "DevMod-MeleeEvasion");
@@ -58,9 +59,9 @@ public class DamageHandler {
             Vec3 slashDirection = null;
             boolean isRanged = false;
 
-            // 1. Identifichiamo l'arma e la parte colpita
+            // 1. Identify the weapon and body part hit
             if (event.getSource().getDirectEntity() instanceof AbstractArrow arrow) {
-                // RANGED: Usa coordinata Y della freccia (PRECISIONE 100%)
+                // RANGED: Use arrow Y coordinate (100% PRECISION)
                 weapon = attacker.getMainHandItem();
                 part = HitHelper.getBodyPart(victim, arrow.getY());
                 hitPoint = arrow.position();
@@ -69,7 +70,7 @@ public class DamageHandler {
                 slashDirection = (delta.lengthSqr() > 0.0001) ? delta.normalize() : arrow.getViewVector(1.0f);
                 isRanged = true;
             } else {
-                // MELEE: Usa AABB subdivision raycast (PRECISIONE 95%)
+                // MELEE: Use AABB subdivision raycast (95% PRECISION)
                 weapon = attacker.getMainHandItem();
                 HitHelper.HitResult hitResult = HitHelper.rayTraceBodyPartWithHitPoint(attacker, victim);
                 part = hitResult.part();
@@ -78,13 +79,13 @@ public class DamageHandler {
                 isRanged = false;
             }
 
-            // Conferma che il danno è arrivato (per il tracking evasioni Enderman)
+            // Confirm that damage was dealt (for Enderman evasion tracking)
             confirmHit(victim);
 
-            // 2. Recuperiamo le Statistiche (Globali o Specifiche)
+            // 2. Retrieve Statistics (Global or Specific)
             WeaponStats stats = WeaponConfigManager.getStats(weapon);
 
-            // 3. Calcolo Moltiplicatore
+            // 3. Calculate Multiplier
             float multiplier = 1.0f;
             String partKey = "devmod.bodypart.body";
             int color = 0xFFFFFF;
@@ -96,11 +97,11 @@ public class DamageHandler {
                 case LEGS -> { multiplier = stats.legsMult; partKey = "devmod.bodypart.legs"; color = 0x55FFFF; }
             }
 
-            // 4. Calcolo Danni Finali
+            // 4. Calculate Final Damage
             float originalDamage = event.getAmount();
             float newDamage = (originalDamage + stats.baseDamageBonus) * multiplier;
 
-            // 5. Penetrazione Armatura (formula configurabile via Config)
+            // 5. Armor Penetration (configurable formula via Config)
             // Calculate armor pen bonus ONCE for both damage application AND telemetry
             float armorPenBonus = 0f;
             if (stats.armorPenetration > 0) {
@@ -111,7 +112,7 @@ public class DamageHandler {
             // Store body part AND armor pen bonus in context for telemetry
             HitContext.store(victim, part, isRanged, armorPenBonus);
 
-            // 6. Applica
+            // 6. Apply
             event.setAmount(newDamage);
 
             // 7. Feedback Visivo (actionbar) - Uses translatable component for i18n
@@ -119,18 +120,21 @@ public class DamageHandler {
                 String dmgText = String.format("%.1f", newDamage);
                 String penText = stats.armorPenetration > 0 ? " [Pen]" : "";
 
-                player.displayClientMessage(
-                        Component.literal("§7Hit: §" + getChar(color))
-                            .append(Component.translatable(partKey))
-                            .append(Component.literal(" §fDmg: " + dmgText + penText)),
-                        true
+                var partComponent = Objects.requireNonNull(Component.translatable(partKey));
+                var damageComponent = Objects.requireNonNull(Component.literal(" §fDmg: " + dmgText + penText));
+                var feedback = Objects.requireNonNull(
+                    Component.literal("§7Hit: §" + getChar(color))
+                        .append(partComponent)
+                        .append(damageComponent)
                 );
+
+                player.displayClientMessage(feedback, true);
             }
 
-            // 8. HUD Impact Analysis - Crea e salva i dati per l'overlay
+            // 8. HUD Impact Analysis - Create and save data for the overlay
             // Note: armorPenBonus already calculated above for damage and telemetry
 
-            // Crea breakdown dettagliato
+            // Create detailed breakdown
             DamageBreakdown breakdown = new DamageBreakdown(
                 weapon,
                 victim,
@@ -139,11 +143,11 @@ public class DamageHandler {
                 armorPenBonus
             );
 
-            // Determina fonte attacco
+            // Determine attack source
             String attackSource = isRanged ? "Ranged Attack" : "Melee Attack";
 
-            // Crea e salva ImpactData per l'HUD (con posizione impatto)
-            // MULTIPLAYER-SAFE: passa UUID dell'attaccante per isolamento dati
+            // Create and store ImpactData for HUD (with hit position)
+            // MULTIPLAYER-SAFE: pass attacker UUID for data isolation
             ImpactData impactData = new ImpactData(
                 attacker.getUUID(),
                 victim,
@@ -157,9 +161,9 @@ public class DamageHandler {
             );
             ImpactData.store(impactData);
 
-            // Aggiungi effetto VFX 3D (marker + slash animation)
-            // In singleplayer, l'evento damage gira sul server integrato ma possiamo
-            // accedere alle classi client perché siamo sullo stesso processo
+            // Add 3D VFX effect (marker + slash animation)
+            // In singleplayer, the damage event runs on the integrated server but we can
+            // access client classes because we're on the same process
             LOGGER.debug("dist.isClient={}, hitPoint={}, target={}",
                 FMLEnvironment.dist.isClient(), hitPoint, victim.getName().getString());
 
@@ -239,13 +243,13 @@ public class DamageHandler {
         };
     }
 
-    // === Tracking per rilevare evasioni Enderman ===
-    // Record per salvare i dati dell'attacco al momento in cui avviene
+    // === Tracking to detect Enderman evasions ===
+    // Record to save attack data at the moment it occurs
     private record PendingAttack(long timestamp, Vec3 targetPosition, Vec3 playerEye, Vec3 lookDir) {}
 
-    // Mappa: targetId -> dati dell'attacco
+    // Map: targetId -> attack data
     private static final Map<Integer, PendingAttack> pendingAttacks = new ConcurrentHashMap<>();
-    // Mappa: targetId -> timestamp dell'ultimo LivingIncomingDamageEvent
+    // Map: targetId -> timestamp of last LivingIncomingDamageEvent
     private static final Map<Integer, Long> confirmedHits = new ConcurrentHashMap<>();
 
     // Lock for atomic operations on pending/confirmed maps
@@ -314,8 +318,8 @@ public class DamageHandler {
     }
 
     /**
-     * Cattura TUTTI i tentativi di attacco (prima che il danno venga calcolato).
-     * Questo evento si attiva anche quando l'Enderman evade!
+     * Captures ALL attack attempts (before damage is calculated).
+     * This event fires even when the Enderman evades!
      */
     @SubscribeEvent
     public static void onAttackEntity(AttackEntityEvent event) {
@@ -324,48 +328,48 @@ public class DamageHandler {
         Player player = event.getEntity();
         long now = System.currentTimeMillis();
 
-        // IMPORTANTE: Salva la posizione dell'Enderman ORA, prima che si teletrasporti!
+        // IMPORTANT: Save the Enderman's position NOW, before it teleports!
         Vec3 targetPos = target.position().add(0, target.getBbHeight() * 0.5, 0);
         Vec3 playerEye = player.getEyePosition();
         Vec3 lookDir = player.getLookAngle();
 
-        // Registra il tentativo di attacco con tutte le posizioni
+        // Register the attack attempt with all positions
         pendingAttacks.put(target.getId(), new PendingAttack(now, targetPos, playerEye, lookDir));
 
         LOGGER.debug("AttackEntityEvent: player={}, target={}, targetPos={}",
             player.getName().getString(), target.getName().getString(), targetPos);
 
-        // Dopo 100ms, controlla se il danno è stato confermato
-        // Se non è stato confermato, l'attacco è stato evaso
+        // After 100ms, check if damage was confirmed
+        // If not confirmed, the attack was evaded
         if (target instanceof EnderMan) {
-            // Schedula un check differito per vedere se il danno è arrivato
+            // Schedule a deferred check to see if damage occurred
             scheduleEvasionCheck(player, target, now);
         }
     }
 
     /**
-     * Schedula un controllo per rilevare se l'Enderman ha evaso.
-     * Usa ScheduledExecutorService invece di Thread.sleep per evitare blocchi.
+     * Schedules a check to detect if the Enderman has evaded.
+     * Uses ScheduledExecutorService instead of Thread.sleep to avoid blocking.
      * THREAD SAFETY: Uses synchronized block to prevent race with confirmHit().
      */
     private static void scheduleEvasionCheck(Player player, LivingEntity target, long attackTime) {
         final int targetId = target.getId();
 
-        // Usa ScheduledExecutor invece di Thread.sleep
+        // Use ScheduledExecutor instead of Thread.sleep
         EVASION_SCHEDULER.schedule(() -> {
             // THREAD SAFETY: Synchronize access to both maps for atomic check-then-act
             synchronized (EVASION_LOCK) {
-                // Recupera i dati salvati al momento dell'attacco
+                // Retrieve data saved at the moment of attack
                 PendingAttack attackData = pendingAttacks.remove(targetId);
                 if (attackData == null) return;
 
-                // Controlla se il danno è stato confermato
+                // Check if damage was confirmed
                 Long hitTime = confirmedHits.remove(targetId); // Also remove to cleanup
                 if (hitTime == null || hitTime < attackTime) {
-                    // Il danno NON è stato confermato -> EVASIONE!
+                    // Damage was NOT confirmed -> EVASION!
                     LOGGER.debug("EVASION DETECTED! Enderman evaded attack at {}", attackData.targetPosition);
 
-                    // Spawna un pannello "EVADED" (proxy handles dist check)
+                    // Spawn an "EVADED" panel (proxy handles dist check)
                     ClientVFXProxy.spawnMeleeEvasionPanel(player, target, attackData.targetPosition, attackData.lookDir);
                 } else {
                     LOGGER.debug("Attack confirmed, no evasion");
@@ -375,7 +379,7 @@ public class DamageHandler {
     }
 
     /**
-     * Chiamato quando un danno viene confermato (da onDamage).
+     * Called when damage is confirmed (from onDamage).
      * THREAD SAFETY: Uses synchronized block to prevent race with scheduleEvasionCheck().
      */
     private static void confirmHit(LivingEntity target) {
@@ -384,75 +388,75 @@ public class DamageHandler {
         }
     }
 
-    // === Handler per danni ambientali (fuoco, lava, caduta, etc.) ===
+    // === Handler for environmental damage (fire, lava, fall, etc.) ===
 
     /**
-     * Traccia danni ambientali che NON hanno un attacker LivingEntity.
-     * Include: fuoco, lava, annegamento, caduta, cactus, soffocamento, etc.
+     * Tracks environmental damage that does NOT have a LivingEntity attacker.
+     * Includes: fire, lava, drowning, fall, cactus, suffocation, etc.
      */
     @SubscribeEvent(priority = net.neoforged.bus.api.EventPriority.NORMAL)
     public static void onEnvironmentalDamage(LivingIncomingDamageEvent event) {
         LivingEntity victim = event.getEntity();
 
-        // Skip se c'è già un attacker LivingEntity (gestito da onDamage)
+        // Skip if there's already a LivingEntity attacker (handled by onDamage)
         if (event.getSource().getEntity() instanceof LivingEntity) {
             return;
         }
 
-        // Solo per il player (mostra HUD)
+        // Only for players (show HUD)
         if (!(victim instanceof Player)) {
             return;
         }
 
-        // Determina il tipo di danno ambientale
+        // Determine the environmental damage type
         String damageSourceName = getEnvironmentalDamageSource(event);
         if (damageSourceName == null) {
-            return; // Tipo di danno non tracciato
+            return; // Damage type not tracked
         }
 
         float damage = event.getAmount();
 
-        // Posizione impatto = centro della vittima
+        // Hit position = center of victim
         Vec3 hitPoint = victim.position().add(0, victim.getBbHeight() * 0.5, 0);
 
-        // Crea breakdown per danno ambientale
+        // Create breakdown for environmental damage
         DamageBreakdown breakdown = new DamageBreakdown(
-            ItemStack.EMPTY,       // Nessuna arma
+            ItemStack.EMPTY,       // No weapon
             victim,
             damage,
-            1.0f,                  // Nessun moltiplicatore body part
-            0f                     // Nessuna armor pen
+            1.0f,                  // No body part multiplier
+            0f                     // No armor pen
         );
 
-        // Crea ImpactData
-        // MULTIPLAYER-SAFE: per danno ambientale, il "receiver" è il player stesso
-        // Usa l'UUID della vittima perché vogliamo che il player veda i propri danni subiti
+        // Create ImpactData
+        // MULTIPLAYER-SAFE: for environmental damage, the "receiver" is the player itself
+        // Use victim's UUID because we want the player to see their own received damage
         ImpactData impactData = new ImpactData(
-            victim.getUUID(),         // UUID del player che subisce il danno
+            victim.getUUID(),         // UUID of player taking damage
             victim,
-            HitHelper.BodyPart.BODY,  // Danno ambientale = body generico
+            HitHelper.BodyPart.BODY,  // Environmental damage = generic body
             1.0f,
             breakdown,
-            damageSourceName,         // Es: "Fire Damage", "Fall Damage"
+            damageSourceName,         // E.g.: "Fire Damage", "Fall Damage"
             false,
             hitPoint,
-            new Vec3(0, -1, 0)        // Direzione generica (verso il basso)
+            new Vec3(0, -1, 0)        // Generic direction (downward)
         );
 
-        // Salva per HUD overlay
+        // Store for HUD overlay
         ImpactData.store(impactData);
 
         LOGGER.debug("Environmental damage: {}, amount={}, victim={}",
             damageSourceName, damage, victim.getName().getString());
 
-        // Spawna pannello 3D (proxy handles dist check)
+        // Spawn 3D panel (proxy handles dist check)
         if (hitPoint != null) {
             ClientVFXProxy.addImpactVFX(hitPoint, new Vec3(0, 1, 0), impactData);
         }
     }
 
     /**
-     * Identifica il tipo di danno ambientale.
+     * Identifies the environmental damage type.
      * Uses config-based damage type mappings loaded from damage_types.json.
      * Custom damage types can be added to the config without recompiling.
      *
@@ -460,13 +464,13 @@ public class DamageHandler {
      * an attacker - unknown types get a formatted fallback label so HUD
      * panels always show something.</p>
      *
-     * @return Nome leggibile del tipo di danno (never null for environmental damage)
+     * @return Readable name for the damage type (never null for environmental damage)
      */
     private static String getEnvironmentalDamageSource(LivingIncomingDamageEvent event) {
         var source = event.getSource();
 
         // Special case: Mace smash detection (requires runtime check, not just type matching)
-        if (source.is(DamageTypes.PLAYER_ATTACK)) {
+        if (source.is(Objects.requireNonNull(DamageTypes.PLAYER_ATTACK))) {
             var attacker = source.getEntity();
             if (attacker instanceof Player player) {
                 ItemStack mainHand = player.getMainHandItem();

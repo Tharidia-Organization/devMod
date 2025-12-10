@@ -17,11 +17,14 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import javax.annotation.Nonnull;
+
 /**
  * Debug overlays settings page.
  * Provides toggles for all debug visualization overlays including
  * Minecraft's native debug APIs (similar to DebugUtils mod).
  */
+@SuppressWarnings("null") // Minecraft APIs lack null annotations
 public class DebugOverlaysPage implements SettingsPage {
 
     private static final int ROW_HEIGHT = 24;
@@ -36,7 +39,7 @@ public class DebugOverlaysPage implements SettingsPage {
 
     // Scroll drag state
     private boolean isDraggingScrollbar = false;
-    private int lastContentX, lastContentY, lastContentWidth, lastContentHeight;
+    private int lastContentY, lastContentHeight;
 
     @Override
     public SettingsCategory getCategory() {
@@ -49,11 +52,9 @@ public class DebugOverlaysPage implements SettingsPage {
     }
 
     @Override
-    public void render(GuiGraphics graphics, Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+    public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
         // Store dimensions for scroll calculations
-        lastContentX = x;
         lastContentY = y;
-        lastContentWidth = width;
         lastContentHeight = height;
         visibleHeight = height;
 

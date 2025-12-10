@@ -475,7 +475,8 @@ public class L6AdvancedConcurrencyTest {
             for (int i = 0; i < threadsCount; i++) {
                 executor.submit(() -> {
                     try {
-                        balances.merge(playerId, depositAmount, Long::sum);
+                        balances.merge(playerId, depositAmount,
+                            (prev, inc) -> (prev == null ? 0L : prev) + (inc == null ? 0L : inc));
                     } finally {
                         latch.countDown();
                     }
@@ -661,7 +662,9 @@ public class L6AdvancedConcurrencyTest {
                 try {
                     for (int i = 0; i < 100; i++) {
                         for (String item : list) {
-                            // Iterate without ConcurrentModificationException
+                            if (item == null) {
+                                error.set(true);
+                            }
                             iterations.incrementAndGet();
                         }
                         Thread.sleep(1);
@@ -876,6 +879,8 @@ public class L6AdvancedConcurrencyTest {
             int playerCount = 20;
             int operationsPerPlayer = 50;
             AtomicInteger errors = new AtomicInteger(0);
+            AtomicLong lastTotalScoreRead = new AtomicLong(0);
+            AtomicInteger lastInstanceCount = new AtomicInteger(0);
 
             List<UUID> playerIds = new ArrayList<>();
             UUID sharedInstanceId = UUID.randomUUID();
@@ -911,11 +916,13 @@ public class L6AdvancedConcurrencyTest {
                                     long total = questScores.values().stream()
                                         .mapToLong(AtomicLong::get)
                                         .sum();
+                                    lastTotalScoreRead.set(total);
                                 }
                                 case 2 -> {
                                     // Check instance players
                                     Set<UUID> players = instancePlayers.get(sharedInstanceId);
                                     int count = players.size();
+                                    lastInstanceCount.set(count);
                                 }
                                 case 3 -> {
                                     // Update state
@@ -938,6 +945,8 @@ public class L6AdvancedConcurrencyTest {
             assertEquals(0, errors.get(), "No errors during concurrent operations");
             assertEquals(playerCount, questStates.size());
             assertEquals(playerCount, questScores.size());
+            assertTrue(lastTotalScoreRead.get() >= 0, "Aggregated score read should be non-negative");
+            assertEquals(playerCount, lastInstanceCount.get(), "Instance should track all players");
         }
 
         @Test

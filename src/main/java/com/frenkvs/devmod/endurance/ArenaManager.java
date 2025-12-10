@@ -12,11 +12,14 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.Objects;
+import javax.annotation.Nonnull;
 
 /**
  * Manages arena creation, barriers, and cleanup for Endurance Quests.
  * Arenas are 64x64 blocks (4 chunks) with invisible barriers.
  */
+@SuppressWarnings({"null", "unused"}) // Minecraft APIs lack null annotations
 public class ArenaManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaManager.class);
 
@@ -84,15 +87,16 @@ public class ArenaManager {
         /**
          * Check if a position is inside this arena.
          */
-        public boolean contains(Vec3 pos) {
-            return bounds.contains(pos);
+        public boolean contains(@Nonnull Vec3 pos) {
+            return bounds.contains(Objects.requireNonNull(pos));
         }
 
         /**
          * Check if a position is inside this arena.
          */
         public boolean contains(BlockPos pos) {
-            return bounds.contains(pos.getX(), pos.getY(), pos.getZ());
+            BlockPos safePos = Objects.requireNonNull(pos);
+            return bounds.contains(safePos.getX(), safePos.getY(), safePos.getZ());
         }
 
         /**
@@ -172,20 +176,22 @@ public class ArenaManager {
             int startY = center.getY();
 
             for (int yOffset = 0; yOffset < 5; yOffset++) {
-                BlockPos checkPos = new BlockPos(x, startY + yOffset, z);
+                BlockPos checkPos = Objects.requireNonNull(new BlockPos(x, startY + yOffset, z));
 
                 // Check if this position is valid for spawning:
                 // - Block at feet level should be air
                 // - Block at head level should be air
                 // - Block below should be solid (not air)
-                BlockPos below = checkPos.below();
-                BlockPos head = checkPos.above();
+                BlockPos below = Objects.requireNonNull(checkPos.below());
+                BlockPos head = Objects.requireNonNull(checkPos.above());
 
-                boolean feetClear = level.getBlockState(checkPos).isAir() ||
-                                    level.getBlockState(checkPos).getBlock() == Blocks.BARRIER;
-                boolean headClear = level.getBlockState(head).isAir() ||
-                                    level.getBlockState(head).getBlock() == Blocks.BARRIER;
-                boolean floorSolid = !level.getBlockState(below).isAir();
+                BlockState feetState = level.getBlockState(checkPos);
+                BlockState headState = level.getBlockState(head);
+                BlockState belowState = level.getBlockState(below);
+
+                boolean feetClear = feetState.isAir() || feetState.getBlock() == Blocks.BARRIER;
+                boolean headClear = headState.isAir() || headState.getBlock() == Blocks.BARRIER;
+                boolean floorSolid = !belowState.isAir();
 
                 if (feetClear && headClear && floorSolid) {
                     return checkPos;
@@ -202,10 +208,7 @@ public class ArenaManager {
      */
     public Arena createArena(ServerLevel level, BlockPos playerPos, int size) {
         // Find suitable center position (flat area)
-        BlockPos center = findSuitableCenter(level, playerPos, size);
-        if (center == null) {
-            center = playerPos; // Fallback to player position
-        }
+        BlockPos center = Objects.requireNonNullElse(findSuitableCenter(level, playerPos, size), playerPos);
 
         Arena arena = new Arena(level, center, size);
 
@@ -237,7 +240,7 @@ public class ArenaManager {
         // Get all mobs in arena bounds
         List<net.minecraft.world.entity.Entity> entities = level.getEntities(
             (net.minecraft.world.entity.Entity) null,
-            arena.getBounds(),
+            Objects.requireNonNull(arena.getBounds()),
             entity -> entity instanceof net.minecraft.world.entity.Mob
         );
 
@@ -280,11 +283,11 @@ public class ArenaManager {
         BlockPos center = arena.getCenter();
         int halfSize = arena.getSize() / 2;
 
-        BlockState floorBlock = Blocks.STONE_BRICKS.defaultBlockState();
+        BlockState floorBlock = Objects.requireNonNull(Blocks.STONE_BRICKS.defaultBlockState());
 
         for (int x = -halfSize; x <= halfSize; x++) {
             for (int z = -halfSize; z <= halfSize; z++) {
-                BlockPos pos = center.offset(x, FLOOR_OFFSET, z);
+                BlockPos pos = Objects.requireNonNull(center.offset(x, FLOOR_OFFSET, z));
                 level.setBlock(pos, floorBlock, 3);
                 arena.addModifiedBlock(pos);
             }
@@ -299,28 +302,28 @@ public class ArenaManager {
         BlockPos center = arena.getCenter();
         int halfSize = arena.getSize() / 2;
 
-        BlockState barrier = Blocks.BARRIER.defaultBlockState();
+        BlockState barrier = Objects.requireNonNull(Blocks.BARRIER.defaultBlockState());
 
         // Build walls
         for (int y = 0; y < ARENA_HEIGHT; y++) {
             for (int i = -halfSize; i <= halfSize; i++) {
                 // North wall
-                BlockPos north = center.offset(i, y, -halfSize);
+                BlockPos north = Objects.requireNonNull(center.offset(i, y, -halfSize));
                 level.setBlock(north, barrier, 3);
                 arena.addModifiedBlock(north);
 
                 // South wall
-                BlockPos south = center.offset(i, y, halfSize);
+                BlockPos south = Objects.requireNonNull(center.offset(i, y, halfSize));
                 level.setBlock(south, barrier, 3);
                 arena.addModifiedBlock(south);
 
                 // East wall
-                BlockPos east = center.offset(halfSize, y, i);
+                BlockPos east = Objects.requireNonNull(center.offset(halfSize, y, i));
                 level.setBlock(east, barrier, 3);
                 arena.addModifiedBlock(east);
 
                 // West wall
-                BlockPos west = center.offset(-halfSize, y, i);
+                BlockPos west = Objects.requireNonNull(center.offset(-halfSize, y, i));
                 level.setBlock(west, barrier, 3);
                 arena.addModifiedBlock(west);
             }
@@ -329,7 +332,7 @@ public class ArenaManager {
         // Build ceiling
         for (int x = -halfSize; x <= halfSize; x++) {
             for (int z = -halfSize; z <= halfSize; z++) {
-                BlockPos pos = center.offset(x, ARENA_HEIGHT, z);
+                BlockPos pos = Objects.requireNonNull(center.offset(x, ARENA_HEIGHT, z));
                 level.setBlock(pos, barrier, 3);
                 arena.addModifiedBlock(pos);
             }
@@ -346,7 +349,9 @@ public class ArenaManager {
 
         // Remove all modified blocks
         for (BlockPos pos : arena.getModifiedBlocks()) {
-            level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+            BlockPos safePos = Objects.requireNonNull(pos);
+            BlockState air = Objects.requireNonNull(Blocks.AIR.defaultBlockState());
+            level.setBlock(safePos, air, 3);
         }
 
         // Unregister arena
@@ -371,10 +376,11 @@ public class ArenaManager {
      * Check if a position is inside any active arena.
      */
     public Optional<Arena> getArenaAt(ServerLevel level, Vec3 pos) {
+        Vec3 safePos = Objects.requireNonNull(pos);
         List<Arena> levelArenas = arenasByLevel.get(level);
         if (levelArenas != null) {
             for (Arena arena : levelArenas) {
-                if (arena.contains(pos)) {
+                if (arena.contains(safePos)) {
                     return Optional.of(arena);
                 }
             }

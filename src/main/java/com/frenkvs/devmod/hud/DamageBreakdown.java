@@ -12,8 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Breakdown dettagliato del calcolo danno per l'HUD.
- * Mostra ogni componente: base, enchants, Pehkui bonus, body part multiplier.
+ * Detailed breakdown of damage calculation for the HUD.
+ * Shows each component: base, enchants, Pehkui bonus, body part multiplier.
  */
 public class DamageBreakdown {
     public final float baseWeaponDamage;
@@ -33,10 +33,10 @@ public class DamageBreakdown {
         this.armorPenetrationBonus = armorPenBonus;
         this.enchantBonuses = new ArrayList<>();
 
-        // Calcola bonus enchant
+        // Calculate enchant bonus
         calculateEnchantBonuses(weapon, target);
 
-        // Pehkui size bonus (25% of base per ogni 1.0 di scala sopra 1.0)
+        // Pehkui size bonus (25% of base for each 1.0 of scale above 1.0)
         Float scale = ModIntegrationManager.getPehkuiScale(target);
         if (scale != null && scale > 1.0f) {
             this.pehkuiScale = scale;
@@ -46,8 +46,8 @@ public class DamageBreakdown {
             this.pehkuiSizeBonus = 0f;
         }
 
-        // Calcolo finale: (base + enchants + pehkui) * bodyPartMult + armorPen
-        // Nota: calcoliamo enchant bonus inline per evitare this-escape warning
+        // Final calculation: (base + enchants + pehkui) * bodyPartMult + armorPen
+        // Note: calculate enchant bonus inline to avoid this-escape warning
         float enchantTotal = (float) this.enchantBonuses.stream().mapToDouble(EnchantBonus::bonus).sum();
         float subtotal = baseWeaponDamage + enchantTotal + pehkuiSizeBonus;
         this.finalDamage = (subtotal * bodyPartMultiplier) + armorPenetrationBonus;
@@ -56,23 +56,23 @@ public class DamageBreakdown {
     private void calculateEnchantBonuses(ItemStack weapon, LivingEntity target) {
         if (weapon.isEmpty()) return;
 
-        // NeoForge 1.21: Usa DataComponents per accedere agli enchantments
+        // NeoForge 1.21: Use DataComponents to access enchantments
         ItemEnchantments enchantments = weapon.get(DataComponents.ENCHANTMENTS);
         if (enchantments == null || enchantments.isEmpty()) return;
 
-        // Itera sugli enchantments
+        // Iterate over enchantments
         for (Holder<Enchantment> holder : enchantments.keySet()) {
             int level = enchantments.getLevel(holder);
             if (level <= 0) continue;
 
             String enchName = holder.getRegisteredName();
 
-            // Sharpness: +1.0 + 0.5 per livello aggiuntivo
+            // Sharpness: +1.0 + 0.5 per additional level
             if (enchName.contains("sharpness")) {
                 float bonus = 1.0f + (level - 1) * 0.5f;
                 enchantBonuses.add(new EnchantBonus("Sharpness " + toRoman(level), level, bonus));
             }
-            // Smite: +2.5 per livello vs undead
+            // Smite: +2.5 per level vs undead
             else if (enchName.contains("smite")) {
                 if (target.isInvertedHealAndHarm()) { // Undead check
                     float bonus = level * 2.5f;
@@ -124,8 +124,8 @@ public class DamageBreakdown {
     }
 
     /**
-     * Genera stringa formula per HUD.
-     * Esempio: "(12.0+3.0+3.0) * 0.90 = 16.2"
+     * Generates formula string for HUD.
+     * Example: "(12.0+3.0+3.0) * 0.90 = 16.2"
      */
     public String getFormulaString() {
         StringBuilder sb = new StringBuilder();
@@ -152,7 +152,7 @@ public class DamageBreakdown {
     }
 
     /**
-     * Genera stringa compatta per debug.
+     * Generates compact string for debug.
      */
     public String toCompactString() {
         return String.format("Base:%.1f + Ench:%.1f + Pehkui:%.1f * BodyPart:%.2f = %.1f",

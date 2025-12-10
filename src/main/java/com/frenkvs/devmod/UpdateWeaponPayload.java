@@ -19,8 +19,8 @@ public record UpdateWeaponPayload(
 
     public static final Type<UpdateWeaponPayload> TYPE = new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "update_weapon")));
 
-    // CORREZIONE: Usiamo StreamCodec.of(...) invece di composite(...)
-    // Questo metodo manuale supporta infiniti parametri.
+    // FIX: We use StreamCodec.of(...) instead of composite(...)
+    // This manual method supports infinite parameters.
     public static final StreamCodec<ByteBuf, UpdateWeaponPayload> STREAM_CODEC = StreamCodec.of(
             // 1. ENCODER (Scrittura: dal tuo PC al cavo di rete)
             (buffer, value) -> {

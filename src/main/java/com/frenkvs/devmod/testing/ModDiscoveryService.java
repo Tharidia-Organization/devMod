@@ -2,11 +2,8 @@ package com.frenkvs.devmod.testing;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.level.block.Block;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforgespi.language.IModInfo;
 import org.slf4j.Logger;
@@ -100,12 +97,13 @@ public class ModDiscoveryService {
         public List<ResourceLocation> getBlocks() { return Collections.unmodifiableList(blocks); }
         public List<ResourceLocation> getEntities() { return Collections.unmodifiableList(entities); }
         public List<ResourceLocation> getEffects() { return Collections.unmodifiableList(effects); }
+        public List<ResourceLocation> getEnchantments() { return Collections.unmodifiableList(enchantments); }
         public List<ResourceLocation> getWeapons() { return Collections.unmodifiableList(weapons); }
         public List<ResourceLocation> getArmor() { return Collections.unmodifiableList(armor); }
         public List<ResourceLocation> getHostileMobs() { return Collections.unmodifiableList(hostileMobs); }
 
         public int getTotalContent() {
-            return items.size() + blocks.size() + entities.size() + effects.size();
+            return items.size() + blocks.size() + entities.size() + effects.size() + enchantments.size();
         }
 
         public boolean hasCombatContent() {
@@ -149,6 +147,7 @@ public class ModDiscoveryService {
             scanBlocks(modId, info);
             scanEntities(modId, info);
             scanEffects(modId, info);
+            scanEnchantments(modId, info);
 
             // Categorize the mod based on content
             categorizeMod(info);
@@ -237,6 +236,14 @@ public class ModDiscoveryService {
                 info.effects.add(key);
             }
         }
+    }
+
+    private void scanEnchantments(String modId, ModInfo info) {
+        // Note: In NeoForge 1.21+, enchantments are data-driven and not in BuiltInRegistries
+        // They are registered via datapack. This method serves as a placeholder for future
+        // implementation when datapack scanning is added, or for mods that register
+        // enchantments through other means.
+        // For now, enchantment discovery requires datapack scanning which is more complex.
     }
 
     /**

@@ -386,7 +386,7 @@ public class L0SmokeBootTest {
 
         @Test
         @Order(2)
-        @DisplayName("KeyInputHandler has 32 KeyMapping fields")
+        @DisplayName("KeyInputHandler has 33 KeyMapping fields")
         void keybindCount() throws IOException {
             Path sourceFile = Paths.get("src/main/java/com/frenkvs/devmod/KeyInputHandler.java");
             String content = Files.readString(sourceFile);
@@ -396,7 +396,7 @@ public class L0SmokeBootTest {
                 .filter(line -> line.contains("public static final KeyMapping"))
                 .count();
 
-            assertEquals(32, count, "Should have exactly 32 KeyMapping definitions");
+            assertEquals(33, count, "Should have exactly 33 KeyMapping definitions");
         }
 
         @Test

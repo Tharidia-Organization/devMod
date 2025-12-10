@@ -2,26 +2,30 @@ package com.frenkvs.devmod.endurance;
 
 import com.frenkvs.devmod.DevMod;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+
+import java.util.Objects;
 
 /**
  * Payload sent from server to client to alert about incoming boss wave.
  * Triggers visual + audio alert 3 seconds before boss spawn.
  */
+@SuppressWarnings({"null", "unused"})
 public record BossAlertPayload(long alertDurationMs, String bossType) implements CustomPacketPayload {
 
-    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "boss_alert");
-    public static final Type<BossAlertPayload> TYPE = new Type<>(ID);
+    public static final ResourceLocation ID = Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "boss_alert"));
+    public static final Type<BossAlertPayload> TYPE = new Type<>(Objects.requireNonNull(ID));
 
     public static final StreamCodec<FriendlyByteBuf, BossAlertPayload> STREAM_CODEC =
         StreamCodec.composite(
-            StreamCodec.of(FriendlyByteBuf::writeLong, FriendlyByteBuf::readLong),
+            Objects.requireNonNull(ByteBufCodecs.VAR_LONG),
             BossAlertPayload::alertDurationMs,
-            StreamCodec.of(FriendlyByteBuf::writeUtf, FriendlyByteBuf::readUtf),
+            Objects.requireNonNull(StreamCodec.of(FriendlyByteBuf::writeUtf, FriendlyByteBuf::readUtf)),
             BossAlertPayload::bossType,
-            BossAlertPayload::new
+            (duration, boss) -> new BossAlertPayload(duration, Objects.requireNonNull(boss))
         );
 
     @Override

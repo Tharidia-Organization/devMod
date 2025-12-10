@@ -13,10 +13,11 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import javax.annotation.Nullable;
 import java.lang.ref.WeakReference;
+import java.util.Objects;
 
 /**
- * Rappresenta un'entità tracciata dal sistema di monitoraggio attributi.
- * Mantiene uno snapshot degli attributi e traccia i cambiamenti.
+ * Represents an entity tracked by the attribute monitoring system.
+ * Maintains an attribute snapshot and tracks changes.
  *
  * <p><b>CLIENT-ONLY</b>: This class uses Minecraft.getInstance() for LoS calculations
  * and should never be instantiated or used on a dedicated server.
@@ -24,13 +25,13 @@ import java.lang.ref.WeakReference;
 @OnlyIn(Dist.CLIENT)
 public class TrackedEntity {
 
-    // === Riferimento entità ===
+    // === Entity Reference ===
     private final WeakReference<LivingEntity> entityRef;
     private final int entityId;
     private final String entityName;
     private final String entityType;
 
-    // === Attributi snapshot ===
+    // === Attribute Snapshot ===
     private float currentHealth;
     private float maxHealth;
     private float armorValue;
@@ -44,15 +45,15 @@ public class TrackedEntity {
     @Nullable private Float pehkuiScale;
     @Nullable private Float pehkuiHitboxScale;
 
-    // === Stato LoS ===
+    // === Line of Sight State ===
     private boolean hasLineOfSight;
     private Vec3 lastKnownPosition;
     private Vec3 lastBlockedPoint;
 
-    // === Tracking temporale ===
+    // === Temporal Tracking ===
     private long firstTrackedTime;
     private long lastUpdateTime;
-    private float healthDelta; // Cambio vita dall'ultimo update
+    private float healthDelta; // Health change since last update
 
     // === Telemetry/Drift tracking ===
     private Vec3 previousPosition;
@@ -69,12 +70,12 @@ public class TrackedEntity {
         this.lastKnownPosition = entity.position();
         this.previousPosition = entity.position();
 
-        // Prima lettura attributi (safe: update() only reads entity state)
+        // Initial attribute read (safe: update() only reads entity state)
         update();
     }
 
     /**
-     * Aggiorna tutti gli attributi dell'entità.
+     * Updates all entity attributes.
      */
     public void update() {
         LivingEntity entity = entityRef.get();
@@ -82,35 +83,35 @@ public class TrackedEntity {
 
         lastUpdateTime = System.currentTimeMillis();
 
-        // Salva delta vita
+        // Save health delta
         float oldHealth = currentHealth;
 
-        // Attributi base
+        // Base attributes
         currentHealth = entity.getHealth();
         maxHealth = entity.getMaxHealth();
         armorValue = entity.getArmorValue();
 
-        // Attributi avanzati (nullable safe)
-        var armorToughnessAttr = entity.getAttribute(Attributes.ARMOR_TOUGHNESS);
+        // Advanced attributes (nullable safe)
+        var armorToughnessAttr = entity.getAttribute(Objects.requireNonNull(Attributes.ARMOR_TOUGHNESS));
         armorToughness = armorToughnessAttr != null ? (float) armorToughnessAttr.getValue() : 0f;
 
-        var moveSpeedAttr = entity.getAttribute(Attributes.MOVEMENT_SPEED);
+        var moveSpeedAttr = entity.getAttribute(Objects.requireNonNull(Attributes.MOVEMENT_SPEED));
         movementSpeed = moveSpeedAttr != null ? moveSpeedAttr.getValue() : 0;
 
-        var attackDmgAttr = entity.getAttribute(Attributes.ATTACK_DAMAGE);
+        var attackDmgAttr = entity.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
         attackDamage = attackDmgAttr != null ? attackDmgAttr.getValue() : 0;
 
-        var attackSpeedAttr = entity.getAttribute(Attributes.ATTACK_SPEED);
+        var attackSpeedAttr = entity.getAttribute(Objects.requireNonNull(Attributes.ATTACK_SPEED));
         attackSpeed = attackSpeedAttr != null ? attackSpeedAttr.getValue() : 0;
 
-        var knockbackAttr = entity.getAttribute(Attributes.KNOCKBACK_RESISTANCE);
+        var knockbackAttr = entity.getAttribute(Objects.requireNonNull(Attributes.KNOCKBACK_RESISTANCE));
         knockbackResistance = knockbackAttr != null ? knockbackAttr.getValue() : 0;
 
         // Pehkui
         pehkuiScale = ModIntegrationManager.getPehkuiScale(entity);
         pehkuiHitboxScale = ModIntegrationManager.getPehkuiHitboxScale(entity);
 
-        // Calcola delta salute
+        // Calculate health delta
         if (oldHealth > 0) {
             healthDelta = currentHealth - oldHealth;
             // Track cumulative damage for telemetry
@@ -119,15 +120,15 @@ public class TrackedEntity {
             }
         }
 
-        // Aggiorna posizione e traccia drift
-        Vec3 currentPos = entity.position();
+        // Update position and track drift
+        Vec3 currentPos = Objects.requireNonNull(entity.position());
         if (previousPosition != null) {
             totalDistanceMoved += previousPosition.distanceTo(currentPos);
         }
         previousPosition = lastKnownPosition;
         lastKnownPosition = currentPos;
 
-        // Aggiorna LoS
+        // Update Line of Sight
         updateLineOfSight(entity);
     }
 
@@ -140,8 +141,8 @@ public class TrackedEntity {
             return;
         }
 
-        Vec3 playerEye = player.getEyePosition();
-        Vec3 entityEye = entity.getEyePosition();
+        Vec3 playerEye = Objects.requireNonNull(player.getEyePosition());
+        Vec3 entityEye = Objects.requireNonNull(entity.getEyePosition());
 
         ClipContext context = new ClipContext(
             playerEye,
@@ -305,7 +306,7 @@ public class TrackedEntity {
     // === Utility ===
 
     /**
-     * Distanza dal player.
+     * Distance from player.
      */
     public double getDistanceToPlayer() {
         Minecraft mc = Minecraft.getInstance();
@@ -319,7 +320,7 @@ public class TrackedEntity {
     }
 
     /**
-     * Verifica se l'entità è ancora valida.
+     * Checks if the entity is still valid.
      */
     public boolean isValid() {
         LivingEntity entity = entityRef.get();
@@ -327,7 +328,7 @@ public class TrackedEntity {
     }
 
     /**
-     * Verifica se l'entità è un mob ostile.
+     * Checks if the entity is a hostile mob.
      */
     public boolean isHostile() {
         LivingEntity entity = entityRef.get();

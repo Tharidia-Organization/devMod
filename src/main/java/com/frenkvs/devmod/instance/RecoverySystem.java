@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.instance;
 
+import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.util.ConfigPaths;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -424,9 +425,23 @@ public class RecoverySystem {
                     // Format: 32 hex chars without dashes -> standard UUID format with dashes
                     UUID instanceId = parseUuidWithoutDashes(uuidStrWithoutDashes);
                     if (instanceId != null && InstanceRegistry.INSTANCE.getInstance(instanceId).isEmpty()) {
-                        LOGGER.info("[Recovery] Found orphaned dimension folder: {} (will be cleaned)",
-                            instanceDir);
-                        // TODO: Actually delete when DynamicDimensionManager is ready
+                        // Skip deletion if the dimension is still registered/loaded
+                        ResourceKey<Level> dimKey = ResourceKey.create(
+                            Registries.DIMENSION,
+                            ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "instance_" + uuidStrWithoutDashes)
+                        );
+
+                        boolean isLoaded = server.getLevel(dimKey) != null;
+                        boolean trackedByManager = DynamicDimensionManager.INSTANCE
+                            .getDimensionForInstance(instanceId).isPresent();
+
+                        if (isLoaded || trackedByManager) {
+                            LOGGER.info("[Recovery] Found orphaned folder {} but dimension still loaded/tracked, skipping delete", instanceDir);
+                            continue;
+                        }
+
+                        LOGGER.info("[Recovery] Removing orphaned dimension folder: {}", instanceDir);
+                        deleteRecursively(instanceDir);
                     }
                 } catch (IllegalArgumentException e) {
                     LOGGER.warn("[Recovery] Invalid instance folder name: {}", dirName);
@@ -461,6 +476,20 @@ public class RecoverySystem {
     }
 
     // === Utility ===
+
+    /**
+     * Recursive delete helper for orphan cleanup.
+     */
+    private void deleteRecursively(Path path) throws IOException {
+        if (Files.isDirectory(path)) {
+            try (DirectoryStream<Path> entries = Files.newDirectoryStream(path)) {
+                for (Path entry : entries) {
+                    deleteRecursively(entry);
+                }
+            }
+        }
+        Files.deleteIfExists(path);
+    }
 
     /**
      * Create a snapshot from a player's current state.

@@ -45,20 +45,20 @@ public class PerformanceProfiler {
     private static final int LINE_HEIGHT = 10;
     private static final int BAR_HEIGHT = 4;
 
-    // Colori (Impact UI Style)
+    // Colors (Impact UI Style)
     private static final int BG_COLOR = 0xCC1A1A2E;         // Panel bg 80% opacity
-    private static final int BORDER_COLOR = 0xFF3D5AFE;     // Blu elettrico Impact
+    private static final int BORDER_COLOR = 0xFF3D5AFE;     // Impact electric blue
     private static final int BORDER_GLOW = 0x553D5AFE;      // Glow effect
-    private static final int TEXT_GREEN = 0xFF00FF00;       // Verde Impact
-    private static final int TEXT_YELLOW = 0xFFFFD700;      // Oro Impact
-    private static final int TEXT_RED = 0xFFFF4444;         // Rosso Impact
-    private static final int TEXT_GRAY = 0xFFAAAAAA;        // Grigio muted
-    private static final int TEXT_CYAN = 0xFF00FFFF;        // Cyan Impact (titoli/headers)
+    private static final int TEXT_GREEN = 0xFF00FF00;       // Impact green
+    private static final int TEXT_YELLOW = 0xFFFFD700;      // Impact gold
+    private static final int TEXT_RED = 0xFFFF4444;         // Impact red
+    private static final int TEXT_GRAY = 0xFFAAAAAA;        // Muted gray
+    private static final int TEXT_CYAN = 0xFF00FFFF;        // Impact cyan (titles/headers)
 
-    // === Stato ===
+    // === State ===
     private boolean enabled = false;
 
-    // Timing per sistema (nome -> tempo in nanoseconds)
+    // Timing per system (name -> time in nanoseconds)
     private final Map<String, Long> systemTimings = new ConcurrentHashMap<>();
     private final Map<String, Long> systemTimingsAvg = new ConcurrentHashMap<>();
     private final Map<String, Integer> systemCallCounts = new ConcurrentHashMap<>();
@@ -149,7 +149,7 @@ public class PerformanceProfiler {
         tickCount++;
         long now = System.currentTimeMillis();
 
-        // Calcola TPS ogni secondo
+        // Calculate TPS every second
         if (tpsWindowStart == 0) {
             tpsWindowStart = now;
         } else if (now - tpsWindowStart >= 1000) {
@@ -171,10 +171,10 @@ public class PerformanceProfiler {
             frameTimeHistory[frameHistoryIndex] = currentFrameTimeMs;
             frameHistoryIndex = (frameHistoryIndex + 1) % FRAME_HISTORY_SIZE;
 
-            // Media mobile
+            // Moving average
             avgFrameTimeMs = avgFrameTimeMs * 0.95f + currentFrameTimeMs * 0.05f;
 
-            // Max (decay lento)
+            // Max (slow decay)
             if (currentFrameTimeMs > maxFrameTimeMs) {
                 maxFrameTimeMs = currentFrameTimeMs;
             } else {
@@ -183,7 +183,7 @@ public class PerformanceProfiler {
         }
         lastFrameNano = now;
 
-        // FPS (ogni secondo)
+        // FPS (every second)
         if (nowMs - lastFpsUpdate >= 1000) {
             Minecraft mc = Minecraft.getInstance();
             currentFps = mc.getFps();
@@ -191,7 +191,7 @@ public class PerformanceProfiler {
             fpsHistory[fpsHistoryIndex] = currentFps;
             fpsHistoryIndex = (fpsHistoryIndex + 1) % fpsHistory.length;
 
-            // Calcola min/max/avg
+            // Calculate min/max/avg
             int sum = 0, count = 0;
             minFps = Integer.MAX_VALUE;
             maxFps = 0;
@@ -206,7 +206,7 @@ public class PerformanceProfiler {
             avgFps = count > 0 ? sum / count : 0;
             if (minFps == Integer.MAX_VALUE) minFps = 0;
 
-            // Calcola medie dei timing per sistema
+            // Calculate average timing for each system
             for (Map.Entry<String, Long> entry : systemTimings.entrySet()) {
                 String name = entry.getKey();
                 long totalNano = entry.getValue();
@@ -215,7 +215,7 @@ public class PerformanceProfiler {
                 systemTimingsAvg.put(name, avgNano);
             }
 
-            // Reset contatori
+            // Reset counters
             systemTimings.clear();
             systemCallCounts.clear();
 
@@ -228,15 +228,15 @@ public class PerformanceProfiler {
     private void renderOverlay(GuiGraphics graphics, Font font) {
         int screenWidth = graphics.guiWidth();
 
-        // Posizione: angolo in alto a destra
+        // Position: top right corner
         int panelHeight = calculatePanelHeight();
         int x = screenWidth - PANEL_WIDTH - PANEL_MARGIN;
         int y = PANEL_MARGIN;
 
-        // Glow esterno (Impact UI style)
+        // Outer glow (Impact UI style)
         graphics.fill(x - 1, y - 1, x + PANEL_WIDTH + 1, y + panelHeight + 1, BORDER_GLOW);
 
-        // Sfondo
+        // Background
         graphics.fill(x, y, x + PANEL_WIDTH, y + panelHeight, BG_COLOR);
 
         // Bordo
@@ -301,7 +301,7 @@ public class PerformanceProfiler {
             graphics.drawString(font, "▸ System Timings", textX, textY, TEXT_CYAN, false);
             textY += LINE_HEIGHT;
 
-            // Ordina per tempo (decrescente) e renderizza
+            // Sort by time (descending) and render
             var sortedTimings = systemTimingsAvg.entrySet().stream()
                 .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
                 .limit(8)
@@ -365,7 +365,7 @@ public class PerformanceProfiler {
             int barHeight = (int)(ft / maxMs * height);
             barHeight = Math.min(barHeight, height);
 
-            // Calcola posizione usando float per evitare gap
+            // Calculate position using float to avoid gaps
             int barX = x + (int)(i * barWidthFloat);
             int barXEnd = x + (int)((i + 1) * barWidthFloat);
             int barY = y + height - barHeight;

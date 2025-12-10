@@ -34,7 +34,7 @@ public class SafeSpotVisualizer {
     private boolean enabled = false;
     private final Map<BlockPos, SafeSpotData> safeSpots = new ConcurrentHashMap<>();
 
-    // MEMORY LEAK FIX: Track quando è stato disabilitato per auto-clear
+    // MEMORY LEAK FIX: Track when it was disabled for auto-clear
     private long disabledSince = 0;
     private static final long AUTO_CLEAR_DELAY_MS = 300_000; // 5 minuti
 
@@ -46,25 +46,25 @@ public class SafeSpotVisualizer {
 
     public void toggle() {
         setEnabled(!enabled);
-        // Quando attivato, sincronizza subito i dati dalla telemetria
+        // When enabled, immediately sync data from telemetry
         if (enabled) {
             syncFromTelemetry();
         }
     }
 
     /**
-     * MEMORY LEAK FIX: Traccia timestamp quando disabilitato
+     * MEMORY LEAK FIX: Track timestamp when disabled
      */
     public void setEnabled(boolean value) {
         boolean wasEnabled = enabled;
         enabled = value;
 
-        // Se disabilitato, salva timestamp
+        // If disabled, save timestamp
         if (!value && wasEnabled) {
             disabledSince = System.currentTimeMillis();
         }
 
-        // Se riabilitato, resetta timestamp
+        // If re-enabled, reset timestamp
         if (value) {
             disabledSince = 0;
         }
@@ -75,19 +75,19 @@ public class SafeSpotVisualizer {
     }
 
     /**
-     * Aggiunge o aggiorna un safe spot
+     * Adds or updates a safe spot
      */
     public void addSafeSpot(BlockPos pos, int hitCount, long durationMs) {
         safeSpots.put(pos, new SafeSpotData(pos, hitCount, durationMs, System.currentTimeMillis()));
     }
 
     /**
-     * Carica safe spots da una mappa di dati telemetria (singola room)
+     * Loads safe spots from a telemetry data map (single room)
      */
     public void loadFromHeatmap(Map<BlockPos, Integer> campingData) {
         safeSpots.clear();
         campingData.forEach((pos, count) -> {
-            // Stima durata basata sul count (ogni count = ~2 secondi di camping)
+            // Estimate duration based on count (each count = ~2 seconds of camping)
             long estimatedDuration = count * 2000L;
             safeSpots.put(pos, new SafeSpotData(pos, count, estimatedDuration, System.currentTimeMillis()));
         });
@@ -157,16 +157,16 @@ public class SafeSpotVisualizer {
     }
 
     /**
-     * Render dei safe spots
-     * MEMORY LEAK FIX: Auto-clear se disabilitato da più di 5 minuti
+     * Render safe spots
+     * MEMORY LEAK FIX: Auto-clear if disabled for more than 5 minutes
      */
     public void render(@Nonnull PoseStack poseStack, @Nonnull MultiBufferSource buffer, @Nonnull Vec3 cameraPos) {
-        // MEMORY LEAK FIX: Pulisci dati se disabilitato da troppo tempo
+        // MEMORY LEAK FIX: Clear data if disabled for too long
         clearIfDisabledFor(AUTO_CLEAR_DELAY_MS);
 
         if (!enabled) return;
 
-        // Aggiorna periodicamente i dati dalla telemetria
+        // Periodically update data from telemetry
         refreshIfNeeded();
 
         if (safeSpots.isEmpty()) return;
@@ -201,7 +201,7 @@ public class SafeSpotVisualizer {
     private void renderSafeSpot(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix,
                                 @Nonnull PoseStack.Pose pose, @Nonnull SafeSpotData spot,
                                 int maxHits, long now, @Nonnull Vec3 cameraPos) {
-        // Intensità basata sul count relativo
+        // Intensity based on relative count
         float intensity = (float) spot.hitCount / maxHits;
 
         // Effetto lampeggiante (sinusoidale)
@@ -217,7 +217,7 @@ public class SafeSpotVisualizer {
         float y = spot.pos.getY();
         float z = spot.pos.getZ();
 
-        // Box più grande per safe spots più intensi
+        // Larger box for more intense safe spots
         float size = 1.0f + intensity * 0.5f;
         float halfExtra = (size - 1.0f) / 2.0f;
 
@@ -270,12 +270,12 @@ public class SafeSpotVisualizer {
     }
 
     /**
-     * MEMORY LEAK FIX: Pulisce i dati se il visualizer è stato disabilitato da più di N millisecondi
+     * MEMORY LEAK FIX: Clears data if the visualizer has been disabled for more than N milliseconds
      */
     public void clearIfDisabledFor(long ms) {
         if (disabledSince > 0 && System.currentTimeMillis() - disabledSince > ms) {
             clear();
-            disabledSince = 0; // Reset timestamp dopo clear
+            disabledSince = 0; // Reset timestamp after clear
         }
     }
 

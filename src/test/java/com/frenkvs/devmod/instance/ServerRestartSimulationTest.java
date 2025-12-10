@@ -508,6 +508,7 @@ public class ServerRestartSimulationTest {
             Map<UUID, String> instances = new ConcurrentHashMap<>();
             AtomicBoolean shutdownInProgress = new AtomicBoolean(false);
             AtomicInteger savedCount = new AtomicInteger(0);
+            Set<UUID> savedIds = ConcurrentHashMap.newKeySet();
 
             // Pre-populate
             for (int i = 0; i < 10; i++) {
@@ -541,7 +542,10 @@ public class ServerRestartSimulationTest {
                     // Take snapshot of current state
                     Set<UUID> snapshot = new HashSet<>(instances.keySet());
                     for (UUID id : snapshot) {
-                        savedCount.incrementAndGet();
+                        if (instances.containsKey(id)) {
+                            savedCount.incrementAndGet();
+                            savedIds.add(id);
+                        }
                     }
                 } catch (InterruptedException ignored) {
                 } finally {
@@ -553,6 +557,7 @@ public class ServerRestartSimulationTest {
             executor.shutdown();
 
             assertTrue(savedCount.get() >= 10, "Should save at least initial instances");
+            assertEquals(savedCount.get(), savedIds.size());
         }
 
         @Test

@@ -93,7 +93,6 @@ public class MultiplayerDataIsolationTest {
     // Test UUIDs representing different players
     private static final UUID PLAYER_1 = UUID.randomUUID();
     private static final UUID PLAYER_2 = UUID.randomUUID();
-    private static final UUID PLAYER_3 = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {

@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
  * Network payload sent from server to client when player dies during quest.
  * Triggers the QuestDeathScreen to appear on the client.
  */
+@SuppressWarnings({"null", "unused"})
 public record QuestDeathPayload(
     int currentWave,
     int totalWaves,

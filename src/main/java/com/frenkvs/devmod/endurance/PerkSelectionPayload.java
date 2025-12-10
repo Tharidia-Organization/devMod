@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
  * Network payload sent from client to server when player selects a perk.
  * Empty perkId means the player chose to skip.
  */
+@SuppressWarnings({"null", "unused"})
 public record PerkSelectionPayload(String perkId) implements CustomPacketPayload {
 
     private static final int MAX_STRING_LENGTH = 128;

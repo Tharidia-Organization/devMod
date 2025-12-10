@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
  * Registry that scans all available mob types from vanilla and mods,
  * automatically generating quest configurations for each.
  */
+@SuppressWarnings("null") // Minecraft/NeoForge API null-safety (EntityType, BuiltInRegistries)
 public class EnduranceQuestRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestRegistry.class);
 
@@ -164,11 +165,24 @@ public class EnduranceQuestRegistry {
         }
 
         /**
-         * Calculate mob count for a specific wave.
+         * Calculate mob count for a specific wave (single player).
          */
         public int getMobCountForWave(int waveNumber) {
-            int count = (int)(baseCountPerWave + (waveNumber - 1) * countScalingPerWave);
-            return Math.min(count, maxPerWave);
+            return getMobCountForWave(waveNumber, 1, QuestType.PVE_COOP);
+        }
+
+        /**
+         * Calculate mob count for a specific wave with player scaling.
+         *
+         * @param waveNumber Current wave number (1-based)
+         * @param playerCount Number of players in the party
+         * @param questType Quest type for difficulty multiplier
+         * @return Scaled mob count
+         */
+        public int getMobCountForWave(int waveNumber, int playerCount, QuestType questType) {
+            int baseCount = (int)(baseCountPerWave + (waveNumber - 1) * countScalingPerWave);
+            int capped = Math.min(baseCount, maxPerWave);
+            return DifficultyScaler.INSTANCE.scaleMobCount(capped, playerCount, questType);
         }
     }
 

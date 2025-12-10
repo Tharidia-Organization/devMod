@@ -4,6 +4,7 @@ package com.frenkvs.devmod.endurance;
  * Defines the different types of Endurance Quests with scaling parameters.
  * Each type supports different player counts and difficulty scaling.
  */
+@SuppressWarnings({"null", "unused"})
 public enum QuestType {
     /**
      * Standard cooperative quest for small parties.

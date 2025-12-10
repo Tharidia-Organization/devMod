@@ -185,16 +185,18 @@ public class DynamicDimensionManager {
         var biomeRegistry = server.registryAccess().registryOrThrow(Registries.BIOME);
         var biomeHolder = biomeRegistry.getHolderOrThrow(Biomes.THE_VOID);
 
-        // Create flat settings with single bedrock layer
-        List<FlatLayerInfo> layers = List.of(
-            new FlatLayerInfo(1, Blocks.BEDROCK)  // Single bedrock layer at y=0
-        );
-
         FlatLevelGeneratorSettings flatSettings = new FlatLevelGeneratorSettings(
             Optional.empty(),  // No structure overrides
             biomeHolder,
             List.of()  // No features
         );
+
+        // Ensure the void world has exactly one bedrock layer and no fillers
+        // LayersInfo is the editable representation converted internally to states
+        List<FlatLayerInfo> layerInfo = flatSettings.getLayersInfo();
+        layerInfo.clear();
+        layerInfo.add(new FlatLayerInfo(1, Blocks.BEDROCK));
+        flatSettings.updateLayers();
 
         // Note: We need to set layers via reflection or use a custom generator
         // For now, create a flat source that will generate void
@@ -297,6 +299,9 @@ public class DynamicDimensionManager {
         // Default spawn position
         BlockPos center = new BlockPos(0, 64, 0);
         int radius = 25;  // 50x50 platform
+
+        // Preload the center chunk to avoid void fall during early teleports
+        level.getChunkAt(center);
 
         LOGGER.debug("[DynamicDim] Generating arena platform at {} with radius {}", center, radius);
 
@@ -531,6 +536,9 @@ public class DynamicDimensionManager {
 
         // Teleport to arena center
         BlockPos spawnPos = new BlockPos(0, 65, 0);  // One block above the platform
+
+        // Make sure the destination chunk is fully loaded before teleport
+        level.getChunkAt(spawnPos);
 
         player.teleportTo(
             level,

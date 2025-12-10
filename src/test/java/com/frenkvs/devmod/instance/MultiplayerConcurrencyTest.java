@@ -177,7 +177,6 @@ public class MultiplayerConcurrencyTest {
         @Test
         @DisplayName("Party members join instance atomically")
         void testPartyJoinAtomic() throws Exception {
-            UUID instanceId = UUID.randomUUID();
             Set<UUID> instancePlayers = ConcurrentHashMap.newKeySet();
             int maxPlayers = 4;
             AtomicInteger joinedCount = new AtomicInteger(0);
@@ -494,9 +493,7 @@ public class MultiplayerConcurrencyTest {
             for (int i = 0; i < 50; i++) {
                 executor.submit(() -> {
                     try {
-                        int count = 0;
                         for (Map.Entry<UUID, UUID> entry : playerToInstance.entrySet()) {
-                            count++;
                             // Access values
                             assertNotNull(entry.getKey());
                             // Value might be null if removed during iteration - that's OK for ConcurrentHashMap

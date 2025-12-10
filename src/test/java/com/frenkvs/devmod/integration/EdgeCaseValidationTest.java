@@ -240,11 +240,13 @@ class EdgeCaseValidationTest {
     class StateTransitionEdgeCasesTest {
 
         @Test
-        @DisplayName("Self-transition is valid (no-op)")
-        void selfTransitionIsValid() {
+        @DisplayName("Self-transition is not valid per implementation")
+        void selfTransitionIsNotValid() {
             InstanceState state = InstanceState.ACTIVE;
-            // Transitioning to same state is allowed as no-op
-            // Implementation returns true for same state
+            // Self-transitions are not explicitly allowed in canTransitionTo
+            // This is a design choice: state changes should be explicit
+            assertFalse(state.canTransitionTo(InstanceState.ACTIVE),
+                "Self-transition should not be valid - state changes should be explicit");
         }
 
         @Test
@@ -576,10 +578,12 @@ class EdgeCaseValidationTest {
 
             int count = 0;
             for (UUID id : empty) {
+                assertNotNull(id);
                 count++;
             }
 
             assertEquals(0, count);
+            assertTrue(empty.isEmpty());
         }
     }
 }

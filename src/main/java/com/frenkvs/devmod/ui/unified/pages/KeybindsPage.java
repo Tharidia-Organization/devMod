@@ -9,6 +9,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,7 +27,7 @@ public class KeybindsPage implements SettingsPage {
     private static final int HINT_HEIGHT = 24; // Reserved space for bottom hint
 
     // Keybind entries organized by category
-    private record KeybindEntry(String name, String key, String description) {}
+    private record KeybindEntry(@Nonnull String name, @Nonnull String key, @Nonnull String description) {}
     private record KeybindSection(String title, List<KeybindEntry> entries) {}
 
     private final List<KeybindSection> sections = new ArrayList<>();
@@ -122,12 +123,14 @@ public class KeybindsPage implements SettingsPage {
         sections.add(new KeybindSection("Help", help));
     }
 
+    @Nonnull
     private String getKeyName(KeyMapping keyMapping) {
-        return keyMapping.getTranslatedKeyMessage().getString();
+        String name = keyMapping.getTranslatedKeyMessage().getString();
+        return name != null ? name : "?";
     }
 
     @Override
-    public void render(GuiGraphics graphics, Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+    public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
         // Cache dimensions for scroll calculations
         lastContentY = y;
         lastContentHeight = height;

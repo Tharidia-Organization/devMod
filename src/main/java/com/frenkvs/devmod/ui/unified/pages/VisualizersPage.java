@@ -14,10 +14,13 @@ import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import javax.annotation.Nonnull;
+
 /**
  * Visualizers settings page with controls for heatmaps, light levels,
  * safe spots, and vertical level analysis.
  */
+@SuppressWarnings("null") // Minecraft APIs lack null annotations
 public class VisualizersPage implements SettingsPage {
 
     private static final int ROW_HEIGHT = 24;
@@ -30,7 +33,7 @@ public class VisualizersPage implements SettingsPage {
     private int visibleHeight = 0;
     private int totalContentHeight = 0;
     private boolean isDraggingScrollbar = false;
-    private int lastContentX, lastContentY, lastContentWidth, lastContentHeight;
+    private int lastContentY, lastContentHeight;
 
     // Light level settings
     private int lightLevelRadius;
@@ -61,11 +64,9 @@ public class VisualizersPage implements SettingsPage {
     }
 
     @Override
-    public void render(GuiGraphics graphics, Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+    public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
         // Store dimensions for scroll calculations
-        lastContentX = x;
         lastContentY = y;
-        lastContentWidth = width;
         lastContentHeight = height;
         visibleHeight = height;
 

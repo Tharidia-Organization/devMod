@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Central manager for all Endurance Quest operations.
  * Handles quest creation, player sessions, persistence, and coordination.
  */
+@SuppressWarnings("null") // Minecraft/NeoForge API null-safety
 public class EnduranceQuestManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestManager.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -188,6 +189,223 @@ public class EnduranceQuestManager {
 
     // ========== Quest Management ==========
 
+    // ========== Party Quest Flow (Separate Phases) ==========
+
+    /**
+     * PHASE 1: Prepare arena for a party quest WITHOUT teleporting or starting.
+     * Creates the arena and returns the info needed for teleportation.
+     *
+     * Used by QuestStartSequence to separate arena creation from teleport.
+     *
+     * @param leader The party leader
+     * @param mobId The mob type for the quest
+     * @param settings Quest settings (includes party info)
+     * @return PreparedArenaResult with arena info, or failure message
+     */
+    public PreparedArenaResult prepareArenaForParty(ServerPlayer leader, ResourceLocation mobId, QuestSettings settings) {
+        // Validate quest type
+        EnduranceQuest template = questTemplates.get(mobId);
+        if (template == null) {
+            return PreparedArenaResult.failure("Unknown quest type: " + mobId);
+        }
+
+        // For instance dimension mode, we need a different flow
+        if (useInstanceDimensions) {
+            return PreparedArenaResult.failure("Instance dimension mode not yet supported for party quests");
+        }
+
+        // Create arena in leader's current dimension
+        ServerLevel level = leader.serverLevel();
+        ArenaManager.Arena arena = arenaManager.createArena(level, leader.blockPosition(), settings.arenaSize);
+
+        if (arena == null) {
+            return PreparedArenaResult.failure("Failed to create arena");
+        }
+
+        LOGGER.info("[EnduranceQuest] Prepared arena {} for party quest (mob: {})",
+            arena.getId(), mobId);
+
+        return PreparedArenaResult.success(arena, mobId, template.getMobConfig());
+    }
+
+    /**
+     * PHASE 2: Teleport players to a prepared arena.
+     * Players should be teleported BEFORE starting the quest.
+     *
+     * @param players List of players to teleport
+     * @param arena The prepared arena
+     * @return Map of player UUID to their spawn position in arena
+     */
+    public Map<UUID, net.minecraft.core.BlockPos> teleportPlayersToArena(List<ServerPlayer> players, ArenaManager.Arena arena) {
+        Map<UUID, net.minecraft.core.BlockPos> spawnPositions = new HashMap<>();
+        net.minecraft.core.BlockPos center = arena.getCenter();
+        int playerCount = players.size();
+
+        // Calculate spread positions for players (circle around center)
+        double radius = Math.min(arena.getSize() / 4.0, 10.0);
+
+        for (int i = 0; i < playerCount; i++) {
+            ServerPlayer player = players.get(i);
+            if (player == null || !player.isAlive()) continue;
+
+            // Calculate position in a circle
+            double angle = (2 * Math.PI * i) / playerCount;
+            double x = center.getX() + 0.5 + radius * Math.cos(angle);
+            double z = center.getZ() + 0.5 + radius * Math.sin(angle);
+
+            // Teleport player
+            player.teleportTo(x, center.getY(), z);
+
+            // Store spawn position
+            spawnPositions.put(player.getUUID(), new net.minecraft.core.BlockPos((int) x, center.getY(), (int) z));
+
+            LOGGER.debug("[EnduranceQuest] Teleported {} to arena at ({}, {}, {})",
+                player.getName().getString(), x, center.getY(), z);
+        }
+
+        LOGGER.info("[EnduranceQuest] Teleported {} players to arena {}", spawnPositions.size(), arena.getId());
+        return spawnPositions;
+    }
+
+    /**
+     * Check if a player is inside the specified arena.
+     * Used for arrival confirmation.
+     *
+     * @param player The player to check
+     * @param arena The arena to check against
+     * @return true if player is inside arena bounds
+     */
+    public boolean isPlayerInArena(ServerPlayer player, ArenaManager.Arena arena) {
+        if (player == null || arena == null) return false;
+        return arena.contains(player.position());
+    }
+
+    /**
+     * Destroy an arena (cleanup resources).
+     * Used when a party quest sequence is cancelled after arena creation.
+     *
+     * @param arena The arena to destroy
+     */
+    public void destroyArena(ArenaManager.Arena arena) {
+        if (arena != null && arenaManager != null) {
+            arenaManager.destroyArena(arena);
+        }
+    }
+
+    /**
+     * PHASE 3: Start a quest for players using a pre-created arena.
+     * All players should already be teleported to the arena.
+     *
+     * @param players List of players to start the quest for
+     * @param arena The prepared arena
+     * @param mobId The mob type for the quest
+     * @param settings Quest settings
+     * @return Map of player UUID to StartQuestResult
+     */
+    public Map<UUID, StartQuestResult> startPreparedQuest(
+            List<ServerPlayer> players, ArenaManager.Arena arena,
+            ResourceLocation mobId, QuestSettings settings) {
+
+        Map<UUID, StartQuestResult> results = new HashMap<>();
+
+        // Get quest template
+        EnduranceQuest template = questTemplates.get(mobId);
+        if (template == null) {
+            for (ServerPlayer player : players) {
+                results.put(player.getUUID(), new StartQuestResult(false, "Unknown quest type: " + mobId, null));
+            }
+            return results;
+        }
+
+        // Start quest for each player
+        for (ServerPlayer player : players) {
+            if (player == null || !player.isAlive()) continue;
+
+            UUID playerId = player.getUUID();
+
+            // Create quest instance
+            EnduranceQuest quest = new EnduranceQuest(template.getMobConfig());
+            quest.setTotalWaves(settings.totalWaves);
+            quest.setEndlessMode(settings.endlessMode);
+
+            // Create placeholder session for atomic insert
+            ActiveQuestSession placeholderSession = new ActiveQuestSession(playerId, quest, null, System.currentTimeMillis());
+
+            // Atomic insert
+            ActiveQuestSession existingSession = activeSessions.putIfAbsent(playerId, placeholderSession);
+            if (existingSession != null) {
+                results.put(playerId, new StartQuestResult(false,
+                    I18n.translate("devmod.endurance.active_quest").getString(), null));
+                continue;
+            }
+
+            // Start the quest
+            quest.start(arena.getId());
+
+            // Create the real session with arena and party settings
+            ActiveQuestSession session = new ActiveQuestSession(
+                playerId, quest, arena, System.currentTimeMillis(),
+                settings.partyId, settings.questType, settings.getPlayerCount()
+            );
+            activeSessions.put(playerId, session); // Replaces placeholder
+
+            // Prepare player (save state, give kit - NO TELEPORT, already done)
+            preparePlayerForQuest(player, session);
+
+            // Initialize all subsystems
+            EnduranceEventHandler.onQuestStart(player, session);
+
+            // Start telemetry
+            String dungeonId = "endurance_party_" + mobId.toString().replace(":", "_");
+            TelemetryService.INSTANCE.startDungeonSession(player, dungeonId);
+
+            results.put(playerId, new StartQuestResult(true, "Quest started!", session));
+
+            LOGGER.info("[EnduranceQuest] Started prepared quest for player {}: {}",
+                player.getName().getString(), quest.getDisplayName());
+        }
+
+        // Start wave 1 for the arena (only once, shared between all players)
+        // Use the first successful session
+        for (StartQuestResult result : results.values()) {
+            if (result.success() && result.session() != null) {
+                WaveManager.INSTANCE.startWave(result.session());
+
+                // Notify all players that wave 1 started
+                for (ServerPlayer player : players) {
+                    if (player != null && results.get(player.getUUID()) != null && results.get(player.getUUID()).success()) {
+                        EnduranceEventHandler.onWaveStart(player, result.session(), 1);
+                    }
+                }
+                break;
+            }
+        }
+
+        return results;
+    }
+
+    /**
+     * Result of preparing an arena for party quest.
+     */
+    public record PreparedArenaResult(
+        boolean success,
+        String errorMessage,
+        ArenaManager.Arena arena,
+        ResourceLocation mobId,
+        EnduranceQuestRegistry.MobQuestConfig mobConfig
+    ) {
+        public static PreparedArenaResult success(ArenaManager.Arena arena, ResourceLocation mobId,
+                                                   EnduranceQuestRegistry.MobQuestConfig mobConfig) {
+            return new PreparedArenaResult(true, null, arena, mobId, mobConfig);
+        }
+
+        public static PreparedArenaResult failure(String message) {
+            return new PreparedArenaResult(false, message, null, null, null);
+        }
+    }
+
+    // ========== Single Player Quest Flow ==========
+
     /**
      * Start a new quest for a player.
      */
@@ -235,8 +453,11 @@ public class EnduranceQuestManager {
         // Start the quest
         quest.start(arena.getId());
 
-        // Create the real session with arena and replace placeholder
-        ActiveQuestSession session = new ActiveQuestSession(playerId, quest, arena, System.currentTimeMillis());
+        // Create the real session with arena and party settings, then replace placeholder
+        ActiveQuestSession session = new ActiveQuestSession(
+            playerId, quest, arena, System.currentTimeMillis(),
+            settings.partyId, settings.questType, settings.getPlayerCount()
+        );
         activeSessions.put(playerId, session); // Replaces placeholder
 
         // Prepare player for quest: save state, set survival, clear inventory, give kit
@@ -355,8 +576,11 @@ public class EnduranceQuestManager {
         // Start the quest
         quest.start(arena.getId());
 
-        // Create the real session with instance ID reference
-        ActiveQuestSession session = new ActiveQuestSession(playerId, quest, arena, System.currentTimeMillis());
+        // Create the real session with instance ID and party settings
+        ActiveQuestSession session = new ActiveQuestSession(
+            playerId, quest, arena, System.currentTimeMillis(),
+            settings.partyId, settings.questType, settings.getPlayerCount()
+        );
         session.setInstanceId(result.instanceId());
         activeSessions.put(playerId, session); // Replace pending session
 
@@ -1023,6 +1247,11 @@ public class EnduranceQuestManager {
         public boolean endlessMode = false;
         public int arenaSize = 64; // blocks (4 chunks)
 
+        // Party/Multiplayer settings
+        public QuestType questType = QuestType.PVE_COOP;
+        public UUID partyId = null;
+        public java.util.List<UUID> partyMemberIds = java.util.List.of();
+
         public QuestSettings() {}
 
         public QuestSettings waves(int waves) {
@@ -1038,6 +1267,27 @@ public class EnduranceQuestManager {
         public QuestSettings arenaSize(int size) {
             this.arenaSize = size;
             return this;
+        }
+
+        public QuestSettings questType(QuestType type) {
+            this.questType = type;
+            // Auto-adjust arena size based on quest type
+            this.arenaSize = type.defaultArenaSize;
+            return this;
+        }
+
+        public QuestSettings party(UUID partyId, java.util.List<UUID> memberIds) {
+            this.partyId = partyId;
+            this.partyMemberIds = memberIds;
+            return this;
+        }
+
+        public boolean isMultiplayer() {
+            return partyId != null && !partyMemberIds.isEmpty();
+        }
+
+        public int getPlayerCount() {
+            return Math.max(1, partyMemberIds.size());
         }
     }
 
@@ -1069,11 +1319,30 @@ public class EnduranceQuestManager {
         private ListTag savedArmor;
         private ListTag savedOffhand;
 
+        // Party/Multiplayer scaling fields
+        private UUID partyId;
+        private QuestType questType = QuestType.PVE_COOP;
+        private int playerCount = 1;
+
         public ActiveQuestSession(UUID playerId, EnduranceQuest quest, ArenaManager.Arena arena, long startTime) {
             this.playerId = playerId;
             this.quest = quest;
             this.arena = arena;
             this.startTime = startTime;
+        }
+
+        /**
+         * Constructor with party/multiplayer parameters.
+         */
+        public ActiveQuestSession(UUID playerId, EnduranceQuest quest, ArenaManager.Arena arena,
+                                  long startTime, UUID partyId, QuestType questType, int playerCount) {
+            this.playerId = playerId;
+            this.quest = quest;
+            this.arena = arena;
+            this.startTime = startTime;
+            this.partyId = partyId;
+            this.questType = questType;
+            this.playerCount = Math.max(1, playerCount);
         }
 
         public UUID getPlayerId() { return playerId; }
@@ -1117,6 +1386,15 @@ public class EnduranceQuestManager {
         // Pending state (while instance is being created)
         public boolean isPending() { return pending; }
         public void setPending(boolean pending) { this.pending = pending; }
+
+        // Party/Multiplayer getters/setters
+        public UUID getPartyId() { return partyId; }
+        public void setPartyId(UUID partyId) { this.partyId = partyId; }
+        public QuestType getQuestType() { return questType; }
+        public void setQuestType(QuestType questType) { this.questType = questType; }
+        public int getPlayerCount() { return playerCount; }
+        public void setPlayerCount(int playerCount) { this.playerCount = Math.max(1, playerCount); }
+        public boolean isMultiplayer() { return partyId != null && playerCount > 1; }
     }
 
     /**
@@ -1127,6 +1405,7 @@ public class EnduranceQuestManager {
         private int totalQuestsAttempted = 0;
         private int totalQuestsCompleted = 0;
         private int totalPointsEarned = 0;
+        @SuppressWarnings("unused") // Reserved for future statistics tracking
         private int totalMobsKilled = 0;
         private long totalPlayTime = 0; // milliseconds
         private final Map<String, MobQuestRecord> mobRecords = new HashMap<>();

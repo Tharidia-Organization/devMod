@@ -24,16 +24,16 @@ import java.util.List;
 public class AttributeMonitoringSystem {
     public static final AttributeMonitoringSystem INSTANCE = new AttributeMonitoringSystem();
 
-    // === Configurazione ===
+    // === Configuration ===
     private static final double MAX_TRACKING_DISTANCE = 64.0;
     private static final int MAX_TRACKED_ENTITIES = 8;
     private static final int LOG_HISTORY_SIZE = 50;
 
     // === PERFORMANCE OPTIMIZATION ===
-    private static final int ENTITY_SCAN_INTERVAL_TICKS = 10; // Scan ogni 10 ticks (~500ms)
+    private static final int ENTITY_SCAN_INTERVAL_TICKS = 10; // Scan every 10 ticks (~500ms)
     private int ticksSinceLastScan = 0;
 
-    // === Stato ===
+    // === State ===
     private boolean enabled = false;
     private final List<TrackedEntity> trackedEntities = new ArrayList<>();
     private final List<AttributeLogEntry> logHistory = new ArrayList<>();
@@ -61,7 +61,7 @@ public class AttributeMonitoringSystem {
         return enabled;
     }
 
-    // === Update Logic (chiamato ogni tick) ===
+    // === Update Logic (called every tick) ===
 
     @SuppressWarnings("null") // player/level are checked for null before use
     public void tick() {
@@ -75,55 +75,55 @@ public class AttributeMonitoringSystem {
         final var level = mc.level;
         Vec3 playerPos = player.position();
 
-        // === PERFORMANCE: Scan per nuove entità solo ogni N ticks ===
+        // === PERFORMANCE: Scan for new entities only every N ticks ===
         ticksSinceLastScan++;
         boolean shouldScanForNew = ticksSinceLastScan >= ENTITY_SCAN_INTERVAL_TICKS;
         if (shouldScanForNew) {
             ticksSinceLastScan = 0;
         }
 
-        // Aggiorna le entità tracciate (scan completo solo periodicamente)
+        // Update tracked entities (full scan only periodically)
         updateTrackedEntities(level, player, playerPos, shouldScanForNew);
 
-        // Determina il target primario (più vicino o sotto mirino)
+        // Determine primary target (closest or under crosshair)
         updatePrimaryTarget(mc, player);
 
-        // Pulisci log vecchi
+        // Clean old logs
         cleanOldLogs();
     }
 
     private void updateTrackedEntities(net.minecraft.client.multiplayer.ClientLevel level,
                                         net.minecraft.client.player.LocalPlayer player,
                                         @Nonnull Vec3 playerPos, boolean scanForNew) {
-        // Rimuovi entità non più valide o troppo lontane
+        // Remove entities that are no longer valid or too far
         trackedEntities.removeIf(tracked -> {
             LivingEntity entity = tracked.getEntity();
             if (entity == null || !entity.isAlive()) return true;
             return entity.distanceToSqr(playerPos) > MAX_TRACKING_DISTANCE * MAX_TRACKING_DISTANCE;
         });
 
-        // Aggiorna i dati delle entità rimanenti
+        // Update data of remaining entities
         for (TrackedEntity tracked : trackedEntities) {
             tracked.update();
         }
 
-        // === PERFORMANCE: Cerca nuove entità solo quando richiesto ===
+        // === PERFORMANCE: Search for new entities only when requested ===
         if (!scanForNew) return;
 
-        // Cerca nuove entità da tracciare (mob vicini)
+        // Search for new entities to track (nearby mobs)
         if (trackedEntities.size() < MAX_TRACKED_ENTITIES) {
             for (var entity : level.entitiesForRendering()) {
                 if (!(entity instanceof Mob mob)) continue;
                 if (mob.distanceToSqr(playerPos) > MAX_TRACKING_DISTANCE * MAX_TRACKING_DISTANCE) continue;
 
-                // Controlla se già tracciata
+                // Check if already tracked
                 boolean alreadyTracked = trackedEntities.stream()
                     .anyMatch(t -> t.getEntityId() == mob.getId());
 
                 if (!alreadyTracked) {
                     trackedEntities.add(new TrackedEntity(mob));
 
-                    // Log evento
+                    // Log event
                     addLog(AttributeLogEntry.Type.ENTITY_DETECTED,
                            "Detected: " + mob.getName().getString(),
                            mob.position());
@@ -136,7 +136,7 @@ public class AttributeMonitoringSystem {
 
     @SuppressWarnings("null") // player is guaranteed non-null when called from tick()
     private void updatePrimaryTarget(Minecraft mc, net.minecraft.client.player.LocalPlayer player) {
-        // Prima prova: entità sotto il mirino
+        // First try: entity under crosshair
         if (mc.crosshairPickEntity instanceof LivingEntity crosshairTarget) {
             for (TrackedEntity tracked : trackedEntities) {
                 if (tracked.getEntityId() == crosshairTarget.getId()) {
@@ -151,7 +151,7 @@ public class AttributeMonitoringSystem {
             }
         }
 
-        // Fallback: entità più vicina
+        // Fallback: closest entity
         if (!trackedEntities.isEmpty()) {
             TrackedEntity closest = null;
             double closestDist = Double.MAX_VALUE;
@@ -178,7 +178,7 @@ public class AttributeMonitoringSystem {
     public void addLog(AttributeLogEntry.Type type, String message, @Nullable Vec3 position) {
         logHistory.add(0, new AttributeLogEntry(type, message, position));
 
-        // Limita dimensione
+        // Limit size
         while (logHistory.size() > LOG_HISTORY_SIZE) {
             logHistory.remove(logHistory.size() - 1);
         }
@@ -186,7 +186,7 @@ public class AttributeMonitoringSystem {
 
     private void cleanOldLogs() {
         long now = System.currentTimeMillis();
-        logHistory.removeIf(log -> now - log.timestamp() > 30000); // 30 secondi max
+        logHistory.removeIf(log -> now - log.timestamp() > 30000); // 30 seconds max
     }
 
     // === Accessors ===

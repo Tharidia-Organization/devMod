@@ -23,8 +23,8 @@ import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 public class ActualDamageTracker {
 
     /**
-     * POST: Cattura il danno REALE dopo che Minecraft ha applicato tutte le riduzioni.
-     * Usa direttamente event.getNewDamage() che è il valore finale calcolato dal gioco.
+     * POST: Capture the REAL damage after Minecraft has applied all reductions.
+     * Uses event.getNewDamage() directly which is the final value calculated by the game.
      */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onDamagePost(LivingDamageEvent.Post event) {
@@ -37,16 +37,16 @@ public class ActualDamageTracker {
         // getNewDamage() = "the amount of health this entity lost during this sequence"
         float actualDamage = event.getNewDamage();
 
-        // Calcola la salute prima/dopo dal danno reale
+        // Calculate health before/after from real damage
         float healthAfter = entity.getHealth();
         float healthBefore = healthAfter + actualDamage;
 
-        // Se l'entità è morta, healthAfter sarà 0 e healthBefore era il danno reale
+        // If the entity is dead, healthAfter will be 0 and healthBefore was the real damage
         if (entity.isDeadOrDying()) {
-            healthBefore = actualDamage; // Il danno reale era tutta la sua vita
+            healthBefore = actualDamage; // The real damage was all its life
         }
 
-        // Aggiorna ImpactData se presente e corrisponde a questa entità
+        // Update ImpactData if present and matches this entity
         ImpactData impact = ImpactData.get();
         if (impact != null) {
             LivingEntity target = impact.getTarget();

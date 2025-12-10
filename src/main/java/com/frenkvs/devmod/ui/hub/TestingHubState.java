@@ -11,32 +11,32 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Singleton che mantiene lo stato persistente del TestingHub.
- * Sopravvive alla chiusura/riapertura della screen.
+ * Singleton that maintains the persistent state of TestingHub.
+ * Survives screen close/reopen.
  */
 public class TestingHubState {
 
     public static final TestingHubState INSTANCE = new TestingHubState();
 
-    // Stato corrente
+    // Current state
     private TestCase currentTest = null;
     private String selectedCategory = null;
     private boolean isMinimized = false;
     private Set<ToolType> activeTools = EnumSet.noneOf(ToolType.class);
 
-    // Scroll offsets per persistenza
+    // Scroll offsets for persistence
     private int categoryScrollOffset = 0;
     private int testScrollOffset = 0;
 
-    // Filtri
+    // Filters
     private String searchQuery = "";
     private Set<TestCase.TestStatus> activeFilters = EnumSet.allOf(TestCase.TestStatus.class);
 
-    // Timestamp sessione
+    // Session timestamp
     private long sessionStartTime = 0;
 
     private TestingHubState() {
-        // Inizializza filtri (escludi IN_PROGRESS di default per chiarezza)
+        // Initialize filters (exclude IN_PROGRESS by default for clarity)
         activeFilters.remove(TestCase.TestStatus.IN_PROGRESS);
     }
 
@@ -50,7 +50,7 @@ public class TestingHubState {
         this.currentTest = test;
         if (test != null) {
             this.selectedCategory = test.getCategory();
-            // Aggiorna HUD se minimizzato
+            // Update HUD if minimized
             if (isMinimized) {
                 ActiveTestHudOverlay.setActiveTest(test);
             }
@@ -62,8 +62,8 @@ public class TestingHubState {
     }
 
     /**
-     * Avanza al prossimo test pending nella stessa categoria,
-     * o alla prima categoria con test pending.
+     * Advance to the next pending test in the same category,
+     * or to the first category with pending tests.
      */
     public void advanceToNextTest() {
         TestCase next = findNextPendingTest();
@@ -80,7 +80,7 @@ public class TestingHubState {
     private TestCase findNextPendingTest() {
         Map<String, List<TestCase>> categories = TestingSession.INSTANCE.getCategorizedTests();
 
-        // Prima cerca nella categoria corrente
+        // First search in the current category
         if (selectedCategory != null && categories.containsKey(selectedCategory)) {
             List<TestCase> tests = categories.get(selectedCategory);
             boolean foundCurrent = (currentTest == null);
@@ -98,7 +98,7 @@ public class TestingHubState {
             }
         }
 
-        // Poi cerca in altre categorie
+        // Then search in other categories
         for (Map.Entry<String, List<TestCase>> entry : categories.entrySet()) {
             if (entry.getKey().equals(selectedCategory)) continue;
 
@@ -109,7 +109,7 @@ public class TestingHubState {
             }
         }
 
-        // Infine cerca dall'inizio della categoria corrente
+        // Finally search from the start of the current category
         if (selectedCategory != null && categories.containsKey(selectedCategory)) {
             for (TestCase test : categories.get(selectedCategory)) {
                 if (test.getStatus() == TestCase.TestStatus.PENDING) {
@@ -168,8 +168,8 @@ public class TestingHubState {
     }
 
     /**
-     * Restituisce i tool richiesti per il test corrente.
-     * Analizza le istruzioni del test per determinare quali tool servono.
+     * Returns the tools required for the current test.
+     * Analyzes test instructions to determine which tools are needed.
      */
     public Set<ToolType> getRequiredToolsForCurrentTest() {
         if (currentTest == null) {
@@ -179,7 +179,7 @@ public class TestingHubState {
     }
 
     /**
-     * Inferisce i tool richiesti analizzando le istruzioni del test.
+     * Infers required tools by analyzing test instructions.
      */
     public static Set<ToolType> inferRequiredTools(TestCase test) {
         Set<ToolType> required = EnumSet.noneOf(ToolType.class);
@@ -187,7 +187,7 @@ public class TestingHubState {
         String description = test.getDescription().toLowerCase();
         String combined = instructions + " " + description;
 
-        // Cerca riferimenti ai tool nelle istruzioni
+        // Search for tool references in instructions
         if (combined.contains("debug") || combined.contains("press g")) {
             required.add(ToolType.DEBUG);
         }
@@ -217,7 +217,7 @@ public class TestingHubState {
     }
 
     /**
-     * Verifica se tutti i tool richiesti sono attivi.
+     * Check if all required tools are active.
      */
     public boolean areAllRequiredToolsEnabled() {
         Set<ToolType> required = getRequiredToolsForCurrentTest();
@@ -276,7 +276,7 @@ public class TestingHubState {
         }
         sessionStartTime = System.currentTimeMillis();
 
-        // Seleziona prima categoria e primo test se non già selezionati
+        // Select first category and first test if not already selected
         if (selectedCategory == null) {
             List<String> categories = TestingSession.INSTANCE.getCategories();
             if (!categories.isEmpty()) {
@@ -289,7 +289,7 @@ public class TestingHubState {
         if (TestingSession.INSTANCE.hasExistingSession()) {
             TestingSession.INSTANCE.resumeSession(TestingSession.INSTANCE.getTesterName());
         }
-        // Se non abbiamo sessionStartTime, calcola dalla data di inizio sessione
+        // If we don't have sessionStartTime, calculate from session start date
         if (sessionStartTime == 0 && TestingSession.INSTANCE.getSessionStarted() != null) {
             sessionStartTime = TestingSession.INSTANCE.getSessionStarted().toEpochMilli();
         } else if (sessionStartTime == 0) {
@@ -299,7 +299,7 @@ public class TestingHubState {
 
     public long getSessionDuration() {
         if (sessionStartTime == 0) {
-            // Fallback: calcola dalla data di inizio se disponibile
+            // Fallback: calculate from start date if available
             if (TestingSession.INSTANCE.getSessionStarted() != null) {
                 return System.currentTimeMillis() - TestingSession.INSTANCE.getSessionStarted().toEpochMilli();
             }
@@ -320,7 +320,7 @@ public class TestingHubState {
     // === VERDICT ===
 
     /**
-     * Applica un verdetto al test corrente (usato da hotkey globali).
+     * Apply a verdict to the current test (used by global hotkeys).
      */
     public void giveVerdict(Verdict verdict) {
         if (currentTest == null) return;
@@ -344,12 +344,12 @@ public class TestingHubState {
     // === STATE PERSISTENCE ===
 
     public void saveState() {
-        // Salva scroll offsets e altri stati transienti
-        // Potrebbe essere esteso per salvare su file JSON
+        // Save scroll offsets and other transient states
+        // Could be extended to save to JSON file
     }
 
     public void loadState() {
-        // Carica stato precedente se esiste
+        // Load previous state if exists
     }
 
     // === RESET ===

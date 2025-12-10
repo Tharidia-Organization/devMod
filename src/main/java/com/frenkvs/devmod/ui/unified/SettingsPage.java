@@ -3,111 +3,113 @@ package com.frenkvs.devmod.ui.unified;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import javax.annotation.Nonnull;
+
 /**
- * Interfaccia base per tutte le pagine di settings.
- * Ogni pagina gestisce una categoria specifica di impostazioni.
+ * Base interface for all settings pages.
+ * Each page manages a specific category of settings.
  */
 public interface SettingsPage {
 
     /**
-     * Ottiene la categoria di questa pagina.
+     * Gets the category of this page.
      */
     SettingsCategory getCategory();
 
     /**
-     * Ottiene il titolo della pagina.
+     * Gets the page title.
      */
     String getTitle();
 
     /**
-     * Inizializza la pagina. Chiamato quando la pagina viene selezionata.
+     * Initializes the page. Called when the page is selected.
      */
     default void init() {}
 
     /**
-     * Renderizza il contenuto della pagina.
+     * Renders the page content.
      *
-     * @param graphics Context di rendering
-     * @param font Font per il testo
-     * @param x Coordinata X area contenuto
-     * @param y Coordinata Y area contenuto
-     * @param width Larghezza area contenuto
-     * @param height Altezza area contenuto
-     * @param mouseX Posizione mouse X
-     * @param mouseY Posizione mouse Y
+     * @param graphics Rendering context
+     * @param font Font for text
+     * @param x Content area X coordinate
+     * @param y Content area Y coordinate
+     * @param width Content area width
+     * @param height Content area height
+     * @param mouseX Mouse X position
+     * @param mouseY Mouse Y position
      */
-    void render(GuiGraphics graphics, Font font, int x, int y, int width, int height, int mouseX, int mouseY);
+    void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY);
 
     /**
-     * Gestisce un click del mouse.
+     * Handles a mouse click.
      *
-     * @param mouseX Posizione mouse X
-     * @param mouseY Posizione mouse Y
-     * @param button Pulsante (0=sinistro, 1=destro)
-     * @param contentX Coordinata X area contenuto
-     * @param contentY Coordinata Y area contenuto
-     * @param contentWidth Larghezza area contenuto
-     * @return true se il click e' stato gestito
+     * @param mouseX Mouse X position
+     * @param mouseY Mouse Y position
+     * @param button Button (0=left, 1=right)
+     * @param contentX Content area X coordinate
+     * @param contentY Content area Y coordinate
+     * @param contentWidth Content area width
+     * @return true if the click was handled
      */
     boolean mouseClicked(double mouseX, double mouseY, int button, int contentX, int contentY, int contentWidth);
 
     /**
-     * Gestisce il rilascio del mouse.
+     * Handles mouse release.
      */
     default boolean mouseReleased(double mouseX, double mouseY, int button) {
         return false;
     }
 
     /**
-     * Gestisce il drag del mouse.
+     * Handles mouse drag.
      */
     default boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         return false;
     }
 
     /**
-     * Gestisce lo scroll del mouse.
+     * Handles mouse scroll.
      */
     default boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         return false;
     }
 
     /**
-     * Gestisce input da tastiera.
+     * Handles keyboard input.
      */
     default boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         return false;
     }
 
     /**
-     * Chiamato ogni tick per aggiornamenti.
+     * Called every tick for updates.
      */
     default void tick() {}
 
     /**
-     * Chiamato quando la pagina viene chiusa/cambiata.
+     * Called when the page is closed/changed.
      */
     default void onClose() {}
 
     /**
-     * Verifica se ci sono modifiche non salvate.
+     * Checks if there are unsaved changes.
      */
     default boolean hasUnsavedChanges() {
         return false;
     }
 
     /**
-     * Salva le modifiche.
+     * Saves the changes.
      */
     default void saveChanges() {}
 
     /**
-     * Resetta ai valori default.
+     * Resets to default values.
      */
     default void resetToDefaults() {}
 
     /**
-     * Ottiene l'altezza totale del contenuto (per scrolling).
+     * Gets the total content height (for scrolling).
      */
     default int getContentHeight() {
         return 200;

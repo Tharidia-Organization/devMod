@@ -25,6 +25,7 @@ import java.util.function.Consumer;
  * - Curse perks (negative effects for bonus rewards)
  * - Meta-progression unlocks
  */
+@SuppressWarnings({"null", "unused"}) // Minecraft APIs lack null annotations
 public class PerkSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(PerkSystem.class);
 
@@ -37,6 +38,7 @@ public class PerkSystem {
     private final Map<UUID, PerkSession> activeSessions = new ConcurrentHashMap<>();
 
     // Meta-progression: unlocked perks per player (persistent)
+    @SuppressWarnings("unused") // Reserved for future meta-progression feature
     private final Map<UUID, Set<String>> unlockedPerks = new ConcurrentHashMap<>();
 
     private final Random random = new Random();
@@ -189,7 +191,9 @@ public class PerkSystem {
      * Player's perk state during a quest.
      */
     public static class PerkSession {
+        @SuppressWarnings("unused") // Reserved for session identification
         private final UUID playerId;
+        @SuppressWarnings("unused") // Reserved for quest tracking
         private final UUID questId;
 
         // Acquired perks and their stack counts
@@ -237,7 +241,7 @@ public class PerkSystem {
         }
 
         public void addPerk(String perkId) {
-            acquiredPerks.merge(perkId, 1, Integer::sum);
+            acquiredPerks.merge(perkId, 1, (a, b) -> a + b);
         }
 
         public Set<String> getAcquiredPerkIds() {

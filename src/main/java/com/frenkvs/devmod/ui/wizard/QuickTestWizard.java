@@ -6,6 +6,7 @@ import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
@@ -13,6 +14,7 @@ import net.minecraft.resources.ResourceLocation;
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Quick Test Wizard - Guided workflow to start integrated testing.
@@ -29,6 +31,7 @@ import java.util.List;
  * 3. Enable overlays (auto-suggest based on test type)
  * 4. Start test (launches integrated session)
  */
+@SuppressWarnings("null") // Minecraft APIs lack null annotations
 public class QuickTestWizard extends Screen {
 
     // Layout
@@ -63,6 +66,14 @@ public class QuickTestWizard extends Screen {
     public QuickTestWizard() {
         super(I18n.screenTitle("quick_test_wizard"));
         loadAvailableMobs();
+    }
+
+    /**
+     * Returns the font, guaranteed non-null after init().
+     */
+    @Nonnull
+    private Font getFont() {
+        return Objects.requireNonNull(this.font);
     }
 
     private void loadAvailableMobs() {
@@ -130,11 +141,11 @@ public class QuickTestWizard extends Screen {
 
         // Title
         String title = "⚡ Quick Test Wizard";
-        graphics.drawString(font, title, x + 15, y + 12, UIConstants.Text.ACCENT, false);
+        graphics.drawString(getFont(), title, x + 15, y + 12, UIConstants.Text.ACCENT, false);
 
         // Subtitle
         String subtitle = getStepTitle();
-        graphics.drawString(font, subtitle, x + 15, y + 26, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(getFont(), subtitle, x + 15, y + 26, UIConstants.Text.SECONDARY, false);
     }
 
     private String getStepTitle() {
@@ -165,7 +176,7 @@ public class QuickTestWizard extends Screen {
             // Number
             String num = String.valueOf(i + 1);
             int textColor = (completed || current) ? UIConstants.Text.WHITE : UIConstants.Text.MUTED;
-            graphics.drawString(font, num, cx - 3, indicatorY - 4, textColor, false);
+            graphics.drawString(getFont(), num, cx - 3, indicatorY - 4, textColor, false);
 
             // Connector line
             if (i < TOTAL_STEPS - 1) {
@@ -194,11 +205,11 @@ public class QuickTestWizard extends Screen {
         // Description
         String desc = selectedTestType.getDescription();
         int descY = y + cardHeight + 20;
-        graphics.drawString(font, desc, panelX + 20, descY, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(getFont(), desc, panelX + 20, descY, UIConstants.Text.SECONDARY, false);
 
         // Auto-configuration hint
         String hint = "§7Auto-config: " + selectedTestType.getAutoConfigHint();
-        graphics.drawString(font, hint, panelX + 20, descY + 15, UIConstants.Text.MUTED, false);
+        graphics.drawString(getFont(), hint, panelX + 20, descY + 15, UIConstants.Text.MUTED, false);
     }
 
     private void drawTestTypeCard(GuiGraphics graphics, int x, int y, int w, int h,
@@ -213,11 +224,11 @@ public class QuickTestWizard extends Screen {
         AxiomRenderer.drawBorder(graphics, x, y, w, h, borderColor);
 
         // Icon
-        graphics.drawString(font, type.getIcon(), x + w/2 - 6, y + 15, type.getColor(), false);
+        graphics.drawString(getFont(), type.getIcon(), x + w/2 - 6, y + 15, type.getColor(), false);
 
         // Name
-        int textW = font.width(type.getDisplayName());
-        graphics.drawString(font, type.getDisplayName(), x + (w - textW)/2, y + 40,
+        int textW = getFont().width(type.getDisplayName());
+        graphics.drawString(getFont(), type.getDisplayName(), x + (w - textW)/2, y + 40,
             selected ? UIConstants.Text.WHITE : UIConstants.Text.PRIMARY, false);
 
         // Selected indicator
@@ -232,7 +243,7 @@ public class QuickTestWizard extends Screen {
         int rightCol = panelX + 260;
 
         // Mob selection
-        graphics.drawString(font, "§lTarget Mob:", leftCol, y, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(getFont(), "§lTarget Mob:", leftCol, y, UIConstants.Text.PRIMARY, false);
 
         // Mob list (scrollable)
         int listY = y + 15;
@@ -244,9 +255,9 @@ public class QuickTestWizard extends Screen {
 
         if (availableMobs.isEmpty()) {
             // Show empty state message
-            graphics.drawString(font, "No mobs found!", leftCol + 10, listY + 20, UIConstants.Accent.ORANGE, false);
-            graphics.drawString(font, "Enter a world first", leftCol + 10, listY + 35, UIConstants.Text.MUTED, false);
-            graphics.drawString(font, "to load mob registry.", leftCol + 10, listY + 48, UIConstants.Text.MUTED, false);
+            graphics.drawString(getFont(), "No mobs found!", leftCol + 10, listY + 20, UIConstants.Accent.ORANGE, false);
+            graphics.drawString(getFont(), "Enter a world first", leftCol + 10, listY + 35, UIConstants.Text.MUTED, false);
+            graphics.drawString(getFont(), "to load mob registry.", leftCol + 10, listY + 48, UIConstants.Text.MUTED, false);
         } else {
             for (int i = 0; i < Math.min(visibleItems, availableMobs.size()); i++) {
                 int idx = mobListScroll + i;
@@ -265,18 +276,18 @@ public class QuickTestWizard extends Screen {
 
                 String mobName = mob.displayName != null ? mob.displayName : mob.mobId.toString();
                 if (mobName.length() > 25) mobName = mobName.substring(0, 22) + "...";
-                graphics.drawString(font, mobName, leftCol + 8, itemY + 6,
+                graphics.drawString(getFont(), mobName, leftCol + 8, itemY + 6,
                     selected ? UIConstants.Text.ACCENT : UIConstants.Text.PRIMARY, false);
             }
         }
 
         // Right column: Wave settings
-        graphics.drawString(font, "§lWave Settings:", rightCol, y, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(getFont(), "§lWave Settings:", rightCol, y, UIConstants.Text.PRIMARY, false);
 
         int settingY = y + 20;
 
         // Wave count
-        graphics.drawString(font, "Waves: " + waveCount, rightCol, settingY, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(getFont(), "Waves: " + waveCount, rightCol, settingY, UIConstants.Text.SECONDARY, false);
         drawPlusMinus(graphics, rightCol + 100, settingY - 2, mouseX, mouseY, "waves");
         settingY += 25;
 
@@ -285,7 +296,7 @@ public class QuickTestWizard extends Screen {
         settingY += 25;
 
         // Arena size
-        graphics.drawString(font, "Arena: " + arenaSize + " blocks", rightCol, settingY, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(getFont(), "Arena: " + arenaSize + " blocks", rightCol, settingY, UIConstants.Text.SECONDARY, false);
         drawPlusMinus(graphics, rightCol + 120, settingY - 2, mouseX, mouseY, "arena");
 
         // Preview info
@@ -293,14 +304,14 @@ public class QuickTestWizard extends Screen {
         graphics.fill(panelX + 20, previewY, panelX + PANEL_WIDTH - 20, previewY + 60, UIConstants.Background.INPUT);
         AxiomRenderer.drawBorder(graphics, panelX + 20, previewY, PANEL_WIDTH - 40, 60, UIConstants.Border.MUTED);
 
-        graphics.drawString(font, "§lTest Preview:", panelX + 30, previewY + 8, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(getFont(), "§lTest Preview:", panelX + 30, previewY + 8, UIConstants.Text.PRIMARY, false);
         if (selectedMob != null) {
             String preview = String.format("Fight %d waves of %s in %dx%d arena",
                 waveCount, selectedMob.getPath(), arenaSize, arenaSize);
-            graphics.drawString(font, preview, panelX + 30, previewY + 25, UIConstants.Text.SECONDARY, false);
+            graphics.drawString(getFont(), preview, panelX + 30, previewY + 25, UIConstants.Text.SECONDARY, false);
 
             String duration = endlessMode ? "Endless (until death)" : "~" + (waveCount * 2) + " minutes estimated";
-            graphics.drawString(font, duration, panelX + 30, previewY + 40, UIConstants.Text.MUTED, false);
+            graphics.drawString(getFont(), duration, panelX + 30, previewY + 40, UIConstants.Text.MUTED, false);
         }
     }
 
@@ -311,8 +322,8 @@ public class QuickTestWizard extends Screen {
         graphics.fill(x, y, x + 16, y + 16, minusHover ? UIConstants.Background.HOVER : UIConstants.Background.INPUT);
         graphics.fill(x + 24, y, x + 40, y + 16, plusHover ? UIConstants.Background.HOVER : UIConstants.Background.INPUT);
 
-        graphics.drawString(font, "-", x + 5, y + 4, UIConstants.Text.PRIMARY, false);
-        graphics.drawString(font, "+", x + 29, y + 4, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(getFont(), "-", x + 5, y + 4, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(getFont(), "+", x + 29, y + 4, UIConstants.Text.PRIMARY, false);
     }
 
     private void drawCheckbox(GuiGraphics graphics, int x, int y, String label, boolean checked,
@@ -328,12 +339,12 @@ public class QuickTestWizard extends Screen {
         }
 
         // Label
-        graphics.drawString(font, label, x + 20, y + 3, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(getFont(), label, x + 20, y + 3, UIConstants.Text.SECONDARY, false);
     }
 
     // ===================== STEP 3: Overlays =====================
     private void drawStep3_Overlays(GuiGraphics graphics, int panelX, int y, int mouseX, int mouseY) {
-        graphics.drawString(font, "§lRecommended overlays for " + selectedTestType.getDisplayName() + ":",
+        graphics.drawString(getFont(), "§lRecommended overlays for " + selectedTestType.getDisplayName() + ":",
             panelX + 20, y, UIConstants.Text.PRIMARY, false);
 
         int checkY = y + 25;
@@ -366,13 +377,13 @@ public class QuickTestWizard extends Screen {
         graphics.fill(panelX + 20, infoY, panelX + PANEL_WIDTH - 20, infoY + 70, 0x40FFAA00);
         AxiomRenderer.drawBorder(graphics, panelX + 20, infoY, PANEL_WIDTH - 40, 70, UIConstants.Accent.ORANGE);
 
-        graphics.drawString(font, "§6ℹ§r Overlays provide real-time feedback during testing:",
+        graphics.drawString(getFont(), "§6ℹ§r Overlays provide real-time feedback during testing:",
             panelX + 30, infoY + 10, UIConstants.Text.PRIMARY, false);
-        graphics.drawString(font, "• Telemetry HUD shows recording status and current room",
+        graphics.drawString(getFont(), "• Telemetry HUD shows recording status and current room",
             panelX + 30, infoY + 25, UIConstants.Text.SECONDARY, false);
-        graphics.drawString(font, "• Debug overlay shows hitboxes and damage numbers",
+        graphics.drawString(getFont(), "• Debug overlay shows hitboxes and damage numbers",
             panelX + 30, infoY + 38, UIConstants.Text.SECONDARY, false);
-        graphics.drawString(font, "• Heatmaps record movement patterns for analysis",
+        graphics.drawString(getFont(), "• Heatmaps record movement patterns for analysis",
             panelX + 30, infoY + 51, UIConstants.Text.SECONDARY, false);
     }
 
@@ -391,49 +402,49 @@ public class QuickTestWizard extends Screen {
 
         // Label with recommendation marker
         String displayLabel = recommended ? label + " §6★" : label;
-        graphics.drawString(font, displayLabel, x + 20, y + 3, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(getFont(), displayLabel, x + 20, y + 3, UIConstants.Text.SECONDARY, false);
 
         return checked; // Return unchanged - click handling separate
     }
 
     // ===================== STEP 4: Summary =====================
     private void drawStep4_Summary(GuiGraphics graphics, int panelX, int y, int mouseX, int mouseY) {
-        graphics.drawString(font, "§l§aReady to Start Test!", panelX + 20, y, UIConstants.Accent.GREEN, false);
+        graphics.drawString(getFont(), "§l§aReady to Start Test!", panelX + 20, y, UIConstants.Accent.GREEN, false);
 
         int summaryY = y + 25;
         int leftCol = panelX + 30;
         int rightCol = panelX + 280;
 
         // Test type
-        graphics.drawString(font, "Test Type:", leftCol, summaryY, UIConstants.Text.MUTED, false);
-        graphics.drawString(font, selectedTestType.getDisplayName(), rightCol, summaryY, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(getFont(), "Test Type:", leftCol, summaryY, UIConstants.Text.MUTED, false);
+        graphics.drawString(getFont(), selectedTestType.getDisplayName(), rightCol, summaryY, UIConstants.Text.PRIMARY, false);
         summaryY += 18;
 
         // Target
-        graphics.drawString(font, "Target Mob:", leftCol, summaryY, UIConstants.Text.MUTED, false);
+        graphics.drawString(getFont(), "Target Mob:", leftCol, summaryY, UIConstants.Text.MUTED, false);
         String mobName = selectedMob != null ? selectedMob.getPath() : "None";
-        graphics.drawString(font, mobName, rightCol, summaryY, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(getFont(), mobName, rightCol, summaryY, UIConstants.Text.PRIMARY, false);
         summaryY += 18;
 
         // Waves
-        graphics.drawString(font, "Waves:", leftCol, summaryY, UIConstants.Text.MUTED, false);
-        graphics.drawString(font, endlessMode ? "Endless" : String.valueOf(waveCount), rightCol, summaryY, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(getFont(), "Waves:", leftCol, summaryY, UIConstants.Text.MUTED, false);
+        graphics.drawString(getFont(), endlessMode ? "Endless" : String.valueOf(waveCount), rightCol, summaryY, UIConstants.Text.PRIMARY, false);
         summaryY += 18;
 
         // Arena
-        graphics.drawString(font, "Arena Size:", leftCol, summaryY, UIConstants.Text.MUTED, false);
-        graphics.drawString(font, arenaSize + "x" + arenaSize + " blocks", rightCol, summaryY, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(getFont(), "Arena Size:", leftCol, summaryY, UIConstants.Text.MUTED, false);
+        graphics.drawString(getFont(), arenaSize + "x" + arenaSize + " blocks", rightCol, summaryY, UIConstants.Text.PRIMARY, false);
         summaryY += 18;
 
         // Overlays
-        graphics.drawString(font, "Active Overlays:", leftCol, summaryY, UIConstants.Text.MUTED, false);
+        graphics.drawString(getFont(), "Active Overlays:", leftCol, summaryY, UIConstants.Text.MUTED, false);
         List<String> activeOverlays = new ArrayList<>();
         if (enableTelemetryHud) activeOverlays.add("Telemetry");
         if (enableDebugOverlay) activeOverlays.add("Debug");
         if (enableBossPhase) activeOverlays.add("Boss Phase");
         if (enableEntityDensity) activeOverlays.add("Density");
         if (enableHeatmaps) activeOverlays.add("Heatmaps");
-        graphics.drawString(font, String.join(", ", activeOverlays), rightCol, summaryY, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(getFont(), String.join(", ", activeOverlays), rightCol, summaryY, UIConstants.Text.PRIMARY, false);
 
         // Big start button
         int btnX = panelX + (PANEL_WIDTH - 200) / 2;
@@ -446,8 +457,8 @@ public class QuickTestWizard extends Screen {
         AxiomRenderer.drawBorder(graphics, btnX, btnY, 200, 40, btnHover ? UIConstants.Accent.GREEN : UIConstants.Border.MUTED);
 
         String btnText = "▶ START TEST";
-        int btnTextW = font.width(btnText);
-        graphics.drawString(font, btnText, btnX + (200 - btnTextW) / 2, btnY + 16,
+        int btnTextW = getFont().width(btnText);
+        graphics.drawString(getFont(), btnText, btnX + (200 - btnTextW) / 2, btnY + 16,
             btnHover ? UIConstants.Accent.GREEN : UIConstants.Text.PRIMARY, false);
     }
 
@@ -459,7 +470,7 @@ public class QuickTestWizard extends Screen {
             graphics.fill(panelX + 20, y, panelX + 100, y + 25,
                 backHover ? UIConstants.Background.HOVER : UIConstants.Background.INPUT);
             AxiomRenderer.drawBorder(graphics, panelX + 20, y, 80, 25, UIConstants.Border.MUTED);
-            graphics.drawString(font, "← Back", panelX + 35, y + 8, UIConstants.Text.PRIMARY, false);
+            graphics.drawString(getFont(), "← Back", panelX + 35, y + 8, UIConstants.Text.PRIMARY, false);
         }
 
         // Next/Start button
@@ -470,7 +481,7 @@ public class QuickTestWizard extends Screen {
             graphics.fill(panelX + PANEL_WIDTH - 100, y, panelX + PANEL_WIDTH - 97, y + 25, UIConstants.Accent.BLUE);
             AxiomRenderer.drawBorder(graphics, panelX + PANEL_WIDTH - 100, y, 80, 25,
                 nextHover ? UIConstants.Accent.BLUE : UIConstants.Border.MUTED);
-            graphics.drawString(font, "Next →", panelX + PANEL_WIDTH - 85, y + 8, UIConstants.Text.PRIMARY, false);
+            graphics.drawString(getFont(), "Next →", panelX + PANEL_WIDTH - 85, y + 8, UIConstants.Text.PRIMARY, false);
         }
 
         // Cancel button (always visible)
@@ -479,7 +490,7 @@ public class QuickTestWizard extends Screen {
             graphics.fill(panelX + PANEL_WIDTH / 2 - 40, y, panelX + PANEL_WIDTH / 2 + 40, y + 25,
                 UIConstants.Background.HOVER);
         }
-        graphics.drawString(font, "Cancel", panelX + PANEL_WIDTH / 2 - 18, y + 8, UIConstants.Text.MUTED, false);
+        graphics.drawString(getFont(), "Cancel", panelX + PANEL_WIDTH / 2 - 18, y + 8, UIConstants.Text.MUTED, false);
     }
 
     @Override
@@ -673,17 +684,18 @@ public class QuickTestWizard extends Screen {
 
     private void startTest() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return;
+        var localPlayer = mc.player;
+        if (localPlayer == null) return;
 
         // Validate mob selection
         if (selectedMob == null) {
-            mc.player.displayClientMessage(
+            localPlayer.displayClientMessage(
                 I18n.translate("devmod.quicktest.select_mob_first"),
                 true
             );
-            mc.getSoundManager().play(
+            mc.getSoundManager().play(Objects.requireNonNull(
                 net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
-                    net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BASS.value(), 0.5f));
+                    Objects.requireNonNull(net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BASS.value()), 0.5f)));
             currentStep = 1; // Go back to mob selection step
             return;
         }
@@ -725,11 +737,11 @@ public class QuickTestWizard extends Screen {
         ));
 
         // Show notification
-        mc.player.displayClientMessage(
+        localPlayer.displayClientMessage(
             I18n.translate("devmod.quicktest.session_started"),
             false
         );
-        mc.player.displayClientMessage(
+        localPlayer.displayClientMessage(
             I18n.translate("devmod.quicktest.mob_preselected"),
             false
         );

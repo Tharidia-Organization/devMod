@@ -838,7 +838,6 @@ public class ArenaWaveManagerTest {
         @DisplayName("Wave cleanup removes remaining mobs")
         void testWaveCleanupRemovesMobs() {
             SimWaveState wave = simulator.startWave(arena.id, 1, 10);
-            int initialMobs = simulator.mobs.size();
 
             // Kill half
             List<UUID> mobIds = new ArrayList<>(wave.spawnedMobs);
@@ -1205,7 +1204,6 @@ public class ArenaWaveManagerTest {
             }
 
             assertFalse(wave.complete, "Wave should not be complete");
-            int mobsBeforeCleanup = simulator.mobs.size();
 
             // Abort quest
             simulator.cleanupWave(arena.id);

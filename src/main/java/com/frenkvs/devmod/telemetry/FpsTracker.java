@@ -39,17 +39,17 @@ public class FpsTracker {
     private static final int PADDING = 4;
     private static final int LINE_HEIGHT = 10;
 
-    // Colori (Impact UI Style)
+    // Colors (Impact UI Style)
     private static final int BG_COLOR = 0xCC1A1A2E;         // Panel bg 80% opacity
-    private static final int BORDER_COLOR = 0xFF3D5AFE;     // Blu elettrico Impact
+    private static final int BORDER_COLOR = 0xFF3D5AFE;     // Impact electric blue
     private static final int BORDER_GLOW = 0x553D5AFE;      // Glow effect
-    private static final int TEXT_CYAN = 0xFF00FFFF;        // Cyan Impact (titoli)
-    private static final int TEXT_GREEN = 0xFF00FF00;       // Verde Impact
-    private static final int TEXT_YELLOW = 0xFFFFD700;      // Oro Impact
-    private static final int TEXT_RED = 0xFFFF4444;         // Rosso Impact
-    private static final int TEXT_GRAY = 0xFFAAAAAA;        // Grigio muted
+    private static final int TEXT_CYAN = 0xFF00FFFF;        // Impact cyan (titles)
+    private static final int TEXT_GREEN = 0xFF00FF00;       // Impact green
+    private static final int TEXT_YELLOW = 0xFFFFD700;      // Impact gold
+    private static final int TEXT_RED = 0xFFFF4444;         // Impact red
+    private static final int TEXT_GRAY = 0xFFAAAAAA;        // Muted gray
 
-    // === Stato ===
+    // === State ===
     private boolean enabled = false;
 
     // FPS tracking
@@ -117,15 +117,15 @@ public class FpsTracker {
 
         frameCount++;
 
-        // Aggiorna FPS ogni secondo
+        // Update FPS every second
         if (now - lastFpsUpdate >= 1000) {
             currentFps = mc.getFps();
 
-            // Aggiorna history
+            // Update history
             fpsHistory[historyIndex] = currentFps;
             historyIndex = (historyIndex + 1) % HISTORY_SIZE;
 
-            // Calcola min/max/avg
+            // Calculate min/max/avg
             int sum = 0;
             int count = 0;
             minFps = Integer.MAX_VALUE;
@@ -176,17 +176,17 @@ public class FpsTracker {
     }
 
     private void renderOverlay(GuiGraphics graphics, Font font) {
-        // Posizione: angolo in alto a sinistra
+        // Position: top left corner
         int x = PANEL_MARGIN;
         int y = PANEL_MARGIN;
 
-        // Glow esterno (Impact UI style)
+        // Outer glow (Impact UI style)
         graphics.fill(x - 1, y - 1, x + PANEL_WIDTH + 1, y + PANEL_HEIGHT + 1, BORDER_GLOW);
 
-        // Sfondo
+        // Background
         graphics.fill(x, y, x + PANEL_WIDTH, y + PANEL_HEIGHT, BG_COLOR);
 
-        // Bordo
+        // Border
         graphics.fill(x, y, x + PANEL_WIDTH, y + 1, BORDER_COLOR);
         graphics.fill(x, y + PANEL_HEIGHT - 1, x + PANEL_WIDTH, y + PANEL_HEIGHT, BORDER_COLOR);
         graphics.fill(x, y, x + 1, y + PANEL_HEIGHT, BORDER_COLOR);
@@ -199,12 +199,12 @@ public class FpsTracker {
         graphics.drawString(font, "Performance", textX, textY, TEXT_CYAN, false);
         textY += LINE_HEIGHT + 2;
 
-        // FPS con colore basato su valore
+        // FPS with color based on value
         int fpsColor = getFpsColor(currentFps);
         String fpsStr = String.format("FPS: %d", currentFps);
         graphics.drawString(font, fpsStr, textX, textY, fpsColor, false);
 
-        // Min/Max sulla stessa riga
+        // Min/Max on the same row
         String minMaxStr = String.format("§7(%d-%d)", minFps, maxFps);
         graphics.drawString(font, minMaxStr, textX + 55, textY, TEXT_GRAY, false);
         textY += LINE_HEIGHT;
@@ -220,7 +220,7 @@ public class FpsTracker {
         graphics.drawString(font, ftStr, textX, textY, ftColor, false);
         textY += LINE_HEIGHT;
 
-        // Memoria
+        // Memory
         Runtime runtime = Runtime.getRuntime();
         long usedMB = (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024);
         long maxMB = runtime.maxMemory() / (1024 * 1024);

@@ -167,9 +167,7 @@ class SerializationRoundTripTest {
             Map<String, Object> map = new HashMap<>();
             String dimensionKey = null;
 
-            if (dimensionKey != null) {
-                map.put("dimension", dimensionKey);
-            }
+            Optional.ofNullable(dimensionKey).ifPresent(value -> map.put("dimension", value));
 
             assertFalse(map.containsKey("dimension"));
         }
@@ -180,9 +178,7 @@ class SerializationRoundTripTest {
             Map<String, Object> map = new HashMap<>();
             String dimensionKey = "devmod:instance_123";
 
-            if (dimensionKey != null) {
-                map.put("dimension", dimensionKey);
-            }
+            Optional.ofNullable(dimensionKey).ifPresent(value -> map.put("dimension", value));
 
             assertTrue(map.containsKey("dimension"));
             assertEquals("devmod:instance_123", map.get("dimension"));

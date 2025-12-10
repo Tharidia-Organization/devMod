@@ -13,6 +13,7 @@ import java.util.List;
  * Network payload sent from server to client when quest is completed.
  * Contains all the reward information for display in QuestCompletionScreen.
  */
+@SuppressWarnings({"null", "unused"})
 public record QuestCompletionPayload(
     // Quest info
     String questName,

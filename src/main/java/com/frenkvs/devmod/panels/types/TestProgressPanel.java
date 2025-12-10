@@ -15,13 +15,13 @@ import net.minecraft.world.phys.Vec3;
 import javax.annotation.Nullable;
 
 /**
- * Pannello che mostra il progresso della sessione di testing corrente.
+ * Panel that shows the current testing session progress.
  *
- * Visualizza:
- * - Test corrente (nome e categoria)
- * - Barra progresso sessione
- * - Conteggio passed/failed/pending
- * - Prossimo step del test
+ * Displays:
+ * - Current test (name and category)
+ * - Session progress bar
+ * - Passed/failed/pending count
+ * - Next test step
  */
 public class TestProgressPanel extends FloatingPanel {
 
@@ -35,10 +35,10 @@ public class TestProgressPanel extends FloatingPanel {
     private int totalCount = 0;
     private long lastUpdateTick = 0;
 
-    private static final int UPDATE_INTERVAL_TICKS = 20; // Aggiorna ogni secondo
+    private static final int UPDATE_INTERVAL_TICKS = 20; // Update every second
 
     /**
-     * Crea un pannello progresso test in una posizione fissa.
+     * Creates a test progress panel at a fixed position.
      */
     public TestProgressPanel(Vec3 position) {
         super(PanelType.TEST_PROGRESS, position);
@@ -57,7 +57,7 @@ public class TestProgressPanel extends FloatingPanel {
     }
 
     /**
-     * Aggiorna i dati dalla sessione di testing.
+     * Updates data from the testing session.
      */
     private void updateSessionData() {
         TestingSession session = TestingSession.INSTANCE;
@@ -137,18 +137,18 @@ public class TestProgressPanel extends FloatingPanel {
         drawBorder(graphics, 0, y, barWidth, barHeight, UIConstants.Border.MUTED);
         y += barHeight + 4;
 
-        // Contatori
+        // Counters
         String statsText = String.format("P:%d F:%d /%d", passedCount, failedCount, totalCount);
         graphics.drawString(mc.font, statsText, 0, y, UIConstants.Text.SECONDARY, false);
 
-        // Percentuale a destra
+        // Percentage on the right
         String percentText = String.format("%.0f%%", sessionProgress * 100);
         int percentWidth = mc.font.width(percentText);
         graphics.drawString(mc.font, percentText, contentWidth - percentWidth - 4, y, progressColor, false);
     }
 
     /**
-     * Disegna un bordo semplice.
+     * Draws a simple border.
      */
     private void drawBorder(GuiGraphics graphics, int x, int y, int w, int h, int color) {
         graphics.fill(x, y, x + w, y + 1, color);           // Top
@@ -158,16 +158,16 @@ public class TestProgressPanel extends FloatingPanel {
     }
 
     /**
-     * Ottiene il colore della barra progresso.
+     * Gets the progress bar color.
      */
     private int getProgressColor() {
         if (failedCount > 0) {
-            return UIConstants.Status.WARNING; // Arancione se ci sono fallimenti
+            return UIConstants.Status.WARNING; // Orange if there are failures
         }
         if (sessionProgress >= 1.0f) {
-            return UIConstants.Status.SUCCESS; // Verde se completato
+            return UIConstants.Status.SUCCESS; // Green if completed
         }
-        return UIConstants.Status.INFO; // Blu durante il progresso
+        return UIConstants.Status.INFO; // Blue during progress
     }
 
     @Override
@@ -243,7 +243,7 @@ public class TestProgressPanel extends FloatingPanel {
     }
 
     /**
-     * Verifica se la sessione e' completa.
+     * Checks if the session is complete.
      */
     public boolean isSessionComplete() {
         return totalCount > 0 && (passedCount + failedCount) >= totalCount;

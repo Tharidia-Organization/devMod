@@ -21,7 +21,7 @@ import java.util.List;
  * Uses standard UIConstants for consistent theming.
  */
 @OnlyIn(Dist.CLIENT)
-@SuppressWarnings("null")
+@SuppressWarnings({"null", "unused"})
 public class PerkSelectionScreen extends Screen {
 
     // === Colors - Standardized to UIConstants ===

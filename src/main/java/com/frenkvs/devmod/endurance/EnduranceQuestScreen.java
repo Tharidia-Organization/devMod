@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 /**
  * Main UI screen for browsing and starting Endurance Quests.
  */
+@SuppressWarnings("null") // Minecraft/NeoForge API null-safety
 public class EnduranceQuestScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestScreen.class);
 
@@ -37,6 +38,7 @@ public class EnduranceQuestScreen extends Screen {
     private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY;
     private static final int COLOR_SUCCESS = UIConstants.Accent.GREEN;
     private static final int COLOR_WARNING = UIConstants.Accent.GOLD;
+    @SuppressWarnings("unused") // Reserved for future error state styling
     private static final int COLOR_DANGER = UIConstants.Accent.RED;
 
     // Tier colors - using UIConstants where applicable

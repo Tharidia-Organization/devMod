@@ -6,6 +6,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
@@ -177,7 +178,7 @@ public abstract class RadialAction {
 
         @Override
         public Component getLabel() {
-            return Component.literal(name);
+            return Objects.requireNonNull(Component.literal(Objects.requireNonNull(name)));
         }
 
         @Override
@@ -227,18 +228,19 @@ public abstract class RadialAction {
         @Override
         public void execute() {
             Minecraft mc = Minecraft.getInstance();
-            if (mc.player != null && mc.getConnection() != null) {
+            var player = mc.player;
+            if (player != null && mc.getConnection() != null) {
                 if (command.startsWith("/")) {
-                    mc.player.connection.sendCommand(command.substring(1));
+                    player.connection.sendCommand(Objects.requireNonNull(command.substring(1)));
                 } else {
-                    mc.player.connection.sendCommand(command);
+                    player.connection.sendCommand(Objects.requireNonNull(command));
                 }
             }
         }
 
         @Override
         public Component getLabel() {
-            return Component.literal(name);
+            return Objects.requireNonNull(Component.literal(Objects.requireNonNull(name)));
         }
 
         @Override
@@ -248,7 +250,7 @@ public abstract class RadialAction {
 
         @Override
         public ItemStack getIconStack() {
-            return icon != null ? icon : new ItemStack(Items.COMMAND_BLOCK);
+            return icon != null ? icon : new ItemStack(Objects.requireNonNull(Items.COMMAND_BLOCK));
         }
 
         @Override
@@ -290,7 +292,7 @@ public abstract class RadialAction {
 
         @Override
         public Component getLabel() {
-            return Component.literal(name);
+            return Objects.requireNonNull(Component.literal(Objects.requireNonNull(name)));
         }
 
         @Override
@@ -342,7 +344,7 @@ public abstract class RadialAction {
 
         @Override
         public Component getLabel() {
-            return Component.literal(name);
+            return Objects.requireNonNull(Component.literal(Objects.requireNonNull(name)));
         }
 
         @Override
@@ -387,7 +389,7 @@ public abstract class RadialAction {
 
         @Override
         public Component getLabel() {
-            return Component.literal(name);
+            return Objects.requireNonNull(Component.literal(Objects.requireNonNull(name)));
         }
 
         @Override
@@ -429,7 +431,7 @@ public abstract class RadialAction {
 
         @Override
         public Component getLabel() {
-            return Component.literal(name + " →");
+            return Objects.requireNonNull(Component.literal(Objects.requireNonNull(name) + " →"));
         }
 
         @Override
@@ -442,12 +444,14 @@ public abstract class RadialAction {
             return emoji;
         }
 
+        /** Returns the subcategory for navigation. Used by menu screen. */
         public RadialCategory getSubcategory() {
             return subcategory;
         }
 
         /**
-         * Check if this action navigates to a subcategory
+         * Check if this action navigates to a subcategory.
+         * Used by menu screen to determine navigation behavior.
          */
         public boolean isSubcategory() {
             return true;

@@ -96,7 +96,8 @@ public class WeaponEditorScreen extends Screen {
     private EditBox presetNameBox;
     private int presetScrollOffset = 0;
 
-    // Favorites
+    // Favorites - reserved for future filtering feature
+    @SuppressWarnings("unused")
     private boolean showFavoritesOnly = false;
 
     // Enchantment Filters
@@ -107,17 +108,24 @@ public class WeaponEditorScreen extends Screen {
     private boolean showHistoryPanel = false;
     private int historyScrollOffset = 0;
 
-    // Export/Import
+    // Export/Import - reserved for future feature
+    @SuppressWarnings("unused")
     private boolean showExportImportMenu = false;
+    @SuppressWarnings("unused")
     private EditBox exportNameBox;
+    @SuppressWarnings("unused")
     private String exportName = "";
+    @SuppressWarnings("unused")
     private int importScrollOffset = 0;
 
-    // Batch mode
+    // Batch mode - reserved for future feature
+    @SuppressWarnings("unused")
     private boolean batchModeEnabled = false;
 
-    // Compare mode
+    // Compare mode - reserved for future feature
+    @SuppressWarnings("unused")
     private boolean showComparePanel = false;
+    @SuppressWarnings("unused")
     private ItemStack compareStack = ItemStack.EMPTY;
 
     // Templates
@@ -143,6 +151,7 @@ public class WeaponEditorScreen extends Screen {
     // Helper classes
     private static class StatSlider {
         final String name;
+        @SuppressWarnings("unused")
         final String tooltip;
         final int color;
         final float min, max;
@@ -187,6 +196,7 @@ public class WeaponEditorScreen extends Screen {
             this.operation = op;
         }
 
+        @SuppressWarnings("unused")
         AttributeEntry copy() {
             return new AttributeEntry(name, attribute, value, operation);
         }
@@ -1019,7 +1029,6 @@ public class WeaponEditorScreen extends Screen {
         int visibleItems = 6; // Reduced to fit in smaller picker
 
         Holder<Enchantment> hoveredEnch = null;
-        int hoveredY = 0;
 
         for (int i = 0; i < Math.min(visibleItems, filtered.size() - pickerScrollOffset); i++) {
             int idx = i + pickerScrollOffset;
@@ -1033,7 +1042,6 @@ public class WeaponEditorScreen extends Screen {
             if (hovered) {
                 graphics.fill(pickerX + 10, itemY, pickerX + pickerW - 30, itemY + itemHeight, UIConstants.Background.HOVER);
                 hoveredEnch = ench;
-                hoveredY = itemY;
             }
 
             // Check if favorite

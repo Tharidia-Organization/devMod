@@ -1,13 +1,10 @@
 package com.frenkvs.devmod.stress;
 
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
-import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 

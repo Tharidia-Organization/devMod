@@ -11,14 +11,14 @@ import javax.annotation.Nullable;
 import java.util.UUID;
 
 /**
- * Classe base astratta per tutti i pannelli flottanti nel mondo 3D.
+ * Abstract base class for all floating panels in the 3D world.
  *
- * Un FloatingPanel e' un elemento UI che:
- * - Esiste nel mondo 3D (non sullo schermo 2D)
- * - Puo' tracciare un'entita' o avere posizione fissa
- * - Ha un lifecycle con animazioni di spawn/despawn
- * - Puo' essere pinnato, minimizzato, trascinato
- * - Si orienta sempre verso la camera (billboard)
+ * A FloatingPanel is a UI element that:
+ * - Exists in the 3D world (not on the 2D screen)
+ * - Can track an entity or have a fixed position
+ * - Has a lifecycle with spawn/despawn animations
+ * - Can be pinned, minimized, dragged
+ * - Always faces the camera (billboard)
  */
 public abstract class FloatingPanel {
 
@@ -53,7 +53,7 @@ public abstract class FloatingPanel {
     private static final float DESPAWN_SCALE_END = 0.9f;
 
     /**
-     * Crea un pannello con tracking di entita'.
+     * Create a panel with entity tracking.
      */
     protected FloatingPanel(PanelType type, EntityTracker tracker) {
         this.id = UUID.randomUUID();
@@ -67,7 +67,7 @@ public abstract class FloatingPanel {
     }
 
     /**
-     * Crea un pannello con posizione fissa.
+     * Create a panel with fixed position.
      */
     protected FloatingPanel(PanelType type, Vec3 fixedPosition) {
         this.id = UUID.randomUUID();
@@ -83,36 +83,36 @@ public abstract class FloatingPanel {
     // === Abstract Methods ===
 
     /**
-     * Renderizza il contenuto interno del pannello (versione 2D per GUI).
-     * Chiamato con coordinate locali (0,0 e' l'angolo top-left del contenuto).
+     * Render the internal content of the panel (2D version for GUI).
+     * Called with local coordinates (0,0 is the top-left corner of content).
      *
-     * @param graphics Context di rendering
-     * @param contentWidth Larghezza disponibile per il contenuto
-     * @param contentHeight Altezza disponibile per il contenuto
+     * @param graphics Rendering context
+     * @param contentWidth Available width for content
+     * @param contentHeight Available height for content
      */
     public abstract void renderContent(GuiGraphics graphics, int contentWidth, int contentHeight);
 
     /**
-     * Renderizza il contenuto interno del pannello nel mondo 3D.
-     * Override questo metodo per rendering 3D custom.
-     * Default: usa il font per renderizzare testo basico.
+     * Render the internal content of the panel in the 3D world.
+     * Override this method for custom 3D rendering.
+     * Default: uses font to render basic text.
      *
-     * @param poseStack Stack di trasformazioni
-     * @param bufferSource Buffer per rendering
-     * @param font Font per il testo
-     * @param contentWidth Larghezza disponibile
-     * @param contentHeight Altezza disponibile
-     * @param alpha Alpha corrente del pannello
+     * @param poseStack Transform stack
+     * @param bufferSource Buffer for rendering
+     * @param font Font for text
+     * @param contentWidth Available width
+     * @param contentHeight Available height
+     * @param alpha Current panel alpha
      */
     public void renderContent3D(PoseStack poseStack, MultiBufferSource bufferSource, Font font,
                                  int contentWidth, int contentHeight, float alpha) {
-        // Default implementation - pannelli possono override per contenuti custom
-        // Renderizza info basiche come testo
+        // Default implementation - panels can override for custom content
+        // Renders basic info as text
         renderText3D(poseStack, bufferSource, font, getTitle(), 0, 0, applyAlpha(0xFFFFFFFF, alpha));
     }
 
     /**
-     * Ottiene il titolo del pannello (mostrato nell'header).
+     * Get the panel title (shown in header).
      */
     public abstract String getTitle();
 
@@ -134,7 +134,7 @@ public abstract class FloatingPanel {
     }
 
     /**
-     * Applica alpha a un colore ARGB.
+     * Apply alpha to an ARGB color.
      */
     protected int applyAlpha(int argb, float alphaMultiplier) {
         int originalAlpha = (argb >> 24) & 0xFF;
@@ -144,24 +144,24 @@ public abstract class FloatingPanel {
     }
 
     /**
-     * Aggiorna lo stato interno del pannello.
-     * Chiamato ogni tick client.
+     * Update the internal state of the panel.
+     * Called every client tick.
      */
     public void tick() {
-        // Aggiorna tracker se presente
+        // Update tracker if present
         if (tracker != null) {
             tracker.tick();
 
-            // Se il target non e' piu' valido, inizia despawn
+            // If the target is no longer valid, start despawn
             if (!tracker.isValid() && state != PanelState.DESPAWNING && state != PanelState.REMOVED) {
                 startDespawn();
             }
         }
 
-        // Gestione lifecycle
+        // Lifecycle management
         updateLifecycle();
 
-        // Auto-expire se configurato
+        // Auto-expire if configured
         if (type.hasAutoExpire() && !pinned) {
             long age = System.currentTimeMillis() - spawnTime;
             if (age > type.getAutoExpireMs() && state == PanelState.VISIBLE) {
@@ -171,7 +171,7 @@ public abstract class FloatingPanel {
     }
 
     /**
-     * Aggiorna le animazioni e le transizioni di stato.
+     * Update animations and state transitions.
      */
     protected void updateLifecycle() {
         long stateTime = System.currentTimeMillis() - stateStartTime;
@@ -225,7 +225,7 @@ public abstract class FloatingPanel {
     // === State Transitions ===
 
     /**
-     * Transizione a un nuovo stato.
+     * Transition to a new state.
      */
     protected void transitionTo(PanelState newState) {
         if (this.state != newState) {
@@ -236,14 +236,14 @@ public abstract class FloatingPanel {
     }
 
     /**
-     * Callback per cambio stato (override per comportamenti custom).
+     * Callback for state change (override for custom behaviors).
      */
     protected void onStateChanged(PanelState newState) {
-        // Override in subclasses se necessario
+        // Override in subclasses if needed
     }
 
     /**
-     * Inizia la sequenza di despawn.
+     * Start the despawn sequence.
      */
     public void startDespawn() {
         if (state != PanelState.DESPAWNING && state != PanelState.REMOVED) {
@@ -252,7 +252,7 @@ public abstract class FloatingPanel {
     }
 
     /**
-     * Chiude immediatamente il pannello.
+     * Immediately close the panel.
      */
     public void close() {
         transitionTo(PanelState.REMOVED);
@@ -261,7 +261,7 @@ public abstract class FloatingPanel {
     // === Position ===
 
     /**
-     * Ottiene la posizione corrente del pannello nel mondo.
+     * Get the current position of the panel in the world.
      */
     public Vec3 getWorldPosition() {
         if (tracker != null && tracker.isValid()) {
@@ -271,7 +271,7 @@ public abstract class FloatingPanel {
     }
 
     /**
-     * Imposta una nuova posizione fissa (rimuove il tracking).
+     * Set a new fixed position (removes tracking).
      */
     public void setFixedPosition(Vec3 position) {
         this.fixedPosition = position;
@@ -281,7 +281,7 @@ public abstract class FloatingPanel {
     // === Pin/Minimize ===
 
     /**
-     * Alterna lo stato di pin.
+     * Toggle pin state.
      */
     public void togglePin() {
         if (type.canPin()) {
@@ -290,7 +290,7 @@ public abstract class FloatingPanel {
     }
 
     /**
-     * Alterna lo stato minimizzato.
+     * Toggle minimized state.
      */
     public void toggleMinimize() {
         if (state == PanelState.VISIBLE) {
@@ -305,23 +305,23 @@ public abstract class FloatingPanel {
     // === Interaction ===
 
     /**
-     * Gestisce un click sul pannello.
+     * Handle a click on the panel.
      *
-     * @param localX Coordinata X relativa al pannello
-     * @param localY Coordinata Y relativa al pannello
-     * @param button Pulsante del mouse (0=left, 1=right, 2=middle)
-     * @return true se il click e' stato gestito
+     * @param localX X coordinate relative to panel
+     * @param localY Y coordinate relative to panel
+     * @param button Mouse button (0=left, 1=right, 2=middle)
+     * @return true if the click was handled
      */
     public boolean handleClick(int localX, int localY, int button) {
         if (!state.isInteractive()) return false;
 
-        // Click destro = toggle pin
+        // Right click = toggle pin
         if (button == 1 && type.canPin()) {
             togglePin();
             return true;
         }
 
-        // Click sinistro sull'header = toggle minimize
+        // Left click on header = toggle minimize
         if (button == 0 && localY < 16) {
             toggleMinimize();
             return true;
@@ -331,7 +331,7 @@ public abstract class FloatingPanel {
     }
 
     /**
-     * Aggiorna lo stato di hover.
+     * Update hover state.
      */
     public void setHovered(boolean hovered) {
         this.hovered = hovered;

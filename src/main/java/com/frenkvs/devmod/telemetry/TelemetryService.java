@@ -209,6 +209,7 @@ public class TelemetryService {
     /**
      * Find room definition for a position. Delegates to RoomService.
      */
+    @SuppressWarnings("unused") // Reserved for future telemetry room analysis
     private RoomDefinition findRoom(ServerLevel level, BlockPos pos) {
         return RoomService.INSTANCE.findRoom(level, pos);
     }

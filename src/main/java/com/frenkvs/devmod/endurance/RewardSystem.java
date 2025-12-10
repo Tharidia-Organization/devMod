@@ -35,6 +35,7 @@ import java.util.function.Consumer;
  * - Shop system for permanent upgrades
  * - Achievement-based bonus rewards
  */
+@SuppressWarnings({"null", "unused"})
 public class RewardSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(RewardSystem.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

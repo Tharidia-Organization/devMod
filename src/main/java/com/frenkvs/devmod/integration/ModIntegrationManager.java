@@ -8,8 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Gestisce le integrazioni con mod esterne (Pehkui, Better Combat, ecc.)
- * Tutte le dipendenze sono soft (opzionali) - la mod funziona anche senza.
+ * Manages integrations with external mods (Pehkui, Better Combat, etc.)
+ * All dependencies are soft (optional) - the mod works without them.
  */
 public class ModIntegrationManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModIntegrationManager.class);
@@ -19,8 +19,8 @@ public class ModIntegrationManager {
     private static boolean initialized = false;
 
     /**
-     * Inizializza il manager controllando quali mod sono presenti.
-     * Chiamare durante FMLCommonSetupEvent.
+     * Initializes the manager by checking which mods are present.
+     * Call during FMLCommonSetupEvent.
      */
     public static void init() {
         if (initialized) return;
@@ -28,7 +28,7 @@ public class ModIntegrationManager {
         pehkuiLoaded = ModList.get().isLoaded("pehkui");
         betterCombatLoaded = ModList.get().isLoaded("bettercombat");
 
-        // Inizializza integrazioni specifiche
+        // Initialize specific integrations
         if (betterCombatLoaded) {
             BetterCombatIntegration.init();
         }
@@ -41,8 +41,8 @@ public class ModIntegrationManager {
     }
 
     /**
-     * Ottiene la scala visiva di un'entità da Pehkui.
-     * @return scala (1.0 = normale), o null se Pehkui non è presente
+     * Gets the visual scale of an entity from Pehkui.
+     * @return scale (1.0 = normal), or null if Pehkui is not present
      */
     public static Float getPehkuiScale(LivingEntity entity) {
         if (!pehkuiLoaded || entity == null) return null;
@@ -55,9 +55,9 @@ public class ModIntegrationManager {
     }
 
     /**
-     * Ottiene la scala hitbox di un'entità da Pehkui.
-     * Può essere diversa dalla scala visiva.
-     * @return scala hitbox, o null se Pehkui non è presente
+     * Gets the hitbox scale of an entity from Pehkui.
+     * Can be different from the visual scale.
+     * @return hitbox scale, or null if Pehkui is not present
      */
     public static Float getPehkuiHitboxScale(LivingEntity entity) {
         if (!pehkuiLoaded || entity == null) return null;
@@ -70,7 +70,7 @@ public class ModIntegrationManager {
     }
 
     /**
-     * Verifica se un'entità è stata scalata da Pehkui.
+     * Checks if an entity has been scaled by Pehkui.
      */
     public static boolean isScaledByPehkui(LivingEntity entity) {
         Float scale = getPehkuiScale(entity);
@@ -94,8 +94,8 @@ public class ModIntegrationManager {
     // === Better Combat Integration Methods ===
 
     /**
-     * Ottiene il nome dell'attacco corrente di Better Combat.
-     * @return nome attacco, o null se BC non attivo
+     * Gets the current Better Combat attack name.
+     * @return attack name, or null if BC is not active
      */
     @Nullable
     public static String getBetterCombatAttackName(Player player) {
@@ -109,8 +109,8 @@ public class ModIntegrationManager {
     }
 
     /**
-     * Ottiene il reach esteso da Better Combat.
-     * @return reach bonus, o 0
+     * Gets the extended reach from Better Combat.
+     * @return reach bonus, or 0
      */
     public static double getBetterCombatReach(Player player) {
         if (!betterCombatLoaded || player == null) return 0;
@@ -123,7 +123,7 @@ public class ModIntegrationManager {
     }
 
     /**
-     * Verifica se il player è in un combo Better Combat.
+     * Checks if the player is in a Better Combat combo.
      */
     public static boolean isInBetterCombatCombo(Player player) {
         if (!betterCombatLoaded || player == null) return false;
@@ -136,7 +136,7 @@ public class ModIntegrationManager {
     }
 
     /**
-     * Ottiene il numero del combo Better Combat.
+     * Gets the Better Combat combo count.
      */
     public static int getBetterCombatComboCount(Player player) {
         if (!betterCombatLoaded || player == null) return 0;

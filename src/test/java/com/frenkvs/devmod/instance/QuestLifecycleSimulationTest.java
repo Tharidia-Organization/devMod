@@ -1,14 +1,10 @@
 package com.frenkvs.devmod.instance;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 
 import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
 

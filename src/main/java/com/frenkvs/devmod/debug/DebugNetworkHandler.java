@@ -1,15 +1,14 @@
 package com.frenkvs.devmod.debug;
 
-import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.debug.client.DebugRenderBools;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Objects;
 
 /**
  * Handles registration and processing of debug network packets.
@@ -22,23 +21,21 @@ import org.slf4j.LoggerFactory;
  * - DebugTogglePayload: client -> server (player requests to toggle a feature)
  * - DebugSyncPayload: server -> client (tells client to enable/disable renderer)
  */
-@EventBusSubscriber(modid = DevMod.MODID, bus = EventBusSubscriber.Bus.MOD)
 public class DebugNetworkHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(DebugNetworkHandler.class);
 
-    @SubscribeEvent
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
         // Debug Toggle (client to server) - player requests to toggle a feature
         event.registrar("debug").playToServer(
-            DebugTogglePayload.TYPE,
-            DebugTogglePayload.STREAM_CODEC,
+            Objects.requireNonNull(DebugTogglePayload.TYPE),
+            Objects.requireNonNull(DebugTogglePayload.STREAM_CODEC),
             DebugNetworkHandler::handleDebugToggle
         );
 
         // Debug Sync (server to client) - sync enabled state to client
         event.registrar("debug").playToClient(
-            DebugSyncPayload.TYPE,
-            DebugSyncPayload.STREAM_CODEC,
+            Objects.requireNonNull(DebugSyncPayload.TYPE),
+            Objects.requireNonNull(DebugSyncPayload.STREAM_CODEC),
             DebugNetworkHandler::handleDebugSync
         );
 
@@ -63,11 +60,12 @@ public class DebugNetworkHandler {
 
                 // Send chat feedback
                 String status = nowEnabled ? "§aENABLED" : "§cDISABLED";
-                player.sendSystemMessage(
+                var feedback = Objects.requireNonNull(
                     net.minecraft.network.chat.Component.literal(
                         "§7[Debug] §f" + feature.getDisplayName() + " " + status
                     )
                 );
+                player.sendSystemMessage(feedback);
 
                 LOGGER.info("[Debug] Player {} toggled {} to {}",
                     player.getName().getString(), feature.getDisplayName(), nowEnabled);

@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+@SuppressWarnings("null") // Minecraft APIs lack null annotations
 public class WeaponConfigManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WeaponConfigManager.class);
@@ -39,7 +40,7 @@ public class WeaponConfigManager {
     private static final net.minecraft.core.component.DataComponentType<CustomData> CUSTOM_DATA =
             Objects.requireNonNull(DataComponents.CUSTOM_DATA);
 
-    // Mappa per le impostazioni GLOBALI (Per tipo di oggetto)
+    // Map for GLOBAL settings (Per item type)
     private static final Map<Item, WeaponStats> globalStats = new HashMap<>();
 
     private static Path dataDirectory = null;
@@ -57,21 +58,21 @@ public class WeaponConfigManager {
         load();
     }
 
-    // Ottiene le statistiche finali per un'arma specifica
+    // Gets the final statistics for a specific weapon
     public static WeaponStats getStats(ItemStack stack) {
         stack = Objects.requireNonNull(stack);
-        // 1. Controlla se l'arma ha modifiche SPECIFICHE (NBT)
+        // 1. Check if the weapon has SPECIFIC modifications (NBT)
         CustomData customData = stack.get(Objects.requireNonNull(DataComponents.CUSTOM_DATA));
         if (customData != null && customData.contains("WeaponModStats")) {
             return WeaponStats.load(customData.copyTag().getCompound("WeaponModStats"));
         }
 
-        // 2. Se non ha modifiche specifiche, usa quelle GLOBALI
+        // 2. If it has no specific modifications, use GLOBAL ones
         if (globalStats.containsKey(stack.getItem())) {
             return globalStats.get(stack.getItem());
         }
 
-        // 3. Altrimenti ritorna statistiche base
+        // 3. Otherwise return base statistics
         return new WeaponStats();
     }
 
@@ -89,8 +90,8 @@ public class WeaponConfigManager {
     }
 
     /**
-     * Ottiene le statistiche globali di default (usate per le labels).
-     * Ritorna un WeaponStats con i valori di default.
+     * Gets the default global statistics (used for labels).
+     * Returns a WeaponStats with default values.
      */
     public static WeaponStats getGlobalStats() {
         return new WeaponStats();
@@ -111,7 +112,7 @@ public class WeaponConfigManager {
     }
 
     /**
-     * Pulisce tutte le statistiche globali (usato per GameTests).
+     * Clears all global statistics (used for GameTests).
      */
     public static void clearAllGlobalStats() {
         globalStats.clear();

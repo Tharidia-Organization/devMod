@@ -11,6 +11,8 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
+import java.util.Objects;
+
 /**
  * Client-side combat event handler for ContextDetector notifications.
  * Uses Minecraft.getInstance() which is only available on client.
@@ -20,48 +22,49 @@ public class CombatEvents {
 
     @SubscribeEvent
     public static void onDamage(LivingIncomingDamageEvent event) {
-        // === FASE 2 UX: Notifica ContextDetector per eventi di combattimento ===
+        // === PHASE 2 UX: Notify ContextDetector for combat events ===
         Minecraft mc = Minecraft.getInstance();
+        LivingEntity target = event.getEntity();
         if (mc.player != null) {
-            LivingEntity target = event.getEntity();
-            // Se il player ha inflitto danno
+            // If the player dealt damage
             if (event.getSource().getEntity() == mc.player && target != null) {
                 ContextDetector.INSTANCE.onDamageDealt(target, event.getAmount());
             }
-            // Se il player ha ricevuto danno
+            // If the player received damage
             if (target == mc.player && event.getSource().getEntity() instanceof LivingEntity attacker) {
                 ContextDetector.INSTANCE.onDamageReceived(attacker, event.getAmount());
             }
         }
 
-        // Verifica che l'attaccante sia un Mob
+        // Check that the attacker is a Mob
         if (!(event.getSource().getEntity() instanceof Mob attacker)) {
             return;
         }
 
-        // Verifica che il target esista
-        if (event.getEntity() == null) {
+        // Check that the target exists
+        if (target == null) {
             return;
         }
+        final LivingEntity nonNullTarget = target;
 
-        // Ottieni attributo ENTITY_INTERACTION_RANGE
-        var reachAttr = attacker.getAttribute(Attributes.ENTITY_INTERACTION_RANGE);
+        // Get ENTITY_INTERACTION_RANGE attribute
+        var reachAttr = attacker.getAttribute(Objects.requireNonNull(Attributes.ENTITY_INTERACTION_RANGE));
         if (reachAttr == null) {
-            return; // Attributo non presente
+            return; // Attribute not present
         }
 
         double customReach = reachAttr.getValue();
         if (customReach <= 0.0) {
-            return; // Reach non configurato o invalido
+            return; // Reach not configured or invalid
         }
 
-        // Calcola distanza effettiva
-        double distanceSqr = attacker.distanceToSqr(event.getEntity());
+        // Calculate effective distance
+        double distanceSqr = attacker.distanceToSqr(nonNullTarget);
         double effectiveReach = customReach + (attacker.getBbWidth() / 2.0);
         double allowedDistanceSqr = (effectiveReach * effectiveReach) + 0.5;
 
-        // Valida solo attacchi diretti da mob
-        if (event.getSource().is(DamageTypes.MOB_ATTACK)) {
+        // Validate only direct attacks from mobs
+        if (event.getSource().is(Objects.requireNonNull(DamageTypes.MOB_ATTACK))) {
             if (distanceSqr > allowedDistanceSqr) {
                 event.setCanceled(true);
             }

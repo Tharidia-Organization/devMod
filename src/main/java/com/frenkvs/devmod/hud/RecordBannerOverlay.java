@@ -6,8 +6,6 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
@@ -21,7 +19,6 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
  * - Particle sparkle effect
  * - Stays for 4 seconds then fades
  */
-@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public class RecordBannerOverlay {
 
     private static final long DISPLAY_DURATION_MS = 4000;
@@ -40,7 +37,6 @@ public class RecordBannerOverlay {
     private static String recordValue = "";
     private static boolean isNewRecord = false;
 
-    @SubscribeEvent
     public static void registerOverlay(RegisterGuiLayersEvent event) {
         event.registerAbove(
             VanillaGuiLayers.BOSS_OVERLAY,

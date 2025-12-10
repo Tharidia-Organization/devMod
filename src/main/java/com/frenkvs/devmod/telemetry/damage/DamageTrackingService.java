@@ -27,12 +27,12 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Servizio per il tracking del danno e delle statistiche delle armi.
+ * Service for damage tracking and weapon statistics.
  *
- * Gestisce:
- * - Aggregati per arma (danni totali, hit, kill, miss)
- * - Aggregati per stanza (danno a player vs mob, morti)
- * - Statistiche minion (danno fatto durante la vita)
+ * Manages:
+ * - Weapon aggregates (total damage, hits, kills, misses)
+ * - Room aggregates (damage to player vs mob, deaths)
+ * - Minion statistics (damage dealt during lifetime)
  * - TTK tracking (time to kill)
  */
 public class DamageTrackingService {
@@ -53,7 +53,7 @@ public class DamageTrackingService {
     // ============================================
 
     /**
-     * Registra un hit con un'arma.
+     * Registers a hit with a weapon.
      */
     public void registerWeaponHit(ServerPlayer player, double damage, boolean isKill) {
         Item weapon = player.getMainHandItem().getItem();
@@ -62,7 +62,7 @@ public class DamageTrackingService {
     }
 
     /**
-     * Registra un miss con un'arma.
+     * Registers a miss with a weapon.
      */
     public void registerWeaponMiss(ServerPlayer player) {
         Item weapon = player.getMainHandItem().getItem();
@@ -71,7 +71,7 @@ public class DamageTrackingService {
     }
 
     /**
-     * Ottiene le statistiche delle armi come stringhe formattate.
+     * Gets weapon statistics as formatted strings.
      */
     public List<String> getWeaponSummaries() {
         List<String> lines = new ArrayList<>();
@@ -157,14 +157,14 @@ public class DamageTrackingService {
     // ============================================
 
     /**
-     * Pulisce tutti i dati per un'entità rimossa.
+     * Cleans up all data for a removed entity.
      */
     public void cleanupEntity(UUID entityId) {
         minionDamage.remove(entityId);
     }
 
     /**
-     * Resetta tutte le statistiche.
+     * Resets all statistics.
      */
     public void clearAll() {
         weaponAggregates.clear();

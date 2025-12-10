@@ -3,23 +3,23 @@ package com.frenkvs.devmod.panels.core;
 import com.frenkvs.devmod.ui.UIConstants;
 
 /**
- * Tipi di pannelli flottanti disponibili nel sistema.
- * Ogni tipo ha configurazioni specifiche per rendering e comportamento.
+ * Types of floating panels available in the system.
+ * Each type has specific configurations for rendering and behavior.
  */
 public enum PanelType {
-    /** Pannello info entita' - mostra stats del mob/player target */
+    /** Entity info panel - shows target mob/player stats */
     ENTITY_INFO("Entity Info", 180, 120, 8000, true, UIConstants.Status.INFO),
 
-    /** Pannello combattimento - mostra danni inflitti/ricevuti */
+    /** Combat panel - shows damage dealt/received */
     COMBAT("Combat", 160, 100, 4000, false, UIConstants.Status.ERROR),
 
-    /** Pannello stato tool - mostra overlay attivi */
+    /** Tool status panel - shows active overlays */
     TOOL_STATUS("Tools", 140, 80, 0, true, UIConstants.Text.ACCENT),
 
-    /** Pannello progresso test - mostra test corrente */
+    /** Test progress panel - shows current test */
     TEST_PROGRESS("Test", 200, 90, 0, true, UIConstants.Status.SUCCESS),
 
-    /** Pannello custom generico */
+    /** Generic custom panel */
     CUSTOM("Custom", 150, 100, 5000, true, UIConstants.Text.PRIMARY);
 
     private final String displayName;
@@ -52,29 +52,29 @@ public enum PanelType {
     }
 
     /**
-     * Tempo dopo cui il pannello si chiude automaticamente.
-     * 0 = non scade mai (richiede chiusura manuale o pin).
+     * Time after which the panel closes automatically.
+     * 0 = never expires (requires manual close or pin).
      */
     public long getAutoExpireMs() {
         return autoExpireMs;
     }
 
     /**
-     * Se questo tipo di pannello puo' essere pinnato.
+     * Whether this panel type can be pinned.
      */
     public boolean canPin() {
         return canPin;
     }
 
     /**
-     * Colore accent per bordi e highlights.
+     * Accent color for borders and highlights.
      */
     public int getAccentColor() {
         return accentColor;
     }
 
     /**
-     * Se il pannello scade automaticamente.
+     * Whether the panel expires automatically.
      */
     public boolean hasAutoExpire() {
         return autoExpireMs > 0;

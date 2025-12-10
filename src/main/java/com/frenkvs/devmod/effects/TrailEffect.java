@@ -4,6 +4,8 @@ import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import javax.annotation.Nonnull;
 
 /**
  * Represents a trail effect that follows an entity or projectile.
@@ -36,11 +38,12 @@ public class TrailEffect {
     /**
      * Adds a new point to the trail.
      */
-    public void addPoint(Vec3 position) {
+    public void addPoint(@Nonnull Vec3 position) {
+        Vec3 safePosition = Objects.requireNonNull(position);
         lastUpdateTime = System.currentTimeMillis();
 
         // Add new point
-        points.add(new TrailPoint(position, System.currentTimeMillis()));
+        points.add(new TrailPoint(safePosition, System.currentTimeMillis()));
 
         // Remove oldest points if exceeding max
         while (points.size() > maxPoints) {
@@ -111,11 +114,11 @@ public class TrailEffect {
      * Represents a single point in the trail.
      */
     public static class TrailPoint {
-        public final Vec3 position;
+        @Nonnull public final Vec3 position;
         public final long timestamp;
 
-        public TrailPoint(Vec3 position, long timestamp) {
-            this.position = position;
+        public TrailPoint(@Nonnull Vec3 position, long timestamp) {
+            this.position = Objects.requireNonNull(position);
             this.timestamp = timestamp;
         }
     }

@@ -3,8 +3,8 @@ package com.frenkvs.devmod.ui.unified;
 import com.frenkvs.devmod.ui.UIConstants;
 
 /**
- * Categorie disponibili nel pannello settings unificato.
- * Ogni categoria ha un'icona, label e colore accent.
+ * Available categories in the unified settings panel.
+ * Each category has an icon, label, and accent color.
  */
 public enum SettingsCategory {
     GENERAL("General", "G", UIConstants.Status.INFO, "General mod settings"),
@@ -44,7 +44,7 @@ public enum SettingsCategory {
     }
 
     /**
-     * Trova una categoria per label (case insensitive).
+     * Finds a category by label (case insensitive).
      */
     public static SettingsCategory fromLabel(String label) {
         for (SettingsCategory cat : values()) {

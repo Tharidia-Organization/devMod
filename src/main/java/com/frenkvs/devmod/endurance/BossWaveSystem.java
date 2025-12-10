@@ -325,6 +325,12 @@ public class BossWaveSystem {
     public BossFight startBossWave(EnduranceQuestManager.ActiveQuestSession session, int waveNumber) {
         EnduranceQuest quest = session.getQuest();
         ArenaManager.Arena arena = session.getArena();
+        ServerLevel level = Objects.requireNonNull(arena.getLevel());
+        BlockPos center = Objects.requireNonNull(arena.getCenter());
+
+        // Get multiplayer scaling parameters
+        int playerCount = session.getPlayerCount();
+        QuestType questType = session.getQuestType();
 
         // Select random archetype
         BossArchetype archetype = selectArchetype(waveNumber);
@@ -333,17 +339,18 @@ public class BossWaveSystem {
         UUID bossId = UUID.randomUUID();
         BossFight fight = new BossFight(bossId, arena.getId(), archetype, waveNumber, quest.getMobId());
 
-        // Spawn boss
-        Mob boss = spawnBoss(arena, quest.getMobConfig(), archetype, waveNumber, quest.getQuestId());
+        // Spawn boss with multiplayer scaling
+        Mob boss = spawnBoss(arena, quest.getMobConfig(), archetype, waveNumber, quest.getQuestId(), playerCount, questType);
         if (boss != null) {
             fight.setBossEntity(boss);
             fight.setMaxHealth(boss.getMaxHealth());
             activeBosses.put(arena.getId(), fight);
 
             // Announce boss
-            announceBoss(arena.getLevel(), arena.getCenter(), archetype, waveNumber);
+            announceBoss(level, center, archetype, waveNumber);
 
-            LOGGER.info("[BossWave] Started boss wave {} with {} archetype", waveNumber, archetype);
+            LOGGER.info("[BossWave] Started boss wave {} with {} archetype (players={}, type={})",
+                waveNumber, archetype, playerCount, questType);
         }
 
         return fight;
@@ -361,12 +368,16 @@ public class BossWaveSystem {
     }
 
     /**
-     * Spawn the boss mob with enhanced stats.
+     * Spawn the boss mob with enhanced stats and multiplayer scaling.
      */
     private Mob spawnBoss(ArenaManager.Arena arena, EnduranceQuestRegistry.MobQuestConfig mobConfig,
-                          BossArchetype archetype, int waveNumber, UUID questId) {
-        ServerLevel level = arena.getLevel();
-        BlockPos center = arena.getCenter();
+                          BossArchetype archetype, int waveNumber, UUID questId,
+                          int playerCount, QuestType questType) {
+        ServerLevel level = Objects.requireNonNull(arena.getLevel());
+        BlockPos center = Objects.requireNonNull(arena.getCenter());
+        BossArchetype safeArchetype = Objects.requireNonNull(archetype);
+        UUID arenaId = Objects.requireNonNull(arena.getId());
+        UUID safeQuestId = Objects.requireNonNull(questId);
 
         Entity entity = mobConfig.entityType.create(level);
         if (!(entity instanceof Mob mob)) return null;
@@ -374,38 +385,51 @@ public class BossWaveSystem {
         // Position at center
         mob.setPos(center.getX() + 0.5, center.getY(), center.getZ() + 0.5);
 
-        // Apply boss stats
+        // Apply boss stats with multiplayer scaling
         float waveScaling = 1.0f + (waveNumber * 0.1f);
 
-        var healthAttr = mob.getAttribute(Attributes.MAX_HEALTH);
+        var healthAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
         if (healthAttr != null) {
             double baseHealth = healthAttr.getBaseValue();
             double bossHealth = baseHealth * archetype.healthMultiplier * waveScaling * 5; // 5x base for boss
-            healthAttr.setBaseValue(bossHealth);
-            mob.setHealth((float) bossHealth);
+
+            // Apply multiplayer HP scaling using DifficultyScaler
+            float scaledHealth = DifficultyScaler.INSTANCE.scaleBossHealth((float) bossHealth, playerCount, questType);
+            healthAttr.setBaseValue(scaledHealth);
+            mob.setHealth(scaledHealth);
+
+            LOGGER.debug("[BossWave] Boss HP: {} -> {} (players={}, type={})",
+                bossHealth, scaledHealth, playerCount, questType);
         }
 
-        var damageAttr = mob.getAttribute(Attributes.ATTACK_DAMAGE);
+        var damageAttr = mob.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
         if (damageAttr != null) {
-            damageAttr.setBaseValue(damageAttr.getBaseValue() * archetype.damageMultiplier * waveScaling);
+            double baseDamage = damageAttr.getBaseValue() * archetype.damageMultiplier * waveScaling;
+
+            // Apply multiplayer damage scaling using DifficultyScaler
+            float scaledDamage = DifficultyScaler.INSTANCE.scaleBossDamage((float) baseDamage, playerCount, questType);
+            damageAttr.setBaseValue(scaledDamage);
+
+            LOGGER.debug("[BossWave] Boss DMG: {} -> {} (players={}, type={})",
+                baseDamage, scaledDamage, playerCount, questType);
         }
 
-        var speedAttr = mob.getAttribute(Attributes.MOVEMENT_SPEED);
+        var speedAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MOVEMENT_SPEED));
         if (speedAttr != null) {
             speedAttr.setBaseValue(speedAttr.getBaseValue() * archetype.speedMultiplier);
         }
 
         // Visual indicators
         mob.setGlowingTag(true);
-        mob.setCustomName(Component.literal("§c§l" + archetype.displayName + " " + mobConfig.displayName));
+        mob.setCustomName(Component.literal("§c§l" + Objects.requireNonNull(safeArchetype.displayName) + " " + Objects.requireNonNull(mobConfig.displayName)));
         mob.setCustomNameVisible(true);
 
         // Tag as boss (include endurance_quest_id so isQuestMob() detects it)
         CompoundTag tag = mob.getPersistentData();
         tag.putBoolean("endurance_boss", true);
-        tag.putString("endurance_archetype", archetype.name());
-        tag.putUUID("endurance_arena_id", arena.getId());
-        tag.putUUID("endurance_quest_id", questId);
+        tag.putString("endurance_archetype", Objects.requireNonNull(safeArchetype.name()));
+        tag.putUUID("endurance_arena_id", arenaId);
+        tag.putUUID("endurance_quest_id", safeQuestId);
 
         // Add spawn effects
         level.addFreshEntity(mob);
@@ -415,7 +439,7 @@ public class BossWaveSystem {
             double x = center.getX() + random.nextGaussian() * 2;
             double y = center.getY() + random.nextDouble() * 3;
             double z = center.getZ() + random.nextGaussian() * 2;
-            level.sendParticles(ParticleTypes.FLAME, x, y, z, 1, 0, 0.1, 0, 0.05);
+            level.sendParticles(Objects.requireNonNull(ParticleTypes.FLAME), x, y, z, 1, 0, 0.1, 0, 0.05);
         }
 
         return mob;
@@ -426,10 +450,11 @@ public class BossWaveSystem {
      */
     private void announceBoss(ServerLevel level, BlockPos pos, BossArchetype archetype, int waveNumber) {
         // Sound effect
-        level.playSound(null, pos, SoundEvents.ENDER_DRAGON_GROWL, SoundSource.HOSTILE, 1.0f, 0.5f);
+        BlockPos safePos = Objects.requireNonNull(pos);
+        level.playSound(null, safePos, Objects.requireNonNull(SoundEvents.ENDER_DRAGON_GROWL), SoundSource.HOSTILE, 1.0f, 0.5f);
 
         // Title announcement (would need client-side packet)
-        LOGGER.info("[BossWave] BOSS WAVE {} - {} has appeared!", waveNumber, archetype.displayName);
+        LOGGER.info("[BossWave] BOSS WAVE {} - {} has appeared!", waveNumber, Objects.requireNonNull(archetype.displayName));
     }
 
     /**
@@ -448,7 +473,7 @@ public class BossWaveSystem {
             // Clean up minions
             for (UUID minionId : fight.activeMinions) {
                 if (fight.bossEntity != null && fight.bossEntity.level() instanceof ServerLevel level) {
-                    Entity minion = level.getEntity(minionId);
+                    Entity minion = level.getEntity(Objects.requireNonNull(minionId));
                     if (minion != null) minion.discard();
                 }
             }
@@ -479,12 +504,13 @@ public class BossWaveSystem {
 
         fight.tick();
         Mob boss = fight.bossEntity;
-        ServerLevel level = (ServerLevel) boss.level();
+        ServerLevel level = Objects.requireNonNull((ServerLevel) boss.level());
+        ServerPlayer safeTarget = Objects.requireNonNull(target);
 
         // Check for ability use based on archetype
         for (BossAbility ability : fight.getArchetypeAbilities()) {
-            if (fight.canUseAbility(ability) && shouldUseAbility(fight, ability, target)) {
-                executeAbility(fight, ability, target, level);
+            if (fight.canUseAbility(ability) && shouldUseAbility(fight, ability, safeTarget)) {
+                executeAbility(fight, ability, safeTarget, level);
                 fight.useAbility(ability);
                 break; // One ability per tick
             }
@@ -515,7 +541,7 @@ public class BossWaveSystem {
      */
     private boolean shouldUseAbility(BossFight fight, BossAbility ability, ServerPlayer target) {
         Mob boss = fight.bossEntity;
-        double distanceToTarget = boss.distanceTo(target);
+        double distanceToTarget = boss.distanceTo(Objects.requireNonNull(target));
 
         return switch (ability) {
             case CHARGE -> distanceToTarget > 8 && distanceToTarget < 20;
@@ -568,20 +594,23 @@ public class BossWaveSystem {
     // ========== Ability Implementations ==========
 
     private void executeCharge(Mob boss, ServerPlayer target, ServerLevel level) {
-        Vec3 direction = target.position().subtract(boss.position()).normalize().scale(2.0);
-        boss.setDeltaMovement(direction);
-        boss.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 40, 3));
+        Vec3 direction = Objects.requireNonNull(
+            Objects.requireNonNull(target.position()).subtract(Objects.requireNonNull(boss.position()))
+        ).normalize().scale(2.0);
+        boss.setDeltaMovement(Objects.requireNonNull(direction));
+        boss.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.MOVEMENT_SPEED), 40, 3));
 
-        level.playSound(null, boss.blockPosition(), SoundEvents.RAVAGER_ATTACK, SoundSource.HOSTILE, 1.0f, 1.0f);
+        BlockPos pos = Objects.requireNonNull(boss.blockPosition());
+        level.playSound(null, pos, Objects.requireNonNull(SoundEvents.RAVAGER_ATTACK), SoundSource.HOSTILE, 1.0f, 1.0f);
     }
 
     private void executeGroundSlam(Mob boss, ServerPlayer target, ServerLevel level) {
-        BlockPos pos = boss.blockPosition();
+        BlockPos pos = Objects.requireNonNull(boss.blockPosition());
 
         // Damage nearby players
-        AABB area = new AABB(pos).inflate(5);
+        AABB area = Objects.requireNonNull(new AABB(pos).inflate(5));
         for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, area)) {
-            player.hurt(level.damageSources().mobAttack(boss), 8.0f);
+            player.hurt(Objects.requireNonNull(level.damageSources().mobAttack(boss)), 8.0f);
             player.knockback(1.5f, boss.getX() - player.getX(), boss.getZ() - player.getZ());
         }
 
@@ -589,30 +618,31 @@ public class BossWaveSystem {
         for (int i = 0; i < 30; i++) {
             double x = pos.getX() + random.nextGaussian() * 3;
             double z = pos.getZ() + random.nextGaussian() * 3;
-            level.sendParticles(ParticleTypes.EXPLOSION, x, pos.getY(), z, 1, 0, 0, 0, 0);
+            level.sendParticles(Objects.requireNonNull(ParticleTypes.EXPLOSION), x, pos.getY(), z, 1, 0, 0, 0, 0);
         }
 
-        level.playSound(null, pos, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.HOSTILE, 1.0f, 0.5f);
+        level.playSound(null, pos, Objects.requireNonNull(SoundEvents.GENERIC_EXPLODE.value()), SoundSource.HOSTILE, 1.0f, 0.5f);
     }
 
     private void executeEnrage(BossFight fight, Mob boss, ServerLevel level) {
         fight.setEnraged(true);
 
-        var damageAttr = boss.getAttribute(Attributes.ATTACK_DAMAGE);
+        var damageAttr = boss.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
         if (damageAttr != null) {
             damageAttr.setBaseValue(damageAttr.getBaseValue() * 1.5);
         }
 
-        boss.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 6000, 1));
-        boss.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 6000, 1));
+        boss.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.DAMAGE_BOOST), 6000, 1));
+        boss.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.MOVEMENT_SPEED), 6000, 1));
 
         // Visual
         for (int i = 0; i < 20; i++) {
-            level.sendParticles(ParticleTypes.ANGRY_VILLAGER,
+            level.sendParticles(Objects.requireNonNull(ParticleTypes.ANGRY_VILLAGER),
                 boss.getX(), boss.getY() + 1, boss.getZ(), 1, 0.5, 0.5, 0.5, 0);
         }
 
-        level.playSound(null, boss.blockPosition(), SoundEvents.ENDER_DRAGON_GROWL, SoundSource.HOSTILE, 1.0f, 1.5f);
+        BlockPos pos = Objects.requireNonNull(boss.blockPosition());
+        level.playSound(null, pos, Objects.requireNonNull(SoundEvents.ENDER_DRAGON_GROWL), SoundSource.HOSTILE, 1.0f, 1.5f);
     }
 
     private void executeSummonMinions(BossFight fight, Mob boss, ServerLevel level) {
@@ -624,48 +654,51 @@ public class BossWaveSystem {
             double x = boss.getX() + Math.cos(angle) * distance;
             double z = boss.getZ() + Math.sin(angle) * distance;
 
-            Entity minion = boss.getType().create(level);
+            Entity minion = boss.getType().create(Objects.requireNonNull(level));
             if (minion instanceof Mob minionMob) {
                 minionMob.setPos(x, boss.getY(), z);
 
                 // Minions are weaker
-                var healthAttr = minionMob.getAttribute(Attributes.MAX_HEALTH);
+                var healthAttr = minionMob.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
                 if (healthAttr != null) {
                     healthAttr.setBaseValue(healthAttr.getBaseValue() * 0.3);
                     minionMob.setHealth((float) (healthAttr.getBaseValue()));
                 }
 
                 // Tag as minion
+                UUID fightArenaId = Objects.requireNonNull(fight.arenaId);
                 CompoundTag tag = minionMob.getPersistentData();
                 tag.putBoolean("endurance_minion", true);
-                tag.putUUID("endurance_arena_id", fight.arenaId);
+                tag.putUUID("endurance_arena_id", fightArenaId);
 
                 level.addFreshEntity(minionMob);
                 fight.activeMinions.add(minionMob.getUUID());
 
                 // Spawn particles
-                level.sendParticles(ParticleTypes.PORTAL, x, boss.getY(), z, 20, 0.5, 1, 0.5, 0);
+                level.sendParticles(Objects.requireNonNull(ParticleTypes.PORTAL), x, boss.getY(), z, 20, 0.5, 1, 0.5, 0);
             }
         }
 
-        level.playSound(null, boss.blockPosition(), SoundEvents.EVOKER_PREPARE_SUMMON, SoundSource.HOSTILE, 1.0f, 1.0f);
+        BlockPos pos = Objects.requireNonNull(boss.blockPosition());
+        level.playSound(null, pos, Objects.requireNonNull(SoundEvents.EVOKER_PREPARE_SUMMON), SoundSource.HOSTILE, 1.0f, 1.0f);
     }
 
     private void executeBarrier(BossFight fight, Mob boss, ServerLevel level) {
         float shieldHealth = boss.getMaxHealth() * 0.3f;
         fight.activateShield(shieldHealth);
 
-        boss.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 100, 2));
+        boss.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.DAMAGE_RESISTANCE), 100, 2));
 
         // Visual
         for (int i = 0; i < 30; i++) {
             double angle = (i / 30.0) * Math.PI * 2;
             double x = boss.getX() + Math.cos(angle) * 2;
             double z = boss.getZ() + Math.sin(angle) * 2;
-            level.sendParticles(ParticleTypes.END_ROD, x, boss.getY() + 1, z, 1, 0, 0, 0, 0);
+            level.sendParticles(Objects.requireNonNull(ParticleTypes.END_ROD), x, boss.getY() + 1, z, 1, 0, 0, 0, 0);
         }
 
-        level.playSound(null, boss.blockPosition(), SoundEvents.SHIELD_BLOCK, SoundSource.HOSTILE, 1.0f, 0.5f);
+        BlockPos pos = Objects.requireNonNull(boss.blockPosition());
+        level.playSound(null, pos, Objects.requireNonNull(SoundEvents.SHIELD_BLOCK), SoundSource.HOSTILE, 1.0f, 0.5f);
     }
 
     private void executeLifeLink(BossFight fight, Mob boss) {
@@ -675,39 +708,43 @@ public class BossWaveSystem {
     }
 
     private void executeUnstoppable(Mob boss, ServerLevel level) {
-        boss.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 200, 3));
-        boss.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 200, 0));
+        boss.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.DAMAGE_RESISTANCE), 200, 3));
+        boss.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.SLOW_FALLING), 200, 0));
 
-        level.playSound(null, boss.blockPosition(), SoundEvents.IRON_GOLEM_REPAIR, SoundSource.HOSTILE, 1.0f, 0.5f);
+        BlockPos pos = Objects.requireNonNull(boss.blockPosition());
+        level.playSound(null, pos, Objects.requireNonNull(SoundEvents.IRON_GOLEM_REPAIR), SoundSource.HOSTILE, 1.0f, 0.5f);
     }
 
     private void executeEarthquake(Mob boss, ServerPlayer target, ServerLevel level) {
-        BlockPos pos = boss.blockPosition();
-        AABB area = new AABB(pos).inflate(12);
+        BlockPos pos = Objects.requireNonNull(boss.blockPosition());
+        AABB area = Objects.requireNonNull(new AABB(pos).inflate(12));
 
         for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, area)) {
             float distance = player.distanceTo(boss);
             float damage = Math.max(2, 15 - distance);
-            player.hurt(level.damageSources().mobAttack(boss), damage);
-            player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60, 2));
+            player.hurt(Objects.requireNonNull(level.damageSources().mobAttack(boss)), damage);
+            player.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.MOVEMENT_SLOWDOWN), 60, 2));
         }
 
         // Screen shake effect would need client packet
         for (int i = 0; i < 50; i++) {
             double x = pos.getX() + random.nextGaussian() * 8;
             double z = pos.getZ() + random.nextGaussian() * 8;
-            level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, x, pos.getY(), z, 1, 0, 0.5, 0, 0);
+            level.sendParticles(Objects.requireNonNull(ParticleTypes.CAMPFIRE_COSY_SMOKE), x, pos.getY(), z, 1, 0, 0.5, 0, 0);
         }
 
-        level.playSound(null, pos, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.HOSTILE, 2.0f, 0.3f);
+        level.playSound(null, pos, Objects.requireNonNull(SoundEvents.GENERIC_EXPLODE.value()), SoundSource.HOSTILE, 2.0f, 0.3f);
     }
 
     private void executeShadowStep(BossFight fight, Mob boss, ServerPlayer target, ServerLevel level) {
         // Particles at old position
-        level.sendParticles(ParticleTypes.LARGE_SMOKE, boss.getX(), boss.getY(), boss.getZ(), 20, 0.5, 1, 0.5, 0);
+        level.sendParticles(Objects.requireNonNull(ParticleTypes.LARGE_SMOKE), boss.getX(), boss.getY(), boss.getZ(), 20, 0.5, 1, 0.5, 0);
 
         // Calculate teleport destination behind player
-        Vec3 behindPlayer = target.position().subtract(target.getLookAngle().scale(2));
+        Vec3 playerPos = Objects.requireNonNull(target.position());
+        Vec3 lookDir = Objects.requireNonNull(target.getLookAngle());
+        Vec3 backOffset = Objects.requireNonNull(lookDir.scale(2));
+        Vec3 behindPlayer = Objects.requireNonNull(playerPos.subtract(backOffset));
 
         // Bounds check - ensure teleport stays within arena
         Optional<EnduranceQuestManager.ActiveQuestSession> sessionOpt =
@@ -721,50 +758,55 @@ public class BossWaveSystem {
             double minZ = arena.getCenter().getZ() - halfSize;
             double maxZ = arena.getCenter().getZ() + halfSize;
 
-            behindPlayer = new Vec3(
+            behindPlayer = Objects.requireNonNull(new Vec3(
                 Math.max(minX, Math.min(maxX, behindPlayer.x)),
                 behindPlayer.y,
                 Math.max(minZ, Math.min(maxZ, behindPlayer.z))
-            );
+            ));
         }
 
         boss.teleportTo(behindPlayer.x, behindPlayer.y, behindPlayer.z);
 
         // Particles at new position
-        level.sendParticles(ParticleTypes.REVERSE_PORTAL, boss.getX(), boss.getY(), boss.getZ(), 20, 0.5, 1, 0.5, 0);
+        level.sendParticles(Objects.requireNonNull(ParticleTypes.REVERSE_PORTAL), boss.getX(), boss.getY(), boss.getZ(), 20, 0.5, 1, 0.5, 0);
 
-        level.playSound(null, boss.blockPosition(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.HOSTILE, 1.0f, 1.0f);
+        BlockPos pos = Objects.requireNonNull(boss.blockPosition());
+        level.playSound(null, pos, Objects.requireNonNull(SoundEvents.ENDERMAN_TELEPORT), SoundSource.HOSTILE, 1.0f, 1.0f);
     }
 
     private void executeMarkForDeath(ServerPlayer target, ServerLevel level) {
-        target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 200, 0));
-        target.addEffect(new MobEffectInstance(MobEffects.UNLUCK, 200, 1));
+        target.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.GLOWING), 200, 0));
+        target.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.UNLUCK), 200, 1));
 
         // Tag for bonus damage
         CompoundTag tag = target.getPersistentData();
         tag.putLong("marked_for_death", System.currentTimeMillis() + 10000);
 
-        level.playSound(null, target.blockPosition(), SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 0.5f, 2.0f);
+        BlockPos pos = Objects.requireNonNull(target.blockPosition());
+        level.playSound(null, pos, Objects.requireNonNull(SoundEvents.WITHER_SPAWN), SoundSource.HOSTILE, 0.5f, 2.0f);
     }
 
     private void executeSmokeBomb(Mob boss, ServerLevel level) {
-        boss.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 100, 0));
-        boss.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 100, 2));
+        boss.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.INVISIBILITY), 100, 0));
+        boss.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.MOVEMENT_SPEED), 100, 2));
 
         // Smoke particles
         for (int i = 0; i < 50; i++) {
-            level.sendParticles(ParticleTypes.LARGE_SMOKE,
+            level.sendParticles(Objects.requireNonNull(ParticleTypes.LARGE_SMOKE),
                 boss.getX() + random.nextGaussian() * 2,
                 boss.getY() + random.nextDouble() * 2,
                 boss.getZ() + random.nextGaussian() * 2,
                 1, 0, 0, 0, 0);
         }
 
-        level.playSound(null, boss.blockPosition(), SoundEvents.FIRE_EXTINGUISH, SoundSource.HOSTILE, 1.0f, 1.0f);
+        BlockPos pos = Objects.requireNonNull(boss.blockPosition());
+        level.playSound(null, pos, Objects.requireNonNull(SoundEvents.FIRE_EXTINGUISH), SoundSource.HOSTILE, 1.0f, 1.0f);
     }
 
     private void executeFireballBarrage(Mob boss, ServerPlayer target, ServerLevel level) {
-        Vec3 direction = target.position().subtract(boss.position()).normalize();
+        Vec3 direction = Objects.requireNonNull(
+            Objects.requireNonNull(target.position()).subtract(Objects.requireNonNull(boss.position()))
+        ).normalize();
 
         for (int i = 0; i < 5; i++) {
             Vec3 velocity = new Vec3(
@@ -772,22 +814,23 @@ public class BossWaveSystem {
                 direction.y + random.nextGaussian() * 0.1,
                 direction.z + random.nextGaussian() * 0.2
             );
-            SmallFireball fireball = new SmallFireball(level, boss, velocity);
+            SmallFireball fireball = new SmallFireball(Objects.requireNonNull(level), boss, velocity);
             fireball.setPos(boss.getX(), boss.getY() + 1.5, boss.getZ());
             level.addFreshEntity(fireball);
         }
 
-        level.playSound(null, boss.blockPosition(), SoundEvents.BLAZE_SHOOT, SoundSource.HOSTILE, 1.0f, 1.0f);
+        BlockPos pos = Objects.requireNonNull(boss.blockPosition());
+        level.playSound(null, pos, Objects.requireNonNull(SoundEvents.BLAZE_SHOOT), SoundSource.HOSTILE, 1.0f, 1.0f);
     }
 
     private void executeFrostNova(Mob boss, ServerLevel level) {
-        BlockPos pos = boss.blockPosition();
-        AABB area = new AABB(pos).inflate(8);
+        BlockPos pos = Objects.requireNonNull(boss.blockPosition());
+        AABB area = Objects.requireNonNull(new AABB(pos).inflate(8));
 
         for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, area)) {
-            player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 3));
-            player.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, 100, 2));
-            player.hurt(level.damageSources().freeze(), 4.0f);
+            player.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.MOVEMENT_SLOWDOWN), 100, 3));
+            player.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.DIG_SLOWDOWN), 100, 2));
+            player.hurt(Objects.requireNonNull(level.damageSources().freeze()), 4.0f);
         }
 
         // Ice particles
@@ -796,27 +839,25 @@ public class BossWaveSystem {
             double radius = random.nextDouble() * 8;
             double x = pos.getX() + Math.cos(angle) * radius;
             double z = pos.getZ() + Math.sin(angle) * radius;
-            level.sendParticles(ParticleTypes.SNOWFLAKE, x, pos.getY() + 0.5, z, 1, 0, 0.2, 0, 0);
+            level.sendParticles(Objects.requireNonNull(ParticleTypes.SNOWFLAKE), x, pos.getY() + 0.5, z, 1, 0, 0.2, 0, 0);
         }
 
-        level.playSound(null, pos, SoundEvents.GLASS_BREAK, SoundSource.HOSTILE, 1.0f, 0.5f);
+        level.playSound(null, pos, Objects.requireNonNull(SoundEvents.GLASS_BREAK), SoundSource.HOSTILE, 1.0f, 0.5f);
     }
 
     private void executeLightningStorm(Mob boss, ServerPlayer target, ServerLevel level) {
         // Strike at player and random nearby positions
+        BlockPos baseStrike = Objects.requireNonNull(target.blockPosition());
         for (int i = 0; i < 3; i++) {
-            BlockPos strikePos;
-            if (i == 0) {
-                strikePos = target.blockPosition();
-            } else {
-                strikePos = target.blockPosition().offset(
+            BlockPos strikePos = (i == 0)
+                ? baseStrike
+                : baseStrike.offset(
                     random.nextInt(10) - 5,
                     0,
                     random.nextInt(10) - 5
                 );
-            }
 
-            LightningBolt lightning = EntityType.LIGHTNING_BOLT.create(level);
+            LightningBolt lightning = EntityType.LIGHTNING_BOLT.create(Objects.requireNonNull(level));
             if (lightning != null) {
                 lightning.moveTo(strikePos.getX(), strikePos.getY(), strikePos.getZ());
                 lightning.setVisualOnly(false);
@@ -827,22 +868,23 @@ public class BossWaveSystem {
 
     private void executeElementalShift(BossFight fight, Mob boss, ServerLevel level) {
         // Cycle through elements, gaining different resistances
-        boss.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 400, 0));
-        boss.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 200, 1));
+        boss.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.FIRE_RESISTANCE), 400, 0));
+        boss.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.DAMAGE_RESISTANCE), 200, 1));
 
         // Reset ability cooldowns for new element abilities
         fight.abilityCooldowns.replaceAll((ability, cooldown) -> cooldown / 2);
 
         // Visual transformation
         for (int i = 0; i < 40; i++) {
-            level.sendParticles(ParticleTypes.DRAGON_BREATH,
+            level.sendParticles(Objects.requireNonNull(ParticleTypes.DRAGON_BREATH),
                 boss.getX() + random.nextGaussian(),
                 boss.getY() + random.nextDouble() * 2,
                 boss.getZ() + random.nextGaussian(),
                 1, 0, 0, 0, 0.1);
         }
 
-        level.playSound(null, boss.blockPosition(), SoundEvents.BEACON_POWER_SELECT, SoundSource.HOSTILE, 1.0f, 0.5f);
+        BlockPos pos = Objects.requireNonNull(boss.blockPosition());
+        level.playSound(null, pos, Objects.requireNonNull(SoundEvents.BEACON_POWER_SELECT), SoundSource.HOSTILE, 1.0f, 0.5f);
     }
 
     private BossWaveSystem() {}

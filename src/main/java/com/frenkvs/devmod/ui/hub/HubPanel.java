@@ -3,71 +3,71 @@ package com.frenkvs.devmod.ui.hub;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**
- * Interfaccia base per i pannelli del TestingHub.
- * Ogni pannello gestisce il proprio rendering e input.
+ * Base interface for TestingHub panels.
+ * Each panel manages its own rendering and input.
  */
 public interface HubPanel {
 
     /**
-     * Renderizza il pannello.
+     * Renders the panel.
      */
     void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick);
 
     /**
-     * Gestisce click del mouse.
-     * @return true se l'evento è stato gestito
+     * Handles mouse click.
+     * @return true if the event was handled
      */
     boolean mouseClicked(double mouseX, double mouseY, int button);
 
     /**
-     * Gestisce rilascio del mouse.
-     * @return true se l'evento è stato gestito
+     * Handles mouse release.
+     * @return true if the event was handled
      */
     default boolean mouseReleased(double mouseX, double mouseY, int button) {
         return false;
     }
 
     /**
-     * Gestisce scroll del mouse.
-     * @return true se l'evento è stato gestito
+     * Handles mouse scroll.
+     * @return true if the event was handled
      */
     default boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         return false;
     }
 
     /**
-     * Gestisce input da tastiera.
-     * @return true se l'evento è stato gestito
+     * Handles keyboard input.
+     * @return true if the event was handled
      */
     default boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         return false;
     }
 
     /**
-     * Gestisce input carattere.
-     * @return true se l'evento è stato gestito
+     * Handles character input.
+     * @return true if the event was handled
      */
     default boolean charTyped(char codePoint, int modifiers) {
         return false;
     }
 
     /**
-     * Verifica se il mouse è sopra il pannello.
+     * Checks if the mouse is over the panel.
      */
     boolean isMouseOver(int mouseX, int mouseY);
 
     /**
-     * Aggiorna lo stato del pannello.
+     * Updates the panel state.
      */
     default void tick() {}
 
     /**
-     * Forza refresh dei dati.
+     * Forces data refresh.
      */
     default void refresh() {}
 
     /**
-     * Restituisce i bounds del pannello.
+     * Returns the panel bounds.
      */
     default int getX() { return 0; }
     default int getY() { return 0; }

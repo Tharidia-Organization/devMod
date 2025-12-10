@@ -16,14 +16,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * UI estesa per gestire le quest.
+ * Extended UI for managing quests.
  *
  * Features:
- * - Lista delle quest disponibili
- * - Dettaglio quest selezionata con tutte le task
- * - Editor per note su quest e task
- * - Creazione/eliminazione quest
- * - Sincronizzazione con QuestHudOverlay
+ * - List of available quests
+ * - Detail of selected quest with all tasks
+ * - Editor for notes on quests and tasks
+ * - Quest creation/deletion
+ * - Synchronization with QuestHudOverlay
  */
 public class QuestEditorScreen extends ModScreen {
 
@@ -365,7 +365,7 @@ public class QuestEditorScreen extends ModScreen {
         g.drawString(font, "Task", x + 5, y + 5, UIConstants.Text.TITLE, false);
 
         if (selectedQuest == null) {
-            g.drawString(font, "Seleziona una quest", x + 10, y + 30, UIConstants.Text.MUTED, false);
+            g.drawString(font, "Select a quest", x + 10, y + 30, UIConstants.Text.MUTED, false);
             return;
         }
 
@@ -407,10 +407,10 @@ public class QuestEditorScreen extends ModScreen {
         if (panelWidth < 50) return;
 
         // Section: Quest Note
-        g.drawString(font, "Nota Quest:", x, y + 25, UIConstants.Text.MUTED, false);
+        g.drawString(font, "Quest Note:", x, y + 25, UIConstants.Text.MUTED, false);
 
         // Section: Task Note
-        g.drawString(font, "Nota Task:", x, y + 105, UIConstants.Text.MUTED, false);
+        g.drawString(font, "Task Note:", x, y + 105, UIConstants.Text.MUTED, false);
 
         // Current selection info
         if (selectedQuest != null) {
@@ -508,10 +508,10 @@ public class QuestEditorScreen extends ModScreen {
     private void addNewQuest() {
         String name = newQuestNameField.getValue().trim();
         if (name.isEmpty()) {
-            name = "Nuova Quest " + (QuestManager.INSTANCE.getAllQuests().size() + 1);
+            name = "New Quest " + (QuestManager.INSTANCE.getAllQuests().size() + 1);
         }
         QuestData newQuest = new QuestData("quest_" + System.currentTimeMillis(), name);
-        newQuest.addTask(new QuestTask("task_1", "Prima task"));
+        newQuest.addTask(new QuestTask("task_1", "First task"));
         QuestManager.INSTANCE.addQuest(newQuest);
         selectedQuest = newQuest;
         selectedTask = newQuest.getCurrentTask();

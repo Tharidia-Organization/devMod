@@ -13,6 +13,7 @@ import java.util.List;
  * Network payload sent from server to client with perk choices after wave completion.
  * Contains serialized perk data for display in PerkSelectionScreen.
  */
+@SuppressWarnings({"null", "unused"})
 public record PerkChoicesPayload(
     int waveNumber,
     List<PerkChoice> choices

@@ -18,6 +18,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.slf4j.Logger;
 import java.util.Objects;
+import com.frenkvs.devmod.debug.DebugNetworkHandler;
 
 @Mod("devmod")
 public class DevMod {
@@ -25,23 +26,23 @@ public class DevMod {
     // Logger
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    // ID della mod (tutto minuscolo come richiesto)
+    // Mod ID (all lowercase as required)
     public static final String MODID = "devmod";
 
-    // 1. REGISTRO DEGLI OGGETTI
+    // 1. ITEMS REGISTRY
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
 
-    // 2. REGISTRO DELLE TAB CREATIVE
+    // 2. CREATIVE TABS REGISTRY
     public static final DeferredRegister<CreativeModeTab> CREATIVE_TABS = DeferredRegister.create(
             Objects.requireNonNull(Registries.CREATIVE_MODE_TAB),
             MODID
     );
 
-    // 3. OGGETTO "VIEWER_ITEM"
+    // 3. "VIEWER_ITEM" ITEM
     public static final DeferredHolder<Item, Item> VIEWER_ITEM = ITEMS.register("viewer_item", () -> new Item(new Item.Properties()));
 
-    // 4. TAB CREATIVA (CORRETTA)
-    // L'errore era qui: dentro < > deve esserci "CreativeModeTab", non "EXAMPLE_TAB"
+    // 4. CREATIVE TAB (FIXED)
+    // The error was here: inside < > must be "CreativeModeTab", not "EXAMPLE_TAB"
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> EXAMPLE_TAB = CREATIVE_TABS.register("example_tab", () -> CreativeModeTab.builder()
             .title(Objects.requireNonNull(Component.translatable("itemGroup." + MODID)))
             .withTabsBefore(CreativeModeTabs.COMBAT)
@@ -55,19 +56,22 @@ public class DevMod {
         ITEMS.register(eventBus);
         CREATIVE_TABS.register(eventBus);
 
-        // Registra la configurazione
+        // Register configuration
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
 
-        // Inizializza integrazione mod esterne (Pehkui, Better Combat, ecc.)
+        // Initialize external mod integration (Pehkui, Better Combat, etc.)
         ModIntegrationManager.init();
 
-        // Registra keybinds solo lato client
+        // Network payload registration (mod bus)
+        eventBus.addListener(DebugNetworkHandler::registerPayloads);
+
+        // Register keybinds only on client side
         if (FMLEnvironment.dist == Dist.CLIENT) {
             eventBus.addListener(DevMod::registerKeyMappings);
             LOGGER.info("[DevMod] Client keybind registration scheduled");
         }
 
-        LOGGER.info("DevMod caricato correttamente!");
+        LOGGER.info("DevMod loaded successfully!");
     }
 
     private static void registerKeyMappings(RegisterKeyMappingsEvent event) {
@@ -100,6 +104,7 @@ public class DevMod {
         event.register(Objects.requireNonNull(KeyInputHandler.OPEN_ENDURANCE_QUEST_KEY));
         event.register(Objects.requireNonNull(KeyInputHandler.QUEST_CONTINUE_KEY));
         event.register(Objects.requireNonNull(KeyInputHandler.QUEST_EXIT_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.OPEN_PARTY_KEY));
         event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_HELP_KEY));
         event.register(Objects.requireNonNull(KeyInputHandler.OPEN_RADIAL_MENU_KEY));
         event.register(Objects.requireNonNull(KeyInputHandler.INSPECT_MOB_KEY));

@@ -8,6 +8,8 @@ import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import javax.annotation.Nonnull;
 
 /**
  * Payload for Raids debug data (server to client).
@@ -15,11 +17,11 @@ import java.util.List;
 public record RaidsPayload(List<RaidInfo> raids) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<RaidsPayload> TYPE =
-        new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "debug_raids"));
+        new CustomPacketPayload.Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "debug_raids")));
 
     public static final StreamCodec<FriendlyByteBuf, RaidsPayload> STREAM_CODEC = new StreamCodec<>() {
         @Override
-        public RaidsPayload decode(FriendlyByteBuf buf) {
+        public RaidsPayload decode(@Nonnull FriendlyByteBuf buf) {
             int count = buf.readVarInt();
             List<RaidInfo> raids = new ArrayList<>(count);
             for (int i = 0; i < count; i++) {
@@ -37,7 +39,7 @@ public record RaidsPayload(List<RaidInfo> raids) implements CustomPacketPayload 
         }
 
         @Override
-        public void encode(FriendlyByteBuf buf, RaidsPayload payload) {
+        public void encode(@Nonnull FriendlyByteBuf buf, @Nonnull RaidsPayload payload) {
             buf.writeVarInt(payload.raids.size());
             for (RaidInfo raid : payload.raids) {
                 buf.writeVarInt(raid.raidId);

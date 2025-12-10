@@ -16,14 +16,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 
 /**
- * Manager singleton per tutti i FloatingPanel nel mondo.
+ * Manager singleton for all FloatingPanels in the world.
  *
- * Responsabilita':
- * - Gestione lifecycle dei pannelli (spawn, tick, despawn)
- * - Limite massimo pannelli attivi
- * - Rendering coordinato di tutti i pannelli
- * - Gestione interazioni mouse
- * - Rimozione pannelli scaduti
+ * Responsibilities:
+ * - Manage panel lifecycle (spawn, tick, despawn)
+ * - Maximum active panels limit
+ * - Coordinated rendering of all panels
+ * - Handle mouse interactions
+ * - Remove expired panels
  */
 public class FloatingPanelManager {
 
@@ -49,22 +49,22 @@ public class FloatingPanelManager {
     // === Panel Spawning ===
 
     /**
-     * Spawna un nuovo pannello.
-     * Se il limite e' raggiunto, rimuove il pannello piu' vecchio non pinnato.
+     * Spawn a new panel.
+     * If the limit is reached, remove the oldest unpinned panel.
      *
-     * @param panel Pannello da aggiungere
-     * @return true se il pannello e' stato aggiunto
+     * @param panel Panel to add
+     * @return true if the panel was added
      */
     public boolean spawnPanel(FloatingPanel panel) {
         if (!enabled) return false;
 
-        // Rimuovi pannelli in eccesso
+        // Remove excess panels
         while (panels.size() >= MAX_PANELS) {
             FloatingPanel oldest = findOldestUnpinnedPanel();
             if (oldest != null) {
                 oldest.startDespawn();
             } else {
-                // Tutti pinnati, non possiamo aggiungere
+                // All pinned, can't add
                 return false;
             }
         }
@@ -74,7 +74,7 @@ public class FloatingPanelManager {
     }
 
     /**
-     * Trova il pannello piu' vecchio non pinnato.
+     * Find the oldest unpinned panel.
      */
     @Nullable
     private FloatingPanel findOldestUnpinnedPanel() {
@@ -95,7 +95,7 @@ public class FloatingPanelManager {
     }
 
     /**
-     * Cerca un pannello esistente per un'entita'.
+     * Search for an existing panel for an entity.
      */
     @Nullable
     public FloatingPanel findPanelForEntity(Entity entity) {
@@ -110,7 +110,7 @@ public class FloatingPanelManager {
     }
 
     /**
-     * Cerca un pannello per ID.
+     * Search for a panel by ID.
      */
     @Nullable
     public FloatingPanel findPanelById(UUID id) {
@@ -123,7 +123,7 @@ public class FloatingPanelManager {
     }
 
     /**
-     * Cerca pannelli per tipo.
+     * Search for panels by type.
      */
     public List<FloatingPanel> findPanelsByType(PanelType type) {
         return panels.stream()
@@ -134,28 +134,28 @@ public class FloatingPanelManager {
     // === Lifecycle ===
 
     /**
-     * Aggiorna tutti i pannelli.
-     * Chiamare ogni tick client.
+     * Update all panels.
+     * Call every client tick.
      */
     public void tick() {
         if (!enabled) return;
 
-        // Tick tutti i pannelli
+        // Tick all panels
         for (FloatingPanel panel : panels) {
             panel.tick();
         }
 
-        // Rimuovi pannelli scaduti
+        // Remove expired panels
         panels.removeIf(FloatingPanel::isExpired);
     }
 
     /**
-     * Renderizza tutti i pannelli visibili.
+     * Render all visible panels.
      *
-     * @param poseStack Stack di trasformazioni
-     * @param bufferSource Buffer per rendering
-     * @param camera Camera attiva
-     * @param partialTick Tick parziale
+     * @param poseStack Transform stack
+     * @param bufferSource Buffer for rendering
+     * @param camera Active camera
+     * @param partialTick Partial tick
      */
     public void render(PoseStack poseStack, MultiBufferSource bufferSource,
                        Camera camera, float partialTick) {
@@ -163,7 +163,7 @@ public class FloatingPanelManager {
 
         Vec3 cameraPos = camera.getPosition();
 
-        // Ordina per distanza (piu' lontani prima per Z-ordering corretto)
+        // Sort by distance (farthest first for correct Z-ordering)
         List<FloatingPanel> sortedPanels = panels.stream()
             .filter(FloatingPanel::shouldRender)
             .filter(p -> {
@@ -173,7 +173,7 @@ public class FloatingPanelManager {
             .sorted((a, b) -> {
                 double distA = a.getWorldPosition().distanceTo(cameraPos);
                 double distB = b.getWorldPosition().distanceTo(cameraPos);
-                return Double.compare(distB, distA); // Lontani prima
+                return Double.compare(distB, distA); // Farthest first
             })
             .toList();
 
@@ -183,8 +183,8 @@ public class FloatingPanelManager {
     }
 
     /**
-     * Renderizza un singolo pannello.
-     * Delegato a PanelRenderer.
+     * Render a single panel.
+     * Delegated to PanelRenderer.
      */
     private void renderPanel(PoseStack poseStack, MultiBufferSource bufferSource,
                              Camera camera, FloatingPanel panel, float partialTick) {
@@ -200,22 +200,22 @@ public class FloatingPanelManager {
     // === Interaction ===
 
     /**
-     * Gestisce un click del mouse.
+     * Handles a mouse click.
      *
-     * @param button Pulsante (0=left, 1=right, 2=middle)
-     * @return true se un pannello ha gestito il click
+     * @param button Button (0=left, 1=right, 2=middle)
+     * @return true if a panel handled the click
      */
     public boolean handleMouseClick(int button) {
         if (!enabled || hoveredPanel == null) return false;
 
-        // Calcola coordinate locali del click (semplificato)
-        // In implementazione reale, proiettare il mouse ray sul pannello
+        // Calculate local click coordinates (simplified)
+        // In real implementation, project the mouse ray onto the panel
         return hoveredPanel.handleClick(0, 0, button);
     }
 
     /**
-     * Aggiorna quale pannello e' sotto il mouse.
-     * Chiamato dal sistema di input.
+     * Update which panel is under the mouse.
+     * Called from the input system.
      */
     public void updateHoveredPanel(Minecraft mc) {
         if (!enabled) {
@@ -223,13 +223,13 @@ public class FloatingPanelManager {
             return;
         }
 
-        // Reset hover state di tutti
+        // Reset hover state of all
         for (FloatingPanel panel : panels) {
             panel.setHovered(false);
         }
 
-        // Trova pannello sotto il mouse (ray casting semplificato)
-        // Implementazione completa in PanelInteractionHandler
+        // Find panel under mouse (simplified ray casting)
+        // Full implementation in PanelInteractionHandler
         hoveredPanel = null;
 
         if (hoveredPanel != null) {
@@ -240,7 +240,7 @@ public class FloatingPanelManager {
     // === Bulk Operations ===
 
     /**
-     * Chiude tutti i pannelli di un tipo specifico.
+     * Close all panels of a specific type.
      */
     public void closeAllOfType(PanelType type) {
         for (FloatingPanel panel : panels) {
@@ -251,7 +251,7 @@ public class FloatingPanelManager {
     }
 
     /**
-     * Chiude tutti i pannelli non pinnati.
+     * Close all unpinned panels.
      */
     public void closeAllUnpinned() {
         for (FloatingPanel panel : panels) {
@@ -262,7 +262,7 @@ public class FloatingPanelManager {
     }
 
     /**
-     * Chiude tutti i pannelli.
+     * Close all panels.
      */
     public void closeAll() {
         for (FloatingPanel panel : panels) {
@@ -271,7 +271,7 @@ public class FloatingPanelManager {
     }
 
     /**
-     * Rimuove immediatamente tutti i pannelli (senza animazione).
+     * Immediately remove all panels (without animation).
      */
     public void clearAll() {
         panels.clear();
@@ -279,7 +279,7 @@ public class FloatingPanelManager {
     }
 
     /**
-     * Rimuove pannelli che matchano un predicato.
+     * Remove panels that match a predicate.
      */
     public void removeWhere(Predicate<FloatingPanel> predicate) {
         for (FloatingPanel panel : panels) {
@@ -322,7 +322,7 @@ public class FloatingPanelManager {
     }
 
     /**
-     * Debug: ottiene info su tutti i pannelli.
+     * Debug: get info about all panels.
      */
     public String getDebugInfo() {
         StringBuilder sb = new StringBuilder();

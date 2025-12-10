@@ -231,7 +231,7 @@ public class RoomBoundsVisualizer {
      * Aggiunge una room da visualizzare
      */
     public void addRoom(String id, BlockPos min, BlockPos max) {
-        // Rimuovi se esiste già
+        // Remove if already exists
         rooms.removeIf(r -> r.id.equals(id));
 
         int colorIndex = rooms.size() % ROOM_COLORS.length;

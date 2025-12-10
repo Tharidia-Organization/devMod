@@ -9,6 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
@@ -41,7 +42,7 @@ public class TelemetryPage implements SettingsPage {
     }
 
     @Override
-    public void render(GuiGraphics graphics, Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+    public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
         int currentY = y;
 
         // === Quick Stats Section ===

@@ -2,7 +2,7 @@ package com.frenkvs.devmod;
 
 import static com.frenkvs.devmod.DevMod.MODID;
 import net.minecraft.client.Minecraft;
-import net.minecraft.world.InteractionHand; // <--- Importante
+import net.minecraft.world.InteractionHand; // <--- Important
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Mob;
 import net.neoforged.api.distmarker.Dist;
@@ -15,21 +15,21 @@ public class InteractionEvents {
 
     @SubscribeEvent
     public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-        // 1. SICUREZZA: Esegui solo sul lato Client (evita errori strani in singleplayer)
+        // 1. SAFETY: Execute only on Client side (avoids strange errors in singleplayer)
         if (!event.getLevel().isClientSide()) return;
 
-        // 2. FIX DEL CRASH: Esegui solo con la mano principale (Destra)
-        // Senza questo, l'evento scatta due volte e manda in tilt la GUI
+        // 2. CRASH FIX: Execute only with main hand (Right)
+        // Without this, the event fires twice and crashes the GUI
         if (event.getHand() != InteractionHand.MAIN_HAND) return;
 
-        // Controlla se hai l'item giusto
+        // Check if you have the right item
         if (event.getItemStack().getItem() == DevMod.VIEWER_ITEM.get()) {
 
             if (event.getTarget() instanceof Mob mob) {
-                // Apri la GUI
+                // Open the GUI
                 Minecraft.getInstance().setScreen(new MobConfigScreen(mob));
 
-                // Blocca l'azione normale e ferma l'input
+                // Block the normal action and stop input
                 event.setCanceled(true);
                 event.setCancellationResult(InteractionResult.SUCCESS);
             }

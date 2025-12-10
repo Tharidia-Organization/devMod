@@ -15,29 +15,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Pannello che mostra lo stato degli overlay/tool attivi.
+ * Panel that shows the status of active overlays/tools.
  *
- * Visualizza:
- * - Lista di tool attivi con hotkey
- * - Indicatori colorati per stato on/off
- * - Conteggio tool attivi
+ * Displays:
+ * - List of active tools with hotkeys
+ * - Colored indicators for on/off state
+ * - Active tool count
  */
 public class ToolStatusPanel extends FloatingPanel {
 
-    // Cache degli stati tool
+    // Tool states cache
     private List<ToolState> toolStates = new ArrayList<>();
     private int activeCount = 0;
     private long lastUpdateTick = 0;
 
-    private static final int UPDATE_INTERVAL_TICKS = 10; // Aggiorna ogni 10 tick
+    private static final int UPDATE_INTERVAL_TICKS = 10; // Update every 10 ticks
 
     /**
-     * Stato di un singolo tool.
+     * State of a single tool.
      */
     private record ToolState(String name, String hotkey, boolean enabled, int color) {}
 
     /**
-     * Crea un pannello stato tool in una posizione fissa.
+     * Creates a tool status panel at a fixed position.
      */
     public ToolStatusPanel(Vec3 position) {
         super(PanelType.TOOL_STATUS, position);
@@ -56,7 +56,7 @@ public class ToolStatusPanel extends FloatingPanel {
     }
 
     /**
-     * Aggiorna gli stati di tutti i tool.
+     * Updates the states of all tools.
      */
     private void updateToolStates() {
         toolStates.clear();
@@ -83,24 +83,24 @@ public class ToolStatusPanel extends FloatingPanel {
         int y = 0;
         int lineHeight = 10;
 
-        // Header con conteggio
+        // Header with count
         String header = "Active: " + activeCount + "/" + toolStates.size();
         graphics.drawString(mc.font, header, 0, y, UIConstants.Text.SECONDARY, false);
         y += lineHeight + 4;
 
-        // Lista tool (mostra solo i primi che entrano)
+        // Tool list (show only the first ones that fit)
         int maxTools = (contentHeight - y) / lineHeight;
         int shown = 0;
 
         for (ToolState tool : toolStates) {
             if (shown >= maxTools) break;
 
-            // Indicatore colorato
+            // Colored indicator
             int dotSize = 4;
             int dotY = y + (lineHeight - dotSize) / 2;
             graphics.fill(0, dotY, dotSize, dotY + dotSize, tool.color);
 
-            // Nome e hotkey
+            // Name and hotkey
             String text = "[" + tool.hotkey + "] " + tool.name;
             int textColor = tool.enabled ? UIConstants.Text.PRIMARY : UIConstants.Text.MUTED;
             graphics.drawString(mc.font, text, dotSize + 4, y, textColor, false);
@@ -116,19 +116,19 @@ public class ToolStatusPanel extends FloatingPanel {
         int y = 0;
         int lineHeight = 10;
 
-        // Header con conteggio
+        // Header with count
         String header = "Active: " + activeCount + "/" + toolStates.size();
         renderText3D(poseStack, bufferSource, font, header, 0, y, applyAlpha(UIConstants.Text.SECONDARY, alpha));
         y += lineHeight + 4;
 
-        // Lista tool (mostra solo i primi che entrano)
+        // Tool list (show only the first ones that fit)
         int maxTools = (contentHeight - y) / lineHeight;
         int shown = 0;
 
         for (ToolState tool : toolStates) {
             if (shown >= maxTools) break;
 
-            // Nome e hotkey
+            // Name and hotkey
             String text = "[" + tool.hotkey + "] " + tool.name;
             int textColor = tool.enabled ? UIConstants.Text.PRIMARY : UIConstants.Text.MUTED;
             renderText3D(poseStack, bufferSource, font, text, 0, y, applyAlpha(textColor, alpha));
@@ -154,7 +154,7 @@ public class ToolStatusPanel extends FloatingPanel {
     }
 
     /**
-     * Verifica se un tool specifico e' attivo.
+     * Checks if a specific tool is active.
      */
     public boolean isToolActive(ToolType tool) {
         return tool.isEnabled();

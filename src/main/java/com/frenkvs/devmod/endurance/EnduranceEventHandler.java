@@ -25,6 +25,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import com.frenkvs.devmod.endurance.analytics.LiveAnalyticsHookManager;
 import com.frenkvs.devmod.endurance.analytics.WaveSummary;
 import com.frenkvs.devmod.endurance.analytics.QuestResult;
+import com.frenkvs.devmod.party.QuestStartSequence;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +46,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * - RewardSystem: Loot and currency
  * - CombatTracker: Stats tracking
  */
+@SuppressWarnings("null") // Minecraft/NeoForge API null-safety (Attributes, MobEffects, etc.)
 @EventBusSubscriber(modid = "devmod")
 public class EnduranceEventHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceEventHandler.class);
@@ -564,9 +566,12 @@ public class EnduranceEventHandler {
         // Tick live analytics hooks (throttled internally to 1/sec)
         LiveAnalyticsHookManager.INSTANCE.tick();
 
-        // Tick perk effects and enforce arena confinement for all players in active quests
+        // Tick quest start sequences (countdown, validation, teleport) and quest-related updates
         var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
+            QuestStartSequence.INSTANCE.tick(server);
+
+            // Tick perk effects and enforce arena confinement for all players in active quests
             for (UUID playerId : EnduranceQuestManager.INSTANCE.getActiveSessions().keySet()) {
                 ServerPlayer player = server.getPlayerList().getPlayer(playerId);
                 if (player != null) {
@@ -875,8 +880,8 @@ public class EnduranceEventHandler {
                 applyWaveModifiersToMob(mob, waveState);
 
                 // Finalize spawn
-                @SuppressWarnings("deprecation")
-                var ignored = mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos),
+                @SuppressWarnings({"deprecation", "unused"})
+                var spawnData = mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos),
                     net.minecraft.world.entity.MobSpawnType.MOB_SUMMONED, null);
 
                 // Tag mob as quest mob BEFORE adding to world
@@ -973,6 +978,9 @@ public class EnduranceEventHandler {
     @SubscribeEvent
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            // Notify QuestStartSequence about disconnect (cancels sequence if needed)
+            QuestStartSequence.INSTANCE.onPlayerDisconnect(player.getUUID());
+
             Optional<EnduranceQuestManager.ActiveQuestSession> sessionOpt =
                 EnduranceQuestManager.INSTANCE.getActiveSession(player);
 
@@ -1044,7 +1052,8 @@ public class EnduranceEventHandler {
         long duration = combatSession != null ? combatSession.getSessionDuration() : 0;
         float dps = combatSession != null ? combatSession.getDPS() : 0;
         float critRate = combatSession != null ? combatSession.getCriticalHitRate() : 0;
-        float avgKillTime = combatSession != null ? combatSession.getAverageKillTime() : 0;
+        @SuppressWarnings("unused")
+        float avgKillTime = combatSession != null ? combatSession.getAverageKillTime() : 0; // Reserved for future use
 
         int maxCombo = comboSession != null ? comboSession.getMaxCombo() : 0;
         String maxRank = comboSession != null ? comboSession.getHighestRank().name() : "D";

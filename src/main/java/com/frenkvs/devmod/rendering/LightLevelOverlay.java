@@ -14,16 +14,16 @@ import org.joml.Matrix4f;
 /**
  * FASE 4 REQ-A2: Light Level Overlay
  *
- * Visualizza livelli di luce sui blocchi intorno al player:
- * - Verde (luce >= 8): Sicuro, nessun mob spawn
- * - Giallo (luce 1-7): Parzialmente buio
- * - Rosso (luce 0): Mob possono spawnare!
+ * Displays light levels on blocks around the player:
+ * - Green (light >= 8): Safe, no mob spawns
+ * - Yellow (light 1-7): Partially dark
+ * - Red (light 0): Mobs can spawn!
  *
- * Mostra anche:
- * - Numero del light level su ogni blocco (opzionale)
- * - Solo superfici solide dove i mob potrebbero spawnare
+ * Also shows:
+ * - Light level number on each block (optional)
+ * - Only solid surfaces where mobs could spawn
  *
- * Attivazione: Tasto L (configurabile)
+ * Activation: L key (configurable)
  */
 // Minecraft API methods are not annotated but never return null in practice
 @SuppressWarnings("null")
@@ -36,7 +36,7 @@ public class LightLevelOverlay {
     private boolean onlySpawnableSurfaces = true;
 
     // === PERFORMANCE OPTIMIZATION: Caching ===
-    private static final int CACHE_UPDATE_INTERVAL_TICKS = 5; // Aggiorna ogni 5 ticks (~250ms)
+    private static final int CACHE_UPDATE_INTERVAL_TICKS = 5; // Update every 5 ticks (~250ms)
     private int ticksSinceLastUpdate = 0;
     private BlockPos lastPlayerPos = null;
     private java.util.List<LightData> cachedLightData = new java.util.ArrayList<>();
@@ -48,14 +48,14 @@ public class LightLevelOverlay {
     public void toggle() {
         enabled = !enabled;
         if (!enabled) {
-            cachedLightData.clear(); // Libera memoria quando disabilitato
+            cachedLightData.clear(); // Free memory when disabled
         }
     }
 
     public void setEnabled(boolean value) {
         enabled = value;
         if (!value) {
-            cachedLightData.clear(); // Libera memoria quando disabilitato
+            cachedLightData.clear(); // Free memory when disabled
         }
     }
 
@@ -80,8 +80,8 @@ public class LightLevelOverlay {
     }
 
     /**
-     * Render del light level overlay
-     * OTTIMIZZATO: Usa caching per ridurre drasticamente le chiamate API
+     * Render the light level overlay
+     * OPTIMIZED: Uses caching to drastically reduce API calls
      */
     public void render(PoseStack poseStack, MultiBufferSource buffer, Vec3 cameraPos) {
         if (!enabled) return;
@@ -92,7 +92,7 @@ public class LightLevelOverlay {
         ClientLevel level = mc.level;
         BlockPos playerPos = mc.player.blockPosition();
 
-        // === PERFORMANCE: Aggiorna cache solo periodicamente o se il player si è mosso ===
+        // === PERFORMANCE: Update cache only periodically or if player has moved ===
         boolean needsCacheUpdate = false;
         ticksSinceLastUpdate++;
 
@@ -101,7 +101,7 @@ public class LightLevelOverlay {
             ticksSinceLastUpdate = 0;
         }
 
-        // Forza aggiornamento se il player si è spostato di più di 2 blocchi
+        // Force update if the player has moved more than 2 blocks
         if (lastPlayerPos == null || playerPos.distManhattan(lastPlayerPos) > 2) {
             needsCacheUpdate = true;
             ticksSinceLastUpdate = 0;
@@ -112,7 +112,7 @@ public class LightLevelOverlay {
             lastPlayerPos = playerPos;
         }
 
-        // === Rendering dalla cache (molto più veloce) ===
+        // === Rendering from cache (much faster) ===
         if (cachedLightData.isEmpty()) return;
 
         VertexConsumer consumer = buffer.getBuffer(RenderType.debugQuads());
@@ -125,7 +125,7 @@ public class LightLevelOverlay {
         for (LightData data : cachedLightData) {
             int combinedLight = data.lightLevel();
 
-            // Determina colore basato su light level
+            // Determine color based on light level
             float r, g, b, a;
             if (combinedLight == 0) {
                 r = 1.0f; g = 0.0f; b = 0.0f; a = 0.5f;
@@ -147,21 +147,21 @@ public class LightLevelOverlay {
 
         poseStack.popPose();
 
-        // Renderizza numeri se abilitato (usa cache)
+        // Render numbers if enabled (uses cache)
         if (showNumbers) {
             renderLightNumbersCached(poseStack, cameraPos);
         }
     }
 
     /**
-     * Aggiorna la cache dei dati di luce (chiamato ogni N ticks)
+     * Updates the light data cache (called every N ticks)
      */
     private void updateLightCache(ClientLevel level, BlockPos playerPos) {
         cachedLightData.clear();
 
         for (int x = -radius; x <= radius; x++) {
             for (int z = -radius; z <= radius; z++) {
-                // Skip se troppo lontano (ottimizzazione circolare)
+                // Skip if too far (circular optimization)
                 if (x*x + z*z > radius*radius) continue;
 
                 for (int y = -4; y <= 4; y++) {
@@ -178,14 +178,14 @@ public class LightLevelOverlay {
                     int combinedLight = Math.max(blockLight, skyLight);
 
                     cachedLightData.add(new LightData(checkPos, combinedLight));
-                    break; // Solo primo blocco trovato
+                    break; // Only first block found
                 }
             }
         }
     }
 
     /**
-     * Renderizza i numeri del light level dalla cache (OTTIMIZZATO)
+     * Renders light level numbers from cache (OPTIMIZED)
      */
     private void renderLightNumbersCached(PoseStack poseStack, Vec3 cameraPos) {
         Minecraft mc = Minecraft.getInstance();
@@ -194,14 +194,14 @@ public class LightLevelOverlay {
         int numberRadiusSqr = 64; // 8 blocchi al quadrato
 
         for (LightData data : cachedLightData) {
-            // Solo blocchi entro 8 blocchi dalla camera
+            // Only blocks within 8 blocks of camera
             double dx = data.pos().getX() + 0.5 - cameraPos.x;
             double dz = data.pos().getZ() + 0.5 - cameraPos.z;
             if (dx*dx + dz*dz > numberRadiusSqr) continue;
 
             int combinedLight = data.lightLevel();
 
-            // Colore del testo basato su light level
+            // Text color based on light level
             int textColor;
             if (combinedLight == 0) {
                 textColor = 0xFFFF0000; // Rosso
@@ -211,7 +211,7 @@ public class LightLevelOverlay {
                 textColor = 0xFF00FF00; // Verde
             }
 
-            // Posizione label (centro del blocco, leggermente sopra)
+            // Label position (block center, slightly above)
             Vec3 labelPos = new Vec3(data.pos().getX() + 0.5, data.pos().getY() + 1.3, data.pos().getZ() + 0.5);
 
             renderFloatingText(poseStack, cameraPos, labelPos, String.valueOf(combinedLight), textColor);

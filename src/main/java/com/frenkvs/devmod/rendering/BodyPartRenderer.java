@@ -25,6 +25,7 @@ import javax.annotation.Nonnull;
  * - Adaptive rendering per non-humanoid entities
  * - Pulsing effect per parte colpita (opzionale)
  */
+@SuppressWarnings("null") // Minecraft APIs lack null annotations
 public class BodyPartRenderer {
 
     // Color definitions (ARGB format)
@@ -32,7 +33,6 @@ public class BodyPartRenderer {
     private static final int COLOR_ARMS = 0xFFFFFF00;  // Yellow
     private static final int COLOR_BODY = 0xFF00FF00;  // Green
     private static final int COLOR_LEGS = 0xFFFF0000;  // Red
-    private static final int COLOR_HIGHLIGHT = 0xFFFFFFFF; // White (hit highlight)
 
     // Opacity levels
     private static final float EDGE_OPACITY = 0.9f;
@@ -50,16 +50,16 @@ public class BodyPartRenderer {
         poseStack.pushPose();
         poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
 
-        // Usa BodyPartCalculator come single source of truth
+        // Use BodyPartCalculator as single source of truth
         BodyPartCalculator.BodyPartAABB[] bodyParts = BodyPartCalculator.calculateAllBodyParts(entity);
 
-        // Ottieni stats per i moltiplicatori (solo per le label)
+        // Get stats for multipliers (only for labels)
         WeaponStats stats = WeaponConfigManager.getGlobalStats();
 
         Matrix4f matrix = poseStack.last().pose();
         var pose = poseStack.last();
 
-        // Renderizza ogni body part
+        // Render each body part
         for (BodyPartCalculator.BodyPartAABB bodyPart : bodyParts) {
             String label = generateLabel(bodyPart.part(), stats);
             renderBodyPartBox(bufferSource, matrix, pose, bodyPart.box(), bodyPart.color(), label, showLabels);
@@ -198,19 +198,19 @@ public class BodyPartRenderer {
     }
 
     /**
-     * Renderizza highlight per parte colpita (pulsing effect)
-     * Usa BodyPartCalculator per ottenere l'AABB corretto
+     * Renders highlight for hit body part (pulsing effect)
+     * Uses BodyPartCalculator to get the correct AABB
      */
     public static void renderHitHighlight(PoseStack poseStack, LivingEntity entity, HitHelper.BodyPart hitPart,
                                          Vec3 cameraPos, MultiBufferSource bufferSource, long hitTime) {
-        // Pulsing effect basato su tempo
+        // Pulsing effect based on time
         long timeSinceHit = System.currentTimeMillis() - hitTime;
-        if (timeSinceHit > 500) return; // Highlight per 500ms
+        if (timeSinceHit > 500) return; // Highlight for 500ms
 
         float pulse = (float) Math.sin(timeSinceHit / 50.0) * 0.5f + 0.5f; // 0.0-1.0 oscillation
         float alpha = (1.0f - (timeSinceHit / 500.0f)) * pulse; // Fade out
 
-        // Usa BodyPartCalculator per ottenere l'AABB della parte colpita
+        // Use BodyPartCalculator to get the hit body part's AABB
         BodyPartCalculator.BodyPartAABB hitBodyPart = BodyPartCalculator.calculateBodyPart(entity, hitPart);
 
         poseStack.pushPose();

@@ -18,7 +18,7 @@ import java.util.List;
  * Displayed when player successfully completes all waves or exits at checkpoint.
  */
 @OnlyIn(Dist.CLIENT)
-@SuppressWarnings("null")
+@SuppressWarnings({"null", "unused"})
 public class QuestCompletionScreen extends Screen {
 
     // === Colors - Thematic victory screen (gold theme) ===

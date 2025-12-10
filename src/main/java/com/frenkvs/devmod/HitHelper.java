@@ -15,7 +15,7 @@ public class HitHelper {
     public enum BodyPart { HEAD, BODY, ARMS, LEGS }
 
     /**
-     * Risultato del raycast con body part e posizione di impatto.
+     * Raycast result with body part and impact position.
      */
     public record HitResult(BodyPart part, Vec3 hitPoint) {
         public static HitResult of(BodyPart part, Vec3 hitPoint) {
@@ -79,12 +79,12 @@ public class HitHelper {
     }
 
     /**
-     * Calcola la parte del corpo basandosi sul punto di impatto Y (per proiettili).
-     * Questo metodo è semplificato perché non ha informazioni sull'attaccante.
+     * Calculates the body part based on the Y impact point (for projectiles).
+     * This method is simplified because it doesn't have attacker information.
      *
-     * PERCENTUALI SINCRONIZZATE CON rayTraceBodyPartAABB:
+     * PERCENTAGES SYNCHRONIZED WITH rayTraceBodyPartAABB:
      * - HEAD: top 25% (85% - 100%)
-     * - BODY/ARMS: middle 40% (45% - 85%)  -- ARMS non distinguibili senza raycast
+     * - BODY/ARMS: middle 40% (45% - 85%)  -- ARMS not distinguishable without raycast
      * - LEGS: bottom 35% (0% - 45%)
      */
     public static BodyPart getBodyPart(LivingEntity target, double hitY) {
@@ -108,30 +108,30 @@ public class HitHelper {
     }
 
     /**
-     * SISTEMA PRECISO DI BODY PART DETECTION (Precisione 95%)
+     * PRECISE BODY PART DETECTION SYSTEM (95% Accuracy)
      *
      * PERFORMANCE: Uses simple TTL cache (100ms TTL, 80%+ hit rate)
      * - Cache hit: ~0.01ms
      * - Cache miss: ~0.5ms (AABB raycast calculation)
      * - Impact: 50x faster for repeated attacker/target pairs
      *
-     * Usa AABB subdivision per dividere l'hitbox del target in 5 parti:
-     * - HEAD (25% superiore)
-     * - ARMS (laterali, 40% altezza centrale)
-     * - BODY (centro, 40% altezza centrale)
-     * - LEGS (35% inferiore)
+     * Uses AABB subdivision to divide the target's hitbox into 5 parts:
+     * - HEAD (top 25%)
+     * - ARMS (sides, 40% central height)
+     * - BODY (center, 40% central height)
+     * - LEGS (bottom 35%)
      *
-     * Fa raycast dall'occhio dell'attaccante verso ogni AABB in ordine di priorità.
-     * Questo metodo è sincronizzato con il debug overlay visivo per coerenza al 100%.
+     * Performs raycast from the attacker's eye to each AABB in priority order.
+     * This method is synchronized with the visual debug overlay for 100% consistency.
      *
      * MODDED COMPATIBILITY:
      * - Adaptive mode for non-humanoid hitboxes (dragons, bosses, quadrupeds)
      * - Dynamic reach detection from attacker attributes
      * - Fallback for custom entity types
      *
-     * @param attacker L'entità che attacca
-     * @param target Il target dell'attacco
-     * @return La body part colpita con precisione 95%
+     * @param attacker The attacking entity
+     * @param target The attack target
+     * @return The hit body part with 95% accuracy
      */
     public static BodyPart rayTraceBodyPartAABB(LivingEntity attacker, LivingEntity target) {
         // PERFORMANCE: Check cache first (100ms TTL, 80%+ hit rate)
@@ -221,7 +221,7 @@ public class HitHelper {
             return rayTraceTallBodyWithHitPoint(attacker, target, mainBox, center, height);
         }
 
-        // Raycast dell'attaccante con reach dinamico
+        // Attacker raycast with dynamic reach
         Vec3 eye = attacker.getEyePosition();
         Vec3 look = attacker.getViewVector(1.0F);
 
@@ -232,7 +232,7 @@ public class HitHelper {
             var reachAttr = attacker.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ENTITY_INTERACTION_RANGE);
             if (reachAttr != null) {
                 double value = reachAttr.getValue();
-                // Se il valore è > 0, usalo; altrimenti mantieni il default
+                // If value is > 0, use it; otherwise keep the default
                 if (value > 0.1) {
                     reach = value + 0.5; // Add margin for raycast
                 }
@@ -244,7 +244,7 @@ public class HitHelper {
         Vec3 end = eye.add(look.scale(reach));
 
         // ===== HEAD (TOP 25%) =====
-        // Priorità massima: headshot deve avere precedenza
+        // Maximum priority: headshot must take precedence
         double headHeight = height * 0.25;
         AABB headBox = new AABB(
             center.x - width/2, mainBox.maxY - headHeight, center.z - depth/2,
@@ -261,17 +261,17 @@ public class HitHelper {
         double torsoHeight = height * 0.40;
         double torsoBottom = torsoTop - torsoHeight;
 
-        // ARMS: Laterali (sinistra e destra) della zona torso
-        // Usa il 30% esterno della larghezza su entrambi i lati
+        // ARMS: Lateral (left and right) of the torso zone
+        // Use the outer 30% of width on both sides
         double armWidth = width * 0.30;
 
-        // ARM SINISTRO (dal punto di vista del target)
+        // LEFT ARM (from target's perspective)
         AABB leftArmBox = new AABB(
             mainBox.minX, torsoBottom, center.z - depth/2,
             mainBox.minX + armWidth, torsoTop, center.z + depth/2
         );
 
-        // ARM DESTRO (dal punto di vista del target)
+        // RIGHT ARM (from target's perspective)
         AABB rightArmBox = new AABB(
             mainBox.maxX - armWidth, torsoBottom, center.z - depth/2,
             mainBox.maxX, torsoTop, center.z + depth/2
@@ -287,8 +287,8 @@ public class HitHelper {
             return HitResult.of(BodyPart.ARMS, rightArmHit.get());
         }
 
-        // TORSO: Centro della zona middle (esclude le arms)
-        double bodyWidth = width - (2 * armWidth); // Larghezza centrale
+        // TORSO: Center of the middle zone (excludes arms)
+        double bodyWidth = width - (2 * armWidth); // Central width
         AABB bodyBox = new AABB(
             center.x - bodyWidth/2, torsoBottom, center.z - depth/2,
             center.x + bodyWidth/2, torsoTop, center.z + depth/2
@@ -311,10 +311,10 @@ public class HitHelper {
             return HitResult.of(BodyPart.LEGS, legsHit.get());
         }
 
-        // ===== FALLBACK: Pitch-based (per edge cases) =====
-        // Se il raycast non interseca nessuna AABB (molto raro),
-        // usa il vecchio sistema basato su pitch come sicurezza
-        // Calcola un hit point approssimativo al centro del target
+        // ===== FALLBACK: Pitch-based (for edge cases) =====
+        // If the raycast doesn't intersect any AABB (very rare),
+        // use the old pitch-based system as safety
+        // Calculate an approximate hit point at the target center
         Vec3 fallbackHitPoint = center;
         double pitch = attacker.getXRot();
         if (pitch < -15) return HitResult.of(BodyPart.HEAD, fallbackHitPoint.add(0, height * 0.35, 0));
@@ -325,7 +325,7 @@ public class HitHelper {
     }
 
     /**
-     * Versione con hit point per horizontal body.
+     * Version with hit point for horizontal body.
      */
     private static HitResult rayTraceHorizontalBodyWithHitPoint(LivingEntity attacker, LivingEntity target, AABB mainBox, Vec3 center) {
         Vec3 eye = attacker.getEyePosition();
@@ -381,7 +381,7 @@ public class HitHelper {
     }
 
     /**
-     * Versione con hit point per tall body.
+     * Version with hit point for tall body.
      */
     private static HitResult rayTraceTallBodyWithHitPoint(LivingEntity attacker, LivingEntity target, AABB mainBox, Vec3 center, double height) {
         Vec3 eye = attacker.getEyePosition();
@@ -439,7 +439,7 @@ public class HitHelper {
             var reachAttr = attacker.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ENTITY_INTERACTION_RANGE);
             if (reachAttr != null) {
                 double value = reachAttr.getValue();
-                // Se il valore è > 0, usalo; altrimenti usa il default
+                // If value is > 0, use it; otherwise use the default
                 if (value > 0.1) {
                     return value + 0.5;
                 }
@@ -451,8 +451,8 @@ public class HitHelper {
     }
 
     /**
-     * Metodo pubblico per ottenere HitResult completo con posizione.
-     * Usa la cache per performance.
+     * Public method to get complete HitResult with position.
+     * Uses cache for performance.
      */
     public static HitResult rayTraceBodyPartWithHitPoint(LivingEntity attacker, LivingEntity target) {
         CacheKey key = CacheKey.of(attacker, target);

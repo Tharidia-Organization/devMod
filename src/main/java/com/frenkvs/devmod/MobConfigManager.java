@@ -36,10 +36,10 @@ public class MobConfigManager {
     // Lock for thread-safe config modifications
     private static final ReentrantReadWriteLock CONFIG_LOCK = new ReentrantReadWriteLock();
 
-    // Una mappa che collega il TIPO di entità (es. Zombie) alle sue STATISTICHE salvate
+    // A map that links the entity TYPE (e.g. Zombie) to its SAVED STATISTICS
     private static final Map<EntityType<?>, SavedStats> globalConfigs = new ConcurrentHashMap<>();
 
-    // Classe semplice per tenere i dati in memoria
+    // Simple class to hold data in memory
     public record SavedStats(double range, double damage, double maxHealth, double armor, double attackReach) {
         // Constructor for backwards compatibility (without attackReach)
         public SavedStats(double range, double damage, double maxHealth, double armor) {
@@ -47,35 +47,35 @@ public class MobConfigManager {
         }
     }
 
-    // Salva una configurazione globale
+    // Save a global configuration
     public static void setGlobalStats(EntityType<?> type, double range, double damage, double maxHealth, double armor) {
         setGlobalStats(type, range, damage, maxHealth, armor, 2.0); // Default attack reach
     }
 
-    // Salva una configurazione globale con attack reach
+    // Save a global configuration with attack reach
     public static void setGlobalStats(EntityType<?> type, double range, double damage, double maxHealth, double armor, double attackReach) {
         CONFIG_LOCK.writeLock().lock();
         try {
             globalConfigs.put(type, new SavedStats(range, damage, maxHealth, armor, attackReach));
-            // Auto-save dopo ogni modifica (while still holding lock)
+            // Auto-save after each modification (while still holding lock)
             saveInternal();
         } finally {
             CONFIG_LOCK.writeLock().unlock();
         }
     }
 
-    // Recupera la configurazione (o null se non esiste)
+    // Retrieve the configuration (or null if it doesn't exist)
     public static SavedStats getGlobalStats(EntityType<?> type) {
         return globalConfigs.get(type);
     }
 
-    // Controlla se abbiamo modifiche per questo tipo
+    // Check if we have modifications for this type
     public static boolean hasConfig(EntityType<?> type) {
         return globalConfigs.containsKey(type);
     }
 
     /**
-     * Salva le configurazioni su file JSON (thread-safe wrapper)
+     * Saves configurations to JSON file (thread-safe wrapper)
      */
     public static void save() {
         CONFIG_LOCK.readLock().lock();
@@ -98,7 +98,7 @@ public class MobConfigManager {
         try {
             Files.createDirectories(file.getParent());
 
-            // Converti EntityType in String (ResourceLocation) per serializzazione
+            // Convert EntityType to String (ResourceLocation) for serialization
             Map<String, SavedStats> serializable = new HashMap<>();
             for (Map.Entry<EntityType<?>, SavedStats> entry : globalConfigs.entrySet()) {
                 EntityType<?> entityType = entry.getKey();
@@ -119,7 +119,7 @@ public class MobConfigManager {
     }
 
     /**
-     * Carica le configurazioni da file JSON
+     * Loads configurations from JSON file
      */
     public static void load() {
         Path file = ConfigPaths.getMobConfigsFile();
@@ -157,8 +157,8 @@ public class MobConfigManager {
     }
 
     /**
-     * Pulisce tutte le configurazioni globali (usato per GameTests).
-     * Non salva su disco per evitare di sovrascrivere le configurazioni utente.
+     * Clears all global configurations (used for GameTests).
+     * Does not save to disk to avoid overwriting user configurations.
      */
     public static void clearAllGlobalStats() {
         globalConfigs.clear();

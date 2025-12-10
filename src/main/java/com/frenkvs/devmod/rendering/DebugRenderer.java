@@ -233,7 +233,7 @@ public class DebugRenderer {
     // ===== RENDER =====
 
     public void render(PoseStack poseStack, MultiBufferSource buffer, Vec3 cameraPos) {
-        // Cleanup expired shapes (ogni 100ms) - ALWAYS do this
+        // Cleanup expired shapes (every 100ms) - ALWAYS do this
         long now = System.currentTimeMillis();
         if (now - lastCleanupTime > 100) {
             cleanupExpired();

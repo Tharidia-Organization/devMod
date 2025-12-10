@@ -7,6 +7,7 @@ import java.util.Map;
  * Client-side cache for shop/wallet data synced from server.
  * Updated when ShopSyncPayload is received.
  */
+@SuppressWarnings({"null", "unused"})
 public class ClientShopCache {
 
     private static int tokens = 0;
@@ -97,6 +98,7 @@ public class ClientShopCache {
             case PRESTIGE -> prestige -= price;
             case BLOOD_GEMS -> bloodGems -= price;
         }
-        purchases.merge(itemId, 1, Integer::sum);
+        int current = purchases.getOrDefault(itemId, 0);
+        purchases.put(itemId, current + 1);
     }
 }

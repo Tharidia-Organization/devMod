@@ -11,6 +11,7 @@ import java.util.Objects;
  * Payload sent from server to client to show/hide the instance loading overlay.
  * Provides visual feedback during async instance dimension creation.
  */
+@SuppressWarnings({"null", "unused"})
 public record InstanceLoadingPayload(
     boolean show,
     String status

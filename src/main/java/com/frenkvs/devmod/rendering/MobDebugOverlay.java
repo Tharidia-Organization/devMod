@@ -15,33 +15,33 @@ import net.minecraft.world.phys.Vec3;
 @SuppressWarnings("null")
 public class MobDebugOverlay {
 
-    private static final int COLOR_HITBOX = 0x80FFFF00; // Giallo trasparente
-    private static final int COLOR_LABEL = 0xFFFFFF; // Bianco
+    private static final int COLOR_HITBOX = 0x80FFFF00; // Transparent yellow
+    private static final int COLOR_LABEL = 0xFFFFFF; // White
 
-    // Traccia il mob corrente per rendering continuo
+    // Track current mob for continuous rendering
     private static Mob trackedMob = null;
     private static long lastUpdateTime = 0;
-    private static final long TRACKING_TIMEOUT = 3000; // 3 secondi senza guardare = stop tracking
+    private static final long TRACKING_TIMEOUT = 3000; // 3 seconds without looking = stop tracking
 
     public static void renderMobInfo() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
         if (!DebugRenderer.INSTANCE.isEnabled()) return;
 
-        // MAP MAKING MODE: Renderizza TUTTE le sfere OGNI FRAME per movimento fluido
-        // NON usiamo DebugRenderer per le sfere globali - le renderizziamo direttamente
-        // Questo evita lag e mantiene il rendering fluido
+        // MAP MAKING MODE: Render ALL spheres EVERY FRAME for smooth movement
+        // We DON'T use DebugRenderer for global spheres - we render them directly
+        // This avoids lag and maintains smooth rendering
 
-        // Raycast personalizzato per trovare il mob guardato (per l'overlay dettagliato)
+        // Custom raycast to find the looked-at mob (for the detailed overlay)
         Mob lookedAtMob = findLookedAtMob(mc);
 
-        // Se stiamo guardando un mob, aggiorna il tracking per l'overlay dettagliato
+        // If we're looking at a mob, update tracking for the detailed overlay
         if (lookedAtMob != null) {
             trackedMob = lookedAtMob;
             lastUpdateTime = System.currentTimeMillis();
         }
 
-        // Se non stiamo guardando nessun mob ma abbiamo un tracked mob recente, continua a mostrare l'overlay
+        // If we're not looking at any mob but have a recent tracked mob, continue showing the overlay
         if (trackedMob != null) {
             // Check timeout
             if (System.currentTimeMillis() - lastUpdateTime > TRACKING_TIMEOUT) {
@@ -49,17 +49,17 @@ public class MobDebugOverlay {
                 return;
             }
 
-            // Check se il mob è ancora valido e vivo
+            // Check if the mob is still valid and alive
             if (!trackedMob.isAlive() || trackedMob.isRemoved()) {
                 trackedMob = null;
                 DebugRenderer.INSTANCE.clear();
                 return;
             }
 
-            // Clear previous frame e renderizza il mob tracciato
+            // Clear previous frame and render the tracked mob
             DebugRenderer.INSTANCE.clear();
 
-            // Render hitbox principale
+            // Render main hitbox
             renderMainHitbox(trackedMob);
 
             // Render body parts
@@ -92,7 +92,7 @@ public class MobDebugOverlay {
         double reach = Math.min(player.blockInteractionRange(), 16.0);
         Vec3 end = eye.add(look.scale(reach));
 
-        // Cerca entità nel raggio
+        // Search for entities in range
         var entities = level.getEntities(player,
             player.getBoundingBox().inflate(reach));
 
@@ -170,10 +170,10 @@ public class MobDebugOverlay {
     }
 
     private static void renderStats(Mob mob) {
-        // Posizione label sopra al mob
+        // Label position above the mob
         Vec3 pos = mob.position().add(0, mob.getBbHeight() + 1.0, 0);
 
-        // Ottieni stat correnti
+        // Get current stats
         double health = mob.getHealth();
         double maxHealth = mob.getMaxHealth();
         double armor = mob.getArmorValue();

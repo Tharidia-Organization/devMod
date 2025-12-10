@@ -50,11 +50,21 @@ public class WaveManager {
         // Wave modifiers (roguelike elements)
         private final Set<WaveModifier> modifiers = new HashSet<>();
 
+        // Multiplayer scaling parameters
+        private final int playerCount;
+        private final QuestType questType;
+
         public WaveState(UUID arenaId, EnduranceQuest quest, int waveNumber) {
+            this(arenaId, quest, waveNumber, 1, QuestType.PVE_COOP);
+        }
+
+        public WaveState(UUID arenaId, EnduranceQuest quest, int waveNumber, int playerCount, QuestType questType) {
             this.arenaId = arenaId;
             this.quest = quest;
             this.waveNumber = waveNumber;
-            this.totalToSpawn = quest.getCurrentWaveMobCount();
+            this.playerCount = Math.max(1, playerCount);
+            this.questType = questType;
+            this.totalToSpawn = quest.getCurrentWaveMobCount(this.playerCount, this.questType);
             this.waveStartTime = System.currentTimeMillis();
         }
 
@@ -68,6 +78,8 @@ public class WaveManager {
         public long getWaveStartTime() { return waveStartTime; }
         public boolean isComplete() { return complete; }
         public Set<WaveModifier> getModifiers() { return modifiers; }
+        public int getPlayerCount() { return playerCount; }
+        public QuestType getQuestType() { return questType; }
 
         public int getRemainingMobs() {
             return spawnedMobs.size() - killed;
@@ -118,7 +130,14 @@ public class WaveManager {
         ArenaManager.Arena arena = session.getArena();
         int waveNumber = quest.getCurrentWave();
 
-        WaveState waveState = new WaveState(arena.getId(), quest, waveNumber);
+        // Get multiplayer scaling parameters from session
+        int playerCount = session.getPlayerCount();
+        QuestType questType = session.getQuestType();
+
+        WaveState waveState = new WaveState(arena.getId(), quest, waveNumber, playerCount, questType);
+
+        LOGGER.debug("[EnduranceQuest] Starting wave {} with playerCount={}, questType={}",
+            waveNumber, playerCount, questType);
 
         // Check if this is a boss wave (every 5 waves)
         if (BossWaveSystem.INSTANCE.isBossWave(waveNumber)) {
@@ -214,6 +233,9 @@ public class WaveManager {
                 // Apply wave modifiers
                 applyMobModifiers(mob, waveState);
 
+                // Apply multiplayer HP scaling
+                applyMultiplayerHPScaling(mob, waveState);
+
                 // Apply elite chance buffs
                 if (random.nextFloat() < mobConfig.eliteChance) {
                     applyEliteBuffs(mob, waveState.waveNumber);
@@ -305,6 +327,30 @@ public class WaveManager {
                     // Handled in wave setup
                 }
             }
+        }
+    }
+
+    /**
+     * Apply multiplayer HP scaling to a mob based on player count and quest type.
+     * Uses DifficultyScaler for consistent scaling across the system.
+     */
+    private void applyMultiplayerHPScaling(Mob mob, WaveState waveState) {
+        // Only apply scaling in multiplayer
+        if (waveState.getPlayerCount() <= 1) {
+            return;
+        }
+
+        var healthAttr = mob.getAttribute(Attributes.MAX_HEALTH);
+        if (healthAttr != null) {
+            float baseHP = (float) healthAttr.getBaseValue();
+            float scaledHP = DifficultyScaler.INSTANCE.scaleMobHealth(
+                baseHP, waveState.getPlayerCount(), waveState.getQuestType());
+
+            healthAttr.setBaseValue(scaledHP);
+            mob.setHealth(mob.getMaxHealth());
+
+            LOGGER.debug("[EnduranceQuest] Mob HP scaled: {} -> {} (players={}, type={})",
+                baseHP, scaledHP, waveState.getPlayerCount(), waveState.getQuestType());
         }
     }
 

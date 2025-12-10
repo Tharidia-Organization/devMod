@@ -121,5 +121,91 @@ public final class ClientPartyCache {
     public static void clear() {
         currentParty = null;
         lastNotification = null;
+        localPlayerReady = false;
+    }
+
+    // === Additional convenience methods for UI ===
+
+    /** Local player's ready state (for optimistic UI updates) */
+    private static volatile boolean localPlayerReady = false;
+
+    /**
+     * Alias for hasParty() for consistency.
+     */
+    public static boolean isInParty() {
+        return hasParty();
+    }
+
+    /**
+     * Get the leader ID if in a party.
+     */
+    @Nullable
+    public static UUID getLeaderId() {
+        return currentParty != null ? currentParty.leaderId() : null;
+    }
+
+    /**
+     * Get the party members list.
+     */
+    public static java.util.List<PartySyncPayload.PartyMemberInfo> getMembers() {
+        return currentParty != null ? currentParty.members() : java.util.List.of();
+    }
+
+    /**
+     * Get the party state.
+     */
+    @Nullable
+    public static PartyData.PartyState getPartyState() {
+        return currentParty != null ? currentParty.getState() : null;
+    }
+
+    /**
+     * Get local player's ready status.
+     */
+    public static boolean isLocalPlayerReady() {
+        return localPlayerReady;
+    }
+
+    /**
+     * Set local player's ready status (for optimistic UI).
+     */
+    public static void setLocalPlayerReady(boolean ready) {
+        localPlayerReady = ready;
+    }
+
+    /**
+     * Set quest type (for optimistic UI).
+     */
+    public static void setQuestType(com.frenkvs.devmod.endurance.QuestType questType) {
+        // This is for optimistic UI updates
+        // The real update will come from PartySyncPayload
+    }
+
+    // === Online Players List (for invite UI) ===
+
+    private static volatile java.util.List<OnlinePlayersPayload.PlayerInfo> onlinePlayers = java.util.List.of();
+    private static volatile long onlinePlayersLastUpdate = 0;
+    private static final long ONLINE_PLAYERS_CACHE_MS = 5000; // 5 seconds cache
+
+    /**
+     * Update the online players list from server.
+     */
+    public static void updateOnlinePlayers(OnlinePlayersPayload payload) {
+        onlinePlayers = new java.util.ArrayList<>(payload.players());
+        onlinePlayersLastUpdate = System.currentTimeMillis();
+    }
+
+    /**
+     * Get the cached online players list.
+     */
+    public static java.util.List<OnlinePlayersPayload.PlayerInfo> getOnlinePlayers() {
+        return onlinePlayers;
+    }
+
+    /**
+     * Check if online players cache is stale.
+     */
+    public static boolean isOnlinePlayersCacheStale() {
+        return System.currentTimeMillis() - onlinePlayersLastUpdate > ONLINE_PLAYERS_CACHE_MS;
     }
 }

@@ -12,22 +12,22 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Gestisce gli effetti visivi 3D dell'impatto:
- * - Energy Vortex Core (spirale di energia al centro)
- * - Slash Animation (arco che segue il colpo)
- * - Connection Lines (linee dal core al pannello HUD)
+ * Manages 3D impact visual effects:
+ * - Energy Vortex Core (energy spiral at center)
+ * - Slash Animation (arc following the hit)
+ * - Connection Lines (lines from core to HUD panel)
  */
 public class ImpactVFX {
 
-    // Lista di effetti attivi (thread-safe per evitare ConcurrentModificationException)
+    // Active effects list (thread-safe to avoid ConcurrentModificationException)
     private static final List<ImpactEffect> activeEffects = new CopyOnWriteArrayList<>();
 
-    // Durata effetti
+    // Effect duration
     private static final long CORE_DURATION_MS = 2500;
-    private static final long SLASH_DURATION_MS = 600;  // Più lungo per vedere l'animazione
+    private static final long SLASH_DURATION_MS = 600;  // Longer to see the animation
     private static final long LINE_DURATION_MS = 2000;
 
-    // Colori - Electric Blue theme
+    // Colors - Electric Blue theme
     private static final int COLOR_CORE_PRIMARY = 0xFF3D5AFE;     // Electric blue
     private static final int COLOR_CORE_SECONDARY = 0xFF00E5FF;   // Cyan
     private static final int COLOR_CORE_GLOW = 0xFF82B1FF;        // Light blue
@@ -35,29 +35,29 @@ public class ImpactVFX {
     private static final int COLOR_LINE = 0xFF00E5FF;             // Cyan
 
     /**
-     * Aggiunge un nuovo effetto impatto.
-     * Spawna sia gli effetti VFX (vortex, slash, linee) che il pannello 3D.
+     * Adds a new impact effect.
+     * Spawns both VFX effects (vortex, slash, lines) and the 3D panel.
      */
     public static void addImpact(Vec3 hitPoint, Vec3 slashDirection, ImpactData data) {
-        // Rimuovi vecchi effetti se ce ne sono troppi
+        // Remove old effects if there are too many
         while (activeEffects.size() > 5) {
             activeEffects.remove(0);
         }
 
         activeEffects.add(new ImpactEffect(hitPoint, slashDirection, data));
 
-        // === NUOVO: Spawna anche il pannello 3D ===
+        // Also spawn the 3D panel
         Impact3DPanelManager.INSTANCE.spawnPanelFromImpact(data);
     }
 
     /**
-     * Renderizza tutti gli effetti attivi.
-     * Chiamato da RenderEvents durante AFTER_ENTITIES.
+     * Renders all active effects.
+     * Called from RenderEvents during AFTER_ENTITIES.
      */
     public static void render(PoseStack poseStack, MultiBufferSource bufferSource, Vec3 cameraPos) {
         if (activeEffects.isEmpty()) return;
 
-        // Rimuovi effetti scaduti
+        // Remove expired effects
         long now = System.currentTimeMillis();
         activeEffects.removeIf(e -> e.isExpired(now));
 
@@ -98,7 +98,7 @@ public class ImpactVFX {
             poseStack.popPose();
         }
 
-        // 3. Render Connection Lines (dal core verso lo schermo/HUD)
+        // 3. Render Connection Lines (from core towards screen/HUD)
         float lineAlpha = effect.getLineAlpha(now);
         if (lineAlpha > 0.05f) {
             renderConnectionLines(poseStack, bufferSource, cameraPos, effect.hitPoint, lineAlpha, effect.getRotation(now));
@@ -106,14 +106,14 @@ public class ImpactVFX {
     }
 
     /**
-     * Renderizza il vortice di energia centrale (spirale rotante).
+     * Renders the central energy vortex (rotating spiral).
      */
     private static void renderEnergyVortex(PoseStack poseStack, MultiBufferSource bufferSource,
                                             float alpha, float rotation, float pulseScale) {
         Matrix4f matrix = poseStack.last().pose();
         VertexConsumer consumer = bufferSource.getBuffer(RenderType.debugLineStrip(2.5));
 
-        // Colori
+        // Colors
         float r1 = ((COLOR_CORE_PRIMARY >> 16) & 0xFF) / 255.0f;
         float g1 = ((COLOR_CORE_PRIMARY >> 8) & 0xFF) / 255.0f;
         float b1 = (COLOR_CORE_PRIMARY & 0xFF) / 255.0f;
@@ -126,21 +126,21 @@ public class ImpactVFX {
         float g3 = ((COLOR_CORE_GLOW >> 8) & 0xFF) / 255.0f;
         float b3 = (COLOR_CORE_GLOW & 0xFF) / 255.0f;
 
-        // === SPIRALE ESTERNA (rotazione oraria) ===
+        // === OUTER SPIRAL (clockwise rotation) ===
         float baseRadius = 0.25f * pulseScale;
         int spiralSegments = 32;
-        float spiralRotations = 2.0f; // Giri della spirale
+        float spiralRotations = 2.0f; // Spiral turns
 
         for (int i = 0; i <= spiralSegments; i++) {
             float t = (float) i / spiralSegments;
             float angle = rotation + t * spiralRotations * (float) Math.PI * 2;
-            float radius = baseRadius * (1.0f - t * 0.6f); // Si restringe verso il centro
+            float radius = baseRadius * (1.0f - t * 0.6f); // Narrows towards center
 
             float x = (float) Math.cos(angle) * radius;
-            float y = (float) Math.sin(angle) * radius * 0.5f; // Schiacciata verticalmente
+            float y = (float) Math.sin(angle) * radius * 0.5f; // Vertically flattened
             float z = (float) Math.sin(angle) * radius;
 
-            // Colore che sfuma dal primario al secondario
+            // Color fading from primary to secondary
             float colorMix = t;
             float r = r1 * (1 - colorMix) + r2 * colorMix;
             float g = g1 * (1 - colorMix) + g2 * colorMix;
@@ -151,7 +151,7 @@ public class ImpactVFX {
                 .setNormal(0, 1, 0);
         }
 
-        // === SPIRALE INTERNA (rotazione antioraria) ===
+        // === INNER SPIRAL (counter-clockwise rotation) ===
         for (int i = 0; i <= spiralSegments; i++) {
             float t = (float) i / spiralSegments;
             float angle = -rotation * 1.5f + t * spiralRotations * (float) Math.PI * 2;
@@ -166,14 +166,14 @@ public class ImpactVFX {
                 .setNormal(0, 1, 0);
         }
 
-        // === ANELLI CONCENTRICI (effetto "onde") ===
+        // === CONCENTRIC RINGS ("wave" effect) ===
         int ringCount = 3;
         for (int ring = 0; ring < ringCount; ring++) {
             float ringRadius = baseRadius * (0.4f + ring * 0.3f);
             float ringAlpha = alpha * (1.0f - ring * 0.25f);
             int ringSegments = 24;
 
-            // Offset rotazione per ogni anello
+            // Rotation offset for each ring
             float ringRotation = rotation * (1.0f + ring * 0.3f);
 
             for (int i = 0; i <= ringSegments; i++) {
@@ -181,7 +181,7 @@ public class ImpactVFX {
                 float x = (float) Math.cos(angle) * ringRadius;
                 float z = (float) Math.sin(angle) * ringRadius;
 
-                // Ondulazione verticale
+                // Vertical wave
                 float waveY = (float) Math.sin(angle * 3 + rotation * 2) * 0.03f;
 
                 consumer.addVertex(matrix, x, waveY, z)
@@ -190,19 +190,19 @@ public class ImpactVFX {
             }
         }
 
-        // === RAGGI DAL CENTRO ===
+        // === RAYS FROM CENTER ===
         int rayCount = 6;
         float rayLength = baseRadius * 1.2f;
 
         for (int i = 0; i < rayCount; i++) {
             float angle = rotation * 0.5f + (float) (2 * Math.PI * i / rayCount);
 
-            // Punto centrale
+            // Central point
             consumer.addVertex(matrix, 0, 0, 0)
                 .setColor(r2, g2, b2, alpha)
                 .setNormal(0, 1, 0);
 
-            // Punto esterno
+            // Outer point
             float x = (float) Math.cos(angle) * rayLength;
             float z = (float) Math.sin(angle) * rayLength;
             consumer.addVertex(matrix, x, 0, z)
@@ -210,7 +210,7 @@ public class ImpactVFX {
                 .setNormal(0, 1, 0);
         }
 
-        // === PUNTO CENTRALE BRILLANTE ===
+        // === BRIGHT CENTER POINT ===
         float dotSize = 0.02f * pulseScale;
         consumer.addVertex(matrix, -dotSize, 0, 0).setColor(1f, 1f, 1f, alpha).setNormal(1, 0, 0);
         consumer.addVertex(matrix, dotSize, 0, 0).setColor(1f, 1f, 1f, alpha).setNormal(1, 0, 0);
@@ -221,8 +221,8 @@ public class ImpactVFX {
     }
 
     /**
-     * Renderizza lo slash che simula il movimento dell'arma che taglia.
-     * L'animazione mostra una "lama" che si muove attraverso il punto di impatto.
+     * Renders the slash simulating weapon cutting movement.
+     * The animation shows a "blade" moving through the impact point.
      */
     private static void renderSlashTrail(PoseStack poseStack, MultiBufferSource bufferSource,
                                           Vec3 direction, float progress) {
@@ -233,15 +233,15 @@ public class ImpactVFX {
         float g = ((COLOR_SLASH >> 8) & 0xFF) / 255.0f;
         float b = (COLOR_SLASH & 0xFF) / 255.0f;
 
-        // Alpha base che decresce con il progresso
+        // Base alpha that decreases with progress
         float baseAlpha = Math.max(0, 1.0f - progress * 0.8f);
 
-        // === SLASH LINE (linea che "taglia" attraverso il punto) ===
-        // Direzione perpendicolare allo sguardo (simula il movimento laterale della spada)
+        // === SLASH LINE (line that "cuts" through the point) ===
+        // Perpendicular direction to view (simulates lateral sword movement)
         float dirX = (float) direction.x;
         float dirZ = (float) direction.z;
 
-        // Vettore perpendicolare per il taglio orizzontale
+        // Perpendicular vector for horizontal cut
         float perpX = -dirZ;
         float perpZ = dirX;
         float perpLen = (float) Math.sqrt(perpX * perpX + perpZ * perpZ);
@@ -253,19 +253,19 @@ public class ImpactVFX {
             perpZ = 0;
         }
 
-        // Dimensione della linea di taglio
-        float slashLength = 0.8f;  // Lunghezza totale del taglio
-        float slashHeight = 0.4f;  // Altezza dell'arco del taglio
+        // Cut line dimensions
+        float slashLength = 0.8f;  // Total cut length
+        float slashHeight = 0.4f;  // Cut arc height
 
-        // === ANIMAZIONE: La lama si muove da sinistra a destra ===
-        // progress 0.0 -> lama a sinistra
-        // progress 0.5 -> lama al centro (punto di impatto)
-        // progress 1.0 -> lama a destra
+        // === ANIMATION: Blade moves from left to right ===
+        // progress 0.0 -> blade on left
+        // progress 0.5 -> blade at center (impact point)
+        // progress 1.0 -> blade on right
 
-        // Posizione corrente della "testa" del taglio
-        float bladePos = (progress * 2.0f - 1.0f) * slashLength; // da -slashLength a +slashLength
+        // Current position of the cut "head"
+        float bladePos = (progress * 2.0f - 1.0f) * slashLength; // from -slashLength to +slashLength
 
-        // === SCIA DEL TAGLIO (trail che rimane) ===
+        // === CUT TRAIL (remaining trail) ===
         int trailSegments = 24;
         float trailStart = -slashLength;
         float trailEnd = Math.min(bladePos, slashLength);
@@ -275,19 +275,19 @@ public class ImpactVFX {
                 float t = (float) i / trailSegments;
                 float pos = trailStart + (trailEnd - trailStart) * t;
 
-                // Posizione lungo la linea di taglio
+                // Position along the cut line
                 float x = perpX * pos;
                 float z = perpZ * pos;
 
-                // Arco verticale (il taglio è curvo, più alto al centro)
-                float arcT = (pos + slashLength) / (2 * slashLength); // 0 a 1
+                // Vertical arc (the cut is curved, higher at center)
+                float arcT = (pos + slashLength) / (2 * slashLength); // 0 to 1
                 float y = (float) Math.sin(arcT * Math.PI) * slashHeight;
 
-                // Alpha: più forte vicino alla lama, sfuma verso la coda
+                // Alpha: stronger near blade, fades towards tail
                 float distFromBlade = Math.abs(pos - bladePos);
                 float trailAlpha = baseAlpha * Math.max(0, 1.0f - distFromBlade / slashLength);
 
-                // Colore che sfuma dal bianco (lama) al blu (scia)
+                // Color fading from white (blade) to blue (trail)
                 float colorFade = Math.min(1, distFromBlade / (slashLength * 0.3f));
                 float cr = r + (1 - r) * (1 - colorFade);
                 float cg = g + (1 - g) * (1 - colorFade);
@@ -299,18 +299,18 @@ public class ImpactVFX {
             }
         }
 
-        // === LAMA (punto più luminoso che si muove) ===
+        // === BLADE (brightest moving point) ===
         if (progress < 0.95f && Math.abs(bladePos) <= slashLength) {
             float bladeX = perpX * bladePos;
             float bladeZ = perpZ * bladePos;
             float arcT = (bladePos + slashLength) / (2 * slashLength);
             float bladeY = (float) Math.sin(arcT * Math.PI) * slashHeight;
 
-            // Punto centrale brillante
+            // Bright central point
             float bladeAlpha = baseAlpha * 1.2f;
             float bladeSize = 0.08f;
 
-            // Croce luminosa sulla lama
+            // Luminous cross on blade
             consumer.addVertex(matrix, bladeX - bladeSize, bladeY, bladeZ)
                 .setColor(1f, 1f, 1f, bladeAlpha).setNormal(1, 0, 0);
             consumer.addVertex(matrix, bladeX + bladeSize, bladeY, bladeZ)
@@ -320,7 +320,7 @@ public class ImpactVFX {
             consumer.addVertex(matrix, bladeX, bladeY + bladeSize, bladeZ)
                 .setColor(1f, 1f, 1f, bladeAlpha).setNormal(0, 1, 0);
 
-            // Linea verticale della lama (effetto "taglio")
+            // Vertical blade line ("cut" effect)
             float bladeLengthVert = 0.25f;
             consumer.addVertex(matrix, bladeX, bladeY - bladeLengthVert, bladeZ)
                 .setColor(1f, 1f, 1f, bladeAlpha * 0.8f).setNormal(0, 1, 0);
@@ -328,15 +328,15 @@ public class ImpactVFX {
                 .setColor(1f, 1f, 1f, bladeAlpha * 0.8f).setNormal(0, 1, 0);
         }
 
-        // === PARTICELLE DI SCINTILLE ===
+        // === SPARK PARTICLES ===
         if (progress < 0.7f) {
             int sparkCount = 6;
             for (int i = 0; i < sparkCount; i++) {
-                // Posizione casuale lungo la scia (basata su indice)
+                // Random position along the trail (based on index)
                 float sparkT = (float) i / sparkCount;
                 float sparkPos = trailStart + (trailEnd - trailStart) * sparkT;
 
-                // Offset "casuale" deterministico
+                // Deterministic "random" offset
                 float offsetX = (float) Math.sin(i * 7.3f + progress * 10) * 0.1f;
                 float offsetY = (float) Math.cos(i * 5.1f + progress * 8) * 0.15f;
                 float offsetZ = (float) Math.sin(i * 3.7f + progress * 12) * 0.1f;
@@ -350,23 +350,23 @@ public class ImpactVFX {
 
                 float sparkAlpha = baseAlpha * (1.0f - progress) * 0.9f;
 
-                // Piccolo punto luminoso
+                // Small bright point
                 float size = 0.015f;
                 consumer.addVertex(matrix, x - size, y, z).setColor(1f, 1f, 0.8f, sparkAlpha).setNormal(1, 0, 0);
                 consumer.addVertex(matrix, x + size, y, z).setColor(1f, 1f, 0.8f, sparkAlpha).setNormal(1, 0, 0);
             }
         }
 
-        // === ARCO ESTERNO (bordo del taglio) ===
-        // Linea superiore dell'arco
+        // === OUTER ARC (cut edge) ===
+        // Upper arc line
         int arcSegments = 16;
-        float arcOffset = 0.05f; // Offset dal centro
+        float arcOffset = 0.05f; // Offset from center
 
         for (int i = 0; i <= arcSegments; i++) {
             float t = (float) i / arcSegments;
             float pos = -slashLength + 2 * slashLength * t;
 
-            // Solo la parte già "tagliata"
+            // Only the already "cut" part
             if (pos > trailEnd) break;
 
             float x = perpX * pos;
@@ -383,7 +383,7 @@ public class ImpactVFX {
     }
 
     /**
-     * Renderizza le linee di connessione dal core verso l'HUD.
+     * Renders connection lines from core towards HUD.
      */
     private static void renderConnectionLines(PoseStack poseStack, MultiBufferSource bufferSource,
                                                Vec3 cameraPos, Vec3 hitPoint, float alpha, float rotation) {
@@ -401,36 +401,36 @@ public class ImpactVFX {
         float g = ((COLOR_LINE >> 8) & 0xFF) / 255.0f;
         float b = (COLOR_LINE & 0xFF) / 255.0f;
 
-        // Direzione verso la camera
+        // Direction towards camera
         Vec3 toCamera = cameraPos.subtract(hitPoint).normalize();
 
-        // === LINEE PRINCIPALI VERSO LA CAMERA ===
+        // === MAIN LINES TOWARDS CAMERA ===
         float lineLength = 1.5f;
         int lineCount = 3;
 
         for (int i = 0; i < lineCount; i++) {
-            // Offset angolare per ogni linea
+            // Angular offset for each line
             float angleOffset = (float) (2 * Math.PI * i / lineCount) + rotation * 0.2f;
 
-            // Punto di partenza (leggermente offset dal centro)
+            // Starting point (slightly offset from center)
             float startOffset = 0.1f;
             float startX = (float) Math.cos(angleOffset) * startOffset;
             float startZ = (float) Math.sin(angleOffset) * startOffset;
 
-            // La linea si estende verso la camera con leggera curva
+            // Line extends towards camera with slight curve
             int segments = 8;
             for (int j = 0; j <= segments; j++) {
                 float t = (float) j / segments;
 
-                // Interpolazione verso la camera
+                // Interpolation towards camera
                 float x = startX * (1 - t) + (float) toCamera.x * lineLength * t;
                 float y = (float) toCamera.y * lineLength * t;
                 float z = startZ * (1 - t) + (float) toCamera.z * lineLength * t;
 
-                // Alpha che diminuisce verso la fine
+                // Alpha decreasing towards end
                 float segmentAlpha = alpha * (1.0f - t * 0.7f);
 
-                // Effetto "pulsazione" lungo la linea
+                // "Pulse" effect along the line
                 float pulse = (float) Math.sin(t * Math.PI * 2 + rotation * 3) * 0.3f + 0.7f;
                 segmentAlpha *= pulse;
 
@@ -440,11 +440,11 @@ public class ImpactVFX {
             }
         }
 
-        // === LINEE LATERALI (effetto "scanner") ===
+        // === SIDE LINES ("scanner" effect) ===
         float sideLength = 0.8f;
         float sideOffset = 0.15f;
 
-        // Linea destra
+        // Right line
         consumer.addVertex(matrix, sideOffset, 0, 0)
             .setColor(r, g, b, alpha * 0.6f)
             .setNormal(1, 0, 0);
@@ -452,7 +452,7 @@ public class ImpactVFX {
             .setColor(r, g, b, alpha * 0.1f)
             .setNormal(1, 0, 0);
 
-        // Linea sinistra
+        // Left line
         consumer.addVertex(matrix, -sideOffset, 0, 0)
             .setColor(r, g, b, alpha * 0.6f)
             .setNormal(1, 0, 0);
@@ -460,7 +460,7 @@ public class ImpactVFX {
             .setColor(r, g, b, alpha * 0.1f)
             .setNormal(1, 0, 0);
 
-        // Linea alto
+        // Top line
         consumer.addVertex(matrix, 0, sideOffset, 0)
             .setColor(r, g, b, alpha * 0.6f)
             .setNormal(0, 1, 0);
@@ -472,14 +472,14 @@ public class ImpactVFX {
     }
 
     /**
-     * Pulisce tutti gli effetti.
+     * Clears all effects.
      */
     public static void clear() {
         activeEffects.clear();
     }
 
     /**
-     * Classe interna per un singolo effetto impatto.
+     * Internal class for a single impact effect.
      */
     private static class ImpactEffect {
         final Vec3 hitPoint;
@@ -502,12 +502,12 @@ public class ImpactVFX {
             long elapsed = now - startTime;
             if (elapsed > CORE_DURATION_MS) return 0;
 
-            // Fade in rapido nei primi 100ms
+            // Fast fade in during first 100ms
             if (elapsed < 100) {
                 return elapsed / 100.0f;
             }
 
-            // Fade out negli ultimi 600ms
+            // Fade out during last 600ms
             long fadeStart = CORE_DURATION_MS - 600;
             if (elapsed > fadeStart) {
                 return 1.0f - (elapsed - fadeStart) / 600.0f;
@@ -534,19 +534,19 @@ public class ImpactVFX {
 
         float getSlashProgress(long now) {
             long elapsed = now - startTime;
-            if (elapsed > SLASH_DURATION_MS) return -1; // Slash finito
+            if (elapsed > SLASH_DURATION_MS) return -1; // Slash finished
             return (float) elapsed / SLASH_DURATION_MS;
         }
 
         float getRotation(long now) {
             long elapsed = now - startTime;
-            // Rotazione continua (radianti)
+            // Continuous rotation (radians)
             return (elapsed * 0.003f) % ((float) Math.PI * 2);
         }
 
         float getPulseScale(long now) {
             long elapsed = now - startTime;
-            // Pulsazione sinusoidale più pronunciata
+            // More pronounced sinusoidal pulse
             double pulse = Math.sin(elapsed * 0.008) * 0.15 + 1.0;
             return (float) pulse;
         }

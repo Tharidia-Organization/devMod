@@ -1,6 +1,7 @@
 package com.frenkvs.devmod.party;
 
 import com.frenkvs.devmod.endurance.QuestType;
+import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +39,10 @@ public class PartyData {
 
     /** Quest type this party is configured for */
     private volatile QuestType questType;
+
+    /** Selected mob type for the endurance quest (null = use default zombie) */
+    @Nullable
+    private volatile ResourceLocation selectedMobId;
 
     /** Current state of the party */
     private volatile PartyState state;
@@ -459,6 +464,45 @@ public class PartyData {
 
     public QuestType getQuestType() {
         return questType;
+    }
+
+    /**
+     * Get the selected mob type for this party's quest.
+     * Returns null if no mob is selected (use default).
+     */
+    @Nullable
+    public ResourceLocation getSelectedMobId() {
+        return selectedMobId;
+    }
+
+    /**
+     * Set the mob type for this party's quest.
+     * Only the leader can change this while party is forming.
+     *
+     * @param requesterId UUID of the player requesting the change (must be leader)
+     * @param mobId The mob ResourceLocation (e.g., "minecraft:zombie")
+     * @return true if changed successfully
+     */
+    public boolean setSelectedMobId(UUID requesterId, ResourceLocation mobId) {
+        if (!requesterId.equals(leaderId)) {
+            LOGGER.debug("[Party] Only leader can change mob type");
+            return false;
+        }
+        if (state != PartyState.FORMING) {
+            LOGGER.debug("[Party] Cannot change mob type - party not in FORMING state");
+            return false;
+        }
+        this.selectedMobId = mobId;
+        LOGGER.info("[Party] Party {} selected mob type: {}", partyId, mobId);
+        return true;
+    }
+
+    /**
+     * Get the mob ID to use for quest, with fallback to default zombie.
+     * @return The selected mob ID, or minecraft:zombie if none selected
+     */
+    public ResourceLocation getEffectiveMobId() {
+        return selectedMobId != null ? selectedMobId : ResourceLocation.withDefaultNamespace("zombie");
     }
 
     public PartyState getState() {

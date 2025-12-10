@@ -28,7 +28,7 @@ import java.lang.reflect.Method;
 public class PehkuiIntegration {
     private static final Logger LOGGER = LoggerFactory.getLogger(PehkuiIntegration.class);
 
-    // Cache delle classi e metodi per performance
+    // Cache of classes and methods for performance
     private static Class<?> scaleTypesClass = null;
     private static Object baseScaleType = null;
     private static Object hitboxWidthScaleType = null;
@@ -38,21 +38,21 @@ public class PehkuiIntegration {
     private static boolean initSuccess = false;
 
     /**
-     * Inizializza la reflection API di Pehkui.
-     * Chiamato automaticamente al primo uso.
+     * Initialize Pehkui reflection API.
+     * Called automatically on first use.
      */
     private static synchronized void initReflection() {
         if (initAttempted) return;
         initAttempted = true;
 
         try {
-            // Carica la classe ScaleTypes
+            // Load ScaleTypes class
             scaleTypesClass = Class.forName("virtuoel.pehkui.api.ScaleTypes");
 
-            // Ottieni il campo BASE (scala visiva)
+            // Get BASE field (visual scale)
             baseScaleType = scaleTypesClass.getField("BASE").get(null);
 
-            // Ottieni il campo HITBOX_WIDTH (scala hitbox) - potrebbe non esistere in versioni vecchie
+            // Get HITBOX_WIDTH field (hitbox scale) - may not exist in old versions
             try {
                 hitboxWidthScaleType = scaleTypesClass.getField("HITBOX_WIDTH").get(null);
             } catch (NoSuchFieldException e) {
@@ -60,20 +60,20 @@ public class PehkuiIntegration {
                 try {
                     hitboxWidthScaleType = scaleTypesClass.getField("WIDTH").get(null);
                 } catch (NoSuchFieldException e2) {
-                    hitboxWidthScaleType = baseScaleType; // Usa BASE come fallback
+                    hitboxWidthScaleType = baseScaleType; // Use BASE as fallback
                 }
             }
 
-            // Ottieni il metodo getScaleData(Entity)
+            // Get getScaleData(Entity) method
             Class<?> scaleTypeClass = baseScaleType.getClass();
             getScaleDataMethod = scaleTypeClass.getMethod("getScaleData", Entity.class);
 
-            // Ottieni il metodo getScale() da ScaleData
+            // Get getScale() method from ScaleData
             Object sampleScaleData = getScaleDataMethod.invoke(baseScaleType, (Entity) null);
             if (sampleScaleData != null) {
                 getScaleMethod = sampleScaleData.getClass().getMethod("getScale");
             } else {
-                // Prova a ottenere il metodo dalla classe ScaleData direttamente
+                // Try to get the method from ScaleData class directly
                 Class<?> scaleDataClass = Class.forName("virtuoel.pehkui.api.ScaleData");
                 getScaleMethod = scaleDataClass.getMethod("getScale");
             }
@@ -89,10 +89,10 @@ public class PehkuiIntegration {
     }
 
     /**
-     * Ottiene la scala visiva base dell'entità.
+     * Get the base visual scale of the entity.
      *
-     * @param entity L'entità da controllare
-     * @return La scala (1.0 = normale), o null se errore/Pehkui non presente
+     * @param entity The entity to check
+     * @return The scale (1.0 = normal), or null if error/Pehkui not present
      */
     public static Float getScale(LivingEntity entity) {
         if (entity == null) return null;
@@ -124,11 +124,11 @@ public class PehkuiIntegration {
     }
 
     /**
-     * Ottiene la scala hitbox dell'entità.
-     * Può essere diversa dalla scala visiva in alcune configurazioni.
+     * Get the hitbox scale of the entity.
+     * May differ from visual scale in some configurations.
      *
-     * @param entity L'entità da controllare
-     * @return La scala hitbox (1.0 = normale), o null se errore
+     * @param entity The entity to check
+     * @return The hitbox scale (1.0 = normal), or null if error
      */
     public static Float getHitboxScale(LivingEntity entity) {
         if (entity == null) return null;
@@ -160,7 +160,7 @@ public class PehkuiIntegration {
     }
 
     /**
-     * Verifica se Pehkui è disponibile e funzionante.
+     * Check if Pehkui is available and working.
      */
     public static boolean isAvailable() {
         if (!initAttempted) {

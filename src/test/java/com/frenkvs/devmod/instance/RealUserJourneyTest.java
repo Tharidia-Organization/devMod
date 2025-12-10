@@ -4,13 +4,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Timeout;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
-import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -315,6 +313,9 @@ public class RealUserJourneyTest {
 
             // Perform recovery based on state
             switch (state) {
+                case NORMAL -> {
+                    player.log("No recovery needed");
+                }
                 case PREPARING, IN_TRANSIT -> {
                     player.log("Teleport was interrupted, restoring position");
                 }
@@ -618,6 +619,7 @@ public class RealUserJourneyTest {
         @DisplayName("Quick disconnect/reconnect preserves snapshot")
         void testQuickDisconnectReconnect() {
             UUID instanceId = sim.startQuest(player, 10, false);
+            assertNotNull(instanceId);
 
             // Quick disconnect/reconnect cycle
             for (int i = 0; i < 3; i++) {
@@ -875,8 +877,7 @@ public class RealUserJourneyTest {
         @Test
         @DisplayName("Invalid backward transitions")
         void testInvalidBackwardTransitions() {
-            assertFalse(PlayerInstanceState.PREPARING.canTransitionTo(PlayerInstanceState.NORMAL)
-                && PlayerInstanceState.NORMAL != PlayerInstanceState.NORMAL); // NORMAL is always valid
+            assertFalse(PlayerInstanceState.IN_TRANSIT.canTransitionTo(PlayerInstanceState.PREPARING));
             assertFalse(PlayerInstanceState.IN_INSTANCE.canTransitionTo(PlayerInstanceState.PREPARING));
             assertFalse(PlayerInstanceState.RETURNING.canTransitionTo(PlayerInstanceState.IN_INSTANCE));
         }
@@ -949,10 +950,11 @@ public class RealUserJourneyTest {
         void testBoundaryRequest() {
             long MAX_AGE_MS = 30_000;
             long createdAt = System.currentTimeMillis() - MAX_AGE_MS;
+            long now = createdAt + MAX_AGE_MS;
 
             // At exactly MAX_AGE, should not be stale (> not >=)
-            boolean isStale = System.currentTimeMillis() - createdAt > MAX_AGE_MS;
-            // This might be flaky due to timing, but demonstrates the edge case
+            boolean isStale = now - createdAt > MAX_AGE_MS;
+            assertFalse(isStale, "Request at MAX_AGE boundary should not be stale");
         }
     }
 

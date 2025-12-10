@@ -6,13 +6,16 @@ import com.frenkvs.devmod.ui.UIConstants;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import javax.annotation.Nonnull;
+
 /**
- * Footer con barra progresso e azioni rapide.
- * Mostra: progress bar, stats, save report button, minimize button.
+ * Footer with progress bar and quick actions.
+ * Shows: progress bar, stats, save report button, minimize button.
  */
 public class ProgressFooter implements HubPanel {
 
     private final int x, y, width, height;
+    @Nonnull
     private final Font font;
     private final Runnable onSaveReport;
     private final Runnable onMinimize;
@@ -22,7 +25,7 @@ public class ProgressFooter implements HubPanel {
     private static final int BUTTON_HEIGHT = 24;
     private static final int PROGRESS_BAR_HEIGHT = 8;
 
-    public ProgressFooter(int x, int y, int width, int height, Font font,
+    public ProgressFooter(int x, int y, int width, int height, @Nonnull Font font,
                           Runnable onSaveReport, Runnable onMinimize) {
         this.x = x;
         this.y = y;
@@ -101,7 +104,7 @@ public class ProgressFooter implements HubPanel {
         AxiomRenderer.drawBorder(graphics, bx, by, bw, PROGRESS_BAR_HEIGHT, UIConstants.Border.DEFAULT);
     }
 
-    private void renderButton(GuiGraphics graphics, int bx, int by, String label, boolean hovered) {
+    private void renderButton(GuiGraphics graphics, int bx, int by, @Nonnull String label, boolean hovered) {
         int bgColor = hovered ? UIConstants.Background.HOVER : UIConstants.Background.INPUT;
         graphics.fill(bx, by, bx + BUTTON_WIDTH, by + BUTTON_HEIGHT, bgColor);
         AxiomRenderer.drawBorder(graphics, bx, by, BUTTON_WIDTH, BUTTON_HEIGHT, UIConstants.Border.DEFAULT);

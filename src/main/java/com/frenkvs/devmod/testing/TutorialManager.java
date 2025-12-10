@@ -484,9 +484,10 @@ public class TutorialManager {
             unlockedAchievements.add(achievementId);
 
             Minecraft mc = Minecraft.getInstance();
-            if (mc.player != null) {
+            var localPlayer = mc.player;
+            if (localPlayer != null) {
                 String name = getAchievementName(achievementId);
-                mc.player.displayClientMessage(
+                localPlayer.displayClientMessage(
                     I18n.translate("devmod.testing.achievement_unlocked", name),
                     false
                 );

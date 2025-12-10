@@ -8,6 +8,8 @@ import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import javax.annotation.Nonnull;
 
 /**
  * Payload for entity AI goals debug data (server to client).
@@ -24,13 +26,13 @@ public record EntityGoalsPayload(
 ) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<EntityGoalsPayload> TYPE =
-        new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "debug_goals"));
+        new CustomPacketPayload.Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "debug_goals")));
 
     public static final StreamCodec<FriendlyByteBuf, EntityGoalsPayload> STREAM_CODEC = new StreamCodec<>() {
         @Override
-        public EntityGoalsPayload decode(FriendlyByteBuf buf) {
+        public EntityGoalsPayload decode(@Nonnull FriendlyByteBuf buf) {
             int entityId = buf.readVarInt();
-            String entityName = buf.readUtf();
+            String entityName = Objects.requireNonNull(buf.readUtf());
             double posX = buf.readDouble();
             double posY = buf.readDouble();
             double posZ = buf.readDouble();
@@ -41,7 +43,7 @@ public record EntityGoalsPayload(
                 goals.add(new GoalInfo(
                     buf.readVarInt(),
                     buf.readBoolean(),
-                    buf.readUtf()
+                    Objects.requireNonNull(buf.readUtf())
                 ));
             }
 
@@ -51,7 +53,7 @@ public record EntityGoalsPayload(
                 targetGoals.add(new GoalInfo(
                     buf.readVarInt(),
                     buf.readBoolean(),
-                    buf.readUtf()
+                    Objects.requireNonNull(buf.readUtf())
                 ));
             }
 
@@ -59,9 +61,9 @@ public record EntityGoalsPayload(
         }
 
         @Override
-        public void encode(FriendlyByteBuf buf, EntityGoalsPayload payload) {
+        public void encode(@Nonnull FriendlyByteBuf buf, @Nonnull EntityGoalsPayload payload) {
             buf.writeVarInt(payload.entityId);
-            buf.writeUtf(payload.entityName);
+            buf.writeUtf(Objects.requireNonNull(payload.entityName));
             buf.writeDouble(payload.posX);
             buf.writeDouble(payload.posY);
             buf.writeDouble(payload.posZ);
@@ -70,14 +72,14 @@ public record EntityGoalsPayload(
             for (GoalInfo goal : payload.goals) {
                 buf.writeVarInt(goal.priority);
                 buf.writeBoolean(goal.isRunning);
-                buf.writeUtf(goal.name);
+                buf.writeUtf(Objects.requireNonNull(goal.name));
             }
 
             buf.writeVarInt(payload.targetGoals.size());
             for (GoalInfo goal : payload.targetGoals) {
                 buf.writeVarInt(goal.priority);
                 buf.writeBoolean(goal.isRunning);
-                buf.writeUtf(goal.name);
+                buf.writeUtf(Objects.requireNonNull(goal.name));
             }
         }
     };

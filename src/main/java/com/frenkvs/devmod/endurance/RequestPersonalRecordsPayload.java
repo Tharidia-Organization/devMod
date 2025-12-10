@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
  * Network payload sent from client to server to request personal records sync.
  * Sent when opening EnduranceQuestScreen.
  */
+@SuppressWarnings({"null", "unused"})
 public record RequestPersonalRecordsPayload() implements CustomPacketPayload {
 
     public static final Type<RequestPersonalRecordsPayload> TYPE = new Type<>(

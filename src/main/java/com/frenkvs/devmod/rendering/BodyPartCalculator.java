@@ -8,40 +8,41 @@ import net.minecraft.world.phys.Vec3;
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
- * SINGLE SOURCE OF TRUTH per calcolo body part AABBs
+ * SINGLE SOURCE OF TRUTH for body part AABB calculation
  *
- * Centralizza tutta la logica di suddivisione hitbox in body parts.
- * Usato da:
- * - BodyPartRenderer (rendering debug overlay)
+ * Centralizes all hitbox subdivision logic into body parts.
+ * Used by:
+ * - BodyPartRenderer (debug overlay rendering)
  * - HitHelper (raycast detection)
- * - Altri sistemi che necessitano di body part AABBs consistenti
+ * - Other systems that need consistent body part AABBs
  *
  * DESIGN:
- * - Immutable record BodyPartAABB per ogni parte
- * - Metodo statico calculateAllBodyParts() ritorna array completo
- * - Supporta adaptive mode (humanoid, horizontal, tall)
+ * - Immutable BodyPartAABB record for each part
+ * - Static calculateAllBodyParts() method returns complete array
+ * - Supports adaptive mode (humanoid, horizontal, tall)
  */
 public class BodyPartCalculator {
 
     /**
-     * Record immutabile che rappresenta una body part con AABB e colore
+     * Immutable record representing a body part with AABB and color
      */
     public record BodyPartAABB(HitHelper.BodyPart part, AABB box, int color) {}
 
-    // Color definitions (ARGB format) - sincronizzati con BodyPartRenderer
+    // Color definitions (ARGB format) - synchronized with BodyPartRenderer
     private static final int COLOR_HEAD = 0xFF00FFFF;  // Cyan
     private static final int COLOR_ARMS = 0xFFFFFF00;  // Yellow
     private static final int COLOR_BODY = 0xFF00FF00;  // Green
     private static final int COLOR_LEGS = 0xFFFF0000;  // Red
 
     /**
-     * Calcola tutte le body part AABBs per un'entità.
-     * SINGLE SOURCE OF TRUTH per body part boxes.
+     * Calculates all body part AABBs for an entity.
+     * SINGLE SOURCE OF TRUTH for body part boxes.
      *
-     * @param entity L'entità per cui calcolare le body parts
-     * @return Array di BodyPartAABB con tutte le parti del corpo
+     * @param entity The entity to calculate body parts for
+     * @return Array of BodyPartAABB with all body parts
      */
     @Nonnull
     public static BodyPartAABB[] calculateAllBodyParts(@Nonnull LivingEntity entity) {
@@ -78,7 +79,7 @@ public class BodyPartCalculator {
             }
         }
         // Fallback: ritorna la prima parte (non dovrebbe mai accadere)
-        return allParts[0];
+        return Objects.requireNonNull(allParts[0]);
     }
 
     /**
@@ -133,7 +134,7 @@ public class BodyPartCalculator {
         );
         parts.add(new BodyPartAABB(HitHelper.BodyPart.LEGS, legsBox, COLOR_LEGS));
 
-        return parts.toArray(new BodyPartAABB[0]);
+        return Objects.requireNonNull(parts.toArray(new BodyPartAABB[0]));
     }
 
     /**
@@ -197,7 +198,7 @@ public class BodyPartCalculator {
         }
         parts.add(new BodyPartAABB(HitHelper.BodyPart.LEGS, backBox, COLOR_LEGS));
 
-        return parts.toArray(new BodyPartAABB[0]);
+        return Objects.requireNonNull(parts.toArray(new BodyPartAABB[0]));
     }
 
     /**
@@ -243,7 +244,7 @@ public class BodyPartCalculator {
         );
         parts.add(new BodyPartAABB(HitHelper.BodyPart.LEGS, legsBox, COLOR_LEGS));
 
-        return parts.toArray(new BodyPartAABB[0]);
+        return Objects.requireNonNull(parts.toArray(new BodyPartAABB[0]));
     }
 
     /**

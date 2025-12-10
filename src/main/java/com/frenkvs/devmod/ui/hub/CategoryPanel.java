@@ -10,7 +10,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,12 +17,13 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 /**
- * Pannello sinistro con:
+ * Left panel with:
  * - Search box
- * - Filtri stato
- * - Lista categorie espandibili
- * - Lista test per categoria selezionata
+ * - Status filters
+ * - Expandable categories list
+ * - Test list for selected category
  */
+@SuppressWarnings("null") // Minecraft APIs lack null annotations
 public class CategoryPanel implements HubPanel {
 
     private final int x, y, width, height;
@@ -61,7 +61,7 @@ public class CategoryPanel implements HubPanel {
         this.onCategorySelected = onCategorySelected;
         this.onTestSelected = onTestSelected;
 
-        // Inizializza expanded category dallo state
+        // Initialize expanded category from state
         this.expandedCategory = state.getSelectedCategory();
 
         // Search box - creato ma non come widget (rendering manuale)
@@ -82,7 +82,7 @@ public class CategoryPanel implements HubPanel {
         // Background
         graphics.fill(x, y, x + width, y + height, UIConstants.Background.PANEL);
 
-        // Bordo destro separatore
+        // Right separator border
         graphics.fill(x + width - 1, y, x + width, y + height, UIConstants.Border.SEPARATOR);
 
         int contentY = y + PADDING;
@@ -101,11 +101,11 @@ public class CategoryPanel implements HubPanel {
         contentY = renderFilters(graphics, contentY, mouseX, mouseY);
         contentY += 6;
 
-        // Separatore
+        // Separator
         AxiomRenderer.drawSeparator(graphics, x + PADDING, contentY, width - PADDING * 2);
         contentY += 8;
 
-        // Lista categorie + test
+        // Categories + test list
         int listStartY = contentY;
         int listHeight = y + height - contentY - PADDING;
 
@@ -116,7 +116,7 @@ public class CategoryPanel implements HubPanel {
         int filterX = x + PADDING;
         int filterY = startY;
 
-        // Renderizza filtri in una riga
+        // Render filters in one row
         TestCase.TestStatus[] statuses = { TestCase.TestStatus.PENDING, TestCase.TestStatus.PASSED, TestCase.TestStatus.FAILED };
 
         for (TestCase.TestStatus status : statuses) {
@@ -133,7 +133,7 @@ public class CategoryPanel implements HubPanel {
                 graphics.drawString(font, "v", filterX + 2, filterY + 2, UIConstants.Text.WHITE, false);
             }
 
-            // Label abbreviato
+            // Abbreviated label
             String label = status.name().substring(0, 1);
             graphics.drawString(font, label, filterX + boxSize + 3, filterY + 3, UIConstants.Text.MUTED, false);
 
@@ -146,7 +146,7 @@ public class CategoryPanel implements HubPanel {
     private void renderCategoryList(GuiGraphics graphics, int startY, int listHeight, int mouseX, int mouseY) {
         Map<String, List<TestCase>> categories = getFilteredCategories();
 
-        // Scissor per scroll
+        // Scissor for scrolling
         graphics.enableScissor(x, startY, x + width, startY + listHeight);
 
         int itemY = startY - scrollOffset;
@@ -156,7 +156,7 @@ public class CategoryPanel implements HubPanel {
             String category = entry.getKey();
             List<TestCase> tests = entry.getValue();
 
-            // Categoria row
+            // Category row
             boolean catExpanded = category.equals(expandedCategory);
             boolean catHovered = isInBounds(mouseX, mouseY, x + PADDING, itemY, width - PADDING * 2, CATEGORY_ROW_HEIGHT)
                                 && mouseY >= startY && mouseY < startY + listHeight;
@@ -168,7 +168,7 @@ public class CategoryPanel implements HubPanel {
             itemY += CATEGORY_ROW_HEIGHT;
             totalHeight += CATEGORY_ROW_HEIGHT;
 
-            // Test rows se espansa
+            // Test rows if expanded
             if (catExpanded) {
                 for (TestCase test : tests) {
                     boolean testHovered = isInBounds(mouseX, mouseY, x + PADDING + 12, itemY, width - PADDING * 2 - 12, TEST_ROW_HEIGHT)
@@ -231,7 +231,7 @@ public class CategoryPanel implements HubPanel {
         int dotColor = test.getStatus().getColor();
         graphics.fill(rx, ry + 5, rx + 6, ry + 11, dotColor);
 
-        // Test name (troncato - keep at least 6 chars for readability)
+        // Test name (truncated - keep at least 6 chars for readability)
         String name = test.getName();
         int maxNameWidth = rwidth - 14;
         if (font.width(name) > maxNameWidth) {
@@ -343,7 +343,7 @@ public class CategoryPanel implements HubPanel {
             String category = entry.getKey();
             List<TestCase> tests = entry.getValue();
 
-            // Click su categoria
+            // Click on category
             if (my >= itemY && my < itemY + CATEGORY_ROW_HEIGHT) {
                 if (category.equals(expandedCategory)) {
                     expandedCategory = null;
@@ -355,7 +355,7 @@ public class CategoryPanel implements HubPanel {
             }
             itemY += CATEGORY_ROW_HEIGHT;
 
-            // Click su test (se espansa)
+            // Click on test (if expanded)
             if (category.equals(expandedCategory)) {
                 for (TestCase test : tests) {
                     if (my >= itemY && my < itemY + TEST_ROW_HEIGHT) {
@@ -397,7 +397,7 @@ public class CategoryPanel implements HubPanel {
 
     @Override
     public void refresh() {
-        // Forza refresh della lista
+        // Force list refresh
     }
 
     @Override

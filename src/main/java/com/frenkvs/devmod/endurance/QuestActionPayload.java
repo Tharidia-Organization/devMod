@@ -12,6 +12,7 @@ import java.util.Objects;
  * Payload sent from client to server for quest actions.
  * Handles: respawn choice, checkpoint choice, abandon quest.
  */
+@SuppressWarnings({"null", "unused"})
 public record QuestActionPayload(
     Action action
 ) implements CustomPacketPayload {

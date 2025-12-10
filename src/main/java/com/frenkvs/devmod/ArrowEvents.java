@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 public class ArrowEvents {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArrowEvents.class);
 
-    // Scheduled executor per evasion check (sostituisce Thread.sleep)
+    // Scheduled executor for evasion check (replaces Thread.sleep)
     private static final ScheduledExecutorService EVASION_SCHEDULER =
         Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "DevMod-ArrowEvasion");
@@ -45,36 +45,36 @@ public class ArrowEvents {
 
     @SubscribeEvent
     public static void onProjectileImpact(ProjectileImpactEvent event) {
-        // 1. Controlliamo se è una FRECCIA (o un tridente, balestra, ecc.)
+        // 1. Check if it's an ARROW (or trident, crossbow bolt, etc.)
         if (!(event.getEntity() instanceof AbstractArrow arrow)) return;
 
-        // Se siamo sul Client (grafica), non calcoliamo nulla, lasciamo fare al server
+        // If on Client (graphics), don't calculate anything, let server handle it
         if (arrow.level().isClientSide) return;
 
         ServerLevel level = (ServerLevel) arrow.level();
         HitResult result = event.getRayTraceResult();
         Vec3 hitPos = result.getLocation();
 
-        // 2. EFFETTO VISIVO (Goal: Ben visibile)
-        // Creiamo un'esplosione di particelle nel punto esatto dell'impatto
-        // "FLASH" è molto visibile, come un piccolo fulmine
+        // 2. VISUAL EFFECT (Goal: Very visible)
+        // Create particle explosion at exact impact point
+        // "FLASH" is very visible, like a small lightning
         level.sendParticles(Objects.requireNonNull(ParticleTypes.FLASH), hitPos.x, hitPos.y, hitPos.z, 1, 0, 0, 0, 0);
-        // Aggiungiamo un po' di fumo dorato (TOTEM_OF_UNDYING) per renderlo epico
+        // Add some golden smoke (TOTEM_OF_UNDYING) for epic effect
         level.sendParticles(Objects.requireNonNull(ParticleTypes.TOTEM_OF_UNDYING), hitPos.x, hitPos.y, hitPos.z, 10, 0.2, 0.2, 0.2, 0.1);
 
-        // 3. SUONO D'IMPATTO
+        // 3. IMPACT SOUND
         level.playSound(null, hitPos.x, hitPos.y, hitPos.z, Objects.requireNonNull(SoundEvents.AMETHYST_BLOCK_HIT), SoundSource.PLAYERS, 1.0f, 2.0f);
 
 
-        // 4. CALCOLO PARTE DEL CORPO (Solo se colpiamo un'entità)
+        // 4. BODY PART CALCULATION (Only if hitting an entity)
         if (result.getType() == HitResult.Type.ENTITY) {
             EntityHitResult entityResult = (EntityHitResult) result;
             Entity target = entityResult.getEntity();
 
-            // Chi ha sparato la freccia? (Per mandargli il messaggio)
+            // Who fired the arrow? (To send them the message)
             if (arrow.getOwner() instanceof ServerPlayer shooter && target instanceof LivingEntity victim) {
 
-                // Track per rilevare evasione Enderman
+                // Track to detect Enderman evasion
                 trackPotentialEvasion(shooter, victim, hitPos);
 
                 // UNIFIED DETECTION: Use the same precise AABB raycast algorithm as DamageHandler
@@ -88,7 +88,7 @@ public class ArrowEvents {
                 switch (bodyPartEnum) {
                     case HEAD:
                         bodyPartKey = "devmod.arrow.head_headshot";
-                        // Suono speciale "DING" per headshot
+                        // Special "DING" sound for headshot
                         level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(), Objects.requireNonNull(SoundEvents.ARROW_HIT_PLAYER), SoundSource.PLAYERS, 1.0f, 1.5f);
                         break;
 
@@ -108,49 +108,49 @@ public class ArrowEvents {
 
                 String bodyPart = I18n.translate(bodyPartKey).getString();
 
-                // 5. MESSAGGIO OVERLAY (Action Bar - quella sopra l'inventario)
+                // 5. OVERLAY MESSAGE (Action Bar - the one above the inventory)
                 shooter.sendSystemMessage(I18n.translate("devmod.arrow.hit_on", victim.getName().getString(), bodyPart));
 
-                // Messaggio visivo veloce sopra la hotbar
+                // Quick visual message above the hotbar
                 shooter.displayClientMessage(I18n.translate("devmod.arrow.hit_indicator", bodyPart), true);
             }
         }
     }
 
-    // === Tracking per rilevare evasioni Enderman con frecce ===
-    // Record per salvare i dati al momento dell'impatto
+    // === Tracking to detect Enderman evasions with arrows ===
+    // Record to save data at the moment of impact
     private record PendingArrowHit(long timestamp, Vec3 hitPos, Vec3 targetPos, ServerPlayer shooter) {}
 
-    // Mappa: targetId -> dati dell'impatto
+    // Map: targetId -> impact data
     private static final Map<Integer, PendingArrowHit> pendingArrowHits = new ConcurrentHashMap<>();
 
     /**
-     * Registra un potenziale colpo freccia su Enderman per verificare l'evasione.
-     * IMPORTANTE: Salva la posizione del target ORA, prima che si teletrasporti!
+     * Registers a potential arrow hit on Enderman to check for evasion.
+     * IMPORTANT: Save the target's position NOW, before it teleports!
      */
     @SuppressWarnings("null") // Vec3 from record fields are guaranteed non-null
     private static void trackPotentialEvasion(ServerPlayer shooter, LivingEntity target, Vec3 hitPos) {
         if (!(target instanceof EnderMan)) return;
 
         long now = System.currentTimeMillis();
-        // Salva la posizione del target al momento dell'impatto!
+        // Save the target's position at the moment of impact!
         Vec3 targetPos = target.position().add(0, target.getBbHeight() * 0.5, 0);
 
         pendingArrowHits.put(target.getId(), new PendingArrowHit(now, hitPos, targetPos, shooter));
 
         LOGGER.debug("Arrow hit on Enderman tracked at hitPos={}, targetPos={}", hitPos, targetPos);
 
-        // Schedula controllo evasione dopo 150ms (usa ScheduledExecutor invece di Thread.sleep)
+        // Schedule evasion check after 150ms (uses ScheduledExecutor instead of Thread.sleep)
         final int targetId = target.getId();
         EVASION_SCHEDULER.schedule(() -> {
             PendingArrowHit pending = pendingArrowHits.remove(targetId);
             if (pending == null) return;
 
-            // Controlla se l'Enderman si è mosso significativamente (teletrasporto)
-            // NOTA: target potrebbe non essere più valido, usiamo i dati salvati
+            // Check if the Enderman moved significantly (teleport)
+            // NOTE: target may no longer be valid, we use saved data
             Vec3 currentPos = target.isAlive() ? target.position() : pending.targetPos;
             double distMoved = currentPos.distanceTo(pending.targetPos);
-            boolean probablyEvaded = distMoved > 5.0; // Se si è mosso di più di 5 blocchi, ha evaso
+            boolean probablyEvaded = distMoved > 5.0; // If it moved more than 5 blocks, it evaded
 
             LOGGER.debug("Enderman moved {} blocks, evaded={}", String.format("%.1f", distMoved), probablyEvaded);
 

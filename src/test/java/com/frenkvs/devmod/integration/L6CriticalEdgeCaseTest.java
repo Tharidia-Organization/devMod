@@ -774,8 +774,6 @@ public class L6CriticalEdgeCaseTest {
                     throw new RuntimeException("Instance creation failed");
                 }
 
-                instances.put(instanceId, InstanceState.CREATING);
-
             } catch (Exception e) {
                 // Rollback
                 balance.set(originalBalance);

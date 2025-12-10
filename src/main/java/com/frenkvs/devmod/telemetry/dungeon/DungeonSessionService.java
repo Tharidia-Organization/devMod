@@ -58,7 +58,7 @@ public class DungeonSessionService {
         session.endMs = System.currentTimeMillis();
 
         return Optional.of(new SessionResult(
-            playerName, session.dungeonId, outcome,
+            playerName, session.dungeonId, session.outcome,
             session.startMs, session.endMs, session.endMs - session.startMs,
             session.deaths, session.kills,
             session.totalDamageDealt, session.totalDamageTaken,
@@ -160,7 +160,7 @@ public class DungeonSessionService {
         enterRoom(playerId, roomId);
 
         if (isBacktrack) {
-            return Optional.of(new BacktrackInfo(roomId, tracker.backtrackCount));
+            return Optional.of(new BacktrackInfo(roomId, tracker.backtrackCount, tracker.lastBacktrackMs));
         }
         return Optional.empty();
     }
@@ -201,7 +201,7 @@ public class DungeonSessionService {
     /**
      * Info about a backtrack event.
      */
-    public record BacktrackInfo(String roomId, int backtrackCount) {}
+    public record BacktrackInfo(String roomId, int backtrackCount, long timestampMs) {}
 
     /**
      * Result of a completed dungeon session.

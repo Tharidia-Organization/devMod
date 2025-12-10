@@ -7,6 +7,8 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.Objects;
+
 /**
  * Payload for syncing debug feature state from server to client.
  * Tells the client to enable/disable a specific debug renderer.
@@ -14,12 +16,12 @@ import net.minecraft.resources.ResourceLocation;
 public record DebugSyncPayload(String featureId, boolean enabled) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<DebugSyncPayload> TYPE =
-        new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "debug_sync"));
+        new CustomPacketPayload.Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "debug_sync")));
 
     public static final StreamCodec<ByteBuf, DebugSyncPayload> STREAM_CODEC = StreamCodec.composite(
-        ByteBufCodecs.STRING_UTF8, DebugSyncPayload::featureId,
-        ByteBufCodecs.BOOL, DebugSyncPayload::enabled,
-        DebugSyncPayload::new
+        Objects.requireNonNull(ByteBufCodecs.STRING_UTF8), DebugSyncPayload::featureId,
+        Objects.requireNonNull(ByteBufCodecs.BOOL), DebugSyncPayload::enabled,
+        (id, enabled) -> new DebugSyncPayload(id, Boolean.TRUE.equals(enabled))
     );
 
     @Override

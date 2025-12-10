@@ -23,24 +23,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * In-game UI per definire Room Bounds.
+ * In-game UI for defining Room Bounds.
  * Uses standard UIConstants for consistent theming.
  *
- * Permette di:
- * - Impostare Punto A (angolo min) dalla posizione del player
- * - Impostare Punto B (angolo max) dalla posizione del player
- * - Dare un nome alla room
- * - Salvare direttamente nel file telemetry_rooms.json
- * - Visualizzare la lista delle room esistenti
+ * Allows:
+ * - Set Point A (min corner) from player position
+ * - Set Point B (max corner) from player position
+ * - Give a name to the room
+ * - Save directly to telemetry_rooms.json file
+ * - View list of existing rooms
  *
- * Keybind: Shift+R (quando Room Bounds visualizer è attivo)
+ * Keybind: Shift+R (when Room Bounds visualizer is active)
  */
 @SuppressWarnings("null")
 public class RoomBoundsEditorScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomBoundsEditorScreen.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    // === Colori UI - Standardized to UIConstants ===
+    // === UI Colors - Standardized to UIConstants ===
     private static final int PANEL_BG = UIConstants.Background.PANEL_SOLID;
     private static final int PANEL_BORDER = UIConstants.Border.DEFAULT;  // Blue instead of green
     private static final int TEXT_TITLE = UIConstants.Text.TITLE;  // Cyan
@@ -50,12 +50,12 @@ public class RoomBoundsEditorScreen extends Screen {
     private static final int TEXT_WARNING = UIConstants.Accent.ORANGE;
     private static final int TEXT_ERROR = UIConstants.Accent.RED;
 
-    // === Dimensioni ===
+    // === Dimensions ===
     private static final int PANEL_WIDTH = 320;
     private static final int PANEL_HEIGHT = 280;
 
     // === State ===
-    // STATIC: Persiste tra aperture della schermata così l'utente può:
+    // STATIC: Persists between screen openings so the user can:
     // 1. Aprire schermata → Set Point A → Chiudere
     // 2. Camminare all'altro angolo
     // 3. Riaprire schermata → Set Point B → Salvare

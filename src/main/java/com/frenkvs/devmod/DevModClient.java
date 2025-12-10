@@ -11,6 +11,8 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
+import com.frenkvs.devmod.hud.ComboDecayOverlay;
+import com.frenkvs.devmod.hud.RecordBannerOverlay;
 
 // This class will not load on dedicated servers. Accessing client side code from here is safe.
 @Mod(value = DevMod.MODID, dist = Dist.CLIENT)
@@ -24,6 +26,10 @@ public class DevModClient {
         // The config screen is accessed by going to the Mods screen > clicking on your mod > clicking on config.
         // Do not forget to add translations for your config options to the en_us.json file.
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
+
+        // HUD overlays (mod event bus)
+        modEventBus.addListener(ComboDecayOverlay::registerOverlay);
+        modEventBus.addListener(RecordBannerOverlay::registerOverlay);
 
         // NOTA: I keybind sono registrati in DevMod.java per evitare problemi di caricamento
     }

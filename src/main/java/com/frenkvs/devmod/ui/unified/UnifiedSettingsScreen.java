@@ -22,8 +22,8 @@ import java.util.EnumMap;
 import java.util.Map;
 
 /**
- * Schermata unificata per tutte le impostazioni del mod.
- * Layout con sidebar per navigazione e area contenuto per le pagine.
+ * Unified settings screen for all mod settings.
+ * Layout with sidebar for navigation and content area for pages.
  */
 @SuppressWarnings("null")
 public class UnifiedSettingsScreen extends Screen {
@@ -38,7 +38,6 @@ public class UnifiedSettingsScreen extends Screen {
     // === State ===
     private SettingsCategory currentCategory = SettingsCategory.GENERAL;
     private final Map<SettingsCategory, SettingsPage> pages = new EnumMap<>(SettingsCategory.class);
-    private int scrollOffset = 0;
     private int mouseX, mouseY;
 
     // Reset confirmation dialog
@@ -53,11 +52,9 @@ public class UnifiedSettingsScreen extends Screen {
 
     // Animation state
     private float categoryTransitionProgress = 1.0f;
-    private SettingsCategory transitionFromCategory = null;
 
     // Tooltip state
     private String tooltipText = "";
-    private int tooltipX, tooltipY;
     private long tooltipShowTime = 0;
     private static final long TOOLTIP_DELAY_MS = 500;
 
@@ -84,7 +81,7 @@ public class UnifiedSettingsScreen extends Screen {
     protected void init() {
         super.init();
 
-        // Inizializza le pagine
+        // Initialize pages
         pages.put(SettingsCategory.GENERAL, new GeneralSettingsPage());
         pages.put(SettingsCategory.DEBUG, new DebugOverlaysPage());
         pages.put(SettingsCategory.VISUALIZERS, new VisualizersPage());
@@ -93,7 +90,7 @@ public class UnifiedSettingsScreen extends Screen {
         pages.put(SettingsCategory.TELEMETRY, new TelemetryPage());
         pages.put(SettingsCategory.KEYBINDS, new KeybindsPage());
 
-        // Inizializza la pagina corrente
+        // Initialize the current page
         SettingsPage currentPage = pages.get(currentCategory);
         if (currentPage != null) {
             currentPage.init();
@@ -109,7 +106,6 @@ public class UnifiedSettingsScreen extends Screen {
             categoryTransitionProgress += 0.15f;
             if (categoryTransitionProgress > 1.0f) {
                 categoryTransitionProgress = 1.0f;
-                transitionFromCategory = null;
             }
         }
 
@@ -125,7 +121,7 @@ public class UnifiedSettingsScreen extends Screen {
         this.mouseX = mouseX;
         this.mouseY = mouseY;
 
-        // Background scuro
+        // Dark background
         graphics.fill(0, 0, width, height, UIConstants.Background.SCREEN);
 
         // Header
@@ -134,11 +130,11 @@ public class UnifiedSettingsScreen extends Screen {
         // Sidebar
         renderSidebar(graphics, mouseX, mouseY);
 
-        // Separatore verticale
+        // Vertical separator
         int separatorX = SIDEBAR_WIDTH;
         graphics.fill(separatorX, HEADER_HEIGHT, separatorX + 1, height - FOOTER_HEIGHT, UIConstants.Border.DEFAULT);
 
-        // Area contenuto
+        // Content area
         renderContent(graphics, mouseX, mouseY);
 
         // Footer
@@ -178,8 +174,6 @@ public class UnifiedSettingsScreen extends Screen {
                     if (tooltipShowTime == 0) {
                         tooltipShowTime = System.currentTimeMillis();
                         tooltipText = category.getDescription();
-                        tooltipX = mouseX;
-                        tooltipY = mouseY;
                     }
 
                     if (System.currentTimeMillis() - tooltipShowTime >= TOOLTIP_DELAY_MS && !tooltipText.isEmpty()) {
@@ -523,10 +517,10 @@ public class UnifiedSettingsScreen extends Screen {
         graphics.fill(0, 0, width, HEADER_HEIGHT, UIConstants.Background.HEADER);
         graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, UIConstants.Border.DEFAULT);
 
-        // Titolo
+        // Title
         graphics.drawString(font, "VOXEL-LAB Settings", PADDING, (HEADER_HEIGHT - 9) / 2, UIConstants.Text.TITLE, false);
 
-        // Breadcrumb a destra
+        // Breadcrumb on the right
         String breadcrumb = currentCategory.getLabel();
         int breadcrumbWidth = font.width(breadcrumb);
         graphics.drawString(font, breadcrumb, width - breadcrumbWidth - PADDING, (HEADER_HEIGHT - 9) / 2,
@@ -605,14 +599,14 @@ public class UnifiedSettingsScreen extends Screen {
         if (selected) {
             graphics.fill(x - 2, y - 2, x + itemWidth + 2, y + SIDEBAR_ITEM_HEIGHT - 6,
                 applyAlpha(category.getAccentColor(), 0.2f));
-            // Accent bar a sinistra
+            // Accent bar on the left
             graphics.fill(0, y - 2, 3, y + SIDEBAR_ITEM_HEIGHT - 6, category.getAccentColor());
         } else if (hovered && hasPage) {
             graphics.fill(x - 2, y - 2, x + itemWidth + 2, y + SIDEBAR_ITEM_HEIGHT - 6,
                 UIConstants.Background.HOVER);
         }
 
-        // Icona
+        // Icon
         int iconColor = selected ? category.getAccentColor() :
             (hasPage ? UIConstants.Text.SECONDARY : UIConstants.Text.DISABLED);
         graphics.drawString(font, "[" + category.getIcon() + "]", x, y + 4, iconColor, false);
@@ -622,7 +616,7 @@ public class UnifiedSettingsScreen extends Screen {
             (hasPage ? UIConstants.Text.SECONDARY : UIConstants.Text.DISABLED);
         graphics.drawString(font, category.getLabel(), x + 28, y + 4, labelColor, false);
 
-        // Indicatore "coming soon" per pagine non implementate
+        // "coming soon" indicator for unimplemented pages
         if (!hasPage) {
             String soon = "soon";
             int soonWidth = font.width(soon);
@@ -650,7 +644,7 @@ public class UnifiedSettingsScreen extends Screen {
             animOffset = (int) ((1.0f - categoryTransitionProgress) * 20);
         }
 
-        // Titolo pagina
+        // Page title
         SettingsPage page = pages.get(currentCategory);
         String pageTitle = page != null ? page.getTitle() : currentCategory.getLabel();
 
@@ -659,16 +653,16 @@ public class UnifiedSettingsScreen extends Screen {
         int titleColor = (titleAlpha << 24) | (UIConstants.Text.PRIMARY & 0x00FFFFFF);
         graphics.drawString(font, pageTitle, contentX + animOffset, contentY, titleColor, false);
 
-        // Descrizione (animated)
+        // Description (animated)
         int descAlpha = (int) (255 * categoryTransitionProgress * 0.7f);
         int descColor = (descAlpha << 24) | (UIConstants.Text.MUTED & 0x00FFFFFF);
         graphics.drawString(font, currentCategory.getDescription(), contentX + animOffset, contentY + 12, descColor, false);
 
-        // Separatore
+        // Separator
         int sepY = contentY + 28;
         graphics.fill(contentX, sepY, contentX + contentWidth, sepY + 1, UIConstants.Border.SEPARATOR);
 
-        // Contenuto pagina
+        // Page content
         int pageY = sepY + PADDING;
         int pageHeight = contentHeight - 40;
 
@@ -678,7 +672,7 @@ public class UnifiedSettingsScreen extends Screen {
                 page.render(graphics, font, contentX + animOffset, pageY, contentWidth, pageHeight, mouseX, mouseY);
             }
         } else {
-            // Placeholder per pagine non implementate
+            // Placeholder for unimplemented pages
             String placeholder = "This section is coming soon...";
             int placeholderWidth = font.width(placeholder);
             graphics.drawString(font, placeholder,
@@ -697,7 +691,7 @@ public class UnifiedSettingsScreen extends Screen {
         graphics.fill(0, footerY, width, height, UIConstants.Background.HEADER);
         graphics.fill(0, footerY, width, footerY + 1, UIConstants.Border.DEFAULT);
 
-        // Bottoni a sinistra
+        // Left buttons
         int buttonY = footerY + (FOOTER_HEIGHT - UIConstants.Size.BUTTON_HEIGHT) / 2;
         int buttonX = PADDING;
 
@@ -734,7 +728,7 @@ public class UnifiedSettingsScreen extends Screen {
         graphics.drawString(font, factoryText, buttonX + (100 - factoryTextWidth) / 2,
             buttonY + (UIConstants.Size.BUTTON_HEIGHT - 8) / 2, UIConstants.Text.WHITE, false);
 
-        // Bottoni a destra
+        // Right buttons
         int rightButtonX = width - PADDING - 80;
 
         // Close button
@@ -748,7 +742,7 @@ public class UnifiedSettingsScreen extends Screen {
         AxiomRenderer.drawButton(graphics, font, rightButtonX, buttonY, 80, UIConstants.Size.BUTTON_HEIGHT,
             "Apply", applyHovered, hasUnsavedChanges());
 
-        // Hint a centro
+        // Hint at center
         String hint = "Press ESC or K to close";
         int hintWidth = font.width(hint);
         graphics.drawString(font, hint, (width - hintWidth) / 2, buttonY + 5, UIConstants.Text.MUTED, false);
@@ -900,7 +894,7 @@ public class UnifiedSettingsScreen extends Screen {
             }
         }
 
-        // K per chiudere (stesso tasto per aprire)
+        // K to close (same key used to open)
         if (keyCode == 75 && !searchFocused) { // K key
             onClose();
             return true;
@@ -918,7 +912,7 @@ public class UnifiedSettingsScreen extends Screen {
             }
         }
 
-        // Passa alla pagina corrente
+        // Pass to current page
         SettingsPage page = pages.get(currentCategory);
         if (page != null && page.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
@@ -995,21 +989,19 @@ public class UnifiedSettingsScreen extends Screen {
 
     private void selectCategory(SettingsCategory category) {
         if (category != currentCategory) {
-            // Chiudi pagina corrente
+            // Close current page
             SettingsPage oldPage = pages.get(currentCategory);
             if (oldPage != null) {
                 oldPage.onClose();
             }
 
             // Start transition animation
-            transitionFromCategory = currentCategory;
             categoryTransitionProgress = 0.0f;
 
-            // Cambia categoria
+            // Change category
             currentCategory = category;
-            scrollOffset = 0;
 
-            // Inizializza nuova pagina
+            // Initialize new page
             SettingsPage newPage = pages.get(currentCategory);
             if (newPage != null) {
                 newPage.init();
@@ -1044,7 +1036,7 @@ public class UnifiedSettingsScreen extends Screen {
             mc.options.menuBackgroundBlurriness().set(originalBlurValue);
         }
 
-        // Salva modifiche se necessario
+        // Save changes if needed
         for (SettingsPage page : pages.values()) {
             if (page.hasUnsavedChanges()) {
                 page.saveChanges();

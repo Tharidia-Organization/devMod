@@ -13,6 +13,7 @@ import java.util.Map;
  * Network payload sent from server to client with player's personal records.
  * Used to display "Best: Wave X | Y pts" in the EnduranceQuestScreen.
  */
+@SuppressWarnings({"null", "unused"})
 public record PersonalRecordsSyncPayload(
     int totalQuestsAttempted,
     int totalQuestsCompleted,

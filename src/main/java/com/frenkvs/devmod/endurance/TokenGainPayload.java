@@ -10,6 +10,7 @@ import net.minecraft.resources.ResourceLocation;
  * Payload sent from server to client when tokens are gained.
  * Triggers the floating "+X Tokens" animation.
  */
+@SuppressWarnings({"null", "unused"})
 public record TokenGainPayload(int amount) implements CustomPacketPayload {
 
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "token_gain");

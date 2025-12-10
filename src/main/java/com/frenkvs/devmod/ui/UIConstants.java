@@ -16,7 +16,7 @@ public final class UIConstants {
         public static final int SCREEN = 0xE01A1A2E;        // Blu scuro (Impact style)
         public static final int PANEL = 0xCC1A1A2E;         // Pannello 80% opacity
         public static final int PANEL_SOLID = 0xFF1A1A2E;   // Pannello 100% opacity
-        public static final int HEADER = 0xFF252538;        // Header leggermente più chiaro
+        public static final int HEADER = 0xFF252538;        // Header slightly lighter
         public static final int INPUT = 0xFF151525;         // Input field scuro
         public static final int HOVER = 0xFF2A2A42;         // Hover blu scuro
         public static final int ACTIVE = 0xFF3D3D5A;        // Active state
@@ -29,7 +29,7 @@ public final class UIConstants {
     // === BORDER COLORS (Impact UI Style) ===
     public static final class Border {
         public static final int DEFAULT = 0xFF3D5AFE;       // Blu elettrico (Impact main)
-        public static final int LIGHT = 0xFF5C7AFF;         // Variante più chiara
+        public static final int LIGHT = 0xFF5C7AFF;         // Lighter variant
         public static final int ACCENT = 0xFF00FFFF;        // Cyan (bordo accent/hover)
         public static final int SEPARATOR = 0x803D5AFE;     // Separatore 50% alpha
         public static final int GLOW = 0x553D5AFE;          // Glow border
@@ -68,7 +68,7 @@ public final class UIConstants {
     public static final class Toggle {
         public static final int ON = Accent.GREEN;          // Verde Impact
         public static final int OFF = Background.INPUT;     // Scuro
-        public static final int ON_HOVER = 0xFF44FF44;      // Verde più chiaro
+        public static final int ON_HOVER = 0xFF44FF44;      // Lighter green
         public static final int OFF_HOVER = Background.HOVER;
         private Toggle() {}
     }

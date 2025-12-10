@@ -11,6 +11,9 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
 
+import javax.annotation.Nonnull;
+import java.util.Objects;
+
 /**
  * Combat settings page - weapon stats and damage configuration.
  * Shows current weapon stats and allows quick access to weapon editor.
@@ -40,7 +43,7 @@ public class CombatSettingsPage implements SettingsPage {
     }
 
     @Override
-    public void render(GuiGraphics graphics, Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+    public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
         // Store dimensions for scroll calculations
         lastContentY = y;
         lastContentHeight = height;
@@ -154,11 +157,11 @@ public class CombatSettingsPage implements SettingsPage {
         graphics.fill(x, thumbY, x + barWidth, thumbY + thumbHeight, thumbColor);
     }
 
-    private int renderStatRow(GuiGraphics graphics, Font font, int x, int y, int width,
+    private int renderStatRow(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
                                String label, String value, int valueColor) {
         graphics.drawString(font, label, x, y + 2, UIConstants.Text.SECONDARY, false);
 
-        int valueWidth = font.width(value);
+        int valueWidth = font.width(Objects.requireNonNull(value));
         graphics.drawString(font, value, x + width - valueWidth - 20, y + 2, valueColor, false);
 
         return y + ROW_HEIGHT;

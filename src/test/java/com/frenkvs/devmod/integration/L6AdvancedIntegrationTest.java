@@ -1,13 +1,10 @@
 package com.frenkvs.devmod.integration;
 
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
-import java.util.function.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -750,12 +747,14 @@ public class L6AdvancedIntegrationTest {
                             }
                             case 1 -> {
                                 // Add kills
-                                sim.playerKills.merge(playerId, random.nextInt(1, 10), Integer::sum);
+                                sim.playerKills.merge(playerId, random.nextInt(1, 10),
+                                    (prev, inc) -> (prev == null ? 0 : prev) + (inc == null ? 0 : inc));
                             }
                             case 2 -> {
                                 // Add style points
                                 int points = random.nextInt(100, 500);
-                                sim.playerStyleScores.merge(playerId, points, Integer::sum);
+                                sim.playerStyleScores.merge(playerId, points,
+                                    (prev, inc) -> (prev == null ? 0 : prev) + (inc == null ? 0 : inc));
                                 sim.playerStyleRanks.put(playerId,
                                     StyleRank.fromScore(sim.playerStyleScores.getOrDefault(playerId, 0)));
                             }
@@ -923,8 +922,10 @@ public class L6AdvancedIntegrationTest {
             executor.shutdown();
 
             // Should be exact
-            assertEquals(incrementCount * incrementValue, atomicScore.get(),
-                "Atomic increment should produce exact result");
+            int expectedScore = incrementCount * incrementValue;
+            assertEquals(expectedScore, atomicScore.get(), "Atomic increment should produce exact result");
+            sim.playerStyleScores.put(playerId, atomicScore.get());
+            assertEquals(expectedScore, sim.playerStyleScores.get(playerId));
         }
 
         @Test
@@ -954,8 +955,7 @@ public class L6AdvancedIntegrationTest {
                         Set<String> currentPerks = sim.playerPerks.get(playerId);
                         if (currentPerks != null) {
                             for (String perk : currentPerks) {
-                                Integer stacks = sim.perkStacks.get(playerId).get(perk);
-                                // Just reading, shouldn't throw
+                                sim.perkStacks.get(playerId).get(perk); // Just reading, shouldn't throw
                             }
                         }
                     } catch (ConcurrentModificationException e) {
@@ -1108,10 +1108,6 @@ public class L6AdvancedIntegrationTest {
                 // Simulate failure mid-operation
                 if (true) throw new RuntimeException("Simulated failure");
 
-                // These would not execute
-                sim.addCurrency(playerId, Currency.TOKENS, 1000);
-                sim.playerQuestStates.put(playerId, QuestState.COMPLETED);
-
             } catch (RuntimeException e) {
                 // Recovery: roll back to ACTIVE state
                 sim.playerQuestStates.put(playerId, QuestState.ACTIVE);
@@ -1209,7 +1205,7 @@ public class L6AdvancedIntegrationTest {
 
             // Verify transaction completed
             assertTrue(success);
-            assertEquals(500, sim.getCurrency(playerId, Currency.TOKENS)); // 1000 - 500
+            assertEquals(originalBalance - cost, sim.getCurrency(playerId, Currency.TOKENS)); // 1000 - 500
             assertEquals(QuestState.ACTIVE, sim.playerQuestStates.get(playerId));
         }
 

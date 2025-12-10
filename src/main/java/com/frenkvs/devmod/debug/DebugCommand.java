@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.Objects;
 
 /**
  * Command handler for /devdebug command.
@@ -32,7 +33,7 @@ public class DebugCommand {
                     .executes(DebugCommand::listFeatures))
                 .then(Commands.literal("off")
                     .executes(DebugCommand::disableAll))
-                .then(Commands.argument("feature", StringArgumentType.word())
+                .then(Commands.argument("feature", Objects.requireNonNull(StringArgumentType.word()))
                     .suggests(DebugCommand::suggestFeatures)
                     .executes(DebugCommand::toggleFeature))
                 .executes(DebugCommand::showHelp)
@@ -61,13 +62,13 @@ public class DebugCommand {
         CommandSourceStack source = context.getSource();
 
         if (!(source.getEntity() instanceof ServerPlayer player)) {
-            source.sendFailure(Component.literal("This command must be run by a player"));
+            source.sendFailure(Objects.requireNonNull(Component.literal("This command must be run by a player")));
             return 0;
         }
 
         Set<DebugFeature> enabled = DebugManager.INSTANCE.getEnabledFeatures(player);
 
-        source.sendSuccess(() -> Component.literal("§e=== Debug Features Status ==="), false);
+        source.sendSuccess(() -> Objects.requireNonNull(Component.literal("§e=== Debug Features Status ===")), false);
 
         for (DebugFeature feature : DebugFeature.values()) {
             boolean isEnabled = enabled.contains(feature);
@@ -75,14 +76,14 @@ public class DebugCommand {
             String featureName = feature.getDisplayName();
             String description = feature.getDescription();
 
-            source.sendSuccess(() -> Component.literal(
+            source.sendSuccess(() -> Objects.requireNonNull(Component.literal(
                 status + " §f" + featureName + " §8- " + description
-            ), false);
+            )), false);
         }
 
-        source.sendSuccess(() -> Component.literal(
+        source.sendSuccess(() -> Objects.requireNonNull(Component.literal(
             "§7Active features: §f" + enabled.size() + "/" + DebugFeature.values().length
-        ), false);
+        )), false);
 
         return 1;
     }
@@ -91,7 +92,7 @@ public class DebugCommand {
         CommandSourceStack source = context.getSource();
 
         if (!(source.getEntity() instanceof ServerPlayer player)) {
-            source.sendFailure(Component.literal("This command must be run by a player"));
+            source.sendFailure(Objects.requireNonNull(Component.literal("This command must be run by a player")));
             return 0;
         }
 
@@ -108,9 +109,9 @@ public class DebugCommand {
         }
 
         if (feature == null) {
-            source.sendFailure(Component.literal(
+            source.sendFailure(Objects.requireNonNull(Component.literal(
                 "Unknown debug feature: " + featureId + ". Use /devdebug list to see available features."
-            ));
+            )));
             return 0;
         }
 
@@ -121,14 +122,14 @@ public class DebugCommand {
 
         String status = nowEnabled ? "§aENABLED" : "§cDISABLED";
         final DebugFeature finalFeature = feature;
-        source.sendSuccess(() -> Component.literal(
+        source.sendSuccess(() -> Objects.requireNonNull(Component.literal(
             "§7[Debug] §f" + finalFeature.getDisplayName() + " " + status
-        ), false);
+        )), false);
 
         if (nowEnabled) {
-            source.sendSuccess(() -> Component.literal(
+            source.sendSuccess(() -> Objects.requireNonNull(Component.literal(
                 "§8" + finalFeature.getDescription()
-            ), false);
+            )), false);
         }
 
         return 1;
@@ -138,7 +139,7 @@ public class DebugCommand {
         CommandSourceStack source = context.getSource();
 
         if (!(source.getEntity() instanceof ServerPlayer player)) {
-            source.sendFailure(Component.literal("This command must be run by a player"));
+            source.sendFailure(Objects.requireNonNull(Component.literal("This command must be run by a player")));
             return 0;
         }
 
@@ -151,9 +152,9 @@ public class DebugCommand {
             PacketDistributor.sendToPlayer(player, new DebugSyncPayload(feature.getId(), false));
         }
 
-        source.sendSuccess(() -> Component.literal(
+        source.sendSuccess(() -> Objects.requireNonNull(Component.literal(
             "§7[Debug] §cDisabled all " + count + " debug features"
-        ), false);
+        )), false);
 
         return 1;
     }

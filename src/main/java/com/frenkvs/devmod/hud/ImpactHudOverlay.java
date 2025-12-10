@@ -16,12 +16,12 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 /**
- * HUD Overlay per mostrare l'analisi dell'impatto in tempo reale.
+ * HUD Overlay to show real-time impact analysis.
  *
- * Registrato sopra il crosshair, mostra:
- * - Impact Analysis Panel (breakdown danno)
+ * Registered above the crosshair, shows:
+ * - Impact Analysis Panel (damage breakdown)
  * - Mod Specifics Panel (Pehkui, Better Combat)
- * - Entity Info (opzionale)
+ * - Entity Info (optional)
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 // Minecraft API methods are not annotated but never return null in practice
@@ -31,18 +31,18 @@ public class ImpactHudOverlay {
     private static final ResourceLocation LAYER_ID =
         ResourceLocation.fromNamespaceAndPath("devmod", "impact_analysis");
 
-    // === Colori UI (stile immagine di riferimento) ===
-    private static final int PANEL_BG = 0xCC1A1A2E;           // Blu scuro 80% opacity
-    private static final int PANEL_BORDER = 0xFF3D5AFE;       // Blu elettrico
+    // === UI Colors (reference image style) ===
+    private static final int PANEL_BG = 0xCC1A1A2E;           // Dark blue 80% opacity
+    private static final int PANEL_BORDER = 0xFF3D5AFE;       // Electric blue
     private static final int PANEL_BORDER_GLOW = 0x553D5AFE;  // Glow border
 
     private static final int TEXT_TITLE = 0xFF00FFFF;         // Cyan
-    private static final int TEXT_NORMAL = 0xFFFFFFFF;        // Bianco
-    private static final int TEXT_VALUE = 0xFF00FF00;         // Verde
-    private static final int TEXT_FORMULA = 0xFFFFD700;       // Oro
-    private static final int TEXT_MUTED = 0xFFAAAAAA;         // Grigio
+    private static final int TEXT_NORMAL = 0xFFFFFFFF;        // White
+    private static final int TEXT_VALUE = 0xFF00FF00;         // Green
+    private static final int TEXT_FORMULA = 0xFFFFD700;       // Gold
+    private static final int TEXT_MUTED = 0xFFAAAAAA;         // Gray
 
-    // === Dimensioni ===
+    // === Dimensions ===
     private static final int PANEL_PADDING = 8;
     private static final int LINE_HEIGHT = 10;
     private static final int SECTION_SPACING = 6;
@@ -50,7 +50,7 @@ public class ImpactHudOverlay {
     // === Toggle (initialized from config) ===
     private static boolean enabled = getConfigEnabled();
 
-    // === Posizione ultimo pannello renderizzato (per hit-test crosshair) ===
+    // === Last rendered panel position (for crosshair hit-test) ===
     private static int lastPanelX = 0;
     private static int lastPanelY = 0;
     private static int lastPanelWidth = 0;
@@ -71,8 +71,8 @@ public class ImpactHudOverlay {
     }
 
     /**
-     * Metodo di rendering principale chiamato ogni frame.
-     * NeoForge 1.21: usa DeltaTracker invece di float partialTick
+     * Main rendering method called every frame.
+     * NeoForge 1.21: uses DeltaTracker instead of float partialTick
      */
     private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
         if (!enabled) return;
@@ -87,33 +87,33 @@ public class ImpactHudOverlay {
         int screenHeight = graphics.guiHeight();
         Font font = mc.font;
 
-        // Calcola dimensioni pannello
+        // Calculate panel dimensions
         int panelWidth = 260;
         int panelHeight = calculatePanelHeight(data, font);
 
-        // Posizione: angolo destro con margine
+        // Position: right corner with margin
         int panelX = screenWidth - panelWidth - 10;
         int panelY = 10;
 
-        // Calcola altezza totale (include mod specifics se presente)
+        // Calculate total height (includes mod specifics if present)
         int totalHeight = panelHeight;
         if (data.hasPehkuiModification() || data.isBetterCombatAttack()) {
             int modHeight = (data.hasPehkuiModification() && data.isBetterCombatAttack()) ? 52 : 40;
             totalHeight += 8 + modHeight;
         }
 
-        // Salva posizione per hit-test
+        // Save position for hit-test
         lastPanelX = panelX;
         lastPanelY = panelY;
         lastPanelWidth = panelWidth;
         lastPanelHeight = totalHeight;
 
-        // Controlla se il crosshair (centro schermo) è sopra il pannello
+        // Check if crosshair (screen center) is over the panel
         int crosshairX = screenWidth / 2;
         int crosshairY = screenHeight / 2;
         boolean isObserving = isCrosshairOverPanel(crosshairX, crosshairY);
 
-        // Aggiorna stato osservazione
+        // Update observation state
         data.setObserved(isObserving);
 
         float alpha = data.getRemainingAlpha();
@@ -122,7 +122,7 @@ public class ImpactHudOverlay {
         // Render Impact Analysis Panel
         renderImpactPanel(graphics, font, data, panelX, panelY, panelWidth, panelHeight, alpha);
 
-        // Render Mod Specifics Panel (sotto il primo)
+        // Render Mod Specifics Panel (below the first one)
         if (data.hasPehkuiModification() || data.isBetterCombatAttack()) {
             int modPanelY = panelY + panelHeight + 8;
             renderModSpecificsPanel(graphics, font, data, panelX, modPanelY, panelWidth, alpha);
@@ -130,7 +130,7 @@ public class ImpactHudOverlay {
     }
 
     /**
-     * Controlla se il crosshair è sopra il pannello Impact HUD.
+     * Checks if the crosshair is over the Impact HUD panel.
      */
     private static boolean isCrosshairOverPanel(int crosshairX, int crosshairY) {
         return crosshairX >= lastPanelX && crosshairX <= lastPanelX + lastPanelWidth &&
@@ -138,22 +138,22 @@ public class ImpactHudOverlay {
     }
 
     /**
-     * Renderizza il pannello principale "Impact Analysis".
+     * Renders the main "Impact Analysis" panel.
      */
     private static void renderImpactPanel(GuiGraphics g, Font font, ImpactData data,
                                           int x, int y, int width, int height, float alpha) {
-        // Sfondo con bordo
+        // Background with border
         renderPanelBackground(g, x, y, width, height, alpha);
 
         int textX = x + PANEL_PADDING;
         int textY = y + PANEL_PADDING;
 
-        // === Titolo ===
+        // === Title ===
         String title = "Impact Analysis (Multi-Part & Mod Integrated)";
         g.drawString(font, title, textX, textY, applyAlpha(TEXT_TITLE, alpha), false);
         textY += LINE_HEIGHT + 2;
 
-        // Linea separatore
+        // Separator line
         g.fill(x + 4, textY, x + width - 4, textY + 1, applyAlpha(PANEL_BORDER, alpha * 0.5f));
         textY += SECTION_SPACING;
 
@@ -205,15 +205,15 @@ public class ImpactHudOverlay {
             textX, textY, applyAlpha(TEXT_FORMULA, alpha), false);
         textY += LINE_HEIGHT + 2;
 
-        // === Danno Reale (NUOVO) ===
+        // === Actual Damage (NEW) ===
         if (data.hasActualDamage()) {
-            // Mostra danno reale con evidenziazione
+            // Show actual damage with highlighting
             float actualDmg = data.getActualDamageDealt();
             float reduction = data.getDamageReduction();
 
-            // Danno reale in grande
+            // Actual damage in large text
             String actualText = String.format("ACTUAL DAMAGE: %.2f", actualDmg);
-            // Simula bold con shadow
+            // Simulate bold with shadow
             g.drawString(font, actualText, textX + 1, textY, applyAlpha(0x550000, alpha), false);
             g.drawString(font, actualText, textX, textY, applyAlpha(0xFF4444, alpha), false);
             textY += LINE_HEIGHT + 2;
@@ -224,22 +224,22 @@ public class ImpactHudOverlay {
             g.drawString(font, healthText, textX, textY, applyAlpha(TEXT_MUTED, alpha), false);
             textY += LINE_HEIGHT;
 
-            // Mostra riduzione/amplificazione
+            // Show reduction/amplification
             if (Math.abs(reduction) > 0.1f) {
                 String reductionText;
                 int reductionColor;
                 if (reduction > 0) {
                     reductionText = String.format("Armor/Effects reduced: -%.2f", reduction);
-                    reductionColor = 0xFF8888; // Rosso chiaro
+                    reductionColor = 0xFF8888; // Light red
                 } else {
                     reductionText = String.format("Damage amplified: +%.2f", -reduction);
-                    reductionColor = 0x88FF88; // Verde chiaro
+                    reductionColor = 0x88FF88; // Light green
                 }
                 g.drawString(font, reductionText, textX, textY, applyAlpha(reductionColor, alpha), false);
                 textY += LINE_HEIGHT;
             }
         } else {
-            // Fallback al danno calcolato (vecchio comportamento)
+            // Fallback to calculated damage (old behavior)
             String finalText = String.format("*Calculated Dmg: %.2f*", bd.finalDamage);
             g.drawString(font, finalText, textX + 1, textY, applyAlpha(0x005500, alpha), false);
             g.drawString(font, finalText, textX, textY, applyAlpha(TEXT_VALUE, alpha), false);
@@ -247,7 +247,7 @@ public class ImpactHudOverlay {
     }
 
     /**
-     * Renderizza il pannello "Mod Specifics".
+     * Renders the "Mod Specifics" panel.
      */
     private static void renderModSpecificsPanel(GuiGraphics g, Font font, ImpactData data,
                                                  int x, int y, int width, float alpha) {
@@ -261,7 +261,7 @@ public class ImpactHudOverlay {
         int textX = x + PANEL_PADDING;
         int textY = y + PANEL_PADDING;
 
-        // Titolo
+        // Title
         g.drawString(font, "Mod Specifics", textX, textY, applyAlpha(TEXT_TITLE, alpha), false);
         textY += LINE_HEIGHT + 4;
 
@@ -281,16 +281,16 @@ public class ImpactHudOverlay {
     }
 
     /**
-     * Renderizza sfondo pannello con bordo glow.
+     * Renders panel background with glow border.
      */
     private static void renderPanelBackground(GuiGraphics g, int x, int y, int width, int height, float alpha) {
-        // Glow esterno (opzionale, effetto sottile)
+        // Outer glow (optional, subtle effect)
         g.fill(x - 1, y - 1, x + width + 1, y + height + 1, applyAlpha(PANEL_BORDER_GLOW, alpha * 0.3f));
 
-        // Sfondo principale
+        // Main background
         g.fill(x, y, x + width, y + height, applyAlpha(PANEL_BG, alpha));
 
-        // Bordo
+        // Border
         int borderColor = applyAlpha(PANEL_BORDER, alpha * 0.8f);
         g.fill(x, y, x + width, y + 1, borderColor);                    // Top
         g.fill(x, y + height - 1, x + width, y + height, borderColor);  // Bottom
@@ -299,7 +299,7 @@ public class ImpactHudOverlay {
     }
 
     /**
-     * Calcola altezza dinamica del pannello in base ai dati.
+     * Calculates dynamic panel height based on data.
      */
     private static int calculatePanelHeight(ImpactData data, Font font) {
         int height = PANEL_PADDING * 2;  // Top + bottom padding
@@ -327,7 +327,7 @@ public class ImpactHudOverlay {
         height += SECTION_SPACING;
         height += LINE_HEIGHT;  // Formula
 
-        // Sezione danno reale (più righe)
+        // Actual damage section (multiple lines)
         if (data.hasActualDamage()) {
             height += LINE_HEIGHT + 2;  // ACTUAL DAMAGE
             height += LINE_HEIGHT;      // HP: before -> after
@@ -342,7 +342,7 @@ public class ImpactHudOverlay {
     }
 
     /**
-     * Applica alpha a un colore ARGB.
+     * Applies alpha to an ARGB color.
      */
     private static int applyAlpha(int color, float alpha) {
         int a = (int) (((color >> 24) & 0xFF) * alpha);

@@ -12,6 +12,7 @@ import java.util.List;
  * This is a simple static cache that gets updated when sync packets arrive.
  */
 @OnlyIn(Dist.CLIENT)
+@SuppressWarnings({"null", "unused"})
 public class ClientQuestCache {
 
     private static volatile QuestSyncPayload cachedData = null;

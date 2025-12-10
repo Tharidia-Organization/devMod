@@ -99,11 +99,13 @@ public class CombatTracker {
 
             // Track damage type
             String damageType = source.type().msgId();
-            damageByType.merge(damageType, damage, Float::sum);
+            float existing = damageByType.getOrDefault(damageType, 0f);
+            damageByType.put(damageType, existing + damage);
 
             // Track body part
             if (bodyPart != null && !bodyPart.isEmpty()) {
-                bodyPartHits.merge(bodyPart, 1, Integer::sum);
+                int hits = bodyPartHits.getOrDefault(bodyPart, 0);
+                bodyPartHits.put(bodyPart, hits + 1);
             }
         }
 
@@ -128,7 +130,8 @@ public class CombatTracker {
             }
 
             String damageType = source.type().msgId();
-            damageTakenByType.merge(damageType, damage, Float::sum);
+            float existing = damageTakenByType.getOrDefault(damageType, 0f);
+            damageTakenByType.put(damageType, existing + damage);
         }
 
         public void recordKill(long timeSinceLastKill) {
@@ -152,7 +155,7 @@ public class CombatTracker {
             if (weapon == null || weapon.isEmpty()) {
                 return "minecraft:fist";
             }
-            ResourceLocation key = BuiltInRegistries.ITEM.getKey(weapon.getItem());
+            ResourceLocation key = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(weapon.getItem()));
             return key.toString();
         }
 

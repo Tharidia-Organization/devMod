@@ -38,6 +38,7 @@ public class InstanceFlowValidationTest {
         /**
          * Simulates the state machine for a mock InstanceData through all stages.
          */
+        @SuppressWarnings("unused") // Mock fields for test simulation
         private static class MockInstanceData {
             UUID instanceId = UUID.randomUUID();
             InstanceState state = InstanceState.CREATING;
@@ -72,6 +73,7 @@ public class InstanceFlowValidationTest {
         /**
          * Simulates the player snapshot state machine.
          */
+        @SuppressWarnings("unused") // Mock fields for test simulation
         private static class MockPlayerSnapshot {
             UUID playerId;
             UUID instanceId;
@@ -158,17 +160,13 @@ public class InstanceFlowValidationTest {
 
             // Step 3: Countdown starts (player in PREPARING, then IN_TRANSIT)
             // Simulate countdown ticks (200 ticks = 10 seconds)
-            int ticksRemaining = 200;
-
-            // Midway through countdown
-            ticksRemaining = 100;
+            // Midway through countdown (100 ticks remaining)
             assertEquals(PlayerInstanceState.PREPARING, playerSnapshot.state,
                 "Player should still be PREPARING during countdown");
             assertEquals(InstanceState.READY, instance.state,
                 "Instance should still be READY during countdown");
 
-            // Countdown complete - transition to IN_TRANSIT
-            ticksRemaining = 0;
+            // Countdown complete (0 ticks remaining) - transition to IN_TRANSIT
             assertTrue(playerSnapshot.transitionTo(PlayerInstanceState.IN_TRANSIT));
 
             // Teleport executes
@@ -502,7 +500,7 @@ public class InstanceFlowValidationTest {
         @Test
         @DisplayName("Dimension creation failure triggers recovery")
         void testDimensionCreationFailureRecovery() {
-            UUID playerId = UUID.randomUUID();
+            // playerId would be used in actual impl to restore player
             AtomicBoolean snapshotCreated = new AtomicBoolean(false);
             AtomicBoolean recoveryTriggered = new AtomicBoolean(false);
             AtomicReference<String> recoveryReason = new AtomicReference<>();
@@ -527,7 +525,7 @@ public class InstanceFlowValidationTest {
         @Test
         @DisplayName("Teleport failure triggers recovery")
         void testTeleportFailureRecovery() {
-            UUID playerId = UUID.randomUUID();
+            // playerId would be used in actual impl to restore player
             AtomicBoolean snapshotExists = new AtomicBoolean(true);
             AtomicBoolean teleportSuccess = new AtomicBoolean(false);
             AtomicBoolean recoveryTriggered = new AtomicBoolean(false);

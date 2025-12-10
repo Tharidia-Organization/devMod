@@ -19,7 +19,7 @@ import org.lwjgl.glfw.GLFW;
  * - Give up and collect partial rewards
  */
 @OnlyIn(Dist.CLIENT)
-@SuppressWarnings("null")
+@SuppressWarnings({"null", "unused"})
 public class QuestDeathScreen extends Screen {
 
     // === Colors - Thematic death screen (red theme) ===

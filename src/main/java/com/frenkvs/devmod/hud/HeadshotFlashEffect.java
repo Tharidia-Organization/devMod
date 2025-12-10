@@ -10,10 +10,10 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 /**
- * Effetto flash rosso per headshot.
+ * Red flash effect for headshots.
  * Trigger: bodyPart == HEAD
- * Durata: 300ms
- * Colore: Rosso semi-trasparente fade-out
+ * Duration: 300ms
+ * Color: Semi-transparent red fade-out
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class HeadshotFlashEffect {
@@ -23,17 +23,17 @@ public class HeadshotFlashEffect {
 
     private static long flashStartTime = 0;
     private static final long FLASH_DURATION_MS = 300;
-    private static final int FLASH_COLOR_BASE = 0xFF0000; // Rosso
+    private static final int FLASH_COLOR_BASE = 0xFF0000; // Red
 
     /**
-     * Attiva l'effetto flash. Chiamare quando detectato headshot.
+     * Activates the flash effect. Call when headshot is detected.
      */
     public static void trigger() {
         flashStartTime = System.currentTimeMillis();
     }
 
     /**
-     * Controlla se il flash è attualmente attivo.
+     * Checks if the flash is currently active.
      */
     public static boolean isActive() {
         return System.currentTimeMillis() - flashStartTime < FLASH_DURATION_MS;
@@ -41,7 +41,7 @@ public class HeadshotFlashEffect {
 
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
-        // Registra sopra il crosshair per coprire tutto
+        // Register above crosshair to cover everything
         event.registerAbove(
             VanillaGuiLayers.CROSSHAIR,
             LAYER_ID,
@@ -50,10 +50,10 @@ public class HeadshotFlashEffect {
     }
 
     /**
-     * Renderizza l'effetto flash. Chiamato nel HUD render loop.
+     * Renders the flash effect. Called in HUD render loop.
      * @param graphics GuiGraphics context
-     * @param screenWidth larghezza schermo
-     * @param screenHeight altezza schermo
+     * @param screenWidth screen width
+     * @param screenHeight screen height
      */
     public static void render(GuiGraphics graphics, int screenWidth, int screenHeight) {
         if (!isActive()) return;
@@ -61,7 +61,7 @@ public class HeadshotFlashEffect {
         long elapsed = System.currentTimeMillis() - flashStartTime;
         float progress = elapsed / (float) FLASH_DURATION_MS;
 
-        // Alpha fade-out: parte da 128 (50%) e scende a 0
+        // Alpha fade-out: starts at 128 (50%) and goes to 0
         int alpha = (int) ((1.0f - progress) * 128);
         int color = (alpha << 24) | FLASH_COLOR_BASE;
 

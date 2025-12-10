@@ -7,30 +7,30 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 /**
- * Integrazione con Better Combat mod.
- * Permette di leggere informazioni sugli attacchi (nome combo, reach esteso, ecc.)
+ * Integration with Better Combat mod.
+ * Allows reading attack information (combo name, extended reach, etc.)
  *
- * NOTA: Questa classe viene caricata solo se Better Combat è presente.
- * Usa reflection per evitare hard dependency.
+ * NOTE: This class is loaded only if Better Combat is present.
+ * Uses reflection to avoid hard dependency.
  */
 public class BetterCombatIntegration {
     private static final Logger LOGGER = LoggerFactory.getLogger(BetterCombatIntegration.class);
     private static boolean initialized = false;
     private static boolean available = false;
 
-    // Cache dei metodi reflection
+    // Cache for reflection methods
     private static Class<?> playerAttackHelperClass;
     private static Class<?> weaponAttributesClass;
 
     /**
-     * Inizializza l'integrazione Better Combat.
+     * Initializes Better Combat integration.
      */
     public static void init() {
         if (initialized) return;
         initialized = true;
 
         try {
-            // Prova a caricare le classi Better Combat via reflection
+            // Try to load Better Combat classes via reflection
             playerAttackHelperClass = Class.forName("net.bettercombat.logic.PlayerAttackHelper");
             weaponAttributesClass = Class.forName("net.bettercombat.api.WeaponAttributes");
             available = true;
@@ -45,15 +45,15 @@ public class BetterCombatIntegration {
     }
 
     /**
-     * Verifica se Better Combat è disponibile e funzionante.
+     * Checks if Better Combat is available and working.
      */
     public static boolean isAvailable() {
         return available;
     }
 
     /**
-     * Ottiene il nome dell'attacco corrente del player (se sta usando Better Combat).
-     * @return nome dell'attacco (es. "Slash", "Thrust", "Spin Attack"), o null
+     * Gets the player's current attack name (if using Better Combat).
+     * @return attack name (e.g., "Slash", "Thrust", "Spin Attack"), or null
      */
     @Nullable
     public static String getCurrentAttackName(Player player) {
@@ -94,8 +94,8 @@ public class BetterCombatIntegration {
     }
 
     /**
-     * Ottiene il reach esteso dell'arma (Better Combat può modificarlo).
-     * @return reach bonus, o 0 se non disponibile
+     * Gets the weapon's extended reach (Better Combat can modify it).
+     * @return reach bonus, or 0 if not available
      */
     public static double getExtendedReach(Player player) {
         if (!available || player == null) return 0;
@@ -128,7 +128,7 @@ public class BetterCombatIntegration {
     }
 
     /**
-     * Verifica se il player sta eseguendo un attacco combo di Better Combat.
+     * Checks if the player is executing a Better Combat combo attack.
      */
     public static boolean isInCombo(Player player) {
         if (!available || player == null) return false;
@@ -151,8 +151,8 @@ public class BetterCombatIntegration {
     }
 
     /**
-     * Ottiene il numero del combo attuale (1, 2, 3, ecc.)
-     * @return numero combo, o 0 se non in combo
+     * Gets the current combo count (1, 2, 3, etc.)
+     * @return combo count, or 0 if not in combo
      */
     public static int getComboCount(Player player) {
         if (!available || player == null) return 0;

@@ -4,7 +4,10 @@ import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.instance.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.*;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -365,6 +368,42 @@ public class InstanceSystemGameTests {
             "State should survive round-trip");
         helper.assertTrue(loaded.getArenaRadius() == 25,
             "Arena radius should survive round-trip");
+
+        helper.succeed();
+    }
+
+    /**
+     * TEST 12b: Void preset + platform + chunk preload
+     * Verifica che la dimensione istanza generi il layer bedrock, la piattaforma
+     * arena e che il chunk di destinazione sia caricato prima del teleport.
+     */
+    @GameTest(template = TEMPLATE_EMPTY, batch = "instance_flow")
+    public static void voidPlatformAndChunkPreload(GameTestHelper helper) {
+        if (!DynamicDimensionManager.INSTANCE.isReady()) {
+            helper.fail("DynamicDimensionManager not ready");
+            return;
+        }
+
+        UUID instanceId = UUID.randomUUID();
+        ResourceKey<Level> dimKey = DynamicDimensionManager.INSTANCE.createDimensionSync(instanceId, "test_arena");
+        helper.assertTrue(dimKey != null, "Dimension key should not be null");
+
+        ServerLevel level = helper.getLevel().getServer().getLevel(dimKey);
+        helper.assertTrue(level != null, "Instance level should exist");
+
+        // Bedrock layer (void preset) al livello 0
+        BlockPos bedrockPos = new BlockPos(0, 0, 0);
+        helper.assertTrue(level.getBlockState(bedrockPos).is(Blocks.BEDROCK),
+            "Bedrock layer should exist at y=0");
+
+        // Chunk centrale deve essere caricato e contenere la piattaforma
+        BlockPos platformPos = new BlockPos(0, 64, 0);
+        helper.assertTrue(level.getChunkAt(platformPos) != null, "Center chunk should be loaded");
+        helper.assertTrue(level.getBlockState(platformPos).is(Blocks.STONE_BRICKS),
+            "Platform should place stone bricks at center");
+
+        boolean destroyed = DynamicDimensionManager.INSTANCE.destroyDimensionSync(instanceId);
+        helper.assertTrue(destroyed, "Dimension should be destroyed cleanly");
 
         helper.succeed();
     }

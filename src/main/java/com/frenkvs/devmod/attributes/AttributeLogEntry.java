@@ -15,36 +15,36 @@ public record AttributeLogEntry(
     long timestamp
 ) {
     /**
-     * Tipi di eventi loggati.
+     * Types of logged events.
      */
     public enum Type {
         // Tracking
-        ENTITY_DETECTED("§a[+]", 0xFF00FF00),      // Verde
-        ENTITY_LOST("§c[-]", 0xFFFF0000),          // Rosso
-        TARGET_CHANGED("§e[T]", 0xFFFFFF00),       // Giallo
+        ENTITY_DETECTED("§a[+]", 0xFF00FF00),      // Green
+        ENTITY_LOST("§c[-]", 0xFFFF0000),          // Red
+        TARGET_CHANGED("§e[T]", 0xFFFFFF00),       // Yellow
 
         // Combat
-        DAMAGE_DEALT("§c[DMG]", 0xFFFF5555),       // Rosso chiaro
-        DAMAGE_RECEIVED("§4[HIT]", 0xFFAA0000),    // Rosso scuro
-        KILL("§6[KILL]", 0xFFFFAA00),              // Arancione
+        DAMAGE_DEALT("§c[DMG]", 0xFFFF5555),       // Light red
+        DAMAGE_RECEIVED("§4[HIT]", 0xFFAA0000),    // Dark red
+        KILL("§6[KILL]", 0xFFFFAA00),              // Orange
 
         // Status
-        HEALTH_LOW("§c[LOW]", 0xFFFF0000),         // Rosso
-        HEALTH_CRITICAL("§4[CRIT]", 0xFF550000),   // Rosso scuro
-        HEALING("§a[HEAL]", 0xFF00FF00),           // Verde
+        HEALTH_LOW("§c[LOW]", 0xFFFF0000),         // Red
+        HEALTH_CRITICAL("§4[CRIT]", 0xFF550000),   // Dark red
+        HEALING("§a[HEAL]", 0xFF00FF00),           // Green
 
         // LoS
-        LOS_GAINED("§a[LoS+]", 0xFF55FF55),        // Verde chiaro
-        LOS_LOST("§7[LoS-]", 0xFFAAAAAA),          // Grigio
+        LOS_GAINED("§a[LoS+]", 0xFF55FF55),        // Light green
+        LOS_LOST("§7[LoS-]", 0xFFAAAAAA),          // Gray
 
         // Movement
         TELEPORT("§d[TP]", 0xFFFF55FF),            // Magenta
-        AGGRO("§c[AGGRO]", 0xFFFF0000),            // Rosso
+        AGGRO("§c[AGGRO]", 0xFFFF0000),            // Red
 
         // System
-        INFO("§7[i]", 0xFFAAAAAA),                 // Grigio
-        WARNING("§e[!]", 0xFFFFFF00),              // Giallo
-        ERROR("§c[X]", 0xFFFF0000);                // Rosso
+        INFO("§7[i]", 0xFFAAAAAA),                 // Gray
+        WARNING("§e[!]", 0xFFFFFF00),              // Yellow
+        ERROR("§c[X]", 0xFFFF0000);                // Red
 
         private final String prefix;
         private final int color;

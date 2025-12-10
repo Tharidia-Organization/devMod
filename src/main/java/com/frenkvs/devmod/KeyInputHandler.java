@@ -586,6 +586,25 @@ public class KeyInputHandler {
             "key.categories.devmod"
     );
 
+    /**
+     * Opens Party Management Screen for multiplayer Endurance Quests.
+     *
+     * <p>Allows creating/joining parties, inviting players, managing
+     * ready status, and selecting quest type for multiplayer sessions.</p>
+     *
+     * <p><b>Default key:</b> F5</p>
+     * <p><b>Note:</b> Changed from P (used by Pathfinding) to F5</p>
+     *
+     * @see com.frenkvs.devmod.party.PartyScreen
+     */
+    public static final KeyMapping OPEN_PARTY_KEY = new KeyMapping(
+            "key.devmod.party",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_F5,
+            "key.categories.devmod"
+    );
+
     // ═══════════════════════════════════════════════════════════════════════════
     // ECONOMY & MISC - Additional overlays and utilities
     // ═══════════════════════════════════════════════════════════════════════════

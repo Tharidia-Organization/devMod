@@ -3,15 +3,15 @@ package com.frenkvs.devmod;
 import net.minecraft.nbt.CompoundTag;
 
 public class WeaponStats {
-    // Moltiplicatori con default da Config (fallback a valori hardcoded se config non caricato)
+    // Multipliers with defaults from Config (fallback to hardcoded values if config not loaded)
     public float headMult = getDefaultHeadMult();
     public float bodyMult = getDefaultBodyMult();
     public float armsMult = getDefaultArmsMult();
     public float legsMult = getDefaultLegsMult();
-    public float armorPenetration = 0.0f; // Percentuale di armatura ignorata (0.0 - 1.0)
-    public float baseDamageBonus = 0.0f;  // Danno piatto aggiunto
+    public float armorPenetration = 0.0f; // Percentage of armor ignored (0.0 - 1.0)
+    public float baseDamageBonus = 0.0f;  // Flat damage added
 
-    // Config-driven defaults con fallback sicuro
+    // Config-driven defaults with safe fallback
     private static float getDefaultHeadMult() {
         try { return Config.HEAD_DAMAGE_MULTIPLIER.get().floatValue(); }
         catch (Exception e) { return 1.5f; }
@@ -32,7 +32,7 @@ public class WeaponStats {
         catch (Exception e) { return 0.7f; }
     }
 
-    // Salva i dati nell'oggetto (NBT)
+    // Save data to the object (NBT)
     public void save(CompoundTag tag) {
         tag.putFloat("HeadMult", headMult);
         tag.putFloat("BodyMult", bodyMult);
@@ -42,7 +42,7 @@ public class WeaponStats {
         tag.putFloat("BaseDmg", baseDamageBonus);
     }
 
-    // Carica i dati
+    // Load data
     public static WeaponStats load(CompoundTag tag) {
         WeaponStats stats = new WeaponStats();
         if (tag.contains("HeadMult")) stats.headMult = tag.getFloat("HeadMult");

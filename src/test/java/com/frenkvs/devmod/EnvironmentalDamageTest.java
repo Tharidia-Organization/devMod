@@ -236,6 +236,8 @@ public class EnvironmentalDamageTest {
             float nakedDamage = calculator.calculateArmorReduction(fallDamage, 0, 0);
 
             assertTrue(armoredDamage < nakedDamage);
+            assertTrue(calculator.wouldSurviveFall(armoredEntity, 10));
+            assertFalse(calculator.wouldSurviveFall(nakedEntity, 50));
         }
 
         @Test

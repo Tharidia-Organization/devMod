@@ -15,13 +15,13 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import java.util.List;
 
 /**
- * Overlay HUD 2D per il sistema di monitoraggio attributi.
- * Mostra un pannello laterale con:
- * - Attributi del target primario
- * - Lista entità tracciate
- * - Log history degli eventi
+ * 2D HUD Overlay for the attribute monitoring system.
+ * Shows a side panel with:
+ * - Primary target attributes
+ * - Tracked entities list
+ * - Event log history
  *
- * Ispirato all'immagine di riferimento "Attribute Monitoring System"
+ * Inspired by the "Attribute Monitoring System" reference image
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 @SuppressWarnings("null")
@@ -31,17 +31,17 @@ public class AttributeHudOverlay {
     private static final ResourceLocation LAYER_ID =
         ResourceLocation.fromNamespaceAndPath("devmod", "attribute_monitor");
 
-    // === Colori UI (Impact UI Style) ===
-    private static final int PANEL_BG = 0xCC1A1A2E;           // Blu scuro 80% opacity
-    private static final int PANEL_BORDER = 0xFF3D5AFE;       // Blu elettrico Impact
+    // === UI Colors (Impact UI Style) ===
+    private static final int PANEL_BG = 0xCC1A1A2E;           // Dark blue 80% opacity
+    private static final int PANEL_BORDER = 0xFF3D5AFE;       // Electric blue Impact
     private static final int BORDER_GLOW = 0x553D5AFE;        // Glow effect
     private static final int TITLE_COLOR = 0xFF00FFFF;        // Cyan Impact
     private static final int TEXT_WHITE = 0xFFFFFFFF;
-    private static final int TEXT_GREEN = 0xFF00FF00;         // Verde Impact
-    private static final int TEXT_YELLOW = 0xFFFFD700;        // Oro Impact
-    private static final int TEXT_RED = 0xFFFF4444;           // Rosso Impact
-    private static final int TEXT_GRAY = 0xFFAAAAAA;          // Grigio muted
-    private static final int TEXT_ORANGE = 0xFFFF9800;        // Arancione
+    private static final int TEXT_GREEN = 0xFF00FF00;         // Green Impact
+    private static final int TEXT_YELLOW = 0xFFFFD700;        // Gold Impact
+    private static final int TEXT_RED = 0xFFFF4444;           // Red Impact
+    private static final int TEXT_GRAY = 0xFFAAAAAA;          // Muted gray
+    private static final int TEXT_ORANGE = 0xFFFF9800;        // Orange
 
     // === Layout ===
     private static final int PANEL_WIDTH = 220;
@@ -53,7 +53,7 @@ public class AttributeHudOverlay {
     private AttributeHudOverlay() {}
 
     /**
-     * Registra il layer GUI.
+     * Registers the GUI layer.
      */
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
@@ -65,8 +65,8 @@ public class AttributeHudOverlay {
     }
 
     /**
-     * Renderizza l'overlay HUD.
-     * Chiamato ogni frame quando il layer è attivo.
+     * Renders the HUD overlay.
+     * Called every frame when the layer is active.
      */
     private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
         if (!AttributeMonitoringSystem.INSTANCE.isEnabled()) return;
@@ -77,26 +77,26 @@ public class AttributeHudOverlay {
         Font font = mc.font;
         int screenWidth = mc.getWindow().getGuiScaledWidth();
 
-        // Posizione pannello (lato destro)
+        // Panel position (right side)
         int panelX = screenWidth - PANEL_WIDTH - PANEL_MARGIN;
         int panelY = PANEL_MARGIN;
 
-        // Calcola altezza dinamica
+        // Calculate dynamic height
         int panelHeight = calculatePanelHeight();
 
-        // === SFONDO ===
+        // === BACKGROUND ===
         renderBackground(graphics, panelX, panelY, PANEL_WIDTH, panelHeight);
 
-        // === CONTENUTO ===
+        // === CONTENT ===
         int y = panelY + PADDING;
         int textX = panelX + PADDING;
         int contentWidth = PANEL_WIDTH - PADDING * 2;
 
-        // TITOLO
+        // TITLE
         graphics.drawString(font, "§b§lAttribute Monitoring", textX, y, TITLE_COLOR, false);
         y += LINE_HEIGHT + 2;
 
-        // Linea separatore
+        // Separator line
         graphics.fill(textX, y, textX + contentWidth, y + 1, PANEL_BORDER);
         y += SECTION_GAP;
 
@@ -109,14 +109,14 @@ public class AttributeHudOverlay {
             y += LINE_HEIGHT + SECTION_GAP;
         }
 
-        // Separatore
+        // Separator
         graphics.fill(textX, y, textX + contentWidth, y + 1, PANEL_BORDER & 0x77FFFFFF);
         y += SECTION_GAP;
 
-        // === ENTITÀ TRACCIATE ===
+        // === TRACKED ENTITIES ===
         y = renderTrackedListSection(graphics, font, textX, y, contentWidth);
 
-        // Separatore
+        // Separator
         graphics.fill(textX, y, textX + contentWidth, y + 1, PANEL_BORDER & 0x77FFFFFF);
         y += SECTION_GAP;
 
@@ -125,22 +125,22 @@ public class AttributeHudOverlay {
     }
 
     private static int calculatePanelHeight() {
-        int height = PADDING * 2 + LINE_HEIGHT + 2 + SECTION_GAP; // Titolo
+        int height = PADDING * 2 + LINE_HEIGHT + 2 + SECTION_GAP; // Title
 
         TrackedEntity target = AttributeMonitoringSystem.INSTANCE.getPrimaryTarget();
         if (target != null && target.isValid()) {
-            height += LINE_HEIGHT * 9 + SECTION_GAP; // Sezione target
+            height += LINE_HEIGHT * 9 + SECTION_GAP; // Target section
         } else {
             height += LINE_HEIGHT + SECTION_GAP;
         }
 
-        height += SECTION_GAP; // Separatore
+        height += SECTION_GAP; // Separator
 
-        // Lista tracciati (max 5)
+        // Tracked list (max 5)
         int trackedCount = Math.min(AttributeMonitoringSystem.INSTANCE.getTrackedCount(), 5);
         height += LINE_HEIGHT + (LINE_HEIGHT * trackedCount) + SECTION_GAP;
 
-        height += SECTION_GAP; // Separatore
+        height += SECTION_GAP; // Separator
 
         // Log (max 8 entries)
         int logCount = Math.min(AttributeMonitoringSystem.INSTANCE.getLogHistory().size(), 8);
@@ -150,7 +150,7 @@ public class AttributeHudOverlay {
     }
 
     private static int renderTargetSection(GuiGraphics graphics, Font font, int x, int y, int width, TrackedEntity target) {
-        // Nome target
+        // Target name
         String nameStr = "§f" + target.getEntityName();
         if (target.hasLineOfSight()) {
             nameStr += " §a[LoS]";
@@ -168,11 +168,11 @@ public class AttributeHudOverlay {
         graphics.drawString(font, healthStr, x, y, healthColor, false);
         y += LINE_HEIGHT;
 
-        // Health bar grafica
+        // Graphical health bar
         int barWidth = width - 4;
         int barHeight = 4;
         int barX = x + 2;
-        graphics.fill(barX, y, barX + barWidth, y + barHeight, 0xFF333333); // BG
+        graphics.fill(barX, y, barX + barWidth, y + barHeight, 0xFF333333); // Background
         int filledWidth = (int) (barWidth * (healthPercent / 100f));
         graphics.fill(barX, y, barX + filledWidth, y + barHeight, healthColor); // Fill
         y += barHeight + 4;
@@ -201,7 +201,7 @@ public class AttributeHudOverlay {
         graphics.drawString(font, distStr, x, y, TEXT_GRAY, false);
         y += LINE_HEIGHT;
 
-        // Pehkui (se presente)
+        // Pehkui (if present)
         if (target.hasPehkuiModification()) {
             Float scale = target.getPehkuiScale();
             String scaleStr = String.format("§dPehkui Scale: %.2fx", scale != null ? scale : 1f);
@@ -271,7 +271,7 @@ public class AttributeHudOverlay {
             for (AttributeLogEntry log : logs) {
                 if (shown >= 8) break;
 
-                // Calcola alpha per fade
+                // Calculate alpha for fade
                 float alpha = log.getAlpha(30000); // 30 secondi max
                 if (alpha < 0.1f) continue;
 
@@ -279,7 +279,7 @@ public class AttributeHudOverlay {
                 String timeStr = "§8[" + log.getFormattedAge() + "] ";
                 String fullStr = timeStr + log.getFormattedMessage();
 
-                // Tronca se troppo lungo
+                // Truncate if too long
                 if (font.width(fullStr) > width) {
                     fullStr = fullStr.substring(0, Math.min(fullStr.length(), 35)) + "...";
                 }
@@ -292,13 +292,13 @@ public class AttributeHudOverlay {
     }
 
     private static void renderBackground(GuiGraphics graphics, int x, int y, int width, int height) {
-        // Glow esterno (Impact UI style)
+        // Outer glow (Impact UI style)
         graphics.fill(x - 1, y - 1, x + width + 1, y + height + 1, BORDER_GLOW);
 
-        // Sfondo
+        // Background
         graphics.fill(x, y, x + width, y + height, PANEL_BG);
 
-        // Bordo
+        // Border
         graphics.fill(x, y, x + width, y + 1, PANEL_BORDER); // Top
         graphics.fill(x, y + height - 1, x + width, y + height, PANEL_BORDER); // Bottom
         graphics.fill(x, y, x + 1, y + height, PANEL_BORDER); // Left

@@ -121,7 +121,7 @@ public class RenderEvents {
         );
         profiler.endTiming("ImpactVFX", t2);
 
-        // === NUOVO: Render Impact 3D Panels ===
+        // === NEW: Render Impact 3D Panels ===
         long t3 = profiler.startTiming("Impact3DPanels");
         Impact3DPanelManager.INSTANCE.renderAllPanels(
             poseStack,
@@ -131,7 +131,7 @@ public class RenderEvents {
         );
         profiler.endTiming("Impact3DPanels", t3);
 
-        // === FASE 7: Render Attribute Monitoring 3D Rays ===
+        // === PHASE 7: Render Attribute Monitoring 3D Rays ===
         long t4 = profiler.startTiming("AttributeRays");
         AttributeRayVisualizer.INSTANCE.render(
             poseStack,
@@ -140,7 +140,7 @@ public class RenderEvents {
         );
         profiler.endTiming("AttributeRays", t4);
 
-        // === FASE 2 UX: Render Floating Panels (Context-Aware) ===
+        // === PHASE 2 UX: Render Floating Panels (Context-Aware) ===
         long t5 = profiler.startTiming("FloatingPanels");
         FloatingPanelManager.INSTANCE.render(
             poseStack,
@@ -150,7 +150,7 @@ public class RenderEvents {
         );
         profiler.endTiming("FloatingPanels", t5);
 
-        // === FASE 4: Pathfinding Debugger (tasto P) ===
+        // === PHASE 4: Pathfinding Debugger (P key) ===
         if (PathfindingDebugger.INSTANCE.isEnabled()) {
             long t6 = profiler.startTiming("PathfindingDebugger");
             PathfindingDebugger.INSTANCE.render(
@@ -175,7 +175,7 @@ public class RenderEvents {
         // Flush the buffer to ensure all lines are rendered
         bufferSource.endBatch();
 
-        // Aggiorna contatori per il profiler
+        // Update counters for the profiler
         profiler.setCounter("3D Panels", Impact3DPanelManager.INSTANCE.getPanelCount());
         profiler.setCounter("Floating Panels", FloatingPanelManager.INSTANCE.getPanelCount());
         profiler.setCounter("Tracked Entities", AttributeMonitoringSystem.INSTANCE.getTrackedCount());
@@ -186,7 +186,7 @@ public class RenderEvents {
     private static int testingReadyDelayTicks = 0;
     private static final int TESTING_READY_DELAY = 100; // 5 seconds delay after player exists
 
-    // Indice per ciclare i tipi di heatmap
+    // Index for cycling heatmap types
     private static int currentHeatmapIndex = -1;
     private static final HeatmapVisualizer.HeatmapType[] HEATMAP_CYCLE = {
             HeatmapVisualizer.HeatmapType.DEATH,
@@ -198,26 +198,26 @@ public class RenderEvents {
     };
 
     /**
-     * Gestisce tutti i keybind della mod.
-     * Questo è il modo CORRETTO secondo la documentazione NeoForge:
+     * Handles all mod keybinds.
+     * This is the CORRECT way according to NeoForge documentation:
      * https://docs.neoforged.net/docs/misc/keymappings
      */
     private static void handleKeyBindings(Minecraft mc) {
         var player = mc.player;
         if (player == null) return;
 
-        // IMPORTANTE: Non processare keybind se c'è già una schermata aperta
-        // (tranne per toggle che non aprono GUI)
+        // IMPORTANT: Don't process keybinds if a screen is already open
+        // (except for toggles that don't open GUI)
         boolean screenOpen = mc.screen != null;
 
-        // Se premi K - Apre UnifiedSettingsScreen (FASE 3: Unified Settings Panel)
+        // If you press K - Opens UnifiedSettingsScreen (PHASE 3: Unified Settings Panel)
         while (KeyInputHandler.OPEN_SETTINGS_KEY.consumeClick()) {
             if (!screenOpen) {
                 mc.setScreen(new com.frenkvs.devmod.ui.unified.UnifiedSettingsScreen(null));
             }
         }
 
-        // Se premi M (e hai qualcosa in mano) - Apre Weapon Editor (GUI legacy)
+        // If you press M (and have something in hand) - Opens Weapon Editor (legacy GUI)
         while (KeyInputHandler.OPEN_WEAPON_EDITOR_KEY.consumeClick()) {
             if (!screenOpen) {
                 if (!player.getMainHandItem().isEmpty()) {
@@ -231,7 +231,7 @@ public class RenderEvents {
             }
         }
 
-        // Se premi G (Toggle Debug Overlay) o Shift+G (Toggle Body Part Boxes)
+        // If you press G (Toggle Debug Overlay) or Shift+G (Toggle Body Part Boxes)
         while (KeyInputHandler.TOGGLE_DEBUG_OVERLAY_KEY.consumeClick()) {
             boolean shiftHeld = Screen.hasShiftDown();
 
@@ -261,7 +261,7 @@ public class RenderEvents {
             }
         }
 
-        // FASE 4: Se premi L (Toggle Light Level Overlay)
+        // PHASE 4: If you press L (Toggle Light Level Overlay)
         while (KeyInputHandler.TOGGLE_LIGHT_OVERLAY_KEY.consumeClick()) {
             LightLevelOverlay.INSTANCE.toggle();
             SettingsManager.INSTANCE.markDirty();
@@ -273,7 +273,7 @@ public class RenderEvents {
             checkOverlayCount(player);
         }
 
-        // FASE 4: Se premi H (Cycle Heatmap Types)
+        // PHASE 4: If you press H (Cycle Heatmap Types)
         // Shift+H: Clear ALL heatmaps
         // Ctrl+H: Clear current heatmap type
         while (KeyInputHandler.TOGGLE_HEATMAP_KEY.consumeClick()) {
@@ -284,7 +284,7 @@ public class RenderEvents {
                 // Shift+H: Clear ALL heatmaps
                 HeatmapVisualizer.INSTANCE.clearAll();
                 currentHeatmapIndex = -1;
-                // Disabilita tutte le visualizzazioni
+                // Disable all visualizations
                 for (HeatmapVisualizer.HeatmapType type : HEATMAP_CYCLE) {
                     HeatmapVisualizer.INSTANCE.setEnabled(type, false);
                 }
@@ -313,7 +313,7 @@ public class RenderEvents {
                 cycleHeatmapType();
                 SettingsManager.INSTANCE.markDirty();
 
-                // Carica dati dal service per il tipo corrente
+                // Load data from service for the current type
                 if (currentHeatmapIndex >= 0 && currentHeatmapIndex < HEATMAP_CYCLE.length) {
                     HeatmapVisualizer.HeatmapType currentType = HEATMAP_CYCLE[currentHeatmapIndex];
                     int loaded = HeatmapVisualizer.INSTANCE.loadDataFromService(currentType);
@@ -332,7 +332,7 @@ public class RenderEvents {
             }
         }
 
-        // FASE 4: Se premi R (Toggle Room Bounds Visualizer)
+        // PHASE 4: If you press R (Toggle Room Bounds Visualizer)
         // Shift+R: Open Room Bounds Editor (in-game UI)
         // Ctrl+R: Reload rooms from config file
         while (KeyInputHandler.TOGGLE_ROOM_BOUNDS_KEY.consumeClick()) {
@@ -365,7 +365,7 @@ public class RenderEvents {
             }
         }
 
-        // FASE 4: Se premi P (Toggle Pathfinding Debugger)
+        // PHASE 4: If you press P (Toggle Pathfinding Debugger)
         while (KeyInputHandler.TOGGLE_PATHFINDING_KEY.consumeClick()) {
             PathfindingDebugger.INSTANCE.toggle();
             SettingsManager.INSTANCE.markDirty();
@@ -376,7 +376,7 @@ public class RenderEvents {
             );
         }
 
-        // FASE 4: Se premi V (Toggle Line of Sight Visualizer)
+        // PHASE 4: If you press V (Toggle Line of Sight Visualizer)
         while (KeyInputHandler.TOGGLE_LOS_KEY.consumeClick()) {
             LineOfSightVisualizer.INSTANCE.toggle();
             SettingsManager.INSTANCE.markDirty();
@@ -387,7 +387,7 @@ public class RenderEvents {
             );
         }
 
-        // FASE 4: Se premi Y (Toggle Vertical Levels Visualizer)
+        // PHASE 4: If you press Y (Toggle Vertical Levels Visualizer)
         while (KeyInputHandler.TOGGLE_VERTICAL_LEVELS_KEY.consumeClick()) {
             VerticalLevelsVisualizer.INSTANCE.toggle();
             SettingsManager.INSTANCE.markDirty();
@@ -398,7 +398,7 @@ public class RenderEvents {
             );
         }
 
-        // FASE 4: Se premi C (Toggle Safe Spot Visualizer)
+        // PHASE 4: If you press C (Toggle Safe Spot Visualizer)
         while (KeyInputHandler.TOGGLE_SAFE_SPOT_KEY.consumeClick()) {
             SafeSpotVisualizer.INSTANCE.toggle();
             SettingsManager.INSTANCE.markDirty();
@@ -410,14 +410,14 @@ public class RenderEvents {
             );
         }
 
-        // Tasto J - Apre la Telemetry Dashboard
+        // J key - Opens the Telemetry Dashboard
         while (KeyInputHandler.OPEN_DASHBOARD_KEY.consumeClick()) {
             if (!screenOpen) {
                 mc.setScreen(new com.frenkvs.devmod.TelemetryDashboardScreen(null));
             }
         }
 
-        // FASE 7: Se premi U (Toggle Attribute Monitoring System)
+        // PHASE 7: If you press U (Toggle Attribute Monitoring System)
         while (KeyInputHandler.TOGGLE_ATTRIBUTE_MONITOR_KEY.consumeClick()) {
             AttributeMonitoringSystem.INSTANCE.toggle();
             String status = AttributeMonitoringSystem.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
@@ -428,7 +428,7 @@ public class RenderEvents {
             );
         }
 
-        // FASE 8: Se premi F8 (Toggle FPS Tracker)
+        // PHASE 8: If you press F8 (Toggle FPS Tracker)
         while (KeyInputHandler.TOGGLE_FPS_TRACKER_KEY.consumeClick()) {
             FpsTracker.INSTANCE.toggle();
             String status = FpsTracker.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
@@ -438,7 +438,7 @@ public class RenderEvents {
             );
         }
 
-        // FASE 9: Se premi F9 (Toggle Performance Profiler)
+        // PHASE 9: If you press F9 (Toggle Performance Profiler)
         while (KeyInputHandler.TOGGLE_PROFILER_KEY.consumeClick()) {
             PerformanceProfiler.INSTANCE.toggle();
             String status = PerformanceProfiler.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
@@ -448,7 +448,7 @@ public class RenderEvents {
             );
         }
 
-        // QA TESTING: Se premi N (Open QA Testing Screen) - LEGACY, ora usa F7 per Testing Hub
+        // QA TESTING: If you press N (Open QA Testing Screen) - LEGACY, now use F7 for Testing Hub
         while (KeyInputHandler.OPEN_QA_TESTING_KEY.consumeClick()) {
             DevMod.LOGGER.info("[DevMod] N key consumed - screenOpen={}", screenOpen);
             if (!screenOpen) {
@@ -466,8 +466,8 @@ public class RenderEvents {
             }
         }
 
-        // TESTING HUB: Se premi F7 (Open Testing Hub - interfaccia unificata)
-        // Se l'hub è minimizzato, lo ripristina invece di crearne uno nuovo
+        // TESTING HUB: If you press F7 (Open Testing Hub - unified interface)
+        // If the hub is minimized, it restores it instead of creating a new one
         while (KeyInputHandler.OPEN_TESTING_HUB_KEY.consumeClick()) {
             if (!screenOpen) {
                 try {
@@ -487,7 +487,7 @@ public class RenderEvents {
             }
         }
 
-        // VOXEL-LAB: Se premi B (Toggle Boss Phase Overlay)
+        // VOXEL-LAB: If you press B (Toggle Boss Phase Overlay)
         while (KeyInputHandler.TOGGLE_BOSS_PHASE_KEY.consumeClick()) {
             BossPhaseOverlay.toggle();
             SettingsManager.INSTANCE.markDirty();
@@ -498,7 +498,7 @@ public class RenderEvents {
             );
         }
 
-        // VOXEL-LAB: Se premi F6 (Toggle Entity Density Overlay)
+        // VOXEL-LAB: If you press F6 (Toggle Entity Density Overlay)
         while (KeyInputHandler.TOGGLE_ENTITY_DENSITY_KEY.consumeClick()) {
             EntityDensityOverlay.toggle();
             SettingsManager.INSTANCE.markDirty();
@@ -509,7 +509,7 @@ public class RenderEvents {
             );
         }
 
-        // VOXEL-LAB: Se premi F5 (Toggle Skill Efficacy Overlay)
+        // VOXEL-LAB: If you press F5 (Toggle Skill Efficacy Overlay)
         while (KeyInputHandler.TOGGLE_SKILL_EFFICACY_KEY.consumeClick()) {
             com.frenkvs.devmod.hud.SkillEfficacyOverlay.toggle();
             SettingsManager.INSTANCE.markDirty();
@@ -520,7 +520,7 @@ public class RenderEvents {
             );
         }
 
-        // VOXEL-LAB M27: Se premi F4 (Toggle Spawnability Map)
+        // VOXEL-LAB M27: If you press F4 (Toggle Spawnability Map)
         while (KeyInputHandler.TOGGLE_SPAWNABILITY_KEY.consumeClick()) {
             SpawnabilityOverlay.INSTANCE.toggle();
             SettingsManager.INSTANCE.markDirty();
@@ -532,7 +532,7 @@ public class RenderEvents {
             );
         }
 
-        // QUEST HUD: Se premi \ (Toggle Quest HUD)
+        // QUEST HUD: If you press \ (Toggle Quest HUD)
         while (KeyInputHandler.TOGGLE_QUEST_HUD_KEY.consumeClick()) {
             QuestHudOverlay.toggle();
             String status = QuestHudOverlay.isEnabled() ? "§aON" : "§cOFF";
@@ -542,7 +542,7 @@ public class RenderEvents {
             );
         }
 
-        // QUEST HUD: Se premi ] (Complete current task)
+        // QUEST HUD: If you press ] (Complete current task)
         while (KeyInputHandler.QUEST_COMPLETE_TASK_KEY.consumeClick()) {
             QuestTask task = QuestManager.INSTANCE.getCurrentTask();
             if (task != null) {
@@ -561,22 +561,22 @@ public class RenderEvents {
             }
         }
 
-        // QUEST EDITOR: Se premi [ (Open Quest Editor)
+        // QUEST EDITOR: If you press [ (Open Quest Editor)
         while (KeyInputHandler.OPEN_QUEST_EDITOR_KEY.consumeClick()) {
             if (!screenOpen) {
                 mc.setScreen(new QuestEditorScreen());
             }
         }
 
-        // ECONOMY: Se premi F3 (Toggle Economy Overlay)
-        // Shift+F3 cicla la vista (economy stats <-> mob loot)
-        // Ctrl+F3 cicla il sort mode (kills, drop%, recent)
+        // ECONOMY: If you press F3 (Toggle Economy Overlay)
+        // Shift+F3 cycles the view (economy stats <-> mob loot)
+        // Ctrl+F3 cycles the sort mode (kills, drop%, recent)
         while (KeyInputHandler.TOGGLE_ECONOMY_KEY.consumeClick()) {
             boolean shiftHeld = Screen.hasShiftDown();
             boolean ctrlHeld = Screen.hasControlDown();
 
             if (ctrlHeld && com.frenkvs.devmod.hud.EconomyOverlay.isEnabled()) {
-                // Ctrl+F3: cicla il sort mode
+                // Ctrl+F3: cycle the sort mode
                 com.frenkvs.devmod.hud.EconomyOverlay.cycleSortMode();
                 String sortName = com.frenkvs.devmod.hud.EconomyOverlay.getSortModeName();
                 player.displayClientMessage(
@@ -584,7 +584,7 @@ public class RenderEvents {
                         true
                 );
             } else if (shiftHeld && com.frenkvs.devmod.hud.EconomyOverlay.isEnabled()) {
-                // Shift+F3: cicla la vista
+                // Shift+F3: cycle the view
                 com.frenkvs.devmod.hud.EconomyOverlay.cycleView();
                 String viewName = com.frenkvs.devmod.hud.EconomyOverlay.getViewModeName();
                 player.displayClientMessage(
@@ -592,7 +592,7 @@ public class RenderEvents {
                         true
                 );
             } else {
-                // F3 normale: toggle overlay
+                // F3 normal: toggle overlay
                 com.frenkvs.devmod.hud.EconomyOverlay.toggle();
                 String status = com.frenkvs.devmod.hud.EconomyOverlay.isEnabled() ? "§aON" : "§cOFF";
                 player.displayClientMessage(
@@ -602,7 +602,7 @@ public class RenderEvents {
             }
         }
 
-        // ECONOMY SCROLL: Page Up/Down per scrollare la lista mob
+        // ECONOMY SCROLL: Page Up/Down to scroll the mob list
         if (com.frenkvs.devmod.hud.EconomyOverlay.isEnabled()) {
             if (InputConstants.isKeyDown(mc.getWindow().getWindow(), InputConstants.KEY_PAGEUP)) {
                 com.frenkvs.devmod.hud.EconomyOverlay.scrollUp();
@@ -612,7 +612,7 @@ public class RenderEvents {
             }
         }
 
-        // CHUNK PERF: Se premi F2 (Toggle Chunk Performance Visualizer)
+        // CHUNK PERF: If you press F2 (Toggle Chunk Performance Visualizer)
         while (KeyInputHandler.TOGGLE_CHUNK_PERF_KEY.consumeClick()) {
             ChunkPerformanceVisualizer.INSTANCE.toggle();
             String status = ChunkPerformanceVisualizer.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
@@ -622,7 +622,7 @@ public class RenderEvents {
             );
         }
 
-        // ENDURANCE QUEST: Se premi F10 (Open Quest Editor with Endurance Modal)
+        // ENDURANCE QUEST: If you press F10 (Open Quest Editor with Endurance Modal)
         // Shift+F10: Toggle Endurance HUD visibility
         // Ctrl+F10: Toggle Endurance HUD details
         while (KeyInputHandler.OPEN_ENDURANCE_QUEST_KEY.consumeClick()) {
@@ -719,7 +719,7 @@ public class RenderEvents {
             }
         }
 
-        // TEST SCREEN SHAKE: Se premi 0 (Test shake effect)
+        // TEST SCREEN SHAKE: If you press 0 (Test shake effect)
         // Debug: check if keybind is detected at all using raw GLFW check
         long windowHandle = mc.getWindow().getWindow();
         boolean zeroKeyDown = com.mojang.blaze3d.platform.InputConstants.isKeyDown(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_0);
@@ -765,27 +765,27 @@ public class RenderEvents {
     private static boolean escWasPressed = false;
 
     private static void cycleHeatmapType() {
-        // Disabilita il tipo corrente
+        // Disable the current type
         if (currentHeatmapIndex >= 0 && currentHeatmapIndex < HEATMAP_CYCLE.length) {
             HeatmapVisualizer.INSTANCE.setEnabled(HEATMAP_CYCLE[currentHeatmapIndex], false);
         }
 
-        // Passa al prossimo (o torna a -1 = tutti off)
+        // Move to the next (or return to -1 = all off)
         currentHeatmapIndex++;
         if (currentHeatmapIndex >= HEATMAP_CYCLE.length) {
-            currentHeatmapIndex = -1; // Tutti off
+            currentHeatmapIndex = -1; // All off
         }
 
-        // Abilita il nuovo tipo
+        // Enable the new type
         if (currentHeatmapIndex >= 0) {
             HeatmapVisualizer.INSTANCE.setEnabled(HEATMAP_CYCLE[currentHeatmapIndex], true);
         }
     }
 
     /**
-     * Client tick event per aggiornare i pannelli 3D e il sistema di monitoraggio.
-     * NOTA: Questo è il modo CORRETTO per gestire i keybind secondo la documentazione NeoForge.
-     * NON usare InputEvent.Key - usare sempre ClientTickEvent.Post con consumeClick().
+     * Client tick event to update 3D panels and the monitoring system.
+     * NOTE: This is the CORRECT way to handle keybinds according to NeoForge documentation.
+     * DO NOT use InputEvent.Key - always use ClientTickEvent.Post with consumeClick().
      */
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
@@ -797,17 +797,17 @@ public class RenderEvents {
             return;
         }
 
-        // === GESTIONE KEYBIND (modo corretto per NeoForge) ===
+        // === KEYBIND HANDLING (correct way for NeoForge) ===
         handleKeyBindings(mc);
 
         PerformanceProfiler profiler = PerformanceProfiler.INSTANCE;
 
-        // Aggiorna il manager dei pannelli 3D
+        // Update the 3D panel manager
         long t0 = profiler.startTiming("PanelManager.tick");
         Impact3DPanelManager.INSTANCE.clientTick();
         profiler.endTiming("PanelManager.tick", t0);
 
-        // FASE 7: Aggiorna il sistema di monitoraggio attributi
+        // PHASE 7: Update the attribute monitoring system
         long t1 = profiler.startTiming("AttrMonitor.tick");
         AttributeMonitoringSystem.INSTANCE.tick();
         profiler.endTiming("AttrMonitor.tick", t1);
@@ -815,7 +815,7 @@ public class RenderEvents {
         // NOTE: PathfindingDebugger tracking is now done automatically in its render() method
         // This prevents duplicate tracking and keeps the code DRY
 
-        // FASE 9: Aggiorna il profiler stesso
+        // PHASE 9: Update the profiler itself
         profiler.onClientTick();
 
         // === Projectile Trails (Perception-style effect) ===
@@ -823,13 +823,13 @@ public class RenderEvents {
         TrailManager.INSTANCE.tick();
         profiler.endTiming("TrailManager.tick", t3);
 
-        // === FASE 2 UX: Tick Floating Panels e Context Detector ===
+        // === PHASE 2 UX: Tick Floating Panels and Context Detector ===
         long t2 = profiler.startTiming("FloatingPanels.tick");
         FloatingPanelManager.INSTANCE.tick();
         ContextDetector.INSTANCE.tick();
 
-        // Aggiorna hover dei pannelli basato sulla posizione del mouse
-        if (mc.screen == null) { // Solo se non c'è una GUI aperta
+        // Update panel hover based on mouse position
+        if (mc.screen == null) { // Only if no GUI is open
             double mouseX = mc.mouseHandler.xpos();
             double mouseY = mc.mouseHandler.ypos();
             int screenW = mc.getWindow().getGuiScaledWidth();

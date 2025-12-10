@@ -10,45 +10,45 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 /**
- * Gestisce le interazioni mouse con i pannelli flottanti nel mondo 3D.
+ * Handles mouse interactions with floating panels in the 3D world.
  *
- * Funzionalita':
- * - Ray casting dal mouse per trovare pannelli sotto il cursore
- * - Gestione click (sinistro/destro/medio)
+ * Features:
+ * - Ray casting from mouse to find panels under cursor
+ * - Click handling (left/right/middle)
  * - Hover detection
- * - Drag support (futuro)
+ * - Drag support (future)
  */
 public class PanelInteractionHandler {
 
     public static final PanelInteractionHandler INSTANCE = new PanelInteractionHandler();
 
-    // Stato interazione
+    // Interaction state
     @Nullable
     private FloatingPanel hoveredPanel = null;
     @Nullable
     private FloatingPanel draggedPanel = null;
     private boolean isDragging = false;
 
-    // Feedback per tentativo drag su pannello non pinnato
+    // Feedback for drag attempt on unpinned panel
     @Nullable
     private String feedbackMessage = null;
     private long feedbackDisplayTime = 0;
     private static final long FEEDBACK_DURATION_MS = 2000;
 
-    // Configurazione
+    // Configuration
     private static final double MAX_INTERACTION_DISTANCE = 20.0;
-    private static final float PANEL_HITBOX_SCALE = 1.2f; // Hitbox leggermente piu' grande
+    private static final float PANEL_HITBOX_SCALE = 1.2f; // Hitbox slightly larger
 
     private PanelInteractionHandler() {}
 
     /**
-     * Aggiorna lo stato di hover basato sulla posizione del mouse.
-     * Chiamare ogni frame.
+     * Updates hover state based on mouse position.
+     * Call every frame.
      *
-     * @param mouseX Posizione X del mouse su schermo
-     * @param mouseY Posizione Y del mouse su schermo
-     * @param screenWidth Larghezza schermo
-     * @param screenHeight Altezza schermo
+     * @param mouseX Mouse X position on screen
+     * @param mouseY Mouse Y position on screen
+     * @param screenWidth Screen width
+     * @param screenHeight Screen height
      */
     public void updateHover(double mouseX, double mouseY, int screenWidth, int screenHeight) {
         Minecraft mc = Minecraft.getInstance();
@@ -57,16 +57,16 @@ public class PanelInteractionHandler {
             return;
         }
 
-        // Se stiamo draggando, non cambiare hover
+        // If dragging, don't change hover
         if (isDragging) return;
 
         Camera camera = mc.gameRenderer.getMainCamera();
         Vec3 cameraPos = camera.getPosition();
 
-        // Trova il pannello sotto il mouse
+        // Find the panel under the mouse
         FloatingPanel newHovered = findPanelUnderMouse(mouseX, mouseY, screenWidth, screenHeight, camera);
 
-        // Aggiorna stato hover
+        // Update hover state
         if (newHovered != hoveredPanel) {
             if (hoveredPanel != null) {
                 hoveredPanel.setHovered(false);
@@ -79,7 +79,7 @@ public class PanelInteractionHandler {
     }
 
     /**
-     * Trova il pannello sotto la posizione del mouse.
+     * Finds the panel under the mouse position.
      */
     @Nullable
     private FloatingPanel findPanelUnderMouse(double mouseX, double mouseY,
@@ -88,7 +88,7 @@ public class PanelInteractionHandler {
         Vec3 cameraPos = camera.getPosition();
         List<FloatingPanel> panels = FloatingPanelManager.INSTANCE.getAllPanels();
 
-        // Converti posizione mouse in ray direction
+        // Convert mouse position to ray direction
         Vec3 rayDir = screenToWorldRay(mouseX, mouseY, screenWidth, screenHeight, camera);
         if (rayDir == null) return null;
 
@@ -103,7 +103,7 @@ public class PanelInteractionHandler {
 
             if (distance > MAX_INTERACTION_DISTANCE) continue;
 
-            // Test intersezione semplificato (sfera attorno al pannello)
+            // Simplified intersection test (sphere around panel)
             double hitRadius = estimatePanelRadius(panel, distance) * PANEL_HITBOX_SCALE;
 
             if (rayIntersectsSphere(cameraPos, rayDir, panelPos, hitRadius)) {
@@ -118,8 +118,8 @@ public class PanelInteractionHandler {
     }
 
     /**
-     * Converte posizione mouse in ray direction nel mondo.
-     * Semplificazione: usa la direzione della camera.
+     * Converts mouse position to ray direction in world.
+     * Simplification: uses camera direction.
      */
     @Nullable
     private Vec3 screenToWorldRay(double mouseX, double mouseY,
@@ -128,15 +128,15 @@ public class PanelInteractionHandler {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return null;
 
-        // Normalizza coordinate mouse (-1 to 1)
+        // Normalize mouse coordinates (-1 to 1)
         float normalizedX = (float) (2.0 * mouseX / screenWidth - 1.0);
         float normalizedY = (float) (1.0 - 2.0 * mouseY / screenHeight);
 
-        // Semplificazione: usa la direzione di look del player con offset
-        // Per interazione precisa servirebbe projection matrix inversa
+        // Simplification: uses player's look direction with offset
+        // For precise interaction, would need inverse projection matrix
         Vec3 lookDir = mc.player.getLookAngle();
 
-        // Calcola right e up vectors
+        // Calculate right and up vectors
         Vec3 worldUp = new Vec3(0, 1, 0);
         Vec3 right = lookDir.cross(worldUp).normalize();
         Vec3 up = right.cross(lookDir).normalize();
@@ -154,22 +154,22 @@ public class PanelInteractionHandler {
     }
 
     /**
-     * Stima il raggio del pannello in unita' mondo basato sulla distanza.
+     * Estimates the panel radius in world units based on distance.
      */
     private double estimatePanelRadius(FloatingPanel panel, double distance) {
-        // Il pannello scala con la distanza, quindi il raggio effettivo
-        // dipende dalle dimensioni e dalla scala
-        float baseScale = 0.015f; // Da PanelRenderer
+        // The panel scales with distance, so the effective radius
+        // depends on dimensions and scale
+        float baseScale = 0.015f; // From PanelRenderer
         int width = panel.getWidth();
         int height = panel.getHeight();
 
-        // Usa la diagonale come raggio approssimativo
+        // Use diagonal as approximate radius
         double diagonal = Math.sqrt(width * width + height * height);
         return diagonal * baseScale * 0.5;
     }
 
     /**
-     * Test intersezione ray-sphere.
+     * Ray-sphere intersection test.
      */
     private boolean rayIntersectsSphere(Vec3 rayOrigin, Vec3 rayDir, Vec3 sphereCenter, double radius) {
         Vec3 oc = rayOrigin.subtract(sphereCenter);
@@ -183,15 +183,15 @@ public class PanelInteractionHandler {
     }
 
     /**
-     * Gestisce un click del mouse.
+     * Handles a mouse click.
      *
-     * @param button Pulsante (0=sinistro, 1=destro, 2=medio)
-     * @return true se il click e' stato gestito
+     * @param button Button (0=left, 1=right, 2=middle)
+     * @return true if the click was handled
      */
     public boolean handleClick(int button) {
         if (hoveredPanel == null) return false;
 
-        // Calcola coordinate locali approssimative (centro del pannello)
+        // Calculate approximate local coordinates (center of panel)
         int localX = hoveredPanel.getWidth() / 2;
         int localY = hoveredPanel.getHeight() / 2;
 
@@ -204,12 +204,12 @@ public class PanelInteractionHandler {
     private double dragStartMouseY = 0;
 
     /**
-     * Gestisce l'inizio di un drag.
+     * Handles the start of a drag.
      */
     public boolean handleDragStart(int button) {
         if (button != 0 || hoveredPanel == null) return false;
 
-        // Solo pannelli pinnati possono essere trascinati
+        // Only pinned panels can be dragged
         if (!hoveredPanel.isPinned()) {
             // Provide feedback to user explaining why drag doesn't work
             showFeedback("Pin panel first (right-click) to enable dragging");
@@ -236,8 +236,8 @@ public class PanelInteractionHandler {
     }
 
     /**
-     * Gestisce il movimento durante un drag.
-     * Sposta il pannello nel mondo 3D basandosi sul movimento del mouse.
+     * Handles movement during a drag.
+     * Moves the panel in 3D world based on mouse movement.
      */
     public void handleDragMove(double mouseX, double mouseY) {
         if (!isDragging || draggedPanel == null || dragStartPanelPos == null) return;
@@ -245,37 +245,37 @@ public class PanelInteractionHandler {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
-        // Calcola delta mouse in coordinate normalizzate
+        // Calculate mouse delta in normalized coordinates
         int screenWidth = mc.getWindow().getGuiScaledWidth();
         int screenHeight = mc.getWindow().getGuiScaledHeight();
 
         double deltaX = (mouseX - dragStartMouseX) / screenWidth;
         double deltaY = (mouseY - dragStartMouseY) / screenHeight;
 
-        // Scala il movimento basandosi sulla distanza del pannello
+        // Scale movement based on panel distance
         Camera camera = mc.gameRenderer.getMainCamera();
         Vec3 cameraPos = camera.getPosition();
         double distance = dragStartPanelPos.distanceTo(cameraPos);
 
-        // Movimento proporzionale alla distanza (pannelli lontani si muovono di piu')
+        // Movement proportional to distance (far panels move more)
         double movementScale = distance * 0.5;
 
-        // Calcola right e up vectors dalla camera
+        // Calculate right and up vectors from camera
         Vec3 lookDir = mc.player.getLookAngle();
         Vec3 worldUp = new Vec3(0, 1, 0);
         Vec3 right = lookDir.cross(worldUp).normalize();
         Vec3 up = right.cross(lookDir).normalize();
 
-        // Nuova posizione = posizione iniziale + offset
+        // New position = initial position + offset
         Vec3 offset = right.scale(deltaX * movementScale).add(up.scale(-deltaY * movementScale));
         Vec3 newPos = dragStartPanelPos.add(offset);
 
-        // Applica la nuova posizione
+        // Apply the new position
         draggedPanel.setFixedPosition(newPos);
     }
 
     /**
-     * Gestisce la fine di un drag.
+     * Handles the end of a drag.
      */
     public void handleDragEnd() {
         isDragging = false;
@@ -284,7 +284,7 @@ public class PanelInteractionHandler {
     }
 
     /**
-     * Pulisce lo stato di hover.
+     * Clears the hover state.
      */
     public void clearHover() {
         if (hoveredPanel != null) {
@@ -294,7 +294,7 @@ public class PanelInteractionHandler {
     }
 
     /**
-     * Reset completo dello stato.
+     * Complete state reset.
      */
     public void reset() {
         clearHover();

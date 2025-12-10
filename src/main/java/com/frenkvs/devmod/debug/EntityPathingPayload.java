@@ -1,7 +1,6 @@
 package com.frenkvs.devmod.debug;
 
 import com.frenkvs.devmod.DevMod;
-import io.netty.buffer.ByteBuf;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -9,6 +8,8 @@ import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import javax.annotation.Nonnull;
 
 /**
  * Payload for entity pathing debug data (server to client).
@@ -26,13 +27,13 @@ public record EntityPathingPayload(
 ) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<EntityPathingPayload> TYPE =
-        new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "debug_pathing"));
+        new CustomPacketPayload.Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "debug_pathing")));
 
     public static final StreamCodec<FriendlyByteBuf, EntityPathingPayload> STREAM_CODEC = new StreamCodec<>() {
         @Override
-        public EntityPathingPayload decode(FriendlyByteBuf buf) {
+        public EntityPathingPayload decode(@Nonnull FriendlyByteBuf buf) {
             int entityId = buf.readVarInt();
-            String entityName = buf.readUtf();
+            String entityName = Objects.requireNonNull(buf.readUtf());
             int nodeCount = buf.readVarInt();
             List<PathNode> nodes = new ArrayList<>(nodeCount);
             for (int i = 0; i < nodeCount; i++) {
@@ -53,9 +54,9 @@ public record EntityPathingPayload(
         }
 
         @Override
-        public void encode(FriendlyByteBuf buf, EntityPathingPayload payload) {
+        public void encode(@Nonnull FriendlyByteBuf buf, @Nonnull EntityPathingPayload payload) {
             buf.writeVarInt(payload.entityId);
-            buf.writeUtf(payload.entityName);
+            buf.writeUtf(Objects.requireNonNull(payload.entityName));
             buf.writeVarInt(payload.nodes.size());
             for (PathNode node : payload.nodes) {
                 buf.writeDouble(node.x);

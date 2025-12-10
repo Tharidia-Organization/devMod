@@ -13,6 +13,7 @@ import java.util.*;
 /**
  * Shop screen for purchasing permanent upgrades with Endurance Tokens.
  */
+@SuppressWarnings({"NullableProblems", "null", "unused"}) // Font is always available when render() is called
 public class EnduranceShopScreen extends Screen {
 
     // Layout constants - using UIConstants for consistency

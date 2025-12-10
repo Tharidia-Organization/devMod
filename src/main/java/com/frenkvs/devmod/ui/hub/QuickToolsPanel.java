@@ -12,11 +12,12 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- * Pannello destro con:
- * - Toggle rapidi per overlay/tool
- * - Accesso rapido agli editor
- * - Info sessione corrente
+ * Right panel with:
+ * - Quick toggles for overlays/tools
+ * - Quick access to editors
+ * - Current session info
  */
+@SuppressWarnings("null") // Minecraft APIs lack null annotations
 public class QuickToolsPanel implements HubPanel {
 
     private final int x, y, width, height;
@@ -25,7 +26,7 @@ public class QuickToolsPanel implements HubPanel {
     private final BiConsumer<ToolType, Boolean> onToolToggled;
     private final Consumer<EditorType> onEditorOpened;
 
-    // Tool richiesti dal test corrente (evidenziati)
+    // Tools required by current test (highlighted)
     private Set<ToolType> requiredTools = EnumSet.noneOf(ToolType.class);
 
     // Layout
@@ -62,14 +63,14 @@ public class QuickToolsPanel implements HubPanel {
         // Background
         graphics.fill(x, y, x + width, y + height, UIConstants.Background.PANEL);
 
-        // Bordo sinistro separatore
+        // Left border separator
         graphics.fill(x, y, x + 1, y + height, UIConstants.Border.SEPARATOR);
 
         int contentY = y + PADDING;
         int contentX = x + PADDING;
         int contentWidth = width - PADDING * 2;
 
-        // === SEZIONE OVERLAYS ===
+        // === OVERLAYS SECTION ===
         graphics.drawString(font, "OVERLAYS", contentX, contentY, UIConstants.Text.TITLE, false);
         contentY += SECTION_HEADER_HEIGHT;
 
@@ -86,7 +87,7 @@ public class QuickToolsPanel implements HubPanel {
         AxiomRenderer.drawSeparator(graphics, contentX, contentY, contentWidth);
         contentY += 12;
 
-        // === SEZIONE EDITORS ===
+        // === EDITORS SECTION ===
         graphics.drawString(font, "EDITORS", contentX, contentY, UIConstants.Text.TITLE, false);
         contentY += SECTION_HEADER_HEIGHT;
 
@@ -100,7 +101,7 @@ public class QuickToolsPanel implements HubPanel {
         AxiomRenderer.drawSeparator(graphics, contentX, contentY, contentWidth);
         contentY += 12;
 
-        // === SEZIONE SESSION ===
+        // === SESSION SECTION ===
         graphics.drawString(font, "SESSION", contentX, contentY, UIConstants.Text.TITLE, false);
         contentY += SECTION_HEADER_HEIGHT;
 
@@ -114,7 +115,7 @@ public class QuickToolsPanel implements HubPanel {
             graphics.fill(rx - 2, ry, rx + rwidth + 2, ry + TOGGLE_ROW_HEIGHT - 2, UIConstants.Background.HOVER);
         }
 
-        // Indicatore "required" (bordo sinistro giallo)
+        // "Required" indicator (yellow left border)
         if (required && !enabled) {
             graphics.fill(rx - 2, ry, rx, ry + TOGGLE_ROW_HEIGHT - 2, UIConstants.Status.WARNING);
         }
@@ -139,7 +140,7 @@ public class QuickToolsPanel implements HubPanel {
         }
         graphics.drawString(font, label, labelX, ry + 5, labelColor, false);
 
-        // Toggle switch (semplificato)
+        // Toggle switch (simplified)
         int toggleWidth = 32;
         int toggleHeight = 14;
         int toggleX = rx + rwidth - toggleWidth;
@@ -155,7 +156,7 @@ public class QuickToolsPanel implements HubPanel {
         int textWidth = font.width(toggleText);
         graphics.drawString(font, toggleText, toggleX + (toggleWidth - textWidth) / 2, toggleY + 3, textColor, false);
 
-        // Checkmark se required e enabled
+        // Checkmark if required and enabled
         if (required && enabled) {
             graphics.drawString(font, "v", toggleX - 10, ry + 5, UIConstants.Status.SUCCESS, false);
         }

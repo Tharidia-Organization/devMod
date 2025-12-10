@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.Objects;
 
 /**
  * Manages projectile trail effects.
@@ -105,6 +106,7 @@ public class TrailManager {
             activeTrails.clear();
             return;
         }
+        var level = Objects.requireNonNull(mc.level);
 
         // Update existing trails
         Iterator<Map.Entry<Integer, TrailEffect>> iterator = activeTrails.entrySet().iterator();
@@ -120,16 +122,16 @@ public class TrailManager {
             }
 
             // Try to update position from entity
-            Entity entity = mc.level.getEntity(entry.getKey());
+            Entity entity = level.getEntity(entry.getKey());
             if (entity != null && entity.isAlive()) {
                 // Only add point if entity has moved
-                Vec3 pos = entity.position().add(0, entity.getBbHeight() * 0.5, 0);
+                Vec3 pos = Objects.requireNonNull(entity.position().add(0, entity.getBbHeight() * 0.5, 0));
                 trail.addPoint(pos);
             }
         }
 
         // Scan for new projectiles to track
-        for (Entity entity : mc.level.entitiesForRendering()) {
+        for (Entity entity : level.entitiesForRendering()) {
             if (shouldTrack(entity) && !activeTrails.containsKey(entity.getId())) {
                 TrailEffect trail = createTrailForEntity(entity);
                 if (trail != null) {
@@ -145,16 +147,21 @@ public class TrailManager {
     public void render(PoseStack poseStack, MultiBufferSource bufferSource, Vec3 cameraPos) {
         if (!isEnabled() || activeTrails.isEmpty()) return;
 
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.lines());
-        Matrix4f matrix = poseStack.last().pose();
+        VertexConsumer consumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.lines()));
+        PoseStack.Pose pose = Objects.requireNonNull(poseStack.last());
+        Matrix4f matrix = Objects.requireNonNull(pose.pose());
+
+        Matrix4f safeMatrix = Objects.requireNonNull(matrix);
+        PoseStack.Pose safePose = Objects.requireNonNull(pose);
 
         for (TrailEffect trail : activeTrails.values()) {
-            renderTrail(consumer, matrix, poseStack, trail, cameraPos);
+            renderTrail(consumer, safeMatrix, safePose, trail, cameraPos);
         }
     }
 
-    private void renderTrail(VertexConsumer consumer, Matrix4f matrix, PoseStack poseStack,
+    private void renderTrail(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose,
                              TrailEffect trail, Vec3 cameraPos) {
+        Vec3 cam = Objects.requireNonNull(cameraPos);
         var points = trail.getPoints();
         if (points.size() < 2) return;
 
@@ -176,17 +183,19 @@ public class TrailManager {
             if (alpha1 < 0.01f && alpha2 < 0.01f) continue;
 
             // Convert to camera-relative coordinates
-            Vec3 rel1 = p1.position.subtract(cameraPos);
-            Vec3 rel2 = p2.position.subtract(cameraPos);
+            Vec3 p1Pos = Objects.requireNonNull(p1.position);
+            Vec3 p2Pos = Objects.requireNonNull(p2.position);
+            Vec3 rel1 = Objects.requireNonNull(p1Pos.subtract(cam));
+            Vec3 rel2 = Objects.requireNonNull(p2Pos.subtract(cam));
 
             // Draw line segment
-            consumer.addVertex(matrix, (float) rel1.x, (float) rel1.y, (float) rel1.z)
+            consumer.addVertex(Objects.requireNonNull(matrix), (float) rel1.x, (float) rel1.y, (float) rel1.z)
                 .setColor(r, g, b, (int) (alpha1 * 255))
-                .setNormal(poseStack.last(), 0, 1, 0);
+                .setNormal(Objects.requireNonNull(pose), 0, 1, 0);
 
-            consumer.addVertex(matrix, (float) rel2.x, (float) rel2.y, (float) rel2.z)
+            consumer.addVertex(Objects.requireNonNull(matrix), (float) rel2.x, (float) rel2.y, (float) rel2.z)
                 .setColor(r, g, b, (int) (alpha2 * 255))
-                .setNormal(poseStack.last(), 0, 1, 0);
+                .setNormal(Objects.requireNonNull(pose), 0, 1, 0);
         }
     }
 

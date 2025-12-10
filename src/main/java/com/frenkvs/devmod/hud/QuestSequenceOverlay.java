@@ -1,0 +1,355 @@
+package com.frenkvs.devmod.hud;
+
+import com.frenkvs.devmod.DevMod;
+import com.frenkvs.devmod.party.ArrivalConfirmPayload;
+import com.frenkvs.devmod.party.QuestSequencePayload;
+import com.frenkvs.devmod.ui.UIConstants;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+import net.neoforged.neoforge.network.PacketDistributor;
+
+import javax.annotation.Nullable;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Client-side overlay that shows the quest start sequence countdown.
+ * Displays: phase name, countdown timer, arrival status, and progress bar.
+ *
+ * Registered as a GUI layer to render properly in the HUD.
+ */
+@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
+public class QuestSequenceOverlay {
+
+    private static final ResourceLocation LAYER_ID =
+        ResourceLocation.fromNamespaceAndPath("devmod", "quest_sequence");
+
+    // Singleton for state management
+    public static final QuestSequenceOverlay INSTANCE = new QuestSequenceOverlay();
+
+    // Current sequence state
+    @Nullable
+    private UUID activePartyId = null;
+    private QuestSequencePayload.Phase currentPhase = QuestSequencePayload.Phase.CANCELLED;
+    private int secondsRemaining = 0;
+    private int totalMembers = 0;
+    private List<UUID> arrivedMembers = List.of();
+
+    // Track if we've sent arrival confirmation
+    private boolean arrivalConfirmed = false;
+    // Retry timer for arrival confirmation (in case server rejects due to position not yet synced)
+    private int arrivalRetryTicks = 0;
+    private static final int ARRIVAL_RETRY_INTERVAL = 10; // 0.5 seconds
+
+    // Animation
+    private float animationProgress = 0f;
+    private static final int FADE_IN_TICKS = 10;
+    private static final int FADE_OUT_TICKS = 20;
+    private boolean fadingOut = false;
+    private int fadeOutTicks = 0;
+
+    private QuestSequenceOverlay() {}
+
+    /**
+     * Register the GUI layer for rendering.
+     */
+    @SubscribeEvent
+    public static void registerGuiLayers(RegisterGuiLayersEvent event) {
+        event.registerAbove(
+            VanillaGuiLayers.BOSS_OVERLAY,
+            LAYER_ID,
+            QuestSequenceOverlay::renderStatic
+        );
+    }
+
+    /**
+     * Static render method for the GUI layer callback.
+     */
+    private static void renderStatic(GuiGraphics graphics, DeltaTracker deltaTracker) {
+        INSTANCE.render(graphics, deltaTracker.getRealtimeDeltaTicks());
+    }
+
+    /**
+     * Update the sequence state from server payload.
+     */
+    public void update(QuestSequencePayload payload) {
+        this.activePartyId = payload.partyId();
+        this.currentPhase = payload.phase();
+        this.secondsRemaining = payload.secondsRemaining();
+        this.totalMembers = payload.totalMembers();
+        this.arrivedMembers = payload.arrivedMembers();
+        this.fadingOut = false;
+        this.fadeOutTicks = 0;
+
+        // Reset arrival confirmation when starting new sequence
+        if (currentPhase == QuestSequencePayload.Phase.COUNTDOWN_START) {
+            arrivalConfirmed = false;
+            arrivalRetryTicks = 0;
+        }
+
+        // Check if we're in WAITING_FOR_ARRIVALS and need to send/retry confirmation
+        if (currentPhase == QuestSequencePayload.Phase.WAITING_FOR_ARRIVALS) {
+            Minecraft mc = Minecraft.getInstance();
+            UUID myUUID = mc.player != null ? mc.player.getUUID() : null;
+
+            // Check if server has already confirmed our arrival
+            boolean serverConfirmedArrival = myUUID != null && arrivedMembers.contains(myUUID);
+
+            if (serverConfirmedArrival) {
+                // Server confirmed - no need to retry
+                arrivalConfirmed = true;
+            } else if (!arrivalConfirmed || arrivalRetryTicks >= ARRIVAL_RETRY_INTERVAL) {
+                // Send initial or retry confirmation
+                sendArrivalConfirmation();
+                arrivalRetryTicks = 0;
+            }
+        }
+
+        // Start fade out if sequence ended
+        if (currentPhase == QuestSequencePayload.Phase.STARTED ||
+            currentPhase == QuestSequencePayload.Phase.CANCELLED) {
+            fadingOut = true;
+        }
+    }
+
+    /**
+     * Send arrival confirmation to server.
+     * Will retry if server hasn't confirmed yet (position verification may fail initially due to lag).
+     */
+    private void sendArrivalConfirmation() {
+        if (activePartyId != null) {
+            arrivalConfirmed = true;
+            PacketDistributor.sendToServer(new ArrivalConfirmPayload(activePartyId));
+        }
+    }
+
+    /**
+     * Clear the overlay (sequence ended or cancelled).
+     */
+    public void clear() {
+        fadingOut = true;
+    }
+
+    /**
+     * Check if overlay should be rendered.
+     */
+    public boolean isActive() {
+        return activePartyId != null && (!fadingOut || fadeOutTicks < FADE_OUT_TICKS);
+    }
+
+    /**
+     * Render the overlay.
+     */
+    public void render(GuiGraphics graphics, float partialTick) {
+        if (!isActive()) return;
+
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.options.hideGui) return;
+
+        int screenWidth = mc.getWindow().getGuiScaledWidth();
+
+        // Update animation
+        if (fadingOut) {
+            fadeOutTicks++;
+            animationProgress = Math.max(0, 1f - (fadeOutTicks / (float) FADE_OUT_TICKS));
+            if (fadeOutTicks >= FADE_OUT_TICKS) {
+                activePartyId = null;
+                return;
+            }
+        } else {
+            animationProgress = Math.min(1f, animationProgress + partialTick / FADE_IN_TICKS);
+        }
+
+        // Increment retry timer for arrival confirmation
+        if (currentPhase == QuestSequencePayload.Phase.WAITING_FOR_ARRIVALS) {
+            arrivalRetryTicks++;
+            // Check if we need to retry (server hasn't confirmed our arrival yet)
+            UUID myUUID = mc.player.getUUID();
+            boolean serverConfirmedArrival = arrivedMembers.contains(myUUID);
+            if (!serverConfirmedArrival && arrivalRetryTicks >= ARRIVAL_RETRY_INTERVAL) {
+                sendArrivalConfirmation();
+                arrivalRetryTicks = 0;
+            }
+        }
+
+        int alpha = (int) (255 * animationProgress);
+        if (alpha < 10) return;
+
+        // Calculate box size - larger for arrival phase
+        int boxWidth = 220;
+        int boxHeight = currentPhase == QuestSequencePayload.Phase.WAITING_FOR_ARRIVALS ? 90 : 70;
+        int boxX = (screenWidth - boxWidth) / 2;
+        int boxY = 40;
+
+        // Background
+        int bgColor = UIConstants.setAlpha(UIConstants.Background.PANEL_SOLID, (int) (0xE0 * animationProgress));
+        graphics.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, bgColor);
+
+        // Border with glow effect based on phase
+        int borderColor = getPhaseColor();
+        borderColor = UIConstants.setAlpha(borderColor, alpha);
+        graphics.renderOutline(boxX, boxY, boxWidth, boxHeight, borderColor);
+
+        // Phase title
+        Component phaseText = getPhaseText();
+        int textColor = UIConstants.setAlpha(UIConstants.Text.PRIMARY, alpha);
+        graphics.drawCenteredString(mc.font, phaseText, boxX + boxWidth / 2, boxY + 8, textColor);
+
+        // Render based on phase
+        if (currentPhase == QuestSequencePayload.Phase.WAITING_FOR_ARRIVALS) {
+            renderArrivalStatus(graphics, mc, boxX, boxY, boxWidth, alpha);
+        } else if (secondsRemaining > 0 && !fadingOut) {
+            renderCountdown(graphics, mc, boxX, boxY, boxWidth, alpha);
+        } else if (currentPhase == QuestSequencePayload.Phase.STARTED) {
+            renderGoMessage(graphics, mc, boxX, boxY, boxWidth, alpha);
+        }
+
+        // Progress bar
+        renderProgressBar(graphics, boxX, boxY, boxWidth, boxHeight, alpha);
+    }
+
+    /**
+     * Render countdown number.
+     */
+    private void renderCountdown(GuiGraphics graphics, Minecraft mc, int boxX, int boxY, int boxWidth, int alpha) {
+        String countdownText = String.valueOf(secondsRemaining);
+        int countdownColor = getCountdownColor();
+        countdownColor = UIConstants.setAlpha(countdownColor, alpha);
+
+        graphics.pose().pushPose();
+        graphics.pose().translate(boxX + boxWidth / 2f, boxY + 32, 0);
+        graphics.pose().scale(2f, 2f, 1f);
+        graphics.drawCenteredString(mc.font, countdownText, 0, 0, countdownColor);
+        graphics.pose().popPose();
+    }
+
+    /**
+     * Render "GO!" message.
+     */
+    private void renderGoMessage(GuiGraphics graphics, Minecraft mc, int boxX, int boxY, int boxWidth, int alpha) {
+        int goColor = UIConstants.setAlpha(UIConstants.Accent.GREEN, alpha);
+        graphics.pose().pushPose();
+        graphics.pose().translate(boxX + boxWidth / 2f, boxY + 32, 0);
+        graphics.pose().scale(2f, 2f, 1f);
+        graphics.drawCenteredString(mc.font, "GO!", 0, 0, goColor);
+        graphics.pose().popPose();
+    }
+
+    /**
+     * Render arrival status with checkmarks.
+     */
+    private void renderArrivalStatus(GuiGraphics graphics, Minecraft mc, int boxX, int boxY, int boxWidth, int alpha) {
+        int arrived = arrivedMembers.size();
+        int total = totalMembers > 0 ? totalMembers : 1;
+
+        // Arrival count
+        String arrivalText = arrived + " / " + total + " arrived";
+        int arrivalColor = UIConstants.setAlpha(UIConstants.Text.PRIMARY, alpha);
+        graphics.drawCenteredString(mc.font, arrivalText, boxX + boxWidth / 2, boxY + 28, arrivalColor);
+
+        // Visual dots for each player
+        int dotSize = 8;
+        int dotSpacing = 12;
+        int totalDotsWidth = total * dotSpacing;
+        int startX = boxX + (boxWidth - totalDotsWidth) / 2;
+        int dotY = boxY + 45;
+
+        for (int i = 0; i < total; i++) {
+            int dotX = startX + i * dotSpacing;
+            boolean isArrived = i < arrived;
+
+            int dotColor = isArrived
+                ? UIConstants.setAlpha(UIConstants.Accent.GREEN, alpha)
+                : UIConstants.setAlpha(UIConstants.Text.DISABLED, alpha);
+
+            graphics.fill(dotX, dotY, dotX + dotSize, dotY + dotSize, dotColor);
+
+            // Checkmark for arrived
+            if (isArrived) {
+                int checkColor = UIConstants.setAlpha(UIConstants.Text.PRIMARY, alpha);
+                graphics.drawString(mc.font, "✓", dotX + 1, dotY, checkColor);
+            }
+        }
+
+        // Timeout warning
+        if (secondsRemaining <= 10 && secondsRemaining > 0) {
+            String timeoutText = "Timeout in " + secondsRemaining + "s";
+            int timeoutColor = UIConstants.setAlpha(UIConstants.Accent.GOLD, alpha);
+            graphics.drawCenteredString(mc.font, timeoutText, boxX + boxWidth / 2, boxY + 62, timeoutColor);
+        }
+    }
+
+    /**
+     * Render progress bar at bottom of box.
+     */
+    private void renderProgressBar(GuiGraphics graphics, int boxX, int boxY, int boxWidth, int boxHeight, int alpha) {
+        int barX = boxX + 10;
+        int barY = boxY + boxHeight - 12;
+        int barWidth = boxWidth - 20;
+        int barHeight = 4;
+
+        // Bar background
+        int barBgColor = UIConstants.setAlpha(UIConstants.Background.INPUT, alpha);
+        graphics.fill(barX, barY, barX + barWidth, barY + barHeight, barBgColor);
+
+        // Bar progress
+        float progress = getPhaseProgress();
+        int progressWidth = (int) (barWidth * progress);
+        int barColor = UIConstants.setAlpha(getPhaseColor(), alpha);
+        graphics.fill(barX, barY, barX + progressWidth, barY + barHeight, barColor);
+    }
+
+    private Component getPhaseText() {
+        return switch (currentPhase) {
+            case COUNTDOWN_START -> Component.translatable("devmod.sequence.countdown");
+            case TELEPORTING -> Component.translatable("devmod.sequence.teleporting");
+            case WAITING_FOR_ARRIVALS -> Component.translatable("devmod.sequence.waiting_arrivals");
+            case SYNCING -> Component.translatable("devmod.sequence.syncing");
+            case STARTING -> Component.translatable("devmod.sequence.starting");
+            case STARTED -> Component.translatable("devmod.sequence.started");
+            case CANCELLED -> Component.translatable("devmod.sequence.cancelled");
+        };
+    }
+
+    private int getPhaseColor() {
+        return switch (currentPhase) {
+            case COUNTDOWN_START -> UIConstants.Accent.GOLD;
+            case TELEPORTING -> UIConstants.Accent.CYAN;
+            case WAITING_FOR_ARRIVALS -> UIConstants.Accent.PURPLE;
+            case SYNCING -> UIConstants.Accent.CYAN;
+            case STARTING -> UIConstants.Accent.GREEN;
+            case STARTED -> UIConstants.Accent.GREEN;
+            case CANCELLED -> UIConstants.Accent.RED;
+        };
+    }
+
+    private int getCountdownColor() {
+        if (secondsRemaining <= 1) return UIConstants.Accent.RED;
+        if (secondsRemaining <= 3) return UIConstants.Accent.GOLD;
+        return UIConstants.Text.PRIMARY;
+    }
+
+    private float getPhaseProgress() {
+        return switch (currentPhase) {
+            case COUNTDOWN_START -> secondsRemaining > 0 ? 1f - (secondsRemaining / 5f) : 1f;
+            case TELEPORTING -> 0.3f;
+            case WAITING_FOR_ARRIVALS -> {
+                if (totalMembers > 0) {
+                    yield 0.3f + 0.4f * (arrivedMembers.size() / (float) totalMembers);
+                }
+                yield 0.5f;
+            }
+            case SYNCING -> secondsRemaining > 0 ? 0.7f + (0.3f * (1f - secondsRemaining / 3f)) : 1f;
+            case STARTING, STARTED -> 1f;
+            case CANCELLED -> 0f;
+        };
+    }
+}

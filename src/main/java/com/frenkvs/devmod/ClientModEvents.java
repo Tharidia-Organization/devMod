@@ -303,22 +303,22 @@ public class ClientModEvents {
                 rawReach = reachAttr.getValue();
             }
 
-            // Testo da mostrare
+            // Text to display
             String reachText;
             int reachColor;
 
             if (rawReach > 0) {
-                // Se è > 0, significa che l'abbiamo modificato noi
+                // If > 0, we modified it
                 reachText = "Reach (MOD): " + df.format(rawReach);
-                reachColor = 0xFFFF00; // Giallo
+                reachColor = 0xFFFF00; // Yellow
             } else {
-                // Se è 0, è il valore vanilla. Calcoliamolo per mostrarlo all'utente.
+                // If 0, it's vanilla value. Calculate it to show user.
                 double estimated = entity.getBbWidth() * 2.0 + 1.0;
                 reachText = "Reach (Vanilla): " + df.format(estimated);
-                reachColor = 0xAAAAAA; // Grigio
+                reachColor = 0xAAAAAA; // Gray
             }
 
-            // --- DISEGNO ---
+            // --- DRAWING ---
             gui.drawString(font, "Nome: " + entity.getName().getString(), x, y, 0xFFFF00);
             y += lineHeight;
 

@@ -6,15 +6,12 @@ import net.minecraft.network.protocol.common.custom.GoalDebugPayload;
 import net.minecraft.network.protocol.common.custom.PoiAddedDebugPayload;
 import net.minecraft.network.protocol.common.custom.RaidsDebugPayload;
 import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
-import net.minecraft.network.protocol.game.DebugPackets;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.ai.goal.GoalSelector;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.village.poi.PoiManager;
-import net.minecraft.world.entity.ai.village.poi.PoiRecord;
 import net.minecraft.world.entity.raid.Raid;
 import net.minecraft.world.entity.raid.Raids;
 import net.minecraft.world.level.pathfinder.Path;
@@ -24,14 +21,14 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
 /**
  * Uses Minecraft's NATIVE debug payload system.
  * These are the same packets that Mojang uses internally for debugging.
  * The client already has renderers for these - we just need to send the packets.
  */
+@SuppressWarnings("unused") // Native debug sending is temporarily disabled; keep code for future use
 public class NativeDebugSender {
     private static final Logger LOGGER = LoggerFactory.getLogger(NativeDebugSender.class);
 
@@ -96,8 +93,8 @@ public class NativeDebugSender {
      * Send pathfinding debug using Minecraft's native PathfindingDebugPayload.
      */
     private void sendPathfindingDebug(ServerPlayer player, ServerLevel level) {
-        BlockPos playerPos = player.blockPosition();
-        AABB searchBox = new AABB(playerPos).inflate(SEARCH_RADIUS);
+        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
+        AABB searchBox = Objects.requireNonNull(new AABB(playerPos).inflate(SEARCH_RADIUS));
 
         for (Mob mob : level.getEntitiesOfClass(Mob.class, searchBox)) {
             PathNavigation nav = mob.getNavigation();
@@ -123,8 +120,8 @@ public class NativeDebugSender {
      * Send goals debug using Minecraft's native GoalDebugPayload.
      */
     private void sendGoalsDebug(ServerPlayer player, ServerLevel level) {
-        BlockPos playerPos = player.blockPosition();
-        AABB searchBox = new AABB(playerPos).inflate(SEARCH_RADIUS);
+        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
+        AABB searchBox = Objects.requireNonNull(new AABB(playerPos).inflate(SEARCH_RADIUS));
 
         for (Mob mob : level.getEntitiesOfClass(Mob.class, searchBox)) {
             List<GoalDebugPayload.DebugGoal> goals = new ArrayList<>();
@@ -134,7 +131,7 @@ public class NativeDebugSender {
                 goals.add(new GoalDebugPayload.DebugGoal(
                     wrappedGoal.getPriority(),
                     wrappedGoal.isRunning(),
-                    wrappedGoal.getGoal().getClass().getSimpleName()
+                    Objects.requireNonNull(wrappedGoal.getGoal().getClass().getSimpleName())
                 ));
             }
 
@@ -143,14 +140,14 @@ public class NativeDebugSender {
                 goals.add(new GoalDebugPayload.DebugGoal(
                     wrappedGoal.getPriority(),
                     wrappedGoal.isRunning(),
-                    "[T] " + wrappedGoal.getGoal().getClass().getSimpleName()
+                    "[T] " + Objects.requireNonNull(wrappedGoal.getGoal().getClass().getSimpleName())
                 ));
             }
 
             if (!goals.isEmpty()) {
                 GoalDebugPayload payload = new GoalDebugPayload(
                     mob.getId(),
-                    mob.blockPosition(),
+                    Objects.requireNonNull(mob.blockPosition()),
                     goals
                 );
 
@@ -163,7 +160,7 @@ public class NativeDebugSender {
      * Send POI debug using Minecraft's native PoiAddedDebugPayload.
      */
     private void sendPOIDebug(ServerPlayer player, ServerLevel level) {
-        BlockPos playerPos = player.blockPosition();
+        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
         PoiManager poiManager = level.getPoiManager();
 
         poiManager.getInRange(
@@ -173,8 +170,8 @@ public class NativeDebugSender {
             PoiManager.Occupancy.ANY
         ).forEach(record -> {
             PoiAddedDebugPayload payload = new PoiAddedDebugPayload(
-                record.getPos(),
-                record.getPoiType().getRegisteredName(),
+                Objects.requireNonNull(record.getPos()),
+                Objects.requireNonNull(record.getPoiType().getRegisteredName()),
                 0 // Free tickets - simplified
             );
 
@@ -189,11 +186,12 @@ public class NativeDebugSender {
         Raids raids = level.getRaids();
         if (raids == null) return;
 
-        BlockPos playerPos = player.blockPosition();
+        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
         Raid nearestRaid = raids.getNearbyRaid(playerPos, 128);
 
         if (nearestRaid != null) {
-            List<BlockPos> raidCenters = List.of(nearestRaid.getCenter());
+            BlockPos center = Objects.requireNonNull(nearestRaid.getCenter());
+            List<BlockPos> raidCenters = Objects.requireNonNull(List.of(center));
 
             RaidsDebugPayload payload = new RaidsDebugPayload(raidCenters);
             player.connection.send(new ClientboundCustomPayloadPacket(payload));

@@ -14,19 +14,19 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 /**
- * HUD Overlay compatto per visualizzare la task rapida.
- * Posizione: basso a destra.
+ * Compact HUD Overlay to display quick tasks.
+ * Position: bottom right.
  *
- * Mostra:
- * - Nome quest corrente
- * - Progress (es. 2/5 tasks)
- * - Prossima task (testo breve)
- * - Nota rapida (se presente)
- * - Hint per keybind [ ] \
+ * Shows:
+ * - Current quest name
+ * - Progress (e.g. 2/5 tasks)
+ * - Next task (short text)
+ * - Quick note (if present)
+ * - Keybind hint [ ] \
  *
  * Features:
- * - Animazione di completamento task
- * - Sincronizzazione con QuestEditorScreen
+ * - Task completion animation
+ * - Synchronization with QuestEditorScreen
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 @SuppressWarnings("null")
@@ -35,20 +35,20 @@ public class QuestHudOverlay {
     private static final ResourceLocation LAYER_ID =
         ResourceLocation.fromNamespaceAndPath("devmod", "quest_hud");
 
-    // === Colori UI (stile coerente con ImpactHudOverlay) ===
-    private static final int PANEL_BG = 0xCC1A1A2E;           // Blu scuro 80% opacity
-    private static final int PANEL_BORDER = 0xFF4CAF50;       // Verde (per quest)
+    // === UI Colors (consistent style with ImpactHudOverlay) ===
+    private static final int PANEL_BG = 0xCC1A1A2E;           // Dark blue 80% opacity
+    private static final int PANEL_BORDER = 0xFF4CAF50;       // Green (for quest)
     private static final int PANEL_BORDER_GLOW = 0x554CAF50;  // Glow border
 
-    private static final int TEXT_TITLE = 0xFF81C784;         // Verde chiaro
-    private static final int TEXT_NORMAL = 0xFFFFFFFF;        // Bianco
-    private static final int TEXT_TASK = 0xFFFFD54F;          // Giallo/Oro (task corrente)
-    private static final int TEXT_NOTE = 0xFFB0BEC5;          // Grigio chiaro (nota)
-    private static final int TEXT_PROGRESS = 0xFF64B5F6;      // Blu chiaro (progress)
-    private static final int TEXT_COMPLETED = 0xFF4CAF50;     // Verde (completata)
-    private static final int TEXT_HINT = 0xFF666666;          // Grigio scuro (hint)
+    private static final int TEXT_TITLE = 0xFF81C784;         // Light green
+    private static final int TEXT_NORMAL = 0xFFFFFFFF;        // White
+    private static final int TEXT_TASK = 0xFFFFD54F;          // Yellow/Gold (current task)
+    private static final int TEXT_NOTE = 0xFFB0BEC5;          // Light gray (note)
+    private static final int TEXT_PROGRESS = 0xFF64B5F6;      // Light blue (progress)
+    private static final int TEXT_COMPLETED = 0xFF4CAF50;     // Green (completed)
+    private static final int TEXT_HINT = 0xFF666666;          // Dark gray (hint)
 
-    // === Dimensioni ===
+    // === Dimensions ===
     private static final int PANEL_PADDING = 6;
     private static final int LINE_HEIGHT = 10;
     private static final int PANEL_WIDTH = 180;
@@ -105,7 +105,7 @@ public class QuestHudOverlay {
     }
 
     /**
-     * Metodo di rendering principale.
+     * Main rendering method.
      */
     private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
         if (!enabled) return;
@@ -113,7 +113,7 @@ public class QuestHudOverlay {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.options.hideGui) return;
 
-        // Nascondi se c'è una Endurance Quest attiva (per evitare sovrapposizioni)
+        // Hide if there's an active Endurance Quest (to avoid overlap)
         if (ClientQuestCache.hasActiveQuest()) return;
 
         QuestData activeQuest = QuestManager.INSTANCE.getActiveQuest();
@@ -123,20 +123,20 @@ public class QuestHudOverlay {
         int screenWidth = graphics.guiWidth();
         int screenHeight = graphics.guiHeight();
 
-        // Calcola dimensioni pannello
+        // Calculate panel dimensions
         int panelHeight = calculatePanelHeight(activeQuest, font);
         int panelX = screenWidth - PANEL_WIDTH - MARGIN_RIGHT;
-        int panelY = screenHeight - panelHeight - MARGIN_BOTTOM - 40; // 40px sopra hotbar
+        int panelY = screenHeight - panelHeight - MARGIN_BOTTOM - 40; // 40px above hotbar
 
         // Render completion animation (if active)
         renderCompletionAnimation(graphics, font, panelX, panelY - 20);
 
-        // Render pannello
+        // Render panel
         renderQuestPanel(graphics, font, activeQuest, panelX, panelY, PANEL_WIDTH, panelHeight);
     }
 
     /**
-     * Renderizza l'animazione di completamento task.
+     * Renders the task completion animation.
      */
     private static void renderCompletionAnimation(GuiGraphics g, Font font, int x, int y) {
         long elapsed = System.currentTimeMillis() - lastCompletionTime;
@@ -170,22 +170,22 @@ public class QuestHudOverlay {
     }
 
     /**
-     * Renderizza il pannello quest compatto.
+     * Renders the compact quest panel.
      */
     private static void renderQuestPanel(GuiGraphics g, Font font, QuestData quest,
                                           int x, int y, int width, int height) {
-        // Sfondo con bordo
+        // Background with border
         renderPanelBackground(g, x, y, width, height);
 
         int textX = x + PANEL_PADDING;
         int textY = y + PANEL_PADDING;
 
         if (minimized) {
-            // Modalità minimizzata: solo icona e nome
+            // Minimized mode: icon and name only
             String title = "\u2605 " + truncateText(quest.getName(), font, width - PANEL_PADDING * 2 - 20);
             g.drawString(font, title, textX, textY, TEXT_TITLE, false);
 
-            // Progress compatto
+            // Compact progress
             String progress = quest.getProgressSummary();
             int progressWidth = font.width(progress);
             g.drawString(font, progress, x + width - PANEL_PADDING - progressWidth, textY, TEXT_PROGRESS, false);
@@ -201,40 +201,40 @@ public class QuestHudOverlay {
         g.drawString(font, progress, x + width - PANEL_PADDING - progressWidth, textY, TEXT_PROGRESS, false);
         textY += LINE_HEIGHT + 2;
 
-        // Linea separatore
+        // Separator line
         g.fill(x + 4, textY, x + width - 4, textY + 1, PANEL_BORDER & 0x55FFFFFF);
         textY += 4;
 
-        // === Task Corrente ===
+        // === Current Task ===
         QuestTask currentTask = quest.getCurrentTask();
         if (currentTask != null) {
-            // Label "Task rapida:"
-            g.drawString(font, "Task rapida:", textX, textY, TEXT_NORMAL, false);
+            // Label "Quick Task:"
+            g.drawString(font, "Quick Task:", textX, textY, TEXT_NORMAL, false);
             textY += LINE_HEIGHT;
 
-            // Descrizione task (con freccia animata)
+            // Task description (with animated arrow)
             long time = System.currentTimeMillis();
             String arrow = (time / 500) % 2 == 0 ? "\u25B6 " : "\u25B7 "; // Alternating arrow
             String taskDesc = arrow + truncateText(currentTask.getDescription(), font, width - PANEL_PADDING * 2 - 10);
             g.drawString(font, taskDesc, textX + 4, textY, TEXT_TASK, false);
             textY += LINE_HEIGHT + 2;
 
-            // Nota task (se presente)
+            // Task note (if present)
             if (currentTask.hasNote()) {
                 String noteText = "\u270E " + truncateText(currentTask.getNote(), font, width - PANEL_PADDING * 2 - 10);
                 g.drawString(font, noteText, textX + 4, textY, TEXT_NOTE, false);
                 textY += LINE_HEIGHT;
             }
         } else {
-            // Quest completata con animazione
+            // Quest completed with animation
             long time = System.currentTimeMillis();
             int pulseAlpha = (int) (200 + 55 * Math.sin(time / 300.0));
             int completedColor = (pulseAlpha << 24) | (TEXT_COMPLETED & 0x00FFFFFF);
-            g.drawString(font, "\u2713 Quest completata!", textX, textY, completedColor, false);
+            g.drawString(font, "\u2713 Quest completed!", textX, textY, completedColor, false);
             textY += LINE_HEIGHT;
         }
 
-        // === Nota Quest (se presente, in fondo) ===
+        // === Quest Note (if present, at the bottom) ===
         if (quest.hasQuestNote()) {
             textY += 2;
             g.fill(x + 4, textY, x + width - 4, textY + 1, PANEL_BORDER & 0x33FFFFFF);
@@ -245,23 +245,23 @@ public class QuestHudOverlay {
             textY += LINE_HEIGHT;
         }
 
-        // === Hint keybind (sempre in fondo) ===
+        // === Keybind hint (always at the bottom) ===
         textY += 2;
         String hint = "[ Editor  ] Completa  \\ Toggle";
         g.drawString(font, hint, textX, textY, TEXT_HINT, false);
     }
 
     /**
-     * Renderizza sfondo pannello con bordo.
+     * Renders panel background with border.
      */
     private static void renderPanelBackground(GuiGraphics g, int x, int y, int width, int height) {
-        // Glow esterno
+        // Outer glow
         g.fill(x - 1, y - 1, x + width + 1, y + height + 1, PANEL_BORDER_GLOW);
 
-        // Sfondo principale
+        // Main background
         g.fill(x, y, x + width, y + height, PANEL_BG);
 
-        // Bordo
+        // Border
         g.fill(x, y, x + width, y + 1, PANEL_BORDER);                    // Top
         g.fill(x, y + height - 1, x + width, y + height, PANEL_BORDER);  // Bottom
         g.fill(x, y, x + 1, y + height, PANEL_BORDER);                   // Left
@@ -269,7 +269,7 @@ public class QuestHudOverlay {
     }
 
     /**
-     * Calcola altezza dinamica del pannello.
+     * Calculates dynamic panel height.
      */
     private static int calculatePanelHeight(QuestData quest, Font font) {
         if (minimized) {
@@ -302,7 +302,7 @@ public class QuestHudOverlay {
     }
 
     /**
-     * Tronca il testo se supera la larghezza massima.
+     * Truncates text if it exceeds the maximum width.
      */
     private static String truncateText(String text, Font font, int maxWidth) {
         if (font.width(text) <= maxWidth) {
@@ -323,7 +323,7 @@ public class QuestHudOverlay {
     }
 
     /**
-     * Applica alpha a un colore ARGB.
+     * Applies alpha to an ARGB color.
      */
     private static int applyAlpha(int color, float alpha) {
         int a = (int) (((color >> 24) & 0xFF) * alpha);

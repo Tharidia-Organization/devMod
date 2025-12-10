@@ -9,8 +9,6 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
@@ -24,7 +22,6 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
  * - Sound effect on rank down
  * - Shows lost combo count
  */
-@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public class ComboDecayOverlay {
 
     private static final long DISPLAY_DURATION_MS = 1200;
@@ -41,7 +38,6 @@ public class ComboDecayOverlay {
     private static StyleRank newRank = null;
     private static boolean soundPlayed = false;
 
-    @SubscribeEvent
     public static void registerOverlay(RegisterGuiLayersEvent event) {
         event.registerAbove(
             VanillaGuiLayers.CROSSHAIR,

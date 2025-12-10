@@ -13,12 +13,15 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.AABB;
 
+import javax.annotation.Nonnull;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Mob configuration page - shows nearby mobs and their custom stats.
  * Click on a mob to open the detailed MobConfigScreen.
  */
+@SuppressWarnings("null") // Minecraft APIs lack null annotations
 public class MobConfigPage implements SettingsPage {
 
     private static final int ROW_HEIGHT = 24;
@@ -60,20 +63,22 @@ public class MobConfigPage implements SettingsPage {
 
     private void scanNearbyMobs() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null || mc.player == null) {
+        var localPlayer = mc.player;
+        var localLevel = mc.level;
+        if (localLevel == null || localPlayer == null) {
             nearbyMobs = List.of();
             return;
         }
 
-        AABB scanBox = mc.player.getBoundingBox().inflate(MOB_SCAN_RADIUS);
-        nearbyMobs = mc.level.getEntitiesOfClass(LivingEntity.class, scanBox,
-            e -> e != mc.player && e.isAlive());
+        AABB scanBox = Objects.requireNonNull(localPlayer.getBoundingBox().inflate(MOB_SCAN_RADIUS));
+        nearbyMobs = localLevel.getEntitiesOfClass(LivingEntity.class, scanBox,
+            e -> e != localPlayer && e.isAlive());
 
         lastScanTime = System.currentTimeMillis();
     }
 
     @Override
-    public void render(GuiGraphics graphics, Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+    public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
         int currentY = y;
 
         // === Nearby Mobs Section ===
@@ -168,7 +173,7 @@ public class MobConfigPage implements SettingsPage {
         }
 
         // Mob name
-        String mobName = mob.getName().getString();
+        String mobName = Objects.requireNonNull(mob.getName().getString());
         EntityType<?> mobType = mob.getType();
         boolean hasConfig = MobConfigManager.hasConfig(mobType);
 

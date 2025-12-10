@@ -11,13 +11,13 @@ import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
 /**
- * Gestisce il rendering del pannello Impact Analysis in 3D nel mondo.
+ * Manages the rendering of the Impact Analysis panel in 3D in the world.
  *
- * Invece di usare un framebuffer off-screen (complesso e problematico),
- * renderizza direttamente il contenuto dell'HUD come geometria 3D nel mondo.
+ * Instead of using an off-screen framebuffer (complex and problematic),
+ * it renders the HUD content directly as 3D geometry in the world.
  *
- * Questo approccio è più semplice, più performante e si integra meglio
- * con il sistema di rendering di Minecraft 1.21.1.
+ * This approach is simpler, more performant, and integrates better
+ * with the Minecraft 1.21.1 rendering system.
  */
 @SuppressWarnings("null") // Minecraft API methods are not annotated but never return null in practice
 public class Impact3DRenderer {
@@ -25,24 +25,24 @@ public class Impact3DRenderer {
     // Singleton instance
     public static final Impact3DRenderer INSTANCE = new Impact3DRenderer();
 
-    // === Dimensioni pannello (in unità mondo) ===
-    private static final float PANEL_SCALE = 0.02f;  // Scala base del pannello (più grande = più leggibile)
-    private static final float PANEL_OFFSET_SIDE = 4.5f;  // Offset laterale dal punto di impatto (a destra)
-    private static final float PANEL_OFFSET_UP = 1.0f;    // Offset verticale (sopra il punto)
+    // === Panel dimensions (in world units) ===
+    private static final float PANEL_SCALE = 0.02f;  // Panel base scale (bigger = more readable)
+    private static final float PANEL_OFFSET_SIDE = 4.5f;  // Lateral offset from impact point (to the right)
+    private static final float PANEL_OFFSET_UP = 1.0f;    // Vertical offset (above the point)
 
-    // === Colori UI (stile immagine di riferimento) ===
-    private static final int PANEL_BG = 0xDD1A1A2E;           // Blu scuro 87% opacity
-    private static final int PANEL_BORDER = 0xFF3D5AFE;       // Blu elettrico
+    // === UI colors (reference image style) ===
+    private static final int PANEL_BG = 0xDD1A1A2E;           // Dark blue 87% opacity
+    private static final int PANEL_BORDER = 0xFF3D5AFE;       // Electric blue
 
-    private static final int TEXT_TITLE = 0x00FFFF;           // Cyan (senza alpha per font)
-    private static final int TEXT_NORMAL = 0xFFFFFF;          // Bianco
-    private static final int TEXT_VALUE = 0x00FF00;           // Verde
-    private static final int TEXT_FORMULA = 0xFFD700;         // Oro
-    private static final int TEXT_MUTED = 0xAAAAAA;           // Grigio
+    private static final int TEXT_TITLE = 0x00FFFF;           // Cyan (no alpha for font)
+    private static final int TEXT_NORMAL = 0xFFFFFF;          // White
+    private static final int TEXT_VALUE = 0x00FF00;           // Green
+    private static final int TEXT_FORMULA = 0xFFD700;         // Gold
+    private static final int TEXT_MUTED = 0xAAAAAA;           // Gray
 
-    // === Dimensioni interne (in pixel font, scala 1:1 con font Minecraft) ===
-    private static final float PANEL_WIDTH_PX = 320f;   // Larghezza pannello in pixel font
-    private static final float PANEL_HEIGHT_PX = 220f;  // Altezza pannello in pixel font
+    // === Internal dimensions (in font pixels, 1:1 scale with Minecraft font) ===
+    private static final float PANEL_WIDTH_PX = 320f;   // Panel width in font pixels
+    private static final float PANEL_HEIGHT_PX = 220f;  // Panel height in font pixels
     private static final float PADDING = 6f;
     private static final float LINE_HEIGHT = 11f;
     private static final float SECTION_SPACING = 5f;
@@ -50,16 +50,16 @@ public class Impact3DRenderer {
     private Impact3DRenderer() {}
 
     /**
-     * Renderizza un pannello 3D nel mondo con i dati dell'impatto.
-     * Il pannello fa billboard verso la camera.
+     * Renders a 3D panel in the world with impact data.
+     * The panel billboards towards the camera.
      *
-     * @param poseStack Stack di trasformazioni
-     * @param bufferSource Buffer per il rendering
-     * @param cameraPos Posizione della camera
-     * @param panelWorldPos Posizione del pannello nel mondo
-     * @param hitPoint Punto di impatto originale (per la linea di collegamento)
-     * @param data Dati dell'impatto da visualizzare
-     * @param alpha Alpha globale per fade in/out
+     * @param poseStack Transformation stack
+     * @param bufferSource Buffer for rendering
+     * @param cameraPos Camera position
+     * @param panelWorldPos Panel position in world
+     * @param hitPoint Original impact point (for connection line)
+     * @param data Impact data to display
+     * @param alpha Global alpha for fade in/out
      */
     public void renderPanel(PoseStack poseStack, MultiBufferSource bufferSource,
                             Vec3 cameraPos, Vec3 panelWorldPos, Vec3 hitPoint,
@@ -69,55 +69,55 @@ public class Impact3DRenderer {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
-        // 1. Renderizza la linea di collegamento dal hit point al pannello
+        // 1. Render connection line from hit point to panel
         renderConnectionLine(poseStack, bufferSource, cameraPos, hitPoint, panelWorldPos, alpha);
 
-        // 2. Trasla alla posizione del pannello (relativa alla camera)
+        // 2. Translate to panel position (relative to camera)
         poseStack.pushPose();
         Vec3 relativePos = panelWorldPos.subtract(cameraPos);
         poseStack.translate(relativePos.x, relativePos.y, relativePos.z);
 
-        // 3. Calcola rotazione billboard (guarda verso la camera)
+        // 3. Calculate billboard rotation (face camera)
         Vec3 toCamera = cameraPos.subtract(panelWorldPos).normalize();
         float yaw = (float) Math.atan2(toCamera.x, toCamera.z);
         poseStack.mulPose(new Quaternionf().rotationY(yaw));
 
-        // 4. Scala uniforme per il pannello - Y negativo per flip verticale
+        // 4. Uniform scale for panel - negative Y for vertical flip
         poseStack.scale(PANEL_SCALE, -PANEL_SCALE, PANEL_SCALE);
 
-        // 5. Centra il pannello rispetto alla sua larghezza/altezza
+        // 5. Center panel relative to its width/height
         poseStack.translate(-PANEL_WIDTH_PX / 2, -PANEL_HEIGHT_PX / 2, 0);
 
-        // 6. Renderizza il contenuto del pannello
+        // 6. Render panel content
         renderPanelContent(poseStack, bufferSource, data, alpha, mc.font);
 
         poseStack.popPose();
     }
 
     /**
-     * Renderizza la linea di collegamento cyan dal punto di impatto al pannello.
-     * Usa RenderType.lines() per evitare flickering.
+     * Renders cyan connection line from impact point to panel.
+     * Uses RenderType.lines() to avoid flickering.
      */
     private void renderConnectionLine(PoseStack poseStack, MultiBufferSource bufferSource,
                                        Vec3 cameraPos, Vec3 hitPoint, Vec3 panelPos, float alpha) {
         poseStack.pushPose();
 
-        // Posizione relativa alla camera
+        // Position relative to camera
         Vec3 hitRel = hitPoint.subtract(cameraPos);
         Vec3 panelRel = panelPos.subtract(cameraPos);
 
         Matrix4f matrix = poseStack.last().pose();
-        // Usa RenderType.lines() standard invece di debugLineStrip per stabilità
+        // Use standard RenderType.lines() instead of debugLineStrip for stability
         VertexConsumer consumer = bufferSource.getBuffer(RenderType.lines());
 
-        // Colore cyan con alpha
+        // Cyan color with alpha
         float r = 0.0f;
         float g = 0.9f;
         float b = 1.0f;
         float a = alpha * 0.9f;
 
-        // Linea dritta e stabile dal hit point al pannello
-        // RenderType.lines() richiede coppie di vertici
+        // Straight stable line from hit point to panel
+        // RenderType.lines() requires vertex pairs
         consumer.addVertex(matrix, (float)hitRel.x, (float)hitRel.y, (float)hitRel.z)
             .setColor(r, g, b, a)
             .setNormal(poseStack.last(), 0, 1, 0);
@@ -129,29 +129,29 @@ public class Impact3DRenderer {
     }
 
     /**
-     * Renderizza il contenuto interno del pannello (sfondo, testo, dati).
+     * Renders the panel's internal content (background, text, data).
      */
     private void renderPanelContent(PoseStack poseStack, MultiBufferSource bufferSource,
                                      ImpactData data, float alpha, Font font) {
 
-        // === SFONDO ===
+        // === BACKGROUND ===
         renderPanelBackground(poseStack, bufferSource, alpha);
 
-        // === CONTENUTO TESTO ===
-        // Offset Z per evitare z-fighting con lo sfondo
+        // === TEXT CONTENT ===
+        // Z offset to avoid z-fighting with background
         poseStack.pushPose();
         poseStack.translate(0, 0, -0.01f);
 
         float textX = PADDING;
         float textY = PADDING;
 
-        // === TITOLO ===
+        // === TITLE ===
         renderText3D(poseStack, bufferSource, font,
             "Impact Analysis (Multi-Part & Mod Integrated)",
             textX, textY, applyAlpha(TEXT_TITLE, alpha), alpha);
         textY += LINE_HEIGHT + 2;
 
-        // Linea separatore (renderizzata come quad sottile)
+        // Separator line (rendered as thin quad)
         renderSeparatorLine(poseStack, bufferSource, 4, textY, PANEL_WIDTH_PX - 12, alpha);
         textY += SECTION_SPACING;
 
@@ -203,7 +203,7 @@ public class Impact3DRenderer {
             textX, textY, applyAlpha(TEXT_FORMULA, alpha), alpha);
         textY += LINE_HEIGHT + 2;
 
-        // === DANNO REALE O CALCOLATO ===
+        // === ACTUAL OR CALCULATED DAMAGE ===
         if (data.hasActualDamage()) {
             float actualDmg = data.getActualDamageDealt();
             renderText3D(poseStack, bufferSource, font,
@@ -237,7 +237,7 @@ public class Impact3DRenderer {
                 textX, textY, applyAlpha(TEXT_VALUE, alpha), alpha);
         }
 
-        // === MOD SPECIFICS (se presenti) ===
+        // === MOD SPECIFICS (if present) ===
         if (data.hasPehkuiModification() || data.isBetterCombatAttack()) {
             textY += LINE_HEIGHT + SECTION_SPACING;
 
@@ -264,8 +264,8 @@ public class Impact3DRenderer {
     }
 
     /**
-     * Renderizza lo sfondo del pannello con bordo.
-     * Usa RenderType.gui() per rendering stabile senza flickering.
+     * Renders the panel background with border.
+     * Uses RenderType.gui() for stable rendering without flickering.
      */
     private void renderPanelBackground(PoseStack poseStack, MultiBufferSource bufferSource, float alpha) {
         Matrix4f matrix = poseStack.last().pose();
@@ -273,23 +273,23 @@ public class Impact3DRenderer {
         float w = PANEL_WIDTH_PX;
         float h = PANEL_HEIGHT_PX;
 
-        // Sfondo principale - usa debug quads che è più stabile per aree filled
+        // Main background - use debug quads which is more stable for filled areas
         VertexConsumer consumer = bufferSource.getBuffer(RenderType.debugQuads());
 
-        // Sfondo scuro semi-trasparente
+        // Semi-transparent dark background
         int bgColor = applyAlphaARGB(PANEL_BG, alpha);
         float br = ((bgColor >> 16) & 0xFF) / 255f;
         float bgc = ((bgColor >> 8) & 0xFF) / 255f;
         float bb = (bgColor & 0xFF) / 255f;
         float ba = ((bgColor >> 24) & 0xFF) / 255f;
 
-        // Quad per lo sfondo (ordine vertici per corretta visualizzazione)
+        // Quad for background (vertex order for correct display)
         consumer.addVertex(matrix, 0, 0, 0.001f).setColor(br, bgc, bb, ba).setNormal(0, 0, 1);
         consumer.addVertex(matrix, 0, h, 0.001f).setColor(br, bgc, bb, ba).setNormal(0, 0, 1);
         consumer.addVertex(matrix, w, h, 0.001f).setColor(br, bgc, bb, ba).setNormal(0, 0, 1);
         consumer.addVertex(matrix, w, 0, 0.001f).setColor(br, bgc, bb, ba).setNormal(0, 0, 1);
 
-        // Bordo con RenderType.lines() - più stabile
+        // Border with RenderType.lines() - more stable
         VertexConsumer lineConsumer = bufferSource.getBuffer(RenderType.lines());
         int borderColor = applyAlphaARGB(PANEL_BORDER, alpha * 0.9f);
         float bor = ((borderColor >> 16) & 0xFF) / 255f;
@@ -312,7 +312,7 @@ public class Impact3DRenderer {
     }
 
     /**
-     * Renderizza una linea separatrice orizzontale.
+     * Renders a horizontal separator line.
      */
     private void renderSeparatorLine(PoseStack poseStack, MultiBufferSource bufferSource,
                                       float x, float y, float width, float alpha) {
@@ -330,22 +330,22 @@ public class Impact3DRenderer {
     }
 
     /**
-     * Renderizza testo nel mondo 3D usando il font di Minecraft.
-     * Usa SEE_THROUGH per visibilità corretta in 3D.
+     * Renders text in 3D world using Minecraft font.
+     * Uses SEE_THROUGH for correct visibility in 3D.
      */
     private void renderText3D(PoseStack poseStack, MultiBufferSource bufferSource, Font font,
                                String text, float x, float y, int color, float globalAlpha) {
         poseStack.pushPose();
-        poseStack.translate(x, y, -0.5f); // Offset Z per essere davanti allo sfondo
+        poseStack.translate(x, y, -0.5f); // Z offset to be in front of background
 
         Matrix4f matrix = poseStack.last().pose();
 
-        // Applica alpha al colore
+        // Apply alpha to color
         int alpha = (int) (((color >> 24) & 0xFF) * globalAlpha);
         if (alpha == 0) alpha = (int) (255 * globalAlpha);
         int finalColor = (alpha << 24) | (color & 0x00FFFFFF);
 
-        // Usa SEE_THROUGH per rendering 3D corretto (non viene bloccato da depth)
+        // Use SEE_THROUGH for correct 3D rendering (not blocked by depth)
         font.drawInBatch(
             text,
             0, 0,
@@ -362,7 +362,7 @@ public class Impact3DRenderer {
     }
 
     /**
-     * Applica alpha a un colore RGB (senza alpha originale).
+     * Applies alpha to an RGB color (without original alpha).
      */
     private int applyAlpha(int rgb, float alpha) {
         int a = (int) (255 * alpha);
@@ -370,7 +370,7 @@ public class Impact3DRenderer {
     }
 
     /**
-     * Applica alpha a un colore ARGB esistente.
+     * Applies alpha to an existing ARGB color.
      */
     private int applyAlphaARGB(int argb, float alphaMultiplier) {
         int originalAlpha = (argb >> 24) & 0xFF;
@@ -379,28 +379,28 @@ public class Impact3DRenderer {
     }
 
     /**
-     * Calcola la posizione del pannello dato un punto di impatto.
-     * Il pannello viene posizionato a lato del punto di impatto.
+     * Calculates panel position given an impact point.
+     * The panel is positioned to the side of the impact point.
      *
-     * @param hitPoint Punto di impatto
-     * @param cameraPos Posizione della camera
-     * @return Posizione del pannello nel mondo
+     * @param hitPoint Impact point
+     * @param cameraPos Camera position
+     * @return Panel position in world
      */
     public Vec3 calculatePanelPosition(Vec3 hitPoint, Vec3 cameraPos) {
-        // Direzione dalla camera al punto di impatto
+        // Direction from camera to impact point
         Vec3 toHit = hitPoint.subtract(cameraPos).normalize();
 
-        // Vettore perpendicolare (a destra della visuale)
+        // Perpendicular vector (to the right of view)
         Vec3 right = toHit.cross(new Vec3(0, 1, 0)).normalize();
 
-        // Se il vettore right è zero (guardiamo dritto su/giù), usa un default
+        // If right vector is zero (looking straight up/down), use default
         if (right.lengthSqr() < 0.001) {
             right = new Vec3(1, 0, 0);
         }
 
-        // Posiziona il pannello a destra e sopra il punto di impatto
-        // L'offset laterale sposta il pannello verso destra della visuale
-        // L'offset verticale lo solleva leggermente
+        // Position panel to the right and above impact point
+        // Lateral offset moves panel to the right of view
+        // Vertical offset lifts it slightly
         return hitPoint
             .add(right.scale(PANEL_OFFSET_SIDE))
             .add(0, PANEL_OFFSET_UP, 0);

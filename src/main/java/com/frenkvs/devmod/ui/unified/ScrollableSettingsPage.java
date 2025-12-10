@@ -4,6 +4,8 @@ import com.frenkvs.devmod.ui.UIConstants;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import javax.annotation.Nonnull;
+
 /**
  * Abstract base class for settings pages that support scrolling.
  * Handles all scroll logic including:
@@ -35,7 +37,7 @@ public abstract class ScrollableSettingsPage implements SettingsPage {
     protected int contentX, contentY, contentWidth, contentHeight;
 
     @Override
-    public void render(GuiGraphics graphics, Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+    public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
         // Cache dimensions
         contentX = x;
         contentY = y;

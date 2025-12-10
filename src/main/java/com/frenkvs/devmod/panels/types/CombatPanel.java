@@ -13,20 +13,20 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Pannello che mostra informazioni di combattimento per un impatto.
+ * Panel that shows combat information for an impact.
  *
- * Informazioni visualizzate:
- * - Danno inflitto (base e finale)
- * - Parte del corpo colpita
- * - Modificatori attivi
- * - Breakdown del danno
+ * Displayed information:
+ * - Damage dealt (base and final)
+ * - Body part hit
+ * - Active modifiers
+ * - Damage breakdown
  */
 public class CombatPanel extends FloatingPanel {
 
     private final ImpactData impactData;
     private final Vec3 hitPoint;
 
-    // Dati estratti per rendering veloce
+    // Extracted data for fast rendering
     private final String partHit;
     private final float baseDamage;
     private final float finalDamage;
@@ -35,10 +35,10 @@ public class CombatPanel extends FloatingPanel {
     private final float actualDamage;
 
     /**
-     * Crea un pannello combat per i dati di impatto.
+     * Creates a combat panel for impact data.
      *
-     * @param data Dati dell'impatto
-     * @param hitPoint Punto di impatto nel mondo
+     * @param data Impact data
+     * @param hitPoint Impact point in the world
      */
     public CombatPanel(ImpactData data, Vec3 hitPoint) {
         super(PanelType.COMBAT, hitPoint.add(0, 0.5, 0)); // Offset sopra il punto
@@ -98,13 +98,13 @@ public class CombatPanel extends FloatingPanel {
     }
 
     /**
-     * Ottiene il colore basato sul danno inflitto.
+     * Gets color based on damage dealt.
      */
     private int getDamageColor(float damage) {
-        if (damage >= 15) return 0xFFFF4444; // Rosso critico
-        if (damage >= 8) return 0xFFFFAA00;  // Arancione alto
-        if (damage >= 4) return 0xFFFFFF00;  // Giallo medio
-        return 0xFFFFFFFF;                    // Bianco basso
+        if (damage >= 15) return 0xFFFF4444; // Critical red
+        if (damage >= 8) return 0xFFFFAA00;  // High orange
+        if (damage >= 4) return 0xFFFFFF00;  // Medium yellow
+        return 0xFFFFFFFF;                    // Low white
     }
 
     @Override

@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
  * Network payload for shop purchase requests.
  * Sent from client to server when player purchases an item.
  */
+@SuppressWarnings({"null", "unused"})
 public record ShopPurchasePayload(String itemId) implements CustomPacketPayload {
 
     // Security limits to prevent DoS attacks

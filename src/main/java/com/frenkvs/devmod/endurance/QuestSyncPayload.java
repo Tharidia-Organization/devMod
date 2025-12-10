@@ -14,6 +14,7 @@ import java.util.Objects;
  * Payload sent from server to client to synchronize quest state for HUD display.
  * This keeps the client informed about the active quest state.
  */
+@SuppressWarnings({"null", "unused"})
 public record QuestSyncPayload(
     boolean hasActiveQuest,
     String questName,

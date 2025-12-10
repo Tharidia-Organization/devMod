@@ -3,6 +3,8 @@ package com.frenkvs.devmod.ui;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.Font;
 
+import javax.annotation.Nonnull;
+
 /**
  * Utility class for rendering Axiom-style UI elements.
  * Provides consistent rendering methods for all mod screens.
@@ -18,8 +20,8 @@ public final class AxiomRenderer {
     /**
      * Draw a panel with header (legacy signature for compatibility)
      */
-    public static void drawPanelWithHeader(GuiGraphics graphics, Font font, int x, int y, int width, int height,
-                                           String title, int bgColor, int headerColor, int borderColor, int textColor) {
+    public static void drawPanelWithHeader(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height,
+                                           @Nonnull String title, int bgColor, int headerColor, int borderColor, int textColor) {
         int headerHeight = UIConstants.Spacing.HEADER_HEIGHT;
 
         // Header
@@ -39,7 +41,7 @@ public final class AxiomRenderer {
     /**
      * Draw a panel with header using default colors
      */
-    public static void drawPanel(GuiGraphics graphics, Font font, int x, int y, int width, int height, String title) {
+    public static void drawPanel(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, @Nonnull String title) {
         drawPanelWithHeader(graphics, font, x, y, width, height, title,
             UIConstants.Background.PANEL, UIConstants.Background.HEADER,
             UIConstants.Border.DEFAULT, UIConstants.Text.PRIMARY);
@@ -67,8 +69,8 @@ public final class AxiomRenderer {
     /**
      * Draw a button with hover/pressed states
      */
-    public static void drawButton(GuiGraphics graphics, Font font, int x, int y, int width, int height,
-                                  String text, boolean hovered, boolean pressed) {
+    public static void drawButton(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height,
+                                  @Nonnull String text, boolean hovered, boolean pressed) {
         int bgColor = pressed ? UIConstants.Background.ACTIVE :
                       (hovered ? UIConstants.Background.HOVER : UIConstants.Background.PANEL);
         int borderColor = pressed ? UIConstants.Border.ACCENT :
@@ -90,8 +92,8 @@ public final class AxiomRenderer {
     /**
      * Draw a tab button with selected state
      */
-    public static void drawTab(GuiGraphics graphics, Font font, int x, int y, int width, int height,
-                               String text, boolean selected, boolean hovered) {
+    public static void drawTab(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height,
+                               @Nonnull String text, boolean selected, boolean hovered) {
         int bgColor = selected ? UIConstants.Background.ACTIVE :
                       (hovered ? UIConstants.Background.HOVER : UIConstants.Background.HEADER);
         int textColor = selected ? UIConstants.Text.ACCENT : UIConstants.Text.PRIMARY;
@@ -115,7 +117,7 @@ public final class AxiomRenderer {
     /**
      * Draw a toggle button (ON/OFF)
      */
-    public static void drawToggle(GuiGraphics graphics, Font font, int x, int y, int width, int height,
+    public static void drawToggle(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height,
                                   boolean enabled, boolean hovered) {
         int bgColor;
         if (enabled) {
@@ -146,35 +148,35 @@ public final class AxiomRenderer {
     /**
      * Draw a label (replaces disabled Button anti-pattern)
      */
-    public static void drawLabel(GuiGraphics graphics, Font font, int x, int y, String text) {
+    public static void drawLabel(GuiGraphics graphics, @Nonnull Font font, int x, int y, @Nonnull String text) {
         graphics.drawString(font, text, x, y, UIConstants.Text.PRIMARY, false);
     }
 
     /**
      * Draw a label with custom color
      */
-    public static void drawLabel(GuiGraphics graphics, Font font, int x, int y, String text, int color) {
+    public static void drawLabel(GuiGraphics graphics, @Nonnull Font font, int x, int y, @Nonnull String text, int color) {
         graphics.drawString(font, text, x, y, color, false);
     }
 
     /**
      * Draw a section header
      */
-    public static void drawSectionHeader(GuiGraphics graphics, Font font, int x, int y, String text) {
+    public static void drawSectionHeader(GuiGraphics graphics, @Nonnull Font font, int x, int y, @Nonnull String text) {
         graphics.drawString(font, text, x, y, UIConstants.Text.TITLE, false);
     }
 
     /**
      * Draw a muted/hint text
      */
-    public static void drawHint(GuiGraphics graphics, Font font, int x, int y, String text) {
+    public static void drawHint(GuiGraphics graphics, @Nonnull Font font, int x, int y, @Nonnull String text) {
         graphics.drawString(font, text, x, y, UIConstants.Text.MUTED, false);
     }
 
     /**
      * Draw centered title
      */
-    public static void drawCenteredTitle(GuiGraphics graphics, Font font, int screenWidth, int y, String title) {
+    public static void drawCenteredTitle(GuiGraphics graphics, @Nonnull Font font, int screenWidth, int y, @Nonnull String title) {
         int textWidth = font.width(title);
         int x = (screenWidth - textWidth) / 2;
         graphics.drawString(font, title, x, y, UIConstants.Text.WHITE, false);
@@ -183,8 +185,8 @@ public final class AxiomRenderer {
     /**
      * Draw a label-value pair (e.g., "Health: 20")
      */
-    public static void drawLabelValue(GuiGraphics graphics, Font font, int x, int y,
-                                      String label, String value) {
+    public static void drawLabelValue(GuiGraphics graphics, @Nonnull Font font, int x, int y,
+                                      @Nonnull String label, @Nonnull String value) {
         graphics.drawString(font, label, x, y, UIConstants.Text.SECONDARY, false);
         int labelWidth = font.width(label);
         graphics.drawString(font, value, x + labelWidth, y, UIConstants.Text.PRIMARY, false);
@@ -193,8 +195,8 @@ public final class AxiomRenderer {
     /**
      * Draw a label-value pair with custom value color
      */
-    public static void drawLabelValue(GuiGraphics graphics, Font font, int x, int y,
-                                      String label, String value, int valueColor) {
+    public static void drawLabelValue(GuiGraphics graphics, @Nonnull Font font, int x, int y,
+                                      @Nonnull String label, @Nonnull String value, int valueColor) {
         graphics.drawString(font, label, x, y, UIConstants.Text.SECONDARY, false);
         int labelWidth = font.width(label);
         graphics.drawString(font, value, x + labelWidth, y, valueColor, false);
@@ -222,8 +224,8 @@ public final class AxiomRenderer {
     /**
      * Draw a row with label and toggle
      */
-    public static void drawToggleRow(GuiGraphics graphics, Font font, int x, int y, int width,
-                                     String label, boolean enabled, boolean hovered) {
+    public static void drawToggleRow(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
+                                     @Nonnull String label, boolean enabled, boolean hovered) {
         // Label on left
         graphics.drawString(font, label, x, y + 4, UIConstants.Text.PRIMARY, false);
 
@@ -236,8 +238,8 @@ public final class AxiomRenderer {
     /**
      * Draw a stat row (label: value)
      */
-    public static void drawStatRow(GuiGraphics graphics, Font font, int x, int y, int width,
-                                   String label, String value, int valueColor) {
+    public static void drawStatRow(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
+                                   @Nonnull String label, @Nonnull String value, int valueColor) {
         graphics.drawString(font, label, x, y, UIConstants.Text.SECONDARY, false);
         int valueWidth = font.width(value);
         graphics.drawString(font, value, x + width - valueWidth, y, valueColor, false);
@@ -309,7 +311,7 @@ public final class AxiomRenderer {
     /**
      * Draw a simple tooltip
      */
-    public static void drawTooltip(GuiGraphics graphics, Font font, int x, int y, String text) {
+    public static void drawTooltip(GuiGraphics graphics, @Nonnull Font font, int x, int y, @Nonnull String text) {
         int padding = 4;
         int textWidth = font.width(text);
         int width = textWidth + padding * 2;
