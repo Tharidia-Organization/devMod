@@ -1,8 +1,11 @@
 package com.frenkvs.devmod.network;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
+
+import java.util.Objects;
 
 /**
  * Client-side handler for configuration confirmation feedback.
@@ -20,7 +23,8 @@ public class ClientConfigFeedback {
      */
     public static void handleMobConfigConfirm(MobConfigConfirmPayload payload) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return;
+        LocalPlayer player = mc.player;
+        if (player == null) return;
 
         lastConfirmTime = System.currentTimeMillis();
         lastConfirmMessage = payload.message();
@@ -30,21 +34,21 @@ public class ClientConfigFeedback {
         // Show action bar message
         if (payload.success()) {
             String prefix = payload.isGlobal() ? "§6[GLOBAL] " : "§a[OK] ";
-            mc.player.displayClientMessage(
-                Component.literal(prefix + "§f" + payload.message()),
+            player.displayClientMessage(
+                Objects.requireNonNull(Component.literal(prefix + "§f" + payload.message()), "message"),
                 true
             );
 
             // Play success sound
-            mc.player.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, 0.5f, 1.2f);
+            player.playSound(Objects.requireNonNull(SoundEvents.EXPERIENCE_ORB_PICKUP, "sound"), 0.5f, 1.2f);
         } else {
-            mc.player.displayClientMessage(
-                Component.literal("§c[ERROR] §f" + payload.message()),
+            player.displayClientMessage(
+                Objects.requireNonNull(Component.literal("§c[ERROR] §f" + payload.message()), "message"),
                 true
             );
 
             // Play error sound
-            mc.player.playSound(SoundEvents.VILLAGER_NO, 0.5f, 1.0f);
+            player.playSound(Objects.requireNonNull(SoundEvents.VILLAGER_NO, "sound"), 0.5f, 1.0f);
         }
     }
 

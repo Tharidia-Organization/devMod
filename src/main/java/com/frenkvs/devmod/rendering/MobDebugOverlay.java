@@ -74,10 +74,10 @@ public class MobDebugOverlay {
     }
 
     /**
-     * Trova il mob guardato dal player usando raycast personalizzato
+     * Finds the mob the player is looking at using custom raycast
      */
     private static Mob findLookedAtMob(Minecraft mc) {
-        // Null safety: verifica che player e level esistano
+        // Null safety: verify player and level exist
         var player = mc.player;
         var level = mc.level;
         if (player == null || level == null) {
@@ -243,7 +243,7 @@ public class MobDebugOverlay {
         Vec3 mobPos = mob.position().add(0, mob.getBbHeight() / 2.0, 0); // Center of mob
 
         // Add sphere wireframe to debug renderer
-        // Colore cyan trasparente (ARGB format: 0x80_00_FF_FF)
+        // Transparent cyan color (ARGB format: 0x80_00_FF_FF)
         int color = 0x8000FFFF; // Alpha=0x80 (50%), RGB=0x00FFFF (cyan)
         int segments = 16; // Number of segments for sphere rendering
 

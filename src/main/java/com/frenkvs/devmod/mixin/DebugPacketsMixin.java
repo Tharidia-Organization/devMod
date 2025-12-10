@@ -27,6 +27,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -65,14 +66,14 @@ public class DebugPacketsMixin {
             goals.add(new GoalDebugPayload.DebugGoal(
                 wrappedGoal.getPriority(),
                 wrappedGoal.isRunning(),
-                wrappedGoal.getGoal().getClass().getSimpleName()
+                Objects.requireNonNull(wrappedGoal.getGoal().getClass().getSimpleName(), "goalName")
             ));
         }
 
         if (!goals.isEmpty()) {
             GoalDebugPayload payload = new GoalDebugPayload(
                 mob.getId(),
-                mob.blockPosition(),
+                Objects.requireNonNull(mob.blockPosition(), "mobPosition"),
                 goals
             );
             sendToPlayers(serverLevel, payload, DebugFeature.ENTITY_GOALS);
@@ -84,7 +85,7 @@ public class DebugPacketsMixin {
      */
     @Inject(method = "sendPoiRemovedPacket", at = @At("HEAD"))
     private static void devmod_sendPoiRemovedPacket(ServerLevel level, BlockPos pos, CallbackInfo ci) {
-        PoiRemovedDebugPayload payload = new PoiRemovedDebugPayload(pos);
+        PoiRemovedDebugPayload payload = new PoiRemovedDebugPayload(Objects.requireNonNull(pos, "pos"));
         sendToPlayers(level, payload, DebugFeature.POI);
     }
 
@@ -115,7 +116,7 @@ public class DebugPacketsMixin {
 
         NeighborUpdatesDebugPayload payload = new NeighborUpdatesDebugPayload(
             serverLevel.getGameTime(),
-            pos
+            Objects.requireNonNull(pos, "pos")
         );
         sendToPlayers(serverLevel, payload, DebugFeature.BLOCK_UPDATES);
     }
@@ -127,7 +128,7 @@ public class DebugPacketsMixin {
         for (ServerPlayer player : level.players()) {
             Set<DebugFeature> enabledFeatures = DebugManager.INSTANCE.getEnabledFeatures(player);
             if (enabledFeatures.contains(feature)) {
-                player.connection.send(new ClientboundCustomPayloadPacket(payload));
+                player.connection.send(new ClientboundCustomPayloadPacket(Objects.requireNonNull(payload, "payload")));
             }
         }
     }

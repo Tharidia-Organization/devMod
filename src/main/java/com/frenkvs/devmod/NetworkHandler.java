@@ -33,8 +33,9 @@ import com.frenkvs.devmod.endurance.InstanceLoadingPayload;
 import com.frenkvs.devmod.party.ArrivalConfirmPayload;
 import com.frenkvs.devmod.party.CancelSequencePayload;
 import com.frenkvs.devmod.party.ClientPartyCache;
-import com.frenkvs.devmod.party.InviteResponsePayload;
-import com.frenkvs.devmod.party.PartyInvitePayload;
+import com.frenkvs.devmod.party.InvitePopupScreen;
+import com.frenkvs.devmod.party.PartyActionPayload;
+import com.frenkvs.devmod.party.PartyData;
 import com.frenkvs.devmod.party.PartyManager;
 import com.frenkvs.devmod.party.PartyNotificationPayload;
 import com.frenkvs.devmod.party.PartySyncPayload;
@@ -80,8 +81,10 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -96,197 +99,187 @@ public class NetworkHandler {
     public static void register(RegisterPayloadHandlersEvent event) {
         // Channel 1: Monster Statistics
         event.registrar("1").playToServer(
-                UpdateMobStatsPayload.TYPE,
-                UpdateMobStatsPayload.STREAM_CODEC,
+                nn(UpdateMobStatsPayload.TYPE),
+                nn(UpdateMobStatsPayload.STREAM_CODEC),
                 NetworkHandler::handleMobData
         );
         // Channel 2: Weapon Statistics
         event.registrar("2").playToServer(
-                UpdateWeaponPayload.TYPE,
-                UpdateWeaponPayload.STREAM_CODEC,
+                nn(UpdateWeaponPayload.TYPE),
+                nn(UpdateWeaponPayload.STREAM_CODEC),
                 NetworkHandler::handleWeaponData
         );
         // Channel 3: Monster Equipment
         event.registrar("3").playToServer(
-                EquipMobPayload.TYPE,
-                EquipMobPayload.STREAM_CODEC,
+                nn(EquipMobPayload.TYPE),
+                nn(EquipMobPayload.STREAM_CODEC),
                 NetworkHandler::handleEquipData
         );
         // Channel 4: Complete Item Modification (durability, enchantments, attributes)
         event.registrar("4").playToServer(
-                ModifyItemPayload.TYPE,
-                ModifyItemPayload.STREAM_CODEC,
+                nn(ModifyItemPayload.TYPE),
+                nn(ModifyItemPayload.STREAM_CODEC),
                 NetworkHandler::handleItemModification
         );
         // Channel 5: Endurance Quest - Start
         event.registrar("5").playToServer(
-                StartQuestPayload.TYPE,
-                StartQuestPayload.STREAM_CODEC,
+                nn(StartQuestPayload.TYPE),
+                nn(StartQuestPayload.STREAM_CODEC),
                 NetworkHandler::handleStartEnduranceQuest
         );
         // Channel 6: Endurance Quest - Actions (respawn, checkpoint, abandon)
         event.registrar("6").playToServer(
-                QuestActionPayload.TYPE,
-                QuestActionPayload.STREAM_CODEC,
+                nn(QuestActionPayload.TYPE),
+                nn(QuestActionPayload.STREAM_CODEC),
                 NetworkHandler::handleQuestAction
         );
         // Channel 7: Endurance Quest - Sync (server to client)
         event.registrar("7").playToClient(
-                QuestSyncPayload.TYPE,
-                QuestSyncPayload.STREAM_CODEC,
+                nn(QuestSyncPayload.TYPE),
+                nn(QuestSyncPayload.STREAM_CODEC),
                 NetworkHandler::handleQuestSync
         );
         // Channel 8: Endurance Quest - Shop Purchase
         event.registrar("8").playToServer(
-                ShopPurchasePayload.TYPE,
-                ShopPurchasePayload.STREAM_CODEC,
+                nn(ShopPurchasePayload.TYPE),
+                nn(ShopPurchasePayload.STREAM_CODEC),
                 NetworkHandler::handleShopPurchase
         );
         // Channel 9: Endurance Quest - Shop Sync (server to client)
         event.registrar("9").playToClient(
-                ShopSyncPayload.TYPE,
-                ShopSyncPayload.STREAM_CODEC,
+                nn(ShopSyncPayload.TYPE),
+                nn(ShopSyncPayload.STREAM_CODEC),
                 NetworkHandler::handleShopSync
         );
         // Channel 10: Request Shop Sync (client to server)
         event.registrar("10").playToServer(
-                RequestShopSyncPayload.TYPE,
-                RequestShopSyncPayload.STREAM_CODEC,
+                nn(RequestShopSyncPayload.TYPE),
+                nn(RequestShopSyncPayload.STREAM_CODEC),
                 NetworkHandler::handleRequestShopSync
         );
         // Channel 11: Mob Config Confirmation (server to client)
         event.registrar("11").playToClient(
-                MobConfigConfirmPayload.TYPE,
-                MobConfigConfirmPayload.STREAM_CODEC,
+                nn(MobConfigConfirmPayload.TYPE),
+                nn(MobConfigConfirmPayload.STREAM_CODEC),
                 NetworkHandler::handleMobConfigConfirm
         );
         // Channel 12: Quest Death Screen (server to client)
         event.registrar("12").playToClient(
-                QuestDeathPayload.TYPE,
-                QuestDeathPayload.STREAM_CODEC,
+                nn(QuestDeathPayload.TYPE),
+                nn(QuestDeathPayload.STREAM_CODEC),
                 NetworkHandler::handleQuestDeath
         );
         // Channel 13: Perk Choices (server to client)
         event.registrar("13").playToClient(
-                PerkChoicesPayload.TYPE,
-                PerkChoicesPayload.STREAM_CODEC,
+                nn(PerkChoicesPayload.TYPE),
+                nn(PerkChoicesPayload.STREAM_CODEC),
                 NetworkHandler::handlePerkChoices
         );
         // Channel 14: Perk Selection (client to server)
         event.registrar("14").playToServer(
-                PerkSelectionPayload.TYPE,
-                PerkSelectionPayload.STREAM_CODEC,
+                nn(PerkSelectionPayload.TYPE),
+                nn(PerkSelectionPayload.STREAM_CODEC),
                 NetworkHandler::handlePerkSelection
         );
         // Channel 15: Quest Completion (server to client)
         event.registrar("15").playToClient(
-                QuestCompletionPayload.TYPE,
-                QuestCompletionPayload.STREAM_CODEC,
+                nn(QuestCompletionPayload.TYPE),
+                nn(QuestCompletionPayload.STREAM_CODEC),
                 NetworkHandler::handleQuestCompletion
         );
         // Channel 16: Personal Records Sync (server to client)
         event.registrar("16").playToClient(
-                PersonalRecordsSyncPayload.TYPE,
-                PersonalRecordsSyncPayload.STREAM_CODEC,
+                nn(PersonalRecordsSyncPayload.TYPE),
+                nn(PersonalRecordsSyncPayload.STREAM_CODEC),
                 NetworkHandler::handlePersonalRecordsSync
         );
         // Channel 17: Request Personal Records (client to server)
         event.registrar("17").playToServer(
-                RequestPersonalRecordsPayload.TYPE,
-                RequestPersonalRecordsPayload.STREAM_CODEC,
+                nn(RequestPersonalRecordsPayload.TYPE),
+                nn(RequestPersonalRecordsPayload.STREAM_CODEC),
                 NetworkHandler::handleRequestPersonalRecords
         );
         // Channel 18: Boss Alert (server to client)
         event.registrar("18").playToClient(
-                BossAlertPayload.TYPE,
-                BossAlertPayload.STREAM_CODEC,
+                nn(BossAlertPayload.TYPE),
+                nn(BossAlertPayload.STREAM_CODEC),
                 (payload, context) -> context.enqueueWork(() ->
                     EnduranceQuestOverlay.onBossAlert(payload.alertDurationMs(), payload.bossType()))
         );
         // Channel 19: Badge Unlock (server to client)
         event.registrar("19").playToClient(
-                BadgeUnlockPayload.TYPE,
-                BadgeUnlockPayload.STREAM_CODEC,
+                nn(BadgeUnlockPayload.TYPE),
+                nn(BadgeUnlockPayload.STREAM_CODEC),
                 (payload, context) -> context.enqueueWork(() ->
                     BadgePopupOverlay.showBadge(payload.badgeName(), payload.rarity()))
         );
         // Channel 20: Token Gain Animation (server to client)
         event.registrar("20").playToClient(
-                TokenGainPayload.TYPE,
-                TokenGainPayload.STREAM_CODEC,
+                nn(TokenGainPayload.TYPE),
+                nn(TokenGainPayload.STREAM_CODEC),
                 (payload, context) -> context.enqueueWork(() ->
                     TokenGainOverlay.show(payload.amount()))
         );
         // Channel 21: Record Banner (server to client)
         event.registrar("21").playToClient(
-                RecordBannerPayload.TYPE,
-                RecordBannerPayload.STREAM_CODEC,
+                nn(RecordBannerPayload.TYPE),
+                nn(RecordBannerPayload.STREAM_CODEC),
                 (payload, context) -> context.enqueueWork(() ->
                     RecordBannerOverlay.showRecord(payload.recordType(), payload.recordValue()))
         );
         // Channel 22: Combo Decay Feedback (server to client)
         event.registrar("22").playToClient(
-                ComboDecayPayload.TYPE,
-                ComboDecayPayload.STREAM_CODEC,
+                nn(ComboDecayPayload.TYPE),
+                nn(ComboDecayPayload.STREAM_CODEC),
                 (payload, context) -> context.enqueueWork(() ->
                     ComboDecayOverlay.show(payload.lostCombo(), payload.previousRankOrdinal(), payload.newRankOrdinal()))
         );
         // Channel 23: Instance Loading Overlay (server to client)
         event.registrar("23").playToClient(
-                InstanceLoadingPayload.TYPE,
-                InstanceLoadingPayload.STREAM_CODEC,
+                nn(InstanceLoadingPayload.TYPE),
+                nn(InstanceLoadingPayload.STREAM_CODEC),
                 NetworkHandler::handleInstanceLoading
         );
 
         // === QUEST SEQUENCE CHANNELS (28-30) ===
         // Channel 28: Quest Sequence Status (server -> client)
         event.registrar("28").playToClient(
-                QuestSequencePayload.TYPE,
-                QuestSequencePayload.STREAM_CODEC,
+                nn(QuestSequencePayload.TYPE),
+                nn(QuestSequencePayload.STREAM_CODEC),
                 NetworkHandler::handleQuestSequence
         );
         // Channel 29: Arrival Confirm (client -> server)
         event.registrar("29").playToServer(
-                ArrivalConfirmPayload.TYPE,
-                ArrivalConfirmPayload.STREAM_CODEC,
+                nn(ArrivalConfirmPayload.TYPE),
+                nn(ArrivalConfirmPayload.STREAM_CODEC),
                 NetworkHandler::handleArrivalConfirm
         );
         // Channel 30: Cancel Sequence (client -> server)
         event.registrar("30").playToServer(
-                CancelSequencePayload.TYPE,
-                CancelSequencePayload.STREAM_CODEC,
+                nn(CancelSequencePayload.TYPE),
+                nn(CancelSequencePayload.STREAM_CODEC),
                 NetworkHandler::handleCancelSequence
         );
 
-        // === PARTY SYSTEM CHANNELS (24-27) - TODO: Fix API mismatch with PartyManager ===
-        // These handlers need to be updated to match the actual PartyManager API.
-        // Temporarily disabled to allow build.
-        /*
-        // Channel 24: Party Invite (client to server)
+        // === PARTY SYSTEM CHANNELS (24-27) ===
+        // Channel 24: Party Action (unified client to server)
         event.registrar("24").playToServer(
-                PartyInvitePayload.TYPE,
-                PartyInvitePayload.STREAM_CODEC,
-                NetworkHandler::handlePartyInvite
-        );
-        // Channel 25: Invite Response (client to server)
-        event.registrar("25").playToServer(
-                InviteResponsePayload.TYPE,
-                InviteResponsePayload.STREAM_CODEC,
-                NetworkHandler::handleInviteResponse
+                nn(PartyActionPayload.TYPE),
+                nn(PartyActionPayload.STREAM_CODEC),
+                NetworkHandler::handlePartyAction
         );
         // Channel 26: Party Notification (server to client)
         event.registrar("26").playToClient(
-                PartyNotificationPayload.TYPE,
-                PartyNotificationPayload.STREAM_CODEC,
+                nn(PartyNotificationPayload.TYPE),
+                nn(PartyNotificationPayload.STREAM_CODEC),
                 NetworkHandler::handlePartyNotification
         );
         // Channel 27: Party Sync (server to client)
         event.registrar("27").playToClient(
-                PartySyncPayload.TYPE,
-                PartySyncPayload.STREAM_CODEC,
+                nn(PartySyncPayload.TYPE),
+                nn(PartySyncPayload.STREAM_CODEC),
                 NetworkHandler::handlePartySync
         );
-        */
     }
 
     // =================================================================================
@@ -299,7 +292,7 @@ public class NetworkHandler {
                 PacketSecurityService security = PacketSecurityService.INSTANCE;
                 ValidationResult validation = security.validatePacket(player, "mob_stats", true);
                 if (!validation.isSuccess()) {
-                    player.sendSystemMessage(I18n.translate("devmod.ui.error").append(": " + validation.getErrorMessage()));
+                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
                     return;
                 }
 
@@ -362,7 +355,7 @@ public class NetworkHandler {
                         applyAttribute(mob, Attributes.MOVEMENT_SPEED, speed, attributesToSync);
                         applyAttribute(mob, Attributes.KNOCKBACK_RESISTANCE, knockbackResist, attributesToSync);
 
-                        AttributeInstance healthAttr = mob.getAttribute(Attributes.MAX_HEALTH);
+                        AttributeInstance healthAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH, "MAX_HEALTH"));
                         if (healthAttr != null) {
                             healthAttr.setBaseValue(maxHealth);
                             attributesToSync.add(healthAttr);
@@ -380,10 +373,10 @@ public class NetworkHandler {
                     }
 
                     // Send confirmation to client
-                    String mobTypeName = typeToUpdate.getDescription().getString();
+                    String mobTypeName = Objects.requireNonNull(typeToUpdate.getDescription().getString(), "mobTypeName");
                     MobConfigConfirmPayload confirm = MobConfigConfirmPayload.success(
                         payload.isGlobal(), mobTypeName, count);
-                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, confirm);
+                    sendPacket(player, confirm);
 
                     LOGGER.info("[MobConfig] Player {} {} config for {} ({} mobs affected)",
                         player.getName().getString(),
@@ -402,8 +395,9 @@ public class NetworkHandler {
                     }
                 } else {
                     // Entity not found or not a mob
-                    MobConfigConfirmPayload confirm = MobConfigConfirmPayload.failure(I18n.translate("devmod.network.target_not_found").getString());
-                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, confirm);
+                    MobConfigConfirmPayload confirm = MobConfigConfirmPayload.failure(
+                        Objects.requireNonNull(I18n.translate("devmod.network.target_not_found").getString(), "message"));
+                    sendPacket(player, confirm);
                 }
             }
         });
@@ -419,7 +413,7 @@ public class NetworkHandler {
                 PacketSecurityService security = PacketSecurityService.INSTANCE;
                 ValidationResult validation = security.validatePacket(player, "weapon_stats", true);
                 if (!validation.isSuccess()) {
-                    player.sendSystemMessage(I18n.translate("devmod.ui.error").append(": " + validation.getErrorMessage()));
+                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
                     return;
                 }
 
@@ -452,7 +446,7 @@ public class NetworkHandler {
                     // SECURITY: Validate custom name
                     String customName = security.validateString(payload.name(), 64);
                     if (customName != null && !customName.isEmpty()) {
-                        stack.set(DataComponents.CUSTOM_NAME, Component.literal(customName));
+                        stack.set(nn(DataComponents.CUSTOM_NAME), Component.literal(nn(customName)));
                     }
                     player.sendSystemMessage(I18n.translate("devmod.network.weapon_specific_updated"));
                 }
@@ -470,7 +464,7 @@ public class NetworkHandler {
                 PacketSecurityService security = PacketSecurityService.INSTANCE;
                 ValidationResult validation = security.validatePacket(player, "equip_mob", true);
                 if (!validation.isSuccess()) {
-                    player.sendSystemMessage(I18n.translate("devmod.ui.error").append(": " + validation.getErrorMessage()));
+                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
                     return;
                 }
 
@@ -506,7 +500,7 @@ public class NetworkHandler {
                 PacketSecurityService security = PacketSecurityService.INSTANCE;
                 ValidationResult validation = security.validatePacket(player, "modify_item", true);
                 if (!validation.isSuccess()) {
-                    player.sendSystemMessage(I18n.translate("devmod.ui.error").append(": " + validation.getErrorMessage()));
+                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
                     return;
                 }
 
@@ -525,14 +519,14 @@ public class NetworkHandler {
 
                 // Apply unbreakable
                 if (payload.unbreakable()) {
-                    stack.set(DataComponents.UNBREAKABLE, new net.minecraft.world.item.component.Unbreakable(true));
+                    stack.set(nn(DataComponents.UNBREAKABLE), new net.minecraft.world.item.component.Unbreakable(true));
                 } else {
-                    stack.remove(DataComponents.UNBREAKABLE);
+                    stack.remove(nn(DataComponents.UNBREAKABLE));
                 }
 
                 // Apply repair cost
                 if (payload.repairCost() >= 0) {
-                    stack.set(DataComponents.REPAIR_COST, payload.repairCost());
+                    stack.set(nn(DataComponents.REPAIR_COST), payload.repairCost());
                 }
 
                 // Apply enchantment changes
@@ -565,7 +559,7 @@ public class NetworkHandler {
      */
     private static int applyEnchantmentChanges(ServerPlayer player, ItemStack stack, List<String> changes) {
         ItemEnchantments.Mutable enchantments = new ItemEnchantments.Mutable(
-            stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY)
+            nn(stack.getOrDefault(nn(DataComponents.ENCHANTMENTS), nn(ItemEnchantments.EMPTY)))
         );
 
         int failCount = 0;
@@ -604,18 +598,18 @@ public class NetworkHandler {
             }
 
             try {
-                ResourceLocation enchantLoc = ResourceLocation.parse(enchantId);
-                var registry = player.server.registryAccess().registryOrThrow(Registries.ENCHANTMENT);
-                var enchantHolder = registry.getHolder(enchantLoc);
+                ResourceLocation enchantLoc = nn(ResourceLocation.parse(nn(enchantId)));
+                var registry = player.server.registryAccess().registryOrThrow(nn(Registries.ENCHANTMENT));
+                var enchantHolder = registry.getHolder(nn(enchantLoc));
 
                 if (enchantHolder.isPresent()) {
-                    Holder<Enchantment> holder = enchantHolder.get();
+                    Holder<Enchantment> holder = nn(enchantHolder.get());
                     if (level <= 0) {
                         // Remove enchantment
                         enchantments.removeIf(h -> h.equals(holder));
                     } else {
                         // Add or update enchantment
-                        enchantments.set(holder, level);
+                        enchantments.set(nn(holder), level);
                     }
                 } else {
                     // Enchantment not found in registry
@@ -630,7 +624,7 @@ public class NetworkHandler {
             }
         }
 
-        stack.set(DataComponents.ENCHANTMENTS, enchantments.toImmutable());
+        stack.set(nn(DataComponents.ENCHANTMENTS), enchantments.toImmutable());
 
         // Send feedback to player about failed enchantments
         if (failCount > 0) {
@@ -648,7 +642,7 @@ public class NetworkHandler {
      */
     private static int applyAttributeChanges(ServerPlayer player, ItemStack stack, List<String> changes) {
         // Get existing modifiers or create new list
-        ItemAttributeModifiers existing = stack.getOrDefault(DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
+        ItemAttributeModifiers existing = nn(stack.getOrDefault(nn(DataComponents.ATTRIBUTE_MODIFIERS), nn(ItemAttributeModifiers.EMPTY)));
         List<ItemAttributeModifiers.Entry> entries = new ArrayList<>(existing.modifiers());
 
         int failCount = 0;
@@ -684,12 +678,12 @@ public class NetworkHandler {
             }
 
             try {
-                ResourceLocation attrLoc = ResourceLocation.parse(attrId);
-                var registry = player.server.registryAccess().registryOrThrow(Registries.ATTRIBUTE);
-                var attrHolder = registry.getHolder(attrLoc);
+                ResourceLocation attrLoc = nn(ResourceLocation.parse(nn(attrId)));
+                var registry = player.server.registryAccess().registryOrThrow(nn(Registries.ATTRIBUTE));
+                var attrHolder = registry.getHolder(nn(attrLoc));
 
                 if (attrHolder.isPresent()) {
-                    Holder<Attribute> holder = attrHolder.get();
+                    Holder<Attribute> holder = nn(attrHolder.get());
                     AttributeModifier.Operation op = switch (operation) {
                         case 1 -> AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
                         case 2 -> AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
@@ -700,9 +694,9 @@ public class NetworkHandler {
                     entries.removeIf(e -> e.attribute().equals(holder));
 
                     // Add new modifier
-                    ResourceLocation modifierId = ResourceLocation.fromNamespaceAndPath("devmod", "custom_" + attrLoc.getPath());
+                    ResourceLocation modifierId = nn(ResourceLocation.fromNamespaceAndPath("devmod", "custom_" + attrLoc.getPath()));
                     AttributeModifier modifier = new AttributeModifier(modifierId, value, op);
-                    entries.add(new ItemAttributeModifiers.Entry(holder, modifier, EquipmentSlotGroup.MAINHAND));
+                    entries.add(new ItemAttributeModifiers.Entry(nn(holder), modifier, EquipmentSlotGroup.MAINHAND));
                 } else {
                     // Attribute not found in registry
                     failCount++;
@@ -716,7 +710,7 @@ public class NetworkHandler {
             }
         }
 
-        stack.set(DataComponents.ATTRIBUTE_MODIFIERS, new ItemAttributeModifiers(entries, existing.showInTooltip()));
+        stack.set(nn(DataComponents.ATTRIBUTE_MODIFIERS), new ItemAttributeModifiers(entries, existing.showInTooltip()));
 
         // Send feedback to player about failed attributes
         if (failCount > 0) {
@@ -740,7 +734,7 @@ public class NetworkHandler {
 
         // Handle special clear commands
         if (itemName.equalsIgnoreCase("air") || itemName.equalsIgnoreCase("clear")) {
-            mob.setItemSlot(slot, ItemStack.EMPTY);
+            mob.setItemSlot(nn(slot), nn(ItemStack.EMPTY));
             return;
         }
 
@@ -756,7 +750,7 @@ public class NetworkHandler {
             Item item = BuiltInRegistries.ITEM.get(id);
             if (item != net.minecraft.world.item.Items.AIR) {
                 ItemStack stack = new ItemStack(item);
-                mob.setItemSlot(slot, stack);
+                mob.setItemSlot(nn(slot), stack);
             }
         } catch (Exception e) {
             LOGGER.warn("Failed to equip validated item '{}' to slot {} for mob {}: {}",
@@ -766,7 +760,7 @@ public class NetworkHandler {
 
     // HERE IS THE METHOD THAT WAS GIVING YOU ERROR: NOW IT'S INSIDE THE CLASS
     private static void applyAttribute(Mob mob, net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute> attr, double value, List<AttributeInstance> syncList) {
-        AttributeInstance instance = mob.getAttribute(attr);
+        AttributeInstance instance = mob.getAttribute(nn(attr));
         if (instance != null) {
             instance.setBaseValue(value);
             syncList.add(instance);
@@ -783,7 +777,7 @@ public class NetworkHandler {
                 PacketSecurityService security = PacketSecurityService.INSTANCE;
                 ValidationResult validation = security.validatePacket(player, "endurance_quest", true);
                 if (!validation.isSuccess()) {
-                    player.sendSystemMessage(I18n.translate("devmod.ui.error").append(": " + validation.getErrorMessage()));
+                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
                     return;
                 }
 
@@ -819,7 +813,7 @@ public class NetworkHandler {
                         LOGGER.info("[EnduranceQuest] Player {} started quest for {} ({} waves, endless={})",
                             player.getName().getString(), mobId, waves, payload.endlessMode());
                     } else {
-                        player.sendSystemMessage(I18n.translate("devmod.ui.error").append(": " + result.message()));
+                        player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", result.message()));
                     }
 
                 } catch (Exception e) {
@@ -933,7 +927,7 @@ public class NetworkHandler {
                 RewardSystem.PurchaseResult result = RewardSystem.INSTANCE.purchaseItem(player, itemId);
 
                 if (!result.success()) {
-                    player.sendSystemMessage(I18n.translate("devmod.ui.error").append(": " + result.message()));
+                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", result.message()));
                 }
                 // Success message is sent by RewardSystem.purchaseItem()
 
@@ -966,7 +960,7 @@ public class NetworkHandler {
     public static void sendShopSync(ServerPlayer player) {
         RewardSystem.PlayerWallet wallet = RewardSystem.INSTANCE.getWallet(player.getUUID());
         ShopSyncPayload payload = ShopSyncPayload.fromWallet(wallet);
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+        sendPacket(player, payload);
     }
 
     // =================================================================================
@@ -1014,7 +1008,7 @@ public class NetworkHandler {
         QuestDeathPayload payload = new QuestDeathPayload(
             currentWave, totalWaves, endlessMode, pointsEarned, deathsThisRun, respawnCost
         );
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+        sendPacket(player, payload);
     }
 
     // =================================================================================
@@ -1048,7 +1042,7 @@ public class NetworkHandler {
         }
 
         PerkChoicesPayload payload = new PerkChoicesPayload(waveNumber, choices);
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+        sendPacket(player, payload);
     }
 
     // =================================================================================
@@ -1061,8 +1055,8 @@ public class NetworkHandler {
 
                 if (payload.isSkip()) {
                     // Player skipped perk selection
-                    player.sendSystemMessage(I18n.translate("devmod.network.perk_skipped")
-                        .withStyle(net.minecraft.ChatFormatting.GRAY));
+                    player.sendSystemMessage(nn(I18n.translate("devmod.network.perk_skipped")
+                        .withStyle(net.minecraft.ChatFormatting.GRAY)));
                     LOGGER.info("[Perk] Player {} skipped perk selection", player.getName().getString());
 
                     // Clear pending choices
@@ -1181,7 +1175,7 @@ public class NetworkHandler {
             achievementNames
         );
 
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+        sendPacket(player, payload);
     }
 
     // =================================================================================
@@ -1231,7 +1225,7 @@ public class NetworkHandler {
             mobRecords
         );
 
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, syncPayload);
+        sendPacket(player, syncPayload);
     }
 
     // =================================================================================
@@ -1243,7 +1237,7 @@ public class NetworkHandler {
      */
     public static void sendBossAlert(ServerPlayer player, long durationMs, String bossType) {
         BossAlertPayload payload = new BossAlertPayload(durationMs, bossType);
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+        sendPacket(player, payload);
     }
 
     // =================================================================================
@@ -1255,7 +1249,7 @@ public class NetworkHandler {
      */
     public static void sendBadgeUnlock(ServerPlayer player, String badgeName, String rarity) {
         BadgeUnlockPayload payload = new BadgeUnlockPayload(badgeName, rarity);
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+        sendPacket(player, payload);
     }
 
     // =================================================================================
@@ -1268,7 +1262,7 @@ public class NetworkHandler {
     public static void sendTokenGain(ServerPlayer player, int amount) {
         if (amount > 0) {
             TokenGainPayload payload = new TokenGainPayload(amount);
-            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+            sendPacket(player, payload);
         }
     }
 
@@ -1286,7 +1280,7 @@ public class NetworkHandler {
      */
     public static void sendRecordBanner(ServerPlayer player, String recordType, String recordValue) {
         RecordBannerPayload payload = new RecordBannerPayload(recordType, recordValue);
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+        sendPacket(player, payload);
     }
 
     // =================================================================================
@@ -1305,7 +1299,7 @@ public class NetworkHandler {
     public static void sendComboDecay(ServerPlayer player, int lostCombo, int previousRank, int newRank) {
         if (lostCombo >= 3 || newRank < previousRank) {
             ComboDecayPayload payload = new ComboDecayPayload(lostCombo, previousRank, newRank);
-            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+            sendPacket(player, payload);
         }
     }
 
@@ -1318,7 +1312,7 @@ public class NetworkHandler {
      */
     public static void sendInstanceLoadingShow(ServerPlayer player, String status) {
         InstanceLoadingPayload payload = new InstanceLoadingPayload(true, status);
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+        sendPacket(player, payload);
     }
 
     /**
@@ -1326,97 +1320,155 @@ public class NetworkHandler {
      */
     public static void sendInstanceLoadingHide(ServerPlayer player) {
         InstanceLoadingPayload payload = InstanceLoadingPayload.hide();
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+        sendPacket(player, payload);
     }
 
     // =================================================================================
-    // 24. PARTY INVITE HANDLER (server-side) - TODO: Fix API mismatch with PartyManager
+    // 24. PARTY ACTION HANDLER (server-side)
     // =================================================================================
-    /* Temporarily disabled - needs to be updated to match PartyManager API
-    private static void handlePartyInvite_DISABLED(PartyInvitePayload payload, IPayloadContext context) {
+    private static void handlePartyAction(PartyActionPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
-            if (context.player() instanceof ServerPlayer sender) {
-                UUID targetId = payload.targetPlayerId();
+            if (context.player() instanceof ServerPlayer player) {
+                UUID playerId = player.getUUID();
+                String playerName = player.getName().getString();
 
-                // Find target player on server
-                ServerPlayer target = sender.server.getPlayerList().getPlayer(targetId);
-                if (target == null) {
-                    sender.sendSystemMessage(I18n.translate("devmod.party.player_not_found"));
-                    return;
-                }
-
-                // Send invite through PartyManager
-                PartyManager.InviteResult result = PartyManager.INSTANCE.sendInvite(
-                    sender.getUUID(),
-                    sender.getName().getString(),
-                    targetId,
-                    target.getName().getString(),
-                    payload.getQuestType()
-                );
-
-                if (result.success()) {
-                    sender.sendSystemMessage(I18n.translate("devmod.party.invite_sent", target.getName().getString()));
-
-                    // Send notification to target player
-                    PartyNotificationPayload notification = PartyNotificationPayload.inviteReceived(
-                        result.inviteId(),
-                        sender.getName().getString(),
-                        payload.getQuestType(),
-                        result.expiresAt()
-                    );
-                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(target, notification);
-                } else {
-                    sender.sendSystemMessage(I18n.translate("devmod.ui.error").append(": " + result.errorMessage()));
-                }
-            }
-        });
-    }
-
-    /*
-    // =================================================================================
-    // 25. INVITE RESPONSE HANDLER (server-side)
-    // =================================================================================
-    private static void handleInviteResponse_DISABLED(InviteResponsePayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            if (context.player() instanceof ServerPlayer responder) {
-                PartyManager.ResponseResult result = PartyManager.INSTANCE.handleInviteResponse(
-                    responder.getUUID(),
-                    responder.getName().getString(),
-                    payload.inviteId(),
-                    payload.accepted()
-                );
-
-                if (result.success()) {
-                    if (payload.accepted()) {
-                        responder.sendSystemMessage(I18n.translate("devmod.party.joined_party"));
-
-                        // Sync party state to responder
-                        sendPartySyncToPlayer(responder);
-
-                        // Notify all party members
-                        if (result.partyId() != null) {
-                            notifyPartyMembers(responder.server, result.partyId(),
-                                PartyNotificationPayload.memberJoined(responder.getUUID(), responder.getName().getString()),
-                                responder.getUUID() // exclude self
-                            );
-                            syncPartyToAllMembers(responder.server, result.partyId());
-                        }
-                    } else {
-                        responder.sendSystemMessage(I18n.translate("devmod.party.invite_declined"));
-                    }
-
-                    // Notify sender about the response
-                    if (result.senderId() != null) {
-                        ServerPlayer sender = responder.server.getPlayerList().getPlayer(result.senderId());
-                        if (sender != null) {
-                            PartyNotificationPayload notification = PartyNotificationPayload.inviteResponse(
-                                payload.accepted(), responder.getUUID(), responder.getName().getString()
-                            );
-                            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(sender, notification);
+                switch (payload.action()) {
+                    case CREATE_PARTY -> {
+                        // Create a new party with this player as leader
+                        var questType = payload.getQuestType();
+                        PartyData party = PartyManager.INSTANCE.createParty(playerId, playerName, questType);
+                        if (party != null) {
+                            LOGGER.info("[Party] {} created party {} (type: {})", playerName, party.getPartyId(), questType);
+                            sendPartySyncToPlayer(player);
+                        } else {
+                            player.sendSystemMessage(I18n.translate("devmod.party.already_in_party"));
                         }
                     }
-                } else {
-                    responder.sendSystemMessage(I18n.translate("devmod.ui.error").append(": " + result.errorMessage()));
+
+                    case TOGGLE_READY -> {
+                        PartyData party = PartyManager.INSTANCE.getPlayerParty(playerId);
+                        if (party != null) {
+                            boolean currentReady = party.isReady(playerId);
+                            party.setReady(playerId, !currentReady);
+                            LOGGER.debug("[Party] {} toggled ready: {}", playerName, !currentReady);
+                            syncPartyToAllMembers(player.server, party.getPartyId());
+                        }
+                    }
+
+                    case LEAVE_PARTY -> {
+                        PartyData party = PartyManager.INSTANCE.getPlayerParty(playerId);
+                        if (party != null) {
+                            UUID partyId = party.getPartyId();
+                            if (PartyManager.INSTANCE.leaveParty(playerId)) {
+                                LOGGER.info("[Party] {} left party {}", playerName, partyId);
+                                // Notify remaining members
+                                notifyPartyMembers(player.server, partyId,
+                                    PartyNotificationPayload.memberLeft(playerId, playerName), null);
+                                syncPartyToAllMembers(player.server, partyId);
+                                // Clear party state for leaving player
+                                sendPartySyncToPlayer(player);
+                            }
+                        }
+                    }
+
+                    case KICK_MEMBER -> {
+                        if (payload.targetPlayerId() != null) {
+                            PartyData party = PartyManager.INSTANCE.getPlayerParty(playerId);
+                            if (party != null && PartyManager.INSTANCE.kickMember(playerId, payload.targetPlayerId())) {
+                                UUID partyId = party.getPartyId();
+                                String kickedName = party.getMemberName(payload.targetPlayerId());
+                                LOGGER.info("[Party] {} kicked {} from party {}", playerName, kickedName, partyId);
+
+                                // Notify kicked player
+                                ServerPlayer kickedPlayer = player.server.getPlayerList().getPlayer(nn(payload.targetPlayerId()));
+                                if (kickedPlayer != null) {
+                                    sendPartyNotification(kickedPlayer,
+                                        PartyNotificationPayload.youWereKicked(playerId, playerName));
+                                    sendPartySyncToPlayer(kickedPlayer);
+                                }
+
+                                // Sync to remaining members
+                                syncPartyToAllMembers(player.server, partyId);
+                            }
+                        }
+                    }
+
+                    case SET_QUEST_TYPE -> {
+                        PartyData party = PartyManager.INSTANCE.getPlayerParty(playerId);
+                        if (party != null && party.isLeader(playerId)) {
+                            var newType = payload.getQuestType();
+                            if (party.setQuestType(newType)) {
+                                LOGGER.info("[Party] {} changed quest type to {} in party {}",
+                                    playerName, newType, party.getPartyId());
+                                syncPartyToAllMembers(player.server, party.getPartyId());
+                            }
+                        }
+                    }
+
+                    case SET_MOB_TYPE -> {
+                        PartyData party = PartyManager.INSTANCE.getPlayerParty(playerId);
+                        if (party != null && party.isLeader(playerId)) {
+                            ResourceLocation mobId = payload.getMobResourceLocation();
+                            if (mobId != null) {
+                                // Validate mob ID exists in registry
+                                var mobConfig = com.frenkvs.devmod.endurance.EnduranceQuestRegistry.INSTANCE.getMobConfig(mobId);
+                                if (mobConfig.isPresent()) {
+                                    if (party.setSelectedMobId(playerId, mobId)) {
+                                        LOGGER.info("[Party] {} changed mob type to {} in party {}",
+                                            playerName, mobId, party.getPartyId());
+                                        syncPartyToAllMembers(player.server, party.getPartyId());
+                                    }
+                                } else {
+                                    LOGGER.warn("[Party] {} tried to set invalid mob type: {}", playerName, mobId);
+                                    player.sendSystemMessage(I18n.translate("devmod.party.invalid_mob"));
+                                }
+                            }
+                        }
+                    }
+
+                    case DISBAND_PARTY -> {
+                        PartyData party = PartyManager.INSTANCE.getPlayerParty(playerId);
+                        if (party != null && party.isLeader(playerId)) {
+                            UUID partyId = party.getPartyId();
+                            var members = new java.util.ArrayList<>(party.getMembers());
+
+                            if (PartyManager.INSTANCE.disbandParty(playerId)) {
+                                LOGGER.info("[Party] {} disbanded party {}", playerName, partyId);
+
+                                // Notify all members and clear their party state
+                                for (UUID memberId : members) {
+                                    ServerPlayer member = player.server.getPlayerList().getPlayer(nn(memberId));
+                                    if (member != null) {
+                                        if (!memberId.equals(playerId)) {
+                                            sendPartyNotification(member,
+                                                PartyNotificationPayload.partyDisbanded(playerId, playerName));
+                                        }
+                                        sendPartySyncToPlayer(member);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    case START_QUEST -> {
+                        PartyData party = PartyManager.INSTANCE.getPlayerParty(playerId);
+                        if (party != null && party.isLeader(playerId) && party.canStartQuest()) {
+                            LOGGER.info("[Party] {} starting quest for party {}", playerName, party.getPartyId());
+
+                            // Start the quest sequence with correct signature
+                            QuestStartSequence.ValidationResult result = QuestStartSequence.INSTANCE.startSequence(
+                                player.server,
+                                party,
+                                player
+                            );
+
+                            if (!result.success()) {
+                                player.sendSystemMessage(I18n.translate(result.errorMessage()));
+                            }
+                        } else {
+                            player.sendSystemMessage(I18n.translate("devmod.party.cannot_start"));
+                        }
+                    }
                 }
             }
         });
@@ -1430,7 +1482,36 @@ public class NetworkHandler {
             // Update client cache
             ClientPartyCache.handleNotification(payload);
 
-            // TODO: Show popup/toast for certain notification types (INVITE_RECEIVED, etc.)
+            // Show popup/toast for certain notification types
+            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+            net.minecraft.client.player.LocalPlayer player = mc.player;
+            if (player == null) return;
+
+            switch (payload.notificationType()) {
+                case INVITE_RECEIVED -> {
+                    // Show invite popup screen
+                    mc.execute(() -> InvitePopupScreen.showInvite(payload));
+                }
+                case YOU_WERE_KICKED, PARTY_DISBANDED -> {
+                    // Show action bar message for kicked/disbanded
+                    player.displayClientMessage(
+                        I18n.translate("devmod.party." + payload.notificationType().name().toLowerCase()),
+                        true
+                    );
+                }
+                case MEMBER_JOINED, MEMBER_LEFT -> {
+                    // Show action bar message for member changes
+                    player.displayClientMessage(
+                        I18n.translate("devmod.party.member_" +
+                            (payload.notificationType() == PartyNotificationPayload.NotificationType.MEMBER_JOINED ? "joined" : "left"),
+                            payload.playerName()),
+                        true
+                    );
+                }
+                default -> {
+                    // Other notifications are handled by cache/UI updates only
+                }
+            }
         });
     }
 
@@ -1457,12 +1538,12 @@ public class NetworkHandler {
 
         if (partyOpt.isPresent()) {
             payload = PartySyncPayload.fromParty(partyOpt.get(),
-                uuid -> player.server.getPlayerList().getPlayer(uuid) != null);
+                uuid -> player.server.getPlayerList().getPlayer(nn(uuid)) != null);
         } else {
             payload = PartySyncPayload.empty();
         }
 
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+        sendPacket(player, payload);
     }
 
     /**
@@ -1474,12 +1555,12 @@ public class NetworkHandler {
 
         var party = partyOpt.get();
         PartySyncPayload payload = PartySyncPayload.fromParty(party,
-            uuid -> server.getPlayerList().getPlayer(uuid) != null);
+            uuid -> server.getPlayerList().getPlayer(nn(uuid)) != null);
 
         for (UUID memberId : party.getMembers()) {
-            ServerPlayer member = server.getPlayerList().getPlayer(memberId);
+            ServerPlayer member = server.getPlayerList().getPlayer(nn(memberId));
             if (member != null) {
-                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(member, payload);
+                sendPacket(member, payload);
             }
         }
     }
@@ -1495,20 +1576,18 @@ public class NetworkHandler {
         for (UUID memberId : partyOpt.get().getMembers()) {
             if (excludePlayer != null && memberId.equals(excludePlayer)) continue;
 
-            ServerPlayer member = server.getPlayerList().getPlayer(memberId);
+            ServerPlayer member = server.getPlayerList().getPlayer(nn(memberId));
             if (member != null) {
-                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(member, notification);
+                sendPacket(member, notification);
             }
         }
     }
-
-    // End of disabled party system code */
 
     /**
      * Send party notification to a specific player.
      */
     public static void sendPartyNotification(ServerPlayer player, PartyNotificationPayload notification) {
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, notification);
+        sendPacket(player, notification);
     }
 
     // =================================================================================
@@ -1555,6 +1634,30 @@ public class NetworkHandler {
                 }
             }
         });
+    }
+
+    // =================================================================================
+    // NULL-SAFETY HELPER METHODS
+    // =================================================================================
+
+    /**
+     * Non-null assertion helper. Returns the value after null check.
+     * Accepts potentially null value and guarantees non-null return.
+     */
+    @Nonnull
+    private static <T> T nn(T value) {
+        return Objects.requireNonNull(value);
+    }
+
+    /**
+     * Send packet to player with null-safety.
+     */
+    private static <T extends net.minecraft.network.protocol.common.custom.CustomPacketPayload> void sendPacket(
+            ServerPlayer player, T payload) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+            Objects.requireNonNull(player, "player"),
+            Objects.requireNonNull(payload, "payload")
+        );
     }
 
 } // <--- This is the essential closing brace

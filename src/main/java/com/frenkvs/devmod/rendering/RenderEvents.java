@@ -13,7 +13,6 @@ import com.frenkvs.devmod.hud.ImpactVFX;
 import com.frenkvs.devmod.panels.context.ContextDetector;
 import com.frenkvs.devmod.panels.core.FloatingPanelManager;
 import com.frenkvs.devmod.panels.ui.PanelInteractionHandler;
-import com.frenkvs.devmod.panels.ui.PanelRenderer;
 import com.frenkvs.devmod.quest.QuestEditorScreen;
 import com.frenkvs.devmod.quest.QuestHudOverlay;
 import com.frenkvs.devmod.quest.QuestManager;
@@ -134,9 +133,9 @@ public class RenderEvents {
         // === PHASE 7: Render Attribute Monitoring 3D Rays ===
         long t4 = profiler.startTiming("AttributeRays");
         AttributeRayVisualizer.INSTANCE.render(
-            poseStack,
-            bufferSource,
-            event.getCamera().getPosition()
+            Objects.requireNonNull(poseStack),
+            Objects.requireNonNull(bufferSource),
+            Objects.requireNonNull(event.getCamera().getPosition())
         );
         profiler.endTiming("AttributeRays", t4);
 
@@ -154,9 +153,9 @@ public class RenderEvents {
         if (PathfindingDebugger.INSTANCE.isEnabled()) {
             long t6 = profiler.startTiming("PathfindingDebugger");
             PathfindingDebugger.INSTANCE.render(
-                poseStack,
-                bufferSource,
-                event.getCamera().getPosition()
+                Objects.requireNonNull(poseStack),
+                Objects.requireNonNull(bufferSource),
+                Objects.requireNonNull(event.getCamera().getPosition())
             );
             profiler.endTiming("PathfindingDebugger", t6);
         }
@@ -319,6 +318,7 @@ public class RenderEvents {
                     int loaded = HeatmapVisualizer.INSTANCE.loadDataFromService(currentType);
                     int total = HeatmapVisualizer.INSTANCE.getDataCount(currentType);
                     String activeTypes = HeatmapVisualizer.INSTANCE.getActiveTypesString();
+                    DevMod.LOGGER.debug("Heatmap loaded {} new points, total: {}", loaded, total);
                     player.displayClientMessage(
                             I18n.translate("devmod.render.heatmap_status", activeTypes, total),
                             true
@@ -459,7 +459,7 @@ public class RenderEvents {
                 } catch (Exception e) {
                     DevMod.LOGGER.error("[DevMod] Error opening QA Testing: {}", e.getMessage(), e);
                     player.displayClientMessage(
-                            I18n.translate("devmod.message.error_opening_qa").append(": " + e.getMessage()),
+                            Objects.requireNonNull(I18n.translate("devmod.message.error_opening_qa").append(": " + e.getMessage())),
                             false
                     );
                 }
@@ -480,7 +480,7 @@ public class RenderEvents {
                 } catch (Exception e) {
                     DevMod.LOGGER.error("[DevMod] Error opening Testing Hub: {}", e.getMessage(), e);
                     player.displayClientMessage(
-                            I18n.translate("devmod.message.error_opening_hub").append(": " + e.getMessage()),
+                            Objects.requireNonNull(I18n.translate("devmod.message.error_opening_hub").append(": " + e.getMessage())),
                             false
                     );
                 }
@@ -550,7 +550,7 @@ public class RenderEvents {
                 QuestManager.INSTANCE.completeCurrentTask();
                 player.displayClientMessage(
                         Objects.requireNonNull(I18n.translate("devmod.message.task_completed").withStyle(s -> s.withColor(0x55FF55))
-                                .append(I18n.translate("devmod.ui.colon_value", taskName).withStyle(s -> s.withColor(0xFFFFFF)))),
+                                .append(Objects.requireNonNull(I18n.translate("devmod.ui.colon_value", taskName).withStyle(s -> s.withColor(0xFFFFFF))))),
                         true
                 );
             } else {
@@ -737,8 +737,8 @@ public class RenderEvents {
                 com.frenkvs.devmod.effects.ShakeManager.INSTANCE.isEnabled(),
                 com.frenkvs.devmod.effects.ShakeManager.INSTANCE.getActiveCount());
             player.displayClientMessage(
-                Component.literal("§e[DevMod] §fScreen shake test triggered! Active shakes: §a" +
-                    com.frenkvs.devmod.effects.ShakeManager.INSTANCE.getActiveCount()),
+                Objects.requireNonNull(Component.literal("§e[DevMod] §fScreen shake test triggered! Active shakes: §a" +
+                    com.frenkvs.devmod.effects.ShakeManager.INSTANCE.getActiveCount()), "shakeMsg"),
                 true
             );
         }

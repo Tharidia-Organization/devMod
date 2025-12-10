@@ -570,6 +570,20 @@ public class QATestingScreen extends Screen {
         graphics.fill(x, thumbY, x + width, thumbY + thumbHeight, 0x80FFFFFF);
     }
 
+    /**
+     * Truncate text to fit within maxWidth pixels, adding ellipsis if needed.
+     */
+    private String truncateText(String text, int maxWidth) {
+        if (font.width(text) <= maxWidth) return text;
+        String ellipsis = "...";
+        int minChars = Math.min(6, text.length());
+        String truncated = text;
+        while (font.width(truncated + ellipsis) > maxWidth && truncated.length() > minChars) {
+            truncated = truncated.substring(0, truncated.length() - 1);
+        }
+        return truncated + ellipsis;
+    }
+
     private void renderTestCard(GuiGraphics graphics, int x, int y, int width, TestCase test,
                                  boolean hovered, boolean selected) {
         int height = TEST_CARD_HEIGHT - 10;
@@ -587,12 +601,12 @@ public class QATestingScreen extends Screen {
         int priorityColor = test.getPriority().getColor();
         graphics.fill(x + width - 20, y + 5, x + width - 5, y + 15, priorityColor);
 
-        // Test name
-        graphics.drawString(font, test.getName(), x + 12, y + 5, UIConstants.Text.PRIMARY, false);
+        // Test name (truncated to fit card width)
+        String testName = truncateText(test.getName(), width - 40); // Leave room for priority indicator
+        graphics.drawString(font, testName, x + 12, y + 5, UIConstants.Text.PRIMARY, false);
 
-        // Description
-        String desc = test.getDescription();
-        if (desc.length() > 60) desc = desc.substring(0, 57) + "...";
+        // Description (truncated to fit card width)
+        String desc = truncateText(test.getDescription(), width - 24);
         graphics.drawString(font, desc, x + 12, y + 18, UIConstants.Text.SECONDARY, false);
 
         // Status text
@@ -630,8 +644,10 @@ public class QATestingScreen extends Screen {
         int contentY = detailsY + 30;
         int contentX = detailsX + PADDING;
 
-        // Test name
-        graphics.drawString(font, selectedTest.getName(), contentX, contentY, UIConstants.Text.WHITE, false);
+        // Test name (truncated to fit panel width)
+        int maxTextWidth = detailsWidth - PADDING * 2;
+        String detailName = truncateText(selectedTest.getName(), maxTextWidth);
+        graphics.drawString(font, detailName, contentX, contentY, UIConstants.Text.WHITE, false);
         contentY += 15;
 
         // Status and Priority
@@ -640,19 +656,21 @@ public class QATestingScreen extends Screen {
         graphics.drawString(font, statusLine, contentX, contentY, selectedTest.getStatus().getColor(), false);
         contentY += 20;
 
-        // Description
+        // Description (truncated to fit panel width)
         AxiomRenderer.drawSectionHeader(graphics, font, contentX, contentY, "Description:");
         contentY += 12;
-        graphics.drawString(font, selectedTest.getDescription(), contentX, contentY, UIConstants.Text.SECONDARY, false);
+        String detailDesc = truncateText(selectedTest.getDescription(), maxTextWidth);
+        graphics.drawString(font, detailDesc, contentX, contentY, UIConstants.Text.SECONDARY, false);
         contentY += 20;
 
-        // Instructions
+        // Instructions (truncated per line to fit panel width)
         AxiomRenderer.drawSectionHeader(graphics, font, contentX, contentY, "Instructions:");
         contentY += 12;
 
         String[] lines = selectedTest.getInstructions().split("\n");
         for (String line : lines) {
-            graphics.drawString(font, line, contentX, contentY, UIConstants.Text.PRIMARY, false);
+            String truncatedLine = truncateText(line, maxTextWidth);
+            graphics.drawString(font, truncatedLine, contentX, contentY, UIConstants.Text.PRIMARY, false);
             contentY += 12;
         }
         contentY += 10;

@@ -145,8 +145,9 @@ public class ImpactData {
     @Nullable
     private static ImpactData getForLocalPlayer() {
         net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-        if (mc.player == null) return null;
-        return getForPlayer(mc.player.getUUID());
+        var player = mc.player;
+        if (player == null) return null;
+        return getForPlayer(player.getUUID());
     }
 
     /**

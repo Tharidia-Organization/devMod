@@ -2,7 +2,6 @@ package com.frenkvs.devmod.panels.context;
 
 import com.frenkvs.devmod.testing.TestingSession;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.LivingEntity;
 
 import javax.annotation.Nullable;
@@ -109,7 +108,7 @@ public class ContextDetector {
         // Log per debug
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
-            // Potrebbe loggare il cambio modo
+            com.frenkvs.devmod.DevMod.LOGGER.debug("Context changed: {} -> {}", oldMode, mode);
         }
     }
 

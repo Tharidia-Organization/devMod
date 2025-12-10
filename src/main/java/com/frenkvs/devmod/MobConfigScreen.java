@@ -35,7 +35,7 @@ public class MobConfigScreen extends Screen {
 
     // Layout constants - aligned with WeaponEditorScreen standard
     private static final int PANEL_WIDTH = 450;
-    private static final int PANEL_HEIGHT = 400;
+    private static final int PANEL_HEIGHT = 410; // Increased to accommodate user presets section
     private static final int PREVIEW_SIZE = 120;
     private static final int SLIDER_WIDTH = 180;
     private static final int SLIDER_HEIGHT = 12;
@@ -84,7 +84,7 @@ public class MobConfigScreen extends Screen {
     // Animation
     private float animationProgress = 0;
     private long lastFrameTime = 0;
-    private float[] sliderAnimations = new float[7]; // Animation progress for each slider
+    private float[] sliderAnimations = new float[7]; // Pulse animation per slider (0-1, decays over time)
 
     // Direct numeric input state
     private int editingSlider = -1;  // Which slider is being edited (-1 = none)
@@ -111,7 +111,7 @@ public class MobConfigScreen extends Screen {
     };
     private int selectedPreset = 5; // Default to Custom
     private int hoveredPreset = -1; // For tooltip display
-    private int hoveredUserPreset = -1; // For user presets
+    private int hoveredUserPreset = -1; // For user presets hover state
     private boolean showSavePresetDialog = false;
     private StringBuilder presetNameInput = new StringBuilder();
     private String deleteConfirmPreset = null; // Name of preset pending deletion
@@ -526,10 +526,17 @@ public class MobConfigScreen extends Screen {
         int handleW = 6;
         boolean sliderHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, trackX - 5, sliderY - 5, trackW + 10, trackH + 10);
 
-        if (sliderHovered || activeSlider == sliderId) {
-            // Glow effect
-            graphics.fill(handleX - 2, sliderY - 2, handleX + handleW + 2, sliderY + trackH + 2,
-                UIConstants.setAlpha(accentColor, 80));
+        // Pulse animation effect (expands glow when value changes)
+        int localSlider = sliderId % 10;
+        float pulseAnim = localSlider < sliderAnimations.length ? sliderAnimations[localSlider] : 0;
+        int pulseExpand = (int) (pulseAnim * 4); // Expand glow by up to 4 pixels
+
+        if (sliderHovered || activeSlider == sliderId || pulseAnim > 0) {
+            // Glow effect (enhanced during pulse)
+            int glowAlpha = 80 + (int) (pulseAnim * 100); // Brighter during pulse
+            graphics.fill(handleX - 2 - pulseExpand, sliderY - 2 - pulseExpand,
+                handleX + handleW + 2 + pulseExpand, sliderY + trackH + 2 + pulseExpand,
+                UIConstants.setAlpha(accentColor, glowAlpha));
         }
 
         // Handle
@@ -565,8 +572,8 @@ public class MobConfigScreen extends Screen {
         // Presets section (to the right of mode)
         drawPresets(graphics, panelX + 150, y - 3);
 
-        // Row 2: Action buttons at bottom
-        int btnY = y + 48;
+        // Row 2: Action buttons at bottom (increased spacing for user presets)
+        int btnY = y + 56;
         int btnW = 70;
         int btnH = 22;
         int btnGap = 8;
@@ -767,6 +774,13 @@ public class MobConfigScreen extends Screen {
             String presetTip = "§e" + PRESET_NAMES[hoveredPreset] + "§r: " + PRESET_DESCRIPTIONS[hoveredPreset];
             AxiomRenderer.drawTooltip(graphics, font, mouseX + 10, mouseY + 15, presetTip);
         }
+
+        // User preset tooltip
+        String[] userPresetNames = MobPresetManager.getPresetNames();
+        if (hoveredUserPreset >= 0 && hoveredUserPreset < userPresetNames.length) {
+            String userTip = "§6" + userPresetNames[hoveredUserPreset] + "§r: Click to apply, Right-click to delete";
+            AxiomRenderer.drawTooltip(graphics, font, mouseX + 10, mouseY + 15, userTip);
+        }
     }
 
     // Confirmation dialog dimensions
@@ -926,10 +940,24 @@ public class MobConfigScreen extends Screen {
             animationProgress = Math.min(1, animationProgress + delta * 3);
         }
 
+        // Decay slider pulse animations
+        for (int i = 0; i < sliderAnimations.length; i++) {
+            if (sliderAnimations[i] > 0) {
+                sliderAnimations[i] = Math.max(0, sliderAnimations[i] - delta * 2);
+            }
+        }
+
         // Auto-rotate preview when not dragging
         if (!isDraggingPreview) {
             targetRotationY += delta * 20; // Slow rotation
             if (targetRotationY > 180) targetRotationY -= 360;
+        }
+    }
+
+    /** Trigger pulse animation on a slider when value changes */
+    private void triggerSliderAnimation(int sliderIndex) {
+        if (sliderIndex >= 0 && sliderIndex < sliderAnimations.length) {
+            sliderAnimations[sliderIndex] = 1.0f;
         }
     }
 
@@ -1119,8 +1147,8 @@ public class MobConfigScreen extends Screen {
             return true;
         }
 
-        // Action buttons - Row 2 at bottomY + 48
-        int btnY = bottomY + 48;
+        // Action buttons - Row 2 at bottomY + 56 (matches drawBottomSection)
+        int btnY = bottomY + 56;
         int btnW = 70;
         int btnH = 22;
         int btnGap = 8;
@@ -1275,6 +1303,9 @@ public class MobConfigScreen extends Screen {
                 }
                 break;
         }
+
+        // Trigger pulse animation for feedback
+        triggerSliderAnimation(localSlider);
 
         // Mark as custom preset
         selectedPreset = 5;

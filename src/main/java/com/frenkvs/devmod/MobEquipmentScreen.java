@@ -35,8 +35,6 @@ public class MobEquipmentScreen extends Screen {
 
     private EditBox mainHand, offHand, head, chest, legs, feet;
 
-    private int mouseX, mouseY;
-
     // Blur control
     private int originalBlurValue = 0;
 
@@ -106,9 +104,6 @@ public class MobEquipmentScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.mouseX = mouseX;
-        this.mouseY = mouseY;
-
         // Dark background
         AxiomRenderer.drawScreenBackground(graphics, this.width, this.height);
 

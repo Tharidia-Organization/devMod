@@ -42,7 +42,7 @@ public class RoomAnalysisService {
      */
     public void recordPlayerQuit(String roomId, BlockPos pos) {
         chokePointQuits.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>())
-            .merge(pos, 1, Integer::sum);
+            .merge(pos, 1, (a, b) -> a + b);
     }
 
     /**
@@ -83,7 +83,7 @@ public class RoomAnalysisService {
      */
     public void recordInvisibleCollision(String roomId, BlockPos pos) {
         invisibleCollisions.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>())
-            .merge(pos, 1, Integer::sum);
+            .merge(pos, 1, (a, b) -> a + b);
     }
 
     /**
@@ -124,7 +124,7 @@ public class RoomAnalysisService {
      */
     public void recordParkourFall(String roomId, BlockPos pos) {
         parkourFalls.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>())
-            .merge(pos, 1, Integer::sum);
+            .merge(pos, 1, (a, b) -> a + b);
     }
 
     /**
@@ -183,8 +183,9 @@ public class RoomAnalysisService {
             tracker.entityTypeCount.forEach((type, count) ->
                 types.append(types.length() > 0 ? ", " : "").append(type).append("=").append(count)
             );
-            report.add(String.format("%s: current=%d peak=%d [%s]",
-                room, tracker.currentEntityCount, tracker.peakEntityCount, types));
+            report.add(String.format("%s: current=%d peak=%d lastUpdate=%dms [%s]",
+                room, tracker.currentEntityCount, tracker.peakEntityCount,
+                System.currentTimeMillis() - tracker.getLastUpdateMs(), types));
         });
         return report;
     }
@@ -256,6 +257,13 @@ public class RoomAnalysisService {
         int currentEntityCount = 0;
         long lastUpdateMs = 0;
         final Map<String, Integer> entityTypeCount = new ConcurrentHashMap<>();
+
+        /**
+         * Gets the last update timestamp for monitoring staleness.
+         */
+        public long getLastUpdateMs() {
+            return lastUpdateMs;
+        }
 
         void update(int count, Map<String, Integer> typeBreakdown, long nowMs) {
             currentEntityCount = count;

@@ -7,6 +7,8 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
 
+import java.util.Objects;
+
 /**
  * Unified boss detection logic used by both client-side overlay and server-side telemetry.
  * Prevents inconsistencies between what the HUD shows and what telemetry tracks.
@@ -89,7 +91,7 @@ public class UnifiedBossDetector {
      * Check entity type name for boss patterns.
      */
     private boolean hasBossTypePattern(LivingEntity entity) {
-        String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString().toLowerCase();
+        String entityId = Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(Objects.requireNonNull(entity.getType()))).toString().toLowerCase();
         return entityId.contains("boss")
             || entityId.contains("ender_guardian")
             || entityId.contains("void_worm")

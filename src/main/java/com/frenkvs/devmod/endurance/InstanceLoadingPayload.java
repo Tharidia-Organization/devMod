@@ -11,7 +11,6 @@ import java.util.Objects;
  * Payload sent from server to client to show/hide the instance loading overlay.
  * Provides visual feedback during async instance dimension creation.
  */
-@SuppressWarnings({"null", "unused"})
 public record InstanceLoadingPayload(
     boolean show,
     String status
@@ -24,9 +23,9 @@ public record InstanceLoadingPayload(
     public static final StreamCodec<RegistryFriendlyByteBuf, InstanceLoadingPayload> STREAM_CODEC = StreamCodec.of(
         (buf, payload) -> {
             buf.writeBoolean(payload.show);
-            buf.writeUtf(payload.status, 256);
+            buf.writeUtf(Objects.requireNonNull(payload.status), 256);
         },
-        buf -> new InstanceLoadingPayload(buf.readBoolean(), buf.readUtf(256))
+        buf -> new InstanceLoadingPayload(buf.readBoolean(), Objects.requireNonNull(buf.readUtf(256)))
     );
 
     @Override

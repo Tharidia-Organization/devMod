@@ -11,6 +11,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -87,20 +89,22 @@ public class InvitePopupScreen extends Screen {
         int buttonGap = 20;
 
         // Accept button
-        addRenderableWidget(Button.builder(Component.translatable("devmod.party.accept"), this::onAccept)
+        addRenderableWidget(Objects.requireNonNull(Button.builder(
+                Objects.requireNonNull(Component.translatable("devmod.party.accept"), "acceptLabel"), this::onAccept)
                 .bounds(popupX + POPUP_WIDTH / 2 - buttonWidth - buttonGap / 2, buttonY, buttonWidth, 20)
-                .build());
+                .build(), "acceptButton"));
 
         // Decline button
-        addRenderableWidget(Button.builder(Component.translatable("devmod.party.decline"), this::onDecline)
+        addRenderableWidget(Objects.requireNonNull(Button.builder(
+                Objects.requireNonNull(Component.translatable("devmod.party.decline"), "declineLabel"), this::onDecline)
                 .bounds(popupX + POPUP_WIDTH / 2 + buttonGap / 2, buttonY, buttonWidth, 20)
-                .build());
+                .build(), "declineButton"));
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Darken background
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        renderBackground(Objects.requireNonNull(graphics, "graphics"), mouseX, mouseY, partialTick);
 
         // Popup background
         graphics.fill(popupX, popupY, popupX + POPUP_WIDTH, popupY + POPUP_HEIGHT, COLOR_BG);
@@ -112,28 +116,28 @@ public class InvitePopupScreen extends Screen {
 
         // Header
         graphics.fill(popupX, popupY, popupX + POPUP_WIDTH, popupY + 25, COLOR_HEADER);
-        graphics.drawCenteredString(font, title, popupX + POPUP_WIDTH / 2, popupY + 8, COLOR_ACCENT);
+        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), Objects.requireNonNull(title, "title"), popupX + POPUP_WIDTH / 2, popupY + 8, COLOR_ACCENT);
 
         // Invite message
-        String inviteMsg = String.format("%s invites you to:", senderName);
-        graphics.drawCenteredString(font, inviteMsg, popupX + POPUP_WIDTH / 2, popupY + 35, COLOR_TEXT);
+        String inviteMsg = Objects.requireNonNull(String.format("%s invites you to:", senderName), "inviteMsg");
+        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), inviteMsg, popupX + POPUP_WIDTH / 2, popupY + 35, COLOR_TEXT);
 
         // Quest type with color coding
-        String questTypeMsg = questType.displayName;
+        String questTypeMsg = Objects.requireNonNull(questType.displayName, "questTypeMsg");
         int questColor = getQuestTypeColor(questType);
-        graphics.drawCenteredString(font, questTypeMsg, popupX + POPUP_WIDTH / 2, popupY + 50, questColor);
+        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), questTypeMsg, popupX + POPUP_WIDTH / 2, popupY + 50, questColor);
 
         // Quest type description
-        String description = getQuestTypeDescription(questType);
-        graphics.drawCenteredString(font, description, popupX + POPUP_WIDTH / 2, popupY + 65, COLOR_TEXT_DIM);
+        String description = Objects.requireNonNull(getQuestTypeDescription(questType), "description");
+        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), description, popupX + POPUP_WIDTH / 2, popupY + 65, COLOR_TEXT_DIM);
 
         // Timer
         long remainingMs = expiresAt - System.currentTimeMillis();
         int remainingSeconds = (int) Math.max(0, remainingMs / 1000);
 
-        String timerText = String.format("Expires in: %ds", remainingSeconds);
+        String timerText = Objects.requireNonNull(String.format("Expires in: %ds", remainingSeconds), "timerText");
         int timerColor = getTimerColor(remainingSeconds);
-        graphics.drawCenteredString(font, timerText, popupX + POPUP_WIDTH / 2, popupY + POPUP_HEIGHT - 55, timerColor);
+        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), timerText, popupX + POPUP_WIDTH / 2, popupY + POPUP_HEIGHT - 55, timerColor);
 
         // Timer bar
         renderTimerBar(graphics, remainingMs);

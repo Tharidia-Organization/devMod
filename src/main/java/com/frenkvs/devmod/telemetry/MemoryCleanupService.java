@@ -31,6 +31,14 @@ public class MemoryCleanupService {
     private static final int MAX_ENTRIES_PER_MAP = 10_000; // Safety limit
     private static final int MAX_ROOM_ENTRIES = 1_000;
 
+    /**
+     * Gets the maximum room entries allowed before cleanup is triggered.
+     * Used for debugging and monitoring memory usage.
+     */
+    public int getMaxRoomEntries() {
+        return MAX_ROOM_ENTRIES;
+    }
+
     // Tracking last cleanup
     private final AtomicLong lastCleanupTime = new AtomicLong(0);
     private final AtomicLong totalCleanedEntries = new AtomicLong(0);

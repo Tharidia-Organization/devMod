@@ -1,21 +1,20 @@
 package com.frenkvs.devmod.panels.ui;
 
 import com.frenkvs.devmod.panels.core.FloatingPanel;
-import com.frenkvs.devmod.panels.core.PanelState;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
+import javax.annotation.Nonnull;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -45,7 +44,6 @@ public class PanelRenderer {
     // === Layout ===
     private static final float HEADER_HEIGHT = 16f;
     private static final float PADDING = 6f;
-    private static final float BORDER_WIDTH = 1f;
 
     // === Colors (Axiom style) ===
     private static final int BG_COLOR = UIConstants.Background.PANEL;
@@ -76,8 +74,8 @@ public class PanelRenderer {
 
         if (!panel.shouldRender()) return;
 
-        Vec3 panelPos = panel.getWorldPosition();
-        double distance = panelPos.distanceTo(cameraPos);
+        Vec3 panelPos = nn(panel.getWorldPosition());
+        double distance = panelPos.distanceTo(nn(cameraPos));
 
         // Calculate scale based on distance
         float distanceScale = calculateDistanceScale(distance);
@@ -95,13 +93,13 @@ public class PanelRenderer {
         poseStack.pushPose();
 
         // Translate to position relative to camera
-        Vec3 relativePos = panelPos.subtract(cameraPos);
+        Vec3 relativePos = nn(panelPos.subtract(nn(cameraPos)));
         poseStack.translate(relativePos.x, relativePos.y, relativePos.z);
 
         // Billboard rotation
-        Vec3 toCamera = cameraPos.subtract(panelPos).normalize();
+        Vec3 toCamera = nn(cameraPos.subtract(panelPos).normalize());
         float yaw = (float) Math.atan2(toCamera.x, toCamera.z);
-        poseStack.mulPose(new Quaternionf().rotationY(yaw));
+        poseStack.mulPose(nn(new Quaternionf().rotationY(yaw)));
 
         // Scale and flip Y
         poseStack.scale(finalScale, -finalScale, finalScale);
@@ -164,15 +162,15 @@ public class PanelRenderer {
      */
     private void renderBackground(PoseStack poseStack, MultiBufferSource bufferSource,
                                    int width, int height, FloatingPanel panel, float alpha) {
-        Matrix4f matrix = poseStack.last().pose();
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.debugQuads());
+        Matrix4f matrix = nn(poseStack.last().pose());
+        VertexConsumer consumer = bufferSource.getBuffer(nn(RenderType.debugQuads()));
 
         // Main background
         int bgColor = applyAlpha(BG_COLOR, alpha * 0.95f);
         drawQuad(consumer, matrix, 0, 0, width, height, 0.001f, bgColor);
 
         // Border
-        VertexConsumer lineConsumer = bufferSource.getBuffer(RenderType.lines());
+        VertexConsumer lineConsumer = bufferSource.getBuffer(nn(RenderType.lines()));
         int borderColor = panel.isHovered() ? applyAlpha(BORDER_HOVER, alpha) : applyAlpha(BORDER_COLOR, alpha);
 
         // Accent color for pinned or hovered panels
@@ -190,15 +188,15 @@ public class PanelRenderer {
      */
     private void renderHeader(PoseStack poseStack, MultiBufferSource bufferSource, Font font,
                                int width, FloatingPanel panel, float alpha) {
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = nn(poseStack.last().pose());
 
         // Header background
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.debugQuads());
+        VertexConsumer consumer = bufferSource.getBuffer(nn(RenderType.debugQuads()));
         int headerBg = applyAlpha(HEADER_BG, alpha * 0.9f);
         drawQuad(consumer, matrix, 0, 0, width, HEADER_HEIGHT, 0.0005f, headerBg);
 
         // Header separator
-        VertexConsumer lineConsumer = bufferSource.getBuffer(RenderType.lines());
+        VertexConsumer lineConsumer = bufferSource.getBuffer(nn(RenderType.lines()));
         int sepColor = applyAlpha(BORDER_COLOR, alpha * 0.5f);
         drawHLine(lineConsumer, matrix, poseStack, 0, HEADER_HEIGHT, width, sepColor);
 
@@ -260,7 +258,7 @@ public class PanelRenderer {
         poseStack.translate(PADDING, contentY, -0.3f);
 
         // Delegate rendering to the specific panel
-        panel.renderContent3D(poseStack, bufferSource, font, contentWidth, contentHeight, alpha);
+        panel.renderContent3D(poseStack, nn(bufferSource), nn(font), contentWidth, contentHeight, alpha);
 
         poseStack.popPose();
     }
@@ -275,14 +273,14 @@ public class PanelRenderer {
         poseStack.pushPose();
         poseStack.translate(x, y, 0);
 
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = nn(poseStack.last().pose());
         font.drawInBatch(
-            text,
+            nn(text),
             0, 0,
             color,
             false,
-            matrix,
-            bufferSource,
+            nn(matrix),
+            nn(bufferSource),
             Font.DisplayMode.SEE_THROUGH,
             0,
             15728880
@@ -301,10 +299,10 @@ public class PanelRenderer {
         float b = (color & 0xFF) / 255f;
         float a = ((color >> 24) & 0xFF) / 255f;
 
-        consumer.addVertex(matrix, x, y, z).setColor(r, g, b, a).setNormal(0, 0, 1);
-        consumer.addVertex(matrix, x, y + h, z).setColor(r, g, b, a).setNormal(0, 0, 1);
-        consumer.addVertex(matrix, x + w, y + h, z).setColor(r, g, b, a).setNormal(0, 0, 1);
-        consumer.addVertex(matrix, x + w, y, z).setColor(r, g, b, a).setNormal(0, 0, 1);
+        consumer.addVertex(nn(matrix), x, y, z).setColor(r, g, b, a).setNormal(0, 0, 1);
+        consumer.addVertex(nn(matrix), x, y + h, z).setColor(r, g, b, a).setNormal(0, 0, 1);
+        consumer.addVertex(nn(matrix), x + w, y + h, z).setColor(r, g, b, a).setNormal(0, 0, 1);
+        consumer.addVertex(nn(matrix), x + w, y, z).setColor(r, g, b, a).setNormal(0, 0, 1);
     }
 
     /**
@@ -318,17 +316,17 @@ public class PanelRenderer {
         float a = ((color >> 24) & 0xFF) / 255f;
 
         // Top
-        consumer.addVertex(matrix, x, y, 0).setColor(r, g, b, a).setNormal(poseStack.last(), 1, 0, 0);
-        consumer.addVertex(matrix, x + w, y, 0).setColor(r, g, b, a).setNormal(poseStack.last(), 1, 0, 0);
+        consumer.addVertex(nn(matrix), x, y, 0).setColor(r, g, b, a).setNormal(nn(poseStack.last()), 1, 0, 0);
+        consumer.addVertex(nn(matrix), x + w, y, 0).setColor(r, g, b, a).setNormal(nn(poseStack.last()), 1, 0, 0);
         // Right
-        consumer.addVertex(matrix, x + w, y, 0).setColor(r, g, b, a).setNormal(poseStack.last(), 0, 1, 0);
-        consumer.addVertex(matrix, x + w, y + h, 0).setColor(r, g, b, a).setNormal(poseStack.last(), 0, 1, 0);
+        consumer.addVertex(nn(matrix), x + w, y, 0).setColor(r, g, b, a).setNormal(nn(poseStack.last()), 0, 1, 0);
+        consumer.addVertex(nn(matrix), x + w, y + h, 0).setColor(r, g, b, a).setNormal(nn(poseStack.last()), 0, 1, 0);
         // Bottom
-        consumer.addVertex(matrix, x + w, y + h, 0).setColor(r, g, b, a).setNormal(poseStack.last(), 1, 0, 0);
-        consumer.addVertex(matrix, x, y + h, 0).setColor(r, g, b, a).setNormal(poseStack.last(), 1, 0, 0);
+        consumer.addVertex(nn(matrix), x + w, y + h, 0).setColor(r, g, b, a).setNormal(nn(poseStack.last()), 1, 0, 0);
+        consumer.addVertex(nn(matrix), x, y + h, 0).setColor(r, g, b, a).setNormal(nn(poseStack.last()), 1, 0, 0);
         // Left
-        consumer.addVertex(matrix, x, y + h, 0).setColor(r, g, b, a).setNormal(poseStack.last(), 0, 1, 0);
-        consumer.addVertex(matrix, x, y, 0).setColor(r, g, b, a).setNormal(poseStack.last(), 0, 1, 0);
+        consumer.addVertex(nn(matrix), x, y + h, 0).setColor(r, g, b, a).setNormal(nn(poseStack.last()), 0, 1, 0);
+        consumer.addVertex(nn(matrix), x, y, 0).setColor(r, g, b, a).setNormal(nn(poseStack.last()), 0, 1, 0);
     }
 
     /**
@@ -341,8 +339,8 @@ public class PanelRenderer {
         float b = (color & 0xFF) / 255f;
         float a = ((color >> 24) & 0xFF) / 255f;
 
-        consumer.addVertex(matrix, x, y, 0).setColor(r, g, b, a).setNormal(poseStack.last(), 1, 0, 0);
-        consumer.addVertex(matrix, x + w, y, 0).setColor(r, g, b, a).setNormal(poseStack.last(), 1, 0, 0);
+        consumer.addVertex(nn(matrix), x, y, 0).setColor(r, g, b, a).setNormal(nn(poseStack.last()), 1, 0, 0);
+        consumer.addVertex(nn(matrix), x + w, y, 0).setColor(r, g, b, a).setNormal(nn(poseStack.last()), 1, 0, 0);
     }
 
     /**
@@ -377,7 +375,7 @@ public class PanelRenderer {
 
         // Cache miss - measure and truncate
         String result;
-        if (font.width(title) <= maxWidth) {
+        if (font.width(nn(title)) <= maxWidth) {
             // Title fits, cache the original
             result = title;
         } else {
@@ -387,7 +385,7 @@ public class PanelRenderer {
             int availableWidth = Math.max(0, maxWidth - ellipsisWidth);
 
             // Get the substring that fits in availableWidth
-            String truncated = font.plainSubstrByWidth(title, availableWidth);
+            String truncated = nn(font.plainSubstrByWidth(nn(title), availableWidth));
 
             // If we actually truncated, add ellipsis
             if (truncated.length() < title.length()) {
@@ -413,5 +411,11 @@ public class PanelRenderer {
      */
     public static void clearTitleCache() {
         TRUNCATED_TITLE_CACHE.clear();
+    }
+
+    // === Null-safety helper ===
+    @Nonnull
+    private static <T> T nn(T value) {
+        return Objects.requireNonNull(value);
     }
 }

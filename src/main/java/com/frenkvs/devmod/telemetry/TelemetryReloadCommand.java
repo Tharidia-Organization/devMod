@@ -49,18 +49,18 @@ public class TelemetryReloadCommand {
                                 .then(Commands.literal("scan")
                                         .then(Commands.literal("light")
                                                 .executes(TelemetryReloadCommand::scanLightAll)
-                                                .then(Commands.argument("roomId", StringArgumentType.string())
+                                                .then(Commands.argument("roomId", Objects.requireNonNull(StringArgumentType.string()))
                                                         .executes(TelemetryReloadCommand::scanLightRoom))))
                                 .then(Commands.literal("spawnability")
-                                        .then(Commands.argument("roomId", StringArgumentType.string())
+                                        .then(Commands.argument("roomId", Objects.requireNonNull(StringArgumentType.string()))
                                                 .executes(TelemetryReloadCommand::checkSpawnability)))
                                 .then(Commands.literal("desirelines")
                                         .executes(TelemetryReloadCommand::dumpDesireLines)
-                                        .then(Commands.argument("roomId", StringArgumentType.string())
+                                        .then(Commands.argument("roomId", Objects.requireNonNull(StringArgumentType.string()))
                                                 .executes(TelemetryReloadCommand::analyzeDesireLines)))
                                 .then(Commands.literal("dungeons")
                                         .executes(TelemetryReloadCommand::dumpDungeonRuns)
-                                        .then(Commands.argument("dungeonId", StringArgumentType.string())
+                                        .then(Commands.argument("dungeonId", Objects.requireNonNull(StringArgumentType.string()))
                                                 .executes(TelemetryReloadCommand::getDungeonStats)))
                                 .then(Commands.literal("backtracking")
                                         .executes(TelemetryReloadCommand::dumpBacktracking)
@@ -176,7 +176,7 @@ public class TelemetryReloadCommand {
 
     private static int scanLightRoom(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         ServerLevel level = ctx.getSource().getLevel();
-        String roomId = StringArgumentType.getString(ctx, "roomId");
+        String roomId = Objects.requireNonNull(StringArgumentType.getString(ctx, "roomId"));
         ctx.getSource().sendSuccess(() -> I18n.translate("devmod.telemetry.scanning_room", roomId), true);
         TelemetryService.INSTANCE.scanRoomLightLevels(level, roomId);
         ctx.getSource().sendSuccess(() -> I18n.translate("devmod.telemetry.scan_room_complete", roomId), true);
@@ -185,9 +185,10 @@ public class TelemetryReloadCommand {
 
     private static int checkSpawnability(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         ServerLevel level = ctx.getSource().getLevel();
-        String roomId = StringArgumentType.getString(ctx, "roomId");
+        String roomId = Objects.requireNonNull(StringArgumentType.getString(ctx, "roomId"));
         var report = TelemetryService.INSTANCE.getSpawnabilityReport(level, roomId);
-        ctx.getSource().sendSuccess(() -> Component.literal(report.toString()), false);
+        String reportStr = Objects.requireNonNull(report.toString());
+        ctx.getSource().sendSuccess(() -> Objects.requireNonNull(Component.literal(reportStr)), false);
         return 1;
     }
 
@@ -217,27 +218,27 @@ public class TelemetryReloadCommand {
 
         var data = analysis.get();
         ctx.getSource().sendSuccess(() -> I18n.translate("devmod.telemetry.desire_lines_room", roomId), false);
-        ctx.getSource().sendSuccess(() -> I18n.translate("devmod.telemetry.total_segments").append(Component.literal(": " + data.totalSegments())), false);
+        ctx.getSource().sendSuccess(() -> Objects.requireNonNull(I18n.translate("devmod.telemetry.total_segments").append(Objects.requireNonNull(Component.literal(": " + data.totalSegments())))), false);
 
-        ctx.getSource().sendSuccess(() -> I18n.translate("devmod.telemetry.top_paths").append(Component.literal(":")), false);
+        ctx.getSource().sendSuccess(() -> Objects.requireNonNull(I18n.translate("devmod.telemetry.top_paths").append(Objects.requireNonNull(Component.literal(":")))), false);
         int count = 0;
         for (var path : data.topPaths()) {
             if (count++ >= 5) break;
-            String pathStr = String.format("  [%d,%d,%d] -> [%d,%d,%d] (%dx)",
+            String pathStr = Objects.requireNonNull(String.format("  [%d,%d,%d] -> [%d,%d,%d] (%dx)",
                 path.from().getX(), path.from().getY(), path.from().getZ(),
                 path.to().getX(), path.to().getY(), path.to().getZ(),
-                path.count());
-            ctx.getSource().sendSuccess(() -> Component.literal(pathStr), false);
+                path.count()));
+            ctx.getSource().sendSuccess(() -> Objects.requireNonNull(Component.literal(pathStr)), false);
         }
 
-        ctx.getSource().sendSuccess(() -> I18n.translate("devmod.telemetry.hotspots").append(Component.literal(":")), false);
+        ctx.getSource().sendSuccess(() -> Objects.requireNonNull(I18n.translate("devmod.telemetry.hotspots").append(Objects.requireNonNull(Component.literal(":")))), false);
         count = 0;
         for (var hotspot : data.hotspots()) {
             if (count++ >= 5) break;
-            String hotspotStr = String.format("  [%d,%d,%d] traffic: %d",
+            String hotspotStr = Objects.requireNonNull(String.format("  [%d,%d,%d] traffic: %d",
                 hotspot.position().getX(), hotspot.position().getY(), hotspot.position().getZ(),
-                hotspot.traffic());
-            ctx.getSource().sendSuccess(() -> Component.literal(hotspotStr), false);
+                hotspot.traffic()));
+            ctx.getSource().sendSuccess(() -> Objects.requireNonNull(Component.literal(hotspotStr)), false);
         }
 
         return 1;
@@ -253,24 +254,26 @@ public class TelemetryReloadCommand {
             ctx.getSource().sendSuccess(() -> I18n.translate("devmod.telemetry.no_completed_runs"), false);
         } else {
             for (String summary : summaries) {
-                ctx.getSource().sendSuccess(() -> Component.literal(summary), false);
+                String sum = Objects.requireNonNull(summary);
+                ctx.getSource().sendSuccess(() -> Objects.requireNonNull(Component.literal(sum)), false);
             }
         }
         return 1;
     }
 
     private static int getDungeonStats(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-        String dungeonId = StringArgumentType.getString(ctx, "dungeonId");
+        String dungeonId = Objects.requireNonNull(StringArgumentType.getString(ctx, "dungeonId"));
         var stats = com.frenkvs.devmod.telemetry.dungeon.DungeonRunService.INSTANCE.getDungeonStats(dungeonId);
 
         if (stats.totalRuns() == 0) {
             ctx.getSource().sendSuccess(() -> I18n.translate("devmod.telemetry.no_runs_dungeon", dungeonId), false);
         } else {
-            ctx.getSource().sendSuccess(() -> Component.literal(stats.toString()), false);
-            ctx.getSource().sendSuccess(() -> I18n.translate("devmod.telemetry.deaths")
-                .append(Component.literal(": " + stats.deaths() + " | "))
+            String statsStr = Objects.requireNonNull(stats.toString());
+            ctx.getSource().sendSuccess(() -> Objects.requireNonNull(Component.literal(statsStr)), false);
+            ctx.getSource().sendSuccess(() -> Objects.requireNonNull(I18n.translate("devmod.telemetry.deaths")
+                .append(Objects.requireNonNull(Component.literal(": " + stats.deaths() + " | ")))
                 .append(I18n.translate("devmod.telemetry.successes"))
-                .append(Component.literal(": " + stats.successes())), false);
+                .append(Objects.requireNonNull(Component.literal(": " + stats.successes())))), false);
         }
         return 1;
     }
@@ -284,7 +287,8 @@ public class TelemetryReloadCommand {
             ctx.getSource().sendSuccess(() -> I18n.translate("devmod.telemetry.no_backtracking_data"), false);
         } else {
             for (String summary : summaries) {
-                ctx.getSource().sendSuccess(() -> Component.literal(summary), false);
+                String sum = Objects.requireNonNull(summary);
+                ctx.getSource().sendSuccess(() -> Objects.requireNonNull(Component.literal(sum)), false);
             }
         }
         return 1;

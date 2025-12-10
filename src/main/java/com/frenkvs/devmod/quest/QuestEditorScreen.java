@@ -10,7 +10,9 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -100,93 +102,92 @@ public class QuestEditorScreen extends ModScreen {
         }
 
         int contentTop = HEADER_HEIGHT + PADDING;
-        int contentHeight = height - contentTop - 60; // Space for bottom buttons
 
         // === Quest Note Field ===
         int noteFieldX = QUEST_LIST_WIDTH + TASK_LIST_WIDTH + PADDING * 3;
         int noteFieldWidth = width - noteFieldX - PADDING;
 
-        questNoteField = new EditBox(font, noteFieldX, contentTop + 40, Math.max(100, noteFieldWidth), 20, I18n.translate("devmod.quest.quest_note"));
+        questNoteField = Objects.requireNonNull(new EditBox(Objects.requireNonNull(font, "font"), noteFieldX, contentTop + 40, Math.max(100, noteFieldWidth), 20, I18n.translate("devmod.quest.quest_note")), "questNoteField");
         questNoteField.setMaxLength(200);
         questNoteField.setHint(I18n.translate("devmod.quest.quest_note_hint"));
         if (selectedQuest != null && selectedQuest.hasQuestNote()) {
-            questNoteField.setValue(selectedQuest.getQuestNote());
+            questNoteField.setValue(Objects.requireNonNull(selectedQuest.getQuestNote(), "questNote"));
         }
         questNoteField.setResponder(this::onQuestNoteChanged);
         this.addRenderableWidget(questNoteField);
 
         // === Task Note Field ===
-        taskNoteField = new EditBox(font, noteFieldX, contentTop + 120, Math.max(100, noteFieldWidth), 20, I18n.translate("devmod.quest.task_note"));
+        taskNoteField = Objects.requireNonNull(new EditBox(Objects.requireNonNull(font, "font"), noteFieldX, contentTop + 120, Math.max(100, noteFieldWidth), 20, I18n.translate("devmod.quest.task_note")), "taskNoteField");
         taskNoteField.setMaxLength(200);
         taskNoteField.setHint(I18n.translate("devmod.quest.task_note_hint"));
         if (selectedTask != null && selectedTask.hasNote()) {
-            taskNoteField.setValue(selectedTask.getNote());
+            taskNoteField.setValue(Objects.requireNonNull(selectedTask.getNote(), "taskNote"));
         }
         taskNoteField.setResponder(this::onTaskNoteChanged);
         this.addRenderableWidget(taskNoteField);
 
         // === New Quest Name Field ===
-        newQuestNameField = new EditBox(font, PADDING, height - 55, QUEST_LIST_WIDTH - 25, 18, I18n.translate("devmod.quest.new_quest"));
+        newQuestNameField = Objects.requireNonNull(new EditBox(Objects.requireNonNull(font), PADDING, height - 55, QUEST_LIST_WIDTH - 25, 18, I18n.translate("devmod.quest.new_quest")));
         newQuestNameField.setMaxLength(50);
         newQuestNameField.setHint(I18n.translate("devmod.quest.new_quest_hint"));
-        this.addRenderableWidget(newQuestNameField);
+        this.addRenderableWidget(Objects.requireNonNull(newQuestNameField));
 
         // === New Task Description Field ===
         int taskFieldX = QUEST_LIST_WIDTH + PADDING * 2;
-        newTaskDescField = new EditBox(font, taskFieldX, height - 55, TASK_LIST_WIDTH - 25, 18, I18n.translate("devmod.quest.new_task"));
+        newTaskDescField = Objects.requireNonNull(new EditBox(Objects.requireNonNull(font), taskFieldX, height - 55, TASK_LIST_WIDTH - 25, 18, I18n.translate("devmod.quest.new_task")));
         newTaskDescField.setMaxLength(100);
         newTaskDescField.setHint(I18n.translate("devmod.quest.new_task_hint"));
-        this.addRenderableWidget(newTaskDescField);
+        this.addRenderableWidget(Objects.requireNonNull(newTaskDescField));
 
         // === Buttons ===
         // Add Quest Button (+)
-        addQuestBtn = Button.builder(I18n.ui("add_symbol"), b -> addNewQuest())
+        addQuestBtn = Objects.requireNonNull(Button.builder(I18n.ui("add_symbol"), b -> addNewQuest())
             .bounds(PADDING + QUEST_LIST_WIDTH - 22, height - 55, 20, 18)
-            .build();
+            .build(), "addQuestBtn");
         this.addRenderableWidget(addQuestBtn);
 
         // Delete Quest Button
-        deleteQuestBtn = Button.builder(I18n.ui("delete_symbol"), b -> deleteSelectedQuest())
+        deleteQuestBtn = Objects.requireNonNull(Button.builder(I18n.ui("delete_symbol"), b -> deleteSelectedQuest())
             .bounds(PADDING + QUEST_LIST_WIDTH - 22, contentTop, 20, 18)
             .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.quest.delete_quest")))
-            .build();
+            .build(), "deleteQuestBtn");
         this.addRenderableWidget(deleteQuestBtn);
 
         // Add Task Button (+)
-        addTaskBtn = Button.builder(I18n.ui("add_symbol"), b -> addNewTask())
+        addTaskBtn = Objects.requireNonNull(Button.builder(I18n.ui("add_symbol"), b -> addNewTask())
             .bounds(taskFieldX + TASK_LIST_WIDTH - 22, height - 55, 20, 18)
-            .build();
+            .build(), "addTaskBtn");
         this.addRenderableWidget(addTaskBtn);
 
         // Delete Task Button
-        deleteTaskBtn = Button.builder(I18n.ui("delete_symbol"), b -> deleteSelectedTask())
+        deleteTaskBtn = Objects.requireNonNull(Button.builder(I18n.ui("delete_symbol"), b -> deleteSelectedTask())
             .bounds(taskFieldX + TASK_LIST_WIDTH - 22, contentTop, 20, 18)
             .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.quest.delete_task")))
-            .build();
+            .build(), "deleteTaskBtn");
         this.addRenderableWidget(deleteTaskBtn);
 
         // Complete Task Button
-        completeTaskBtn = Button.builder(I18n.ui("complete_with_icon"), b -> completeSelectedTask())
+        completeTaskBtn = Objects.requireNonNull(Button.builder(I18n.ui("complete_with_icon"), b -> completeSelectedTask())
             .bounds(noteFieldX, contentTop + 150, 100, 20)
-            .build();
+            .build(), "completeTaskBtn");
         this.addRenderableWidget(completeTaskBtn);
 
         // Set Active Quest Button
-        setActiveBtn = Button.builder(I18n.ui("activate_with_icon"), b -> setActiveQuest())
+        setActiveBtn = Objects.requireNonNull(Button.builder(I18n.ui("activate_with_icon"), b -> setActiveQuest())
             .bounds(noteFieldX + 110, contentTop + 150, 80, 20)
-            .build();
+            .build(), "setActiveBtn");
         this.addRenderableWidget(setActiveBtn);
 
         // Close Button
-        this.addRenderableWidget(Button.builder(I18n.ui("close"), b -> onClose())
+        this.addRenderableWidget(Objects.requireNonNull(Button.builder(I18n.ui("close"), b -> onClose())
             .bounds(width / 2 - 50, height - 28, 100, 20)
-            .build());
+            .build(), "closeBtn"));
 
         // === NEW: Endurance Quest Button ===
-        newEnduranceBtn = Button.builder(I18n.ui("endurance_quest"), b -> openEnduranceModal())
+        newEnduranceBtn = Objects.requireNonNull(Button.builder(I18n.ui("endurance_quest"), b -> openEnduranceModal())
             .bounds(PADDING, height - 28, 90, 20)
             .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.quest.create_endurance")))
-            .build();
+            .build(), "newEnduranceBtn");
         this.addRenderableWidget(newEnduranceBtn);
 
         // Initialize endurance modal components (hidden by default)
@@ -219,45 +220,45 @@ public class QuestEditorScreen extends ModScreen {
         int modalY = (height - modalHeight) / 2;
 
         // Search field
-        mobSearchField = new EditBox(font, modalX + 10, modalY + 35, modalWidth - 20, 18, I18n.ui("search"));
+        mobSearchField = Objects.requireNonNull(new EditBox(Objects.requireNonNull(font), modalX + 10, modalY + 35, modalWidth - 20, 18, I18n.ui("search")));
         mobSearchField.setHint(I18n.translate("devmod.quest.search_mobs"));
         mobSearchField.setResponder(this::filterMobs);
         mobSearchField.setVisible(false);
-        this.addRenderableWidget(mobSearchField);
+        this.addRenderableWidget(Objects.requireNonNull(mobSearchField));
 
         // Waves control buttons
-        wavesMinusBtn = Button.builder(I18n.ui("minus_symbol"), b -> adjustWaves(-1))
+        wavesMinusBtn = Objects.requireNonNull(Button.builder(I18n.ui("minus_symbol"), b -> adjustWaves(-1))
             .bounds(modalX + modalWidth - 150, modalY + modalHeight - 70, 20, 20)
-            .build();
+            .build());
         wavesMinusBtn.visible = false;
-        this.addRenderableWidget(wavesMinusBtn);
+        this.addRenderableWidget(Objects.requireNonNull(wavesMinusBtn));
 
-        wavesPlusBtn = Button.builder(I18n.ui("plus_symbol"), b -> adjustWaves(1))
+        wavesPlusBtn = Objects.requireNonNull(Button.builder(I18n.ui("plus_symbol"), b -> adjustWaves(1))
             .bounds(modalX + modalWidth - 80, modalY + modalHeight - 70, 20, 20)
-            .build();
+            .build());
         wavesPlusBtn.visible = false;
-        this.addRenderableWidget(wavesPlusBtn);
+        this.addRenderableWidget(Objects.requireNonNull(wavesPlusBtn));
 
         // Endless mode toggle
-        endlessModeBtn = Button.builder(I18n.translate("devmod.endurance.endless_off"), b -> toggleEndlessMode())
+        endlessModeBtn = Objects.requireNonNull(Button.builder(I18n.translate("devmod.endurance.endless_off"), b -> toggleEndlessMode())
             .bounds(modalX + 10, modalY + modalHeight - 70, 100, 20)
-            .build();
+            .build());
         endlessModeBtn.visible = false;
-        this.addRenderableWidget(endlessModeBtn);
+        this.addRenderableWidget(Objects.requireNonNull(endlessModeBtn));
 
         // Start button
-        startEnduranceBtn = Button.builder(I18n.ui("start_quest_with_icon"), b -> startEnduranceQuest())
+        startEnduranceBtn = Objects.requireNonNull(Button.builder(I18n.ui("start_quest_with_icon"), b -> startEnduranceQuest())
             .bounds(modalX + modalWidth - 110, modalY + modalHeight - 35, 100, 25)
-            .build();
+            .build());
         startEnduranceBtn.visible = false;
-        this.addRenderableWidget(startEnduranceBtn);
+        this.addRenderableWidget(Objects.requireNonNull(startEnduranceBtn));
 
         // Cancel button
-        cancelEnduranceBtn = Button.builder(I18n.ui("cancel"), b -> closeEnduranceModal())
+        cancelEnduranceBtn = Objects.requireNonNull(Button.builder(I18n.ui("cancel"), b -> closeEnduranceModal())
             .bounds(modalX + 10, modalY + modalHeight - 35, 80, 25)
-            .build();
+            .build());
         cancelEnduranceBtn.visible = false;
-        this.addRenderableWidget(cancelEnduranceBtn);
+        this.addRenderableWidget(Objects.requireNonNull(cancelEnduranceBtn));
     }
 
     @Override
@@ -277,15 +278,15 @@ public class QuestEditorScreen extends ModScreen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Background
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        renderBackground(Objects.requireNonNull(graphics, "graphics"), mouseX, mouseY, partialTick);
 
         int contentTop = HEADER_HEIGHT + PADDING;
 
         // === Header ===
         graphics.fill(0, 0, width, HEADER_HEIGHT, UIConstants.Background.HEADER);
-        graphics.drawCenteredString(font, "Quest Editor", width / 2, 10, UIConstants.Text.TITLE);
+        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), "Quest Editor", width / 2, 10, UIConstants.Text.TITLE);
 
         // === Quest List Panel ===
         renderQuestListPanel(graphics, PADDING, contentTop, mouseX, mouseY);
@@ -316,7 +317,7 @@ public class QuestEditorScreen extends ModScreen {
         g.fill(x + QUEST_LIST_WIDTH - 1, y, x + QUEST_LIST_WIDTH, y + panelHeight, UIConstants.Border.DEFAULT);
 
         // Header
-        g.drawString(font, "Quest", x + 5, y + 5, UIConstants.Text.TITLE, false);
+        g.drawString(Objects.requireNonNull(font, "font"), "Quest", x + 5, y + 5, UIConstants.Text.TITLE, false);
 
         // Quest list
         List<QuestData> quests = QuestManager.INSTANCE.getAllQuests();
@@ -343,11 +344,11 @@ public class QuestEditorScreen extends ModScreen {
             String prefix = isActive ? "\u2605 " : "  ";
             String name = prefix + truncate(quest.getName(), QUEST_LIST_WIDTH - 30);
             int color = isActive ? UIConstants.Accent.GOLD : (quest.isComplete() ? UIConstants.Accent.GREEN : UIConstants.Text.PRIMARY);
-            g.drawString(font, name, x + 5, itemY + 2, color, false);
+            g.drawString(Objects.requireNonNull(font, "font"), name, x + 5, itemY + 2, color, false);
 
             // Progress indicator
-            String progress = quest.getProgressSummary();
-            g.drawString(font, progress, x + QUEST_LIST_WIDTH - font.width(progress) - 25, itemY + 2, UIConstants.Text.MUTED, false);
+            String progress = Objects.requireNonNull(quest.getProgressSummary(), "progress");
+            g.drawString(Objects.requireNonNull(font, "font"), progress, x + QUEST_LIST_WIDTH - font.width(progress) - 25, itemY + 2, UIConstants.Text.MUTED, false);
         }
     }
 
@@ -362,10 +363,10 @@ public class QuestEditorScreen extends ModScreen {
         g.fill(x + TASK_LIST_WIDTH - 1, y, x + TASK_LIST_WIDTH, y + panelHeight, UIConstants.Border.DEFAULT);
 
         // Header
-        g.drawString(font, "Task", x + 5, y + 5, UIConstants.Text.TITLE, false);
+        g.drawString(Objects.requireNonNull(font, "font"), "Task", x + 5, y + 5, UIConstants.Text.TITLE, false);
 
         if (selectedQuest == null) {
-            g.drawString(font, "Select a quest", x + 10, y + 30, UIConstants.Text.MUTED, false);
+            g.drawString(Objects.requireNonNull(font, "font"), "Select a quest", x + 10, y + 30, UIConstants.Text.MUTED, false);
             return;
         }
 
@@ -394,11 +395,11 @@ public class QuestEditorScreen extends ModScreen {
             String prefix = task.isCompleted() ? "\u2713 " : (isCurrent ? "\u25B6 " : "  ");
             String desc = prefix + truncate(task.getDescription(), TASK_LIST_WIDTH - 20);
             int color = task.isCompleted() ? UIConstants.Accent.GREEN : (isCurrent ? UIConstants.Accent.GOLD : UIConstants.Text.PRIMARY);
-            g.drawString(font, desc, x + 5, itemY + 2, color, false);
+            g.drawString(Objects.requireNonNull(font, "font"), desc, x + 5, itemY + 2, color, false);
 
             // Note indicator
             if (task.hasNote()) {
-                g.drawString(font, "\u270E", x + TASK_LIST_WIDTH - 15, itemY + 2, UIConstants.Accent.BLUE, false);
+                g.drawString(Objects.requireNonNull(font, "font"), "\u270E", x + TASK_LIST_WIDTH - 15, itemY + 2, UIConstants.Accent.BLUE, false);
             }
         }
     }
@@ -407,26 +408,26 @@ public class QuestEditorScreen extends ModScreen {
         if (panelWidth < 50) return;
 
         // Section: Quest Note
-        g.drawString(font, "Quest Note:", x, y + 25, UIConstants.Text.MUTED, false);
+        g.drawString(Objects.requireNonNull(font, "font"), "Quest Note:", x, y + 25, UIConstants.Text.MUTED, false);
 
         // Section: Task Note
-        g.drawString(font, "Task Note:", x, y + 105, UIConstants.Text.MUTED, false);
+        g.drawString(Objects.requireNonNull(font, "font"), "Task Note:", x, y + 105, UIConstants.Text.MUTED, false);
 
         // Current selection info
         if (selectedQuest != null) {
-            g.drawString(font, "Quest: " + selectedQuest.getName(), x, y + 5, UIConstants.Text.TITLE, false);
+            g.drawString(Objects.requireNonNull(font, "font"), "Quest: " + selectedQuest.getName(), x, y + 5, UIConstants.Text.TITLE, false);
         }
 
         if (selectedTask != null) {
-            g.drawString(font, "Task: " + truncate(selectedTask.getDescription(), panelWidth / 6), x, y + 85, UIConstants.Text.TITLE, false);
+            g.drawString(Objects.requireNonNull(font, "font"), "Task: " + truncate(selectedTask.getDescription(), panelWidth / 6), x, y + 85, UIConstants.Text.TITLE, false);
         }
 
         // Help text
         int helpY = y + 190;
-        g.drawString(font, "Keybind:", x, helpY, UIConstants.Text.MUTED, false);
-        g.drawString(font, "] = Complete task", x, helpY + 12, UIConstants.Text.DISABLED, false);
-        g.drawString(font, "\\ = Toggle HUD", x, helpY + 24, UIConstants.Text.DISABLED, false);
-        g.drawString(font, "[ = Open editor", x, helpY + 36, UIConstants.Text.DISABLED, false);
+        g.drawString(Objects.requireNonNull(font, "font"), "Keybind:", x, helpY, UIConstants.Text.MUTED, false);
+        g.drawString(Objects.requireNonNull(font, "font"), "] = Complete task", x, helpY + 12, UIConstants.Text.DISABLED, false);
+        g.drawString(Objects.requireNonNull(font, "font"), "\\ = Toggle HUD", x, helpY + 24, UIConstants.Text.DISABLED, false);
+        g.drawString(Objects.requireNonNull(font, "font"), "[ = Open editor", x, helpY + 36, UIConstants.Text.DISABLED, false);
     }
 
     @Override
@@ -482,8 +483,6 @@ public class QuestEditorScreen extends ModScreen {
         if (handleEnduranceModalScroll(mouseX, mouseY, scrollY)) {
             return true;
         }
-
-        int contentTop = HEADER_HEIGHT + PADDING;
 
         // Scroll quest list
         if (mouseX >= PADDING && mouseX < PADDING + QUEST_LIST_WIDTH) {
@@ -619,10 +618,10 @@ public class QuestEditorScreen extends ModScreen {
 
     private void updateFieldsFromSelection() {
         if (questNoteField != null) {
-            questNoteField.setValue(selectedQuest != null && selectedQuest.hasQuestNote() ? selectedQuest.getQuestNote() : "");
+            questNoteField.setValue(Objects.requireNonNull(selectedQuest != null && selectedQuest.hasQuestNote() ? selectedQuest.getQuestNote() : "", "questNoteValue"));
         }
         if (taskNoteField != null) {
-            taskNoteField.setValue(selectedTask != null && selectedTask.hasNote() ? selectedTask.getNote() : "");
+            taskNoteField.setValue(Objects.requireNonNull(selectedTask != null && selectedTask.hasNote() ? selectedTask.getNote() : "", "taskNoteValue"));
         }
     }
 
@@ -645,7 +644,7 @@ public class QuestEditorScreen extends ModScreen {
     }
 
     private String truncate(String text, int maxWidth) {
-        if (font.width(text) <= maxWidth) return text;
+        if (Objects.requireNonNull(font, "font").width(Objects.requireNonNull(text, "text")) <= maxWidth) return text;
         String ellipsis = "...";
         int minChars = Math.min(6, text.length()); // Keep at least 6 chars for readability
         String truncated = text;
@@ -775,7 +774,7 @@ public class QuestEditorScreen extends ModScreen {
         graphics.fill(modalX + modalWidth - 1, modalY, modalX + modalWidth, modalY + modalHeight, UIConstants.Border.DEFAULT);
 
         // Title
-        graphics.drawCenteredString(font, "\u2694 New Endurance Quest", modalX + modalWidth / 2, modalY + 10, UIConstants.Accent.GOLD);
+        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), "\u2694 New Endurance Quest", modalX + modalWidth / 2, modalY + 10, UIConstants.Accent.GOLD);
 
         // Mob list area
         int listX = modalX + 10;
@@ -808,12 +807,12 @@ public class QuestEditorScreen extends ModScreen {
             graphics.fill(listX + 2, itemY + 2, listX + 5, itemY + itemHeight - 2, tierColor);
 
             // Mob name
-            graphics.drawString(font, mob.displayName, listX + 10, itemY + 5, UIConstants.Text.PRIMARY, false);
+            graphics.drawString(Objects.requireNonNull(font, "font"), mob.displayName, listX + 10, itemY + 5, UIConstants.Text.PRIMARY, false);
 
             // Tier badge
-            String tierText = mob.tier.name();
+            String tierText = Objects.requireNonNull(mob.tier.name(), "tierText");
             int tierTextWidth = font.width(tierText);
-            graphics.drawString(font, tierText, listX + listWidth - tierTextWidth - 10, itemY + 5, tierColor, false);
+            graphics.drawString(Objects.requireNonNull(font, "font"), tierText, listX + listWidth - tierTextWidth - 10, itemY + 5, tierColor, false);
         }
 
         // Scrollbar
@@ -825,16 +824,16 @@ public class QuestEditorScreen extends ModScreen {
         }
 
         // Stats info
-        graphics.drawString(font, filteredMobs.size() + " mobs available", listX, listY + listHeight + 5, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), filteredMobs.size() + " mobs available", listX, listY + listHeight + 5, UIConstants.Text.SECONDARY, false);
 
         // Wave count display
         String waveText = "Waves: " + enduranceWaves;
-        graphics.drawString(font, waveText, modalX + modalWidth - 125, modalY + modalHeight - 65, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), waveText, modalX + modalWidth - 125, modalY + modalHeight - 65, UIConstants.Text.PRIMARY, false);
 
         // Selected mob info
         if (selectedMob != null) {
             int infoY = modalY + modalHeight - 95;
-            graphics.drawString(font, "Selected: " + selectedMob.displayName, listX, infoY, UIConstants.Accent.GREEN, false);
+            graphics.drawString(Objects.requireNonNull(font, "font"), "Selected: " + selectedMob.displayName, listX, infoY, UIConstants.Accent.GREEN, false);
         }
     }
 

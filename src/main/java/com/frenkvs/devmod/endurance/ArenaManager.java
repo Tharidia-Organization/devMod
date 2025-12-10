@@ -19,7 +19,6 @@ import javax.annotation.Nonnull;
  * Manages arena creation, barriers, and cleanup for Endurance Quests.
  * Arenas are 64x64 blocks (4 chunks) with invisible barriers.
  */
-@SuppressWarnings({"null", "unused"}) // Minecraft APIs lack null annotations
 public class ArenaManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaManager.class);
 

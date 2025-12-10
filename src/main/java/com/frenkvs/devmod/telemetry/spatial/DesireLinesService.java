@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -70,7 +71,7 @@ public class DesireLinesService {
 
         // Only record segment if in same room and moved significant distance
         if (lastPos != null && roomId.equals(lastRoom)) {
-            double distance = Math.sqrt(lastPos.distSqr(gridPos));
+            double distance = Math.sqrt(Objects.requireNonNull(lastPos).distSqr(Objects.requireNonNull(gridPos)));
             if (distance >= SEGMENT_MIN_DISTANCE) {
                 recordSegment(roomId, lastPos, gridPos);
             }
@@ -84,7 +85,7 @@ public class DesireLinesService {
         String key = roomId + ":" + from.getX() + "," + from.getY() + "," + from.getZ();
 
         movementSegments.computeIfAbsent(key, k -> new ConcurrentHashMap<>())
-            .merge(to, 1, Integer::sum);
+            .merge(to, 1, (a, b) -> a + b);
     }
 
     /**
@@ -132,11 +133,11 @@ public class DesireLinesService {
 
         for (Map.Entry<BlockPos, Map<BlockPos, Integer>> fromEntry : roomSegments.entrySet()) {
             int fromCount = fromEntry.getValue().values().stream().mapToInt(i -> i).sum();
-            positionTraffic.merge(fromEntry.getKey(), fromCount, Integer::sum);
+            positionTraffic.merge(fromEntry.getKey(), fromCount, (a, b) -> a + b);
             totalSegments += fromCount;
 
             for (Map.Entry<BlockPos, Integer> toEntry : fromEntry.getValue().entrySet()) {
-                positionTraffic.merge(toEntry.getKey(), toEntry.getValue(), Integer::sum);
+                positionTraffic.merge(toEntry.getKey(), toEntry.getValue(), (a, b) -> a + b);
             }
         }
 

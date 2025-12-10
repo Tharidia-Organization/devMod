@@ -11,11 +11,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import javax.annotation.Nonnull;
+
 /**
  * Payload sent from client to server to start an Endurance Quest.
  * Supports both solo play and multiplayer party quests.
  */
-@SuppressWarnings({"null", "unused"})
 public record StartQuestPayload(
     String mobId,
     int totalWaves,
@@ -36,9 +37,9 @@ public record StartQuestPayload(
 
     public static final StreamCodec<RegistryFriendlyByteBuf, StartQuestPayload> STREAM_CODEC = new StreamCodec<>() {
         @Override
-        public StartQuestPayload decode(RegistryFriendlyByteBuf buf) {
+        public StartQuestPayload decode(@Nonnull RegistryFriendlyByteBuf buf) {
             // SECURITY FIX: Limit string length
-            String mobId = buf.readUtf(MAX_STRING_LENGTH);
+            String mobId = Objects.requireNonNull(buf.readUtf(MAX_STRING_LENGTH));
             int totalWaves = buf.readVarInt();
             boolean endlessMode = buf.readBoolean();
             int arenaSize = buf.readVarInt();
@@ -60,15 +61,15 @@ public record StartQuestPayload(
             memberCount = Math.min(memberCount, MAX_PARTY_SIZE); // Security limit
             List<UUID> partyMemberIds = new ArrayList<>(memberCount);
             for (int i = 0; i < memberCount; i++) {
-                partyMemberIds.add(buf.readUUID());
+                partyMemberIds.add(Objects.requireNonNull(buf.readUUID()));
             }
 
             return new StartQuestPayload(mobId, totalWaves, endlessMode, arenaSize, questType, partyId, partyMemberIds);
         }
 
         @Override
-        public void encode(RegistryFriendlyByteBuf buf, StartQuestPayload payload) {
-            buf.writeUtf(payload.mobId);
+        public void encode(@Nonnull RegistryFriendlyByteBuf buf, @Nonnull StartQuestPayload payload) {
+            buf.writeUtf(Objects.requireNonNull(payload.mobId));
             buf.writeVarInt(payload.totalWaves);
             buf.writeBoolean(payload.endlessMode);
             buf.writeVarInt(payload.arenaSize);
@@ -85,7 +86,7 @@ public record StartQuestPayload(
             // Write party member IDs
             buf.writeVarInt(payload.partyMemberIds.size());
             for (UUID memberId : payload.partyMemberIds) {
-                buf.writeUUID(memberId);
+                buf.writeUUID(Objects.requireNonNull(memberId));
             }
         }
     };
@@ -127,6 +128,6 @@ public record StartQuestPayload(
      * Get mob ID as ResourceLocation.
      */
     public ResourceLocation getMobResourceLocation() {
-        return ResourceLocation.parse(mobId);
+        return Objects.requireNonNull(ResourceLocation.parse(Objects.requireNonNull(mobId)));
     }
 }

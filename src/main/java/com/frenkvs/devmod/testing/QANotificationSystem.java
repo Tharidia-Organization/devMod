@@ -3,7 +3,6 @@ package com.frenkvs.devmod.testing;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import org.slf4j.Logger;
@@ -12,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Toast notification system for QA testing events.
@@ -57,7 +57,6 @@ public class QANotificationSystem {
         final String title;
         final String subtitle;
         final long createdAt;
-        float slideProgress = 0f; // 0 = hidden, 1 = fully visible
 
         Notification(NotificationType type, String title, String subtitle) {
             this.type = type;
@@ -193,7 +192,12 @@ public class QANotificationSystem {
 
     private void playSound(NotificationType type) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null) return;
+        if (mc.player == null) return;
+        var level = mc.level;
+        if (level == null) return;
+
+        var player = Objects.requireNonNull(mc.player);
+        var blockPos = Objects.requireNonNull(player.blockPosition());
 
         // Play appropriate sound
         var sound = switch (type) {
@@ -206,10 +210,10 @@ public class QANotificationSystem {
             case XP_GAIN -> SoundEvents.EXPERIENCE_ORB_PICKUP;
         };
 
-        mc.level.playSound(
-            mc.player,
-            mc.player.blockPosition(),
-            sound,
+        level.playSound(
+            player,
+            blockPos,
+            Objects.requireNonNull(sound),
             SoundSource.MASTER,
             0.5f,
             type == NotificationType.LEVEL_UP ? 1.2f : 1.0f
@@ -271,15 +275,17 @@ public class QANotificationSystem {
         int subtitleColor = (textAlpha << 24) | 0xAAAAAA;
         int typeColor = (textAlpha << 24) | (notif.type.getColor() & 0x00FFFFFF);
 
+        Font fontNonNull = Objects.requireNonNull(font);
+
         // Type prefix
-        graphics.drawString(font, notif.type.getPrefix(), x + 8, y + 5, typeColor, false);
+        graphics.drawString(fontNonNull, notif.type.getPrefix(), x + 8, y + 5, typeColor, false);
 
         // Title
-        graphics.drawString(font, notif.title, x + 8, y + 16, titleColor, false);
+        graphics.drawString(fontNonNull, notif.title, x + 8, y + 16, titleColor, false);
 
         // Subtitle
         if (notif.subtitle != null && !notif.subtitle.isEmpty()) {
-            graphics.drawString(font, notif.subtitle, x + 8, y + 27, subtitleColor, false);
+            graphics.drawString(fontNonNull, notif.subtitle, x + 8, y + 27, subtitleColor, false);
         }
     }
 

@@ -10,6 +10,8 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
+import java.util.Objects;
+
 /**
  * Tracks enchantment procs as "skills" for telemetry analytics.
  *
@@ -55,7 +57,7 @@ public class EnchantmentSkillTracker {
 
     private static void trackWeaponEnchantments(LivingEntity attacker, ItemStack weapon, LivingEntity victim) {
         // Use modern DataComponents API instead of deprecated getEnchantments()
-        ItemEnchantments enchantments = weapon.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
+        ItemEnchantments enchantments = Objects.requireNonNull(weapon.getOrDefault(Objects.requireNonNull(DataComponents.ENCHANTMENTS), Objects.requireNonNull(ItemEnchantments.EMPTY)));
 
         for (var entry : enchantments.entrySet()) {
             int level = entry.getIntValue();
@@ -92,7 +94,7 @@ public class EnchantmentSkillTracker {
             if (armor.isEmpty()) continue;
 
             // Use modern DataComponents API instead of deprecated getEnchantments()
-            ItemEnchantments enchantments = armor.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
+            ItemEnchantments enchantments = Objects.requireNonNull(armor.getOrDefault(Objects.requireNonNull(DataComponents.ENCHANTMENTS), Objects.requireNonNull(ItemEnchantments.EMPTY)));
             for (var entry : enchantments.entrySet()) {
                 // Use registry key instead of deprecated description()
                 String enchantId = entry.getKey().getRegisteredName();

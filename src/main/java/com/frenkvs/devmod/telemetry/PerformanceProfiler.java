@@ -78,6 +78,14 @@ public class PerformanceProfiler {
     private float estimatedTps = 20.0f;
     private long tpsWindowStart = 0;
 
+    /**
+     * Gets the last recorded tick time for TPS calculations.
+     * Used for debugging and performance analysis.
+     */
+    public long getLastTickTime() {
+        return lastTickTime;
+    }
+
     // Contatori attivi
     private final Map<String, Integer> activeCounters = new LinkedHashMap<>();
 

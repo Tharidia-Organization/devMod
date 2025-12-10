@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -337,7 +338,7 @@ public class PlayerInstanceSnapshot {
         tag.putInt("version", CURRENT_VERSION);
 
         // Identifiers
-        tag.putUUID("playerId", playerId);
+        tag.putUUID("playerId", Objects.requireNonNull(playerId, "playerId"));
         if (instanceId != null) {
             tag.putUUID("instanceId", instanceId);
         }
@@ -345,11 +346,11 @@ public class PlayerInstanceSnapshot {
         tag.putLong("lastUpdated", lastUpdated);
 
         // State
-        tag.putString("state", state.name());
+        tag.putString("state", Objects.requireNonNull(state.name(), "state"));
 
         // Position
         if (originalDimension != null) {
-            tag.putString("dimension", originalDimension.toString());
+            tag.putString("dimension", Objects.requireNonNull(originalDimension.toString(), "dimension"));
         }
         tag.putDouble("x", originalX);
         tag.putDouble("y", originalY);
@@ -367,7 +368,7 @@ public class PlayerInstanceSnapshot {
 
         // Stats
         if (originalGameMode != null) {
-            tag.putString("gameMode", originalGameMode.name());
+            tag.putString("gameMode", Objects.requireNonNull(originalGameMode.name(), "gameMode"));
         }
         tag.putFloat("health", originalHealth);
         tag.putFloat("maxHealth", originalMaxHealth);
@@ -388,7 +389,7 @@ public class PlayerInstanceSnapshot {
             tag.putString("questType", questType);
         }
         if (mobId != null) {
-            tag.putString("mobId", mobId.toString());
+            tag.putString("mobId", Objects.requireNonNull(mobId.toString(), "mobId"));
         }
         tag.putInt("targetWaves", targetWaves);
         tag.putBoolean("endlessMode", endlessMode);
@@ -401,7 +402,7 @@ public class PlayerInstanceSnapshot {
             ListTag memberList = new ListTag();
             for (UUID member : partyMembers) {
                 CompoundTag memberTag = new CompoundTag();
-                memberTag.putUUID("uuid", member);
+                memberTag.putUUID("uuid", Objects.requireNonNull(member, "partyMember"));
                 memberList.add(memberTag);
             }
             tag.put("partyMembers", memberList);
@@ -437,7 +438,7 @@ public class PlayerInstanceSnapshot {
 
         // Position
         if (tag.contains("dimension")) {
-            snapshot.originalDimension = ResourceLocation.parse(tag.getString("dimension"));
+            snapshot.originalDimension = ResourceLocation.parse(Objects.requireNonNull(tag.getString("dimension"), "dimension"));
         }
         snapshot.originalX = tag.getDouble("x");
         snapshot.originalY = tag.getDouble("y");
@@ -455,7 +456,7 @@ public class PlayerInstanceSnapshot {
 
         // Stats
         if (tag.contains("gameMode")) {
-            snapshot.originalGameMode = GameType.valueOf(tag.getString("gameMode"));
+            snapshot.originalGameMode = GameType.valueOf(Objects.requireNonNull(tag.getString("gameMode"), "gameMode"));
         }
         snapshot.originalHealth = tag.getFloat("health");
         snapshot.originalMaxHealth = tag.getFloat("maxHealth");
@@ -476,7 +477,7 @@ public class PlayerInstanceSnapshot {
             snapshot.questType = tag.getString("questType");
         }
         if (tag.contains("mobId")) {
-            snapshot.mobId = ResourceLocation.parse(tag.getString("mobId"));
+            snapshot.mobId = ResourceLocation.parse(Objects.requireNonNull(tag.getString("mobId"), "mobId"));
         }
         snapshot.targetWaves = tag.getInt("targetWaves");
         snapshot.endlessMode = tag.getBoolean("endlessMode");
@@ -508,8 +509,8 @@ public class PlayerInstanceSnapshot {
         Files.createDirectories(filePath.getParent());
 
         // Write to temp file first, then rename (atomic operation)
-        Path tempPath = filePath.resolveSibling(filePath.getFileName() + ".tmp");
-        NbtIo.writeCompressed(tag, tempPath);
+        Path tempPath = Objects.requireNonNull(filePath.resolveSibling(filePath.getFileName() + ".tmp"), "tempPath");
+        NbtIo.writeCompressed(Objects.requireNonNull(tag, "tag"), tempPath);
 
         // Atomic rename
         Files.move(tempPath, filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
@@ -521,7 +522,10 @@ public class PlayerInstanceSnapshot {
      * Load snapshot from file.
      */
     public static PlayerInstanceSnapshot loadFromFile(Path filePath) throws IOException {
-        CompoundTag tag = NbtIo.readCompressed(filePath, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
+        CompoundTag tag = NbtIo.readCompressed(
+            Objects.requireNonNull(filePath, "filePath"),
+            Objects.requireNonNull(net.minecraft.nbt.NbtAccounter.unlimitedHeap(), "nbtAccounter")
+        );
         return fromNBT(tag);
     }
 

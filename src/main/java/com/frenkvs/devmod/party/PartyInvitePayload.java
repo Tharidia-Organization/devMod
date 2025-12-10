@@ -23,11 +23,11 @@ public record PartyInvitePayload(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "party_invite"))
     );
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, PartyInvitePayload> STREAM_CODEC = StreamCodec.composite(
-        ByteBufCodecs.STRING_UTF8.map(UUID::fromString, UUID::toString), PartyInvitePayload::targetPlayerId,
-        ByteBufCodecs.VAR_INT, PartyInvitePayload::questTypeOrdinal,
-        PartyInvitePayload::new
-    );
+    public static final StreamCodec<RegistryFriendlyByteBuf, PartyInvitePayload> STREAM_CODEC = Objects.requireNonNull(StreamCodec.composite(
+        Objects.requireNonNull(ByteBufCodecs.STRING_UTF8.map(s -> UUID.fromString(Objects.requireNonNull(s)), uuid -> Objects.requireNonNull(uuid.toString()))), PartyInvitePayload::targetPlayerId,
+        Objects.requireNonNull(ByteBufCodecs.VAR_INT), PartyInvitePayload::questTypeOrdinal,
+        (a, b) -> new PartyInvitePayload(a, b)
+    ));
 
     @Override
     public Type<? extends CustomPacketPayload> type() {

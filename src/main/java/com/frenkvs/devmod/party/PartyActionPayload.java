@@ -24,44 +24,45 @@ public record PartyActionPayload(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "party_action"))
     );
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, PartyActionPayload> STREAM_CODEC = new StreamCodec<>() {
-        @Override
-        public PartyActionPayload decode(RegistryFriendlyByteBuf buf) {
-            int actionOrdinal = buf.readVarInt();
-            Action action = Action.values()[Math.min(actionOrdinal, Action.values().length - 1)];
+    public static final StreamCodec<RegistryFriendlyByteBuf, PartyActionPayload> STREAM_CODEC = StreamCodec.of(
+        PartyActionPayload::encode,
+        PartyActionPayload::decode
+    );
 
-            UUID targetPlayerId = null;
-            if (buf.readBoolean()) {
-                targetPlayerId = buf.readUUID();
-            }
+    private static void encode(RegistryFriendlyByteBuf buf, PartyActionPayload payload) {
+        buf.writeVarInt(payload.action.ordinal());
 
-            int questTypeOrdinal = buf.readVarInt();
-
-            String mobId = null;
-            if (buf.readBoolean()) {
-                mobId = buf.readUtf(128);
-            }
-
-            return new PartyActionPayload(action, targetPlayerId, questTypeOrdinal, mobId);
+        buf.writeBoolean(payload.targetPlayerId != null);
+        if (payload.targetPlayerId != null) {
+            buf.writeUUID(payload.targetPlayerId);
         }
 
-        @Override
-        public void encode(RegistryFriendlyByteBuf buf, PartyActionPayload payload) {
-            buf.writeVarInt(payload.action.ordinal());
+        buf.writeVarInt(payload.questTypeOrdinal);
 
-            buf.writeBoolean(payload.targetPlayerId != null);
-            if (payload.targetPlayerId != null) {
-                buf.writeUUID(payload.targetPlayerId);
-            }
-
-            buf.writeVarInt(payload.questTypeOrdinal);
-
-            buf.writeBoolean(payload.mobId != null);
-            if (payload.mobId != null) {
-                buf.writeUtf(payload.mobId);
-            }
+        buf.writeBoolean(payload.mobId != null);
+        if (payload.mobId != null) {
+            buf.writeUtf(payload.mobId);
         }
-    };
+    }
+
+    private static PartyActionPayload decode(RegistryFriendlyByteBuf buf) {
+        int actionOrdinal = buf.readVarInt();
+        Action action = Action.values()[Math.min(actionOrdinal, Action.values().length - 1)];
+
+        UUID targetPlayerId = null;
+        if (buf.readBoolean()) {
+            targetPlayerId = buf.readUUID();
+        }
+
+        int questTypeOrdinal = buf.readVarInt();
+
+        String mobId = null;
+        if (buf.readBoolean()) {
+            mobId = buf.readUtf(128);
+        }
+
+        return new PartyActionPayload(action, targetPlayerId, questTypeOrdinal, mobId);
+    }
 
     /**
      * Party action types.
@@ -139,10 +140,11 @@ public record PartyActionPayload(
      */
     @Nullable
     public ResourceLocation getMobResourceLocation() {
-        if (mobId == null || mobId.isEmpty()) {
+        String localMobId = mobId;
+        if (localMobId == null || localMobId.isEmpty()) {
             return null;
         }
-        return ResourceLocation.tryParse(mobId);
+        return ResourceLocation.tryParse(localMobId);
     }
 
     @Override

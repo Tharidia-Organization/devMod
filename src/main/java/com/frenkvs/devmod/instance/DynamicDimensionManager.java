@@ -3,6 +3,8 @@ package com.frenkvs.devmod.instance;
 import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.mixin.MinecraftServerAccessor;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -10,28 +12,30 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.progress.ChunkProgressListener;
-import net.minecraft.world.RandomSequences;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
 import net.minecraft.world.level.dimension.LevelStem;
+import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.levelgen.FlatLevelSource;
 import net.minecraft.world.level.levelgen.flat.FlatLayerInfo;
 import net.minecraft.world.level.levelgen.flat.FlatLevelGeneratorSettings;
+import net.minecraft.world.level.levelgen.structure.StructureSet;
 import net.minecraft.world.level.storage.DerivedLevelData;
-import net.minecraft.world.level.storage.LevelStorageSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.world.entity.RelativeMovement;
 
 /**
  * Manages dynamic creation and destruction of instance dimensions at runtime.
@@ -143,8 +147,10 @@ public class DynamicDimensionManager {
 
         // Create unique dimension name
         String dimensionName = "instance_" + instanceId.toString().replace("-", "");
-        ResourceLocation dimensionLocation = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, dimensionName);
-        ResourceKey<Level> dimensionKey = ResourceKey.create(Registries.DIMENSION, dimensionLocation);
+        ResourceLocation dimensionLocation = nn(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, dimensionName), "dimension location");
+        ResourceKey<? extends net.minecraft.core.Registry<Level>> dimensionRegistryKey =
+            nn(Registries.DIMENSION, "dimension registry key");
+        ResourceKey<Level> dimensionKey = ResourceKey.create(dimensionRegistryKey, dimensionLocation);
 
         LOGGER.info("[DynamicDim] Creating dimension {} for instance {}", dimensionLocation, instanceId);
 
@@ -177,25 +183,34 @@ public class DynamicDimensionManager {
      */
     private ServerLevel createVoidDimension(ResourceKey<Level> dimensionKey, String arenaId) {
         // Get dimension type reference
-        var dimensionTypeRegistry = server.registryAccess().registryOrThrow(Registries.DIMENSION_TYPE);
-        var dimensionType = dimensionTypeRegistry.getHolderOrThrow(BuiltinDimensionTypes.OVERWORLD);
+        ResourceKey<? extends net.minecraft.core.Registry<? extends net.minecraft.world.level.dimension.DimensionType>> dimensionTypeRegistryKey =
+            nn(Registries.DIMENSION_TYPE, "dimension type registry key");
+        ResourceKey<net.minecraft.world.level.dimension.DimensionType> overworldType =
+            nn(BuiltinDimensionTypes.OVERWORLD, "overworld dimension type");
+        var dimensionTypeRegistry = nn(server.registryAccess().registryOrThrow(dimensionTypeRegistryKey), "dimension type registry");
+        var dimensionType = nn(dimensionTypeRegistry.getHolderOrThrow(overworldType), "dimension type");
 
         // Create flat generator settings for void world
         // This creates a minimal world with just bedrock at y=0
-        var biomeRegistry = server.registryAccess().registryOrThrow(Registries.BIOME);
-        var biomeHolder = biomeRegistry.getHolderOrThrow(Biomes.THE_VOID);
+        ResourceKey<? extends net.minecraft.core.Registry<? extends net.minecraft.world.level.biome.Biome>> biomeRegistryKey =
+            nn(Registries.BIOME, "biome registry key");
+        var biomeRegistry = nn(server.registryAccess().registryOrThrow(biomeRegistryKey), "biome registry");
+        ResourceKey<net.minecraft.world.level.biome.Biome> voidBiomeKey =
+            nn(Biomes.THE_VOID, "void biome key");
+
+        var biomeHolder = nn(biomeRegistry.getHolderOrThrow(voidBiomeKey), "void biome");
 
         FlatLevelGeneratorSettings flatSettings = new FlatLevelGeneratorSettings(
-            Optional.empty(),  // No structure overrides
+            nn(Optional.<HolderSet<StructureSet>>empty(), "structures"),
             biomeHolder,
-            List.of()  // No features
+            nn(List.<Holder<PlacedFeature>>of(), "features")
         );
 
         // Ensure the void world has exactly one bedrock layer and no fillers
         // LayersInfo is the editable representation converted internally to states
         List<FlatLayerInfo> layerInfo = flatSettings.getLayersInfo();
         layerInfo.clear();
-        layerInfo.add(new FlatLayerInfo(1, Blocks.BEDROCK));
+        layerInfo.add(new FlatLayerInfo(1, nn(Blocks.BEDROCK, "bedrock block")));
         flatSettings.updateLayers();
 
         // Note: We need to set layers via reflection or use a custom generator
@@ -238,29 +253,32 @@ public class DynamicDimensionManager {
 
             // Create derived level data for the new dimension
             DerivedLevelData derivedLevelData = new DerivedLevelData(
-                server.getWorldData(),
-                server.getWorldData().overworldData()
+                nn(server.getWorldData(), "world data"),
+                nn(server.getWorldData().overworldData(), "overworld data")
             );
 
             // Get executor and storage via accessor
             MinecraftServerAccessor accessor = (MinecraftServerAccessor) server;
+            var executor = nn(accessor.getExecutor(), "executor");
+            var storage = nn(accessor.getStorageSource(), "storage");
+            List<net.minecraft.world.level.CustomSpawner> customSpawners = nn(List.of(), "custom spawners");
 
             // Create the new ServerLevel
             // Note: This is a simplified creation - full implementation may need more setup
-            ServerLevel newLevel = new ServerLevel(
-                server,
-                accessor.getExecutor(),
-                accessor.getStorageSource(),
-                derivedLevelData,
-                dimensionKey,
-                levelStem,
-                new NoOpChunkProgressListener(),
-                false,  // isDebug
-                overworld.getSeed(),
-                List.of(),  // customSpawners
-                false,  // tickTime
-                null    // randomSequences
-            );
+        ServerLevel newLevel = new ServerLevel(
+            nn(server, "server"),
+            executor,
+            storage,
+            derivedLevelData,
+            nn(dimensionKey, "dimension key"),
+            nn(levelStem, "level stem"),
+            new NoOpChunkProgressListener(),
+            false,  // isDebug
+            overworld.getSeed(),
+            customSpawners,
+            false,  // tickTime
+            null    // randomSequences
+        );
 
             // Add to the levels map
             levels.put(dimensionKey, newLevel);
@@ -279,10 +297,10 @@ public class DynamicDimensionManager {
      */
     private static class NoOpChunkProgressListener implements ChunkProgressListener {
         @Override
-        public void updateSpawnPos(net.minecraft.world.level.ChunkPos pos) {}
+        public void updateSpawnPos(@Nonnull net.minecraft.world.level.ChunkPos pos) {}
 
         @Override
-        public void onStatusChange(net.minecraft.world.level.ChunkPos pos, @Nullable net.minecraft.world.level.chunk.status.ChunkStatus status) {}
+        public void onStatusChange(@Nonnull net.minecraft.world.level.ChunkPos pos, @Nullable net.minecraft.world.level.chunk.status.ChunkStatus status) {}
 
         @Override
         public void start() {}
@@ -301,7 +319,7 @@ public class DynamicDimensionManager {
         int radius = 25;  // 50x50 platform
 
         // Preload the center chunk to avoid void fall during early teleports
-        level.getChunkAt(center);
+        level.getChunkAt(nn(center, "center chunk"));
 
         LOGGER.debug("[DynamicDim] Generating arena platform at {} with radius {}", center, radius);
 
@@ -312,11 +330,11 @@ public class DynamicDimensionManager {
                     BlockPos pos = center.offset(x, 0, z);
 
                     // Main platform layer
-                    level.setBlock(pos, Blocks.STONE_BRICKS.defaultBlockState(), 2);
+                    level.setBlock(nn(pos, "platform pos"), nn(Blocks.STONE_BRICKS.defaultBlockState(), "stone bricks"), 2);
 
                     // Add some variation
                     if ((x + z) % 7 == 0) {
-                        level.setBlock(pos, Blocks.CHISELED_STONE_BRICKS.defaultBlockState(), 2);
+                        level.setBlock(nn(pos, "platform pos"), nn(Blocks.CHISELED_STONE_BRICKS.defaultBlockState(), "chiseled bricks"), 2);
                     }
                 }
             }
@@ -328,14 +346,14 @@ public class DynamicDimensionManager {
         for (int[] corner : corners) {
             BlockPos pillarBase = center.offset(corner[0], 0, corner[1]);
             for (int y = 0; y <= pillarHeight; y++) {
-                level.setBlock(pillarBase.above(y), Blocks.STONE_BRICK_WALL.defaultBlockState(), 2);
+                level.setBlock(nn(pillarBase.above(y), "pillar pos"), nn(Blocks.STONE_BRICK_WALL.defaultBlockState(), "pillar block"), 2);
             }
             // Torch on top
-            level.setBlock(pillarBase.above(pillarHeight + 1), Blocks.TORCH.defaultBlockState(), 2);
+            level.setBlock(nn(pillarBase.above(pillarHeight + 1), "torch pos"), nn(Blocks.TORCH.defaultBlockState(), "torch block"), 2);
         }
 
         // Add spawn marker at center
-        level.setBlock(center.above(1), Blocks.LODESTONE.defaultBlockState(), 2);
+        level.setBlock(nn(center.above(1), "lodestone pos"), nn(Blocks.LODESTONE.defaultBlockState(), "lodestone block"), 2);
 
         LOGGER.info("[DynamicDim] Arena platform generated for arena type: {}", arenaId);
     }
@@ -405,7 +423,7 @@ public class DynamicDimensionManager {
                         spawnPos.getX() + 0.5,
                         spawnPos.getY(),
                         spawnPos.getZ() + 0.5,
-                        Set.of(),
+                        nn(Set.<RelativeMovement>of(), "movement flags"),
                         player.getYRot(),
                         player.getXRot()
                     );
@@ -479,7 +497,8 @@ public class DynamicDimensionManager {
         if (server == null) return;
 
         String dimensionName = "instance_" + instanceId.toString().replace("-", "");
-        Path dimensionPath = server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT)
+        var rootResource = nn(net.minecraft.world.level.storage.LevelResource.ROOT, "level resource root");
+        Path dimensionPath = nn(server.getWorldPath(rootResource), "world path")
             .resolve("dimensions")
             .resolve(DevMod.MODID)
             .resolve(dimensionName);
@@ -545,7 +564,7 @@ public class DynamicDimensionManager {
             spawnPos.getX() + 0.5,
             spawnPos.getY(),
             spawnPos.getZ() + 0.5,
-            Set.of(),
+            nn(Set.<RelativeMovement>of(), "movement flags"),
             0,  // Face north
             0   // Level pitch
         );
@@ -568,7 +587,7 @@ public class DynamicDimensionManager {
             spawnPos.getX() + 0.5,
             spawnPos.getY(),
             spawnPos.getZ() + 0.5,
-            Set.of(),
+            nn(Set.<RelativeMovement>of(), "movement flags"),
             player.getYRot(),
             player.getXRot()
         );
@@ -612,5 +631,13 @@ public class DynamicDimensionManager {
      */
     public boolean isReady() {
         return initialized && server != null;
+    }
+
+    /**
+     * Utility to document non-null expectations for APIs that aren't annotated.
+     */
+    @Nonnull
+    private static <T> T nn(T value, String context) {
+        return Objects.requireNonNull(value, context);
     }
 }

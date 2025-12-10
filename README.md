@@ -1,6 +1,6 @@
-# DevMod - Mob Config Viewer & Level Design Toolkit
+# DevMod - Combat Testing & Level Design Toolkit
 
-A NeoForge 1.21.1 mod providing advanced debugging, telemetry, and analysis tools for Minecraft level designers and mod developers.
+A comprehensive NeoForge 1.21.1 mod providing advanced combat systems, debugging tools, telemetry, and analysis features for Minecraft level designers and mod developers.
 
 ## Requirements
 
@@ -8,13 +8,27 @@ A NeoForge 1.21.1 mod providing advanced debugging, telemetry, and analysis tool
 - **NeoForge 21.1.x** (tested with 21.1.42)
 - **Minecraft 1.21.1**
 
-## Features
+## Core Features
+
+### Endurance Quest System
+A roguelike-inspired wave-based combat mode with extensive gameplay systems:
+
+- **Wave Combat**: Progressive difficulty waves with configurable mob types
+- **Perk System**: Roguelike perk selection between waves (Common → Legendary tiers)
+- **Combo System**: DMC-inspired style scoring (D → SSS ranks) with multipliers
+- **Reward System**: Multi-currency economy (Tokens, Prestige, Blood Gems)
+- **Party System**: Multiplayer party formation with synchronized quests
+- **Shop System**: Permanent upgrades and unlocks
+- **Achievement System**: 10+ achievements with currency rewards
+- **Boss Waves**: Special boss encounters every 10 waves
+- **Mutator System**: Gameplay modifiers for increased challenge/rewards
 
 ### Combat System
-- **Body Part Detection**: Precise hitbox targeting with configurable damage multipliers (head, body, arms, legs)
+- **Body Part Detection**: Precise hitbox targeting with configurable damage multipliers
 - **Weapon Configuration**: Per-weapon damage stats, penetration, and multipliers
 - **Mob Configuration**: Customize health, damage, armor, and follow range per mob type
 - **Real-time Damage Display**: HUD overlay showing impact damage and body part hit
+- **Trail Effects**: Visual weapon trails during combat
 
 ### Debug Visualization Tools
 | Key | Feature | Description |
@@ -34,38 +48,20 @@ A NeoForge 1.21.1 mod providing advanced debugging, telemetry, and analysis tool
 ### Configuration Screens
 | Key | Screen | Description |
 |-----|--------|-------------|
-| `K` | Voxel-Lab Dashboard | Main settings hub (Axiom-style UI) |
+| `K` | Unified Settings | Main settings hub (Axiom-style UI) |
 | `M` | Weapon Editor | Configure held weapon stats |
 | `J` | Telemetry Dashboard | View collected analytics |
 | `N` / `F7` | Testing Hub | QA testing interface |
+| `O` | Radial Menu | Quick access to common actions |
 
 ### Telemetry System
 Comprehensive data collection for level design analysis:
 - **Combat Metrics**: Hit tracking, damage, TTK (Time To Kill), weapon stats
 - **Spatial Metrics**: Movement heatmaps, death locations, stuck points
 - **Behavior Metrics**: Aggro drops, boss resets, kiting patterns
-- **Performance Metrics**: TPS, MSPT, entity counts
+- **Performance Metrics**: TPS, MSPT, entity counts, FPS
 
-Data exported as NDJSON files in `run/telemetry/`:
-- `hits.ndjson` - All combat hits
-- `deaths.ndjson` - Death events with TTK
-- `alerts.ndjson` - Anomalies (stuck, camping, aggro drop)
-- `performance.ndjson` - Server performance
-
-### Commands
-```
-/devtest hud <on|off|toggle>     - Toggle Impact HUD
-/devtest panel <on|off|toggle>   - Toggle 3D panels
-/devtest debug <on|off|toggle>   - Toggle debug renderer
-/devtest debugbox <size>         - Add debug box at player position
-/devtest debugclear              - Clear all debug shapes
-/devtest panelclear              - Clear all 3D panels
-/devtest info                    - Show system status
-/devtest qa                      - Open Testing Hub
-/devtest bodypart <part>         - Show body part multiplier info
-
-/telemetry reload                - Reload telemetry config
-```
+Data exported as NDJSON files in `run/telemetry/`.
 
 ## Installation
 
@@ -97,35 +93,39 @@ cd devmod
 src/main/java/com/frenkvs/devmod/
 ├── DevMod.java                 # Main mod entry point
 ├── DevModClient.java           # Client-side initialization
-├── HitHelper.java              # Body part detection logic
-├── DamageHandler.java          # Damage calculation and events
-├── WeaponStats.java            # Weapon configuration
 ├── attributes/                 # Attribute monitoring system
-├── gametest/                   # Test harness and commands
-├── hud/                        # HUD overlays (Impact, 3D panels)
-├── integration/                # Mod compatibility (Pehkui, BetterCombat)
-├── rendering/                  # Debug visualization renderers
+├── debug/                      # Debug commands and rendering
+├── effects/                    # Visual effects (trails)
+├── endurance/                  # Endurance Quest System
+│   ├── ArenaManager.java       # Arena lifecycle
+│   ├── WaveManager.java        # Wave spawning logic
+│   ├── PerkSystem.java         # Roguelike perks
+│   ├── ComboSystem.java        # Style scoring (D→SSS)
+│   ├── RewardSystem.java       # Currency & rewards
+│   ├── MutatorSystem.java      # Gameplay modifiers
+│   └── GamificationManager.java # Progress tracking
+├── hud/                        # HUD overlays
+├── instance/                   # Dynamic dimension system
+├── integration/                # Mod compatibility
+├── panels/                     # Floating 3D panels
+├── party/                      # Multiplayer party system
+├── quest/                      # Quest framework
+├── rendering/                  # Debug visualization
 ├── telemetry/                  # Data collection services
-│   ├── TelemetryService.java   # Main orchestrator
-│   ├── combat/                 # Fight sessions
-│   ├── damage/                 # Damage tracking
-│   ├── entity/                 # Entity tracking
-│   └── spatial/                # Heatmaps
 ├── testing/                    # QA testing framework
-├── ui/                         # Screen implementations
-│   └── hub/                    # Modular UI components
-└── util/                       # Utilities (PathSanitizer, etc.)
+└── ui/                         # Screen implementations
 ```
 
 ## Configuration
 
 Configuration files are stored in `run/config/devmod/`:
 
-- `devmod-common.toml` - Main configuration
-- `telemetry_settings.json` - Telemetry thresholds
-- `telemetry_rooms.json` - Room definitions for spatial analysis
-- `mob_configs.json` - Per-mob stat overrides
-- `weapon_configs.json` - Per-weapon stat overrides
+| File | Purpose |
+|------|---------|
+| `devmod-common.toml` | Main configuration |
+| `telemetry_settings.json` | Telemetry thresholds |
+| `mob_configs.json` | Per-mob stat overrides |
+| `weapon_configs.json` | Per-weapon stat overrides |
 
 ### Body Part Damage Multipliers (Default)
 | Body Part | Multiplier |
@@ -141,28 +141,42 @@ DevMod includes soft integrations with:
 - **Pehkui**: Entity scale support for hitbox calculations
 - **Better Combat**: Enhanced combat system compatibility
 
-## Security Features
-
-- **Path Sanitization**: All file I/O operations are validated against allowed directories
-- **Packet Validation**: Network packets are rate-limited and value-clamped
-- **Memory Management**: Automatic cleanup of long-session data (logs, telemetry)
-
 ## Testing
 
-The mod includes a comprehensive testing framework:
+The mod includes **2172 automated tests** covering all major systems:
 
 ```bash
-# Run all unit tests
+# Run all tests
 ./gradlew test
 
-# Run specific test class
-./gradlew test --tests "com.frenkvs.devmod.PacketSecurityServiceTest"
-./gradlew test --tests "com.frenkvs.devmod.PathSanitizerTest"
+# Run specific test suites
+./gradlew test --tests "com.frenkvs.devmod.endurance.*"
+./gradlew test --tests "com.frenkvs.devmod.party.*"
 ```
 
-### Test Coverage
-- `PacketSecurityServiceTest` - Network security validation
-- `PathSanitizerTest` - File path sanitization
+### Test Coverage by System
+| System | Tests | Coverage |
+|--------|-------|----------|
+| Endurance Quest | 400+ | Perk, Combo, Reward, Wave |
+| Party System | 200+ | Sync, Flow, Payload |
+| Instance System | 150+ | Dimension, Recovery |
+| Combat System | 100+ | Damage, Hit detection |
+| Integration | 300+ | End-to-end flows |
+| Stress Tests | 200+ | Concurrency, Memory |
+
+## Documentation
+
+- [Architecture Overview](docs/ARCHITECTURE.md)
+- [Feature Documentation](docs/FEATURES.md)
+- [Testing Guide](docs/TESTING.md)
+- [Progressive Test Plan](docs/PROGRESSIVE_TEST_PLAN.md)
+
+## Security Features
+
+- **Path Sanitization**: All file I/O operations are validated
+- **Packet Validation**: Network packets are rate-limited and value-clamped
+- **Double-Spending Prevention**: Synchronized purchase operations
+- **Memory Management**: Automatic cleanup of long-session data
 
 ## Contributing
 
@@ -176,14 +190,9 @@ The mod includes a comprehensive testing framework:
 
 This project is licensed under the MIT License - see [LICENSE](LICENSE) for details.
 
-## Resources
-
-- [NeoForge Documentation](https://docs.neoforged.net/)
-- [NeoForge Discord](https://discord.neoforged.net/)
-- [Mojang Mapping License](https://github.com/NeoForged/NeoForm/blob/main/Mojang.md)
-
 ---
 
-**Version:** 0.0.1
+**Version:** 0.1.0
 **Minecraft:** 1.21.1
 **NeoForge:** 21.1.42+
+**Tests:** 2172 passing

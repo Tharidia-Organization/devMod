@@ -6,6 +6,7 @@ import com.frenkvs.devmod.telemetry.TelemetryService;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,13 +127,15 @@ public class IntegratedTestSession {
         TelemetryStatusOverlay.resetTimer();
 
         // Mark linked test as in progress
-        if (linkedTestCase != null && linkedTestCase.getStatus() == TestCase.TestStatus.PENDING) {
-            linkedTestCase.startTest();
+        TestCase linkedTest = linkedTestCase;
+        if (linkedTest != null && linkedTest.getStatus() == TestCase.TestStatus.PENDING) {
+            linkedTest.startTest();
         }
 
         // Notify user
-        if (mc.player != null) {
-            mc.player.displayClientMessage(
+        Player player = mc.player;
+        if (player != null) {
+            player.displayClientMessage(
                 I18n.translate("devmod.test.session_started", type.getDisplayName()),
                 false
             );
@@ -167,10 +170,11 @@ public class IntegratedTestSession {
         TelemetryService.INSTANCE.pauseRecording();
 
         // Process linked test case
-        if (linkedTestCase != null) {
+        TestCase testCase = linkedTestCase;
+        if (testCase != null) {
             switch (outcome) {
-                case COMPLETED, VICTORY -> linkedTestCase.markPassed("Completed via IntegratedTest session");
-                case DEATH, FAILED -> linkedTestCase.markFailed("Failed via IntegratedTest", "Outcome: " + outcome);
+                case COMPLETED, VICTORY -> testCase.markPassed("Completed via IntegratedTest session");
+                case DEATH, FAILED -> testCase.markFailed("Failed via IntegratedTest", "Outcome: " + outcome);
                 case ABANDONED, INTERRUPTED -> {} // Leave test in progress state
             }
         }
@@ -180,15 +184,16 @@ public class IntegratedTestSession {
 
         // Notify user
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player != null) {
+        Player player = mc.player;
+        if (player != null) {
             String key = outcome.isSuccess() ? "devmod.test.session_ended_success" : "devmod.test.session_ended_fail";
-            mc.player.displayClientMessage(
+            player.displayClientMessage(
                 I18n.translate(key, outcome.getDisplayName()),
                 false
             );
 
             // Show summary
-            mc.player.displayClientMessage(
+            player.displayClientMessage(
                 I18n.translate("devmod.test.session_summary",
                     formatDuration(results.duration),
                     completedWaves,

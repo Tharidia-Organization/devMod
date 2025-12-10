@@ -8,9 +8,10 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+
+import java.util.Objects;
 
 /**
  * Combo Decay Overlay - shows visual/audio feedback when combo is lost.
@@ -40,8 +41,8 @@ public class ComboDecayOverlay {
 
     public static void registerOverlay(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.CROSSHAIR,
-            ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "combo_decay"),
+            Objects.requireNonNull(VanillaGuiLayers.CROSSHAIR),
+            Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "combo_decay")),
             (guiGraphics, deltaTracker) -> render(guiGraphics)
         );
     }
@@ -76,14 +77,16 @@ public class ComboDecayOverlay {
         // Play sound
         if (!soundPlayed && mc.getSoundManager() != null) {
             if (isRankDown) {
-                mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.SHIELD_BREAK, 0.8f, 0.7f));
+                mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(
+                    Objects.requireNonNull(SoundEvents.SHIELD_BREAK), 0.8f, 0.7f)));
             } else if (lostCombo >= 5) {
-                mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.ITEM_BREAK, 0.5f, 1.2f));
+                mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(
+                    Objects.requireNonNull(SoundEvents.ITEM_BREAK), 0.5f, 1.2f)));
             }
             soundPlayed = true;
         }
 
-        Font font = mc.font;
+        Font font = Objects.requireNonNull(mc.font, "font");
         int screenWidth = mc.getWindow().getGuiScaledWidth();
         int screenHeight = mc.getWindow().getGuiScaledHeight();
 

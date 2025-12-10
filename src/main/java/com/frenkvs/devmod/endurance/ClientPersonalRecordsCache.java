@@ -11,7 +11,6 @@ import java.util.Map;
  * Updated via PersonalRecordsSyncPayload from server.
  */
 @OnlyIn(Dist.CLIENT)
-@SuppressWarnings({"null", "unused"})
 public class ClientPersonalRecordsCache {
 
     private static int totalQuestsAttempted = 0;

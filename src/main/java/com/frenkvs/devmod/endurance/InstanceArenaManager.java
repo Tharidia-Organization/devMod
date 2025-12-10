@@ -28,7 +28,6 @@ import java.util.concurrent.TimeoutException;
  * - Parallel instances for multiple players
  * - Automatic cleanup on disconnect/crash
  */
-@SuppressWarnings({"null", "unused"})
 public class InstanceArenaManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceArenaManager.class);
     public static final InstanceArenaManager INSTANCE = new InstanceArenaManager();
@@ -197,32 +196,31 @@ public class InstanceArenaManager {
     /**
      * Build barriers for the instance arena.
      */
-    @SuppressWarnings("NullableProblems") // BlockPos and BlockState are always non-null here
     private void buildInstanceArenaBarriers(ServerLevel level, BlockPos center, int size, ArenaManager.Arena arena) {
         int halfSize = size / 2;
         net.minecraft.world.level.block.state.BlockState barrier =
-            net.minecraft.world.level.block.Blocks.BARRIER.defaultBlockState();
+            java.util.Objects.requireNonNull(net.minecraft.world.level.block.Blocks.BARRIER.defaultBlockState());
 
         // Build walls
         for (int y = 0; y < ArenaManager.ARENA_HEIGHT; y++) {
             for (int i = -halfSize; i <= halfSize; i++) {
                 // North wall
-                BlockPos north = center.offset(i, y, -halfSize);
+                BlockPos north = java.util.Objects.requireNonNull(center.offset(i, y, -halfSize));
                 level.setBlock(north, barrier, 3);
                 arena.addModifiedBlock(north);
 
                 // South wall
-                BlockPos south = center.offset(i, y, halfSize);
+                BlockPos south = java.util.Objects.requireNonNull(center.offset(i, y, halfSize));
                 level.setBlock(south, barrier, 3);
                 arena.addModifiedBlock(south);
 
                 // East wall
-                BlockPos east = center.offset(halfSize, y, i);
+                BlockPos east = java.util.Objects.requireNonNull(center.offset(halfSize, y, i));
                 level.setBlock(east, barrier, 3);
                 arena.addModifiedBlock(east);
 
                 // West wall
-                BlockPos west = center.offset(-halfSize, y, i);
+                BlockPos west = java.util.Objects.requireNonNull(center.offset(-halfSize, y, i));
                 level.setBlock(west, barrier, 3);
                 arena.addModifiedBlock(west);
             }
@@ -231,7 +229,7 @@ public class InstanceArenaManager {
         // Build ceiling
         for (int x = -halfSize; x <= halfSize; x++) {
             for (int z = -halfSize; z <= halfSize; z++) {
-                BlockPos pos = center.offset(x, ArenaManager.ARENA_HEIGHT, z);
+                BlockPos pos = java.util.Objects.requireNonNull(center.offset(x, ArenaManager.ARENA_HEIGHT, z));
                 level.setBlock(pos, barrier, 3);
                 arena.addModifiedBlock(pos);
             }

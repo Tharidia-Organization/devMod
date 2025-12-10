@@ -12,6 +12,9 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.phys.Vec3;
 
+import javax.annotation.Nonnull;
+import java.util.Objects;
+
 /**
  * Panel that shows combat information for an impact.
  *
@@ -62,18 +65,19 @@ public class CombatPanel extends FloatingPanel {
         Minecraft mc = Minecraft.getInstance();
         if (mc.font == null) return;
 
+        Font font = Objects.requireNonNull(mc.font, "font");
         int y = 0;
         int lineHeight = 10;
 
         // Danno principale (grande e colorato)
-        String damageText = String.format("%.1f", actualDamage);
+        String damageText = Objects.requireNonNull(String.format("%.1f", actualDamage), "damageText");
         int damageColor = getDamageColor(actualDamage);
-        graphics.drawString(mc.font, damageText, 0, y, damageColor, false);
+        graphics.drawString(font, damageText, 0, y, damageColor, false);
         y += lineHeight + 4;
 
         // Parte colpita
-        String partText = partHit + " (x" + String.format("%.2f", partMultiplier) + ")";
-        graphics.drawString(mc.font, partText, 0, y, UIConstants.Text.SECONDARY, false);
+        String partText = Objects.requireNonNull(partHit + " (x" + String.format("%.2f", partMultiplier) + ")", "partText");
+        graphics.drawString(font, partText, 0, y, UIConstants.Text.SECONDARY, false);
         y += lineHeight + 2;
 
         // Breakdown se c'e' spazio
@@ -83,16 +87,16 @@ public class CombatPanel extends FloatingPanel {
             y += 4;
 
             // Base damage
-            String baseText = String.format("Base: %.1f", baseDamage);
-            graphics.drawString(mc.font, baseText, 0, y, UIConstants.Text.MUTED, false);
+            String baseText = Objects.requireNonNull(String.format("Base: %.1f", baseDamage), "baseText");
+            graphics.drawString(font, baseText, 0, y, UIConstants.Text.MUTED, false);
             y += lineHeight;
 
             // Calculated vs Actual
             if (hasActualDamage && Math.abs(actualDamage - finalDamage) > 0.1f) {
                 float diff = actualDamage - finalDamage;
-                String diffText = String.format("Armor: %s%.1f", diff < 0 ? "" : "+", diff);
+                String diffText = Objects.requireNonNull(String.format("Armor: %s%.1f", diff < 0 ? "" : "+", diff), "diffText");
                 int diffColor = diff < 0 ? UIConstants.Status.ERROR : UIConstants.Status.SUCCESS;
-                graphics.drawString(mc.font, diffText, 0, y, diffColor, false);
+                graphics.drawString(font, diffText, 0, y, diffColor, false);
             }
         }
     }
@@ -108,39 +112,40 @@ public class CombatPanel extends FloatingPanel {
     }
 
     @Override
-    public void renderContent3D(PoseStack poseStack, MultiBufferSource bufferSource, Font font,
+    public void renderContent3D(@Nonnull PoseStack poseStack, @Nonnull MultiBufferSource bufferSource, @Nonnull Font font,
                                  int contentWidth, int contentHeight, float alpha) {
         int y = 0;
         int lineHeight = 10;
 
         // Danno principale
-        String damageText = String.format("%.1f DMG", actualDamage);
+        String damageText = Objects.requireNonNull(String.format("%.1f DMG", actualDamage), "damageText");
         int damageColor = getDamageColor(actualDamage);
         renderText3D(poseStack, bufferSource, font, damageText, 0, y, applyAlpha(damageColor, alpha));
         y += lineHeight + 4;
 
         // Parte colpita
-        String partText = partHit + " (x" + String.format("%.2f", partMultiplier) + ")";
+        String partText = Objects.requireNonNull(partHit + " (x" + String.format("%.2f", partMultiplier) + ")", "partText");
         renderText3D(poseStack, bufferSource, font, partText, 0, y, applyAlpha(UIConstants.Text.SECONDARY, alpha));
         y += lineHeight + 2;
 
         // Base damage
-        String baseText = String.format("Base: %.1f", baseDamage);
+        String baseText = Objects.requireNonNull(String.format("Base: %.1f", baseDamage), "baseText");
         renderText3D(poseStack, bufferSource, font, baseText, 0, y, applyAlpha(UIConstants.Text.MUTED, alpha));
         y += lineHeight;
 
         // Differenza armor se significativa
         if (hasActualDamage && Math.abs(actualDamage - finalDamage) > 0.1f) {
             float diff = actualDamage - finalDamage;
-            String diffText = String.format("Armor: %s%.1f", diff < 0 ? "" : "+", diff);
+            String diffText = Objects.requireNonNull(String.format("Armor: %s%.1f", diff < 0 ? "" : "+", diff), "diffText");
             int diffColor = diff < 0 ? UIConstants.Status.ERROR : UIConstants.Status.SUCCESS;
             renderText3D(poseStack, bufferSource, font, diffText, 0, y, applyAlpha(diffColor, alpha));
         }
     }
 
     @Override
+    @Nonnull
     public String getTitle() {
-        return "DMG: " + String.format("%.1f", actualDamage);
+        return Objects.requireNonNull("DMG: " + String.format("%.1f", actualDamage), "title");
     }
 
     // === Getters ===

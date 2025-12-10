@@ -10,6 +10,7 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Detailed breakdown of damage calculation for the HUD.
@@ -57,15 +58,16 @@ public class DamageBreakdown {
         if (weapon.isEmpty()) return;
 
         // NeoForge 1.21: Use DataComponents to access enchantments
-        ItemEnchantments enchantments = weapon.get(DataComponents.ENCHANTMENTS);
+        ItemEnchantments enchantments = weapon.get(Objects.requireNonNull(DataComponents.ENCHANTMENTS));
         if (enchantments == null || enchantments.isEmpty()) return;
 
         // Iterate over enchantments
         for (Holder<Enchantment> holder : enchantments.keySet()) {
-            int level = enchantments.getLevel(holder);
+            Holder<Enchantment> safeHolder = Objects.requireNonNull(holder, "enchantment holder");
+            int level = enchantments.getLevel(safeHolder);
             if (level <= 0) continue;
 
-            String enchName = holder.getRegisteredName();
+            String enchName = Objects.requireNonNull(safeHolder.getRegisteredName(), "enchantment id");
 
             // Sharpness: +1.0 + 0.5 per additional level
             if (enchName.contains("sharpness")) {

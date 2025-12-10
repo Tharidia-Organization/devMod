@@ -3,7 +3,6 @@ package com.frenkvs.devmod.telemetry.dungeon;
 import com.frenkvs.devmod.telemetry.TelemetryService;
 import com.frenkvs.devmod.telemetry.room.RoomService;
 import com.mojang.logging.LogUtils;
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -121,7 +120,7 @@ public class DungeonRunService {
 
         if (run != null) {
             String itemId = item.getItem().toString();
-            run.lootCollected.merge(itemId, item.getCount(), Integer::sum);
+            run.lootCollected.merge(itemId, item.getCount(), (a, b) -> a + b);
             run.totalLootValue += estimateLootValue(item);
         }
     }
@@ -135,7 +134,7 @@ public class DungeonRunService {
 
         if (run != null) {
             run.kills++;
-            run.enemiesKilled.merge(enemyType, 1, Integer::sum);
+            run.enemiesKilled.merge(enemyType, 1, (a, b) -> a + b);
         }
     }
 
@@ -195,6 +194,7 @@ public class DungeonRunService {
     private void logRunResult(DungeonRunResult result) {
         StringBuilder json = new StringBuilder();
         json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"player_id\":\"").append(result.playerId).append("\",");
         json.append("\"player\":\"").append(result.playerName).append("\",");
         json.append("\"dungeon\":\"").append(result.dungeonId).append("\",");
         json.append("\"outcome\":\"").append(result.outcome).append("\",");
@@ -205,7 +205,8 @@ public class DungeonRunService {
         json.append("\"damage_dealt\":").append(String.format("%.1f", result.damageDealt)).append(",");
         json.append("\"damage_taken\":").append(String.format("%.1f", result.damageTaken)).append(",");
         json.append("\"loot_value\":").append(result.totalLootValue).append(",");
-        json.append("\"loot_items\":").append(result.lootItems);
+        json.append("\"loot_items\":").append(result.lootItems).append(",");
+        json.append("\"last_death_room\":\"").append(result.lastDeathRoom != null ? result.lastDeathRoom : "").append("\"");
         json.append("}");
 
         TelemetryService.INSTANCE.appendDungeonRun(json.toString());
@@ -403,12 +404,25 @@ public class DungeonRunService {
             this.currentRoom = roomId;
             this.roomsVisited.add(roomId);
         }
+
+        public UUID getPlayerId() {
+            return playerId;
+        }
+
+        public String getLastDeathRoom() {
+            return lastDeathRoom;
+        }
+
+        public long getLastDeathTime() {
+            return lastDeathTime;
+        }
     }
 
     /**
      * Completed run result for analysis.
      */
     public static class DungeonRunResult {
+        public final UUID playerId;
         public final String playerName;
         public final String dungeonId;
         public final RunOutcome outcome;
@@ -420,8 +434,11 @@ public class DungeonRunService {
         public final float damageDealt;
         public final int totalLootValue;
         public final int lootItems;
+        public final String lastDeathRoom;
+        public final long lastDeathTime;
 
         DungeonRunResult(DungeonRun run) {
+            this.playerId = run.getPlayerId();
             this.playerName = run.playerName;
             this.dungeonId = run.dungeonId;
             this.outcome = run.outcome;
@@ -433,6 +450,8 @@ public class DungeonRunService {
             this.damageDealt = run.damageDealt;
             this.totalLootValue = run.totalLootValue;
             this.lootItems = run.lootCollected.values().stream().mapToInt(i -> i).sum();
+            this.lastDeathRoom = run.getLastDeathRoom();
+            this.lastDeathTime = run.getLastDeathTime();
         }
     }
 

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -76,7 +77,7 @@ public class DamageTrackingService {
     public List<String> getWeaponSummaries() {
         List<String> lines = new ArrayList<>();
         weaponAggregates.forEach((item, agg) -> {
-            String id = BuiltInRegistries.ITEM.getKey(item).toString();
+            String id = Objects.requireNonNull(BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item))).toString();
             lines.add(String.format(Locale.ROOT,
                     "%s dmg=%.2f hits=%d kills=%d miss=%d acc=%.1f%%",
                     id, agg.totalDamage, agg.hits, agg.kills, agg.misses,
@@ -313,9 +314,9 @@ public class DamageTrackingService {
                 // Restore weapon aggregates
                 if (saved.weapons != null) {
                     saved.weapons.forEach((itemId, agg) -> {
-                        ResourceLocation resLoc = ResourceLocation.tryParse(itemId);
+                        ResourceLocation resLoc = ResourceLocation.tryParse(Objects.requireNonNull(itemId));
                         if (resLoc != null && BuiltInRegistries.ITEM.containsKey(resLoc)) {
-                            Item item = BuiltInRegistries.ITEM.get(resLoc);
+                            Item item = Objects.requireNonNull(BuiltInRegistries.ITEM.get(resLoc));
                             weaponAggregates.put(item, agg);
                         }
                     });
@@ -350,10 +351,8 @@ public class DamageTrackingService {
             // Convert weapon aggregates to serializable format
             toSave.weapons = new ConcurrentHashMap<>();
             weaponAggregates.forEach((item, agg) -> {
-                ResourceLocation key = BuiltInRegistries.ITEM.getKey(item);
-                if (key != null) {
-                    toSave.weapons.put(key.toString(), agg);
-                }
+                ResourceLocation key = Objects.requireNonNull(BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item)));
+                toSave.weapons.put(Objects.requireNonNull(key.toString()), agg);
             });
 
             toSave.rooms = new ConcurrentHashMap<>(roomAggregates);

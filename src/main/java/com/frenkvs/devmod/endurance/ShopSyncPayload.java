@@ -8,12 +8,13 @@ import net.minecraft.resources.ResourceLocation;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import javax.annotation.Nonnull;
 
 /**
  * Network payload to sync player wallet data from server to client.
  * Sent when player opens the shop or when currency changes.
  */
-@SuppressWarnings({"null", "unused"})
 public record ShopSyncPayload(
     int tokens,
     int prestige,
@@ -22,7 +23,7 @@ public record ShopSyncPayload(
 ) implements CustomPacketPayload {
 
     public static final Type<ShopSyncPayload> TYPE = new Type<>(
-        ResourceLocation.fromNamespaceAndPath("devmod", "shop_sync")
+        Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "shop_sync"))
     );
 
     // Security limits to prevent DoS attacks
@@ -31,7 +32,7 @@ public record ShopSyncPayload(
 
     public static final StreamCodec<ByteBuf, ShopSyncPayload> STREAM_CODEC = new StreamCodec<>() {
         @Override
-        public ShopSyncPayload decode(ByteBuf buf) {
+        public ShopSyncPayload decode(@Nonnull ByteBuf buf) {
             int tokens = buf.readInt();
             int prestige = buf.readInt();
             int bloodGems = buf.readInt();
@@ -57,14 +58,14 @@ public record ShopSyncPayload(
         }
 
         @Override
-        public void encode(ByteBuf buf, ShopSyncPayload payload) {
+        public void encode(@Nonnull ByteBuf buf, @Nonnull ShopSyncPayload payload) {
             buf.writeInt(payload.tokens);
             buf.writeInt(payload.prestige);
             buf.writeInt(payload.bloodGems);
 
             buf.writeInt(payload.purchases.size());
             for (Map.Entry<String, Integer> entry : payload.purchases.entrySet()) {
-                ByteBufCodecs.STRING_UTF8.encode(buf, entry.getKey());
+                ByteBufCodecs.STRING_UTF8.encode(buf, Objects.requireNonNull(entry.getKey()));
                 buf.writeInt(entry.getValue());
             }
         }

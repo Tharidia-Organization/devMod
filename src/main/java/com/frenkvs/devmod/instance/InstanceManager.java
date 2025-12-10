@@ -10,9 +10,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.Objects;
 
 /**
  * Main orchestrator for the instance dimension system.
@@ -151,19 +153,17 @@ public class InstanceManager {
             return CompletableFuture.completedFuture(null);
         }
 
-        UUID playerId = player.getUUID();
+        UUID playerId = nn(player.getUUID(), "player uuid");
 
         // Check if player is already in an instance
         if (InstanceRegistry.INSTANCE.getPlayerInstance(playerId).isPresent()) {
-            player.sendSystemMessage(Component.literal("[DevMod] You are already in an instance!")
-                .withStyle(ChatFormatting.RED));
+            player.sendSystemMessage(styledMsg("[DevMod] You are already in an instance!", ChatFormatting.RED));
             return CompletableFuture.completedFuture(null);
         }
 
         // Check if player has a pending teleport
         if (pendingTeleports.containsKey(playerId)) {
-            player.sendSystemMessage(Component.literal("[DevMod] Teleport already in progress!")
-                .withStyle(ChatFormatting.RED));
+            player.sendSystemMessage(styledMsg("[DevMod] Teleport already in progress!", ChatFormatting.RED));
             return CompletableFuture.completedFuture(null);
         }
 
@@ -174,14 +174,15 @@ public class InstanceManager {
         List<ServerPlayer> allPlayers = new ArrayList<>();
         allPlayers.add(player);
 
-        if (partyMembers != null && !partyMembers.isEmpty()) {
-            for (UUID memberId : partyMembers) {
-                ServerPlayer member = server.getPlayerList().getPlayer(memberId);
-                if (member != null && !memberId.equals(playerId)) {
-                    allPlayers.add(member);
+            if (partyMembers != null && !partyMembers.isEmpty()) {
+                for (UUID rawMemberId : partyMembers) {
+                    UUID memberId = nn(rawMemberId, "party member id");
+                    ServerPlayer member = server.getPlayerList().getPlayer(memberId);
+                    if (member != null && !memberId.equals(playerId)) {
+                        allPlayers.add(member);
+                    }
                 }
             }
-        }
 
         // Create instance data
         InstanceData instance = InstanceRegistry.INSTANCE.createInstance(arenaId, playerId);
@@ -189,7 +190,7 @@ public class InstanceManager {
 
         // Add all players to instance
         for (ServerPlayer p : allPlayers) {
-            instance.addPlayer(p.getUUID());
+            instance.addPlayer(nn(p.getUUID(), "player uuid"));
         }
 
         // Save instance
@@ -207,17 +208,15 @@ public class InstanceManager {
             }
 
             RecoverySystem.INSTANCE.saveSnapshot(snapshot);
-            InstanceRegistry.INSTANCE.mapPlayer(p.getUUID(), instanceId);
+            InstanceRegistry.INSTANCE.mapPlayer(nn(p.getUUID(), "player uuid"), instanceId);
         }
 
         // Notify players (different message based on mode)
         for (ServerPlayer p : allPlayers) {
             if (immediate) {
-                p.sendSystemMessage(Component.literal("[DevMod] Preparing instance...")
-                    .withStyle(ChatFormatting.GOLD));
+                p.sendSystemMessage(styledMsg("[DevMod] Preparing instance...", ChatFormatting.GOLD));
             } else {
-                p.sendSystemMessage(Component.literal("[DevMod] Preparing instance... teleporting in 10 seconds")
-                    .withStyle(ChatFormatting.GOLD));
+                p.sendSystemMessage(styledMsg("[DevMod] Preparing instance... teleporting in 10 seconds", ChatFormatting.GOLD));
             }
         }
 
@@ -233,15 +232,15 @@ public class InstanceManager {
                     LOGGER.error("[InstanceManager] Dimension creation failed for instance {}", instanceId);
                     for (ServerPlayer p : allPlayers) {
                         // Verify player is still online before recovery
-                        ServerPlayer onlinePlayer = server.getPlayerList().getPlayer(p.getUUID());
+                        ServerPlayer onlinePlayer = server.getPlayerList().getPlayer(nn(p.getUUID(), "player uuid"));
                         if (onlinePlayer != null) {
-                            RecoverySystem.INSTANCE.loadSnapshot(p.getUUID()).ifPresent(snapshot -> {
+                            RecoverySystem.INSTANCE.loadSnapshot(nn(p.getUUID(), "player uuid")).ifPresent(snapshot -> {
                                 RecoverySystem.INSTANCE.performRecovery(onlinePlayer, snapshot, "Instance creation failed");
                             });
                         } else {
                             // Player disconnected - snapshot will handle recovery on next login
                             LOGGER.info("[InstanceManager] Player {} disconnected during instance creation, snapshot preserved for login recovery",
-                                p.getUUID());
+                                nn(p.getUUID(), "player uuid"));
                         }
                     }
                     InstanceRegistry.INSTANCE.removeInstance(instanceId);
@@ -256,16 +255,17 @@ public class InstanceManager {
                 // Phase 3: Teleport or start countdown based on mode
                 // Re-fetch players from server to ensure they're still online
                 for (ServerPlayer originalPlayer : allPlayers) {
-                    ServerPlayer onlinePlayer = server.getPlayerList().getPlayer(originalPlayer.getUUID());
+                    ServerPlayer onlinePlayer = server.getPlayerList().getPlayer(nn(originalPlayer.getUUID(), "player uuid"));
                     if (onlinePlayer == null) {
                         // Player disconnected during dimension creation
-                        LOGGER.warn("[InstanceManager] Player {} disconnected before teleport, skipping",
-                            originalPlayer.getUUID());
-                        // Remove from instance, snapshot preserved for login recovery
-                        instance.removePlayer(originalPlayer.getUUID());
-                        InstanceRegistry.INSTANCE.unmapPlayer(originalPlayer.getUUID());
-                        continue;
-                    }
+                UUID originalId = nn(originalPlayer.getUUID(), "player uuid");
+                LOGGER.warn("[InstanceManager] Player {} disconnected before teleport, skipping",
+                            originalId);
+                // Remove from instance, snapshot preserved for login recovery
+                instance.removePlayer(originalId);
+                InstanceRegistry.INSTANCE.unmapPlayer(originalId);
+                continue;
+            }
 
                     if (teleportImmediately) {
                         executeImmediateTeleport(onlinePlayer, instanceId, dimensionKey);
@@ -290,7 +290,7 @@ public class InstanceManager {
      * Used when integrating with quest systems that need synchronous completion.
      */
     private void executeImmediateTeleport(ServerPlayer player, UUID instanceId, ResourceKey<Level> dimensionKey) {
-        UUID playerId = player.getUUID();
+        UUID playerId = nn(player.getUUID(), "player uuid");
 
         LOGGER.info("[InstanceManager] Executing immediate teleport for {} to instance {}",
             player.getName().getString(), instanceId);
@@ -312,8 +312,7 @@ public class InstanceManager {
                 }
             });
 
-            player.sendSystemMessage(Component.literal("[DevMod] Welcome to the arena! Good luck!")
-                .withStyle(ChatFormatting.GREEN));
+            player.sendSystemMessage(styledMsg("[DevMod] Welcome to the arena! Good luck!", ChatFormatting.GREEN));
 
             LOGGER.info("[InstanceManager] Player {} successfully teleported to instance {} (immediate)",
                 player.getName().getString(), instanceId);
@@ -332,12 +331,11 @@ public class InstanceManager {
      * Start the teleport countdown for a player.
      */
     private void startTeleportCountdown(ServerPlayer player, UUID instanceId, ResourceKey<Level> dimensionKey) {
-        UUID playerId = player.getUUID();
+        UUID playerId = nn(player.getUUID(), "player uuid");
 
         TeleportRequest request = new TeleportRequest(
             playerId,
             instanceId,
-            dimensionKey,
             TELEPORT_COUNTDOWN_TICKS
         );
 
@@ -368,7 +366,7 @@ public class InstanceManager {
                 iterator.remove();
 
                 // Try to recover the player
-                ServerPlayer player = server.getPlayerList().getPlayer(request.playerId);
+                ServerPlayer player = server.getPlayerList().getPlayer(nn(request.playerId, "request playerId"));
                 if (player != null) {
                     RecoverySystem.INSTANCE.loadSnapshot(request.playerId).ifPresent(snapshot -> {
                         RecoverySystem.INSTANCE.performRecovery(player, snapshot, "Teleport timed out");
@@ -380,7 +378,7 @@ public class InstanceManager {
             request.ticksRemaining--;
 
             // Check if player is still online
-            ServerPlayer player = server.getPlayerList().getPlayer(request.playerId);
+            ServerPlayer player = server.getPlayerList().getPlayer(nn(request.playerId, "request playerId"));
             if (player == null) {
                 LOGGER.warn("[InstanceManager] Player {} disconnected during countdown", request.playerId);
                 iterator.remove();
@@ -390,15 +388,12 @@ public class InstanceManager {
 
             // Send countdown messages at intervals
             if (request.ticksRemaining == 100) { // 5 seconds
-                player.sendSystemMessage(Component.literal("[DevMod] Teleporting in 5 seconds...")
-                    .withStyle(ChatFormatting.YELLOW));
-            } else if (request.ticksRemaining == 60) { // 3 seconds
-                player.sendSystemMessage(Component.literal("[DevMod] Teleporting in 3 seconds...")
-                    .withStyle(ChatFormatting.YELLOW));
-            } else if (request.ticksRemaining == 20) { // 1 second
-                player.sendSystemMessage(Component.literal("[DevMod] Teleporting in 1 second...")
-                    .withStyle(ChatFormatting.YELLOW));
-            }
+                        player.sendSystemMessage(styledMsg("[DevMod] Teleporting in 5 seconds...", ChatFormatting.YELLOW));
+                    } else if (request.ticksRemaining == 60) { // 3 seconds
+                        player.sendSystemMessage(styledMsg("[DevMod] Teleporting in 3 seconds...", ChatFormatting.YELLOW));
+                    } else if (request.ticksRemaining == 20) { // 1 second
+                        player.sendSystemMessage(styledMsg("[DevMod] Teleporting in 1 second...", ChatFormatting.YELLOW));
+                    }
 
             // Execute teleport when countdown reaches zero
             if (request.ticksRemaining <= 0) {
@@ -419,7 +414,7 @@ public class InstanceManager {
 
         if (success) {
             // Update snapshot and instance state
-            RecoverySystem.INSTANCE.updateSnapshotState(player.getUUID(), PlayerInstanceState.IN_INSTANCE);
+            RecoverySystem.INSTANCE.updateSnapshotState(nn(player.getUUID(), "player uuid"), PlayerInstanceState.IN_INSTANCE);
 
             InstanceRegistry.INSTANCE.getInstance(request.instanceId).ifPresent(instance -> {
                 if (instance.getState() == InstanceState.READY) {
@@ -428,8 +423,7 @@ public class InstanceManager {
                 }
             });
 
-            player.sendSystemMessage(Component.literal("[DevMod] Welcome to the arena! Good luck!")
-                .withStyle(ChatFormatting.GREEN));
+            player.sendSystemMessage(styledMsg("[DevMod] Welcome to the arena! Good luck!", ChatFormatting.GREEN));
 
             LOGGER.info("[InstanceManager] Player {} successfully teleported to instance {}",
                 player.getName().getString(), request.instanceId);
@@ -438,7 +432,7 @@ public class InstanceManager {
             LOGGER.error("[InstanceManager] Teleport failed for {} to instance {}",
                 player.getName().getString(), request.instanceId);
 
-            RecoverySystem.INSTANCE.loadSnapshot(player.getUUID()).ifPresent(snapshot -> {
+            RecoverySystem.INSTANCE.loadSnapshot(nn(player.getUUID(), "player uuid")).ifPresent(snapshot -> {
                 RecoverySystem.INSTANCE.performRecovery(player, snapshot, "Teleport failed");
             });
         }
@@ -471,20 +465,18 @@ public class InstanceManager {
         Set<UUID> playerIds = instance.getPlayerIds();
 
         for (UUID playerId : playerIds) {
-            ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+            ServerPlayer player = server.getPlayerList().getPlayer(nn(playerId, "player id"));
 
-            if (player != null) {
-                // Update snapshot state
-                RecoverySystem.INSTANCE.updateSnapshotState(playerId, PlayerInstanceState.RETURNING);
+                if (player != null) {
+                    // Update snapshot state
+                    RecoverySystem.INSTANCE.updateSnapshotState(playerId, PlayerInstanceState.RETURNING);
 
-                // Notify player
-                if (success) {
-                    player.sendSystemMessage(Component.literal("[DevMod] Quest completed! Returning to overworld...")
-                        .withStyle(ChatFormatting.GREEN));
-                } else {
-                    player.sendSystemMessage(Component.literal("[DevMod] " + reason + ". Returning to overworld...")
-                        .withStyle(ChatFormatting.RED));
-                }
+                    // Notify player
+                    if (success) {
+                        player.sendSystemMessage(styledMsg("[DevMod] Quest completed! Returning to overworld...", ChatFormatting.GREEN));
+                    } else {
+                        player.sendSystemMessage(styledMsg("[DevMod] " + reason + ". Returning to overworld...", ChatFormatting.RED));
+                    }
 
                 // Return player to original position
                 // NOTE: performRecovery() also calls unmapPlayer() internally, so we don't need to do it again
@@ -552,7 +544,7 @@ public class InstanceManager {
     public void onPlayerLogout(ServerPlayer player) {
         if (!initialized) return;
 
-        UUID playerId = player.getUUID();
+        UUID playerId = nn(player.getUUID(), "player uuid");
 
         // Cancel pending teleport if any
         if (pendingTeleports.remove(playerId) != null) {
@@ -578,7 +570,7 @@ public class InstanceManager {
     public void onPlayerDeath(ServerPlayer player) {
         if (!initialized) return;
 
-        UUID playerId = player.getUUID();
+        UUID playerId = nn(player.getUUID(), "player uuid");
 
         // Check if player is in an instance
         Optional<InstanceData> instanceOpt = InstanceRegistry.INSTANCE.getPlayerInstance(playerId);
@@ -623,17 +615,15 @@ public class InstanceManager {
     private static class TeleportRequest {
         final UUID playerId;
         final UUID instanceId;
-        final ResourceKey<Level> dimensionKey;
         final long createdAt;
         int ticksRemaining;
 
         // Maximum time a teleport request can exist before being considered stale (30 seconds)
         static final long MAX_AGE_MS = 30_000;
 
-        TeleportRequest(UUID playerId, UUID instanceId, ResourceKey<Level> dimensionKey, int ticksRemaining) {
+        TeleportRequest(UUID playerId, UUID instanceId, int ticksRemaining) {
             this.playerId = playerId;
             this.instanceId = instanceId;
-            this.dimensionKey = dimensionKey;
             this.ticksRemaining = ticksRemaining;
             this.createdAt = System.currentTimeMillis();
         }
@@ -644,5 +634,18 @@ public class InstanceManager {
         boolean isStale() {
             return System.currentTimeMillis() - createdAt > MAX_AGE_MS;
         }
+    }
+
+    @Nonnull
+    private static Component styledMsg(@Nonnull String text, @Nonnull ChatFormatting style) {
+        return Objects.requireNonNull(
+            Objects.requireNonNull(Component.literal(text), "message").withStyle(style),
+            "styled message"
+        );
+    }
+
+    @Nonnull
+    private static <T> T nn(T value, String context) {
+        return Objects.requireNonNull(value, context);
     }
 }

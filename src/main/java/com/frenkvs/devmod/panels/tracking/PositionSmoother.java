@@ -2,6 +2,9 @@ package com.frenkvs.devmod.panels.tracking;
 
 import net.minecraft.world.phys.Vec3;
 
+import javax.annotation.Nonnull;
+import java.util.Objects;
+
 /**
  * Utility for smoothing 3D positions with various algorithms.
  *
@@ -14,8 +17,10 @@ import net.minecraft.world.phys.Vec3;
 public class PositionSmoother {
 
     // === Current State ===
+    @Nonnull
     private Vec3 currentPosition;
-    private Vec3 velocity = Vec3.ZERO;
+    @Nonnull
+    private Vec3 velocity = Objects.requireNonNull(Vec3.ZERO, "Vec3.ZERO");
 
     // === Configuration ===
     private SmoothingMode mode = SmoothingMode.EXPONENTIAL;
@@ -37,13 +42,13 @@ public class PositionSmoother {
         CRITICALLY_DAMPED
     }
 
-    public PositionSmoother(Vec3 initialPosition) {
-        this.currentPosition = initialPosition;
+    public PositionSmoother(@Nonnull Vec3 initialPosition) {
+        this.currentPosition = Objects.requireNonNull(initialPosition, "initialPosition");
     }
 
-    public PositionSmoother(Vec3 initialPosition, SmoothingMode mode) {
-        this.currentPosition = initialPosition;
-        this.mode = mode;
+    public PositionSmoother(@Nonnull Vec3 initialPosition, @Nonnull SmoothingMode mode) {
+        this.currentPosition = Objects.requireNonNull(initialPosition, "initialPosition");
+        this.mode = Objects.requireNonNull(mode, "mode");
     }
 
     /**
@@ -53,13 +58,14 @@ public class PositionSmoother {
      * @param deltaTime Elapsed time in seconds (typically 0.05 per tick)
      * @return New smoothed position
      */
-    public Vec3 update(Vec3 target, float deltaTime) {
-        currentPosition = switch (mode) {
+    @Nonnull
+    public Vec3 update(@Nonnull Vec3 target, float deltaTime) {
+        currentPosition = Objects.requireNonNull(switch (mode) {
             case LINEAR -> updateLinear(target, deltaTime);
             case EXPONENTIAL -> updateExponential(target, deltaTime);
             case SPRING -> updateSpring(target, deltaTime);
             case CRITICALLY_DAMPED -> updateCriticallyDamped(target, deltaTime);
-        };
+        });
 
         return currentPosition;
     }
@@ -67,68 +73,72 @@ public class PositionSmoother {
     /**
      * Linear interpolation: moves by a fixed fraction towards the target.
      */
-    private Vec3 updateLinear(Vec3 target, float deltaTime) {
-        Vec3 diff = target.subtract(currentPosition);
+    @Nonnull
+    private Vec3 updateLinear(@Nonnull Vec3 target, float deltaTime) {
+        Vec3 diff = Objects.requireNonNull(target.subtract(currentPosition));
         float factor = Math.min(1.0f, smoothingFactor * deltaTime * 20);
-        return currentPosition.add(diff.scale(factor));
+        return Objects.requireNonNull(currentPosition.add(Objects.requireNonNull(diff.scale(factor))));
     }
 
     /**
      * Exponential smoothing: faster when far away, slows down when approaching.
      */
-    private Vec3 updateExponential(Vec3 target, float deltaTime) {
+    @Nonnull
+    private Vec3 updateExponential(@Nonnull Vec3 target, float deltaTime) {
         // Formula: pos = pos + (target - pos) * (1 - e^(-factor * dt))
         float factor = (float) (1 - Math.exp(-smoothingFactor * 20 * deltaTime));
-        Vec3 diff = target.subtract(currentPosition);
-        return currentPosition.add(diff.scale(factor));
+        Vec3 diff = Objects.requireNonNull(target.subtract(currentPosition));
+        return Objects.requireNonNull(currentPosition.add(Objects.requireNonNull(diff.scale(factor))));
     }
 
     /**
      * Spring physics: may oscillate around the target.
      */
-    private Vec3 updateSpring(Vec3 target, float deltaTime) {
+    @Nonnull
+    private Vec3 updateSpring(@Nonnull Vec3 target, float deltaTime) {
         // F = -k * x - d * v (spring force + damping)
-        Vec3 displacement = currentPosition.subtract(target);
-        Vec3 springForce = displacement.scale(-springStiffness);
-        Vec3 dampingForce = velocity.scale(-springDamping);
-        Vec3 acceleration = springForce.add(dampingForce);
+        Vec3 displacement = Objects.requireNonNull(currentPosition.subtract(target));
+        Vec3 springForce = Objects.requireNonNull(displacement.scale(-springStiffness));
+        Vec3 dampingForce = Objects.requireNonNull(velocity.scale(-springDamping));
+        Vec3 acceleration = Objects.requireNonNull(springForce.add(dampingForce));
 
         // Integrazione semi-implicita
-        velocity = velocity.add(acceleration.scale(deltaTime));
-        return currentPosition.add(velocity.scale(deltaTime));
+        velocity = Objects.requireNonNull(velocity.add(Objects.requireNonNull(acceleration.scale(deltaTime))));
+        return Objects.requireNonNull(currentPosition.add(Objects.requireNonNull(velocity.scale(deltaTime))));
     }
 
     /**
      * Critically damped spring: smooth and fast without oscillations.
      * Used for UI where you don't want bouncing.
      */
-    private Vec3 updateCriticallyDamped(Vec3 target, float deltaTime) {
+    @Nonnull
+    private Vec3 updateCriticallyDamped(@Nonnull Vec3 target, float deltaTime) {
         // Damping critico: d = 2 * sqrt(k)
         float omega = (float) Math.sqrt(springStiffness);
         float criticalDamping = 2 * omega;
 
-        Vec3 displacement = currentPosition.subtract(target);
-        Vec3 springForce = displacement.scale(-springStiffness);
-        Vec3 dampingForce = velocity.scale(-criticalDamping);
-        Vec3 acceleration = springForce.add(dampingForce);
+        Vec3 displacement = Objects.requireNonNull(currentPosition.subtract(target));
+        Vec3 springForce = Objects.requireNonNull(displacement.scale(-springStiffness));
+        Vec3 dampingForce = Objects.requireNonNull(velocity.scale(-criticalDamping));
+        Vec3 acceleration = Objects.requireNonNull(springForce.add(dampingForce));
 
-        velocity = velocity.add(acceleration.scale(deltaTime));
-        return currentPosition.add(velocity.scale(deltaTime));
+        velocity = Objects.requireNonNull(velocity.add(Objects.requireNonNull(acceleration.scale(deltaTime))));
+        return Objects.requireNonNull(currentPosition.add(Objects.requireNonNull(velocity.scale(deltaTime))));
     }
 
     /**
      * Sets position immediately (without smoothing).
      */
-    public void setPosition(Vec3 position) {
-        this.currentPosition = position;
-        this.velocity = Vec3.ZERO;
+    public void setPosition(@Nonnull Vec3 position) {
+        this.currentPosition = Objects.requireNonNull(position, "position");
+        this.velocity = Objects.requireNonNull(Vec3.ZERO, "Vec3.ZERO");
     }
 
     /**
      * Resets velocity (stops movement).
      */
     public void resetVelocity() {
-        this.velocity = Vec3.ZERO;
+        this.velocity = Objects.requireNonNull(Vec3.ZERO, "Vec3.ZERO");
     }
 
     // === Getters/Setters ===
@@ -192,14 +202,14 @@ public class PositionSmoother {
     /**
      * Calculates distance from target.
      */
-    public double distanceFromTarget(Vec3 target) {
+    public double distanceFromTarget(@Nonnull Vec3 target) {
         return currentPosition.distanceTo(target);
     }
 
     /**
      * Checks if position is "settled" (close to target and nearly stopped).
      */
-    public boolean isSettled(Vec3 target, double positionThreshold, double velocityThreshold) {
+    public boolean isSettled(@Nonnull Vec3 target, double positionThreshold, double velocityThreshold) {
         return currentPosition.distanceTo(target) < positionThreshold
             && velocity.length() < velocityThreshold;
     }

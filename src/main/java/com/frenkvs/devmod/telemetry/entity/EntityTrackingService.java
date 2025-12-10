@@ -10,9 +10,9 @@ import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -326,10 +326,15 @@ public class EntityTrackingService {
 
         PositionTracker(ResourceKey<Level> dim, double x, double y, double z, long ms) {
             this.dimension = dim;
+            com.mojang.logging.LogUtils.getLogger().debug("[EntityTracking] Created position tracker for dimension {}", getDimension());
             this.x = x;
             this.y = y;
             this.z = z;
             this.lastMoveMs = ms;
+        }
+
+        public ResourceKey<Level> getDimension() {
+            return dimension;
         }
     }
 
@@ -342,7 +347,7 @@ public class EntityTrackingService {
      */
     public record SpawnInfo(String worldId, Vec3 position) {
         public double distanceFrom(Vec3 currentPos) {
-            return position.distanceTo(currentPos);
+            return Objects.requireNonNull(position).distanceTo(Objects.requireNonNull(currentPos));
         }
     }
 
@@ -409,17 +414,18 @@ public class EntityTrackingService {
 
             double pathLen = 0;
             double yawChange = 0;
-            Vec3 last = samples.getFirst().pos;
+            Vec3 last = Objects.requireNonNull(samples.getFirst().pos);
             float lastYaw = samples.getFirst().yaw;
 
             for (Sample s : samples) {
-                pathLen += s.pos.distanceTo(last);
+                Vec3 samplePos = Objects.requireNonNull(s.pos);
+                pathLen += samplePos.distanceTo(last);
                 yawChange += Math.abs(wrapYaw(s.yaw - lastYaw));
-                last = s.pos;
+                last = samplePos;
                 lastYaw = s.yaw;
             }
 
-            double displacement = samples.getFirst().pos.distanceTo(samples.getLast().pos);
+            double displacement = Objects.requireNonNull(samples.getFirst().pos).distanceTo(Objects.requireNonNull(samples.getLast().pos));
 
             if (pathLen < 1.0 && yawChange > 720) {
                 return "spin";

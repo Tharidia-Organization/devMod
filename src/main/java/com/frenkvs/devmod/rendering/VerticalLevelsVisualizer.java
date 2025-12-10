@@ -12,6 +12,7 @@ import org.joml.Matrix4f;
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * FASE 4 REQ-A7: Vertical Levels Visualizer
@@ -158,12 +159,12 @@ public class VerticalLevelsVisualizer {
     public void render(@Nonnull PoseStack poseStack, @Nonnull MultiBufferSource buffer, @Nonnull Vec3 cameraPos) {
         if (!enabled || roomZonesList.isEmpty()) return;
 
-        VertexConsumer consumer = buffer.getBuffer(RenderType.lines());
+        VertexConsumer consumer = Objects.requireNonNull(buffer.getBuffer(Objects.requireNonNull(RenderType.lines())));
 
         poseStack.pushPose();
         poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-        Matrix4f matrix = poseStack.last().pose();
-        var pose = poseStack.last();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
+        var pose = Objects.requireNonNull(poseStack.last());
 
         int renderedCount = 0;
         for (RoomZones room : roomZonesList) {
@@ -183,7 +184,7 @@ public class VerticalLevelsVisualizer {
             double dz = centerZ - cameraPos.z;
             if (dx*dx + dy*dy + dz*dz > getMaxRenderDistanceSq()) continue;
 
-            renderZones(consumer, matrix, pose, room, cameraPos);
+            renderZones(Objects.requireNonNull(consumer), Objects.requireNonNull(matrix), Objects.requireNonNull(pose), room, cameraPos);
             renderedCount++;
         }
 
@@ -253,8 +254,8 @@ public class VerticalLevelsVisualizer {
     private void line(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix, @Nonnull PoseStack.Pose pose,
                       float x1, float y1, float z1, float x2, float y2, float z2,
                       float r, float g, float b, float a) {
-        consumer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
-        consumer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
+        Objects.requireNonNull(consumer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a)).setNormal(Objects.requireNonNull(pose), 0f, 1f, 0f);
+        Objects.requireNonNull(consumer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a)).setNormal(Objects.requireNonNull(pose), 0f, 1f, 0f);
     }
 
     public int getRoomCount() {

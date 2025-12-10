@@ -23,6 +23,7 @@ import org.joml.Matrix4f;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Chunk Performance Visualizer (M54).
@@ -106,9 +107,10 @@ public class ChunkPerformanceVisualizer {
 
     private void updateCache(Level level) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return;
+        var player = mc.player;
+        if (player == null) return;
 
-        ChunkPos playerChunk = mc.player.chunkPosition();
+        ChunkPos playerChunk = player.chunkPosition();
         chunkDataCache.clear();
 
         for (int dx = -renderRadius; dx <= renderRadius; dx++) {
@@ -142,8 +144,11 @@ public class ChunkPerformanceVisualizer {
         tileEntityCount = blockEntities.size();
 
         // Calculate performance score (0 = good, 1 = bad)
-        double entityScore = Math.min(1.0, (double) entityCount / ENTITY_HIGH);
-        double tileScore = Math.min(1.0, (double) tileEntityCount / TILE_HIGH);
+        // Score is 0 if below LOW threshold, scales up to 1.0 at HIGH threshold
+        double entityScore = entityCount <= ENTITY_LOW ? 0.0
+            : Math.min(1.0, (double) (entityCount - ENTITY_LOW) / (ENTITY_HIGH - ENTITY_LOW));
+        double tileScore = tileEntityCount <= TILE_LOW ? 0.0
+            : Math.min(1.0, (double) (tileEntityCount - TILE_LOW) / (TILE_HIGH - TILE_LOW));
         double perfScore = (entityScore + tileScore) / 2.0;
 
         return new ChunkPerfData(entityCount, tileEntityCount, perfScore);
@@ -161,8 +166,8 @@ public class ChunkPerformanceVisualizer {
         float[] color = getColorForPerformance(data.perfScore);
 
         // Render filled quad at player height
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.debugQuads());
-        Matrix4f matrix = poseStack.last().pose();
+        VertexConsumer consumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.debugQuads()));
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
         // Top face (semi-transparent)
         consumer.addVertex(matrix, minX, renderY, minZ).setColor(color[0], color[1], color[2], color[3] * 0.3f);
@@ -171,7 +176,7 @@ public class ChunkPerformanceVisualizer {
         consumer.addVertex(matrix, maxX, renderY, minZ).setColor(color[0], color[1], color[2], color[3] * 0.3f);
 
         // Render chunk borders (lines)
-        VertexConsumer lineConsumer = bufferSource.getBuffer(RenderType.debugLineStrip(2.0));
+        VertexConsumer lineConsumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.debugLineStrip(2.0)));
 
         float borderAlpha = 0.8f;
         // Bottom border

@@ -9,6 +9,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
+import java.util.Objects;
+
 /**
  * Red flash effect for headshots.
  * Trigger: bodyPart == HEAD
@@ -19,7 +21,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 public class HeadshotFlashEffect {
 
     private static final ResourceLocation LAYER_ID =
-        ResourceLocation.fromNamespaceAndPath("devmod", "headshot_flash");
+        Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "headshot_flash"));
 
     private static long flashStartTime = 0;
     private static final long FLASH_DURATION_MS = 300;
@@ -43,8 +45,8 @@ public class HeadshotFlashEffect {
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         // Register above crosshair to cover everything
         event.registerAbove(
-            VanillaGuiLayers.CROSSHAIR,
-            LAYER_ID,
+            Objects.requireNonNull(VanillaGuiLayers.CROSSHAIR),
+            Objects.requireNonNull(LAYER_ID),
             (graphics, deltaTracker) -> render(graphics, graphics.guiWidth(), graphics.guiHeight())
         );
     }

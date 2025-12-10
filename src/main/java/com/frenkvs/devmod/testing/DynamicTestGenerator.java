@@ -1,6 +1,5 @@
 package com.frenkvs.devmod.testing;
 
-import com.frenkvs.devmod.testing.ModDiscoveryService.ModCategory;
 import com.frenkvs.devmod.testing.ModDiscoveryService.ModInfo;
 import com.frenkvs.devmod.testing.TestCase.TestPriority;
 import net.minecraft.resources.ResourceLocation;
@@ -14,7 +13,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 
 /**
  * Automatically generates test cases based on discovered mod content.
@@ -570,7 +568,7 @@ public class DynamicTestGenerator {
             {"eldritch", "Eldritch", "Cosmic horror, madness, ancient power"}
         };
 
-        // Armor sets (11 wizard armor sets)
+        // Armor sets (11 wizard armor sets) - used in test descriptions to show available armor count
         private static final String[] ARMOR_SETS = {
             "wandering_magician", "pumpkin", "pyromancer", "electromancer",
             "archevoker", "cultist", "cryomancer", "shadowwalker",
@@ -803,12 +801,12 @@ public class DynamicTestGenerator {
         }
 
         private void addArmorSetTests(List<TestCase> tests) {
-            // General armor test
+            // General armor test - references all armor sets
             tests.add(TestCase.withProgress(
                 "iss_armor_general",
                 "Iron's Spellbooks - Armor",
                 "Wizard Armor Basics",
-                "Test wizard armor protection and bonuses",
+                "Test wizard armor protection and bonuses from " + ARMOR_SETS.length + " available sets",
                 "1. Equip any wizard armor set\n2. Take damage and verify protection\n3. Check mana bonuses\n4. Verify school-specific bonuses\n5. Test set bonuses when full set equipped",
                 TestPriority.HIGH,
                 progress -> {

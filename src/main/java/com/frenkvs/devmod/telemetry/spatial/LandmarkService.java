@@ -16,11 +16,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -97,8 +97,8 @@ public class LandmarkService {
         UUID playerId = player.getUUID();
 
         for (LandmarkDefinition landmark : landmarks.values()) {
-            Vec3 landmarkPos = Vec3.atCenterOf(landmark.position());
-            Vec3 toLandmark = landmarkPos.subtract(eyePos);
+            Vec3 landmarkPos = Vec3.atCenterOf(Objects.requireNonNull(landmark.position()));
+            Vec3 toLandmark = landmarkPos.subtract(Objects.requireNonNull(eyePos));
             double distance = toLandmark.length();
 
             // Check if within observation radius
@@ -107,7 +107,7 @@ public class LandmarkService {
             }
 
             // Check if player is looking at landmark
-            double dot = lookVec.normalize().dot(toLandmark.normalize());
+            double dot = Objects.requireNonNull(lookVec.normalize()).dot(Objects.requireNonNull(toLandmark.normalize()));
             if (dot > landmark.viewAngle()) {
                 // Player is looking at this landmark
                 boolean firstTime = recordObservation(playerId, landmark.id());
@@ -139,7 +139,7 @@ public class LandmarkService {
         boolean firstTime = !playerObs.containsKey(landmarkId);
         if (firstTime) {
             playerObs.put(landmarkId, System.currentTimeMillis());
-            observationCounts.merge(landmarkId, 1, Integer::sum);
+            observationCounts.merge(landmarkId, 1, (a, b) -> a + b);
         }
 
         return firstTime;

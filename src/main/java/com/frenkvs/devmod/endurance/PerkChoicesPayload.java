@@ -8,12 +8,14 @@ import net.minecraft.resources.ResourceLocation;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
 
 /**
  * Network payload sent from server to client with perk choices after wave completion.
  * Contains serialized perk data for display in PerkSelectionScreen.
  */
-@SuppressWarnings({"null", "unused"})
 public record PerkChoicesPayload(
     int waveNumber,
     List<PerkChoice> choices
@@ -23,7 +25,7 @@ public record PerkChoicesPayload(
     private static final int MAX_STRING_LENGTH = 256;
 
     public static final Type<PerkChoicesPayload> TYPE = new Type<>(
-        ResourceLocation.fromNamespaceAndPath("devmod", "perk_choices")
+        Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "perk_choices"))
     );
 
     /**
@@ -59,7 +61,7 @@ public record PerkChoicesPayload(
 
     public static final StreamCodec<ByteBuf, PerkChoicesPayload> STREAM_CODEC = new StreamCodec<>() {
         @Override
-        public PerkChoicesPayload decode(ByteBuf buf) {
+        public PerkChoicesPayload decode(@Nonnull ByteBuf buf) {
             int waveNumber = buf.readInt();
             int choiceCount = Math.min(buf.readInt(), MAX_CHOICES);
 
@@ -72,7 +74,7 @@ public record PerkChoicesPayload(
         }
 
         @Override
-        public void encode(ByteBuf buf, PerkChoicesPayload payload) {
+        public void encode(@Nonnull ByteBuf buf, @Nonnull PerkChoicesPayload payload) {
             buf.writeInt(payload.waveNumber);
             buf.writeInt(Math.min(payload.choices.size(), MAX_CHOICES));
 

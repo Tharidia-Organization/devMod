@@ -7,7 +7,9 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.phys.Vec3;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -104,7 +106,7 @@ public abstract class FloatingPanel {
      * @param contentHeight Available height
      * @param alpha Current panel alpha
      */
-    public void renderContent3D(PoseStack poseStack, MultiBufferSource bufferSource, Font font,
+    public void renderContent3D(@Nonnull PoseStack poseStack, @Nonnull MultiBufferSource bufferSource, @Nonnull Font font,
                                  int contentWidth, int contentHeight, float alpha) {
         // Default implementation - panels can override for custom content
         // Renders basic info as text
@@ -114,6 +116,7 @@ public abstract class FloatingPanel {
     /**
      * Get the panel title (shown in header).
      */
+    @Nonnull
     public abstract String getTitle();
 
     // === 3D Rendering Helpers ===
@@ -121,13 +124,13 @@ public abstract class FloatingPanel {
     /**
      * Helper per renderizzare testo 3D.
      */
-    protected void renderText3D(PoseStack poseStack, MultiBufferSource bufferSource, Font font,
-                                 String text, float x, float y, int color) {
+    protected void renderText3D(@Nonnull PoseStack poseStack, @Nonnull MultiBufferSource bufferSource, @Nonnull Font font,
+                                 @Nonnull String text, float x, float y, int color) {
         poseStack.pushPose();
         poseStack.translate(x, y, 0);
         font.drawInBatch(
             text, 0, 0, color, false,
-            poseStack.last().pose(), bufferSource,
+            Objects.requireNonNull(poseStack.last().pose()), bufferSource,
             Font.DisplayMode.SEE_THROUGH, 0, 15728880
         );
         poseStack.popPose();
@@ -149,11 +152,12 @@ public abstract class FloatingPanel {
      */
     public void tick() {
         // Update tracker if present
-        if (tracker != null) {
-            tracker.tick();
+        EntityTracker localTracker = this.tracker;
+        if (localTracker != null) {
+            localTracker.tick();
 
             // If the target is no longer valid, start despawn
-            if (!tracker.isValid() && state != PanelState.DESPAWNING && state != PanelState.REMOVED) {
+            if (!localTracker.isValid() && state != PanelState.DESPAWNING && state != PanelState.REMOVED) {
                 startDespawn();
             }
         }
@@ -263,11 +267,13 @@ public abstract class FloatingPanel {
     /**
      * Get the current position of the panel in the world.
      */
+    @Nonnull
     public Vec3 getWorldPosition() {
-        if (tracker != null && tracker.isValid()) {
-            return tracker.getSmoothedPosition();
+        EntityTracker localTracker = this.tracker;
+        if (localTracker != null && localTracker.isValid()) {
+            return Objects.requireNonNull(localTracker.getSmoothedPosition(), "smoothedPosition");
         }
-        return fixedPosition != null ? fixedPosition : Vec3.ZERO;
+        return fixedPosition != null ? fixedPosition : Objects.requireNonNull(Vec3.ZERO, "Vec3.ZERO");
     }
 
     /**

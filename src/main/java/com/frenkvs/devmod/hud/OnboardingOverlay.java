@@ -2,7 +2,6 @@ package com.frenkvs.devmod.hud;
 
 import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.KeyInputHandler;
-import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 import com.frenkvs.devmod.util.I18n;
@@ -58,7 +57,6 @@ public class OnboardingOverlay {
     private static boolean active = false;
     private static int currentStep = 0;
     private static long stepStartTime = 0;
-    private static boolean waitingForAction = false;
     private static float pulseAnimation = 0;
 
     // Tutorial steps - using i18n keys
@@ -311,8 +309,14 @@ public class OnboardingOverlay {
      * Advance to next tutorial step.
      */
     public static void advanceStep() {
+        long now = System.currentTimeMillis();
+        // Debounce repeated triggers for the same step
+        if (now - stepStartTime < 200) {
+            return;
+        }
+
         currentStep++;
-        stepStartTime = System.currentTimeMillis();
+        stepStartTime = now;
 
         Minecraft mc = Minecraft.getInstance();
         if (mc != null) {

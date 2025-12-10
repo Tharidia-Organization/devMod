@@ -3,7 +3,6 @@ package com.frenkvs.devmod.endurance;
 /**
  * States for an Endurance Quest lifecycle.
  */
-@SuppressWarnings({"null", "unused"})
 public enum EnduranceQuestState {
     /** Quest available but not started */
     AVAILABLE,

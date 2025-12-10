@@ -35,8 +35,8 @@ public record PartyNotificationPayload(
 
     private static void encode(RegistryFriendlyByteBuf buf, PartyNotificationPayload payload) {
         buf.writeVarInt(payload.notificationType.ordinal());
-        buf.writeUUID(payload.relatedId);
-        buf.writeUtf(payload.playerName);
+        buf.writeUUID(Objects.requireNonNull(payload.relatedId));
+        buf.writeUtf(Objects.requireNonNull(payload.playerName));
         buf.writeVarInt(payload.questTypeOrdinal);
         buf.writeLong(payload.expiresAt);
     }
@@ -44,8 +44,8 @@ public record PartyNotificationPayload(
     private static PartyNotificationPayload decode(RegistryFriendlyByteBuf buf) {
         int typeOrdinal = buf.readVarInt();
         NotificationType type = NotificationType.fromOrdinal(typeOrdinal);
-        UUID relatedId = buf.readUUID();
-        String playerName = buf.readUtf(MAX_NAME_LENGTH);
+        UUID relatedId = Objects.requireNonNull(buf.readUUID());
+        String playerName = Objects.requireNonNull(buf.readUtf(MAX_NAME_LENGTH));
         int questTypeOrdinal = buf.readVarInt();
         long expiresAt = buf.readLong();
         return new PartyNotificationPayload(type, relatedId, playerName, questTypeOrdinal, expiresAt);

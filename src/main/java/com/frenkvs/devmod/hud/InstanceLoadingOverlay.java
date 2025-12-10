@@ -14,6 +14,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
+import java.util.Objects;
+
 /**
  * Loading overlay shown when creating an instance dimension.
  * Provides clear visual feedback during async operations.
@@ -37,8 +39,8 @@ public class InstanceLoadingOverlay {
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.CROSSHAIR,
-            LAYER_ID,
+            Objects.requireNonNull(VanillaGuiLayers.CROSSHAIR),
+            Objects.requireNonNull(LAYER_ID),
             InstanceLoadingOverlay::render
         );
     }
@@ -49,7 +51,7 @@ public class InstanceLoadingOverlay {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
-        Font font = mc.font;
+        Font font = Objects.requireNonNull(mc.font, "font");
         int screenWidth = mc.getWindow().getGuiScaledWidth();
         int screenHeight = mc.getWindow().getGuiScaledHeight();
 

@@ -9,11 +9,11 @@ import org.slf4j.Logger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -229,6 +229,7 @@ public class BacktrackingService {
 
             if (positions.size() > maxSize) {
                 BlockPos removed = positions.removeFirst();
+                com.mojang.logging.LogUtils.getLogger().debug("[BacktrackingService] Removed old position from history: {}", removed);
                 rooms.removeFirst();
                 // Don't remove from visitedPositions - we want to track all visited
             }
@@ -255,7 +256,7 @@ public class BacktrackingService {
                 if (!currentRoom.equals(oldRoom)) continue;
 
                 // Check if close enough to count as same position
-                double dist = Math.sqrt(oldPos.distSqr(newPos));
+                double dist = Math.sqrt(Objects.requireNonNull(oldPos).distSqr(Objects.requireNonNull(newPos)));
                 if (dist <= BACKTRACK_THRESHOLD) {
                     int stepsBack = positions.size() - i;
                     return new BacktrackResult(true, stepsBack);
@@ -285,7 +286,7 @@ public class BacktrackingService {
         void recordBacktrack(BlockPos pos, int stepsBack) {
             backtrackCount++;
             totalStepsBack += stepsBack;
-            backtrackPositions.merge(pos, 1, Integer::sum);
+            backtrackPositions.merge(pos, 1, (a, b) -> a + b);
         }
 
         void recordVisitor(UUID playerId) {

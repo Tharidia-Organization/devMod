@@ -5,11 +5,13 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.Objects;
+import javax.annotation.Nonnull;
+
 /**
  * Network payload sent from server to client when player dies during quest.
  * Triggers the QuestDeathScreen to appear on the client.
  */
-@SuppressWarnings({"null", "unused"})
 public record QuestDeathPayload(
     int currentWave,
     int totalWaves,
@@ -20,12 +22,12 @@ public record QuestDeathPayload(
 ) implements CustomPacketPayload {
 
     public static final Type<QuestDeathPayload> TYPE = new Type<>(
-        ResourceLocation.fromNamespaceAndPath("devmod", "quest_death")
+        Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "quest_death"))
     );
 
     public static final StreamCodec<ByteBuf, QuestDeathPayload> STREAM_CODEC = new StreamCodec<>() {
         @Override
-        public QuestDeathPayload decode(ByteBuf buf) {
+        public QuestDeathPayload decode(@Nonnull ByteBuf buf) {
             int currentWave = buf.readInt();
             int totalWaves = buf.readInt();
             boolean endlessMode = buf.readBoolean();
@@ -36,7 +38,7 @@ public record QuestDeathPayload(
         }
 
         @Override
-        public void encode(ByteBuf buf, QuestDeathPayload payload) {
+        public void encode(@Nonnull ByteBuf buf, @Nonnull QuestDeathPayload payload) {
             buf.writeInt(payload.currentWave);
             buf.writeInt(payload.totalWaves);
             buf.writeBoolean(payload.endlessMode);

@@ -12,7 +12,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.phys.Vec3;
 
-import javax.annotation.Nullable;
+import javax.annotation.Nonnull;
+import java.util.Objects;
 
 /**
  * Panel that shows the current testing session progress.
@@ -102,21 +103,22 @@ public class TestProgressPanel extends FloatingPanel {
         int lineHeight = 10;
 
         // Test corrente (keep at least 6 chars for readability)
-        String testText = currentTestName;
-        if (mc.font.width(testText) > contentWidth) {
+        Font font = Objects.requireNonNull(mc.font);
+        String testText = Objects.requireNonNull(currentTestName);
+        if (font.width(testText) > contentWidth) {
             String ellipsis = "...";
             int minChars = Math.min(6, testText.length());
-            while (mc.font.width(testText + ellipsis) > contentWidth && testText.length() > minChars) {
+            while (font.width(testText + ellipsis) > contentWidth && testText.length() > minChars) {
                 testText = testText.substring(0, testText.length() - 1);
             }
             testText += ellipsis;
         }
-        graphics.drawString(mc.font, testText, 0, y, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, testText, 0, y, UIConstants.Text.PRIMARY, false);
         y += lineHeight;
 
         // Categoria
         if (!currentCategory.isEmpty()) {
-            graphics.drawString(mc.font, currentCategory, 0, y, UIConstants.Text.MUTED, false);
+            graphics.drawString(font, currentCategory, 0, y, UIConstants.Text.MUTED, false);
             y += lineHeight;
         }
         y += 4;
@@ -139,12 +141,12 @@ public class TestProgressPanel extends FloatingPanel {
 
         // Counters
         String statsText = String.format("P:%d F:%d /%d", passedCount, failedCount, totalCount);
-        graphics.drawString(mc.font, statsText, 0, y, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, statsText, 0, y, UIConstants.Text.SECONDARY, false);
 
         // Percentage on the right
-        String percentText = String.format("%.0f%%", sessionProgress * 100);
-        int percentWidth = mc.font.width(percentText);
-        graphics.drawString(mc.font, percentText, contentWidth - percentWidth - 4, y, progressColor, false);
+        String percentText = Objects.requireNonNull(String.format("%.0f%%", sessionProgress * 100));
+        int percentWidth = font.width(percentText);
+        graphics.drawString(font, percentText, contentWidth - percentWidth - 4, y, progressColor, false);
     }
 
     /**
@@ -171,13 +173,13 @@ public class TestProgressPanel extends FloatingPanel {
     }
 
     @Override
-    public void renderContent3D(PoseStack poseStack, MultiBufferSource bufferSource, Font font,
+    public void renderContent3D(@Nonnull PoseStack poseStack, @Nonnull MultiBufferSource bufferSource, @Nonnull Font font,
                                  int contentWidth, int contentHeight, float alpha) {
         int y = 0;
         int lineHeight = 10;
 
         // Test corrente (keep at least 6 chars for readability)
-        String testText = currentTestName;
+        String testText = Objects.requireNonNull(currentTestName);
         if (font.width(testText) > contentWidth) {
             String ellipsis = "...";
             int minChars = Math.min(6, testText.length());
@@ -191,25 +193,26 @@ public class TestProgressPanel extends FloatingPanel {
 
         // Categoria
         if (!currentCategory.isEmpty()) {
-            renderText3D(poseStack, bufferSource, font, currentCategory, 0, y, applyAlpha(UIConstants.Text.MUTED, alpha));
+            renderText3D(poseStack, bufferSource, font, Objects.requireNonNull(currentCategory), 0, y, applyAlpha(UIConstants.Text.MUTED, alpha));
             y += lineHeight;
         }
         y += 4;
 
         // Progresso come testo
-        String progressText = String.format("Progress: %.0f%%", sessionProgress * 100);
+        String progressText = Objects.requireNonNull(String.format("Progress: %.0f%%", sessionProgress * 100));
         int progressColor = getProgressColor();
         renderText3D(poseStack, bufferSource, font, progressText, 0, y, applyAlpha(progressColor, alpha));
         y += lineHeight + 2;
 
         // Contatori
-        String statsText = String.format("Passed: %d | Failed: %d | Total: %d", passedCount, failedCount, totalCount);
+        String statsText = Objects.requireNonNull(String.format("Passed: %d | Failed: %d | Total: %d", passedCount, failedCount, totalCount));
         renderText3D(poseStack, bufferSource, font, statsText, 0, y, applyAlpha(UIConstants.Text.SECONDARY, alpha));
     }
 
     @Override
+    @Nonnull
     public String getTitle() {
-        return String.format("Test: %.0f%%", sessionProgress * 100);
+        return Objects.requireNonNull(String.format("Test: %.0f%%", sessionProgress * 100));
     }
 
     // === Getters ===

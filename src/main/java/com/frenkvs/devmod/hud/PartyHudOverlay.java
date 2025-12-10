@@ -101,7 +101,7 @@ public class PartyHudOverlay {
 
         // Header
         String header = "Party (" + members.size() + ")";
-        graphics.drawString(font, header, x + PADDING, y + PADDING - 2, TEXT_PRIMARY);
+        graphics.drawString(font, header, x + PADDING, y + PADDING - 2, TEXT_SECONDARY);
 
         // Member list
         int memberY = y + PADDING + 12;
@@ -135,11 +135,18 @@ public class PartyHudOverlay {
 
         graphics.fill(barX, barY, barX + barWidth, barY + HEALTH_BAR_HEIGHT, HEALTH_BG);
 
-        // Fill based on ready status (green if ready, red if not)
         if (member.isOnline()) {
-            int fillColor = member.isReady() ? HEALTH_HIGH : HEALTH_LOW;
-            int fillWidth = member.isReady() ? barWidth : barWidth / 3;
+            int fillWidth = barWidth;
+            int fillColor = HEALTH_HIGH;
+            if (!member.isReady()) {
+                fillWidth = barWidth / 3;
+                fillColor = HEALTH_MED;
+            }
             graphics.fill(barX, barY, barX + fillWidth, barY + HEALTH_BAR_HEIGHT, fillColor);
+        } else {
+            // Offline members: short red bar to signal unavailable
+            int fillWidth = barWidth / 4;
+            graphics.fill(barX, barY, barX + fillWidth, barY + HEALTH_BAR_HEIGHT, HEALTH_LOW);
         }
     }
 

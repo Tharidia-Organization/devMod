@@ -6,23 +6,24 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+import javax.annotation.Nonnull;
 
 /**
  * Network payload sent from client to server when player selects a perk.
  * Empty perkId means the player chose to skip.
  */
-@SuppressWarnings({"null", "unused"})
 public record PerkSelectionPayload(String perkId) implements CustomPacketPayload {
 
     private static final int MAX_STRING_LENGTH = 128;
 
     public static final Type<PerkSelectionPayload> TYPE = new Type<>(
-        ResourceLocation.fromNamespaceAndPath("devmod", "perk_selection")
+        Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "perk_selection"))
     );
 
     public static final StreamCodec<ByteBuf, PerkSelectionPayload> STREAM_CODEC = new StreamCodec<>() {
         @Override
-        public PerkSelectionPayload decode(ByteBuf buf) {
+        public PerkSelectionPayload decode(@Nonnull ByteBuf buf) {
             int length = buf.readInt();
             if (length < 0 || length > MAX_STRING_LENGTH) {
                 length = 0;
@@ -34,7 +35,7 @@ public record PerkSelectionPayload(String perkId) implements CustomPacketPayload
         }
 
         @Override
-        public void encode(ByteBuf buf, PerkSelectionPayload payload) {
+        public void encode(@Nonnull ByteBuf buf, @Nonnull PerkSelectionPayload payload) {
             byte[] bytes = payload.perkId.getBytes(StandardCharsets.UTF_8);
             int length = Math.min(bytes.length, MAX_STRING_LENGTH);
             buf.writeInt(length);

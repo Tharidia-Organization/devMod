@@ -7,6 +7,8 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
+import java.util.Objects;
+
 /**
  * Base class for all DevMod screens providing consistent styling and behavior.
  *
@@ -75,28 +77,28 @@ public abstract class ModScreen extends Screen {
         int buttonY = height - BOTTOM_MARGIN;
 
         // Apply button
-        this.addRenderableWidget(Button.builder(
-            Component.translatable("devmod.ui.apply"),
+        this.addRenderableWidget(Objects.requireNonNull(Button.builder(
+            Objects.requireNonNull(Component.translatable("devmod.ui.apply")),
             b -> {
                 onApply();
                 onClose();
             })
             .bounds(centerX - BUTTON_WIDTH - BUTTON_SPACING - BUTTON_WIDTH/2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT)
-            .build());
+            .build()));
 
         // Cancel button
-        this.addRenderableWidget(Button.builder(
-            Component.translatable("devmod.ui.cancel"),
+        this.addRenderableWidget(Objects.requireNonNull(Button.builder(
+            Objects.requireNonNull(Component.translatable("devmod.ui.cancel")),
             b -> onCancel())
             .bounds(centerX - BUTTON_WIDTH/2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT)
-            .build());
+            .build()));
 
         // Reset button
-        this.addRenderableWidget(Button.builder(
-            Component.translatable("devmod.ui.reset"),
+        this.addRenderableWidget(Objects.requireNonNull(Button.builder(
+            Objects.requireNonNull(Component.translatable("devmod.ui.reset")),
             b -> onReset())
             .bounds(centerX + BUTTON_SPACING + BUTTON_WIDTH/2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT)
-            .build());
+            .build()));
     }
 
     /**
@@ -107,21 +109,21 @@ public abstract class ModScreen extends Screen {
         int buttonY = height - BOTTOM_MARGIN;
 
         // Apply button
-        this.addRenderableWidget(Button.builder(
-            Component.translatable("devmod.ui.apply"),
+        this.addRenderableWidget(Objects.requireNonNull(Button.builder(
+            Objects.requireNonNull(Component.translatable("devmod.ui.apply")),
             b -> {
                 onApply();
                 onClose();
             })
             .bounds(centerX - BUTTON_WIDTH - BUTTON_SPACING/2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT)
-            .build());
+            .build()));
 
         // Cancel button
-        this.addRenderableWidget(Button.builder(
-            Component.translatable("devmod.ui.cancel"),
+        this.addRenderableWidget(Objects.requireNonNull(Button.builder(
+            Objects.requireNonNull(Component.translatable("devmod.ui.cancel")),
             b -> onCancel())
             .bounds(centerX + BUTTON_SPACING/2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT)
-            .build());
+            .build()));
     }
 
     /**
@@ -134,8 +136,8 @@ public abstract class ModScreen extends Screen {
      * @return Configured EditBox
      */
     protected EditBox createNumberField(int x, int y, int fieldWidth, String initialValue) {
-        EditBox box = new EditBox(font, x, y, fieldWidth, 20, Component.empty());
-        box.setValue(initialValue);
+        EditBox box = new EditBox(Objects.requireNonNull(font), x, y, fieldWidth, 20, Objects.requireNonNull(Component.empty()));
+        box.setValue(Objects.requireNonNull(initialValue));
         box.setFilter(s -> s.isEmpty() || s.matches("-?\\d*\\.?\\d*"));
         return box;
     }
@@ -144,8 +146,8 @@ public abstract class ModScreen extends Screen {
      * Creates an integer-only input field.
      */
     protected EditBox createIntegerField(int x, int y, int fieldWidth, int initialValue) {
-        EditBox box = new EditBox(font, x, y, fieldWidth, 20, Component.empty());
-        box.setValue(String.valueOf(initialValue));
+        EditBox box = new EditBox(Objects.requireNonNull(font), x, y, fieldWidth, 20, Objects.requireNonNull(Component.empty()));
+        box.setValue(Objects.requireNonNull(String.valueOf(initialValue)));
         box.setFilter(s -> s.isEmpty() || s.matches("-?\\d*"));
         return box;
     }
@@ -154,8 +156,8 @@ public abstract class ModScreen extends Screen {
      * Creates a text input field with max length.
      */
     protected EditBox createTextField(int x, int y, int fieldWidth, String initialValue, int maxLength) {
-        EditBox box = new EditBox(font, x, y, fieldWidth, 20, Component.empty());
-        box.setValue(initialValue);
+        EditBox box = new EditBox(Objects.requireNonNull(font), x, y, fieldWidth, 20, Objects.requireNonNull(Component.empty()));
+        box.setValue(Objects.requireNonNull(initialValue));
         box.setMaxLength(maxLength);
         return box;
     }
@@ -178,7 +180,7 @@ public abstract class ModScreen extends Screen {
      * Renders a section header with colored line.
      */
     protected void renderSectionHeader(GuiGraphics graphics, String text, int x, int y, int sectionWidth) {
-        graphics.drawString(font, text, x, y, AxiomColors.TEXT_ACCENT, false);
+        graphics.drawString(Objects.requireNonNull(font), text, x, y, AxiomColors.TEXT_ACCENT, false);
         graphics.fill(x, y + 12, x + sectionWidth, y + 13, AxiomColors.ACCENT_BLUE);
     }
 
@@ -186,8 +188,8 @@ public abstract class ModScreen extends Screen {
      * Renders a label-value pair.
      */
     protected void renderLabelValue(GuiGraphics graphics, String label, String value, int x, int y) {
-        graphics.drawString(font, label + ":", x, y, AxiomColors.TEXT_MUTED, false);
-        graphics.drawString(font, value, x + font.width(label + ": "), y, AxiomColors.TEXT_PRIMARY, false);
+        graphics.drawString(Objects.requireNonNull(font), label + ":", x, y, AxiomColors.TEXT_MUTED, false);
+        graphics.drawString(Objects.requireNonNull(font), value, x + font.width(label + ": "), y, AxiomColors.TEXT_PRIMARY, false);
     }
 
     /**

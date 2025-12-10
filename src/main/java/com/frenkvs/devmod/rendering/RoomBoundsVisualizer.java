@@ -16,6 +16,7 @@ import org.joml.Matrix4f;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -193,9 +194,9 @@ public class RoomBoundsVisualizer {
      * Check if a block is solid (not air, water, etc.)
      */
     private boolean isSolidBlock(ClientLevel level, BlockPos pos) {
-        BlockState state = level.getBlockState(pos);
+        BlockState state = Objects.requireNonNull(level.getBlockState(Objects.requireNonNull(pos)));
         // Consider solid if it's not air and has some collision shape
-        return !state.isAir() && !state.getCollisionShape(level, pos).isEmpty();
+        return !state.isAir() && !Objects.requireNonNull(state.getCollisionShape(level, Objects.requireNonNull(pos))).isEmpty();
     }
 
     /**
@@ -274,12 +275,12 @@ public class RoomBoundsVisualizer {
         if (!enabled && !hasPending) return;
         if (!enabled && rooms.isEmpty() && !hasPending) return;
 
-        VertexConsumer consumer = buffer.getBuffer(RenderType.lines());
+        VertexConsumer consumer = Objects.requireNonNull(buffer.getBuffer(Objects.requireNonNull(RenderType.lines())));
 
         poseStack.pushPose();
         poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-        Matrix4f matrix = poseStack.last().pose();
-        var pose = poseStack.last();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
+        var pose = Objects.requireNonNull(poseStack.last());
 
         for (RoomVisual room : rooms) {
             // Solo room entro 200 blocchi
@@ -416,8 +417,8 @@ public class RoomBoundsVisualizer {
     private void line(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose,
                       float x1, float y1, float z1, float x2, float y2, float z2,
                       float r, float g, float b, float a) {
-        consumer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
-        consumer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
+        Objects.requireNonNull(consumer.addVertex(Objects.requireNonNull(matrix), x1, y1, z1).setColor(r, g, b, a)).setNormal(Objects.requireNonNull(pose), 0f, 1f, 0f);
+        Objects.requireNonNull(consumer.addVertex(Objects.requireNonNull(matrix), x2, y2, z2).setColor(r, g, b, a)).setNormal(Objects.requireNonNull(pose), 0f, 1f, 0f);
     }
 
     /**

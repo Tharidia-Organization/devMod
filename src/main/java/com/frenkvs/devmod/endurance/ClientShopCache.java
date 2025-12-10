@@ -7,7 +7,6 @@ import java.util.Map;
  * Client-side cache for shop/wallet data synced from server.
  * Updated when ShopSyncPayload is received.
  */
-@SuppressWarnings({"null", "unused"})
 public class ClientShopCache {
 
     private static int tokens = 0;

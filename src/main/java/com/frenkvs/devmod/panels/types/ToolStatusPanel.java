@@ -11,8 +11,10 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.phys.Vec3;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Panel that shows the status of active overlays/tools.
@@ -85,7 +87,8 @@ public class ToolStatusPanel extends FloatingPanel {
 
         // Header with count
         String header = "Active: " + activeCount + "/" + toolStates.size();
-        graphics.drawString(mc.font, header, 0, y, UIConstants.Text.SECONDARY, false);
+        Font font = Objects.requireNonNull(mc.font);
+        graphics.drawString(font, header, 0, y, UIConstants.Text.SECONDARY, false);
         y += lineHeight + 4;
 
         // Tool list (show only the first ones that fit)
@@ -103,7 +106,7 @@ public class ToolStatusPanel extends FloatingPanel {
             // Name and hotkey
             String text = "[" + tool.hotkey + "] " + tool.name;
             int textColor = tool.enabled ? UIConstants.Text.PRIMARY : UIConstants.Text.MUTED;
-            graphics.drawString(mc.font, text, dotSize + 4, y, textColor, false);
+            graphics.drawString(font, text, dotSize + 4, y, textColor, false);
 
             y += lineHeight;
             shown++;
@@ -111,7 +114,7 @@ public class ToolStatusPanel extends FloatingPanel {
     }
 
     @Override
-    public void renderContent3D(PoseStack poseStack, MultiBufferSource bufferSource, Font font,
+    public void renderContent3D(@Nonnull PoseStack poseStack, @Nonnull MultiBufferSource bufferSource, @Nonnull Font font,
                                  int contentWidth, int contentHeight, float alpha) {
         int y = 0;
         int lineHeight = 10;
@@ -139,8 +142,9 @@ public class ToolStatusPanel extends FloatingPanel {
     }
 
     @Override
+    @Nonnull
     public String getTitle() {
-        return "Tools (" + activeCount + ")";
+        return Objects.requireNonNull("Tools (" + activeCount + ")", "title");
     }
 
     // === Getters ===

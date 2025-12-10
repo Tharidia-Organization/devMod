@@ -8,7 +8,6 @@ import java.util.UUID;
  * Represents a single Endurance Quest instance for a specific mob type.
  * Each quest is a standalone challenge where the player fights waves of that mob.
  */
-@SuppressWarnings({"null", "unused"}) // Minecraft APIs lack null annotations
 public class EnduranceQuest {
 
     private final UUID questId;

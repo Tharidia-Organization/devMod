@@ -12,7 +12,6 @@ import java.util.Objects;
  * Payload sent from client to server for quest actions.
  * Handles: respawn choice, checkpoint choice, abandon quest.
  */
-@SuppressWarnings({"null", "unused"})
 public record QuestActionPayload(
     Action action
 ) implements CustomPacketPayload {
@@ -22,7 +21,7 @@ public record QuestActionPayload(
     );
 
     public static final StreamCodec<RegistryFriendlyByteBuf, QuestActionPayload> STREAM_CODEC = StreamCodec.composite(
-        ByteBufCodecs.VAR_INT.map(Action::fromId, Action::getId), QuestActionPayload::action,
+        Objects.requireNonNull(ByteBufCodecs.VAR_INT.map(i -> Action.fromId(Objects.requireNonNull(i)), Action::getId)), QuestActionPayload::action,
         QuestActionPayload::new
     );
 

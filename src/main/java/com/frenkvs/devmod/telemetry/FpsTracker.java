@@ -78,6 +78,14 @@ public class FpsTracker {
 
     private FpsTracker() {}
 
+    /**
+     * Gets the total frame count since session start.
+     * Used for tracking session length and frame history.
+     */
+    public int getFrameCount() {
+        return frameCount;
+    }
+
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
@@ -107,12 +115,12 @@ public class FpsTracker {
             lastFrameTime = System.nanoTime();
         }
 
-        // Calcola frame time
+        // Calculate frame time
         long currentTime = System.nanoTime();
         frameTimeMs = (currentTime - lastFrameTime) / 1_000_000f;
         lastFrameTime = currentTime;
 
-        // Media mobile frame time
+        // Moving average frame time
         avgFrameTimeMs = avgFrameTimeMs * 0.9f + frameTimeMs * 0.1f;
 
         frameCount++;

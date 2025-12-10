@@ -262,12 +262,15 @@ public class PerkSelectionScreen extends Screen {
             applyAlpha(perk.tierColor() | 0xFF000000, alpha * 0.8f));
         g.drawString(font, tierText, cardX + cardW - tierBadgeW - 3, textY, applyAlpha(COLOR_TEXT, alpha));
 
-        // Perk name
-        g.drawString(font, perk.name(), cardX + 10, textY, applyAlpha(COLOR_TEXT, alpha));
+        // Perk name (truncated to fit card width, leaving room for tier badge)
+        int maxNameWidth = cardW - tierBadgeW - 25; // Leave room for tier badge and padding
+        String perkName = truncateText(perk.name(), maxNameWidth);
+        g.drawString(font, perkName, cardX + 10, textY, applyAlpha(COLOR_TEXT, alpha));
         textY += 20;
 
-        // Category
-        g.drawString(font, perk.categoryName(), cardX + 10, textY, applyAlpha(perk.categoryColor() | 0xFF000000, alpha));
+        // Category (truncated to fit card width)
+        String categoryName = truncateText(perk.categoryName(), cardW - 20);
+        g.drawString(font, categoryName, cardX + 10, textY, applyAlpha(perk.categoryColor() | 0xFF000000, alpha));
         textY += 16;
 
         // Description (word wrap) - limit to MAX_DESCRIPTION_LINES
@@ -416,6 +419,20 @@ public class PerkSelectionScreen extends Screen {
             lines.add(current.toString());
         }
         return lines;
+    }
+
+    /**
+     * Truncate text to fit within maxWidth pixels, adding ellipsis if needed.
+     */
+    private String truncateText(String text, int maxWidth) {
+        if (font.width(text) <= maxWidth) return text;
+        String ellipsis = "...";
+        int minChars = Math.min(6, text.length());
+        String truncated = text;
+        while (font.width(truncated + ellipsis) > maxWidth && truncated.length() > minChars) {
+            truncated = truncated.substring(0, truncated.length() - 1);
+        }
+        return truncated + ellipsis;
     }
 
     private int applyAlpha(int color, float alpha) {

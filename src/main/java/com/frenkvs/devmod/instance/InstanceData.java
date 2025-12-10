@@ -387,8 +387,11 @@ public class InstanceData {
         data.state = InstanceState.valueOf((String) map.get("state"));
 
         if (map.containsKey("dimension")) {
-            ResourceLocation dimLoc = ResourceLocation.parse((String) map.get("dimension"));
-            data.dimensionKey = ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION, dimLoc);
+            String dim = Objects.requireNonNull((String) map.get("dimension"), "dimension");
+            ResourceLocation dimLoc = Objects.requireNonNull(ResourceLocation.parse(dim), "dimension location");
+            ResourceKey<? extends net.minecraft.core.Registry<Level>> dimensionRegistryKey =
+                Objects.requireNonNull(net.minecraft.core.registries.Registries.DIMENSION, "dimension registry key");
+            data.dimensionKey = ResourceKey.create(dimensionRegistryKey, dimLoc);
         }
 
         List<String> playerIds = (List<String>) map.get("players");
@@ -410,7 +413,8 @@ public class InstanceData {
         }
 
         if (map.containsKey("questMob")) {
-            data.questMobId = ResourceLocation.parse((String) map.get("questMob"));
+            String questMob = Objects.requireNonNull((String) map.get("questMob"), "questMob");
+            data.questMobId = ResourceLocation.parse(questMob);
             data.currentWave = ((Number) map.get("currentWave")).intValue();
             data.totalWaves = ((Number) map.get("totalWaves")).intValue();
             data.questStartTime = ((Number) map.get("questStartTime")).longValue();

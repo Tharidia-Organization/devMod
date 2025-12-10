@@ -25,7 +25,6 @@ import java.util.function.Consumer;
  * - Curse perks (negative effects for bonus rewards)
  * - Meta-progression unlocks
  */
-@SuppressWarnings({"null", "unused"}) // Minecraft APIs lack null annotations
 public class PerkSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(PerkSystem.class);
 
@@ -38,7 +37,6 @@ public class PerkSystem {
     private final Map<UUID, PerkSession> activeSessions = new ConcurrentHashMap<>();
 
     // Meta-progression: unlocked perks per player (persistent)
-    @SuppressWarnings("unused") // Reserved for future meta-progression feature
     private final Map<UUID, Set<String>> unlockedPerks = new ConcurrentHashMap<>();
 
     private final Random random = new Random();
@@ -191,9 +189,7 @@ public class PerkSystem {
      * Player's perk state during a quest.
      */
     public static class PerkSession {
-        @SuppressWarnings("unused") // Reserved for session identification
         private final UUID playerId;
-        @SuppressWarnings("unused") // Reserved for quest tracking
         private final UUID questId;
 
         // Acquired perks and their stack counts
@@ -301,6 +297,9 @@ public class PerkSystem {
         public void setPendingChoices(List<Perk> choices) { this.pendingChoices = choices; }
         public void clearPendingChoices() { pendingChoices.clear(); }
 
+        public UUID getPlayerId() { return playerId; }
+        public UUID getQuestId() { return questId; }
+
         public void addAppliedModifier(AttributeModifier modifier) {
             appliedModifiers.add(modifier);
         }
@@ -352,11 +351,11 @@ public class PerkSystem {
 
         registerPerk(new Perk("vitality", "Vitality", "+2 max hearts", PerkTier.UNCOMMON, PerkCategory.DEFENSE,
             true, 5, ctx -> {
-                var attr = ctx.player.getAttribute(Attributes.MAX_HEALTH);
+                var attr = ctx.player.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
                 if (attr != null) {
                     // Each stack uses a unique modifier ID so they don't conflict
                     // Only add the INCREMENTAL bonus (4.0 HP per new stack, not cumulative)
-                    ResourceLocation modId = ResourceLocation.fromNamespaceAndPath("devmod", "vitality_stack_" + ctx.stackCount);
+                    ResourceLocation modId = Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "vitality_stack_" + ctx.stackCount));
                     AttributeModifier mod = new AttributeModifier(
                         modId,
                         4.0, // Fixed per-stack bonus, not multiplied by stackCount
@@ -459,7 +458,7 @@ public class PerkSystem {
 
         registerPerk(new Perk("ultimate_curse", "Pact with Death", "Die in one hit, +300% rewards", PerkTier.LEGENDARY, PerkCategory.CURSE,
             false, 1, ctx -> {
-                var attr = ctx.player.getAttribute(Attributes.MAX_HEALTH);
+                var attr = ctx.player.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
                 if (attr != null) {
                     ctx.player.setHealth(1.0f);
                 }
@@ -480,7 +479,7 @@ public class PerkSystem {
             PerkTier.LEGENDARY, PerkCategory.DEFENSE, null, false, 1,
             Set.of(), Set.of(),
             ctx -> {
-                var attr = ctx.player.getAttribute(Attributes.MAX_HEALTH);
+                var attr = ctx.player.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
                 if (attr != null) {
                     float bonus = ctx.player.getMaxHealth() * 0.5f;
                     ctx.player.setHealth(ctx.player.getHealth() + bonus);
@@ -523,26 +522,26 @@ public class PerkSystem {
             // Remove applied attribute modifiers from all relevant attributes
             for (AttributeModifier mod : session.getAppliedModifiers()) {
                 // Try removing from MAX_HEALTH (vitality perk)
-                var healthAttr = player.getAttribute(Attributes.MAX_HEALTH);
+                var healthAttr = player.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
                 if (healthAttr != null) {
-                    healthAttr.removeModifier(mod);
+                    healthAttr.removeModifier(Objects.requireNonNull(mod));
                 }
                 // Try removing from other attributes that perks might modify
-                var speedAttr = player.getAttribute(Attributes.MOVEMENT_SPEED);
+                var speedAttr = player.getAttribute(Objects.requireNonNull(Attributes.MOVEMENT_SPEED));
                 if (speedAttr != null) {
-                    speedAttr.removeModifier(mod);
+                    speedAttr.removeModifier(Objects.requireNonNull(mod));
                 }
-                var attackSpeedAttr = player.getAttribute(Attributes.ATTACK_SPEED);
+                var attackSpeedAttr = player.getAttribute(Objects.requireNonNull(Attributes.ATTACK_SPEED));
                 if (attackSpeedAttr != null) {
-                    attackSpeedAttr.removeModifier(mod);
+                    attackSpeedAttr.removeModifier(Objects.requireNonNull(mod));
                 }
             }
 
             // Remove any perk-related potion effects that might still be active
-            player.removeEffect(MobEffects.REGENERATION);
-            player.removeEffect(MobEffects.MOVEMENT_SPEED);
-            player.removeEffect(MobEffects.DAMAGE_BOOST);
-            player.removeEffect(MobEffects.DAMAGE_RESISTANCE);
+            player.removeEffect(Objects.requireNonNull(MobEffects.REGENERATION));
+            player.removeEffect(Objects.requireNonNull(MobEffects.MOVEMENT_SPEED));
+            player.removeEffect(Objects.requireNonNull(MobEffects.DAMAGE_BOOST));
+            player.removeEffect(Objects.requireNonNull(MobEffects.DAMAGE_RESISTANCE));
 
             // Reset player health to max (after attribute cleanup) to avoid issues
             // with health being above new max health
@@ -551,10 +550,25 @@ public class PerkSystem {
                 player.setHealth(maxHealth);
             }
 
-            LOGGER.info("[PerkSystem] Session ended for player {} - {} perks acquired, all effects removed",
-                player.getName().getString(), session.getTotalPerksAcquired());
+            LOGGER.info("[PerkSystem] Session ended for player {} (quest {}) - {} perks acquired, all effects removed",
+                session.getPlayerId(), session.getQuestId(), session.getTotalPerksAcquired());
         }
         return session;
+    }
+
+    /**
+     * Check if a player has unlocked a specific perk.
+     */
+    public boolean hasUnlockedPerk(UUID playerId, String perkId) {
+        Set<String> perks = unlockedPerks.get(playerId);
+        return perks != null && perks.contains(perkId);
+    }
+
+    /**
+     * Get all unlocked perks for a player.
+     */
+    public Set<String> getUnlockedPerks(UUID playerId) {
+        return unlockedPerks.getOrDefault(playerId, Set.of());
     }
 
     // ========== Perk Selection ==========
@@ -712,7 +726,7 @@ public class PerkSystem {
         // Doom curse
         if (session.hasPerk("curse_doom")) {
             if (player.tickCount % 20 == 0) { // Every second
-                player.hurt(player.damageSources().magic(), 1.0f);
+                player.hurt(Objects.requireNonNull(player.damageSources().magic()), 1.0f);
             }
         }
 
@@ -781,7 +795,7 @@ public class PerkSystem {
         // Soul Drain
         if (session.hasPerk("soul_drain")) {
             player.getFoodData().eat(2, 0.5f);
-            player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 40, 0));
+            player.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.REGENERATION), 40, 0));
         }
     }
 

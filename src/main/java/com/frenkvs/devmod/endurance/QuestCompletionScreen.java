@@ -183,8 +183,9 @@ public class QuestCompletionScreen extends Screen {
         g.drawCenteredString(font, title, centerX, y, applyAlpha(COLOR_SUCCESS, alpha));
         y += 18;
 
-        // Quest name and wave info
-        g.drawCenteredString(font, data.questName(), centerX, y, applyAlpha(COLOR_TEXT, alpha));
+        // Quest name and wave info (truncated to fit panel width)
+        String questName = truncateText(data.questName(), PANEL_WIDTH - 40);
+        g.drawCenteredString(font, questName, centerX, y, applyAlpha(COLOR_TEXT, alpha));
         y += 14;
 
         String waveInfo = data.endlessMode()
@@ -303,6 +304,20 @@ public class QuestCompletionScreen extends Screen {
         int a = (int) (((color >> 24) & 0xFF) * alpha);
         if (a <= 0) a = (int) (255 * alpha);
         return (a << 24) | (color & 0x00FFFFFF);
+    }
+
+    /**
+     * Truncate text to fit within maxWidth pixels, adding ellipsis if needed.
+     */
+    private String truncateText(String text, int maxWidth) {
+        if (font.width(text) <= maxWidth) return text;
+        String ellipsis = "...";
+        int minChars = Math.min(6, text.length());
+        String truncated = text;
+        while (font.width(truncated + ellipsis) > maxWidth && truncated.length() > minChars) {
+            truncated = truncated.substring(0, truncated.length() - 1);
+        }
+        return truncated + ellipsis;
     }
 
     private void closeScreen() {

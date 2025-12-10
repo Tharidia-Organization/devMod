@@ -54,12 +54,50 @@ public class EnduranceQuestRegistry {
     }
 
     /**
+     * Difficulty presets that define how mob stats scale with players.
+     * Different mob types benefit from different scaling approaches.
+     */
+    public enum MobDifficultyPreset {
+        /** Many weak mobs - high count, low HP (silverfish, zombies, slimes) */
+        SWARM(1.5f, 0.7f, 0.8f, "Swarm", "Many weak enemies"),
+        /** Standard balanced scaling */
+        STANDARD(1.0f, 1.0f, 1.0f, "Standard", "Balanced difficulty"),
+        /** Few tanky mobs - low count, high HP (iron golems, wardens) */
+        TANK(0.5f, 2.0f, 0.7f, "Tank", "Few tough enemies"),
+        /** Fragile but deadly - medium count, low HP, high damage (creepers, phantoms) */
+        GLASS_CANNON(0.8f, 0.5f, 1.5f, "Glass Cannon", "Fragile but deadly"),
+        /** Single powerful enemy - very low count, very high HP (bosses) */
+        BOSS_STYLE(0.3f, 3.0f, 1.2f, "Boss Style", "Single powerful foe");
+
+        /** Multiplier for mob count scaling */
+        public final float countMultiplier;
+        /** Multiplier for mob HP scaling */
+        public final float hpMultiplier;
+        /** Multiplier for mob damage scaling */
+        public final float damageMultiplier;
+        /** Display name for UI */
+        public final String displayName;
+        /** Description for tooltips */
+        public final String description;
+
+        MobDifficultyPreset(float countMultiplier, float hpMultiplier, float damageMultiplier,
+                           String displayName, String description) {
+            this.countMultiplier = countMultiplier;
+            this.hpMultiplier = hpMultiplier;
+            this.damageMultiplier = damageMultiplier;
+            this.displayName = displayName;
+            this.description = description;
+        }
+    }
+
+    /**
      * Configuration for a mob's quest parameters.
      */
     public static class MobQuestConfig {
         public final ResourceLocation mobId;
         public final EntityType<?> entityType;
         public final MobTier tier;
+        public final MobDifficultyPreset difficultyPreset;
         public final String displayName;
         public final String namespace;
 
@@ -77,17 +115,32 @@ public class EnduranceQuestRegistry {
         public final int pointsPerKill;
         public final int bonusPointsForWaveClear;
 
+        // Base stats (estimated from entity type defaults)
+        public final float baseHealth;
+        public final float baseDamage;
+        public final float baseSpeed;
+
         public MobQuestConfig(ResourceLocation mobId, EntityType<?> entityType, MobTier tier) {
+            this(mobId, entityType, tier, determineDifficultyPreset(mobId, tier));
+        }
+
+        public MobQuestConfig(ResourceLocation mobId, EntityType<?> entityType, MobTier tier, MobDifficultyPreset preset) {
             this.mobId = mobId;
             this.entityType = entityType;
             this.tier = tier;
+            this.difficultyPreset = preset;
             this.namespace = mobId.getNamespace();
 
             // Generate display name from ID
             String path = mobId.getPath();
             this.displayName = Arrays.stream(path.split("_"))
-                .map(s -> s.substring(0, 1).toUpperCase() + s.substring(1))
+                .map(s -> s.isEmpty() ? s : s.substring(0, 1).toUpperCase() + s.substring(1))
                 .collect(Collectors.joining(" "));
+
+            // Estimate base stats from mob type
+            this.baseHealth = estimateBaseHealth(mobId, tier);
+            this.baseDamage = estimateBaseDamage(mobId, tier);
+            this.baseSpeed = estimateBaseSpeed(mobId, tier);
 
             // Configure based on tier
             switch (tier) {
@@ -165,6 +218,114 @@ public class EnduranceQuestRegistry {
         }
 
         /**
+         * Determine difficulty preset based on mob characteristics.
+         */
+        private static MobDifficultyPreset determineDifficultyPreset(ResourceLocation mobId, MobTier tier) {
+            String path = mobId.getPath().toLowerCase();
+
+            // Boss-style mobs
+            if (tier == MobTier.BOSS || path.contains("warden") || path.contains("elder_guardian")) {
+                return MobDifficultyPreset.BOSS_STYLE;
+            }
+
+            // Tank mobs
+            if (path.contains("golem") || path.contains("ravager") || path.contains("hoglin") ||
+                path.contains("zoglin") || path.contains("piglin_brute")) {
+                return MobDifficultyPreset.TANK;
+            }
+
+            // Glass cannon mobs
+            if (path.contains("creeper") || path.contains("phantom") || path.contains("vex") ||
+                path.contains("blaze") || path.contains("ghast")) {
+                return MobDifficultyPreset.GLASS_CANNON;
+            }
+
+            // Swarm mobs
+            if (path.contains("silverfish") || path.contains("slime") || path.contains("magma_cube") ||
+                path.contains("zombie") || path.contains("husk") || path.contains("drowned") ||
+                tier == MobTier.TRIVIAL) {
+                return MobDifficultyPreset.SWARM;
+            }
+
+            // Default
+            return MobDifficultyPreset.STANDARD;
+        }
+
+        /**
+         * Estimate base health from mob type.
+         */
+        private static float estimateBaseHealth(ResourceLocation mobId, MobTier tier) {
+            String path = mobId.getPath().toLowerCase();
+
+            // Known mob base health values
+            if (path.equals("wither")) return 300f;
+            if (path.equals("ender_dragon")) return 200f;
+            if (path.equals("warden")) return 500f;
+            if (path.equals("elder_guardian")) return 80f;
+            if (path.contains("golem")) return 100f;
+            if (path.contains("ravager")) return 100f;
+            if (path.contains("ghast")) return 10f;
+            if (path.contains("enderman")) return 40f;
+            if (path.contains("creeper")) return 20f;
+            if (path.contains("zombie") || path.contains("skeleton")) return 20f;
+            if (path.contains("spider")) return 16f;
+            if (path.contains("silverfish")) return 8f;
+            if (path.contains("slime")) return 16f;
+
+            // Default by tier
+            return switch (tier) {
+                case TRIVIAL -> 8f;
+                case EASY -> 20f;
+                case MEDIUM -> 24f;
+                case HARD -> 40f;
+                case ELITE -> 80f;
+                case BOSS -> 200f;
+            };
+        }
+
+        /**
+         * Estimate base damage from mob type.
+         */
+        private static float estimateBaseDamage(ResourceLocation mobId, MobTier tier) {
+            String path = mobId.getPath().toLowerCase();
+
+            // Known mob base damage values
+            if (path.equals("warden")) return 30f;
+            if (path.contains("ravager")) return 12f;
+            if (path.contains("golem")) return 15f;
+            if (path.contains("creeper")) return 43f; // Explosion
+            if (path.contains("enderman")) return 7f;
+            if (path.contains("zombie") || path.contains("skeleton")) return 3f;
+            if (path.contains("spider")) return 2f;
+
+            // Default by tier
+            return switch (tier) {
+                case TRIVIAL -> 1f;
+                case EASY -> 3f;
+                case MEDIUM -> 4f;
+                case HARD -> 6f;
+                case ELITE -> 10f;
+                case BOSS -> 15f;
+            };
+        }
+
+        /**
+         * Estimate base speed from mob type.
+         */
+        private static float estimateBaseSpeed(ResourceLocation mobId, MobTier tier) {
+            String path = mobId.getPath().toLowerCase();
+
+            if (path.contains("spider")) return 0.3f;
+            if (path.contains("enderman")) return 0.3f;
+            if (path.contains("wolf")) return 0.3f;
+            if (path.contains("phantom")) return 0.35f;
+            if (path.contains("golem")) return 0.15f;
+
+            // Default
+            return 0.23f;
+        }
+
+        /**
          * Calculate mob count for a specific wave (single player).
          */
         public int getMobCountForWave(int waveNumber) {
@@ -173,6 +334,7 @@ public class EnduranceQuestRegistry {
 
         /**
          * Calculate mob count for a specific wave with player scaling.
+         * Applies difficulty preset count multiplier.
          *
          * @param waveNumber Current wave number (1-based)
          * @param playerCount Number of players in the party
@@ -182,7 +344,38 @@ public class EnduranceQuestRegistry {
         public int getMobCountForWave(int waveNumber, int playerCount, QuestType questType) {
             int baseCount = (int)(baseCountPerWave + (waveNumber - 1) * countScalingPerWave);
             int capped = Math.min(baseCount, maxPerWave);
-            return DifficultyScaler.INSTANCE.scaleMobCount(capped, playerCount, questType);
+            // Apply difficulty preset multiplier
+            int presetAdjusted = (int) Math.ceil(capped * difficultyPreset.countMultiplier);
+            return DifficultyScaler.INSTANCE.scaleMobCount(presetAdjusted, playerCount, questType);
+        }
+
+        /**
+         * Get scaled health for this mob type.
+         * @param playerCount Number of players
+         * @param questType Quest type
+         * @return Scaled health value
+         */
+        public float getScaledHealth(int playerCount, QuestType questType) {
+            float scaled = DifficultyScaler.INSTANCE.scaleMobHealth(baseHealth, playerCount, questType);
+            return scaled * difficultyPreset.hpMultiplier;
+        }
+
+        /**
+         * Get scaled damage for this mob type.
+         * @param playerCount Number of players
+         * @return Scaled damage value
+         */
+        public float getScaledDamage(int playerCount) {
+            // Damage scales more gently
+            float playerScale = 1.0f + (playerCount - 1) * 0.05f;
+            return baseDamage * playerScale * difficultyPreset.damageMultiplier;
+        }
+
+        /**
+         * Get a summary string for UI display.
+         */
+        public String getStatsSummary() {
+            return String.format("HP: %.0f | DMG: %.0f | %s", baseHealth, baseDamage, difficultyPreset.displayName);
         }
     }
 

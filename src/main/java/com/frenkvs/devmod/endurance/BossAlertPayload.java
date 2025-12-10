@@ -13,7 +13,6 @@ import java.util.Objects;
  * Payload sent from server to client to alert about incoming boss wave.
  * Triggers visual + audio alert 3 seconds before boss spawn.
  */
-@SuppressWarnings({"null", "unused"})
 public record BossAlertPayload(long alertDurationMs, String bossType) implements CustomPacketPayload {
 
     public static final ResourceLocation ID = Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "boss_alert"));

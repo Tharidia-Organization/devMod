@@ -23,6 +23,8 @@ import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
+import java.util.Objects;
+
 /**
  * GameTests for DevMod critical features.
  *
@@ -273,7 +275,7 @@ public class DevModGameTests {
         );
 
         // Serialize to buffer
-        ByteBuf buffer = Unpooled.buffer();
+        ByteBuf buffer = Objects.requireNonNull(Unpooled.buffer(), "Buffer should not be null");
         UpdateMobStatsPayload.STREAM_CODEC.encode(buffer, original);
 
         // Deserialize from buffer
@@ -321,7 +323,7 @@ public class DevModGameTests {
         );
 
         // Serialize to buffer
-        ByteBuf buffer = Unpooled.buffer();
+        ByteBuf buffer = Objects.requireNonNull(Unpooled.buffer(), "Buffer should not be null");
         UpdateWeaponPayload.STREAM_CODEC.encode(buffer, original);
 
         // Deserialize from buffer
@@ -357,7 +359,7 @@ public class DevModGameTests {
             true, 1.5f, 1.0f, 0.75f, 0.0f, 0.0f, ""
         );
 
-        ByteBuf buffer = Unpooled.buffer();
+        ByteBuf buffer = Objects.requireNonNull(Unpooled.buffer(), "Buffer should not be null");
         UpdateWeaponPayload.STREAM_CODEC.encode(buffer, original);
         UpdateWeaponPayload decoded = UpdateWeaponPayload.STREAM_CODEC.decode(buffer);
 
@@ -386,7 +388,7 @@ public class DevModGameTests {
             1.0                 // Max knockback resist
         );
 
-        ByteBuf buffer = Unpooled.buffer();
+        ByteBuf buffer = Objects.requireNonNull(Unpooled.buffer(), "Buffer should not be null");
         UpdateMobStatsPayload.STREAM_CODEC.encode(buffer, original);
         UpdateMobStatsPayload decoded = UpdateMobStatsPayload.STREAM_CODEC.decode(buffer);
 
@@ -410,7 +412,8 @@ public class DevModGameTests {
     @GameTest(template = TEMPLATE_5X5, batch = "entities", timeoutTicks = 100)
     public static void bodyPartDetectionHeightBased(GameTestHelper helper) {
         BlockPos spawnPos = new BlockPos(2, 1, 2);
-        Zombie zombie = helper.spawn(EntityType.ZOMBIE, spawnPos);
+        Zombie zombie = Objects.requireNonNull(helper.spawn(Objects.requireNonNull(EntityType.ZOMBIE), spawnPos),
+            "Spawned zombie should not be null");
 
         helper.runAfterDelay(10, () -> {
             double feetY = zombie.getY();
@@ -452,7 +455,10 @@ public class DevModGameTests {
         // Retrieve and verify
         MobConfigManager.SavedStats retrieved = MobConfigManager.getGlobalStats(zombieType);
 
-        helper.assertTrue(retrieved != null, "Retrieved stats should not be null");
+        if (retrieved == null) {
+            helper.fail("Retrieved stats should not be null");
+            return;
+        }
         helper.assertTrue(Math.abs(retrieved.range() - 32.0) < EPSILON,
             "Follow range mismatch");
         helper.assertTrue(Math.abs(retrieved.damage() - 5.0) < EPSILON,
@@ -509,10 +515,10 @@ public class DevModGameTests {
         WeaponStats customStats = new WeaponStats();
         customStats.headMult = 3.0f;
         customStats.baseDamageBonus = 5.0f;
-        WeaponConfigManager.setGlobalStats(Items.DIAMOND_SWORD, customStats);
+        WeaponConfigManager.setGlobalStats(Objects.requireNonNull(Items.DIAMOND_SWORD), customStats);
 
         // Create item and get stats
-        ItemStack sword = new ItemStack(Items.DIAMOND_SWORD);
+        ItemStack sword = new ItemStack(Objects.requireNonNull(Items.DIAMOND_SWORD));
         WeaponStats retrieved = WeaponConfigManager.getStats(sword);
 
         helper.assertTrue(Math.abs(retrieved.headMult - 3.0f) < EPSILON,
@@ -521,7 +527,7 @@ public class DevModGameTests {
             "Global base damage bonus should be 5.0");
 
         // Cleanup
-        WeaponConfigManager.setGlobalStats(Items.DIAMOND_SWORD, new WeaponStats());
+        WeaponConfigManager.setGlobalStats(Objects.requireNonNull(Items.DIAMOND_SWORD), new WeaponStats());
 
         helper.succeed();
     }
@@ -535,10 +541,10 @@ public class DevModGameTests {
         // Set global stats for iron sword
         WeaponStats globalStats = new WeaponStats();
         globalStats.headMult = 2.0f;
-        WeaponConfigManager.setGlobalStats(Items.IRON_SWORD, globalStats);
+        WeaponConfigManager.setGlobalStats(Objects.requireNonNull(Items.IRON_SWORD), globalStats);
 
         // Create item with specific NBT stats (higher priority)
-        ItemStack sword = new ItemStack(Items.IRON_SWORD);
+        ItemStack sword = new ItemStack(Objects.requireNonNull(Items.IRON_SWORD));
         WeaponStats specificStats = new WeaponStats();
         specificStats.headMult = 4.0f;
         WeaponConfigManager.setSpecificStats(sword, specificStats);
@@ -550,7 +556,7 @@ public class DevModGameTests {
             "Specific NBT stats should override global: expected 4.0, got " + retrieved.headMult);
 
         // Cleanup
-        WeaponConfigManager.setGlobalStats(Items.IRON_SWORD, new WeaponStats());
+        WeaponConfigManager.setGlobalStats(Objects.requireNonNull(Items.IRON_SWORD), new WeaponStats());
 
         helper.succeed();
     }
@@ -565,7 +571,7 @@ public class DevModGameTests {
         WeaponConfigManager.clearAllGlobalStats();
 
         // 1. No config set - should return defaults
-        ItemStack goldenSword = new ItemStack(Items.GOLDEN_SWORD);
+        ItemStack goldenSword = new ItemStack(Objects.requireNonNull(Items.GOLDEN_SWORD));
         WeaponStats defaultStats = WeaponConfigManager.getStats(goldenSword);
         helper.assertTrue(Math.abs(defaultStats.headMult - 1.5f) < EPSILON,
             "Default head multiplier should be 1.5");
@@ -573,7 +579,7 @@ public class DevModGameTests {
         // 2. Set global config - should override defaults
         WeaponStats globalStats = new WeaponStats();
         globalStats.headMult = 2.5f;
-        WeaponConfigManager.setGlobalStats(Items.GOLDEN_SWORD, globalStats);
+        WeaponConfigManager.setGlobalStats(Objects.requireNonNull(Items.GOLDEN_SWORD), globalStats);
 
         WeaponStats afterGlobal = WeaponConfigManager.getStats(goldenSword);
         helper.assertTrue(Math.abs(afterGlobal.headMult - 2.5f) < EPSILON,
@@ -624,7 +630,8 @@ public class DevModGameTests {
 
         // Spawn a zombie for cache test
         BlockPos spawnPos = new BlockPos(2, 1, 2);
-        Zombie zombie = helper.spawn(EntityType.ZOMBIE, spawnPos);
+        Zombie zombie = Objects.requireNonNull(helper.spawn(Objects.requireNonNull(EntityType.ZOMBIE), spawnPos),
+            "Spawned zombie should not be null");
 
         helper.runAfterDelay(10, () -> {
             // Perform body part detection (should populate cache)

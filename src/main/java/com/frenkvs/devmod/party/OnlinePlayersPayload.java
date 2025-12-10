@@ -36,8 +36,8 @@ public record OnlinePlayersPayload(
 
             List<PlayerInfo> players = new ArrayList<>(count);
             for (int i = 0; i < count; i++) {
-                UUID playerId = buf.readUUID();
-                String playerName = buf.readUtf(MAX_NAME_LENGTH);
+                UUID playerId = Objects.requireNonNull(buf.readUUID());
+                String playerName = Objects.requireNonNull(buf.readUtf(MAX_NAME_LENGTH));
                 boolean inParty = buf.readBoolean();
                 boolean canInvite = buf.readBoolean();
                 players.add(new PlayerInfo(playerId, playerName, inParty, canInvite));
@@ -53,8 +53,8 @@ public record OnlinePlayersPayload(
             int written = 0;
             for (PlayerInfo player : players) {
                 if (written >= MAX_PLAYERS) break;
-                buf.writeUUID(player.playerId);
-                buf.writeUtf(player.playerName, MAX_NAME_LENGTH);
+                buf.writeUUID(Objects.requireNonNull(player.playerId));
+                buf.writeUtf(Objects.requireNonNull(player.playerName), MAX_NAME_LENGTH);
                 buf.writeBoolean(player.inParty);
                 buf.writeBoolean(player.canInvite);
                 written++;

@@ -14,7 +14,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
-import javax.annotation.Nullable;
+import java.util.Objects;
+import javax.annotation.Nonnull;
 
 /**
  * Unified HUD overlay for integrated test sessions.
@@ -41,8 +42,6 @@ public class IntegratedTestHud {
     private static final int TEXT_TITLE = 0xFF00FFFF;
     private static final int TEXT_NORMAL = 0xFFFFFFFF;
     private static final int TEXT_VALUE = 0xFF00FF00;
-    private static final int TEXT_WARNING = 0xFFFFFF00;
-    private static final int TEXT_DANGER = 0xFFFF4444;
     private static final int TEXT_MUTED = 0xFFAAAAAA;
     private static final int PROGRESS_BG = 0xFF333333;
     private static final int PROGRESS_FILL = 0xFF00DD88;
@@ -59,8 +58,8 @@ public class IntegratedTestHud {
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.CROSSHAIR,
-            LAYER_ID,
+            Objects.requireNonNull(VanillaGuiLayers.CROSSHAIR),
+            Objects.requireNonNull(LAYER_ID),
             IntegratedTestHud::render
         );
     }
@@ -76,7 +75,7 @@ public class IntegratedTestHud {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null || mc.options.hideGui) return;
 
-        Font font = mc.font;
+        Font font = Objects.requireNonNull(mc.font, "font");
         int screenHeight = graphics.guiHeight();
 
         // Position: Left side, vertically centered
@@ -84,7 +83,7 @@ public class IntegratedTestHud {
         int panelHeight = calculatePanelHeight(session);
         int panelY = (screenHeight - panelHeight) / 2;
 
-        renderPanel(graphics, font, panelX, panelY, panelHeight, session);
+        renderPanel(graphics, Objects.requireNonNull(font, "font"), panelX, panelY, panelHeight, session);
     }
 
     private static int calculatePanelHeight(IntegratedTestSession session) {
@@ -108,7 +107,7 @@ public class IntegratedTestHud {
         return height;
     }
 
-    private static void renderPanel(GuiGraphics graphics, Font font, int x, int y, int height,
+    private static void renderPanel(@Nonnull GuiGraphics graphics, @Nonnull Font font, int x, int y, int height,
                                      IntegratedTestSession session) {
         // Background
         graphics.fill(x, y, x + PANEL_WIDTH, y + height, PANEL_BG);
@@ -132,7 +131,7 @@ public class IntegratedTestHud {
 
         // Session type
         String typeName = session.getCurrentType() != null ?
-            session.getCurrentType().getDisplayName() : "Unknown";
+            Objects.requireNonNullElse(session.getCurrentType().getDisplayName(), "Unknown") : "Unknown";
         graphics.drawString(font, typeName, textX, textY, TEXT_NORMAL, false);
         textY += LINE_HEIGHT;
 
@@ -197,7 +196,7 @@ public class IntegratedTestHud {
             textY += 4;
 
             // Test name (truncated - keep at least 6 chars for readability)
-            String testName = linkedTest.getName();
+            String testName = Objects.requireNonNull(linkedTest.getName(), "linked test name");
             int maxTestNameWidth = PANEL_WIDTH - PANEL_PADDING * 2 - 10;
             if (font.width(testName) > maxTestNameWidth) {
                 String ellipsis = "...";
@@ -211,8 +210,11 @@ public class IntegratedTestHud {
             textY += LINE_HEIGHT;
 
             // Test status
-            String statusText = linkedTest.getStatus().getDisplayName();
-            int statusColor = linkedTest.getStatus().getColor();
+            var status = linkedTest.getStatus();
+            String statusText = status != null
+                ? Objects.requireNonNullElse(status.getDisplayName(), "Unknown")
+                : "Unknown";
+            int statusColor = status != null ? status.getColor() : TEXT_NORMAL;
             graphics.drawString(font, "  Status: " + statusText, textX, textY, statusColor, false);
             textY += LINE_HEIGHT;
         }

@@ -323,9 +323,10 @@ public class HazardTypeRegistry {
         if (source == null) return HazardType.UNKNOWN;
 
         // Extract source type string
-        ResourceLocation typeKey = source.type().msgId() != null ?
-            ResourceLocation.tryParse(source.type().msgId()) : null;
-        String sourceType = typeKey != null ? typeKey.toString() : source.getMsgId();
+        String msgId = source.type().msgId();
+        ResourceLocation typeKey = msgId != null ?
+            ResourceLocation.tryParse(Objects.requireNonNull(msgId)) : null;
+        String sourceType = typeKey != null ? Objects.requireNonNull(typeKey.toString()) : Objects.requireNonNull(source.getMsgId());
 
         return classifyByString(sourceType);
     }
@@ -372,9 +373,10 @@ public class HazardTypeRegistry {
     public String getTriggeredAchievement(DamageSource source) {
         if (source == null) return null;
 
-        ResourceLocation typeKey = source.type().msgId() != null ?
-            ResourceLocation.tryParse(source.type().msgId()) : null;
-        String sourceType = typeKey != null ? typeKey.toString() : source.getMsgId();
+        String msgId = source.type().msgId();
+        ResourceLocation typeKey = msgId != null ?
+            ResourceLocation.tryParse(Objects.requireNonNull(msgId)) : null;
+        String sourceType = typeKey != null ? Objects.requireNonNull(typeKey.toString()) : Objects.requireNonNull(source.getMsgId());
 
         for (HazardPattern pattern : registeredPatterns) {
             if (pattern.matches(sourceType) && pattern.triggerAchievement) {

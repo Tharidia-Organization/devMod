@@ -5,10 +5,12 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.annotation.Nonnull;
 
 public class HitHelper {
 
@@ -222,14 +224,16 @@ public class HitHelper {
         }
 
         // Attacker raycast with dynamic reach
-        Vec3 eye = attacker.getEyePosition();
-        Vec3 look = attacker.getViewVector(1.0F);
+        Vec3 eye = nn(attacker.getEyePosition(), "eye position");
+        Vec3 look = nn(attacker.getViewVector(1.0F), "view vector");
 
         // DYNAMIC REACH: Read from attacker's attribute (Better Combat, Epic Knights compatibility)
         double reach = 3.5; // Default fallback
         try {
             // Try to get entity reach attribute (added by NeoForge/combat mods)
-            var reachAttr = attacker.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ENTITY_INTERACTION_RANGE);
+            var reachAttr = attacker.getAttribute(Objects.requireNonNull(
+                net.minecraft.world.entity.ai.attributes.Attributes.ENTITY_INTERACTION_RANGE,
+                "reach attribute key"));
             if (reachAttr != null) {
                 double value = reachAttr.getValue();
                 // If value is > 0, use it; otherwise keep the default
@@ -241,7 +245,8 @@ public class HitHelper {
             // Fallback to default if attribute not available (vanilla mobs)
         }
 
-        Vec3 end = eye.add(look.scale(reach));
+        Vec3 scaledLook = nn(look.scale(reach), "scaled look");
+        Vec3 end = nn(eye.add(scaledLook), "ray end");
 
         // ===== HEAD (TOP 25%) =====
         // Maximum priority: headshot must take precedence
@@ -253,7 +258,7 @@ public class HitHelper {
 
         Optional<Vec3> headHit = headBox.clip(eye, end);
         if (headHit.isPresent()) {
-            return HitResult.of(BodyPart.HEAD, headHit.get());
+            return HitResult.of(BodyPart.HEAD, nn(headHit.get(), "head hit"));
         }
 
         // ===== TORSO + ARMS (MIDDLE 40%) =====
@@ -279,12 +284,12 @@ public class HitHelper {
 
         Optional<Vec3> leftArmHit = leftArmBox.clip(eye, end);
         if (leftArmHit.isPresent()) {
-            return HitResult.of(BodyPart.ARMS, leftArmHit.get());
+            return HitResult.of(BodyPart.ARMS, nn(leftArmHit.get(), "left arm hit"));
         }
 
         Optional<Vec3> rightArmHit = rightArmBox.clip(eye, end);
         if (rightArmHit.isPresent()) {
-            return HitResult.of(BodyPart.ARMS, rightArmHit.get());
+            return HitResult.of(BodyPart.ARMS, nn(rightArmHit.get(), "right arm hit"));
         }
 
         // TORSO: Center of the middle zone (excludes arms)
@@ -296,7 +301,7 @@ public class HitHelper {
 
         Optional<Vec3> bodyHit = bodyBox.clip(eye, end);
         if (bodyHit.isPresent()) {
-            return HitResult.of(BodyPart.BODY, bodyHit.get());
+            return HitResult.of(BodyPart.BODY, nn(bodyHit.get(), "body hit"));
         }
 
         // ===== LEGS (BOTTOM 35%) =====
@@ -308,17 +313,17 @@ public class HitHelper {
 
         Optional<Vec3> legsHit = legsBox.clip(eye, end);
         if (legsHit.isPresent()) {
-            return HitResult.of(BodyPart.LEGS, legsHit.get());
+            return HitResult.of(BodyPart.LEGS, nn(legsHit.get(), "legs hit"));
         }
 
         // ===== FALLBACK: Pitch-based (for edge cases) =====
         // If the raycast doesn't intersect any AABB (very rare),
         // use the old pitch-based system as safety
         // Calculate an approximate hit point at the target center
-        Vec3 fallbackHitPoint = center;
+        Vec3 fallbackHitPoint = nn(center, "target center");
         double pitch = attacker.getXRot();
-        if (pitch < -15) return HitResult.of(BodyPart.HEAD, fallbackHitPoint.add(0, height * 0.35, 0));
-        if (pitch > 25) return HitResult.of(BodyPart.LEGS, fallbackHitPoint.add(0, -height * 0.3, 0));
+        if (pitch < -15) return HitResult.of(BodyPart.HEAD, nn(fallbackHitPoint.add(0, height * 0.35, 0), "fallback head hit"));
+        if (pitch > 25) return HitResult.of(BodyPart.LEGS, nn(fallbackHitPoint.add(0, -height * 0.3, 0), "fallback legs hit"));
 
         // Default: torso
         return HitResult.of(BodyPart.BODY, fallbackHitPoint);
@@ -328,10 +333,11 @@ public class HitHelper {
      * Version with hit point for horizontal body.
      */
     private static HitResult rayTraceHorizontalBodyWithHitPoint(LivingEntity attacker, LivingEntity target, AABB mainBox, Vec3 center) {
-        Vec3 eye = attacker.getEyePosition();
-        Vec3 look = attacker.getViewVector(1.0F);
+        Vec3 eye = nn(attacker.getEyePosition(), "eye position");
+        Vec3 look = nn(attacker.getViewVector(1.0F), "view vector");
         double reach = getDynamicReach(attacker);
-        Vec3 end = eye.add(look.scale(reach));
+        Vec3 scaledLook = nn(look.scale(reach), "scaled look");
+        Vec3 end = nn(eye.add(scaledLook), "ray end");
 
         double width = mainBox.getXsize();
         double depth = mainBox.getZsize();
@@ -356,7 +362,7 @@ public class HitHelper {
 
         Optional<Vec3> frontHit = frontBox.clip(eye, end);
         if (frontHit.isPresent()) {
-            return HitResult.of(BodyPart.HEAD, frontHit.get());
+            return HitResult.of(BodyPart.HEAD, nn(frontHit.get(), "front hit"));
         }
 
         AABB backBox;
@@ -374,20 +380,21 @@ public class HitHelper {
 
         Optional<Vec3> backHit = backBox.clip(eye, end);
         if (backHit.isPresent()) {
-            return HitResult.of(BodyPart.LEGS, backHit.get());
+            return HitResult.of(BodyPart.LEGS, nn(backHit.get(), "back hit"));
         }
 
-        return HitResult.of(BodyPart.BODY, center);
+        return HitResult.of(BodyPart.BODY, nn(center, "body center"));
     }
 
     /**
      * Version with hit point for tall body.
      */
     private static HitResult rayTraceTallBodyWithHitPoint(LivingEntity attacker, LivingEntity target, AABB mainBox, Vec3 center, double height) {
-        Vec3 eye = attacker.getEyePosition();
-        Vec3 look = attacker.getViewVector(1.0F);
+        Vec3 eye = nn(attacker.getEyePosition(), "eye position");
+        Vec3 look = nn(attacker.getViewVector(1.0F), "view vector");
         double reach = getDynamicReach(attacker);
-        Vec3 end = eye.add(look.scale(reach));
+        Vec3 scaledLook = nn(look.scale(reach), "scaled look");
+        Vec3 end = nn(eye.add(scaledLook), "ray end");
 
         double width = mainBox.getXsize();
         double depth = mainBox.getZsize();
@@ -400,7 +407,7 @@ public class HitHelper {
 
         Optional<Vec3> headHit = headBox.clip(eye, end);
         if (headHit.isPresent()) {
-            return HitResult.of(BodyPart.HEAD, headHit.get());
+            return HitResult.of(BodyPart.HEAD, nn(headHit.get(), "head hit"));
         }
 
         double upperBodyTop = mainBox.maxY - headHeight;
@@ -412,7 +419,7 @@ public class HitHelper {
 
         Optional<Vec3> bodyHit = upperBodyBox.clip(eye, end);
         if (bodyHit.isPresent()) {
-            return HitResult.of(BodyPart.BODY, bodyHit.get());
+            return HitResult.of(BodyPart.BODY, nn(bodyHit.get(), "upper body hit"));
         }
 
         double lowerBodyTop = upperBodyTop - upperBodyHeight;
@@ -424,10 +431,10 @@ public class HitHelper {
 
         Optional<Vec3> armsHit = lowerBodyBox.clip(eye, end);
         if (armsHit.isPresent()) {
-            return HitResult.of(BodyPart.ARMS, armsHit.get());
+            return HitResult.of(BodyPart.ARMS, nn(armsHit.get(), "arms hit"));
         }
 
-        return HitResult.of(BodyPart.LEGS, center.add(0, -height * 0.3, 0));
+        return HitResult.of(BodyPart.LEGS, nn(center.add(0, -height * 0.3, 0), "legs hit"));
     }
 
     /**
@@ -436,7 +443,9 @@ public class HitHelper {
      */
     private static double getDynamicReach(LivingEntity attacker) {
         try {
-            var reachAttr = attacker.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ENTITY_INTERACTION_RANGE);
+            var reachAttr = attacker.getAttribute(Objects.requireNonNull(
+                net.minecraft.world.entity.ai.attributes.Attributes.ENTITY_INTERACTION_RANGE,
+                "reach attribute key"));
             if (reachAttr != null) {
                 double value = reachAttr.getValue();
                 // If value is > 0, use it; otherwise use the default
@@ -448,6 +457,14 @@ public class HitHelper {
             // Fallback
         }
         return 3.5; // Default reach
+    }
+
+    /**
+     * Helper to document non-null expectations for vectors sourced from Minecraft APIs.
+     */
+    @Nonnull
+    private static Vec3 nn(Vec3 value, String context) {
+        return Objects.requireNonNull(value, context);
     }
 
     /**

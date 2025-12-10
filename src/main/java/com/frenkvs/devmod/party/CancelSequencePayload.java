@@ -31,7 +31,7 @@ public record CancelSequencePayload(
 
         @Override
         public void encode(@Nonnull RegistryFriendlyByteBuf buf, @Nonnull CancelSequencePayload payload) {
-            buf.writeUUID(payload.partyId);
+            buf.writeUUID(Objects.requireNonNull(payload.partyId()));
         }
     };
 

@@ -16,7 +16,9 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Objects;
 
 /**
  * Panel that shows detailed information about an entity.
@@ -76,9 +78,10 @@ public class EntityInfoPanel extends FloatingPanel {
      * Updates the entity's cached data.
      */
     private void updateEntityData() {
-        if (tracker == null) return;
+        EntityTracker localTracker = this.tracker;
+        if (localTracker == null) return;
 
-        Entity target = tracker.getEntity();
+        Entity target = localTracker.getEntity();
         if (target == null) return;
 
         entityName = target.getName().getString();
@@ -89,11 +92,11 @@ public class EntityInfoPanel extends FloatingPanel {
             maxHealth = living.getMaxHealth();
 
             // Attributes
-            if (living.getAttribute(Attributes.ATTACK_DAMAGE) != null) {
-                attackDamage = (float) living.getAttributeValue(Attributes.ATTACK_DAMAGE);
+            if (living.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE)) != null) {
+                attackDamage = (float) living.getAttributeValue(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
             }
-            if (living.getAttribute(Attributes.ARMOR) != null) {
-                armor = (float) living.getAttributeValue(Attributes.ARMOR);
+            if (living.getAttribute(Objects.requireNonNull(Attributes.ARMOR)) != null) {
+                armor = (float) living.getAttributeValue(Objects.requireNonNull(Attributes.ARMOR));
             }
 
             effectCount = living.getActiveEffects().size();
@@ -112,11 +115,12 @@ public class EntityInfoPanel extends FloatingPanel {
         int lineHeight = 10;
 
         // Entity name
-        graphics.drawString(mc.font, entityName, 0, y, UIConstants.Text.PRIMARY, false);
+        Font font = Objects.requireNonNull(mc.font);
+        graphics.drawString(font, entityName, 0, y, UIConstants.Text.PRIMARY, false);
         y += lineHeight + 2;
 
         // Type
-        graphics.drawString(mc.font, entityType, 0, y, UIConstants.Text.MUTED, false);
+        graphics.drawString(font, entityType, 0, y, UIConstants.Text.MUTED, false);
         y += lineHeight + 4;
 
         // Health bar
@@ -133,23 +137,23 @@ public class EntityInfoPanel extends FloatingPanel {
 
         // Health text
         String healthText = String.format("%.1f / %.1f", currentHealth, maxHealth);
-        graphics.drawString(mc.font, healthText, 0, y, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, healthText, 0, y, UIConstants.Text.SECONDARY, false);
         y += lineHeight + 4;
 
         // Stats
         if (attackDamage > 0) {
-            graphics.drawString(mc.font, String.format("ATK: %.1f", attackDamage), 0, y, UIConstants.Status.ERROR, false);
+            graphics.drawString(font, String.format("ATK: %.1f", attackDamage), 0, y, UIConstants.Status.ERROR, false);
             y += lineHeight;
         }
 
         if (armor > 0) {
-            graphics.drawString(mc.font, String.format("DEF: %.1f", armor), 0, y, UIConstants.Status.INFO, false);
+            graphics.drawString(font, String.format("DEF: %.1f", armor), 0, y, UIConstants.Status.INFO, false);
             y += lineHeight;
         }
 
         // Effects count
         if (effectCount > 0) {
-            graphics.drawString(mc.font, String.format("Effects: %d", effectCount), 0, y, UIConstants.Status.WARNING, false);
+            graphics.drawString(font, String.format("Effects: %d", effectCount), 0, y, UIConstants.Status.WARNING, false);
         }
     }
 
@@ -163,49 +167,50 @@ public class EntityInfoPanel extends FloatingPanel {
     }
 
     @Override
-    public void renderContent3D(PoseStack poseStack, MultiBufferSource bufferSource, Font font,
+    public void renderContent3D(@Nonnull PoseStack poseStack, @Nonnull MultiBufferSource bufferSource, @Nonnull Font font,
                                  int contentWidth, int contentHeight, float alpha) {
         int y = 0;
         int lineHeight = 10;
 
         // Entity name
-        renderText3D(poseStack, bufferSource, font, entityName, 0, y, applyAlpha(UIConstants.Text.PRIMARY, alpha));
+        renderText3D(poseStack, bufferSource, font, Objects.requireNonNull(entityName, "entityName"), 0, y, applyAlpha(UIConstants.Text.PRIMARY, alpha));
         y += lineHeight + 2;
 
         // Type
-        renderText3D(poseStack, bufferSource, font, entityType, 0, y, applyAlpha(UIConstants.Text.MUTED, alpha));
+        renderText3D(poseStack, bufferSource, font, Objects.requireNonNull(entityType, "entityType"), 0, y, applyAlpha(UIConstants.Text.MUTED, alpha));
         y += lineHeight + 4;
 
         // Health (testo)
         float healthPercent = maxHealth > 0 ? currentHealth / maxHealth : 0;
-        String healthText = String.format("HP: %.0f/%.0f (%.0f%%)", currentHealth, maxHealth, healthPercent * 100);
+        String healthText = Objects.requireNonNull(String.format("HP: %.0f/%.0f (%.0f%%)", currentHealth, maxHealth, healthPercent * 100), "healthText");
         int healthColor = getHealthColor(healthPercent);
         renderText3D(poseStack, bufferSource, font, healthText, 0, y, applyAlpha(healthColor, alpha));
         y += lineHeight + 2;
 
         // Stats
         if (attackDamage > 0) {
-            String atkText = String.format("ATK: %.1f", attackDamage);
+            String atkText = Objects.requireNonNull(String.format("ATK: %.1f", attackDamage), "atkText");
             renderText3D(poseStack, bufferSource, font, atkText, 0, y, applyAlpha(UIConstants.Status.ERROR, alpha));
             y += lineHeight;
         }
 
         if (armor > 0) {
-            String defText = String.format("DEF: %.1f", armor);
+            String defText = Objects.requireNonNull(String.format("DEF: %.1f", armor), "defText");
             renderText3D(poseStack, bufferSource, font, defText, 0, y, applyAlpha(UIConstants.Status.INFO, alpha));
             y += lineHeight;
         }
 
         // Effects count
         if (effectCount > 0) {
-            String effectText = String.format("Effects: %d", effectCount);
+            String effectText = Objects.requireNonNull(String.format("Effects: %d", effectCount), "effectText");
             renderText3D(poseStack, bufferSource, font, effectText, 0, y, applyAlpha(UIConstants.Status.WARNING, alpha));
         }
     }
 
     @Override
+    @Nonnull
     public String getTitle() {
-        return entityName.isEmpty() ? "Entity Info" : entityName;
+        return entityName.isEmpty() ? "Entity Info" : Objects.requireNonNull(entityName, "entityName");
     }
 
     // === Getters per dati entity ===

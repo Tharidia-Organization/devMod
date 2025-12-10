@@ -11,6 +11,8 @@ import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
+import java.util.Objects;
+
 /**
  * L0 Boot Verification GameTests
  *
@@ -167,7 +169,8 @@ public class L0BootVerificationTests {
     @GameTest(template = TEMPLATE, batch = "l0_boot", required = true)
     public static void l0_06b_weaponConfigAccessible(GameTestHelper helper) {
         try {
-            net.minecraft.world.item.ItemStack sword = new net.minecraft.world.item.ItemStack(Items.DIAMOND_SWORD);
+            net.minecraft.world.item.ItemStack sword = new net.minecraft.world.item.ItemStack(
+                Objects.requireNonNull(Items.DIAMOND_SWORD));
             var stats = WeaponConfigManager.getStats(sword);
             helper.assertTrue(stats != null, "WeaponStats should not be null");
             DevMod.LOGGER.info("[L0-06b] PASS: WeaponConfigManager accessible");

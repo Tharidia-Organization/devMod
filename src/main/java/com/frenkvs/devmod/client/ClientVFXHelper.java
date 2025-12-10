@@ -90,7 +90,7 @@ public class ClientVFXHelper {
      */
     public static void addImpactVFX(Vec3 hitPoint, Vec3 slashDirection, ImpactData impactData) {
         // Trigger headshot flash effect if hit was to the head
-        if (impactData != null && impactData.bodyPart == BodyPart.HEAD) {
+        if (impactData != null && impactData.bodyPart == BodyPart.HEAD && isLocalAttacker(impactData)) {
             HeadshotFlashEffect.trigger();
         }
 
@@ -99,6 +99,16 @@ public class ClientVFXHelper {
         } else {
             Impact3DPanelManager.INSTANCE.spawnPanelFromImpact(impactData);
         }
+    }
+
+    /**
+     * Ensures visuals tied to the attacker run only for the local player.
+     */
+    private static boolean isLocalAttacker(ImpactData impactData) {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.player != null
+            && impactData.attackerUUID != null
+            && impactData.attackerUUID.equals(mc.player.getUUID());
     }
 
     /**

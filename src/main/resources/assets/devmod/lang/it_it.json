@@ -724,6 +724,8 @@
   "devmod.party.state.ready": "Pronto",
   "devmod.party.state.in_quest": "In Quest",
   "devmod.party.state.disbanded": "Sciolto",
+  "devmod.party.invalid_mob": "Tipo di mob non valido",
+  "devmod.party.already_in_party": "Sei già in un party",
 
   "_comment_party_invite": "Stringhe Popup Invito Party",
   "devmod.party.invite_title": "Invito Party",

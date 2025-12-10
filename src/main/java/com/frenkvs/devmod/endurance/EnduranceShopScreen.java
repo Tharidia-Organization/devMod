@@ -9,11 +9,12 @@ import net.minecraft.client.gui.screens.Screen;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.*;
+import java.util.Objects;
+import javax.annotation.Nonnull;
 
 /**
  * Shop screen for purchasing permanent upgrades with Endurance Tokens.
  */
-@SuppressWarnings({"NullableProblems", "null", "unused"}) // Font is always available when render() is called
 public class EnduranceShopScreen extends Screen {
 
     // Layout constants - using UIConstants for consistency
@@ -79,26 +80,26 @@ public class EnduranceShopScreen extends Screen {
         int catY = 50;
         for (RewardSystem.ShopCategory category : RewardSystem.ShopCategory.values()) {
             final RewardSystem.ShopCategory cat = category;
-            addRenderableWidget(Button.builder(I18n.ui("shop.category." + category.name().toLowerCase()), btn -> selectCategory(cat))
+            addRenderableWidget(Objects.requireNonNull(Button.builder(I18n.ui("shop.category." + category.name().toLowerCase()), btn -> selectCategory(cat))
                 .bounds(UIConstants.Spacing.PANEL_MARGIN, catY,
                         CATEGORY_WIDTH - UIConstants.Spacing.PANEL_MARGIN * 2, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
-                .build());
+                .build()));
             catY += UIConstants.Size.BUTTON_HEIGHT_PROMINENT + UIConstants.Spacing.GAP_SMALL;
         }
 
         // Back button (secondary action)
-        addRenderableWidget(Button.builder(I18n.ui("back"), btn -> goBack())
+        addRenderableWidget(Objects.requireNonNull(Button.builder(I18n.ui("back"), btn -> goBack())
             .bounds(UIConstants.Spacing.PANEL_MARGIN, height - 40,
                     UIConstants.Size.BUTTON_WIDTH_SMALL - 20, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
             .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.tooltip.back")))
-            .build());
+            .build()));
 
         // Purchase button (primary CTA)
-        addRenderableWidget(Button.builder(I18n.ui("purchase"), btn -> purchaseSelected())
+        addRenderableWidget(Objects.requireNonNull(Button.builder(I18n.ui("purchase"), btn -> purchaseSelected())
             .bounds(width - UIConstants.Size.BUTTON_WIDTH_SMALL - 10, height - 40,
                     UIConstants.Size.BUTTON_WIDTH_SMALL, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
             .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.tooltip.purchase")))
-            .build());
+            .build()));
     }
 
     private void loadPlayerData() {
@@ -138,7 +139,7 @@ public class EnduranceShopScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Background
         graphics.fill(0, 0, width, height, COLOR_BG);
 
@@ -161,24 +162,24 @@ public class EnduranceShopScreen extends Screen {
 
     private void renderHeader(GuiGraphics graphics) {
         // Title
-        graphics.drawCenteredString(font, I18n.translate("devmod.endurance.shop_title").getString(), width / 2, 10, COLOR_ACCENT);
+        graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.endurance.shop_title").getString()), width / 2, 10, COLOR_ACCENT);
 
         // Currency display
         int currencyY = 10;
         int currencyX = width - 200;
 
         // Tokens
-        graphics.drawString(font, I18n.translate("devmod.reward.tokens").getString() + ": " + playerTokens,
+        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.reward.tokens").getString()) + ": " + playerTokens,
             currencyX, currencyY, CURRENCY_COLORS.get(RewardSystem.Currency.TOKENS));
         currencyY += 12;
 
         // Prestige
-        graphics.drawString(font, I18n.translate("devmod.reward.prestige").getString() + ": " + playerPrestige,
+        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.reward.prestige").getString()) + ": " + playerPrestige,
             currencyX, currencyY, CURRENCY_COLORS.get(RewardSystem.Currency.PRESTIGE));
         currencyY += 12;
 
         // Blood Gems
-        graphics.drawString(font, I18n.translate("devmod.reward.blood_gems").getString() + ": " + playerBloodGems,
+        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.reward.blood_gems").getString()) + ": " + playerBloodGems,
             currencyX, currencyY, CURRENCY_COLORS.get(RewardSystem.Currency.BLOOD_GEMS));
     }
 
@@ -186,7 +187,7 @@ public class EnduranceShopScreen extends Screen {
         graphics.fill(0, 40, CATEGORY_WIDTH, height - 50, COLOR_CATEGORY_BG);
 
         // Category header
-        graphics.drawCenteredString(font, I18n.translate("devmod.ui.categories").getString(), CATEGORY_WIDTH / 2, 45, COLOR_TEXT_DIM);
+        graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.ui.categories").getString()), CATEGORY_WIDTH / 2, 45, COLOR_TEXT_DIM);
     }
 
     private void renderItemList(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -242,30 +243,32 @@ public class EnduranceShopScreen extends Screen {
         int catColor = CATEGORY_COLORS.get(item.category);
         graphics.fill(x, y, x + 4, y + ITEM_HEIGHT, catColor);
 
-        // Item name
+        // Item name (truncated to prevent overflow)
         int nameColor = maxedOut ? COLOR_TEXT_DIM : COLOR_TEXT;
-        graphics.drawString(font, item.displayName, x + 10, y + 5, nameColor);
+        String displayName = truncateText(item.displayName, width - 100); // Leave room for owned count
+        graphics.drawString(Objects.requireNonNull(font), displayName, x + 10, y + 5, nameColor);
 
-        // Description
-        graphics.drawString(font, item.description, x + 10, y + 18, COLOR_TEXT_DIM);
+        // Description (truncated to prevent overflow)
+        String description = truncateText(item.description, width - 20);
+        graphics.drawString(Objects.requireNonNull(font), description, x + 10, y + 18, COLOR_TEXT_DIM);
 
         // Price
         int currencyColor = CURRENCY_COLORS.get(item.currency);
         String priceText = item.price + " " + item.currency.displayName;
         int priceColor = canAfford ? currencyColor : COLOR_ERROR;
-        graphics.drawString(font, priceText, x + 10, y + 35, priceColor);
+        graphics.drawString(Objects.requireNonNull(font), priceText, x + 10, y + 35, priceColor);
 
         // Owned count
-        String ownedText = I18n.translate("devmod.ui.owned").getString() + ": " + owned + "/" + item.maxPurchases;
+        String ownedText = Objects.requireNonNull(I18n.translate("devmod.ui.owned").getString()) + ": " + owned + "/" + item.maxPurchases;
         int ownedColor = maxedOut ? COLOR_SUCCESS : COLOR_TEXT_DIM;
-        graphics.drawString(font, ownedText, x + width - font.width(ownedText) - 10, y + 5, ownedColor);
+        graphics.drawString(Objects.requireNonNull(font), ownedText, x + width - font.width(ownedText) - 10, y + 5, ownedColor);
 
         // Status indicator
         if (maxedOut) {
-            graphics.drawString(font, I18n.translate("devmod.ui.max").getString(), x + width - 30, y + ITEM_HEIGHT - 15, COLOR_SUCCESS);
+            graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.ui.max").getString()), x + width - 30, y + ITEM_HEIGHT - 15, COLOR_SUCCESS);
         } else if (!canAfford) {
-            String cantAfford = I18n.translate("devmod.reward.cannot_afford").getString();
-            graphics.drawString(font, cantAfford, x + width - font.width(cantAfford) - 10, y + ITEM_HEIGHT - 15, COLOR_ERROR);
+            String cantAfford = Objects.requireNonNull(I18n.translate("devmod.reward.cannot_afford").getString());
+            graphics.drawString(Objects.requireNonNull(font), cantAfford, x + width - font.width(cantAfford) - 10, y + ITEM_HEIGHT - 15, COLOR_ERROR);
         }
     }
 
@@ -280,12 +283,12 @@ public class EnduranceShopScreen extends Screen {
         int y = panelY + 10;
 
         // Item name
-        graphics.drawCenteredString(font, selectedItem.displayName, panelX + panelWidth / 2, y, COLOR_TEXT);
+        graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(selectedItem.displayName), panelX + panelWidth / 2, y, COLOR_TEXT);
         y += 20;
 
         // Category
         int catColor = CATEGORY_COLORS.get(selectedItem.category);
-        graphics.drawCenteredString(font, selectedItem.category.displayName, panelX + panelWidth / 2, y, catColor);
+        graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(selectedItem.category.displayName), panelX + panelWidth / 2, y, catColor);
         y += 25;
 
         // Divider
@@ -297,24 +300,24 @@ public class EnduranceShopScreen extends Screen {
         int maxWidth = panelWidth - 20;
         List<String> lines = wrapText(desc, maxWidth);
         for (String line : lines) {
-            graphics.drawString(font, line, panelX + 10, y, COLOR_TEXT_DIM);
+            graphics.drawString(Objects.requireNonNull(font), line, panelX + 10, y, COLOR_TEXT_DIM);
             y += 11;
         }
         y += 10;
 
         // Price details
-        graphics.drawString(font, I18n.translate("devmod.ui.price").getString() + ":", panelX + 10, y, COLOR_ACCENT);
+        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.ui.price").getString()) + ":", panelX + 10, y, COLOR_ACCENT);
         y += 12;
         int currencyColor = CURRENCY_COLORS.get(selectedItem.currency);
-        graphics.drawString(font, "  " + selectedItem.price + " " + selectedItem.currency.displayName,
+        graphics.drawString(Objects.requireNonNull(font), "  " + selectedItem.price + " " + selectedItem.currency.displayName,
             panelX + 10, y, currencyColor);
         y += 20;
 
         // Purchase info
         int owned = playerPurchases.getOrDefault(selectedItem.id, 0);
-        graphics.drawString(font, I18n.translate("devmod.shop.purchases").getString() + ":", panelX + 10, y, COLOR_ACCENT);
+        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.shop.purchases").getString()) + ":", panelX + 10, y, COLOR_ACCENT);
         y += 12;
-        graphics.drawString(font, "  " + owned + " / " + selectedItem.maxPurchases,
+        graphics.drawString(Objects.requireNonNull(font), "  " + owned + " / " + selectedItem.maxPurchases,
             panelX + 10, y, owned >= selectedItem.maxPurchases ? COLOR_SUCCESS : COLOR_TEXT_DIM);
     }
 
@@ -325,7 +328,7 @@ public class EnduranceShopScreen extends Screen {
 
         for (String word : words) {
             String testLine = currentLine.isEmpty() ? word : currentLine + " " + word;
-            if (font.width(testLine) > maxWidth) {
+            if (Objects.requireNonNull(font).width(Objects.requireNonNull(testLine)) > maxWidth) {
                 if (!currentLine.isEmpty()) {
                     lines.add(currentLine.toString());
                     currentLine = new StringBuilder(word);
@@ -341,6 +344,20 @@ public class EnduranceShopScreen extends Screen {
         }
 
         return lines;
+    }
+
+    /**
+     * Truncate text to fit within maxWidth pixels, adding ellipsis if needed.
+     */
+    private String truncateText(String text, int maxWidth) {
+        if (Objects.requireNonNull(font).width(Objects.requireNonNull(text)) <= maxWidth) return text;
+        String ellipsis = "...";
+        int minChars = Math.min(6, text.length());
+        String truncated = text;
+        while (Objects.requireNonNull(font).width(truncated + ellipsis) > maxWidth && truncated.length() > minChars) {
+            truncated = truncated.substring(0, truncated.length() - 1);
+        }
+        return truncated + ellipsis;
     }
 
     private boolean canAfford(RewardSystem.ShopItem item) {

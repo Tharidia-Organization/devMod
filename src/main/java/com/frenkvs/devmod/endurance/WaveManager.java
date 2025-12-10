@@ -21,6 +21,7 @@ import java.util.*;
 /**
  * Manages wave spawning, mob buffs, and wave progression for Endurance Quests.
  */
+@SuppressWarnings({"null"}) // Minecraft APIs lack null annotations
 public class WaveManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(WaveManager.class);
 
@@ -204,6 +205,7 @@ public class WaveManager {
      * Spawn mobs for the current wave.
      * Verifies each spawn and logs failures for debugging.
      */
+    @SuppressWarnings("deprecation")
     private void spawnWaveMobs(WaveState waveState, ArenaManager.Arena arena) {
         ServerLevel level = arena.getLevel();
         EnduranceQuestRegistry.MobQuestConfig mobConfig = waveState.quest.getMobConfig();
@@ -242,8 +244,7 @@ public class WaveManager {
                 }
 
                 // Finalize spawn
-                @SuppressWarnings("deprecation")
-                var ignored = mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos),
+                mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos),
                     MobSpawnType.MOB_SUMMONED, null);
 
                 // Tag mob as quest mob BEFORE adding to world (so event handlers can see it)
@@ -331,26 +332,49 @@ public class WaveManager {
     }
 
     /**
-     * Apply multiplayer HP scaling to a mob based on player count and quest type.
-     * Uses DifficultyScaler for consistent scaling across the system.
+     * Apply HP and damage scaling based on player count, quest type, AND mob difficulty preset.
+     * This ensures the spawned mobs match what the UI preview shows.
      */
     private void applyMultiplayerHPScaling(Mob mob, WaveState waveState) {
-        // Only apply scaling in multiplayer
-        if (waveState.getPlayerCount() <= 1) {
-            return;
-        }
+        EnduranceQuestRegistry.MobQuestConfig mobConfig = waveState.quest.getMobConfig();
+        int playerCount = waveState.getPlayerCount();
+        QuestType questType = waveState.getQuestType();
 
+        // Apply HP scaling using MobQuestConfig (includes difficultyPreset.hpMultiplier)
         var healthAttr = mob.getAttribute(Attributes.MAX_HEALTH);
         if (healthAttr != null) {
             float baseHP = (float) healthAttr.getBaseValue();
-            float scaledHP = DifficultyScaler.INSTANCE.scaleMobHealth(
-                baseHP, waveState.getPlayerCount(), waveState.getQuestType());
+            // Use mobConfig.getScaledHealth() which applies preset multiplier
+            float scaledHP = mobConfig.getScaledHealth(playerCount, questType);
+            // If mob has different base HP than estimated, scale proportionally
+            if (Math.abs(baseHP - mobConfig.baseHealth) > 0.1f && mobConfig.baseHealth > 0) {
+                float ratio = baseHP / mobConfig.baseHealth;
+                scaledHP = scaledHP * ratio;
+            }
 
             healthAttr.setBaseValue(scaledHP);
             mob.setHealth(mob.getMaxHealth());
 
-            LOGGER.debug("[EnduranceQuest] Mob HP scaled: {} -> {} (players={}, type={})",
-                baseHP, scaledHP, waveState.getPlayerCount(), waveState.getQuestType());
+            LOGGER.debug("[EnduranceQuest] Mob HP scaled: {} -> {} (players={}, preset={}, type={})",
+                baseHP, scaledHP, playerCount, mobConfig.difficultyPreset.displayName, questType);
+        }
+
+        // Apply damage scaling using MobQuestConfig (includes difficultyPreset.damageMultiplier)
+        // Note: Apply preset multiplier even in single player for consistency with UI preview
+        var attackAttr = mob.getAttribute(Attributes.ATTACK_DAMAGE);
+        if (attackAttr != null) {
+            float baseDamage = (float) attackAttr.getBaseValue();
+            float scaledDamage = mobConfig.getScaledDamage(playerCount);
+            // Proportional scaling for different base damages
+            if (Math.abs(baseDamage - mobConfig.baseDamage) > 0.1f && mobConfig.baseDamage > 0) {
+                float ratio = baseDamage / mobConfig.baseDamage;
+                scaledDamage = scaledDamage * ratio;
+            }
+
+            attackAttr.setBaseValue(scaledDamage);
+
+            LOGGER.debug("[EnduranceQuest] Mob DMG scaled: {} -> {} (players={}, preset={})",
+                baseDamage, scaledDamage, playerCount, mobConfig.difficultyPreset.displayName);
         }
     }
 

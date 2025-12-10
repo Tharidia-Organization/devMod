@@ -31,7 +31,7 @@ public record ArrivalConfirmPayload(
 
         @Override
         public void encode(@Nonnull RegistryFriendlyByteBuf buf, @Nonnull ArrivalConfirmPayload payload) {
-            buf.writeUUID(payload.partyId);
+            buf.writeUUID(Objects.requireNonNull(payload.partyId, "partyId"));
         }
     };
 

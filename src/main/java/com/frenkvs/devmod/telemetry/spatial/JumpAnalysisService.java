@@ -8,10 +8,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
@@ -98,6 +98,11 @@ public class JumpAnalysisService {
 
         // Update state for next tick
         state.wasOnGround = onGround;
+        // Check if player teleported (moved more than 10 blocks in one tick)
+        Vec3 lastPos = state.getLastPos();
+        if (lastPos != null && currentPos.distanceTo(Objects.requireNonNull(lastPos)) > 10.0) {
+            state.isJumping = false; // Cancel any active jump tracking on teleport
+        }
         state.lastPos = currentPos;
     }
 
@@ -105,8 +110,8 @@ public class JumpAnalysisService {
      * Create a jump record from current state.
      */
     private JumpRecord createJumpRecord(ServerPlayer player, ServerLevel level, JumpState state, Vec3 endPos, boolean landed) {
-        BlockPos startBlock = BlockPos.containing(state.jumpStartPos);
-        BlockPos endBlock = BlockPos.containing(endPos);
+        BlockPos startBlock = BlockPos.containing(Objects.requireNonNull(state.jumpStartPos));
+        BlockPos endBlock = BlockPos.containing(Objects.requireNonNull(endPos));
         String roomId = RoomService.INSTANCE.resolveRoom(level, startBlock);
 
         double horizontalDistance = Math.sqrt(
@@ -155,11 +160,11 @@ public class JumpAnalysisService {
         if (record.failedJump) analysis.failedJumps++;
 
         // Track direction distribution
-        analysis.directionCounts.merge(record.direction, 1, Integer::sum);
+        analysis.directionCounts.merge(record.direction, 1, (a, b) -> a + b);
 
         // Track difficulty hotspots
         if (record.failedJump) {
-            analysis.failureHotspots.merge(record.startPos, 1, Integer::sum);
+            analysis.failureHotspots.merge(record.startPos, 1, (a, b) -> a + b);
         }
     }
 
@@ -306,6 +311,13 @@ public class JumpAnalysisService {
         double maxJumpHeight = 0;
         String jumpDirection = "UNKNOWN";
         Vec3 lastPos = Vec3.ZERO;
+
+        /**
+         * Gets the last recorded position for tracking jump patterns.
+         */
+        public Vec3 getLastPos() {
+            return lastPos;
+        }
     }
 
     /**

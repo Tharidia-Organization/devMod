@@ -182,14 +182,13 @@ public class DeferredEntityProcessor {
         setAttribute(mob, Attributes.ARMOR, stats.armor());
 
         // Special handling for health
-        AttributeInstance hpAttr = mob.getAttribute(Attributes.MAX_HEALTH);
+        AttributeInstance hpAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
         if (hpAttr != null && hpAttr.getBaseValue() != stats.maxHealth()) {
             hpAttr.setBaseValue(stats.maxHealth());
             mob.setHealth(mob.getMaxHealth());
         }
     }
 
-    @SuppressWarnings("null")
     private void setAttribute(Mob mob, net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute> attr, double val) {
         AttributeInstance instance = mob.getAttribute(Objects.requireNonNull(attr));
         if (instance != null) {

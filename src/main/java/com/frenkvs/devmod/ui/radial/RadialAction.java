@@ -56,6 +56,23 @@ public abstract class RadialAction {
         return "●";
     }
 
+    /**
+     * Check if this action navigates to a subcategory.
+     * Override in subcategory actions.
+     */
+    public boolean isSubcategoryAction() {
+        return false;
+    }
+
+    /**
+     * Get the subcategory this action navigates to.
+     * Returns null unless this is a subcategory action.
+     */
+    @Nullable
+    public RadialCategory getSubcategory() {
+        return null;
+    }
+
     // ============================================================
     // Factory methods for common action types
     // ============================================================
@@ -444,16 +461,13 @@ public abstract class RadialAction {
             return emoji;
         }
 
-        /** Returns the subcategory for navigation. Used by menu screen. */
+        @Override
         public RadialCategory getSubcategory() {
             return subcategory;
         }
 
-        /**
-         * Check if this action navigates to a subcategory.
-         * Used by menu screen to determine navigation behavior.
-         */
-        public boolean isSubcategory() {
+        @Override
+        public boolean isSubcategoryAction() {
             return true;
         }
     }

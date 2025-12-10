@@ -47,6 +47,10 @@ public class VisualizersPage implements SettingsPage {
     private int sliderContentX, sliderWidth;
     private int viewDistSliderX, viewDistSliderWidth;
 
+    // Slider pulse animations (0-1, decays over time)
+    private float lightSliderPulse = 0f;
+    private float viewDistSliderPulse = 0f;
+
     @Override
     public SettingsCategory getCategory() {
         return SettingsCategory.VISUALIZERS;
@@ -65,6 +69,10 @@ public class VisualizersPage implements SettingsPage {
 
     @Override
     public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+        // Decay slider pulse animations
+        if (lightSliderPulse > 0) lightSliderPulse = Math.max(0, lightSliderPulse - 0.05f);
+        if (viewDistSliderPulse > 0) viewDistSliderPulse = Math.max(0, viewDistSliderPulse - 0.05f);
+
         // Store dimensions for scroll calculations
         lastContentY = y;
         lastContentHeight = height;
@@ -103,7 +111,7 @@ public class VisualizersPage implements SettingsPage {
         this.sliderWidth = Math.max(60, Math.min(effectiveWidth - labelWidth - buttonsWidth, 200));
         this.sliderContentX = sliderX;
         renderSlider(graphics, sliderX, currentY + 2, this.sliderWidth, 12,
-                (lightLevelRadius - 4) / 28.0f, mouseX, mouseY);
+                (lightLevelRadius - 4) / 28.0f, mouseX, mouseY, lightSliderPulse);
 
         // [-] [+] buttons - positioned after slider with proper spacing
         int minusBtnX = sliderX + sliderWidth + 8;
@@ -198,7 +206,7 @@ public class VisualizersPage implements SettingsPage {
         this.viewDistSliderX = vdSliderX;
         float vdPercentage = (float) (viewDistance - SettingsData.VisualizerSettings.MIN_RENDER_DISTANCE) /
                              (SettingsData.VisualizerSettings.MAX_RENDER_DISTANCE - SettingsData.VisualizerSettings.MIN_RENDER_DISTANCE);
-        renderSlider(graphics, vdSliderX, currentY + 2, this.viewDistSliderWidth, 12, vdPercentage, mouseX, mouseY);
+        renderSlider(graphics, vdSliderX, currentY + 2, this.viewDistSliderWidth, 12, vdPercentage, mouseX, mouseY, viewDistSliderPulse);
 
         // [-] [+] buttons for view distance - positioned after slider with proper spacing
         int vdMinusBtnX = vdSliderX + viewDistSliderWidth + 8;
@@ -315,7 +323,7 @@ public class VisualizersPage implements SettingsPage {
     }
 
     private void renderSlider(GuiGraphics graphics, int x, int y, int width, int height,
-                               float value, int mouseX, int mouseY) {
+                               float value, int mouseX, int mouseY, float pulseAnimation) {
         // Background track
         graphics.fill(x, y + height / 2 - 2, x + width, y + height / 2 + 2, UIConstants.Background.INPUT);
 
@@ -325,6 +333,17 @@ public class VisualizersPage implements SettingsPage {
 
         // Handle
         int handleX = x + fillWidth - 4;
+        boolean hovered = isMouseOver(mouseX, mouseY, x, y, width, height);
+
+        // Pulse animation effect (expands glow when value changes)
+        int pulseExpand = (int) (pulseAnimation * 4);
+        if (pulseAnimation > 0 || hovered) {
+            int glowAlpha = 60 + (int) (pulseAnimation * 100);
+            graphics.fill(handleX - 2 - pulseExpand, y - pulseExpand,
+                handleX + 10 + pulseExpand, y + height + pulseExpand,
+                UIConstants.setAlpha(UIConstants.Border.ACCENT, glowAlpha));
+        }
+
         graphics.fill(handleX, y, handleX + 8, y + height, UIConstants.Border.DEFAULT);
     }
 
@@ -388,11 +407,13 @@ public class VisualizersPage implements SettingsPage {
         if (isMouseOver((int) mouseX, (int) mouseY, minusBtnX, y, 20, 16)) {
             lightLevelRadius = Math.max(4, lightLevelRadius - 4);
             LightLevelOverlay.INSTANCE.setRadius(lightLevelRadius);
+            lightSliderPulse = 1.0f;
             return true;
         }
         if (isMouseOver((int) mouseX, (int) mouseY, plusBtnX, y, 20, 16)) {
             lightLevelRadius = Math.min(32, lightLevelRadius + 4);
             LightLevelOverlay.INSTANCE.setRadius(lightLevelRadius);
+            lightSliderPulse = 1.0f;
             return true;
         }
         y += ROW_HEIGHT;
@@ -472,6 +493,7 @@ public class VisualizersPage implements SettingsPage {
             SettingsManager.INSTANCE.getSettings().visualizers.setRenderDistance(viewDistance);
             SettingsManager.INSTANCE.markDirty();
             SettingsManager.INSTANCE.save();
+            viewDistSliderPulse = 1.0f;
             return true;
         }
 
@@ -481,6 +503,7 @@ public class VisualizersPage implements SettingsPage {
             SettingsManager.INSTANCE.getSettings().visualizers.setRenderDistance(viewDistance);
             SettingsManager.INSTANCE.markDirty();
             SettingsManager.INSTANCE.save();
+            viewDistSliderPulse = 1.0f;
             return true;
         }
 
@@ -520,6 +543,7 @@ public class VisualizersPage implements SettingsPage {
         lightLevelRadius = Math.round(rawValue / 4.0f) * 4;
         lightLevelRadius = Math.max(4, Math.min(32, lightLevelRadius));
         LightLevelOverlay.INSTANCE.setRadius(lightLevelRadius);
+        lightSliderPulse = 1.0f; // Trigger pulse animation
     }
 
     /**
@@ -536,6 +560,7 @@ public class VisualizersPage implements SettingsPage {
         viewDistance = Math.max(SettingsData.VisualizerSettings.MIN_RENDER_DISTANCE,
                                 Math.min(SettingsData.VisualizerSettings.MAX_RENDER_DISTANCE, viewDistance));
         SettingsManager.INSTANCE.getSettings().visualizers.setRenderDistance(viewDistance);
+        viewDistSliderPulse = 1.0f; // Trigger pulse animation
     }
 
     @Override

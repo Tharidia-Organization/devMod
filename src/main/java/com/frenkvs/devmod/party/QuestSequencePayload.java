@@ -34,7 +34,7 @@ public record QuestSequencePayload(
         @Override
         @Nonnull
         public QuestSequencePayload decode(@Nonnull RegistryFriendlyByteBuf buf) {
-            UUID partyId = buf.readUUID();
+            UUID partyId = Objects.requireNonNull(buf.readUUID());
             int phaseOrdinal = buf.readVarInt();
             Phase phase = Phase.values()[Math.min(phaseOrdinal, Phase.values().length - 1)];
             int secondsRemaining = buf.readVarInt();
@@ -45,7 +45,7 @@ public record QuestSequencePayload(
             arrivedCount = Math.min(arrivedCount, MAX_MEMBERS);
             List<UUID> arrivedMembers = new ArrayList<>(arrivedCount);
             for (int i = 0; i < arrivedCount; i++) {
-                arrivedMembers.add(buf.readUUID());
+                arrivedMembers.add(Objects.requireNonNull(buf.readUUID()));
             }
 
             return new QuestSequencePayload(partyId, phase, secondsRemaining, totalMembers, arrivedMembers);
@@ -53,7 +53,7 @@ public record QuestSequencePayload(
 
         @Override
         public void encode(@Nonnull RegistryFriendlyByteBuf buf, @Nonnull QuestSequencePayload payload) {
-            buf.writeUUID(payload.partyId);
+            buf.writeUUID(Objects.requireNonNull(payload.partyId));
             buf.writeVarInt(payload.phase.ordinal());
             buf.writeVarInt(payload.secondsRemaining);
             buf.writeVarInt(payload.totalMembers);
@@ -64,7 +64,7 @@ public record QuestSequencePayload(
             int written = 0;
             for (UUID memberId : arrived) {
                 if (written >= MAX_MEMBERS) break;
-                buf.writeUUID(memberId);
+                buf.writeUUID(Objects.requireNonNull(memberId));
                 written++;
             }
         }

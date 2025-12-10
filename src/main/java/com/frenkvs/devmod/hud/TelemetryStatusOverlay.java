@@ -12,6 +12,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+import java.util.Objects;
 
 /**
  * Compact HUD overlay showing telemetry recording status.
@@ -42,8 +43,8 @@ public class TelemetryStatusOverlay {
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.HOTBAR,
-            LAYER_ID,
+            Objects.requireNonNull(VanillaGuiLayers.HOTBAR),
+            Objects.requireNonNull(LAYER_ID),
             TelemetryStatusOverlay::render
         );
     }
@@ -70,7 +71,7 @@ public class TelemetryStatusOverlay {
             recordingStartTime = 0;
         }
 
-        Font font = mc.font;
+        Font font = Objects.requireNonNull(mc.font, "font");
         int screenWidth = graphics.guiWidth();
 
         // Position: top-right corner, but offset down if ImpactHudOverlay is visible
@@ -105,7 +106,9 @@ public class TelemetryStatusOverlay {
         graphics.drawString(font, statusText, dotX + 10, dotY - 1, recording ? RECORDING_COLOR : PAUSED_COLOR, false);
 
         // Room info (keep at least 6 chars for readability)
-        String roomText = currentRoom != null && !currentRoom.isEmpty() ? currentRoom : "No room";
+        String roomText = currentRoom != null && !currentRoom.isEmpty()
+            ? currentRoom
+            : "No room";
         if (roomText.length() > 14) {
             int truncateAt = Math.max(6, 11); // Keep at least 6 chars
             roomText = roomText.substring(0, truncateAt) + "...";
@@ -115,7 +118,7 @@ public class TelemetryStatusOverlay {
         // Recording time
         if (recording && recordingStartTime > 0) {
             long elapsed = System.currentTimeMillis() - recordingStartTime;
-            String timeText = formatTime(elapsed);
+            String timeText = Objects.requireNonNull(formatTime(elapsed), "time text");
             int timeWidth = font.width(timeText);
             graphics.drawString(font, timeText, panelX + panelWidth - timeWidth - 6, panelY + 6, TEXT_NORMAL, false);
         }

@@ -31,7 +31,6 @@ import java.util.function.BiConsumer;
  *
  * <p>Thread-safe for concurrent access from multiple server threads.
  */
-@SuppressWarnings("null") // Map.merge BiFunction boxing
 public class SpatialMetricsService {
     public static final SpatialMetricsService INSTANCE = new SpatialMetricsService();
 
@@ -60,7 +59,7 @@ public class SpatialMetricsService {
      */
     public QuitRecord recordQuit(String roomId, BlockPos pos) {
         chokePointQuits.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>())
-                .merge(pos, 1, Integer::sum);
+                .merge(pos, 1, (a, b) -> a + b);
         return new QuitRecord(roomId, pos);
     }
 
@@ -114,7 +113,7 @@ public class SpatialMetricsService {
                 if (room.contains(level, living.blockPosition())) {
                     totalCount++;
                     String type = entity.getType().toShortString();
-                    typeBreakdown.merge(type, 1, Integer::sum);
+                    typeBreakdown.merge(type, 1, (a, b) -> a + b);
                 }
             }
         }
@@ -166,7 +165,7 @@ public class SpatialMetricsService {
      */
     public CollisionRecord recordInvisibleCollision(String roomId, BlockPos pos) {
         invisibleCollisions.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>())
-                .merge(pos, 1, Integer::sum);
+                .merge(pos, 1, (a, b) -> a + b);
         return new CollisionRecord(roomId, pos, getInvisibleCollisionCount(roomId, pos));
     }
 
@@ -212,7 +211,7 @@ public class SpatialMetricsService {
      */
     public FallRecord recordParkourFall(String roomId, BlockPos pos, float fallDistance) {
         parkourFalls.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>())
-                .merge(pos, 1, Integer::sum);
+                .merge(pos, 1, (a, b) -> a + b);
         return new FallRecord(roomId, pos, fallDistance, getParkourFallCount(roomId, pos));
     }
 

@@ -21,6 +21,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
+import java.util.Objects;
+
 /**
  * Test harness commands for manual testing of complex UI/HUD features.
  *
@@ -117,7 +119,7 @@ public class TestHarnessCommands {
 
             // /devtest debugbox <size> - Adds a debug box at player position
             .then(Commands.literal("debugbox")
-                .then(Commands.argument("size", FloatArgumentType.floatArg(0.1f, 10.0f))
+                .then(Commands.argument("size", Objects.requireNonNull(FloatArgumentType.floatArg(0.1f, 10.0f)))
                     .executes(ctx -> {
                         float size = FloatArgumentType.getFloat(ctx, "size");
                         Vec3 pos = ctx.getSource().getPosition();
@@ -184,7 +186,7 @@ public class TestHarnessCommands {
 
             // /devtest bodypart <part> - Shows body part multiplier info
             .then(Commands.literal("bodypart")
-                .then(Commands.argument("part", StringArgumentType.word())
+                .then(Commands.argument("part", Objects.requireNonNull(StringArgumentType.word()))
                     .executes(ctx -> {
                         String partName = StringArgumentType.getString(ctx, "part").toUpperCase();
 

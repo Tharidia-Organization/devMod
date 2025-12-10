@@ -60,7 +60,7 @@ public class RadialMenuItem {
      * Check if this item navigates to a subcategory
      */
     public boolean isSubcategoryLink() {
-        return action instanceof SubcategoryAction;
+        return action.isSubcategoryAction();
     }
 
     /**
@@ -68,10 +68,7 @@ public class RadialMenuItem {
      */
     @Nullable
     public RadialCategory getLinkedSubcategory() {
-        if (action instanceof SubcategoryAction subAction) {
-            return subAction.getSubcategory();
-        }
-        return null;
+        return action.getSubcategory();
     }
 
     // === Getters and Setters ===
@@ -121,15 +118,6 @@ public class RadialMenuItem {
 
     public boolean hasCustomColor() {
         return customColor != -1;
-    }
-
-    // === Inner class for subcategory action reference ===
-
-    /**
-     * Interface to check for subcategory actions without coupling
-     */
-    private interface SubcategoryAction {
-        RadialCategory getSubcategory();
     }
 
     // === Static factory methods ===

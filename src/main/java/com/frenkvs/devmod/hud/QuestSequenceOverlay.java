@@ -19,6 +19,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.UUID;
+import java.util.Objects;
 
 /**
  * Client-side overlay that shows the quest start sequence countdown.
@@ -64,8 +65,8 @@ public class QuestSequenceOverlay {
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.BOSS_OVERLAY,
-            LAYER_ID,
+            Objects.requireNonNull(VanillaGuiLayers.BOSS_OVERLAY),
+            Objects.requireNonNull(LAYER_ID),
             QuestSequenceOverlay::renderStatic
         );
     }
@@ -152,7 +153,9 @@ public class QuestSequenceOverlay {
         if (!isActive()) return;
 
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.options.hideGui) return;
+        var player = mc.player;
+        if (player == null || mc.options.hideGui) return;
+        var font = Objects.requireNonNull(mc.font, "font");
 
         int screenWidth = mc.getWindow().getGuiScaledWidth();
 
@@ -172,7 +175,7 @@ public class QuestSequenceOverlay {
         if (currentPhase == QuestSequencePayload.Phase.WAITING_FOR_ARRIVALS) {
             arrivalRetryTicks++;
             // Check if we need to retry (server hasn't confirmed our arrival yet)
-            UUID myUUID = mc.player.getUUID();
+            UUID myUUID = player.getUUID();
             boolean serverConfirmedArrival = arrivedMembers.contains(myUUID);
             if (!serverConfirmedArrival && arrivalRetryTicks >= ARRIVAL_RETRY_INTERVAL) {
                 sendArrivalConfirmation();
@@ -199,17 +202,17 @@ public class QuestSequenceOverlay {
         graphics.renderOutline(boxX, boxY, boxWidth, boxHeight, borderColor);
 
         // Phase title
-        Component phaseText = getPhaseText();
+        Component phaseText = Objects.requireNonNull(getPhaseText(), "phase text");
         int textColor = UIConstants.setAlpha(UIConstants.Text.PRIMARY, alpha);
-        graphics.drawCenteredString(mc.font, phaseText, boxX + boxWidth / 2, boxY + 8, textColor);
+        graphics.drawCenteredString(font, phaseText, boxX + boxWidth / 2, boxY + 8, textColor);
 
         // Render based on phase
         if (currentPhase == QuestSequencePayload.Phase.WAITING_FOR_ARRIVALS) {
-            renderArrivalStatus(graphics, mc, boxX, boxY, boxWidth, alpha);
+            renderArrivalStatus(graphics, Objects.requireNonNull(font, "font"), boxX, boxY, boxWidth, alpha);
         } else if (secondsRemaining > 0 && !fadingOut) {
-            renderCountdown(graphics, mc, boxX, boxY, boxWidth, alpha);
+            renderCountdown(graphics, Objects.requireNonNull(font, "font"), boxX, boxY, boxWidth, alpha);
         } else if (currentPhase == QuestSequencePayload.Phase.STARTED) {
-            renderGoMessage(graphics, mc, boxX, boxY, boxWidth, alpha);
+            renderGoMessage(graphics, Objects.requireNonNull(font, "font"), boxX, boxY, boxWidth, alpha);
         }
 
         // Progress bar
@@ -219,41 +222,42 @@ public class QuestSequenceOverlay {
     /**
      * Render countdown number.
      */
-    private void renderCountdown(GuiGraphics graphics, Minecraft mc, int boxX, int boxY, int boxWidth, int alpha) {
-        String countdownText = String.valueOf(secondsRemaining);
+    private void renderCountdown(GuiGraphics graphics, net.minecraft.client.gui.Font font, int boxX, int boxY, int boxWidth, int alpha) {
+        String countdownText = Objects.requireNonNull(String.valueOf(secondsRemaining), "countdown");
         int countdownColor = getCountdownColor();
         countdownColor = UIConstants.setAlpha(countdownColor, alpha);
 
         graphics.pose().pushPose();
         graphics.pose().translate(boxX + boxWidth / 2f, boxY + 32, 0);
         graphics.pose().scale(2f, 2f, 1f);
-        graphics.drawCenteredString(mc.font, countdownText, 0, 0, countdownColor);
+        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), countdownText, 0, 0, countdownColor);
         graphics.pose().popPose();
     }
 
     /**
      * Render "GO!" message.
      */
-    private void renderGoMessage(GuiGraphics graphics, Minecraft mc, int boxX, int boxY, int boxWidth, int alpha) {
+    private void renderGoMessage(GuiGraphics graphics, net.minecraft.client.gui.Font font, int boxX, int boxY, int boxWidth, int alpha) {
         int goColor = UIConstants.setAlpha(UIConstants.Accent.GREEN, alpha);
         graphics.pose().pushPose();
         graphics.pose().translate(boxX + boxWidth / 2f, boxY + 32, 0);
         graphics.pose().scale(2f, 2f, 1f);
-        graphics.drawCenteredString(mc.font, "GO!", 0, 0, goColor);
+        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), "GO!", 0, 0, goColor);
         graphics.pose().popPose();
     }
 
     /**
      * Render arrival status with checkmarks.
      */
-    private void renderArrivalStatus(GuiGraphics graphics, Minecraft mc, int boxX, int boxY, int boxWidth, int alpha) {
+    private void renderArrivalStatus(GuiGraphics graphics, net.minecraft.client.gui.Font font, int boxX, int boxY, int boxWidth, int alpha) {
         int arrived = arrivedMembers.size();
         int total = totalMembers > 0 ? totalMembers : 1;
 
         // Arrival count
-        String arrivalText = arrived + " / " + total + " arrived";
+        String arrivalText = Objects.requireNonNull(arrived + " / " + total + " arrived", "arrival text");
         int arrivalColor = UIConstants.setAlpha(UIConstants.Text.PRIMARY, alpha);
-        graphics.drawCenteredString(mc.font, arrivalText, boxX + boxWidth / 2, boxY + 28, arrivalColor);
+        var safeFont = Objects.requireNonNull(font, "font");
+        graphics.drawCenteredString(safeFont, arrivalText, boxX + boxWidth / 2, boxY + 28, arrivalColor);
 
         // Visual dots for each player
         int dotSize = 8;
@@ -275,15 +279,15 @@ public class QuestSequenceOverlay {
             // Checkmark for arrived
             if (isArrived) {
                 int checkColor = UIConstants.setAlpha(UIConstants.Text.PRIMARY, alpha);
-                graphics.drawString(mc.font, "✓", dotX + 1, dotY, checkColor);
+                graphics.drawString(safeFont, "✓", dotX + 1, dotY, checkColor);
             }
         }
 
         // Timeout warning
         if (secondsRemaining <= 10 && secondsRemaining > 0) {
-            String timeoutText = "Timeout in " + secondsRemaining + "s";
+            String timeoutText = Objects.requireNonNull("Timeout in " + secondsRemaining + "s", "timeout text");
             int timeoutColor = UIConstants.setAlpha(UIConstants.Accent.GOLD, alpha);
-            graphics.drawCenteredString(mc.font, timeoutText, boxX + boxWidth / 2, boxY + 62, timeoutColor);
+            graphics.drawCenteredString(safeFont, timeoutText, boxX + boxWidth / 2, boxY + 62, timeoutColor);
         }
     }
 

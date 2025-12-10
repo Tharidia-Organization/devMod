@@ -142,7 +142,7 @@ public class QuestStartSequence {
         }
 
         // Get the player
-        ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+        ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(playerId));
         if (player == null) {
             LOGGER.warn("[QuestSequence] Arrival confirm for offline player: {}", playerId);
             return;
@@ -212,7 +212,7 @@ public class QuestStartSequence {
         QuestType questType = party.getQuestType();
 
         for (UUID memberId : party.getMembers()) {
-            ServerPlayer member = server.getPlayerList().getPlayer(memberId);
+            ServerPlayer member = server.getPlayerList().getPlayer(Objects.requireNonNull(memberId));
 
             if (member == null) {
                 String name = party.getMemberName(memberId);

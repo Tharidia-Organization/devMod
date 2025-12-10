@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * - NEUTRAL: Changes gameplay without clear advantage
  * - CHAOTIC: Unpredictable effects
  */
-@SuppressWarnings({"null", "unused"})
 public class MutatorSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(MutatorSystem.class);
 

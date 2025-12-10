@@ -12,9 +12,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -215,7 +215,7 @@ public class PlayerTrackingService {
     public Map<String, Integer> getPlayerCountPerRoom() {
         Map<String, Integer> counts = new HashMap<>();
         playerRooms.values().forEach(tracker ->
-                counts.merge(tracker.currentRoom(), 1, Integer::sum));
+                counts.merge(tracker.currentRoom(), 1, (a, b) -> a + b));
         return counts;
     }
 
@@ -420,13 +420,13 @@ public class PlayerTrackingService {
         public void update(Vec3 pos, float yaw, long nowMs) {
             if (lastUpdateMs == 0) {
                 // First update, just store state
-                lastPosition = pos;
+                lastPosition = Objects.requireNonNull(pos);
                 lastYaw = yaw;
                 lastUpdateMs = nowMs;
                 return;
             }
 
-            double dist = lastPosition.distanceTo(pos);
+            double dist = lastPosition.distanceTo(Objects.requireNonNull(pos));
             float yawDelta = Math.abs(yaw - lastYaw);
 
             // Normalize yaw delta (handle wrap-around)

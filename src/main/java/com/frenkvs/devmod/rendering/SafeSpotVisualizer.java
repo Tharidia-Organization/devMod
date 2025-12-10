@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 
 import javax.annotation.Nonnull;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -36,10 +37,10 @@ public class SafeSpotVisualizer {
 
     // MEMORY LEAK FIX: Track when it was disabled for auto-clear
     private long disabledSince = 0;
-    private static final long AUTO_CLEAR_DELAY_MS = 300_000; // 5 minuti
+    private static final long AUTO_CLEAR_DELAY_MS = 300_000; // 5 minutes
 
-    // Refresh interval per aggiornamento automatico dati
-    private static final long REFRESH_INTERVAL_MS = 5_000; // 5 secondi
+    // Refresh interval for automatic data update
+    private static final long REFRESH_INTERVAL_MS = 5_000; // 5 seconds
     private long lastRefreshTime = 0;
 
     private SafeSpotVisualizer() {}
@@ -171,28 +172,28 @@ public class SafeSpotVisualizer {
 
         if (safeSpots.isEmpty()) return;
 
-        VertexConsumer consumer = buffer.getBuffer(RenderType.lines());
+        VertexConsumer consumer = Objects.requireNonNull(buffer.getBuffer(Objects.requireNonNull(RenderType.lines())));
         long now = System.currentTimeMillis();
 
         poseStack.pushPose();
         poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-        Matrix4f matrix = poseStack.last().pose();
-        var pose = poseStack.last();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
+        var pose = Objects.requireNonNull(poseStack.last());
 
-        // Trova il valore massimo per normalizzazione
+        // Find max value for normalization
         int maxHits = safeSpots.values().stream()
                 .mapToInt(s -> s.hitCount)
                 .max()
                 .orElse(1);
 
         for (SafeSpotData spot : safeSpots.values()) {
-            // Solo spot entro 100 blocchi
+            // Only spots within 100 blocks
             double dx = spot.pos.getX() + 0.5 - cameraPos.x;
             double dy = spot.pos.getY() + 1.0 - cameraPos.y;
             double dz = spot.pos.getZ() + 0.5 - cameraPos.z;
             if (dx*dx + dy*dy + dz*dz > 100*100) continue;
 
-            renderSafeSpot(consumer, matrix, pose, spot, maxHits, now, cameraPos);
+            renderSafeSpot(Objects.requireNonNull(consumer), Objects.requireNonNull(matrix), Objects.requireNonNull(pose), spot, maxHits, now, cameraPos);
         }
 
         poseStack.popPose();
@@ -204,10 +205,10 @@ public class SafeSpotVisualizer {
         // Intensity based on relative count
         float intensity = (float) spot.hitCount / maxHits;
 
-        // Effetto lampeggiante (sinusoidale)
+        // Blinking effect (sinusoidal)
         float blink = (float) (Math.sin(now / 200.0) * 0.3 + 0.7);
 
-        // Colore rosso con alpha variabile
+        // Red color with variable alpha
         float r = 1.0f;
         float g = 0.2f * (1.0f - intensity);
         float b = 0.0f;
@@ -261,8 +262,8 @@ public class SafeSpotVisualizer {
     private void line(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix, @Nonnull PoseStack.Pose pose,
                       float x1, float y1, float z1, float x2, float y2, float z2,
                       float r, float g, float b, float a) {
-        consumer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
-        consumer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
+        Objects.requireNonNull(consumer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a)).setNormal(Objects.requireNonNull(pose), 0f, 1f, 0f);
+        Objects.requireNonNull(consumer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a)).setNormal(Objects.requireNonNull(pose), 0f, 1f, 0f);
     }
 
     public int getSafeSpotCount() {

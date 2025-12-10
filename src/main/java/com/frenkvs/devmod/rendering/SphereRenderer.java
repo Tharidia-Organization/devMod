@@ -7,7 +7,9 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
+import javax.annotation.Nonnull;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -106,15 +108,14 @@ public class SphereRenderer {
      * @param blue Blue color component (0-1)
      * @param alpha Opacity (0-1)
      */
-    @SuppressWarnings("null")
     public static void renderSphereWireframe(PoseStack poseStack, MultiBufferSource bufferSource,
                                               Vec3 center, double radius,
                                               float red, float green, float blue, float alpha) {
         Set<Vec3> points = generateSpherePoints(center, radius);
         if (points.isEmpty()) return;
 
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.lines());
-        Matrix4f matrix = poseStack.last().pose();
+        VertexConsumer consumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.lines()));
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
         // Render small cubes at each point to visualize the sphere
         float blockSize = 0.1f; // Small dots
@@ -142,13 +143,12 @@ public class SphereRenderer {
      * @param blue Blue color component (0-1)
      * @param alpha Opacity (0-1)
      */
-    @SuppressWarnings("null")
     public static void renderSphereFilled(PoseStack poseStack, MultiBufferSource bufferSource,
                                            Vec3 center, double radius,
                                            float red, float green, float blue, float alpha) {
         // Use custom RenderType with POSITION_COLOR + alpha blending
-        VertexConsumer consumer = bufferSource.getBuffer(CustomRenderTypes.TRANSLUCENT_POSITION_COLOR);
-        Matrix4f matrix = poseStack.last().pose();
+        VertexConsumer consumer = bufferSource.getBuffer(Objects.requireNonNull(CustomRenderTypes.TRANSLUCENT_POSITION_COLOR));
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
         int latitudes = 16;  // Vertical segments
         int longitudes = 32; // Horizontal segments
@@ -198,7 +198,7 @@ public class SphereRenderer {
     /**
      * Draws a wireframe cube outline.
      */
-    private static void drawWireframeCube(VertexConsumer consumer, Matrix4f matrix,
+    private static void drawWireframeCube(VertexConsumer consumer, @Nonnull Matrix4f matrix,
                                           float cx, float cy, float cz, float halfSize,
                                           float r, float g, float b, float a) {
         float x1 = cx - halfSize;
@@ -230,10 +230,13 @@ public class SphereRenderer {
     /**
      * Draws a filled cube with 6 quad faces.
      * SIMPLE version: only position + color (for RenderType.debugQuads)
+     *
+     * This method is currently unused but kept for potential future use in filled visualizations.
      */
-    private static void drawFilledCubeSimple(VertexConsumer consumer, Matrix4f matrix,
+    public static void drawFilledCubeSimple(VertexConsumer consumer, @Nonnull Matrix4f matrix,
                                              float cx, float cy, float cz, float halfSize,
                                              float r, float g, float b, float a) {
+        Matrix4f mat = Objects.requireNonNull(matrix);
         float x1 = cx - halfSize;
         float y1 = cy - halfSize;
         float z1 = cz - halfSize;
@@ -242,50 +245,50 @@ public class SphereRenderer {
         float z2 = cz + halfSize;
 
         // Top face (+Y)
-        quadSimple(consumer, matrix, x1, y2, z1, x1, y2, z2, x2, y2, z2, x2, y2, z1, r, g, b, a);
+        quadSimple(consumer, mat, x1, y2, z1, x1, y2, z2, x2, y2, z2, x2, y2, z1, r, g, b, a);
 
         // Bottom face (-Y)
-        quadSimple(consumer, matrix, x1, y1, z2, x2, y1, z2, x2, y1, z1, x1, y1, z1, r, g, b, a);
+        quadSimple(consumer, mat, x1, y1, z2, x2, y1, z2, x2, y1, z1, x1, y1, z1, r, g, b, a);
 
         // North face (+Z)
-        quadSimple(consumer, matrix, x1, y2, z2, x2, y2, z2, x2, y1, z2, x1, y1, z2, r, g, b, a);
+        quadSimple(consumer, mat, x1, y2, z2, x2, y2, z2, x2, y1, z2, x1, y1, z2, r, g, b, a);
 
         // South face (-Z)
-        quadSimple(consumer, matrix, x2, y2, z1, x1, y2, z1, x1, y1, z1, x2, y1, z1, r, g, b, a);
+        quadSimple(consumer, mat, x2, y2, z1, x1, y2, z1, x1, y1, z1, x2, y1, z1, r, g, b, a);
 
         // East face (+X)
-        quadSimple(consumer, matrix, x2, y2, z2, x2, y2, z1, x2, y1, z1, x2, y1, z2, r, g, b, a);
+        quadSimple(consumer, mat, x2, y2, z2, x2, y2, z1, x2, y1, z1, x2, y1, z2, r, g, b, a);
 
         // West face (-X)
-        quadSimple(consumer, matrix, x1, y2, z1, x1, y2, z2, x1, y1, z2, x1, y1, z1, r, g, b, a);
+        quadSimple(consumer, mat, x1, y2, z1, x1, y2, z2, x1, y1, z2, x1, y1, z1, r, g, b, a);
     }
 
     /**
      * Helper to draw a line between two points.
      */
-    @SuppressWarnings("null")
-    private static void line(VertexConsumer consumer, Matrix4f matrix,
+    private static void line(VertexConsumer consumer, @Nonnull Matrix4f matrix,
                              float x1, float y1, float z1,
                              float x2, float y2, float z2,
                              float r, float g, float b, float a) {
-        consumer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a);
-        consumer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a);
+        Matrix4f mat = Objects.requireNonNull(matrix);
+        Objects.requireNonNull(consumer.addVertex(mat, x1, y1, z1)).setColor(r, g, b, a);
+        Objects.requireNonNull(consumer.addVertex(mat, x2, y2, z2)).setColor(r, g, b, a);
     }
 
     /**
      * Helper to draw a quad (4 vertices) - SIMPLE version (position + color only).
      */
-    @SuppressWarnings("null")
-    private static void quadSimple(VertexConsumer consumer, Matrix4f matrix,
+    private static void quadSimple(VertexConsumer consumer, @Nonnull Matrix4f matrix,
                                     float x1, float y1, float z1,
                                     float x2, float y2, float z2,
                                     float x3, float y3, float z3,
                                     float x4, float y4, float z4,
                                     float r, float g, float b, float a) {
-        consumer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a);
-        consumer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a);
-        consumer.addVertex(matrix, x3, y3, z3).setColor(r, g, b, a);
-        consumer.addVertex(matrix, x4, y4, z4).setColor(r, g, b, a);
+        Matrix4f mat = Objects.requireNonNull(matrix);
+        Objects.requireNonNull(consumer.addVertex(mat, x1, y1, z1)).setColor(r, g, b, a);
+        Objects.requireNonNull(consumer.addVertex(mat, x2, y2, z2)).setColor(r, g, b, a);
+        Objects.requireNonNull(consumer.addVertex(mat, x3, y3, z3)).setColor(r, g, b, a);
+        Objects.requireNonNull(consumer.addVertex(mat, x4, y4, z4)).setColor(r, g, b, a);
     }
 
 }

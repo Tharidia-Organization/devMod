@@ -41,14 +41,14 @@ public record PartySyncPayload(
 
     private static void encode(RegistryFriendlyByteBuf buf, PartySyncPayload payload) {
         buf.writeBoolean(payload.hasParty);
-        buf.writeUUID(payload.partyId);
-        buf.writeUUID(payload.leaderId);
+        buf.writeUUID(Objects.requireNonNull(payload.partyId));
+        buf.writeUUID(Objects.requireNonNull(payload.leaderId));
 
         // Write members list
         buf.writeVarInt(payload.members.size());
         for (PartyMemberInfo member : payload.members) {
-            buf.writeUUID(member.playerId);
-            buf.writeUtf(member.playerName);
+            buf.writeUUID(Objects.requireNonNull(member.playerId));
+            buf.writeUtf(Objects.requireNonNull(member.playerName));
             buf.writeBoolean(member.isReady);
             buf.writeBoolean(member.isLeader);
             buf.writeBoolean(member.isOnline);
@@ -72,8 +72,8 @@ public record PartySyncPayload(
         }
         List<PartyMemberInfo> members = new ArrayList<>(memberCount);
         for (int i = 0; i < memberCount; i++) {
-            UUID playerId = buf.readUUID();
-            String playerName = buf.readUtf(MAX_NAME_LENGTH);
+            UUID playerId = Objects.requireNonNull(buf.readUUID());
+            String playerName = Objects.requireNonNull(buf.readUtf(MAX_NAME_LENGTH));
             boolean isReady = buf.readBoolean();
             boolean isLeader = buf.readBoolean();
             boolean isOnline = buf.readBoolean();
@@ -130,10 +130,11 @@ public record PartySyncPayload(
      * Returns null if no mob is selected.
      */
     public ResourceLocation getSelectedMobResourceLocation() {
-        if (selectedMobId == null || selectedMobId.isEmpty()) {
+        String localSelectedMobId = selectedMobId;
+        if (localSelectedMobId == null || localSelectedMobId.isEmpty()) {
             return null;
         }
-        return ResourceLocation.tryParse(selectedMobId);
+        return ResourceLocation.tryParse(localSelectedMobId);
     }
 
     /**
@@ -141,11 +142,12 @@ public record PartySyncPayload(
      * Returns "Zombie" (default) if none selected.
      */
     public String getSelectedMobDisplayName() {
-        if (selectedMobId == null || selectedMobId.isEmpty()) {
+        String localSelectedMobId = selectedMobId;
+        if (localSelectedMobId == null || localSelectedMobId.isEmpty()) {
             return "Zombie";
         }
         // Extract the path part and capitalize
-        ResourceLocation loc = ResourceLocation.tryParse(selectedMobId);
+        ResourceLocation loc = ResourceLocation.tryParse(localSelectedMobId);
         if (loc == null) return "Zombie";
         String path = loc.getPath();
         // Convert snake_case to Title Case

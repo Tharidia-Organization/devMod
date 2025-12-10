@@ -11,6 +11,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -385,21 +386,23 @@ public class InstanceSystemGameTests {
         }
 
         UUID instanceId = UUID.randomUUID();
-        ResourceKey<Level> dimKey = DynamicDimensionManager.INSTANCE.createDimensionSync(instanceId, "test_arena");
-        helper.assertTrue(dimKey != null, "Dimension key should not be null");
+        ResourceKey<Level> dimKey = Objects.requireNonNull(
+            DynamicDimensionManager.INSTANCE.createDimensionSync(instanceId, "test_arena"),
+            "Dimension key should not be null");
 
-        ServerLevel level = helper.getLevel().getServer().getLevel(dimKey);
-        helper.assertTrue(level != null, "Instance level should exist");
+        ServerLevel level = Objects.requireNonNull(
+            helper.getLevel().getServer().getLevel(dimKey),
+            "Instance level should exist");
 
         // Bedrock layer (void preset) al livello 0
         BlockPos bedrockPos = new BlockPos(0, 0, 0);
-        helper.assertTrue(level.getBlockState(bedrockPos).is(Blocks.BEDROCK),
+        helper.assertTrue(level.getBlockState(bedrockPos).is(Objects.requireNonNull(Blocks.BEDROCK)),
             "Bedrock layer should exist at y=0");
 
         // Chunk centrale deve essere caricato e contenere la piattaforma
         BlockPos platformPos = new BlockPos(0, 64, 0);
         helper.assertTrue(level.getChunkAt(platformPos) != null, "Center chunk should be loaded");
-        helper.assertTrue(level.getBlockState(platformPos).is(Blocks.STONE_BRICKS),
+        helper.assertTrue(level.getBlockState(platformPos).is(Objects.requireNonNull(Blocks.STONE_BRICKS)),
             "Platform should place stone bricks at center");
 
         boolean destroyed = DynamicDimensionManager.INSTANCE.destroyDimensionSync(instanceId);

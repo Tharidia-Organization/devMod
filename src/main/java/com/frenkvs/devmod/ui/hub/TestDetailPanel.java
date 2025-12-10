@@ -6,6 +6,7 @@ import com.frenkvs.devmod.ui.UIConstants;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -101,11 +102,11 @@ public class TestDetailPanel implements HubPanel {
         String line1 = "Select a test from the list";
         String line2 = "to see details here";
 
-        int w1 = font.width(line1);
-        int w2 = font.width(line2);
+        int w1 = Objects.requireNonNull(font, "font").width(line1);
+        int w2 = Objects.requireNonNull(font, "font").width(line2);
 
-        graphics.drawString(font, line1, centerX - w1 / 2, centerY - 10, UIConstants.Text.MUTED, false);
-        graphics.drawString(font, line2, centerX - w2 / 2, centerY + 4, UIConstants.Text.MUTED, false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), line1, centerX - w1 / 2, centerY - 10, UIConstants.Text.MUTED, false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), line2, centerX - w2 / 2, centerY + 4, UIConstants.Text.MUTED, false);
     }
 
     private void renderCompletionMessage(GuiGraphics graphics) {
@@ -115,11 +116,11 @@ public class TestDetailPanel implements HubPanel {
         String line1 = "All tests completed!";
         String line2 = "Save your report to share results.";
 
-        int w1 = font.width(line1);
-        int w2 = font.width(line2);
+        int w1 = Objects.requireNonNull(font, "font").width(line1);
+        int w2 = Objects.requireNonNull(font, "font").width(line2);
 
-        graphics.drawString(font, line1, centerX - w1 / 2, centerY - 10, UIConstants.Status.SUCCESS, false);
-        graphics.drawString(font, line2, centerX - w2 / 2, centerY + 6, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), line1, centerX - w1 / 2, centerY - 10, UIConstants.Status.SUCCESS, false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), line2, centerX - w2 / 2, centerY + 6, UIConstants.Text.SECONDARY, false);
     }
 
     private void renderTestDetails(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -140,7 +141,7 @@ public class TestDetailPanel implements HubPanel {
         contentY += 8;
 
         // === DESCRIPTION ===
-        graphics.drawString(font, "Description:", contentX, contentY, UIConstants.Text.TITLE, false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), "Description:", contentX, contentY, UIConstants.Text.TITLE, false);
         contentY += LINE_HEIGHT + 2;
 
         String desc = currentTest.getDescription();
@@ -148,7 +149,7 @@ public class TestDetailPanel implements HubPanel {
         contentY += 12;
 
         // === ISTRUZIONI ===
-        graphics.drawString(font, "Instructions:", contentX, contentY, UIConstants.Text.TITLE, false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), "Instructions:", contentX, contentY, UIConstants.Text.TITLE, false);
         contentY += LINE_HEIGHT + 4;
 
         int instructionsHeight = height - contentY - y - BUTTON_HEIGHT - 60;
@@ -168,15 +169,15 @@ public class TestDetailPanel implements HubPanel {
     private void renderHeader(GuiGraphics graphics, int cx, int cy, int cw) {
         // Test name
         String name = currentTest.getName();
-        if (font.width(name) > cw - 60) {
+        if (Objects.requireNonNull(font, "font").width(Objects.requireNonNull(name, "name")) > cw - 60) {
             name = name.substring(0, Math.min(name.length(), 40)) + "...";
         }
-        graphics.drawString(font, name, cx, cy + 4, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), name, cx, cy + 4, UIConstants.Text.PRIMARY, false);
 
         // Priority badge
         String priority = "[" + currentTest.getPriority().name() + "]";
-        int priorityWidth = font.width(priority);
-        graphics.drawString(font, priority, cx + cw - priorityWidth, cy + 4, currentTest.getPriority().getColor(), false);
+        int priorityWidth = Objects.requireNonNull(font, "font").width(priority);
+        graphics.drawString(Objects.requireNonNull(font, "font"), priority, cx + cw - priorityWidth, cy + 4, currentTest.getPriority().getColor(), false);
 
         // Underline
         graphics.fill(cx, cy + HEADER_HEIGHT - 4, cx + cw, cy + HEADER_HEIGHT - 3, UIConstants.Border.SEPARATOR);
@@ -188,12 +189,12 @@ public class TestDetailPanel implements HubPanel {
         graphics.fill(cx, cy + 2, cx + 8, cy + 10, statusColor);
 
         // Status text
-        graphics.drawString(font, currentTest.getStatus().getDisplayName(), cx + 12, cy, statusColor, false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), currentTest.getStatus().getDisplayName(), cx + 12, cy, statusColor, false);
 
         // Category
         String category = "Category: " + currentTest.getCategory();
-        int catWidth = font.width(category);
-        graphics.drawString(font, category, cx + cw - catWidth, cy, UIConstants.Text.MUTED, false);
+        int catWidth = Objects.requireNonNull(font, "font").width(category);
+        graphics.drawString(Objects.requireNonNull(font, "font"), category, cx + cw - catWidth, cy, UIConstants.Text.MUTED, false);
     }
 
     private int renderWrappedText(GuiGraphics graphics, int cx, int cy, int maxWidth, String text, int color) {
@@ -203,8 +204,8 @@ public class TestDetailPanel implements HubPanel {
 
         for (String word : words) {
             String testLine = line.length() > 0 ? line + " " + word : word;
-            if (font.width(testLine) > maxWidth) {
-                graphics.drawString(font, line.toString(), cx, lineY, color, false);
+            if (Objects.requireNonNull(font, "font").width(Objects.requireNonNull(testLine, "testLine")) > maxWidth) {
+                graphics.drawString(Objects.requireNonNull(font, "font"), line.toString(), cx, lineY, color, false);
                 lineY += LINE_HEIGHT;
                 line = new StringBuilder(word);
             } else {
@@ -213,7 +214,7 @@ public class TestDetailPanel implements HubPanel {
         }
 
         if (line.length() > 0) {
-            graphics.drawString(font, line.toString(), cx, lineY, color, false);
+            graphics.drawString(Objects.requireNonNull(font, "font"), line.toString(), cx, lineY, color, false);
             lineY += LINE_HEIGHT;
         }
 
@@ -245,24 +246,24 @@ public class TestDetailPanel implements HubPanel {
             String checkbox = isChecked ? "[X]" : "[ ]";
 
             if (stepY >= cy - 20 && stepY < cy + maxHeight + 20) {
-                graphics.drawString(font, checkbox, cx, stepY, checkColor, false);
+                graphics.drawString(Objects.requireNonNull(font, "font"), checkbox, cx, stepY, checkColor, false);
 
                 // Step text (wrapped if necessary)
                 String stepText = step;
-                int textX = cx + font.width(checkbox) + 4;
-                int textWidth = cw - font.width(checkbox) - 8;
+                int textX = cx + Objects.requireNonNull(font, "font").width(checkbox) + 4;
+                int textWidth = cw - Objects.requireNonNull(font, "font").width(checkbox) - 8;
 
-                if (font.width(stepText) > textWidth) {
+                if (Objects.requireNonNull(font, "font").width(stepText) > textWidth) {
                     // Truncate with ellipsis - keep at least 10 chars for readability
                     String ellipsis = "...";
                     int minChars = Math.min(10, stepText.length());
-                    while (font.width(stepText + ellipsis) > textWidth && stepText.length() > minChars) {
+                    while (Objects.requireNonNull(font, "font").width(stepText + ellipsis) > textWidth && stepText.length() > minChars) {
                         stepText = stepText.substring(0, stepText.length() - 1);
                     }
                     stepText = stepText + ellipsis;
                 }
 
-                graphics.drawString(font, stepText, textX, stepY, UIConstants.Text.SECONDARY, false);
+                graphics.drawString(Objects.requireNonNull(font, "font"), stepText, textX, stepY, UIConstants.Text.SECONDARY, false);
             }
 
             stepY += LINE_HEIGHT + 4;
@@ -277,7 +278,7 @@ public class TestDetailPanel implements HubPanel {
     }
 
     private int renderRequiredTools(GuiGraphics graphics, int cx, int cy, int cw, int mouseX, int mouseY) {
-        graphics.drawString(font, "Required Tools:", cx, cy, UIConstants.Text.TITLE, false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), "Required Tools:", cx, cy, UIConstants.Text.TITLE, false);
         cy += LINE_HEIGHT + 4;
 
         int toolX = cx + 4;
@@ -288,11 +289,11 @@ public class TestDetailPanel implements HubPanel {
             String badge = "[" + tool.getHotkey() + "] " + tool.getLabel();
             String status = enabled ? " OK" : " NEEDED";
 
-            graphics.drawString(font, badge, toolX, cy, UIConstants.Text.SECONDARY, false);
-            int badgeWidth = font.width(badge);
-            graphics.drawString(font, status, toolX + badgeWidth, cy, badgeColor, false);
+            graphics.drawString(Objects.requireNonNull(font, "font"), badge, toolX, cy, UIConstants.Text.SECONDARY, false);
+            int badgeWidth = Objects.requireNonNull(font, "font").width(badge);
+            graphics.drawString(Objects.requireNonNull(font, "font"), status, toolX + badgeWidth, cy, badgeColor, false);
 
-            toolX += font.width(badge + status) + 16;
+            toolX += Objects.requireNonNull(font, "font").width(badge + status) + 16;
 
             // New line if necessary
             if (toolX > cx + cw - 100) {
@@ -323,14 +324,14 @@ public class TestDetailPanel implements HubPanel {
 
             // Label
             String label = verdict.getLabel();
-            int labelWidth = font.width(label);
+            int labelWidth = Objects.requireNonNull(font, "font").width(Objects.requireNonNull(label, "label"));
             int labelColor = hovered ? verdict.getColor() : UIConstants.Text.PRIMARY;
-            graphics.drawString(font, label, bx + (BUTTON_WIDTH - labelWidth) / 2, buttonsY + 8, labelColor, false);
+            graphics.drawString(Objects.requireNonNull(font, "font"), label, bx + (BUTTON_WIDTH - labelWidth) / 2, buttonsY + 8, labelColor, false);
 
             // Hotkey hint below
             String hotkey = "[" + verdict.getHotkey() + "]";
-            int hotkeyWidth = font.width(hotkey);
-            graphics.drawString(font, hotkey, bx + (BUTTON_WIDTH - hotkeyWidth) / 2, buttonsY + BUTTON_HEIGHT + 2, UIConstants.Text.MUTED, false);
+            int hotkeyWidth = Objects.requireNonNull(font, "font").width(hotkey);
+            graphics.drawString(Objects.requireNonNull(font, "font"), hotkey, bx + (BUTTON_WIDTH - hotkeyWidth) / 2, buttonsY + BUTTON_HEIGHT + 2, UIConstants.Text.MUTED, false);
         }
     }
 
@@ -379,4 +380,8 @@ public class TestDetailPanel implements HubPanel {
     public int getWidth() { return width; }
     @Override
     public int getHeight() { return height; }
+
+    public TestingHubState getState() {
+        return state;
+    }
 }

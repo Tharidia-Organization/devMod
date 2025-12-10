@@ -5,9 +5,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+import java.util.Objects;
 
 /**
  * Record Banner Overlay - shows "NEW RECORD!" banner when player beats personal record.
@@ -39,8 +39,8 @@ public class RecordBannerOverlay {
 
     public static void registerOverlay(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.BOSS_OVERLAY,
-            ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "record_banner"),
+            Objects.requireNonNull(VanillaGuiLayers.BOSS_OVERLAY),
+            Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "record_banner")),
             (guiGraphics, deltaTracker) -> render(guiGraphics)
         );
     }
@@ -107,7 +107,7 @@ public class RecordBannerOverlay {
         float pulse = (float) (1.0 + 0.1 * Math.sin(elapsed * 0.008));
         int titleWidth = font.width(title);
         int titleX = (screenWidth - titleWidth) / 2;
-        int titleY = bannerY + 8;
+        int titleY = bannerY + 8 - (int) (pulse * 1.5f); // subtle bounce with pulse
 
         // Gold shadow
         int goldDarkAlpha = ((int)(alpha * 0.8f) << 24) | (GOLD_DARK & 0x00FFFFFF);
@@ -118,14 +118,14 @@ public class RecordBannerOverlay {
         graphics.drawString(font, title, titleX, titleY, mainGold, false);
 
         // Draw record type
-        int typeWidth = font.width(recordType);
+        int typeWidth = font.width(Objects.requireNonNull(recordType, "record type"));
         int typeX = (screenWidth - typeWidth) / 2;
         int typeY = bannerY + 22;
         int typeColor = (alpha << 24) | (WHITE & 0x00FFFFFF);
         graphics.drawString(font, recordType, typeX, typeY, typeColor, false);
 
         // Draw record value (larger, emphasized)
-        String valueText = recordValue;
+        String valueText = Objects.requireNonNull(recordValue, "record value");
         int valueWidth = font.width(valueText);
         int valueX = (screenWidth - valueWidth) / 2;
         int valueY = bannerY + 35;
@@ -142,7 +142,6 @@ public class RecordBannerOverlay {
             int bannerHeight, long elapsed, int alpha) {
         // Simple sparkle effect - gold particles that float up
         int sparkleCount = 8;
-        long sparklePhase = elapsed % 1000;
 
         for (int i = 0; i < sparkleCount; i++) {
             // Each sparkle has different timing offset

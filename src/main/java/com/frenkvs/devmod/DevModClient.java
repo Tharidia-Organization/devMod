@@ -31,7 +31,7 @@ public class DevModClient {
         modEventBus.addListener(ComboDecayOverlay::registerOverlay);
         modEventBus.addListener(RecordBannerOverlay::registerOverlay);
 
-        // NOTA: I keybind sono registrati in DevMod.java per evitare problemi di caricamento
+        // NOTE: Keybinds are registered in DevMod.java to avoid loading issues
     }
 
     @SubscribeEvent

@@ -415,7 +415,9 @@ public class ErrorRecoveryScenarioTest {
             Set<UUID> instancePlayers = ConcurrentHashMap.newKeySet();
             UUID player1 = UUID.randomUUID();
             UUID player2 = UUID.randomUUID();
+            // Instance ID used for identification in real scenarios
             UUID instanceId = UUID.randomUUID();
+            assertNotNull(instanceId, "Instance ID should be generated");
 
             instancePlayers.add(player1);
             instancePlayers.add(player2);

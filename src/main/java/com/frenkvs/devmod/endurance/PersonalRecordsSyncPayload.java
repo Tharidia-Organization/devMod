@@ -8,12 +8,13 @@ import net.minecraft.resources.ResourceLocation;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import javax.annotation.Nonnull;
 
 /**
  * Network payload sent from server to client with player's personal records.
  * Used to display "Best: Wave X | Y pts" in the EnduranceQuestScreen.
  */
-@SuppressWarnings({"null", "unused"})
 public record PersonalRecordsSyncPayload(
     int totalQuestsAttempted,
     int totalQuestsCompleted,
@@ -25,7 +26,7 @@ public record PersonalRecordsSyncPayload(
     private static final int MAX_RECORDS = 100;
 
     public static final Type<PersonalRecordsSyncPayload> TYPE = new Type<>(
-        ResourceLocation.fromNamespaceAndPath("devmod", "personal_records_sync")
+        Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "personal_records_sync"))
     );
 
     /**
@@ -40,7 +41,7 @@ public record PersonalRecordsSyncPayload(
 
     public static final StreamCodec<ByteBuf, PersonalRecordsSyncPayload> STREAM_CODEC = new StreamCodec<>() {
         @Override
-        public PersonalRecordsSyncPayload decode(ByteBuf buf) {
+        public PersonalRecordsSyncPayload decode(@Nonnull ByteBuf buf) {
             int totalAttempted = buf.readInt();
             int totalCompleted = buf.readInt();
             int totalPoints = buf.readInt();
@@ -61,7 +62,7 @@ public record PersonalRecordsSyncPayload(
         }
 
         @Override
-        public void encode(ByteBuf buf, PersonalRecordsSyncPayload payload) {
+        public void encode(@Nonnull ByteBuf buf, @Nonnull PersonalRecordsSyncPayload payload) {
             buf.writeInt(payload.totalQuestsAttempted);
             buf.writeInt(payload.totalQuestsCompleted);
             buf.writeInt(payload.totalPointsEarned);

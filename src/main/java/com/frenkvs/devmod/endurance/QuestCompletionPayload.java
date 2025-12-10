@@ -8,12 +8,13 @@ import net.minecraft.resources.ResourceLocation;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import javax.annotation.Nonnull;
 
 /**
  * Network payload sent from server to client when quest is completed.
  * Contains all the reward information for display in QuestCompletionScreen.
  */
-@SuppressWarnings({"null", "unused"})
 public record QuestCompletionPayload(
     // Quest info
     String questName,
@@ -53,12 +54,12 @@ public record QuestCompletionPayload(
     private static final int MAX_ACHIEVEMENTS = 10;
 
     public static final Type<QuestCompletionPayload> TYPE = new Type<>(
-        ResourceLocation.fromNamespaceAndPath("devmod", "quest_completion")
+        Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "quest_completion"))
     );
 
     public static final StreamCodec<ByteBuf, QuestCompletionPayload> STREAM_CODEC = new StreamCodec<>() {
         @Override
-        public QuestCompletionPayload decode(ByteBuf buf) {
+        public QuestCompletionPayload decode(@Nonnull ByteBuf buf) {
             String questName = readString(buf);
             int finalWave = buf.readInt();
             int totalWaves = buf.readInt();
@@ -101,7 +102,7 @@ public record QuestCompletionPayload(
         }
 
         @Override
-        public void encode(ByteBuf buf, QuestCompletionPayload payload) {
+        public void encode(@Nonnull ByteBuf buf, @Nonnull QuestCompletionPayload payload) {
             writeString(buf, payload.questName);
             buf.writeInt(payload.finalWave);
             buf.writeInt(payload.totalWaves);

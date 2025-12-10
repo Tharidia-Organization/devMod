@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.LightLayer;
 import org.slf4j.Logger;
 
+import java.util.Objects;
 import java.util.function.BiConsumer;
 
 /**
@@ -55,7 +56,7 @@ public class LightAnalysisService {
             for (int y = min.getY(); y <= max.getY(); y++) {
                 for (int z = min.getZ(); z <= max.getZ(); z++) {
                     BlockPos pos = new BlockPos(x, y, z);
-                    BlockPos above = pos.above();
+                    BlockPos above = Objects.requireNonNull(pos.above());
 
                     // Skip if not air above (can't spawn/stand there)
                     if (!level.getBlockState(above).isAir()) continue;
@@ -145,7 +146,7 @@ public class LightAnalysisService {
             for (int y = min.getY(); y <= max.getY(); y++) {
                 for (int z = min.getZ(); z <= max.getZ(); z++) {
                     BlockPos pos = new BlockPos(x, y, z);
-                    BlockPos above = pos.above();
+                    BlockPos above = Objects.requireNonNull(pos.above());
 
                     if (!level.getBlockState(above).isAir()) continue;
 
@@ -154,8 +155,8 @@ public class LightAnalysisService {
 
                     scannedBlocks++;
 
-                    int blockLight = level.getBrightness(LightLayer.BLOCK, above);
-                    int skyLight = level.getBrightness(LightLayer.SKY, above);
+                    int blockLight = level.getBrightness(LightLayer.BLOCK, Objects.requireNonNull(above));
+                    int skyLight = level.getBrightness(LightLayer.SKY, Objects.requireNonNull(above));
                     int combinedLight = Math.max(blockLight, skyLight);
 
                     totalLight += combinedLight;

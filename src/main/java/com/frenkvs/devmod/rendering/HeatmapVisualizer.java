@@ -3,7 +3,6 @@ package com.frenkvs.devmod.rendering;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
@@ -12,6 +11,7 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -27,8 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * - HeatmapVisualizer.INSTANCE.toggle(HeatmapType.DEATH)
  * - HeatmapVisualizer.INSTANCE.setData(HeatmapType.DEATH, data)
  */
-// Minecraft API methods are not annotated but never return null in practice
-@SuppressWarnings("null")
 public class HeatmapVisualizer {
     public static final HeatmapVisualizer INSTANCE = new HeatmapVisualizer();
 
@@ -85,12 +83,12 @@ public class HeatmapVisualizer {
         boolean wasEnabled = enabled.getOrDefault(type, false);
         enabled.put(type, value);
 
-        // Se tutte le heatmap sono ora disabilitate, salva timestamp
+        // If all heatmaps are now disabled, save timestamp
         if (!value && wasEnabled && !hasActiveHeatmaps()) {
             disabledSince = System.currentTimeMillis();
         }
 
-        // Se riabilitato, resetta timestamp
+        // If re-enabled, reset timestamp
         if (value) {
             disabledSince = 0;
         }
@@ -101,19 +99,19 @@ public class HeatmapVisualizer {
     }
 
     /**
-     * Imposta i dati per una heatmap (da usare quando si ricevono dal server)
+     * Sets data for a heatmap (to use when receiving from server)
      */
     public void setData(HeatmapType type, Map<BlockPos, Integer> data) {
         heatmapData.put(type, new ConcurrentHashMap<>(data));
 
-        // Calcola max per normalizzazione
+        // Calculate max for normalization
         int max = data.values().stream().mapToInt(Integer::intValue).max().orElse(1);
         maxCounts.put(type, Math.max(1, max));
     }
 
     /**
-     * Aggiunge un singolo punto alla heatmap.
-     * MEMORY LEAK FIX #2: Ignora se la heatmap ha raggiunto il limite massimo di punti.
+     * Adds a single point to the heatmap.
+     * MEMORY LEAK FIX #2: Ignores if the heatmap has reached the maximum point limit.
      */
     public void addPoint(HeatmapType type, BlockPos pos, int count) {
         Map<BlockPos, Integer> data = heatmapData.get(type);
@@ -123,8 +121,8 @@ public class HeatmapVisualizer {
             return; // Silently ignore to prevent unbounded growth
         }
 
-        data.merge(pos, count, Integer::sum);
-        int newCount = data.get(pos);
+        data.merge(pos, count, (a, b) -> Objects.requireNonNull(a) + Objects.requireNonNull(b));
+        int newCount = Objects.requireNonNull(data.get(pos));
         if (newCount > maxCounts.get(type)) {
             maxCounts.put(type, newCount);
         }
@@ -167,26 +165,26 @@ public class HeatmapVisualizer {
     }
 
     /**
-     * MEMORY LEAK FIX: Pulisce i dati se il visualizer è stato disabilitato da più di N millisecondi
+     * MEMORY LEAK FIX: Clears data if the visualizer has been disabled for more than N milliseconds
      */
     public void clearIfDisabledFor(long ms) {
         if (disabledSince > 0 && System.currentTimeMillis() - disabledSince > ms) {
             clearAll();
-            disabledSince = 0; // Reset timestamp dopo clear
+            disabledSince = 0; // Reset timestamp after clear
         }
     }
 
     private void renderHeatmap(PoseStack poseStack, MultiBufferSource buffer, Vec3 cameraPos,
                                Map<BlockPos, Integer> data, int maxCount, HeatmapType type) {
-        VertexConsumer consumer = buffer.getBuffer(RenderType.debugQuads());
+        VertexConsumer consumer = buffer.getBuffer(Objects.requireNonNull(RenderType.debugQuads()));
 
         poseStack.pushPose();
         poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-        Matrix4f matrix = poseStack.last().pose();
-        var pose = poseStack.last();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
+        var pose = Objects.requireNonNull(poseStack.last());
 
-        // Limita il rendering ai blocchi vicini (performance)
-        // Usa il valore configurabile da Settings
+        // Limit rendering to nearby blocks (performance)
+        // Use configurable value from Settings
         double maxDistSqr = SettingsManager.INSTANCE.getSettings().visualizers.getRenderDistanceSq();
 
         for (Map.Entry<BlockPos, Integer> entry : data.entrySet()) {
@@ -266,17 +264,16 @@ public class HeatmapVisualizer {
     private void renderSolidBox(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose, AABB box,
                                 float r, float g, float b, float a) {
         float minX = (float) box.minX;
-        float minY = (float) box.minY;
         float minZ = (float) box.minZ;
         float maxX = (float) box.maxX;
         float maxY = (float) box.maxY;
         float maxZ = (float) box.maxZ;
 
         // Top face only (lighter for heatmap)
-        consumer.addVertex(matrix, minX, maxY, minZ).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
-        consumer.addVertex(matrix, minX, maxY, maxZ).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
-        consumer.addVertex(matrix, maxX, maxY, maxZ).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
-        consumer.addVertex(matrix, maxX, maxY, minZ).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
+        Objects.requireNonNull(consumer.addVertex(Objects.requireNonNull(matrix), minX, maxY, minZ).setColor(r, g, b, a)).setNormal(Objects.requireNonNull(pose), 0f, 1f, 0f);
+        Objects.requireNonNull(consumer.addVertex(Objects.requireNonNull(matrix), minX, maxY, maxZ).setColor(r, g, b, a)).setNormal(Objects.requireNonNull(pose), 0f, 1f, 0f);
+        Objects.requireNonNull(consumer.addVertex(Objects.requireNonNull(matrix), maxX, maxY, maxZ).setColor(r, g, b, a)).setNormal(Objects.requireNonNull(pose), 0f, 1f, 0f);
+        Objects.requireNonNull(consumer.addVertex(Objects.requireNonNull(matrix), maxX, maxY, minZ).setColor(r, g, b, a)).setNormal(Objects.requireNonNull(pose), 0f, 1f, 0f);
     }
 
     /**
@@ -326,7 +323,7 @@ public class HeatmapVisualizer {
         // Combine all room data into a single map
         Map<BlockPos, Integer> combined = new ConcurrentHashMap<>();
         for (Map<BlockPos, Integer> roomData : sourceData.values()) {
-            roomData.forEach((pos, count) -> combined.merge(pos, count, Integer::sum));
+            roomData.forEach((pos, count) -> combined.merge(pos, count, (a, b) -> Objects.requireNonNull(a) + Objects.requireNonNull(b)));
         }
 
         // Set data in the visualizer

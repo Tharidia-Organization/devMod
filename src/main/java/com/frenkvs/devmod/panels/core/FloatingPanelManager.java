@@ -11,6 +11,7 @@ import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
@@ -161,7 +162,7 @@ public class FloatingPanelManager {
                        Camera camera, float partialTick) {
         if (!enabled || panels.isEmpty()) return;
 
-        Vec3 cameraPos = camera.getPosition();
+        Vec3 cameraPos = Objects.requireNonNull(camera.getPosition(), "cameraPos");
 
         // Sort by distance (farthest first for correct Z-ordering)
         List<FloatingPanel> sortedPanels = panels.stream()
@@ -206,11 +207,12 @@ public class FloatingPanelManager {
      * @return true if a panel handled the click
      */
     public boolean handleMouseClick(int button) {
-        if (!enabled || hoveredPanel == null) return false;
+        FloatingPanel panel = hoveredPanel;
+        if (!enabled || panel == null) return false;
 
         // Calculate local click coordinates (simplified)
         // In real implementation, project the mouse ray onto the panel
-        return hoveredPanel.handleClick(0, 0, button);
+        return panel.handleClick(0, 0, button);
     }
 
     /**

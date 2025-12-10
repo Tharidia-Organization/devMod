@@ -13,14 +13,14 @@ public final class UIConstants {
 
     // === BACKGROUND COLORS (Impact UI Style) ===
     public static final class Background {
-        public static final int SCREEN = 0xE01A1A2E;        // Blu scuro (Impact style)
-        public static final int PANEL = 0xCC1A1A2E;         // Pannello 80% opacity
-        public static final int PANEL_SOLID = 0xFF1A1A2E;   // Pannello 100% opacity
+        public static final int SCREEN = 0xE01A1A2E;        // Dark blue (Impact style)
+        public static final int PANEL = 0xCC1A1A2E;         // Panel 80% opacity
+        public static final int PANEL_SOLID = 0xFF1A1A2E;   // Panel 100% opacity
         public static final int HEADER = 0xFF252538;        // Header slightly lighter
-        public static final int INPUT = 0xFF151525;         // Input field scuro
-        public static final int HOVER = 0xFF2A2A42;         // Hover blu scuro
+        public static final int INPUT = 0xFF151525;         // Dark input field
+        public static final int HOVER = 0xFF2A2A42;         // Dark blue hover
         public static final int ACTIVE = 0xFF3D3D5A;        // Active state
-        public static final int TOOLTIP = 0xF0151525;       // Tooltip scuro
+        public static final int TOOLTIP = 0xF0151525;       // Dark tooltip
         public static final int HUD_PANEL = 0xCC1A1A2E;     // HUD panel (Impact)
         public static final int GLOW = 0x553D5AFE;          // Glow effect
         private Background() {}
@@ -28,26 +28,26 @@ public final class UIConstants {
 
     // === BORDER COLORS (Impact UI Style) ===
     public static final class Border {
-        public static final int DEFAULT = 0xFF3D5AFE;       // Blu elettrico (Impact main)
+        public static final int DEFAULT = 0xFF3D5AFE;       // Electric blue (Impact main)
         public static final int LIGHT = 0xFF5C7AFF;         // Lighter variant
-        public static final int ACCENT = 0xFF00FFFF;        // Cyan (bordo accent/hover)
-        public static final int SEPARATOR = 0x803D5AFE;     // Separatore 50% alpha
+        public static final int ACCENT = 0xFF00FFFF;        // Cyan (accent/hover border)
+        public static final int SEPARATOR = 0x803D5AFE;     // Separator 50% alpha
         public static final int GLOW = 0x553D5AFE;          // Glow border
-        public static final int MUTED = 0xFF2A2A4A;         // Bordo attenuato
+        public static final int MUTED = 0xFF2A2A4A;         // Muted border
         private Border() {}
     }
 
     // === TEXT COLORS (Impact UI Style) ===
     public static final class Text {
-        public static final int PRIMARY = 0xFFFFFFFF;       // Bianco primario
-        public static final int SECONDARY = 0xFFAAAAAA;     // Grigio secondario (muted)
-        public static final int MUTED = 0xFF888888;         // Grigio attenuato
-        public static final int DISABLED = 0xFF555555;      // Grigio disabilitato
-        public static final int ACCENT = 0xFF3D5AFE;        // Blu elettrico
-        public static final int TITLE = 0xFF00FFFF;         // Cyan (titoli Impact)
-        public static final int VALUE = 0xFF00FF00;         // Verde (valori Impact)
-        public static final int FORMULA = 0xFFFFD700;       // Oro (formule Impact)
-        public static final int WHITE = 0xFFFFFFFF;         // Bianco puro
+        public static final int PRIMARY = 0xFFFFFFFF;       // Primary white
+        public static final int SECONDARY = 0xFFAAAAAA;     // Secondary gray (muted)
+        public static final int MUTED = 0xFF888888;         // Muted gray
+        public static final int DISABLED = 0xFF555555;      // Disabled gray
+        public static final int ACCENT = 0xFF3D5AFE;        // Electric blue
+        public static final int TITLE = 0xFF00FFFF;         // Cyan (Impact titles)
+        public static final int VALUE = 0xFF00FF00;         // Green (Impact values)
+        public static final int FORMULA = 0xFFFFD700;       // Gold (Impact formulas)
+        public static final int WHITE = 0xFFFFFFFF;         // Pure white
         private Text() {}
     }
 

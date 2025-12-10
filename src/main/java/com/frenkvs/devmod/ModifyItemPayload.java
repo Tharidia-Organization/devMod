@@ -42,12 +42,13 @@ public record ModifyItemPayload(
 
     // NeoForge 1.21.1 compliant StreamCodec using composite pattern
     public static final StreamCodec<ByteBuf, ModifyItemPayload> STREAM_CODEC = StreamCodec.composite(
-        ByteBufCodecs.VAR_INT, ModifyItemPayload::durability,
-        ByteBufCodecs.BOOL, ModifyItemPayload::unbreakable,
-        ByteBufCodecs.VAR_INT, ModifyItemPayload::repairCost,
-        ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list(MAX_ENCHANTMENTS)), ModifyItemPayload::enchantmentChanges,
-        ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list(MAX_ATTRIBUTES)), ModifyItemPayload::attributeChanges,
-        ModifyItemPayload::new
+        Objects.requireNonNull(ByteBufCodecs.VAR_INT), ModifyItemPayload::durability,
+        Objects.requireNonNull(ByteBufCodecs.BOOL), ModifyItemPayload::unbreakable,
+        Objects.requireNonNull(ByteBufCodecs.VAR_INT), ModifyItemPayload::repairCost,
+        Objects.requireNonNull(ByteBufCodecs.STRING_UTF8.apply(Objects.requireNonNull(ByteBufCodecs.list(MAX_ENCHANTMENTS)))), ModifyItemPayload::enchantmentChanges,
+        Objects.requireNonNull(ByteBufCodecs.STRING_UTF8.apply(Objects.requireNonNull(ByteBufCodecs.list(MAX_ATTRIBUTES)))), ModifyItemPayload::attributeChanges,
+        (durability, unbreakable, repairCost, enchantmentChanges, attributeChanges) ->
+            new ModifyItemPayload(durability, unbreakable, repairCost, enchantmentChanges, attributeChanges)
     );
 
     public ModifyItemPayload {

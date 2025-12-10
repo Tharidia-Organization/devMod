@@ -137,4 +137,15 @@ public final class I18n {
     public static MutableComponent literal(String text) {
         return Objects.requireNonNull(Component.literal(Objects.requireNonNull(text)));
     }
+
+    /**
+     * Create an error message with additional details appended.
+     * Used for validation error messages like "Error: <detail>".
+     */
+    @Nonnull
+    public static Component errorWithDetails(String key, String details) {
+        MutableComponent base = translate(key);
+        MutableComponent detailPart = Objects.requireNonNull(Component.literal(": " + Objects.requireNonNull(details)));
+        return Objects.requireNonNull(base.append(detailPart));
+    }
 }

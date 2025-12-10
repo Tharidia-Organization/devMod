@@ -12,7 +12,6 @@ import java.util.Objects;
  * Payload sent from server to client when a badge is unlocked.
  * Triggers the badge popup overlay on the client.
  */
-@SuppressWarnings({"null", "unused"})
 public record BadgeUnlockPayload(String badgeName, String rarity) implements CustomPacketPayload {
 
     public static final ResourceLocation ID = Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "badge_unlock"));

@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 /**
  * Manages gamification elements: points, badges, achievements, leaderboards, and challenges.
  */
-@SuppressWarnings({"null", "unused"})
 public class GamificationManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(GamificationManager.class);
 

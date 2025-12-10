@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Event tracker that hooks into game events to automatically update TesterProgress.
@@ -91,7 +92,7 @@ public class QAEventTracker {
         }
 
         // Player dealt damage to a mob
-        Player player = mc.player;
+        Player player = Objects.requireNonNull(mc.player);
         ItemStack weapon = player.getMainHandItem();
 
         // Detect body part from HitHelper if available
@@ -103,9 +104,9 @@ public class QAEventTracker {
                             !player.isInWater() && !player.isPassenger();
 
         // Check for mace smash (mace + falling)
-        boolean isMaceSmash = weapon.is(Items.MACE) && player.fallDistance > 1.5f;
+        boolean isMaceSmash = weapon.is(java.util.Objects.requireNonNull(Items.MACE)) && player.fallDistance > 1.5f;
 
-        // Check if arrow
+        // Check if arrow - used in tracking
         boolean isArrow = source.getDirectEntity() instanceof Arrow;
 
         // Store for kill correlation
@@ -115,8 +116,8 @@ public class QAEventTracker {
         lastWeaponUsed = weapon.copy();
         lastDamageTime = System.currentTimeMillis();
 
-        // Record damage
-        TesterProgress.INSTANCE.onDamageDealt(damage, bodyPart, weapon.getItem(), isCritical);
+        // Record damage (note: isArrow tracked separately in kill events)
+        TesterProgress.INSTANCE.onDamageDealt(damage, bodyPart, weapon.getItem(), isCritical || isArrow);
 
         LOGGER.debug("Damage tracked: {} dmg to {} ({}) with {}",
             damage, target.getName().getString(), bodyPart, weapon.getHoverName().getString());
@@ -135,7 +136,8 @@ public class QAEventTracker {
 
         // Check if player caused the death
         Entity killer = source.getEntity();
-        if (killer == null || !killer.equals(mc.player)) {
+        Player player = mc.player;
+        if (killer == null || player == null || !killer.equals(player)) {
             return;
         }
 
@@ -143,14 +145,16 @@ public class QAEventTracker {
         String bodyPart = "BODY";
         boolean isCritical = false;
         boolean isMaceSmash = false;
-        ItemStack weapon = mc.player.getMainHandItem();
+        ItemStack weapon = player.getMainHandItem();
 
         if (System.currentTimeMillis() - lastDamageTime < 500) {
-            bodyPart = lastHitBodyPart != null ? lastHitBodyPart : "BODY";
+            String cachedBodyPart = lastHitBodyPart;
+            bodyPart = cachedBodyPart != null ? cachedBodyPart : "BODY";
             isCritical = lastHitWasCritical;
             isMaceSmash = lastHitWasMaceSmash;
-            if (!lastWeaponUsed.isEmpty()) {
-                weapon = lastWeaponUsed;
+            ItemStack cachedWeapon = lastWeaponUsed;
+            if (cachedWeapon != null && !cachedWeapon.isEmpty()) {
+                weapon = cachedWeapon;
             }
         }
 
@@ -176,7 +180,10 @@ public class QAEventTracker {
         );
 
         // Check for enchanted weapon kill - use modern DataComponents API
-        ItemEnchantments enchants = weapon.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
+        ItemEnchantments enchants = weapon.getOrDefault(
+            java.util.Objects.requireNonNull(DataComponents.ENCHANTMENTS),
+            java.util.Objects.requireNonNull(ItemEnchantments.EMPTY)
+        );
         if (!enchants.isEmpty()) {
             // Track as enchanted kill
             TesterProgress.INSTANCE.onEnchantedKill("enchanted_weapon");
@@ -237,10 +244,14 @@ public class QAEventTracker {
 
         MobEffectInstance effect = event.getEffectInstance();
         if (effect != null) {
-            String effectName = BuiltInRegistries.MOB_EFFECT.getKey(effect.getEffect().value()).toString();
-            TesterProgress.INSTANCE.onEffectGained(effectName);
-
-            LOGGER.debug("Effect gained: {}", effectName);
+            net.minecraft.resources.ResourceLocation effectKey = BuiltInRegistries.MOB_EFFECT.getKey(
+                java.util.Objects.requireNonNull(effect.getEffect().value())
+            );
+            if (effectKey != null) {
+                String effectName = effectKey.toString();
+                TesterProgress.INSTANCE.onEffectGained(effectName);
+                LOGGER.debug("Effect gained: {}", effectName);
+            }
         }
     }
 

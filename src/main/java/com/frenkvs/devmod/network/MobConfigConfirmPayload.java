@@ -6,6 +6,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import javax.annotation.Nonnull;
 import java.util.Objects;
 
 /**
@@ -15,9 +16,9 @@ import java.util.Objects;
 public record MobConfigConfirmPayload(
     boolean success,
     boolean isGlobal,
-    String mobTypeName,
+    @Nonnull String mobTypeName,
     int affectedCount,
-    String message
+    @Nonnull String message
 ) implements CustomPacketPayload {
 
     public static final Type<MobConfigConfirmPayload> TYPE = new Type<>(
@@ -35,9 +36,9 @@ public record MobConfigConfirmPayload(
         buffer -> new MobConfigConfirmPayload(
             ByteBufCodecs.BOOL.decode(buffer),
             ByteBufCodecs.BOOL.decode(buffer),
-            ByteBufCodecs.STRING_UTF8.decode(buffer),
+            Objects.requireNonNull(ByteBufCodecs.STRING_UTF8.decode(buffer)),
             ByteBufCodecs.VAR_INT.decode(buffer),
-            ByteBufCodecs.STRING_UTF8.decode(buffer)
+            Objects.requireNonNull(ByteBufCodecs.STRING_UTF8.decode(buffer))
         )
     );
 
@@ -49,7 +50,7 @@ public record MobConfigConfirmPayload(
     /**
      * Create a success confirmation.
      */
-    public static MobConfigConfirmPayload success(boolean isGlobal, String mobTypeName, int affectedCount) {
+    public static MobConfigConfirmPayload success(boolean isGlobal, @Nonnull String mobTypeName, int affectedCount) {
         String message = isGlobal
             ? "Global config saved for " + mobTypeName + " (" + affectedCount + " mobs updated)"
             : "Config applied to " + mobTypeName;
@@ -59,7 +60,7 @@ public record MobConfigConfirmPayload(
     /**
      * Create a failure confirmation.
      */
-    public static MobConfigConfirmPayload failure(String reason) {
+    public static MobConfigConfirmPayload failure(@Nonnull String reason) {
         return new MobConfigConfirmPayload(false, false, "", 0, reason);
     }
 }

@@ -5,25 +5,27 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.Objects;
+import javax.annotation.Nonnull;
+
 /**
  * Network payload sent from client to server to request personal records sync.
  * Sent when opening EnduranceQuestScreen.
  */
-@SuppressWarnings({"null", "unused"})
 public record RequestPersonalRecordsPayload() implements CustomPacketPayload {
 
     public static final Type<RequestPersonalRecordsPayload> TYPE = new Type<>(
-        ResourceLocation.fromNamespaceAndPath("devmod", "request_personal_records")
+        Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "request_personal_records"))
     );
 
     public static final StreamCodec<ByteBuf, RequestPersonalRecordsPayload> STREAM_CODEC = new StreamCodec<>() {
         @Override
-        public RequestPersonalRecordsPayload decode(ByteBuf buf) {
+        public RequestPersonalRecordsPayload decode(@Nonnull ByteBuf buf) {
             return new RequestPersonalRecordsPayload();
         }
 
         @Override
-        public void encode(ByteBuf buf, RequestPersonalRecordsPayload payload) {
+        public void encode(@Nonnull ByteBuf buf, @Nonnull RequestPersonalRecordsPayload payload) {
             // No data to encode
         }
     };

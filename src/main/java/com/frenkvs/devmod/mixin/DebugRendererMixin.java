@@ -11,6 +11,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import javax.annotation.Nonnull;
+
 /**
  * Client-side mixin to enable debug renderers.
  * In release builds, DebugRenderer.render() never calls the actual renderers.
@@ -35,8 +37,8 @@ public class DebugRendererMixin {
      * Inject at the end of render() to actually render the debug data.
      */
     @Inject(method = "render", at = @At("TAIL"))
-    private void devmod_render(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
-                               double camX, double camY, double camZ, CallbackInfo ci) {
+    private void devmod_render(@Nonnull PoseStack poseStack, @Nonnull MultiBufferSource.BufferSource bufferSource,
+                               double camX, double camY, double camZ, @Nonnull CallbackInfo ci) {
 
         if (DebugRenderBools.ENTITY_PATHING) {
             this.pathfindingRenderer.render(poseStack, bufferSource, camX, camY, camZ);
@@ -79,7 +81,7 @@ public class DebugRendererMixin {
      * Clear all renderers when they should be reset.
      */
     @Inject(method = "clear", at = @At("TAIL"))
-    private void devmod_clear(CallbackInfo ci) {
+    private void devmod_clear(@Nonnull CallbackInfo ci) {
         this.pathfindingRenderer.clear();
         this.goalSelectorRenderer.clear();
         this.raidDebugRenderer.clear();

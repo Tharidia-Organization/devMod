@@ -9,7 +9,9 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+import javax.annotation.Nonnull;
 
 /**
  * Manages 3D impact visual effects:
@@ -44,7 +46,8 @@ public class ImpactVFX {
             activeEffects.remove(0);
         }
 
-        activeEffects.add(new ImpactEffect(hitPoint, slashDirection, data));
+        activeEffects.add(new ImpactEffect(Objects.requireNonNull(hitPoint, "hitPoint"),
+            slashDirection, data));
 
         // Also spawn the 3D panel
         Impact3DPanelManager.INSTANCE.spawnPanelFromImpact(data);
@@ -61,8 +64,9 @@ public class ImpactVFX {
         long now = System.currentTimeMillis();
         activeEffects.removeIf(e -> e.isExpired(now));
 
+        Vec3 cam = nnVec(cameraPos, "cameraPos");
         for (ImpactEffect effect : activeEffects) {
-            renderEffect(poseStack, bufferSource, cameraPos, effect, now);
+            renderEffect(poseStack, bufferSource, cam, effect, now);
         }
 
         // Flush buffer per assicurare rendering
@@ -74,11 +78,13 @@ public class ImpactVFX {
     private static void renderEffect(PoseStack poseStack, MultiBufferSource bufferSource,
                                      Vec3 cameraPos, ImpactEffect effect, long now) {
         float coreAlpha = effect.getCoreAlpha(now);
+        Vec3 hitPoint = nnVec(effect.hitPoint, "hitPoint");
+        Vec3 cam = nnVec(cameraPos, "cameraPos");
 
         // 1. Render Energy Vortex Core (spirale di energia)
         if (coreAlpha > 0.01f) {
             poseStack.pushPose();
-            Vec3 rel = effect.hitPoint.subtract(cameraPos);
+            Vec3 rel = Objects.requireNonNull(hitPoint.subtract(cam), "relative position");
             poseStack.translate(rel.x, rel.y, rel.z);
 
             renderEnergyVortex(poseStack, bufferSource, coreAlpha, effect.getRotation(now), effect.getPulseScale(now));
@@ -90,7 +96,7 @@ public class ImpactVFX {
         float slashProgress = effect.getSlashProgress(now);
         if (slashProgress >= 0 && slashProgress <= 1.0f) {
             poseStack.pushPose();
-            Vec3 rel = effect.hitPoint.subtract(cameraPos);
+            Vec3 rel = Objects.requireNonNull(hitPoint.subtract(cam), "relative position");
             poseStack.translate(rel.x, rel.y, rel.z);
 
             renderSlashTrail(poseStack, bufferSource, effect.slashDirection, slashProgress);
@@ -101,7 +107,7 @@ public class ImpactVFX {
         // 3. Render Connection Lines (from core towards screen/HUD)
         float lineAlpha = effect.getLineAlpha(now);
         if (lineAlpha > 0.05f) {
-            renderConnectionLines(poseStack, bufferSource, cameraPos, effect.hitPoint, lineAlpha, effect.getRotation(now));
+            renderConnectionLines(poseStack, bufferSource, cameraPos, hitPoint, lineAlpha, effect.getRotation(now));
         }
     }
 
@@ -110,8 +116,8 @@ public class ImpactVFX {
      */
     private static void renderEnergyVortex(PoseStack poseStack, MultiBufferSource bufferSource,
                                             float alpha, float rotation, float pulseScale) {
-        Matrix4f matrix = poseStack.last().pose();
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.debugLineStrip(2.5));
+        Matrix4f matrix = nn(poseStack.last().pose(), "vortex matrix");
+        VertexConsumer consumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.debugLineStrip(2.5)));
 
         // Colors
         float r1 = ((COLOR_CORE_PRIMARY >> 16) & 0xFF) / 255.0f;
@@ -226,8 +232,9 @@ public class ImpactVFX {
      */
     private static void renderSlashTrail(PoseStack poseStack, MultiBufferSource bufferSource,
                                           Vec3 direction, float progress) {
-        Matrix4f matrix = poseStack.last().pose();
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.debugLineStrip(5.0));
+        Vec3 dir = nnVec(direction, "slash direction");
+        Matrix4f matrix = nn(poseStack.last().pose(), "slash matrix");
+        VertexConsumer consumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.debugLineStrip(5.0)));
 
         float r = ((COLOR_SLASH >> 16) & 0xFF) / 255.0f;
         float g = ((COLOR_SLASH >> 8) & 0xFF) / 255.0f;
@@ -238,8 +245,8 @@ public class ImpactVFX {
 
         // === SLASH LINE (line that "cuts" through the point) ===
         // Perpendicular direction to view (simulates lateral sword movement)
-        float dirX = (float) direction.x;
-        float dirZ = (float) direction.z;
+        float dirX = (float) dir.x;
+        float dirZ = (float) dir.z;
 
         // Perpendicular vector for horizontal cut
         float perpX = -dirZ;
@@ -390,19 +397,20 @@ public class ImpactVFX {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
+        Vec3 cam = nnVec(cameraPos, "cameraPos");
         poseStack.pushPose();
-        Vec3 rel = hitPoint.subtract(cameraPos);
+        Vec3 rel = Objects.requireNonNull(hitPoint.subtract(cam), "relative position");
         poseStack.translate(rel.x, rel.y, rel.z);
 
-        Matrix4f matrix = poseStack.last().pose();
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.debugLineStrip(2.0));
+        Matrix4f matrix = nn(poseStack.last().pose(), "line matrix");
+        VertexConsumer consumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.debugLineStrip(2.0)));
 
         float r = ((COLOR_LINE >> 16) & 0xFF) / 255.0f;
         float g = ((COLOR_LINE >> 8) & 0xFF) / 255.0f;
         float b = (COLOR_LINE & 0xFF) / 255.0f;
 
         // Direction towards camera
-        Vec3 toCamera = cameraPos.subtract(hitPoint).normalize();
+        Vec3 toCamera = nnVec(cam.subtract(hitPoint), "toCamera").normalize();
 
         // === MAIN LINES TOWARDS CAMERA ===
         float lineLength = 1.5f;
@@ -461,7 +469,7 @@ public class ImpactVFX {
             .setNormal(1, 0, 0);
 
         // Top line
-        consumer.addVertex(matrix, 0, sideOffset, 0)
+            consumer.addVertex(matrix, 0, sideOffset, 0)
             .setColor(r, g, b, alpha * 0.6f)
             .setNormal(0, 1, 0);
         consumer.addVertex(matrix, 0, sideOffset + sideLength, 0)
@@ -482,15 +490,13 @@ public class ImpactVFX {
      * Internal class for a single impact effect.
      */
     private static class ImpactEffect {
-        final Vec3 hitPoint;
-        final Vec3 slashDirection;
-        final ImpactData data;
+        @Nonnull final Vec3 hitPoint;
+        @Nonnull final Vec3 slashDirection;
         final long startTime;
 
-        ImpactEffect(Vec3 hitPoint, Vec3 slashDirection, ImpactData data) {
-            this.hitPoint = hitPoint;
+        ImpactEffect(@Nonnull Vec3 hitPoint, Vec3 slashDirection, ImpactData data) {
+            this.hitPoint = Objects.requireNonNull(hitPoint, "hitPoint");
             this.slashDirection = slashDirection != null ? slashDirection : new Vec3(1, 0, 0);
-            this.data = data;
             this.startTime = System.currentTimeMillis();
         }
 
@@ -550,5 +556,15 @@ public class ImpactVFX {
             double pulse = Math.sin(elapsed * 0.008) * 0.15 + 1.0;
             return (float) pulse;
         }
+    }
+
+    @Nonnull
+    private static Matrix4f nn(Matrix4f matrix, String context) {
+        return Objects.requireNonNull(matrix, context);
+    }
+
+    @Nonnull
+    private static Vec3 nnVec(Vec3 vec, String context) {
+        return Objects.requireNonNull(vec, context);
     }
 }

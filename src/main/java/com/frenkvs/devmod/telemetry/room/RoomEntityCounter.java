@@ -16,6 +16,7 @@ import net.minecraft.world.phys.AABB;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -184,6 +185,7 @@ public class RoomEntityCounter {
             Math.max(min.getY(), max.getY()) + 1,
             Math.max(min.getZ(), max.getZ()) + 1
         );
+        java.util.Objects.requireNonNull(roomBox);
 
         // Query entities in the room
         List<Entity> entitiesInRoom = level.getEntities(null, roomBox);
@@ -241,7 +243,7 @@ public class RoomEntityCounter {
             }
 
             // PERFORMANCE FIX: Reduced scan radius from 32 to 16 blocks
-            AABB scanBox = player.getBoundingBox().inflate(16);
+            AABB scanBox = Objects.requireNonNull(Objects.requireNonNull(player.getBoundingBox()).inflate(16));
             List<Entity> nearbyEntities = level.getEntities(player, scanBox);
 
             RoomEntityStats fallbackStats = roomStats.computeIfAbsent(playerRoom, k -> new RoomEntityStats());

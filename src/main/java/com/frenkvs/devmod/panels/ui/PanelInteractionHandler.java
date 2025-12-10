@@ -6,8 +6,10 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Handles mouse interactions with floating panels in the 3D world.
@@ -61,7 +63,6 @@ public class PanelInteractionHandler {
         if (isDragging) return;
 
         Camera camera = mc.gameRenderer.getMainCamera();
-        Vec3 cameraPos = camera.getPosition();
 
         // Find the panel under the mouse
         FloatingPanel newHovered = findPanelUnderMouse(mouseX, mouseY, screenWidth, screenHeight, camera);
@@ -85,7 +86,7 @@ public class PanelInteractionHandler {
     private FloatingPanel findPanelUnderMouse(double mouseX, double mouseY,
                                                int screenWidth, int screenHeight,
                                                Camera camera) {
-        Vec3 cameraPos = camera.getPosition();
+        Vec3 cameraPos = Objects.requireNonNull(camera.getPosition());
         List<FloatingPanel> panels = FloatingPanelManager.INSTANCE.getAllPanels();
 
         // Convert mouse position to ray direction
@@ -106,7 +107,7 @@ public class PanelInteractionHandler {
             // Simplified intersection test (sphere around panel)
             double hitRadius = estimatePanelRadius(panel, distance) * PANEL_HITBOX_SCALE;
 
-            if (rayIntersectsSphere(cameraPos, rayDir, panelPos, hitRadius)) {
+            if (rayIntersectsSphere(cameraPos, rayDir, Objects.requireNonNull(panelPos), hitRadius)) {
                 if (distance < closestDist) {
                     closestDist = distance;
                     closest = panel;
@@ -126,7 +127,8 @@ public class PanelInteractionHandler {
                                    int screenWidth, int screenHeight,
                                    Camera camera) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return null;
+        var player = mc.player;
+        if (player == null) return null;
 
         // Normalize mouse coordinates (-1 to 1)
         float normalizedX = (float) (2.0 * mouseX / screenWidth - 1.0);
@@ -134,12 +136,12 @@ public class PanelInteractionHandler {
 
         // Simplification: uses player's look direction with offset
         // For precise interaction, would need inverse projection matrix
-        Vec3 lookDir = mc.player.getLookAngle();
+        Vec3 lookDir = Objects.requireNonNull(player.getLookAngle());
 
         // Calculate right and up vectors
         Vec3 worldUp = new Vec3(0, 1, 0);
-        Vec3 right = lookDir.cross(worldUp).normalize();
-        Vec3 up = right.cross(lookDir).normalize();
+        Vec3 right = Objects.requireNonNull(lookDir.cross(worldUp).normalize());
+        Vec3 up = Objects.requireNonNull(right.cross(lookDir).normalize());
 
         // FOV adjustment
         float fov = (float) Math.toRadians(mc.options.fov().get());
@@ -150,7 +152,7 @@ public class PanelInteractionHandler {
         float offsetY = normalizedY * tanHalfFov;
 
         // Ray direction
-        return lookDir.add(right.scale(offsetX)).add(up.scale(offsetY)).normalize();
+        return Objects.requireNonNull(lookDir.add(Objects.requireNonNull(right.scale(offsetX))).add(Objects.requireNonNull(up.scale(offsetY))).normalize());
     }
 
     /**
@@ -171,8 +173,8 @@ public class PanelInteractionHandler {
     /**
      * Ray-sphere intersection test.
      */
-    private boolean rayIntersectsSphere(Vec3 rayOrigin, Vec3 rayDir, Vec3 sphereCenter, double radius) {
-        Vec3 oc = rayOrigin.subtract(sphereCenter);
+    private boolean rayIntersectsSphere(@Nonnull Vec3 rayOrigin, @Nonnull Vec3 rayDir, @Nonnull Vec3 sphereCenter, double radius) {
+        Vec3 oc = Objects.requireNonNull(rayOrigin.subtract(sphereCenter));
 
         double a = rayDir.dot(rayDir);
         double b = 2.0 * oc.dot(rayDir);
@@ -189,13 +191,14 @@ public class PanelInteractionHandler {
      * @return true if the click was handled
      */
     public boolean handleClick(int button) {
-        if (hoveredPanel == null) return false;
+        FloatingPanel localHovered = this.hoveredPanel;
+        if (localHovered == null) return false;
 
         // Calculate approximate local coordinates (center of panel)
-        int localX = hoveredPanel.getWidth() / 2;
-        int localY = hoveredPanel.getHeight() / 2;
+        int localX = localHovered.getWidth() / 2;
+        int localY = localHovered.getHeight() / 2;
 
-        return hoveredPanel.handleClick(localX, localY, button);
+        return localHovered.handleClick(localX, localY, button);
     }
 
     // Drag state
@@ -207,18 +210,19 @@ public class PanelInteractionHandler {
      * Handles the start of a drag.
      */
     public boolean handleDragStart(int button) {
-        if (button != 0 || hoveredPanel == null) return false;
+        FloatingPanel localHovered = this.hoveredPanel;
+        if (button != 0 || localHovered == null) return false;
 
         // Only pinned panels can be dragged
-        if (!hoveredPanel.isPinned()) {
+        if (!localHovered.isPinned()) {
             // Provide feedback to user explaining why drag doesn't work
             showFeedback("Pin panel first (right-click) to enable dragging");
             return false;
         }
 
-        draggedPanel = hoveredPanel;
+        draggedPanel = localHovered;
         isDragging = true;
-        dragStartPanelPos = draggedPanel.getWorldPosition();
+        dragStartPanelPos = localHovered.getWorldPosition();
 
         Minecraft mc = Minecraft.getInstance();
         dragStartMouseX = mc.mouseHandler.xpos();
@@ -240,10 +244,13 @@ public class PanelInteractionHandler {
      * Moves the panel in 3D world based on mouse movement.
      */
     public void handleDragMove(double mouseX, double mouseY) {
-        if (!isDragging || draggedPanel == null || dragStartPanelPos == null) return;
+        FloatingPanel localDraggedPanel = this.draggedPanel;
+        Vec3 localDragStartPos = this.dragStartPanelPos;
+        if (!isDragging || localDraggedPanel == null || localDragStartPos == null) return;
 
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return;
+        var player = mc.player;
+        if (player == null) return;
 
         // Calculate mouse delta in normalized coordinates
         int screenWidth = mc.getWindow().getGuiScaledWidth();
@@ -254,24 +261,24 @@ public class PanelInteractionHandler {
 
         // Scale movement based on panel distance
         Camera camera = mc.gameRenderer.getMainCamera();
-        Vec3 cameraPos = camera.getPosition();
-        double distance = dragStartPanelPos.distanceTo(cameraPos);
+        Vec3 cameraPos = Objects.requireNonNull(camera.getPosition());
+        double distance = localDragStartPos.distanceTo(cameraPos);
 
         // Movement proportional to distance (far panels move more)
         double movementScale = distance * 0.5;
 
         // Calculate right and up vectors from camera
-        Vec3 lookDir = mc.player.getLookAngle();
+        Vec3 lookDir = Objects.requireNonNull(player.getLookAngle());
         Vec3 worldUp = new Vec3(0, 1, 0);
-        Vec3 right = lookDir.cross(worldUp).normalize();
-        Vec3 up = right.cross(lookDir).normalize();
+        Vec3 right = Objects.requireNonNull(lookDir.cross(worldUp).normalize());
+        Vec3 up = Objects.requireNonNull(right.cross(lookDir).normalize());
 
         // New position = initial position + offset
-        Vec3 offset = right.scale(deltaX * movementScale).add(up.scale(-deltaY * movementScale));
-        Vec3 newPos = dragStartPanelPos.add(offset);
+        Vec3 offset = Objects.requireNonNull(Objects.requireNonNull(right.scale(deltaX * movementScale)).add(Objects.requireNonNull(up.scale(-deltaY * movementScale))));
+        Vec3 newPos = Objects.requireNonNull(localDragStartPos.add(offset));
 
         // Apply the new position
-        draggedPanel.setFixedPosition(newPos);
+        localDraggedPanel.setFixedPosition(newPos);
     }
 
     /**

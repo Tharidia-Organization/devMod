@@ -97,6 +97,23 @@ public final class ClientPartyCache {
     }
 
     /**
+     * Get the selected mob ID as ResourceLocation.
+     * Returns null if no party or no mob selected.
+     */
+    @Nullable
+    public static net.minecraft.resources.ResourceLocation getSelectedMobId() {
+        return currentParty != null ? currentParty.getSelectedMobResourceLocation() : null;
+    }
+
+    /**
+     * Get the selected mob display name.
+     * Returns "Zombie" (default) if no party or no mob selected.
+     */
+    public static String getSelectedMobDisplayName() {
+        return currentParty != null ? currentParty.getSelectedMobDisplayName() : "Zombie";
+    }
+
+    /**
      * Get the last notification if still displayable.
      */
     @Nullable

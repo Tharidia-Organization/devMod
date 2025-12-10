@@ -29,14 +29,14 @@ public record NamedInvitePayload(
         @Override
         @Nonnull
         public NamedInvitePayload decode(@Nonnull RegistryFriendlyByteBuf buf) {
-            String name = buf.readUtf(MAX_NAME_LENGTH);
+            String name = Objects.requireNonNull(buf.readUtf(MAX_NAME_LENGTH));
             int questType = buf.readVarInt();
             return new NamedInvitePayload(name, questType);
         }
 
         @Override
         public void encode(@Nonnull RegistryFriendlyByteBuf buf, @Nonnull NamedInvitePayload payload) {
-            buf.writeUtf(payload.targetPlayerName, MAX_NAME_LENGTH);
+            buf.writeUtf(Objects.requireNonNull(payload.targetPlayerName), MAX_NAME_LENGTH);
             buf.writeVarInt(payload.questTypeOrdinal);
         }
     };

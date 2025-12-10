@@ -27,12 +27,12 @@ public record InviteResponsePayload(
     );
 
     private static void encode(RegistryFriendlyByteBuf buf, InviteResponsePayload payload) {
-        buf.writeUUID(payload.inviteId);
+        buf.writeUUID(Objects.requireNonNull(payload.inviteId));
         buf.writeBoolean(payload.accepted);
     }
 
     private static InviteResponsePayload decode(RegistryFriendlyByteBuf buf) {
-        UUID inviteId = buf.readUUID();
+        UUID inviteId = Objects.requireNonNull(buf.readUUID());
         boolean accepted = buf.readBoolean();
         return new InviteResponsePayload(inviteId, accepted);
     }

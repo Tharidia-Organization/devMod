@@ -158,6 +158,7 @@ public class WeaponEditorScreen extends Screen {
         float value;
         EditBox inputField;
         boolean isDragging = false;
+        float pulseAnimation = 0f; // Pulse effect when value changes (0-1, decays over time)
 
         StatSlider(String name, String tooltip, int color, float min, float max, float defaultVal) {
             this.name = name;
@@ -166,6 +167,10 @@ public class WeaponEditorScreen extends Screen {
             this.min = min;
             this.max = max;
             this.value = defaultVal;
+        }
+
+        void triggerPulse() {
+            this.pulseAnimation = 1.0f;
         }
     }
 
@@ -894,6 +899,16 @@ public class WeaponEditorScreen extends Screen {
 
         int knobX = Math.max(x, Math.min(x + width - 6, x + fillWidth - 3));
         boolean hovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, width, height);
+
+        // Pulse animation effect (expands glow when value changes)
+        int pulseExpand = (int) (stat.pulseAnimation * 4);
+        if (stat.pulseAnimation > 0 || hovered || stat.isDragging) {
+            int glowAlpha = 80 + (int) (stat.pulseAnimation * 100);
+            graphics.fill(knobX - 2 - pulseExpand, y - 2 - pulseExpand,
+                knobX + 8 + pulseExpand, y + height + 2 + pulseExpand,
+                UIConstants.setAlpha(stat.color, glowAlpha));
+        }
+
         graphics.fill(knobX, y - 1, knobX + 6, y + height + 1, hovered || stat.isDragging ? UIConstants.Text.WHITE : UIConstants.Text.SECONDARY);
 
         AxiomRenderer.drawBorder(graphics, x, y, width, height, UIConstants.Border.MUTED);
@@ -2757,6 +2772,7 @@ public class WeaponEditorScreen extends Screen {
         float value = stat.min + ratio * (stat.max - stat.min);
         value = Math.round(value * 20) / 20f;
         stat.value = value;
+        stat.triggerPulse(); // Visual feedback when value changes
         if (stat.inputField != null) {
             stat.inputField.setValue(formatFloat(value));
         }
@@ -3087,6 +3103,13 @@ public class WeaponEditorScreen extends Screen {
     public void tick() {
         super.tick();
         if (statusTicks > 0) statusTicks--;
+
+        // Decay slider pulse animations
+        for (StatSlider slider : statSliders) {
+            if (slider.pulseAnimation > 0) {
+                slider.pulseAnimation = Math.max(0, slider.pulseAnimation - 0.1f);
+            }
+        }
     }
 
     @Override

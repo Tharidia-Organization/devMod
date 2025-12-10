@@ -8,23 +8,23 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 /**
- * Servizio centralizzato per la gestione delle heatmap spaziali.
+ * Centralized service for spatial heatmap management.
  *
- * Gestisce le seguenti heatmap:
- * - Stuck: Posizioni dove le entità rimangono bloccate
- * - Aggro Drop: Posizioni dove i mob perdono l'aggro
- * - Kiting: Posizioni dove i mob vengono kitati/girati
- * - Death: Posizioni di morte
- * - Movement: Posizioni di movimento dei player
- * - Camping: Posizioni dove i player campano
- * - Choke Points: Posizioni dove i player quittano
- * - Invisible Collisions: Collisioni invisibili
- * - Parkour Falls: Cadute da parkour
+ * Manages the following heatmaps:
+ * - Stuck: Positions where entities get stuck
+ * - Aggro Drop: Positions where mobs lose aggro
+ * - Kiting: Positions where mobs get kited/turned
+ * - Death: Death positions
+ * - Movement: Player movement positions
+ * - Camping: Positions where players camp
+ * - Choke Points: Positions where players quit
+ * - Invisible Collisions: Invisible collisions
+ * - Parkour Falls: Parkour falls
  */
 public class HeatmapService {
     public static final HeatmapService INSTANCE = new HeatmapService();
 
-    // Heatmap per tipo
+    // Heatmap by type
     private final Map<String, Map<BlockPos, Integer>> stuckHeatmap = new ConcurrentHashMap<>();
     private final Map<String, Map<BlockPos, Integer>> aggroDropHeatmap = new ConcurrentHashMap<>();
     private final Map<String, Map<BlockPos, Integer>> kitingHeatmap = new ConcurrentHashMap<>();
@@ -209,7 +209,7 @@ public class HeatmapService {
 
     private void increment(Map<String, Map<BlockPos, Integer>> heatmap, String room, BlockPos pos) {
         heatmap.computeIfAbsent(room, k -> new ConcurrentHashMap<>())
-               .merge(pos, 1, Integer::sum);
+               .merge(pos, 1, (a, b) -> a + b);
     }
 
     private String escapeJson(String s) {
