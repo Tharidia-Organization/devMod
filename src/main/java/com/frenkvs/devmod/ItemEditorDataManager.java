@@ -601,4 +601,56 @@ public class ItemEditorDataManager {
         templates.clear();
         loadAll();
     }
+
+    /**
+     * Reset all Item Editor data (presets, favorites, history, custom templates).
+     * Called during a full player reset to return to first-time experience.
+     */
+    public void resetAll() {
+        DevMod.LOGGER.info("[ItemEditor] Resetting all Item Editor data...");
+
+        // Clear in-memory data
+        presets.clear();
+        favoriteEnchantments.clear();
+        favoriteAttributes.clear();
+        history.clear();
+        templates.clear();
+
+        // Delete data files
+        try {
+            Path dataDir = getDataDirectory();
+            deleteIfExists(dataDir.resolve("presets.json"));
+            deleteIfExists(dataDir.resolve("favorites.json"));
+            deleteIfExists(dataDir.resolve("history.json"));
+            deleteIfExists(dataDir.resolve("templates.json"));
+
+            // Delete exports directory contents
+            Path exportsDir = dataDir.resolve("exports");
+            if (Files.exists(exportsDir)) {
+                Files.list(exportsDir).forEach(file -> {
+                    try {
+                        Files.deleteIfExists(file);
+                    } catch (IOException e) {
+                        DevMod.LOGGER.warn("[ItemEditor] Could not delete export file: {}", file.getFileName());
+                    }
+                });
+            }
+
+            DevMod.LOGGER.info("[ItemEditor] All data reset successfully");
+        } catch (Exception e) {
+            DevMod.LOGGER.error("[ItemEditor] Error during reset: {}", e.getMessage());
+        }
+
+        // Reinitialize with defaults
+        initDefaultTemplates();
+        initialized = true;
+    }
+
+    private void deleteIfExists(Path path) {
+        try {
+            Files.deleteIfExists(path);
+        } catch (IOException e) {
+            DevMod.LOGGER.warn("[ItemEditor] Could not delete file: {}", path.getFileName());
+        }
+    }
 }

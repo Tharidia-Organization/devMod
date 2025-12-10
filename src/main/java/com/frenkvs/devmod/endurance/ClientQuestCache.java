@@ -30,6 +30,12 @@ public class ClientQuestCache {
         cachedData = payload;
         lastUpdateTime = System.currentTimeMillis();
 
+        // If quest is no longer active, reset tracking state
+        if (!payload.hasActiveQuest()) {
+            lastWave = 0;
+            wasActive = false;
+        }
+
         // Sync with IntegratedTestSession
         syncWithIntegratedSession(oldData, payload);
     }

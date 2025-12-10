@@ -763,6 +763,38 @@ public class GamificationManager {
             playerProfiles.size(), allTimeLeaderboard.entries.size());
     }
 
+    /**
+     * Reset all gamification data. Called during full player reset.
+     */
+    public void resetAll() {
+        LOGGER.info("[Gamification] Resetting all gamification data...");
+
+        // Clear in-memory data
+        playerProfiles.clear();
+        allTimeLeaderboard.entries.clear();
+        weeklyLeaderboard.entries.clear();
+        dailyLeaderboard.entries.clear();
+        dailyChallenges.clear();
+        weeklyChallenges.clear();
+        lastDailyReset = null;
+        lastWeeklyReset = null;
+
+        // Delete data files
+        if (dataDirectory != null) {
+            try {
+                Files.deleteIfExists(dataDirectory.resolve("profiles.json"));
+                Files.deleteIfExists(dataDirectory.resolve("leaderboards.json"));
+                LOGGER.info("[Gamification] All gamification data reset successfully");
+            } catch (IOException e) {
+                LOGGER.error("[Gamification] Failed to delete data files", e);
+            }
+        }
+
+        // Regenerate challenges
+        generateDailyChallenges();
+        generateWeeklyChallenges();
+    }
+
     private void saveData() {
         // Save player profiles
         Path profilesFile = dataDirectory.resolve("profiles.json");

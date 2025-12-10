@@ -44,6 +44,7 @@ public class UnifiedSettingsScreen extends Screen {
     // Reset confirmation dialog
     private boolean showResetConfirmation = false;
     private boolean showFactoryResetConfirmation = false;
+    private boolean showPlayerProgressResetConfirmation = false;
 
     // Search functionality
     private String searchQuery = "";
@@ -151,6 +152,11 @@ public class UnifiedSettingsScreen extends Screen {
         // Factory reset confirmation dialog (rendered on top)
         if (showFactoryResetConfirmation) {
             renderFactoryResetDialog(graphics, mouseX, mouseY);
+        }
+
+        // Player progress reset confirmation dialog (rendered on top)
+        if (showPlayerProgressResetConfirmation) {
+            renderPlayerProgressResetDialog(graphics, mouseX, mouseY);
         }
 
         // Tooltip (rendered last, on top of everything)
@@ -390,6 +396,126 @@ public class UnifiedSettingsScreen extends Screen {
         onClose();
     }
 
+    // === Player Progress Reset Dialog ===
+
+    private void renderPlayerProgressResetDialog(GuiGraphics graphics, int mouseX, int mouseY) {
+        // Dim background
+        graphics.fill(0, 0, width, height, 0x90000000);
+
+        // Dialog box
+        int dialogWidth = 340;
+        int dialogHeight = 160;
+        int dialogX = (width - dialogWidth) / 2;
+        int dialogY = (height - dialogHeight) / 2;
+
+        // Background with orange border (warning, not destructive)
+        graphics.fill(dialogX - 2, dialogY - 2, dialogX + dialogWidth + 2, dialogY + dialogHeight + 2, UIConstants.Accent.ORANGE);
+        graphics.fill(dialogX, dialogY, dialogX + dialogWidth, dialogY + dialogHeight, UIConstants.Background.PANEL);
+
+        // Title
+        String title = "Reset Player Progress";
+        int titleWidth = font.width(title);
+        graphics.drawString(font, title, dialogX + (dialogWidth - titleWidth) / 2, dialogY + 12, UIConstants.Accent.ORANGE, false);
+
+        // Description
+        String[] messages = {
+            "This will reset ALL player progress:",
+            "- Endurance Quest stats & records",
+            "- Tokens, rewards & achievements",
+            "- Item Editor presets & favorites",
+            "- Leaderboard rankings",
+            "Settings will NOT be affected."
+        };
+
+        int y = dialogY + 32;
+        for (String msg : messages) {
+            int msgWidth = font.width(msg);
+            int color = msg.startsWith("-") ? UIConstants.Text.SECONDARY : UIConstants.Text.PRIMARY;
+            graphics.drawString(font, msg, dialogX + (dialogWidth - msgWidth) / 2, y, color, false);
+            y += 11;
+        }
+
+        // Buttons
+        int buttonWidth = 100;
+        int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
+        int buttonY = dialogY + dialogHeight - buttonHeight - 12;
+
+        // Cancel button
+        int cancelX = dialogX + dialogWidth / 2 - buttonWidth - 15;
+        boolean cancelHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, cancelX, buttonY, buttonWidth, buttonHeight);
+        AxiomRenderer.drawButton(graphics, font, cancelX, buttonY, buttonWidth, buttonHeight, "Cancel", cancelHovered, false);
+
+        // Confirm button (orange)
+        int confirmX = dialogX + dialogWidth / 2 + 15;
+        boolean confirmHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, confirmX, buttonY, buttonWidth, buttonHeight);
+        graphics.fill(confirmX, buttonY, confirmX + buttonWidth, buttonY + buttonHeight,
+            confirmHovered ? 0xFFFF8800 : UIConstants.Accent.ORANGE);
+        AxiomRenderer.drawBorder(graphics, confirmX, buttonY, buttonWidth, buttonHeight, UIConstants.Border.DEFAULT);
+        String confirmText = "Reset Progress";
+        int confirmTextWidth = font.width(confirmText);
+        graphics.drawString(font, confirmText, confirmX + (buttonWidth - confirmTextWidth) / 2,
+            buttonY + (buttonHeight - 8) / 2, UIConstants.Text.WHITE, false);
+    }
+
+    private boolean handlePlayerProgressResetDialogClick(int mouseX, int mouseY) {
+        int dialogWidth = 340;
+        int dialogHeight = 160;
+        int dialogX = (width - dialogWidth) / 2;
+        int dialogY = (height - dialogHeight) / 2;
+
+        int buttonWidth = 100;
+        int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
+        int buttonY = dialogY + dialogHeight - buttonHeight - 12;
+
+        // Cancel button
+        int cancelX = dialogX + dialogWidth / 2 - buttonWidth - 15;
+        if (AxiomRenderer.isMouseOver(mouseX, mouseY, cancelX, buttonY, buttonWidth, buttonHeight)) {
+            showPlayerProgressResetConfirmation = false;
+            return true;
+        }
+
+        // Confirm button - perform player progress reset
+        int confirmX = dialogX + dialogWidth / 2 + 15;
+        if (AxiomRenderer.isMouseOver(mouseX, mouseY, confirmX, buttonY, buttonWidth, buttonHeight)) {
+            performPlayerProgressReset();
+            showPlayerProgressResetConfirmation = false;
+            return true;
+        }
+
+        // Click outside dialog cancels
+        if (mouseX < dialogX || mouseX > dialogX + dialogWidth ||
+            mouseY < dialogY || mouseY > dialogY + dialogHeight) {
+            showPlayerProgressResetConfirmation = false;
+            return true;
+        }
+
+        return true; // Consume all clicks when dialog is open
+    }
+
+    private void performPlayerProgressReset() {
+        // Reset ItemEditorDataManager
+        try {
+            com.frenkvs.devmod.ItemEditorDataManager.INSTANCE.resetAll();
+        } catch (Exception e) {
+            // Ignore - may not be initialized
+        }
+
+        // Reset EnduranceQuestManager (includes RewardSystem and GamificationManager)
+        try {
+            com.frenkvs.devmod.endurance.EnduranceQuestManager.INSTANCE.clearAllPlayerStats();
+        } catch (Exception e) {
+            // Ignore - may not be initialized on client
+        }
+
+        // Show feedback to user
+        if (minecraft != null && minecraft.player != null) {
+            minecraft.player.displayClientMessage(
+                I18n.translate("devmod.message.player_progress_reset"),
+                false
+            );
+        }
+    }
+
     // === Header ===
 
     private void renderHeader(GuiGraphics graphics) {
@@ -579,8 +705,22 @@ public class UnifiedSettingsScreen extends Screen {
         AxiomRenderer.drawButton(graphics, font, buttonX, buttonY, 80, UIConstants.Size.BUTTON_HEIGHT,
             "Reset Page", resetHovered, false);
 
-        // Factory Reset button (dangerous action - red color)
+        // Reset Progress button (orange - warning action)
         buttonX += 90;
+        boolean resetProgressHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, buttonX, buttonY, 105, UIConstants.Size.BUTTON_HEIGHT);
+        if (resetProgressHovered) {
+            graphics.fill(buttonX, buttonY, buttonX + 105, buttonY + UIConstants.Size.BUTTON_HEIGHT, 0xFFFF8800);
+        } else {
+            graphics.fill(buttonX, buttonY, buttonX + 105, buttonY + UIConstants.Size.BUTTON_HEIGHT, UIConstants.Accent.ORANGE);
+        }
+        AxiomRenderer.drawBorder(graphics, buttonX, buttonY, 105, UIConstants.Size.BUTTON_HEIGHT, UIConstants.Border.DEFAULT);
+        String resetProgressText = "Reset Progress";
+        int resetProgressTextWidth = font.width(resetProgressText);
+        graphics.drawString(font, resetProgressText, buttonX + (105 - resetProgressTextWidth) / 2,
+            buttonY + (UIConstants.Size.BUTTON_HEIGHT - 8) / 2, UIConstants.Text.WHITE, false);
+
+        // Factory Reset button (dangerous action - red color)
+        buttonX += 115;
         boolean factoryResetHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, buttonX, buttonY, 100, UIConstants.Size.BUTTON_HEIGHT);
         if (factoryResetHovered) {
             graphics.fill(buttonX, buttonY, buttonX + 100, buttonY + UIConstants.Size.BUTTON_HEIGHT, UIConstants.Status.ERROR);
@@ -625,6 +765,11 @@ public class UnifiedSettingsScreen extends Screen {
         // Handle factory reset confirmation dialog
         if (showFactoryResetConfirmation) {
             return handleFactoryResetDialogClick((int) mouseX, (int) mouseY);
+        }
+
+        // Handle player progress reset confirmation dialog
+        if (showPlayerProgressResetConfirmation) {
+            return handlePlayerProgressResetDialogClick((int) mouseX, (int) mouseY);
         }
 
         // Header close button
@@ -686,8 +831,15 @@ public class UnifiedSettingsScreen extends Screen {
             return true;
         }
 
+        // Reset Progress button - show player progress reset confirmation
+        int resetProgressX = PADDING + 90;
+        if (AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, resetProgressX, buttonY, 105, UIConstants.Size.BUTTON_HEIGHT)) {
+            showPlayerProgressResetConfirmation = true;
+            return true;
+        }
+
         // Factory Reset button - show factory reset confirmation
-        int factoryResetX = PADDING + 90;
+        int factoryResetX = PADDING + 90 + 115;
         if (AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, factoryResetX, buttonY, 100, UIConstants.Size.BUTTON_HEIGHT)) {
             showFactoryResetConfirmation = true;
             return true;

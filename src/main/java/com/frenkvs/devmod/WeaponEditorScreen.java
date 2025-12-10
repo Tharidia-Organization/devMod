@@ -971,10 +971,10 @@ public class WeaponEditorScreen extends Screen {
         int pickerX = panelX + 20;
         int pickerY = startY;
         int pickerW = PANEL_WIDTH - 40;
-        int pickerH = 250; // Increased height for filter tabs
+        int pickerH = 200; // Reduced height to avoid overlapping with buttons
 
         // Darken background
-        graphics.fill(panelX, startY - 20, panelX + PANEL_WIDTH, startY + 270, 0xC0000000);
+        graphics.fill(panelX, startY - 20, panelX + PANEL_WIDTH, startY + 220, 0xC0000000);
 
         // Picker background
         graphics.fill(pickerX, pickerY, pickerX + pickerW, pickerY + pickerH, UIConstants.Background.PANEL);
@@ -1016,7 +1016,7 @@ public class WeaponEditorScreen extends Screen {
         // Enchantment list (moved down for filter tabs + search box)
         int listY = pickerY + 58;
         int itemHeight = 18;
-        int visibleItems = 8;
+        int visibleItems = 6; // Reduced to fit in smaller picker
 
         Holder<Enchantment> hoveredEnch = null;
         int hoveredY = 0;
@@ -1272,10 +1272,10 @@ public class WeaponEditorScreen extends Screen {
         int pickerX = panelX + 20;
         int pickerY = startY;
         int pickerW = PANEL_WIDTH - 40;
-        int pickerH = 220;
+        int pickerH = 200; // Reduced height to avoid overlapping with buttons
 
         // Darken background
-        graphics.fill(panelX, startY - 20, panelX + PANEL_WIDTH, startY + 240, 0xC0000000);
+        graphics.fill(panelX, startY - 20, panelX + PANEL_WIDTH, startY + 220, 0xC0000000);
 
         // Picker background
         graphics.fill(pickerX, pickerY, pickerX + pickerW, pickerY + pickerH, UIConstants.Background.PANEL);
@@ -1299,7 +1299,7 @@ public class WeaponEditorScreen extends Screen {
         // Attribute list
         int listY = pickerY + 42;
         int itemHeight = 18;
-        int visibleItems = 8;
+        int visibleItems = 7; // Reduced to fit in smaller picker
 
         for (int i = 0; i < Math.min(visibleItems, filtered.size() - attrPickerScrollOffset); i++) {
             int idx = i + attrPickerScrollOffset;
@@ -2215,7 +2215,7 @@ public class WeaponEditorScreen extends Screen {
         int pickerX = panelX + 20;
         int pickerY = startY;
         int pickerW = PANEL_WIDTH - 40;
-        int pickerH = 250;
+        int pickerH = 200;
 
         // Close button (X)
         int closeX = pickerX + pickerW - 20;
@@ -2247,7 +2247,7 @@ public class WeaponEditorScreen extends Screen {
         List<Holder<Enchantment>> filtered = getFilteredAvailableEnchants();
         int listY = pickerY + 58;
         int itemHeight = 18;
-        int visibleItems = 8;
+        int visibleItems = 6;
 
         for (int i = 0; i < Math.min(visibleItems, filtered.size() - pickerScrollOffset); i++) {
             int idx = i + pickerScrollOffset;
@@ -2273,7 +2273,7 @@ public class WeaponEditorScreen extends Screen {
         List<Holder<Enchantment>> filtered = getFilteredAvailableEnchants();
         int listY = pickerY + 58;
         int itemHeight = 18;
-        int visibleItems = 8;
+        int visibleItems = 6;
 
         for (int i = 0; i < Math.min(visibleItems, filtered.size() - pickerScrollOffset); i++) {
             int idx = i + pickerScrollOffset;
@@ -2376,7 +2376,7 @@ public class WeaponEditorScreen extends Screen {
         int pickerX = panelX + 20;
         int pickerY = startY;
         int pickerW = PANEL_WIDTH - 40;
-        int pickerH = 220;
+        int pickerH = 200;
 
         // Close button
         int closeX = pickerX + pickerW - 20;
@@ -2397,7 +2397,7 @@ public class WeaponEditorScreen extends Screen {
         List<Holder<Attribute>> filtered = getFilteredAvailableAttributes();
         int listY = pickerY + 42;
         int itemHeight = 18;
-        int visibleItems = 8;
+        int visibleItems = 7;
 
         for (int i = 0; i < Math.min(visibleItems, filtered.size() - attrPickerScrollOffset); i++) {
             int idx = i + attrPickerScrollOffset;

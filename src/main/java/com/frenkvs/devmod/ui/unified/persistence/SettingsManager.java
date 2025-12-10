@@ -270,6 +270,22 @@ public class SettingsManager {
             LOGGER.warn("[DevMod] Could not reset QuestManager: {}", e.getMessage());
         }
 
+        // Reset ItemEditorDataManager (presets, favorites, history)
+        try {
+            com.frenkvs.devmod.ItemEditorDataManager.INSTANCE.resetAll();
+            LOGGER.debug("[DevMod] ItemEditorDataManager reset");
+        } catch (Exception e) {
+            LOGGER.warn("[DevMod] Could not reset ItemEditorDataManager: {}", e.getMessage());
+        }
+
+        // Reset EnduranceQuestManager (player stats, rewards, gamification)
+        try {
+            com.frenkvs.devmod.endurance.EnduranceQuestManager.INSTANCE.clearAllPlayerStats();
+            LOGGER.debug("[DevMod] EnduranceQuestManager reset");
+        } catch (Exception e) {
+            LOGGER.warn("[DevMod] Could not reset EnduranceQuestManager: {}", e.getMessage());
+        }
+
         // Delete config files to ensure fresh start
         deleteConfigFile(ConfigPaths.getTesterProfileFile());
         deleteConfigFile(ConfigPaths.getTesterProgressFile());

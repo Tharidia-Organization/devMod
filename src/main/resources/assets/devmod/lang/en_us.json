@@ -664,5 +664,6 @@
   "devmod.screen.welcome": "Welcome to DevMod",
   "devmod.screen.exit_quest_confirm": "Exit Quest?",
 
-  "devmod.message.factory_reset_complete": "§c[DevMod] Factory reset complete! Restart game for full effect."
+  "devmod.message.factory_reset_complete": "§c[DevMod] Factory reset complete! Restart game for full effect.",
+  "devmod.message.player_progress_reset": "§6[DevMod] Player progress reset! Quest stats, rewards, and presets cleared."
 }

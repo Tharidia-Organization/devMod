@@ -644,6 +644,30 @@ public class RewardSystem {
         LOGGER.info("[RewardSystem] Saved all data ({} wallets)", playerWallets.size());
     }
 
+    /**
+     * Reset all reward system data. Called during full player reset.
+     */
+    public void resetAll() {
+        LOGGER.info("[RewardSystem] Resetting all reward data...");
+
+        // Clear in-memory data
+        playerWallets.clear();
+        purchaseLocks.clear();
+
+        // Delete wallet file
+        if (dataDirectory != null) {
+            try {
+                Path walletsFile = dataDirectory.resolve("player_wallets.json");
+                Path backupFile = dataDirectory.resolve("player_wallets.json.bak");
+                Files.deleteIfExists(walletsFile);
+                Files.deleteIfExists(backupFile);
+                LOGGER.info("[RewardSystem] All reward data reset successfully");
+            } catch (IOException e) {
+                LOGGER.error("[RewardSystem] Failed to delete wallet files", e);
+            }
+        }
+    }
+
     // ========== Notifications ==========
 
     private void notifyPlayer(ServerPlayer player, QuestRewards rewards) {

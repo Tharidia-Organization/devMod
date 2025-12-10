@@ -254,6 +254,9 @@ public class EnduranceQuestManager {
             // Restore player's original state (inventory, game mode)
             restorePlayerAfterQuest(player, session);
 
+            // Cleanup wave state and boss fight systems
+            cleanupQuestSystems(session);
+
             // Cleanup arena
             arenaManager.destroyArena(session.arena);
 
@@ -356,6 +359,9 @@ public class EnduranceQuestManager {
                 // Restore player's original state (inventory, game mode)
                 restorePlayerAfterQuest(player, session);
 
+                // Cleanup wave state and boss fight systems
+                cleanupQuestSystems(session);
+
                 arenaManager.destroyArena(session.arena);
 
                 // Cleanup subsystems and award partial rewards
@@ -388,6 +394,9 @@ public class EnduranceQuestManager {
 
                 // Restore player's original state (inventory, game mode)
                 restorePlayerAfterQuest(player, session);
+
+                // Cleanup wave state and boss fight systems
+                cleanupQuestSystems(session);
 
                 arenaManager.destroyArena(session.arena);
 
@@ -438,6 +447,9 @@ public class EnduranceQuestManager {
         if (session != null && session.quest.getState() == EnduranceQuestState.WAVE_COMPLETE) {
             // Restore player's original state (inventory, game mode)
             restorePlayerAfterQuest(player, session);
+
+            // Cleanup wave state and boss fight systems
+            cleanupQuestSystems(session);
 
             // Partial completion - save progress
             arenaManager.destroyArena(session.arena);
@@ -701,6 +713,72 @@ public class EnduranceQuestManager {
 
         LOGGER.info("[EnduranceQuest] Restored player {} state (game mode: {})",
             player.getName().getString(), originalMode);
+    }
+
+    /**
+     * Cleanup quest-related systems (WaveManager, BossWaveSystem) when quest ends.
+     * This ensures all state is properly reset for the next quest.
+     */
+    private void cleanupQuestSystems(ActiveQuestSession session) {
+        ArenaManager.Arena arena = session.getArena();
+        UUID arenaId = arena.getId();
+
+        // Cleanup WaveManager state (removes tracked mobs, resets wave state)
+        WaveManager.INSTANCE.cleanupWave(arenaId, arena.getLevel());
+
+        // Cleanup BossWaveSystem if there's an active boss fight
+        BossWaveSystem.INSTANCE.endBossFight(arenaId, false);
+
+        LOGGER.debug("[EnduranceQuest] Cleaned up quest systems for arena {}", arenaId);
+    }
+
+    /**
+     * Clear ALL player stats and quest data. Used for full player reset.
+     * This deletes all endurance quest records, stats, and progress.
+     */
+    public void clearAllPlayerStats() {
+        LOGGER.info("[EnduranceQuest] Clearing all player stats and quest data...");
+
+        // Clear in-memory stats
+        playerStats.clear();
+        questTemplates.clear();
+
+        // Delete player stats file
+        if (dataDirectory != null) {
+            try {
+                Path statsFile = dataDirectory.resolve("player_stats.json");
+                Path backupFile = dataDirectory.resolve("player_stats.json.bak");
+                Path tempFile = dataDirectory.resolve("player_stats.json.tmp");
+
+                Files.deleteIfExists(statsFile);
+                Files.deleteIfExists(backupFile);
+                Files.deleteIfExists(tempFile);
+
+                LOGGER.info("[EnduranceQuest] All player stats cleared successfully");
+            } catch (IOException e) {
+                LOGGER.error("[EnduranceQuest] Failed to delete player stats files", e);
+            }
+        }
+
+        // Reset RewardSystem
+        try {
+            RewardSystem.INSTANCE.resetAll();
+        } catch (Exception e) {
+            LOGGER.warn("[EnduranceQuest] Could not reset RewardSystem: {}", e.getMessage());
+        }
+
+        // Reset GamificationManager
+        try {
+            GamificationManager.INSTANCE.resetAll();
+        } catch (Exception e) {
+            LOGGER.warn("[EnduranceQuest] Could not reset GamificationManager: {}", e.getMessage());
+        }
+
+        // Reinitialize quest templates
+        for (EnduranceQuestRegistry.MobQuestConfig mobConfig : EnduranceQuestRegistry.INSTANCE.getAllMobConfigs()) {
+            EnduranceQuest template = new EnduranceQuest(mobConfig);
+            questTemplates.put(mobConfig.mobId, template);
+        }
     }
 
     // ========== Inner Classes ==========
