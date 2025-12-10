@@ -210,3 +210,8 @@ idea {
         downloadJavadoc = true
     }
 }
+
+tasks.named('jar') {
+    archiveBaseName.set('DevMod')
+    archiveVersion.set('')
+}

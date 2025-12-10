@@ -374,7 +374,8 @@ public class MobConfigScreen extends Screen {
         // Create rotation quaternion for proper mob orientation
         Quaternionf rotation = new Quaternionf()
             .rotateY((float) Math.toRadians(rotationY))
-            .rotateX((float) Math.toRadians(rotationX));
+            .rotateX((float) Math.toRadians(rotationX))
+            .rotateZ((float) Math.PI);
 
         try {
             // Render entity
@@ -1205,8 +1206,8 @@ public class MobConfigScreen extends Screen {
             int mx = (int) mouseX;
             int my = (int) mouseY;
             // Improved sensitivity: 0.8 for Y rotation, 0.5 for X tilt
-            targetRotationY = dragStartRotY + (mx - dragStartX) * 0.8f;
-            rotationX = Mth.clamp(dragStartRotX + (my - dragStartY) * 0.5f, -45, 45);
+            targetRotationY = dragStartRotY - (mx - dragStartX) * 0.8f;
+            rotationX = Mth.clamp(dragStartRotX - (my - dragStartY) * 0.5f, -45, 45);
             return true;
         }
 
