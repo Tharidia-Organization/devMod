@@ -183,6 +183,7 @@ public class WaveManager {
 
     /**
      * Spawn mobs for the current wave.
+     * Verifies each spawn and logs failures for debugging.
      */
     private void spawnWaveMobs(WaveState waveState, ArenaManager.Arena arena) {
         ServerLevel level = arena.getLevel();
@@ -192,8 +193,18 @@ public class WaveManager {
         int toSpawn = waveState.totalToSpawn - waveState.spawned;
         List<BlockPos> spawnPositions = arena.getDistributedSpawnPositions(toSpawn);
 
-        for (int i = 0; i < toSpawn && i < spawnPositions.size(); i++) {
-            BlockPos spawnPos = spawnPositions.get(i);
+        int successfulSpawns = 0;
+        int failedSpawns = 0;
+
+        // If we don't have enough positions, log warning
+        if (spawnPositions.size() < toSpawn) {
+            LOGGER.warn("[EnduranceQuest] Only {} valid spawn positions found for {} mobs",
+                spawnPositions.size(), toSpawn);
+        }
+
+        for (int i = 0; i < toSpawn; i++) {
+            // Use modulo to reuse positions if we don't have enough
+            BlockPos spawnPos = spawnPositions.get(i % Math.max(1, spawnPositions.size()));
 
             Entity entity = entityType.create(level);
             if (entity instanceof Mob mob) {
@@ -213,18 +224,40 @@ public class WaveManager {
                 var ignored = mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos),
                     MobSpawnType.MOB_SUMMONED, null);
 
-                // Add to world
-                level.addFreshEntity(mob);
-
-                // Track the mob
-                waveState.addSpawnedMob(mob.getUUID());
-
-                // Tag mob as quest mob for tracking
+                // Tag mob as quest mob BEFORE adding to world (so event handlers can see it)
                 CompoundTag tag = mob.getPersistentData();
                 tag.putUUID("endurance_quest_id", waveState.quest.getQuestId());
                 tag.putUUID("endurance_arena_id", arena.getId());
+
+                // Add to world and verify success
+                boolean added = level.addFreshEntity(mob);
+
+                if (added && mob.isAlive()) {
+                    // Track the mob only if successfully spawned
+                    waveState.addSpawnedMob(mob.getUUID());
+                    successfulSpawns++;
+                } else {
+                    failedSpawns++;
+                    LOGGER.warn("[EnduranceQuest] Failed to spawn mob at {} (added={}, alive={})",
+                        spawnPos, added, mob.isAlive());
+                }
+            } else {
+                failedSpawns++;
+                LOGGER.error("[EnduranceQuest] Failed to create entity of type {}", entityType);
             }
         }
+
+        // If some spawns failed, adjust totalToSpawn to match actual spawned count
+        // This ensures wave can be completed with actual spawned mobs
+        if (failedSpawns > 0) {
+            LOGGER.warn("[EnduranceQuest] Wave {} spawn summary: {} successful, {} failed. Adjusting wave target.",
+                waveState.waveNumber, successfulSpawns, failedSpawns);
+            // Don't reduce below killed count to avoid instant completion
+            waveState.totalToSpawn = Math.max(waveState.killed + 1, waveState.spawned);
+        }
+
+        LOGGER.info("[EnduranceQuest] Wave {} spawned {}/{} mobs successfully",
+            waveState.waveNumber, successfulSpawns, toSpawn);
     }
 
     /**

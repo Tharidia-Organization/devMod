@@ -6,10 +6,14 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.frenkvs.devmod.telemetry.TelemetryService;
 import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameType;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -195,9 +199,12 @@ public class EnduranceQuestManager {
         // Start the quest
         quest.start(arena.getId());
 
-        // Create session
+        // Create session (will store original inventory and gamemode)
         ActiveQuestSession session = new ActiveQuestSession(playerId, quest, arena, System.currentTimeMillis());
         activeSessions.put(playerId, session);
+
+        // Prepare player for quest: save state, set survival, clear inventory, give kit
+        preparePlayerForQuest(player, session);
 
         // Teleport player to arena center
         arenaManager.teleportToArena(player, arena);
@@ -243,6 +250,9 @@ public class EnduranceQuestManager {
 
         if (session != null) {
             session.quest.fail(true);
+
+            // Restore player's original state (inventory, game mode)
+            restorePlayerAfterQuest(player, session);
 
             // Cleanup arena
             arenaManager.destroyArena(session.arena);
@@ -342,6 +352,10 @@ public class EnduranceQuestManager {
             } else {
                 // End quest
                 activeSessions.remove(playerId);
+
+                // Restore player's original state (inventory, game mode)
+                restorePlayerAfterQuest(player, session);
+
                 arenaManager.destroyArena(session.arena);
 
                 // Cleanup subsystems and award partial rewards
@@ -371,6 +385,10 @@ public class EnduranceQuestManager {
             if (session.quest.getState() == EnduranceQuestState.COMPLETED) {
                 // Quest fully completed!
                 activeSessions.remove(player.getUUID());
+
+                // Restore player's original state (inventory, game mode)
+                restorePlayerAfterQuest(player, session);
+
                 arenaManager.destroyArena(session.arena);
 
                 // Cleanup subsystems and award full rewards
@@ -418,6 +436,9 @@ public class EnduranceQuestManager {
         ActiveQuestSession session = activeSessions.remove(playerId);
 
         if (session != null && session.quest.getState() == EnduranceQuestState.WAVE_COMPLETE) {
+            // Restore player's original state (inventory, game mode)
+            restorePlayerAfterQuest(player, session);
+
             // Partial completion - save progress
             arenaManager.destroyArena(session.arena);
 
@@ -588,6 +609,100 @@ public class EnduranceQuestManager {
         }
     }
 
+    // ========== Player State Management ==========
+
+    /**
+     * Prepare a player for the quest: save current state, set survival mode,
+     * clear inventory, and give a starter kit.
+     */
+    private void preparePlayerForQuest(ServerPlayer player, ActiveQuestSession session) {
+        // Save original game mode
+        session.setOriginalGameMode(player.gameMode.getGameModeForPlayer());
+
+        // Save inventory (main inventory, armor, offhand)
+        ListTag inventoryTag = new ListTag();
+        player.getInventory().save(inventoryTag);
+        session.setSavedInventory(inventoryTag);
+
+        // Clear the player's inventory completely
+        player.getInventory().clearContent();
+
+        // Set to survival mode
+        player.setGameMode(GameType.SURVIVAL);
+
+        // Give starter kit
+        giveStarterKit(player);
+
+        // Heal player to full
+        player.setHealth(player.getMaxHealth());
+        player.getFoodData().setFoodLevel(20);
+        player.getFoodData().setSaturation(5.0f);
+
+        LOGGER.info("[EnduranceQuest] Prepared player {} for quest (saved {} inventory slots, was in {} mode)",
+            player.getName().getString(), inventoryTag.size(), session.getOriginalGameMode());
+    }
+
+    /**
+     * Give the player a starter kit for the endurance quest.
+     */
+    private void giveStarterKit(ServerPlayer player) {
+        var inventory = player.getInventory();
+
+        // Iron Sword (main weapon)
+        ItemStack sword = new ItemStack(Items.IRON_SWORD);
+        inventory.add(sword);
+
+        // Bow + Arrows (ranged option)
+        ItemStack bow = new ItemStack(Items.BOW);
+        inventory.add(bow);
+        inventory.add(new ItemStack(Items.ARROW, 32));
+
+        // Shield (defense)
+        inventory.add(new ItemStack(Items.SHIELD));
+
+        // Basic armor set (iron)
+        player.getInventory().armor.set(3, new ItemStack(Items.IRON_HELMET));      // Head slot
+        player.getInventory().armor.set(2, new ItemStack(Items.IRON_CHESTPLATE));  // Chest slot
+        player.getInventory().armor.set(1, new ItemStack(Items.IRON_LEGGINGS));    // Legs slot
+        player.getInventory().armor.set(0, new ItemStack(Items.IRON_BOOTS));       // Feet slot
+
+        // Food (golden apples for emergency healing)
+        inventory.add(new ItemStack(Items.GOLDEN_APPLE, 3));
+        inventory.add(new ItemStack(Items.COOKED_BEEF, 16));
+
+        // Utility items
+        inventory.add(new ItemStack(Items.TORCH, 16));
+
+        LOGGER.debug("[EnduranceQuest] Gave starter kit to {}", player.getName().getString());
+    }
+
+    /**
+     * Restore a player's original state after the quest ends.
+     */
+    private void restorePlayerAfterQuest(ServerPlayer player, ActiveQuestSession session) {
+        // Clear quest inventory
+        player.getInventory().clearContent();
+
+        // Restore original inventory
+        ListTag savedInventory = session.getSavedInventory();
+        if (savedInventory != null && !savedInventory.isEmpty()) {
+            player.getInventory().load(savedInventory);
+        }
+
+        // Restore original game mode
+        GameType originalMode = session.getOriginalGameMode();
+        if (originalMode != null) {
+            player.setGameMode(originalMode);
+        }
+
+        // Heal player
+        player.setHealth(player.getMaxHealth());
+        player.getFoodData().setFoodLevel(20);
+
+        LOGGER.info("[EnduranceQuest] Restored player {} state (game mode: {})",
+            player.getName().getString(), originalMode);
+    }
+
     // ========== Inner Classes ==========
 
     /**
@@ -632,6 +747,12 @@ public class EnduranceQuestManager {
         private int killsInCurrentWave = 0;
         private boolean awaitingRespawnChoice = false;
 
+        // Saved player state (to restore after quest)
+        private GameType originalGameMode;
+        private ListTag savedInventory;
+        private ListTag savedArmor;
+        private ListTag savedOffhand;
+
         public ActiveQuestSession(UUID playerId, EnduranceQuest quest, ArenaManager.Arena arena, long startTime) {
             this.playerId = playerId;
             this.quest = quest;
@@ -661,6 +782,16 @@ public class EnduranceQuestManager {
         public boolean isWaveComplete() {
             return killsInCurrentWave >= quest.getCurrentWaveMobCount();
         }
+
+        // Saved state getters/setters
+        public GameType getOriginalGameMode() { return originalGameMode; }
+        public void setOriginalGameMode(GameType mode) { this.originalGameMode = mode; }
+        public ListTag getSavedInventory() { return savedInventory; }
+        public void setSavedInventory(ListTag inv) { this.savedInventory = inv; }
+        public ListTag getSavedArmor() { return savedArmor; }
+        public void setSavedArmor(ListTag armor) { this.savedArmor = armor; }
+        public ListTag getSavedOffhand() { return savedOffhand; }
+        public void setSavedOffhand(ListTag offhand) { this.savedOffhand = offhand; }
     }
 
     /**

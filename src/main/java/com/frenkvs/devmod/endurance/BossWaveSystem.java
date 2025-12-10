@@ -334,7 +334,7 @@ public class BossWaveSystem {
         BossFight fight = new BossFight(bossId, arena.getId(), archetype, waveNumber, quest.getMobId());
 
         // Spawn boss
-        Mob boss = spawnBoss(arena, quest.getMobConfig(), archetype, waveNumber);
+        Mob boss = spawnBoss(arena, quest.getMobConfig(), archetype, waveNumber, quest.getQuestId());
         if (boss != null) {
             fight.setBossEntity(boss);
             fight.setMaxHealth(boss.getMaxHealth());
@@ -364,7 +364,7 @@ public class BossWaveSystem {
      * Spawn the boss mob with enhanced stats.
      */
     private Mob spawnBoss(ArenaManager.Arena arena, EnduranceQuestRegistry.MobQuestConfig mobConfig,
-                          BossArchetype archetype, int waveNumber) {
+                          BossArchetype archetype, int waveNumber, UUID questId) {
         ServerLevel level = arena.getLevel();
         BlockPos center = arena.getCenter();
 
@@ -400,11 +400,12 @@ public class BossWaveSystem {
         mob.setCustomName(Component.literal("§c§l" + archetype.displayName + " " + mobConfig.displayName));
         mob.setCustomNameVisible(true);
 
-        // Tag as boss
+        // Tag as boss (include endurance_quest_id so isQuestMob() detects it)
         CompoundTag tag = mob.getPersistentData();
         tag.putBoolean("endurance_boss", true);
         tag.putString("endurance_archetype", archetype.name());
         tag.putUUID("endurance_arena_id", arena.getId());
+        tag.putUUID("endurance_quest_id", questId);
 
         // Add spawn effects
         level.addFreshEntity(mob);

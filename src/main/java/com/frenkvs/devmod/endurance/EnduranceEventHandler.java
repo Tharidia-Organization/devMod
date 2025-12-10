@@ -846,6 +846,7 @@ public class EnduranceEventHandler {
 
     /**
      * Respawn mobs that died from external causes (not player kills).
+     * Applies the same wave modifiers as original spawns.
      */
     private static void respawnMissingWaveMobs(
             EnduranceQuestManager.ActiveQuestSession session,
@@ -859,47 +860,108 @@ public class EnduranceEventHandler {
         net.minecraft.world.entity.EntityType<?> entityType = mobConfig.entityType;
 
         List<net.minecraft.core.BlockPos> spawnPositions = arena.getDistributedSpawnPositions(count);
+        int successfulRespawns = 0;
 
-        for (int i = 0; i < count && i < spawnPositions.size(); i++) {
-            net.minecraft.core.BlockPos spawnPos = spawnPositions.get(i);
+        for (int i = 0; i < count; i++) {
+            // Use modulo to reuse positions if we don't have enough
+            net.minecraft.core.BlockPos spawnPos = spawnPositions.get(i % Math.max(1, spawnPositions.size()));
 
             Entity entity = entityType.create(level);
             if (entity instanceof Mob mob) {
                 // Position the mob
                 mob.setPos(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5);
 
+                // Apply wave modifiers (same as original spawns)
+                applyWaveModifiersToMob(mob, waveState);
+
                 // Finalize spawn
                 @SuppressWarnings("deprecation")
                 var ignored = mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos),
                     net.minecraft.world.entity.MobSpawnType.MOB_SUMMONED, null);
 
-                // Add to world
-                level.addFreshEntity(mob);
-
-                // Tag mob as quest mob for tracking
+                // Tag mob as quest mob BEFORE adding to world
                 CompoundTag tag = mob.getPersistentData();
                 tag.putUUID("endurance_quest_id", waveState.getQuest().getQuestId());
                 tag.putUUID("endurance_arena_id", arena.getId());
                 tag.putBoolean("endurance_respawned", true); // Mark as respawned
 
-                // Replace dead mob UUID with new one in wave state tracking
-                if (i < deadMobIds.size()) {
-                    waveState.getSpawnedMobs().remove(deadMobIds.get(i));
-                }
-                waveState.getSpawnedMobs().add(mob.getUUID());
+                // Add to world and verify success
+                boolean added = level.addFreshEntity(mob);
 
-                LOGGER.info("[EnduranceQuest] Respawned {} at {} for wave {}",
-                    entityType.getDescriptionId(), spawnPos, waveState.getWaveNumber());
+                if (added && mob.isAlive()) {
+                    // Replace dead mob UUID with new one in wave state tracking
+                    if (i < deadMobIds.size()) {
+                        waveState.getSpawnedMobs().remove(deadMobIds.get(i));
+                    }
+                    waveState.getSpawnedMobs().add(mob.getUUID());
+                    successfulRespawns++;
+
+                    LOGGER.info("[EnduranceQuest] Respawned {} at {} for wave {}",
+                        entityType.getDescriptionId(), spawnPos, waveState.getWaveNumber());
+                } else {
+                    LOGGER.warn("[EnduranceQuest] Failed to respawn mob at {}", spawnPos);
+                }
             }
         }
 
         // Notify player about respawned mobs
-        UUID playerId = session.getPlayerId();
-        var serverInstance = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
-        ServerPlayer player = serverInstance != null ? serverInstance.getPlayerList().getPlayer(playerId) : null;
-        if (player != null) {
-            player.sendSystemMessage(I18n.translate("devmod.endurance.mobs_respawned", count)
-                .withStyle(ChatFormatting.YELLOW));
+        if (successfulRespawns > 0) {
+            UUID playerId = session.getPlayerId();
+            var serverInstance = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+            ServerPlayer player = serverInstance != null ? serverInstance.getPlayerList().getPlayer(playerId) : null;
+            if (player != null) {
+                player.sendSystemMessage(I18n.translate("devmod.endurance.mobs_respawned", successfulRespawns)
+                    .withStyle(ChatFormatting.YELLOW));
+            }
+        }
+    }
+
+    /**
+     * Apply wave modifiers to a respawned mob (mirrors WaveManager.applyMobModifiers).
+     */
+    private static void applyWaveModifiersToMob(Mob mob, WaveManager.WaveState waveState) {
+        for (WaveManager.WaveModifier modifier : waveState.getModifiers()) {
+            switch (modifier) {
+                case SPEED_BOOST -> {
+                    var speedAttr = mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+                    if (speedAttr != null) {
+                        speedAttr.setBaseValue(speedAttr.getBaseValue() * 1.25);
+                    }
+                }
+                case DAMAGE_BOOST -> {
+                    var attackAttr = mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
+                    if (attackAttr != null) {
+                        attackAttr.setBaseValue(attackAttr.getBaseValue() * 1.25);
+                    }
+                }
+                case HEALTH_BOOST -> {
+                    var healthAttr = mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH);
+                    if (healthAttr != null) {
+                        healthAttr.setBaseValue(healthAttr.getBaseValue() * 1.5);
+                        mob.setHealth(mob.getMaxHealth());
+                    }
+                }
+                case ARMOR_BOOST -> {
+                    var armorAttr = mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR);
+                    if (armorAttr != null) {
+                        armorAttr.setBaseValue(armorAttr.getBaseValue() + 8);
+                    }
+                }
+                case FIRE_ASPECT -> {
+                    mob.getPersistentData().putBoolean("endurance_fire_aspect", true);
+                }
+                case INVISIBILITY -> {
+                    mob.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                        net.minecraft.world.effect.MobEffects.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
+                }
+                case REGEN -> {
+                    mob.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                        net.minecraft.world.effect.MobEffects.REGENERATION, Integer.MAX_VALUE, 0, false, false));
+                }
+                case DOUBLE_SPAWN -> {
+                    // Not applicable for individual mob spawns
+                }
+            }
         }
     }
 

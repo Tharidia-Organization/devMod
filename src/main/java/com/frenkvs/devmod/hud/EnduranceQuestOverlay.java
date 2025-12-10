@@ -6,6 +6,7 @@ import com.frenkvs.devmod.endurance.ComboSystem;
 import com.frenkvs.devmod.endurance.EnduranceQuestState;
 import com.frenkvs.devmod.endurance.QuestSyncPayload;
 import com.frenkvs.devmod.endurance.WaveCheckpointScreen;
+import com.frenkvs.devmod.endurance.PerkSelectionScreen;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -485,11 +486,16 @@ public class EnduranceQuestOverlay {
             // Wait for delay before opening screen (allows animation to play)
             long elapsed = System.currentTimeMillis() - waveCompleteDetectedTime;
             if (elapsed >= CHECKPOINT_SCREEN_DELAY) {
-                // Mark as shown to prevent reopening
-                checkpointScreenShown = true;
-
                 // Open checkpoint screen (on main thread)
                 mc.execute(() -> {
+                    // Don't interrupt PerkSelectionScreen - player needs to choose a perk first
+                    if (mc.screen instanceof PerkSelectionScreen) {
+                        return; // Wait for player to finish perk selection
+                    }
+
+                    // Mark as shown to prevent reopening (only after perk selection is done)
+                    checkpointScreenShown = true;
+
                     // Close current screen if it's not the checkpoint screen or chat
                     if (mc.screen != null && !(mc.screen instanceof WaveCheckpointScreen)) {
                         // Close inventory, pause menu, etc. to show checkpoint

@@ -29,6 +29,7 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
 
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 
 /**
@@ -124,7 +125,15 @@ public class NativeDebugClientRenderer {
         var serverLevel = server.getLevel(mc.level.dimension());
         if (serverLevel == null) return;
 
-        for (Mob mob : serverLevel.getEntitiesOfClass(Mob.class, searchBox)) {
+        // Copy to list to avoid ConcurrentModificationException
+        List<Mob> mobs;
+        try {
+            mobs = new ArrayList<>(serverLevel.getEntitiesOfClass(Mob.class, searchBox));
+        } catch (ConcurrentModificationException e) {
+            return; // Skip this frame if entities are being modified
+        }
+
+        for (Mob mob : mobs) {
             Path path = mob.getNavigation().getPath();
             if (path == null || path.isDone()) continue;
 
@@ -217,7 +226,15 @@ public class NativeDebugClientRenderer {
         BlockPos playerPos = mc.player.blockPosition();
         AABB searchBox = new AABB(playerPos).inflate(SEARCH_RADIUS);
 
-        for (Mob mob : serverLevel.getEntitiesOfClass(Mob.class, searchBox)) {
+        // Copy to list to avoid ConcurrentModificationException
+        List<Mob> mobs;
+        try {
+            mobs = new ArrayList<>(serverLevel.getEntitiesOfClass(Mob.class, searchBox));
+        } catch (ConcurrentModificationException e) {
+            return; // Skip this frame if entities are being modified
+        }
+
+        for (Mob mob : mobs) {
             renderMobGoals(poseStack, bufferSource, camPos, mob);
         }
     }
@@ -291,7 +308,16 @@ public class NativeDebugClientRenderer {
         BlockPos playerPos = mc.player.blockPosition();
         AABB searchBox = new AABB(playerPos).inflate(SEARCH_RADIUS);
 
-        for (Mob mob : serverLevel.getEntitiesOfClass(Mob.class, searchBox)) {
+        // Copy to list to avoid ConcurrentModificationException
+        List<Mob> mobs;
+        try {
+            mobs = new ArrayList<>(serverLevel.getEntitiesOfClass(Mob.class, searchBox));
+        } catch (ConcurrentModificationException e) {
+            poseStack.popPose();
+            return; // Skip this frame if entities are being modified
+        }
+
+        for (Mob mob : mobs) {
             Vec3 mobPos = mob.position();
             float mx = (float) mobPos.x;
             float my = (float) mobPos.y + mob.getBbHeight() * 0.5f;
@@ -451,7 +477,16 @@ public class NativeDebugClientRenderer {
         poseStack.translate(-camPos.x, -camPos.y, -camPos.z);
         Matrix4f matrix = poseStack.last().pose();
 
-        for (Bee bee : serverLevel.getEntitiesOfClass(Bee.class, searchBox)) {
+        // Copy to list to avoid ConcurrentModificationException
+        List<Bee> bees;
+        try {
+            bees = new ArrayList<>(serverLevel.getEntitiesOfClass(Bee.class, searchBox));
+        } catch (ConcurrentModificationException e) {
+            poseStack.popPose();
+            return; // Skip this frame if entities are being modified
+        }
+
+        for (Bee bee : bees) {
             Vec3 beePos = bee.position();
             float bx = (float) beePos.x;
             float by = (float) beePos.y + 0.5f;

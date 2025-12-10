@@ -107,6 +107,7 @@ public class ArenaManager {
 
         /**
          * Get spawn positions distributed around the arena.
+         * Validates each position to ensure mobs can spawn there.
          */
         public List<BlockPos> getDistributedSpawnPositions(int count) {
             List<BlockPos> positions = new ArrayList<>();
@@ -114,19 +115,70 @@ public class ArenaManager {
 
             // Distribute evenly in a grid pattern
             int gridSize = (int) Math.ceil(Math.sqrt(count));
-            int spacing = (halfSize * 2) / (gridSize + 1);
+            int spacing = Math.max(2, (halfSize * 2) / (gridSize + 1)); // Minimum 2 block spacing
+
+            Random random = new Random();
 
             for (int i = 0; i < count; i++) {
                 int gridX = i % gridSize;
                 int gridZ = i / gridSize;
 
-                int x = center.getX() - halfSize + spacing + (gridX * spacing);
-                int z = center.getZ() - halfSize + spacing + (gridZ * spacing);
+                int baseX = center.getX() - halfSize + spacing + (gridX * spacing);
+                int baseZ = center.getZ() - halfSize + spacing + (gridZ * spacing);
 
-                positions.add(new BlockPos(x, center.getY(), z));
+                // Find a valid spawn position (with floor below and air above)
+                BlockPos validPos = findValidSpawnPosition(baseX, baseZ, random);
+                if (validPos != null) {
+                    positions.add(validPos);
+                }
+            }
+
+            // If we couldn't find enough valid positions, add more using random positions
+            int attempts = 0;
+            while (positions.size() < count && attempts < count * 3) {
+                attempts++;
+                int x = center.getX() + random.nextInt(halfSize * 2) - halfSize;
+                int z = center.getZ() + random.nextInt(halfSize * 2) - halfSize;
+                BlockPos validPos = findValidSpawnPosition(x, z, random);
+                if (validPos != null && !positions.contains(validPos)) {
+                    positions.add(validPos);
+                }
             }
 
             return positions;
+        }
+
+        /**
+         * Find a valid spawn position at the given X/Z coordinates.
+         * Returns null if no valid position can be found.
+         */
+        private BlockPos findValidSpawnPosition(int x, int z, Random random) {
+            // Start from arena floor level and check upward
+            int startY = center.getY();
+
+            for (int yOffset = 0; yOffset < 5; yOffset++) {
+                BlockPos checkPos = new BlockPos(x, startY + yOffset, z);
+
+                // Check if this position is valid for spawning:
+                // - Block at feet level should be air
+                // - Block at head level should be air
+                // - Block below should be solid (not air)
+                BlockPos below = checkPos.below();
+                BlockPos head = checkPos.above();
+
+                boolean feetClear = level.getBlockState(checkPos).isAir() ||
+                                    level.getBlockState(checkPos).getBlock() == Blocks.BARRIER;
+                boolean headClear = level.getBlockState(head).isAir() ||
+                                    level.getBlockState(head).getBlock() == Blocks.BARRIER;
+                boolean floorSolid = !level.getBlockState(below).isAir();
+
+                if (feetClear && headClear && floorSolid) {
+                    return checkPos;
+                }
+            }
+
+            // Fallback: just use the arena floor level
+            return new BlockPos(x, startY, z);
         }
     }
 
