@@ -91,6 +91,9 @@ public class DynamicDimensionManager {
         dimensionToInstance.clear();
         instanceToDimension.clear();
 
+        // Clear DH registrations on shutdown
+        com.frenkvs.devmod.integration.DistantHorizonsIntegration.clearAllRegistrations();
+
         LOGGER.info("[DynamicDim] Shutdown complete");
     }
 
@@ -285,6 +288,9 @@ public class DynamicDimensionManager {
             // Add to the levels map
             levels.put(dimensionKey, newLevel);
 
+            // Register with Distant Horizons for LOD compatibility
+            com.frenkvs.devmod.integration.DistantHorizonsIntegration.registerDynamicDimension(newLevel);
+
             LOGGER.info("[DynamicDim] Successfully injected dimension {}", dimensionKey.location());
             return newLevel;
 
@@ -473,12 +479,15 @@ public class DynamicDimensionManager {
             unloadSucceeded = true;
         }
 
-        // 3. Clean up tracking maps BEFORE file deletion
+        // 3. Unregister from Distant Horizons BEFORE cleanup
+        com.frenkvs.devmod.integration.DistantHorizonsIntegration.unregisterDynamicDimension(dimensionKey);
+
+        // 4. Clean up tracking maps BEFORE file deletion
         // This prevents other code from trying to use this dimension
         dimensionToInstance.remove(dimensionKey);
         instanceToDimension.remove(instanceId);
 
-        // 4. Delete dimension files ONLY if unload succeeded
+        // 5. Delete dimension files ONLY if unload succeeded
         // This prevents file-in-use errors and ensures resources are released
         if (unloadSucceeded) {
             deleteDimensionFiles(instanceId);

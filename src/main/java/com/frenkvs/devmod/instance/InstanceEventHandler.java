@@ -16,6 +16,8 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.UUID;
+
 
 /**
  * Event handler for the instance dimension system.
@@ -133,6 +135,35 @@ public class InstanceEventHandler {
     // === Dimension Change Detection ===
     // Note: Additional handlers can be added here to detect when players
     // try to leave the instance dimension through other means (portals, commands, etc.)
+
+    /**
+     * Handle vanilla respawn for players with active Endurance Quests.
+     * When a player clicks the vanilla "Respawn" button (instead of our custom F11/F12),
+     * they get teleported to their spawn point. We intercept this and redirect them back
+     * to the instance arena.
+     */
+    @SubscribeEvent
+    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            UUID playerId = player.getUUID();
+
+            // Check if player has an active Endurance Quest session
+            var sessionOpt = com.frenkvs.devmod.endurance.EnduranceQuestManager.INSTANCE.getActiveSession(playerId);
+            if (sessionOpt.isPresent()) {
+                var session = sessionOpt.get();
+
+                // Only handle if awaiting respawn choice (player died and we showed death screen)
+                if (session.isAwaitingRespawnChoice()) {
+                    LOGGER.info("[InstanceEvents] Player {} used vanilla respawn while in Endurance Quest - redirecting to instance arena",
+                        player.getName().getString());
+
+                    // Use EnduranceQuestManager's respawn handling with continueQuest=true
+                    // This will teleport them back to the arena and restart the wave
+                    com.frenkvs.devmod.endurance.EnduranceQuestManager.INSTANCE.handleRespawnChoice(player, true);
+                }
+            }
+        }
+    }
 
     @SubscribeEvent
     public static void onPlayerChangeDimension(PlayerEvent.PlayerChangedDimensionEvent event) {

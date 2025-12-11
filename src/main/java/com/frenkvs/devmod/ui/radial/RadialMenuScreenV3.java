@@ -441,6 +441,10 @@ public class RadialMenuScreenV3 extends Screen {
                 new ItemStack(Items.GOLDEN_HELMET),
                 () -> new com.frenkvs.devmod.endurance.EnduranceQuestScreen(),
                 "Start endurance quest mode"))
+            .item(RadialMenuItem.screen("Multiplayer", "👥",
+                new ItemStack(Items.PLAYER_HEAD),
+                () -> new com.frenkvs.devmod.party.PartyScreen(),
+                "Party & multiplayer quests"))
             .build();
         rootCategories.add(quest);
 

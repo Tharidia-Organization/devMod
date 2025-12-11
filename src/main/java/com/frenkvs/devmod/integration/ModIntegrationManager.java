@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Manages integrations with external mods (Pehkui, Better Combat, etc.)
+ * Manages integrations with external mods (Pehkui, Better Combat, Distant Horizons, etc.)
  * All dependencies are soft (optional) - the mod works without them.
  */
 public class ModIntegrationManager {
@@ -16,6 +16,7 @@ public class ModIntegrationManager {
 
     private static boolean pehkuiLoaded = false;
     private static boolean betterCombatLoaded = false;
+    private static boolean distantHorizonsLoaded = false;
     private static boolean initialized = false;
 
     /**
@@ -27,15 +28,21 @@ public class ModIntegrationManager {
 
         pehkuiLoaded = ModList.get().isLoaded("pehkui");
         betterCombatLoaded = ModList.get().isLoaded("bettercombat");
+        distantHorizonsLoaded = ModList.get().isLoaded("distanthorizons");
 
         // Initialize specific integrations
         if (betterCombatLoaded) {
             BetterCombatIntegration.init();
         }
 
+        if (distantHorizonsLoaded) {
+            DistantHorizonsIntegration.init();
+        }
+
         LOGGER.info("[DevMod] Mod Integration Status:");
         LOGGER.info("  - Pehkui: {}", pehkuiLoaded ? "ENABLED" : "not found");
         LOGGER.info("  - Better Combat: {}", betterCombatLoaded ? "ENABLED" : "not found");
+        LOGGER.info("  - Distant Horizons: {}", distantHorizonsLoaded ? "ENABLED" : "not found");
 
         initialized = true;
     }
@@ -85,6 +92,10 @@ public class ModIntegrationManager {
 
     public static boolean isBetterCombatLoaded() {
         return betterCombatLoaded;
+    }
+
+    public static boolean isDistantHorizonsLoaded() {
+        return distantHorizonsLoaded;
     }
 
     public static boolean isInitialized() {
