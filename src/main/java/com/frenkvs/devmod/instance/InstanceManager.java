@@ -274,12 +274,11 @@ public class InstanceManager {
                     }
                 }
 
-                // Check if all players disconnected
-                if (instance.isEmpty()) {
-                    LOGGER.warn("[InstanceManager] All players disconnected before teleport, destroying instance {}",
-                        instanceId);
-                    InstanceRegistry.INSTANCE.scheduleDestruction(instanceId);
-                }
+                // NOTE: Don't check isEmpty() here - players might have been successfully teleported
+                // and the instance is active. The destruction will be handled by:
+                // - InstanceData.removePlayer() when last player leaves
+                // - forceEndPlayerInstances() on disconnect
+                // - Normal quest completion flow
 
                 return instanceId;
             });

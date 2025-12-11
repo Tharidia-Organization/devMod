@@ -1,7 +1,11 @@
 package com.frenkvs.devmod.instance;
 
 import com.frenkvs.devmod.DevMod;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
@@ -11,6 +15,7 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 /**
  * Event handler for the instance dimension system.
@@ -50,11 +55,40 @@ public class InstanceEventHandler {
         // Process pending teleports every tick
         InstanceManager.INSTANCE.tick();
 
+        // Force tick instance dimensions - they may not be ticked by vanilla server loop
+        tickInstanceDimensions(event.getServer());
+
         // Process pending destructions periodically
         tickCounter++;
         if (tickCounter >= DESTRUCTION_CHECK_INTERVAL) {
             tickCounter = 0;
             InstanceRegistry.INSTANCE.processPendingDestructions();
+        }
+    }
+
+    /**
+     * Force tick all active instance dimensions.
+     * This ensures entities in dynamically created dimensions receive full ticks.
+     *
+     * NOTE: We call level.tick() because dynamically created dimensions may not
+     * be included in the server's normal tick loop.
+     */
+    private static void tickInstanceDimensions(MinecraftServer server) {
+        for (InstanceData instance : InstanceRegistry.INSTANCE.getInstancesByState(InstanceState.ACTIVE)) {
+            ResourceKey<Level> dimKey = instance.getDimensionKey();
+            if (dimKey != null) {
+                ServerLevel level = server.getLevel(dimKey);
+                if (level != null && !level.players().isEmpty()) {
+                    // Only tick if there are players in the dimension
+                    // This prevents double-ticking and issues during death/respawn
+                    try {
+                        level.tick(() -> true);
+                    } catch (Exception e) {
+                        LOGGER.warn("[InstanceEvents] Failed to tick instance dimension {}: {}",
+                            dimKey.location(), e.getMessage());
+                    }
+                }
+            }
         }
     }
 
@@ -81,6 +115,15 @@ public class InstanceEventHandler {
         if (event.getEntity() instanceof ServerPlayer player) {
             // Only handle if player is in an instance
             if (InstanceManager.INSTANCE.isPlayerInInstance(player.getUUID())) {
+                // Check if player has an active Endurance Quest - if so, let EnduranceQuestManager handle death
+                // EnduranceQuestManager has its own death handling with respawn options
+                if (com.frenkvs.devmod.endurance.EnduranceQuestManager.INSTANCE.getActiveSession(player.getUUID()).isPresent()) {
+                    LOGGER.debug("[InstanceEvents] Player {} died in instance but has active Endurance Quest - delegating to EnduranceQuestManager",
+                        player.getName().getString());
+                    // Don't call InstanceManager.onPlayerDeath() - EnduranceQuestManager will handle it
+                    return;
+                }
+
                 LOGGER.debug("[InstanceEvents] Player died in instance: {}", player.getName().getString());
                 InstanceManager.INSTANCE.onPlayerDeath(player);
             }
@@ -96,14 +139,35 @@ public class InstanceEventHandler {
         if (event.getEntity() instanceof ServerPlayer player) {
             // Check if player was in an instance and left via unexpected means
             if (InstanceManager.INSTANCE.isPlayerInInstance(player.getUUID())) {
-                // If they're no longer in the instance dimension, force end
                 InstanceManager.INSTANCE.getPlayerInstance(player.getUUID()).ifPresent(instance -> {
-                    if (instance.getDimensionKey() != null &&
-                        !player.level().dimension().equals(instance.getDimensionKey())) {
-                        LOGGER.warn("[InstanceEvents] Player {} left instance dimension unexpectedly",
-                            player.getName().getString());
-                        // This shouldn't happen in normal flow, but handle it gracefully
-                        InstanceManager.INSTANCE.forceEndPlayerInstances(player.getUUID());
+                    if (instance.getDimensionKey() != null) {
+                        // Check if player is teleporting TO the instance dimension (legitimate teleport)
+                        if (event.getTo().equals(instance.getDimensionKey())) {
+                            LOGGER.debug("[InstanceEvents] Player {} teleporting TO instance dimension, ignoring",
+                                player.getName().getString());
+                            return;
+                        }
+
+                        // Check if player LEFT the instance dimension unexpectedly
+                        if (event.getFrom().equals(instance.getDimensionKey())) {
+                            // Check if this is a legitimate return teleport (player dying or quest ending)
+                            // by checking the snapshot state - RETURNING means endInstanceQuest() is handling it
+                            java.util.Optional<PlayerInstanceSnapshot> snapshotOpt =
+                                RecoverySystem.INSTANCE.loadSnapshot(player.getUUID());
+                            if (snapshotOpt.isPresent()) {
+                                PlayerInstanceState state = snapshotOpt.get().getState();
+                                if (state == PlayerInstanceState.RETURNING) {
+                                    LOGGER.debug("[InstanceEvents] Player {} leaving instance dimension via legitimate return (state: RETURNING), ignoring",
+                                        player.getName().getString());
+                                    return;
+                                }
+                            }
+
+                            LOGGER.warn("[InstanceEvents] Player {} left instance dimension unexpectedly (from {} to {})",
+                                player.getName().getString(), event.getFrom().location(), event.getTo().location());
+                            // This shouldn't happen in normal flow, but handle it gracefully
+                            InstanceManager.INSTANCE.forceEndPlayerInstances(player.getUUID());
+                        }
                     }
                 });
             }

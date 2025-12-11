@@ -86,7 +86,9 @@ public class CommonModEvents {
         // Initialize EnduranceQuestManager
         try {
             EnduranceQuestManager.INSTANCE.initialize(ConfigPaths.getConfigDir());
-            LOGGER.info("[DevMod] EnduranceQuestManager initialized successfully");
+            // Enable instance dimensions for quest isolation
+            EnduranceQuestManager.INSTANCE.setUseInstanceDimensions(true);
+            LOGGER.info("[DevMod] EnduranceQuestManager initialized successfully with instance dimensions enabled");
         } catch (Exception e) {
             LOGGER.error("[DevMod] Failed to initialize EnduranceQuestManager", e);
         }

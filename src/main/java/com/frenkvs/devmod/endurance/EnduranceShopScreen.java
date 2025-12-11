@@ -1,10 +1,10 @@
 package com.frenkvs.devmod.endurance;
 
+import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -76,30 +76,7 @@ public class EnduranceShopScreen extends Screen {
         // Load items for selected category
         updateCategoryItems();
 
-        // Category buttons (prominent height for navigation)
-        int catY = 50;
-        for (RewardSystem.ShopCategory category : RewardSystem.ShopCategory.values()) {
-            final RewardSystem.ShopCategory cat = category;
-            addRenderableWidget(Objects.requireNonNull(Button.builder(I18n.ui("shop.category." + category.name().toLowerCase()), btn -> selectCategory(cat))
-                .bounds(UIConstants.Spacing.PANEL_MARGIN, catY,
-                        CATEGORY_WIDTH - UIConstants.Spacing.PANEL_MARGIN * 2, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
-                .build()));
-            catY += UIConstants.Size.BUTTON_HEIGHT_PROMINENT + UIConstants.Spacing.GAP_SMALL;
-        }
-
-        // Back button (secondary action)
-        addRenderableWidget(Objects.requireNonNull(Button.builder(I18n.ui("back"), btn -> goBack())
-            .bounds(UIConstants.Spacing.PANEL_MARGIN, height - 40,
-                    UIConstants.Size.BUTTON_WIDTH_SMALL - 20, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
-            .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.tooltip.back")))
-            .build()));
-
-        // Purchase button (primary CTA)
-        addRenderableWidget(Objects.requireNonNull(Button.builder(I18n.ui("purchase"), btn -> purchaseSelected())
-            .bounds(width - UIConstants.Size.BUTTON_WIDTH_SMALL - 10, height - 40,
-                    UIConstants.Size.BUTTON_WIDTH_SMALL, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
-            .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.tooltip.purchase")))
-            .build()));
+        // All buttons are now rendered custom - no vanilla widgets needed
     }
 
     private void loadPlayerData() {
@@ -146,7 +123,7 @@ public class EnduranceShopScreen extends Screen {
         // Header
         renderHeader(graphics);
 
-        // Category sidebar
+        // Category sidebar with custom buttons
         renderCategorySidebar(graphics, mouseX, mouseY);
 
         // Item list
@@ -156,6 +133,9 @@ public class EnduranceShopScreen extends Screen {
         if (selectedItem != null) {
             renderItemDetails(graphics);
         }
+
+        // Custom action buttons (Back, Purchase)
+        renderActionButtons(graphics, mouseX, mouseY);
 
         super.render(graphics, mouseX, mouseY, partialTick);
     }
@@ -188,6 +168,23 @@ public class EnduranceShopScreen extends Screen {
 
         // Category header
         graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.ui.categories").getString()), CATEGORY_WIDTH / 2, 45, COLOR_TEXT_DIM);
+
+        // Category buttons (custom rendered)
+        int catY = 60;
+        int catBtnW = CATEGORY_WIDTH - UIConstants.Spacing.PANEL_MARGIN * 2;
+        int catBtnH = UIConstants.Size.BUTTON_HEIGHT_PROMINENT;
+
+        for (RewardSystem.ShopCategory category : RewardSystem.ShopCategory.values()) {
+            int catBtnX = UIConstants.Spacing.PANEL_MARGIN;
+            boolean isSelected = category == selectedCategory;
+            boolean isHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, catBtnX, catY, catBtnW, catBtnH);
+            int catColor = CATEGORY_COLORS.get(category);
+
+            String catName = I18n.translate("devmod.shop.category." + category.name().toLowerCase()).getString();
+            renderButton(graphics, catBtnX, catY, catBtnW, catBtnH, catName, isHovered, isSelected ? catColor : UIConstants.Border.DEFAULT);
+
+            catY += catBtnH + UIConstants.Spacing.GAP_SMALL;
+        }
     }
 
     private void renderItemList(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -321,6 +318,44 @@ public class EnduranceShopScreen extends Screen {
             panelX + 10, y, owned >= selectedItem.maxPurchases ? COLOR_SUCCESS : COLOR_TEXT_DIM);
     }
 
+    /**
+     * Render custom action buttons (Back, Purchase).
+     */
+    private void renderActionButtons(GuiGraphics graphics, int mouseX, int mouseY) {
+        int buttonY = height - 40;
+
+        // Back button (secondary - left side)
+        int backW = UIConstants.Size.BUTTON_WIDTH_SMALL - 20;
+        int backH = UIConstants.Size.BUTTON_HEIGHT_PROMINENT;
+        int backX = UIConstants.Spacing.PANEL_MARGIN;
+        boolean backHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, backX, buttonY, backW, backH);
+        renderButton(graphics, backX, buttonY, backW, backH,
+            I18n.translate("devmod.ui.back").getString(), backHovered, UIConstants.Border.DEFAULT);
+
+        // Purchase button (primary CTA - green, right side)
+        int purchaseW = UIConstants.Size.BUTTON_WIDTH_SMALL;
+        int purchaseH = UIConstants.Size.BUTTON_HEIGHT_PROMINENT;
+        int purchaseX = width - purchaseW - 10;
+        boolean canPurchase = selectedItem != null && canAfford(selectedItem)
+            && playerPurchases.getOrDefault(selectedItem.id, 0) < selectedItem.maxPurchases;
+        boolean purchaseHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, purchaseX, buttonY, purchaseW, purchaseH);
+        int purchaseColor = canPurchase ? UIConstants.Accent.GREEN : UIConstants.Text.DISABLED;
+        renderButton(graphics, purchaseX, buttonY, purchaseW, purchaseH,
+            I18n.translate("devmod.ui.purchase").getString(), purchaseHovered && canPurchase, purchaseColor);
+    }
+
+    /**
+     * Render a custom styled button.
+     */
+    private void renderButton(GuiGraphics graphics, int x, int y, int w, int h, String text, boolean hovered, int color) {
+        int bgColor = hovered ? color : UIConstants.Background.INPUT;
+        graphics.fill(x, y, x + w, y + h, bgColor);
+        AxiomRenderer.drawBorder(graphics, x, y, w, h, color);
+        int textX = x + (w - Objects.requireNonNull(font).width(Objects.requireNonNull(text))) / 2;
+        int textY = y + (h - 8) / 2;
+        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(text), textX, textY, hovered ? UIConstants.Text.WHITE : color, false);
+    }
+
     private List<String> wrapText(String text, int maxWidth) {
         List<String> lines = new ArrayList<>();
         String[] words = text.split(" ");
@@ -370,6 +405,44 @@ public class EnduranceShopScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        int mx = (int) mouseX;
+        int my = (int) mouseY;
+
+        // Check category button clicks
+        int catY = 60;
+        int catBtnW = CATEGORY_WIDTH - UIConstants.Spacing.PANEL_MARGIN * 2;
+        int catBtnH = UIConstants.Size.BUTTON_HEIGHT_PROMINENT;
+        int catBtnX = UIConstants.Spacing.PANEL_MARGIN;
+
+        for (RewardSystem.ShopCategory category : RewardSystem.ShopCategory.values()) {
+            if (AxiomRenderer.isMouseOver(mx, my, catBtnX, catY, catBtnW, catBtnH)) {
+                selectCategory(category);
+                return true;
+            }
+            catY += catBtnH + UIConstants.Spacing.GAP_SMALL;
+        }
+
+        // Check action button clicks
+        int buttonY = height - 40;
+
+        // Back button
+        int backW = UIConstants.Size.BUTTON_WIDTH_SMALL - 20;
+        int backH = UIConstants.Size.BUTTON_HEIGHT_PROMINENT;
+        int backX = UIConstants.Spacing.PANEL_MARGIN;
+        if (AxiomRenderer.isMouseOver(mx, my, backX, buttonY, backW, backH)) {
+            goBack();
+            return true;
+        }
+
+        // Purchase button
+        int purchaseW = UIConstants.Size.BUTTON_WIDTH_SMALL;
+        int purchaseH = UIConstants.Size.BUTTON_HEIGHT_PROMINENT;
+        int purchaseX = width - purchaseW - 10;
+        if (AxiomRenderer.isMouseOver(mx, my, purchaseX, buttonY, purchaseW, purchaseH)) {
+            purchaseSelected();
+            return true;
+        }
+
         // Check item list clicks
         int listX = CATEGORY_WIDTH + 10;
         int listY = 50;

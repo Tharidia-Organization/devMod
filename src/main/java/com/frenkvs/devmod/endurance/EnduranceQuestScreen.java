@@ -1,10 +1,10 @@
 package com.frenkvs.devmod.endurance;
 
+import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -119,7 +119,7 @@ public class EnduranceQuestScreen extends Screen {
         // Load quests
         loadQuests();
 
-        // Search box
+        // Search box (keep as EditBox - appropriate for text input)
         searchBox = new EditBox(font, SIDEBAR_WIDTH + 10, 10, 200, 20, I18n.ui("search"));
         searchBox.setHint(I18n.translate("devmod.quest.search_mobs"));
         searchBox.setResponder(query -> {
@@ -128,37 +128,7 @@ public class EnduranceQuestScreen extends Screen {
         });
         addRenderableWidget(searchBox);
 
-        // Start Quest button (primary CTA - use large height)
-        addRenderableWidget(Button.builder(I18n.ui("start_quest"), btn -> startSelectedQuest())
-            .bounds(width - UIConstants.Size.BUTTON_WIDTH_MEDIUM - 10, height - 40,
-                    UIConstants.Size.BUTTON_WIDTH_MEDIUM, UIConstants.Size.BUTTON_HEIGHT_LARGE)
-            .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.tooltip.start_quest")))
-            .build());
-
-        // Settings buttons (icon buttons for +/-)
-        addRenderableWidget(Button.builder(I18n.ui("minus_symbol"), btn -> adjustWaves(-1))
-            .bounds(width - SIDEBAR_WIDTH, height - 80,
-                    UIConstants.Size.BUTTON_WIDTH_ICON, UIConstants.Size.BUTTON_HEIGHT)
-            .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.tooltip.decrease_waves")))
-            .build());
-        addRenderableWidget(Button.builder(I18n.ui("plus_symbol"), btn -> adjustWaves(1))
-            .bounds(width - UIConstants.Size.BUTTON_WIDTH_MEDIUM - 10, height - 80,
-                    UIConstants.Size.BUTTON_WIDTH_ICON, UIConstants.Size.BUTTON_HEIGHT)
-            .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.tooltip.increase_waves")))
-            .build());
-
-        addRenderableWidget(Button.builder(I18n.translate("devmod.endurance.endless_off"), btn -> toggleEndless(btn))
-            .bounds(width - SIDEBAR_WIDTH, height - 55,
-                    UIConstants.Size.BUTTON_WIDTH_SMALL, UIConstants.Size.BUTTON_HEIGHT)
-            .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.tooltip.endless_mode")))
-            .build());
-
-        // Shop button (secondary action - use large height for consistency)
-        addRenderableWidget(Button.builder(I18n.ui("shop"), btn -> openShop())
-            .bounds(UIConstants.Spacing.PANEL_MARGIN, height - 40,
-                    UIConstants.Size.BUTTON_WIDTH_SMALL - 20, UIConstants.Size.BUTTON_HEIGHT_LARGE)
-            .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.tooltip.shop")))
-            .build());
+        // All buttons are now rendered custom via renderActionButtons()
     }
 
     private void openShop() {
@@ -228,6 +198,9 @@ public class EnduranceQuestScreen extends Screen {
 
         // Quest settings panel
         renderSettingsPanel(graphics);
+
+        // Custom action buttons (rendered after super to be on top)
+        renderActionButtons(graphics, mouseX, mouseY);
 
         super.render(graphics, mouseX, mouseY, partialTick);
 
@@ -562,13 +535,70 @@ public class EnduranceQuestScreen extends Screen {
         panelY += 15;
 
         graphics.drawString(font, String.format("Waves: %d", questWaves), panelX + 50, panelY + 5, COLOR_TEXT);
-        panelY += 25;
+    }
 
-        // Endless mode status shown on button
+    /**
+     * Render custom action buttons with Impact styling.
+     */
+    private void renderActionButtons(GuiGraphics graphics, int mouseX, int mouseY) {
+        int buttonY = height - 40;
+
+        // Start Quest button (primary CTA - green)
+        int startW = UIConstants.Size.BUTTON_WIDTH_MEDIUM;
+        int startH = UIConstants.Size.BUTTON_HEIGHT_LARGE;
+        int startX = width - startW - 10;
+        boolean startHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, startX, buttonY, startW, startH);
+        renderButton(graphics, startX, buttonY, startW, startH, "Start Quest", startHovered, UIConstants.Accent.GREEN);
+
+        // Shop button (secondary - gold)
+        int shopW = 80;
+        int shopH = UIConstants.Size.BUTTON_HEIGHT_LARGE;
+        int shopX = UIConstants.Spacing.PANEL_MARGIN;
+        boolean shopHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, shopX, buttonY, shopW, shopH);
+        renderButton(graphics, shopX, buttonY, shopW, shopH, "Shop", shopHovered, UIConstants.Accent.GOLD);
+
+        // Wave control buttons
+        int waveY = height - 85;
+        int controlX = width - 230;
+
+        // Minus button
+        int minusBtnSize = 24;
+        boolean minusHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, controlX, waveY, minusBtnSize, minusBtnSize);
+        renderButton(graphics, controlX, waveY, minusBtnSize, minusBtnSize, "-", minusHovered, UIConstants.Border.DEFAULT);
+
+        // Plus button
+        int plusX = controlX + 80;
+        boolean plusHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, plusX, waveY, minusBtnSize, minusBtnSize);
+        renderButton(graphics, plusX, waveY, minusBtnSize, minusBtnSize, "+", plusHovered, UIConstants.Border.DEFAULT);
+
+        // Endless toggle button
+        int toggleY = height - 55;
+        int toggleW = UIConstants.Size.BUTTON_WIDTH_SMALL;
+        int toggleH = UIConstants.Size.BUTTON_HEIGHT;
+        boolean toggleHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, controlX, toggleY, toggleW, toggleH);
+        String toggleText = endlessMode ? "Endless: ON" : "Endless: OFF";
+        int toggleColor = endlessMode ? UIConstants.Accent.GREEN : UIConstants.Border.DEFAULT;
+        renderButton(graphics, controlX, toggleY, toggleW, toggleH, toggleText, toggleHovered, toggleColor);
+    }
+
+    /**
+     * Render a custom styled button.
+     */
+    private void renderButton(GuiGraphics graphics, int x, int y, int w, int h, String text, boolean hovered, int color) {
+        int bgColor = hovered ? color : UIConstants.Background.INPUT;
+        graphics.fill(x, y, x + w, y + h, bgColor);
+        AxiomRenderer.drawBorder(graphics, x, y, w, h, color);
+
+        int textX = x + (w - font.width(text)) / 2;
+        int textY = y + (h - 8) / 2;
+        graphics.drawString(font, text, textX, textY, hovered ? UIConstants.Text.WHITE : color, false);
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        int mx = (int) mouseX;
+        int my = (int) mouseY;
+
         // Handle intro overlay click first
         if (showIntroOverlay) {
             int panelH = 280;
@@ -583,6 +613,54 @@ public class EnduranceQuestScreen extends Screen {
                 return true;
             }
             // Block all other clicks while overlay is shown
+            return true;
+        }
+
+        // Handle custom button clicks
+        int buttonY = height - 40;
+
+        // Start Quest button
+        int startW = UIConstants.Size.BUTTON_WIDTH_MEDIUM;
+        int startH = UIConstants.Size.BUTTON_HEIGHT_LARGE;
+        int startX = width - startW - 10;
+        if (AxiomRenderer.isMouseOver(mx, my, startX, buttonY, startW, startH)) {
+            startSelectedQuest();
+            return true;
+        }
+
+        // Shop button
+        int shopW = 80;
+        int shopH = UIConstants.Size.BUTTON_HEIGHT_LARGE;
+        int shopX = UIConstants.Spacing.PANEL_MARGIN;
+        if (AxiomRenderer.isMouseOver(mx, my, shopX, buttonY, shopW, shopH)) {
+            openShop();
+            return true;
+        }
+
+        // Wave control buttons
+        int waveY = height - 85;
+        int controlX = width - 230;
+        int minusBtnSize = 24;
+
+        // Minus button
+        if (AxiomRenderer.isMouseOver(mx, my, controlX, waveY, minusBtnSize, minusBtnSize)) {
+            adjustWaves(-1);
+            return true;
+        }
+
+        // Plus button
+        int plusX = controlX + 80;
+        if (AxiomRenderer.isMouseOver(mx, my, plusX, waveY, minusBtnSize, minusBtnSize)) {
+            adjustWaves(1);
+            return true;
+        }
+
+        // Endless toggle
+        int toggleY = height - 55;
+        int toggleW = UIConstants.Size.BUTTON_WIDTH_SMALL;
+        int toggleH = UIConstants.Size.BUTTON_HEIGHT;
+        if (AxiomRenderer.isMouseOver(mx, my, controlX, toggleY, toggleW, toggleH)) {
+            toggleEndless();
             return true;
         }
 
@@ -660,9 +738,9 @@ public class EnduranceQuestScreen extends Screen {
         questWaves = Math.max(1, Math.min(50, questWaves + delta));
     }
 
-    private void toggleEndless(Button btn) {
+    private void toggleEndless() {
         endlessMode = !endlessMode;
-        btn.setMessage(I18n.translate(endlessMode ? "devmod.endurance.endless_on" : "devmod.endurance.endless_off"));
+        // No button message update needed - text is rendered dynamically
     }
 
     private void startSelectedQuest() {

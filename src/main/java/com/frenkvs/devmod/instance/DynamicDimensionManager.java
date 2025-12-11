@@ -12,6 +12,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.progress.ChunkProgressListener;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Blocks;
@@ -265,6 +266,7 @@ public class DynamicDimensionManager {
 
             // Create the new ServerLevel
             // Note: This is a simplified creation - full implementation may need more setup
+            // IMPORTANT: tickTime must be TRUE for entities to have AI and tick properly
         ServerLevel newLevel = new ServerLevel(
             nn(server, "server"),
             executor,
@@ -276,7 +278,7 @@ public class DynamicDimensionManager {
             false,  // isDebug
             overworld.getSeed(),
             customSpawners,
-            false,  // tickTime
+            true,   // tickTime - MUST be true for entity AI to work!
             null    // randomSequences
         );
 
@@ -320,6 +322,39 @@ public class DynamicDimensionManager {
 
         // Preload the center chunk to avoid void fall during early teleports
         level.getChunkAt(nn(center, "center chunk"));
+
+        // Force-load chunks to ensure entities tick properly
+        // This is critical for mobs AI to work in the instance dimension
+        // We use multiple approaches to guarantee entity ticking:
+        // 1. setChunkForced - marks chunk as force-loaded
+        // 2. PLAYER ticket - ensures entity ticking level
+        int chunkRadius = (radius / 16) + 2;  // Cover arena + margin
+        int centerChunkX = center.getX() >> 4;
+        int centerChunkZ = center.getZ() >> 4;
+
+        ChunkPos centerChunkPos = new ChunkPos(centerChunkX, centerChunkZ);
+
+        int chunksForced = 0;
+        for (int cx = -chunkRadius; cx <= chunkRadius; cx++) {
+            for (int cz = -chunkRadius; cz <= chunkRadius; cz++) {
+                int chunkX = centerChunkX + cx;
+                int chunkZ = centerChunkZ + cz;
+                // setChunkForced ensures chunk stays loaded AND entities tick
+                level.setChunkForced(chunkX, chunkZ, true);
+                chunksForced++;
+            }
+        }
+
+        // Add PLAYER ticket to center chunk to guarantee entity ticking
+        // PLAYER tickets have level 33 - 31 = 2, which enables entity ticking
+        level.getChunkSource().addRegionTicket(
+            nn(net.minecraft.server.level.TicketType.PLAYER, "player ticket type"),
+            centerChunkPos,
+            3,  // radius in chunks around the center
+            centerChunkPos
+        );
+
+        LOGGER.info("[DynamicDim] Force-loaded {} chunks around arena center with PLAYER ticket", chunksForced);
 
         LOGGER.debug("[DynamicDim] Generating arena platform at {} with radius {}", center, radius);
 
