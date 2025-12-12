@@ -1,6 +1,3 @@
-/damage @p 1
-/effect give @p minecraft:hunger 10 1
-/summon zombie ~ ~ ~
 /summon skeleton ~ ~ ~
 /gamemode survival
 /effect give @p minecraft:hunger 10 1
@@ -48,3 +45,6 @@
 /gamemode creative
 /devmod dungeon start test_castle
 /devmod dungeon end DEATH 5 1 2
+/devmod dashboard start
+/devmod dashboard status
+/devmod dashboard start

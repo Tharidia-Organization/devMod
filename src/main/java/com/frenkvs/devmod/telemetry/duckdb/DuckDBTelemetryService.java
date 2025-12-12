@@ -241,6 +241,24 @@ public class DuckDBTelemetryService {
             batchWriter.getDroppedInserts());
     }
 
+    /**
+     * Get a read-only connection for analytics queries.
+     * Used by the dashboard REST API.
+     *
+     * @return The DuckDB connection, or null if not initialized or on error
+     */
+    public java.sql.Connection getConnection() {
+        if (!initialized || connectionManager == null) {
+            return null;
+        }
+        try {
+            return connectionManager.getConnection();
+        } catch (SQLException e) {
+            LOGGER.error("[DuckDB] Failed to get connection for dashboard: {}", e.getMessage());
+            return null;
+        }
+    }
+
     // ============================================
     // COMBAT EVENTS
     // ============================================

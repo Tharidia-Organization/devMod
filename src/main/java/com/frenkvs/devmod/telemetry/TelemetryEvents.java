@@ -53,6 +53,9 @@ public class TelemetryEvents {
         // Flush heatmap data to DuckDB before shutdown
         com.frenkvs.devmod.telemetry.spatial.HeatmapService.INSTANCE.shutdown();
 
+        // Stop telemetry dashboard server
+        com.frenkvs.devmod.telemetry.dashboard.TelemetryDashboardServer.INSTANCE.stop();
+
         // PERFORMANCE FIX: Gracefully shutdown async telemetry writer
         // Ensures all pending writes are flushed before server shutdown
         TelemetryService.INSTANCE.shutdown();
@@ -117,6 +120,7 @@ public class TelemetryEvents {
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         TelemetryReloadCommand.register(event.getDispatcher());
         com.frenkvs.devmod.telemetry.dungeon.DungeonCommand.register(event.getDispatcher());
+        com.frenkvs.devmod.telemetry.dashboard.DashboardCommand.register(event.getDispatcher());
     }
 
     // NOTE: Server-side PlayerTickEvent is not available in NeoForge.

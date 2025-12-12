@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevMod Telemetry Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>DevMod Telemetry Dashboard</h1>
+            <div id="status" class="status connecting">Connecting...</div>
+        </header>
+
+        <nav id="nav">
+            <button class="nav-btn active" data-section="overview">Overview</button>
+            <button class="nav-btn" data-section="combat">Combat</button>
+            <button class="nav-btn" data-section="endurance">Endurance</button>
+            <button class="nav-btn" data-section="dungeons">Dungeons</button>
+            <button class="nav-btn" data-section="spatial">Spatial</button>
+            <button class="nav-btn" data-section="economy">Economy</button>
+            <button class="nav-btn" data-section="query">SQL Query</button>
+        </nav>
+
+        <main id="content">
+            <!-- Overview Section -->
+            <section id="section-overview" class="section active">
+                <h2>Summary</h2>
+                <div id="summary-cards" class="cards"></div>
+                <h3>Table Counts</h3>
+                <div id="table-counts" class="table-container"></div>
+            </section>
+
+            <!-- Combat Section -->
+            <section id="section-combat" class="section">
+                <h2>Combat Analytics</h2>
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="combat-hits">Hits</button>
+                    <button class="tab-btn" data-tab="combat-deaths">Deaths</button>
+                    <button class="tab-btn" data-tab="combat-weapons">Weapons</button>
+                    <button class="tab-btn" data-tab="combat-fights">Fights</button>
+                </div>
+                <div id="combat-hits" class="tab-content active">
+                    <div class="controls">
+                        <input type="number" id="combat-hits-limit" value="100" min="1" max="5000">
+                        <button onclick="loadCombatHits()">Load</button>
+                    </div>
+                    <div id="combat-hits-data" class="table-container"></div>
+                </div>
+                <div id="combat-deaths" class="tab-content">
+                    <div class="controls">
+                        <input type="number" id="combat-deaths-limit" value="100" min="1" max="1000">
+                        <button onclick="loadCombatDeaths()">Load</button>
+                    </div>
+                    <div id="combat-deaths-data" class="table-container"></div>
+                </div>
+                <div id="combat-weapons" class="tab-content">
+                    <div id="combat-weapons-data" class="table-container"></div>
+                </div>
+                <div id="combat-fights" class="tab-content">
+                    <div class="controls">
+                        <input type="number" id="combat-fights-limit" value="50" min="1" max="500">
+                        <button onclick="loadCombatFights()">Load</button>
+                    </div>
+                    <div id="combat-fights-data" class="table-container"></div>
+                </div>
+            </section>
+
+            <!-- Endurance Section -->
+            <section id="section-endurance" class="section">
+                <h2>Endurance Mode</h2>
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="endurance-sessions">Sessions</button>
+                    <button class="tab-btn" data-tab="endurance-waves">Waves</button>
+                    <button class="tab-btn" data-tab="endurance-perks">Perks</button>
+                </div>
+                <div id="endurance-sessions" class="tab-content active">
+                    <div class="controls">
+                        <input type="number" id="endurance-sessions-limit" value="50" min="1" max="500">
+                        <button onclick="loadEnduranceSessions()">Load</button>
+                    </div>
+                    <div id="endurance-sessions-data" class="table-container"></div>
+                </div>
+                <div id="endurance-waves" class="tab-content">
+                    <div class="controls">
+                        <input type="number" id="endurance-waves-limit" value="100" min="1" max="1000">
+                        <button onclick="loadEnduranceWaves()">Load</button>
+                    </div>
+                    <div id="endurance-waves-data" class="table-container"></div>
+                </div>
+                <div id="endurance-perks" class="tab-content">
+                    <div id="endurance-perks-data" class="table-container"></div>
+                </div>
+            </section>
+
+            <!-- Dungeons Section -->
+            <section id="section-dungeons" class="section">
+                <h2>Dungeon Runs</h2>
+                <div class="controls">
+                    <input type="number" id="dungeons-limit" value="50" min="1" max="500">
+                    <button onclick="loadDungeonRuns()">Load</button>
+                </div>
+                <div id="dungeons-data" class="table-container"></div>
+            </section>
+
+            <!-- Spatial Section -->
+            <section id="section-spatial" class="section">
+                <h2>Spatial Data</h2>
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="spatial-heatmaps">Heatmaps</button>
+                    <button class="tab-btn" data-tab="spatial-transitions">Transitions</button>
+                </div>
+                <div id="spatial-heatmaps" class="tab-content active">
+                    <div class="controls">
+                        <select id="spatial-heatmap-type">
+                            <option value="">All Types</option>
+                            <option value="death">Deaths</option>
+                            <option value="kill">Kills</option>
+                            <option value="damage">Damage</option>
+                        </select>
+                        <input type="number" id="spatial-heatmaps-limit" value="1000" min="1" max="10000">
+                        <button onclick="loadHeatmaps()">Load</button>
+                    </div>
+                    <div id="spatial-heatmaps-data" class="table-container"></div>
+                </div>
+                <div id="spatial-transitions" class="tab-content">
+                    <div class="controls">
+                        <input type="number" id="spatial-transitions-limit" value="200" min="1" max="2000">
+                        <button onclick="loadTransitions()">Load</button>
+                    </div>
+                    <div id="spatial-transitions-data" class="table-container"></div>
+                </div>
+            </section>
+
+            <!-- Economy Section -->
+            <section id="section-economy" class="section">
+                <h2>Economy</h2>
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="economy-drops">Mob Drops</button>
+                    <button class="tab-btn" data-tab="economy-kills">Mob Kills</button>
+                </div>
+                <div id="economy-drops" class="tab-content active">
+                    <div class="controls">
+                        <input type="number" id="economy-drops-limit" value="200" min="1" max="2000">
+                        <button onclick="loadEconomyDrops()">Load</button>
+                    </div>
+                    <div id="economy-drops-data" class="table-container"></div>
+                </div>
+                <div id="economy-kills" class="tab-content">
+                    <div class="controls">
+                        <input type="number" id="economy-kills-limit" value="200" min="1" max="2000">
+                        <button onclick="loadEconomyKills()">Load</button>
+                    </div>
+                    <div id="economy-kills-data" class="table-container"></div>
+                </div>
+            </section>
+
+            <!-- SQL Query Section -->
+            <section id="section-query" class="section">
+                <h2>Custom SQL Query</h2>
+                <p class="warning">Only SELECT queries are allowed</p>
+                <div class="query-container">
+                    <textarea id="sql-query" placeholder="SELECT * FROM combat_hits LIMIT 10"></textarea>
+                    <button onclick="executeQuery()">Execute</button>
+                </div>
+                <div id="query-result" class="table-container"></div>
+            </section>
+        </main>
+
+        <footer>
+            <span>DevMod Telemetry Dashboard</span>
+            <span id="refresh-time"></span>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
