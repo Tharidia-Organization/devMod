@@ -1,6 +1,7 @@
 package com.frenkvs.devmod.party;
 
 import com.frenkvs.devmod.endurance.QuestType;
+import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +61,11 @@ public class PartyManager {
 
         LOGGER.info("[PartyManager] Created party {} (leader: {}, type: {})",
                 party.getPartyId(), leaderName, questType);
+
+        // Telemetry: record party created
+        EnduranceTelemetryService.INSTANCE.recordPartyCreated(
+            party.getPartyId(), leaderId, leaderName, questType
+        );
 
         notifyListeners(listener -> listener.onPartyCreated(party));
         return party;
@@ -139,6 +145,11 @@ public class PartyManager {
         LOGGER.info("[PartyManager] Invite sent from {} to {} for party {}",
                 senderId, targetId, party.getPartyId());
 
+        // Telemetry: record invite sent
+        EnduranceTelemetryService.INSTANCE.recordInviteSent(
+            party.getPartyId(), senderId, targetId
+        );
+
         notifyListeners(listener -> listener.onInviteSent(invite));
         return invite;
     }
@@ -191,6 +202,17 @@ public class PartyManager {
                 if (party.addMember(playerId, playerName)) {
                     playerToParty.put(playerId, party.getPartyId());
                     LOGGER.info("[PartyManager] Player {} joined party {}", playerId, party.getPartyId());
+
+                    // Telemetry: record party join
+                    EnduranceTelemetryService.INSTANCE.recordPartyJoin(
+                        party.getPartyId(), playerId, playerName, party.getMemberCount()
+                    );
+
+                    // Telemetry: record invite response (accepted)
+                    EnduranceTelemetryService.INSTANCE.recordInviteResponse(
+                        party.getPartyId(), playerId, true
+                    );
+
                     notifyListeners(listener -> listener.onMemberJoined(party, playerId));
                 }
             }
@@ -198,6 +220,12 @@ public class PartyManager {
             invite.decline();
             LOGGER.info("[PartyManager] Player {} declined invite to party {}",
                     playerId, party.getPartyId());
+
+            // Telemetry: record invite response (declined)
+            EnduranceTelemetryService.INSTANCE.recordInviteResponse(
+                party.getPartyId(), playerId, false
+            );
+
             notifyListeners(listener -> listener.onInviteDeclined(invite));
         }
 
@@ -247,6 +275,17 @@ public class PartyManager {
             invites.remove(invite);
             LOGGER.info("[PartyManager] Player {} ({}) joined party {}",
                     playerName, playerId, party.getPartyId());
+
+            // Telemetry: record party join
+            EnduranceTelemetryService.INSTANCE.recordPartyJoin(
+                party.getPartyId(), playerId, playerName, party.getMemberCount()
+            );
+
+            // Telemetry: record invite response (accepted)
+            EnduranceTelemetryService.INSTANCE.recordInviteResponse(
+                party.getPartyId(), playerId, true
+            );
+
             notifyListeners(listener -> listener.onMemberJoined(party, playerId));
             return true;
         }
@@ -299,6 +338,12 @@ public class PartyManager {
         if (party.removeMember(playerId)) {
             playerToParty.remove(playerId);
             LOGGER.info("[PartyManager] Player {} left party {}", playerId, partyId);
+
+            // Telemetry: record party leave
+            EnduranceTelemetryService.INSTANCE.recordPartyLeave(
+                partyId, playerId, "left", party.getMemberCount()
+            );
+
             notifyListeners(listener -> listener.onMemberLeft(party, playerId));
             return true;
         }
@@ -323,6 +368,12 @@ public class PartyManager {
             playerToParty.remove(targetId);
             LOGGER.info("[PartyManager] Player {} kicked from party {} by {}",
                     targetId, party.getPartyId(), leaderId);
+
+            // Telemetry: record party leave (kicked)
+            EnduranceTelemetryService.INSTANCE.recordPartyLeave(
+                party.getPartyId(), targetId, "kicked", party.getMemberCount()
+            );
+
             notifyListeners(listener -> listener.onMemberKicked(party, targetId, leaderId));
             return true;
         }
@@ -379,10 +430,17 @@ public class PartyManager {
             invites.removeIf(inv -> inv.getPartyId().equals(partyId));
         }
 
+        int memberCount = party.getMemberCount();
         party.disband();
         parties.remove(partyId);
 
         LOGGER.info("[PartyManager] Party {} disbanded by {}", partyId, leaderId);
+
+        // Telemetry: record party disbanded
+        EnduranceTelemetryService.INSTANCE.recordPartyDisbanded(
+            partyId, memberCount, "leader_disbanded"
+        );
+
         notifyListeners(listener -> listener.onPartyDisbanded(party));
         return true;
     }
@@ -650,6 +708,11 @@ public class PartyManager {
         LOGGER.info("[PartyManager] Invite sent: {} -> {} (party: {}, type: {})",
                 senderName, targetName, party.getPartyId(), questType);
 
+        // Telemetry: record invite sent
+        EnduranceTelemetryService.INSTANCE.recordInviteSent(
+            party.getPartyId(), senderId, targetId
+        );
+
         notifyListeners(listener -> listener.onInviteSent(invite));
         return InviteResult.success(invite.getInviteId(), invite.getExpiresAt());
     }
@@ -713,6 +776,17 @@ public class PartyManager {
 
                 LOGGER.info("[PartyManager] {} ({}) joined party {} via invite",
                         playerName, playerId, party.getPartyId());
+
+                // Telemetry: record party join
+                EnduranceTelemetryService.INSTANCE.recordPartyJoin(
+                    party.getPartyId(), playerId, playerName, party.getMemberCount()
+                );
+
+                // Telemetry: record invite response (accepted)
+                EnduranceTelemetryService.INSTANCE.recordInviteResponse(
+                    party.getPartyId(), playerId, true
+                );
+
                 notifyListeners(listener -> listener.onMemberJoined(party, playerId));
 
                 return ResponseResult.success(party.getPartyId(), senderId);
@@ -724,6 +798,12 @@ public class PartyManager {
             invites.remove(invite);
             LOGGER.info("[PartyManager] {} declined invite to party {}",
                     playerName, party.getPartyId());
+
+            // Telemetry: record invite response (declined)
+            EnduranceTelemetryService.INSTANCE.recordInviteResponse(
+                party.getPartyId(), playerId, false
+            );
+
             notifyListeners(listener -> listener.onInviteDeclined(invite));
 
             return ResponseResult.success(null, senderId);

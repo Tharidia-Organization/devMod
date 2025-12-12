@@ -27,6 +27,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ArmorItem;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -216,16 +217,46 @@ public class RenderEvents {
             }
         }
 
-        // If you press M (and have something in hand) - Opens Weapon Editor (legacy GUI)
+        // If you press M - Opens Item Editor (auto-detects type)
+        // M alone: Auto-detect (Armor → ArmorEditor, Other → WeaponEditor)
+        // Shift+M: Force WeaponEditor (for items with mixed attributes)
+        // Ctrl+M: Force ArmorEditor (edit armor in hand or open slot selector)
         while (KeyInputHandler.OPEN_WEAPON_EDITOR_KEY.consumeClick()) {
             if (!screenOpen) {
-                if (!player.getMainHandItem().isEmpty()) {
-                    mc.setScreen(new com.frenkvs.devmod.WeaponEditorScreen());
+                boolean shiftHeld = Screen.hasShiftDown();
+                boolean ctrlHeld = Screen.hasControlDown();
+                var heldItem = player.getMainHandItem();
+
+                if (ctrlHeld) {
+                    // Ctrl+M: Force ArmorEditor
+                    mc.setScreen(new com.frenkvs.devmod.ArmorEditorScreen());
+                } else if (shiftHeld) {
+                    // Shift+M: Force WeaponEditor
+                    if (!heldItem.isEmpty()) {
+                        mc.setScreen(new com.frenkvs.devmod.WeaponEditorScreen());
+                    } else {
+                        player.displayClientMessage(
+                                Objects.requireNonNull(Component.translatable("devmod.message.must_hold_item").withStyle(s -> s.withColor(0xFF5555))),
+                                true
+                        );
+                    }
                 } else {
-                    player.displayClientMessage(
-                            Objects.requireNonNull(Component.translatable("devmod.message.must_hold_item").withStyle(s -> s.withColor(0xFF5555))),
-                            true
-                    );
+                    // M alone: Auto-detect based on item type
+                    if (!heldItem.isEmpty()) {
+                        if (heldItem.getItem() instanceof ArmorItem) {
+                            // Holding armor → ArmorEditor
+                            mc.setScreen(new com.frenkvs.devmod.ArmorEditorScreen());
+                        } else {
+                            // Holding weapon/tool/other → WeaponEditor
+                            mc.setScreen(new com.frenkvs.devmod.WeaponEditorScreen());
+                        }
+                    } else {
+                        // Empty hand → Show hint about modifiers
+                        player.displayClientMessage(
+                                Objects.requireNonNull(Component.translatable("devmod.message.item_editor_hint").withStyle(s -> s.withColor(0xFFAA00))),
+                                true
+                        );
+                    }
                 }
             }
         }
@@ -743,6 +774,23 @@ public class RenderEvents {
             );
         }
 
+        // ABILITY SYSTEM: Dash (LEFT ALT)
+        while (KeyInputHandler.DASH_KEY.consumeClick()) {
+            // Send dash request to server
+            net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                Objects.requireNonNull(com.frenkvs.devmod.abilities.AbilityActionPayload.dash())
+            );
+        }
+
+        // ABILITY SYSTEM: Dodge (LEFT CONTROL)
+        // Determine dodge direction from movement keys
+        while (KeyInputHandler.DODGE_KEY.consumeClick()) {
+            var dodgeDirection = determineDodgeDirection(mc);
+            net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                Objects.requireNonNull(com.frenkvs.devmod.abilities.AbilityActionPayload.dodge(dodgeDirection))
+            );
+        }
+
         // ESC handling for onboarding tutorial skip
         // Use InputConstants for reliable key detection
         // NOTE: Check isActive() first, regardless of screenOpen state
@@ -763,6 +811,33 @@ public class RenderEvents {
 
     // Debounce state for ESC key in tutorial
     private static boolean escWasPressed = false;
+
+    /**
+     * Determine dodge direction based on movement keys.
+     * A = Left, D = Right, S = Back, W = Forward, None = Back (default)
+     */
+    private static com.frenkvs.devmod.abilities.DodgeAbilitySystem.DodgeDirection determineDodgeDirection(Minecraft mc) {
+        var options = mc.options;
+
+        boolean left = options.keyLeft.isDown();
+        boolean right = options.keyRight.isDown();
+        boolean back = options.keyDown.isDown();
+        boolean forward = options.keyUp.isDown();
+
+        // Priority: Left/Right > Back > Forward > Default (Back)
+        if (left && !right) {
+            return com.frenkvs.devmod.abilities.DodgeAbilitySystem.DodgeDirection.LEFT;
+        } else if (right && !left) {
+            return com.frenkvs.devmod.abilities.DodgeAbilitySystem.DodgeDirection.RIGHT;
+        } else if (back) {
+            return com.frenkvs.devmod.abilities.DodgeAbilitySystem.DodgeDirection.BACK;
+        } else if (forward) {
+            return com.frenkvs.devmod.abilities.DodgeAbilitySystem.DodgeDirection.FORWARD;
+        }
+
+        // Default to back
+        return com.frenkvs.devmod.abilities.DodgeAbilitySystem.DodgeDirection.BACK;
+    }
 
     private static void cycleHeatmapType() {
         // Disable the current type

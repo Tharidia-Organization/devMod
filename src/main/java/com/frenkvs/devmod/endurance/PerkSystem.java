@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.endurance;
 
+import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -595,6 +596,17 @@ public class PerkSystem {
         }
 
         session.setPendingChoices(choices);
+
+        // Telemetry: record perk choices offered
+        if (!choices.isEmpty()) {
+            EnduranceTelemetryService.INSTANCE.recordPerkChoicesOffered(
+                player.getUUID(),
+                session.getQuestId(),
+                waveNumber,
+                choices
+            );
+        }
+
         return choices;
     }
 
@@ -702,6 +714,22 @@ public class PerkSystem {
      */
     private void applyPerk(ServerPlayer player, PerkSession session, Perk perk) {
         session.addPerk(perk.id);
+
+        // Telemetry: record perk selection
+        EnduranceTelemetryService.INSTANCE.recordPerkSelected(
+            player.getUUID(),
+            session.getQuestId(),
+            perk.id,
+            perk.name,
+            perk.tier,
+            perk.category,
+            session.getPerkStacks(perk.id),
+            session.getTotalPerksAcquired()
+        );
+
+        // Trigger player attribute snapshot on perk acquisition
+        com.frenkvs.devmod.telemetry.player.PlayerAttributeTelemetryService.INSTANCE
+            .recordSnapshot(player, "perk_acquired_" + perk.id);
 
         PerkContext context = new PerkContext(player, session, session.getPerkStacks(perk.id));
         perk.apply(context);

@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.endurance;
 
+import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
@@ -178,6 +179,16 @@ public class WaveManager {
 
         LOGGER.info("[EnduranceQuest] Started wave {} with {} mobs (modifiers: {})",
             waveState.waveNumber, waveState.totalToSpawn, waveState.modifiers);
+
+        // Telemetry: record wave start
+        EnduranceTelemetryService.INSTANCE.recordWaveStart(
+            quest.getQuestId(),
+            waveNumber,
+            waveState.totalToSpawn,
+            playerCount,
+            questType,
+            waveState.modifiers
+        );
 
         return waveState;
     }
@@ -436,6 +447,19 @@ public class WaveManager {
             }
 
             if (waveState.isComplete()) {
+                long durationMs = System.currentTimeMillis() - waveState.waveStartTime;
+                float killsPerSecond = durationMs > 0 ? (waveState.killed * 1000f / durationMs) : 0;
+
+                // Telemetry: record wave completion
+                EnduranceTelemetryService.INSTANCE.recordWaveComplete(
+                    waveState.quest.getQuestId(),
+                    waveState.waveNumber,
+                    waveState.killed,
+                    durationMs,
+                    false, // noDamage - would need damage tracking per wave
+                    killsPerSecond
+                );
+
                 LOGGER.info("[EnduranceQuest] Wave {} complete!", waveState.waveNumber);
             }
         }

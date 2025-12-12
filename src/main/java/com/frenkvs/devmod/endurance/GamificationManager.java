@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.endurance;
 
+import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -305,6 +306,8 @@ public class GamificationManager {
                 .findFirst()
                 .orElse(null);
 
+            int oldRank = getPosition(playerId);
+
             if (entry == null) {
                 entry = new LeaderboardEntry(playerId, playerName, points);
                 entries.add(entry);
@@ -319,6 +322,14 @@ public class GamificationManager {
             // Keep top 100
             if (entries.size() > 100) {
                 entries = entries.subList(0, 100);
+            }
+
+            // Telemetry: record leaderboard change if rank improved
+            int newRank = getPosition(playerId);
+            if (newRank > 0 && (oldRank < 0 || newRank < oldRank)) {
+                EnduranceTelemetryService.INSTANCE.recordLeaderboardChange(
+                    playerId, name, oldRank, newRank, points
+                );
             }
         }
 
@@ -483,6 +494,11 @@ public class GamificationManager {
         profile.totalPoints += badge.bonusPoints;
         profile.weeklyPoints += badge.bonusPoints;
         profile.dailyPoints += badge.bonusPoints;
+
+        // Telemetry: record badge unlocked
+        EnduranceTelemetryService.INSTANCE.recordBadgeUnlocked(
+            profile.playerId, badgeId, badge.name, badge.bonusPoints
+        );
 
         LOGGER.info("[Gamification] {} earned badge: {} (+{} points)",
             profile.playerName, badge.name, badge.bonusPoints);

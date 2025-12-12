@@ -3,6 +3,8 @@ package com.frenkvs.devmod.telemetry;
 import com.frenkvs.devmod.telemetry.boss.BossPhaseService;
 import com.frenkvs.devmod.telemetry.combat.FightSessionService;
 import com.frenkvs.devmod.telemetry.damage.DamageTrackingService;
+import com.frenkvs.devmod.telemetry.duckdb.DuckDBConfig;
+import com.frenkvs.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.frenkvs.devmod.telemetry.dungeon.DungeonSessionService;
 import com.frenkvs.devmod.telemetry.entity.EntityTrackingService;
 import com.frenkvs.devmod.telemetry.entity.MinionService;
@@ -55,6 +57,12 @@ public class TelemetryService {
     private final AtomicInteger tickCounter = new AtomicInteger(0);
     private final Map<UUID, Long> mobSpawnTime = new ConcurrentHashMap<>();
     private TelemetrySettings settings = TelemetrySettings.defaults();
+
+    /**
+     * Flag to track if DuckDB was requested but failed to initialize.
+     * Used for circuit breaker logic when FALLBACK_ON_ERROR=false.
+     */
+    private volatile boolean duckDbInitFailed = false;
     private final Map<UUID, Long> mobFirstHit = new ConcurrentHashMap<>();
 
     // Recording state for UI
@@ -147,6 +155,24 @@ public class TelemetryService {
         // Initialize DamageTrackingService with telemetry directory for persistence
         DamageTrackingService.INSTANCE.initialize(telemetryDir);
 
+        // Initialize DuckDB telemetry storage (PRIMARY)
+        if (DuckDBConfig.ENABLED) {
+            boolean duckDbInitialized = DuckDBTelemetryService.INSTANCE.initialize(server);
+            if (duckDbInitialized) {
+                LOGGER.info("DuckDB telemetry initialized (NDJSON fallback: {})", DuckDBConfig.NDJSON_FALLBACK);
+                duckDbInitFailed = false;
+            } else {
+                duckDbInitFailed = true;
+                if (DuckDBConfig.FALLBACK_ON_ERROR) {
+                    LOGGER.warn("DuckDB initialization failed, falling back to NDJSON only");
+                } else {
+                    LOGGER.error("DuckDB initialization failed and FALLBACK_ON_ERROR=false - TELEMETRY DISABLED");
+                }
+            }
+        } else {
+            LOGGER.info("DuckDB disabled, using NDJSON only (legacy mode)");
+        }
+
         LOGGER.info("Telemetry rooms loaded: {}, Boss HP threshold: {}, Phase detection: {}, Skill tracking: {}",
                 RoomService.INSTANCE.getRoomCount(), settings.bossHpThreshold(), settings.bossPhaseDetectionEnabled(), settings.skillTrackingEnabled());
     }
@@ -158,6 +184,11 @@ public class TelemetryService {
     public void shutdown() {
         // Save damage aggregates before shutdown
         DamageTrackingService.INSTANCE.saveAggregates();
+
+        // Shutdown DuckDB (flushes pending batch writes)
+        if (DuckDBTelemetryService.INSTANCE.isInitialized()) {
+            DuckDBTelemetryService.INSTANCE.shutdown();
+        }
 
         if (asyncWriter != null) {
             asyncWriter.shutdown();
@@ -176,11 +207,17 @@ public class TelemetryService {
 
         if (result.roomChanged()) {
             appendLine("room_time.ndjson", "{\"ts\":\"" + Instant.now() + "\",\"player\":\"" + TelemetryJson.escape(player.getGameProfile().getName()) + "\",\"room\":\"" + TelemetryJson.escape(roomId) + "\"}");
+
+            // DuckDB: log room transition
+            DuckDBTelemetryService.INSTANCE.logRoomTransition(
+                player.getUUID(),
+                player.getGameProfile().getName(),
+                roomId);
         }
 
-        // FASE 3 M10: Sample player movement for heatmap (every 2 seconds)
+        // FASE 3 M10: Sample player movement for heatmap (with throttle)
         if (result.shouldSampleMovement()) {
-            HeatmapService.INSTANCE.recordMovement(roomId, player.blockPosition());
+            HeatmapService.INSTANCE.recordMovement(roomId, player.blockPosition(), player.getStringUUID());
         }
     }
 
@@ -189,13 +226,22 @@ public class TelemetryService {
         var result = PlayerTrackingService.INSTANCE.checkOutOfBounds(player);
 
         if (result.shouldAlert()) {
+            String playerName = player.getGameProfile().getName();
+            Vec3 pos = result.position();
+
             String line = "{\"ts\":\"" + Instant.now() + "\","
                     + "\"type\":\"out_of_bounds_vertical\","
-                    + "\"player\":\"" + TelemetryJson.escape(player.getGameProfile().getName()) + "\","
+                    + "\"player\":\"" + TelemetryJson.escape(playerName) + "\","
                     + "\"room\":\"" + TelemetryJson.escape(result.roomId()) + "\","
-                    + "\"pos\":[" + result.position().x + "," + result.position().y + "," + result.position().z + "],"
+                    + "\"pos\":[" + pos.x + "," + pos.y + "," + pos.z + "],"
                     + "\"deltaY\":" + result.deltaY() + "}";
             appendLine("alerts.ndjson", line);
+
+            // DuckDB: log out_of_bounds alert
+            DuckDBTelemetryService.INSTANCE.logAlert(
+                "out_of_bounds", playerName, null, null, result.roomId(),
+                pos.x, pos.y, pos.z,
+                "{\"deltaY\":" + result.deltaY() + "}");
         }
     }
 
@@ -249,7 +295,17 @@ public class TelemetryService {
                 + "\"attackerState\":" + attackerState + ","
                 + "\"targetState\":" + targetState
                 + "}";
-        appendLine("hits.ndjson", line);
+
+        // DuckDB PRIMARY, NDJSON fallback
+        if (DuckDBTelemetryService.INSTANCE.isEnabled()) {
+            DuckDBTelemetryService.INSTANCE.logHit(room, level.dimension().location().toString(),
+                attackerName, attackerType, target.getName().getString(), targetType,
+                amount, damageType, hpBefore, hpAfter, bodyPart, distance,
+                armorPenBonus, false, hazard, hazardType, attackerState, targetState);
+        }
+        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+            appendLine("hits.ndjson", line);
+        }
 
         // Aggregates - delegate to DamageTrackingService
         if (attacker instanceof ServerPlayer player) {
@@ -363,7 +419,16 @@ public class TelemetryService {
                 + "\"ttkFirstHitMs\":" + (ttkFirstHit != null ? ttkFirstHit : -1) + ","
                 + "\"ttkSpawnMs\":" + (ttkSpawn != null ? ttkSpawn : -1)
                 + "}";
-        appendLine("deaths.ndjson", line);
+
+        // DuckDB PRIMARY, NDJSON fallback
+        if (DuckDBTelemetryService.INSTANCE.isEnabled()) {
+            DuckDBTelemetryService.INSTANCE.logDeath(room, level.dimension().location().toString(),
+                entity.getName().getString(), EntityTypeName.of(entity),
+                source.getMsgId(), ttkFirstHit, ttkSpawn);
+        }
+        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+            appendLine("deaths.ndjson", line);
+        }
 
         // FASE 3 M9: Aggregate death position for heatmap
         HeatmapService.INSTANCE.recordDeath(room, entity.blockPosition());
@@ -414,7 +479,16 @@ public class TelemetryService {
                 + "\"hpAfter\":" + hpAfter + ","
                 + "\"source\":\"" + TelemetryJson.escape(source) + "\""
                 + "}";
-        appendLine("heals.ndjson", line);
+
+        // DuckDB PRIMARY, NDJSON fallback
+        if (DuckDBTelemetryService.INSTANCE.isEnabled()) {
+            DuckDBTelemetryService.INSTANCE.logHeal(room, level.dimension().location().toString(),
+                entity.getName().getString(), EntityTypeName.of(entity),
+                amount, hpBefore, hpAfter, source);
+        }
+        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+            appendLine("heals.ndjson", line);
+        }
 
         // Aggregates per stanza - delegate to DamageTrackingService
         DamageTrackingService.INSTANCE.registerRoomHeal(room, entity, amount);
@@ -435,7 +509,16 @@ public class TelemetryService {
                 + "\"reason\":\"" + TelemetryJson.escape(reason) + "\","
                 + "\"spawnFail\":" + failed
                 + "}";
-        appendLine("spawns.ndjson", line);
+
+        // DuckDB PRIMARY, NDJSON fallback
+        if (DuckDBTelemetryService.INSTANCE.isEnabled()) {
+            DuckDBTelemetryService.INSTANCE.logSpawn(room, level.dimension().location().toString(),
+                entity.getName().getString(), EntityTypeName.of(entity),
+                reason, failed, entity.getX(), entity.getY(), entity.getZ());
+        }
+        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+            appendLine("spawns.ndjson", line);
+        }
 
         // FASE 2 M6: Track minion spawn for concurrent count - delegated to MinionService
         if (entity instanceof Mob && !(entity instanceof ServerPlayer) && entity.getMaxHealth() < settings.bossHpThreshold()) {
@@ -467,9 +550,62 @@ public class TelemetryService {
      */
     public void tickFights() {
         FightSessionService.INSTANCE.tick(result -> {
-            // Write fight result to NDJSON using the service's built-in JSON serialization
-            appendLine("fights.ndjson", result.toJson());
+            // DuckDB: PRIMARY storage
+            if (DuckDBTelemetryService.INSTANCE.isEnabled()) {
+                DuckDBTelemetryService.INSTANCE.logFight(
+                    result.room(),
+                    result.worldId(),
+                    result.startInstant(),
+                    result.endInstant(),
+                    result.durationMs(),
+                    result.hits(),
+                    result.mobKills(),
+                    result.playerDeaths(),
+                    result.players().toArray(new String[0]),
+                    mapToJson(result.mobKillsByType()),
+                    mapToJson(result.playerDeathsByName()),
+                    ttkMapToJson(result.ttkByType()),
+                    result.maxBurst(),
+                    result.avgHpAfterPlayers(),
+                    result.avgHpAfterMobs()
+                );
+            }
+
+            // NDJSON: Fallback only
+            if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+                appendLine("fights.ndjson", result.toJson());
+            }
         });
+    }
+
+    /** Helper: Convert Map<String, Integer> to JSON string */
+    private String mapToJson(Map<String, Integer> map) {
+        StringBuilder sb = new StringBuilder("{");
+        boolean first = true;
+        for (Map.Entry<String, Integer> e : map.entrySet()) {
+            if (!first) sb.append(",");
+            first = false;
+            sb.append("\"").append(TelemetryJson.escape(e.getKey())).append("\":").append(e.getValue());
+        }
+        sb.append("}");
+        return sb.toString();
+    }
+
+    /** Helper: Convert TTK map to JSON string */
+    private String ttkMapToJson(Map<String, FightSessionService.TTKAggregate> map) {
+        StringBuilder sb = new StringBuilder("{");
+        boolean first = true;
+        for (Map.Entry<String, FightSessionService.TTKAggregate> e : map.entrySet()) {
+            if (!first) sb.append(",");
+            first = false;
+            FightSessionService.TTKAggregate ttk = e.getValue();
+            sb.append("\"").append(TelemetryJson.escape(e.getKey())).append("\":{");
+            sb.append("\"avg\":").append(ttk.avgMs()).append(",");
+            sb.append("\"max\":").append(ttk.maxMs()).append(",");
+            sb.append("\"count\":").append(ttk.count()).append("}");
+        }
+        sb.append("}");
+        return sb.toString();
     }
 
     /**
@@ -483,7 +619,14 @@ public class TelemetryService {
         String line = "{\"ts\":\"" + Instant.now() + "\","
                 + "\"mspt\":" + averageMspt + ","
                 + "\"tps\":" + tps + "}";
-        appendLine("performance.ndjson", line);
+
+        // DuckDB PRIMARY, NDJSON fallback
+        if (DuckDBTelemetryService.INSTANCE.isEnabled()) {
+            DuckDBTelemetryService.INSTANCE.logPerformance(averageMspt, tps);
+        }
+        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+            appendLine("performance.ndjson", line);
+        }
     }
 
     public List<String> getWeaponSummaries() {
@@ -606,11 +749,17 @@ public class TelemetryService {
 
         if (isStuck) {
             ResourceKey<Level> dim = entity.level().dimension();
+            String entityName = entity.getName().getString();
+            String entityType = EntityTypeName.of(entity);
+            double x = entity.getX();
+            double y = entity.getY();
+            double z = entity.getZ();
+
             String line = "{\"ts\":\"" + Instant.now() + "\","
                     + "\"type\":\"stuck\","
-                    + "\"entity\":\"" + TelemetryJson.escape(entity.getName().getString()) + "\","
-                    + "\"entityType\":\"" + TelemetryJson.escape(EntityTypeName.of(entity)) + "\","
-                    + "\"pos\":[" + entity.getX() + "," + entity.getY() + "," + entity.getZ() + "],"
+                    + "\"entity\":\"" + TelemetryJson.escape(entityName) + "\","
+                    + "\"entityType\":\"" + TelemetryJson.escape(entityType) + "\","
+                    + "\"pos\":[" + x + "," + y + "," + z + "],"
                     + "\"world\":\"" + dim.location() + "\"}";
             appendLine("alerts.ndjson", line);
 
@@ -618,6 +767,11 @@ public class TelemetryService {
             if (entity.level() instanceof ServerLevel serverLevel) {
                 String room = resolveRoom(serverLevel, entity.blockPosition());
                 HeatmapService.INSTANCE.recordStuck(room, entity.blockPosition());
+
+                // DuckDB: log stuck alert
+                DuckDBTelemetryService.INSTANCE.logAlert(
+                    "stuck", null, entityName, entityType, room, x, y, z,
+                    "{\"world\":\"" + dim.location() + "\"}");
             }
         }
     }
@@ -628,16 +782,25 @@ public class TelemetryService {
 
         if (isCamping) {
             BlockPos pos = player.blockPosition();
+            String playerName = player.getGameProfile().getName();
+            String targetName = target.getName().getString();
+            String targetType = EntityTypeName.of(target);
+
             String line = "{\"ts\":\"" + Instant.now() + "\","
                     + "\"type\":\"camping\","
-                    + "\"player\":\"" + TelemetryJson.escape(player.getGameProfile().getName()) + "\","
+                    + "\"player\":\"" + TelemetryJson.escape(playerName) + "\","
                     + "\"pos\":[" + pos.getX() + "," + pos.getY() + "," + pos.getZ() + "],"
-                    + "\"target\":\"" + TelemetryJson.escape(target.getName().getString()) + "\"}";
+                    + "\"target\":\"" + TelemetryJson.escape(targetName) + "\"}";
             appendLine("alerts.ndjson", line);
 
             // Delegate heatmap to HeatmapService
             String room = resolveRoom(player.serverLevel(), pos);
             HeatmapService.INSTANCE.recordCamping(room, pos);
+
+            // DuckDB: log camping alert
+            DuckDBTelemetryService.INSTANCE.logAlert(
+                "camping", playerName, targetName, targetType, room,
+                pos.getX(), pos.getY(), pos.getZ(), null);
         }
     }
 
@@ -666,15 +829,21 @@ public class TelemetryService {
             if (!(entity instanceof net.minecraft.world.entity.Mob mob)) continue;
             if (entity.isRemoved()) continue;
 
+            String mobName = mob.getName().getString();
+            String mobType = EntityTypeName.of(mob);
+            double mobX = mob.getX();
+            double mobY = mob.getY();
+            double mobZ = mob.getZ();
+
             // Update path tracker and check for kiting issues
             String pathIssue = EntityTrackingService.INSTANCE.updatePathAndDetectIssue(mob);
             if (pathIssue != null) {
                 String room = resolveRoom(level, mob.blockPosition());
                 String line = "{\"ts\":\"" + Instant.now() + "\","
                         + "\"type\":\"" + pathIssue + "\","
-                        + "\"mob\":\"" + TelemetryJson.escape(mob.getName().getString()) + "\","
-                        + "\"mobType\":\"" + TelemetryJson.escape(EntityTypeName.of(mob)) + "\","
-                        + "\"pos\":[" + mob.getX() + "," + mob.getY() + "," + mob.getZ() + "],"
+                        + "\"mob\":\"" + TelemetryJson.escape(mobName) + "\","
+                        + "\"mobType\":\"" + TelemetryJson.escape(mobType) + "\","
+                        + "\"pos\":[" + mobX + "," + mobY + "," + mobZ + "],"
                         + "\"room\":\"" + TelemetryJson.escape(room) + "\"}";
                 appendLine("alerts.ndjson", line);
 
@@ -682,6 +851,10 @@ public class TelemetryService {
                 if (pathIssue.equals("kiting_path") || pathIssue.equals("spin")) {
                     HeatmapService.INSTANCE.recordKiting(room, mob.blockPosition());
                 }
+
+                // DuckDB: log kiting/spin alert
+                DuckDBTelemetryService.INSTANCE.logAlert(
+                    pathIssue, null, mobName, mobType, room, mobX, mobY, mobZ, null);
             }
 
             // Check aggro drop using EntityTrackingService
@@ -690,14 +863,18 @@ public class TelemetryService {
                 String room = resolveRoom(level, mob.blockPosition());
                 String line = "{\"ts\":\"" + Instant.now() + "\","
                         + "\"type\":\"aggro_drop\","
-                        + "\"mob\":\"" + TelemetryJson.escape(mob.getName().getString()) + "\","
-                        + "\"mobType\":\"" + TelemetryJson.escape(EntityTypeName.of(mob)) + "\","
-                        + "\"pos\":[" + mob.getX() + "," + mob.getY() + "," + mob.getZ() + "],"
+                        + "\"mob\":\"" + TelemetryJson.escape(mobName) + "\","
+                        + "\"mobType\":\"" + TelemetryJson.escape(mobType) + "\","
+                        + "\"pos\":[" + mobX + "," + mobY + "," + mobZ + "],"
                         + "\"room\":\"" + TelemetryJson.escape(room) + "\"}";
                 appendLine("alerts.ndjson", line);
 
                 // Delegate heatmap to HeatmapService
                 HeatmapService.INSTANCE.recordAggroDrop(room, mob.blockPosition());
+
+                // DuckDB: log aggro_drop alert
+                DuckDBTelemetryService.INSTANCE.logAlert(
+                    "aggro_drop", null, mobName, mobType, room, mobX, mobY, mobZ, null);
 
                 // Boss reset / leash fail heuristic: far from spawn
                 EntityTrackingService.INSTANCE.getSpawnInfo(mob.getUUID()).ifPresent(info -> {
@@ -705,12 +882,17 @@ public class TelemetryService {
                     if (dist > 20) {
                         String resetLine = "{\"ts\":\"" + Instant.now() + "\","
                                 + "\"type\":\"reset\","
-                                + "\"mob\":\"" + TelemetryJson.escape(mob.getName().getString()) + "\","
-                                + "\"mobType\":\"" + TelemetryJson.escape(EntityTypeName.of(mob)) + "\","
-                                + "\"pos\":[" + mob.getX() + "," + mob.getY() + "," + mob.getZ() + "],"
+                                + "\"mob\":\"" + TelemetryJson.escape(mobName) + "\","
+                                + "\"mobType\":\"" + TelemetryJson.escape(mobType) + "\","
+                                + "\"pos\":[" + mobX + "," + mobY + "," + mobZ + "],"
                                 + "\"spawnPos\":[" + info.position().x + "," + info.position().y + "," + info.position().z + "],"
                                 + "\"room\":\"" + TelemetryJson.escape(room) + "\"}";
                         appendLine("alerts.ndjson", resetLine);
+
+                        // DuckDB: log reset alert with spawn position in extra_data
+                        String spawnPosJson = "{\"spawnPos\":[" + info.position().x + "," + info.position().y + "," + info.position().z + "]}";
+                        DuckDBTelemetryService.INSTANCE.logAlert(
+                            "reset", null, mobName, mobType, room, mobX, mobY, mobZ, spawnPosJson);
                     }
                 });
             }
@@ -726,15 +908,45 @@ public class TelemetryService {
     // logFightEnd -> delegated to FightSessionService.FightSessionResult.toJson()
 
     /**
+     * Counter for rate-limited NDJSON skip logging.
+     */
+    private final AtomicInteger ndjsonSkipCount = new AtomicInteger(0);
+
+    /**
      * PERFORMANCE FIX: Queue telemetry write to background thread (~0.1ms overhead)
      *
      * Before: Blocking I/O write in server tick (5-20ms lag spike)
      * After: Non-blocking queue operation (<0.1ms)
      *
      * Impact: ~95% reduction in telemetry I/O lag
+     *
+     * DuckDB Migration: When DuckDB is PRIMARY (NDJSON_FALLBACK=false),
+     * NDJSON writes are SKIPPED entirely. This is the single guard point
+     * for ALL NDJSON writes in the system.
      */
     void appendLine(String fileName, String line) {
         if (telemetryDir == null || asyncWriter == null) return;
+
+        // Circuit breaker: If DuckDB failed and FALLBACK_ON_ERROR=false, disable ALL telemetry
+        if (duckDbInitFailed && !DuckDBConfig.FALLBACK_ON_ERROR) {
+            // Rate-limited logging (every 1000 skips)
+            int count = ndjsonSkipCount.incrementAndGet();
+            if (count == 1 || count % 1000 == 0) {
+                LOGGER.debug("[NDJSON] Skipped {} writes (STRICT MODE - DuckDB failed, no fallback) - latest: {}", count, fileName);
+            }
+            return;
+        }
+
+        // DuckDB PRIMARY mode: Skip NDJSON writes when DuckDB is enabled and fallback is disabled
+        if (!DuckDBConfig.NDJSON_FALLBACK && DuckDBTelemetryService.INSTANCE.isEnabled()) {
+            // Rate-limited logging (every 1000 skips)
+            int count = ndjsonSkipCount.incrementAndGet();
+            if (count == 1 || count % 1000 == 0) {
+                LOGGER.debug("[NDJSON] Skipped {} writes (DuckDB PRIMARY mode) - latest: {}", count, fileName);
+            }
+            return;
+        }
+
         Path file = telemetryDir.resolve(fileName);
         asyncWriter.queueWrite(file, line);
     }
@@ -744,6 +956,38 @@ public class TelemetryService {
      */
     public void appendEconomyLine(String line) {
         appendLine("economy.ndjson", line);
+    }
+
+    /**
+     * Append progression telemetry line (public API for ProgressionTrackingEvents).
+     * Tracks: blocks, xp, advancements, dimensions, combat, trades, fishing.
+     */
+    public void appendProgressionLine(String line) {
+        appendLine("progression.ndjson", line);
+    }
+
+    /**
+     * Append endurance telemetry line (public API for EnduranceTelemetryService).
+     * Tracks: waves, combos, perks, mutators, rewards, party, bosses.
+     */
+    public void appendEnduranceLine(String line) {
+        appendLine("endurance.ndjson", line);
+    }
+
+    /**
+     * Append player attributes telemetry line (public API for PlayerAttributeTelemetryService).
+     * Tracks: player attribute changes, status effects, modifiers.
+     */
+    public void appendPlayerAttributesLine(String line) {
+        appendLine("player_attributes.ndjson", line);
+    }
+
+    /**
+     * Append ability usage telemetry line (public API for AbilityTelemetryService).
+     * Tracks: dash, dodge, stamina usage, perfect dodges, exhaustion events.
+     */
+    public void appendAbilityUsageLine(String line) {
+        appendLine("ability_usage.ndjson", line);
     }
 
     // PlayerRoomTracker -> delegated to PlayerTrackingService
@@ -855,8 +1099,15 @@ public class TelemetryService {
      */
     public void logPlayerQuit(ServerPlayer player) {
         String room = resolveRoom((ServerLevel) player.level(), player.blockPosition());
-        var record = SpatialMetricsService.INSTANCE.recordQuit(room, player.blockPosition());
-        appendLine("player_quits.ndjson", record.toJson(player.getName().getString()));
+        BlockPos pos = player.blockPosition();
+        String playerName = player.getName().getString();
+        var record = SpatialMetricsService.INSTANCE.recordQuit(room, pos);
+        appendLine("player_quits.ndjson", record.toJson(playerName));
+
+        // DuckDB: log choke_point alert (player quit position)
+        DuckDBTelemetryService.INSTANCE.logAlert(
+            "choke_point", playerName, null, null, room,
+            pos.getX(), pos.getY(), pos.getZ(), null);
     }
 
     /**
@@ -868,12 +1119,21 @@ public class TelemetryService {
         var result = PlayerTrackingService.INSTANCE.trackRoomVisit(player.getUUID(), roomId);
 
         if (result.isBacktrack()) {
+            String playerName = player.getName().getString();
+            BlockPos pos = player.blockPosition();
+
             String line = "{\"ts\":\"" + Instant.now() + "\","
                     + "\"type\":\"backtrack\","
-                    + "\"player\":\"" + TelemetryJson.escape(player.getName().getString()) + "\","
+                    + "\"player\":\"" + TelemetryJson.escape(playerName) + "\","
                     + "\"room\":\"" + TelemetryJson.escape(roomId) + "\","
                     + "\"backtrackCount\":" + result.backtrackCount() + "}";
             appendLine("alerts.ndjson", line);
+
+            // DuckDB: log backtrack alert
+            DuckDBTelemetryService.INSTANCE.logAlert(
+                "backtrack", playerName, null, null, roomId,
+                pos.getX(), pos.getY(), pos.getZ(),
+                "{\"backtrackCount\":" + result.backtrackCount() + "}");
         }
 
         // Update dungeon session room sequence
@@ -893,7 +1153,14 @@ public class TelemetryService {
     public void logInvisibleCollision(ServerPlayer player, BlockPos pos) {
         String room = resolveRoom((ServerLevel) player.level(), pos);
         var record = SpatialMetricsService.INSTANCE.recordInvisibleCollision(room, pos);
-        appendLine("alerts.ndjson", record.toJson(player.getName().getString()));
+        String playerName = player.getName().getString();
+        appendLine("alerts.ndjson", record.toJson(playerName));
+
+        // DuckDB: log invisible_collision alert
+        DuckDBTelemetryService.INSTANCE.logAlert(
+            "invisible_collision", playerName, null, null, room,
+            pos.getX(), pos.getY(), pos.getZ(),
+            "{\"totalCount\":" + record.totalCount() + "}");
     }
 
     /**
@@ -902,7 +1169,14 @@ public class TelemetryService {
     public void logParkourFall(ServerPlayer player, float fallDistance, BlockPos fallPos) {
         String room = resolveRoom((ServerLevel) player.level(), fallPos);
         var record = SpatialMetricsService.INSTANCE.recordParkourFall(room, fallPos, fallDistance);
-        appendLine("parkour_falls.ndjson", record.toJson(player.getName().getString()));
+        String playerName = player.getName().getString();
+        appendLine("parkour_falls.ndjson", record.toJson(playerName));
+
+        // DuckDB: log parkour_fall alert
+        DuckDBTelemetryService.INSTANCE.logAlert(
+            "parkour_fall", playerName, null, null, room,
+            fallPos.getX(), fallPos.getY(), fallPos.getZ(),
+            "{\"fallDistance\":" + fallDistance + ",\"totalCount\":" + record.totalCount() + "}");
     }
 
     // ===== FASE 5: Export Methods =====

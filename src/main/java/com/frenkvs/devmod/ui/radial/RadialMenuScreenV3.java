@@ -1,24 +1,25 @@
 package com.frenkvs.devmod.ui.radial;
 
-import com.frenkvs.devmod.ModConfig;
-import com.frenkvs.devmod.hud.*;
-import com.frenkvs.devmod.rendering.*;
-import com.frenkvs.devmod.telemetry.FpsTracker;
+import com.frenkvs.devmod.hud.OnboardingOverlay;
+import com.frenkvs.devmod.ui.radial.animation.RadialAnimator;
+import com.frenkvs.devmod.ui.radial.config.RadialMenuConstants;
+import com.frenkvs.devmod.ui.radial.input.RadialSearchHandler;
+import com.frenkvs.devmod.ui.radial.model.MacroCategory;
+import com.frenkvs.devmod.ui.radial.render.RadialCategoryRenderer;
+import com.frenkvs.devmod.ui.radial.render.RadialGeometry;
+import com.frenkvs.devmod.ui.radial.render.RadialHubRenderer;
+import com.frenkvs.devmod.ui.radial.render.RadialTooltipRenderer;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 import com.frenkvs.devmod.util.I18n;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
 
 import javax.annotation.Nonnull;
@@ -26,18 +27,37 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 /**
- * RADIAL MENU V3 - CLEAN & USABLE EDITION
+ * RADIAL MENU V3 - MACRO-CATEGORY EDITION
  *
- * Focus on usability:
+ * Architecture:
+ * - Center hub divided into 4 macro-category segments (ANALYZE, COMBAT, TOOLS, PLAY)
+ * - Each macro-category controls 6 categories in the outer ring
+ * - Total capacity: 24 categories (4 macros × 6 categories)
+ * - Clicking center segment switches active macro-category
+ * - Smooth transitions between macro-categories
+ * - State persisted across menu opens
+ *
+ * UX Features:
  * - Clean, readable layout with proper spacing
  * - Large clickable areas - no overlap
  * - Fast, non-distracting animations
  * - Fuzzy search (type to filter)
- * - Optional favorites in center ring
  * - Keyboard shortcuts for power users
  */
 @SuppressWarnings("null") // Minecraft API null annotations
 public class RadialMenuScreenV3 extends Screen {
+
+    // ================================================================
+    // MACRO-CATEGORY SYSTEM
+    // ================================================================
+
+    // MacroCategory enum extracted to com.frenkvs.devmod.ui.radial.model.MacroCategory
+
+    // === Macro-Category State ===
+    private static MacroCategory selectedMacro = MacroCategory.ANALYZE; // Persisted across opens
+    private MacroCategory hoveredMacro = null;
+    private final Map<MacroCategory, List<RadialCategory>> macroCategoryMap = new EnumMap<>(MacroCategory.class);
+    private MacroCategory transitionFromMacro = null; // Previous macro during transition for cross-fade effect
 
     // === Configuration ===
     private final RadialMenuConfig config = RadialMenuConfig.INSTANCE;
@@ -48,6 +68,7 @@ public class RadialMenuScreenV3 extends Screen {
     private int itemRadius;
     private int centerButtonRadius;
     private int favoritesRadius;
+    private int macroHubRadius; // Radius of the macro-category hub in the center
 
     // === Menu Structure ===
     private final List<RadialCategory> rootCategories = new ArrayList<>();
@@ -61,30 +82,18 @@ public class RadialMenuScreenV3 extends Screen {
     private int prevSelectedCategory = -1;
     private int centerX, centerY;
 
-    // === Animation State ===
-    private float openAnimation = 0f;
-    private float categoryHoverAnim = 0f;
-    private float pulsePhase = 0f;
-    private float[] categoryAnimations;
-    private float[] itemAnimations;
-    private float[] favoriteAnimations;
-    private boolean closing = false;
+    // === Animation System ===
+    private final RadialAnimator animator = new RadialAnimator(6, 10, RadialMenuConstants.MAX_FAVORITES);
     private long openTime;
-
-    // === Advanced Animation ===
-    private float wavePhase = 0f;
-    private float morphProgress = 0f;
 
     // === Search System ===
     private boolean searchMode = false;
     private StringBuilder searchQuery = new StringBuilder();
-    private List<SearchResult> searchResults = new ArrayList<>();
+    private List<RadialSearchHandler.SearchResult> searchResults = new ArrayList<>();
     private int selectedSearchResult = -1;
-    private float searchBoxAnimation = 0f;
 
     // === Favorites System ===
     private final List<FavoriteItem> favorites = new ArrayList<>();
-    private static final int MAX_FAVORITES = 8;
 
     // === Usage Statistics ===
     private final Map<String, Integer> usageStats = new HashMap<>();
@@ -113,7 +122,8 @@ public class RadialMenuScreenV3 extends Screen {
         outerRadius = config.outerRadius;
         itemRadius = config.itemRadius;
         centerButtonRadius = config.centerButtonRadius;
-        favoritesRadius = innerRadius - 15;
+        favoritesRadius = innerRadius - RadialMenuConstants.FAVORITES_OFFSET;
+        macroHubRadius = centerButtonRadius + RadialMenuConstants.MACRO_HUB_OFFSET;
     }
 
     private void cacheTargetEntity() {
@@ -129,52 +139,7 @@ public class RadialMenuScreenV3 extends Screen {
     // ================================================================
 
     private void updateSearchResults() {
-        searchResults.clear();
-        if (searchQuery.length() == 0) return;
-
-        String query = searchQuery.toString().toLowerCase();
-
-        for (RadialCategory cat : rootCategories) {
-            for (RadialMenuItem item : cat.getItems()) {
-                String name = item.getName().toLowerCase();
-                String desc = item.getDescription().toLowerCase();
-
-                // Fuzzy match scoring
-                int score = 0;
-                if (name.startsWith(query)) score += 100;
-                else if (name.contains(query)) score += 50;
-                if (desc.contains(query)) score += 25;
-
-                // Character-by-character fuzzy
-                if (score == 0) {
-                    int matchedChars = 0;
-                    int lastIndex = -1;
-                    for (char c : query.toCharArray()) {
-                        int idx = name.indexOf(c, lastIndex + 1);
-                        if (idx > lastIndex) {
-                            matchedChars++;
-                            lastIndex = idx;
-                        }
-                    }
-                    if (matchedChars == query.length()) {
-                        score = 10 + (10 - Math.min(10, name.length() - query.length()));
-                    }
-                }
-
-                if (score > 0) {
-                    searchResults.add(new SearchResult(item, cat, score));
-                }
-            }
-        }
-
-        // Sort by score descending
-        searchResults.sort((a, b) -> b.score - a.score);
-
-        // Limit results
-        if (searchResults.size() > 8) {
-            searchResults = new ArrayList<>(searchResults.subList(0, 8));
-        }
-
+        searchResults = RadialSearchHandler.search(searchQuery.toString(), rootCategories);
         selectedSearchResult = searchResults.isEmpty() ? -1 : 0;
     }
 
@@ -199,7 +164,7 @@ public class RadialMenuScreenV3 extends Screen {
 
     private void loadFavorites() {
         // Would load from config in production
-        favoriteAnimations = new float[MAX_FAVORITES];
+        // Animator handles favorite animations internally
     }
 
     private void toggleFavorite(RadialMenuItem item, RadialCategory category) {
@@ -215,7 +180,7 @@ public class RadialMenuScreenV3 extends Screen {
         }
 
         // Add to favorites
-        if (favorites.size() < MAX_FAVORITES) {
+        if (favorites.size() < RadialMenuConstants.MAX_FAVORITES) {
             favorites.add(new FavoriteItem(key, item, category));
             playSound(1.3f);
         }
@@ -223,238 +188,45 @@ public class RadialMenuScreenV3 extends Screen {
 
     private void nextCategory() {
         selectedCategoryIndex = (selectedCategoryIndex + 1) % rootCategories.size();
-        morphProgress = 0f;
+        animator.startMorph();
         playSound(1.05f);
     }
 
     private void prevCategory() {
         selectedCategoryIndex = (selectedCategoryIndex - 1 + rootCategories.size()) % rootCategories.size();
-        morphProgress = 0f;
+        animator.startMorph();
         playSound(0.95f);
     }
 
     // ================================================================
-    // CATEGORY INITIALIZATION (same as V2 but with favorites integration)
+    // CATEGORY INITIALIZATION - MACRO-CATEGORY ARCHITECTURE
     // ================================================================
 
+    /**
+     * Initializes the 4 macro-categories, each containing 6 sub-categories.
+     * Total: 24 categories organized hierarchically for better UX.
+     *
+     * Categories are defined in RadialMenuRegistry for better separation of concerns.
+     *
+     * ANALYZE (👁): Debug overlays, Spatial analysis, Performance, Light/Spawn, Pathfinding, Entity Debug
+     * COMBAT (⚔): Combat Tools, Editors, Heatmaps, Boss/Skills, Economy, Attributes
+     * TOOLS (🔧): Settings, Dashboard, Testing, Mob Editor, Weapon/Armor Editor, Commands
+     * PLAY (📜): Quest System, Endurance Mode, Party/Multiplayer, Achievements, Challenges, Leaderboards
+     */
     private void initializeCategories() {
-        RadialMenuConfig.ColorTheme theme = config.theme;
+        // Build categories from registry with mob editor supplier for context-dependent items
+        Map<MacroCategory, List<RadialCategory>> registryCategories =
+            RadialMenuRegistry.createDefaultCategories(this::createMobEditorItem);
 
-        // Category 1: Debug Overlays
-        RadialCategory debug = RadialCategory.builder("debug")
-            .name("Debug")
-            .color(theme.categoryColors[0])
-            .icon("👁")
-            .iconStack(new ItemStack(Items.ENDER_EYE))
-            .item(RadialMenuItem.toggle("Body Parts", "🎯",
-                new ItemStack(Items.ARMOR_STAND),
-                () -> ModConfig.showBodyPartBoxes,
-                v -> ModConfig.showBodyPartBoxes = v,
-                "Show body part hitboxes on entities"))
-            .item(RadialMenuItem.toggle("Light Levels", "💡",
-                new ItemStack(Items.TORCH),
-                () -> LightLevelOverlay.INSTANCE.isEnabled(),
-                v -> LightLevelOverlay.INSTANCE.setEnabled(v),
-                "Display spawn light levels on blocks"))
-            .item(RadialMenuItem.toggle("Pathfinding", "🛤",
-                new ItemStack(Items.RAIL),
-                () -> PathfindingDebugger.INSTANCE.isEnabled(),
-                v -> PathfindingDebugger.INSTANCE.setEnabled(v),
-                "Visualize mob pathfinding routes"))
-            .item(RadialMenuItem.toggle("Line of Sight", "👀",
-                new ItemStack(Items.SPYGLASS),
-                () -> LineOfSightVisualizer.INSTANCE.isEnabled(),
-                v -> LineOfSightVisualizer.INSTANCE.setEnabled(v),
-                "Show mob vision cones"))
-            .item(RadialMenuItem.toggle("Mob Debug", "👾",
-                new ItemStack(Items.ZOMBIE_HEAD),
-                () -> DebugRenderer.INSTANCE.isEnabled(),
-                v -> DebugRenderer.INSTANCE.setEnabled(v),
-                "Show mob stats, hitboxes & aggro ranges"))
-            .build();
-        rootCategories.add(debug);
+        // Copy to our internal map and rootCategories
+        macroCategoryMap.putAll(registryCategories);
 
-        // Category 2: Spatial Analysis
-        RadialCategory spatial = RadialCategory.builder("spatial")
-            .name("Spatial")
-            .color(theme.categoryColors[1])
-            .icon("🗺")
-            .iconStack(new ItemStack(Items.FILLED_MAP))
-            .item(RadialMenuItem.toggle("Room Bounds", "🏠",
-                new ItemStack(Items.STRUCTURE_BLOCK),
-                () -> RoomBoundsVisualizer.INSTANCE.isEnabled(),
-                v -> RoomBoundsVisualizer.INSTANCE.setEnabled(v),
-                "Detect and highlight room boundaries"))
-            .item(RadialMenuItem.toggle("Vertical Levels", "📶",
-                new ItemStack(Items.LADDER),
-                () -> VerticalLevelsVisualizer.INSTANCE.isEnabled(),
-                v -> VerticalLevelsVisualizer.INSTANCE.setEnabled(v),
-                "Show Y-level zone layers"))
-            .item(RadialMenuItem.toggle("Safe Spots", "🛡",
-                new ItemStack(Items.SHIELD),
-                () -> SafeSpotVisualizer.INSTANCE.isEnabled(),
-                v -> SafeSpotVisualizer.INSTANCE.setEnabled(v),
-                "Highlight camping positions"))
-            .item(RadialMenuItem.toggle("Spawnability", "👾",
-                new ItemStack(Items.SPAWNER),
-                () -> SpawnabilityOverlay.INSTANCE.isEnabled(),
-                v -> SpawnabilityOverlay.INSTANCE.setEnabled(v),
-                "Mark potential mob spawn zones"))
-            .item(RadialMenuItem.toggle("Chunk Perf", "📦",
-                new ItemStack(Items.CHEST),
-                () -> ChunkPerformanceVisualizer.INSTANCE.isEnabled(),
-                v -> ChunkPerformanceVisualizer.INSTANCE.setEnabled(v),
-                "Show chunk render performance"))
-            .build();
-        rootCategories.add(spatial);
+        // Populate rootCategories in correct order (all categories flat for search)
+        for (MacroCategory macro : MacroCategory.values()) {
+            rootCategories.addAll(macroCategoryMap.get(macro));
+        }
 
-        // Category 3: Performance
-        RadialCategory perf = RadialCategory.builder("perf")
-            .name("Perf")
-            .color(theme.categoryColors[2])
-            .icon("📊")
-            .iconStack(new ItemStack(Items.CLOCK))
-            .item(RadialMenuItem.toggle("FPS Tracker", "🎮",
-                new ItemStack(Items.CLOCK),
-                () -> FpsTracker.INSTANCE.isEnabled(),
-                v -> FpsTracker.INSTANCE.setEnabled(v),
-                "Display FPS graph and statistics"))
-            .item(RadialMenuItem.toggle("Entity Density", "👥",
-                new ItemStack(Items.VILLAGER_SPAWN_EGG),
-                () -> EntityDensityOverlay.isEnabled(),
-                v -> EntityDensityOverlay.setEnabled(v),
-                "Show entity count per area"))
-            .item(RadialMenuItem.toggle("Heatmaps", "🔥",
-                new ItemStack(Items.BLAZE_POWDER),
-                () -> HeatmapVisualizer.INSTANCE.hasActiveHeatmaps(),
-                v -> HeatmapVisualizer.INSTANCE.toggle(HeatmapVisualizer.HeatmapType.DEATH),
-                "Toggle death heatmap visualization"))
-            .item(RadialMenuItem.toggle("Profiler", "⏱",
-                new ItemStack(Items.REDSTONE),
-                () -> com.frenkvs.devmod.telemetry.PerformanceProfiler.INSTANCE.isEnabled(),
-                v -> com.frenkvs.devmod.telemetry.PerformanceProfiler.INSTANCE.setEnabled(v),
-                "Performance profiling overlay"))
-            .item(RadialMenuItem.toggle("Attr Monitor", "📈",
-                new ItemStack(Items.EXPERIENCE_BOTTLE),
-                () -> com.frenkvs.devmod.attributes.AttributeMonitoringSystem.INSTANCE.isEnabled(),
-                v -> com.frenkvs.devmod.attributes.AttributeMonitoringSystem.INSTANCE.setEnabled(v),
-                "Track entity attributes in real-time"))
-            .build();
-        rootCategories.add(perf);
-
-        // Category 4: Combat
-        RadialCategory combat = RadialCategory.builder("combat")
-            .name("Combat")
-            .color(theme.categoryColors[3])
-            .icon("⚔")
-            .iconStack(new ItemStack(Items.DIAMOND_SWORD))
-            .item(RadialMenuItem.toggle("Boss Phases", "👹",
-                new ItemStack(Items.WITHER_SKELETON_SKULL),
-                () -> BossPhaseOverlay.isEnabled(),
-                v -> BossPhaseOverlay.setEnabled(v),
-                "Display boss phase information"))
-            .item(RadialMenuItem.toggle("Skill Efficacy", "✨",
-                new ItemStack(Items.ENCHANTED_BOOK),
-                () -> SkillEfficacyOverlay.isEnabled(),
-                v -> SkillEfficacyOverlay.setEnabled(v),
-                "Track skill effectiveness"))
-            .item(RadialMenuItem.toggle("Economy", "💰",
-                new ItemStack(Items.GOLD_INGOT),
-                () -> EconomyOverlay.isEnabled(),
-                v -> EconomyOverlay.setEnabled(v),
-                "Show loot and gold statistics"))
-            .build();
-        rootCategories.add(combat);
-
-        // Category 5: Tools
-        RadialCategory tools = RadialCategory.builder("tools")
-            .name("Tools")
-            .color(theme.categoryColors[4])
-            .icon("🔧")
-            .iconStack(new ItemStack(Items.IRON_PICKAXE))
-            .item(RadialMenuItem.screen("Settings", "⚙",
-                new ItemStack(Items.COMPARATOR),
-                () -> new com.frenkvs.devmod.ui.unified.UnifiedSettingsScreen(null),
-                "Open DevMod configuration"))
-            .item(createMobEditorItem())
-            .item(RadialMenuItem.screen("Item Editor", "🗡",
-                new ItemStack(Items.DIAMOND_SWORD),
-                () -> new com.frenkvs.devmod.WeaponEditorScreen(),
-                "Edit weapons and items"))
-            .item(RadialMenuItem.screen("Dashboard", "📋",
-                new ItemStack(Items.WRITABLE_BOOK),
-                () -> new com.frenkvs.devmod.TelemetryDashboardScreen(null),
-                "Telemetry analytics dashboard"))
-            .item(RadialMenuItem.screen("Testing Hub", "🧪",
-                new ItemStack(Items.BREWING_STAND),
-                () -> new com.frenkvs.devmod.ui.hub.TestingHub(),
-                "QA testing and validation tools"))
-            .item(RadialMenuItem.screen("Quick Test", "⚡",
-                new ItemStack(Items.LIGHTNING_ROD),
-                () -> new com.frenkvs.devmod.ui.wizard.QuickTestWizard(),
-                "Guided workflow to start testing"))
-            .item(RadialMenuItem.toggle("Quick Help", "❓",
-                new ItemStack(Items.KNOWLEDGE_BOOK),
-                () -> QuickHelpOverlay.isEnabled(),
-                v -> QuickHelpOverlay.setEnabled(v),
-                "Show keybind help overlay"))
-            .build();
-
-        // Commands subcategory
-        RadialCategory commands = tools.addSubcategory("commands", "Commands", 0xFFFFAA00, "📜");
-        commands.addItem(RadialMenuItem.command("Gamemode Creative", "🎨",
-            new ItemStack(Items.GRASS_BLOCK), "/gamemode creative", "Switch to creative mode"));
-        commands.addItem(RadialMenuItem.command("Gamemode Survival", "⚔",
-            new ItemStack(Items.IRON_SWORD), "/gamemode survival", "Switch to survival mode"));
-        commands.addItem(RadialMenuItem.command("Heal", "❤",
-            new ItemStack(Items.GOLDEN_APPLE), "/heal", "Restore full health"));
-        commands.addItem(RadialMenuItem.command("Time Day", "☀",
-            new ItemStack(Items.SUNFLOWER), "/time set day", "Set time to day"));
-        commands.addItem(RadialMenuItem.command("Time Night", "🌙",
-            new ItemStack(Items.CLOCK), "/time set night", "Set time to night"));
-        commands.addItem(RadialMenuItem.command("Weather Clear", "🌤",
-            new ItemStack(Items.FEATHER), "/weather clear", "Clear the weather"));
-
-        rootCategories.add(tools);
-
-        // Category 6: Quest
-        RadialCategory quest = RadialCategory.builder("quest")
-            .name("Quest")
-            .color(theme.categoryColors[5])
-            .icon("📜")
-            .iconStack(new ItemStack(Items.PAPER))
-            .item(RadialMenuItem.toggle("Quest HUD", "📋",
-                new ItemStack(Items.MAP),
-                () -> com.frenkvs.devmod.quest.QuestHudOverlay.isEnabled(),
-                v -> com.frenkvs.devmod.quest.QuestHudOverlay.setEnabled(v),
-                "Quest tracker overlay"))
-            .item(RadialMenuItem.toggle("Endurance HUD", "💪",
-                new ItemStack(Items.IRON_CHESTPLATE),
-                () -> EnduranceQuestOverlay.isEnabled(),
-                v -> EnduranceQuestOverlay.setEnabled(v),
-                "Endurance quest overlay"))
-            .item(RadialMenuItem.screen("Quest Editor", "✏",
-                new ItemStack(Items.FEATHER),
-                () -> new com.frenkvs.devmod.quest.QuestEditorScreen(),
-                "Create and edit quests"))
-            .item(RadialMenuItem.screen("Endurance", "🏆",
-                new ItemStack(Items.GOLDEN_HELMET),
-                () -> new com.frenkvs.devmod.endurance.EnduranceQuestScreen(),
-                "Start endurance quest mode"))
-            .item(RadialMenuItem.screen("Multiplayer", "👥",
-                new ItemStack(Items.PLAYER_HEAD),
-                () -> new com.frenkvs.devmod.party.PartyScreen(),
-                "Party & multiplayer quests"))
-            .build();
-        rootCategories.add(quest);
-
-        categoryAnimations = new float[rootCategories.size()];
-        // Calculate max items across all categories for proper animation array size
-        int maxItems = rootCategories.stream()
-            .mapToInt(cat -> cat.getItems().size())
-            .max()
-            .orElse(10);
-        itemAnimations = new float[Math.max(maxItems, 10)];
+        // Animator handles animation arrays internally with proper sizing
     }
 
     private RadialMenuItem createMobEditorItem() {
@@ -481,7 +253,7 @@ public class RadialMenuScreenV3 extends Screen {
     }
 
     private void openMobEditor() {
-        closing = true;
+        animator.startClose();
         Minecraft mc = Minecraft.getInstance();
         mc.tell(() -> {
             if (cachedTargetEntity instanceof net.minecraft.world.entity.Mob mob && mob.isAlive()) {
@@ -509,7 +281,7 @@ public class RadialMenuScreenV3 extends Screen {
         // Update animations
         updateAnimations(partialTick);
 
-        if (closing && openAnimation < 0.05f) {
+        if (animator.isFullyClosed()) {
             onClose();
             return;
         }
@@ -523,7 +295,7 @@ public class RadialMenuScreenV3 extends Screen {
         pose.pushPose();
 
         // Simple smooth scale animation (no elastic bounce, no rotation)
-        float scale = easeOutQuad(openAnimation);
+        float scale = animator.getOpenAnimationEased();
         pose.translate(centerX, centerY, 0);
         pose.scale(scale, scale, 1f);
         pose.translate(-centerX, -centerY, 0);
@@ -567,51 +339,22 @@ public class RadialMenuScreenV3 extends Screen {
     // ================================================================
 
     private void updateAnimations(float partialTick) {
-        if (!config.enableAnimations) {
-            openAnimation = closing ? 0f : 1f;
-            return;
-        }
+        // Delegate to centralized animator
+        animator.update(partialTick, config.enableAnimations);
 
-        float delta = partialTick * 0.05f;
-        float targetAnim = closing ? 0f : 1f;
-        float animSpeed = closing ? config.closeAnimationSpeed : config.openAnimationSpeed;
-        openAnimation = Mth.lerp(animSpeed, openAnimation, targetAnim);
+        // Update search box animation
+        animator.updateSearchBoxAnimation(searchMode);
 
-        pulsePhase += delta * 3f;
-        wavePhase += delta * 2f;
-        if (pulsePhase > Math.PI * 2) pulsePhase -= (float)(Math.PI * 2);
-        if (wavePhase > Math.PI * 2) wavePhase -= (float)(Math.PI * 2);
-
-        // Morph animation
-        if (morphProgress < 1f) {
-            morphProgress = Math.min(1f, morphProgress + 0.08f);
-        }
-
-        // Search box animation
-        float searchTarget = searchMode ? 1f : 0f;
-        searchBoxAnimation = Mth.lerp(0.15f, searchBoxAnimation, searchTarget);
-
+        // Update category/item/favorite selection animations
         List<RadialCategory> categories = getActiveCategories();
-        for (int i = 0; i < categories.size(); i++) {
-            float target = (i == selectedCategoryIndex) ? 1f : 0f;
-            if (i < categoryAnimations.length) {
-                categoryAnimations[i] = Mth.lerp(0.2f, categoryAnimations[i], target);
-            }
-        }
+        animator.updateCategoryAnimations(selectedCategoryIndex, categories.size());
 
         if (selectedCategoryIndex >= 0 && selectedCategoryIndex < categories.size()) {
             RadialCategory cat = categories.get(selectedCategoryIndex);
-            for (int i = 0; i < cat.getItems().size() && i < itemAnimations.length; i++) {
-                float target = (i == selectedItemIndex) ? 1f : 0f;
-                itemAnimations[i] = Mth.lerp(0.2f, itemAnimations[i], target);
-            }
+            animator.updateItemAnimations(selectedItemIndex, cat.getItems().size());
         }
 
-        // Favorites animation
-        for (int i = 0; i < favorites.size() && i < favoriteAnimations.length; i++) {
-            float target = (i == selectedFavoriteIndex) ? 1f : 0f;
-            favoriteAnimations[i] = Mth.lerp(0.2f, favoriteAnimations[i], target);
-        }
+        animator.updateFavoriteAnimations(selectedFavoriteIndex, favorites.size());
     }
 
     // ================================================================
@@ -630,16 +373,16 @@ public class RadialMenuScreenV3 extends Screen {
         selectedItemIndex = -1;
         selectedFavoriteIndex = -1;
 
-        // Center button area - no selection
-        if (distance < centerButtonRadius) {
+        // Macro hub area (center with 4 segments) - handled in renderCenterHub
+        if (distance < macroHubRadius) {
             return;
         }
 
         double angle = Math.atan2(dy, dx);
         if (angle < 0) angle += Math.PI * 2;
 
-        // Check favorites ring first (between center and inner radius)
-        if (!favorites.isEmpty() && distance >= centerButtonRadius && distance < innerRadius) {
+        // Check favorites ring (between macro hub and inner radius)
+        if (!favorites.isEmpty() && distance >= macroHubRadius && distance < innerRadius) {
             int numFavorites = favorites.size();
             double favSegmentAngle = (Math.PI * 2) / numFavorites;
             double favStartOffset = -Math.PI / 2;
@@ -658,6 +401,8 @@ public class RadialMenuScreenV3 extends Screen {
 
         List<RadialCategory> categories = getActiveCategories();
         int numCategories = categories.size();
+        if (numCategories == 0) return;
+
         double segmentAngle = (Math.PI * 2) / numCategories;
         double startOffset = -Math.PI / 2 - segmentAngle / 2;
 
@@ -667,7 +412,7 @@ public class RadialMenuScreenV3 extends Screen {
         selectedCategoryIndex = (int)(adjustedAngle / segmentAngle) % numCategories;
 
         // Select item if mouse is beyond the outer ring
-        if (distance > outerRadius && selectedCategoryIndex >= 0) {
+        if (distance > outerRadius && selectedCategoryIndex >= 0 && selectedCategoryIndex < categories.size()) {
             RadialCategory cat = categories.get(selectedCategoryIndex);
             int numItems = cat.getItems().size();
             if (numItems > 0) {
@@ -687,8 +432,13 @@ public class RadialMenuScreenV3 extends Screen {
         }
     }
 
+    /**
+     * Returns the 6 categories for the currently selected macro-category.
+     * This is the core of the macro-category system - outer ring shows only
+     * categories belonging to the active macro.
+     */
     private List<RadialCategory> getActiveCategories() {
-        return rootCategories;
+        return macroCategoryMap.getOrDefault(selectedMacro, Collections.emptyList());
     }
 
     // ================================================================
@@ -705,7 +455,7 @@ public class RadialMenuScreenV3 extends Screen {
         for (int i = 0; i < numFavorites; i++) {
             FavoriteItem fav = favorites.get(i);
             boolean selected = (i == selectedFavoriteIndex);
-            float anim = i < favoriteAnimations.length ? favoriteAnimations[i] : 0;
+            float anim = animator.getFavoriteAnimation(i);
 
             double midAngle = startOffset + i * segmentAngle;
             int favX = (int)(centerX + Math.cos(midAngle) * favoritesRadius);
@@ -715,7 +465,7 @@ public class RadialMenuScreenV3 extends Screen {
 
             // Star background
             int bgColor = selected ? 0xDDFFD700 : 0x88FFD700;
-            renderCircle(graphics, favX, favY, size, bgColor);
+            RadialGeometry.renderCircle(graphics, favX, favY, size, bgColor);
 
             // Icon
             if (fav.item.getIconStack() != null) {
@@ -735,54 +485,26 @@ public class RadialMenuScreenV3 extends Screen {
     // ================================================================
 
     private void renderSearchOverlay(GuiGraphics graphics) {
+        float searchBoxAnimation = animator.getSearchBoxAnimation();
         if (searchBoxAnimation < 0.01f) return;
 
-        RadialMenuConfig.ColorTheme theme = config.theme;
+        RadialTooltipRenderer.SearchConfig searchConfig = new RadialTooltipRenderer.SearchConfig(
+            width, height, centerX, config.theme
+        );
 
-        // Darken background
-        int overlayAlpha = (int)(0x80 * searchBoxAnimation);
-        graphics.fill(0, 0, width, height, (overlayAlpha << 24));
+        // Convert search results to display format
+        List<RadialTooltipRenderer.SearchResultDisplay> displayResults = searchResults.stream()
+            .map(r -> new RadialTooltipRenderer.SearchResultDisplay(
+                r.getItem().getIconEmoji(),
+                r.getItem().getName(),
+                r.getCategory().getName(),
+                r.getItem().isToggle(),
+                r.getItem().isActive()
+            ))
+            .toList();
 
-        // Search box
-        int boxWidth = (int)(300 * searchBoxAnimation);
-        int boxHeight = 30;
-        int boxX = centerX - boxWidth / 2;
-        int boxY = 50;
-
-        graphics.fill(boxX - 2, boxY - 2, boxX + boxWidth + 2, boxY + boxHeight + 2, theme.border);
-        graphics.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, 0xEE101020);
-
-        // Search icon and text
-        String displayText = searchQuery.length() > 0 ? searchQuery.toString() : "§7Type to search...";
-        graphics.drawString(font, "🔍 " + displayText, boxX + 10, boxY + 10, theme.textPrimary);
-
-        // Blinking cursor
-        if (searchQuery.length() > 0 && (System.currentTimeMillis() / 500) % 2 == 0) {
-            int cursorX = boxX + 10 + font.width("🔍 " + searchQuery.toString());
-            graphics.fill(cursorX, boxY + 8, cursorX + 2, boxY + 22, theme.textPrimary);
-        }
-
-        // Results
-        int resultY = boxY + boxHeight + 10;
-        for (int i = 0; i < searchResults.size(); i++) {
-            SearchResult result = searchResults.get(i);
-            boolean selected = (i == selectedSearchResult);
-
-            int resultBg = selected ? theme.selected : 0xCC101020;
-            graphics.fill(boxX, resultY, boxX + boxWidth, resultY + 25, resultBg);
-
-            String icon = result.item.getIconEmoji();
-            String name = result.item.getName();
-            String catName = "§7[" + result.category.getName() + "]";
-
-            graphics.drawString(font, icon + " " + name + " " + catName, boxX + 10, resultY + 8, theme.textPrimary);
-
-            if (result.item.isToggle() && result.item.isActive()) {
-                graphics.drawString(font, "§a● ON", boxX + boxWidth - 40, resultY + 8, theme.active);
-            }
-
-            resultY += 28;
-        }
+        RadialTooltipRenderer.renderSearchOverlay(graphics, font, searchConfig,
+            searchQuery.toString(), displayResults, selectedSearchResult, searchBoxAnimation);
     }
 
     // ================================================================
@@ -791,317 +513,130 @@ public class RadialMenuScreenV3 extends Screen {
 
     private void renderBackground(GuiGraphics graphics) {
         // Solid dark background - more opaque for visibility
-        int alpha = (int)(0xE0 * openAnimation); // Much more opaque (224/255 vs 144/255)
+        int alpha = (int)(0xE0 * animator.getOpenAnimation()); // Much more opaque (224/255 vs 144/255)
         graphics.fill(0, 0, width, height, (alpha << 24) | 0x0D0D15);
     }
 
     private void renderCategoryGlow(GuiGraphics graphics, int categoryIndex) {
         List<RadialCategory> categories = getActiveCategories();
-        if (categoryIndex >= categories.size()) return;
-
-        RadialCategory cat = categories.get(categoryIndex);
-        float anim = categoryIndex < categoryAnimations.length ? categoryAnimations[categoryIndex] : 0;
-
-        double segmentAngle = (Math.PI * 2) / categories.size();
-        double midAngle = -Math.PI / 2 + categoryIndex * segmentAngle;
-
-        int glowX = (int)(centerX + Math.cos(midAngle) * itemRadius);
-        int glowY = (int)(centerY + Math.sin(midAngle) * itemRadius);
-
-        int glowRadius = (int)(60 * anim);
-        int glowColorVal = (cat.getColor() & 0x00FFFFFF) | ((int)(0x40 * anim) << 24);
-        renderRadialGradient(graphics, glowX, glowY, glowRadius, glowColorVal, 0x00000000);
+        RadialCategoryRenderer.renderCategoryGlow(graphics, categories, categoryIndex,
+            centerX, centerY, itemRadius, animator.getCategoryAnimations());
     }
 
+    /**
+     * Renders the center hub with 4 macro-category segments.
+     * Each segment is clickable and switches the active macro-category.
+     * The selected macro is highlighted with its color.
+     */
     private void renderCenterHub(GuiGraphics graphics, int mouseX, int mouseY) {
-        double dx = mouseX - centerX;
-        double dy = mouseY - centerY;
-        double distance = Math.sqrt(dx * dx + dy * dy);
-        boolean hovered = distance < centerButtonRadius;
+        // Detect hover state
+        RadialHubRenderer.HoverResult hoverResult = RadialHubRenderer.detectHover(
+            mouseX, mouseY, centerX, centerY, centerButtonRadius, macroHubRadius);
 
-        float hoverAnim = hovered ? Math.min(1f, categoryHoverAnim + 0.1f) : Math.max(0f, categoryHoverAnim - 0.05f);
-        categoryHoverAnim = hoverAnim;
+        hoveredMacro = hoverResult.hoveredMacro();
+        boolean centerHovered = hoverResult.centerHovered();
 
-        // Solid opaque center button - structured look
-        int bgColor = hovered ? 0xFF353555 : 0xF0252540;
-        renderCircle(graphics, centerX, centerY, centerButtonRadius, bgColor);
+        // Update hover animation via animator
+        animator.updateCenterHoverAnimation(centerHovered);
 
-        // Strong outer border (thicker)
-        int borderColor = hovered ? 0xFF6080FF : 0xFF505070;
-        renderRing(graphics, centerX, centerY, centerButtonRadius - 3, centerButtonRadius, borderColor);
+        // Update segment animations via animator
+        animator.updateMacroSegmentAnimations(selectedMacro.ordinal(), hoveredMacro != null ? hoveredMacro.ordinal() : -1);
 
-        // Inner ring for depth
-        renderRing(graphics, centerX, centerY, centerButtonRadius - 4, centerButtonRadius - 3, 0xFF404060);
-
-        // Determine if we're in a subcategory (navigable back)
+        // Build hub state and render
         boolean inSubcategory = currentCategory != null && currentCategory.hasParent();
+        RadialHubRenderer.HubState hubState = new RadialHubRenderer.HubState(
+            centerX, centerY, centerButtonRadius, macroHubRadius,
+            selectedMacro, hoveredMacro, animator.getMacroSegmentAnimations(),
+            animator.getCenterHoverAnimation(), searchMode, inSubcategory
+        );
 
-        // Static icon (no bounce)
-        String centerIcon;
-        int iconColor;
-        if (hovered) {
-            centerIcon = inSubcategory ? "←" : "✕";
-            iconColor = inSubcategory ? 0xFF80AAFF : 0xFFFF6666;
-        } else {
-            centerIcon = searchMode ? "🔍" : "⚡";
-            iconColor = 0xFF8080FF;
-        }
-        graphics.drawCenteredString(font, centerIcon, centerX, centerY - 4, iconColor);
-
-        // Label - brighter, shows "Back" when in subcategory
-        String label;
-        if (hovered) {
-            label = inSubcategory ? "Back" : "Close";
-        } else {
-            label = searchMode ? "Search" : "DevMod";
-        }
-        int labelColor = hovered ? 0xFFFFFFFF : 0xFFCCCCDD;
-        graphics.drawCenteredString(font, label, centerX, centerY + 8, labelColor);
+        RadialHubRenderer.render(graphics, font, hubState);
     }
 
     private void renderCategories(GuiGraphics graphics) {
-        RadialMenuConfig.ColorTheme theme = config.theme;
+        // Draw ring borders
+        RadialCategoryRenderer.renderRingBorders(graphics, centerX, centerY, innerRadius, outerRadius);
+
+        // Build ring config
+        RadialCategoryRenderer.RingConfig ringConfig = new RadialCategoryRenderer.RingConfig(
+            centerX, centerY, innerRadius, outerRadius, itemRadius,
+            selectedCategoryIndex, animator.getCategoryAnimations(), config.theme, config.iconMode, animator.getPulsePhase()
+        );
+
+        // Cross-fade transition: render outgoing categories (fading out) then incoming (fading in)
+        boolean isTransitioning = animator.isTransitioning() && transitionFromMacro != null;
+
+        if (isTransitioning) {
+            // Render outgoing categories with decreasing alpha
+            float outgoingAlpha = 1f - animator.getMacroTransitionProgress();
+            List<RadialCategory> outgoingCategories = macroCategoryMap.getOrDefault(transitionFromMacro, Collections.emptyList());
+            RadialCategoryRenderer.renderCategoryRing(graphics, font, outgoingCategories, ringConfig, outgoingAlpha, false);
+        }
+
+        // Render current (incoming) categories
         List<RadialCategory> categories = getActiveCategories();
-        int numCategories = categories.size();
-        double segmentAngle = (Math.PI * 2) / numCategories;
-        double startOffset = -Math.PI / 2;
-
-        // Draw inner ring border first (solid line around center)
-        renderRing(graphics, centerX, centerY, innerRadius - 2, innerRadius, 0xFF303050);
-
-        for (int i = 0; i < numCategories; i++) {
-            RadialCategory cat = categories.get(i);
-            boolean selected = (i == selectedCategoryIndex);
-
-            double startAngle = startOffset + (i - 0.5) * segmentAngle;
-            double endAngle = startAngle + segmentAngle;
-
-            // Solid segment fill - more opaque
-            int baseColor = selected ? 0xEE252540 : 0xDD1a1a30;
-            int segColor = selected ? blendColors(baseColor, cat.getColor(), 0.25f) : baseColor;
-            renderArcSegment(graphics, centerX, centerY, innerRadius, outerRadius, startAngle, endAngle, segColor);
-
-            // Strong outer border
-            int borderCol = selected ? cat.getColor() : 0xFF404060;
-            renderArcOutline(graphics, centerX, centerY, outerRadius, startAngle, endAngle, borderCol, 2);
-
-            // Divider lines between segments
-            double dividerAngle = startAngle;
-            int divX1 = (int)(centerX + Math.cos(dividerAngle) * innerRadius);
-            int divY1 = (int)(centerY + Math.sin(dividerAngle) * innerRadius);
-            int divX2 = (int)(centerX + Math.cos(dividerAngle) * outerRadius);
-            int divY2 = (int)(centerY + Math.sin(dividerAngle) * outerRadius);
-            drawLine(graphics, divX1, divY1, divX2, divY2, 0xFF404060);
-
-            double midAngle = startOffset + i * segmentAngle;
-            int iconX = (int)(centerX + Math.cos(midAngle) * itemRadius);
-            int iconY = (int)(centerY + Math.sin(midAngle) * itemRadius);
-
-            // Render icon (no scaling animation)
-            renderCategoryIcon(graphics, cat, iconX, iconY - 8, selected);
-
-            // Category name - brighter text
-            int textColor = selected ? 0xFFFFFFFF : 0xFFBBBBCC;
-            graphics.drawCenteredString(font, cat.getName(), iconX, iconY + 6, textColor);
-
-            // Active items badge
-            int activeCount = cat.countActiveItems();
-            if (activeCount > 0) {
-                renderBadge(graphics, iconX + 20, iconY - 14, activeCount, theme.active);
-            }
-        }
-
-        // Draw outer ring border (solid line around entire wheel)
-        renderRing(graphics, centerX, centerY, outerRadius, outerRadius + 2, 0xFF505070);
-    }
-
-    private void renderCategoryIcon(GuiGraphics graphics, RadialCategory cat, int x, int y, boolean selected) {
-        RadialMenuConfig.ColorTheme theme = config.theme;
-        int iconColor = selected ? cat.getColor() : theme.textSecondary;
-
-        boolean useItemStack = config.iconMode == RadialMenuConfig.IconMode.ITEMSTACK ||
-            (config.iconMode == RadialMenuConfig.IconMode.AUTO && cat.getIconStack() != null);
-
-        if (useItemStack && cat.getIconStack() != null) {
-            graphics.renderItem(cat.getIconStack(), x - 8, y - 4);
-        } else {
-            graphics.drawCenteredString(font, cat.getIcon(), x, y, iconColor);
-        }
+        float incomingAlpha = isTransitioning ? animator.getMacroTransitionProgress() : 1f;
+        RadialCategoryRenderer.renderCategoryRing(graphics, font, categories, ringConfig, incomingAlpha, true);
     }
 
     private void renderCategoryItems(GuiGraphics graphics, RadialCategory category) {
-        RadialMenuConfig.ColorTheme theme = config.theme;
-        List<RadialMenuItem> items = category.getItems();
-        int numItems = items.size();
-        if (numItems == 0) return;
-
         List<RadialCategory> categories = getActiveCategories();
-        double segmentAngle = (Math.PI * 2) / categories.size();
-        double startOffset = -Math.PI / 2;
-        double catStartAngle = startOffset + (selectedCategoryIndex - 0.5) * segmentAngle;
-        double itemAngleStep = segmentAngle / numItems;
 
-        // Larger radius for better spacing between items
-        int baseRadius = outerRadius + 55;
-        int itemSize = 34; // Larger clickable area
+        RadialCategoryRenderer.ItemsConfig itemsConfig = new RadialCategoryRenderer.ItemsConfig(
+            centerX, centerY, outerRadius,
+            selectedCategoryIndex, selectedItemIndex,
+            animator.getItemAnimations(), config.theme
+        );
 
-        for (int i = 0; i < numItems; i++) {
-            RadialMenuItem item = items.get(i);
-            if (!item.isVisible()) continue;
-
-            boolean itemSelected = (i == selectedItemIndex);
-            boolean isActive = item.isToggle() && item.isActive();
-            float itemAnim = i < itemAnimations.length ? itemAnimations[i] : 0;
-
-            double itemAngle = catStartAngle + (i + 0.5) * itemAngleStep;
-
-            // Position with slight expansion on hover
-            int itemX = (int)(centerX + Math.cos(itemAngle) * (baseRadius + 6 * itemAnim));
-            int itemY = (int)(centerY + Math.sin(itemAngle) * (baseRadius + 6 * itemAnim));
-
-            int itemRadiusSize = itemSize + (int)(4 * itemAnim);
-
-            // Solid opaque background - structured look
-            int bgColor = itemSelected ? 0xFF303050 : 0xF0202035;
-            if (isActive) {
-                bgColor = blendColors(bgColor, theme.active, 0.25f);
-            }
-            // Draw solid circle background
-            renderCircle(graphics, itemX, itemY, itemRadiusSize, bgColor);
-
-            // Strong visible border
-            int borderColor = isActive ? theme.active : (itemSelected ? category.getColor() : 0xFF505070);
-            int borderWidth = itemSelected ? 3 : 2;
-            renderRing(graphics, itemX, itemY, itemRadiusSize - borderWidth, itemRadiusSize, borderColor);
-
-            // Inner subtle highlight for depth
-            if (itemSelected) {
-                renderRing(graphics, itemX, itemY, itemRadiusSize - borderWidth - 1, itemRadiusSize - borderWidth,
-                    blendColors(category.getColor(), 0xFFFFFFFF, 0.3f));
-            }
-
-            // Icon only (no emoji - just ItemStack for clarity, or simple dot)
-            if (item.getIconStack() != null) {
-                graphics.renderItem(item.getIconStack(), itemX - 8, itemY - 16);
-            } else {
-                int iconColor = itemSelected ? theme.textPrimary : theme.textSecondary;
-                graphics.drawCenteredString(font, item.getIconEmoji(), itemX, itemY - 12, iconColor);
-            }
-
-            // Name - truncate if too long (keep at least 6 chars for readability)
-            String name = item.getName();
-            int maxWidth = 56;
-            if (font.width(name) > maxWidth) {
-                String ellipsis = "...";
-                int minChars = Math.min(6, name.length());
-                while (font.width(name + ellipsis) > maxWidth && name.length() > minChars) {
-                    name = name.substring(0, name.length() - 1);
-                }
-                name += ellipsis;
-            }
-            int nameColor = itemSelected ? theme.textPrimary : (isActive ? theme.active : theme.textSecondary);
-            graphics.drawCenteredString(font, name, itemX, itemY + 4, nameColor);
-
-            // Toggle status indicator - simple and clear
-            if (item.isToggle()) {
-                String status = isActive ? "ON" : "OFF";
-                int statusColor = isActive ? theme.active : 0xFF666666;
-                graphics.drawCenteredString(font, status, itemX, itemY + 16, statusColor);
-            } else if (item.isSubcategoryLink()) {
-                graphics.drawCenteredString(font, "▸", itemX, itemY + 16, theme.textSecondary);
-            }
-        }
+        RadialCategoryRenderer.renderCategoryItems(graphics, font, category, categories, itemsConfig);
     }
 
     private void renderTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
-        RadialMenuConfig.ColorTheme theme = config.theme;
-        String tooltip = null;
-
         double dx = mouseX - centerX;
         double dy = mouseY - centerY;
-        if (Math.sqrt(dx * dx + dy * dy) < centerButtonRadius) {
-            tooltip = "§7Click to close §8| §7Scroll to search";
-        } else if (selectedFavoriteIndex >= 0 && selectedFavoriteIndex < favorites.size()) {
-            tooltip = "★ " + favorites.get(selectedFavoriteIndex).item.getName();
-        } else if (selectedCategoryIndex >= 0 && selectedCategoryIndex < getActiveCategories().size()) {
-            RadialCategory cat = getActiveCategories().get(selectedCategoryIndex);
-            if (selectedItemIndex >= 0 && selectedItemIndex < cat.getItems().size()) {
-                RadialMenuItem item = cat.getItems().get(selectedItemIndex);
-                tooltip = item.getDescription();
-                if (editMode) {
-                    tooltip += " §8| §cShift+Click to favorite";
-                }
-            }
-        }
+        double distance = Math.sqrt(dx * dx + dy * dy);
+
+        boolean centerHovered = distance < centerButtonRadius * RadialMenuConstants.CLOSE_BUTTON_RATIO;
+        boolean macroHubHovered = distance < macroHubRadius;
+
+        // Build favorites reference list for tooltip generation
+        List<RadialTooltipRenderer.FavoriteRef> favoriteRefs = favorites.stream()
+            .map(f -> new RadialTooltipRenderer.FavoriteRef(f.item.getName()))
+            .toList();
+
+        String tooltip = RadialTooltipRenderer.generateTooltip(
+            hoveredMacro, selectedMacro,
+            selectedFavoriteIndex, favoriteRefs,
+            selectedCategoryIndex, selectedItemIndex,
+            getActiveCategories(),
+            centerHovered, macroHubHovered, editMode
+        );
 
         if (tooltip != null) {
-            int tooltipWidth = font.width(tooltip);
-            int tooltipX = centerX - tooltipWidth / 2;
-            int tooltipY = centerY + outerRadius + 70;
-
-            int padding = 6;
-            graphics.fill(tooltipX - padding - 1, tooltipY - padding - 1,
-                tooltipX + tooltipWidth + padding + 1, tooltipY + 10 + padding + 1,
-                theme.border);
-            graphics.fill(tooltipX - padding, tooltipY - padding,
-                tooltipX + tooltipWidth + padding, tooltipY + 10 + padding,
-                0xF0101020);
-            graphics.drawString(font, tooltip, tooltipX, tooltipY, theme.textPrimary, false);
+            RadialTooltipRenderer.TooltipContext context = new RadialTooltipRenderer.TooltipContext(
+                centerX, centerY, outerRadius, config.theme
+            );
+            RadialTooltipRenderer.renderTooltip(graphics, font, tooltip, context);
         }
     }
 
     private void renderHelpText(GuiGraphics graphics) {
         if (!config.showKeyHints) return;
-
-        RadialMenuConfig.ColorTheme theme = config.theme;
-        float helpAlpha = Math.min(1f, (System.currentTimeMillis() - openTime) / 200f);
-        int textAlpha = (int)(0xAA * helpAlpha);
-        int helpColor = (textAlpha << 24) | (theme.textSecondary & 0x00FFFFFF);
-
-        String helpLine = searchMode ? "§eSearch §7- Type to filter, Enter to select, Esc to cancel" :
-            "§7Click to select §8| §7[/] Search §8| §7[T] Theme";
-
-        graphics.drawCenteredString(font, helpLine, width / 2, height - 25, helpColor);
+        RadialTooltipRenderer.renderHelpText(graphics, font, width, height,
+            selectedMacro, searchMode, openTime, config.theme);
     }
 
     private void renderBreadcrumb(GuiGraphics graphics) {
-        if (navigationStack.isEmpty() && currentCategory == null) return;
-
-        StringBuilder breadcrumb = new StringBuilder("§7");
-        for (RadialCategory cat : navigationStack) {
-            breadcrumb.append(cat.getName()).append(" > ");
-        }
-        if (currentCategory != null) {
-            breadcrumb.append("§f").append(currentCategory.getName());
-        }
-
-        graphics.drawString(font, breadcrumb.toString(), 10, 10, 0xFFFFFFFF, true);
+        RadialTooltipRenderer.renderBreadcrumb(graphics, font,
+            new ArrayList<>(navigationStack), currentCategory);
     }
 
     private void renderEditModeIndicator(GuiGraphics graphics) {
-        String editText = "§c§l[EDIT MODE] §7Shift+Click to ★ favorite";
-        int textWidth = font.width(editText);
-        graphics.fill(width / 2 - textWidth / 2 - 5, 5, width / 2 + textWidth / 2 + 5, 20, 0xCC000000);
-        graphics.drawCenteredString(font, editText, width / 2, 8, 0xFFFF4444);
+        RadialTooltipRenderer.renderEditModeIndicator(graphics, font, width);
     }
 
     private void renderThemeIndicator(GuiGraphics graphics) {
-        if (System.currentTimeMillis() - openTime < 2000) {
-            float alpha = 1f - Math.max(0, (System.currentTimeMillis() - openTime - 1000) / 1000f);
-            if (alpha > 0) {
-                int color = ((int)(alpha * 255) << 24) | 0xFFFFFF;
-                String themeText = "Theme: " + config.theme.presetName;
-                graphics.drawCenteredString(font, themeText, width / 2, 30, color);
-            }
-        }
-    }
-
-    private void renderBadge(GuiGraphics graphics, int x, int y, int count, int color) {
-        float pulse = 0.8f + 0.2f * (float)Math.sin(pulsePhase * 2);
-        int badgeColor = blendColors(color, 0xFFFFFFFF, pulse * 0.3f);
-
-        graphics.fill(x - 6, y - 4, x + 6, y + 6, 0xDD000000);
-        graphics.drawCenteredString(font, String.valueOf(count), x, y - 2, badgeColor);
+        RadialTooltipRenderer.renderThemeIndicator(graphics, font, width, config.theme.presetName, openTime);
     }
 
     // ================================================================
@@ -1183,8 +718,8 @@ public class RadialMenuScreenV3 extends Screen {
                 return true;
             }
             if (keyCode == GLFW.GLFW_KEY_ENTER && selectedSearchResult >= 0) {
-                SearchResult result = searchResults.get(selectedSearchResult);
-                executeItem(result.item, result.category);
+                RadialSearchHandler.SearchResult result = searchResults.get(selectedSearchResult);
+                executeItem(result.getItem(), result.getCategory());
                 searchMode = false;
                 return true;
             }
@@ -1205,7 +740,7 @@ public class RadialMenuScreenV3 extends Screen {
         }
 
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-            closing = true;
+            animator.startClose();
             return true;
         }
 
@@ -1230,11 +765,35 @@ public class RadialMenuScreenV3 extends Screen {
             return true;
         }
 
-        if (keyCode >= GLFW.GLFW_KEY_1 && keyCode <= GLFW.GLFW_KEY_6) {
-            int num = keyCode - GLFW.GLFW_KEY_1;
+        // Keys 1-4 switch macro-categories
+        if (keyCode >= GLFW.GLFW_KEY_1 && keyCode <= GLFW.GLFW_KEY_4) {
+            int macroIndex = keyCode - GLFW.GLFW_KEY_1;
+            MacroCategory[] macros = MacroCategory.values();
+            if (macroIndex < macros.length && macros[macroIndex] != selectedMacro) {
+                transitionFromMacro = selectedMacro;
+                selectedMacro = macros[macroIndex];
+                animator.startMacroTransition();
+                selectedCategoryIndex = -1;
+                selectedItemIndex = -1;
+                playSound(1.1f);
+            }
+            return true;
+        }
+
+        // Keys 5-9 and 0 select categories within current macro (Q-P for items)
+        if (keyCode >= GLFW.GLFW_KEY_5 && keyCode <= GLFW.GLFW_KEY_9) {
+            int num = keyCode - GLFW.GLFW_KEY_5;
             if (num < getActiveCategories().size()) {
-                morphProgress = 0f;
+                animator.startMorph();
                 selectedCategoryIndex = num;
+            }
+            return true;
+        }
+        if (keyCode == GLFW.GLFW_KEY_0) {
+            // Key 0 selects 6th category (index 5)
+            if (5 < getActiveCategories().size()) {
+                animator.startMorph();
+                selectedCategoryIndex = 5;
             }
             return true;
         }
@@ -1298,11 +857,26 @@ public class RadialMenuScreenV3 extends Screen {
         double dy = mc.mouseHandler.ypos() * height / mc.getWindow().getHeight() - centerY;
         double distance = Math.sqrt(dx * dx + dy * dy);
 
-        if (distance < centerButtonRadius) {
+        // Check if clicking on center close button (very center)
+        if (distance < centerButtonRadius * 0.4) {
             if (currentCategory != null && currentCategory.hasParent()) {
                 navigateBack();
             } else {
-                closing = true;
+                animator.startClose();
+            }
+            return;
+        }
+
+        // Check if clicking on a macro-category segment
+        if (distance < macroHubRadius) {
+            if (hoveredMacro != null && hoveredMacro != selectedMacro) {
+                // Switch to the hovered macro-category
+                transitionFromMacro = selectedMacro;
+                selectedMacro = hoveredMacro;
+                animator.startMacroTransition();
+                selectedCategoryIndex = -1;
+                selectedItemIndex = -1;
+                playSound(1.1f);
             }
             return;
         }
@@ -1358,7 +932,7 @@ public class RadialMenuScreenV3 extends Screen {
         }
 
         if (config.closeOnToggle && !item.isToggle()) {
-            closing = true;
+            animator.startClose();
         }
     }
 
@@ -1413,159 +987,6 @@ public class RadialMenuScreenV3 extends Screen {
         }
     }
 
-    private float easeOutQuad(float t) {
-        return 1 - (1 - t) * (1 - t);
-    }
-
-    private int blendColors(int color1, int color2, float t) {
-        t = Mth.clamp(t, 0f, 1f);
-        int a1 = (color1 >> 24) & 0xFF, r1 = (color1 >> 16) & 0xFF, g1 = (color1 >> 8) & 0xFF, b1 = color1 & 0xFF;
-        int a2 = (color2 >> 24) & 0xFF, r2 = (color2 >> 16) & 0xFF, g2 = (color2 >> 8) & 0xFF, b2 = color2 & 0xFF;
-        return ((int)(a1 + (a2 - a1) * t) << 24) | ((int)(r1 + (r2 - r1) * t) << 16) |
-            ((int)(g1 + (g2 - g1) * t) << 8) | (int)(b1 + (b2 - b1) * t);
-    }
-
-    // ================================================================
-    // RENDERING PRIMITIVES
-    // ================================================================
-
-    private void renderRadialGradient(GuiGraphics graphics, int cx, int cy, int radius, int centerColor, int edgeColor) {
-        int rings = 8;
-        for (int ring = 0; ring < rings; ring++) {
-            float t1 = (float)ring / rings;
-            int r1 = (int)(radius * t1);
-            int r2 = (int)(radius * (float)(ring + 1) / rings);
-            int color = blendColors(centerColor, edgeColor, t1);
-            renderRing(graphics, cx, cy, r1, r2, color);
-        }
-    }
-
-    private void renderCircle(GuiGraphics graphics, int cx, int cy, int radius, int color) {
-        int segments = 24;
-        RenderSystem.enableBlend();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-
-        BufferBuilder buffer = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
-        Matrix4f matrix = graphics.pose().last().pose();
-
-        float a = ((color >> 24) & 0xFF) / 255f;
-        float r = ((color >> 16) & 0xFF) / 255f;
-        float g = ((color >> 8) & 0xFF) / 255f;
-        float b = (color & 0xFF) / 255f;
-
-        buffer.addVertex(matrix, cx, cy, 0).setColor(r, g, b, a);
-        for (int i = 0; i <= segments; i++) {
-            double angle = (Math.PI * 2 * i) / segments;
-            float x = (float)(cx + Math.cos(angle) * radius);
-            float y = (float)(cy + Math.sin(angle) * radius);
-            buffer.addVertex(matrix, x, y, 0).setColor(r, g, b, a);
-        }
-
-        BufferUploader.drawWithShader(buffer.buildOrThrow());
-        RenderSystem.disableBlend();
-    }
-
-    private void renderRing(GuiGraphics graphics, int cx, int cy, int innerRadius, int outerRadius, int color) {
-        int segments = 32;
-        RenderSystem.enableBlend();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-
-        BufferBuilder buffer = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
-        Matrix4f matrix = graphics.pose().last().pose();
-
-        float a = ((color >> 24) & 0xFF) / 255f;
-        float r = ((color >> 16) & 0xFF) / 255f;
-        float g = ((color >> 8) & 0xFF) / 255f;
-        float b = (color & 0xFF) / 255f;
-
-        for (int i = 0; i <= segments; i++) {
-            double angle = (Math.PI * 2 * i) / segments;
-            float cos = (float)Math.cos(angle);
-            float sin = (float)Math.sin(angle);
-            buffer.addVertex(matrix, cx + cos * innerRadius, cy + sin * innerRadius, 0).setColor(r, g, b, a);
-            buffer.addVertex(matrix, cx + cos * outerRadius, cy + sin * outerRadius, 0).setColor(r, g, b, a);
-        }
-
-        BufferUploader.drawWithShader(buffer.buildOrThrow());
-        RenderSystem.disableBlend();
-    }
-
-    private void drawLine(GuiGraphics graphics, int x1, int y1, int x2, int y2, int color) {
-        RenderSystem.enableBlend();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-
-        BufferBuilder buffer = Tesselator.getInstance().begin(VertexFormat.Mode.DEBUG_LINES, DefaultVertexFormat.POSITION_COLOR);
-        Matrix4f matrix = graphics.pose().last().pose();
-
-        float a = ((color >> 24) & 0xFF) / 255f;
-        float r = ((color >> 16) & 0xFF) / 255f;
-        float g = ((color >> 8) & 0xFF) / 255f;
-        float b = (color & 0xFF) / 255f;
-
-        buffer.addVertex(matrix, x1, y1, 0).setColor(r, g, b, a);
-        buffer.addVertex(matrix, x2, y2, 0).setColor(r, g, b, a);
-
-        BufferUploader.drawWithShader(buffer.buildOrThrow());
-        RenderSystem.disableBlend();
-    }
-
-    private void renderArcSegment(GuiGraphics graphics, int cx, int cy, int innerR, int outerR,
-                                  double startAngle, double endAngle, int color) {
-        int segments = 16;
-        double angleStep = (endAngle - startAngle) / segments;
-
-        RenderSystem.enableBlend();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-
-        BufferBuilder buffer = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
-        Matrix4f matrix = graphics.pose().last().pose();
-
-        float a = ((color >> 24) & 0xFF) / 255f;
-        float r = ((color >> 16) & 0xFF) / 255f;
-        float g = ((color >> 8) & 0xFF) / 255f;
-        float b = (color & 0xFF) / 255f;
-
-        for (int i = 0; i <= segments; i++) {
-            double angle = startAngle + i * angleStep;
-            float cos = (float)Math.cos(angle);
-            float sin = (float)Math.sin(angle);
-            buffer.addVertex(matrix, cx + cos * innerR, cy + sin * innerR, 0).setColor(r, g, b, a);
-            buffer.addVertex(matrix, cx + cos * outerR, cy + sin * outerR, 0).setColor(r, g, b, a);
-        }
-
-        BufferUploader.drawWithShader(buffer.buildOrThrow());
-        RenderSystem.disableBlend();
-    }
-
-    private void renderArcOutline(GuiGraphics graphics, int cx, int cy, int radius,
-                                  double startAngle, double endAngle, int color, int width) {
-        int segments = 16;
-        double angleStep = (endAngle - startAngle) / segments;
-
-        RenderSystem.enableBlend();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        RenderSystem.lineWidth(width);
-
-        BufferBuilder buffer = Tesselator.getInstance().begin(VertexFormat.Mode.DEBUG_LINE_STRIP, DefaultVertexFormat.POSITION_COLOR);
-        Matrix4f matrix = graphics.pose().last().pose();
-
-        float a = ((color >> 24) & 0xFF) / 255f;
-        float r = ((color >> 16) & 0xFF) / 255f;
-        float g = ((color >> 8) & 0xFF) / 255f;
-        float b = (color & 0xFF) / 255f;
-
-        for (int i = 0; i <= segments; i++) {
-            double angle = startAngle + i * angleStep;
-            float x = (float)(cx + Math.cos(angle) * radius);
-            float y = (float)(cy + Math.sin(angle) * radius);
-            buffer.addVertex(matrix, x, y, 0).setColor(r, g, b, a);
-        }
-
-        BufferUploader.drawWithShader(buffer.buildOrThrow());
-        RenderSystem.lineWidth(1);
-        RenderSystem.disableBlend();
-    }
-
     @Override
     public boolean isPauseScreen() {
         return false;
@@ -1575,17 +996,7 @@ public class RadialMenuScreenV3 extends Screen {
     // INNER CLASSES
     // ================================================================
 
-    private static class SearchResult {
-        final RadialMenuItem item;
-        final RadialCategory category;
-        final int score;
-
-        SearchResult(RadialMenuItem item, RadialCategory category, int score) {
-            this.item = item;
-            this.category = category;
-            this.score = score;
-        }
-    }
+    // SearchResult moved to RadialSearchHandler.SearchResult
 
     private static class FavoriteItem {
         final String key;

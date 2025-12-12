@@ -86,15 +86,20 @@ public class KeyInputHandler {
     );
 
     /**
-     * Opens the Weapon/Item Editor for modifying held item attributes.
+     * Opens the Item Editor with smart type detection.
      *
-     * <p>Allows editing damage, attack speed, and other attributes
-     * of the currently held weapon or tool.</p>
+     * <p>Automatically selects the appropriate editor based on held item:</p>
+     * <ul>
+     *   <li><b>M alone:</b> Auto-detect - ArmorItem → ArmorEditor, Other → WeaponEditor</li>
+     *   <li><b>Shift+M:</b> Force WeaponEditor (for items with mixed attributes)</li>
+     *   <li><b>Ctrl+M:</b> Force ArmorEditor (opens slot selector if hand empty)</li>
+     * </ul>
      *
      * <p><b>Default key:</b> M</p>
      * <p><b>Mnemonic:</b> M = "Modify" item</p>
      *
      * @see com.frenkvs.devmod.WeaponEditorScreen
+     * @see com.frenkvs.devmod.ArmorEditorScreen
      */
     public static final KeyMapping OPEN_WEAPON_EDITOR_KEY = new KeyMapping(
             "key.devmod.weapon_editor",
@@ -685,5 +690,46 @@ public class KeyInputHandler {
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_0,
             "key.categories.devmod"
+    );
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // ABILITY SYSTEM - Dash and Dodge
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Triggers a dash ability - quick burst of speed in look direction.
+     *
+     * <p>Consumes stamina and has a cooldown. Can be performed in air or on ground.</p>
+     *
+     * <p><b>Default key:</b> LEFT ALT</p>
+     * <p><b>Mnemonic:</b> ALT = Alternative movement / Quick access</p>
+     *
+     * @see com.frenkvs.devmod.abilities.DashAbilitySystem
+     */
+    public static final KeyMapping DASH_KEY = new KeyMapping(
+            "key.devmod.dash",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_LEFT_ALT,
+            "key.categories.devmod.abilities"
+    );
+
+    /**
+     * Triggers a dodge ability - evasive roll with invincibility frames.
+     *
+     * <p>Direction determined by movement keys (A/D for left/right, S for back).
+     * Has i-frames that can negate damage if timed correctly.</p>
+     *
+     * <p><b>Default key:</b> LEFT CONTROL</p>
+     * <p><b>Mnemonic:</b> CTRL = Control/evade danger</p>
+     *
+     * @see com.frenkvs.devmod.abilities.DodgeAbilitySystem
+     */
+    public static final KeyMapping DODGE_KEY = new KeyMapping(
+            "key.devmod.dodge",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_LEFT_CONTROL,
+            "key.categories.devmod.abilities"
     );
 }

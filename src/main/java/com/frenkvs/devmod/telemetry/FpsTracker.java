@@ -164,9 +164,18 @@ public class FpsTracker {
     /**
      * Logs FPS data to client-side telemetry file.
      * M58: Client FPS tracking for performance analysis.
+     *
+     * DuckDB Migration: Skip NDJSON writes when DuckDB is PRIMARY.
+     * Note: FPS is client-side only, not stored in DuckDB (server-side).
      */
     private void logFpsTelemetry() {
         try {
+            // DuckDB PRIMARY mode: Skip NDJSON writes
+            if (!com.frenkvs.devmod.telemetry.duckdb.DuckDBConfig.NDJSON_FALLBACK
+                && com.frenkvs.devmod.telemetry.duckdb.DuckDBTelemetryService.INSTANCE.isEnabled()) {
+                return; // Skip client FPS logging in DuckDB PRIMARY mode
+            }
+
             FpsStats stats = getStats();
             String json = stats.toJson();
 

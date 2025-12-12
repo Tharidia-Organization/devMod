@@ -24,48 +24,47 @@ import org.joml.Vector3f;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Party management screen with 3D mob preview.
- * Features:
- * - Quest type selection tabs
- * - Mob type selector with 3D preview and filters
- * - Member list with ready status
- * - Wave preview slider with scaling info
- * - Realtime party sync refresh
+ * Epic Party Management Screen - Guild Hall Style
+ * Features animated borders, glow effects, and RPG-style presentation.
  */
-@SuppressWarnings("null")
 public class PartyScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyScreen.class);
 
-    // Layout constants
-    private static final int PANEL_WIDTH = 520;
-    private static final int PANEL_HEIGHT = 460;
-    private static final int HEADER_HEIGHT = 30;
-    private static final int TAB_HEIGHT = 28;
-    private static final int MEMBER_ROW_HEIGHT = 26;
-    private static final int MOB_PREVIEW_SIZE = 100;
-    private static final int MOB_LIST_WIDTH = 140;
+    // === EPIC DESIGN CONSTANTS ===
+    private static final int PANEL_WIDTH = 600;
+    private static final int PANEL_HEIGHT = 420;
 
-    // Colors
-    private static final int COLOR_BG = 0xE8101018;
-    private static final int COLOR_HEADER = 0xFF1A1A28;
-    private static final int COLOR_TEXT = 0xFFFFFFFF;
-    private static final int COLOR_TEXT_DIM = 0xFFAAAAAA;
-    private static final int COLOR_LEADER = 0xFFFFD700;
-    private static final int COLOR_READY = 0xFF00FF00;
-    private static final int COLOR_NOT_READY = 0xFFFF6666;
-    private static final int COLOR_TAB_ACTIVE = 0xFF3366FF;
-    private static final int COLOR_TAB_INACTIVE = 0xFF333344;
-    private static final int COLOR_MOB_SELECTED = 0xFF4488FF;
-    private static final int COLOR_MOB_HOVER = 0x40FFFFFF;
-    private static final int COLOR_FILTER_ACTIVE = 0xFF44AA44;
-    private static final int COLOR_FILTER_INACTIVE = 0xFF444444;
+    // Colors - Epic Impact Style
+    private static final int COLOR_BG_DARK = 0xF0080810;
+    private static final int COLOR_HEADER_GRADIENT_TOP = 0xFF1A1A35;
+    private static final int COLOR_HEADER_GRADIENT_BOT = 0xFF0D0D1A;
+    private static final int COLOR_GLOW_BLUE = 0xFF3D5AFE;
+    private static final int COLOR_GLOW_CYAN = 0xFF00FFFF;
+    private static final int COLOR_TEXT_WHITE = 0xFFFFFFFF;
+    private static final int COLOR_TEXT_GRAY = 0xFFAABBCC;
+    private static final int COLOR_TEXT_DIM = 0xFF667788;
+    private static final int COLOR_READY = 0xFF00FF88;
+    private static final int COLOR_NOT_READY = 0xFFFF6677;
+    private static final int COLOR_LEADER_GOLD = 0xFFFFD700;
 
-    // State from ClientPartyCache
+    // Animation
+    private float animationTick = 0f;
+    private float glowPulse = 0f;
+    private float titleGlow = 0f;
+    private final float[] memberAnimations = new float[8];
+
+    // Party State
     private List<PartySyncPayload.PartyMemberInfo> members = new ArrayList<>();
     private UUID leaderId = null;
     private QuestType questType = QuestType.PVE_COOP;
@@ -74,38 +73,33 @@ public class PartyScreen extends Screen {
     private boolean isLeader = false;
     private boolean isReady = false;
 
-    // Mob selection
+    // Mob Selection
     private List<EnduranceQuestRegistry.MobQuestConfig> availableMobs = new ArrayList<>();
     private List<EnduranceQuestRegistry.MobQuestConfig> filteredMobs = new ArrayList<>();
     private int selectedMobIndex = 0;
     private int mobListScrollOffset = 0;
     private String mobSearchText = "";
-    private static final int MAX_VISIBLE_MOBS = 7;
+    private static final int MAX_VISIBLE_MOBS = 6;
 
     // Filters
     private Set<String> availableNamespaces = new LinkedHashSet<>();
-    @Nullable
-    private String selectedNamespace = null; // null = all
-    @Nullable
-    private MobTier selectedTierFilter = null; // null = all
+    @Nullable private String selectedNamespace = null;
+    @Nullable private MobTier selectedTierFilter = null;
 
-    // Wave preview slider
+    // Preview
     private int previewWaveNumber = 1;
     private static final int MAX_PREVIEW_WAVE = 20;
-
-    // 3D Preview state
     private float mobRotationY = -30f;
     private float targetMobRotationY = -30f;
     private float mobRotationX = 0f;
     private boolean isDraggingPreview = false;
     private int dragStartX, dragStartY;
     private float dragStartRotX, dragStartRotY;
-    @Nullable
-    private LivingEntity previewEntity = null;
+    @Nullable private LivingEntity previewEntity = null;
 
-    // Realtime sync
+    // Sync
     private long lastSyncTime = 0;
-    private static final long SYNC_INTERVAL_MS = 500; // Refresh every 500ms
+    private static final long SYNC_INTERVAL_MS = 500;
 
     // UI Components
     private EditBox inviteBox;
@@ -115,23 +109,17 @@ public class PartyScreen extends Screen {
     private Button startButton;
     private Button leaveButton;
     private Button disbandButton;
+    private Button inviteButton;
 
-    // Selected member for kick
-    @Nullable
-    private UUID selectedMemberId = null;
     private int hoveredMemberIndex = -1;
+    private int hoveredMobIndex = -1;
+    private int hoveredQuestTab = -1;
 
-    // Panel position
-    private int panelX;
-    private int panelY;
-
-    // Blur control
+    private int panelX, panelY;
     private int originalBlurValue = 0;
 
     public PartyScreen() {
-        super(Component.translatable("devmod.party.title"));
-
-        // Disable blur
+        super(Objects.requireNonNull(Component.translatable("devmod.party.title")));
         Minecraft mc = Minecraft.getInstance();
         if (mc.options != null) {
             OptionInstance<Integer> blurOption = mc.options.menuBackgroundBlurriness();
@@ -140,79 +128,100 @@ public class PartyScreen extends Screen {
         }
     }
 
+    /**
+     * Returns a non-null font reference for rendering operations.
+     * This helper ensures null safety for all font-dependent drawing calls.
+     */
+    @Nonnull
+    private net.minecraft.client.gui.Font getFont() {
+        return Objects.requireNonNull(this.font, "Font not initialized");
+    }
+
     @Override
     protected void init() {
         super.init();
 
-        // Center the panel (with clamping for small screens)
-        int actualWidth = Math.min(PANEL_WIDTH, width - 20);
-        int actualHeight = Math.min(PANEL_HEIGHT, height - 20);
+        int actualWidth = Math.min(PANEL_WIDTH, width - 40);
+        int actualHeight = Math.min(PANEL_HEIGHT, height - 40);
         panelX = (width - actualWidth) / 2;
         panelY = (height - actualHeight) / 2;
 
-        // Load available mobs
         loadAvailableMobs();
-
-        // Refresh party data from cache
         refreshFromCache();
 
-        // === UI Components ===
+        // === Create UI Components ===
 
-        // Invite box (below member list)
-        int inviteY = panelY + HEADER_HEIGHT + TAB_HEIGHT + 180;
-        inviteBox = new EditBox(font, panelX + 15, inviteY, 130, 18,
-                Component.translatable("devmod.party.invite_placeholder"));
-        inviteBox.setHint(Component.translatable("devmod.party.invite_hint"));
+        // Use same coordinates as renderMembersPanel for invite section
+        // Members panel: panelLeft = panelX + 15, panelTop = panelY + 80, panelH = 200
+        int membersPanelLeft = panelX + 15;
+        int membersPanelTop = panelY + 80;
+        int membersPanelH = 200;
+        int inviteSectionY = membersPanelTop + membersPanelH + 8;  // = panelY + 288
+        // Input background at: (membersPanelLeft + 5, inviteSectionY + 12) with size 140x20
+        int inviteBoxX = membersPanelLeft + 5 + 3;   // 3px inside border
+        int inviteBoxY = inviteSectionY + 12 + 3;    // 3px inside border
+        inviteBox = new EditBox(getFont(), inviteBoxX, inviteBoxY, 130, 14,
+                Objects.requireNonNull(Component.literal("Player name...")));
+        inviteBox.setHint(Objects.requireNonNull(Component.literal("Enter name...")));
         inviteBox.setMaxLength(16);
-        addRenderableWidget(inviteBox);
+        inviteBox.setBordered(false);
+        addRenderableWidget(Objects.requireNonNull(inviteBox));
 
-        // Invite button
-        addRenderableWidget(Button.builder(Component.literal("Invite"), this::onInviteClicked)
-                .bounds(panelX + 150, inviteY, 45, 18)
+        // Invite button - positioned right after the input background
+        int inviteButtonX = membersPanelLeft + 5 + 140 + 3;  // After input bg (140 wide) + gap
+        inviteButton = Objects.requireNonNull(Button.builder(
+                Objects.requireNonNull(Component.literal("INVITE")), this::onInviteClicked)
+                .bounds(inviteButtonX, inviteSectionY + 12, 50, 20)
                 .build());
+        addRenderableWidget(inviteButton);
 
-        // Mob search box
-        int mobSectionX = panelX + 205;
-        mobSearchBox = new EditBox(font, mobSectionX, panelY + HEADER_HEIGHT + TAB_HEIGHT + 8, MOB_LIST_WIDTH, 16,
-                Component.literal("Search mobs..."));
-        mobSearchBox.setHint(Component.literal("Search..."));
+        // Mob search box - inside mob selection panel after header
+        // Mob panel: panelLeft = panelX + 225, panelTop = panelY + 80
+        // Search background at: (panelLeft + 5, panelTop + 28) with size (panelW - 10) x 20
+        int mobPanelLeft = panelX + 225;
+        int mobPanelTop = panelY + 80;
+        int mobSearchY = mobPanelTop + 28 + 3;  // 3px inside the search background
+        mobSearchBox = new EditBox(getFont(), mobPanelLeft + 8, mobSearchY, 140, 14,
+                Objects.requireNonNull(Component.literal("Search...")));
+        mobSearchBox.setHint(Objects.requireNonNull(Component.literal("Search mobs...")));
         mobSearchBox.setMaxLength(32);
+        mobSearchBox.setBordered(false);
         mobSearchBox.setResponder(this::onMobSearchChanged);
         addRenderableWidget(mobSearchBox);
 
-        // Bottom buttons
-        int buttonY = panelY + PANEL_HEIGHT - 35;
-        int buttonWidth = 70;
-        int buttonGap = 5;
+        // Bottom action buttons
+        int buttonY = panelY + PANEL_HEIGHT - 45;
+        int centerX = panelX + PANEL_WIDTH / 2;
 
-        // Ready button
-        readyButton = Button.builder(getReadyButtonText(), this::onReadyClicked)
-                .bounds(panelX + 15, buttonY, buttonWidth, 20)
-                .build();
+        readyButton = Objects.requireNonNull(Button.builder(
+                Objects.requireNonNull(getReadyButtonText()), this::onReadyClicked)
+                .bounds(centerX - 180, buttonY, 80, 24)
+                .build());
         addRenderableWidget(readyButton);
 
-        // Leave button
-        leaveButton = Button.builder(Component.translatable("devmod.party.leave_party"), this::onLeaveClicked)
-                .bounds(panelX + 15 + buttonWidth + buttonGap, buttonY, buttonWidth, 20)
-                .build();
+        leaveButton = Objects.requireNonNull(Button.builder(
+                Objects.requireNonNull(Component.literal("LEAVE")), this::onLeaveClicked)
+                .bounds(centerX - 90, buttonY, 70, 24)
+                .build());
         addRenderableWidget(leaveButton);
 
-        // Start Quest button (leader only)
-        startButton = Button.builder(Component.translatable("devmod.party.start_quest"), this::onStartClicked)
-                .bounds(panelX + PANEL_WIDTH - buttonWidth * 2 - buttonGap - 15, buttonY, buttonWidth + 15, 20)
-                .build();
+        startButton = Objects.requireNonNull(Button.builder(
+                Objects.requireNonNull(Component.literal("START QUEST")), this::onStartClicked)
+                .bounds(centerX - 10, buttonY, 120, 24)
+                .build());
         addRenderableWidget(startButton);
 
-        // Disband button (leader only)
-        disbandButton = Button.builder(Component.translatable("devmod.party.disband_party"), this::onDisbandClicked)
-                .bounds(panelX + PANEL_WIDTH - buttonWidth - 15, buttonY, buttonWidth, 20)
-                .build();
+        disbandButton = Objects.requireNonNull(Button.builder(
+                Objects.requireNonNull(Component.literal("DISBAND")), this::onDisbandClicked)
+                .bounds(centerX + 120, buttonY, 70, 24)
+                .build());
         addRenderableWidget(disbandButton);
 
-        // Create Party button (shown when not in a party)
-        createPartyButton = Button.builder(Component.translatable("devmod.party.create_party"), this::onCreatePartyClicked)
-                .bounds(panelX + PANEL_WIDTH / 2 - 70, panelY + PANEL_HEIGHT / 2 - 10, 140, 24)
-                .build();
+        // Create Party button (when not in party)
+        createPartyButton = Objects.requireNonNull(Button.builder(
+                Objects.requireNonNull(Component.literal("CREATE PARTY")), this::onCreatePartyClicked)
+                .bounds(centerX - 80, panelY + PANEL_HEIGHT / 2 + 20, 160, 30)
+                .build());
         addRenderableWidget(createPartyButton);
 
         updateButtonStates();
@@ -221,13 +230,10 @@ public class PartyScreen extends Screen {
 
     private void loadAvailableMobs() {
         availableMobs = new ArrayList<>(EnduranceQuestRegistry.INSTANCE.getAllMobConfigs());
-
-        // Collect namespaces
         availableNamespaces = availableMobs.stream()
                 .map(m -> m.namespace)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
-        // Sort by tier then by name
         availableMobs.sort((a, b) -> {
             int tierComp = a.tier.compareTo(b.tier);
             if (tierComp != 0) return tierComp;
@@ -236,7 +242,6 @@ public class PartyScreen extends Screen {
 
         filterMobs();
 
-        // Find default selection (zombie)
         for (int i = 0; i < filteredMobs.size(); i++) {
             if (filteredMobs.get(i).mobId.getPath().equals("zombie")) {
                 selectedMobIndex = i;
@@ -248,15 +253,8 @@ public class PartyScreen extends Screen {
     private void filterMobs() {
         filteredMobs = availableMobs.stream()
                 .filter(m -> {
-                    // Namespace filter
-                    if (selectedNamespace != null && !m.namespace.equals(selectedNamespace)) {
-                        return false;
-                    }
-                    // Tier filter
-                    if (selectedTierFilter != null && m.tier != selectedTierFilter) {
-                        return false;
-                    }
-                    // Search filter
+                    if (selectedNamespace != null && !m.namespace.equals(selectedNamespace)) return false;
+                    if (selectedTierFilter != null && m.tier != selectedTierFilter) return false;
                     if (!mobSearchText.isEmpty()) {
                         String search = mobSearchText.toLowerCase();
                         return m.displayName.toLowerCase().contains(search) ||
@@ -266,7 +264,6 @@ public class PartyScreen extends Screen {
                 })
                 .collect(Collectors.toList());
 
-        // Ensure selectedMobIndex is valid
         if (selectedMobIndex >= filteredMobs.size()) {
             selectedMobIndex = Math.max(0, filteredMobs.size() - 1);
         }
@@ -286,15 +283,10 @@ public class PartyScreen extends Screen {
             members = new ArrayList<>(ClientPartyCache.getMembers());
             leaderId = ClientPartyCache.getLeaderId();
             QuestType cachedType = ClientPartyCache.getQuestType();
-            if (cachedType != null) {
-                questType = cachedType;
-            }
+            if (cachedType != null) questType = cachedType;
             PartyData.PartyState cachedState = ClientPartyCache.getPartyState();
-            if (cachedState != null) {
-                partyState = cachedState;
-            }
+            if (cachedState != null) partyState = cachedState;
 
-            // Get selected mob from cache
             PartySyncPayload party = ClientPartyCache.getParty();
             if (party != null) {
                 ResourceLocation mobId = party.getSelectedMobResourceLocation();
@@ -312,10 +304,10 @@ public class PartyScreen extends Screen {
             }
 
             Minecraft mc = Minecraft.getInstance();
-            if (mc.player != null) {
-                isLeader = mc.player.getUUID().equals(leaderId);
-                // Get ready state from member list
-                UUID localId = mc.player.getUUID();
+            var localPlayer = mc.player;
+            if (localPlayer != null) {
+                isLeader = localPlayer.getUUID().equals(leaderId);
+                UUID localId = localPlayer.getUUID();
                 isReady = members.stream()
                         .filter(m -> m.playerId().equals(localId))
                         .findFirst()
@@ -334,59 +326,58 @@ public class PartyScreen extends Screen {
     public void tick() {
         super.tick();
 
-        // Realtime sync refresh
+        // Animation updates
+        animationTick += 0.05f;
+        glowPulse = (float) (Math.sin(animationTick * 2) * 0.5 + 0.5);
+        titleGlow = (float) (Math.sin(animationTick * 3) * 0.3 + 0.7);
+
+        // Member entrance animations
+        for (int i = 0; i < memberAnimations.length; i++) {
+            if (i < members.size()) {
+                memberAnimations[i] = Math.min(1f, memberAnimations[i] + 0.1f);
+            } else {
+                memberAnimations[i] = 0f;
+            }
+        }
+
+        // Sync
         long now = System.currentTimeMillis();
         if (now - lastSyncTime > SYNC_INTERVAL_MS) {
             lastSyncTime = now;
             boolean wasInParty = isInParty;
             refreshFromCache();
-
-            // Update UI if state changed
-            if (wasInParty != isInParty) {
-                updateButtonStates();
-            }
+            if (wasInParty != isInParty) updateButtonStates();
         }
     }
 
     private void updateButtonStates() {
-        // Create party button only visible when not in a party
         createPartyButton.visible = !isInParty;
         createPartyButton.active = !isInParty;
 
-        // Other buttons only visible when in a party
         readyButton.visible = isInParty;
         leaveButton.visible = isInParty;
         startButton.visible = isInParty;
         inviteBox.visible = isInParty;
+        inviteButton.visible = isInParty;
         mobSearchBox.visible = isInParty;
 
-        // Ready button message
         readyButton.setMessage(getReadyButtonText());
-
-        // Start button only for leader when enough players are ready
         startButton.active = isLeader && canStartQuest();
-
-        // Disband button only for leader
         disbandButton.active = isLeader;
         disbandButton.visible = isInParty && isLeader;
-
-        // Invite box only for leader
         inviteBox.setEditable(isLeader);
     }
 
     private boolean canStartQuest() {
         if (!isInParty) return false;
-        // Allow solo for PVE_COOP testing
         if (questType.allowsSoloPlay() && members.size() == 1) return true;
         if (members.size() < questType.minPlayers) return false;
-        // Check if all members are ready
         return members.stream().allMatch(PartySyncPayload.PartyMemberInfo::isReady);
     }
 
+    @Nonnull
     private Component getReadyButtonText() {
-        return isReady
-                ? Component.translatable("devmod.party.not_ready")
-                : Component.translatable("devmod.party.ready");
+        return Objects.requireNonNull(Component.literal(isReady ? "READY" : "NOT READY"));
     }
 
     private void updatePreviewEntity() {
@@ -413,429 +404,619 @@ public class PartyScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Transparent background
+    public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        // Dark cinematic background
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
-        // Main panel background
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, COLOR_BG);
-
-        // Header
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + HEADER_HEIGHT, COLOR_HEADER);
-        graphics.drawCenteredString(font, title, panelX + PANEL_WIDTH / 2, panelY + 10, COLOR_TEXT);
-
-        // Party state indicator
-        if (isInParty) {
-            String stateText = "§7[" + partyState.name() + "]";
-            graphics.drawString(font, stateText, panelX + PANEL_WIDTH - font.width(stateText) - 10, panelY + 10, COLOR_TEXT_DIM);
-        }
-
-        // Border
-        AxiomRenderer.drawBorder(graphics, panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, UIConstants.Border.DEFAULT);
+        // Main panel with glow
+        renderMainPanel(graphics);
 
         if (isInParty) {
-            // Quest type tabs
+            // Quest type tabs with glow
             renderQuestTypeTabs(graphics, mouseX, mouseY);
 
-            // Left side: Members list
-            renderMembersList(graphics, mouseX, mouseY);
+            // Left: Party members panel
+            renderMembersPanel(graphics, mouseX, mouseY);
 
-            // Center: Mob selection with filters
-            renderMobSection(graphics, mouseX, mouseY);
+            // Center: Mob selection
+            renderMobSelectionPanel(graphics, mouseX, mouseY);
 
-            // Right: 3D Preview with stats
-            renderMobPreviewSection(graphics, mouseX, mouseY);
+            // Right: 3D Preview with pedestal
+            renderMobPreviewPanel(graphics, mouseX, mouseY);
 
-            // Bottom: Wave preview with slider
-            renderWavePreview(graphics, mouseX, mouseY);
+            // Bottom: Wave stats
+            renderWaveStatsBar(graphics, mouseX, mouseY);
         } else {
-            // Show "No Party" message
-            graphics.drawCenteredString(font, Component.translatable("devmod.party.no_party"),
-                    panelX + PANEL_WIDTH / 2, panelY + PANEL_HEIGHT / 2 - 40, COLOR_TEXT_DIM);
-            graphics.drawCenteredString(font, Component.literal("Create a party to start an Endurance Quest"),
-                    panelX + PANEL_WIDTH / 2, panelY + PANEL_HEIGHT / 2 - 25, COLOR_TEXT_DIM);
+            renderNoPartyState(graphics);
         }
 
-        // Render widgets
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 
-    private void renderQuestTypeTabs(GuiGraphics graphics, int mouseX, int mouseY) {
-        int tabY = panelY + HEADER_HEIGHT;
-        int tabWidth = PANEL_WIDTH / 3;
+    private void renderMainPanel(GuiGraphics graphics) {
+        // Outer glow effect
+        int glowAlpha = (int) (30 + glowPulse * 20);
+        int glowColor = (glowAlpha << 24) | (COLOR_GLOW_BLUE & 0x00FFFFFF);
+        graphics.fill(panelX - 4, panelY - 4, panelX + PANEL_WIDTH + 4, panelY + PANEL_HEIGHT + 4, glowColor);
+        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT + 2, glowColor);
 
-        for (int i = 0; i < QuestType.values().length; i++) {
-            QuestType type = QuestType.values()[i];
-            int tabX = panelX + i * tabWidth;
+        // Main background
+        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, COLOR_BG_DARK);
 
-            boolean isActive = type == questType;
-            boolean isHovered = mouseX >= tabX && mouseX < tabX + tabWidth &&
-                    mouseY >= tabY && mouseY < tabY + TAB_HEIGHT;
+        // Header gradient
+        for (int i = 0; i < 40; i++) {
+            float t = i / 40f;
+            int color = UIConstants.lerp(COLOR_HEADER_GRADIENT_TOP, COLOR_HEADER_GRADIENT_BOT, t);
+            graphics.fill(panelX, panelY + i, panelX + PANEL_WIDTH, panelY + i + 1, color);
+        }
 
-            int tabColor = isActive ? COLOR_TAB_ACTIVE :
-                    (isHovered ? 0xFF444466 : COLOR_TAB_INACTIVE);
+        // Animated border
+        int borderAlpha = (int) (180 + glowPulse * 75);
+        int borderColor = (borderAlpha << 24) | (COLOR_GLOW_BLUE & 0x00FFFFFF);
+        drawAnimatedBorder(graphics, panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, borderColor);
 
-            graphics.fill(tabX, tabY, tabX + tabWidth, tabY + TAB_HEIGHT, tabColor);
+        // Title with glow
+        String title = "PARTY MANAGEMENT";
+        int titleX = panelX + PANEL_WIDTH / 2 - getFont().width(title) / 2;
 
-            // Tab text
-            graphics.drawCenteredString(font, type.displayName, tabX + tabWidth / 2, tabY + 6, COLOR_TEXT);
+        // Title glow
+        int titleGlowAlpha = (int) (titleGlow * 100);
+        net.minecraft.client.gui.Font f = getFont();
+        graphics.drawString(f, title, titleX - 1, panelY + 14, (titleGlowAlpha << 24) | (COLOR_GLOW_CYAN & 0x00FFFFFF), false);
+        graphics.drawString(f, title, titleX + 1, panelY + 14, (titleGlowAlpha << 24) | (COLOR_GLOW_CYAN & 0x00FFFFFF), false);
+        graphics.drawString(f, title, titleX, panelY + 13, (titleGlowAlpha << 24) | (COLOR_GLOW_CYAN & 0x00FFFFFF), false);
+        graphics.drawString(f, title, titleX, panelY + 15, (titleGlowAlpha << 24) | (COLOR_GLOW_CYAN & 0x00FFFFFF), false);
 
-            // Player range
-            String range = String.format("%d-%d players", type.minPlayers, type.maxPlayers);
-            graphics.drawCenteredString(font, range, tabX + tabWidth / 2, tabY + 16, COLOR_TEXT_DIM);
+        // Main title
+        graphics.drawString(f, title, titleX, panelY + 14, COLOR_GLOW_CYAN, false);
+
+        // Subtitle
+        if (isInParty) {
+            String subtitle = partyState.name() + " - " + members.size() + "/" + questType.maxPlayers + " Warriors";
+            int subX = panelX + PANEL_WIDTH / 2 - f.width(subtitle) / 2;
+            graphics.drawString(f, subtitle, subX, panelY + 28, COLOR_TEXT_DIM, false);
         }
     }
 
-    private void renderMembersList(GuiGraphics graphics, int mouseX, int mouseY) {
-        int listX = panelX + 10;
-        int listY = panelY + HEADER_HEIGHT + TAB_HEIGHT + 10;
-        int listWidth = 185;
+    private void drawAnimatedBorder(GuiGraphics graphics, int x, int y, int w, int h, int color) {
+        // Top
+        graphics.fill(x, y, x + w, y + 2, color);
+        // Bottom
+        graphics.fill(x, y + h - 2, x + w, y + h, color);
+        // Left
+        graphics.fill(x, y, x + 2, y + h, color);
+        // Right
+        graphics.fill(x + w - 2, y, x + w, y + h, color);
 
-        // Section title
-        graphics.drawString(font, "§lParty Members", listX, listY, COLOR_TEXT);
-        listY += 15;
+        // Corner accents
+        int cornerSize = 8;
+        // Top-left
+        graphics.fill(x, y, x + cornerSize, y + 3, COLOR_GLOW_CYAN);
+        graphics.fill(x, y, x + 3, y + cornerSize, COLOR_GLOW_CYAN);
+        // Top-right
+        graphics.fill(x + w - cornerSize, y, x + w, y + 3, COLOR_GLOW_CYAN);
+        graphics.fill(x + w - 3, y, x + w, y + cornerSize, COLOR_GLOW_CYAN);
+        // Bottom-left
+        graphics.fill(x, y + h - 3, x + cornerSize, y + h, COLOR_GLOW_CYAN);
+        graphics.fill(x, y + h - cornerSize, x + 3, y + h, COLOR_GLOW_CYAN);
+        // Bottom-right
+        graphics.fill(x + w - cornerSize, y + h - 3, x + w, y + h, COLOR_GLOW_CYAN);
+        graphics.fill(x + w - 3, y + h - cornerSize, x + w, y + h, COLOR_GLOW_CYAN);
+    }
 
-        hoveredMemberIndex = -1;
+    private void renderQuestTypeTabs(GuiGraphics graphics, int mouseX, int mouseY) {
+        int tabY = panelY + 45;
+        int tabWidth = (PANEL_WIDTH - 40) / 3;
+        int tabHeight = 28;
+        net.minecraft.client.gui.Font f = getFont();
 
-        for (int i = 0; i < members.size() && i < 6; i++) {
-            PartySyncPayload.PartyMemberInfo member = members.get(i);
-            int rowY = listY + i * MEMBER_ROW_HEIGHT;
+        hoveredQuestTab = -1;
 
-            // Check hover
-            if (mouseX >= listX && mouseX < listX + listWidth &&
-                    mouseY >= rowY && mouseY < rowY + MEMBER_ROW_HEIGHT) {
-                hoveredMemberIndex = i;
-                graphics.fill(listX, rowY, listX + listWidth, rowY + MEMBER_ROW_HEIGHT, 0x30FFFFFF);
+        for (int i = 0; i < QuestType.values().length; i++) {
+            QuestType type = QuestType.values()[i];
+            int tabX = panelX + 20 + i * tabWidth;
+
+            boolean isActive = type == questType;
+            boolean isHovered = mouseX >= tabX && mouseX < tabX + tabWidth - 4 &&
+                    mouseY >= tabY && mouseY < tabY + tabHeight;
+
+            if (isHovered) hoveredQuestTab = i;
+
+            // Tab background
+            int bgColor = isActive ? 0xFF1A2A4A : (isHovered ? 0xFF151525 : 0xFF0A0A15);
+            graphics.fill(tabX, tabY, tabX + tabWidth - 4, tabY + tabHeight, bgColor);
+
+            // Active indicator
+            if (isActive) {
+                int glowIntensity = (int) (150 + glowPulse * 50);
+                graphics.fill(tabX, tabY + tabHeight - 3, tabX + tabWidth - 4, tabY + tabHeight,
+                    (glowIntensity << 24) | (COLOR_GLOW_BLUE & 0x00FFFFFF));
+                graphics.fill(tabX, tabY + tabHeight - 2, tabX + tabWidth - 4, tabY + tabHeight, COLOR_GLOW_BLUE);
             }
 
-            // Ready indicator
-            int indicatorColor = member.isReady() ? COLOR_READY : COLOR_NOT_READY;
-            graphics.fill(listX + 2, rowY + 6, listX + 8, rowY + MEMBER_ROW_HEIGHT - 8, indicatorColor);
+            // Border
+            int borderColor = isActive ? COLOR_GLOW_BLUE : (isHovered ? 0xFF3D5AFE : 0xFF2A2A4A);
+            AxiomRenderer.drawBorder(graphics, tabX, tabY, tabWidth - 4, tabHeight, borderColor);
 
-            // Leader star
+            // Icon + Name
+            String icon = getQuestTypeIcon(type);
+            String name = type.displayName;
+            int textColor = isActive ? COLOR_GLOW_CYAN : (isHovered ? COLOR_TEXT_WHITE : COLOR_TEXT_GRAY);
+
+            graphics.drawCenteredString(f, icon + " " + name, tabX + (tabWidth - 4) / 2, tabY + 6, textColor);
+
+            // Player range
+            String range = type.minPlayers + "-" + type.maxPlayers + " players";
+            graphics.drawCenteredString(f, range, tabX + (tabWidth - 4) / 2, tabY + 17, COLOR_TEXT_DIM);
+        }
+    }
+
+    private String getQuestTypeIcon(QuestType type) {
+        return switch (type) {
+            case PVE_COOP -> "[CO-OP]";
+            case RAID_BOSS -> "[RAID]";
+            case EVENT -> "[EVENT]";
+        };
+    }
+
+    private void renderMembersPanel(GuiGraphics graphics, int mouseX, int mouseY) {
+        int panelLeft = panelX + 15;
+        int panelTop = panelY + 80;
+        int panelW = 200;
+        int panelH = 200;
+        net.minecraft.client.gui.Font f = getFont();
+
+        // Panel background
+        graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + panelH, 0xCC0A0A18);
+        AxiomRenderer.drawBorder(graphics, panelLeft, panelTop, panelW, panelH, 0xFF2A3A5A);
+
+        // Header
+        graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + 22, 0xFF151528);
+        graphics.drawString(f, "PARTY MEMBERS", panelLeft + 8, panelTop + 7, COLOR_GLOW_CYAN, false);
+
+        hoveredMemberIndex = -1;
+        int memberY = panelTop + 28;
+
+        for (int i = 0; i < Math.min(members.size(), 6); i++) {
+            PartySyncPayload.PartyMemberInfo member = members.get(i);
+            float anim = memberAnimations[i];
+
+            int rowY = memberY + i * 28;
+            int rowH = 26;
+
+            // Slide-in animation
+            int offsetX = (int) ((1f - anim) * -50);
+            int rowX = panelLeft + 5 + offsetX;
+            int rowW = panelW - 10;
+
+            boolean isHovered = mouseX >= panelLeft + 5 && mouseX < panelLeft + panelW - 5 &&
+                    mouseY >= rowY && mouseY < rowY + rowH;
+            if (isHovered) hoveredMemberIndex = i;
+
+            // Row background
+            int rowBg = isHovered ? 0x40FFFFFF : 0x20FFFFFF;
+            graphics.fill(rowX, rowY, rowX + rowW, rowY + rowH, (int)(rowBg * anim));
+
             boolean isMemberLeader = member.playerId().equals(leaderId);
-            String prefix = isMemberLeader ? "§6★ " : "  ";
-            int nameColor = isMemberLeader ? COLOR_LEADER : COLOR_TEXT;
+
+            // Ready/status indicator with glow
+            int statusX = rowX + 5;
+            int statusColor = member.isReady() ? COLOR_READY : COLOR_NOT_READY;
+            int statusGlow = member.isReady() ? 0x4000FF88 : 0x40FF4466;
+
+            // Status glow
+            graphics.fill(statusX - 2, rowY + 5, statusX + 10, rowY + rowH - 5, statusGlow);
+            graphics.fill(statusX, rowY + 7, statusX + 8, rowY + rowH - 7, statusColor);
+
+            // Leader crown or player icon
+            String prefix = isMemberLeader ? "[L] " : "    ";
+            int nameColor = isMemberLeader ? COLOR_LEADER_GOLD : COLOR_TEXT_WHITE;
 
             // Player name
             String displayName = member.playerName();
             Minecraft mc = Minecraft.getInstance();
-            if (mc.player != null && member.playerId().equals(mc.player.getUUID())) {
-                displayName += " §7(You)";
+            var localPlayer = mc.player;
+            if (localPlayer != null && member.playerId().equals(localPlayer.getUUID())) {
+                displayName += " (You)";
             }
-            graphics.drawString(font, prefix + displayName, listX + 12, rowY + 8, nameColor);
+            graphics.drawString(f, prefix + displayName, rowX + 18, rowY + 5, nameColor, false);
 
-            // Ready/Not Ready text on right
-            String readyText = member.isReady() ? "§aReady" : "§cWaiting";
-            int textWidth = font.width(readyText.replace("§a", "").replace("§c", ""));
-            graphics.drawString(font, readyText, listX + listWidth - textWidth - 5, rowY + 8, COLOR_TEXT);
+            // Status text
+            String status = member.isReady() ? "Ready" : "Waiting";
+            int statusTextColor = member.isReady() ? COLOR_READY : COLOR_NOT_READY;
+            graphics.drawString(f, status, rowX + 18, rowY + 15, statusTextColor, false);
+
+            // Kick hint on hover (for leader)
+            if (isHovered && isLeader && !member.playerId().equals(leaderId)) {
+                graphics.drawString(f, "[Right-click: Kick]", rowX + rowW - 85, rowY + 10, COLOR_TEXT_DIM, false);
+            }
         }
 
         // Empty state
         if (members.isEmpty()) {
-            graphics.drawString(font, "§7No members yet", listX + 10, listY + 20, COLOR_TEXT_DIM);
+            graphics.drawCenteredString(f, "No warriors yet...", panelLeft + panelW / 2, panelTop + 80, COLOR_TEXT_DIM);
+            graphics.drawCenteredString(f, "Invite players below", panelLeft + panelW / 2, panelTop + 95, COLOR_TEXT_DIM);
         }
 
-        // Player count
-        int infoY = listY + 6 * MEMBER_ROW_HEIGHT + 5;
-        String countText = String.format("§7Players: %d/%d", members.size(), questType.maxPlayers);
-        graphics.drawString(font, countText, listX, infoY, COLOR_TEXT_DIM);
+        // Invite section header
+        int inviteSectionY = panelTop + panelH + 8;
+        graphics.drawString(f, "> INVITE PLAYER", panelLeft + 5, inviteSectionY, COLOR_TEXT_DIM, false);
+
+        // Input background - extends to make room for invite button beside it
+        graphics.fill(panelLeft + 5, inviteSectionY + 12, panelLeft + 145, inviteSectionY + 32, 0xFF0A0A15);
+        AxiomRenderer.drawBorder(graphics, panelLeft + 5, inviteSectionY + 12, 140, 20, 0xFF2A3A5A);
     }
 
-    private void renderMobSection(GuiGraphics graphics, int mouseX, int mouseY) {
-        int sectionX = panelX + 205;
-        int sectionY = panelY + HEADER_HEIGHT + TAB_HEIGHT + 8;
+    private void renderMobSelectionPanel(GuiGraphics graphics, int mouseX, int mouseY) {
+        int panelLeft = panelX + 225;
+        int panelTop = panelY + 80;
+        int panelW = 160;
+        int panelH = 230;
+        net.minecraft.client.gui.Font f = getFont();
 
-        // Section title
-        graphics.drawString(font, "§lMob Type", sectionX, sectionY - 2, COLOR_TEXT);
+        // Panel background
+        graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + panelH, 0xCC0A0A18);
+        AxiomRenderer.drawBorder(graphics, panelLeft, panelTop, panelW, panelH, 0xFF2A3A5A);
 
-        // Filter buttons below search
-        int filterY = sectionY + 26;
-        renderFilters(graphics, sectionX, filterY, mouseX, mouseY);
+        // Header
+        graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + 22, 0xFF151528);
+        graphics.drawString(f, "SELECT ENEMY", panelLeft + 8, panelTop + 7, COLOR_GLOW_CYAN, false);
+
+        // Search background
+        int searchY = panelTop + 28;
+        graphics.fill(panelLeft + 5, searchY, panelLeft + panelW - 5, searchY + 20, 0xFF0A0A15);
+        AxiomRenderer.drawBorder(graphics, panelLeft + 5, searchY, panelW - 10, 20, 0xFF2A3A5A);
+
+        // Namespace filter buttons (All / MC / Mods)
+        int nsFilterY = searchY + 25;
+        int nsBtnX = panelLeft + 5;
+
+        // "All" button
+        boolean allActive = selectedNamespace == null;
+        int allW = 28;
+        int allColor = allActive ? 0xFF3D5AFE : 0xFF1A1A2A;
+        boolean allHovered = mouseX >= nsBtnX && mouseX < nsBtnX + allW &&
+                            mouseY >= nsFilterY && mouseY < nsFilterY + 12;
+        if (allHovered) allColor = UIConstants.lighten(allColor, 0.2f);
+        graphics.fill(nsBtnX, nsFilterY, nsBtnX + allW, nsFilterY + 12, allColor);
+        AxiomRenderer.drawBorder(graphics, nsBtnX, nsFilterY, allW, 12, allActive ? 0xFF3D5AFE : 0xFF3A3A5A);
+        graphics.drawCenteredString(f, "All", nsBtnX + allW / 2, nsFilterY + 2, COLOR_TEXT_WHITE);
+        nsBtnX += allW + 2;
+
+        // "MC" button for minecraft namespace
+        boolean mcActive = "minecraft".equals(selectedNamespace);
+        int mcW = 24;
+        int mcColor = mcActive ? 0xFF44AA44 : 0xFF1A1A2A;
+        boolean mcHovered = mouseX >= nsBtnX && mouseX < nsBtnX + mcW &&
+                           mouseY >= nsFilterY && mouseY < nsFilterY + 12;
+        if (mcHovered) mcColor = UIConstants.lighten(mcColor, 0.2f);
+        graphics.fill(nsBtnX, nsFilterY, nsBtnX + mcW, nsFilterY + 12, mcColor);
+        AxiomRenderer.drawBorder(graphics, nsBtnX, nsFilterY, mcW, 12, mcActive ? 0xFF44AA44 : 0xFF3A3A5A);
+        graphics.drawCenteredString(f, "MC", nsBtnX + mcW / 2, nsFilterY + 2, COLOR_TEXT_WHITE);
+        nsBtnX += mcW + 2;
+
+        // Mod count indicator
+        long modCount = availableNamespaces.stream().filter(ns -> !"minecraft".equals(ns)).count();
+        if (modCount > 0) {
+            graphics.drawString(f, "+" + modCount, nsBtnX + 2, nsFilterY + 2, COLOR_TEXT_DIM, false);
+        }
+
+        // Tier filter buttons (second row)
+        int filterY = nsFilterY + 16;
+        int btnW = 22;
+        int btnX = panelLeft + 5;
+
+        for (MobTier tier : MobTier.values()) {
+            boolean active = tier == selectedTierFilter;
+            int color = active ? getTierColor(tier) : 0xFF1A1A2A;
+            boolean hovered = mouseX >= btnX && mouseX < btnX + btnW &&
+                             mouseY >= filterY && mouseY < filterY + 14;
+
+            if (hovered) color = UIConstants.lighten(color, 0.2f);
+
+            graphics.fill(btnX, filterY, btnX + btnW, filterY + 14, color);
+            AxiomRenderer.drawBorder(graphics, btnX, filterY, btnW, 14,
+                active ? getTierColor(tier) : 0xFF3A3A5A);
+
+            String initial = Objects.requireNonNull(tier.name().substring(0, 1));
+            graphics.drawCenteredString(f, initial, btnX + btnW / 2, filterY + 3, COLOR_TEXT_WHITE);
+
+            btnX += btnW + 2;
+        }
 
         // Mob list
-        int listY = filterY + 22;
-        int visibleMobs = Math.min(MAX_VISIBLE_MOBS, filteredMobs.size());
+        int listY = filterY + 18;
+        hoveredMobIndex = -1;
 
-        for (int i = 0; i < visibleMobs; i++) {
+        for (int i = 0; i < MAX_VISIBLE_MOBS; i++) {
             int mobIndex = mobListScrollOffset + i;
             if (mobIndex >= filteredMobs.size()) break;
 
             EnduranceQuestRegistry.MobQuestConfig config = filteredMobs.get(mobIndex);
-            int rowY = listY + i * 18;
+            int rowY = listY + i * 26;
+            int rowH = 24;
 
             boolean isSelected = mobIndex == selectedMobIndex;
-            boolean isHovered = mouseX >= sectionX && mouseX < sectionX + MOB_LIST_WIDTH &&
-                    mouseY >= rowY && mouseY < rowY + 18;
+            boolean isHovered = mouseX >= panelLeft + 5 && mouseX < panelLeft + panelW - 5 &&
+                    mouseY >= rowY && mouseY < rowY + rowH;
 
-            // Row background
+            if (isHovered) hoveredMobIndex = mobIndex;
+
+            // Row background with selection effect
             if (isSelected) {
-                graphics.fill(sectionX, rowY, sectionX + MOB_LIST_WIDTH, rowY + 18, COLOR_MOB_SELECTED);
+                int selectGlow = (int) (100 + glowPulse * 50);
+                graphics.fill(panelLeft + 5, rowY, panelLeft + panelW - 5, rowY + rowH,
+                    (selectGlow << 24) | (COLOR_GLOW_BLUE & 0x00FFFFFF));
+                graphics.fill(panelLeft + 6, rowY + 1, panelLeft + panelW - 6, rowY + rowH - 1, 0xFF1A2A4A);
             } else if (isHovered) {
-                graphics.fill(sectionX, rowY, sectionX + MOB_LIST_WIDTH, rowY + 18, COLOR_MOB_HOVER);
+                graphics.fill(panelLeft + 5, rowY, panelLeft + panelW - 5, rowY + rowH, 0x30FFFFFF);
             }
 
-            // Tier indicator (color bar)
+            // Tier color bar
             int tierColor = getTierColor(config.tier);
-            graphics.fill(sectionX, rowY + 2, sectionX + 3, rowY + 16, tierColor);
+            graphics.fill(panelLeft + 5, rowY + 2, panelLeft + 9, rowY + rowH - 2, tierColor);
 
-            // Mob name (truncated if needed)
-            String name = config.displayName;
-            if (font.width(name) > MOB_LIST_WIDTH - 35) {
-                name = font.plainSubstrByWidth(name, MOB_LIST_WIDTH - 40) + "..";
+            // Mob name
+            String name = Objects.requireNonNull(config.displayName);
+            if (f.width(name) > panelW - 40) {
+                name = Objects.requireNonNull(f.plainSubstrByWidth(name, panelW - 45)) + "..";
             }
-            graphics.drawString(font, name, sectionX + 6, rowY + 5, COLOR_TEXT);
+            int nameColor = isSelected ? COLOR_GLOW_CYAN : COLOR_TEXT_WHITE;
+            graphics.drawString(f, name, panelLeft + 14, rowY + 4, nameColor, false);
 
-            // Preset icon
-            String presetIcon = getPresetIcon(config.difficultyPreset);
-            graphics.drawString(font, presetIcon, sectionX + MOB_LIST_WIDTH - 12, rowY + 5, COLOR_TEXT_DIM);
+            // Difficulty preset icon
+            String preset = getPresetSymbol(config.difficultyPreset);
+            graphics.drawString(f, preset, panelLeft + 14, rowY + 14, COLOR_TEXT_DIM, false);
         }
 
         // Scroll indicators
         if (mobListScrollOffset > 0) {
-            graphics.drawString(font, "§7▲", sectionX + MOB_LIST_WIDTH / 2 - 3, listY - 8, COLOR_TEXT_DIM);
+            graphics.drawCenteredString(f, "^", panelLeft + panelW / 2, listY - 8, COLOR_GLOW_BLUE);
         }
         if (mobListScrollOffset + MAX_VISIBLE_MOBS < filteredMobs.size()) {
-            graphics.drawString(font, "§7▼", sectionX + MOB_LIST_WIDTH / 2 - 3, listY + MAX_VISIBLE_MOBS * 18 + 2, COLOR_TEXT_DIM);
+            graphics.drawCenteredString(f, "v", panelLeft + panelW / 2, listY + MAX_VISIBLE_MOBS * 26 + 2, COLOR_GLOW_BLUE);
         }
 
-        // Mob count
-        graphics.drawString(font, String.format("§7%d mobs", filteredMobs.size()),
-                sectionX, listY + MAX_VISIBLE_MOBS * 18 + 12, COLOR_TEXT_DIM);
+        // Count
+        graphics.drawString(f, filteredMobs.size() + " enemies", panelLeft + 8, panelTop + panelH - 14, COLOR_TEXT_DIM, false);
     }
 
-    private void renderFilters(GuiGraphics graphics, int x, int y, int mouseX, int mouseY) {
-        // Namespace filter buttons (compact)
-        int btnX = x;
-        int btnH = 12;
+    private void renderMobPreviewPanel(GuiGraphics graphics, int mouseX, int mouseY) {
+        int panelLeft = panelX + 395;
+        int panelTop = panelY + 80;
+        int panelW = 190;
+        int panelH = 230;
+        net.minecraft.client.gui.Font f = getFont();
 
-        // "All" button
-        boolean allActive = selectedNamespace == null;
-        int allColor = allActive ? COLOR_FILTER_ACTIVE : COLOR_FILTER_INACTIVE;
-        int allW = font.width("All") + 6;
-        graphics.fill(btnX, y, btnX + allW, y + btnH, allColor);
-        graphics.drawString(font, "All", btnX + 3, y + 2, COLOR_TEXT);
-        btnX += allW + 2;
+        // Panel background with gradient
+        graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + panelH, 0xCC0A0A18);
 
-        // "MC" button for minecraft namespace
-        boolean mcActive = "minecraft".equals(selectedNamespace);
-        int mcColor = mcActive ? COLOR_FILTER_ACTIVE : COLOR_FILTER_INACTIVE;
-        int mcW = font.width("MC") + 6;
-        graphics.fill(btnX, y, btnX + mcW, y + btnH, mcColor);
-        graphics.drawString(font, "MC", btnX + 3, y + 2, COLOR_TEXT);
-        btnX += mcW + 2;
+        // Inner darker area for preview
+        int previewArea = panelTop + 22;
+        graphics.fill(panelLeft + 5, previewArea, panelLeft + panelW - 5, previewArea + 120, 0xFF050510);
 
-        // Mod count indicator
-        long modCount = availableNamespaces.stream().filter(ns -> !ns.equals("minecraft")).count();
-        if (modCount > 0) {
-            String modText = "+" + modCount + " mods";
-            graphics.drawString(font, "§7" + modText, btnX + 2, y + 2, COLOR_TEXT_DIM);
+        // Animated circular platform effect
+        int centerX = panelLeft + panelW / 2;
+        int platformY = previewArea + 110;
+        int platformRadius = 40;
+
+        // Platform glow
+        for (int r = platformRadius; r > platformRadius - 5; r--) {
+            int alpha = (int) ((1 - (platformRadius - r) / 5f) * (50 + glowPulse * 30));
+            int glowC = (alpha << 24) | (COLOR_GLOW_BLUE & 0x00FFFFFF);
+            graphics.fill(centerX - r, platformY - 3, centerX + r, platformY, glowC);
         }
 
-        // Tier filter (second row)
-        int tierY = y + btnH + 3;
-        int tierBtnW = 18;
-        int tierBtnX = x;
+        // Platform line
+        graphics.fill(centerX - platformRadius + 5, platformY - 1, centerX + platformRadius - 5, platformY, COLOR_GLOW_BLUE);
 
-        for (MobTier tier : MobTier.values()) {
-            boolean active = tier == selectedTierFilter;
-            int color = active ? getTierColor(tier) : COLOR_FILTER_INACTIVE;
+        AxiomRenderer.drawBorder(graphics, panelLeft, panelTop, panelW, panelH, 0xFF2A3A5A);
 
-            graphics.fill(tierBtnX, tierY, tierBtnX + tierBtnW, tierY + btnH, color);
-
-            // Tier initial
-            String initial = tier.name().substring(0, 1);
-            graphics.drawCenteredString(font, initial, tierBtnX + tierBtnW / 2, tierY + 2, COLOR_TEXT);
-
-            tierBtnX += tierBtnW + 1;
-        }
-    }
-
-    private void renderMobPreviewSection(GuiGraphics graphics, int mouseX, int mouseY) {
-        int previewX = panelX + 355;
-        int previewY = panelY + HEADER_HEIGHT + TAB_HEIGHT + 8;
-        int boxW = MOB_PREVIEW_SIZE + 50;
-        int boxH = MOB_PREVIEW_SIZE + 80;
-
-        // Preview box background
-        graphics.fill(previewX, previewY, previewX + boxW, previewY + boxH, 0xFF1A1A2A);
-        AxiomRenderer.drawBorder(graphics, previewX, previewY, boxW, boxH, UIConstants.Border.MUTED);
+        // Header
+        graphics.fill(panelLeft, panelTop, panelLeft + panelW, panelTop + 22, 0xFF151528);
+        graphics.drawString(f, "PREVIEW", panelLeft + 8, panelTop + 7, COLOR_GLOW_CYAN, false);
 
         // Smooth rotation
-        mobRotationY = Mth.lerp(0.1f, mobRotationY, targetMobRotationY);
+        mobRotationY = Mth.lerp(0.15f, mobRotationY, targetMobRotationY);
 
-        if (previewEntity != null && !filteredMobs.isEmpty() && selectedMobIndex < filteredMobs.size()) {
-            int centerX = previewX + boxW / 2;
-            int centerY = previewY + 85;
+        LivingEntity entity = previewEntity;
+        if (entity != null && !filteredMobs.isEmpty() && selectedMobIndex < filteredMobs.size()) {
+            int entityCenterY = previewArea + 85;
 
-            // Calculate scale based on mob size
-            float mobHeight = previewEntity.getBbHeight();
-            float mobWidth = previewEntity.getBbWidth();
+            // Calculate scale
+            float mobHeight = entity.getBbHeight();
+            float mobWidth = entity.getBbWidth();
             float maxDim = Math.max(mobHeight, mobWidth);
-            int scale = (int) Math.min(35, 70 / maxDim);
+            int scale = (int) Math.min(40, 80 / maxDim);
 
-            // Create rotation quaternion
-            Quaternionf rotation = new Quaternionf()
+            Quaternionf rotation = Objects.requireNonNull(new Quaternionf()
                     .rotateY((float) Math.toRadians(mobRotationY))
                     .rotateX((float) Math.toRadians(mobRotationX))
-                    .rotateZ((float) Math.PI);
+                    .rotateZ((float) Math.PI));
 
             try {
                 InventoryScreen.renderEntityInInventory(
-                        graphics, centerX, centerY, scale,
-                        new Vector3f(0, 0, 0), rotation, null, previewEntity
+                        graphics, centerX, entityCenterY, scale,
+                        new Vector3f(0, 0, 0), rotation, null, entity
                 );
             } catch (Exception e) {
-                graphics.drawCenteredString(font, "Preview", centerX, centerY - 20, COLOR_TEXT_DIM);
+                graphics.drawCenteredString(f, "[Preview Error]", centerX, entityCenterY - 20, COLOR_TEXT_DIM);
             }
 
-            // Mob info below preview
             EnduranceQuestRegistry.MobQuestConfig config = filteredMobs.get(selectedMobIndex);
 
-            // Name
-            graphics.drawCenteredString(font, config.displayName, previewX + boxW / 2, previewY + boxH - 70, COLOR_TEXT);
+            // Stats section
+            int statsY = previewArea + 125;
+
+            // Name with tier color
+            graphics.drawCenteredString(f, Objects.requireNonNull(config.displayName), centerX, statsY, getTierColor(config.tier));
 
             // Tier badge
-            String tierText = getTierDisplayName(config.tier);
-            int tierColor = getTierColor(config.tier);
-            graphics.drawCenteredString(font, tierText, previewX + boxW / 2, previewY + boxH - 58, tierColor);
+            String tierBadge = Objects.requireNonNull(getTierBadge(config.tier));
+            graphics.drawCenteredString(f, tierBadge, centerX, statsY + 12, getTierColor(config.tier));
 
-            // Preset type
-            graphics.drawCenteredString(font, "§7" + config.difficultyPreset.displayName,
-                    previewX + boxW / 2, previewY + boxH - 46, COLOR_TEXT_DIM);
+            // Stats grid
+            int statY = statsY + 28;
+            int col1 = panelLeft + 15;
+            int col2 = panelLeft + panelW / 2 + 5;
 
             // Base stats
-            int statsY = previewY + boxH - 32;
-            graphics.drawString(font, String.format("§cHP: %.0f", config.baseHealth),
-                    previewX + 8, statsY, COLOR_TEXT);
-            graphics.drawString(font, String.format("§6DMG: %.0f", config.baseDamage),
-                    previewX + 8, statsY + 10, COLOR_TEXT);
+            graphics.drawString(f, "HP", col1, statY, 0xFFFF6666, false);
+            graphics.drawString(f, String.format("%.0f", config.baseHealth), col1 + 25, statY, COLOR_TEXT_WHITE, false);
 
-            // Scaled stats (for current party)
+            graphics.drawString(f, "DMG", col2, statY, 0xFFFFAA00, false);
+            graphics.drawString(f, String.format("%.0f", config.baseDamage), col2 + 30, statY, COLOR_TEXT_WHITE, false);
+
+            // Scaled stats
+            statY += 14;
             int playerCount = Math.max(1, members.size());
             float scaledHP = config.getScaledHealth(playerCount, questType);
             float scaledDMG = config.getScaledDamage(playerCount);
-            graphics.drawString(font, String.format("§7→ %.0f", scaledHP),
-                    previewX + boxW - 45, statsY, COLOR_TEXT_DIM);
-            graphics.drawString(font, String.format("§7→ %.0f", scaledDMG),
-                    previewX + boxW - 45, statsY + 10, COLOR_TEXT_DIM);
+
+            graphics.drawString(f, "Scaled", col1, statY, COLOR_TEXT_DIM, false);
+            graphics.drawString(f, String.format("%.0f", scaledHP), col1 + 40, statY, COLOR_READY, false);
+            graphics.drawString(f, String.format("%.0f", scaledDMG), col2 + 30, statY, 0xFFFFFF00, false);
+
+            // Points
+            statY += 14;
+            graphics.drawString(f, "Points/Kill: " + config.pointsPerKill, col1, statY, COLOR_TEXT_GRAY, false);
 
         } else {
-            graphics.drawCenteredString(font, "No Preview", previewX + boxW / 2, previewY + boxH / 2, COLOR_TEXT_DIM);
+            graphics.drawCenteredString(f, "Select an enemy", centerX, previewArea + 60, COLOR_TEXT_DIM);
         }
 
         // Drag hint
-        boolean hovering = mouseX >= previewX && mouseX < previewX + boxW &&
-                mouseY >= previewY && mouseY < previewY + boxH - 70;
+        boolean hovering = mouseX >= panelLeft + 5 && mouseX < panelLeft + panelW - 5 &&
+                mouseY >= previewArea && mouseY < previewArea + 120;
         if (hovering && !isDraggingPreview) {
-            graphics.drawString(font, "§8Drag to rotate", previewX + 4, previewY + 4, COLOR_TEXT_DIM);
+            graphics.drawString(f, "[Drag to rotate]", panelLeft + 8, previewArea + 4, 0x60FFFFFF, false);
         }
     }
 
-    private void renderWavePreview(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderWaveStatsBar(GuiGraphics graphics, int mouseX, int mouseY) {
         if (filteredMobs.isEmpty() || selectedMobIndex >= filteredMobs.size()) return;
 
-        int previewY = panelY + PANEL_HEIGHT - 90;
-        int previewX = panelX + 15;
+        int barY = panelY + PANEL_HEIGHT - 85;
+        int barX = panelX + 15;
+        int barW = PANEL_WIDTH - 30;
+        net.minecraft.client.gui.Font f = getFont();
 
-        // Separator line
-        graphics.fill(panelX + 10, previewY - 5, panelX + PANEL_WIDTH - 10, previewY - 4, 0xFF333344);
+        // Separator
+        graphics.fill(barX, barY - 5, barX + barW, barY - 3, 0xFF2A3A5A);
 
-        // Title with wave slider
-        graphics.drawString(font, "§lWave Preview", previewX, previewY, COLOR_TEXT);
+        // Wave slider section
+        graphics.drawString(f, "> WAVE PREVIEW", barX, barY, COLOR_TEXT_DIM, false);
 
-        // Wave slider
-        int sliderX = previewX + 90;
-        int sliderY = previewY;
-        int sliderW = 120;
-        int sliderH = 10;
+        // Slider
+        int sliderX = barX + 100;
+        int sliderW = 150;
+        int sliderY = barY;
 
         // Slider background
-        graphics.fill(sliderX, sliderY, sliderX + sliderW, sliderY + sliderH, 0xFF333344);
+        graphics.fill(sliderX, sliderY + 2, sliderX + sliderW, sliderY + 10, 0xFF151525);
+        AxiomRenderer.drawBorder(graphics, sliderX, sliderY + 2, sliderW, 8, 0xFF2A3A5A);
 
-        // Slider filled portion
+        // Slider fill
         float progress = (previewWaveNumber - 1) / (float) (MAX_PREVIEW_WAVE - 1);
         int fillW = (int) (sliderW * progress);
-        graphics.fill(sliderX, sliderY, sliderX + fillW, sliderY + sliderH, COLOR_TAB_ACTIVE);
+        graphics.fill(sliderX + 1, sliderY + 3, sliderX + fillW, sliderY + 9, COLOR_GLOW_BLUE);
 
         // Wave number
-        String waveText = "Wave " + previewWaveNumber;
-        graphics.drawString(font, waveText, sliderX + sliderW + 5, sliderY, COLOR_TEXT);
+        graphics.drawString(f, "Wave " + previewWaveNumber, sliderX + sliderW + 10, sliderY, COLOR_TEXT_WHITE, false);
 
-        previewY += 16;
-
+        // Stats row
+        int statsY = barY + 16;
         EnduranceQuestRegistry.MobQuestConfig config = filteredMobs.get(selectedMobIndex);
         int playerCount = Math.max(1, members.size());
 
-        // Stats for selected wave
         int mobCount = config.getMobCountForWave(previewWaveNumber, playerCount, questType);
         float scaledHP = config.getScaledHealth(playerCount, questType);
         float scaledDMG = config.getScaledDamage(playerCount);
-
-        // Calculate wave multiplier
         float waveMultiplier = 1.0f + (previewWaveNumber - 1) * 0.05f;
 
-        // Row 1: Counts
-        int col1 = previewX;
-        int col2 = previewX + 130;
-        int col3 = previewX + 260;
-        int col4 = previewX + 390;
-
-        graphics.drawString(font, String.format("§7Mobs: §f%d", mobCount), col1, previewY, COLOR_TEXT);
-        graphics.drawString(font, String.format("§7HP: §c%.0f", scaledHP * waveMultiplier), col2, previewY, COLOR_TEXT);
-        graphics.drawString(font, String.format("§7DMG: §6%.0f", scaledDMG * waveMultiplier), col3, previewY, COLOR_TEXT);
-        graphics.drawString(font, String.format("§7Difficulty: §e%.2fx", questType.difficultyMultiplier * waveMultiplier), col4, previewY, COLOR_TEXT);
-
-        previewY += 12;
-
-        // Row 2: Points and Elite
-        int pointsPerWave = mobCount * config.pointsPerKill + config.bonusPointsForWaveClear;
-        graphics.drawString(font, String.format("§7Points/Kill: §e%d", config.pointsPerKill), col1, previewY, COLOR_TEXT);
-        graphics.drawString(font, String.format("§7Wave Total: §e%d", pointsPerWave), col2, previewY, COLOR_TEXT);
-        graphics.drawString(font, String.format("§7Elite%%: §c%.0f%%", config.eliteChance * 100), col3, previewY, COLOR_TEXT);
-        graphics.drawString(font, String.format("§7Players: §b%d", playerCount), col4, previewY, COLOR_TEXT);
+        // Stats with labels
+        int col = barX;
+        graphics.drawString(f, "Mobs: " + mobCount, col, statsY, COLOR_TEXT_WHITE, false);
+        col += 80;
+        graphics.drawString(f, String.format("HP: %.0f", scaledHP * waveMultiplier), col, statsY, 0xFFFF6666, false);
+        col += 90;
+        graphics.drawString(f, String.format("DMG: %.0f", scaledDMG * waveMultiplier), col, statsY, 0xFFFFAA00, false);
+        col += 90;
+        graphics.drawString(f, String.format("Points: %d", mobCount * config.pointsPerKill), col, statsY, 0xFFFFFF00, false);
+        col += 100;
+        graphics.drawString(f, String.format("Difficulty: %.1fx", questType.difficultyMultiplier * waveMultiplier), col, statsY, 0xFFAA66FF, false);
     }
 
-    private String getPresetIcon(MobDifficultyPreset preset) {
+    private void renderNoPartyState(GuiGraphics graphics) {
+        int centerX = panelX + PANEL_WIDTH / 2;
+        int centerY = panelY + PANEL_HEIGHT / 2;
+        net.minecraft.client.gui.Font f = getFont();
+
+        // Clear title
+        String noParty = "NO ACTIVE PARTY";
+
+        // Glow effect
+        int glowAlpha = (int) (glowPulse * 80);
+        graphics.drawString(f, noParty, centerX - f.width(noParty) / 2 - 1, centerY - 70, (glowAlpha << 24) | (COLOR_GLOW_CYAN & 0x00FFFFFF), false);
+        graphics.drawString(f, noParty, centerX - f.width(noParty) / 2 + 1, centerY - 70, (glowAlpha << 24) | (COLOR_GLOW_CYAN & 0x00FFFFFF), false);
+
+        graphics.drawCenteredString(f, noParty, centerX, centerY - 70, COLOR_GLOW_CYAN);
+
+        // Clear instructions
+        graphics.drawCenteredString(f, "Click CREATE PARTY to start a new group,", centerX, centerY - 45, COLOR_TEXT_WHITE);
+        graphics.drawCenteredString(f, "then invite other players to join you.", centerX, centerY - 30, COLOR_TEXT_GRAY);
+
+        // Decorative line
+        int lineW = 140;
+        graphics.fill(centerX - lineW, centerY - 15, centerX + lineW, centerY - 14, 0xFF2A3A5A);
+        graphics.fill(centerX - 40, centerY - 15, centerX + 40, centerY - 14, COLOR_GLOW_BLUE);
+
+        // Or wait for invite
+        graphics.drawCenteredString(f, "- OR -", centerX, centerY, COLOR_TEXT_DIM);
+        graphics.drawCenteredString(f, "Wait for another player to invite you.", centerX, centerY + 15, COLOR_TEXT_GRAY);
+        graphics.drawCenteredString(f, "Invites will appear as a popup notification.", centerX, centerY + 30, COLOR_TEXT_DIM);
+    }
+
+    private String getPresetSymbol(MobDifficultyPreset preset) {
         return switch (preset) {
-            case SWARM -> "S";
-            case STANDARD -> "=";
-            case TANK -> "T";
-            case GLASS_CANNON -> "G";
-            case BOSS_STYLE -> "B";
+            case SWARM -> "[Swarm]";
+            case STANDARD -> "[Standard]";
+            case TANK -> "[Tank]";
+            case GLASS_CANNON -> "[Glass]";
+            case BOSS_STYLE -> "[Boss]";
         };
     }
 
     private int getTierColor(MobTier tier) {
         return switch (tier) {
-            case TRIVIAL -> 0xFF888888;
+            case TRIVIAL -> 0xFF666666;
             case EASY -> 0xFF55FF55;
             case MEDIUM -> 0xFFFFFF55;
             case HARD -> 0xFFFF8800;
             case ELITE -> 0xFFFF5555;
-            case BOSS -> 0xFFAA00AA;
+            case BOSS -> 0xFFAA00FF;
         };
     }
 
-    private String getTierDisplayName(MobTier tier) {
+    private String getTierBadge(MobTier tier) {
         return switch (tier) {
-            case TRIVIAL -> "§7★ Trivial";
-            case EASY -> "§a★★ Easy";
-            case MEDIUM -> "§e★★★ Medium";
-            case HARD -> "§6★★★★ Hard";
-            case ELITE -> "§c★★★★★ Elite";
-            case BOSS -> "§5💀 Boss";
+            case TRIVIAL -> "* Trivial";
+            case EASY -> "** Easy";
+            case MEDIUM -> "*** Medium";
+            case HARD -> "**** Hard";
+            case ELITE -> "***** Elite";
+            case BOSS -> "BOSS";
         };
     }
 
-    // === Button Handlers ===
+    // === EVENT HANDLERS ===
 
     private void onInviteClicked(Button button) {
         String playerName = inviteBox.getValue().trim();
         if (playerName.isEmpty()) return;
 
         LOGGER.info("[PartyScreen] Sending invite to: {}", playerName);
-        PacketDistributor.sendToServer(NamedInvitePayload.create(playerName, questType));
+        PacketDistributor.sendToServer(Objects.requireNonNull(NamedInvitePayload.create(playerName, questType)));
         inviteBox.setValue("");
         UIConstants.Sound.success();
     }
@@ -843,14 +1024,14 @@ public class PartyScreen extends Screen {
     private void onReadyClicked(Button button) {
         isReady = !isReady;
         ClientPartyCache.setLocalPlayerReady(isReady);
-        PacketDistributor.sendToServer(PartyActionPayload.toggleReady());
+        PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.toggleReady()));
         updateButtonStates();
         UIConstants.Sound.toggleOn();
     }
 
     private void onLeaveClicked(Button button) {
         LOGGER.info("[PartyScreen] Leaving party");
-        PacketDistributor.sendToServer(PartyActionPayload.leaveParty());
+        PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.leaveParty()));
         onClose();
         UIConstants.Sound.click();
     }
@@ -863,21 +1044,21 @@ public class PartyScreen extends Screen {
 
         LOGGER.info("[PartyScreen] Starting quest with {} players, mob: {}",
                 members.size(), getSelectedMobId());
-        PacketDistributor.sendToServer(PartyActionPayload.startQuest());
+        PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.startQuest()));
         onClose();
         UIConstants.Sound.success();
     }
 
     private void onDisbandClicked(Button button) {
         LOGGER.info("[PartyScreen] Disbanding party");
-        PacketDistributor.sendToServer(PartyActionPayload.disbandParty());
+        PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.disbandParty()));
         onClose();
         UIConstants.Sound.warning();
     }
 
     private void onCreatePartyClicked(Button button) {
         LOGGER.info("[PartyScreen] Creating party with type: {}", questType);
-        PacketDistributor.sendToServer(PartyActionPayload.createParty(questType));
+        PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.createParty(questType)));
         isInParty = true;
         isLeader = true;
         updateButtonStates();
@@ -892,101 +1073,81 @@ public class PartyScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // Check quest type tab clicks
-        int tabY = panelY + HEADER_HEIGHT;
-        int tabWidth = PANEL_WIDTH / 3;
-
-        if (mouseY >= tabY && mouseY < tabY + TAB_HEIGHT && isLeader && isInParty) {
-            for (int i = 0; i < QuestType.values().length; i++) {
-                int tabX = panelX + i * tabWidth;
-                if (mouseX >= tabX && mouseX < tabX + tabWidth) {
-                    questType = QuestType.values()[i];
-                    ClientPartyCache.setQuestType(questType);
-                    PacketDistributor.sendToServer(PartyActionPayload.setQuestType(questType));
-                    UIConstants.Sound.click();
-                    updateButtonStates();
-                    return true;
-                }
-            }
+        // Quest type tabs
+        if (isInParty && isLeader && hoveredQuestTab >= 0 && hoveredQuestTab < QuestType.values().length) {
+            questType = QuestType.values()[hoveredQuestTab];
+            ClientPartyCache.setQuestType(questType);
+            PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.setQuestType(questType)));
+            UIConstants.Sound.click();
+            updateButtonStates();
+            return true;
         }
 
-        // Check filter clicks
+        // Namespace filter clicks
         if (isInParty) {
-            int filterX = panelX + 205;
-            int filterY = panelY + HEADER_HEIGHT + TAB_HEIGHT + 34;
+            int nsFilterY = panelY + 80 + 28 + 25;
+            int nsBtnX = panelX + 230;
 
             // "All" button
-            int allW = font.width("All") + 6;
-            if (mouseX >= filterX && mouseX < filterX + allW &&
-                    mouseY >= filterY && mouseY < filterY + 12) {
+            int allW = 28;
+            if (mouseX >= nsBtnX && mouseX < nsBtnX + allW &&
+                mouseY >= nsFilterY && mouseY < nsFilterY + 12) {
                 selectedNamespace = null;
                 filterMobs();
                 UIConstants.Sound.click();
                 return true;
             }
+            nsBtnX += allW + 2;
 
             // "MC" button
-            int mcX = filterX + allW + 2;
-            int mcW = font.width("MC") + 6;
-            if (mouseX >= mcX && mouseX < mcX + mcW &&
-                    mouseY >= filterY && mouseY < filterY + 12) {
+            int mcW = 24;
+            if (mouseX >= nsBtnX && mouseX < nsBtnX + mcW &&
+                mouseY >= nsFilterY && mouseY < nsFilterY + 12) {
                 selectedNamespace = "minecraft".equals(selectedNamespace) ? null : "minecraft";
                 filterMobs();
                 UIConstants.Sound.click();
                 return true;
             }
+        }
 
-            // Tier filter buttons
-            int tierY = filterY + 15;
-            int tierBtnW = 18;
-            int tierBtnX = filterX;
+        // Tier filter clicks
+        if (isInParty) {
+            int filterY = panelY + 80 + 28 + 25 + 16;
+            int btnW = 22;
+            int btnX = panelX + 230;
+
             for (MobTier tier : MobTier.values()) {
-                if (mouseX >= tierBtnX && mouseX < tierBtnX + tierBtnW &&
-                        mouseY >= tierY && mouseY < tierY + 12) {
+                if (mouseX >= btnX && mouseX < btnX + btnW &&
+                    mouseY >= filterY && mouseY < filterY + 14) {
                     selectedTierFilter = (tier == selectedTierFilter) ? null : tier;
                     filterMobs();
                     UIConstants.Sound.click();
                     return true;
                 }
-                tierBtnX += tierBtnW + 1;
+                btnX += btnW + 2;
             }
         }
 
-        // Check mob list clicks
-        if (isInParty && isLeader) {
-            int sectionX = panelX + 205;
-            int listY = panelY + HEADER_HEIGHT + TAB_HEIGHT + 56;
-
-            if (mouseX >= sectionX && mouseX < sectionX + MOB_LIST_WIDTH) {
-                for (int i = 0; i < MAX_VISIBLE_MOBS; i++) {
-                    int rowY = listY + i * 18;
-                    if (mouseY >= rowY && mouseY < rowY + 18) {
-                        int mobIndex = mobListScrollOffset + i;
-                        if (mobIndex < filteredMobs.size()) {
-                            selectedMobIndex = mobIndex;
-                            updatePreviewEntity();
-
-                            ResourceLocation mobId = getSelectedMobId();
-                            if (mobId != null) {
-                                PacketDistributor.sendToServer(PartyActionPayload.setMobType(mobId));
-                            }
-
-                            UIConstants.Sound.click();
-                            return true;
-                        }
-                    }
-                }
+        // Mob list clicks
+        if (isInParty && isLeader && hoveredMobIndex >= 0 && hoveredMobIndex < filteredMobs.size()) {
+            selectedMobIndex = hoveredMobIndex;
+            updatePreviewEntity();
+            ResourceLocation mobId = getSelectedMobId();
+            if (mobId != null) {
+                PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.setMobType(mobId)));
             }
+            UIConstants.Sound.click();
+            return true;
         }
 
         // Wave slider
         if (isInParty) {
-            int sliderX = panelX + 105;
-            int sliderY = panelY + PANEL_HEIGHT - 90;
-            int sliderW = 120;
+            int sliderX = panelX + 115;
+            int sliderY = panelY + PANEL_HEIGHT - 85;
+            int sliderW = 150;
 
             if (mouseX >= sliderX && mouseX < sliderX + sliderW &&
-                    mouseY >= sliderY && mouseY < sliderY + 12) {
+                    mouseY >= sliderY && mouseY < sliderY + 14) {
                 float progress = (float) (mouseX - sliderX) / sliderW;
                 previewWaveNumber = 1 + (int) (progress * (MAX_PREVIEW_WAVE - 1));
                 previewWaveNumber = Mth.clamp(previewWaveNumber, 1, MAX_PREVIEW_WAVE);
@@ -994,11 +1155,11 @@ public class PartyScreen extends Screen {
             }
         }
 
-        // Check 3D preview drag start
-        int previewX = panelX + 355;
-        int previewY = panelY + HEADER_HEIGHT + TAB_HEIGHT + 8;
-        int boxW = MOB_PREVIEW_SIZE + 50;
-        int boxH = MOB_PREVIEW_SIZE + 10;
+        // 3D Preview drag
+        int previewX = panelX + 400;
+        int previewY = panelY + 102;
+        int boxW = 180;
+        int boxH = 120;
 
         if (mouseX >= previewX && mouseX < previewX + boxW &&
                 mouseY >= previewY && mouseY < previewY + boxH) {
@@ -1010,17 +1171,12 @@ public class PartyScreen extends Screen {
             return true;
         }
 
-        // Check member selection for kick
-        if (hoveredMemberIndex >= 0 && hoveredMemberIndex < members.size() && isLeader) {
+        // Member kick
+        if (hoveredMemberIndex >= 0 && hoveredMemberIndex < members.size() && isLeader && button == 1) {
             PartySyncPayload.PartyMemberInfo member = members.get(hoveredMemberIndex);
             if (!member.playerId().equals(leaderId)) {
-                selectedMemberId = member.playerId();
-                if (button == 1) {
-                    PacketDistributor.sendToServer(PartyActionPayload.kickMember(selectedMemberId));
-                    UIConstants.Sound.warning();
-                    return true;
-                }
-                UIConstants.Sound.click();
+                PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.kickMember(member.playerId())));
+                UIConstants.Sound.warning();
                 return true;
             }
         }
@@ -1045,12 +1201,12 @@ public class PartyScreen extends Screen {
         }
 
         // Wave slider drag
-        int sliderX = panelX + 105;
-        int sliderY = panelY + PANEL_HEIGHT - 90;
-        int sliderW = 120;
+        int sliderX = panelX + 115;
+        int sliderY = panelY + PANEL_HEIGHT - 85;
+        int sliderW = 150;
 
         if (mouseX >= sliderX - 10 && mouseX < sliderX + sliderW + 10 &&
-                mouseY >= sliderY - 5 && mouseY < sliderY + 17) {
+                mouseY >= sliderY - 5 && mouseY < sliderY + 20) {
             float progress = (float) (mouseX - sliderX) / sliderW;
             previewWaveNumber = 1 + (int) (progress * (MAX_PREVIEW_WAVE - 1));
             previewWaveNumber = Mth.clamp(previewWaveNumber, 1, MAX_PREVIEW_WAVE);
@@ -1062,13 +1218,13 @@ public class PartyScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        // Scroll mob list
-        int sectionX = panelX + 205;
-        int listY = panelY + HEADER_HEIGHT + TAB_HEIGHT + 56;
-        int listHeight = MAX_VISIBLE_MOBS * 18;
+        int listX = panelX + 230;
+        int listY = panelY + 80 + 28 + 25 + 16 + 18; // searchY + nsFilterY offset + tierFilterY offset + listOffset
+        int listW = 150;
+        int listH = MAX_VISIBLE_MOBS * 26;
 
-        if (mouseX >= sectionX && mouseX < sectionX + MOB_LIST_WIDTH &&
-                mouseY >= listY && mouseY < listY + listHeight) {
+        if (mouseX >= listX && mouseX < listX + listW &&
+                mouseY >= listY && mouseY < listY + listH) {
             int maxScroll = Math.max(0, filteredMobs.size() - MAX_VISIBLE_MOBS);
             mobListScrollOffset = Mth.clamp(mobListScrollOffset - (int) verticalAmount, 0, maxScroll);
             return true;

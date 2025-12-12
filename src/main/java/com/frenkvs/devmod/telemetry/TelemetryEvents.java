@@ -2,6 +2,7 @@ package com.frenkvs.devmod.telemetry;
 
 import com.frenkvs.devmod.Config;
 import com.frenkvs.devmod.DevMod;
+import com.frenkvs.devmod.telemetry.player.PlayerAttributeTelemetryService;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
@@ -49,6 +50,9 @@ public class TelemetryEvents {
         // Clear deferred processor queue
         DeferredEntityProcessor.INSTANCE.clear();
 
+        // Flush heatmap data to DuckDB before shutdown
+        com.frenkvs.devmod.telemetry.spatial.HeatmapService.INSTANCE.shutdown();
+
         // PERFORMANCE FIX: Gracefully shutdown async telemetry writer
         // Ensures all pending writes are flushed before server shutdown
         TelemetryService.INSTANCE.shutdown();
@@ -80,6 +84,9 @@ public class TelemetryEvents {
             }
             TelemetryService.INSTANCE.tickSkills(System.currentTimeMillis());
 
+            // P2-A: Tick heatmap service for periodic DuckDB flush (every 60s)
+            com.frenkvs.devmod.telemetry.spatial.HeatmapService.INSTANCE.tick();
+
             // WORKAROUND: Track players via ServerTick instead of PlayerTick
             // This avoids the PlayerTickEvent registration issue
             for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
@@ -99,6 +106,8 @@ public class TelemetryEvents {
                     // M47: Track backtracking
                     com.frenkvs.devmod.telemetry.spatial.BacktrackingService.INSTANCE
                         .recordPosition(player.getUUID(), roomId, player.position());
+                    // Player attribute telemetry (health, hunger, combat stats, etc.)
+                    PlayerAttributeTelemetryService.INSTANCE.tick(player);
                 }
             }
         }
@@ -107,6 +116,7 @@ public class TelemetryEvents {
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         TelemetryReloadCommand.register(event.getDispatcher());
+        com.frenkvs.devmod.telemetry.dungeon.DungeonCommand.register(event.getDispatcher());
     }
 
     // NOTE: Server-side PlayerTickEvent is not available in NeoForge.
@@ -142,6 +152,12 @@ public class TelemetryEvents {
         // MODDED COMPATIBILITY: Log even if event is canceled (Better Combat, other combat mods)
         // This ensures we don't lose telemetry data when mods cancel events
         TelemetryService.INSTANCE.logHit(target.level(), attacker, target, source, event.getAmount(), hpBefore, hpAfter, part, distance, armorPenBonus);
+
+        // Player attribute telemetry: record health change
+        if (target instanceof ServerPlayer player) {
+            PlayerAttributeTelemetryService.INSTANCE.recordHealthChange(
+                player, (float) hpBefore, (float) hpAfter, source.getMsgId());
+        }
 
         // M41: Track damage for dungeon runs
         if (target instanceof ServerPlayer player) {
@@ -195,6 +211,13 @@ public class TelemetryEvents {
             }
         }
         TelemetryService.INSTANCE.logHeal(entity.level(), entity, event.getAmount(), source);
+
+        // Player attribute telemetry: record health change from heal
+        if (entity instanceof ServerPlayer player) {
+            float hpBefore = player.getHealth();
+            float hpAfter = Math.min(player.getMaxHealth(), hpBefore + event.getAmount());
+            PlayerAttributeTelemetryService.INSTANCE.recordHealthChange(player, hpBefore, hpAfter, "heal_" + source);
+        }
 
         // Mark regeneration/healing effects as "hit" (they successfully healed)
         for (var effect : entity.getActiveEffects()) {

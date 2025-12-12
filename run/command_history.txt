@@ -1,50 +1,50 @@
-/time set night
+/damage @p 1
+/effect give @p minecraft:hunger 10 1
+/summon zombie ~ ~ ~
+/summon skeleton ~ ~ ~
 /gamemode survival
-/gamemode c
+/effect give @p minecraft:hunger 10 1
+/damage @p 1
+/gamemode creative
+/summon zombie ~ ~ ~
+/effect give @s minecraft:strength 10 1
+/summon zombie ~ ~ ~
+/damage @p 1
+/gamemode survival
+/damage @p 1
+/summon zombie ~ ~ ~
 /gamemode creative
 /gamemode survival
 /gamemode creative
-/kill all
-/kill @a
-/kill @e
+/summon minecraft:villager
+/summon zombie ~ ~ ~
 /gamemode survival
+/summon minecraft:villager
 /gamemode creative
 /gamemode survival
 /gamemode creative
+/give deve minecraft:barrier
+/give dev minecraft:barrier
 /time set night
-/time set noon
-/effect give Dev minecraft:night_vision infinite 9 true
-/time set night
-/gamerule doWeatherCycle false
-/weather clear
-/time set night
-/gamerule doWeatherCycle false
-/gamerule doMobSpawning false
-/time set night
-/kill @a
-/kill @
-/kill @e
-/effect give Dev minecraft:night_vision infinite 9 true
-/time set night
-/time set noon
-/time set night
-/devtest
-/devtest info
-/devtest debug
-/devtest debugbox 100
-/devtest debugbox 10
-/devtest hud toggle
-/give @p bow
-/time set day
-/devtest qa
-/effect give @e minecraft:glowing infinite
-/tp @e
-/tp @e Dev
 /gamemode survival
 /gamemode creative
-/devdebug entity_brains
-/devdebug entity_pathing
+/gamemode survival
+/time set night
+/gamemode creative
+/gamemode survival
+/locate structure minecraft:mineshaft_mesa
+/locate structure minecraft:mineshaft
+/tp @s 128 ~ -80
+/gamemode creative
 /gamemode survival
 /gamemode creative
-/devdebug entity_goals
-/tp @e Dev
+/gamemode survival
+/devmod dungeon start test_castle
+/devmod dungeon end DEATH 5 1 2
+/devmod dungeon start test_castle
+/devmod dungeon end DEATH 5 1 2
+/devmod dungeon start test_castle
+/devmod dungeon end DEATH 5 1 2
+/gamemode creative
+/devmod dungeon start test_castle
+/devmod dungeon end DEATH 5 1 2

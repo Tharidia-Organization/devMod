@@ -109,6 +109,9 @@ public class DevMod {
         event.register(Objects.requireNonNull(KeyInputHandler.OPEN_RADIAL_MENU_KEY));
         event.register(Objects.requireNonNull(KeyInputHandler.INSPECT_MOB_KEY));
         event.register(Objects.requireNonNull(KeyInputHandler.TEST_SCREEN_SHAKE_KEY));
+        // Ability system keybinds
+        event.register(Objects.requireNonNull(KeyInputHandler.DASH_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.DODGE_KEY));
         LOGGER.info("[DevMod] All keybinds registered successfully");
     }
 }

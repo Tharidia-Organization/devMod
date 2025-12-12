@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.endurance;
 
+import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -157,11 +158,8 @@ public class BossWaveSystem {
 
         // Combat tracking
         private int ticksAlive = 0;
-        @SuppressWarnings("unused") // Reserved for end-of-fight statistics
-        private float totalDamageDealt = 0;
-        @SuppressWarnings("unused") // Reserved for end-of-fight statistics
-        private float totalDamageTaken = 0;
-        @SuppressWarnings("unused") // Reserved for end-of-fight statistics
+        private float totalDamageDealt = 0; // Damage dealt to players by this boss
+        private float totalDamageTaken = 0; // Damage taken by this boss
         private int abilitiesUsed = 0;
 
         // Rewards
@@ -241,8 +239,9 @@ public class BossWaveSystem {
             this.isEnraged = enraged;
         }
 
-        public void onPlayerDamaged() {
+        public void onPlayerDamaged(float damage) {
             perfectFight = false;
+            totalDamageDealt += damage;
         }
 
         private void checkPhaseTransition() {
@@ -348,6 +347,11 @@ public class BossWaveSystem {
 
             // Announce boss
             announceBoss(level, center, archetype, waveNumber);
+
+            // Telemetry: record boss wave start
+            EnduranceTelemetryService.INSTANCE.recordBossWaveStart(
+                quest.getQuestId(), waveNumber, archetype.name(), boss.getMaxHealth(), playerCount
+            );
 
             LOGGER.info("[BossWave] Started boss wave {} with {} archetype (players={}, type={})",
                 waveNumber, archetype, playerCount, questType);
@@ -487,8 +491,15 @@ public class BossWaveSystem {
 
                 fight.bonusPoints = baseBonus + phaseBonus + perfectBonus + speedBonus;
 
-                LOGGER.info("[BossWave] Boss defeated! Bonus: {} (perfect: {}, speed: {})",
-                    fight.bonusPoints, fight.perfectFight, fight.ticksAlive < 1200);
+                // Telemetry: record boss defeated
+                long fightDurationMs = (long) fight.ticksAlive * 50; // 20 ticks/second = 50ms/tick
+                EnduranceTelemetryService.INSTANCE.recordBossDefeated(
+                    fight.arenaId, fight.waveNumber, fight.archetype.name(),
+                    fightDurationMs, fight.bonusPoints, fight.totalDamageTaken
+                );
+
+                LOGGER.info("[BossWave] Boss defeated! Bonus: {} (perfect: {}, speed: {}, abilities: {}, dmgDealt: {})",
+                    fight.bonusPoints, fight.perfectFight, fight.ticksAlive < 1200, fight.abilitiesUsed, fight.totalDamageDealt);
             }
         }
         return fight;
@@ -571,9 +582,14 @@ public class BossWaveSystem {
 
         LOGGER.debug("[BossWave] Boss using ability: {}", ability);
 
+        // Telemetry: record boss ability (playersHit and damage will be updated by specific abilities)
+        EnduranceTelemetryService.INSTANCE.recordBossAbility(
+            fight.arenaId, fight.archetype.name(), ability.displayName, 0, 0
+        );
+
         switch (ability) {
             case CHARGE -> executeCharge(boss, target, level);
-            case GROUND_SLAM -> executeGroundSlam(boss, target, level);
+            case GROUND_SLAM -> executeGroundSlam(fight, boss, target, level);
             case ENRAGE -> executeEnrage(fight, boss, level);
             case SUMMON_MINIONS -> executeSummonMinions(fight, boss, level);
             case BARRIER -> executeBarrier(fight, boss, level);
@@ -604,14 +620,16 @@ public class BossWaveSystem {
         level.playSound(null, pos, Objects.requireNonNull(SoundEvents.RAVAGER_ATTACK), SoundSource.HOSTILE, 1.0f, 1.0f);
     }
 
-    private void executeGroundSlam(Mob boss, ServerPlayer target, ServerLevel level) {
+    private void executeGroundSlam(BossFight fight, Mob boss, ServerPlayer target, ServerLevel level) {
         BlockPos pos = Objects.requireNonNull(boss.blockPosition());
+        float damage = 8.0f;
 
         // Damage nearby players
         AABB area = Objects.requireNonNull(new AABB(pos).inflate(5));
         for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, area)) {
-            player.hurt(Objects.requireNonNull(level.damageSources().mobAttack(boss)), 8.0f);
+            player.hurt(Objects.requireNonNull(level.damageSources().mobAttack(boss)), damage);
             player.knockback(1.5f, boss.getX() - player.getX(), boss.getZ() - player.getZ());
+            fight.onPlayerDamaged(damage);
         }
 
         // Particles

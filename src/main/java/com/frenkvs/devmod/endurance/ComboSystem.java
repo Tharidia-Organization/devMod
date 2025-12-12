@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.endurance;
 
+import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -243,9 +244,24 @@ public class ComboSystem {
             // Update rank
             StyleRank newRank = StyleRank.fromScore(styleScore);
             boolean rankUp = newRank.ordinal() > currentRank.ordinal();
+            StyleRank oldRank = currentRank;
             currentRank = newRank;
             if (newRank.ordinal() > highestRank.ordinal()) {
                 highestRank = newRank;
+            }
+
+            // Telemetry: record rank change
+            if (rankUp && questId != null) {
+                EnduranceTelemetryService.INSTANCE.recordStyleRankChange(
+                    playerId, questId, oldRank, newRank, styleScore, currentCombo
+                );
+            }
+
+            // Telemetry: record special actions
+            if (action.stylePoints >= 100 && questId != null) {
+                EnduranceTelemetryService.INSTANCE.recordSpecialAction(
+                    playerId, questId, action, basePoints, styleGain, currentCombo
+                );
             }
 
             // Track stats
@@ -317,6 +333,13 @@ public class ComboSystem {
                 if (currentRank.ordinal() < previousRank.ordinal()) {
                     pendingPreviousRank = previousRank;
                     pendingNewRank = currentRank;
+                }
+
+                // Telemetry: record combo break
+                if (questId != null && comboLost > 0) {
+                    EnduranceTelemetryService.INSTANCE.recordComboBreak(
+                        playerId, questId, comboLost, previousRank, currentRank, damage
+                    );
                 }
             }
         }
@@ -447,6 +470,13 @@ public class ComboSystem {
             currentRank = newRank;
             if (newRank.ordinal() > highestRank.ordinal()) {
                 highestRank = newRank;
+            }
+
+            // Telemetry: record combo milestone
+            if (questId != null) {
+                EnduranceTelemetryService.INSTANCE.recordComboMilestone(
+                    playerId, questId, currentCombo, styleGain, currentRank
+                );
             }
 
             // Create announcement

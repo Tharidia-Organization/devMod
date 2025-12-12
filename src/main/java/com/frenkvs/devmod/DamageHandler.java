@@ -10,12 +10,16 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.tags.DamageTypeTags;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.minecraft.world.damagesource.DamageTypes;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.item.MaceItem;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
@@ -109,8 +113,22 @@ public class DamageHandler {
                 newDamage += armorPenBonus;
             }
 
-            // Store body part AND armor pen bonus in context for telemetry
+            // 5b. Custom Armor Reduction (DevMod ArmorStats)
+            // Applied AFTER weapon stats, BEFORE final damage
+            float armorReduction = 0f;
+            if (victim instanceof Player playerVictim) {
+                armorReduction = calculateCustomArmorReduction(playerVictim, event.getSource());
+                if (armorReduction > 0) {
+                    float reducedDamage = newDamage * (1.0f - armorReduction);
+                    LOGGER.debug("Armor reduction: {}% -> damage {} -> {}",
+                        (int)(armorReduction * 100), newDamage, reducedDamage);
+                    newDamage = reducedDamage;
+                }
+            }
+
+            // Store body part, armor pen bonus, AND armor reduction in context for telemetry
             HitContext.store(victim, part, isRanged, armorPenBonus);
+            HitContext.storeArmorReduction(victim, armorReduction);
 
             // 6. Apply
             event.setAmount(newDamage);
@@ -184,6 +202,42 @@ public class DamageHandler {
         if (color == 0xFF5555) return 'c';
         if (color == 0x55FFFF) return 'b';
         return 'a';
+    }
+
+    /**
+     * Calculates custom armor reduction from DevMod ArmorStats.
+     * Sums reduction from all equipped armor pieces, capped at 80%.
+     *
+     * @param player The player taking damage
+     * @param source The damage source
+     * @return Total reduction percentage (0.0 - 0.8)
+     */
+    private static float calculateCustomArmorReduction(Player player, DamageSource source) {
+        float totalReduction = 0f;
+
+        // Determine damage type flags
+        boolean isFire = source.is(Objects.requireNonNull(DamageTypeTags.IS_FIRE));
+        boolean isExplosion = source.is(Objects.requireNonNull(DamageTypeTags.IS_EXPLOSION));
+        boolean isProjectile = source.is(Objects.requireNonNull(DamageTypeTags.IS_PROJECTILE));
+        boolean isMagic = source.is(Objects.requireNonNull(DamageTypeTags.WITCH_RESISTANT_TO)); // Magic damage type
+        boolean isPhysical = !isFire && !isExplosion && !isMagic; // Default to physical
+
+        // Sum reductions from all armor slots
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
+            if (slot.getType() != EquipmentSlot.Type.HUMANOID_ARMOR) continue;
+
+            ItemStack armor = player.getItemBySlot(slot);
+            if (armor.isEmpty() || !(armor.getItem() instanceof ArmorItem)) continue;
+
+            ArmorStats stats = ArmorConfigManager.getStats(armor);
+            if (stats.isDefault()) continue; // Skip default stats (no custom config)
+
+            // Get reduction for this damage type
+            totalReduction += stats.getReductionFor(isPhysical, isFire, isMagic, isExplosion, isProjectile);
+        }
+
+        // Cap at 80% to prevent invincibility
+        return Math.min(totalReduction, 0.8f);
     }
 
     /**

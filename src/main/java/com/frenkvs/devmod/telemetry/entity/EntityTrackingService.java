@@ -124,22 +124,33 @@ public class EntityTrackingService {
 
     /**
      * Aggiorna lo stato di aggro di un mob.
-     * @return true se il mob ha perso l'aggro
+     * EDGE-BASED: fires only on transition hadTarget=true -> hasTarget=false
+     * with cooldown to prevent spam.
+     * @return true se il mob ha perso l'aggro (edge transition + cooldown passed)
      */
     public boolean checkAggroDrop(Mob mob) {
         UUID id = mob.getUUID();
         long now = System.currentTimeMillis();
         AggroTracker tracker = aggroTrackers.computeIfAbsent(id, k -> new AggroTracker());
 
-        if (mob.getTarget() != null) {
-            tracker.lastHadTargetMs = now;
+        boolean hasTarget = mob.getTarget() != null;
+
+        if (hasTarget) {
+            // Currently has target - update state
+            tracker.hadTarget = true;
             return false;
         }
 
-        if (now - tracker.lastHadTargetMs > aggroDropThresholdMs) {
-            // Reset to avoid spam
-            tracker.lastHadTargetMs = now;
-            return true;
+        // No target now - check for edge transition
+        if (tracker.hadTarget) {
+            // Edge: had target -> no target
+            tracker.hadTarget = false;
+
+            // Check cooldown (30s default via aggroDropThresholdMs, repurposed)
+            if (now - tracker.lastFiredMs > aggroDropThresholdMs) {
+                tracker.lastFiredMs = now;
+                return true;
+            }
         }
 
         return false;
@@ -339,7 +350,8 @@ public class EntityTrackingService {
     }
 
     private static class AggroTracker {
-        long lastHadTargetMs = System.currentTimeMillis();
+        long lastFiredMs = 0;  // Cooldown: when we last fired aggro_drop
+        boolean hadTarget = false;  // Edge detection: was targeting last check
     }
 
     /**

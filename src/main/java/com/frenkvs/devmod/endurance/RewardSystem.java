@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.endurance;
 
+import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.frenkvs.devmod.util.I18n;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -194,6 +195,11 @@ public class RewardSystem {
         // Award tokens
         wallet.addCurrency(Currency.TOKENS, finalTokens);
 
+        // Telemetry: record tokens earned
+        EnduranceTelemetryService.INSTANCE.recordCurrencyEarned(
+            playerId, quest.getQuestId(), Currency.TOKENS, finalTokens, "quest_completion"
+        );
+
         // Prestige for completing all waves
         if (quest.getState() == EnduranceQuestState.COMPLETED) {
             int prestigeEarned = quest.getTotalWaves() / 5;
@@ -202,6 +208,11 @@ public class RewardSystem {
             }
             wallet.addCurrency(Currency.PRESTIGE, prestigeEarned);
             rewards.prestigeEarned = prestigeEarned;
+
+            // Telemetry: record prestige earned
+            EnduranceTelemetryService.INSTANCE.recordCurrencyEarned(
+                playerId, quest.getQuestId(), Currency.PRESTIGE, prestigeEarned, "quest_completion"
+            );
         }
 
         // Blood gems from boss waves
@@ -210,6 +221,11 @@ public class RewardSystem {
             int bloodGems = bossWaves * (random.nextInt(3) + 1);
             wallet.addCurrency(Currency.BLOOD_GEMS, bloodGems);
             rewards.bloodGemsEarned = bloodGems;
+
+            // Telemetry: record blood gems earned
+            EnduranceTelemetryService.INSTANCE.recordCurrencyEarned(
+                playerId, quest.getQuestId(), Currency.BLOOD_GEMS, bloodGems, "boss_waves"
+            );
         }
 
         // Generate loot drops
@@ -254,6 +270,12 @@ public class RewardSystem {
             if (entry != null) {
                 ItemStack stack = entry.createStack(random);
                 drops.add(stack);
+
+                // Telemetry: record loot drop
+                String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+                EnduranceTelemetryService.INSTANCE.recordLootDrop(
+                    player.getUUID(), quest.getQuestId(), itemId, stack.getCount(), tier
+                );
             }
         }
 
@@ -264,7 +286,14 @@ public class RewardSystem {
                                  random.nextFloat() < 0.3f ? LootTier.EPIC : LootTier.RARE;
             LootEntry bonusEntry = rollLootEntry(bonusTier);
             if (bonusEntry != null) {
-                drops.add(bonusEntry.createStack(random));
+                ItemStack bonusStack = bonusEntry.createStack(random);
+                drops.add(bonusStack);
+
+                // Telemetry: record bonus loot drop
+                String bonusItemId = BuiltInRegistries.ITEM.getKey(bonusStack.getItem()).toString();
+                EnduranceTelemetryService.INSTANCE.recordLootDrop(
+                    player.getUUID(), quest.getQuestId(), bonusItemId, bonusStack.getCount(), bonusTier
+                );
             }
         }
 
@@ -440,6 +469,11 @@ public class RewardSystem {
             wallet.recordPurchase(itemId);
             savePlayerWallets();
 
+            // Telemetry: record shop purchase
+            EnduranceTelemetryService.INSTANCE.recordShopPurchase(
+                playerId, itemId, item.currency, item.price, wallet.getPurchaseCount(itemId)
+            );
+
             // Apply immediate effects
             applyPurchaseEffects(player, item);
 
@@ -536,6 +570,12 @@ public class RewardSystem {
                 wallet.unlockAchievement(achievement.id);
                 wallet.addCurrency(achievement.rewardCurrency, achievement.rewardAmount);
                 unlocked.add(achievement);
+
+                // Telemetry: record achievement unlocked
+                EnduranceTelemetryService.INSTANCE.recordAchievementUnlocked(
+                    player.getUUID(), quest.getQuestId(), achievement.id, achievement.displayName,
+                    achievement.rewardCurrency, achievement.rewardAmount
+                );
 
                 // Send achievement notification
                 player.sendSystemMessage(I18n.translate("devmod.reward.achievement_unlocked", achievement.displayName)

@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.endurance;
 
+import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.Level;
@@ -198,6 +199,8 @@ public class MutatorSystem {
         public boolean hasMirrorDamage() { return mirrorDamage; }
         public boolean hasLowGravity() { return lowGravity; }
         public boolean hasHighGravity() { return highGravity; }
+        public boolean isLowGravity() { return lowGravity; }
+        public boolean isHighGravity() { return highGravity; }
         public boolean isFastForward() { return fastForward; }
         public boolean isBulletHell() { return bulletHell; }
 
@@ -353,6 +356,15 @@ public class MutatorSystem {
         LOGGER.info("[MutatorSystem] Created session with {} mutators: {}",
             session.getActiveMutators().size(), session.getSummary());
 
+        // Telemetry: record mutators assigned
+        if (!session.getActiveMutators().isEmpty()) {
+            EnduranceTelemetryService.INSTANCE.recordMutatorsAssigned(
+                questId,
+                session.getActiveMutators(),
+                session.getTotalRewardMultiplier()
+            );
+        }
+
         return session;
     }
 
@@ -392,6 +404,13 @@ public class MutatorSystem {
      * Used between waves to add progressive difficulty.
      */
     public void rollNewMutator(MutatorSession session) {
+        rollNewMutator(session, -1);
+    }
+
+    /**
+     * Roll and add a new random mutator to an existing session with wave tracking.
+     */
+    public void rollNewMutator(MutatorSession session, int waveNumber) {
         if (session == null) return;
 
         // Get available mutators (not already active)
@@ -410,6 +429,13 @@ public class MutatorSystem {
             if (newMutator != null) {
                 session.addMutator(newMutator);
                 LOGGER.info("[MutatorSystem] Added new mutator: {} ({})", newMutator.name, newMutator.id);
+
+                // Telemetry: record mutator added mid-quest
+                EnduranceTelemetryService.INSTANCE.recordMutatorAdded(
+                    session.getQuestId(),
+                    newMutator,
+                    waveNumber
+                );
             }
         }
     }

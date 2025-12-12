@@ -26,6 +26,8 @@ import com.frenkvs.devmod.endurance.analytics.LiveAnalyticsHookManager;
 import com.frenkvs.devmod.endurance.analytics.WaveSummary;
 import com.frenkvs.devmod.endurance.analytics.QuestResult;
 import com.frenkvs.devmod.party.QuestStartSequence;
+import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
+import com.frenkvs.devmod.telemetry.player.PlayerAttributeTelemetryService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -88,6 +90,20 @@ public class EnduranceEventHandler {
 
         // Start live analytics session for real-time feedback hooks
         LiveAnalyticsHookManager.INSTANCE.onQuestStart(questId, playerId);
+
+        // Record telemetry for quest start
+        EnduranceTelemetryService.INSTANCE.recordQuestStart(
+            questId,
+            playerId,
+            session.getQuest().getDisplayName(),
+            session.getQuest().getTotalWaves(),
+            session.getQuest().isEndlessMode(),
+            1, // party size - single player for now
+            QuestType.PVE_COOP // default quest type
+        );
+
+        // Trigger player attribute snapshot on quest start
+        PlayerAttributeTelemetryService.INSTANCE.recordSnapshot(player, "quest_start");
 
         LOGGER.info("[EnduranceQuest] Quest started for {} with {} mutators",
             player.getName().getString(), mutatorSession.getActiveMutatorCount());
@@ -178,6 +194,20 @@ public class EnduranceEventHandler {
             questId, playerId, session.getQuest(), combatSessionData, comboSession, completed
         );
         LiveAnalyticsHookManager.INSTANCE.onQuestEnd(result);
+
+        // Record telemetry for quest end
+        EnduranceTelemetryService.INSTANCE.recordQuestEnd(
+            questId,
+            completed ? EnduranceQuestState.COMPLETED : EnduranceQuestState.FAILED,
+            session.getQuest().getCurrentWave(),
+            session.getQuest().getSessionDuration(),
+            session.getQuest().getMobsKilledThisSession(),
+            session.getQuest().getTotalDamageDealtThisSession(),
+            session.getQuest().getDamageTakenThisSession()
+        );
+
+        // Trigger player attribute snapshot on quest end
+        PlayerAttributeTelemetryService.INSTANCE.recordSnapshot(player, "quest_end");
 
         LOGGER.info("[EnduranceQuest] Quest ended for {} - Completed: {}, Style Rank: {}",
             player.getName().getString(), completed,
@@ -281,8 +311,14 @@ public class EnduranceEventHandler {
         // === MUTATOR SYSTEM - Roll new mutators between waves ===
         if (mutatorSession != null && waveNumber % 3 == 0) {
             // Every 3 waves, potentially add a new mutator
-            MutatorSystem.INSTANCE.rollNewMutator(mutatorSession);
+            int prevMutatorCount = mutatorSession.getActiveMutatorCount();
+            MutatorSystem.INSTANCE.rollNewMutator(mutatorSession, waveNumber);
             LOGGER.info("[EnduranceQuest] New mutator rolled at wave {}", waveNumber);
+
+            // Trigger player attribute snapshot if mutator was added
+            if (mutatorSession.getActiveMutatorCount() > prevMutatorCount) {
+                PlayerAttributeTelemetryService.INSTANCE.recordSnapshot(player, "mutator_added_wave_" + waveNumber);
+            }
         }
 
         // === PERK SYSTEM - Generate perk choices for player ===
@@ -506,6 +542,19 @@ public class EnduranceEventHandler {
                 ComboSystem.ComboSession comboSession = comboSessions.get(playerId);
                 if (comboSession != null) {
                     comboSession.registerKill(false, 0); // Basic kill
+                }
+
+                // Record wave kill telemetry
+                if (questId != null) {
+                    var waveStateOpt = arenaId != null ? WaveManager.INSTANCE.getWaveState(arenaId) : Optional.<WaveManager.WaveState>empty();
+                    int waveNumber = waveStateOpt.map(WaveManager.WaveState::getWaveNumber).orElse(1);
+                    String weaponId = player.getMainHandItem().getItem().getDescriptionId();
+                    float damageDealt = CombatTracker.INSTANCE.getSession(questId)
+                        .map(s -> s.getCurrentWaveStats() != null ? s.getCurrentWaveStats().damageDealt : 0f)
+                        .orElse(0f);
+                    EnduranceTelemetryService.INSTANCE.recordWaveKill(
+                        questId, waveNumber, mobId.toString(), false, weaponId, damageDealt
+                    );
                 }
 
                 // Process mutator death effects (exploding mobs, etc.)
@@ -743,6 +792,10 @@ public class EnduranceEventHandler {
 
         if (session.isPresent()) {
             ArenaManager.Arena arena = session.get().getArena();
+            if (arena == null) {
+                // Arena not yet assigned, skip confinement check
+                return;
+            }
             if (!arena.contains(player.position())) {
                 // Teleport back to center
                 player.teleportTo(
@@ -766,6 +819,10 @@ public class EnduranceEventHandler {
                 EnduranceQuestManager.INSTANCE.getActiveSessions().values()) {
 
             ArenaManager.Arena arena = session.getArena();
+            if (arena == null) {
+                // Arena not yet assigned, skip cleanup for this session
+                continue;
+            }
             net.minecraft.server.level.ServerLevel level = arena.getLevel();
 
             // Get all entities in arena bounds

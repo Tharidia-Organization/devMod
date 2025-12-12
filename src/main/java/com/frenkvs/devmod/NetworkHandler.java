@@ -30,10 +30,19 @@ import com.frenkvs.devmod.endurance.TokenGainPayload;
 import com.frenkvs.devmod.endurance.RecordBannerPayload;
 import com.frenkvs.devmod.endurance.ComboDecayPayload;
 import com.frenkvs.devmod.endurance.InstanceLoadingPayload;
+import com.frenkvs.devmod.abilities.AbilityActionPayload;
+import com.frenkvs.devmod.abilities.ClientStaminaCache;
+import com.frenkvs.devmod.abilities.DashAbilitySystem;
+import com.frenkvs.devmod.abilities.DodgeAbilitySystem;
+import com.frenkvs.devmod.abilities.StaminaSyncPayload;
+import com.frenkvs.devmod.telemetry.duckdb.packets.TelemetryBatchPayload;
+import com.frenkvs.devmod.telemetry.duckdb.packets.TelemetryPacketHandler;
 import com.frenkvs.devmod.party.ArrivalConfirmPayload;
 import com.frenkvs.devmod.party.CancelSequencePayload;
 import com.frenkvs.devmod.party.ClientPartyCache;
 import com.frenkvs.devmod.party.InvitePopupScreen;
+import com.frenkvs.devmod.party.InviteResponsePayload;
+import com.frenkvs.devmod.party.NamedInvitePayload;
 import com.frenkvs.devmod.party.PartyActionPayload;
 import com.frenkvs.devmod.party.PartyData;
 import com.frenkvs.devmod.party.PartyManager;
@@ -268,6 +277,12 @@ public class NetworkHandler {
                 nn(PartyActionPayload.STREAM_CODEC),
                 NetworkHandler::handlePartyAction
         );
+        // Channel 25: Invite Response (client to server) - accept/decline party invite
+        event.registrar("25").playToServer(
+                nn(InviteResponsePayload.TYPE),
+                nn(InviteResponsePayload.STREAM_CODEC),
+                NetworkHandler::handleInviteResponse
+        );
         // Channel 26: Party Notification (server to client)
         event.registrar("26").playToClient(
                 nn(PartyNotificationPayload.TYPE),
@@ -279,6 +294,41 @@ public class NetworkHandler {
                 nn(PartySyncPayload.TYPE),
                 nn(PartySyncPayload.STREAM_CODEC),
                 NetworkHandler::handlePartySync
+        );
+        // Channel 28: Named Invite (client to server) - invite player by name
+        event.registrar("28").playToServer(
+                nn(NamedInvitePayload.TYPE),
+                nn(NamedInvitePayload.STREAM_CODEC),
+                NetworkHandler::handleNamedInvite
+        );
+
+        // Channel 31: Stamina Sync (server to client)
+        event.registrar("31").playToClient(
+                nn(StaminaSyncPayload.TYPE),
+                nn(StaminaSyncPayload.STREAM_CODEC),
+                (payload, context) -> context.enqueueWork(() ->
+                    ClientStaminaCache.update(payload.currentStamina(), payload.maxStamina()))
+        );
+
+        // Channel 32: Ability Action (client to server) - dash, dodge
+        event.registrar("32").playToServer(
+                nn(AbilityActionPayload.TYPE),
+                nn(AbilityActionPayload.STREAM_CODEC),
+                NetworkHandler::handleAbilityAction
+        );
+
+        // Channel 33: Telemetry Batch (client to server) - multiplayer telemetry sync
+        event.registrar("33").playToServer(
+                nn(TelemetryBatchPayload.TYPE),
+                nn(TelemetryBatchPayload.STREAM_CODEC),
+                NetworkHandler::handleTelemetryBatch
+        );
+
+        // Channel 34: Armor Statistics
+        event.registrar("34").playToServer(
+                nn(UpdateArmorPayload.TYPE),
+                nn(UpdateArmorPayload.STREAM_CODEC),
+                NetworkHandler::handleArmorData
         );
     }
 
@@ -449,6 +499,80 @@ public class NetworkHandler {
                         stack.set(nn(DataComponents.CUSTOM_NAME), Component.literal(nn(customName)));
                     }
                     player.sendSystemMessage(I18n.translate("devmod.network.weapon_specific_updated"));
+                }
+            }
+        });
+    }
+
+    // =================================================================================
+    // 2b. ARMOR MODIFICATION LOGIC
+    // =================================================================================
+    private static void handleArmorData(UpdateArmorPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer player) {
+                // SECURITY: Validate packet and check permissions
+                PacketSecurityService security = PacketSecurityService.INSTANCE;
+                ValidationResult validation = security.validatePacket(player, "armor_stats", true);
+                if (!validation.isSuccess()) {
+                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
+                    return;
+                }
+
+                // Convert payload to ArmorStats
+                ArmorStats stats = payload.toArmorStats();
+
+                // Clamp values for security
+                stats.physicalReduction = Math.max(0f, Math.min(1f, stats.physicalReduction));
+                stats.fireReduction = Math.max(0f, Math.min(1f, stats.fireReduction));
+                stats.magicReduction = Math.max(0f, Math.min(1f, stats.magicReduction));
+                stats.explosionReduction = Math.max(0f, Math.min(1f, stats.explosionReduction));
+                stats.projectileReduction = Math.max(0f, Math.min(1f, stats.projectileReduction));
+                stats.armorBonus = Math.max(-20f, Math.min(30f, stats.armorBonus));
+                stats.toughnessBonus = Math.max(-10f, Math.min(20f, stats.toughnessBonus));
+                stats.knockbackResistance = Math.max(0f, Math.min(1f, stats.knockbackResistance));
+                stats.thornsPercent = Math.max(0f, Math.min(0.5f, stats.thornsPercent));
+
+                if (payload.isGlobal()) {
+                    // Apply to item type globally
+                    ResourceLocation itemLoc = ResourceLocation.tryParse(nn(payload.itemName()));
+                    if (itemLoc != null && BuiltInRegistries.ITEM.containsKey(itemLoc)) {
+                        Item item = BuiltInRegistries.ITEM.get(itemLoc);
+                        ArmorConfigManager.setGlobalStats(item, stats);
+                        String itemName = nn(item.getDescription().getString());
+                        player.sendSystemMessage(I18n.translate("devmod.network.armor_global_saved", itemName));
+
+                        // Notify all other players about global config change
+                        String adminName = player.getName().getString();
+                        var broadcastMsg = I18n.translate("devmod.network.armor_global_broadcast", adminName, itemName);
+                        for (ServerPlayer otherPlayer : player.server.getPlayerList().getPlayers()) {
+                            if (!otherPlayer.getUUID().equals(player.getUUID())) {
+                                otherPlayer.sendSystemMessage(broadcastMsg);
+                            }
+                        }
+                    } else {
+                        player.sendSystemMessage(I18n.translate("devmod.network.invalid_item"));
+                    }
+                } else {
+                    // Apply to specific item in slot
+                    EquipmentSlot slot = switch (payload.slot()) {
+                        case 0 -> EquipmentSlot.HEAD;
+                        case 1 -> EquipmentSlot.CHEST;
+                        case 2 -> EquipmentSlot.LEGS;
+                        case 3 -> EquipmentSlot.FEET;
+                        default -> null;
+                    };
+
+                    if (slot != null) {
+                        ItemStack armor = player.getItemBySlot(nn(slot));
+                        if (!armor.isEmpty() && ArmorConfigManager.isArmor(armor)) {
+                            ArmorConfigManager.setSpecificStats(armor, stats);
+                            player.sendSystemMessage(I18n.translate("devmod.network.armor_specific_updated"));
+                        } else {
+                            player.sendSystemMessage(I18n.translate("devmod.network.no_armor_in_slot"));
+                        }
+                    } else {
+                        player.sendSystemMessage(I18n.translate("devmod.network.invalid_slot"));
+                    }
                 }
             }
         });
@@ -1324,6 +1448,42 @@ public class NetworkHandler {
     }
 
     // =================================================================================
+    // 25. INVITE RESPONSE HANDLER (server-side)
+    // =================================================================================
+    private static void handleInviteResponse(InviteResponsePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer player) {
+                UUID playerId = player.getUUID();
+                String playerName = player.getName().getString();
+                UUID inviteId = payload.inviteId();
+
+                PartyManager.ResponseResult result = PartyManager.INSTANCE.handleInviteResponse(
+                    playerId, playerName, inviteId, payload.accepted());
+
+                if (result.success()) {
+                    if (payload.accepted()) {
+                        LOGGER.info("[Party] {} accepted invite {}", playerName, inviteId);
+                        // Sync party to new member
+                        sendPartySyncToPlayer(player);
+                        // Notify other members
+                        if (result.partyId() != null) {
+                            notifyPartyMembers(player.server, result.partyId(),
+                                PartyNotificationPayload.memberJoined(playerId, playerName), playerId);
+                            syncPartyToAllMembers(player.server, result.partyId());
+                        }
+                    } else {
+                        LOGGER.info("[Party] {} declined invite {}", playerName, inviteId);
+                    }
+                } else {
+                    // Failed - send error message
+                    String errorMsg = result.errorMessage() != null ? result.errorMessage() : "Unknown error";
+                    player.sendSystemMessage(I18n.translate("devmod.party.invite_error", errorMsg));
+                }
+            }
+        });
+    }
+
+    // =================================================================================
     // 24. PARTY ACTION HANDLER (server-side)
     // =================================================================================
     private static void handlePartyAction(PartyActionPayload payload, IPayloadContext context) {
@@ -1469,6 +1629,77 @@ public class NetworkHandler {
                             player.sendSystemMessage(I18n.translate("devmod.party.cannot_start"));
                         }
                     }
+                }
+            }
+        });
+    }
+
+    // =================================================================================
+    // 28. NAMED INVITE HANDLER (server-side) - invite player by name
+    // =================================================================================
+    private static void handleNamedInvite(NamedInvitePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer player) {
+                UUID playerId = player.getUUID();
+                String playerName = player.getName().getString();
+                String targetName = payload.targetPlayerName();
+
+                // Security: validate target name
+                if (targetName == null || targetName.isBlank() || targetName.length() > 16) {
+                    player.sendSystemMessage(I18n.translate("devmod.party.invalid_name"));
+                    return;
+                }
+
+                // Find target player by name
+                ServerPlayer targetPlayer = player.server.getPlayerList().getPlayerByName(targetName);
+                if (targetPlayer == null) {
+                    player.sendSystemMessage(I18n.translate("devmod.party.player_not_found", targetName));
+                    return;
+                }
+
+                // Can't invite yourself
+                if (targetPlayer.getUUID().equals(playerId)) {
+                    player.sendSystemMessage(I18n.translate("devmod.party.cannot_invite_self"));
+                    return;
+                }
+
+                // Get or create party
+                PartyData existingParty = PartyManager.INSTANCE.getPlayerParty(playerId);
+                PartyData party;
+                if (existingParty == null) {
+                    // Create new party with quest type from payload
+                    party = PartyManager.INSTANCE.createParty(playerId, playerName, payload.getQuestType());
+                    if (party == null) {
+                        player.sendSystemMessage(I18n.translate("devmod.party.create_failed"));
+                        return;
+                    }
+                    LOGGER.info("[Party] {} created party {} via named invite", playerName, party.getPartyId());
+                } else {
+                    party = existingParty;
+                }
+
+                // Check if player is leader
+                if (!party.getLeaderId().equals(playerId)) {
+                    player.sendSystemMessage(I18n.translate("devmod.party.not_leader"));
+                    return;
+                }
+
+                // Send invite (returns PartyInvite or null)
+                var invite = PartyManager.INSTANCE.sendInvite(playerId, targetPlayer.getUUID(), targetName);
+                if (invite != null) {
+                    player.sendSystemMessage(I18n.translate("devmod.party.invite_sent", targetName));
+                    // Notify target player
+                    sendPartyNotification(targetPlayer,
+                        PartyNotificationPayload.inviteReceived(
+                            invite.getInviteId(),
+                            playerName,
+                            party.getQuestType(),
+                            invite.getExpiresAt()
+                        ));
+                    // Sync party state
+                    sendPartySyncToPlayer(player);
+                } else {
+                    player.sendSystemMessage(I18n.translate("devmod.party.invite_failed", targetName));
                 }
             }
         });
@@ -1637,6 +1868,44 @@ public class NetworkHandler {
     }
 
     // =================================================================================
+    // ABILITY SYSTEM HANDLERS
+    // =================================================================================
+
+    /**
+     * Handle ability action (dash, dodge) from client.
+     */
+    private static void handleAbilityAction(AbilityActionPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer player) {
+                switch (payload.ability()) {
+                    case DASH -> {
+                        boolean success = DashAbilitySystem.INSTANCE.tryDash(player);
+                        if (!success) {
+                            // Could send feedback to client here
+                        }
+                    }
+                    case DODGE -> {
+                        var direction = payload.getDodgeDirection();
+                        boolean success = DodgeAbilitySystem.INSTANCE.tryDodge(player, direction);
+                        if (!success) {
+                            // Could send feedback to client here
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Send stamina sync to a player.
+     * Called periodically from StaminaSystem to update client HUD.
+     */
+    public static void sendStaminaSync(ServerPlayer player, float currentStamina, float maxStamina) {
+        StaminaSyncPayload payload = new StaminaSyncPayload(currentStamina, maxStamina);
+        sendPacket(player, payload);
+    }
+
+    // =================================================================================
     // NULL-SAFETY HELPER METHODS
     // =================================================================================
 
@@ -1658,6 +1927,22 @@ public class NetworkHandler {
             Objects.requireNonNull(player, "player"),
             Objects.requireNonNull(payload, "payload")
         );
+    }
+
+    // =================================================================================
+    // 33. TELEMETRY BATCH HANDLER (server-side)
+    // =================================================================================
+
+    /**
+     * Handle telemetry batch from multiplayer clients.
+     * Delegates to TelemetryPacketHandler for rate limiting and processing.
+     */
+    private static void handleTelemetryBatch(TelemetryBatchPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer player) {
+                TelemetryPacketHandler.INSTANCE.handleBatch(player, payload);
+            }
+        });
     }
 
 } // <--- This is the essential closing brace

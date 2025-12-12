@@ -92,6 +92,14 @@ public class CommonModEvents {
         } catch (Exception e) {
             LOGGER.error("[DevMod] Failed to initialize EnduranceQuestManager", e);
         }
+
+        // Initialize ArmorConfigManager for custom armor stats
+        try {
+            ArmorConfigManager.initialize(ConfigPaths.getConfigDir());
+            LOGGER.info("[DevMod] ArmorConfigManager initialized successfully");
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Failed to initialize ArmorConfigManager", e);
+        }
     }
 
     /**

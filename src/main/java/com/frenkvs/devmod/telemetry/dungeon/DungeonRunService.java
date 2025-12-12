@@ -1,6 +1,8 @@
 package com.frenkvs.devmod.telemetry.dungeon;
 
 import com.frenkvs.devmod.telemetry.TelemetryService;
+import com.frenkvs.devmod.telemetry.duckdb.DuckDBConfig;
+import com.frenkvs.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.frenkvs.devmod.telemetry.room.RoomService;
 import com.mojang.logging.LogUtils;
 import net.minecraft.server.level.ServerLevel;
@@ -49,6 +51,13 @@ public class DungeonRunService {
     // Timeout for abandoned runs (30 minutes)
     private static final long RUN_TIMEOUT_MS = 30 * 60 * 1000;
 
+    // Rate limiting for room tracking logs
+    private long lastRoomLogTime = 0;
+    private static final long ROOM_LOG_INTERVAL_MS = 5000; // Log every 5 seconds max
+
+    // Debug runs that should not be auto-ended by trackPlayer
+    private final Set<UUID> debugRuns = ConcurrentHashMap.newKeySet();
+
     private DungeonRunService() {}
 
     /**
@@ -75,7 +84,8 @@ public class DungeonRunService {
         run.visitRoom(roomId);
         activeRuns.put(playerId, run);
 
-        LOGGER.debug("[DungeonRun] {} started run in dungeon '{}'", player.getName().getString(), dungeonId);
+        LOGGER.info("[DungeonRunService] RUN START: player='{}' dungeonId='{}' roomId='{}'",
+            player.getName().getString(), dungeonId, roomId);
     }
 
     /**
@@ -163,6 +173,37 @@ public class DungeonRunService {
     }
 
     /**
+     * Debug method to start a run that won't be auto-ended by trackPlayer.
+     * Used by /devmod dungeon start command for testing.
+     */
+    public void debugStartRun(ServerPlayer player, String dungeonId, String roomId) {
+        debugRuns.add(player.getUUID());
+        onEnterDungeon(player, dungeonId, roomId);
+    }
+
+    /**
+     * Debug method to end a run with a specific outcome.
+     * Used by /devmod dungeon end command for testing.
+     */
+    public void debugEndRun(UUID playerId, RunOutcome outcome, String reason) {
+        debugRuns.remove(playerId);
+        endRun(playerId, outcome, reason);
+    }
+
+    /**
+     * Debug method to set deaths count on active run.
+     * Used by /devmod dungeon end command for testing.
+     */
+    public void debugSetDeaths(UUID playerId, int deaths) {
+        DungeonRun run = activeRuns.get(playerId);
+        if (run != null) {
+            run.deaths = deaths;
+            run.lastDeathRoom = run.currentRoom;
+            run.lastDeathTime = System.currentTimeMillis();
+        }
+    }
+
+    /**
      * Ends a dungeon run and records the result.
      */
     private void endRun(UUID playerId, RunOutcome outcome, String reason) {
@@ -183,33 +224,62 @@ public class DungeonRunService {
         // Log to telemetry
         logRunResult(result);
 
-        LOGGER.info("[DungeonRun] {} {} dungeon '{}' after {}s ({} deaths, {} kills)",
-            run.playerName, outcome.name().toLowerCase(), run.dungeonId,
-            result.durationSeconds, run.deaths, run.kills);
+        LOGGER.info("[DungeonRunService] RUN END: player='{}' dungeonId='{}' outcome={} duration={}s deaths={} kills={} reason='{}'",
+            run.playerName, run.dungeonId, outcome.name(), result.durationSeconds, run.deaths, run.kills, reason);
     }
 
     /**
-     * Logs run result to telemetry files.
+     * Logs run result to telemetry (DuckDB primary, NDJSON fallback).
      */
     private void logRunResult(DungeonRunResult result) {
-        StringBuilder json = new StringBuilder();
-        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
-        json.append("\"player_id\":\"").append(result.playerId).append("\",");
-        json.append("\"player\":\"").append(result.playerName).append("\",");
-        json.append("\"dungeon\":\"").append(result.dungeonId).append("\",");
-        json.append("\"outcome\":\"").append(result.outcome).append("\",");
-        json.append("\"duration_sec\":").append(result.durationSeconds).append(",");
-        json.append("\"deaths\":").append(result.deaths).append(",");
-        json.append("\"kills\":").append(result.kills).append(",");
-        json.append("\"rooms_visited\":").append(result.roomsVisited).append(",");
-        json.append("\"damage_dealt\":").append(String.format("%.1f", result.damageDealt)).append(",");
-        json.append("\"damage_taken\":").append(String.format("%.1f", result.damageTaken)).append(",");
-        json.append("\"loot_value\":").append(result.totalLootValue).append(",");
-        json.append("\"loot_items\":").append(result.lootItems).append(",");
-        json.append("\"last_death_room\":\"").append(result.lastDeathRoom != null ? result.lastDeathRoom : "").append("\"");
-        json.append("}");
+        // Calculate timestamps for DuckDB
+        Instant startTs = Instant.ofEpochMilli(result.lastDeathTime > 0
+            ? result.lastDeathTime - (result.durationSeconds * 1000)
+            : System.currentTimeMillis() - (result.durationSeconds * 1000));
+        Instant endTs = Instant.now();
+        long durationMs = result.durationSeconds * 1000;
 
-        TelemetryService.INSTANCE.appendDungeonRun(json.toString());
+        // Build rooms list as comma-separated string (placeholder - actual rooms tracking would need enhancement)
+        String roomsList = ""; // Room list not currently tracked in DungeonRunResult
+
+        // Build enemies killed as JSON string
+        String enemiesKilled = ""; // Not currently exposed in DungeonRunResult
+
+        // Build loot collected as JSON string
+        String lootCollected = ""; // Not currently exposed in DungeonRunResult
+
+        // P2-B: Primary write to DuckDB
+        DuckDBTelemetryService.INSTANCE.logDungeonRun(
+            startTs, endTs, durationMs,
+            result.playerId.toString(), result.playerName, result.dungeonId,
+            result.outcome.name(), result.roomsVisited, roomsList,
+            result.deaths, result.kills, enemiesKilled,
+            result.damageDealt, result.damageTaken,
+            result.lootItems, lootCollected,  // reward_count = lootItems
+            result.lastDeathRoom != null ? result.lastDeathRoom : ""
+        );
+
+        // P2-B: NDJSON fallback (only if enabled or DuckDB unavailable)
+        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+            StringBuilder json = new StringBuilder();
+            json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+            json.append("\"player_id\":\"").append(result.playerId).append("\",");
+            json.append("\"player\":\"").append(result.playerName).append("\",");
+            json.append("\"dungeon\":\"").append(result.dungeonId).append("\",");
+            json.append("\"outcome\":\"").append(result.outcome).append("\",");
+            json.append("\"duration_sec\":").append(result.durationSeconds).append(",");
+            json.append("\"deaths\":").append(result.deaths).append(",");
+            json.append("\"kills\":").append(result.kills).append(",");
+            json.append("\"rooms_visited\":").append(result.roomsVisited).append(",");
+            json.append("\"damage_dealt\":").append(String.format("%.1f", result.damageDealt)).append(",");
+            json.append("\"damage_taken\":").append(String.format("%.1f", result.damageTaken)).append(",");
+            json.append("\"loot_value\":").append(result.totalLootValue).append(",");
+            json.append("\"loot_items\":").append(result.lootItems).append(",");
+            json.append("\"last_death_room\":\"").append(result.lastDeathRoom != null ? result.lastDeathRoom : "").append("\"");
+            json.append("}");
+
+            TelemetryService.INSTANCE.appendDungeonRun(json.toString());
+        }
     }
 
     /**
@@ -225,6 +295,19 @@ public class DungeonRunService {
 
         DungeonRun activeRun = activeRuns.get(playerId);
 
+        // P2-B Instrumentation: rate-limited room tracking log
+        long now = System.currentTimeMillis();
+        if (now - lastRoomLogTime > ROOM_LOG_INTERVAL_MS) {
+            lastRoomLogTime = now;
+            if (dungeonId != null) {
+                LOGGER.info("[DungeonRunService] Player {} in room='{}' -> dungeonId='{}' (DUNGEON DETECTED)",
+                    player.getName().getString(), currentRoom, dungeonId);
+            } else {
+                LOGGER.info("[DungeonRunService] Player {} in room='{}' -> NOT A DUNGEON (no dungeon_//_dungeon pattern)",
+                    player.getName().getString(), currentRoom);
+            }
+        }
+
         if (dungeonId != null) {
             // Player is in a dungeon room
             if (activeRun == null || !activeRun.dungeonId.equals(dungeonId)) {
@@ -234,7 +317,8 @@ public class DungeonRunService {
             }
         } else {
             // Player is outside dungeon
-            if (activeRun != null) {
+            // Skip auto-ending for debug runs (started via /devmod dungeon start)
+            if (activeRun != null && !debugRuns.contains(playerId)) {
                 onExitDungeon(player, activeRun.dungeonId, false);
             }
         }

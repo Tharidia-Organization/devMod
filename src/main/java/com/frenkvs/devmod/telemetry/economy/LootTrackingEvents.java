@@ -2,8 +2,11 @@ package com.frenkvs.devmod.telemetry.economy;
 
 import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.telemetry.TelemetryService;
+import com.frenkvs.devmod.telemetry.duckdb.DuckDBTelemetryService;
+import com.frenkvs.devmod.telemetry.room.RoomService;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -13,14 +16,19 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
+import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
+import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Event handlers for loot and economy tracking.
@@ -53,6 +61,7 @@ public class LootTrackingEvents {
         String mobType = entity.getType().getDescriptionId();
         BlockPos pos = entity.blockPosition();
         ServerLevel level = (ServerLevel) entity.level();
+        String room = RoomService.INSTANCE.resolveRoom(level, pos);
 
         Collection<ItemEntity> drops = event.getDrops();
         boolean hasLoot = !drops.isEmpty();
@@ -61,6 +70,8 @@ public class LootTrackingEvents {
         var killRecord = EconomyMetricsService.INSTANCE.recordMobKill(mobType, hasLoot);
         if (killRecord != null) {
             TelemetryService.INSTANCE.appendEconomyLine(killRecord.toJson());
+            // DuckDB: economy_mob_kills
+            DuckDBTelemetryService.INSTANCE.logMobKill(mobType, killRecord.totalKills(), hasLoot);
             LOGGER.debug("[Economy] Mob killed: {} (kill #{}, hasLoot={})",
                     mobType, killRecord.totalKills(), hasLoot);
         }
@@ -74,10 +85,16 @@ public class LootTrackingEvents {
                 if (stack.isEmpty()) continue;
 
                 droppedItems.add(stack.copy());
+                String itemId = Objects.requireNonNull(BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(stack.getItem()))).toString();
 
                 var dropRecord = EconomyMetricsService.INSTANCE.recordMobDrop(level, mobType, stack, pos);
                 if (dropRecord != null) {
                     TelemetryService.INSTANCE.appendEconomyLine(dropRecord.toJson());
+                    // DuckDB: economy_mob_drops
+                    DuckDBTelemetryService.INSTANCE.logMobDrop(
+                        mobType, room, itemId, stack.getCount(),
+                        pos.getX(), pos.getY(), pos.getZ()
+                    );
                     LOGGER.debug("[Economy] Mob drop: {} dropped {}x {} at {}",
                             mobType, stack.getCount(), stack.getItem(), pos);
                 }
@@ -167,5 +184,153 @@ public class LootTrackingEvents {
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         EconomyMetricsService.INSTANCE.cleanupPlayer(player.getUUID());
+    }
+
+    // ===== NEW ECONOMY HOOKS =====
+
+    /**
+     * Track item pickup from ground.
+     * This captures items picked up by walking over them (not crafting/smelting).
+     */
+    @SubscribeEvent
+    public static void onItemPickup(ItemEntityPickupEvent.Pre event) {
+        if (!(event.getPlayer() instanceof ServerPlayer player)) return;
+        if (player.level().isClientSide()) return;
+
+        ItemEntity itemEntity = event.getItemEntity();
+        ItemStack stack = itemEntity.getItem();
+        if (stack.isEmpty()) return;
+
+        BlockPos pos = itemEntity.blockPosition();
+        String room = RoomService.INSTANCE.resolveRoom(player.serverLevel(), pos);
+        String itemId = Objects.requireNonNull(BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(stack.getItem()))).toString();
+
+        var record = EconomyMetricsService.INSTANCE.recordItemPickup(
+                player,
+                stack,
+                pos
+        );
+
+        if (record != null) {
+            TelemetryService.INSTANCE.appendEconomyLine(record.toJson());
+            // DuckDB: economy_item_pickups
+            DuckDBTelemetryService.INSTANCE.logItemPickup(
+                player.getUUID(), player.getGameProfile().getName(),
+                room, itemId, stack.getCount(),
+                pos.getX(), pos.getY(), pos.getZ()
+            );
+            LOGGER.debug("[Economy] Item picked up: {} picked {}x {}",
+                    player.getGameProfile().getName(), stack.getCount(), stack.getItem());
+        }
+    }
+
+    /**
+     * Track item usage/consumption (food, potions, etc.).
+     * Fires when player finishes using an item.
+     */
+    @SubscribeEvent
+    public static void onItemUsed(LivingEntityUseItemEvent.Finish event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (player.level().isClientSide()) return;
+
+        ItemStack usedItem = event.getItem();
+        if (usedItem.isEmpty()) return;
+
+        // Track consumable items (food, potions, etc.)
+        // Check if item will be consumed (stack shrinks or transforms)
+        var foodProps = usedItem.getFoodProperties(player);
+        boolean isFood = foodProps != null;
+        boolean isPotion = usedItem.getItem().getClass().getName().contains("Potion");
+        if (isFood || isPotion) {
+            String itemId = Objects.requireNonNull(BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(usedItem.getItem()))).toString();
+            String useType = isFood ? "food" : "potion";
+
+            var record = EconomyMetricsService.INSTANCE.recordItemUsed(player, usedItem);
+            if (record != null) {
+                TelemetryService.INSTANCE.appendEconomyLine(record.toJson());
+                // DuckDB: economy_item_usage
+                DuckDBTelemetryService.INSTANCE.logItemUsage(
+                    player.getUUID(), player.getGameProfile().getName(),
+                    "consumed", itemId, usedItem.getCount(), useType
+                );
+                LOGGER.debug("[Economy] Item used: {} used {}",
+                        player.getGameProfile().getName(), usedItem.getItem());
+            }
+        }
+    }
+
+    /**
+     * Track item discard (Q key or drag out of inventory).
+     * Useful for tracking reward relevance - items players throw away.
+     */
+    @SubscribeEvent
+    public static void onItemToss(ItemTossEvent event) {
+        if (!(event.getPlayer() instanceof ServerPlayer player)) return;
+        if (player.level().isClientSide()) return;
+
+        ItemStack tossed = event.getEntity().getItem();
+        if (tossed.isEmpty()) return;
+
+        String itemId = Objects.requireNonNull(BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(tossed.getItem()))).toString();
+
+        var record = EconomyMetricsService.INSTANCE.recordItemDiscarded(player, tossed);
+        if (record != null) {
+            TelemetryService.INSTANCE.appendEconomyLine(record.toJson());
+            // DuckDB: economy_item_usage (event_type=discarded)
+            DuckDBTelemetryService.INSTANCE.logItemUsage(
+                player.getUUID(), player.getGameProfile().getName(),
+                "discarded", itemId, tossed.getCount(), "toss"
+            );
+            LOGGER.debug("[Economy] Item discarded: {} discarded {}x {}",
+                    player.getGameProfile().getName(), tossed.getCount(), tossed.getItem());
+        }
+    }
+
+    /**
+     * Track chest/container opening.
+     * Captures what items are in containers when players open them.
+     */
+    @SubscribeEvent
+    public static void onContainerOpen(PlayerContainerEvent.Open event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (player.level().isClientSide()) return;
+
+        var container = event.getContainer();
+
+        // Skip player inventory (we only want chests, barrels, etc.)
+        if (container.getClass().getSimpleName().contains("InventoryMenu")) return;
+
+        // Collect container contents
+        List<ItemStack> contents = new ArrayList<>();
+        for (int i = 0; i < container.slots.size(); i++) {
+            var slot = container.slots.get(i);
+            // Only include container slots, not player inventory slots
+            if (slot.container != player.getInventory()) {
+                ItemStack stack = slot.getItem();
+                if (!stack.isEmpty()) {
+                    contents.add(stack.copy());
+                }
+            }
+        }
+
+        // Only track if container has items
+        if (contents.isEmpty()) return;
+
+        // Use player position as chest position approximation
+        // (actual chest position would require more complex tracking)
+        BlockPos pos = player.blockPosition();
+
+        var record = EconomyMetricsService.INSTANCE.recordChestOpen(
+                player,
+                (ServerLevel) player.level(),
+                pos,
+                contents
+        );
+
+        if (record != null) {
+            TelemetryService.INSTANCE.appendEconomyLine(record.toJson());
+            LOGGER.debug("[Economy] Container opened: {} opened container with {} items at {}",
+                    player.getGameProfile().getName(), contents.size(), pos);
+        }
     }
 }

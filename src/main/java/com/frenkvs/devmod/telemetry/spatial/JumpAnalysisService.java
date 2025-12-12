@@ -2,6 +2,7 @@ package com.frenkvs.devmod.telemetry.spatial;
 
 import com.frenkvs.devmod.telemetry.TelemetryJson;
 import com.frenkvs.devmod.telemetry.room.RoomService;
+import com.frenkvs.devmod.telemetry.util.BitPackedFlags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -362,20 +363,40 @@ public class JumpAnalysisService {
             boolean wallCollision,
             boolean ceilingCollision
     ) {
+        /**
+         * Convert to JSON string.
+         * PERFORMANCE: Uses bit-packed flags for 4 booleans and StringBuilder.
+         * flags bits: [0]=landed, [1]=failedJump, [2]=wallCollision, [3]=ceilingCollision
+         */
         public String toJson() {
-            return "{\"ts\":\"" + Instant.now() + "\","
-                    + "\"player\":\"" + TelemetryJson.escape(player) + "\","
-                    + "\"room\":\"" + TelemetryJson.escape(roomId) + "\","
-                    + "\"start\":[" + startPos.getX() + "," + startPos.getY() + "," + startPos.getZ() + "],"
-                    + "\"end\":[" + endPos.getX() + "," + endPos.getY() + "," + endPos.getZ() + "],"
-                    + "\"height\":" + String.format("%.2f", maxHeight) + ","
-                    + "\"distance\":" + String.format("%.2f", horizontalDistance) + ","
-                    + "\"dir\":\"" + direction + "\","
-                    + "\"duration\":" + durationMs + ","
-                    + "\"landed\":" + landed + ","
-                    + "\"failed\":" + failedJump + ","
-                    + "\"wallHit\":" + wallCollision + ","
-                    + "\"ceilingHit\":" + ceilingCollision + "}";
+            // PERFORMANCE: Pack 4 booleans into single int
+            int flags = BitPackedFlags.pack(landed, failedJump, wallCollision, ceilingCollision);
+
+            StringBuilder json = new StringBuilder(256);
+            json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+            json.append("\"player\":\"").append(TelemetryJson.escape(player)).append("\",");
+            json.append("\"room\":\"").append(TelemetryJson.escape(roomId)).append("\",");
+            json.append("\"start\":[").append(startPos.getX()).append(",")
+                .append(startPos.getY()).append(",").append(startPos.getZ()).append("],");
+            json.append("\"end\":[").append(endPos.getX()).append(",")
+                .append(endPos.getY()).append(",").append(endPos.getZ()).append("],");
+            json.append("\"height\":"); appendDouble2(json, maxHeight); json.append(",");
+            json.append("\"distance\":"); appendDouble2(json, horizontalDistance); json.append(",");
+            json.append("\"dir\":\"").append(direction).append("\",");
+            json.append("\"duration\":").append(durationMs).append(",");
+            json.append("\"flags\":").append(flags);
+            json.append("}");
+            return json.toString();
+        }
+
+        /** Append double with 2 decimal places without String.format() */
+        private static void appendDouble2(StringBuilder sb, double value) {
+            long scaled = Math.round(value * 100.0);
+            long intPart = scaled / 100;
+            long decPart = Math.abs(scaled % 100);
+            sb.append(intPart).append('.');
+            if (decPart < 10) sb.append('0');
+            sb.append(decPart);
         }
     }
 

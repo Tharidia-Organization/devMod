@@ -43,7 +43,28 @@ public class HitContext {
      * @param armorPenBonus The calculated armor penetration bonus damage
      */
     public static synchronized void store(Entity target, HitHelper.BodyPart bodyPart, boolean isRanged, float armorPenBonus) {
-        CONTEXT.put(target.getUUID(), new HitInfo(bodyPart, isRanged, armorPenBonus, System.currentTimeMillis()));
+        CONTEXT.put(target.getUUID(), new HitInfo(bodyPart, isRanged, armorPenBonus, 0f, System.currentTimeMillis()));
+    }
+
+    /**
+     * Store armor reduction separately (called after store() in DamageHandler).
+     * Updates existing HitInfo with armor reduction value.
+     *
+     * @param target The victim entity
+     * @param armorReduction The custom armor reduction percentage (0.0 - 0.8)
+     */
+    public static synchronized void storeArmorReduction(Entity target, float armorReduction) {
+        HitInfo existing = CONTEXT.get(target.getUUID());
+        if (existing != null) {
+            // Update with armor reduction
+            CONTEXT.put(target.getUUID(), new HitInfo(
+                existing.bodyPart(),
+                existing.isRanged(),
+                existing.armorPenBonus(),
+                armorReduction,
+                existing.timestamp()
+            ));
+        }
     }
 
     /**
@@ -82,7 +103,8 @@ public class HitContext {
      * @param bodyPart The body part that was hit
      * @param isRanged Whether this was a ranged attack
      * @param armorPenBonus The armor penetration bonus damage (for telemetry)
+     * @param armorReduction The custom armor reduction percentage (0.0 - 0.8)
      * @param timestamp When this hit was recorded
      */
-    public record HitInfo(HitHelper.BodyPart bodyPart, boolean isRanged, float armorPenBonus, long timestamp) {}
+    public record HitInfo(HitHelper.BodyPart bodyPart, boolean isRanged, float armorPenBonus, float armorReduction, long timestamp) {}
 }

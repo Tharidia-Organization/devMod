@@ -1,0 +1,228 @@
+package com.frenkvs.devmod.hud;
+
+import com.frenkvs.devmod.DevMod;
+import com.frenkvs.devmod.abilities.ClientStaminaCache;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+
+/**
+ * HUD overlay for displaying player stamina bar.
+ * Shows stamina bar above the hotbar when not full or recently used.
+ */
+@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
+@SuppressWarnings("null")
+public class StaminaHudOverlay {
+
+    private static final ResourceLocation LAYER_ID =
+        ResourceLocation.fromNamespaceAndPath("devmod", "stamina_hud");
+
+    // Bar dimensions
+    private static final int BAR_WIDTH = 91;
+    private static final int BAR_HEIGHT = 5;
+    private static final int BAR_BORDER = 1;
+
+    // Colors
+    private static final int COLOR_BACKGROUND = 0xFF1A1A1A;
+    private static final int COLOR_BORDER = 0xFF3A3A3A;
+    private static final int COLOR_STAMINA_FULL = 0xFF4CAF50; // Green
+    private static final int COLOR_STAMINA_MEDIUM = 0xFFFFEB3B; // Yellow
+    private static final int COLOR_STAMINA_LOW = 0xFFFF5722; // Orange
+    private static final int COLOR_STAMINA_EXHAUSTED = 0xFFF44336; // Red
+    private static final int COLOR_STAMINA_REGEN = 0xFF81C784; // Light green pulse
+
+    // Visibility control
+    private static boolean enabled = true;
+    private static long lastNotFullTime = 0;
+    private static final long HIDE_DELAY_MS = 3000; // Hide bar 3 seconds after full
+
+    // Animation
+    private static float displayedStamina = 100.0f;
+    private static final float SMOOTH_SPEED = 0.15f;
+
+    @SubscribeEvent
+    public static void registerGuiLayers(RegisterGuiLayersEvent event) {
+        event.registerAbove(
+            VanillaGuiLayers.HOTBAR,
+            LAYER_ID,
+            StaminaHudOverlay::render
+        );
+    }
+
+    /**
+     * Toggle stamina HUD visibility.
+     */
+    public static void toggle() {
+        enabled = !enabled;
+    }
+
+    /**
+     * Check if stamina HUD is enabled.
+     */
+    public static boolean isEnabled() {
+        return enabled;
+    }
+
+    /**
+     * Set stamina HUD enabled state.
+     */
+    public static void setEnabled(boolean value) {
+        enabled = value;
+    }
+
+    private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
+        if (!enabled) return;
+
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.options.hideGui) return;
+
+        // Skip in creative/spectator
+        if (mc.player.isCreative() || mc.player.isSpectator()) return;
+
+        float currentStamina = ClientStaminaCache.getCurrentStamina();
+        float maxStamina = ClientStaminaCache.getMaxStamina();
+
+        // Skip if data is stale
+        if (ClientStaminaCache.isStale()) return;
+
+        float percent = maxStamina > 0 ? currentStamina / maxStamina : 0;
+
+        // Track when stamina is not full for auto-hide
+        if (percent < 0.99f) {
+            lastNotFullTime = System.currentTimeMillis();
+        }
+
+        // Auto-hide when full for some time
+        long timeSinceNotFull = System.currentTimeMillis() - lastNotFullTime;
+        if (percent >= 0.99f && timeSinceNotFull > HIDE_DELAY_MS) {
+            return;
+        }
+
+        // Smooth animation
+        displayedStamina += (currentStamina - displayedStamina) * SMOOTH_SPEED;
+        float displayPercent = maxStamina > 0 ? displayedStamina / maxStamina : 0;
+
+        // Calculate position (centered above hotbar)
+        int screenWidth = graphics.guiWidth();
+        int screenHeight = graphics.guiHeight();
+
+        int x = (screenWidth - BAR_WIDTH) / 2;
+        int y = screenHeight - 52; // Above hotbar
+
+        // Fade effect when near full
+        float alpha = 1.0f;
+        if (percent >= 0.99f) {
+            alpha = Math.max(0, 1.0f - (timeSinceNotFull / (float) HIDE_DELAY_MS));
+        }
+
+        if (alpha <= 0) return;
+
+        // Draw background
+        int bgColor = applyAlpha(COLOR_BACKGROUND, alpha);
+        int borderColor = applyAlpha(COLOR_BORDER, alpha);
+
+        graphics.fill(
+            x - BAR_BORDER,
+            y - BAR_BORDER,
+            x + BAR_WIDTH + BAR_BORDER,
+            y + BAR_HEIGHT + BAR_BORDER,
+            borderColor
+        );
+
+        graphics.fill(x, y, x + BAR_WIDTH, y + BAR_HEIGHT, bgColor);
+
+        // Choose color based on stamina level
+        int staminaColor;
+        if (percent <= 0) {
+            staminaColor = COLOR_STAMINA_EXHAUSTED;
+        } else if (percent < 0.25f) {
+            staminaColor = COLOR_STAMINA_LOW;
+        } else if (percent < 0.5f) {
+            staminaColor = COLOR_STAMINA_MEDIUM;
+        } else {
+            staminaColor = COLOR_STAMINA_FULL;
+        }
+
+        // Pulse effect when regenerating
+        if (displayedStamina < currentStamina) {
+            long pulse = System.currentTimeMillis() % 500;
+            if (pulse < 250) {
+                staminaColor = lerpColor(staminaColor, COLOR_STAMINA_REGEN, pulse / 250.0f);
+            } else {
+                staminaColor = lerpColor(COLOR_STAMINA_REGEN, staminaColor, (pulse - 250) / 250.0f);
+            }
+        }
+
+        staminaColor = applyAlpha(staminaColor, alpha);
+
+        // Draw stamina bar
+        int filledWidth = (int) (BAR_WIDTH * Math.max(0, Math.min(1, displayPercent)));
+        if (filledWidth > 0) {
+            graphics.fill(x, y, x + filledWidth, y + BAR_HEIGHT, staminaColor);
+        }
+
+        // Draw ability cooldown indicators
+        renderCooldownIndicators(graphics, x, y, alpha);
+    }
+
+    /**
+     * Render small indicators for dash/dodge cooldowns.
+     */
+    private static void renderCooldownIndicators(GuiGraphics graphics, int barX, int barY, float alpha) {
+        // Small indicators below the stamina bar
+        int indicatorY = barY + BAR_HEIGHT + 2;
+        int indicatorSize = 4;
+
+        // These would need network sync for actual cooldown data
+        // For now, just show placeholder slots
+        int dashX = barX + BAR_WIDTH / 3 - indicatorSize / 2;
+        int dodgeX = barX + 2 * BAR_WIDTH / 3 - indicatorSize / 2;
+
+        int readyColor = applyAlpha(0xFF4CAF50, alpha);
+        int borderCol = applyAlpha(0xFF2A2A2A, alpha);
+
+        // Dash indicator (left)
+        graphics.fill(dashX - 1, indicatorY - 1, dashX + indicatorSize + 1, indicatorY + indicatorSize + 1, borderCol);
+        graphics.fill(dashX, indicatorY, dashX + indicatorSize, indicatorY + indicatorSize, readyColor);
+
+        // Dodge indicator (right)
+        graphics.fill(dodgeX - 1, indicatorY - 1, dodgeX + indicatorSize + 1, indicatorY + indicatorSize + 1, borderCol);
+        graphics.fill(dodgeX, indicatorY, dodgeX + indicatorSize, indicatorY + indicatorSize, readyColor);
+    }
+
+    /**
+     * Apply alpha to a color.
+     */
+    private static int applyAlpha(int color, float alpha) {
+        int a = (int) (((color >> 24) & 0xFF) * alpha);
+        return (a << 24) | (color & 0x00FFFFFF);
+    }
+
+    /**
+     * Lerp between two colors.
+     */
+    private static int lerpColor(int color1, int color2, float t) {
+        int a1 = (color1 >> 24) & 0xFF;
+        int r1 = (color1 >> 16) & 0xFF;
+        int g1 = (color1 >> 8) & 0xFF;
+        int b1 = color1 & 0xFF;
+
+        int a2 = (color2 >> 24) & 0xFF;
+        int r2 = (color2 >> 16) & 0xFF;
+        int g2 = (color2 >> 8) & 0xFF;
+        int b2 = color2 & 0xFF;
+
+        int a = (int) (a1 + (a2 - a1) * t);
+        int r = (int) (r1 + (r2 - r1) * t);
+        int g = (int) (g1 + (g2 - g1) * t);
+        int b = (int) (b1 + (b2 - b1) * t);
+
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+}
