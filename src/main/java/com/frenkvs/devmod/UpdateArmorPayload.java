@@ -10,7 +10,7 @@ import java.util.Objects;
 
 /**
  * Network payload for updating armor statistics.
- * Sent from client (ArmorEditorScreen) to server.
+ * Sent from ItemEditorScreen (Armor module) to server.
  *
  * Supports both global (per-item-type) and specific (per-item-instance) configurations.
  */

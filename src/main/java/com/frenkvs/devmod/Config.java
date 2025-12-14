@@ -80,6 +80,26 @@ public class Config {
     public static final ModConfigSpec.BooleanValue PROJECTILE_TRAILS_ENABLED;
     public static final ModConfigSpec.DoubleValue PROJECTILE_TRAILS_INTENSITY;
 
+    // ============================================
+    // EDITOR SETTINGS
+    // ============================================
+
+    public static final ModConfigSpec.BooleanValue EDITOR_SOUNDS_ENABLED;
+
+    // ============================================
+    // BADGE POPUP SETTINGS
+    // ============================================
+
+    public static final ModConfigSpec.BooleanValue BADGE_POPUP_ENABLED;
+    public static final ModConfigSpec.IntValue BADGE_POPUP_DURATION_MS;
+    public static final ModConfigSpec.IntValue BADGE_POPUP_SLIDE_IN_MS;
+    public static final ModConfigSpec.IntValue BADGE_POPUP_FADE_OUT_MS;
+    public static final ModConfigSpec.IntValue BADGE_POPUP_Y_POSITION;
+    public static final ModConfigSpec.DoubleValue BADGE_POPUP_SOUND_VOLUME;
+    public static final ModConfigSpec.BooleanValue BADGE_POPUP_PARTICLES_ENABLED;
+    public static final ModConfigSpec.BooleanValue BADGE_POPUP_GLOW_ENABLED;
+    public static final ModConfigSpec.BooleanValue BADGE_POPUP_SOUND_ENABLED;
+
     static {
         BUILDER.push("telemetry");
 
@@ -203,6 +223,62 @@ public class Config {
         PROJECTILE_TRAILS_INTENSITY = BUILDER
                 .comment("Projectile trail intensity/opacity (0.0 = invisible, 1.0 = bright)")
                 .defineInRange("projectileTrailsIntensity", 1.0, 0.0, 2.0);
+
+        BUILDER.pop();
+
+        // ============================================
+        // EDITOR SETTINGS
+        // ============================================
+
+        BUILDER.push("editor");
+
+        EDITOR_SOUNDS_ENABLED = BUILDER
+                .comment("Enable sound effects for editor interactions (button clicks, slider ticks, toggles)")
+                .define("soundsEnabled", true);
+
+        BUILDER.pop();
+
+        // ============================================
+        // BADGE POPUP SETTINGS
+        // ============================================
+
+        BUILDER.push("badgePopup");
+
+        BADGE_POPUP_ENABLED = BUILDER
+                .comment("Enable badge unlock popup notifications")
+                .define("enabled", true);
+
+        BADGE_POPUP_DURATION_MS = BUILDER
+                .comment("Total popup display duration in milliseconds")
+                .defineInRange("durationMs", 5000, 1000, 15000);
+
+        BADGE_POPUP_SLIDE_IN_MS = BUILDER
+                .comment("Slide-in animation duration in milliseconds")
+                .defineInRange("slideInMs", 400, 100, 1000);
+
+        BADGE_POPUP_FADE_OUT_MS = BUILDER
+                .comment("Fade-out animation duration in milliseconds")
+                .defineInRange("fadeOutMs", 600, 100, 2000);
+
+        BADGE_POPUP_Y_POSITION = BUILDER
+                .comment("Vertical position from top of screen in pixels")
+                .defineInRange("yPosition", 12, 0, 200);
+
+        BADGE_POPUP_SOUND_ENABLED = BUILDER
+                .comment("Enable sound effects when badge is unlocked")
+                .define("soundEnabled", true);
+
+        BADGE_POPUP_SOUND_VOLUME = BUILDER
+                .comment("Sound volume multiplier (0.0 = muted, 1.0 = full volume)")
+                .defineInRange("soundVolume", 1.0, 0.0, 1.0);
+
+        BADGE_POPUP_PARTICLES_ENABLED = BUILDER
+                .comment("Enable particle effects for EPIC and LEGENDARY badges")
+                .define("particlesEnabled", true);
+
+        BADGE_POPUP_GLOW_ENABLED = BUILDER
+                .comment("Enable glow effect for RARE+ badges")
+                .define("glowEnabled", true);
 
         BUILDER.pop();
     }

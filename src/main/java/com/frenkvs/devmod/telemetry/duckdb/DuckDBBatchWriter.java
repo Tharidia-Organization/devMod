@@ -679,11 +679,27 @@ public class DuckDBBatchWriter {
             k -> new LinkedBlockingQueue<>(DuckDBConfig.QUEUE_CAPACITY));
 
         if (!queue.offer(values)) {
-            // Queue full - drop event
-            droppedInserts.incrementAndGet();
-            droppedByQueueFull.incrementAndGet();
-            if (DuckDBConfig.LOG_INSERTS) {
-                LOGGER.warn("[DuckDB] Queue full for {}, dropping insert", tableName);
+            boolean enqueued = false;
+            if (priority == EventPriority.CRITICAL) {
+                // For critical events, attempt an immediate flush to free space and retry once.
+                flushTable(tableName);
+                enqueued = queue.offer(values);
+                if (!enqueued) {
+                    try {
+                        enqueued = queue.offer(values, 50, TimeUnit.MILLISECONDS);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }
+
+            if (!enqueued) {
+                // Queue full - drop event (non-critical or retry failed)
+                droppedInserts.incrementAndGet();
+                droppedByQueueFull.incrementAndGet();
+                if (DuckDBConfig.LOG_INSERTS) {
+                    LOGGER.warn("[DuckDB] Queue full for {}, dropping insert", tableName);
+                }
             }
         } else {
             // Check if batch size reached for immediate flush
@@ -723,7 +739,7 @@ public class DuckDBBatchWriter {
             int totalFlushed = 0;
 
             for (String tableName : tableQueues.keySet()) {
-                totalFlushed += flushTable(tableName);
+                totalFlushed += flushTableUnlocked(tableName);
             }
 
             // Track flush metrics
@@ -743,20 +759,22 @@ public class DuckDBBatchWriter {
      * Flush a single table's batch with transaction and circuit breaker.
      */
     private int flushTable(String tableName) {
+        synchronized (flushLock) {
+            return flushTableUnlocked(tableName);
+        }
+    }
+
+    private int flushTableUnlocked(String tableName) {
         // Circuit breaker: skip if broken
         if (circuitBroken) return 0;
 
         BlockingQueue<Object[]> queue = tableQueues.get(tableName);
         if (queue == null || queue.isEmpty()) return 0;
 
-        // Drain up to BATCH_SIZE rows
-        List<Object[]> batch = new ArrayList<>(DuckDBConfig.BATCH_SIZE);
-        queue.drainTo(batch, DuckDBConfig.BATCH_SIZE);
-
-        if (batch.isEmpty()) return 0;
-
         Connection conn = null;
         boolean autoCommitOriginal = true;
+        int flushed = 0;
+        List<Object[]> batch = null;
 
         try {
             conn = connectionManager.getConnection();
@@ -766,35 +784,39 @@ public class DuckDBBatchWriter {
                 return 0;
             }
 
-            // Transaction: BEGIN
             autoCommitOriginal = conn.getAutoCommit();
             conn.setAutoCommit(false);
 
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                for (Object[] row : batch) {
-                    setParameters(stmt, row);
-                    stmt.addBatch();
+            while (running && !queue.isEmpty()) {
+                batch = new ArrayList<>(DuckDBConfig.BATCH_SIZE);
+                queue.drainTo(batch, DuckDBConfig.BATCH_SIZE);
+                if (batch.isEmpty()) break;
+
+                try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    for (Object[] row : batch) {
+                        setParameters(stmt, row);
+                        stmt.addBatch();
+                    }
+                    stmt.executeBatch();
                 }
-                stmt.executeBatch();
+
+                flushed += batch.size();
+                totalInserts.addAndGet(batch.size());
+                totalBatches.incrementAndGet();
             }
 
-            // Transaction: COMMIT
-            conn.commit();
+            if (flushed > 0) {
+                conn.commit();
+                consecutiveErrors.set(0);
 
-            // Success: reset error counter
-            consecutiveErrors.set(0);
-
-            totalInserts.addAndGet(batch.size());
-            totalBatches.incrementAndGet();
-
-            if (DuckDBConfig.LOG_INSERTS) {
-                LOGGER.debug("[DuckDB] Inserted {} rows into {}", batch.size(), tableName);
+                if (DuckDBConfig.LOG_INSERTS) {
+                    LOGGER.debug("[DuckDB] Inserted {} rows into {}", flushed, tableName);
+                }
             }
 
-            return batch.size();
+            return flushed;
 
         } catch (SQLException e) {
-            // Transaction: ROLLBACK on error
             if (conn != null) {
                 try {
                     conn.rollback();
@@ -803,25 +825,27 @@ public class DuckDBBatchWriter {
                 }
             }
 
-            // Track error for stats
-            errorCount.incrementAndGet();
+            // Re-queue drained batch so we don't lose data on transient errors
+            if (batch != null && !batch.isEmpty()) {
+                for (Object[] row : batch) {
+                    queue.offer(row);
+                }
+            }
 
-            // Circuit breaker logic
+            errorCount.incrementAndGet();
             long errors = consecutiveErrors.incrementAndGet();
             if (errors >= CIRCUIT_BREAKER_THRESHOLD) {
                 circuitBroken = true;
                 LOGGER.error("[DuckDB] CIRCUIT BREAKER TRIGGERED after {} consecutive errors. " +
                     "DuckDB writes disabled. Error: {}", errors, e.getMessage());
-                // Notify DuckDBTelemetryService to handle fallback policy
                 DuckDBTelemetryService.INSTANCE.triggerCircuitBreaker();
             } else {
                 LOGGER.error("[DuckDB] Failed to flush batch for {} (error {}/{}): {}",
                     tableName, errors, CIRCUIT_BREAKER_THRESHOLD, e.getMessage());
             }
-            return 0;
+            return flushed;
 
         } finally {
-            // Restore auto-commit
             if (conn != null) {
                 try {
                     conn.setAutoCommit(autoCommitOriginal);

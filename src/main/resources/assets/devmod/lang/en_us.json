@@ -814,5 +814,25 @@
   "devmod.party.missed_teleport": "You missed the teleport!",
   "devmod.party.cannot_cancel": "Cannot cancel at this stage",
   "devmod.party.arena_creation_failed": "Failed to create arena!",
-  "devmod.party.teleported_to_arena": "Teleported to arena!"
+  "devmod.party.teleported_to_arena": "Teleported to arena!",
+
+  "_comment_badge_popup": "Badge Popup Overlay Strings",
+  "devmod.badge.unlocked": "★ BADGE UNLOCKED ★",
+  "devmod.badge.rarity.common": "Common",
+  "devmod.badge.rarity.uncommon": "Uncommon",
+  "devmod.badge.rarity.rare": "Rare",
+  "devmod.badge.rarity.epic": "Epic",
+  "devmod.badge.rarity.legendary": "Legendary",
+
+  "_comment_badge_config": "Badge Popup Configuration Strings",
+  "devmod.config.badge_popup": "Badge Popup Settings",
+  "devmod.config.badge_popup.enabled": "Enable badge popup notifications",
+  "devmod.config.badge_popup.duration": "Display duration (ms)",
+  "devmod.config.badge_popup.slide_in": "Slide-in animation duration (ms)",
+  "devmod.config.badge_popup.fade_out": "Fade-out animation duration (ms)",
+  "devmod.config.badge_popup.y_position": "Vertical position from top",
+  "devmod.config.badge_popup.sound_enabled": "Enable unlock sounds",
+  "devmod.config.badge_popup.sound_volume": "Sound volume",
+  "devmod.config.badge_popup.particles_enabled": "Enable particle effects",
+  "devmod.config.badge_popup.glow_enabled": "Enable glow effects"
 }

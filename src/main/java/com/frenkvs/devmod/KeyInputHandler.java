@@ -90,16 +90,15 @@ public class KeyInputHandler {
      *
      * <p>Automatically selects the appropriate editor based on held item:</p>
      * <ul>
-     *   <li><b>M alone:</b> Auto-detect - ArmorItem → ArmorEditor, Other → WeaponEditor</li>
-     *   <li><b>Shift+M:</b> Force WeaponEditor (for items with mixed attributes)</li>
-     *   <li><b>Ctrl+M:</b> Force ArmorEditor (opens slot selector if hand empty)</li>
+     *   <li><b>M alone:</b> Auto-detect - ArmorItem → Armor module, Other → Weapon module</li>
+     *   <li><b>Shift+M:</b> Force Weapon module</li>
+     *   <li><b>Ctrl+M:</b> Force Armor module (warns if hand empty)</li>
      * </ul>
      *
      * <p><b>Default key:</b> M</p>
      * <p><b>Mnemonic:</b> M = "Modify" item</p>
      *
-     * @see com.frenkvs.devmod.WeaponEditorScreen
-     * @see com.frenkvs.devmod.ArmorEditorScreen
+     * @see com.frenkvs.devmod.ui.editor.ItemEditorScreen
      */
     public static final KeyMapping OPEN_WEAPON_EDITOR_KEY = new KeyMapping(
             "key.devmod.weapon_editor",

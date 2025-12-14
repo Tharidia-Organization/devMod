@@ -5,6 +5,9 @@ import com.frenkvs.devmod.hud.*;
 import com.frenkvs.devmod.rendering.*;
 import com.frenkvs.devmod.telemetry.FpsTracker;
 import com.frenkvs.devmod.ui.radial.model.MacroCategory;
+import com.frenkvs.devmod.ui.editor.ItemEditorScreen;
+import com.frenkvs.devmod.ui.editor.EditorStartTab;
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -35,6 +38,32 @@ public final class RadialMenuRegistry {
      */
     private static ItemStack stack(net.minecraft.world.item.Item item) {
         return new ItemStack(Objects.requireNonNull(item));
+    }
+
+    private static ItemStack getHeldItem() {
+        var mc = Minecraft.getInstance();
+        var player = mc.player;
+        if (player == null) return ItemStack.EMPTY;
+        ItemStack held = player.getMainHandItem();
+        return held.isEmpty() ? ItemStack.EMPTY : held.copy();
+    }
+
+    private static void openEditor(EditorStartTab tab) {
+        var mc = Minecraft.getInstance();
+        var player = mc.player;
+        if (player == null) return;
+        ItemStack held = player.getMainHandItem();
+        if (held.isEmpty()) {
+            player.displayClientMessage(
+                Objects.requireNonNull(
+                    net.minecraft.network.chat.Component.translatable("devmod.message.must_hold_item")
+                        .withStyle(s -> s.withColor(0xFFAA00))
+                ),
+                true
+            );
+            return;
+        }
+        mc.setScreen(new ItemEditorScreen(held, tab));
     }
 
     /**
@@ -227,13 +256,13 @@ public final class RadialMenuRegistry {
             .color(0xFFFF6666)
             .icon("\u270F") // pencil
             .iconStack(stack(Items.ANVIL))
-            .item(RadialMenuItem.screen("Weapon Editor", "\uD83D\uDDE1",
+            .item(RadialMenuItem.action("Weapon Editor", "\uD83D\uDDE1",
                 stack(Items.DIAMOND_SWORD),
-                () -> new com.frenkvs.devmod.WeaponEditorScreen(),
+                () -> openEditor(EditorStartTab.WEAPON),
                 "Edit weapon stats and body part multipliers"))
-            .item(RadialMenuItem.screen("Armor Editor", "\uD83D\uDEE1",
+            .item(RadialMenuItem.action("Armor Editor", "\uD83D\uDEE1",
                 stack(Items.DIAMOND_CHESTPLATE),
-                () -> new com.frenkvs.devmod.ArmorEditorScreen(),
+                () -> openEditor(EditorStartTab.ARMOR),
                 "Edit armor protection and attributes"));
         if (mobEditorItemSupplier != null) {
             editorsBuilder.item(mobEditorItemSupplier.get());
@@ -334,6 +363,10 @@ public final class RadialMenuRegistry {
                 stack(Items.LIGHTNING_ROD),
                 () -> new com.frenkvs.devmod.ui.wizard.QuickTestWizard(),
                 "Guided workflow to start testing"))
+            .item(RadialMenuItem.screen("Badge Tests", "\uD83C\uDFC6",
+                stack(Items.NETHER_STAR),
+                () -> new com.frenkvs.devmod.testing.BadgeTestScreen(),
+                "Test badge popup animations & sounds"))
             .build());
 
         // Category 4: Mob Editor
@@ -355,11 +388,11 @@ public final class RadialMenuRegistry {
             .iconStack(stack(Items.DIAMOND_SWORD))
             .item(RadialMenuItem.screen("Weapon Editor", "\uD83D\uDDE1",
                 stack(Items.DIAMOND_SWORD),
-                () -> new com.frenkvs.devmod.WeaponEditorScreen(),
+                () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.WEAPON),
                 "Edit weapon stats and body part multipliers"))
             .item(RadialMenuItem.screen("Armor Editor", "\uD83D\uDEE1",
                 stack(Items.DIAMOND_CHESTPLATE),
-                () -> new com.frenkvs.devmod.ArmorEditorScreen(),
+                () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.ARMOR),
                 "Edit armor protection and attributes"))
             .build());
 

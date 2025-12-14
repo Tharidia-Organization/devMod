@@ -77,6 +77,8 @@ public class ItemEditorDataManager {
         public String name;
         public String itemType; // For filtering by item type
         public long createdAt;
+        public String scope = "SPECIFIC";
+        public String devmodVersion = "unknown";
         public List<Float> statValues = new ArrayList<>();
         public List<EnchantData> enchantments = new ArrayList<>();
         public List<AttrData> attributes = new ArrayList<>();

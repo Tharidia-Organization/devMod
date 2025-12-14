@@ -1,11 +1,12 @@
 package com.frenkvs.devmod.ui.hub;
 
-import com.frenkvs.devmod.WeaponEditorScreen;
 import com.frenkvs.devmod.testing.ActiveTestHudOverlay;
 import com.frenkvs.devmod.testing.TestCase;
 import com.frenkvs.devmod.testing.TestingSession;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.ItemEditorScreen;
+import com.frenkvs.devmod.ui.editor.EditorStartTab;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -504,7 +505,7 @@ public class TestingHub extends Screen {
             case WEAPON -> {
                 Minecraft mc = Minecraft.getInstance();
                 if (mc.player != null && !mc.player.getMainHandItem().isEmpty()) {
-                    mc.setScreen(new WeaponEditorScreen());
+                    mc.setScreen(new ItemEditorScreen(mc.player.getMainHandItem(), EditorStartTab.WEAPON));
                 } else {
                     // Show message
                     showNotification("Hold an item in your main hand first!");

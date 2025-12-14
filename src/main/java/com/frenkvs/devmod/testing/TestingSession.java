@@ -382,6 +382,50 @@ public class TestingSession {
             TestCase.TestPriority.MEDIUM
         ));
 
+        // === Badge Popup Tests ===
+        addTest(new TestCase(
+            "badge_common", "Badge Popups", "Common Badge Popup",
+            "Verify COMMON rarity badge popup displays correctly",
+            "1. Press F8 to open test menu\n2. Click 'Test Common Badge'\n3. Verify popup slides in from top\n4. Check sound plays and popup fades out",
+            TestCase.TestPriority.HIGH
+        ));
+        addTest(new TestCase(
+            "badge_uncommon", "Badge Popups", "Uncommon Badge Popup",
+            "Verify UNCOMMON rarity badge popup displays correctly",
+            "1. Press F8 to open test menu\n2. Click 'Test Uncommon Badge'\n3. Verify green-tinted popup appears\n4. Check sound pitch is slightly different",
+            TestCase.TestPriority.HIGH
+        ));
+        addTest(new TestCase(
+            "badge_rare", "Badge Popups", "Rare Badge Popup",
+            "Verify RARE rarity badge popup with glow effect",
+            "1. Press F8 to open test menu\n2. Click 'Test Rare Badge'\n3. Verify blue popup with GLOW effect\n4. Check pulsing border animation",
+            TestCase.TestPriority.HIGH
+        ));
+        addTest(new TestCase(
+            "badge_epic", "Badge Popups", "Epic Badge Popup",
+            "Verify EPIC rarity badge popup with particles",
+            "1. Press F8 to open test menu\n2. Click 'Test Epic Badge'\n3. Verify purple popup with PARTICLES\n4. Particles should float around edges",
+            TestCase.TestPriority.HIGH
+        ));
+        addTest(new TestCase(
+            "badge_legendary", "Badge Popups", "Legendary Badge Popup",
+            "Verify LEGENDARY rarity badge popup (full effects)",
+            "1. Press F8 to open test menu\n2. Click 'Test Legendary Badge'\n3. Verify gold popup with ALL effects\n4. Check fanfare sound plays additionally",
+            TestCase.TestPriority.CRITICAL
+        ));
+        addTest(new TestCase(
+            "badge_queue", "Badge Popups", "Badge Queue System",
+            "Verify multiple badges queue correctly",
+            "1. Press F8 to open test menu\n2. Click 'Test All Badges' rapidly\n3. Verify popups appear ONE AT A TIME\n4. Each should complete before next starts",
+            TestCase.TestPriority.MEDIUM
+        ));
+        addTest(new TestCase(
+            "badge_config", "Badge Popups", "Badge Config Options",
+            "Verify badge popup config works",
+            "1. Open config (devmod-client.toml)\n2. Set badgePopup.enabled = false\n3. Test a badge popup - should NOT appear\n4. Re-enable and verify it works again",
+            TestCase.TestPriority.MEDIUM
+        ));
+
         // Organize by category
         for (TestCase test : testCases) {
             categorizedTests.computeIfAbsent(test.getCategory(), k -> new ArrayList<>()).add(test);

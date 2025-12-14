@@ -804,5 +804,25 @@
   "devmod.party.missed_teleport": "Hai perso il teletrasporto!",
   "devmod.party.cannot_cancel": "Impossibile annullare in questa fase",
   "devmod.party.arena_creation_failed": "Impossibile creare l'arena!",
-  "devmod.party.teleported_to_arena": "Teletrasportato nell'arena!"
+  "devmod.party.teleported_to_arena": "Teletrasportato nell'arena!",
+
+  "_comment_badge_popup": "Stringhe Overlay Popup Badge",
+  "devmod.badge.unlocked": "★ BADGE SBLOCCATO ★",
+  "devmod.badge.rarity.common": "Comune",
+  "devmod.badge.rarity.uncommon": "Non Comune",
+  "devmod.badge.rarity.rare": "Raro",
+  "devmod.badge.rarity.epic": "Epico",
+  "devmod.badge.rarity.legendary": "Leggendario",
+
+  "_comment_badge_config": "Stringhe Configurazione Popup Badge",
+  "devmod.config.badge_popup": "Impostazioni Popup Badge",
+  "devmod.config.badge_popup.enabled": "Abilita notifiche popup badge",
+  "devmod.config.badge_popup.duration": "Durata visualizzazione (ms)",
+  "devmod.config.badge_popup.slide_in": "Durata animazione ingresso (ms)",
+  "devmod.config.badge_popup.fade_out": "Durata dissolvenza uscita (ms)",
+  "devmod.config.badge_popup.y_position": "Posizione verticale dall'alto",
+  "devmod.config.badge_popup.sound_enabled": "Abilita suoni sblocco",
+  "devmod.config.badge_popup.sound_volume": "Volume suoni",
+  "devmod.config.badge_popup.particles_enabled": "Abilita effetti particelle",
+  "devmod.config.badge_popup.glow_enabled": "Abilita effetti luminosi"
 }

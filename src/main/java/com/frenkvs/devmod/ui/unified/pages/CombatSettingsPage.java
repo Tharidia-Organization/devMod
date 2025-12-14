@@ -4,6 +4,8 @@ import com.frenkvs.devmod.WeaponConfigManager;
 import com.frenkvs.devmod.WeaponStats;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.ItemEditorScreen;
+import com.frenkvs.devmod.ui.editor.EditorStartTab;
 import com.frenkvs.devmod.ui.unified.SettingsCategory;
 import com.frenkvs.devmod.ui.unified.SettingsPage;
 import net.minecraft.client.Minecraft;
@@ -199,7 +201,7 @@ public class CombatSettingsPage implements SettingsPage {
         int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
 
         if (!heldItem.isEmpty() && AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, contentX, buttonY, buttonWidth, buttonHeight)) {
-            mc.setScreen(new com.frenkvs.devmod.WeaponEditorScreen());
+            mc.setScreen(new ItemEditorScreen(heldItem, EditorStartTab.WEAPON));
             return true;
         }
 

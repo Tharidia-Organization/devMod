@@ -1,0 +1,78 @@
+Initialized native services in: /Users/erik/.gradle/native
+Initialized jansi services in: /Users/erik/.gradle/native
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.2.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Starting process 'Gradle build daemon'. Working directory: /Users/erik/.gradle/daemon/9.2.0 Command: /Library/Java/JavaVirtualMachines/jdk-23.0.1.jdk/Contents/Home/bin/java --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.prefs/java.util.prefs=ALL-UNNAMED --add-opens=java.base/java.nio.charset=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.xml/javax.xml.namespace=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED -Xmx3G -Dfile.encoding=UTF-8 -Duser.country=IT -Duser.language=it -Duser.variant -cp /Users/erik/.gradle/wrapper/dists/gradle-9.2.0-bin/11i5gvueggl8a5cioxuftxrik/gradle-9.2.0/lib/gradle-daemon-main-9.2.0.jar -javaagent:/Users/erik/.gradle/wrapper/dists/gradle-9.2.0-bin/11i5gvueggl8a5cioxuftxrik/gradle-9.2.0/lib/agents/gradle-instrumentation-agent-9.2.0.jar org.gradle.launcher.daemon.bootstrap.GradleDaemon 9.2.0
+Successfully started process 'Gradle build daemon'
+An attempt to start the daemon took 0.612 secs.
+The client will now receive all logging from the daemon (pid: 57997). The daemon log file: /Users/erik/.gradle/daemon/9.2.0/daemon-57997.out.log
+Daemon will be stopped at the end of the build 
+Using 10 worker leases.
+Operational build model parameters: {requiresToolingModels=false, parallelProjectExecution=true, configureOnDemand=false, configurationCache=true, configurationCacheParallelStore=false, configurationCacheParallelLoad=true, isolatedProjects=false, parallelProjectConfiguration=false, intermediateModelCache=false, parallelToolingApiActions=true, invalidateCoupledProjects=false, modelAsProjectDependency=false, resilientModelBuilding=false}
+Received JVM installation metadata from '/Library/Java/JavaVirtualMachines/jdk-23.0.1.jdk/Contents/Home': {JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-23.0.1.jdk/Contents/Home, JAVA_VERSION=23.0.1, JAVA_VENDOR=Oracle Corporation, RUNTIME_NAME=OpenJDK Runtime Environment, RUNTIME_VERSION=23.0.1+11-39, VM_NAME=OpenJDK 64-Bit Server VM, VM_VERSION=23.0.1+11-39, VM_VENDOR=Oracle Corporation, OS_ARCH=aarch64}
+Encryption key source: default Gradle keystore (pkcs12)
+Reusing configuration cache.
+Watching the file system is configured to be enabled if available
+Now considering [/Users/erik/Desktop/DevMod/devMod] as hierarchies to watch
+File system watching is active
+Using local directory build cache for the root build (location = /Users/erik/.gradle/caches/build-cache-1, remove unused entries = after 7 days).
+Tasks to be executed: [task ':createMinecraftArtifacts', task ':compileJava', task ':generateModMetadata', task ':processResources', task ':classes', task ':compileTestJava', task ':processTestResources', task ':testClasses', task ':test']
+Tasks that were excluded: []
+Resolve mutations for :createMinecraftArtifacts (Thread[#58,Execution worker,5,main]) started.
+Resolve mutations for :generateModMetadata (Thread[#66,Execution worker Thread 9,5,main]) started.
+Resolve mutations for :processTestResources (Thread[#57,included builds,5,main]) started.
+:generateModMetadata (Thread[#66,Execution worker Thread 9,5,main]) started.
+:processTestResources (Thread[#57,included builds,5,main]) started.
+:createMinecraftArtifacts (Thread[#58,Execution worker,5,main]) started.
+
+> Task :processTestResources NO-SOURCE
+Skipping task ':processTestResources' as it has no source files and no previous output files.
+
+> Task :generateModMetadata UP-TO-DATE
+Caching disabled for task ':generateModMetadata' because:
+  Not worth caching
+Skipping task ':generateModMetadata' as it is up-to-date.
+Resolve mutations for :processResources (Thread[#66,Execution worker Thread 9,5,main]) started.
+:processResources (Thread[#66,Execution worker Thread 9,5,main]) started.
+
+> Task :createMinecraftArtifacts UP-TO-DATE
+Caching disabled for task ':createMinecraftArtifacts' because:
+  Implements its own caching
+Skipping task ':createMinecraftArtifacts' as it is up-to-date.
+Resolve mutations for :compileJava (Thread[#58,Execution worker,5,main]) started.
+
+> Task :processResources UP-TO-DATE
+Caching disabled for task ':processResources' because:
+  Not worth caching
+Skipping task ':processResources' as it is up-to-date.
+:compileJava (Thread[#58,Execution worker,5,main]) started.
+
+> Task :compileJava UP-TO-DATE
+Build cache key for task ':compileJava' is f1a2b5f259529c0dc9aa27f2787fb89a
+Skipping task ':compileJava' as it is up-to-date.
+Resolve mutations for :classes (Thread[#58,Execution worker,5,main]) started.
+:classes (Thread[#58,Execution worker,5,main]) started.
+
+> Task :classes UP-TO-DATE
+Skipping task ':classes' as it has no actions.
+Resolve mutations for :compileTestJava (Thread[#58,Execution worker,5,main]) started.
+:compileTestJava (Thread[#58,Execution worker,5,main]) started.
+
+> Task :compileTestJava UP-TO-DATE
+Build cache key for task ':compileTestJava' is 9ff33fe3de5538a4ebc111eed48ef720
+Skipping task ':compileTestJava' as it is up-to-date.
+Resolve mutations for :testClasses (Thread[#58,Execution worker,5,main]) started.
+:testClasses (Thread[#58,Execution worker,5,main]) started.
+
+> Task :testClasses UP-TO-DATE
+Skipping task ':testClasses' as it has no actions.
+Resolve mutations for :test (Thread[#58,Execution worker,5,main]) started.
+:test (Thread[#58,Execution worker,5,main]) started.
+
+> Task :test UP-TO-DATE
+Build cache key for task ':test' is ae0b59d2f0c5b826854c149917abebed
+Skipping task ':test' as it is up-to-date.
+
+BUILD SUCCESSFUL in 2s
+6 actionable tasks: 6 up-to-date
+Watched directory hierarchies: [/Users/erik/Desktop/DevMod/devMod]
+Configuration cache entry reused.

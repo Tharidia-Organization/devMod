@@ -28,6 +28,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.ItemStack;
+import com.frenkvs.devmod.ui.editor.ItemEditorScreen;
+import com.frenkvs.devmod.ui.editor.EditorStartTab;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -225,15 +228,22 @@ public class RenderEvents {
             if (!screenOpen) {
                 boolean shiftHeld = Screen.hasShiftDown();
                 boolean ctrlHeld = Screen.hasControlDown();
-                var heldItem = player.getMainHandItem();
+                ItemStack heldItem = player.getMainHandItem().copy();
 
                 if (ctrlHeld) {
                     // Ctrl+M: Force ArmorEditor
-                    mc.setScreen(new com.frenkvs.devmod.ArmorEditorScreen());
+                    if (!heldItem.isEmpty()) {
+                        mc.setScreen(new ItemEditorScreen(heldItem, EditorStartTab.ARMOR));
+                    } else {
+                        player.displayClientMessage(
+                            Objects.requireNonNull(Component.translatable("devmod.message.must_hold_item").withStyle(s -> s.withColor(0xFF5555))),
+                            true
+                        );
+                    }
                 } else if (shiftHeld) {
                     // Shift+M: Force WeaponEditor
                     if (!heldItem.isEmpty()) {
-                        mc.setScreen(new com.frenkvs.devmod.WeaponEditorScreen());
+                        mc.setScreen(new ItemEditorScreen(heldItem, EditorStartTab.WEAPON));
                     } else {
                         player.displayClientMessage(
                                 Objects.requireNonNull(Component.translatable("devmod.message.must_hold_item").withStyle(s -> s.withColor(0xFF5555))),
@@ -245,10 +255,10 @@ public class RenderEvents {
                     if (!heldItem.isEmpty()) {
                         if (heldItem.getItem() instanceof ArmorItem) {
                             // Holding armor → ArmorEditor
-                            mc.setScreen(new com.frenkvs.devmod.ArmorEditorScreen());
+                            mc.setScreen(new ItemEditorScreen(heldItem, EditorStartTab.ARMOR));
                         } else {
                             // Holding weapon/tool/other → WeaponEditor
-                            mc.setScreen(new com.frenkvs.devmod.WeaponEditorScreen());
+                            mc.setScreen(new ItemEditorScreen(heldItem, EditorStartTab.WEAPON));
                         }
                     } else {
                         // Empty hand → Show hint about modifiers
