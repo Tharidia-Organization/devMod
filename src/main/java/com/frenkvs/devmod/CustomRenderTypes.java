@@ -1,4 +1,4 @@
-package com.frenkvs.devmod.rendering;
+package com.frenkvs.devmod;
 
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;

@@ -147,7 +147,7 @@ public class SphereRenderer {
                                            Vec3 center, double radius,
                                            float red, float green, float blue, float alpha) {
         // Use custom RenderType with POSITION_COLOR + alpha blending
-        VertexConsumer consumer = bufferSource.getBuffer(com.frenkvs.devmod.rendering.CustomRenderTypes.TRANSLUCENT_POSITION_COLOR);
+        VertexConsumer consumer = bufferSource.getBuffer(com.frenkvs.devmod.CustomRenderTypes.TRANSLUCENT_POSITION_COLOR);
         Matrix4f matrix = poseStack.last().pose();
 
         int latitudes = 16;  // Vertical segments
