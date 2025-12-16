@@ -99,6 +99,7 @@ public class EditorToggle {
             return TOGGLE_HEIGHT;
         }
 
+        GuiGraphics safeGraphics = graphics;
         var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
 
         int height = TOGGLE_HEIGHT;
@@ -110,7 +111,7 @@ public class EditorToggle {
         // Label on the left
         int labelColor = enabled ? UIConstants.Text.PRIMARY : UIConstants.Text.MUTED;
         String safeLabel = Objects.requireNonNullElse(label, "");
-        graphics.drawString(font, safeLabel, x, y + (height - 8) / 2, labelColor, false);
+        safeGraphics.drawString(font, safeLabel, x, y + (height - 8) / 2, labelColor, false);
 
         // Toggle on the right - centered vertically within TOGGLE_HEIGHT
         int toggleX = x + width - TOGGLE_WIDTH;
@@ -127,7 +128,7 @@ public class EditorToggle {
             trackColor = UIConstants.Background.INPUT;
         }
 
-        graphics.fill(toggleX, trackY, toggleX + TOGGLE_WIDTH, trackY + TRACK_HEIGHT, trackColor);
+        safeGraphics.fill(toggleX, trackY, toggleX + TOGGLE_WIDTH, trackY + TRACK_HEIGHT, trackColor);
 
         // Border
         int borderColor = focused ? UIConstants.Border.ACCENT :
@@ -149,7 +150,7 @@ public class EditorToggle {
             handleColor = UIConstants.Slider.THUMB;
         }
 
-        graphics.fill(handleX, handleY, handleX + HANDLE_SIZE, handleY + HANDLE_SIZE, handleColor);
+        safeGraphics.fill(handleX, handleY, handleX + HANDLE_SIZE, handleY + HANDLE_SIZE, handleColor);
 
         // State indicator text
         String stateText = value ? "ON" : "OFF";
@@ -157,7 +158,7 @@ public class EditorToggle {
             (value ? UIConstants.Accent.GREEN : UIConstants.Text.MUTED) :
             UIConstants.Text.DISABLED;
         int stateX = toggleX - font.width(stateText) - 8;
-        graphics.drawString(font, stateText, stateX, y + (height - 8) / 2, stateColor, false);
+        safeGraphics.drawString(font, stateText, stateX, y + (height - 8) / 2, stateColor, false);
 
         return height;
     }

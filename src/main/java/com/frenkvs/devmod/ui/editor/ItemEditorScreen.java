@@ -664,8 +664,9 @@ public class ItemEditorScreen extends Screen {
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         perfMonitor.startFrame();
-        // Dark overlay background
-        graphics.fill(0, 0, width, height, UIConstants.Background.OVERLAY);
+        // Dark overlay background, but leave vanilla hotbar area unobscured
+        int hotbarReserve = ScaledCoord.scaleDim(24);
+        graphics.fill(0, 0, width, Math.max(0, height - hotbarReserve), UIConstants.Background.OVERLAY);
 
         // Get layout areas (centralized in EditorLayout)
         var panelBounds = editorLayout.getPanelBounds();
@@ -1104,6 +1105,10 @@ public class ItemEditorScreen extends Screen {
         if (header.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
+        // Allow interaction with the real vanilla hotbar while this screen is open
+        if (handleHotbarClick(mouseX, mouseY, button)) {
+            return true;
+        }
         if (footer.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
@@ -1161,6 +1166,9 @@ public class ItemEditorScreen extends Screen {
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         if (showLowConfidenceDialog) return false;
+        if (handleHotbarClick(mouseX, mouseY, button, true)) {
+            return true;
+        }
         if (scrollArea.mouseReleased(mouseX, mouseY, button)) {
             return true;
         }
@@ -1169,6 +1177,54 @@ public class ItemEditorScreen extends Screen {
         }
 
         return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    /**
+     * Minimal hotbar interaction while the editor screen is open.
+     * Left-click to pick up / place items using the carried stack semantics.
+     */
+    private boolean handleHotbarClick(double mouseX, double mouseY, int button) {
+        return handleHotbarClick(mouseX, mouseY, button, false);
+    }
+
+    /**
+     * @param placeOnly when true, only process if there's a carried stack (for drag-release scenarios)
+     */
+    private boolean handleHotbarClick(double mouseX, double mouseY, int button, boolean placeOnly) {
+        if (button != 0) return false;
+        var player = Minecraft.getInstance().player;
+        if (player == null) return false;
+
+        // Mirror the vanilla HUD placement: centered at bottom, 9 slots
+        final int hotbarWidth = 182;
+        final int slotSize = 20;
+        final int startX = (this.width - hotbarWidth) / 2;
+        final int startY = this.height - 22;
+
+        for (int i = 0; i < 9; i++) {
+            int slotX = startX + i * slotSize;
+            if (mouseX >= slotX && mouseX < slotX + slotSize && mouseY >= startY && mouseY < startY + slotSize) {
+                var inv = player.getInventory();
+                ItemStack slotStack = Objects.requireNonNull(inv.getItem(i), "hotbar slot cannot be null");
+                ItemStack carried = Objects.requireNonNull(player.containerMenu.getCarried(), "carried stack cannot be null");
+
+                if (placeOnly && carried.isEmpty()) {
+                    return false;
+                }
+
+                if (carried.isEmpty()) {
+                    player.containerMenu.setCarried(Objects.requireNonNull(slotStack.copy(), "copy cannot be null"));
+                    inv.setItem(i, Objects.requireNonNull(ItemStack.EMPTY, "empty cannot be null"));
+                } else {
+                    ItemStack carriedCopy = Objects.requireNonNull(carried.copy(), "copy cannot be null");
+                    ItemStack slotCopy = Objects.requireNonNull(slotStack.copy(), "copy cannot be null");
+                    inv.setItem(i, carriedCopy);
+                    player.containerMenu.setCarried(slotCopy);
+                }
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

@@ -9,6 +9,7 @@ import com.frenkvs.devmod.ui.editor.ItemEditorScreen;
 import com.frenkvs.devmod.ui.editor.EditorStartTab;
 import com.frenkvs.devmod.ui.editor.WeaponTypeDetector;
 import com.frenkvs.devmod.ui.radial.model.MacroCategory;
+import com.frenkvs.devmod.ui.testing.VoxelLabUiTestScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -391,6 +392,10 @@ public final class RadialMenuRegistry {
                 stack(Items.NETHER_STAR),
                 () -> new com.frenkvs.devmod.testing.BadgeTestScreen(),
                 "Test badge popup animations & sounds"))
+            .item(RadialMenuItem.screen("UI Test Lab", "\uD83D\uDD8C",
+                stack(Items.GLOW_ITEM_FRAME),
+                VoxelLabUiTestScreen::new,
+                "Voxel Lab: mostra e interagisci con tutte le varianti di EditorButton"))
             .build());
 
         // Category 4: Mob Editor

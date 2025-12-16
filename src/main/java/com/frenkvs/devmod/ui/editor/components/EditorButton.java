@@ -8,10 +8,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
- * Custom button component for the editor.
- * Supports primary/secondary styles and icons.
+ * Custom button component per l'editor.
+ * Ora pensato come bottone principale: supporta varianti, icone, hotkey hint, toggle.
  *
  * @see EDITOR_DESIGN_SYSTEM.md Section 2.7
  */
@@ -41,9 +42,14 @@ public class EditorButton {
     private final String id;
     private final String label;
     private Style style = Style.NORMAL;
+    private Size size = Size.MEDIUM;
+    private String icon = null;
     private String tooltip = null;
+    private String hotkeyHint = null;
     private boolean enabled = true;
     private boolean playSound = true;
+    private boolean toggleable = false;
+    private boolean toggled = false;
 
     // State
     private boolean hovered = false;
@@ -54,6 +60,7 @@ public class EditorButton {
 
     // Callback
     private Runnable onClick;
+    private Consumer<Boolean> onToggle;
 
     // ═══════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -73,8 +80,26 @@ public class EditorButton {
         return this;
     }
 
+    public EditorButton size(Size size) {
+        this.size = size;
+        return this;
+    }
+
+    /**
+     * Icona testuale (glyph) da mostrare a sinistra del label.
+     */
+    public EditorButton icon(String icon) {
+        this.icon = icon;
+        return this;
+    }
+
     public EditorButton tooltip(String tooltip) {
         this.tooltip = tooltip;
+        return this;
+    }
+
+    public EditorButton hotkeyHint(String hotkeyHint) {
+        this.hotkeyHint = hotkeyHint;
         return this;
     }
 
@@ -88,8 +113,24 @@ public class EditorButton {
         return this;
     }
 
+    public EditorButton toggleable(boolean toggleable) {
+        this.toggleable = toggleable;
+        return this;
+    }
+
+    public EditorButton toggled(boolean toggled) {
+        this.toggleable = true;
+        this.toggled = toggled;
+        return this;
+    }
+
     public EditorButton onClick(Runnable callback) {
         this.onClick = callback;
+        return this;
+    }
+
+    public EditorButton onToggle(Consumer<Boolean> callback) {
+        this.onToggle = callback;
         return this;
     }
 
@@ -98,7 +139,7 @@ public class EditorButton {
     // ═══════════════════════════════════════════════════════════════
 
     /**
-     * Render the button at the given position.
+     * Render del bottone alla posizione indicata.
      */
     public void render(GuiGraphics graphics, int x, int y, int width, int height, int mouseX, int mouseY) {
         var font = Minecraft.getInstance().font;
@@ -110,9 +151,10 @@ public class EditorButton {
         this.hovered = enabled && bounds.contains(mouseX, mouseY);
 
         // Get colors based on style and state
-        int bgColor = getBackgroundColor();
-        int borderColor = getBorderColor();
-        int textColor = getTextColor();
+        boolean active = toggleable && toggled;
+        int bgColor = getBackgroundColor(active);
+        int borderColor = getBorderColor(active);
+        int textColor = getTextColor(active);
 
         // Background
         graphics.fill(x, y, x + width, y + height, bgColor);
@@ -123,39 +165,65 @@ public class EditorButton {
         // Pressed effect (slightly offset text)
         int textOffsetY = pressed && hovered ? 1 : 0;
 
-        // Label (centered)
-        int textWidth = font.width(label);
-        int textX = x + (width - textWidth) / 2;
-        int textY = y + (height - font.lineHeight) / 2 + textOffsetY;
-        graphics.drawString(font, label, textX, textY, textColor, false);
+        // Content layout
+        int padding = UIConstants.Spacing.SM;
+        int contentY = y + (height - font.lineHeight) / 2 + textOffsetY;
+
+        // Right hotkey hint
+        int hintWidth = hotkeyHint != null ? font.width(hotkeyHint) : 0;
+        int hintX = hotkeyHint != null ? x + width - padding - hintWidth : x + width - padding;
+
+        if (hotkeyHint != null) {
+            graphics.drawString(font, hotkeyHint, hintX, contentY, UIConstants.Text.MUTED, false);
+        }
+
+        // Left icon
+        int iconWidth = icon != null ? font.width(icon) : 0;
+        int iconX = x + padding;
+        if (icon != null) {
+            graphics.drawString(font, icon, iconX, contentY, textColor, false);
+        }
+
+        // Label, con ellissi se serve
+        int labelStartX = icon != null ? iconX + iconWidth + UIConstants.Spacing.SM : x + padding;
+        int labelAreaRight = hotkeyHint != null ? hintX - UIConstants.Spacing.SM : x + width - padding;
+        int labelAreaWidth = Math.max(0, labelAreaRight - labelStartX);
+        String labelText = Objects.requireNonNull(fitToWidth(label, labelAreaWidth, font), "labelText");
+        int textWidth = font.width(labelText);
+        int textX = labelStartX + Math.max(0, (labelAreaWidth - textWidth) / 2);
+        graphics.drawString(font, labelText, textX, contentY, textColor, false);
     }
 
     /**
-     * Render at default size.
+     * Render con dimensioni di default.
      */
     public void render(GuiGraphics graphics, int x, int y, int mouseX, int mouseY) {
-        render(graphics, x, y, UIConstants.Size.BUTTON_WIDTH, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
+        render(graphics, x, y, UIConstants.Size.BUTTON_WIDTH, size.height, mouseX, mouseY);
     }
 
-    private int getBackgroundColor() {
+    private int getBackgroundColor(boolean active) {
         if (!enabled) {
             return UIConstants.Button.DISABLED;
         }
 
         return switch (style) {
-            case PRIMARY -> pressed && hovered ? UIConstants.Button.PRIMARY_PRESS :
-                           (hovered ? UIConstants.Button.PRIMARY_HOVER : UIConstants.Button.PRIMARY);
-            case DANGER -> pressed && hovered ? UIConstants.darken(UIConstants.Accent.RED, 0.3f) :
-                          (hovered ? UIConstants.lighten(UIConstants.Accent.RED, 0.1f) : UIConstants.Accent.RED);
-            case SUCCESS -> pressed && hovered ? UIConstants.darken(UIConstants.Accent.GREEN, 0.3f) :
-                           (hovered ? UIConstants.lighten(UIConstants.Accent.GREEN, 0.1f) : UIConstants.Accent.GREEN);
-            case GHOST -> hovered ? UIConstants.Background.HOVER : 0x00000000;
-            default -> pressed && hovered ? UIConstants.Button.PRESS :
-                      (hovered ? UIConstants.Button.HOVER : UIConstants.Button.NORMAL);
+            case PRIMARY -> (pressed && hovered) || active
+                ? UIConstants.darken(UIConstants.Accent.CYAN, 0.2f)
+                : (hovered ? UIConstants.lighten(UIConstants.Accent.CYAN, 0.05f) : UIConstants.Accent.CYAN);
+            case DANGER -> (pressed && hovered) || active
+                ? UIConstants.darken(UIConstants.Accent.RED, 0.2f)
+                : (hovered ? UIConstants.lighten(UIConstants.Accent.RED, 0.05f) : UIConstants.Accent.RED);
+            case SUCCESS -> (pressed && hovered) || active
+                ? UIConstants.darken(UIConstants.Accent.GREEN, 0.2f)
+                : (hovered ? UIConstants.lighten(UIConstants.Accent.GREEN, 0.05f) : UIConstants.Accent.GREEN);
+            case GHOST -> hovered || active ? UIConstants.Background.HOVER : UIConstants.Background.INPUT;
+            default -> (pressed && hovered) || active
+                ? UIConstants.Background.ACTIVE
+                : (hovered ? UIConstants.Background.HOVER : UIConstants.Background.INPUT);
         };
     }
 
-    private int getBorderColor() {
+    private int getBorderColor(boolean active) {
         if (!enabled) {
             return UIConstants.Border.MUTED;
         }
@@ -164,18 +232,18 @@ public class EditorButton {
             case PRIMARY -> UIConstants.Accent.CYAN;
             case DANGER -> UIConstants.Accent.RED;
             case SUCCESS -> UIConstants.Accent.GREEN;
-            case GHOST -> hovered ? UIConstants.Border.DEFAULT : 0x00000000;
-            default -> hovered ? UIConstants.Border.HOVER : UIConstants.Border.DEFAULT;
+            case GHOST -> (hovered || active) ? UIConstants.Border.HOVER : UIConstants.Border.DEFAULT;
+            default -> (hovered || active) ? UIConstants.Border.HOVER : UIConstants.Border.DEFAULT;
         };
     }
 
-    private int getTextColor() {
+    private int getTextColor(boolean active) {
         if (!enabled) {
             return UIConstants.Text.DISABLED;
         }
 
         return switch (style) {
-            case GHOST -> hovered ? UIConstants.Text.PRIMARY : UIConstants.Text.SECONDARY;
+            case GHOST -> hovered || active ? UIConstants.Text.PRIMARY : UIConstants.Text.SECONDARY;
             default -> UIConstants.Text.PRIMARY;
         };
     }
@@ -209,6 +277,13 @@ public class EditorButton {
             // Trigger click
             if (playSound) {
                 EditorSounds.playButtonClick();
+            }
+
+            if (toggleable) {
+                toggled = !toggled;
+                if (onToggle != null) {
+                    onToggle.accept(toggled);
+                }
             }
 
             if (onClick != null) {
@@ -257,5 +332,61 @@ public class EditorButton {
 
     public ResponsiveLayout.Rect getBounds() {
         return bounds;
+    }
+
+    public boolean isToggleable() {
+        return toggleable;
+    }
+
+    public boolean isToggled() {
+        return toggled;
+    }
+
+    public Size getSize() {
+        return size;
+    }
+
+    /**
+     * Ritorna un tooltip attivo (solo se hovered e presente).
+     */
+    public String activeTooltip() {
+        return hovered ? tooltip : null;
+    }
+
+    private String fitToWidth(String text, int maxWidth, net.minecraft.client.gui.Font font) {
+        String safeText = Objects.requireNonNull(text, "text");
+        if (maxWidth <= 0) {
+            return "";
+        }
+        if (font.width(safeText) <= maxWidth) {
+            return safeText;
+        }
+        String ellipsis = "...";
+        int ellipsisWidth = font.width(ellipsis);
+        if (ellipsisWidth >= maxWidth) {
+            return ellipsis;
+        }
+        int allowed = maxWidth - ellipsisWidth;
+        String slice = font.plainSubstrByWidth(safeText, allowed);
+        return slice + ellipsis;
+    }
+
+    /**
+     * Taglie base per altezze differenti.
+     */
+    public enum Size {
+        SMALL(16),
+        MEDIUM(UIConstants.Size.BUTTON_HEIGHT),
+        LARGE(24);
+
+        final int height;
+
+        Size(int height) {
+            this.height = height;
+        }
+
+        public int height() {
+            return height;
+        }
     }
 }

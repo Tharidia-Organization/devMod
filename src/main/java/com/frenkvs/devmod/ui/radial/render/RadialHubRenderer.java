@@ -4,6 +4,7 @@ import com.frenkvs.devmod.ui.radial.config.RadialMenuConstants;
 import com.frenkvs.devmod.ui.radial.model.MacroCategory;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 
 import java.util.Objects;
@@ -240,8 +241,14 @@ public final class RadialHubRenderer {
         int iconX = (int) (cx + Math.cos(midAngle) * iconRadius);
         int iconY = (int) (cy + Math.sin(midAngle) * iconRadius);
 
-        int iconColor = isSelected ? 0xFFFFFFFF : (isHovered ? macro.getColor() : 0xFFAAAAAA);
-        graphics.drawCenteredString(font, macro.getIcon(), iconX, iconY - 4, iconColor);
+        ResourceLocation tex = macro.getIconTexture();
+        if (tex != null) {
+            int size = 18;
+            graphics.blit(tex, iconX - size / 2, iconY - size / 2 - 2, 0, 0, size, size, size, size);
+        } else {
+            int iconColor = isSelected ? 0xFFFFFFFF : (isHovered ? macro.getColor() : 0xFFAAAAAA);
+            graphics.drawCenteredString(font, macro.getIcon(), iconX, iconY - 4, iconColor);
+        }
     }
 
     /**
@@ -266,6 +273,7 @@ public final class RadialHubRenderer {
         // Icon
         String centerIcon;
         int centerIconColor;
+        ResourceLocation centerTex = null;
 
         if (centerHovered) {
             centerIcon = state.inSubcategory ? "←" : "✕";
@@ -276,10 +284,16 @@ public final class RadialHubRenderer {
         } else {
             // Show selected macro icon in center when not hovered
             centerIcon = state.selectedMacro.getIcon();
+            centerTex = state.selectedMacro.getIconTexture();
             centerIconColor = state.selectedMacro.getColor();
         }
 
-        graphics.drawCenteredString(font, centerIcon, state.centerX, state.centerY - 3, centerIconColor);
+        if (centerTex != null && !centerHovered && !state.searchMode) {
+            int size = (int) (closeBtnRadius * 1.2);
+            graphics.blit(centerTex, state.centerX - size / 2, state.centerY - size / 2 - 2, 0, 0, size, size, size, size);
+        } else {
+            graphics.drawCenteredString(font, centerIcon, state.centerX, state.centerY - 3, centerIconColor);
+        }
     }
 
     /**

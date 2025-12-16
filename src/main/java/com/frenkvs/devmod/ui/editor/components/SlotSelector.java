@@ -115,6 +115,21 @@ public final class SlotSelector {
         return this;
     }
 
+    /**
+     * Programmatically select a slot by EquipmentSlot (sync from preview).
+     */
+    public void selectSlot(EquipmentSlot slot) {
+        for (int i = 0; i < slots.size(); i++) {
+            if (slots.get(i).slot() == slot) {
+                selectedIndex = i;
+                if (onSelect != null) {
+                    onSelect.accept(slots.get(i));
+                }
+                break;
+            }
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // RENDERING
     // ═══════════════════════════════════════════════════════════════

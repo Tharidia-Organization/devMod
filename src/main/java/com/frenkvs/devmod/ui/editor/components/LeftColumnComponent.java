@@ -24,7 +24,6 @@ public class LeftColumnComponent {
     // ═══════════════════════════════════════════════════════════════
 
     // Component positions (relative to left column origin)
-    private static final int PREVIEW_X = 12;
     private static final int PREVIEW_Y = 20;
     private static final int SLOT_SELECTOR_X = 5;
     private static final int SLOT_SELECTOR_Y = 170;
@@ -61,10 +60,12 @@ public class LeftColumnComponent {
 
         // Wire up slot selector callback
         slotSelector.onSelect(slot -> {
+            preview.setSlot(slot.slot());
             if (onSlotSelect != null) {
                 onSlotSelect.accept(slot);
             }
         });
+        preview.onSlotClick(slotSelector::selectSlot);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -182,7 +183,7 @@ public class LeftColumnComponent {
         // Preview
         int previewSize = ScaledCoord.scaleDim(UIConstants.PanelDimensions.PREVIEW_SIZE);
         int previewY = y + ScaledCoord.scaleDim(PREVIEW_Y);
-        int previewX = x + Math.max(ScaledCoord.scaleDim(PREVIEW_X), (columnWidth - previewSize) / 2);
+        int previewX = x + (columnWidth - previewSize) / 2;
         preview.render(graphics, previewX, previewY, mouseX, mouseY, partialTick);
 
         // Slot selector

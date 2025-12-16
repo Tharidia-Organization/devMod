@@ -81,6 +81,8 @@ public class RadialMenuScreenV3 extends Screen {
     private int selectedFavoriteIndex = -1;
     private int prevSelectedCategory = -1;
     private int centerX, centerY;
+    private double lastMouseX = 0;
+    private double lastMouseY = 0;
 
     // === Animation System ===
     private final RadialAnimator animator = new RadialAnimator(6, 10, RadialMenuConstants.MAX_FAVORITES);
@@ -278,6 +280,9 @@ public class RadialMenuScreenV3 extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        this.lastMouseX = mouseX;
+        this.lastMouseY = mouseY;
+
         // Update animations
         updateAnimations(partialTick);
 
@@ -643,32 +648,15 @@ public class RadialMenuScreenV3 extends Screen {
     // INPUT HANDLING
     // ================================================================
 
+    private boolean primaryClickHandled = false;
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         boolean shiftHeld = hasShiftDown();
 
         if (button == 0) {
-            // Check favorites first
-            if (selectedFavoriteIndex >= 0 && selectedFavoriteIndex < favorites.size()) {
-                FavoriteItem fav = favorites.get(selectedFavoriteIndex);
-                executeItem(fav.item, fav.category);
-                return true;
-            }
-
-            // Shift+click to toggle favorite
-            if (shiftHeld && selectedItemIndex >= 0 && selectedCategoryIndex >= 0) {
-                RadialCategory cat = getActiveCategories().get(selectedCategoryIndex);
-                RadialMenuItem item = cat.getItems().get(selectedItemIndex);
-                toggleFavorite(item, cat);
-                return true;
-            }
-
-            if (editMode && selectedItemIndex >= 0) {
-                openItemEditor();
-            } else {
-                activateSelection();
-            }
-            return true;
+            primaryClickHandled = handlePrimaryClick(shiftHeld, mouseX, mouseY);
+            return primaryClickHandled;
         } else if (button == 1 && config.rightClickToEdit) {
             if (selectedItemIndex >= 0) {
                 openItemEditor();
@@ -676,6 +664,43 @@ public class RadialMenuScreenV3 extends Screen {
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        try {
+            if (button == 0 && !primaryClickHandled) {
+                // Alcuni trackpad su macOS inviano solo mouseReleased: ripeti la logica del click primario.
+                return handlePrimaryClick(hasShiftDown(), mouseX, mouseY);
+            }
+            return super.mouseReleased(mouseX, mouseY, button);
+        } finally {
+            primaryClickHandled = false;
+        }
+    }
+
+    private boolean handlePrimaryClick(boolean shiftHeld, double mouseX, double mouseY) {
+        // Check favorites first
+        if (selectedFavoriteIndex >= 0 && selectedFavoriteIndex < favorites.size()) {
+            FavoriteItem fav = favorites.get(selectedFavoriteIndex);
+            executeItem(fav.item, fav.category);
+            return true;
+        }
+
+        // Shift+click to toggle favorite
+        if (shiftHeld && selectedItemIndex >= 0 && selectedCategoryIndex >= 0) {
+            RadialCategory cat = getActiveCategories().get(selectedCategoryIndex);
+            RadialMenuItem item = cat.getItems().get(selectedItemIndex);
+            toggleFavorite(item, cat);
+            return true;
+        }
+
+        if (editMode && selectedItemIndex >= 0) {
+            openItemEditor();
+        } else {
+            activateSelection(mouseX, mouseY);
+        }
+        return true;
     }
 
     @Override
@@ -701,7 +726,7 @@ public class RadialMenuScreenV3 extends Screen {
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
         if (keyCode == GLFW.GLFW_KEY_G && config.releaseToSelect) {
-            activateSelection();
+                activateSelection(lastMouseX, lastMouseY);
             return true;
         }
         return super.keyReleased(keyCode, scanCode, modifiers);
@@ -851,10 +876,9 @@ public class RadialMenuScreenV3 extends Screen {
         };
     }
 
-    private void activateSelection() {
-        Minecraft mc = Minecraft.getInstance();
-        double dx = mc.mouseHandler.xpos() * width / mc.getWindow().getWidth() - centerX;
-        double dy = mc.mouseHandler.ypos() * height / mc.getWindow().getHeight() - centerY;
+    private void activateSelection(double mouseX, double mouseY) {
+        double dx = mouseX - centerX;
+        double dy = mouseY - centerY;
         double distance = Math.sqrt(dx * dx + dy * dy);
 
         // Check if clicking on center close button (very center)

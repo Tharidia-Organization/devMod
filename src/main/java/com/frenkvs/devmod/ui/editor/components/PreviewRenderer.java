@@ -14,6 +14,9 @@ import net.minecraft.world.item.ItemStack;
 import org.joml.Quaternionf;
 
 import java.util.Objects;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.function.Consumer;
 
 /**
  * Preview renderer for displaying items or entity models.
@@ -52,6 +55,7 @@ public class PreviewRenderer {
     private PreviewMode mode = PreviewMode.ENTITY;
     private ItemStack item = ItemStack.EMPTY;
     private EquipmentSlot slot = EquipmentSlot.MAINHAND;
+    // Uses player inventory directly; no local buffers
 
     // Rotation state
     private float rotationX = 0f;
@@ -67,10 +71,12 @@ public class PreviewRenderer {
     // Display options
     private boolean showHint = true;
     private String hintText = "Drag to rotate";
+    private Consumer<EquipmentSlot> onSlotClick;
 
     // Bounds
     private ResponsiveLayout.Rect bounds = ResponsiveLayout.Rect.EMPTY;
     private ResponsiveLayout.Rect previewBounds = ResponsiveLayout.Rect.EMPTY;
+    private final List<SlotBox> slotBoxes = new ArrayList<>();
 
     // ═══════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -107,6 +113,11 @@ public class PreviewRenderer {
         return this;
     }
 
+    public PreviewRenderer onSlotClick(Consumer<EquipmentSlot> callback) {
+        this.onSlotClick = callback;
+        return this;
+    }
+
     public PreviewRenderer autoRotate(boolean auto) {
         this.autoRotate = auto;
         return this;
@@ -135,18 +146,17 @@ public class PreviewRenderer {
         this.bounds = new ResponsiveLayout.Rect(x, y, size, totalHeight);
         this.previewBounds = new ResponsiveLayout.Rect(x, y, size, size);
 
-        // Background
-        graphics.fill(x, y, x + size, y + size, UIConstants.Background.INPUT);
-
-        // Border
-        int borderColor = dragging ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
-        AxiomRenderer.drawBorder(graphics, x, y, size, size, borderColor);
+        // Background layers (dark + glow)
+        renderBackdrop(graphics, x, y, size);
 
         // Auto-rotation update
         if (autoRotate && !dragging) {
             rotationY += autoRotateSpeed;
             if (rotationY > 360f) rotationY -= 360f;
         }
+
+        slotBoxes.clear();
+        renderSlots(graphics, font, x, y, size, mouseX, mouseY);
 
         // Render content based on mode
         if (mode == PreviewMode.ENTITY) {
@@ -164,7 +174,28 @@ public class PreviewRenderer {
             graphics.drawString(font, safeHintText, hintX, hintY, UIConstants.Text.MUTED, false);
         }
 
+        // Render carried stack (from vanilla "carried" slot) following the cursor
+        var player = Minecraft.getInstance().player;
+        if (player != null) {
+            ItemStack carried = player.containerMenu.getCarried();
+            if (!carried.isEmpty()) {
+                graphics.renderItem(carried, mouseX - ScaledCoord.scaleDim(4), mouseY - ScaledCoord.scaleDim(12));
+            }
+        }
+
         return totalHeight;
+    }
+
+    private void renderBackdrop(GuiGraphics graphics, int x, int y, int size) {
+        // Base scuro uniforme, niente glow acceso
+        graphics.fill(x, y, x + size, y + size, 0xFF111419);
+
+        int centerX = x + size / 2;
+        int baseRadius = size / 6;
+        int baseCenterY = y + (int) (size * 0.72f);
+
+        // Nessun alone acceso; solo un leggero scurimento per appoggio
+        drawFilledCircle(graphics, centerX, baseCenterY, baseRadius, 0x10101060);
     }
 
     private void renderEntityPreview(GuiGraphics graphics, int x, int y, int size) {
@@ -206,6 +237,65 @@ public class PreviewRenderer {
         }
     }
 
+    private void renderSlots(GuiGraphics graphics, net.minecraft.client.gui.Font font,
+                             int x, int y, int size, int mouseX, int mouseY) {
+        EquipmentSlot[] slots = {
+            EquipmentSlot.MAINHAND, EquipmentSlot.HEAD, EquipmentSlot.OFFHAND,
+            EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.FEET
+        };
+
+        int slotSize = ScaledCoord.scaleDim(28);
+        int gap = ScaledCoord.scaleDim(12);
+        int leftX = x + ScaledCoord.scaleDim(6);
+        int rightX = x + size - slotSize - ScaledCoord.scaleDim(6);
+        int startY = y + ScaledCoord.scaleDim(6);
+
+        LivingEntity entity = Minecraft.getInstance().player;
+
+        for (int i = 0; i < slots.length; i++) {
+            EquipmentSlot slot = slots[i];
+            slot = Objects.requireNonNull(slot, "slot cannot be null");
+            boolean leftSide = i < 3;
+            int slotX = leftSide ? leftX : rightX;
+            int slotY = startY + (i % 3) * (slotSize + gap);
+
+            ResponsiveLayout.Rect rect = new ResponsiveLayout.Rect(slotX, slotY, slotSize, slotSize);
+            slotBoxes.add(new SlotBox(slot, rect));
+
+            boolean hovered = rect.contains(mouseX, mouseY);
+            boolean selected = slot == this.slot;
+
+            int bg = selected ? 0x4020C0FF : (hovered ? UIConstants.Background.HOVER : UIConstants.Background.INPUT);
+            graphics.fill(rect.x(), rect.y(), rect.x() + rect.width(), rect.y() + rect.height(), bg);
+
+            int border = selected ? UIConstants.Accent.CYAN : (hovered ? UIConstants.Border.HOVER : UIConstants.Border.DEFAULT);
+            AxiomRenderer.drawBorder(graphics, rect.x(), rect.y(), rect.width(), rect.height(), border);
+
+            ItemStack stack = ItemStack.EMPTY;
+            if (entity != null) {
+                stack = entity.getItemBySlot(slot);
+            }
+
+            if (!stack.isEmpty()) {
+                int pad = ScaledCoord.scaleDim(4);
+                ItemStack safeStack = Objects.requireNonNull(stack, "stack cannot be null");
+                graphics.renderItem(safeStack, rect.x() + pad, rect.y() + pad);
+                // Tooltip-like name
+                if (hovered) {
+                    String name = safeStack.getHoverName().getString();
+                    graphics.drawString(Objects.requireNonNull(font, "font cannot be null"), name, rect.x() + rect.width() + ScaledCoord.scaleDim(4), rect.y(), UIConstants.Text.PRIMARY, false);
+                }
+            } else {
+                String glyph = Objects.requireNonNull(placeholderFor(slot), "placeholder cannot be null");
+                var safeFont = Objects.requireNonNull(font, "font cannot be null");
+                int textColor = selected ? UIConstants.Text.PRIMARY : UIConstants.Text.MUTED;
+                int textX = rect.x() + (slotSize - safeFont.width(glyph)) / 2;
+                int textY = rect.y() + (slotSize - safeFont.lineHeight) / 2;
+                graphics.drawString(safeFont, glyph, textX, textY, textColor, false);
+            }
+        }
+    }
+
     private void renderItemPreview(GuiGraphics graphics, int x, int y, int size) {
         if (item.isEmpty()) {
             // Show placeholder
@@ -234,12 +324,46 @@ public class PreviewRenderer {
         graphics.pose().popPose();
     }
 
+    private void drawFilledCircle(GuiGraphics graphics, int cx, int cy, int radius, int color) {
+        for (int r = radius; r >= 0; r--) {
+            int a = Math.max(20, ((color >> 24) & 0xFF) - (radius - r) * 2);
+            int rgb = (a << 24) | (color & 0x00FFFFFF);
+            graphics.fill(cx - r, cy - r, cx + r, cy + r, rgb);
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // INPUT HANDLING
     // ═══════════════════════════════════════════════════════════════
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button != 0) return false;
+
+        // Slot click
+        for (SlotBox box : slotBoxes) {
+            if (box.bounds.contains(mouseX, mouseY)) {
+                EquipmentSlot clickedSlot = Objects.requireNonNull(box.slot, "slot cannot be null");
+                this.slot = clickedSlot;
+                if (onSlotClick != null) {
+                    onSlotClick.accept(clickedSlot);
+                }
+                var player = Minecraft.getInstance().player;
+                if (player != null) {
+                    ItemStack carried = Objects.requireNonNull(player.containerMenu.getCarried(), "carried stack cannot be null");
+                    ItemStack current = Objects.requireNonNull(player.getItemBySlot(clickedSlot), "slot stack cannot be null");
+                    if (carried.isEmpty()) {
+                        // pick up
+                        player.containerMenu.setCarried(Objects.requireNonNull(current.copy(), "copy cannot be null"));
+                        player.setItemSlot(clickedSlot, Objects.requireNonNull(ItemStack.EMPTY, "empty cannot be null"));
+                    } else {
+                        // place/swap
+                        player.setItemSlot(clickedSlot, Objects.requireNonNull(carried.copy(), "copy cannot be null"));
+                        player.containerMenu.setCarried(Objects.requireNonNull(current.copy(), "copy cannot be null"));
+                    }
+                }
+                return true;
+            }
+        }
 
         if (previewBounds.contains(mouseX, mouseY)) {
             dragging = true;
@@ -255,6 +379,25 @@ public class PreviewRenderer {
         if (dragging) {
             dragging = false;
             return true;
+        }
+
+        // Drop carried stack into equip slots on release
+        if (button == 0) {
+            for (SlotBox box : slotBoxes) {
+                if (box.bounds.contains(mouseX, mouseY)) {
+                    var player = Minecraft.getInstance().player;
+                    if (player != null) {
+                        EquipmentSlot targetSlot = Objects.requireNonNull(box.slot, "slot cannot be null");
+                        ItemStack carried = Objects.requireNonNull(player.containerMenu.getCarried(), "carried stack cannot be null");
+                        ItemStack current = Objects.requireNonNull(player.getItemBySlot(targetSlot), "slot stack cannot be null");
+                        if (!carried.isEmpty()) {
+                            player.setItemSlot(targetSlot, Objects.requireNonNull(carried.copy(), "copy cannot be null"));
+                            player.containerMenu.setCarried(Objects.requireNonNull(current.copy(), "copy cannot be null"));
+                        }
+                    }
+                    return true;
+                }
+            }
         }
         return false;
     }
@@ -276,6 +419,11 @@ public class PreviewRenderer {
 
             lastMouseX = mouseX;
             lastMouseY = mouseY;
+            return true;
+        }
+        // Allow drag visual with carried stack
+        var player = Minecraft.getInstance().player;
+        if (player != null && !player.containerMenu.getCarried().isEmpty() && previewBounds.contains(mouseX, mouseY)) {
             return true;
         }
         return false;
@@ -317,7 +465,12 @@ public class PreviewRenderer {
     }
 
     public void setSlot(EquipmentSlot slot) {
-        this.slot = slot;
+        this.slot = Objects.requireNonNull(slot, "slot cannot be null");
+        var player = Minecraft.getInstance().player;
+        if (player != null) {
+            EquipmentSlot safeSlot = Objects.requireNonNull(this.slot, "slot cannot be null");
+            this.item = Objects.requireNonNull(player.getItemBySlot(safeSlot), "slot stack cannot be null");
+        }
     }
 
     public float getRotationX() {
@@ -365,4 +518,18 @@ public class PreviewRenderer {
     public ResponsiveLayout.Rect getPreviewBounds() {
         return previewBounds;
     }
+
+    private String placeholderFor(EquipmentSlot slot) {
+        return switch (slot) {
+            case HEAD -> "H";
+            case CHEST -> "C";
+            case LEGS -> "L";
+            case FEET -> "F";
+            case MAINHAND -> "M";
+            case OFFHAND -> "O";
+            default -> "?";
+        };
+    }
+
+    private record SlotBox(EquipmentSlot slot, ResponsiveLayout.Rect bounds) {}
 }

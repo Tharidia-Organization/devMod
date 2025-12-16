@@ -1,6 +1,7 @@
 package com.frenkvs.devmod.ui.radial.model;
 
 import java.util.Objects;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Macro-categories that organize the radial menu into 4 logical groups.
@@ -25,36 +26,42 @@ public enum MacroCategory {
      * Debug, spatial analysis, and visualization tools.
      * Color: Blue (0xFF4488FF)
      */
-    ANALYZE("Analyze", "\uD83D\uDC41", 0xFF4488FF, "Debug, spatial analysis, visualization"),
+    ANALYZE("Analyze", "\uD83D\uDC41", 0xFF4488FF, "Debug, spatial analysis, visualization",
+        ResourceLocation.fromNamespaceAndPath("devmod", "textures/gui/icons/radial/macro_analyze.png")),
 
     /**
      * Combat tools, editors, and heatmaps.
      * Color: Red (0xFFFF4444)
      */
-    COMBAT("Combat", "\u2694", 0xFFFF4444, "Combat tools, editors, heatmaps"),
+    COMBAT("Combat", "\u2694", 0xFFFF4444, "Combat tools, editors, heatmaps",
+        ResourceLocation.fromNamespaceAndPath("devmod", "textures/gui/icons/radial/macro_combat.png")),
 
     /**
      * Settings, editors, and testing utilities.
      * Color: Orange (0xFFFFAA00)
      */
-    TOOLS("Tools", "\uD83D\uDD27", 0xFFFFAA00, "Settings, editors, testing utilities"),
+    TOOLS("Tools", "\uD83D\uDD27", 0xFFFFAA00, "Settings, editors, testing utilities",
+        ResourceLocation.fromNamespaceAndPath("devmod", "textures/gui/icons/radial/macro_tools.png")),
 
     /**
      * Quests, endurance mode, and multiplayer features.
      * Color: Green (0xFF44FF88)
      */
-    PLAY("Play", "\uD83D\uDCDC", 0xFF44FF88, "Quests, endurance, multiplayer");
+    PLAY("Play", "\uD83D\uDCDC", 0xFF44FF88, "Quests, endurance, multiplayer",
+        ResourceLocation.fromNamespaceAndPath("devmod", "textures/gui/icons/radial/macro_play.png"));
 
     private final String name;
     private final String icon;
     private final int color;
     private final String description;
+    private final ResourceLocation iconTexture;
 
-    MacroCategory(String name, String icon, int color, String description) {
+    MacroCategory(String name, String icon, int color, String description, ResourceLocation iconTexture) {
         this.name = Objects.requireNonNull(name, "MacroCategory name cannot be null");
         this.icon = Objects.requireNonNull(icon, "MacroCategory icon cannot be null");
         this.color = color;
         this.description = Objects.requireNonNull(description, "MacroCategory description cannot be null");
+        this.iconTexture = iconTexture;
     }
 
     /**
@@ -79,6 +86,13 @@ public enum MacroCategory {
      */
     public int getColor() {
         return color;
+    }
+
+    /**
+     * Returns the texture for this macro-category icon (game-icons).
+     */
+    public ResourceLocation getIconTexture() {
+        return iconTexture;
     }
 
     /**
