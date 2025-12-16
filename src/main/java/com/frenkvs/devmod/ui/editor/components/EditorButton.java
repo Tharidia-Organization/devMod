@@ -60,8 +60,8 @@ public class EditorButton {
     // ═══════════════════════════════════════════════════════════════
 
     public EditorButton(String id, String label) {
-        this.id = id;
-        this.label = label;
+        this.id = Objects.requireNonNull(id, "id cannot be null");
+        this.label = Objects.requireNonNull(label, "label cannot be null");
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -124,9 +124,9 @@ public class EditorButton {
         int textOffsetY = pressed && hovered ? 1 : 0;
 
         // Label (centered)
-        int textWidth = font.width(Objects.requireNonNull(label, "label cannot be null"));
+        int textWidth = font.width(label);
         int textX = x + (width - textWidth) / 2;
-        int textY = y + (height - 8) / 2 + textOffsetY;
+        int textY = y + (height - font.lineHeight) / 2 + textOffsetY;
         graphics.drawString(font, label, textX, textY, textColor, false);
     }
 
@@ -196,22 +196,26 @@ public class EditorButton {
     }
 
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (pressed) {
-            pressed = false;
-
-            if (bounds.contains(mouseX, mouseY) && enabled) {
-                // Trigger click
-                if (playSound) {
-                    EditorSounds.playButtonClick();
-                }
-
-                if (onClick != null) {
-                    onClick.run();
-                }
-                return true;
-            }
+        if (!pressed) {
+            return false;
         }
 
+        pressed = false;
+        if (button != 0) {
+            return false;
+        }
+
+        if (bounds.contains(mouseX, mouseY) && enabled) {
+            // Trigger click
+            if (playSound) {
+                EditorSounds.playButtonClick();
+            }
+
+            if (onClick != null) {
+                onClick.run();
+            }
+            return true;
+        }
         return false;
     }
 
