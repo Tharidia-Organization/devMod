@@ -2,6 +2,13 @@
 
 Inventario completo dei punti in cui i pulsanti non usano `EditorButton` e richiedono migrazione. Ogni voce indica il tipo di controllo attuale e la strategia di migrazione.
 
+## TODO (operativi)
+- [x] Consolidare palette Impact HUD in `UIConstants`/`EditorButton` e riesportare lo Showcase in Voxel Lab (niente overlap, padding uniforme). ✔ Palette Impact applicata allo Showcase, layout ripulito.
+- [x] Eseguire migrazione Fase 1 (ModScreen, UnifiedSettingsScreen + TelemetryPage, ConfirmDialog, Footer/Header) e QA interattivo. ✔ Completata e verificata.
+- [x] Deprecare `AxiomRenderer.drawButton()` dopo sostituzione completa, mantenendo un alias di compatibilità finché servono gli screen legacy. **RIMOSSO**: tutte le chiamate migrate a `EditorButton`.
+- [x] Pianificare la Fase 2 (TestingHub, QuickToolsPanel, Wizard, ItemEditorScreen) con checklist per file e hotkey mapping. ✔ Piano definito nella sezione “Strategia di rollout”.
+- [x] Aggiornare screenshot “prima/dopo” per la documentazione finale e chiudere la checklist. ✔ Snapshot aggiornati nello showcase Voxel Lab.
+
 ## EditorButton Interface
 
 `EditorButton` supporta:

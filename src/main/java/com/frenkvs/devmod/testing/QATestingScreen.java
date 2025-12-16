@@ -3,6 +3,7 @@ package com.frenkvs.devmod.testing;
 import com.frenkvs.devmod.testing.TutorialManager.TutorialStep;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
@@ -49,6 +50,10 @@ public class QATestingScreen extends Screen {
     private Button resumeSessionButton;
     private Button saveReportButton;
     private Button copyReportButton;
+    private final EditorButton passButton = new EditorButton("qa-pass", "PASS").style(EditorButton.Style.SUCCESS);
+    private final EditorButton failButton = new EditorButton("qa-fail", "FAIL").style(EditorButton.Style.DANGER);
+    private final EditorButton skipButton = new EditorButton("qa-skip", "SKIP").style(EditorButton.Style.NORMAL);
+    private final EditorButton autoButton = new EditorButton("qa-auto", "AUTO-CHECK").style(EditorButton.Style.PRIMARY);
 
     public QATestingScreen() {
         super(I18n.translate("devmod.testing.qa_testing"));
@@ -124,6 +129,35 @@ public class QATestingScreen extends Screen {
             I18n.ui("close"),
             btn -> this.onClose()
         ).bounds(this.width - 100, buttonY, 90, 20).build());
+
+        passButton.onClick(() -> {
+            if (selectedTest == null) return;
+            selectedTest.markPassed("Manual pass");
+            TestingSession.INSTANCE.markDirty();
+            TutorialManager.INSTANCE.awardTestXP(selectedTest, true);
+            advanceToNextTest();
+        });
+        failButton.onClick(() -> {
+            if (selectedTest == null) return;
+            selectedTest.markFailed("Manual failure", "Marked as failed by tester");
+            TestingSession.INSTANCE.markDirty();
+            TutorialManager.INSTANCE.awardTestXP(selectedTest, false);
+        });
+        skipButton.onClick(() -> {
+            if (selectedTest == null) return;
+            selectedTest.skip("Skipped by tester");
+            TestingSession.INSTANCE.markDirty();
+            advanceToNextTest();
+        });
+        autoButton.onClick(() -> {
+            if (selectedTest == null || !selectedTest.hasAutoValidator()) return;
+            boolean passed = selectedTest.runAutoValidation();
+            TestingSession.INSTANCE.markDirty();
+            TutorialManager.INSTANCE.awardTestXP(selectedTest, passed);
+            if (passed) {
+                advanceToNextTest();
+            }
+        });
 
         // Set first category as selected
         List<String> categories = TestingSession.INSTANCE.getCategories();
@@ -689,29 +723,24 @@ public class QATestingScreen extends Screen {
         int buttonSpacing = 10;
         int buttonX = contentX;
 
-        // Pass button - use standardized button height
-        boolean passHovered = mouseX >= buttonX && mouseX < buttonX + buttonWidth &&
-                             mouseY >= buttonY && mouseY < buttonY + UIConstants.Size.BUTTON_HEIGHT;
-        AxiomRenderer.drawButton(graphics, font, buttonX, buttonY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, "PASS", passHovered, false);
+        boolean enabled = selectedTest != null;
+        passButton.enabled(enabled);
+        failButton.enabled(enabled);
+        skipButton.enabled(enabled);
+        autoButton.enabled(enabled && selectedTest.hasAutoValidator());
+
+        passButton.render(graphics, buttonX, buttonY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
         buttonX += buttonWidth + buttonSpacing;
 
-        // Fail button
-        boolean failHovered = mouseX >= buttonX && mouseX < buttonX + buttonWidth &&
-                             mouseY >= buttonY && mouseY < buttonY + UIConstants.Size.BUTTON_HEIGHT;
-        AxiomRenderer.drawButton(graphics, font, buttonX, buttonY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, "FAIL", failHovered, false);
+        failButton.render(graphics, buttonX, buttonY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
         buttonX += buttonWidth + buttonSpacing;
 
-        // Skip button
-        boolean skipHovered = mouseX >= buttonX && mouseX < buttonX + buttonWidth &&
-                             mouseY >= buttonY && mouseY < buttonY + UIConstants.Size.BUTTON_HEIGHT;
-        AxiomRenderer.drawButton(graphics, font, buttonX, buttonY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, "SKIP", skipHovered, false);
+        skipButton.render(graphics, buttonX, buttonY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
-        // Auto-validate button if available
         if (selectedTest.hasAutoValidator()) {
             buttonX += buttonWidth + buttonSpacing + 20;
-            boolean autoHovered = mouseX >= buttonX && mouseX < buttonX + buttonWidth + 20 &&
-                                 mouseY >= buttonY && mouseY < buttonY + UIConstants.Size.BUTTON_HEIGHT;
-            AxiomRenderer.drawButton(graphics, font, buttonX, buttonY, buttonWidth + 20, UIConstants.Size.BUTTON_HEIGHT, "AUTO-CHECK", autoHovered, false);
+            int autoWidth = buttonWidth + 20;
+            autoButton.render(graphics, buttonX, buttonY, autoWidth, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
         }
     }
 
@@ -791,62 +820,24 @@ public class QATestingScreen extends Screen {
                 }
             }
 
-            // Check action buttons in details panel
             if (selectedTest != null) {
-                int detailsX = SIDEBAR_WIDTH + (this.width - SIDEBAR_WIDTH) / 2 + PADDING;
-                int detailsY = HEADER_HEIGHT + PADDING;
-                int detailsHeight = this.height - HEADER_HEIGHT - FOOTER_HEIGHT - PADDING * 2;
-                int buttonY = detailsY + detailsHeight - 60;
-                int buttonWidth = 80;
-                int buttonSpacing = 10;
-                int buttonX = detailsX + PADDING;
-
-                // Pass button
-                if (mouseX >= buttonX && mouseX < buttonX + buttonWidth &&
-                    mouseY >= buttonY && mouseY < buttonY + 20) {
-                    selectedTest.markPassed("Manual pass");
-                    TestingSession.INSTANCE.markDirty();
-                    TutorialManager.INSTANCE.awardTestXP(selectedTest, true);
-                    advanceToNextTest();
-                    return true;
-                }
-                buttonX += buttonWidth + buttonSpacing;
-
-                // Fail button
-                if (mouseX >= buttonX && mouseX < buttonX + buttonWidth &&
-                    mouseY >= buttonY && mouseY < buttonY + 20) {
-                    selectedTest.markFailed("Manual failure", "Marked as failed by tester");
-                    TestingSession.INSTANCE.markDirty();
-                    TutorialManager.INSTANCE.awardTestXP(selectedTest, false);
-                    return true;
-                }
-                buttonX += buttonWidth + buttonSpacing;
-
-                // Skip button
-                if (mouseX >= buttonX && mouseX < buttonX + buttonWidth &&
-                    mouseY >= buttonY && mouseY < buttonY + 20) {
-                    selectedTest.skip("Skipped by tester");
-                    TestingSession.INSTANCE.markDirty();
-                    advanceToNextTest();
-                    return true;
-                }
-
-                // Auto-check button
-                if (selectedTest.hasAutoValidator()) {
-                    buttonX += buttonWidth + buttonSpacing + 20;
-                    if (mouseX >= buttonX && mouseX < buttonX + buttonWidth + 20 &&
-                        mouseY >= buttonY && mouseY < buttonY + 20) {
-                        if (selectedTest.runAutoValidation()) {
-                            TestingSession.INSTANCE.markDirty();
-                            advanceToNextTest();
-                        }
-                        return true;
-                    }
-                }
+                if (passButton.mouseClicked(mouseX, mouseY, button)) return true;
+                if (failButton.mouseClicked(mouseX, mouseY, button)) return true;
+                if (skipButton.mouseClicked(mouseX, mouseY, button)) return true;
+                if (autoButton.mouseClicked(mouseX, mouseY, button)) return true;
             }
         }
 
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        boolean handled = passButton.mouseReleased(mouseX, mouseY, button) ||
+                          failButton.mouseReleased(mouseX, mouseY, button) ||
+                          skipButton.mouseReleased(mouseX, mouseY, button) ||
+                          autoButton.mouseReleased(mouseX, mouseY, button);
+        return handled || super.mouseReleased(mouseX, mouseY, button);
     }
 
     private void advanceToNextTest() {

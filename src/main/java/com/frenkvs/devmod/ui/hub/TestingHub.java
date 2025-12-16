@@ -5,6 +5,7 @@ import com.frenkvs.devmod.testing.TestCase;
 import com.frenkvs.devmod.testing.TestingSession;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.editor.ItemEditorScreen;
 import com.frenkvs.devmod.ui.editor.EditorStartTab;
 import com.frenkvs.devmod.util.I18n;
@@ -52,6 +53,8 @@ public class TestingHub extends Screen {
     // === SESSION INPUT ===
     private EditBox testerNameField;
     private boolean showSessionStart = false;
+    private final EditorButton startButton = new EditorButton("hub-start", "Start New").style(EditorButton.Style.PRIMARY);
+    private final EditorButton resumeButton = new EditorButton("hub-resume", "Resume").style(EditorButton.Style.PRIMARY);
 
     // === FOCUS ===
     private enum PanelFocus { CATEGORIES, DETAILS, TOOLS }
@@ -192,14 +195,18 @@ public class TestingHub extends Screen {
         int buttonsX = panelX + (panelWidth - buttonWidth * 2 - buttonGap) / 2;
 
         // Start New
-        boolean startHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, buttonsX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT);
-        AxiomRenderer.drawButton(graphics, font, buttonsX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, "Start New", startHovered, false);
+        startButton
+            .style(EditorButton.Style.PRIMARY)
+            .onClick(this::startSession);
+        startButton.render(graphics, buttonsX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
         // Resume (if available)
         if (TestingSession.INSTANCE.hasExistingSession()) {
             int resumeX = buttonsX + buttonWidth + buttonGap;
-            boolean resumeHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, resumeX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT);
-            AxiomRenderer.drawButton(graphics, font, resumeX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, "Resume", resumeHovered, false);
+            resumeButton
+                .style(EditorButton.Style.PRIMARY)
+                .onClick(this::resumeSession);
+            resumeButton.render(graphics, resumeX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
         }
 
         // Hint
@@ -396,30 +403,13 @@ public class TestingHub extends Screen {
     private boolean handleSessionStartClick(int mx, int my, int button) {
         if (button != 0) return super.mouseClicked(mx, my, button);
 
-        int panelWidth = 350;
-        int panelHeight = 200;
-        int panelX = (width - panelWidth) / 2;
-        int panelY = (height - panelHeight) / 2;
+        // Start / Resume buttons
+        if (startButton.mouseClicked(mx, my, button)) return true;
+        if (startButton.mouseReleased(mx, my, button)) return true;
 
-        int contentY = panelY + UIConstants.Spacing.HEADER_HEIGHT + UIConstants.Spacing.PANEL_PADDING + 10 + 16 + 30 + 40;
-
-        int buttonWidth = 120;
-        int buttonGap = 20;
-        int buttonsX = panelX + (panelWidth - buttonWidth * 2 - buttonGap) / 2;
-
-        // Start New button
-        if (AxiomRenderer.isMouseOver(mx, my, buttonsX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT)) {
-            startSession();
-            return true;
-        }
-
-        // Resume button
         if (TestingSession.INSTANCE.hasExistingSession()) {
-            int resumeX = buttonsX + buttonWidth + buttonGap;
-            if (AxiomRenderer.isMouseOver(mx, my, resumeX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT)) {
-                resumeSession();
-                return true;
-            }
+            resumeButton.mouseClicked(mx, my, button);
+            if (resumeButton.mouseReleased(mx, my, button)) return true;
         }
 
         return super.mouseClicked(mx, my, button);

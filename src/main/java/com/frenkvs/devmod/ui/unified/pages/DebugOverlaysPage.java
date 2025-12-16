@@ -10,6 +10,7 @@ import com.frenkvs.devmod.rendering.PathfindingDebugger;
 import com.frenkvs.devmod.rendering.RoomBoundsVisualizer;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.unified.SettingsCategory;
 import com.frenkvs.devmod.ui.unified.SettingsPage;
 import net.minecraft.client.Minecraft;
@@ -40,6 +41,8 @@ public class DebugOverlaysPage implements SettingsPage {
     // Scroll drag state
     private boolean isDraggingScrollbar = false;
     private int lastContentY, lastContentHeight;
+    private final EditorButton disableAllBtn = new EditorButton("debug-disable-all", "Disable All").style(EditorButton.Style.DANGER);
+    private final EditorButton enableAllBtn = new EditorButton("debug-enable-all", "Enable All").style(EditorButton.Style.SUCCESS);
 
     @Override
     public SettingsCategory getCategory() {
@@ -173,13 +176,11 @@ public class DebugOverlaysPage implements SettingsPage {
         int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
         int buttonSpacing = 10;
 
-        boolean disableAllHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, currentY, buttonWidth, buttonHeight);
-        AxiomRenderer.drawButton(graphics, font, x, currentY, buttonWidth, buttonHeight,
-            "Disable All", disableAllHovered, false);
+        disableAllBtn.onClick(this::disableAll);
+        disableAllBtn.render(graphics, x, currentY, buttonWidth, buttonHeight, mouseX, mouseY);
 
-        boolean enableAllHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x + buttonWidth + buttonSpacing, currentY, buttonWidth, buttonHeight);
-        AxiomRenderer.drawButton(graphics, font, x + buttonWidth + buttonSpacing, currentY, buttonWidth, buttonHeight,
-            "Enable All", enableAllHovered, false);
+        enableAllBtn.onClick(this::enableAll);
+        enableAllBtn.render(graphics, x + buttonWidth + buttonSpacing, currentY, buttonWidth, buttonHeight, mouseX, mouseY);
 
         // Disable scissoring
         graphics.disableScissor();
@@ -457,22 +458,8 @@ public class DebugOverlaysPage implements SettingsPage {
         // Skip section header "Quick Actions"
         y += 14;
 
-        // Quick action buttons
-        int buttonWidth = 100;
-        int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
-        int buttonSpacing = 10;
-
-        // Disable All
-        if (AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, contentX, y, buttonWidth, buttonHeight)) {
-            disableAll();
-            return true;
-        }
-
-        // Enable All
-        if (AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, contentX + buttonWidth + buttonSpacing, y, buttonWidth, buttonHeight)) {
-            enableAll();
-            return true;
-        }
+        if (disableAllBtn.mouseClicked(mouseX, mouseY, button)) return true;
+        if (enableAllBtn.mouseClicked(mouseX, mouseY, button)) return true;
 
         return false;
     }

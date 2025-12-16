@@ -62,33 +62,6 @@ public final class AxiomRenderer {
         graphics.fill(0, 0, width, height, UIConstants.Background.SCREEN);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // BUTTON RENDERING
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    /**
-     * Draw a button with hover/pressed states
-     */
-    public static void drawButton(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height,
-                                  @Nonnull String text, boolean hovered, boolean pressed) {
-        int bgColor = pressed ? UIConstants.Background.ACTIVE :
-                      (hovered ? UIConstants.Background.HOVER : UIConstants.Background.PANEL);
-        int borderColor = pressed ? UIConstants.Border.ACCENT :
-                          (hovered ? UIConstants.Border.LIGHT : UIConstants.Border.DEFAULT);
-
-        // Background
-        graphics.fill(x, y, x + width, y + height, bgColor);
-
-        // Border
-        drawBorder(graphics, x, y, width, height, borderColor);
-
-        // Text (centered)
-        int textWidth = font.width(text);
-        int textX = x + (width - textWidth) / 2;
-        int textY = y + (height - 8) / 2;
-        graphics.drawString(font, text, textX, textY, UIConstants.Text.PRIMARY, false);
-    }
-
     /**
      * Draw a tab button with selected state
      */

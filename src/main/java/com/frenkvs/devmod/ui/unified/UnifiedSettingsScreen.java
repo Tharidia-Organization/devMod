@@ -1,6 +1,7 @@
 package com.frenkvs.devmod.ui.unified;
 
 import com.frenkvs.devmod.ui.AxiomRenderer;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.ui.unified.pages.CombatSettingsPage;
 import com.frenkvs.devmod.ui.unified.pages.DebugOverlaysPage;
@@ -44,6 +45,19 @@ public class UnifiedSettingsScreen extends Screen {
     private boolean showResetConfirmation = false;
     private boolean showFactoryResetConfirmation = false;
     private boolean showPlayerProgressResetConfirmation = false;
+    // Dialog buttons (reused to preserve bounds/hit state)
+    private final EditorButton resetCancelBtn = new EditorButton("reset-cancel", "Cancel");
+    private final EditorButton resetConfirmBtn = new EditorButton("reset-confirm", "Reset").style(EditorButton.Style.DANGER);
+    private final EditorButton factoryCancelBtn = new EditorButton("factory-cancel", "Cancel");
+    private final EditorButton factoryConfirmBtn = new EditorButton("factory-confirm", "RESET ALL").style(EditorButton.Style.DANGER);
+    private final EditorButton progressCancelBtn = new EditorButton("progress-cancel", "Cancel");
+    private final EditorButton progressConfirmBtn = new EditorButton("progress-confirm", "Reset Progress").style(EditorButton.Style.DANGER);
+    // Footer buttons
+    private final EditorButton footerResetPageBtn = new EditorButton("footer-reset-page", "Reset Page");
+    private final EditorButton footerResetProgressBtn = new EditorButton("footer-reset-progress", "Reset Progress");
+    private final EditorButton footerFactoryResetBtn = new EditorButton("footer-factory-reset", "Factory Reset").style(EditorButton.Style.DANGER);
+    private final EditorButton footerCloseBtn = new EditorButton("footer-close", "Close");
+    private final EditorButton footerApplyBtn = new EditorButton("footer-apply", "Apply").style(EditorButton.Style.PRIMARY);
 
     // Search functionality
     private String searchQuery = "";
@@ -229,19 +243,20 @@ public class UnifiedSettingsScreen extends Screen {
 
         // Cancel button
         int cancelX = dialogX + dialogWidth / 2 - buttonWidth - 10;
-        boolean cancelHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, cancelX, buttonY, buttonWidth, buttonHeight);
-        AxiomRenderer.drawButton(graphics, font, cancelX, buttonY, buttonWidth, buttonHeight, "Cancel", cancelHovered, false);
+        resetCancelBtn
+            .style(EditorButton.Style.NORMAL)
+            .onClick(() -> showResetConfirmation = false);
+        resetCancelBtn.render(graphics, cancelX, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
 
         // Confirm button
         int confirmX = dialogX + dialogWidth / 2 + 10;
-        boolean confirmHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, confirmX, buttonY, buttonWidth, buttonHeight);
-        graphics.fill(confirmX, buttonY, confirmX + buttonWidth, buttonY + buttonHeight,
-            confirmHovered ? UIConstants.Status.ERROR : UIConstants.Accent.RED);
-        AxiomRenderer.drawBorder(graphics, confirmX, buttonY, buttonWidth, buttonHeight, UIConstants.Border.DEFAULT);
-        String confirmText = "Reset";
-        int confirmTextWidth = font.width(confirmText);
-        graphics.drawString(font, confirmText, confirmX + (buttonWidth - confirmTextWidth) / 2,
-            buttonY + (buttonHeight - 8) / 2, UIConstants.Text.WHITE, false);
+        resetConfirmBtn
+            .style(EditorButton.Style.DANGER)
+            .onClick(() -> {
+                resetCurrentPage();
+                showResetConfirmation = false;
+            });
+        resetConfirmBtn.render(graphics, confirmX, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
     }
 
     private boolean handleResetDialogClick(int mouseX, int mouseY) {
@@ -250,20 +265,14 @@ public class UnifiedSettingsScreen extends Screen {
         int dialogX = (width - dialogWidth) / 2;
         int dialogY = (height - dialogHeight) / 2;
 
-        int buttonWidth = 80;
-        int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
-        int buttonY = dialogY + dialogHeight - buttonHeight - 16;
-
         // Cancel button
-        int cancelX = dialogX + dialogWidth / 2 - buttonWidth - 10;
-        if (AxiomRenderer.isMouseOver(mouseX, mouseY, cancelX, buttonY, buttonWidth, buttonHeight)) {
+        if (resetCancelBtn.mouseClicked(mouseX, mouseY, 0)) {
             showResetConfirmation = false;
             return true;
         }
 
         // Confirm button
-        int confirmX = dialogX + dialogWidth / 2 + 10;
-        if (AxiomRenderer.isMouseOver(mouseX, mouseY, confirmX, buttonY, buttonWidth, buttonHeight)) {
+        if (resetConfirmBtn.mouseClicked(mouseX, mouseY, 0)) {
             resetCurrentPage();
             showResetConfirmation = false;
             return true;
@@ -324,19 +333,20 @@ public class UnifiedSettingsScreen extends Screen {
 
         // Cancel button
         int cancelX = dialogX + dialogWidth / 2 - buttonWidth - 15;
-        boolean cancelHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, cancelX, buttonY, buttonWidth, buttonHeight);
-        AxiomRenderer.drawButton(graphics, font, cancelX, buttonY, buttonWidth, buttonHeight, "Cancel", cancelHovered, false);
+        factoryCancelBtn
+            .style(EditorButton.Style.NORMAL)
+            .onClick(() -> showFactoryResetConfirmation = false);
+        factoryCancelBtn.render(graphics, cancelX, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
 
         // Confirm button (red)
         int confirmX = dialogX + dialogWidth / 2 + 15;
-        boolean confirmHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, confirmX, buttonY, buttonWidth, buttonHeight);
-        graphics.fill(confirmX, buttonY, confirmX + buttonWidth, buttonY + buttonHeight,
-            confirmHovered ? UIConstants.Status.ERROR : UIConstants.Accent.RED);
-        AxiomRenderer.drawBorder(graphics, confirmX, buttonY, buttonWidth, buttonHeight, UIConstants.Border.DEFAULT);
-        String confirmText = "RESET ALL";
-        int confirmTextWidth = font.width(confirmText);
-        graphics.drawString(font, confirmText, confirmX + (buttonWidth - confirmTextWidth) / 2,
-            buttonY + (buttonHeight - 8) / 2, UIConstants.Text.WHITE, false);
+        factoryConfirmBtn
+            .style(EditorButton.Style.DANGER)
+            .onClick(() -> {
+                performFactoryReset();
+                showFactoryResetConfirmation = false;
+            });
+        factoryConfirmBtn.render(graphics, confirmX, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
     }
 
     private boolean handleFactoryResetDialogClick(int mouseX, int mouseY) {
@@ -345,20 +355,14 @@ public class UnifiedSettingsScreen extends Screen {
         int dialogX = (width - dialogWidth) / 2;
         int dialogY = (height - dialogHeight) / 2;
 
-        int buttonWidth = 100;
-        int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
-        int buttonY = dialogY + dialogHeight - buttonHeight - 12;
-
         // Cancel button
-        int cancelX = dialogX + dialogWidth / 2 - buttonWidth - 15;
-        if (AxiomRenderer.isMouseOver(mouseX, mouseY, cancelX, buttonY, buttonWidth, buttonHeight)) {
+        if (factoryCancelBtn.mouseClicked(mouseX, mouseY, 0)) {
             showFactoryResetConfirmation = false;
             return true;
         }
 
         // Confirm button - perform factory reset
-        int confirmX = dialogX + dialogWidth / 2 + 15;
-        if (AxiomRenderer.isMouseOver(mouseX, mouseY, confirmX, buttonY, buttonWidth, buttonHeight)) {
+        if (factoryConfirmBtn.mouseClicked(mouseX, mouseY, 0)) {
             performFactoryReset();
             showFactoryResetConfirmation = false;
             return true;
@@ -436,19 +440,20 @@ public class UnifiedSettingsScreen extends Screen {
 
         // Cancel button
         int cancelX = dialogX + dialogWidth / 2 - buttonWidth - 15;
-        boolean cancelHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, cancelX, buttonY, buttonWidth, buttonHeight);
-        AxiomRenderer.drawButton(graphics, font, cancelX, buttonY, buttonWidth, buttonHeight, "Cancel", cancelHovered, false);
+        progressCancelBtn
+            .style(EditorButton.Style.NORMAL)
+            .onClick(() -> showPlayerProgressResetConfirmation = false);
+        progressCancelBtn.render(graphics, cancelX, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
 
         // Confirm button (orange)
         int confirmX = dialogX + dialogWidth / 2 + 15;
-        boolean confirmHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, confirmX, buttonY, buttonWidth, buttonHeight);
-        graphics.fill(confirmX, buttonY, confirmX + buttonWidth, buttonY + buttonHeight,
-            confirmHovered ? 0xFFFF8800 : UIConstants.Accent.ORANGE);
-        AxiomRenderer.drawBorder(graphics, confirmX, buttonY, buttonWidth, buttonHeight, UIConstants.Border.DEFAULT);
-        String confirmText = "Reset Progress";
-        int confirmTextWidth = font.width(confirmText);
-        graphics.drawString(font, confirmText, confirmX + (buttonWidth - confirmTextWidth) / 2,
-            buttonY + (buttonHeight - 8) / 2, UIConstants.Text.WHITE, false);
+        progressConfirmBtn
+            .style(EditorButton.Style.DANGER)
+            .onClick(() -> {
+                performPlayerProgressReset();
+                showPlayerProgressResetConfirmation = false;
+            });
+        progressConfirmBtn.render(graphics, confirmX, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
     }
 
     private boolean handlePlayerProgressResetDialogClick(int mouseX, int mouseY) {
@@ -463,15 +468,14 @@ public class UnifiedSettingsScreen extends Screen {
 
         // Cancel button
         int cancelX = dialogX + dialogWidth / 2 - buttonWidth - 15;
-        if (AxiomRenderer.isMouseOver(mouseX, mouseY, cancelX, buttonY, buttonWidth, buttonHeight)) {
+        if (progressCancelBtn.mouseClicked(mouseX, mouseY, 0)) {
             showPlayerProgressResetConfirmation = false;
             return true;
         }
 
         // Confirm button - perform player progress reset
         int confirmX = dialogX + dialogWidth / 2 + 15;
-        if (AxiomRenderer.isMouseOver(mouseX, mouseY, confirmX, buttonY, buttonWidth, buttonHeight)) {
-            performPlayerProgressReset();
+        if (progressConfirmBtn.mouseClicked(mouseX, mouseY, 0)) {
             showPlayerProgressResetConfirmation = false;
             return true;
         }
@@ -696,51 +700,41 @@ public class UnifiedSettingsScreen extends Screen {
         int buttonX = PADDING;
 
         // Reset Page button
-        boolean resetHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, buttonX, buttonY, 80, UIConstants.Size.BUTTON_HEIGHT);
-        AxiomRenderer.drawButton(graphics, font, buttonX, buttonY, 80, UIConstants.Size.BUTTON_HEIGHT,
-            "Reset Page", resetHovered, false);
+        footerResetPageBtn
+            .style(EditorButton.Style.NORMAL)
+            .onClick(() -> showResetConfirmation = true);
+        footerResetPageBtn.render(graphics, buttonX, buttonY, 80, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
         // Reset Progress button (orange - warning action)
         buttonX += 90;
-        boolean resetProgressHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, buttonX, buttonY, 105, UIConstants.Size.BUTTON_HEIGHT);
-        if (resetProgressHovered) {
-            graphics.fill(buttonX, buttonY, buttonX + 105, buttonY + UIConstants.Size.BUTTON_HEIGHT, 0xFFFF8800);
-        } else {
-            graphics.fill(buttonX, buttonY, buttonX + 105, buttonY + UIConstants.Size.BUTTON_HEIGHT, UIConstants.Accent.ORANGE);
-        }
-        AxiomRenderer.drawBorder(graphics, buttonX, buttonY, 105, UIConstants.Size.BUTTON_HEIGHT, UIConstants.Border.DEFAULT);
-        String resetProgressText = "Reset Progress";
-        int resetProgressTextWidth = font.width(resetProgressText);
-        graphics.drawString(font, resetProgressText, buttonX + (105 - resetProgressTextWidth) / 2,
-            buttonY + (UIConstants.Size.BUTTON_HEIGHT - 8) / 2, UIConstants.Text.WHITE, false);
+        footerResetProgressBtn
+            .style(EditorButton.Style.DANGER)
+            .onClick(() -> showPlayerProgressResetConfirmation = true);
+        footerResetProgressBtn.render(graphics, buttonX, buttonY, 105, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
         // Factory Reset button (dangerous action - red color)
         buttonX += 115;
-        boolean factoryResetHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, buttonX, buttonY, 100, UIConstants.Size.BUTTON_HEIGHT);
-        if (factoryResetHovered) {
-            graphics.fill(buttonX, buttonY, buttonX + 100, buttonY + UIConstants.Size.BUTTON_HEIGHT, UIConstants.Status.ERROR);
-        } else {
-            graphics.fill(buttonX, buttonY, buttonX + 100, buttonY + UIConstants.Size.BUTTON_HEIGHT, UIConstants.Accent.RED);
-        }
-        AxiomRenderer.drawBorder(graphics, buttonX, buttonY, 100, UIConstants.Size.BUTTON_HEIGHT, UIConstants.Border.DEFAULT);
-        String factoryText = "Factory Reset";
-        int factoryTextWidth = font.width(factoryText);
-        graphics.drawString(font, factoryText, buttonX + (100 - factoryTextWidth) / 2,
-            buttonY + (UIConstants.Size.BUTTON_HEIGHT - 8) / 2, UIConstants.Text.WHITE, false);
+        footerFactoryResetBtn
+            .style(EditorButton.Style.DANGER)
+            .onClick(() -> showFactoryResetConfirmation = true);
+        footerFactoryResetBtn.render(graphics, buttonX, buttonY, 100, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
         // Right buttons
         int rightButtonX = width - PADDING - 80;
 
         // Close button
-        boolean closeHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, rightButtonX, buttonY, 80, UIConstants.Size.BUTTON_HEIGHT);
-        AxiomRenderer.drawButton(graphics, font, rightButtonX, buttonY, 80, UIConstants.Size.BUTTON_HEIGHT,
-            "Close", closeHovered, false);
+        footerCloseBtn
+            .style(EditorButton.Style.NORMAL)
+            .onClick(this::onClose);
+        footerCloseBtn.render(graphics, rightButtonX, buttonY, 80, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
         // Apply button
         rightButtonX -= 90;
-        boolean applyHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, rightButtonX, buttonY, 80, UIConstants.Size.BUTTON_HEIGHT);
-        AxiomRenderer.drawButton(graphics, font, rightButtonX, buttonY, 80, UIConstants.Size.BUTTON_HEIGHT,
-            "Apply", applyHovered, hasUnsavedChanges());
+        footerApplyBtn
+            .style(EditorButton.Style.PRIMARY)
+            .enabled(true)
+            .onClick(this::applyChanges);
+        footerApplyBtn.render(graphics, rightButtonX, buttonY, 80, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
         // Hint at center
         String hint = "Press ESC or K to close";
@@ -821,36 +815,31 @@ public class UnifiedSettingsScreen extends Screen {
         int buttonY = footerY + (FOOTER_HEIGHT - UIConstants.Size.BUTTON_HEIGHT) / 2;
 
         // Reset Page button - show confirmation dialog
-        if (AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, PADDING, buttonY, 80, UIConstants.Size.BUTTON_HEIGHT)) {
-            showResetConfirmation = true;
+        if (footerResetPageBtn.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
 
         // Reset Progress button - show player progress reset confirmation
         int resetProgressX = PADDING + 90;
-        if (AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, resetProgressX, buttonY, 105, UIConstants.Size.BUTTON_HEIGHT)) {
-            showPlayerProgressResetConfirmation = true;
+        if (footerResetProgressBtn.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
 
         // Factory Reset button - show factory reset confirmation
         int factoryResetX = PADDING + 90 + 115;
-        if (AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, factoryResetX, buttonY, 100, UIConstants.Size.BUTTON_HEIGHT)) {
-            showFactoryResetConfirmation = true;
+        if (footerFactoryResetBtn.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
 
         // Close button
         int closeButtonX = width - PADDING - 80;
-        if (AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, closeButtonX, buttonY, 80, UIConstants.Size.BUTTON_HEIGHT)) {
-            onClose();
+        if (footerCloseBtn.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
 
         // Apply button
         int applyButtonX = closeButtonX - 90;
-        if (AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, applyButtonX, buttonY, 80, UIConstants.Size.BUTTON_HEIGHT)) {
-            applyChanges();
+        if (footerApplyBtn.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
 
@@ -866,6 +855,29 @@ public class UnifiedSettingsScreen extends Screen {
         }
 
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        boolean handled = false;
+        handled |= resetCancelBtn.mouseReleased(mouseX, mouseY, button);
+        handled |= resetConfirmBtn.mouseReleased(mouseX, mouseY, button);
+        handled |= factoryCancelBtn.mouseReleased(mouseX, mouseY, button);
+        handled |= factoryConfirmBtn.mouseReleased(mouseX, mouseY, button);
+        handled |= footerResetPageBtn.mouseReleased(mouseX, mouseY, button);
+        handled |= footerResetProgressBtn.mouseReleased(mouseX, mouseY, button);
+        handled |= footerFactoryResetBtn.mouseReleased(mouseX, mouseY, button);
+        handled |= footerCloseBtn.mouseReleased(mouseX, mouseY, button);
+        handled |= footerApplyBtn.mouseReleased(mouseX, mouseY, button);
+        if (handled) return true;
+
+        // Propagate to current page
+        SettingsPage page = pages.get(currentCategory);
+        if (page != null && page.mouseReleased(mouseX, mouseY, button)) {
+            return true;
+        }
+
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
@@ -965,15 +977,6 @@ public class UnifiedSettingsScreen extends Screen {
             return page.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
-    }
-
-    @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        SettingsPage page = pages.get(currentCategory);
-        if (page != null && page.mouseReleased(mouseX, mouseY, button)) {
-            return true;
-        }
-        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override

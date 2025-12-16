@@ -3,6 +3,7 @@ package com.frenkvs.devmod.ui.editor.components;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.editor.core.EditorSounds;
 import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
+import com.frenkvs.devmod.ui.editor.core.ScaledCoord;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -61,6 +62,7 @@ public class EditorButton {
     // Callback
     private Runnable onClick;
     private Consumer<Boolean> onToggle;
+    private Integer accentOverride = null;
 
     // ═══════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -113,6 +115,14 @@ public class EditorButton {
         return this;
     }
 
+    /**
+     * Accent color override (ARGB). If set, it replaces the default Impact accent for this button.
+     */
+    public EditorButton accent(int argb) {
+        this.accentOverride = argb;
+        return this;
+    }
+
     public EditorButton toggleable(boolean toggleable) {
         this.toggleable = toggleable;
         return this;
@@ -134,6 +144,10 @@ public class EditorButton {
         return this;
     }
 
+    public static Builder builder(String id, String label) {
+        return new Builder(id, label);
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // RENDERING
     // ═══════════════════════════════════════════════════════════════
@@ -150,17 +164,33 @@ public class EditorButton {
         // Check hover state
         this.hovered = enabled && bounds.contains(mouseX, mouseY);
 
-        // Get colors based on style and state
+        // Palette Impact + override
         boolean active = toggleable && toggled;
-        int bgColor = getBackgroundColor(active);
-        int borderColor = getBorderColor(active);
-        int textColor = getTextColor(active);
+        Palette palette = paletteFor(style, accentOverride);
+        int bgColor = pickBackground(palette, active);
+        int borderColor = pickBorder(palette, active);
+        int textColor = pickText(palette, active);
 
-        // Background
+        // Background + impact-style bevel
         graphics.fill(x, y, x + width, y + height, bgColor);
+        int highlight = UIConstants.lighten(bgColor, 0.05f);
+        int mid = UIConstants.darken(bgColor, 0.02f);
+        int shadow = UIConstants.darken(bgColor, 0.08f);
+        int gradBand = Math.max(1, ScaledCoord.scaleDim(1));
+        // top glow
+        graphics.fill(x, y, x + width, y + gradBand, highlight);
+        // mid tone
+        graphics.fill(x, y + gradBand, x + width, y + height - gradBand, mid);
+        // bottom shadow
+        graphics.fill(x, y + height - gradBand, x + width, y + height, shadow);
 
         // Border
         AxiomRenderer.drawBorder(graphics, x, y, width, height, borderColor);
+        // Focus/hover ring (impact accent)
+        if ((hovered || active) && enabled) {
+            int ringColor = UIConstants.withAlpha(borderColor, 0x40);
+            AxiomRenderer.drawBorder(graphics, x - 1, y - 1, width + 2, height + 2, ringColor);
+        }
 
         // Pressed effect (slightly offset text)
         int textOffsetY = pressed && hovered ? 1 : 0;
@@ -191,6 +221,8 @@ public class EditorButton {
         String labelText = Objects.requireNonNull(fitToWidth(label, labelAreaWidth, font), "labelText");
         int textWidth = font.width(labelText);
         int textX = labelStartX + Math.max(0, (labelAreaWidth - textWidth) / 2);
+        // Soft shadow per la leggibilità (opaco per evitare trasparenze sui testi)
+        graphics.drawString(font, labelText, textX + 1, contentY + 1, 0xFF000000, false);
         graphics.drawString(font, labelText, textX, contentY, textColor, false);
     }
 
@@ -201,50 +233,63 @@ public class EditorButton {
         render(graphics, x, y, UIConstants.Size.BUTTON_WIDTH, size.height, mouseX, mouseY);
     }
 
-    private int getBackgroundColor(boolean active) {
-        if (!enabled) {
-            return UIConstants.Button.DISABLED;
-        }
-
-        return switch (style) {
-            case PRIMARY -> (pressed && hovered) || active
-                ? UIConstants.darken(UIConstants.Accent.CYAN, 0.2f)
-                : (hovered ? UIConstants.lighten(UIConstants.Accent.CYAN, 0.05f) : UIConstants.Accent.CYAN);
-            case DANGER -> (pressed && hovered) || active
-                ? UIConstants.darken(UIConstants.Accent.RED, 0.2f)
-                : (hovered ? UIConstants.lighten(UIConstants.Accent.RED, 0.05f) : UIConstants.Accent.RED);
-            case SUCCESS -> (pressed && hovered) || active
-                ? UIConstants.darken(UIConstants.Accent.GREEN, 0.2f)
-                : (hovered ? UIConstants.lighten(UIConstants.Accent.GREEN, 0.05f) : UIConstants.Accent.GREEN);
-            case GHOST -> hovered || active ? UIConstants.Background.HOVER : UIConstants.Background.INPUT;
-            default -> (pressed && hovered) || active
-                ? UIConstants.Background.ACTIVE
-                : (hovered ? UIConstants.Background.HOVER : UIConstants.Background.INPUT);
-        };
+    private int pickBackground(Palette palette, boolean active) {
+        if (!enabled) return palette.disabledBg;
+        if ((pressed && hovered) || active) return palette.press;
+        if (hovered) return palette.hover;
+        return palette.normal;
     }
 
-    private int getBorderColor(boolean active) {
-        if (!enabled) {
-            return UIConstants.Border.MUTED;
-        }
-
-        return switch (style) {
-            case PRIMARY -> UIConstants.Accent.CYAN;
-            case DANGER -> UIConstants.Accent.RED;
-            case SUCCESS -> UIConstants.Accent.GREEN;
-            case GHOST -> (hovered || active) ? UIConstants.Border.HOVER : UIConstants.Border.DEFAULT;
-            default -> (hovered || active) ? UIConstants.Border.HOVER : UIConstants.Border.DEFAULT;
-        };
+    private int pickBorder(Palette palette, boolean active) {
+        if (!enabled) return palette.disabledBorder;
+        if (hovered || active) return palette.hoverBorder;
+        return palette.border;
     }
 
-    private int getTextColor(boolean active) {
-        if (!enabled) {
-            return UIConstants.Text.DISABLED;
-        }
+    private int pickText(Palette palette, boolean active) {
+        if (!enabled) return palette.disabledText;
+        if (style == Style.GHOST && !hovered && !active) return UIConstants.Text.SECONDARY;
+        return palette.text;
+    }
+
+    private Palette paletteFor(Style style, Integer accentOverride) {
+        // Palette Impact HUD centralizzata in UIConstants
+        int defaultBase = UIConstants.ImpactButton.DEFAULT_BASE;
+        int ghostBase = UIConstants.ImpactButton.GHOST_BASE;
+
+        int accent = accentOverride != null ? accentOverride : UIConstants.ImpactButton.PRIMARY_BORDER;
+        int primaryBase = accentOverride != null ? UIConstants.darken(accentOverride, 0.35f) : UIConstants.ImpactButton.PRIMARY_BASE;
+        int dangerBase = UIConstants.darken(UIConstants.ImpactButton.DANGER_BASE, 0.04f);
+        int successBase = UIConstants.darken(UIConstants.ImpactButton.SUCCESS_BASE, 0.05f);
 
         return switch (style) {
-            case GHOST -> hovered || active ? UIConstants.Text.PRIMARY : UIConstants.Text.SECONDARY;
-            default -> UIConstants.Text.PRIMARY;
+            case PRIMARY -> new Palette(primaryBase,
+                UIConstants.lighten(primaryBase, 0.08f),
+                UIConstants.darken(primaryBase, 0.10f),
+                accent,
+                UIConstants.Text.PRIMARY);
+            case DANGER -> new Palette(dangerBase,
+                UIConstants.lighten(dangerBase, 0.06f),
+                UIConstants.darken(dangerBase, 0.12f),
+                UIConstants.ImpactButton.DANGER_BORDER,
+                UIConstants.Text.PRIMARY);
+            case SUCCESS -> new Palette(successBase,
+                UIConstants.lighten(successBase, 0.08f),
+                UIConstants.darken(successBase, 0.12f),
+                UIConstants.ImpactButton.SUCCESS_BORDER,
+                UIConstants.Text.PRIMARY);
+            case GHOST -> new Palette(
+                ghostBase,
+                UIConstants.lighten(ghostBase, 0.05f),
+                UIConstants.darken(ghostBase, 0.06f),
+                UIConstants.Border.MUTED,
+                UIConstants.Text.PRIMARY);
+            default -> new Palette(
+                defaultBase,
+                UIConstants.lighten(defaultBase, 0.04f),
+                UIConstants.darken(defaultBase, 0.12f),
+                UIConstants.Border.DEFAULT,
+                UIConstants.Text.PRIMARY);
         };
     }
 
@@ -292,6 +337,30 @@ public class EditorButton {
             return true;
         }
         return false;
+    }
+
+    private static final class Palette {
+        final int normal;
+        final int hover;
+        final int press;
+        final int border;
+        final int text;
+        final int hoverBorder;
+        final int disabledBg;
+        final int disabledBorder;
+        final int disabledText;
+
+        Palette(int normal, int hover, int press, int border, int text) {
+            this.normal = normal;
+            this.hover = hover;
+            this.press = press;
+            this.border = border;
+            this.text = text;
+            this.hoverBorder = UIConstants.Border.ACCENT;
+            this.disabledBg = UIConstants.darken(UIConstants.Background.INPUT, 0.25f);
+            this.disabledBorder = UIConstants.Border.MUTED;
+            this.disabledText = UIConstants.Text.DISABLED;
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -351,6 +420,78 @@ public class EditorButton {
      */
     public String activeTooltip() {
         return hovered ? tooltip : null;
+    }
+
+    public static final class Builder {
+        private final EditorButton button;
+
+        private Builder(String id, String label) {
+            this.button = new EditorButton(id, label);
+        }
+
+        public Builder style(Style style) {
+            button.style(style);
+            return this;
+        }
+
+        public Builder size(Size size) {
+            button.size(size);
+            return this;
+        }
+
+        public Builder icon(String icon) {
+            button.icon(icon);
+            return this;
+        }
+
+        public Builder tooltip(String tooltip) {
+            button.tooltip(tooltip);
+            return this;
+        }
+
+        public Builder hotkeyHint(String hint) {
+            button.hotkeyHint(hint);
+            return this;
+        }
+
+        public Builder enabled(boolean enabled) {
+            button.enabled(enabled);
+            return this;
+        }
+
+        public Builder playSound(boolean play) {
+            button.playSound(play);
+            return this;
+        }
+
+        public Builder toggleable(boolean toggleable) {
+            button.toggleable(toggleable);
+            return this;
+        }
+
+        public Builder toggled(boolean toggled) {
+            button.toggled(toggled);
+            return this;
+        }
+
+        public Builder accent(int argb) {
+            button.accent(argb);
+            return this;
+        }
+
+        public Builder onClick(Runnable callback) {
+            button.onClick(callback);
+            return this;
+        }
+
+        public Builder onToggle(Consumer<Boolean> callback) {
+            button.onToggle(callback);
+            return this;
+        }
+
+        public EditorButton build() {
+            return button;
+        }
     }
 
     private String fitToWidth(String text, int maxWidth, net.minecraft.client.gui.Font font) {

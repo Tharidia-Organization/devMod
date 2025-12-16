@@ -6,6 +6,7 @@ import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.ui.editor.ItemEditorScreen;
 import com.frenkvs.devmod.ui.editor.EditorStartTab;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.unified.SettingsCategory;
 import com.frenkvs.devmod.ui.unified.SettingsPage;
 import net.minecraft.client.Minecraft;
@@ -33,6 +34,7 @@ public class CombatSettingsPage implements SettingsPage {
     private int totalContentHeight = 0;
     private boolean isDraggingScrollbar = false;
     private int lastContentY, lastContentHeight;
+    private final EditorButton openEditorButton = new EditorButton("combat-open-editor", "Open Weapon Editor [M]").style(EditorButton.Style.PRIMARY);
 
     @Override
     public SettingsCategory getCategory() {
@@ -109,20 +111,16 @@ public class CombatSettingsPage implements SettingsPage {
         // Open Weapon Editor button
         int buttonWidth = 160;
         int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
-        boolean editorHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, currentY, buttonWidth, buttonHeight);
         boolean hasWeapon = !heldItem.isEmpty();
 
-        if (hasWeapon) {
-            AxiomRenderer.drawButton(graphics, font, x, currentY, buttonWidth, buttonHeight,
-                "Open Weapon Editor [M]", editorHovered, false);
-        } else {
-            // Disabled button
-            graphics.fill(x, currentY, x + buttonWidth, currentY + buttonHeight, UIConstants.Background.INPUT);
-            AxiomRenderer.drawBorder(graphics, x, currentY, buttonWidth, buttonHeight, UIConstants.Border.MUTED);
-            int textWidth = font.width("Open Weapon Editor [M]");
-            graphics.drawString(font, "Open Weapon Editor [M]", x + (buttonWidth - textWidth) / 2,
-                currentY + (buttonHeight - 9) / 2, UIConstants.Text.DISABLED, false);
-        }
+        openEditorButton
+            .enabled(hasWeapon)
+            .onClick(() -> {
+                if (!heldItem.isEmpty()) {
+                    Minecraft.getInstance().setScreen(new ItemEditorScreen(heldItem, EditorStartTab.WEAPON));
+                }
+            });
+        openEditorButton.render(graphics, x, currentY, buttonWidth, buttonHeight, mouseX, mouseY);
         currentY += buttonHeight + 8;
 
         // Hint
@@ -196,12 +194,7 @@ public class CombatSettingsPage implements SettingsPage {
         ItemStack heldItem = mc.player != null ? mc.player.getMainHandItem() : ItemStack.EMPTY;
 
         // Calculate button position with scroll offset
-        int buttonY = calculateButtonY(contentY - scrollOffset, heldItem.isEmpty());
-        int buttonWidth = 160;
-        int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
-
-        if (!heldItem.isEmpty() && AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, contentX, buttonY, buttonWidth, buttonHeight)) {
-            mc.setScreen(new ItemEditorScreen(heldItem, EditorStartTab.WEAPON));
+        if (openEditorButton.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
 
@@ -232,6 +225,9 @@ public class CombatSettingsPage implements SettingsPage {
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         if (isDraggingScrollbar) {
             isDraggingScrollbar = false;
+            return true;
+        }
+        if (openEditorButton.mouseReleased(mouseX, mouseY, button)) {
             return true;
         }
         return false;

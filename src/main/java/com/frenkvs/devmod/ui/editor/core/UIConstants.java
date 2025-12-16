@@ -256,6 +256,31 @@ public final class UIConstants {
         private Button() {}
     }
 
+    /**
+     * Palette Impact HUD per i bottoni (usata da EditorButton).
+     */
+    public static final class ImpactButton {
+        // Base neutro
+        public static final int DEFAULT_BASE = darken(Background.PANEL_SOLID, 0.08f);
+        public static final int DEFAULT_BORDER = Border.DEFAULT;
+        public static final int GHOST_BASE = darken(Background.PANEL_SOLID, 0.16f);
+        public static final int GHOST_BORDER = Border.MUTED;
+
+        // Primari (teal)
+        public static final int PRIMARY_BASE = 0xFF0E5569;
+        public static final int PRIMARY_BORDER = 0xFF1A8BAA;
+
+        // Danger (rosso scuro)
+        public static final int DANGER_BASE = 0xFF7A1A1E;
+        public static final int DANGER_BORDER = 0xFFB23036;
+
+        // Success (verde bosco)
+        public static final int SUCCESS_BASE = 0xFF1F6A3F;
+        public static final int SUCCESS_BORDER = 0xFF2DA45A;
+
+        private ImpactButton() {}
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // COLOR PALETTE - SLIDERS
     // ═══════════════════════════════════════════════════════════════

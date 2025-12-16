@@ -3,6 +3,7 @@ package com.frenkvs.devmod.ui.unified.pages;
 import com.frenkvs.devmod.telemetry.TelemetryService;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.unified.SettingsCategory;
 import com.frenkvs.devmod.ui.unified.SettingsPage;
 import net.minecraft.client.Minecraft;
@@ -27,9 +28,14 @@ public class TelemetryPage implements SettingsPage {
     private long statusDisplayTime = 0;
 
     // Layout state cached from render for mouseClicked
-    private boolean lastUseOneColumn = false;
-    private int lastEffectiveButtonWidth = BUTTON_WIDTH;
-    private int lastCol2X = 0;
+    // Buttons
+    private final EditorButton deathButton = new EditorButton("tele-death", "Death Heatmap");
+    private final EditorButton movementButton = new EditorButton("tele-movement", "Movement Map");
+    private final EditorButton campingButton = new EditorButton("tele-camping", "Camping Spots");
+    private final EditorButton stuckButton = new EditorButton("tele-stuck", "Stuck Points");
+    private final EditorButton aggroButton = new EditorButton("tele-aggro", "Aggro Drops");
+    private final EditorButton kitingButton = new EditorButton("tele-kiting", "Kiting Paths");
+    private final EditorButton dashboardButton = new EditorButton("tele-dashboard", "Open Full Dashboard [J]");
 
     @Override
     public SettingsCategory getCategory() {
@@ -92,56 +98,66 @@ public class TelemetryPage implements SettingsPage {
             col2X = x + effectiveButtonWidth + buttonGap;
         }
 
-        // Cache layout state for mouseClicked
-        this.lastUseOneColumn = useOneColumn;
-        this.lastEffectiveButtonWidth = effectiveButtonWidth;
-        this.lastCol2X = col2X;
-
         // Row 1
-        boolean deathHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT);
-        AxiomRenderer.drawButton(graphics, font, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT, "Death Heatmap", deathHovered, false);
+        deathButton.onClick(() -> {
+            TelemetryService.INSTANCE.exportDeathHeatmap();
+            showStatus("Death heatmap exported!");
+        });
+        deathButton.render(graphics, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT, mouseX, mouseY);
 
         if (!useOneColumn) {
-            boolean movementHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, col2X, currentY, effectiveButtonWidth, BUTTON_HEIGHT);
-            AxiomRenderer.drawButton(graphics, font, col2X, currentY, effectiveButtonWidth, BUTTON_HEIGHT, "Movement Map", movementHovered, false);
+            movementButton.onClick(() -> {
+                TelemetryService.INSTANCE.exportMovementHeatmap();
+                showStatus("Movement map exported!");
+            });
+            movementButton.render(graphics, col2X, currentY, effectiveButtonWidth, BUTTON_HEIGHT, mouseX, mouseY);
         }
         currentY += BUTTON_HEIGHT + 4;
 
         if (useOneColumn) {
-            boolean movementHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT);
-            AxiomRenderer.drawButton(graphics, font, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT, "Movement Map", movementHovered, false);
+            movementButton.render(graphics, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT, mouseX, mouseY);
             currentY += BUTTON_HEIGHT + 4;
         }
 
         // Row 2
-        boolean campingHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT);
-        AxiomRenderer.drawButton(graphics, font, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT, "Camping Spots", campingHovered, false);
+        campingButton.onClick(() -> {
+            TelemetryService.INSTANCE.exportCampingHeatmap();
+            showStatus("Camping spots exported!");
+        });
+        campingButton.render(graphics, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT, mouseX, mouseY);
 
         if (!useOneColumn) {
-            boolean stuckHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, col2X, currentY, effectiveButtonWidth, BUTTON_HEIGHT);
-            AxiomRenderer.drawButton(graphics, font, col2X, currentY, effectiveButtonWidth, BUTTON_HEIGHT, "Stuck Points", stuckHovered, false);
+            stuckButton.onClick(() -> {
+                TelemetryService.INSTANCE.exportStuckHeatmap();
+                showStatus("Stuck points exported!");
+            });
+            stuckButton.render(graphics, col2X, currentY, effectiveButtonWidth, BUTTON_HEIGHT, mouseX, mouseY);
         }
         currentY += BUTTON_HEIGHT + 4;
 
         if (useOneColumn) {
-            boolean stuckHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT);
-            AxiomRenderer.drawButton(graphics, font, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT, "Stuck Points", stuckHovered, false);
+            stuckButton.render(graphics, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT, mouseX, mouseY);
             currentY += BUTTON_HEIGHT + 4;
         }
 
         // Row 3
-        boolean aggroHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT);
-        AxiomRenderer.drawButton(graphics, font, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT, "Aggro Drops", aggroHovered, false);
+        aggroButton.onClick(() -> {
+            TelemetryService.INSTANCE.exportAggroDropHeatmap();
+            showStatus("Aggro drops exported!");
+        });
+        aggroButton.render(graphics, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT, mouseX, mouseY);
 
         if (!useOneColumn) {
-            boolean kitingHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, col2X, currentY, effectiveButtonWidth, BUTTON_HEIGHT);
-            AxiomRenderer.drawButton(graphics, font, col2X, currentY, effectiveButtonWidth, BUTTON_HEIGHT, "Kiting Paths", kitingHovered, false);
+            kitingButton.onClick(() -> {
+                TelemetryService.INSTANCE.exportKitingHeatmap();
+                showStatus("Kiting paths exported!");
+            });
+            kitingButton.render(graphics, col2X, currentY, effectiveButtonWidth, BUTTON_HEIGHT, mouseX, mouseY);
         }
         currentY += BUTTON_HEIGHT + 4;
 
         if (useOneColumn) {
-            boolean kitingHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT);
-            AxiomRenderer.drawButton(graphics, font, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT, "Kiting Paths", kitingHovered, false);
+            kitingButton.render(graphics, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT, mouseX, mouseY);
             currentY += BUTTON_HEIGHT + 4;
         }
         currentY += SECTION_SPACING - 4;
@@ -155,9 +171,10 @@ public class TelemetryPage implements SettingsPage {
         currentY += ROW_HEIGHT + 4;
 
         // Open full dashboard button
-        boolean dashboardHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, currentY, BUTTON_WIDTH + 40, BUTTON_HEIGHT);
-        AxiomRenderer.drawButton(graphics, font, x, currentY, BUTTON_WIDTH + 40, BUTTON_HEIGHT,
-            "Open Full Dashboard [J]", dashboardHovered, false);
+        dashboardButton.onClick(() -> {
+            Minecraft.getInstance().setScreen(new com.frenkvs.devmod.TelemetryDashboardScreen(null));
+        });
+        dashboardButton.render(graphics, x, currentY, BUTTON_WIDTH + 40, BUTTON_HEIGHT, mouseX, mouseY);
         currentY += BUTTON_HEIGHT + 8;
 
         // Status message
@@ -174,89 +191,28 @@ public class TelemetryPage implements SettingsPage {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button, int contentX, int contentY, int contentWidth) {
         if (button != 0) return false;
+        boolean handled = false;
+        handled |= deathButton.mouseClicked(mouseX, mouseY, button);
+        handled |= movementButton.mouseClicked(mouseX, mouseY, button);
+        handled |= campingButton.mouseClicked(mouseX, mouseY, button);
+        handled |= stuckButton.mouseClicked(mouseX, mouseY, button);
+        handled |= aggroButton.mouseClicked(mouseX, mouseY, button);
+        handled |= kitingButton.mouseClicked(mouseX, mouseY, button);
+        handled |= dashboardButton.mouseClicked(mouseX, mouseY, button);
+        return handled;
+    }
 
-        // Use cached layout state from render
-        int btnWidth = lastEffectiveButtonWidth;
-        int col2X = lastCol2X;
-        boolean oneCol = lastUseOneColumn;
-
-        int y = contentY + ROW_HEIGHT + 4; // Skip section header
-        y += ROW_HEIGHT * 3; // Skip stats rows
-        y += SECTION_SPACING + SECTION_SPACING + ROW_HEIGHT + 4; // Skip to export section
-
-        // Export buttons - use responsive layout
-        // Death Heatmap (always row 1, col 1)
-        if (AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, contentX, y, btnWidth, BUTTON_HEIGHT)) {
-            TelemetryService.INSTANCE.exportDeathHeatmap();
-            showStatus("Death heatmap exported!");
-            return true;
-        }
-        if (!oneCol && AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, col2X, y, btnWidth, BUTTON_HEIGHT)) {
-            TelemetryService.INSTANCE.exportMovementHeatmap();
-            showStatus("Movement map exported!");
-            return true;
-        }
-        y += BUTTON_HEIGHT + 4;
-
-        // Movement (if single column, it's on its own row)
-        if (oneCol && AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, contentX, y, btnWidth, BUTTON_HEIGHT)) {
-            TelemetryService.INSTANCE.exportMovementHeatmap();
-            showStatus("Movement map exported!");
-            return true;
-        }
-        if (oneCol) y += BUTTON_HEIGHT + 4;
-
-        // Camping Spots
-        if (AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, contentX, y, btnWidth, BUTTON_HEIGHT)) {
-            TelemetryService.INSTANCE.exportCampingHeatmap();
-            showStatus("Camping spots exported!");
-            return true;
-        }
-        if (!oneCol && AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, col2X, y, btnWidth, BUTTON_HEIGHT)) {
-            TelemetryService.INSTANCE.exportStuckHeatmap();
-            showStatus("Stuck points exported!");
-            return true;
-        }
-        y += BUTTON_HEIGHT + 4;
-
-        // Stuck Points (if single column)
-        if (oneCol && AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, contentX, y, btnWidth, BUTTON_HEIGHT)) {
-            TelemetryService.INSTANCE.exportStuckHeatmap();
-            showStatus("Stuck points exported!");
-            return true;
-        }
-        if (oneCol) y += BUTTON_HEIGHT + 4;
-
-        // Aggro Drops
-        if (AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, contentX, y, btnWidth, BUTTON_HEIGHT)) {
-            TelemetryService.INSTANCE.exportAggroDropHeatmap();
-            showStatus("Aggro drops exported!");
-            return true;
-        }
-        if (!oneCol && AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, col2X, y, btnWidth, BUTTON_HEIGHT)) {
-            TelemetryService.INSTANCE.exportKitingHeatmap();
-            showStatus("Kiting paths exported!");
-            return true;
-        }
-        y += BUTTON_HEIGHT + 4;
-
-        // Kiting Paths (if single column)
-        if (oneCol && AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, contentX, y, btnWidth, BUTTON_HEIGHT)) {
-            TelemetryService.INSTANCE.exportKitingHeatmap();
-            showStatus("Kiting paths exported!");
-            return true;
-        }
-        if (oneCol) y += BUTTON_HEIGHT + 4;
-
-        y += SECTION_SPACING - 4 + SECTION_SPACING + ROW_HEIGHT + 4;
-
-        // Dashboard button
-        if (AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, contentX, y, btnWidth + 40, BUTTON_HEIGHT)) {
-            Minecraft.getInstance().setScreen(new com.frenkvs.devmod.TelemetryDashboardScreen(null));
-            return true;
-        }
-
-        return false;
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        boolean handled = false;
+        handled |= deathButton.mouseReleased(mouseX, mouseY, button);
+        handled |= movementButton.mouseReleased(mouseX, mouseY, button);
+        handled |= campingButton.mouseReleased(mouseX, mouseY, button);
+        handled |= stuckButton.mouseReleased(mouseX, mouseY, button);
+        handled |= aggroButton.mouseReleased(mouseX, mouseY, button);
+        handled |= kitingButton.mouseReleased(mouseX, mouseY, button);
+        handled |= dashboardButton.mouseReleased(mouseX, mouseY, button);
+        return handled;
     }
 
     private void showStatus(String message) {

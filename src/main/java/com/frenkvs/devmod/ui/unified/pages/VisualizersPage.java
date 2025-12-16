@@ -7,6 +7,7 @@ import com.frenkvs.devmod.rendering.SafeSpotVisualizer;
 import com.frenkvs.devmod.rendering.VerticalLevelsVisualizer;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.unified.SettingsCategory;
 import com.frenkvs.devmod.ui.unified.SettingsPage;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsData;
@@ -50,6 +51,13 @@ public class VisualizersPage implements SettingsPage {
     // Slider pulse animations (0-1, decays over time)
     private float lightSliderPulse = 0f;
     private float viewDistSliderPulse = 0f;
+
+    // Buttons
+    private final EditorButton lightMinusBtn = new EditorButton("viz-light-minus", "-");
+    private final EditorButton lightPlusBtn = new EditorButton("viz-light-plus", "+");
+    private final EditorButton clearAllBtn = new EditorButton("viz-clear-all", "Clear All");
+    private final EditorButton vdMinusBtn = new EditorButton("viz-vd-minus", "-");
+    private final EditorButton vdPlusBtn = new EditorButton("viz-vd-plus", "+");
 
     @Override
     public SettingsCategory getCategory() {
@@ -116,10 +124,23 @@ public class VisualizersPage implements SettingsPage {
         // [-] [+] buttons - positioned after slider with proper spacing
         int minusBtnX = sliderX + sliderWidth + 8;
         int plusBtnX = minusBtnX + 24;
-        boolean minusHovered = isMouseOver(mouseX, mouseY, minusBtnX, currentY, 20, 16);
-        boolean plusHovered = isMouseOver(mouseX, mouseY, plusBtnX, currentY, 20, 16);
-        AxiomRenderer.drawButton(graphics, font, minusBtnX, currentY, 20, 16, "-", minusHovered, false);
-        AxiomRenderer.drawButton(graphics, font, plusBtnX, currentY, 20, 16, "+", plusHovered, false);
+        lightMinusBtn
+            .style(EditorButton.Style.NORMAL)
+            .onClick(() -> {
+                lightLevelRadius = Math.max(4, lightLevelRadius - 4);
+                LightLevelOverlay.INSTANCE.setRadius(lightLevelRadius);
+                lightSliderPulse = 1.0f;
+            });
+        lightMinusBtn.render(graphics, minusBtnX, currentY, 20, 16, mouseX, mouseY);
+
+        lightPlusBtn
+            .style(EditorButton.Style.NORMAL)
+            .onClick(() -> {
+                lightLevelRadius = Math.min(32, lightLevelRadius + 4);
+                LightLevelOverlay.INSTANCE.setRadius(lightLevelRadius);
+                lightSliderPulse = 1.0f;
+            });
+        lightPlusBtn.render(graphics, plusBtnX, currentY, 20, 16, mouseX, mouseY);
         currentY += ROW_HEIGHT;
 
         // Separator
@@ -137,8 +158,10 @@ public class VisualizersPage implements SettingsPage {
         // "Disable All" button if any active
         if (activeCount > 0) {
             int btnX = x + width - 80;
-            boolean btnHovered = isMouseOver(mouseX, mouseY, btnX, currentY - 2, 70, 16);
-            AxiomRenderer.drawButton(graphics, font, btnX, currentY - 2, 70, 16, "Clear All", btnHovered, false);
+            clearAllBtn
+                .style(EditorButton.Style.DANGER)
+                .onClick(this::disableAllHeatmaps);
+            clearAllBtn.render(graphics, btnX, currentY - 2, 70, 16, mouseX, mouseY);
         }
         currentY += ROW_HEIGHT;
 
@@ -211,10 +234,23 @@ public class VisualizersPage implements SettingsPage {
         // [-] [+] buttons for view distance - positioned after slider with proper spacing
         int vdMinusBtnX = vdSliderX + viewDistSliderWidth + 8;
         int vdPlusBtnX = vdMinusBtnX + 24;
-        boolean vdMinusHovered = isMouseOver(mouseX, mouseY, vdMinusBtnX, currentY, 20, 16);
-        boolean vdPlusHovered = isMouseOver(mouseX, mouseY, vdPlusBtnX, currentY, 20, 16);
-        AxiomRenderer.drawButton(graphics, font, vdMinusBtnX, currentY, 20, 16, "-", vdMinusHovered, false);
-        AxiomRenderer.drawButton(graphics, font, vdPlusBtnX, currentY, 20, 16, "+", vdPlusHovered, false);
+        vdMinusBtn
+            .style(EditorButton.Style.NORMAL)
+            .onClick(() -> {
+                viewDistance = Math.max(SettingsData.VisualizerSettings.MIN_RENDER_DISTANCE, viewDistance - 8);
+                SettingsManager.INSTANCE.getSettings().visualizers.setRenderDistance(viewDistance);
+                viewDistSliderPulse = 1.0f;
+            });
+        vdMinusBtn.render(graphics, vdMinusBtnX, currentY, 20, 16, mouseX, mouseY);
+
+        vdPlusBtn
+            .style(EditorButton.Style.NORMAL)
+            .onClick(() -> {
+                viewDistance = Math.min(SettingsData.VisualizerSettings.MAX_RENDER_DISTANCE, viewDistance + 8);
+                SettingsManager.INSTANCE.getSettings().visualizers.setRenderDistance(viewDistance);
+                viewDistSliderPulse = 1.0f;
+            });
+        vdPlusBtn.render(graphics, vdPlusBtnX, currentY, 20, 16, mouseX, mouseY);
         currentY += ROW_HEIGHT;
 
         // Hint about view distance
@@ -322,6 +358,13 @@ public class VisualizersPage implements SettingsPage {
         return y + 20;
     }
 
+    private void disableAllHeatmaps() {
+        for (HeatmapType type : HeatmapType.values()) {
+            HeatmapVisualizer.INSTANCE.setEnabled(type, false);
+        }
+        UIConstants.Sound.delete();
+    }
+
     private void renderSlider(GuiGraphics graphics, int x, int y, int width, int height,
                                float value, int mouseX, int mouseY, float pulseAnimation) {
         // Background track
@@ -394,8 +437,6 @@ public class VisualizersPage implements SettingsPage {
         // Radius controls - slider click/drag
         int sliderX = contentX + 120;
         int localSliderWidth = Math.min(contentWidth - 140, 200);
-        int minusBtnX = sliderX + localSliderWidth + 8;
-        int plusBtnX = minusBtnX + 24;
 
         // Click on slider to set value directly
         if (isMouseOver((int) mouseX, (int) mouseY, sliderX, y, localSliderWidth, 16)) {
@@ -404,33 +445,15 @@ public class VisualizersPage implements SettingsPage {
             return true;
         }
 
-        if (isMouseOver((int) mouseX, (int) mouseY, minusBtnX, y, 20, 16)) {
-            lightLevelRadius = Math.max(4, lightLevelRadius - 4);
-            LightLevelOverlay.INSTANCE.setRadius(lightLevelRadius);
-            lightSliderPulse = 1.0f;
-            return true;
-        }
-        if (isMouseOver((int) mouseX, (int) mouseY, plusBtnX, y, 20, 16)) {
-            lightLevelRadius = Math.min(32, lightLevelRadius + 4);
-            LightLevelOverlay.INSTANCE.setRadius(lightLevelRadius);
-            lightSliderPulse = 1.0f;
-            return true;
-        }
+        if (lightMinusBtn.mouseClicked(mouseX, mouseY, button)) return true;
+        if (lightPlusBtn.mouseClicked(mouseX, mouseY, button)) return true;
         y += ROW_HEIGHT;
 
         // Separator space
         y += 8 + SECTION_SPACING;
 
         // Skip section header - but check for "Clear All" button click first
-        int btnX = contentX + contentWidth - 80;
-        if (countActiveHeatmaps() > 0 && isMouseOver((int) mouseX, (int) mouseY, btnX, y - 2, 70, 16)) {
-            // Disable all heatmaps
-            for (HeatmapType type : HeatmapType.values()) {
-                HeatmapVisualizer.INSTANCE.setEnabled(type, false);
-            }
-            UIConstants.Sound.delete();
-            return true;
-        }
+        if (countActiveHeatmaps() > 0 && clearAllBtn.mouseClicked(mouseX, mouseY, button)) return true;
         y += ROW_HEIGHT;
 
         // Heatmap toggles - use all enum values for consistency
@@ -477,8 +500,6 @@ public class VisualizersPage implements SettingsPage {
         // View Distance controls
         int vdSliderX = contentX + 140;
         int localVdSliderWidth = Math.min(contentWidth - 160, 180);
-        int vdMinusBtnX = vdSliderX + localVdSliderWidth + 8;
-        int vdPlusBtnX = vdMinusBtnX + 24;
 
         // Click on view distance slider
         if (isMouseOver((int) mouseX, (int) mouseY, vdSliderX, y, localVdSliderWidth, 16)) {
@@ -487,25 +508,8 @@ public class VisualizersPage implements SettingsPage {
             return true;
         }
 
-        // View distance minus button
-        if (isMouseOver((int) mouseX, (int) mouseY, vdMinusBtnX, y, 20, 16)) {
-            viewDistance = Math.max(SettingsData.VisualizerSettings.MIN_RENDER_DISTANCE, viewDistance - 8);
-            SettingsManager.INSTANCE.getSettings().visualizers.setRenderDistance(viewDistance);
-            SettingsManager.INSTANCE.markDirty();
-            SettingsManager.INSTANCE.save();
-            viewDistSliderPulse = 1.0f;
-            return true;
-        }
-
-        // View distance plus button
-        if (isMouseOver((int) mouseX, (int) mouseY, vdPlusBtnX, y, 20, 16)) {
-            viewDistance = Math.min(SettingsData.VisualizerSettings.MAX_RENDER_DISTANCE, viewDistance + 8);
-            SettingsManager.INSTANCE.getSettings().visualizers.setRenderDistance(viewDistance);
-            SettingsManager.INSTANCE.markDirty();
-            SettingsManager.INSTANCE.save();
-            viewDistSliderPulse = 1.0f;
-            return true;
-        }
+        if (vdMinusBtn.mouseClicked(mouseX, mouseY, button)) return true;
+        if (vdPlusBtn.mouseClicked(mouseX, mouseY, button)) return true;
 
         return false;
     }
@@ -609,6 +613,13 @@ public class VisualizersPage implements SettingsPage {
                 SettingsManager.INSTANCE.save();
                 return true;
             }
+            boolean handled = false;
+            handled |= lightMinusBtn.mouseReleased(mouseX, mouseY, button);
+            handled |= lightPlusBtn.mouseReleased(mouseX, mouseY, button);
+            handled |= clearAllBtn.mouseReleased(mouseX, mouseY, button);
+            handled |= vdMinusBtn.mouseReleased(mouseX, mouseY, button);
+            handled |= vdPlusBtn.mouseReleased(mouseX, mouseY, button);
+            if (handled) return true;
         }
         return false;
     }

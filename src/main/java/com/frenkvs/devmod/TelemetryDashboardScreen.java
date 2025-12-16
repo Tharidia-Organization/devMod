@@ -13,6 +13,7 @@ import com.frenkvs.devmod.testing.stats.EnvironmentalDamageStats;
 import com.frenkvs.devmod.testing.stats.HazardTypeRegistry.HazardType;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -54,6 +55,8 @@ public class TelemetryDashboardScreen extends Screen {
 
     // Confirmation state for destructive actions
     private boolean showClearConfirmation = false;
+    private final EditorButton backButton = new EditorButton("tele-back", "Back");
+    private final EditorButton refreshButton = new EditorButton("tele-refresh", "Refresh").style(EditorButton.Style.PRIMARY);
 
     private enum DashboardTab {
         OVERLAYS("Overlays"),
@@ -130,8 +133,10 @@ public class TelemetryDashboardScreen extends Screen {
         int buttonWidth = 100;
         int buttonX = (this.width - buttonWidth) / 2;
         int buttonY = this.height - 35;
-        boolean backHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, buttonX, buttonY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT);
-        AxiomRenderer.drawButton(graphics, font, buttonX, buttonY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, "Back", backHovered, false);
+        backButton
+            .style(EditorButton.Style.NORMAL)
+            .onClick(this::onClose);
+        backButton.render(graphics, buttonX, buttonY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
     }
 
     private void renderOverlaysTab(GuiGraphics graphics, int x, int y) {
@@ -231,8 +236,14 @@ public class TelemetryDashboardScreen extends Screen {
         int startX = x + (CONTENT_WIDTH - totalWidth) / 2;
 
         // Manual Refresh button
-        boolean refreshHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, startX, y, btnWidth, UIConstants.Size.BUTTON_HEIGHT);
-        AxiomRenderer.drawButton(graphics, font, startX, y, btnWidth, UIConstants.Size.BUTTON_HEIGHT, "Refresh", refreshHovered, false);
+        refreshButton
+            .style(EditorButton.Style.PRIMARY)
+            .onClick(() -> {
+                refreshStats();
+                lastRefreshTime = System.currentTimeMillis();
+                showMessage("Stats refreshed!");
+            });
+        refreshButton.render(graphics, startX, y, btnWidth, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
         // Auto-refresh toggle
         int toggleX = startX + btnWidth + 10;
@@ -469,6 +480,10 @@ public class TelemetryDashboardScreen extends Screen {
         int mx = (int) mouseX;
         int my = (int) mouseY;
 
+        if (backButton.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+
         // Tab clicks
         int tabStartX = (this.width - (DashboardTab.values().length * TAB_WIDTH)) / 2;
         int tabY = 26;
@@ -491,15 +506,6 @@ public class TelemetryDashboardScreen extends Screen {
             case EXPORT -> { if (handleExportClick(mx, my, contentX, contentY)) return true; }
             case STATS -> { if (handleStatsClick(mx, my, contentX, contentY)) return true; }
             case VISUALIZERS -> { if (handleVisualizersClick(mx, my, contentX, contentY)) return true; }
-        }
-
-        // Back button
-        int buttonWidth = 100;
-        int buttonX = (this.width - buttonWidth) / 2;
-        int buttonY = this.height - 35;
-        if (AxiomRenderer.isMouseOver(mx, my, buttonX, buttonY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT)) {
-            this.onClose();
-            return true;
         }
 
         return super.mouseClicked(mouseX, mouseY, button);
@@ -578,16 +584,13 @@ public class TelemetryDashboardScreen extends Screen {
         int startX = x + (CONTENT_WIDTH - totalWidth) / 2;
 
         // Manual Refresh button
-        if (AxiomRenderer.isMouseOver(mx, my, startX, y, btnWidth, UIConstants.Size.BUTTON_HEIGHT)) {
-            refreshStats();
-            lastRefreshTime = System.currentTimeMillis();
-            showMessage("Stats refreshed!");
+        if (refreshButton.mouseClicked(mx, my, 0)) {
             return true;
         }
 
         // Auto-refresh toggle
         int toggleX = startX + btnWidth + 10;
-        if (AxiomRenderer.isMouseOver(mx, my, toggleX, y, toggleWidth, UIConstants.Size.BUTTON_HEIGHT)) {
+        if (mx >= toggleX && mx < toggleX + toggleWidth && my >= y && my < y + UIConstants.Size.BUTTON_HEIGHT) {
             autoRefresh = !autoRefresh;
             if (autoRefresh) {
                 lastRefreshTime = System.currentTimeMillis();
@@ -599,6 +602,15 @@ public class TelemetryDashboardScreen extends Screen {
         }
 
         return false;
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        boolean handled = false;
+        handled |= backButton.mouseReleased(mouseX, mouseY, button);
+        handled |= refreshButton.mouseReleased(mouseX, mouseY, button);
+        if (handled) return true;
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     private boolean handleVisualizersClick(int mx, int my, int x, int y) {

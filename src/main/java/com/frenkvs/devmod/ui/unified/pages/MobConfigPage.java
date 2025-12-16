@@ -3,6 +3,7 @@ package com.frenkvs.devmod.ui.unified.pages;
 import com.frenkvs.devmod.MobConfigManager;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.unified.SettingsCategory;
 import com.frenkvs.devmod.ui.unified.SettingsPage;
 import net.minecraft.client.Minecraft;
@@ -37,6 +38,7 @@ public class MobConfigPage implements SettingsPage {
     private String statusMessage = null;
     private long statusMessageTime = 0;
     private int statusMessageColor = UIConstants.Text.MUTED;
+    private final EditorButton clearAllBtn = new EditorButton("mob-clear-configs", "Clear All Configs").style(EditorButton.Style.DANGER);
 
     @Override
     public SettingsCategory getCategory() {
@@ -126,18 +128,13 @@ public class MobConfigPage implements SettingsPage {
         // Clear all button
         int buttonWidth = 140;
         int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
-        boolean clearHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, currentY, buttonWidth, buttonHeight);
-
-        if (configuredCount > 0) {
-            AxiomRenderer.drawButton(graphics, font, x, currentY, buttonWidth, buttonHeight,
-                "Clear All Configs", clearHovered, false);
-        } else {
-            graphics.fill(x, currentY, x + buttonWidth, currentY + buttonHeight, UIConstants.Background.INPUT);
-            AxiomRenderer.drawBorder(graphics, x, currentY, buttonWidth, buttonHeight, UIConstants.Border.MUTED);
-            int textWidth = font.width("Clear All Configs");
-            graphics.drawString(font, "Clear All Configs", x + (buttonWidth - textWidth) / 2,
-                currentY + (buttonHeight - 9) / 2, UIConstants.Text.DISABLED, false);
-        }
+        clearAllBtn
+            .enabled(configuredCount > 0)
+            .onClick(() -> {
+                MobConfigManager.clearAllGlobalStats();
+                showStatusMessage("Cleared all configs", UIConstants.Status.SUCCESS);
+            });
+        clearAllBtn.render(graphics, x, currentY, buttonWidth, buttonHeight, mouseX, mouseY);
         currentY += buttonHeight + 12;
 
         // Hint
@@ -254,14 +251,18 @@ public class MobConfigPage implements SettingsPage {
         y += SECTION_SPACING + SECTION_SPACING + ROW_HEIGHT + ROW_HEIGHT; // Separators and headers
 
         // Clear All button
-        int buttonWidth = 140;
-        int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
-        if (countConfiguredMobTypes() > 0 &&
-            AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, contentX, y, buttonWidth, buttonHeight)) {
-            MobConfigManager.clearAllGlobalStats();
+        if (clearAllBtn.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
 
+        return false;
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (clearAllBtn.mouseReleased(mouseX, mouseY, button)) {
+            return true;
+        }
         return false;
     }
 

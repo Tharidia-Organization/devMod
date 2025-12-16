@@ -2,7 +2,6 @@ package com.frenkvs.devmod.ui;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -77,28 +76,28 @@ public abstract class ModScreen extends Screen {
         int buttonY = height - BOTTOM_MARGIN;
 
         // Apply button
-        this.addRenderableWidget(Objects.requireNonNull(Button.builder(
-            Objects.requireNonNull(Component.translatable("devmod.ui.apply")),
-            b -> {
+        var apply = new com.frenkvs.devmod.ui.editor.components.EditorButton("apply", Component.translatable("devmod.ui.apply").getString())
+            .style(com.frenkvs.devmod.ui.editor.components.EditorButton.Style.PRIMARY)
+            .onClick(() -> {
                 onApply();
                 onClose();
-            })
-            .bounds(centerX - BUTTON_WIDTH - BUTTON_SPACING - BUTTON_WIDTH/2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT)
-            .build()));
+            });
+        this.addRenderableWidget(new com.frenkvs.devmod.ui.editor.components.EditorButtonWidget(apply,
+            centerX - BUTTON_WIDTH - BUTTON_SPACING - BUTTON_WIDTH / 2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT));
 
         // Cancel button
-        this.addRenderableWidget(Objects.requireNonNull(Button.builder(
-            Objects.requireNonNull(Component.translatable("devmod.ui.cancel")),
-            b -> onCancel())
-            .bounds(centerX - BUTTON_WIDTH/2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT)
-            .build()));
+        var cancel = new com.frenkvs.devmod.ui.editor.components.EditorButton("cancel", Component.translatable("devmod.ui.cancel").getString())
+            .style(com.frenkvs.devmod.ui.editor.components.EditorButton.Style.NORMAL)
+            .onClick(this::onCancel);
+        this.addRenderableWidget(new com.frenkvs.devmod.ui.editor.components.EditorButtonWidget(cancel,
+            centerX - BUTTON_WIDTH / 2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT));
 
-        // Reset button
-        this.addRenderableWidget(Objects.requireNonNull(Button.builder(
-            Objects.requireNonNull(Component.translatable("devmod.ui.reset")),
-            b -> onReset())
-            .bounds(centerX + BUTTON_SPACING + BUTTON_WIDTH/2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT)
-            .build()));
+        // Reset button (dangerous)
+        var reset = new com.frenkvs.devmod.ui.editor.components.EditorButton("reset", Component.translatable("devmod.ui.reset").getString())
+            .style(com.frenkvs.devmod.ui.editor.components.EditorButton.Style.DANGER)
+            .onClick(this::onReset);
+        this.addRenderableWidget(new com.frenkvs.devmod.ui.editor.components.EditorButtonWidget(reset,
+            centerX + BUTTON_SPACING + BUTTON_WIDTH / 2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT));
     }
 
     /**
@@ -109,21 +108,21 @@ public abstract class ModScreen extends Screen {
         int buttonY = height - BOTTOM_MARGIN;
 
         // Apply button
-        this.addRenderableWidget(Objects.requireNonNull(Button.builder(
-            Objects.requireNonNull(Component.translatable("devmod.ui.apply")),
-            b -> {
+        var apply = new com.frenkvs.devmod.ui.editor.components.EditorButton("apply", Component.translatable("devmod.ui.apply").getString())
+            .style(com.frenkvs.devmod.ui.editor.components.EditorButton.Style.PRIMARY)
+            .onClick(() -> {
                 onApply();
                 onClose();
-            })
-            .bounds(centerX - BUTTON_WIDTH - BUTTON_SPACING/2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT)
-            .build()));
+            });
+        this.addRenderableWidget(new com.frenkvs.devmod.ui.editor.components.EditorButtonWidget(apply,
+            centerX - BUTTON_WIDTH - BUTTON_SPACING / 2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT));
 
         // Cancel button
-        this.addRenderableWidget(Objects.requireNonNull(Button.builder(
-            Objects.requireNonNull(Component.translatable("devmod.ui.cancel")),
-            b -> onCancel())
-            .bounds(centerX + BUTTON_SPACING/2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT)
-            .build()));
+        var cancel = new com.frenkvs.devmod.ui.editor.components.EditorButton("cancel", Component.translatable("devmod.ui.cancel").getString())
+            .style(com.frenkvs.devmod.ui.editor.components.EditorButton.Style.NORMAL)
+            .onClick(this::onCancel);
+        this.addRenderableWidget(new com.frenkvs.devmod.ui.editor.components.EditorButtonWidget(cancel,
+            centerX + BUTTON_SPACING / 2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT));
     }
 
     /**

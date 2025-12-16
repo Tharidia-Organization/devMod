@@ -107,22 +107,24 @@ public class VoxelLabUiTestScreen extends Screen {
     }
 
     private void layoutGrid() {
-        int startY = PADDING + 72;
+        int currentY = PADDING + 72;
         int col = 0;
-        int row = 0;
+        int rowHeight = 0;
 
         for (DemoButton demo : demoButtons) {
             int btnHeight = demo.button.getSize().height();
             int x = PADDING + col * (DEMO_WIDTH + GRID_SPACING);
-            int y = startY + row * (btnHeight + GRID_SPACING);
+            int y = currentY;
 
             demo.x = x;
             demo.y = y;
+            rowHeight = Math.max(rowHeight, btnHeight);
 
             col++;
             if (col >= GRID_COLUMNS) {
                 col = 0;
-                row++;
+                currentY += rowHeight + GRID_SPACING;
+                rowHeight = 0;
             }
         }
     }

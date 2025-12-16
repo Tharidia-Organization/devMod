@@ -2,6 +2,7 @@ package com.frenkvs.devmod;
 
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
@@ -42,6 +43,8 @@ public class MobEquipmentScreen extends Screen {
     private String errorMessage = null;
     private int errorDisplayTicks = 0;
     private EditBox errorField = null;
+    private final EditorButton applyButton = new EditorButton("mob-equip-apply", "Apply").style(EditorButton.Style.PRIMARY);
+    private final EditorButton backButton = new EditorButton("mob-equip-back", "Back").style(EditorButton.Style.NORMAL);
 
     public MobEquipmentScreen(Mob mob, Screen parentScreen) {
         super(I18n.translate("devmod.screen.mob_equipment", mob.getName().getString()));
@@ -60,6 +63,9 @@ public class MobEquipmentScreen extends Screen {
     @Override
     protected void init() {
         if (font == null) return;
+
+        applyButton.onClick(this::save);
+        backButton.onClick(this::onClose);
 
         int panelX = (this.width - PANEL_WIDTH) / 2;
         int panelY = (this.height - PANEL_HEIGHT) / 2;
@@ -164,13 +170,9 @@ public class MobEquipmentScreen extends Screen {
         int buttonWidth = 100;
         int buttonGap = 10;
         int buttonsX = panelX + (PANEL_WIDTH - buttonWidth * 2 - buttonGap) / 2;
-
-        boolean applyHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, buttonsX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT);
-        AxiomRenderer.drawButton(graphics, font, buttonsX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, "Apply", applyHovered, false);
-
         int backX = buttonsX + buttonWidth + buttonGap;
-        boolean backHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, backX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT);
-        AxiomRenderer.drawButton(graphics, font, backX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, "Back", backHovered, false);
+        applyButton.render(graphics, buttonsX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
+        backButton.render(graphics, backX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
         // Render widgets (EditBoxes)
         super.render(graphics, mouseX, mouseY, partialTick);
@@ -221,38 +223,17 @@ public class MobEquipmentScreen extends Screen {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
 
-        int panelX = (this.width - PANEL_WIDTH) / 2;
-        int panelY = (this.height - PANEL_HEIGHT) / 2;
-
-        // Calculate button Y position
-        int contentY = panelY + UIConstants.Spacing.HEADER_HEIGHT + UIConstants.Spacing.PANEL_PADDING;
-        contentY += 16; // section header
-        contentY += ROW_HEIGHT * 2; // weapons
-        contentY += UIConstants.Spacing.GAP_LARGE + 16; // separator + section header
-        contentY += ROW_HEIGHT * 4; // armor
-        contentY += UIConstants.Spacing.GAP_LARGE + UIConstants.Spacing.GAP_LARGE; // separator
-
-        int mx = (int) mouseX;
-        int my = (int) mouseY;
-
-        int buttonWidth = 100;
-        int buttonGap = 10;
-        int buttonsX = panelX + (PANEL_WIDTH - buttonWidth * 2 - buttonGap) / 2;
-
-        // Apply button
-        if (AxiomRenderer.isMouseOver(mx, my, buttonsX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT)) {
-            save();
-            return true;
-        }
-
-        // Back button
-        int backX = buttonsX + buttonWidth + buttonGap;
-        if (AxiomRenderer.isMouseOver(mx, my, backX, contentY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT)) {
-            onClose();
-            return true;
-        }
+        if (applyButton.mouseClicked(mouseX, mouseY, button)) return true;
+        if (backButton.mouseClicked(mouseX, mouseY, button)) return true;
 
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        boolean handled = applyButton.mouseReleased(mouseX, mouseY, button) ||
+                          backButton.mouseReleased(mouseX, mouseY, button);
+        return handled || super.mouseReleased(mouseX, mouseY, button);
     }
 
     private void save() {
