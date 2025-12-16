@@ -144,9 +144,9 @@ public class DamageHandler {
                 newDamage *= rangedSpeedOverride;
             }
 
-            // Sweeping ratio: applies small additional AoE-style bonus even on single target
-            if (stats.sweepingRatio > 0) {
-                newDamage += originalDamage * stats.sweepingRatio;
+            // Damage Bonus: applies additional damage bonus on single target
+            if (stats.damageBonus > 0) {
+                newDamage += originalDamage * stats.damageBonus;
             }
 
             // 5. Armor Penetration (configurable formula via Config) + Armor Shred

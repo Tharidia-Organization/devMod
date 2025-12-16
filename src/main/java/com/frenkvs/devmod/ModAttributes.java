@@ -29,6 +29,9 @@ public final class ModAttributes {
     public static final DeferredHolder<Attribute, Attribute> LIFE_STEAL = ATTRIBUTES.register("life_steal",
         () -> new RangedAttribute("attribute.devmod.life_steal", 0.0D, 0.0D, 100.0D).setSyncable(true));
 
+    public static final DeferredHolder<Attribute, Attribute> DAMAGE_BONUS = ATTRIBUTES.register("damage_bonus",
+        () -> new RangedAttribute("attribute.devmod.damage_bonus", 0.0D, 0.0D, 100.0D).setSyncable(true));
+
     // Damage type bonuses
     public static final DeferredHolder<Attribute, Attribute> DAMAGE_VS_UNDEAD = ATTRIBUTES.register("damage_vs_undead",
         () -> new RangedAttribute("attribute.devmod.damage_vs_undead", 0.0D, 0.0D, 200.0D).setSyncable(true));

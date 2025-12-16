@@ -622,6 +622,8 @@
   "devmod.network.perk_invalid": "[Perk] Invalid perk selection: %s",
   "devmod.network.continuing_quest": "Continuing quest...",
 
+  "attribute.name.devmod.damage_bonus": "Direct Damage Bonus",
+
   "_comment_render_events": "Render Events / Keybind Toggle Messages",
   "devmod.render.overlays_warning": "[WARNING] %d overlays active! May impact performance. Press F9 for profiler.",
   "devmod.render.overlays_info": "[Info] %d overlays active. Consider disabling unused ones.",

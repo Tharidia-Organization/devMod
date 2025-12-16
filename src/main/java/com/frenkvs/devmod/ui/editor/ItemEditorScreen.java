@@ -758,10 +758,10 @@ public class ItemEditorScreen extends Screen {
             renderPresetsPanel(graphics, mouseX, mouseY);
         }
         if (showTemplatesPanel) {
-            templateOverlay.render(graphics, width, height, mouseX, mouseY);
+            templateOverlay.render(graphics, font, width, height, mouseX, mouseY);
         }
         if (showCraftingPanel) {
-            craftingPanel.render(graphics, width, height, mouseX, mouseY);
+            craftingPanel.render(graphics, font, width, height, mouseX, mouseY);
         }
 
         // Render header dropdown overlays last so they appear above content
@@ -1053,7 +1053,7 @@ public class ItemEditorScreen extends Screen {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         // Handle help overlay first
         if (helpOverlay.isVisible()) {
-            return helpOverlay.mouseClicked((int) mouseX, (int) mouseY);
+            return helpOverlay.mouseClicked(mouseX, mouseY, width, height);
         }
 
         if (showLowConfidenceDialog && pendingDetection != null) {
@@ -1062,22 +1062,20 @@ public class ItemEditorScreen extends Screen {
 
         // Handle modal dialog
         if (activeDialog != null && activeDialog.isVisible()) {
-            return activeDialog.mouseClicked((int) mouseX, (int) mouseY);
+            return activeDialog.mouseClicked(mouseX, mouseY, width, height);
         }
 
         if (showCraftingPanel && craftingPanel.isVisible()) {
             if (craftingPanel.mouseClicked(mouseX, mouseY, width, height)) {
-                toggleOverlay(OverlayType.NONE);
+                if (!craftingPanel.isVisible()) {
+                    toggleOverlay(OverlayType.NONE);
+                }
                 return true;
             }
         }
-        if (showCraftingPanel && craftingPanel.mouseScrolled(mouseX, mouseY, 0)) {
-            // allow scroll click area without closing
-            return true;
-        }
 
         if (showTemplatesPanel && templateOverlay != null) {
-            if (templateOverlay.mouseClicked(mouseX, mouseY)) {
+            if (templateOverlay.mouseClicked(mouseX, mouseY, width, height)) {
                 return true;
             }
         }
@@ -1252,7 +1250,12 @@ public class ItemEditorScreen extends Screen {
             }
         }
         if (showTemplatesPanel && templateOverlay != null) {
-            if (templateOverlay.mouseScrolled(mouseX, mouseY, scrollY)) {
+            if (templateOverlay.mouseScrolled(mouseX, mouseY, scrollY, width, height)) {
+                return true;
+            }
+        }
+        if (showCraftingPanel && craftingPanel.isVisible()) {
+            if (craftingPanel.mouseScrolled(mouseX, mouseY, scrollY, width, height)) {
                 return true;
             }
         }
@@ -1489,7 +1492,7 @@ public class ItemEditorScreen extends Screen {
             return true;
         }
         if (showTemplatesPanel && templateOverlay != null) {
-            return templateOverlay.charTyped(chr);
+            return templateOverlay.charTyped(chr, modifiers);
         }
         if (showPresetsPanel) {
             if (Character.isISOControl(chr)) {
@@ -1785,7 +1788,7 @@ public class ItemEditorScreen extends Screen {
             stats.add(s.lifesteal);
             stats.add(s.fireDamageBonus);
             stats.add(s.magicDamageBonus);
-            stats.add(s.sweepingRatio);
+            stats.add(s.damageBonus);
             stats.add(s.armorShred);
             stats.add(s.damageVsUndead);
             stats.add(s.damageVsArthropods);
@@ -1853,7 +1856,7 @@ public class ItemEditorScreen extends Screen {
             newStats.lifesteal = getStat(values, 12, newStats.lifesteal);
             newStats.fireDamageBonus = getStat(values, 13, newStats.fireDamageBonus);
             newStats.magicDamageBonus = getStat(values, 14, newStats.magicDamageBonus);
-            newStats.sweepingRatio = getStat(values, 15, newStats.sweepingRatio);
+            newStats.damageBonus = getStat(values, 15, newStats.damageBonus);
             newStats.armorShred = getStat(values, 16, newStats.armorShred);
             newStats.damageVsUndead = getStat(values, 17, newStats.damageVsUndead);
             newStats.damageVsArthropods = getStat(values, 18, newStats.damageVsArthropods);

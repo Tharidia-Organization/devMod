@@ -98,7 +98,7 @@ public class WeaponModule extends AbstractEditorModule {
     private EditorSlider attackKnockbackSlider;
     private EditorSlider armorPenetrationSlider;
     private EditorSlider baseDamageBonusSlider;
-    private EditorSlider sweepingRatioSlider;
+    private EditorSlider damageBonusSlider;
     // Variant-specific sliders
     private EditorSlider smashBonusSlider;
     private EditorSlider smashCapSlider;
@@ -369,7 +369,7 @@ public class WeaponModule extends AbstractEditorModule {
         if (attackKnockbackSlider != null) attackKnockbackSlider.setValue(stats.attackKnockback);
         if (armorPenetrationSlider != null) armorPenetrationSlider.setValue(stats.armorPenetration * 100);
         if (baseDamageBonusSlider != null) baseDamageBonusSlider.setValue(stats.baseDamageBonus);
-        if (sweepingRatioSlider != null) sweepingRatioSlider.setValue(stats.sweepingRatio * 100);
+        if (damageBonusSlider != null) damageBonusSlider.setValue(stats.damageBonus * 100);
 
         if (critChanceSlider != null) critChanceSlider.setValue(stats.critChance * 100);
         if (critDamageSlider != null) critDamageSlider.setValue(stats.critDamage);
@@ -585,13 +585,13 @@ public class WeaponModule extends AbstractEditorModule {
             .showInput(true)
             .onChange(v -> { stats.attackKnockback = v; markDirty("Knockback"); });
 
-        sweepingRatioSlider = new EditorSlider("sweep", "Sweeping Ratio", 0f, 100f, 0f)
+        damageBonusSlider = new EditorSlider("damageBonus", "Damage Bonus", 0f, 100f, 0f)
             .step(1f)
             .format("%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.NEUTRAL)
             .showInput(true)
-            .onChange(v -> { stats.sweepingRatio = v / 100f; markDirty("Sweeping ratio"); });
+            .onChange(v -> { stats.damageBonus = v / 100f; markDirty("Damage bonus"); });
 
         armorPenetrationSlider = new EditorSlider("armorPen", "Armor Penetration", 0f, 100f, 0f)
             .step(1f)
@@ -623,7 +623,7 @@ public class WeaponModule extends AbstractEditorModule {
             new SliderSectionAdapter(attackSpeedSlider),
             new SliderSectionAdapter(attackReachSlider),
             new SliderSectionAdapter(attackKnockbackSlider),
-            new SliderSectionAdapter(sweepingRatioSlider),
+            new SliderSectionAdapter(damageBonusSlider),
             new SliderSectionAdapter(armorPenetrationSlider),
             new SliderSectionAdapter(baseDamageBonusSlider),
             new SliderSectionAdapter(armorShredSlider)
@@ -1109,7 +1109,7 @@ public class WeaponModule extends AbstractEditorModule {
         applySourceLabel(attackSpeedSlider);
         applySourceLabel(attackReachSlider);
         applySourceLabel(attackKnockbackSlider);
-        applySourceLabel(sweepingRatioSlider);
+        applySourceLabel(damageBonusSlider);
         applySourceLabel(armorPenetrationSlider);
         applySourceLabel(baseDamageBonusSlider);
         applySourceLabel(armorShredSlider);
@@ -1395,7 +1395,7 @@ public class WeaponModule extends AbstractEditorModule {
         putIfChanged(delta, "AtkSpd", baseline.attackSpeed, current.attackSpeed);
         putIfChanged(delta, "AtkRch", baseline.attackReach, current.attackReach);
         putIfChanged(delta, "AtkKB", baseline.attackKnockback, current.attackKnockback);
-        putIfChanged(delta, "Sweep", baseline.sweepingRatio, current.sweepingRatio);
+        putIfChanged(delta, "Sweep", baseline.damageBonus, current.damageBonus);
 
         putIfChanged(delta, "CritCh", baseline.critChance, current.critChance);
         putIfChanged(delta, "CritDmg", baseline.critDamage, current.critDamage);
@@ -1492,7 +1492,7 @@ public class WeaponModule extends AbstractEditorModule {
             && a.attackSpeed == b.attackSpeed
             && a.attackReach == b.attackReach
             && a.attackKnockback == b.attackKnockback
-            && a.sweepingRatio == b.sweepingRatio
+            && a.damageBonus == b.damageBonus
             && a.armorPenetration == b.armorPenetration
             && a.baseDamageBonus == b.baseDamageBonus
             && a.armorShred == b.armorShred

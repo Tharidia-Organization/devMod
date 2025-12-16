@@ -3,6 +3,7 @@ package com.frenkvs.devmod.ui.editor.systems;
 import com.frenkvs.devmod.ArmorStats;
 import com.frenkvs.devmod.WeaponStats;
 import com.frenkvs.devmod.ui.AxiomRenderer;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
@@ -26,12 +27,20 @@ public class DebugPanel {
 
     private final List<String> entries = new ArrayList<>();
     private List<String> statSources = List.of();
-    private ResponsiveLayout.Rect copyRect;
-    private ResponsiveLayout.Rect exportRect;
-    private ResponsiveLayout.Rect itemCopyRect;
     private ResponsiveLayout.Rect nbtToggleRect;
     private boolean showFullNbt = false;
     private String lastItemDataPayload = null;
+
+    // Buttons using EditorButton component
+    private final EditorButton copyButton = new EditorButton("copy", "Copy")
+        .style(EditorButton.Style.GHOST).size(EditorButton.Size.SMALL)
+        .onClick(this::copyLogToClipboard);
+    private final EditorButton exportButton = new EditorButton("export", "Export")
+        .style(EditorButton.Style.GHOST).size(EditorButton.Size.SMALL)
+        .onClick(this::handleExport);
+    private final EditorButton copyItemButton = new EditorButton("copyItem", "Copy Item")
+        .style(EditorButton.Style.GHOST).size(EditorButton.Size.SMALL)
+        .onClick(this::copyItemDataToClipboard);
 
     public DebugPanel() {}
 
@@ -58,7 +67,7 @@ public class DebugPanel {
 
     public int render(GuiGraphics graphics, Font font, int x, int y, int width, int height, int mouseX, int mouseY, ItemStack current) {
         Objects.requireNonNull(font, "font cannot be null");
-        copyRect = exportRect = itemCopyRect = nbtToggleRect = null;
+        nbtToggleRect = null;
         lastItemDataPayload = null;
 
         int pad = 6;
@@ -149,29 +158,20 @@ public class DebugPanel {
                 }
             }
 
-            // Action buttons (Copy / Export / Copy Item)
+            // Action buttons using EditorButton components
             int btnW = 56;
-            int btnH = 14;
-            int bx = x + width - btnW - pad;
+            int btnH = EditorButton.Size.SMALL.height();
+            int btnGap = 6;
             int by = y + pad;
-            copyRect = new ResponsiveLayout.Rect(bx, by, btnW, btnH);
-            graphics.fill(bx, by, bx + btnW, by + btnH, 0xFF222222);
-            AxiomRenderer.drawBorder(graphics, bx, by, btnW, btnH, UIConstants.Border.DEFAULT);
-            graphics.drawString(font, "Copy", bx + 10, by + 3, 0xFFFFFF, false);
 
-            int exW = 56;
-            int exBx = bx - exW - 6;
-            exportRect = new ResponsiveLayout.Rect(exBx, by, exW, btnH);
-            graphics.fill(exBx, by, exBx + exW, by + btnH, 0xFF222222);
-            AxiomRenderer.drawBorder(graphics, exBx, by, exW, btnH, UIConstants.Border.DEFAULT);
-            graphics.drawString(font, "Export", exBx + 8, by + 3, 0xFFFFFF, false);
+            // Position buttons from right to left
+            int copyX = x + width - btnW - pad;
+            int exportX = copyX - btnW - btnGap;
+            int copyItemX = exportX - 72 - btnGap;  // Copy Item is wider
 
-            int icW = 72;
-            int icBx = exBx - icW - 6;
-            itemCopyRect = new ResponsiveLayout.Rect(icBx, by, icW, btnH);
-            graphics.fill(icBx, by, icBx + icW, by + btnH, 0xFF222222);
-            AxiomRenderer.drawBorder(graphics, icBx, by, icW, btnH, UIConstants.Border.DEFAULT);
-            graphics.drawString(font, "Copy Item", icBx + 6, by + 3, 0xFFFFFF, false);
+            copyButton.render(graphics, copyX, by, btnW, btnH, mouseX, mouseY);
+            exportButton.render(graphics, exportX, by, btnW, btnH, mouseX, mouseY);
+            copyItemButton.render(graphics, copyItemX, by, 72, btnH, mouseX, mouseY);
 
             // Build item data payload for the copy button
             populateItemPayload(resolvedTag);
@@ -197,21 +197,17 @@ public class DebugPanel {
     }
 
     public boolean handleClick(double mouseX, double mouseY) {
-        if (copyRect != null && copyRect.contains(mouseX, mouseY)) {
-            copyLogToClipboard();
+        // Delegate to EditorButton components
+        if (copyButton.mouseClicked(mouseX, mouseY, 0)) {
+            copyButton.mouseReleased(mouseX, mouseY, 0);
             return true;
         }
-        if (exportRect != null && exportRect.contains(mouseX, mouseY)) {
-            try {
-                var f = exportLogToTempFile();
-                log("Exported debug log to: " + f.toString());
-            } catch (Exception e) {
-                log("Export failed: " + e.getMessage());
-            }
+        if (exportButton.mouseClicked(mouseX, mouseY, 0)) {
+            exportButton.mouseReleased(mouseX, mouseY, 0);
             return true;
         }
-        if (itemCopyRect != null && itemCopyRect.contains(mouseX, mouseY)) {
-            copyItemDataToClipboard();
+        if (copyItemButton.mouseClicked(mouseX, mouseY, 0)) {
+            copyItemButton.mouseReleased(mouseX, mouseY, 0);
             return true;
         }
         if (nbtToggleRect != null && nbtToggleRect.contains(mouseX, mouseY)) {
@@ -219,6 +215,15 @@ public class DebugPanel {
             return true;
         }
         return false;
+    }
+
+    private void handleExport() {
+        try {
+            var f = exportLogToTempFile();
+            log("Exported debug log to: " + f.toString());
+        } catch (Exception e) {
+            log("Export failed: " + e.getMessage());
+        }
     }
 
     // Package-private export helper for tests: writes to a temp file and returns its path

@@ -1,6 +1,8 @@
 package com.frenkvs.devmod.ui.editor.systems;
 
 import com.frenkvs.devmod.ui.AxiomRenderer;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
+import com.frenkvs.devmod.ui.editor.core.BaseOverlay;
 import com.frenkvs.devmod.ui.editor.core.ScaledCoord;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
@@ -24,9 +26,10 @@ import java.util.Objects;
 
 /**
  * Crafting recipe + value analysis overlay.
+ * Extends BaseOverlay for consistent modal behavior with dynamic height.
  * Mirrors docs/editor-design-system/03-crafting-analysis.md (Section 2.6).
  */
-public class CraftingInfoPanel {
+public class CraftingInfoPanel extends BaseOverlay {
 
     public record IngredientValue(ItemStack item, int count, RarityTier rarity, int value) {}
 
@@ -88,7 +91,8 @@ public class CraftingInfoPanel {
 
     private record PanelMetrics(int panelHeight, int valueHeight) {}
 
-    private boolean visible = false;
+    private static final int PANEL_WIDTH = 300;
+
     private ItemStack targetItem = ItemStack.EMPTY;
     private RecipeHolder<CraftingRecipe> recipe = null;
     private List<RecipeHolder<CraftingRecipe>> recipes = List.of();
@@ -102,6 +106,19 @@ public class CraftingInfoPanel {
     private int ingredientAreaW = 0;
     private int ingredientAreaH = 0;
 
+    // Navigation buttons using EditorButton component
+    private final EditorButton prevButton = new EditorButton("prev", "<")
+        .style(EditorButton.Style.GHOST)
+        .size(EditorButton.Size.SMALL)
+        .onClick(() -> selectRecipe(selectedRecipeIndex - 1));
+    private final EditorButton nextButton = new EditorButton("next", ">")
+        .style(EditorButton.Style.GHOST)
+        .size(EditorButton.Size.SMALL)
+        .onClick(() -> selectRecipe(selectedRecipeIndex + 1));
+
+    // Cached metrics for current frame (set during render)
+    private int cachedValueHeight = 0;
+
     public void show(ItemStack item) {
         this.targetItem = item.copy();
         RecipeAnalysis selected = selectBestRecipe(item);
@@ -114,43 +131,55 @@ public class CraftingInfoPanel {
             this.selectedRecipeIndex = Math.max(0, this.recipes.indexOf(selected.recipe()));
         }
         this.ingredientScrollOffset = 0;
-        this.visible = true;
+        super.show(); // Use BaseOverlay's show()
     }
 
-    public void hide() {
-        this.visible = false;
+    // =========================================================================
+    // BaseOverlay IMPLEMENTATION
+    // =========================================================================
+
+    @Override
+    protected int getPanelWidth() {
+        return PANEL_WIDTH;
     }
 
-    public boolean isVisible() {
-        return visible;
+    @Override
+    protected int getPanelHeight() {
+        // Default height, but dynamic height is used via getPanelHeight(screenHeight)
+        return 200;
     }
 
-    public void render(GuiGraphics g, int screenWidth, int screenHeight, int mouseX, int mouseY) {
-        if (!visible) return;
+    @Override
+    protected int getPanelHeight(int screenHeight) {
         Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
-
-        // Overlay
-        g.fill(0, 0, screenWidth, screenHeight, 0x80000000);
-
-        int panelW = ScaledCoord.scaleDim(300);
         int padding = ScaledCoord.scaleDim(10);
-        int gridSize = ScaledCoord.scaleDim(24 * 3 + 20); // 3 cells + arrow
+        int gridSize = ScaledCoord.scaleDim(24 * 3 + 20);
         int titleH = ScaledCoord.scaleDim(16);
         int valueTitleH = ScaledCoord.scaleDim(14);
+        // computePanelMetrics returns scaled values, we need to return unscaled for BaseOverlay
         PanelMetrics metrics = computePanelMetrics(screenHeight, font, padding, gridSize, titleH, valueTitleH);
-        int panelH = metrics.panelHeight();
-        int valueHeight = metrics.valueHeight();
+        this.cachedValueHeight = metrics.valueHeight();
+        // Return unscaled height: divide scaled value by current scale
+        float scale = ScaledCoord.getScale();
+        return scale > 0 ? Math.round(metrics.panelHeight() / scale) : metrics.panelHeight();
+    }
 
-        int x = (screenWidth - panelW) / 2;
-        int y = (screenHeight - panelH) / 2;
+    @Override
+    protected boolean usesDynamicHeight() {
+        return true;
+    }
 
-        // Panel background
-        g.fill(x, y, x + panelW, y + panelH, UIConstants.Background.PANEL_SOLID);
-        AxiomRenderer.drawBorder(g, x, y, panelW, panelH, UIConstants.Border.DEFAULT);
+    @Override
+    protected void renderContent(GuiGraphics g, Font font, int x, int y, int panelW, int panelH,
+                                  int mouseX, int mouseY) {
+        int padding = ScaledCoord.scaleDim(10);
+        int gridSize = ScaledCoord.scaleDim(24 * 3 + 20);
+        int titleH = ScaledCoord.scaleDim(16);
+        int valueTitleH = ScaledCoord.scaleDim(14);
 
         int cursorY = y + padding;
         g.drawString(font, "CRAFTING RECIPE", x + padding, cursorY, UIConstants.Text.TITLE, false);
-        drawRecipeSelector(g, font, x + panelW - padding - ScaledCoord.scaleDim(90), cursorY - ScaledCoord.scaleDim(2));
+        drawRecipeSelector(g, font, x + panelW - padding - ScaledCoord.scaleDim(90), cursorY - ScaledCoord.scaleDim(2), mouseX, mouseY);
         cursorY += titleH + ScaledCoord.scaleDim(2);
 
         renderCraftingGrid(g, font, x + padding, cursorY);
@@ -162,8 +191,8 @@ public class CraftingInfoPanel {
         this.ingredientAreaX = x + padding;
         this.ingredientAreaY = cursorY;
         this.ingredientAreaW = panelW - padding * 2;
-        this.ingredientAreaH = valueHeight;
-        renderValueAnalysis(g, font, ingredientAreaX, ingredientAreaY, valueHeight, ingredientAreaW);
+        this.ingredientAreaH = cachedValueHeight;
+        renderValueAnalysis(g, font, ingredientAreaX, ingredientAreaY, cachedValueHeight, ingredientAreaW);
 
         // Close hint
         String closeHint = "Click outside or press ESC to close";
@@ -367,77 +396,43 @@ public class CraftingInfoPanel {
         };
     }
 
-    /** Close when user clicks outside the panel. */
-    public boolean mouseClicked(double mouseX, double mouseY, int screenWidth, int screenHeight) {
-        if (!visible) return false;
-        int panelW = ScaledCoord.scaleDim(300);
-        int padding = ScaledCoord.scaleDim(10);
-        int gridSize = ScaledCoord.scaleDim(24 * 3 + 20);
-        int titleH = ScaledCoord.scaleDim(16);
-        int valueTitleH = ScaledCoord.scaleDim(14);
-        PanelMetrics metrics = computePanelMetrics(screenHeight,
-            Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null"),
-            padding, gridSize, titleH, valueTitleH);
-        int panelH = metrics.panelHeight();
-        int x = (screenWidth - panelW) / 2;
-        int y = (screenHeight - panelH) / 2;
-        if (mouseX < x || mouseX > x + panelW || mouseY < y || mouseY > y + panelH) {
-            hide();
-            return true;
-        }
-        // Recipe selector clicks
+    @Override
+    protected boolean handleMouseClicked(double mouseX, double mouseY,
+                                          int panelX, int panelY, int panelW, int panelH) {
+        // Recipe selector clicks using EditorButton
         if (!recipes.isEmpty()) {
-            int btnW = ScaledCoord.scaleDim(16);
-            int btnH = ScaledCoord.scaleDim(14);
-            int gap = ScaledCoord.scaleDim(6);
-            int totalW = btnW * 2 + gap + ScaledCoord.scaleDim(50);
-            int selectorX = x + panelW - ScaledCoord.scaleDim(10) - totalW;
-            int selectorY = y + ScaledCoord.scaleDim(10);
-            int prevX = selectorX + ScaledCoord.scaleDim(2);
-            int labelX = prevX + btnW + gap;
-            int nextX = labelX + ScaledCoord.scaleDim(40);
-            if (mouseY >= selectorY && mouseY <= selectorY + btnH) {
-                if (mouseX >= prevX && mouseX <= prevX + btnW) {
-                    selectRecipe(selectedRecipeIndex - 1);
-                    return true;
-                }
-                if (mouseX >= nextX && mouseX <= nextX + btnW) {
-                    selectRecipe(selectedRecipeIndex + 1);
-                    return true;
-                }
+            if (prevButton.mouseClicked(mouseX, mouseY, 0)) {
+                prevButton.mouseReleased(mouseX, mouseY, 0);
+                return true;
             }
-            // Ingredients scroll wheel inside value area
-            if (mouseX >= ingredientAreaX && mouseX <= ingredientAreaX + ingredientAreaW &&
-                mouseY >= ingredientAreaY && mouseY <= ingredientAreaY + ingredientAreaH) {
-                // Let mouseScrolled handle it, but consume click so it doesn't close
-                return false;
+            if (nextButton.mouseClicked(mouseX, mouseY, 0)) {
+                nextButton.mouseReleased(mouseX, mouseY, 0);
+                return true;
             }
         }
-        return false;
+        return true; // Consume click
     }
 
-    public boolean keyPressed(int keyCode) {
-        if (!visible) return false;
-        if (keyCode == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE) {
-            hide();
-            return true;
-        }
-        if (keyCode == com.mojang.blaze3d.platform.InputConstants.KEY_LEFT) {
+    @Override
+    protected boolean handleKeyPressed(int keyCode) {
+        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT) {
             selectRecipe(selectedRecipeIndex - 1);
             return true;
         }
-        if (keyCode == com.mojang.blaze3d.platform.InputConstants.KEY_RIGHT) {
+        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT) {
             selectRecipe(selectedRecipeIndex + 1);
             return true;
         }
-        return false;
+        return true; // Consume all keys when visible
     }
 
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
-        if (!visible) return false;
+    @Override
+    protected boolean handleMouseScrolled(double mouseX, double mouseY, double scrollDelta,
+                                           int panelX, int panelY, int panelW, int panelH) {
         if (mouseX >= ingredientAreaX && mouseX <= ingredientAreaX + ingredientAreaW &&
             mouseY >= ingredientAreaY && mouseY <= ingredientAreaY + ingredientAreaH) {
-            ingredientScrollOffset = Math.max(0, Math.min(ingredientMaxScroll, ingredientScrollOffset - (int) (scrollY * ScaledCoord.scaleDim(12))));
+            ingredientScrollOffset = Math.max(0, Math.min(ingredientMaxScroll,
+                ingredientScrollOffset - (int) (scrollDelta * ScaledCoord.scaleDim(12))));
             return true;
         }
         return false;
@@ -458,7 +453,7 @@ public class CraftingInfoPanel {
         return new PanelMetrics(panelH, valueHeight);
     }
 
-    private void drawRecipeSelector(GuiGraphics g, Font font, int x, int y) {
+    private void drawRecipeSelector(GuiGraphics g, Font font, int x, int y, int mouseX, int mouseY) {
         if (recipes.isEmpty()) {
             return;
         }
@@ -473,22 +468,20 @@ public class CraftingInfoPanel {
         g.fill(boxX, boxY, boxX + totalW, boxY + btnH, UIConstants.Background.INPUT);
         AxiomRenderer.drawBorder(g, boxX, boxY, totalW, btnH, UIConstants.Border.MUTED);
 
-        // Prev button
+        // Prev button using EditorButton
         int prevX = boxX + ScaledCoord.scaleDim(2);
-        g.fill(prevX, boxY + ScaledCoord.scaleDim(1), prevX + btnW, boxY + btnH - ScaledCoord.scaleDim(1),
-            UIConstants.Background.PANEL);
-        g.drawString(safeFont, "<", prevX + ScaledCoord.scaleDim(5), boxY + ScaledCoord.scaleDim(3), UIConstants.Text.PRIMARY, false);
+        prevButton.setEnabled(selectedRecipeIndex > 0);
+        prevButton.render(g, prevX, boxY + ScaledCoord.scaleDim(1), btnW, btnH - ScaledCoord.scaleDim(2), mouseX, mouseY);
 
         // Label
         String label = (selectedRecipeIndex + 1) + "/" + recipes.size();
         int labelX = prevX + btnW + gap;
         g.drawString(safeFont, label, labelX, boxY + ScaledCoord.scaleDim(3), UIConstants.Text.SECONDARY, false);
 
-        // Next button
+        // Next button using EditorButton
         int nextX = labelX + ScaledCoord.scaleDim(40);
-        g.fill(nextX, boxY + ScaledCoord.scaleDim(1), nextX + btnW, boxY + btnH - ScaledCoord.scaleDim(1),
-            UIConstants.Background.PANEL);
-        g.drawString(safeFont, ">", nextX + ScaledCoord.scaleDim(5), boxY + ScaledCoord.scaleDim(3), UIConstants.Text.PRIMARY, false);
+        nextButton.setEnabled(selectedRecipeIndex < recipes.size() - 1);
+        nextButton.render(g, nextX, boxY + ScaledCoord.scaleDim(1), btnW, btnH - ScaledCoord.scaleDim(2), mouseX, mouseY);
     }
 
     private void selectRecipe(int index) {

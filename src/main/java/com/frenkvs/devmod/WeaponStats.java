@@ -28,7 +28,7 @@ public class WeaponStats {
     public float attackSpeed = 0.0f;        // Attack speed override (0 = use item default)
     public float attackReach = 0.0f;        // Attack reach override (0 = use item default)
     public float attackKnockback = 0.0f;    // Additional knockback
-    public float sweepingRatio = 0.0f;      // Sweeping edge ratio (0-1)
+    public float damageBonus = 0.0f;      // Direct damage bonus (0-1)
 
     // ═══════════════════════════════════════════════════════════════
     // CRITICAL HIT
@@ -130,7 +130,7 @@ public class WeaponStats {
         if (attackSpeed != 0.0f) tag.putFloat("AtkSpd", attackSpeed);
         if (attackReach != 0.0f) tag.putFloat("AtkRch", attackReach);
         if (attackKnockback != 0.0f) tag.putFloat("AtkKB", attackKnockback);
-        if (sweepingRatio != 0.0f) tag.putFloat("Sweep", sweepingRatio);
+        if (damageBonus != 0.0f) tag.putFloat("DmgBonus", damageBonus);
 
         // Critical hit
         if (critChance != 0.0f) tag.putFloat("CritCh", critChance);
@@ -191,7 +191,7 @@ public class WeaponStats {
         if (tag.contains("AtkSpd")) stats.attackSpeed = tag.getFloat("AtkSpd");
         if (tag.contains("AtkRch")) stats.attackReach = tag.getFloat("AtkRch");
         if (tag.contains("AtkKB")) stats.attackKnockback = tag.getFloat("AtkKB");
-        if (tag.contains("Sweep")) stats.sweepingRatio = tag.getFloat("Sweep");
+        if (tag.contains("DmgBonus")) stats.damageBonus = tag.getFloat("DmgBonus");
 
         // Critical hit
         if (tag.contains("CritCh")) stats.critChance = tag.getFloat("CritCh");
@@ -258,7 +258,7 @@ public class WeaponStats {
             && attackSpeed == 0.0f
             && attackReach == 0.0f
             && attackKnockback == 0.0f
-            && sweepingRatio == 0.0f
+            && damageBonus == 0.0f
             && critChance == 0.0f
             && critDamage == 1.5f
             && armorShred == 0.0f
@@ -294,7 +294,7 @@ public class WeaponStats {
         copy.attackSpeed = this.attackSpeed;
         copy.attackReach = this.attackReach;
         copy.attackKnockback = this.attackKnockback;
-        copy.sweepingRatio = this.sweepingRatio;
+        copy.damageBonus = this.damageBonus;
         copy.critChance = this.critChance;
         copy.critDamage = this.critDamage;
         copy.armorShred = this.armorShred;
@@ -338,7 +338,7 @@ public class WeaponStats {
             ", vsArthro=" + damageVsArthropods +
             ", vsPlayers=" + damageVsPlayers +
             ", truePct=" + trueDamagePercent +
-            ", sweep=" + sweepingRatio +
+            ", bonus=" + damageBonus +
             ", maxDur=" + maxDurability +
             ", curDmg=" + currentDamage +
             ", repair=" + repairCost +

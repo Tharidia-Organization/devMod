@@ -1,37 +1,38 @@
 package com.frenkvs.devmod.ui.editor.systems;
 
-import com.frenkvs.devmod.ui.AxiomRenderer;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
+import com.frenkvs.devmod.ui.editor.core.BaseOverlay;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import com.frenkvs.devmod.ui.editor.core.ScaledCoord;
 import com.frenkvs.devmod.ui.editor.core.Typography;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.Objects;
 
 /**
  * Modal confirmation dialog.
+ * Extends BaseOverlay for consistent modal behavior.
  *
  * @see EDITOR_DESIGN_SYSTEM.md#37-confirmation-dialogs
  */
-public final class ConfirmDialog {
+public final class ConfirmDialog extends BaseOverlay {
 
     private static final int WIDTH = 320;
     private static final int HEIGHT = 140;
 
     private final String title;
     private final String message;
-    private final String confirmText;
-    private final String cancelText;
-    private final int confirmColor;
     private final Runnable onConfirm;
     private final Runnable onCancel;
 
-    private boolean visible = false;
-    private int hoveredButton = -1;  // -1=none, 0=confirm, 1=cancel
+    // Buttons using EditorButton component
+    private final EditorButton confirmButton;
+    private final EditorButton cancelButton;
+
+    // Cached button positions for click handling
+    private int btnY, btnWidth, btnHeight, confirmX, cancelX;
 
     // =========================================================================
     // FACTORY METHODS (Common dialogs)
@@ -113,136 +114,114 @@ public final class ConfirmDialog {
                          Runnable onConfirm, Runnable onCancel) {
         this.title = title;
         this.message = message;
-        this.confirmText = confirmText;
-        this.cancelText = cancelText;
-        this.confirmColor = confirmColor;
         this.onConfirm = onConfirm;
         this.onCancel = onCancel;
+
+        // Determine button style based on confirmColor
+        EditorButton.Style confirmStyle = EditorButton.Style.PRIMARY;
+        if (confirmColor == UIConstants.Accent.RED) {
+            confirmStyle = EditorButton.Style.DANGER;
+        } else if (confirmColor == UIConstants.Accent.ORANGE) {
+            confirmStyle = EditorButton.Style.DANGER;  // Use danger for orange warnings too
+        } else if (confirmColor == UIConstants.Accent.GREEN) {
+            confirmStyle = EditorButton.Style.SUCCESS;
+        }
+
+        // Create buttons with appropriate styles
+        this.confirmButton = new EditorButton("confirm", confirmText)
+            .style(confirmStyle)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(() -> {
+                hide();
+                onConfirm.run();
+            });
+
+        this.cancelButton = new EditorButton("cancel", cancelText)
+            .style(EditorButton.Style.NORMAL)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(() -> {
+                hide();
+                onCancel.run();
+            });
     }
 
-    public void show() {
-        visible = true;
+    // =========================================================================
+    // BaseOverlay IMPLEMENTATION
+    // =========================================================================
+
+    @Override
+    protected int getPanelWidth() {
+        return WIDTH;
     }
 
-    public void hide() {
-        visible = false;
+    @Override
+    protected int getPanelHeight() {
+        return HEIGHT;
     }
 
-    public boolean isVisible() {
-        return visible;
-    }
-
-    public void render(GuiGraphics g, Font font, int screenWidth, int screenHeight,
-                       int mouseX, int mouseY) {
-        if (!visible) return;
-
+    @Override
+    protected void renderContent(GuiGraphics graphics, Font font,
+                                  int x, int y, int width, int height,
+                                  int mouseX, int mouseY) {
         float textScale = Typography.withUiScale(Typography.BODY);
 
-        // Dark overlay
-        g.fill(0, 0, screenWidth, screenHeight, UIConstants.Background.OVERLAY);
-
-        // Center dialog
-        int panelW = ScaledCoord.scaleDim(WIDTH);
-        int panelH = ScaledCoord.scaleDim(HEIGHT);
-        int x = (screenWidth - panelW) / 2;
-        int y = (screenHeight - panelH) / 2;
-
-        // Panel
-        g.fill(x, y, x + panelW, y + panelH, UIConstants.Background.PANEL_SOLID);
-        AxiomRenderer.drawBorder(g, x, y, panelW, panelH, UIConstants.Border.DEFAULT);
-
         // Title
-        Typography.drawText(g, font, Objects.requireNonNull(title, "title cannot be null"),
+        Typography.drawText(graphics, font, Objects.requireNonNull(title, "title cannot be null"),
             x + ScaledCoord.scaleDim(16), y + ScaledCoord.scaleDim(16),
             UIConstants.Text.TITLE, textScale);
 
         // Message (multi-line support)
         int msgY = y + ScaledCoord.scaleDim(40);
         for (String line : message.split("\n")) {
-            Typography.drawText(g, font, Objects.requireNonNull(line, "line cannot be null"),
+            Typography.drawText(graphics, font, Objects.requireNonNull(line, "line cannot be null"),
                 x + ScaledCoord.scaleDim(16), msgY, UIConstants.Text.PRIMARY, textScale);
             msgY += ScaledCoord.scaleDim(12);
         }
 
-        // Buttons
-        int btnY = y + panelH - ScaledCoord.scaleDim(44);
-        int btnWidth = ScaledCoord.scaleDim(100);
-        int btnHeight = ScaledCoord.scaleDim(28);
+        // Calculate and cache button positions
+        this.btnY = y + height - ScaledCoord.scaleDim(44);
+        this.btnWidth = ScaledCoord.scaleDim(100);
+        this.btnHeight = ScaledCoord.scaleDim(28);
+        this.confirmX = x + width / 2 - btnWidth - ScaledCoord.scaleDim(8);
+        this.cancelX = x + width / 2 + ScaledCoord.scaleDim(8);
 
-        // Update hover state
-        int confirmX = x + panelW / 2 - btnWidth - ScaledCoord.scaleDim(8);
-        int cancelX = x + panelW / 2 + ScaledCoord.scaleDim(8);
-
-        hoveredButton = -1;
-        if (mouseY >= btnY && mouseY < btnY + btnHeight) {
-            if (mouseX >= confirmX && mouseX < confirmX + btnWidth) {
-                hoveredButton = 0;
-            } else if (mouseX >= cancelX && mouseX < cancelX + btnWidth) {
-                hoveredButton = 1;
-            }
-        }
-
-        // Confirm button
-        renderButton(g, font, confirmX, btnY, btnWidth, btnHeight,
-                    confirmText, confirmColor, hoveredButton == 0, textScale);
-
-        // Cancel button
-        renderButton(g, font, cancelX, btnY, btnWidth, btnHeight,
-                    cancelText, UIConstants.Border.DEFAULT, hoveredButton == 1, textScale);
+        // Render buttons using EditorButton component
+        confirmButton.render(graphics, confirmX, btnY, btnWidth, btnHeight, mouseX, mouseY);
+        cancelButton.render(graphics, cancelX, btnY, btnWidth, btnHeight, mouseX, mouseY);
     }
 
-    public boolean mouseClicked(int mouseX, int mouseY) {
-        if (!visible) return false;
-
-        if (hoveredButton == 0) {
-            playButtonClick();
-            hide();
-            onConfirm.run();
-            return true;
-        } else if (hoveredButton == 1) {
-            playButtonClick();
-            hide();
-            onCancel.run();
-            return true;
-        }
-
-        return true;  // Consume click to prevent interaction with editor behind
+    @Override
+    protected void onEscapePressed() {
+        onCancel.run();
     }
 
-    public boolean keyPressed(int keyCode) {
-        if (!visible) return false;
-
-        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-            hide();
-            onCancel.run();
-            return true;
-        }
+    @Override
+    protected boolean handleKeyPressed(int keyCode) {
         if (keyCode == GLFW.GLFW_KEY_ENTER) {
             hide();
             onConfirm.run();
             return true;
         }
-
-        return true;
+        return true; // Consume all keys when visible
     }
 
-    private void renderButton(GuiGraphics g, Font font,
-                              int x, int y, int w, int h,
-                              String text, int borderColor, boolean hovered, float textScale) {
-        int bg = hovered ? UIConstants.Background.HOVER : UIConstants.Background.INPUT;
-        g.fill(x, y, x + w, y + h, bg);
-        AxiomRenderer.drawBorder(g, x, y, w, h, borderColor);
-
-        int textWidth = Math.round(font.width(Objects.requireNonNull(text, "text cannot be null")) * textScale);
-        int textX = x + (w - textWidth) / 2;
-        int textY = y + (h - Math.round(font.lineHeight * textScale)) / 2;
-        Typography.drawText(g, font, text, textX, textY, UIConstants.Text.PRIMARY, textScale);
+    @Override
+    protected boolean shouldCloseOnClickOutside() {
+        return false; // Dialog requires explicit button click
     }
 
-    private void playButtonClick() {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player != null) {
-            mc.player.playSound(Objects.requireNonNull(SoundEvents.UI_BUTTON_CLICK.value()), 0.5f, 1.0f);
+    @Override
+    protected boolean handleMouseClicked(double mouseX, double mouseY,
+                                          int panelX, int panelY, int panelW, int panelH) {
+        // Delegate to EditorButton components
+        if (confirmButton.mouseClicked(mouseX, mouseY, 0)) {
+            confirmButton.mouseReleased(mouseX, mouseY, 0);
+            return true;
         }
+        if (cancelButton.mouseClicked(mouseX, mouseY, 0)) {
+            cancelButton.mouseReleased(mouseX, mouseY, 0);
+            return true;
+        }
+        return true; // Consume click to prevent interaction with editor behind
     }
 }

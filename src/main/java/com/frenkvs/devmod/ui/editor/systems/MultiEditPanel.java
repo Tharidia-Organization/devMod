@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.ui.editor.systems;
 
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -51,6 +52,24 @@ public class MultiEditPanel {
     private int itemScrollOffset = 0;
 
     private final java.util.function.BooleanSupplier persistSupplier;
+
+    // Buttons using EditorButton component
+    private final EditorButton clearButton = new EditorButton("clear", "Clear All")
+        .style(EditorButton.Style.DANGER)
+        .size(EditorButton.Size.SMALL);
+    private final EditorButton applyButton = new EditorButton("apply", "Apply to all")
+        .style(EditorButton.Style.SUCCESS)
+        .size(EditorButton.Size.SMALL);
+    private final EditorButton exportButton = new EditorButton("export", "Export")
+        .style(EditorButton.Style.GHOST)
+        .size(EditorButton.Size.SMALL);
+    private final EditorButton copyFailsButton = new EditorButton("copyFails", "Copy fails")
+        .style(EditorButton.Style.GHOST)
+        .size(EditorButton.Size.SMALL);
+    private final EditorButton detailsButton = new EditorButton("details", "Details")
+        .style(EditorButton.Style.GHOST)
+        .size(EditorButton.Size.SMALL)
+        .toggleable(true);
 
     public MultiEditPanel(MultiEditManager manager, java.util.function.BooleanSupplier persistSupplier,
                           Supplier<String> activeItemTypeSupplier) {
@@ -249,29 +268,18 @@ public class MultiEditPanel {
             listY += 12;
         }
 
-        // Action buttons area
+        // Action buttons area using EditorButton components
         graphics.fill(x, listY, x + width, listY + 24, 0xFF1A1A1A);
 
-        clearRect = new ResponsiveLayout.Rect(x + 4, listY + 4, 80, 16);
-        applyRect = new ResponsiveLayout.Rect(x + width - 100, listY + 4, 96, 16);
+        int btnH = 16;
+        clearRect = new ResponsiveLayout.Rect(x + 4, listY + 4, 80, btnH);
+        applyRect = new ResponsiveLayout.Rect(x + width - 100, listY + 4, 96, btnH);
 
-        int clearBg = clearEnabled ? 0xFF2A1A1A : 0xFF1A0F0F;
-        int clearFg = clearEnabled ? 0xFFFF8888 : 0xFF553333;
-        graphics.fill(clearRect.x(), clearRect.y(), clearRect.right(), clearRect.bottom(), clearBg);
-        graphics.drawString(safeFont, "[Clear All]", clearRect.x() + 4, clearRect.y() + 3, clearFg, false);
+        clearButton.setEnabled(clearEnabled);
+        applyButton.setEnabled(applyEnabled);
 
-        int applyBg = applyEnabled ? 0xFF1A2A1A : 0xFF0F190F;
-        int applyFg = applyEnabled ? 0xFF88FF88 : 0xFF335533;
-        String applyLabel;
-        if (!persistAllowed) {
-            applyLabel = "Preview locked";
-        } else if (presets.isEmpty()) {
-            applyLabel = "No presets";
-        } else {
-            applyLabel = "[Apply to all]";
-        }
-        graphics.fill(applyRect.x(), applyRect.y(), applyRect.right(), applyRect.bottom(), applyBg);
-        graphics.drawString(safeFont, applyLabel, applyRect.x() + 4, applyRect.y() + 3, applyFg, false);
+        clearButton.render(graphics, clearRect.x(), clearRect.y(), clearRect.width(), btnH, mouseX, mouseY);
+        applyButton.render(graphics, applyRect.x(), applyRect.y(), applyRect.width(), btnH, mouseX, mouseY);
 
         listY += 24;
 
@@ -292,16 +300,16 @@ public class MultiEditPanel {
             graphics.drawString(safeFont, summary, x + 6, listY + 4, summaryColor, false);
 
             if (lastResult.failureCount() > 0) {
-                failureToggleRect = new ResponsiveLayout.Rect(x + width - 90, listY + 2, 64, 14);
-                copyFailuresRect = new ResponsiveLayout.Rect(x + width - 180, listY + 2, 64, 14);
-                ResponsiveLayout.Rect exportRect = new ResponsiveLayout.Rect(x + width - 240, listY + 2, 64, 14);
-                graphics.fill(exportRect.x(), exportRect.y(), exportRect.right(), exportRect.bottom(), 0xFF222222);
-                graphics.drawString(safeFont, "Export", exportRect.x() + 8, exportRect.y() + 3, 0xFFEEEEEE, false);
+                int failBtnH = 14;
+                failureToggleRect = new ResponsiveLayout.Rect(x + width - 70, listY + 2, 64, failBtnH);
+                copyFailuresRect = new ResponsiveLayout.Rect(x + width - 145, listY + 2, 70, failBtnH);
+                ResponsiveLayout.Rect exportRect = new ResponsiveLayout.Rect(x + width - 210, listY + 2, 60, failBtnH);
 
-                graphics.fill(copyFailuresRect.x(), copyFailuresRect.y(), copyFailuresRect.right(), copyFailuresRect.bottom(), 0xFF222222);
-                graphics.drawString(safeFont, "Copy fails", copyFailuresRect.x() + 4, copyFailuresRect.y() + 3, 0xFFEEEEEE, false);
-                graphics.fill(failureToggleRect.x(), failureToggleRect.y(), failureToggleRect.right(), failureToggleRect.bottom(), 0xFF222222);
-                graphics.drawString(safeFont, showFailureDetails ? "Hide" : "Details", failureToggleRect.x() + 6, failureToggleRect.y() + 3, 0xFFEEEEEE, false);
+                // Render buttons using EditorButton components
+                exportButton.render(graphics, exportRect.x(), exportRect.y(), exportRect.width(), failBtnH, mouseX, mouseY);
+                copyFailsButton.render(graphics, copyFailuresRect.x(), copyFailuresRect.y(), copyFailuresRect.width(), failBtnH, mouseX, mouseY);
+                detailsButton.toggled(showFailureDetails);
+                detailsButton.render(graphics, failureToggleRect.x(), failureToggleRect.y(), failureToggleRect.width(), failBtnH, mouseX, mouseY);
             } else {
                 failureToggleRect = null;
                 copyFailuresRect = null;
@@ -394,19 +402,19 @@ public class MultiEditPanel {
             }
         }
 
-        if (copyFailuresRect != null && copyFailuresRect.contains(mouseX, mouseY)) {
+        // Failure detail buttons using EditorButton components
+        if (exportButton.mouseClicked(mouseX, mouseY, 0)) {
+            exportButton.mouseReleased(mouseX, mouseY, 0);
+            exportFailuresToFile();
+            return true;
+        }
+        if (copyFailsButton.mouseClicked(mouseX, mouseY, 0)) {
+            copyFailsButton.mouseReleased(mouseX, mouseY, 0);
             copyFailuresToClipboard();
             return true;
         }
-        // Export button area (located left of Copy); compute its rect based on current layout
-        if (failureToggleRect != null) {
-            ResponsiveLayout.Rect exportRect = new ResponsiveLayout.Rect(failureToggleRect.x() - 150, failureToggleRect.y(), 64, 14);
-            if (exportRect.contains(mouseX, mouseY)) {
-                exportFailuresToFile();
-                return true;
-            }
-        }
-        if (failureToggleRect != null && failureToggleRect.contains(mouseX, mouseY)) {
+        if (detailsButton.mouseClicked(mouseX, mouseY, 0)) {
+            detailsButton.mouseReleased(mouseX, mouseY, 0);
             showFailureDetails = !showFailureDetails;
             if (!showFailureDetails) {
                 showAllFailures = false;
@@ -419,8 +427,9 @@ public class MultiEditPanel {
             return true;
         }
 
-        // Clear all
-        if (clearRect != null && clearRect.contains(mouseX, mouseY)) {
+        // Clear all using EditorButton
+        if (clearButton.mouseClicked(mouseX, mouseY, 0)) {
+            clearButton.mouseReleased(mouseX, mouseY, 0);
             if (clearEnabled) {
                 manager.clearSelection();
                 lastResult = null;
@@ -429,12 +438,10 @@ public class MultiEditPanel {
             return true;
         }
 
-        // Apply to all
-        if (applyRect != null && applyRect.contains(mouseX, mouseY)) {
-            if (!applyEnabled) {
-                return true;
-            }
-            if (selectedPresetIndex >= 0 && selectedPresetIndex < presets.size()) {
+        // Apply to all using EditorButton
+        if (applyButton.mouseClicked(mouseX, mouseY, 0)) {
+            applyButton.mouseReleased(mouseX, mouseY, 0);
+            if (applyEnabled && selectedPresetIndex >= 0 && selectedPresetIndex < presets.size()) {
                 var presetData = presets.get(selectedPresetIndex);
                 var dataPreset = new DataPreset(presetData);
                 var adapter = ItemEditorPresetManager.INSTANCE;

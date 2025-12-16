@@ -2,25 +2,27 @@ package com.frenkvs.devmod.ui.editor.systems;
 
 import com.frenkvs.devmod.ItemEditorDataManager;
 import com.frenkvs.devmod.ui.AxiomRenderer;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
+import com.frenkvs.devmod.ui.editor.core.BaseOverlay;
 import com.frenkvs.devmod.ui.editor.core.ScaledCoord;
 import com.frenkvs.devmod.ui.editor.core.Typography;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
  * Templates overlay (MVP) with virtualized list and preview.
+ * Extends BaseOverlay for consistent modal behavior.
  * Based on EDITOR_DESIGN_SYSTEM section 2.42.
  */
-public class TemplateOverlay {
+public class TemplateOverlay extends BaseOverlay {
 
     private static final int PANEL_WIDTH = 340;
     private static final int PANEL_HEIGHT = 280;
@@ -36,6 +38,14 @@ public class TemplateOverlay {
     private Runnable closeCallback = () -> {};
 
     private boolean searchFocused = false;
+
+    // Buttons using EditorButton component
+    private final EditorButton cancelButton = new EditorButton("cancel", "Cancel")
+        .style(EditorButton.Style.NORMAL)
+        .size(EditorButton.Size.SMALL);
+    private final EditorButton applyButton = new EditorButton("apply", "Apply Template")
+        .style(EditorButton.Style.SUCCESS)
+        .size(EditorButton.Size.SMALL);
 
     public void setTemplates(List<ItemEditorDataManager.TemplateData> data, String filterCategory) {
         this.templates.clear();
@@ -58,21 +68,25 @@ public class TemplateOverlay {
         this.searchFocused = false;
     }
 
-    public void render(GuiGraphics graphics, int screenWidth, int screenHeight, int mouseX, int mouseY) {
-        var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
+    // =========================================================================
+    // BaseOverlay IMPLEMENTATION
+    // =========================================================================
+
+    @Override
+    protected int getPanelWidth() {
+        return PANEL_WIDTH;
+    }
+
+    @Override
+    protected int getPanelHeight() {
+        return PANEL_HEIGHT;
+    }
+
+    @Override
+    protected void renderContent(GuiGraphics graphics, Font font,
+                                  int panelX, int panelY, int panelW, int panelH,
+                                  int mouseX, int mouseY) {
         float textScale = Typography.withUiScale(Typography.BODY);
-
-        // Dim background
-        graphics.fill(0, 0, screenWidth, screenHeight, UIConstants.Background.OVERLAY);
-
-        int panelW = ScaledCoord.scaleDim(PANEL_WIDTH);
-        int panelH = ScaledCoord.scaleDim(PANEL_HEIGHT);
-        int panelX = (screenWidth - panelW) / 2;
-        int panelY = (screenHeight - panelH) / 2;
-
-        // Panel
-        graphics.fill(panelX, panelY, panelX + panelW, panelY + panelH, UIConstants.Background.PANEL_SOLID);
-        AxiomRenderer.drawBorder(graphics, panelX, panelY, panelW, panelH, UIConstants.Border.DEFAULT);
 
         // Header
         Typography.drawText(graphics, font, "Templates", panelX + ScaledCoord.scaleDim(12), panelY + ScaledCoord.scaleDim(10), UIConstants.Text.TITLE, textScale);
@@ -146,64 +160,84 @@ public class TemplateOverlay {
         AxiomRenderer.drawBorder(graphics, previewX, previewY, listW, previewH, UIConstants.Border.DEFAULT);
 
         if (!filtered.isEmpty() && selectedIndex >= 0 && selectedIndex < filtered.size()) {
-            ItemEditorDataManager.TemplateData selected = filtered.get(selectedIndex);
-            String name = selected.name == null ? "(template)" : selected.name;
+            ItemEditorDataManager.TemplateData selectedTemplate = filtered.get(selectedIndex);
+            String name = selectedTemplate.name == null ? "(template)" : selectedTemplate.name;
             Typography.drawText(graphics, font, name, previewX + ScaledCoord.scaleDim(6), previewY + ScaledCoord.scaleDim(6), UIConstants.Text.PRIMARY, textScale);
-            String scope = "Scope: " + (selected.itemCategory == null ? "Unknown" : selected.itemCategory);
+            String scope = "Scope: " + (selectedTemplate.itemCategory == null ? "Unknown" : selectedTemplate.itemCategory);
             Typography.drawText(graphics, font, scope, previewX + ScaledCoord.scaleDim(6), previewY + ScaledCoord.scaleDim(18), UIConstants.Text.SECONDARY, textScale);
 
-            int ench = selected.enchantments == null ? 0 : selected.enchantments.size();
-            int attrs = selected.attributes == null ? 0 : selected.attributes.size();
+            int ench = selectedTemplate.enchantments == null ? 0 : selectedTemplate.enchantments.size();
+            int attrs = selectedTemplate.attributes == null ? 0 : selectedTemplate.attributes.size();
             String touches = "Touches: Enchants (" + ench + "), Attributes (" + attrs + ")";
             Typography.drawText(graphics, font, touches, previewX + ScaledCoord.scaleDim(6), previewY + ScaledCoord.scaleDim(30), UIConstants.Text.MUTED, textScale);
         } else {
             Typography.drawText(graphics, font, "(no templates)", previewX + ScaledCoord.scaleDim(6), previewY + ScaledCoord.scaleDim(6), UIConstants.Text.MUTED, textScale);
         }
 
-        // Buttons
+        // Buttons using EditorButton components
         int btnY = panelY + panelH - ScaledCoord.scaleDim(28);
         int btnW = ScaledCoord.scaleDim(100);
         int btnH = ScaledCoord.scaleDim(18);
         int applyX = panelX + panelW - btnW - ScaledCoord.scaleDim(12);
         int cancelX = applyX - btnW - ScaledCoord.scaleDim(8);
 
-        renderButton(graphics, font, cancelX, btnY, btnW, btnH, "Cancel", UIConstants.Border.DEFAULT,
-            mouseX, mouseY, () -> closeCallback.run(), textScale);
         boolean canApply = !filtered.isEmpty() && selectedIndex >= 0 && selectedIndex < filtered.size();
-        renderButton(graphics, font, applyX, btnY, btnW, btnH, "Apply Template",
-            canApply ? UIConstants.Accent.GREEN : UIConstants.Border.MUTED, mouseX, mouseY, () -> {
-                if (canApply) {
-                    applyCallback.accept(filtered.get(selectedIndex));
-                }
-            }, textScale);
+        applyButton.setEnabled(canApply);
+
+        cancelButton.render(graphics, cancelX, btnY, btnW, btnH, mouseX, mouseY);
+        applyButton.render(graphics, applyX, btnY, btnW, btnH, mouseX, mouseY);
     }
 
-    private void renderButton(GuiGraphics g, Font font, int x, int y, int w, int h,
-                              String label, int accent,
-                              int mouseX, int mouseY, Runnable onClick, float textScale) {
-        String safeLabel = java.util.Objects.requireNonNull(label, "label cannot be null");
-        boolean hovered = mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h;
-        int bg = hovered ? accent : UIConstants.Background.INPUT;
-        g.fill(x, y, x + w, y + h, bg);
-        AxiomRenderer.drawBorder(g, x, y, w, h, accent);
-        int textWidth = Math.round(font.width(safeLabel) * textScale);
-        int textX = x + (w - textWidth) / 2;
-        int textY = y + (h - Math.round(font.lineHeight * textScale)) / 2;
-        Typography.drawText(g, font, safeLabel, textX, textY, UIConstants.Text.PRIMARY, textScale);
+    @Override
+    protected void onEscapePressed() {
+        closeCallback.run();
     }
 
-    public boolean mouseClicked(double mouseX, double mouseY) {
-        int panelW = ScaledCoord.scaleDim(PANEL_WIDTH);
-        int panelH = ScaledCoord.scaleDim(PANEL_HEIGHT);
-        int panelX = (Minecraft.getInstance().getWindow().getGuiScaledWidth() - panelW) / 2;
-        int panelY = (Minecraft.getInstance().getWindow().getGuiScaledHeight() - panelH) / 2;
+    @Override
+    protected boolean handleKeyPressed(int keyCode) {
+        // Enter applies
+        if (keyCode == GLFW.GLFW_KEY_ENTER) {
+            List<ItemEditorDataManager.TemplateData> filtered = getFiltered();
+            if (!filtered.isEmpty() && selectedIndex >= 0 && selectedIndex < filtered.size()) {
+                applyCallback.accept(filtered.get(selectedIndex));
+            }
+            return true;
+        }
+        if (keyCode == GLFW.GLFW_KEY_DOWN) {
+            moveSelection(1);
+            return true;
+        }
+        if (keyCode == GLFW.GLFW_KEY_UP) {
+            moveSelection(-1);
+            return true;
+        }
+        if (keyCode == GLFW.GLFW_KEY_BACKSPACE && searchFocused && !searchQuery.isEmpty()) {
+            searchQuery = searchQuery.substring(0, searchQuery.length() - 1);
+            return true;
+        }
+        return true; // Consume all keys when visible
+    }
 
-        // Clicking outside closes
-        if (mouseX < panelX || mouseX > panelX + panelW || mouseY < panelY || mouseY > panelY + panelH) {
-            closeCallback.run();
+    /**
+     * Handle key pressed with modifiers (for Ctrl+F).
+     * This method should be called from the screen's keyPressed handler.
+     */
+    public boolean keyPressed(int keyCode, int modifiers) {
+        if (!visible) return false;
+
+        // Ctrl+F focuses search
+        if (keyCode == GLFW.GLFW_KEY_F && (modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
+            searchFocused = true;
             return true;
         }
 
+        // Delegate to BaseOverlay's keyPressed (handles ESC and other keys)
+        return keyPressed(keyCode);
+    }
+
+    @Override
+    protected boolean handleMouseClicked(double mouseX, double mouseY,
+                                          int panelX, int panelY, int panelW, int panelH) {
         // Search focus
         int searchX = panelX + ScaledCoord.scaleDim(12);
         int searchY = panelY + ScaledCoord.scaleDim(40);
@@ -229,18 +263,14 @@ public class TemplateOverlay {
             return true;
         }
 
-        // Buttons
-        int btnY = panelY + panelH - ScaledCoord.scaleDim(28);
-        int btnW = ScaledCoord.scaleDim(100);
-        int btnH = ScaledCoord.scaleDim(18);
-        int applyX = panelX + panelW - btnW - ScaledCoord.scaleDim(12);
-        int cancelX = applyX - btnW - ScaledCoord.scaleDim(8);
-
-        if (mouseX >= cancelX && mouseX <= cancelX + btnW && mouseY >= btnY && mouseY <= btnY + btnH) {
+        // Button clicks using EditorButton components
+        if (cancelButton.mouseClicked(mouseX, mouseY, 0)) {
+            cancelButton.mouseReleased(mouseX, mouseY, 0);
             closeCallback.run();
             return true;
         }
-        if (mouseX >= applyX && mouseX <= applyX + btnW && mouseY >= btnY && mouseY <= btnY + btnH) {
+        if (applyButton.mouseClicked(mouseX, mouseY, 0)) {
+            applyButton.mouseReleased(mouseX, mouseY, 0);
             List<ItemEditorDataManager.TemplateData> filtered = getFiltered();
             if (!filtered.isEmpty() && selectedIndex >= 0 && selectedIndex < filtered.size()) {
                 applyCallback.accept(filtered.get(selectedIndex));
@@ -248,62 +278,29 @@ public class TemplateOverlay {
             return true;
         }
 
-        // Buttons handled in render (no state change here)
-        return false;
+        return true; // Consume click
     }
 
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
-        int panelW = ScaledCoord.scaleDim(PANEL_WIDTH);
-        int panelH = ScaledCoord.scaleDim(PANEL_HEIGHT);
-        int panelX = (Minecraft.getInstance().getWindow().getGuiScaledWidth() - panelW) / 2;
-        int panelY = (Minecraft.getInstance().getWindow().getGuiScaledHeight() - panelH) / 2;
-        int listX = panelX + ScaledCoord.scaleDim(12);
+    @Override
+    protected boolean handleMouseScrolled(double mouseX, double mouseY, double scrollDelta,
+                                           int panelX, int panelY, int panelW, int panelH) {
         int searchY = panelY + ScaledCoord.scaleDim(40);
+        int listX = panelX + ScaledCoord.scaleDim(12);
         int listY = searchY + ScaledCoord.scaleDim(16) + ScaledCoord.scaleDim(8);
         int listW = panelW - ScaledCoord.scaleDim(24);
         int listH = ScaledCoord.scaleDim(8 * LIST_ROW_HEIGHT);
         int rowHeight = ScaledCoord.scaleDim(LIST_ROW_HEIGHT);
+
         if (mouseX >= listX && mouseX <= listX + listW && mouseY >= listY && mouseY <= listY + listH) {
-            int maxScroll = Math.max(0, Math.max(0, getFiltered().size() * rowHeight - listH));
-            scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) (scrollY * rowHeight)));
+            int maxScroll = Math.max(0, getFiltered().size() * rowHeight - listH);
+            scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) (scrollDelta * rowHeight)));
             return true;
         }
         return false;
     }
 
-    public boolean keyPressed(int keyCode, int modifiers) {
-        // Enter applies
-        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER) {
-            List<ItemEditorDataManager.TemplateData> filtered = getFiltered();
-            if (!filtered.isEmpty() && selectedIndex >= 0 && selectedIndex < filtered.size()) {
-                applyCallback.accept(filtered.get(selectedIndex));
-            }
-            return true;
-        }
-        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) {
-            closeCallback.run();
-            return true;
-        }
-        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_F && (modifiers & org.lwjgl.glfw.GLFW.GLFW_MOD_CONTROL) != 0) {
-            searchFocused = true;
-            return true;
-        }
-        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_DOWN) {
-            moveSelection(1);
-            return true;
-        }
-        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_UP) {
-            moveSelection(-1);
-            return true;
-        }
-        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_BACKSPACE && searchFocused && !searchQuery.isEmpty()) {
-            searchQuery = searchQuery.substring(0, searchQuery.length() - 1);
-            return true;
-        }
-        return false;
-    }
-
-    public boolean charTyped(char chr) {
+    @Override
+    protected boolean handleCharTyped(char chr, int modifiers) {
         if (searchFocused) {
             if (!Character.isISOControl(chr)) {
                 searchQuery += chr;

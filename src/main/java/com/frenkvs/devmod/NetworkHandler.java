@@ -678,7 +678,10 @@ public class NetworkHandler {
         if (delta.contains("AtkSpd")) target.attackSpeed = delta.getFloat("AtkSpd");
         if (delta.contains("AtkRch")) target.attackReach = delta.getFloat("AtkRch");
         if (delta.contains("AtkKB")) target.attackKnockback = delta.getFloat("AtkKB");
-        if (delta.contains("Sweep")) target.sweepingRatio = delta.getFloat("Sweep");
+
+        if (delta.contains("DmgBonus")) {
+            target.damageBonus = delta.getFloat("DmgBonus");
+        }
 
         if (delta.contains("CritCh")) target.critChance = delta.getFloat("CritCh");
         if (delta.contains("CritDmg")) target.critDamage = delta.getFloat("CritDmg");
