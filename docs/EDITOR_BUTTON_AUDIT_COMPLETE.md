@@ -32,8 +32,8 @@ Inventario completo dei punti in cui i pulsanti non usano `EditorButton` e richi
 - ✅ `src/main/java/com/frenkvs/devmod/ui/WelcomeScreen.java`: `tutorialButton`, `skipButton` - **PRIORITÀ MEDIA**
 
 ### Hub / Wizard (pulsanti disegnati a mano)
-- ✅ `src/main/java/com/frenkvs/devmod/ui/hub/QuickToolsPanel.java`: toggle overlay e launcher editor (metodi `renderToolToggle`, `renderEditorButton`) - hit-test + fill manuale - **PRIORITÀ ALTA**
-- ✅ `src/main/java/com/frenkvs/devmod/ui/hub/TestingHub.java`: "Start New", "Resume" in session start, header buttons (X, -) - usa `AxiomRenderer.drawButton` - **PRIORITÀ ALTA**
+- ✅ `src/main/java/com/frenkvs/devmod/ui/hub/QuickToolsPanel.java`: toggle overlay e launcher editor ora con `EditorButton` (toggleable + hotkey hint), rimosso fill/hit-test manuale - **PRIORITÀ ALTA**
+- ✅ `src/main/java/com/frenkvs/devmod/ui/hub/TestingHub.java`: "Start New", "Resume" in session start e header buttons (X, -) ora `EditorButton` (ghost/danger) - **PRIORITÀ ALTA**
 - ✅ `src/main/java/com/frenkvs/devmod/ui/hub/TestDetailPanel.java`: pulsanti verdict (Pass/Fail/Skip) con hotkey hint - **PRIORITÀ MEDIA**
 - ✅ `src/main/java/com/frenkvs/devmod/ui/hub/ProgressFooter.java`: "Save Report", "Minimize" - **PRIORITÀ MEDIA**
 - ✅ `src/main/java/com/frenkvs/devmod/ui/wizard/QuickTestWizard.java`: navigation buttons (Back/Next/Cancel/Start) - **PRIORITÀ MEDIA**

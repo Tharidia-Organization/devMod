@@ -3,20 +3,31 @@ package com.frenkvs.devmod;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeAll;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Tests for NBT → component migration in armor system.
  */
 public class ArmorComponentMigrationTest {
+
+    @BeforeAll
+    static void bootstrap() {
+        TestBootstrap.init();
+    }
     
     @Test
     void migrateFromNBT_preservesAllStats() {
+        var armorComponent = ArmorComponents.armorStatsComponent();
+        assertNotNull(armorComponent, "armor_stats component unavailable");
+
         // Create armor with legacy NBT data
-        ItemStack helmet = new ItemStack("minecraft:diamond_helmet");
+        ItemStack helmet = new ItemStack(requireNonNull(Items.DIAMOND_HELMET));
         
         // Add legacy NBT stats
         ArmorStats originalStats = new ArmorStats();
@@ -39,11 +50,11 @@ public class ArmorComponentMigrationTest {
             ArmorStats migratedStats = ArmorStats.load(java.util.Objects.requireNonNull(customData.copyTag()).getCompound("ArmorModStats"));
             CompoundTag migratedTag = new CompoundTag();
             migratedStats.save(migratedTag);
-            helmet.set(java.util.Objects.requireNonNull(ArmorComponents.ARMOR_STATS.get()), java.util.Objects.requireNonNull(migratedTag.copy()));
+            helmet.set(armorComponent, java.util.Objects.requireNonNull(migratedTag.copy()));
         }
         
         // Verify component was set correctly
-        CompoundTag componentTag = helmet.get(java.util.Objects.requireNonNull(ArmorComponents.ARMOR_STATS.get()));
+        CompoundTag componentTag = helmet.get(armorComponent);
         ArmorStats componentStats = componentTag == null ? null : ArmorStats.load(componentTag.copy());
         assertNotNull(componentStats);
         assertEquals(0.3f, componentStats.physicalReduction, 0.001f);
@@ -55,7 +66,10 @@ public class ArmorComponentMigrationTest {
     
     @Test
     void componentRoundTrip_preservesData() {
-        ItemStack chestplate = new ItemStack("minecraft:netherite_chestplate");
+        var armorComponent = ArmorComponents.armorStatsComponent();
+        assertNotNull(armorComponent, "armor_stats component unavailable");
+
+        ItemStack chestplate = new ItemStack(requireNonNull(Items.NETHERITE_CHESTPLATE));
         
         ArmorStats original = new ArmorStats();
         original.magicReduction = 0.4f;
@@ -67,10 +81,10 @@ public class ArmorComponentMigrationTest {
         // Set component
         CompoundTag tag = new CompoundTag();
         original.save(tag);
-        chestplate.set(java.util.Objects.requireNonNull(ArmorComponents.ARMOR_STATS.get()), java.util.Objects.requireNonNull(tag.copy()));
+        chestplate.set(armorComponent, java.util.Objects.requireNonNull(tag.copy()));
         
         // Retrieve component
-        CompoundTag retrievedTag = chestplate.get(java.util.Objects.requireNonNull(ArmorComponents.ARMOR_STATS.get()));
+        CompoundTag retrievedTag = chestplate.get(armorComponent);
         ArmorStats retrieved = retrievedTag == null ? null : ArmorStats.load(retrievedTag.copy());
         
         assertNotNull(retrieved);
@@ -83,10 +97,13 @@ public class ArmorComponentMigrationTest {
     
     @Test
     void emptyComponent_returnsDefaults() {
-        ItemStack boots = new ItemStack("minecraft:leather_boots");
+        var armorComponent = ArmorComponents.armorStatsComponent();
+        assertNotNull(armorComponent, "armor_stats component unavailable");
+
+        ItemStack boots = new ItemStack(requireNonNull(Items.LEATHER_BOOTS));
         
         // No component set
-        CompoundTag statsTag = boots.get(java.util.Objects.requireNonNull(ArmorComponents.ARMOR_STATS.get()));
+        CompoundTag statsTag = boots.get(armorComponent);
         
         // Should be null (no component), fallback to defaults handled by ArmorConfigManager
         assertNull(statsTag);

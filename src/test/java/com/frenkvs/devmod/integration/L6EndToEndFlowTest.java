@@ -275,7 +275,7 @@ public class L6EndToEndFlowTest {
             session.peakRank = session.currentRank.ordinal() > session.peakRank.ordinal()
                 ? session.currentRank : session.peakRank;
 
-            session.damageDealt += 10 + Math.random() * 20;
+            session.damageDealt += (float) (10 + Math.random() * 20);
         }
 
         // Simulate damage taken (maybe)

@@ -3,19 +3,30 @@ package com.frenkvs.devmod;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeAll;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Tests for armor migration helper functionality.
  */
 public class ArmorMigrationHelperTest {
+
+    @BeforeAll
+    static void bootstrap() {
+        TestBootstrap.init();
+    }
     
     @Test
     void migrateIfNeeded_withNBTData_migratesSuccessfully() {
-        ItemStack helmet = new ItemStack("minecraft:diamond_helmet");
+        var armorComponent = ArmorComponents.armorStatsComponent();
+        assertNotNull(armorComponent, "armor_stats component unavailable");
+
+        ItemStack helmet = new ItemStack(requireNonNull(Items.DIAMOND_HELMET));
         
         // Add legacy NBT
         ArmorStats original = new ArmorStats();
@@ -34,7 +45,7 @@ public class ArmorMigrationHelperTest {
         assertTrue(migrated, "Migration should succeed");
         
         // Verify component was set
-        net.minecraft.nbt.CompoundTag componentTag = helmet.get(java.util.Objects.requireNonNull(ArmorComponents.ARMOR_STATS.get()));
+        net.minecraft.nbt.CompoundTag componentTag = helmet.get(armorComponent);
         ArmorStats componentStats = componentTag == null ? null : ArmorStats.load(componentTag.copy());
         assertNotNull(componentStats);
         assertEquals(0.25f, componentStats.physicalReduction, 0.001f);
@@ -43,14 +54,17 @@ public class ArmorMigrationHelperTest {
     
     @Test
     void migrateIfNeeded_withExistingComponent_skipsmigration() {
-        ItemStack chestplate = new ItemStack("minecraft:iron_chestplate");
+        var armorComponent = ArmorComponents.armorStatsComponent();
+        assertNotNull(armorComponent, "armor_stats component unavailable");
+
+        ItemStack chestplate = new ItemStack(requireNonNull(Items.IRON_CHESTPLATE));
         
         // Set component first
         ArmorStats existing = new ArmorStats();
         existing.magicReduction = 0.3f;
         net.minecraft.nbt.CompoundTag existingTag = new net.minecraft.nbt.CompoundTag();
         existing.save(existingTag);
-        chestplate.set(java.util.Objects.requireNonNull(ArmorComponents.ARMOR_STATS.get()), java.util.Objects.requireNonNull(existingTag.copy()));
+        chestplate.set(armorComponent, java.util.Objects.requireNonNull(existingTag.copy()));
         
         // Add NBT (should be ignored)
         CompoundTag customTag = new CompoundTag();
@@ -67,7 +81,7 @@ public class ArmorMigrationHelperTest {
         assertFalse(migrated, "Should skip migration when component exists");
         
         // Verify original component unchanged
-        net.minecraft.nbt.CompoundTag componentTag = chestplate.get(java.util.Objects.requireNonNull(ArmorComponents.ARMOR_STATS.get()));
+        net.minecraft.nbt.CompoundTag componentTag = chestplate.get(armorComponent);
         ArmorStats componentStats = componentTag == null ? null : ArmorStats.load(componentTag.copy());
         assertNotNull(componentStats);
         assertEquals(0.3f, componentStats.magicReduction, 0.001f);
@@ -76,7 +90,10 @@ public class ArmorMigrationHelperTest {
     
     @Test
     void getStatsWithMigration_performsAutoMigration() {
-        ItemStack boots = new ItemStack("minecraft:leather_boots");
+        var armorComponent = ArmorComponents.armorStatsComponent();
+        assertNotNull(armorComponent, "armor_stats component unavailable");
+
+        ItemStack boots = new ItemStack(requireNonNull(Items.LEATHER_BOOTS));
         
         // Add only NBT data
         ArmorStats nbtStats = new ArmorStats();
@@ -97,7 +114,7 @@ public class ArmorMigrationHelperTest {
         assertTrue(stats.thornsReflect);
         
         // Verify component was created
-        net.minecraft.nbt.CompoundTag componentStats = boots.get(java.util.Objects.requireNonNull(ArmorComponents.ARMOR_STATS.get()));
+        net.minecraft.nbt.CompoundTag componentStats = boots.get(armorComponent);
         assertNotNull(componentStats);
     }
 }

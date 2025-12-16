@@ -877,7 +877,8 @@ class ConcurrentOperationStressTest {
                 futures.add(future);
             }
 
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get(30, TimeUnit.SECONDS);
+            CompletableFuture<?>[] futureArray = futures.toArray(CompletableFuture[]::new);
+            CompletableFuture.allOf(futureArray).get(30, TimeUnit.SECONDS);
 
             for (int i = 0; i < chainCount; i++) {
                 int expected = (i * 2 + 1) / 2;

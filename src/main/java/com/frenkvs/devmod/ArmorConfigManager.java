@@ -91,9 +91,11 @@ public class ArmorConfigManager {
     public static ArmorStats getStats(ItemStack stack) {
         stack = Objects.requireNonNull(stack);
 
+        var armorComponent = ArmorComponents.armorStatsComponent();
+
         // 0. Prefer data component if present
         try {
-            net.minecraft.nbt.CompoundTag componentTag = stack.get(Objects.requireNonNull(ArmorComponents.ARMOR_STATS.get()));
+            net.minecraft.nbt.CompoundTag componentTag = armorComponent == null ? null : stack.get(armorComponent);
             if (componentTag != null && !componentTag.isEmpty()) {
                 return ArmorStats.load(componentTag.copy());
             }
@@ -108,7 +110,9 @@ public class ArmorConfigManager {
             try {
                 net.minecraft.nbt.CompoundTag clampedTag = new net.minecraft.nbt.CompoundTag();
                 loaded.save(clampedTag);
-                stack.set(Objects.requireNonNull(ArmorComponents.ARMOR_STATS.get()), clampedTag.copy());
+                if (armorComponent != null) {
+                    stack.set(armorComponent, clampedTag.copy());
+                }
                 applyAttributeModifiers(stack, loaded);
             } catch (Exception ignored) {}
             return loaded;
@@ -145,7 +149,8 @@ public class ArmorConfigManager {
         boolean hasCustom = customData != null && customData.contains(NBT_KEY);
         boolean hasComponent = false;
         try {
-            hasComponent = stack.get(Objects.requireNonNull(ArmorComponents.ARMOR_STATS.get())) != null;
+            var armorComponent = ArmorComponents.armorStatsComponent();
+            hasComponent = armorComponent != null && stack.get(armorComponent) != null;
         } catch (Exception ignored) {}
         return hasCustom || hasComponent;
     }
@@ -176,7 +181,10 @@ public class ArmorConfigManager {
         try {
             net.minecraft.nbt.CompoundTag statsTag = new net.minecraft.nbt.CompoundTag();
             clamped.save(statsTag);
-            stack.set(Objects.requireNonNull(ArmorComponents.ARMOR_STATS.get()), statsTag.copy());
+            var armorComponent = ArmorComponents.armorStatsComponent();
+            if (armorComponent != null) {
+                stack.set(armorComponent, statsTag.copy());
+            }
         } catch (Exception ignored) {}
         applyAttributeModifiers(stack, clamped);
     }
@@ -190,7 +198,10 @@ public class ArmorConfigManager {
             tag.remove(NBT_KEY);
         });
         try {
-            stack.remove(Objects.requireNonNull(ArmorComponents.ARMOR_STATS.get()));
+            var armorComponent = ArmorComponents.armorStatsComponent();
+            if (armorComponent != null) {
+                stack.remove(armorComponent);
+            }
         } catch (Exception ignored) {}
     }
 

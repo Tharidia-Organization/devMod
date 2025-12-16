@@ -31,8 +31,7 @@ public class MultiEditManager {
         if (selectedItems.stream()
             .filter(Objects::nonNull)
             .noneMatch(s -> ItemStack.isSameItem(Objects.requireNonNull(s, "selected item cannot be null"), safeItem))) {
-            ItemStack copy = Objects.requireNonNull(safeItem.copy(), "item copy cannot be null");
-            selectedItems.add(copy);
+            selectedItems.add(safeItem);
             selectedSlots.add(slot);
         }
     }

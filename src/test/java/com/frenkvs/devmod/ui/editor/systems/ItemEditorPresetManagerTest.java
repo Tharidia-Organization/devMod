@@ -1,17 +1,26 @@
 package com.frenkvs.devmod.ui.editor.systems;
 
 import com.frenkvs.devmod.ItemEditorDataManager;
+import com.frenkvs.devmod.TestBootstrap;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeAll;
 
 import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static java.util.Objects.requireNonNull;
 
 public class ItemEditorPresetManagerTest {
     
     private ItemEditorPresetManager manager;
+
+    @BeforeAll
+    static void bootstrap() {
+        TestBootstrap.init();
+    }
     
     @BeforeEach
     void setUp() {
@@ -20,7 +29,7 @@ public class ItemEditorPresetManagerTest {
     
     @Test
     void applyPreset_weaponStats_appliesCorrectly() {
-        ItemStack sword = new ItemStack("minecraft:diamond_sword");
+        ItemStack sword = new ItemStack(requireNonNull(Items.DIAMOND_SWORD));
         ItemEditorDataManager.PresetData data = new ItemEditorDataManager.PresetData("test_weapon");
         data.statValues = new ArrayList<>();
         // 15 weapon stats expected by manager
@@ -34,7 +43,7 @@ public class ItemEditorPresetManagerTest {
     
     @Test
     void applyPreset_armorStats_appliesCorrectly() {
-        ItemStack helmet = new ItemStack("minecraft:diamond_helmet");
+        ItemStack helmet = new ItemStack(requireNonNull(Items.DIAMOND_HELMET));
         ItemEditorDataManager.PresetData data = new ItemEditorDataManager.PresetData("test_armor");
         data.statValues = new ArrayList<>();
         float[] vals = {0.3f,0.2f,0,0,0,5f,0,0,0,1};

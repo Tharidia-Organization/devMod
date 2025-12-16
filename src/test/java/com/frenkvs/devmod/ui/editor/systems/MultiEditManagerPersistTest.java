@@ -1,21 +1,30 @@
 package com.frenkvs.devmod.ui.editor.systems;
 
+import com.frenkvs.devmod.TestBootstrap;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeAll;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static java.util.Objects.requireNonNull;
 
 public class MultiEditManagerPersistTest {
+
+    @BeforeAll
+    static void bootstrap() {
+        TestBootstrap.init();
+    }
 
     @Test
     public void applyPresetToAll_invokesPresetManager_whenPersistTrue() {
         MultiEditManager manager = new MultiEditManager();
 
-        ItemStack a = new ItemStack("A");
-        ItemStack b = new ItemStack("B");
-        ItemStack c = new ItemStack("C");
+        ItemStack a = new ItemStack(requireNonNull(Items.STICK));
+        ItemStack b = new ItemStack(requireNonNull(Items.DIRT));
+        ItemStack c = new ItemStack(requireNonNull(Items.STONE));
 
         manager.addToSelection(a, 0);
         manager.addToSelection(b, 1);

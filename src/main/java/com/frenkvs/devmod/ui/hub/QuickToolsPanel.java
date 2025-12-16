@@ -3,10 +3,13 @@ package com.frenkvs.devmod.ui.hub;
 import com.frenkvs.devmod.testing.TestingSession;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -32,9 +35,12 @@ public class QuickToolsPanel implements HubPanel {
     // Layout
     private static final int PADDING = 10;
     private static final int SECTION_HEADER_HEIGHT = 16;
-    private static final int TOGGLE_ROW_HEIGHT = 22;
-    private static final int BUTTON_HEIGHT = 22;
+    private static final int BUTTON_HEIGHT = UIConstants.Size.BUTTON_HEIGHT;
+    private static final int BUTTON_GAP = 4;
     private static final int SESSION_LINE_HEIGHT = 12;
+
+    private final Map<ToolType, EditorButton> toolButtons;
+    private final Map<EditorType, EditorButton> editorButtons;
 
     public QuickToolsPanel(int x, int y, int width, int height, Font font,
                            TestingHubState state,
@@ -48,6 +54,8 @@ public class QuickToolsPanel implements HubPanel {
         this.state = state;
         this.onToolToggled = onToolToggled;
         this.onEditorOpened = onEditorOpened;
+        this.toolButtons = buildToolButtons();
+        this.editorButtons = buildEditorButtons();
     }
 
     public void highlightRequired(Set<ToolType> tools) {
@@ -77,10 +85,8 @@ public class QuickToolsPanel implements HubPanel {
         for (ToolType tool : ToolType.values()) {
             boolean enabled = tool.isEnabled();
             boolean required = requiredTools.contains(tool);
-            boolean hovered = isInBounds(mouseX, mouseY, contentX, contentY, contentWidth, TOGGLE_ROW_HEIGHT - 2);
-
-            renderToolToggle(graphics, contentX, contentY, contentWidth, tool, enabled, required, hovered);
-            contentY += TOGGLE_ROW_HEIGHT;
+            renderToolToggle(graphics, contentX, contentY, contentWidth, tool, enabled, required, mouseX, mouseY);
+            contentY += BUTTON_HEIGHT + BUTTON_GAP;
         }
 
         contentY += 8;
@@ -92,9 +98,8 @@ public class QuickToolsPanel implements HubPanel {
         contentY += SECTION_HEADER_HEIGHT;
 
         for (EditorType editor : EditorType.values()) {
-            boolean hovered = isInBounds(mouseX, mouseY, contentX, contentY, contentWidth, BUTTON_HEIGHT);
-            renderEditorButton(graphics, contentX, contentY, contentWidth, editor, hovered);
-            contentY += BUTTON_HEIGHT + 4;
+            renderEditorButton(graphics, contentX, contentY, contentWidth, editor, mouseX, mouseY);
+            contentY += BUTTON_HEIGHT + BUTTON_GAP;
         }
 
         contentY += 8;
@@ -109,80 +114,23 @@ public class QuickToolsPanel implements HubPanel {
     }
 
     private void renderToolToggle(GuiGraphics graphics, int rx, int ry, int rwidth,
-                                   ToolType tool, boolean enabled, boolean required, boolean hovered) {
-        // Background hover
-        if (hovered) {
-            graphics.fill(rx - 2, ry, rx + rwidth + 2, ry + TOGGLE_ROW_HEIGHT - 2, UIConstants.Background.HOVER);
-        }
+                                   ToolType tool, boolean enabled, boolean required, int mouseX, int mouseY) {
+        EditorButton button = toolButtons.get(tool);
+        if (button == null) return;
 
-        // "Required" indicator (yellow left border)
-        if (required && !enabled) {
-            graphics.fill(rx - 2, ry, rx, ry + TOGGLE_ROW_HEIGHT - 2, UIConstants.Status.WARNING);
-        }
-
-        // Hotkey badge
-        String hotkey = "[" + tool.getHotkey() + "]";
-        graphics.drawString(font, hotkey, rx, ry + 5, UIConstants.Text.MUTED, false);
-
-        // Label
-        int labelX = rx + font.width(hotkey) + 4;
-        int labelColor = required && !enabled ? UIConstants.Status.WARNING : UIConstants.Text.PRIMARY;
-
-        String label = tool.getLabel();
-        int maxLabelWidth = rwidth - font.width(hotkey) - 50;
-        if (font.width(label) > maxLabelWidth) {
-            String ellipsis = "...";
-            int minChars = Math.min(6, label.length()); // Keep at least 6 chars for readability
-            while (font.width(label + ellipsis) > maxLabelWidth && label.length() > minChars) {
-                label = label.substring(0, label.length() - 1);
-            }
-            label += ellipsis;
-        }
-        graphics.drawString(font, label, labelX, ry + 5, labelColor, false);
-
-        // Toggle switch (simplified)
-        int toggleWidth = 32;
-        int toggleHeight = 14;
-        int toggleX = rx + rwidth - toggleWidth;
-        int toggleY = ry + 3;
-
-        int toggleBg = enabled ? UIConstants.Status.SUCCESS : UIConstants.Background.INPUT;
-        graphics.fill(toggleX, toggleY, toggleX + toggleWidth, toggleY + toggleHeight, toggleBg);
-        AxiomRenderer.drawBorder(graphics, toggleX, toggleY, toggleWidth, toggleHeight, UIConstants.Border.DEFAULT);
-
-        // Toggle text
-        String toggleText = enabled ? "ON" : "OFF";
-        int textColor = enabled ? UIConstants.Text.WHITE : UIConstants.Text.MUTED;
-        int textWidth = font.width(toggleText);
-        graphics.drawString(font, toggleText, toggleX + (toggleWidth - textWidth) / 2, toggleY + 3, textColor, false);
-
-        // Checkmark if required and enabled
-        if (required && enabled) {
-            graphics.drawString(font, "v", toggleX - 10, ry + 5, UIConstants.Status.SUCCESS, false);
-        }
+        // Sync state every frame in case external toggles changed it.
+        button.toggled(enabled);
+        button.style(required && !enabled ? EditorButton.Style.DANGER : EditorButton.Style.NORMAL);
+        button.accent(required && !enabled ? UIConstants.Status.WARNING : UIConstants.Border.DEFAULT);
+        button.render(graphics, rx, ry, rwidth, BUTTON_HEIGHT, mouseX, mouseY);
     }
 
     private void renderEditorButton(GuiGraphics graphics, int rx, int ry, int rwidth,
-                                     EditorType editor, boolean hovered) {
-        // Background
-        int bgColor = hovered ? UIConstants.Background.HOVER : UIConstants.Background.INPUT;
-        graphics.fill(rx, ry, rx + rwidth, ry + BUTTON_HEIGHT, bgColor);
+                                     EditorType editor, int mouseX, int mouseY) {
+        EditorButton button = editorButtons.get(editor);
+        if (button == null) return;
 
-        // Border
-        int borderColor = hovered ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
-        AxiomRenderer.drawBorder(graphics, rx, ry, rwidth, BUTTON_HEIGHT, borderColor);
-
-        // Hotkey hint
-        String hotkey = "[" + editor.getHotkey() + "]";
-        graphics.drawString(font, hotkey, rx + 6, ry + 7, UIConstants.Text.MUTED, false);
-
-        // Label
-        int labelX = rx + 6 + font.width(hotkey) + 4;
-        graphics.drawString(font, editor.getLabel(), labelX, ry + 7, UIConstants.Text.PRIMARY, false);
-
-        // Arrow
-        int arrowColor = hovered ? UIConstants.Text.ACCENT : UIConstants.Text.MUTED;
-        graphics.drawString(font, ">", rx + rwidth - 12, ry + 7, arrowColor, false);
+        button.render(graphics, rx, ry, rwidth, BUTTON_HEIGHT, mouseX, mouseY);
     }
 
     private void renderSessionInfo(GuiGraphics graphics, int rx, int ry, int rwidth) {
@@ -228,31 +176,36 @@ public class QuickToolsPanel implements HubPanel {
         int mx = (int) mouseX;
         int my = (int) mouseY;
 
-        int contentY = y + PADDING + SECTION_HEADER_HEIGHT;
-        int contentX = x + PADDING;
-        int contentWidth = width - PADDING * 2;
-
-        // Check tool toggles
-        for (ToolType tool : ToolType.values()) {
-            if (isInBounds(mx, my, contentX, contentY, contentWidth, TOGGLE_ROW_HEIGHT - 2)) {
-                boolean newState = !tool.isEnabled();
-                tool.setEnabled(newState);
-                onToolToggled.accept(tool, newState);
+        for (EditorButton btn : toolButtons.values()) {
+            if (btn.mouseClicked(mx, my, button)) {
                 return true;
             }
-            contentY += TOGGLE_ROW_HEIGHT;
         }
 
-        // Skip separator
-        contentY += 8 + 12 + SECTION_HEADER_HEIGHT;
-
-        // Check editor buttons
-        for (EditorType editor : EditorType.values()) {
-            if (isInBounds(mx, my, contentX, contentY, contentWidth, BUTTON_HEIGHT)) {
-                onEditorOpened.accept(editor);
+        for (EditorButton btn : editorButtons.values()) {
+            if (btn.mouseClicked(mx, my, button)) {
                 return true;
             }
-            contentY += BUTTON_HEIGHT + 4;
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        int mx = (int) mouseX;
+        int my = (int) mouseY;
+
+        for (EditorButton btn : toolButtons.values()) {
+            if (btn.mouseReleased(mx, my, button)) {
+                return true;
+            }
+        }
+
+        for (EditorButton btn : editorButtons.values()) {
+            if (btn.mouseReleased(mx, my, button)) {
+                return true;
+            }
         }
 
         return false;
@@ -263,10 +216,6 @@ public class QuickToolsPanel implements HubPanel {
         return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
     }
 
-    private boolean isInBounds(int mx, int my, int bx, int by, int bw, int bh) {
-        return mx >= bx && mx < bx + bw && my >= by && my < by + bh;
-    }
-
     @Override
     public int getX() { return x; }
     @Override
@@ -275,4 +224,35 @@ public class QuickToolsPanel implements HubPanel {
     public int getWidth() { return width; }
     @Override
     public int getHeight() { return height; }
+
+    private Map<ToolType, EditorButton> buildToolButtons() {
+        Map<ToolType, EditorButton> buttons = new EnumMap<>(ToolType.class);
+        for (ToolType tool : ToolType.values()) {
+            EditorButton button = EditorButton.builder("tool-" + tool.name().toLowerCase(), tool.getLabel())
+                .hotkeyHint("[" + tool.getHotkey() + "]")
+                .toggleable(true)
+                .toggled(tool.isEnabled())
+                .style(EditorButton.Style.NORMAL)
+                .onToggle(enabled -> {
+                    tool.setEnabled(enabled);
+                    onToolToggled.accept(tool, enabled);
+                })
+                .build();
+            buttons.put(tool, button);
+        }
+        return buttons;
+    }
+
+    private Map<EditorType, EditorButton> buildEditorButtons() {
+        Map<EditorType, EditorButton> buttons = new EnumMap<>(EditorType.class);
+        for (EditorType editor : EditorType.values()) {
+            EditorButton button = EditorButton.builder("editor-" + editor.name().toLowerCase(), editor.getLabel())
+                .hotkeyHint("[" + editor.getHotkey() + "]")
+                .style(EditorButton.Style.PRIMARY)
+                .onClick(() -> onEditorOpened.accept(editor))
+                .build();
+            buttons.put(editor, button);
+        }
+        return buttons;
+    }
 }

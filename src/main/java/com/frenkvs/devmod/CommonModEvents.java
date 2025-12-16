@@ -157,6 +157,7 @@ public class CommonModEvents {
         if (stack == null || stack.isEmpty()) return;
 
         EquipmentSlot slot = event.getSlot();
+        var armorComponent = ArmorComponents.armorStatsComponent();
         // Weapons (mainhand/offhand)
         if (slot == EquipmentSlot.MAINHAND || slot == EquipmentSlot.OFFHAND) {
             boolean hasDevmodData = false;
@@ -204,7 +205,7 @@ public class CommonModEvents {
         if (isArmorSlot || isShield) {
             boolean hasDevmodArmor = false;
             try {
-                var comp = stack.get(Objects.requireNonNull(com.frenkvs.devmod.ArmorComponents.ARMOR_STATS.get()));
+                var comp = armorComponent != null ? stack.get(armorComponent) : null;
                 hasDevmodArmor = comp != null && !comp.isEmpty();
             } catch (Exception ignored) {}
             try {

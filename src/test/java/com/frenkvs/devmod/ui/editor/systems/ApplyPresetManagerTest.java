@@ -1,20 +1,29 @@
 package com.frenkvs.devmod.ui.editor.systems;
 
+import com.frenkvs.devmod.TestBootstrap;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static java.util.Objects.requireNonNull;
 
 public class ApplyPresetManagerTest {
+
+    @BeforeAll
+    static void bootstrap() {
+        TestBootstrap.init();
+    }
 
     @Test
     public void applyPresetToAll_handlesSuccessesAndFailures() {
         MultiEditManager manager = new MultiEditManager();
 
-        ItemStack a = new ItemStack("A");
-        ItemStack b = new ItemStack("B");
+        ItemStack a = new ItemStack(requireNonNull(Items.STICK));
+        ItemStack b = new ItemStack(requireNonNull(Items.DIRT));
 
         manager.addToSelection(a, 0);
         manager.addToSelection(b, 1);
@@ -26,7 +35,7 @@ public class ApplyPresetManagerTest {
         PresetManager pm = new PresetManager() {
             @Override
             public boolean applyPreset(Preset preset, ItemStack item, int slotIndex) {
-                return "A".equals(item.getHoverName().getString()); // success only for 'a'
+                return item == a; // success only for 'a'
             }
         };
 
@@ -41,29 +50,31 @@ public class ApplyPresetManagerTest {
     public void applyPresetToAll_respectsScopeAndCollectsFailures() {
         MultiEditManager manager = new MultiEditManager();
 
-        ItemStack a = new ItemStack("A");
-        ItemStack b = new ItemStack("B");
-        ItemStack c = new ItemStack("C");
+        ItemStack a = new ItemStack(requireNonNull(Items.STICK));
+        ItemStack b = new ItemStack(requireNonNull(Items.DIRT));
+        ItemStack c = new ItemStack(requireNonNull(Items.STONE));
 
         manager.addToSelection(a, 0);
         manager.addToSelection(b, 1);
         manager.addToSelection(c, 2);
 
         // Scope excludes item "B"
-        Preset scopedPreset = () -> stack -> !"B".equals(stack.getHoverName().getString());
+        Preset scopedPreset = () -> stack -> stack != b;
 
         // Only succeeds for item "A"
         PresetManager pm = new PresetManager() {
             @Override
             public boolean applyPreset(Preset preset, ItemStack item, int slotIndex) {
-                return "A".equals(item.getHoverName().getString());
+                return item == a;
             }
         };
 
         BatchEditResult res = manager.applyPresetToAll(scopedPreset, pm);
         assertEquals(1, res.successCount());
         assertEquals(2, res.failureCount());
-        assertTrue(res.failures().stream().anyMatch(s -> s.contains("B") && s.contains("Scope")));
-        assertTrue(res.failures().stream().anyMatch(s -> s.contains("C") && s.contains("apply failed")));
+        assertTrue(res.failureDetails().stream()
+            .anyMatch(d -> d.itemId != null && d.itemId.endsWith("dirt") && "Scope mismatch".equals(d.message)));
+        assertTrue(res.failureDetails().stream()
+            .anyMatch(d -> d.itemId != null && d.itemId.endsWith("stone") && "apply failed".equals(d.message)));
     }
 }

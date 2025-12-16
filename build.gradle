@@ -128,6 +128,9 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 // "optional", meaning it will not be pulled by dependents of this mod.
 configurations {
     runtimeClasspath.extendsFrom localRuntime
+    // Ensure tests see the same classpath (NeoForge/Minecraft) as main sources
+    testCompileClasspath.extendsFrom compileClasspath
+    testRuntimeClasspath.extendsFrom runtimeClasspath
 }
 
 // Add localRuntime dependencies to NeoForge run configurations
@@ -151,6 +154,9 @@ dependencies {
     // SLF4J for test logging (required by DuckDB classes)
     testImplementation 'org.slf4j:slf4j-api:2.0.9'
     testRuntimeOnly 'org.slf4j:slf4j-simple:2.0.9'
+
+    // Annotations used in test helpers (ResourceLocation mock)
+    testImplementation 'javax.annotation:javax.annotation-api:1.3.2'
 
     // Allow test classes to access main source classes (for non-Minecraft unit tests)
     testImplementation sourceSets.main.output

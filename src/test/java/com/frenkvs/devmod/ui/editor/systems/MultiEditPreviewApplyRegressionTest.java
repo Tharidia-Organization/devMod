@@ -1,11 +1,15 @@
 package com.frenkvs.devmod.ui.editor.systems;
 
+import com.frenkvs.devmod.TestBootstrap;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeAll;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Regression tests to ensure preview (no persist) vs apply (persist) behavior
@@ -13,12 +17,17 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class MultiEditPreviewApplyRegressionTest {
 
+    @BeforeAll
+    static void bootstrap() {
+        TestBootstrap.init();
+    }
+
     @Test
     public void previewMode_doesNotInvokePersistenceHandler() {
         MultiEditManager manager = new MultiEditManager();
 
-        ItemStack a = new ItemStack("minecraft:stone");
-        ItemStack b = new ItemStack("minecraft:dirt"); // use different id to avoid deduplication
+        ItemStack a = new ItemStack(requireNonNull(Items.STONE));
+        ItemStack b = new ItemStack(requireNonNull(Items.DIRT)); // use different id to avoid deduplication
 
         manager.addToSelection(a, 0);
         manager.addToSelection(b, 1);
@@ -57,8 +66,8 @@ public class MultiEditPreviewApplyRegressionTest {
     public void applyWithPersist_invokesPersistenceHandler_and_reportsFailures() {
         MultiEditManager manager = new MultiEditManager();
 
-        ItemStack a = new ItemStack("minecraft:stone");
-        ItemStack b = new ItemStack("minecraft:dirt"); // use different id to avoid deduplication
+        ItemStack a = new ItemStack(requireNonNull(Items.STONE));
+        ItemStack b = new ItemStack(requireNonNull(Items.DIRT)); // use different id to avoid deduplication
 
         manager.addToSelection(a, 0);
         manager.addToSelection(b, 1);

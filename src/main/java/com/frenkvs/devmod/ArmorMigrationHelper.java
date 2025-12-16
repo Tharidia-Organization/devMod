@@ -20,9 +20,14 @@ public final class ArmorMigrationHelper {
      */
     public static boolean migrateIfNeeded(ItemStack stack) {
         if (stack.isEmpty()) return false;
+
+        var armorComponent = ArmorComponents.armorStatsComponent();
+        if (armorComponent == null) {
+            return false;
+        }
         
         // Skip if component already exists
-        if (stack.has(Objects.requireNonNull(ArmorComponents.ARMOR_STATS.get()))) {
+        if (stack.has(armorComponent)) {
             return false;
         }
         
@@ -40,7 +45,7 @@ public final class ArmorMigrationHelper {
             stats.save(statsTag);
             
             // Set component
-            stack.set(Objects.requireNonNull(ArmorComponents.ARMOR_STATS.get()), statsTag.copy());
+            stack.set(armorComponent, statsTag.copy());
             
             // Optionally clean up NBT (keep for compatibility)
             // CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.remove(NBT_KEY));
@@ -56,15 +61,17 @@ public final class ArmorMigrationHelper {
      * Get armor stats with automatic migration.
      */
     public static ArmorStats getStatsWithMigration(ItemStack stack) {
+        var armorComponent = ArmorComponents.armorStatsComponent();
+
         // Try component first
-        CompoundTag component = stack.get(Objects.requireNonNull(ArmorComponents.ARMOR_STATS.get()));
+        CompoundTag component = armorComponent == null ? null : stack.get(armorComponent);
         if (component != null && !component.isEmpty()) {
             return ArmorStats.load(component.copy());
         }
         
         // Try migration
         if (migrateIfNeeded(stack)) {
-            CompoundTag migrated = stack.get(Objects.requireNonNull(ArmorComponents.ARMOR_STATS.get()));
+            CompoundTag migrated = armorComponent == null ? null : stack.get(armorComponent);
             if (migrated != null && !migrated.isEmpty()) {
                 return ArmorStats.load(migrated.copy());
             }

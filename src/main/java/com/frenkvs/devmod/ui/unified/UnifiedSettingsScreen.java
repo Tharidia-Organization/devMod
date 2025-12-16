@@ -462,19 +462,13 @@ public class UnifiedSettingsScreen extends Screen {
         int dialogX = (width - dialogWidth) / 2;
         int dialogY = (height - dialogHeight) / 2;
 
-        int buttonWidth = 100;
-        int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
-        int buttonY = dialogY + dialogHeight - buttonHeight - 12;
-
         // Cancel button
-        int cancelX = dialogX + dialogWidth / 2 - buttonWidth - 15;
         if (progressCancelBtn.mouseClicked(mouseX, mouseY, 0)) {
             showPlayerProgressResetConfirmation = false;
             return true;
         }
 
         // Confirm button - perform player progress reset
-        int confirmX = dialogX + dialogWidth / 2 + 15;
         if (progressConfirmBtn.mouseClicked(mouseX, mouseY, 0)) {
             showPlayerProgressResetConfirmation = false;
             return true;
@@ -810,35 +804,27 @@ public class UnifiedSettingsScreen extends Screen {
             searchFocused = false;
         }
 
-        // Footer buttons
-        int footerY = height - FOOTER_HEIGHT;
-        int buttonY = footerY + (FOOTER_HEIGHT - UIConstants.Size.BUTTON_HEIGHT) / 2;
-
         // Reset Page button - show confirmation dialog
         if (footerResetPageBtn.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
 
         // Reset Progress button - show player progress reset confirmation
-        int resetProgressX = PADDING + 90;
         if (footerResetProgressBtn.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
 
         // Factory Reset button - show factory reset confirmation
-        int factoryResetX = PADDING + 90 + 115;
         if (footerFactoryResetBtn.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
 
         // Close button
-        int closeButtonX = width - PADDING - 80;
         if (footerCloseBtn.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
 
         // Apply button
-        int applyButtonX = closeButtonX - 90;
         if (footerApplyBtn.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
@@ -1024,11 +1010,6 @@ public class UnifiedSettingsScreen extends Screen {
         if (page != null) {
             page.saveChanges();
         }
-    }
-
-    private boolean hasUnsavedChanges() {
-        SettingsPage page = pages.get(currentCategory);
-        return page != null && page.hasUnsavedChanges();
     }
 
     @Override

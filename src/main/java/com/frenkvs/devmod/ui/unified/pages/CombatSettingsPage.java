@@ -190,28 +190,12 @@ public class CombatSettingsPage implements SettingsPage {
             }
         }
 
-        Minecraft mc = Minecraft.getInstance();
-        ItemStack heldItem = mc.player != null ? mc.player.getMainHandItem() : ItemStack.EMPTY;
-
         // Calculate button position with scroll offset
         if (openEditorButton.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
 
         return false;
-    }
-
-    private int calculateButtonY(int startY, boolean noWeapon) {
-        int currentY = startY;
-        currentY += ROW_HEIGHT + 4; // Section header
-        if (noWeapon) {
-            currentY += ROW_HEIGHT + ROW_HEIGHT + SECTION_SPACING;
-        } else {
-            currentY += ROW_HEIGHT + ROW_HEIGHT * 5 + SECTION_SPACING;
-        }
-        currentY += SECTION_SPACING; // Separator
-        currentY += ROW_HEIGHT + 4; // Quick Actions header
-        return currentY;
     }
 
     @Override

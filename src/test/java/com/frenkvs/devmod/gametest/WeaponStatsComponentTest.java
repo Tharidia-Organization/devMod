@@ -1,12 +1,15 @@
 package com.frenkvs.devmod.gametest;
 
+import com.frenkvs.devmod.TestBootstrap;
 import com.frenkvs.devmod.WeaponConfigManager;
 import com.frenkvs.devmod.WeaponStats;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeAll;
 import static org.junit.jupiter.api.Assertions.*;
+import static java.util.Objects.requireNonNull;
 
 /**
  * JUnit tests to ensure weapon_stats component round-trips and tool clear toggle works.
@@ -14,9 +17,14 @@ import static org.junit.jupiter.api.Assertions.*;
 @Disabled("Requires Minecraft data component runtime; stubbed for compilation only")
 public class WeaponStatsComponentTest {
 
+    @BeforeAll
+    static void bootstrap() {
+        TestBootstrap.init();
+    }
+
     @Test
     public void componentRoundTrip() {
-        ItemStack sword = new ItemStack(new Item("devmod:test_sword"));
+        ItemStack sword = new ItemStack(requireNonNull(Items.DIAMOND_SWORD));
         WeaponStats stats = new WeaponStats();
         stats.attackDamage = 12.5f;
         stats.critChance = 0.25f;
@@ -33,7 +41,7 @@ public class WeaponStatsComponentTest {
 
     @Test
     public void clearToolComponent() {
-        ItemStack pickaxe = new ItemStack(new Item("devmod:test_pickaxe"));
+        ItemStack pickaxe = new ItemStack(requireNonNull(Items.DIAMOND_PICKAXE));
         WeaponStats stats = new WeaponStats();
         stats.clearToolRules = true;
         WeaponConfigManager.setSpecificStats(pickaxe, stats);

@@ -366,8 +366,15 @@ public class WeaponConfigManager {
     }
 
     private static Holder<Attribute> holder(net.neoforged.neoforge.registries.DeferredHolder<Attribute, Attribute> def) {
-        Attribute mapped = PufferfishCompat.map(def);
-        return holder(mapped);
+        try {
+            if (!def.isBound()) {
+                return null;
+            }
+            Attribute mapped = PufferfishCompat.map(def);
+            return holder(mapped);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**

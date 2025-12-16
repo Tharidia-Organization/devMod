@@ -40,6 +40,8 @@ public class TestingHub extends Screen {
     private static final int MAX_HUB_WIDTH = 900;
     private static final int MIN_HUB_HEIGHT = 450;
     private static final int MAX_HUB_HEIGHT = 600;
+    private static final int HEADER_BUTTON_WIDTH = 18;
+    private static final int HEADER_BUTTON_GAP = 6;
 
     // === STATE ===
     private final TestingHubState state;
@@ -55,6 +57,14 @@ public class TestingHub extends Screen {
     private boolean showSessionStart = false;
     private final EditorButton startButton = new EditorButton("hub-start", "Start New").style(EditorButton.Style.PRIMARY);
     private final EditorButton resumeButton = new EditorButton("hub-resume", "Resume").style(EditorButton.Style.PRIMARY);
+    private final EditorButton headerCloseButton = new EditorButton("hub-close", "X")
+        .size(EditorButton.Size.SMALL)
+        .style(EditorButton.Style.DANGER)
+        .playSound(false);
+    private final EditorButton headerMinimizeButton = new EditorButton("hub-minimize", "-")
+        .size(EditorButton.Size.SMALL)
+        .style(EditorButton.Style.GHOST)
+        .playSound(false);
 
     // === FOCUS ===
     private enum PanelFocus { CATEGORIES, DETAILS, TOOLS }
@@ -88,6 +98,9 @@ public class TestingHub extends Screen {
             }
             initPanels();
         }
+
+        headerCloseButton.onClick(this::onClose);
+        headerMinimizeButton.onClick(this::minimizeToHud);
     }
 
     private void initSessionStartUI() {
@@ -274,17 +287,16 @@ public class TestingHub extends Screen {
         int testerWidth = font.width(tester);
         graphics.drawString(font, tester, hubX + hubWidth - testerWidth - 80, hubY + 10, UIConstants.Text.MUTED, false);
 
+        int buttonHeight = EditorButton.Size.SMALL.height();
+        int buttonY = hubY + (HEADER_HEIGHT - buttonHeight) / 2;
+
         // Close button [X]
-        int closeX = hubX + hubWidth - 22;
-        boolean closeHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, closeX, hubY + 6, 16, 16);
-        int closeColor = closeHovered ? UIConstants.Accent.RED : UIConstants.Text.MUTED;
-        graphics.drawString(font, "X", closeX + 4, hubY + 10, closeColor, false);
+        int closeX = hubX + hubWidth - HEADER_BUTTON_WIDTH - HEADER_BUTTON_GAP;
+        headerCloseButton.render(graphics, closeX, buttonY, HEADER_BUTTON_WIDTH, buttonHeight, mouseX, mouseY);
 
         // Minimize button [-]
-        int minX = closeX - 20;
-        boolean minHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, minX, hubY + 6, 16, 16);
-        int minColor = minHovered ? UIConstants.Text.ACCENT : UIConstants.Text.MUTED;
-        graphics.drawString(font, "-", minX + 4, hubY + 10, minColor, false);
+        int minX = closeX - HEADER_BUTTON_WIDTH - HEADER_BUTTON_GAP;
+        headerMinimizeButton.render(graphics, minX, buttonY, HEADER_BUTTON_WIDTH, buttonHeight, mouseX, mouseY);
     }
 
     // === INPUT HANDLING ===
@@ -364,21 +376,8 @@ public class TestingHub extends Screen {
             return handleSessionStartClick(mx, my, button);
         }
 
-        // Header buttons
-        if (my >= hubY && my < hubY + HEADER_HEIGHT) {
-            // Close button
-            int closeX = hubX + hubWidth - 22;
-            if (AxiomRenderer.isMouseOver(mx, my, closeX, hubY + 6, 16, 16)) {
-                this.onClose();
-                return true;
-            }
-            // Minimize button
-            int minX = closeX - 20;
-            if (AxiomRenderer.isMouseOver(mx, my, minX, hubY + 6, 16, 16)) {
-                minimizeToHud();
-                return true;
-            }
-        }
+        if (headerCloseButton.mouseClicked(mx, my, button)) return true;
+        if (headerMinimizeButton.mouseClicked(mx, my, button)) return true;
 
         // Panels
         if (categoryPanel != null && categoryPanel.isMouseOver(mx, my)) {
@@ -413,6 +412,35 @@ public class TestingHub extends Screen {
         }
 
         return super.mouseClicked(mx, my, button);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        int mx = (int) mouseX;
+        int my = (int) mouseY;
+
+        if (showSessionStart) {
+            if (startButton.mouseReleased(mx, my, button)) return true;
+            if (TestingSession.INSTANCE.hasExistingSession() && resumeButton.mouseReleased(mx, my, button)) return true;
+        }
+
+        if (headerCloseButton.mouseReleased(mx, my, button)) return true;
+        if (headerMinimizeButton.mouseReleased(mx, my, button)) return true;
+
+        if (categoryPanel != null && categoryPanel.isMouseOver(mx, my)) {
+            if (categoryPanel.mouseReleased(mouseX, mouseY, button)) return true;
+        }
+        if (detailPanel != null && detailPanel.isMouseOver(mx, my)) {
+            if (detailPanel.mouseReleased(mouseX, mouseY, button)) return true;
+        }
+        if (toolsPanel != null && toolsPanel.isMouseOver(mx, my)) {
+            if (toolsPanel.mouseReleased(mouseX, mouseY, button)) return true;
+        }
+        if (footer != null && footer.isMouseOver(mx, my)) {
+            if (footer.mouseReleased(mouseX, mouseY, button)) return true;
+        }
+
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override

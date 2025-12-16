@@ -1,14 +1,18 @@
 package com.frenkvs.devmod.ui.editor.systems;
 
 import com.frenkvs.devmod.ItemEditorDataManager;
+import com.frenkvs.devmod.TestBootstrap;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeAll;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Integration tests for MultiEdit system with preset application.
@@ -18,6 +22,11 @@ public class MultiEditIntegrationTest {
     private MultiEditManager manager;
     private ItemEditorPresetManager presetManager;
     private AtomicInteger persistCallCount;
+
+    @BeforeAll
+    static void bootstrap() {
+        TestBootstrap.init();
+    }
     
     @BeforeEach
     void setUp() {
@@ -35,8 +44,8 @@ public class MultiEditIntegrationTest {
     @Test
     void batchPresetApplication_withPersistence_callsPersistenceHandler() {
         // Setup items
-        ItemStack sword1 = new ItemStack("minecraft:diamond_sword");
-        ItemStack sword2 = new ItemStack("minecraft:iron_sword");
+        ItemStack sword1 = new ItemStack(requireNonNull(Items.DIAMOND_SWORD));
+        ItemStack sword2 = new ItemStack(requireNonNull(Items.IRON_SWORD));
         manager.addToSelection(sword1, 0);
         manager.addToSelection(sword2, 1);
         
@@ -58,7 +67,7 @@ public class MultiEditIntegrationTest {
     
     @Test
     void batchPresetApplication_withoutPersistence_doesNotCallHandler() {
-        ItemStack sword = new ItemStack("minecraft:diamond_sword");
+        ItemStack sword = new ItemStack(requireNonNull(Items.DIAMOND_SWORD));
         manager.addToSelection(sword, 0);
         
         ItemEditorDataManager.PresetData data = new ItemEditorDataManager.PresetData("test_no_persist");
@@ -77,7 +86,7 @@ public class MultiEditIntegrationTest {
     @Test
     void errorReportGeneration_includesAllFailureDetails() {
         // Force a failure by using invalid preset
-        ItemStack item = new ItemStack("minecraft:stick"); // Non-weapon item
+        ItemStack item = new ItemStack(requireNonNull(Items.STICK)); // Non-weapon item
         manager.addToSelection(item, 0);
         
         ItemEditorDataManager.PresetData data = new ItemEditorDataManager.PresetData("invalid_preset");

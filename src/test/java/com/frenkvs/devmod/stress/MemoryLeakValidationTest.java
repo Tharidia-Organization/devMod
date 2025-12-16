@@ -282,6 +282,7 @@ class MemoryLeakValidationTest {
 
             try {
                 try (TestResource r = new TestResource()) {
+                    assertNotNull(r);
                     throw new RuntimeException("Test exception");
                 }
             } catch (RuntimeException e) {

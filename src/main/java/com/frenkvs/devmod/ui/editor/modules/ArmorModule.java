@@ -113,7 +113,8 @@ public class ArmorModule extends AbstractEditorModule {
         // Prefer component storage; fall back to legacy CustomData
         CompoundTag componentTag = null;
         try {
-            componentTag = item.get(Objects.requireNonNull(ArmorComponents.ARMOR_STATS.get(), "armor component type"));
+            var armorComponent = ArmorComponents.armorStatsComponent();
+            componentTag = armorComponent != null ? item.get(armorComponent) : null;
         } catch (Exception ignored) {}
 
         var customDataType = Objects.requireNonNull(

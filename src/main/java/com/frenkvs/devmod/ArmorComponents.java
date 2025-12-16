@@ -9,6 +9,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import java.util.Objects;
+import javax.annotation.Nullable;
 
 /**
  * Data components for armor-related persistent data.
@@ -35,4 +36,39 @@ public final class ArmorComponents {
             .persistent(Objects.requireNonNull(CompoundTag.CODEC))
             .networkSynchronized(Objects.requireNonNull(ARMOR_TAG_STREAM_CODEC))
             .build());
+
+    // Fallback instance for test environments where Neo registries are not bound.
+    private static DataComponentType<CompoundTag> fallbackArmorStats;
+
+    /**
+     * Returns the registered armor_stats component when bound, otherwise a local
+     * fallback instance so JVM tests can still store/read data without registry binding.
+     */
+    public static DataComponentType<CompoundTag> armorStatsComponent() {
+        try {
+            if (ARMOR_STATS.isBound()) {
+                return ARMOR_STATS.get();
+            }
+        } catch (Exception ignored) {}
+        return fallbackArmorStats();
+    }
+
+    public static boolean isArmorStatsBound() {
+        try {
+            return ARMOR_STATS.isBound();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Nullable
+    private static synchronized DataComponentType<CompoundTag> fallbackArmorStats() {
+        if (fallbackArmorStats == null) {
+            fallbackArmorStats = DataComponentType.<CompoundTag>builder()
+                .persistent(Objects.requireNonNull(CompoundTag.CODEC))
+                .networkSynchronized(Objects.requireNonNull(ARMOR_TAG_STREAM_CODEC))
+                .build();
+        }
+        return fallbackArmorStats;
+    }
 }

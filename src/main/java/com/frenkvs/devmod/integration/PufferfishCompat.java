@@ -18,13 +18,22 @@ import java.util.Objects;
  */
 public final class PufferfishCompat {
     private static final String MODID = "puffish_attributes";
-    private static final boolean LOADED = ModList.get().isLoaded(MODID);
+    private static final boolean LOADED = isLoadedSafe();
     private static final Map<String, String> PATH_MAP = Map.of(
         "armor_shred", "armor_shred",
         "life_steal", "life_steal"
     );
 
     private PufferfishCompat() {}
+
+    private static boolean isLoadedSafe() {
+        try {
+            ModList list = ModList.get();
+            return list != null && list.isLoaded(MODID);
+        } catch (Exception e) {
+            return false;
+        }
+    }
 
     public static boolean isCompatEnabled() {
         return LOADED;
@@ -35,7 +44,9 @@ public final class PufferfishCompat {
      * This implementation compares attribute holders directly for robustness.
      */
     public static Attribute map(DeferredHolder<Attribute, Attribute> attribute) {
-        if (!LOADED) return attribute.get();
+        if (!LOADED) {
+            return attribute.isBound() ? attribute.get() : null;
+        }
 
         String mappedPath = PATH_MAP.get(attribute.getId().getPath());
 
@@ -53,7 +64,7 @@ public final class PufferfishCompat {
         }
 
         DevMod.LOGGER.debug("[PufferfishCompat] Missing {} in {}", targetId, MODID);
-        return attribute.get();
+        return attribute.isBound() ? attribute.get() : null;
     }
 
     /**
