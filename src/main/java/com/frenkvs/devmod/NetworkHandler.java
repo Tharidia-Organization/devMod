@@ -1,7 +1,6 @@
 package com.frenkvs.devmod;
 
 import static com.frenkvs.devmod.DevMod.MODID;
-import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.util.I18n;
 import com.frenkvs.devmod.endurance.ClientQuestCache;
 import com.frenkvs.devmod.endurance.EnduranceQuestManager;

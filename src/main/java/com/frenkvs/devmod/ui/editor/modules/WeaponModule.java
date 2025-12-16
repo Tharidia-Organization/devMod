@@ -1422,13 +1422,13 @@ public class WeaponModule extends AbstractEditorModule {
 
     private void putIfChanged(CompoundTag tag, String key, float base, float cur) {
         if (Math.abs(base - cur) > EPSILON) {
-            tag.putFloat(key, cur);
+            tag.putFloat(java.util.Objects.requireNonNull(key, "key"), cur);
         }
     }
 
     private void putIfChanged(CompoundTag tag, String key, int base, int cur) {
         if (base != cur) {
-            tag.putInt(key, cur);
+            tag.putInt(java.util.Objects.requireNonNull(key, "key"), cur);
         }
     }
 

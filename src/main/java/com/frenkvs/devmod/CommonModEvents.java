@@ -174,7 +174,7 @@ public class CommonModEvents {
 
             if (hasDevmodData) {
                 try {
-                    WeaponStats stats = com.frenkvs.devmod.WeaponConfigManager.getStats(stack);
+                    com.frenkvs.devmod.WeaponStats stats = com.frenkvs.devmod.WeaponConfigManager.getStats(stack);
                     // Clamp and reapply (ensures modifiers/tool clear) and log if modifiers exceeded limits
                     stats = com.frenkvs.devmod.WeaponConfigManager.clampStats(stats);
                     com.frenkvs.devmod.WeaponConfigManager.setSpecificStats(stack, stats);
@@ -270,7 +270,7 @@ public class CommonModEvents {
         if (!hasDevmodData) return;
 
         try {
-            WeaponStats stats = com.frenkvs.devmod.WeaponConfigManager.getStats(stack);
+            com.frenkvs.devmod.WeaponStats stats = com.frenkvs.devmod.WeaponConfigManager.getStats(stack);
             stats = com.frenkvs.devmod.WeaponConfigManager.clampStats(stats);
             com.frenkvs.devmod.WeaponConfigManager.setSpecificStats(stack, stats);
             // If clear tool rules is set, ensure no extra speed modifiers are added here; vanilla will use default
@@ -297,7 +297,7 @@ public class CommonModEvents {
         } catch (Exception ignored) {}
         if (!hasDevmodData) return;
         try {
-            WeaponStats stats = com.frenkvs.devmod.WeaponConfigManager.getStats(stack);
+            com.frenkvs.devmod.WeaponStats stats = com.frenkvs.devmod.WeaponConfigManager.getStats(stack);
             if (stats.clearToolRules && event.getPlayer() != null) {
                 // Remove any custom tool component; vanilla drop logic will apply
                 stack.remove(Objects.requireNonNull(net.minecraft.core.component.DataComponents.TOOL));

@@ -157,7 +157,8 @@ public class EditorSlider {
         this.bounds = new ResponsiveLayout.Rect(x, y, width, totalHeight);
 
         // Calculate track position using EditorSpacing (per spec Section 4.2)
-        int labelWidth = showLabel ? Math.max(LABEL_WIDTH, font.width(label) + EditorSpacing.S) : 0;
+        String safeLabel = label == null ? "" : label;
+        int labelWidth = showLabel ? Math.max(LABEL_WIDTH, font.width(safeLabel) + EditorSpacing.S) : 0;
         int trackX = x + labelWidth + EditorSpacing.S;
         int reservedRight = showInput ? INPUT_WIDTH + EditorSpacing.S : 60;
         int trackWidth = width - labelWidth - reservedRight - EditorSpacing.S * 2;
@@ -172,7 +173,7 @@ public class EditorSlider {
         // Label on the left
         if (showLabel) {
             int labelColor = enabled ? UIConstants.Text.PRIMARY : UIConstants.Text.MUTED;
-            graphics.drawString(font, label, x, y + (HEIGHT - 8) / 2, labelColor, false);
+            graphics.drawString(font, safeLabel, x, y + (HEIGHT - 8) / 2, labelColor, false);
         }
 
         // Track background
