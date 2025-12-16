@@ -2,6 +2,7 @@ package com.frenkvs.devmod.ui.editor.components;
 
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
+import com.frenkvs.devmod.ui.editor.core.ScaledCoord;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import com.mojang.blaze3d.platform.Lighting;
 import net.minecraft.client.Minecraft;
@@ -27,7 +28,7 @@ public class PreviewRenderer {
     // DIMENSIONS (from Section 2.5)
     // ═══════════════════════════════════════════════════════════════
 
-    private static final int SIZE = UIConstants.PanelDimensions.PREVIEW_SIZE;  // 100x100
+    private static final int SIZE = UIConstants.PanelDimensions.PREVIEW_SIZE;  // 130x130
     private static final int HINT_HEIGHT = 12;
 
     // ═══════════════════════════════════════════════════════════════
@@ -128,16 +129,18 @@ public class PreviewRenderer {
         var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
 
         // Calculate total height
-        int totalHeight = SIZE + (showHint ? HINT_HEIGHT : 0);
-        this.bounds = new ResponsiveLayout.Rect(x, y, SIZE, totalHeight);
-        this.previewBounds = new ResponsiveLayout.Rect(x, y, SIZE, SIZE);
+        int size = ScaledCoord.scaleDim(SIZE);
+        int hintHeight = showHint ? ScaledCoord.scaleDim(HINT_HEIGHT) : 0;
+        int totalHeight = size + hintHeight;
+        this.bounds = new ResponsiveLayout.Rect(x, y, size, totalHeight);
+        this.previewBounds = new ResponsiveLayout.Rect(x, y, size, size);
 
         // Background
-        graphics.fill(x, y, x + SIZE, y + SIZE, UIConstants.Background.INPUT);
+        graphics.fill(x, y, x + size, y + size, UIConstants.Background.INPUT);
 
         // Border
         int borderColor = dragging ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
-        AxiomRenderer.drawBorder(graphics, x, y, SIZE, SIZE, borderColor);
+        AxiomRenderer.drawBorder(graphics, x, y, size, size, borderColor);
 
         // Auto-rotation update
         if (autoRotate && !dragging) {
@@ -147,24 +150,24 @@ public class PreviewRenderer {
 
         // Render content based on mode
         if (mode == PreviewMode.ENTITY) {
-            renderEntityPreview(graphics, x, y);
+            renderEntityPreview(graphics, x, y, size);
         } else {
-            renderItemPreview(graphics, x, y);
+            renderItemPreview(graphics, x, y, size);
         }
 
         // Hint text below preview
         if (showHint && hintText != null) {
-            int hintY = y + SIZE + 2;
+            int hintY = y + size + ScaledCoord.scaleDim(2);
             String safeHintText = Objects.requireNonNull(hintText, "hintText cannot be null");
             int hintWidth = font.width(safeHintText);
-            int hintX = x + (SIZE - hintWidth) / 2;
+            int hintX = x + (size - hintWidth) / 2;
             graphics.drawString(font, safeHintText, hintX, hintY, UIConstants.Text.MUTED, false);
         }
 
         return totalHeight;
     }
 
-    private void renderEntityPreview(GuiGraphics graphics, int x, int y) {
+    private void renderEntityPreview(GuiGraphics graphics, int x, int y, int size) {
         var mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
@@ -172,11 +175,11 @@ public class PreviewRenderer {
         LivingEntity entity = Objects.requireNonNull(mc.player, "player entity cannot be null");
 
         // Center position
-        int centerX = x + SIZE / 2;
-        int centerY = y + SIZE - 10;
+        int centerX = x + size / 2;
+        int centerY = y + size - ScaledCoord.scaleDim(10);
 
         // Scale to fit the preview area
-        int scale = 35;
+        int scale = ScaledCoord.scaleDim(45);
 
         // Apply rotation as quaternion
         Quaternionf rotation = new Quaternionf();
@@ -189,7 +192,7 @@ public class PreviewRenderer {
             GuiGraphics safeGraphics = Objects.requireNonNull(graphics, "graphics cannot be null");
             InventoryScreen.renderEntityInInventoryFollowsMouse(
                 safeGraphics,
-                x, y, x + SIZE, y + SIZE,
+                x, y, x + size, y + size,
                 scale,
                 0.0625f,
                 centerX + rotationY * 0.5f,
@@ -199,24 +202,24 @@ public class PreviewRenderer {
             Lighting.setupFor3DItems();
         } catch (Exception e) {
             // Fallback to item preview if entity rendering fails
-            renderItemPreview(graphics, x, y);
+            renderItemPreview(graphics, x, y, size);
         }
     }
 
-    private void renderItemPreview(GuiGraphics graphics, int x, int y) {
+    private void renderItemPreview(GuiGraphics graphics, int x, int y, int size) {
         if (item.isEmpty()) {
             // Show placeholder
             var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
             String placeholder = "?";
-            int textX = x + (SIZE - font.width(placeholder)) / 2;
-            int textY = y + (SIZE - 8) / 2;
+            int textX = x + (size - font.width(placeholder)) / 2;
+            int textY = y + (size - font.lineHeight) / 2;
             graphics.drawString(font, placeholder, textX, textY, UIConstants.Text.MUTED, false);
             return;
         }
 
         // Use pose stack for rotation
         graphics.pose().pushPose();
-        graphics.pose().translate(x + SIZE / 2f, y + SIZE / 2f, 100f);
+        graphics.pose().translate(x + size / 2f, y + size / 2f, 100f);
         Quaternionf rotY = Objects.requireNonNull(new Quaternionf().rotateY((float) Math.toRadians(rotationY)), "Y rotation cannot be null");
         Quaternionf rotX = Objects.requireNonNull(new Quaternionf().rotateX((float) Math.toRadians(rotationX)), "X rotation cannot be null");
         graphics.pose().mulPose(rotY);

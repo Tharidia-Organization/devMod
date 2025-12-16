@@ -34,10 +34,40 @@ public class PacketSecurityService {
     public static final double MAX_DAMAGE = 10_000.0;
     public static final double MAX_FOLLOW_RANGE = 1024.0;
     public static final double MAX_ARMOR = 1000.0;
+    public static final double MIN_ATTACK_SPEED = -10.0;
     public static final double MAX_MULTIPLIER = 100.0;
     public static final double MIN_MULTIPLIER = 0.0;
     public static final double MAX_PENETRATION = 1.0;
     public static final double MIN_PENETRATION = -1.0;
+    public static final double MAX_ARMOR_SHRED = 66.0;
+    public static final double MAX_DAMAGE_VS = 2.0;
+    public static final double MAX_TRUE_DAMAGE = 1.0;
+    public static final double MAX_SWEEPING = 1.0;
+    public static final int MAX_DURABILITY = 4096;
+    public static final int MAX_REPAIR_COST = 1000;
+    public static final double MAX_TOOL_SPEED = 128.0;
+    public static final int MAX_TOOL_DAMAGE_PER_BLOCK = 128;
+    public static final int MAX_TOOL_RULES = 16;
+    public static final double MAX_RANGED_SPEED = 5.0;
+    public static final double MAX_RANGED_GRAVITY = 0.2;
+    public static final double MAX_RANGED_SPREAD = 3.0;
+    public static final double MAX_RANGED_BASE_DAMAGE = 50.0;
+    public static final double MIN_RANGED_MULT = 0.2;
+    public static final double MAX_RANGED_MULT = 3.0;
+    public static final double MIN_ARMOR_REDUCTION = 0.0;
+    public static final double MAX_ARMOR_REDUCTION = 1.0;
+    public static final double MIN_ARMOR_BONUS = -20.0;
+    public static final double MAX_ARMOR_BONUS = 30.0;
+    public static final double MIN_TOUGHNESS_BONUS = -10.0;
+    public static final double MAX_TOUGHNESS_BONUS = 20.0;
+    public static final double MIN_KNOCKBACK_RESIST = 0.0;
+    public static final double MAX_KNOCKBACK_RESIST = 1.0;
+    public static final double MIN_THORNS_PERCENT = 0.0;
+    public static final double MAX_THORNS_PERCENT = 0.5;
+    public static final double MIN_SHIELD_BLOCK = 0.0;
+    public static final double MAX_SHIELD_BLOCK = 1.0;
+    public static final double MIN_SHIELD_RECOVERY = 0.0;
+    public static final double MAX_SHIELD_RECOVERY = 2.0;
 
     // Rate limiting state
     private final Map<String, RateLimitEntry> rateLimits = new ConcurrentHashMap<>();
@@ -131,6 +161,86 @@ public class PacketSecurityService {
         return clamp(armor, MIN_ATTRIBUTE_VALUE, MAX_ARMOR);
     }
 
+    public double validateArmorShred(double shredPercent) {
+        return clamp(shredPercent, MIN_ATTRIBUTE_VALUE, MAX_ARMOR_SHRED);
+    }
+
+    public double validateDamageVs(double percent) {
+        return clamp(percent, MIN_ATTRIBUTE_VALUE, MAX_DAMAGE_VS);
+    }
+
+    public double validateTrueDamage(double percent) {
+        return clamp(percent, MIN_ATTRIBUTE_VALUE, MAX_TRUE_DAMAGE);
+    }
+
+    public double validateSweeping(double percent) {
+        return clamp(percent, MIN_ATTRIBUTE_VALUE, MAX_SWEEPING);
+    }
+
+    public int validateDurability(int value) {
+        return (int) clamp(value, 0, MAX_DURABILITY);
+    }
+
+    public int validateRepairCost(int value) {
+        return (int) clamp(value, 0, MAX_REPAIR_COST);
+    }
+
+    public double validateToolSpeed(double speed) {
+        return clamp(speed, 0.0, MAX_TOOL_SPEED);
+    }
+
+    public int validateToolDamagePerBlock(int value) {
+        return (int) clamp(value, 0, MAX_TOOL_DAMAGE_PER_BLOCK);
+    }
+
+    public double validateRangedMultiplier(double value) {
+        return clamp(value, MIN_RANGED_MULT, MAX_RANGED_MULT);
+    }
+
+    public double validateRangedSpeed(double value) {
+        return clamp(value, 0.0, MAX_RANGED_SPEED);
+    }
+
+    public double validateRangedGravity(double value) {
+        return clamp(value, 0.0, MAX_RANGED_GRAVITY);
+    }
+
+    public double validateRangedSpread(double value) {
+        return clamp(value, 0.0, MAX_RANGED_SPREAD);
+    }
+
+    public double validateRangedBaseDamage(double value) {
+        return clamp(value, 0.0, MAX_RANGED_BASE_DAMAGE);
+    }
+
+    public double validateArmorReduction(double value) {
+        return clamp(value, MIN_ARMOR_REDUCTION, MAX_ARMOR_REDUCTION);
+    }
+
+    public double validateArmorBonus(double value) {
+        return clamp(value, MIN_ARMOR_BONUS, MAX_ARMOR_BONUS);
+    }
+
+    public double validateToughnessBonus(double value) {
+        return clamp(value, MIN_TOUGHNESS_BONUS, MAX_TOUGHNESS_BONUS);
+    }
+
+    public double validateKnockbackResistance(double value) {
+        return clamp(value, MIN_KNOCKBACK_RESIST, MAX_KNOCKBACK_RESIST);
+    }
+
+    public double validateThornsPercent(double value) {
+        return clamp(value, MIN_THORNS_PERCENT, MAX_THORNS_PERCENT);
+    }
+
+    public double validateShieldBlock(double value) {
+        return clamp(value, MIN_SHIELD_BLOCK, MAX_SHIELD_BLOCK);
+    }
+
+    public double validateShieldRecovery(double value) {
+        return clamp(value, MIN_SHIELD_RECOVERY, MAX_SHIELD_RECOVERY);
+    }
+
     /**
      * Validate a damage multiplier value.
      *
@@ -139,6 +249,13 @@ public class PacketSecurityService {
      */
     public double validateMultiplier(double multiplier) {
         return clamp(multiplier, MIN_MULTIPLIER, MAX_MULTIPLIER);
+    }
+
+    /**
+     * Validate an attack speed value (allows negative speeds for vanilla weapons).
+     */
+    public double validateAttackSpeed(double speed) {
+        return clamp(speed, MIN_ATTACK_SPEED, MAX_MULTIPLIER);
     }
 
     /**

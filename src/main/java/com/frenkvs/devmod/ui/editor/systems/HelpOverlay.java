@@ -1,6 +1,8 @@
 package com.frenkvs.devmod.ui.editor.systems;
 
 import com.frenkvs.devmod.ui.AxiomRenderer;
+import com.frenkvs.devmod.ui.editor.core.ScaledCoord;
+import com.frenkvs.devmod.ui.editor.core.Typography;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -27,19 +29,30 @@ public final class HelpOverlay {
             new HelpEntry("Tab / Shift+Tab", "Switch between tabs"),
             new HelpEntry("1-9", "Quick select tab"),
             new HelpEntry("Scroll / Arrow Keys", "Navigate sliders"),
-            new HelpEntry("Home / End", "Jump to min/max value")
+            new HelpEntry("Home / End", "Jump to min/max value"),
+            new HelpEntry("Escape", "Close editor / overlays")
         )),
-        new HelpSection("Editing", List.of(
-            new HelpEntry("Ctrl+Z", "Undo last change"),
-            new HelpEntry("Ctrl+Shift+Z", "Redo last change"),
+        new HelpSection("Editing & Apply", List.of(
+            new HelpEntry("Ctrl+Z / Ctrl+Shift+Z", "Undo / Redo"),
             new HelpEntry("Ctrl+S", "Apply changes"),
-            new HelpEntry("Backspace", "Reset slider to default")
+            new HelpEntry("Ctrl+Enter", "Quick Apply (APPLY mode)"),
+            new HelpEntry("F5", "Toggle Preview/Apply mode"),
+            new HelpEntry("Backspace", "Reset slider to default"),
+            new HelpEntry("M", "Toggle Multi-Edit panel")
         )),
-        new HelpSection("General", List.of(
-            new HelpEntry("Escape", "Close editor"),
-            new HelpEntry("F1", "Show/hide this help"),
-            new HelpEntry("Alt+D", "Toggle dev panel"),
-            new HelpEntry("Click mode badge", "Toggle Preview/Apply mode")
+        new HelpSection("Data & Presets", List.of(
+            new HelpEntry("Ctrl+E / Ctrl+I", "Export / Import"),
+            new HelpEntry("Ctrl+P", "Open Presets"),
+            new HelpEntry("Ctrl+F", "Focus preset search"),
+            new HelpEntry("Delete", "Delete hovered preset"),
+            new HelpEntry("Click mode badge", "Scope + mode info")
+        )),
+        new HelpSection("Debug & Overlays", List.of(
+            new HelpEntry("F9", "Toggle Debug Overlay"),
+            new HelpEntry("F10", "Show grid in Debug Overlay"),
+            new HelpEntry("F11", "Show bounds/performance in Debug Overlay"),
+            new HelpEntry("F3 + D", "Toggle Dev Panel (debug tab)"),
+            new HelpEntry("F1", "Show/hide this help")
         ))
     );
 
@@ -63,60 +76,67 @@ public final class HelpOverlay {
                        int mouseX, int mouseY) {
         if (!visible) return;
 
+        float textScale = Typography.withUiScale(Typography.BODY);
+
         // Dark overlay
         g.fill(0, 0, screenWidth, screenHeight, UIConstants.Background.OVERLAY);
 
         // Center panel
-        int x = (screenWidth - WIDTH) / 2;
-        int y = (screenHeight - HEIGHT) / 2;
+        int panelW = ScaledCoord.scaleDim(WIDTH);
+        int panelH = ScaledCoord.scaleDim(HEIGHT);
+        int x = (screenWidth - panelW) / 2;
+        int y = (screenHeight - panelH) / 2;
 
         // Panel background
-        g.fill(x, y, x + WIDTH, y + HEIGHT, UIConstants.Background.PANEL_SOLID);
-        AxiomRenderer.drawBorder(g, x, y, WIDTH, HEIGHT, UIConstants.Border.ACCENT);
+        g.fill(x, y, x + panelW, y + panelH, UIConstants.Background.PANEL_SOLID);
+        AxiomRenderer.drawBorder(g, x, y, panelW, panelH, UIConstants.Border.ACCENT);
 
         // Title
         String title = "Help - Keyboard Shortcuts";
-        int titleWidth = font.width(Objects.requireNonNull(title));
-        g.drawString(font, title, x + (WIDTH - titleWidth) / 2, y + 12, UIConstants.Text.TITLE, false);
+        int titleWidth = Math.round(font.width(Objects.requireNonNull(title)) * textScale);
+        Typography.drawText(g, font, title, x + (panelW - titleWidth) / 2, y + ScaledCoord.scaleDim(12),
+            UIConstants.Text.TITLE, textScale);
 
         // Separator
-        g.fill(x + 16, y + 28, x + WIDTH - 16, y + 29, UIConstants.Border.DEFAULT);
+        g.fill(x + ScaledCoord.scaleDim(16), y + ScaledCoord.scaleDim(28),
+               x + panelW - ScaledCoord.scaleDim(16), y + ScaledCoord.scaleDim(29), UIConstants.Border.DEFAULT);
 
         // Render sections
-        int sectionY = y + 40;
-        int columnWidth = (WIDTH - 48) / 2;
+        int sectionY = y + ScaledCoord.scaleDim(40);
+        int columnWidth = (panelW - ScaledCoord.scaleDim(48)) / 2;
 
         for (int i = 0; i < SECTIONS.size(); i++) {
             HelpSection section = SECTIONS.get(i);
-            int sectionX = x + 16 + (i % 2) * (columnWidth + 16);
+            int sectionX = x + ScaledCoord.scaleDim(16) + (i % 2) * (columnWidth + ScaledCoord.scaleDim(16));
 
-            if (i == 2) {
-                // Third section goes below
-                sectionY = y + 40 + 120;
-                sectionX = x + 16;
+            if (i >= 2) {
+                // Third+ sections go below
+                sectionY = y + ScaledCoord.scaleDim(40 + 120);
+                sectionX = x + ScaledCoord.scaleDim(16) + ((i - 2) % 2) * (columnWidth + ScaledCoord.scaleDim(16));
             }
 
             // Section title
-            g.drawString(font, Objects.requireNonNull(section.title()), sectionX, sectionY,
-                        UIConstants.Accent.CYAN, false);
+            Typography.drawText(g, font, Objects.requireNonNull(section.title()), sectionX, sectionY,
+                UIConstants.Accent.CYAN, textScale);
 
-            int entryY = sectionY + 14;
+            int entryY = sectionY + ScaledCoord.scaleDim(14);
             for (HelpEntry entry : section.entries()) {
                 // Key
-                g.drawString(font, Objects.requireNonNull(entry.key()), sectionX, entryY,
-                            UIConstants.Text.VALUE, false);
+                Typography.drawText(g, font, Objects.requireNonNull(entry.key()), sectionX, entryY,
+                    UIConstants.Text.VALUE, textScale);
                 // Description
-                g.drawString(font, Objects.requireNonNull(entry.description()), sectionX + 100, entryY,
-                            UIConstants.Text.SECONDARY, false);
-                entryY += 12;
+                Typography.drawText(g, font, Objects.requireNonNull(entry.description()),
+                    sectionX + ScaledCoord.scaleDim(110), entryY,
+                    UIConstants.Text.SECONDARY, textScale);
+                entryY += ScaledCoord.scaleDim(12);
             }
         }
 
         // Close hint
         String closeHint = "Press F1 or Escape to close";
-        int hintWidth = font.width(Objects.requireNonNull(closeHint));
-        g.drawString(font, closeHint, x + (WIDTH - hintWidth) / 2, y + HEIGHT - 20,
-                    UIConstants.Text.MUTED, false);
+        int hintWidth = Math.round(font.width(Objects.requireNonNull(closeHint)) * textScale);
+        Typography.drawText(g, font, closeHint, x + (panelW - hintWidth) / 2,
+            y + panelH - ScaledCoord.scaleDim(20), UIConstants.Text.MUTED, textScale);
     }
 
     public boolean keyPressed(int keyCode) {

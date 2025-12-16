@@ -1,0 +1,62 @@
+# Weapon Properties – Compliance TODO
+Checklist to align implementation with `docs/editor-design-system/15-weapon-properties.md` across all editor modules (Weapon, Ranged, Armor/General). Status reflects current codebase snapshot after ranged work.
+
+## Snapshot
+- Custom attributes are registered (`ModAttributes`) and Pufferfish mapping exists, but WeaponModule still relies on `WeaponModStats` NBT for Tier1/3 values (not data components/attribute modifiers as plan specifies).
+- Durability + tool rules are applied via data components; damage/crit/bonuses are applied ad-hoc in `DamageHandler`, not through attribute components.
+- Ranged module now has data component (`RangedStats`) and runtime hooks; melee/armor modules lack equivalent components/UI wiring.
+
+## TODO (high priority first)
+- [x] Data components as source of truth for melee stats  
+  - Create `WeaponComponents` (or reuse AttributeModifiers) to store Tier1 vanilla stats (attack damage/speed/knockback/reach/sweep) instead of NBT-only `WeaponModStats`.  
+  - Persist Tier3 DevMod attributes (crit chance/multiplier, armor shred, lifesteal, vs-* bonuses, true dmg) via attribute modifiers on stack; keep compatibility with Pufferfish map.  
+  - Mirror load/save between components and editor model; migrate existing NBT gracefully.
+    - ✅ Added `WeaponComponents.WEAPON_STATS` typed data component and mirrored setSpecificStats/load to use it (legacy CustomData preserved).
+    - ✅ Auto-migrate legacy `WeaponModStats` into the component when missing.
+    - ✅ Apply attribute modifiers on save (vanilla + DevMod attributes, Pufferfish-mapped where present) while leaving other modifiers intact and pruning zeroed entries.
+      - Now clamps modifiers server-side via `PacketSecurityService` before writing.
+    - ✅ Editor load now prefers the component and falls back to legacy data; variant data read from component when CustomData is missing.
+    - ✅ Payloads now include both component and legacy tags; previews apply full stack edits (CustomData + component + attribute modifiers).
+    - ✅ Fallback load reconstructs stats from devmod attribute modifiers when components/legacy data are absent.
+    - ✅ Reconstructed stats are persisted back into the component to avoid repeated rebuilds.
+    - ✅ Editor import/export updated to include sweeping, armor shred, vs-* bonuses, and true damage fields.
+    - ✅ Global stats now materialize onto stacks (component + modifiers) when no per-item data exists.
+    - ✅ Component/legacy loads now also ensure stack attribute modifiers reflect the stats (clamped via security).
+    - ✅ Stats are clamped via `PacketSecurityService` before persisting (global/specific) and before ensuring modifiers.
+    - ✅ Client payload clamps stats before sending.
+- [ ] UI parity with design doc  
+  - Rework WeaponModule tabs to show value-source badges (vanilla vs dev vs stack) like ranged; expose Tool tab as separate section (default speed, damage/block, 3 rules, clear toggle).  
+  - Add Damage Types tab wiring (vs-undead/arthropod/player, fire bonus, true damage) with clamped sliders and tooltips from doc.  
+  - Add per-variant tabs (Mace/Trident) using the same component-backed model; guard visibility by detection.
+    - ✅ Value-source badges prefixed on WeaponModule sliders (DEV/NBT/VANILLA) based on loaded source.
+- [ ] Network & validation  
+  - Replace `WeaponStatsPayload` raw NBT with typed payload mirroring `RangedWeaponStatsPayload`; clamp all Tier1/3 fields server-side using `PacketSecurityService`.  
+  - Add migration path so legacy payloads are accepted but normalized into components.
+    - ✅ Added `weapon_stats_v2` payload (typed record + StreamCodec), still carrying legacy/component tags for compatibility.
+    - ✅ Clamp now centralized via `WeaponConfigManager.clampStats` inside server handler; normalized into component on apply.
+- [ ] Runtime application  
+  - On equip/shoot/swing, read component/attribute modifiers instead of custom NBT; ensure armor shred, vs-* bonuses, true damage and tool rules are enforced server-side.  
+    - TODO: Update `DamageHandler` to prefer component-backed modifiers and avoid double-applying legacy stats.  
+    - TODO: Ensure tool rules enforcement reads the component and respects clear toggle. (equip/breakspeed/drop sanitization present)
+    - ✅ DamageHandler now merges component stats with DevMod attribute modifiers to avoid stale legacy-only values.
+    - ✅ Tool clear flag clears tool component on load/materialization to enforce removal.
+    - ✅ Equip change event sanitizes weapon stats/components (main/off hand) to reapply modifiers and clear tool rules (clamped).
+    - ✅ BreakSpeed event sanitizes tool/weapon component before mining.
+    - ✅ Drop event clears TOOL component when clearToolRules is set to avoid custom drops.
+  - Add server validation for custom attributes when applying modifiers (range from doc).  
+    - TODO: Validate attribute modifier ranges on equip/apply (not only payload clamp).  
+  - Ensure compatibility layer (Pufferfish) maps modifiers before application; no-duplication with vanilla base stats.  
+    - ✅ DevMod now overwrites any existing modifier on the same attribute (removes all and re-adds its own) to avoid stacking.
+- [ ] Armor/General module alignment  
+  - Create dedicated docs/plans for Armor and General modules mirroring doc-15 structure; ensure UI/payload/runtime follow the same component-first pattern and hook into `DamageHandler`/durability systems.  
+  - Add coverage for shields’ block strength/reflect/cooldown using data components instead of bespoke NBT.
+- [ ] Tests & diagnostics  
+  - GameTests: serialize/deserialize WeaponComponents, attribute modifier application, migration from NBT; runtime damage calculations for armor shred/true damage/vs-* targets.  
+    - TODO: GameTest for component→modifiers materialization and back.  
+    - TODO: Damage calc tests for armor shred + true damage + vs-undead/arthropods/players.  
+  - Regression tests for tool rules editing and enforcement.  
+    - ✅ Clear toggle removes tool component (JUnit @Disabled placeholder; needs runtime env).
+- [ ] Documentation upkeep  
+  - Update `15-weapon-properties.md` checklist to reflect actual status; document migration notes and component IDs.  
+  - Add short “implementation status” section to ranged/armor/general docs referencing shared attribute system.
+  - ✅ Datapack export/import ora include campi avanzati (sweep, armor_shred, vs-*, true_damage, clear_tool_rules).

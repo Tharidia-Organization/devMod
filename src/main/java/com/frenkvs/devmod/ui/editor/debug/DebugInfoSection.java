@@ -13,6 +13,7 @@ import net.minecraft.nbt.CompoundTag;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Locale;
 
 /**
  * Custom section rendering the debug information panel.
@@ -38,23 +39,23 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
                             List<String> changeLog,
                             List<String> nbtLines,
                             Runnable onCopy) {
-        this.debugInfo = debugInfo;
+        this.debugInfo = Objects.requireNonNull(debugInfo, "debug info cannot be null");
         this.comparisons = List.copyOf(comparisons);
         this.changeLog = List.copyOf(changeLog);
         this.nbtLines = List.copyOf(nbtLines);
         this.onCopy = onCopy;
-        this.infoLines = buildInfoLines(debugInfo);
+        this.infoLines = buildInfoLines();
         this.totalHeight = calculateHeight();
     }
 
-    private List<String> buildInfoLines(ItemDebugInfo info) {
+    private List<String> buildInfoLines() {
         List<String> lines = new ArrayList<>();
-        String registry = info.registryName() == null ? "<unknown>" : info.registryName();
+        String registry = debugInfo.registryName() == null ? "<unknown>" : debugInfo.registryName();
         lines.add("Registry: " + registry);
-        lines.add("Stack size: " + info.stackSize());
-        lines.add("Damage: " + info.currentDamage() + "/" + info.maxDamage());
-        lines.add("NBT tags: " + info.nbtTagCount());
-        lines.add("Custom data: " + (info.hasCustomData() ? "yes" : "no"));
+        lines.add("Stack size: " + debugInfo.stackSize());
+        lines.add("Damage: " + debugInfo.currentDamage() + "/" + debugInfo.maxDamage());
+        lines.add("NBT tags: " + debugInfo.nbtTagCount());
+        lines.add("Custom data: " + (debugInfo.hasCustomData() ? "yes" : "no"));
         return lines;
     }
 
@@ -128,48 +129,68 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
     }
 
     private int renderComparisonBlock(GuiGraphics graphics, Font font, int x, int y) {
-        graphics.drawString(font, "Value comparisons", x, y, UIConstants.Text.TITLE, false);
+        Font safeFont = Objects.requireNonNull(font, "font cannot be null");
+        graphics.drawString(safeFont, "Value comparisons", x, y, UIConstants.Text.TITLE, false);
         y += LINE_HEIGHT;
         if (comparisons.isEmpty()) {
-            graphics.drawString(font, "(none)", x + 4, y, UIConstants.Text.MUTED, false);
+            graphics.drawString(safeFont, "(none)", x + 4, y, UIConstants.Text.MUTED, false);
             return y + LINE_HEIGHT;
         }
+        boolean hasServerBaseline = comparisons.stream().anyMatch(c -> !Double.isNaN(c.serverValue()));
+        if (!hasServerBaseline) {
+            graphics.drawString(safeFont, "(Server/config baseline not available — showing item only)", x + 4, y,
+                UIConstants.Text.MUTED, false);
+            y += LINE_HEIGHT;
+        }
         for (ValueComparison comp : comparisons) {
-            int color = comp.hasMismatch() ? UIConstants.Accent.RED :
-                comp.isModified() ? UIConstants.Accent.YELLOW : UIConstants.Text.SECONDARY;
+            String orig = formatValue(comp.originalValue());
+            String srv = formatValue(comp.serverValue());
+            String cur = formatValue(comp.currentValue());
             String suffix = comp.hasMismatch() ? " [MISMATCH]" :
-                comp.isModified() ? " [MOD]" : "";
-            String line = String.format("%-18s exp:%7.2f srv:%7.2f cur:%7.2f%s",
-                comp.attributeName(), comp.originalValue(), comp.serverValue(), comp.currentValue(), suffix);
-            graphics.drawString(font, line, x, y, color, false);
+                comp.isModified() ? " [MOD]" :
+                Double.isNaN(comp.serverValue()) ? " [SERVER N/A]" : "";
+
+            int color = comp.hasMismatch() ? UIConstants.Accent.RED :
+                comp.isModified() ? UIConstants.Accent.YELLOW :
+                Double.isNaN(comp.serverValue()) ? UIConstants.Text.MUTED : UIConstants.Text.SECONDARY;
+
+            String line = String.format("%-18s orig:%7s srv:%7s cur:%7s%s",
+                comp.attributeName(), orig, srv, cur, suffix);
+            graphics.drawString(safeFont, line, x, y, color, false);
             y += LINE_HEIGHT;
         }
         return y;
     }
 
+    private String formatValue(double value) {
+        return Double.isNaN(value) ? "n/a" : String.format(Locale.US, "%.2f", value);
+    }
+
     private int renderHistoryBlock(GuiGraphics graphics, Font font, int x, int y) {
-        graphics.drawString(font, "Session log", x, y, UIConstants.Text.TITLE, false);
+        Font safeFont = Objects.requireNonNull(font, "font cannot be null");
+        graphics.drawString(safeFont, "Session log", x, y, UIConstants.Text.TITLE, false);
         y += LINE_HEIGHT;
         if (changeLog.isEmpty()) {
-            graphics.drawString(font, "(no entries)", x + 4, y, UIConstants.Text.MUTED, false);
+            graphics.drawString(safeFont, "(no entries)", x + 4, y, UIConstants.Text.MUTED, false);
             return y + LINE_HEIGHT;
         }
         for (String entry : changeLog) {
-            graphics.drawString(font, entry, x + 4, y, UIConstants.Text.SECONDARY, false);
+            graphics.drawString(safeFont, entry, x + 4, y, UIConstants.Text.SECONDARY, false);
             y += LINE_HEIGHT;
         }
         return y;
     }
 
     private int renderNbtBlock(GuiGraphics graphics, Font font, int x, int y) {
-        graphics.drawString(font, "NBT data", x, y, UIConstants.Text.TITLE, false);
+        Font safeFont = Objects.requireNonNull(font, "font cannot be null");
+        graphics.drawString(safeFont, "NBT data", x, y, UIConstants.Text.TITLE, false);
         y += LINE_HEIGHT;
         if (nbtLines.isEmpty()) {
-            graphics.drawString(font, "(empty)", x + 4, y, UIConstants.Text.MUTED, false);
+            graphics.drawString(safeFont, "(empty)", x + 4, y, UIConstants.Text.MUTED, false);
             return y + LINE_HEIGHT;
         }
         for (String line : nbtLines) {
-            graphics.drawString(font, line, x + 4, y, UIConstants.Text.FORMULA, false);
+            graphics.drawString(safeFont, line, x + 4, y, UIConstants.Text.FORMULA, false);
             y += LINE_HEIGHT;
         }
         return y;
@@ -216,17 +237,19 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
     }
 
     private static void formatTag(List<String> lines, CompoundTag tag, String indent, int maxLines, int[] count) {
+        String safeIndent = Objects.requireNonNull(indent, "indent cannot be null");
         for (String key : tag.getAllKeys()) {
             if (count[0] >= maxLines) return;
-            var value = tag.get(key);
-            String prefix = indent + key + ": ";
+            String safeKey = Objects.requireNonNull(key, "nbt key cannot be null");
+            var value = tag.get(safeKey);
+            String prefix = safeIndent + safeKey + ": ";
             if (value instanceof CompoundTag nested) {
                 lines.add(prefix + "{");
                 count[0]++;
                 if (count[0] >= maxLines) return;
-                formatTag(lines, nested, indent + "  ", maxLines, count);
+                formatTag(lines, nested, safeIndent + "  ", maxLines, count);
                 if (count[0] >= maxLines) return;
-                lines.add(indent + "}");
+                lines.add(safeIndent + "}");
                 count[0]++;
             } else {
                 lines.add(prefix + value);

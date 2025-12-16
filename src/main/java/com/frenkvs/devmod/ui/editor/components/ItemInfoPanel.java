@@ -2,6 +2,8 @@ package com.frenkvs.devmod.ui.editor.components;
 
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
+import com.frenkvs.devmod.ui.editor.core.ScaledCoord;
+import com.frenkvs.devmod.ui.editor.core.Typography;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -119,60 +121,69 @@ public class ItemInfoPanel {
      */
     public int render(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
         var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
+        float nameScale = Typography.sectionHeaderScale();
+        float statScale = Typography.valueScale();
+        float dirtyScale = Typography.valueScale();
 
-        this.bounds = new ResponsiveLayout.Rect(x, y, width, HEIGHT);
+        int panelHeight = ScaledCoord.scaleDim(HEIGHT);
+        int padding = ScaledCoord.scaleDim(PADDING);
+        int lineHeight = Math.max(ScaledCoord.scaleDim(LINE_HEIGHT), Math.round(font.lineHeight * statScale));
+
+        this.bounds = new ResponsiveLayout.Rect(x, y, width, panelHeight);
 
         // Background
-        graphics.fill(x, y, x + width, y + HEIGHT, UIConstants.Background.INPUT);
+        graphics.fill(x, y, x + width, y + panelHeight, UIConstants.Background.INPUT);
 
         // Border
-        AxiomRenderer.drawBorder(graphics, x, y, width, HEIGHT, UIConstants.Border.DEFAULT);
+        AxiomRenderer.drawBorder(graphics, x, y, width, panelHeight, UIConstants.Border.DEFAULT);
 
-        int contentX = x + PADDING;
-        int contentWidth = width - PADDING * 2;
-        int currentY = y + PADDING;
+        int contentX = x + padding;
+        int contentWidth = width - padding * 2;
+        int currentY = y + padding;
 
         // Item name (title)
         if (!itemName.isEmpty()) {
             // Truncate if too long
             String displayName = truncateText(font, itemName, contentWidth);
-            graphics.drawString(font, displayName, contentX, currentY, UIConstants.Text.TITLE, false);
-            currentY += LINE_HEIGHT;
+            int nameHeight = Math.round(font.lineHeight * nameScale);
+            Typography.drawText(graphics, font, displayName, contentX, currentY, UIConstants.Text.TITLE, nameScale);
+            currentY += Math.max(lineHeight, nameHeight);
         }
 
         // Stats
         for (StatLine stat : stats) {
-            if (currentY + LINE_HEIGHT > y + HEIGHT - PADDING - LINE_HEIGHT) {
+            if (currentY + lineHeight > y + panelHeight - padding - lineHeight) {
                 // Not enough space, stop rendering stats
                 break;
             }
-            renderStatLine(graphics, font, contentX, currentY, contentWidth, stat);
-            currentY += LINE_HEIGHT;
+            renderStatLine(graphics, font, contentX, currentY, contentWidth, lineHeight, stat, statScale);
+            currentY += lineHeight;
         }
 
         // Dirty indicator at bottom
-        renderDirtyIndicator(graphics, font, x, y + HEIGHT - LINE_HEIGHT - 4, width);
+        renderDirtyIndicator(graphics, font, x, y + panelHeight - lineHeight - ScaledCoord.scaleDim(4), width, lineHeight, dirtyScale);
 
-        return HEIGHT;
+        return panelHeight;
     }
 
     private void renderStatLine(GuiGraphics graphics, net.minecraft.client.gui.Font font,
-                                int x, int y, int width, StatLine stat) {
+                                int x, int y, int width, int lineHeight, StatLine stat, float scale) {
         // Label on left
         String label = Objects.requireNonNull(stat.label(), "stat label cannot be null");
-        graphics.drawString(Objects.requireNonNull(font, "font cannot be null"), label + ":", x, y, UIConstants.Text.SECONDARY, false);
+        Typography.drawText(graphics, Objects.requireNonNull(font, "font cannot be null"),
+            label + ":", x, y, UIConstants.Text.SECONDARY, scale);
 
         // Value on right
         String value = stat.value();
         if (value != null) {
-            int valueWidth = font.width(value);
+            int valueWidth = Math.round(font.width(value) * scale);
             int valueX = x + width - valueWidth;
-            graphics.drawString(font, value, valueX, y, stat.valueColor(), false);
+            Typography.drawText(graphics, font, value, valueX, y, stat.valueColor(), scale);
         }
     }
 
     private void renderDirtyIndicator(GuiGraphics graphics, net.minecraft.client.gui.Font font,
-                                      int x, int y, int width) {
+                                      int x, int y, int width, int lineHeight, float scale) {
         String text;
         int color;
 
@@ -190,9 +201,9 @@ public class ItemInfoPanel {
         }
 
         // Center the indicator
-        int textWidth = font.width(text);
+        int textWidth = Math.round(font.width(text) * scale);
         int textX = x + (width - textWidth) / 2;
-        graphics.drawString(font, text, textX, y, color, false);
+        Typography.drawText(graphics, font, text, textX, y, color, scale);
     }
 
     private String truncateText(net.minecraft.client.gui.Font font, String text, int maxWidth) {

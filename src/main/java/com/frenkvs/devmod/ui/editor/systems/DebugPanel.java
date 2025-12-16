@@ -1,41 +1,66 @@
 package com.frenkvs.devmod.ui.editor.systems;
 
+import com.frenkvs.devmod.ArmorStats;
+import com.frenkvs.devmod.WeaponStats;
+import com.frenkvs.devmod.ui.AxiomRenderer;
+import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
+import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
-
-import com.frenkvs.devmod.ui.AxiomRenderer;
-import com.frenkvs.devmod.ui.editor.core.UIConstants;
-import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.CustomData;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * Simple debug panel that displays lightweight item info and a small session log.
+ * Lightweight dev-only debug panel used by the editor screen.
+ * Shows quick item info, a small session log, and supports copying/exporting logs.
  */
 public class DebugPanel {
 
     private final List<String> entries = new ArrayList<>();
+    private List<String> statSources = List.of();
     private ResponsiveLayout.Rect copyRect;
     private ResponsiveLayout.Rect exportRect;
+    private ResponsiveLayout.Rect itemCopyRect;
+    private ResponsiveLayout.Rect nbtToggleRect;
+    private boolean showFullNbt = false;
+    private String lastItemDataPayload = null;
 
-    public DebugPanel() {
-    }
+    public DebugPanel() {}
 
     public void log(String entry) {
         if (entry == null) return;
         entries.add(0, entry);
-        if (entries.size() > 64) entries.remove(entries.size() - 1);
+        if (entries.size() > 64) {
+            entries.remove(entries.size() - 1);
+        }
+    }
+
+    public void setStatSources(List<String> sources) {
+        this.statSources = sources == null ? List.of() : List.copyOf(sources);
+    }
+
+    public void clear() {
+        entries.clear();
     }
 
     // Package-private accessor for tests
-    java.util.List<String> getEntries() { return java.util.Collections.unmodifiableList(entries); }
+    List<String> getEntries() {
+        return Collections.unmodifiableList(entries);
+    }
 
     public int render(GuiGraphics graphics, Font font, int x, int y, int width, int height, int mouseX, int mouseY, ItemStack current) {
-        Objects.requireNonNull(font);
+        Objects.requireNonNull(font, "font cannot be null");
+        copyRect = exportRect = itemCopyRect = nbtToggleRect = null;
+        lastItemDataPayload = null;
+
         int pad = 6;
         int lineH = 12;
         graphics.fill(x, y, x + width, y + height, 0xE0101020);
@@ -45,30 +70,62 @@ public class DebugPanel {
         graphics.drawString(font, "Debug", x + pad, curY, 0xFFFFFF, false);
         curY += lineH;
 
+        CompoundTag resolvedTag = null;
+
+        // Toggle hint for NBT view
+        nbtToggleRect = new ResponsiveLayout.Rect(x + pad, curY, 90, lineH);
+        graphics.drawString(font, showFullNbt ? "NBT: full" : "NBT: summary", nbtToggleRect.x(), nbtToggleRect.y(), 0x88CCFF, false);
+        curY += lineH;
+
         if (current != null) {
+            // Item identification
             String name = current.getHoverName().getString();
             graphics.drawString(font, "Item: " + name, x + pad, curY, 0xDDDDDD, false);
             curY += lineH;
-            graphics.drawString(font, "Count: " + current.getCount(), x + pad, curY, 0xCCCCCC, false);
-            curY += lineH;
+
             try {
-                int dmg = current.getDamageValue();
-                graphics.drawString(font, "Damage: " + dmg + "/" + current.getMaxDamage(), x + pad, curY, 0xCCCCCC, false);
-            } catch (Exception ignored) {
+                graphics.drawString(font, "Count: " + current.getCount(), x + pad, curY, 0xCCCCCC, false);
+            } catch (Throwable ignored) {
+                graphics.drawString(font, "Count: n/a", x + pad, curY, 0xCCCCCC, false);
+            }
+            curY += lineH;
+
+            try {
+                graphics.drawString(font, "Damage: " + current.getDamageValue() + "/" + current.getMaxDamage(), x + pad, curY, 0xCCCCCC, false);
+            } catch (Throwable ignored) {
                 graphics.drawString(font, "Damage: n/a", x + pad, curY, 0xCCCCCC, false);
             }
             curY += lineH;
-            // Attempt to read NBT reflectively (safe for test stubs without NBT APIs)
+
             String tagText = "n/a";
             try {
-                var cls = current.getClass();
+                // Prefer reading editor custom data when available (safer across mappings)
                 try {
+                    var customType = Objects.requireNonNull(DataComponents.CUSTOM_DATA);
+                    CustomData customData = current.get(customType);
+                    if (customData != null) {
+                        CompoundTag copied = customData.copyTag();
+                        if (copied != null && !copied.isEmpty()) {
+                            resolvedTag = copied;
+                            tagText = String.valueOf(copied.getAllKeys().size());
+                        }
+                    }
+                } catch (Throwable ignoredInner) {
+                    // ignore and fall back to reflection below
+                }
+
+                // Reflection fallback: try to call ItemStack#getTag() if present
+                if (resolvedTag == null) {
+                    var cls = current.getClass();
                     var getTag = cls.getMethod("getTag");
-                    Object tag = getTag.invoke(current);
-                    if (tag != null) {
+                    Object tagObj = getTag.invoke(current);
+                    if (tagObj instanceof CompoundTag ct) {
+                        resolvedTag = ct;
+                        tagText = String.valueOf(ct.getAllKeys().size());
+                    } else if (tagObj != null) {
                         try {
-                            var sizeM = tag.getClass().getMethod("size");
-                            Object sizeO = sizeM.invoke(tag);
+                            var sizeM = tagObj.getClass().getMethod("size");
+                            Object sizeO = sizeM.invoke(tagObj);
                             tagText = String.valueOf(sizeO);
                         } catch (NoSuchMethodException ns) {
                             tagText = "present";
@@ -76,8 +133,6 @@ public class DebugPanel {
                     } else {
                         tagText = "0";
                     }
-                } catch (NoSuchMethodException ns) {
-                    tagText = "n/a";
                 }
             } catch (Exception ignored) {
                 tagText = "n/a";
@@ -85,7 +140,16 @@ public class DebugPanel {
             graphics.drawString(font, "NBT tags: " + tagText, x + pad, curY, 0x8899AA, false);
             curY += lineH;
 
-            // Copy button
+            if (!statSources.isEmpty()) {
+                graphics.drawString(font, "Source:", x + pad, curY, 0xFFFFFF, false);
+                curY += lineH;
+                for (String src : statSources) {
+                    graphics.drawString(font, "• " + src, x + pad + 4, curY, 0xCCDDFF, false);
+                    curY += lineH;
+                }
+            }
+
+            // Action buttons (Copy / Export / Copy Item)
             int btnW = 56;
             int btnH = 14;
             int bx = x + width - btnW - pad;
@@ -94,14 +158,23 @@ public class DebugPanel {
             graphics.fill(bx, by, bx + btnW, by + btnH, 0xFF222222);
             AxiomRenderer.drawBorder(graphics, bx, by, btnW, btnH, UIConstants.Border.DEFAULT);
             graphics.drawString(font, "Copy", bx + 10, by + 3, 0xFFFFFF, false);
-            
-            // Export button (left of Copy)
+
             int exW = 56;
             int exBx = bx - exW - 6;
             exportRect = new ResponsiveLayout.Rect(exBx, by, exW, btnH);
             graphics.fill(exBx, by, exBx + exW, by + btnH, 0xFF222222);
             AxiomRenderer.drawBorder(graphics, exBx, by, exW, btnH, UIConstants.Border.DEFAULT);
             graphics.drawString(font, "Export", exBx + 8, by + 3, 0xFFFFFF, false);
+
+            int icW = 72;
+            int icBx = exBx - icW - 6;
+            itemCopyRect = new ResponsiveLayout.Rect(icBx, by, icW, btnH);
+            graphics.fill(icBx, by, icBx + icW, by + btnH, 0xFF222222);
+            AxiomRenderer.drawBorder(graphics, icBx, by, icW, btnH, UIConstants.Border.DEFAULT);
+            graphics.drawString(font, "Copy Item", icBx + 6, by + 3, 0xFFFFFF, false);
+
+            // Build item data payload for the copy button
+            populateItemPayload(resolvedTag);
         }
 
         // Session log (show up to 8 lines)
@@ -115,23 +188,34 @@ public class DebugPanel {
             graphics.drawString(font, e, x + pad, curY + i * lineH, 0xAAAAAA, false);
         }
 
+        if (showFullNbt) {
+            String nbtSummary = buildNbtSummary(resolvedTag);
+            graphics.drawString(font, nbtSummary, x + pad, y + height - lineH - 4, 0xFFCCAA, false);
+        }
+
         return height;
     }
 
     public boolean handleClick(double mouseX, double mouseY) {
-        if (copyRect == null) return false;
-        if (copyRect.contains(mouseX, mouseY)) {
+        if (copyRect != null && copyRect.contains(mouseX, mouseY)) {
             copyLogToClipboard();
             return true;
         }
         if (exportRect != null && exportRect.contains(mouseX, mouseY)) {
             try {
                 var f = exportLogToTempFile();
-                // Log a small entry indicating where it's written
                 log("Exported debug log to: " + f.toString());
             } catch (Exception e) {
                 log("Export failed: " + e.getMessage());
             }
+            return true;
+        }
+        if (itemCopyRect != null && itemCopyRect.contains(mouseX, mouseY)) {
+            copyItemDataToClipboard();
+            return true;
+        }
+        if (nbtToggleRect != null && nbtToggleRect.contains(mouseX, mouseY)) {
+            showFullNbt = !showFullNbt;
             return true;
         }
         return false;
@@ -151,16 +235,75 @@ public class DebugPanel {
         return target;
     }
 
+    // Export only the most recent N entries
+    public java.nio.file.Path exportRecentToTempFile(int recent) throws java.io.IOException {
+        java.nio.file.Path dir = java.nio.file.Path.of(System.getProperty("java.io.tmpdir"));
+        String fileName = "devmod-debug-recent-" + System.currentTimeMillis() + ".log";
+        java.nio.file.Path target = dir.resolve(fileName);
+        try (java.io.BufferedWriter w = java.nio.file.Files.newBufferedWriter(target)) {
+            int limit = Math.min(recent, entries.size());
+            for (int i = 0; i < limit; i++) {
+                w.write(entries.get(i));
+                w.newLine();
+            }
+        }
+        return target;
+    }
+
     private void copyLogToClipboard() {
         try {
             StringBuilder sb = new StringBuilder();
             for (String s : entries) {
-                sb.append(s).append("\n");
+                sb.append(java.util.Objects.requireNonNullElse(s, "")).append("\n");
             }
             Minecraft mc = Minecraft.getInstance();
             if (mc != null && mc.keyboardHandler != null) {
-                mc.keyboardHandler.setClipboard(sb.toString());
+                mc.keyboardHandler.setClipboard(java.util.Objects.requireNonNull(sb.toString(), "clipboard payload cannot be null"));
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            // best-effort only
+        }
+    }
+
+    private void copyItemDataToClipboard() {
+        try {
+            String payload = lastItemDataPayload == null ? "<no item data>" : lastItemDataPayload;
+            Minecraft mc = Minecraft.getInstance();
+            if (mc != null && mc.keyboardHandler != null) {
+                mc.keyboardHandler.setClipboard(java.util.Objects.requireNonNull(payload, "payload cannot be null"));
+            }
+            log("Copied item data to clipboard");
+        } catch (Exception ignored) {
+            // best-effort only
+        }
+    }
+
+    private void populateItemPayload(CompoundTag tag) {
+        if (tag == null) {
+            lastItemDataPayload = null;
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        if (tag.contains("WeaponModStats")) {
+            CompoundTag wtag = tag.getCompound("WeaponModStats");
+            WeaponStats ws = WeaponStats.load(wtag);
+            sb.append("WeaponStats: ").append(ws).append("\n").append(wtag).append("\n");
+        }
+        if (tag.contains("ArmorModStats")) {
+            CompoundTag atag = tag.getCompound("ArmorModStats");
+            ArmorStats as = ArmorStats.load(atag);
+            sb.append("ArmorStats: ").append(as).append("\n").append(atag).append("\n");
+        }
+        if (sb.length() == 0) {
+            sb.append(tag);
+        }
+        lastItemDataPayload = sb.toString();
+    }
+
+    private String buildNbtSummary(CompoundTag tag) {
+        if (tag == null) return "NBT: <none>";
+        String s = tag.toString();
+        if (s.length() > 200) s = s.substring(0, 197) + "...";
+        return "NBT: " + s;
     }
 }

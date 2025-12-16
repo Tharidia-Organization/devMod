@@ -138,6 +138,20 @@ public final class ConfigPaths {
         return getItemEditorDir().resolve("exports");
     }
 
+    /**
+     * Weapon whitelist file: config/devmod/weapon_whitelist.json
+     */
+    public static Path getWeaponWhitelistFile() {
+        return getConfigDir().resolve("weapon_whitelist.json");
+    }
+
+    /**
+     * Weapon blacklist file: config/devmod/weapon_blacklist.json
+     */
+    public static Path getWeaponBlacklistFile() {
+        return getConfigDir().resolve("weapon_blacklist.json");
+    }
+
     // ==================== GAME DIRECTORIES ====================
 
     /**

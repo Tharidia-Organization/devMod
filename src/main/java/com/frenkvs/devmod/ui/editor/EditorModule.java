@@ -112,6 +112,12 @@ public interface EditorModule {
     /** Detect if current state differs from original (even if dirty list is empty) */
     default boolean hasPendingDiff() { return hasUnsavedChanges(); }
 
+    /** Provide preview copy of the item (optional) */
+    default ItemStack getPreviewItem() { return null; }
+
+    /** Clear any preview state (optional) */
+    default void clearPreview() {}
+
     // ═══════════════════════════════════════════════════════════════
     // NETWORK
     // ═══════════════════════════════════════════════════════════════

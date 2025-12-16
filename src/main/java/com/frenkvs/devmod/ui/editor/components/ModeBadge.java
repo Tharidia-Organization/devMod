@@ -3,6 +3,8 @@ package com.frenkvs.devmod.ui.editor.components;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.editor.core.EditorSounds;
 import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
+import com.frenkvs.devmod.ui.editor.core.ScaledCoord;
+import com.frenkvs.devmod.ui.editor.core.Typography;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -24,7 +26,7 @@ public class ModeBadge {
     // DIMENSIONS (from Section 2.4 Header Zone)
     // ═══════════════════════════════════════════════════════════════
 
-    private static final int WIDTH = 80;
+    private static final int WIDTH = 100;
     private static final int HEIGHT = 20;
 
     // ═══════════════════════════════════════════════════════════════
@@ -109,6 +111,8 @@ public class ModeBadge {
     private boolean clickable = true;
     private boolean hovered = false;
     private boolean showDropdown = false;
+    private int lastRenderX = 0;
+    private int lastRenderY = 0;
 
     // Bounds
     private ResponsiveLayout.Rect bounds = ResponsiveLayout.Rect.EMPTY;
@@ -116,6 +120,7 @@ public class ModeBadge {
     // Callbacks
     private Consumer<Scope> onScopeChange;
     private Consumer<Mode> onModeChange;
+    private Runnable onSetDefaultMode;
 
     // ═══════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -134,6 +139,23 @@ public class ModeBadge {
     public ModeBadge badgeType(BadgeType type) {
         this.badgeType = type;
         return this;
+    }
+
+    public boolean isHovered() {
+        return hovered;
+    }
+
+    public String getTooltipText() {
+        if (!hovered) return null;
+        if (badgeType == BadgeType.SCOPE) {
+            return scope == Scope.GLOBAL
+                ? "Changes will apply to ALL items of this type"
+                : "Changes will apply only to THIS specific item";
+        } else {
+            return mode == Mode.PREVIEW
+                ? "Preview: local-only changes (no server sync)"
+                : "Apply: changes will be persisted and sent to server";
+        }
     }
 
     public ModeBadge scope(Scope scope) {
@@ -161,6 +183,11 @@ public class ModeBadge {
         return this;
     }
 
+    public ModeBadge onSetDefaultMode(Runnable callback) {
+        this.onSetDefaultMode = callback;
+        return this;
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // RENDERING
     // ═══════════════════════════════════════════════════════════════
@@ -172,7 +199,14 @@ public class ModeBadge {
     public int render(GuiGraphics graphics, int x, int y, int mouseX, int mouseY) {
         var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
 
-        this.bounds = new ResponsiveLayout.Rect(x, y, WIDTH, HEIGHT);
+        int badgeWidth = ScaledCoord.scaleDim(WIDTH);
+        int badgeHeight = ScaledCoord.scaleDim(HEIGHT);
+        int dropdownPadding = ScaledCoord.scale(10);
+        float textScale = Typography.buttonScale();
+
+        this.bounds = new ResponsiveLayout.Rect(x, y, badgeWidth, badgeHeight);
+        this.lastRenderX = x;
+        this.lastRenderY = y;
         this.hovered = clickable && bounds.contains(mouseX, mouseY);
 
         // Get current display values based on badge type
@@ -196,30 +230,35 @@ public class ModeBadge {
         }
 
         // Background
-        graphics.fill(x, y, x + WIDTH, y + HEIGHT, bgColor);
+        graphics.fill(x, y, x + badgeWidth, y + badgeHeight, bgColor);
 
         // Border
-        AxiomRenderer.drawBorder(graphics, x, y, WIDTH, HEIGHT, borderColor);
+        AxiomRenderer.drawBorder(graphics, x, y, badgeWidth, badgeHeight, borderColor);
 
         // Text (centered)
-        int textWidth = label != null ? font.width(label) : 0;
-        int textX = x + (WIDTH - textWidth) / 2;
-        int textY = y + (HEIGHT - 8) / 2;
-        graphics.drawString(font, label, textX, textY, UIConstants.Text.PRIMARY, false);
+        int textWidth = label != null ? Math.round(font.width(label) * textScale) : 0;
+        int textHeight = Math.round(font.lineHeight * textScale);
+        int textX = x + (badgeWidth - textWidth) / 2;
+        int textY = y + (badgeHeight - textHeight) / 2;
+        Typography.drawText(graphics, font, label, textX, textY, UIConstants.Text.PRIMARY, textScale);
 
         // Dropdown indicator (if clickable)
         if (clickable) {
             String indicator = showDropdown ? "▲" : "▼";
-            int indicatorX = x + WIDTH - 10;
-            graphics.drawString(font, indicator, indicatorX, textY, UIConstants.Text.MUTED, false);
+            int indicatorWidth = Math.round(font.width(indicator) * textScale);
+            int indicatorX = x + badgeWidth - dropdownPadding - indicatorWidth / 2;
+            Typography.drawText(graphics, font, indicator, indicatorX, textY, UIConstants.Text.MUTED, textScale);
         }
 
-        // Render dropdown if open
-        if (showDropdown) {
-            renderDropdown(graphics, x, y + HEIGHT, mouseX, mouseY);
-        }
+        return badgeWidth;
+    }
 
-        return WIDTH;
+    /**
+     * Render dropdown overlay on a second pass so it appears above content.
+     */
+    public void renderOverlay(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (!showDropdown) return;
+        renderDropdown(graphics, lastRenderX, lastRenderY + ScaledCoord.scaleDim(HEIGHT), mouseX, mouseY);
     }
 
     private void renderDropdown(GuiGraphics graphics, int x, int y, int mouseX, int mouseY) {
@@ -227,18 +266,23 @@ public class ModeBadge {
 
         int dropdownHeight;
         Object[] options;
+        int badgeWidth = ScaledCoord.scaleDim(WIDTH);
+        int badgeHeight = ScaledCoord.scaleDim(HEIGHT);
+        float textScale = Typography.buttonScale();
+
+        boolean includeDefaultAction = badgeType == BadgeType.MODE && onSetDefaultMode != null;
 
         if (badgeType == BadgeType.SCOPE) {
             options = Scope.values();
-            dropdownHeight = options.length * HEIGHT;
+            dropdownHeight = options.length * badgeHeight;
         } else {
             options = Mode.values();
-            dropdownHeight = options.length * HEIGHT;
+            dropdownHeight = options.length * badgeHeight + (includeDefaultAction ? badgeHeight : 0);
         }
 
         // Dropdown background
-        graphics.fill(x, y, x + WIDTH, y + dropdownHeight, UIConstants.Background.PANEL_SOLID);
-        AxiomRenderer.drawBorder(graphics, x, y, WIDTH, dropdownHeight, UIConstants.Border.DEFAULT);
+        graphics.fill(x, y, x + badgeWidth, y + dropdownHeight, UIConstants.Background.PANEL_SOLID);
+        AxiomRenderer.drawBorder(graphics, x, y, badgeWidth, dropdownHeight, UIConstants.Border.DEFAULT);
 
         // Render options
         int optionY = y;
@@ -259,26 +303,38 @@ public class ModeBadge {
                 isSelected = m == mode;
             }
 
-            ResponsiveLayout.Rect optionBounds = new ResponsiveLayout.Rect(x, optionY, WIDTH, HEIGHT);
+            ResponsiveLayout.Rect optionBounds = new ResponsiveLayout.Rect(x, optionY, badgeWidth, badgeHeight);
             boolean optionHovered = optionBounds.contains(mouseX, mouseY);
 
             // Option background
             int optionBg = isSelected ? UIConstants.Background.ACTIVE :
                           (optionHovered ? UIConstants.Background.HOVER : UIConstants.Background.INPUT);
-            graphics.fill(x + 1, optionY, x + WIDTH - 1, optionY + HEIGHT, optionBg);
+            graphics.fill(x + 1, optionY, x + badgeWidth - 1, optionY + badgeHeight, optionBg);
 
             // Selection indicator
             if (isSelected) {
-                graphics.fill(x + 1, optionY, x + 3, optionY + HEIGHT, borderColor);
+                graphics.fill(x + 1, optionY, x + 3, optionY + badgeHeight, borderColor);
             }
 
             // Option text
             int textX = x + 6;
-            int textY = optionY + (HEIGHT - 8) / 2;
+            int textY = optionY + (badgeHeight - Math.round(font.lineHeight * textScale)) / 2;
             int textColor = isSelected ? UIConstants.Text.PRIMARY : UIConstants.Text.SECONDARY;
-            graphics.drawString(font, label, textX, textY, textColor, false);
+            Typography.drawText(graphics, font, label, textX, textY, textColor, textScale);
 
-            optionY += HEIGHT;
+            optionY += badgeHeight;
+        }
+
+        // Optional "Set as default" action for mode badge
+        if (includeDefaultAction) {
+            ResponsiveLayout.Rect optionBounds = new ResponsiveLayout.Rect(x, optionY, badgeWidth, badgeHeight);
+            boolean optionHovered = optionBounds.contains(mouseX, mouseY);
+            int optionBg = optionHovered ? UIConstants.Background.HOVER : UIConstants.Background.INPUT;
+            graphics.fill(x + 1, optionY, x + badgeWidth - 1, optionY + badgeHeight, optionBg);
+            int textX = x + 6;
+            int textY = optionY + (badgeHeight - Math.round(font.lineHeight * textScale)) / 2;
+            Typography.drawText(graphics, font, "Set current as default", textX, textY,
+                UIConstants.Text.SECONDARY, textScale);
         }
     }
 
@@ -293,6 +349,7 @@ public class ModeBadge {
         if (showDropdown) {
             int dropdownY = bounds.y() + HEIGHT;
             Object[] options = badgeType == BadgeType.SCOPE ? Scope.values() : Mode.values();
+            boolean includeDefaultAction = badgeType == BadgeType.MODE && onSetDefaultMode != null;
 
             for (int i = 0; i < options.length; i++) {
                 ResponsiveLayout.Rect optionBounds = new ResponsiveLayout.Rect(
@@ -318,6 +375,21 @@ public class ModeBadge {
                                 onModeChange.accept(mode);
                             }
                         }
+                    }
+                    showDropdown = false;
+                    return true;
+                }
+            }
+
+            // Extra "Set as default" row (mode badge only)
+            if (includeDefaultAction) {
+                ResponsiveLayout.Rect defaultBounds = new ResponsiveLayout.Rect(
+                    bounds.x(), dropdownY + options.length * HEIGHT, WIDTH, HEIGHT
+                );
+                if (defaultBounds.contains(mouseX, mouseY)) {
+                    EditorSounds.playButtonClick();
+                    if (onSetDefaultMode != null) {
+                        onSetDefaultMode.run();
                     }
                     showDropdown = false;
                     return true;
@@ -379,11 +451,11 @@ public class ModeBadge {
     }
 
     public int getWidth() {
-        return WIDTH;
+        return ScaledCoord.scaleDim(WIDTH);
     }
 
     public int getHeight() {
-        return HEIGHT;
+        return ScaledCoord.scaleDim(HEIGHT);
     }
 
     public ResponsiveLayout.Rect getBounds() {
@@ -437,22 +509,4 @@ public class ModeBadge {
         return badgeType == BadgeType.SCOPE && scope == Scope.SPECIFIC;
     }
 
-    public boolean isHovered() {
-        return hovered;
-    }
-
-    /**
-     * Tooltip text per design spec.
-     */
-    public String getTooltipText() {
-        if (badgeType == BadgeType.SCOPE) {
-            return scope == Scope.GLOBAL
-                ? "Changes will apply to ALL items of this type"
-                : "Changes will apply only to THIS specific item";
-        } else {
-            return mode == Mode.PREVIEW
-                ? "Preview only (no save)"
-                : "Apply changes (Ctrl+S)";
-        }
-    }
 }

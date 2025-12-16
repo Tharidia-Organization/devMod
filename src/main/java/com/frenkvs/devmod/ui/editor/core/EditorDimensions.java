@@ -63,5 +63,5 @@ public final class EditorDimensions {
     public static final int ICON_SMALL = 12;         // 3 units
     public static final int ICON_NORMAL = 16;        // 4 units
     public static final int ICON_LARGE = 24;         // 6 units
-    public static final int SLOT_SIZE = 24;          // 6 units
+    public static final int SLOT_SIZE = 32;          // 8 units, aligned to 4px grid
 }

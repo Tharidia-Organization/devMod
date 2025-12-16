@@ -243,6 +243,42 @@ public class TestingSession {
             TestCase.TestPriority.MEDIUM
         ));
 
+        // === WEAPON PROPERTIES (Editor + Runtime) ===
+        addTest(new TestCase(
+            "wp_component_roundtrip", "Weapon Properties", "Component round-trip",
+            "Verify weapon_stats component persists and applies modifiers",
+            "1. Open Weapon Editor on a sword\n2. Set attack damage 12.5, crit chance 25%, vs-undead 100%\n3. Apply and re-equip\n4. Confirm modifiers/tooltips show edited values (no duplicate modifiers)",
+            TestCase.TestPriority.HIGH
+        ));
+
+        addTest(new TestCase(
+            "wp_clear_tool_rules", "Weapon Properties", "Clear Tool Rules",
+            "Verify clear tool rules removes tool component and restores default mining",
+            "1. Edit a pickaxe: toggle 'Clear Tool Rules' ON and apply\n2. Check NBT: TOOL component absent\n3. Mine a block: speed is default\n4. Toggle OFF, add a tag+speed rule, apply, verify component present and speed applies",
+            TestCase.TestPriority.HIGH
+        ));
+
+        addTest(new TestCase(
+            "wp_damage_bonuses", "Weapon Properties", "Damage type bonuses",
+            "Verify vs-undead/true damage/armor shred apply correctly",
+            "1. Set vs-undead +100%, true damage 20%, armor shred 10 on a weapon\n2. Hit an undead mob: damage higher than baseline; part of armor bypassed\n3. Hit a player: vs-undead not applied",
+            TestCase.TestPriority.CRITICAL
+        ));
+
+        addTest(new TestCase(
+            "wp_datapack_export_import", "Weapon Properties", "Datapack export/import",
+            "Verify datapack export/import preserves advanced fields without stacking",
+            "1. Export overrides to datapack via editor\n2. Remove local overrides, import datapack\n3. Confirm values (sweep, armor_shred, vs-*, true_damage, clear_tool_rules) are restored, no duplicate modifiers",
+            TestCase.TestPriority.MEDIUM
+        ));
+
+        addTest(new TestCase(
+            "wp_clamp_override", "Weapon Properties", "Clamp out-of-range edits",
+            "Verify server clamps out-of-range weapon edits and overwrites existing modifiers",
+            "1. Attempt to set armor shred > 66 or true damage > 100%\n2. Apply and re-equip\n3. Confirm values are clamped to allowed max and modifiers are overwritten (no stacking with prior modifiers)",
+            TestCase.TestPriority.CRITICAL
+        ));
+
         // === OVERLAY TESTS ===
         addTest(new TestCase(
             "ovl_impact_hud", "Overlays", "Impact HUD Overlay",

@@ -1,6 +1,7 @@
 package com.frenkvs.devmod;
 
 import static com.frenkvs.devmod.DevMod.MODID;
+import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.util.I18n;
 import com.frenkvs.devmod.endurance.ClientQuestCache;
 import com.frenkvs.devmod.endurance.EnduranceQuestManager;
@@ -58,9 +59,11 @@ import com.frenkvs.devmod.hud.TokenGainOverlay;
 import com.frenkvs.devmod.hud.RecordBannerOverlay;
 import com.frenkvs.devmod.hud.ComboDecayOverlay;
 import com.frenkvs.devmod.network.ClientConfigFeedback;
+import com.frenkvs.devmod.network.EditorApplyConfirmPayload;
 import com.frenkvs.devmod.network.MobConfigConfirmPayload;
 import com.frenkvs.devmod.network.PacketSecurityService;
 import com.frenkvs.devmod.network.PacketSecurityService.ValidationResult;
+import com.frenkvs.devmod.network.RangedWeaponStatsPayload;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
@@ -80,9 +83,13 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.BowItem;
+import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -112,11 +119,23 @@ public class NetworkHandler {
                 nn(UpdateMobStatsPayload.STREAM_CODEC),
                 NetworkHandler::handleMobData
         );
-        // Channel 2: Weapon Statistics
+        // Channel 2: Weapon Statistics (legacy; kept for compatibility)
         event.registrar("2").playToServer(
                 nn(UpdateWeaponPayload.TYPE),
                 nn(UpdateWeaponPayload.STREAM_CODEC),
                 NetworkHandler::handleWeaponData
+        );
+        // Channel 7: Weapon Stats Payload (NBT-based, preferred)
+        event.registrar("7").playToServer(
+                nn(com.frenkvs.devmod.network.WeaponStatsPayload.TYPE),
+                nn(com.frenkvs.devmod.network.WeaponStatsPayload.STREAM_CODEC),
+                NetworkHandler::handleWeaponStatsData
+        );
+        // Channel 17: Weapon Stats Payload v2 (typed)
+        event.registrar("17").playToServer(
+                nn(com.frenkvs.devmod.network.WeaponStatsPayloadV2.TYPE),
+                nn(com.frenkvs.devmod.network.WeaponStatsPayloadV2.STREAM_CODEC),
+                NetworkHandler::handleWeaponStatsDataV2
         );
         // Channel 3: Monster Equipment
         event.registrar("3").playToServer(
@@ -330,6 +349,24 @@ public class NetworkHandler {
                 nn(UpdateArmorPayload.STREAM_CODEC),
                 NetworkHandler::handleArmorData
         );
+        // Channel 35: Editor apply confirmation (server to client)
+        event.registrar("35").playToClient(
+                nn(EditorApplyConfirmPayload.TYPE),
+                nn(EditorApplyConfirmPayload.STREAM_CODEC),
+                NetworkHandler::handleEditorApplyConfirm
+        );
+        // Channel 36: Ranged weapon stats (client to server)
+        event.registrar("36").playToServer(
+                nn(RangedWeaponStatsPayload.TYPE),
+                nn(RangedWeaponStatsPayload.STREAM_CODEC),
+                NetworkHandler::handleRangedWeaponData
+        );
+        // Channel 37: Armor Stats Payload v2 (component + typed)
+        event.registrar("37").playToServer(
+                nn(com.frenkvs.devmod.network.ArmorStatsPayloadV2.TYPE),
+                nn(com.frenkvs.devmod.network.ArmorStatsPayloadV2.STREAM_CODEC),
+                NetworkHandler::handleArmorStatsDataV2
+        );
     }
 
     // =================================================================================
@@ -464,11 +501,15 @@ public class NetworkHandler {
                 ValidationResult validation = security.validatePacket(player, "weapon_stats", true);
                 if (!validation.isSuccess()) {
                     player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
+                    sendEditorConfirm(player, false, payload.isGlobal(), "weapon", "<unknown>", validation.getErrorMessage());
                     return;
                 }
 
                 ItemStack stack = player.getMainHandItem();
-                if (stack.isEmpty()) return;
+                if (stack.isEmpty()) {
+                    sendEditorConfirm(player, false, payload.isGlobal(), "weapon", "<empty>", "No item in hand");
+                    return;
+                }
 
                 // SECURITY: Validate and clamp multiplier values
                 WeaponStats stats = new WeaponStats();
@@ -482,6 +523,7 @@ public class NetworkHandler {
                     WeaponConfigManager.setGlobalStats(stack.getItem(), stats);
                     String itemName = stack.getHoverName().getString();
                     player.sendSystemMessage(I18n.translate("devmod.network.weapon_global_saved", itemName));
+                    sendEditorConfirm(player, true, true, "weapon", getItemId(stack), "Weapon global saved");
 
                     // Notify all other players about global config change
                     String adminName = player.getName().getString();
@@ -499,9 +541,276 @@ public class NetworkHandler {
                         stack.set(nn(DataComponents.CUSTOM_NAME), Component.literal(nn(customName)));
                     }
                     player.sendSystemMessage(I18n.translate("devmod.network.weapon_specific_updated"));
+                    sendEditorConfirm(player, true, false, "weapon", getItemId(stack), "Weapon specific updated");
                 }
             }
         });
+    }
+
+    private static void handleWeaponStatsData(com.frenkvs.devmod.network.WeaponStatsPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayer player)) return;
+
+            PacketSecurityService security = PacketSecurityService.INSTANCE;
+            ValidationResult validation = security.validatePacket(player, "weapon_stats_nbt", true);
+            if (!validation.isSuccess()) {
+                player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
+                sendEditorConfirm(player, false, payload.isGlobal(), "weapon", "<unknown>", validation.getErrorMessage());
+                return;
+            }
+
+            ItemStack stack = player.getMainHandItem();
+            if (stack.isEmpty()) {
+                sendEditorConfirm(player, false, payload.isGlobal(), "weapon", "<empty>", "No item in hand");
+                return;
+            }
+
+            // Ensure payload item matches held item
+            if (!Objects.equals(stack.getItem(), payload.item().getItem())) {
+                sendEditorConfirm(player, false, payload.isGlobal(), "weapon", getItemId(stack), "Item mismatch (held vs payload)");
+                return;
+            }
+
+            CompoundTag tag = Objects.requireNonNull(payload.statsTag());
+
+            CompoundTag toLoad;
+            if (tag.contains("weapon_stats_component")) {
+                toLoad = tag.getCompound("weapon_stats_component");
+            } else if (tag.contains("WeaponModStats")) {
+                toLoad = tag.getCompound("WeaponModStats");
+            } else {
+                toLoad = tag;
+            }
+
+            if (toLoad == null || toLoad.isEmpty()) {
+                sendEditorConfirm(player, false, payload.isGlobal(), "weapon", getItemId(stack), "Missing stats");
+                return;
+            }
+
+            WeaponStats stats = WeaponConfigManager.clampStats(WeaponStats.load(toLoad));
+            sanitizeToolRules(stats, security);
+
+            if (payload.isGlobal()) {
+                WeaponConfigManager.setGlobalStats(stack.getItem(), stats);
+                sendEditorConfirm(player, true, true, "weapon", getItemId(stack), "Weapon global saved");
+            } else {
+                CompoundTag variant = new CompoundTag();
+                if (toLoad.contains("Mace")) variant.put("Mace", Objects.requireNonNull(toLoad.getCompound("Mace")));
+                if (toLoad.contains("Trident")) variant.put("Trident", Objects.requireNonNull(toLoad.getCompound("Trident")));
+                WeaponConfigManager.setSpecificStats(stack, stats, variant);
+                sendEditorConfirm(player, true, false, "weapon", getItemId(stack), "Weapon specific updated");
+            }
+        });
+    }
+
+    private static void handleWeaponStatsDataV2(com.frenkvs.devmod.network.WeaponStatsPayloadV2 payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayer player)) return;
+
+            PacketSecurityService security = PacketSecurityService.INSTANCE;
+            ValidationResult validation = security.validatePacket(player, "weapon_stats_v2", true);
+            if (!validation.isSuccess()) {
+                player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
+                sendEditorConfirm(player, false, payload.isGlobal(), "weapon", "<unknown>", validation.getErrorMessage());
+                return;
+            }
+
+            ItemStack stack = player.getMainHandItem();
+            if (stack.isEmpty()) {
+                sendEditorConfirm(player, false, payload.isGlobal(), "weapon", "<empty>", "No item in hand");
+                return;
+            }
+
+            if (!Objects.equals(stack.getItem(), payload.item().getItem())) {
+                sendEditorConfirm(player, false, payload.isGlobal(), "weapon", getItemId(stack), "Item mismatch (held vs payload)");
+                return;
+            }
+
+            CompoundTag tag = payload.statsTag();
+            if (tag == null || tag.isEmpty()) {
+                sendEditorConfirm(player, false, payload.isGlobal(), "weapon", getItemId(stack), "Missing stats");
+                return;
+            }
+
+            CompoundTag toLoad = tag.contains("weapon_stats_component") ? tag.getCompound("weapon_stats_component")
+                : (tag.contains("WeaponModStats") ? tag.getCompound("WeaponModStats") : tag);
+
+            WeaponStats stats;
+            if (tag.contains("delta")) {
+                // Merge delta onto current stack stats to avoid overwriting untouched fields
+                WeaponStats base = WeaponConfigManager.getStats(stack).copy();
+                applyDelta(base, tag.getCompound("delta"));
+                toLoad = new CompoundTag();
+                base.save(toLoad);
+                stats = WeaponConfigManager.clampStats(base);
+            } else {
+                stats = WeaponConfigManager.clampStats(WeaponStats.load(toLoad));
+            }
+            sanitizeToolRules(stats, security);
+
+            DevMod.LOGGER.info("[Server][WeaponApply] player={} item={} global={} dmg={} spd={} reach={} bonus={} pen={} shred={}",
+                player.getGameProfile().getName(), stack.getItem(), payload.isGlobal(),
+                stats.attackDamage, stats.attackSpeed, stats.attackReach, stats.baseDamageBonus,
+                stats.armorPenetration, stats.armorShred);
+
+            if (payload.isGlobal()) {
+                WeaponConfigManager.setGlobalStats(stack.getItem(), stats);
+                sendEditorConfirm(player, true, true, "weapon", getItemId(stack), "Weapon global saved");
+            } else {
+                CompoundTag variant = new CompoundTag();
+                if (toLoad.contains("Mace")) variant.put("Mace", Objects.requireNonNull(toLoad.getCompound("Mace")));
+                if (toLoad.contains("Trident")) variant.put("Trident", Objects.requireNonNull(toLoad.getCompound("Trident")));
+                WeaponConfigManager.setSpecificStats(stack, stats, variant);
+                sendEditorConfirm(player, true, false, "weapon", getItemId(stack), "Weapon specific updated");
+            }
+        });
+    }
+
+    private static void applyDelta(WeaponStats target, net.minecraft.nbt.CompoundTag delta) {
+        if (target == null || delta == null || delta.isEmpty()) return;
+        if (delta.contains("HeadMult")) target.headMult = delta.getFloat("HeadMult");
+        if (delta.contains("BodyMult")) target.bodyMult = delta.getFloat("BodyMult");
+        if (delta.contains("ArmsMult")) target.armsMult = delta.getFloat("ArmsMult");
+        if (delta.contains("LegsMult")) target.legsMult = delta.getFloat("LegsMult");
+
+        if (delta.contains("ArmorPen")) target.armorPenetration = delta.getFloat("ArmorPen");
+        if (delta.contains("BaseDmg")) target.baseDamageBonus = delta.getFloat("BaseDmg");
+        if (delta.contains("AtkDmg")) target.attackDamage = delta.getFloat("AtkDmg");
+        if (delta.contains("AtkSpd")) target.attackSpeed = delta.getFloat("AtkSpd");
+        if (delta.contains("AtkRch")) target.attackReach = delta.getFloat("AtkRch");
+        if (delta.contains("AtkKB")) target.attackKnockback = delta.getFloat("AtkKB");
+        if (delta.contains("Sweep")) target.sweepingRatio = delta.getFloat("Sweep");
+
+        if (delta.contains("CritCh")) target.critChance = delta.getFloat("CritCh");
+        if (delta.contains("CritDmg")) target.critDamage = delta.getFloat("CritDmg");
+        if (delta.contains("ArmorShred")) target.armorShred = delta.getFloat("ArmorShred");
+
+        if (delta.contains("FireDmg")) target.fireDamageBonus = delta.getFloat("FireDmg");
+        if (delta.contains("MagicDmg")) target.magicDamageBonus = delta.getFloat("MagicDmg");
+        if (delta.contains("Lifesteal")) target.lifesteal = delta.getFloat("Lifesteal");
+        if (delta.contains("VsUndead")) target.damageVsUndead = delta.getFloat("VsUndead");
+        if (delta.contains("VsArthro")) target.damageVsArthropods = delta.getFloat("VsArthro");
+        if (delta.contains("VsPlayers")) target.damageVsPlayers = delta.getFloat("VsPlayers");
+        if (delta.contains("TrueDmgPct")) target.trueDamagePercent = delta.getFloat("TrueDmgPct");
+
+        if (delta.contains("MaxDur")) target.maxDurability = delta.getInt("MaxDur");
+        if (delta.contains("CurDmg")) target.currentDamage = delta.getInt("CurDmg");
+        if (delta.contains("Repair")) target.repairCost = delta.getInt("Repair");
+        if (delta.contains("Unbreakable")) target.unbreakable = delta.getBoolean("Unbreakable");
+        if (delta.contains("ClearToolRules")) target.clearToolRules = delta.getBoolean("ClearToolRules");
+        if (delta.contains("DefaultSpeed")) target.toolDefaultMiningSpeed = delta.getFloat("DefaultSpeed");
+        if (delta.contains("DamagePerBlock")) target.toolDamagePerBlock = delta.getInt("DamagePerBlock");
+    }
+
+    // =================================================================================
+    // 2c. RANGED WEAPON LOGIC
+    // =================================================================================
+    private static void handleRangedWeaponData(RangedWeaponStatsPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer player) {
+                PacketSecurityService security = PacketSecurityService.INSTANCE;
+                ValidationResult validation = security.validatePacket(player, "ranged_weapon", true);
+                if (!validation.isSuccess()) {
+                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
+                    sendEditorConfirm(player, false, payload.isGlobal(), "ranged", "<unknown>", validation.getErrorMessage());
+                    return;
+                }
+
+                if (payload.isGlobal()) {
+                    player.sendSystemMessage(I18n.translate("devmod.network.global_not_supported"));
+                    sendEditorConfirm(player, false, true, "ranged", "<unknown>", "Global ranged not supported");
+                    return;
+                }
+
+                ItemStack stack = player.getMainHandItem();
+                if (stack.isEmpty() || !(stack.getItem() instanceof BowItem || stack.getItem() instanceof CrossbowItem)) {
+                    sendEditorConfirm(player, false, false, "ranged", getItemId(stack), "No ranged weapon in hand");
+                    return;
+                }
+
+                // Ensure payload item matches held item to prevent mismatch edits
+                if (!Objects.equals(stack.getItem(), payload.item().getItem())) {
+                    sendEditorConfirm(player, false, false, "ranged", getItemId(stack), "Item mismatch (held vs payload)");
+                    return;
+                }
+
+                CompoundTag root = payload.statsTag() == null ? new CompoundTag() : payload.statsTag().copy();
+                CompoundTag data = stack.getOrDefault(nn(DataComponents.CUSTOM_DATA), nn(CustomData.EMPTY)).copyTag();
+                if (root.contains("RangedStats")) {
+                    CompoundTag ranged = Objects.requireNonNull(root.getCompound("RangedStats"));
+                    clampRanged(ranged);
+                    data.put("RangedStats", ranged);
+                } else {
+                    clampRanged(root);
+                    data.put("RangedStats", Objects.requireNonNull(root));
+                }
+                stack.set(nn(DataComponents.CUSTOM_DATA), CustomData.of(data));
+                player.sendSystemMessage(I18n.translate("devmod.network.weapon_specific_updated"));
+                sendEditorConfirm(player, true, false, "ranged", getItemId(stack), "Ranged weapon updated");
+                // Broadcast ammo filter info to client for HUD/source indicator
+                if (root.contains("ammoFilter")) {
+                    String filter = root.getString("ammoFilter");
+                    player.sendSystemMessage(I18n.translate("devmod.network.ranged_ammo_filter", filter));
+                }
+            }
+        });
+    }
+
+    private static void clampRanged(CompoundTag ranged) {
+        ranged.putFloat("drawSpeed", clampFloat(ranged, "drawSpeed", 0.2f, (float) PacketSecurityService.MAX_RANGED_MULT));
+        ranged.putFloat("chargeTime", clampFloat(ranged, "chargeTime", 0.2f, (float) PacketSecurityService.MAX_RANGED_MULT));
+        ranged.putFloat("accuracy", clampFloat(ranged, "accuracy", 0.2f, 2.0f));
+        ranged.putFloat("range", clampFloat(ranged, "range", 0.2f, 5.0f));
+        ranged.putFloat("projectileSpeed", clampFloat(ranged, "projectileSpeed", 0.2f, (float) PacketSecurityService.MAX_RANGED_SPEED));
+        ranged.putFloat("projectileGravity", clampFloat(ranged, "projectileGravity", 0f, (float) PacketSecurityService.MAX_RANGED_GRAVITY));
+        ranged.putFloat("projectileSpread", clampFloat(ranged, "projectileSpread", 0f, (float) PacketSecurityService.MAX_RANGED_SPREAD));
+        ranged.putFloat("baseDamage", clampFloat(ranged, "baseDamage", 0f, (float) PacketSecurityService.MAX_RANGED_BASE_DAMAGE));
+        ranged.putInt("piercing", clampInt(ranged, "piercing", 0, 10));
+        ranged.putInt("multishotCount", clampInt(ranged, "multishotCount", 1, 5));
+        ranged.putBoolean("multishot", ranged.getBoolean("multishot"));
+        ranged.putBoolean("infinityOverride", ranged.getBoolean("infinityOverride"));
+        ranged.putFloat("critChance", clampFloat(ranged, "critChance", 0f, 1f));
+        ranged.putFloat("critDamage", clampFloat(ranged, "critDamage", 0.5f, 5.0f));
+        ranged.putFloat("riptideDistance", clampFloat(ranged, "riptideDistance", 0f, 64f));
+        ranged.putFloat("loyaltySpeed", clampFloat(ranged, "loyaltySpeed", 0f, (float) PacketSecurityService.MAX_RANGED_SPEED));
+        ranged.putBoolean("riptideRequiresWater", ranged.getBoolean("riptideRequiresWater"));
+        ranged.putBoolean("channeling", ranged.getBoolean("channeling"));
+    }
+
+    private static float clampFloat(CompoundTag tag, String key, float min, float max) {
+        String safeKey = Objects.requireNonNull(key);
+        float val = tag.contains(safeKey) ? tag.getFloat(safeKey) : min;
+        return Math.max(min, Math.min(max, val));
+    }
+
+    private static int clampInt(CompoundTag tag, String key, int min, int max) {
+        String safeKey = Objects.requireNonNull(key);
+        int val = tag.contains(safeKey) ? tag.getInt(safeKey) : min;
+        return Math.max(min, Math.min(max, val));
+    }
+
+    private static void sanitizeToolRules(WeaponStats stats, PacketSecurityService security) {
+        stats.toolDefaultMiningSpeed = (float) security.validateToolSpeed(stats.toolDefaultMiningSpeed);
+        stats.toolDamagePerBlock = security.validateToolDamagePerBlock(stats.toolDamagePerBlock);
+        if (stats.toolRules == null) {
+            stats.toolRules = new ArrayList<>();
+            return;
+        }
+        List<WeaponStats.ToolRuleData> cleaned = new ArrayList<>();
+        for (WeaponStats.ToolRuleData rule : stats.toolRules) {
+            if (rule == null || rule.isEmpty()) continue;
+            String tag = security.validateItemId(rule.blockTag);
+            if (tag == null || tag.isBlank()) continue;
+            WeaponStats.ToolRuleData safe = new WeaponStats.ToolRuleData();
+            safe.blockTag = tag;
+            safe.speed = (float) security.validateToolSpeed(rule.speed);
+            safe.correctForDrops = rule.correctForDrops;
+            cleaned.add(safe);
+            if (cleaned.size() >= PacketSecurityService.MAX_TOOL_RULES) {
+                break;
+            }
+        }
+        stats.toolRules = cleaned;
     }
 
     // =================================================================================
@@ -515,6 +824,7 @@ public class NetworkHandler {
                 ValidationResult validation = security.validatePacket(player, "armor_stats", true);
                 if (!validation.isSuccess()) {
                     player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
+                    sendEditorConfirm(player, false, payload.isGlobal(), "armor", payload.itemName(), validation.getErrorMessage());
                     return;
                 }
 
@@ -531,6 +841,8 @@ public class NetworkHandler {
                 stats.toughnessBonus = Math.max(-10f, Math.min(20f, stats.toughnessBonus));
                 stats.knockbackResistance = Math.max(0f, Math.min(1f, stats.knockbackResistance));
                 stats.thornsPercent = Math.max(0f, Math.min(0.5f, stats.thornsPercent));
+                stats.shieldBlockStrength = Math.max(0f, Math.min(1f, stats.shieldBlockStrength));
+                stats.shieldRecoverySpeed = Math.max(0f, Math.min(2f, stats.shieldRecoverySpeed));
 
                 if (payload.isGlobal()) {
                     // Apply to item type globally
@@ -540,6 +852,7 @@ public class NetworkHandler {
                         ArmorConfigManager.setGlobalStats(item, stats);
                         String itemName = nn(item.getDescription().getString());
                         player.sendSystemMessage(I18n.translate("devmod.network.armor_global_saved", itemName));
+                        sendEditorConfirm(player, true, true, "armor", itemName, "Armor global saved");
 
                         // Notify all other players about global config change
                         String adminName = player.getName().getString();
@@ -551,6 +864,7 @@ public class NetworkHandler {
                         }
                     } else {
                         player.sendSystemMessage(I18n.translate("devmod.network.invalid_item"));
+                        sendEditorConfirm(player, false, payload.isGlobal(), "armor", payload.itemName(), "Invalid item");
                     }
                 } else {
                     // Apply to specific item in slot
@@ -567,14 +881,127 @@ public class NetworkHandler {
                         if (!armor.isEmpty() && ArmorConfigManager.isArmor(armor)) {
                             ArmorConfigManager.setSpecificStats(armor, stats);
                             player.sendSystemMessage(I18n.translate("devmod.network.armor_specific_updated"));
+                            sendEditorConfirm(player, true, false, "armor", getItemId(armor), "Armor specific updated");
                         } else {
                             player.sendSystemMessage(I18n.translate("devmod.network.no_armor_in_slot"));
+                            sendEditorConfirm(player, false, false, "armor", getItemId(armor), "No armor in slot");
                         }
                     } else {
+                        // slot == -1 or invalid: try main hand as fallback
+                        ItemStack held = player.getMainHandItem();
+                        if (!held.isEmpty() && ArmorConfigManager.isArmor(held)) {
+                            ArmorConfigManager.setSpecificStats(held, stats);
+                            player.sendSystemMessage(I18n.translate("devmod.network.armor_specific_updated"));
+                            sendEditorConfirm(player, true, false, "armor", getItemId(held), "Armor specific updated (fallback main hand)");
+                            return;
+                        }
                         player.sendSystemMessage(I18n.translate("devmod.network.invalid_slot"));
+                        sendEditorConfirm(player, false, false, "armor", payload.itemName(), "Invalid slot");
                     }
                 }
             }
+        });
+    }
+
+    private static void handleArmorStatsDataV2(com.frenkvs.devmod.network.ArmorStatsPayloadV2 payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayer player)) {
+                return;
+            }
+
+            PacketSecurityService security = PacketSecurityService.INSTANCE;
+            ValidationResult validation = security.validatePacket(player, "armor_stats_v2", true);
+            if (!validation.isSuccess()) {
+                player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
+                sendEditorConfirm(player, false, payload.isGlobal(), "armor", "<unknown>", validation.getErrorMessage());
+                return;
+            }
+
+            ItemStack payloadStack = payload.item();
+            if (payloadStack == null || payloadStack.isEmpty()) {
+                sendEditorConfirm(player, false, payload.isGlobal(), "armor", "<empty>", "Missing item");
+                return;
+            }
+
+            CompoundTag tag = payload.statsTag();
+            if (tag == null || tag.isEmpty()) {
+                sendEditorConfirm(player, false, payload.isGlobal(), "armor", getItemId(payloadStack), "Missing stats");
+                return;
+            }
+
+            CompoundTag toLoad = tag.contains("armor_stats_component") ? tag.getCompound("armor_stats_component")
+                : (tag.contains("ArmorModStats") ? tag.getCompound("ArmorModStats") : tag);
+            ArmorStats stats = ArmorStats.load(toLoad == null ? new CompoundTag() : toLoad);
+
+            // Clamp via PacketSecurityService to avoid malicious payloads
+            stats.physicalReduction = (float) security.validateArmorReduction(stats.physicalReduction);
+            stats.fireReduction = (float) security.validateArmorReduction(stats.fireReduction);
+            stats.magicReduction = (float) security.validateArmorReduction(stats.magicReduction);
+            stats.explosionReduction = (float) security.validateArmorReduction(stats.explosionReduction);
+            stats.projectileReduction = (float) security.validateArmorReduction(stats.projectileReduction);
+            stats.armorBonus = (float) security.validateArmorBonus(stats.armorBonus);
+            stats.toughnessBonus = (float) security.validateToughnessBonus(stats.toughnessBonus);
+            stats.knockbackResistance = (float) security.validateKnockbackResistance(stats.knockbackResistance);
+            stats.thornsPercent = (float) security.validateThornsPercent(stats.thornsPercent);
+            stats.shieldBlockStrength = (float) security.validateShieldBlock(stats.shieldBlockStrength);
+            stats.shieldRecoverySpeed = (float) security.validateShieldRecovery(stats.shieldRecoverySpeed);
+
+            if (payload.isGlobal()) {
+                Item item = payloadStack.getItem();
+                ArmorConfigManager.setGlobalStats(item, stats);
+                sendEditorConfirm(player, true, true, "armor", getItemId(payloadStack), "Armor global saved");
+                return;
+            }
+
+            EquipmentSlot slot = switch (payload.slot()) {
+                case 0 -> EquipmentSlot.HEAD;
+                case 1 -> EquipmentSlot.CHEST;
+                case 2 -> EquipmentSlot.LEGS;
+                case 3 -> EquipmentSlot.FEET;
+                default -> null;
+            };
+
+            ItemStack target = ItemStack.EMPTY;
+            if (slot != null) {
+                target = player.getItemBySlot(nn(slot));
+            }
+
+            // Fallback: find matching armor piece by item type
+            if (target.isEmpty()) {
+                for (EquipmentSlot eqSlot : EquipmentSlot.values()) {
+                    if (eqSlot.getType() != EquipmentSlot.Type.HUMANOID_ARMOR) continue;
+                    ItemStack candidate = player.getItemBySlot(eqSlot);
+                    if (!candidate.isEmpty() && Objects.equals(candidate.getItem(), payloadStack.getItem())) {
+                        target = candidate;
+                        slot = eqSlot;
+                        break;
+                    }
+                }
+            }
+
+            // Final fallback: offhand/mainhand for shields
+            if (target.isEmpty()) {
+                ItemStack offhand = player.getOffhandItem();
+                if (!offhand.isEmpty() && Objects.equals(offhand.getItem(), payloadStack.getItem())) {
+                    target = offhand;
+                    slot = EquipmentSlot.OFFHAND;
+                }
+            }
+            if (target.isEmpty()) {
+                ItemStack main = player.getMainHandItem();
+                if (!main.isEmpty() && Objects.equals(main.getItem(), payloadStack.getItem())) {
+                    target = main;
+                    slot = EquipmentSlot.MAINHAND;
+                }
+            }
+
+            if (target.isEmpty() || !ArmorConfigManager.isArmor(target)) {
+                sendEditorConfirm(player, false, false, "armor", getItemId(payloadStack), "No matching armor piece");
+                return;
+            }
+
+            ArmorConfigManager.setSpecificStats(target, stats);
+            sendEditorConfirm(player, true, false, "armor", getItemId(target), "Armor specific updated");
         });
     }
 
@@ -805,6 +1232,12 @@ public class NetworkHandler {
                 ResourceLocation attrLoc = nn(ResourceLocation.parse(nn(attrId)));
                 var registry = player.server.registryAccess().registryOrThrow(nn(Registries.ATTRIBUTE));
                 var attrHolder = registry.getHolder(nn(attrLoc));
+                if (attrHolder.isEmpty()) {
+                    var mapped = com.frenkvs.devmod.integration.PufferfishCompat.map(attrLoc, registry);
+                    if (mapped != null) {
+                        attrHolder = java.util.Optional.of(mapped);
+                    }
+                }
 
                 if (attrHolder.isPresent()) {
                     Holder<Attribute> holder = nn(attrHolder.get());
@@ -1105,6 +1538,18 @@ public class NetworkHandler {
         context.enqueueWork(() -> {
             // Delegate to client feedback handler
             ClientConfigFeedback.handleMobConfigConfirm(payload);
+        });
+    }
+
+    // =================================================================================
+    // 11b. EDITOR APPLY CONFIRMATION HANDLER (client-side)
+    // =================================================================================
+    private static void handleEditorApplyConfirm(EditorApplyConfirmPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+            if (mc != null && mc.screen instanceof com.frenkvs.devmod.ui.editor.ItemEditorScreen screen) {
+                screen.onServerConfirm(payload);
+            }
         });
     }
 
@@ -1903,6 +2348,24 @@ public class NetworkHandler {
     public static void sendStaminaSync(ServerPlayer player, float currentStamina, float maxStamina) {
         StaminaSyncPayload payload = new StaminaSyncPayload(currentStamina, maxStamina);
         sendPacket(player, payload);
+    }
+
+    private static void sendEditorConfirm(ServerPlayer player, boolean success, boolean global, String scope, String itemId, String message) {
+        try {
+            EditorApplyConfirmPayload payload = new EditorApplyConfirmPayload(success, global,
+                scope == null ? "<unknown>" : scope,
+                itemId == null ? "<unknown>" : itemId,
+                message == null ? "" : message);
+            sendPacket(player, payload);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to send editor confirm to {}: {}", player.getName().getString(), e.getMessage());
+        }
+    }
+
+    private static String getItemId(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return "<empty>";
+        var key = BuiltInRegistries.ITEM.getKey(nn(stack.getItem()));
+        return key == null ? stack.getHoverName().getString() : key.toString();
     }
 
     // =================================================================================

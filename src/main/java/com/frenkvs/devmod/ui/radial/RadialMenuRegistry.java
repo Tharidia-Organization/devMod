@@ -4,9 +4,11 @@ import com.frenkvs.devmod.ModConfig;
 import com.frenkvs.devmod.hud.*;
 import com.frenkvs.devmod.rendering.*;
 import com.frenkvs.devmod.telemetry.FpsTracker;
-import com.frenkvs.devmod.ui.radial.model.MacroCategory;
+import com.frenkvs.devmod.ArmorConfigManager;
 import com.frenkvs.devmod.ui.editor.ItemEditorScreen;
 import com.frenkvs.devmod.ui.editor.EditorStartTab;
+import com.frenkvs.devmod.ui.editor.WeaponTypeDetector;
+import com.frenkvs.devmod.ui.radial.model.MacroCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -46,6 +48,28 @@ public final class RadialMenuRegistry {
         if (player == null) return ItemStack.EMPTY;
         ItemStack held = player.getMainHandItem();
         return held.isEmpty() ? ItemStack.EMPTY : held.copy();
+    }
+
+    private static boolean isWeaponItem(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        var detection = WeaponTypeDetector.detectDetailed(stack);
+        return WeaponTypeDetector.isMelee(detection.type()) || WeaponTypeDetector.isRanged(detection.type());
+    }
+
+    private static boolean isArmorItem(ItemStack stack) {
+        return stack != null && ArmorConfigManager.isArmor(stack);
+    }
+
+    private static boolean isGeneralItem(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        var detection = WeaponTypeDetector.detectDetailed(stack);
+        return !isWeaponItem(stack) && !isArmorItem(stack) && detection.type() != WeaponTypeDetector.WeaponType.SHIELD;
+    }
+
+    private static boolean isShieldItem(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        var detection = WeaponTypeDetector.detectDetailed(stack);
+        return detection.type() == WeaponTypeDetector.WeaponType.SHIELD;
     }
 
     private static void openEditor(EditorStartTab tab) {
@@ -381,19 +405,41 @@ public final class RadialMenuRegistry {
         categories.add(mobEditorBuilder.build());
 
         // Category 5: Item Editors
+        ItemStack held = getHeldItem();
+        RadialMenuItem weaponEditor = RadialMenuItem.screen("Weapon Editor", "\uD83D\uDDE1",
+            stack(Items.DIAMOND_SWORD),
+            () -> new ItemEditorScreen(held, EditorStartTab.WEAPON),
+            "Edit weapon stats and body part multipliers");
+        weaponEditor.setVisible(isWeaponItem(held));
+
+        RadialMenuItem armorEditor = RadialMenuItem.screen("Armor Editor", "\uD83D\uDEE1",
+            stack(Items.DIAMOND_CHESTPLATE),
+            () -> new ItemEditorScreen(held, EditorStartTab.ARMOR),
+            "Edit armor protection and attributes");
+        armorEditor.setVisible(isArmorItem(held));
+
+        RadialMenuItem shieldEditor = RadialMenuItem.screen("Shield Editor", "盾",
+            stack(Items.SHIELD),
+            () -> new ItemEditorScreen(held, EditorStartTab.ARMOR),
+            "Edit shield block/reflect")
+            .setCustomColor(0xFFDDDDDD);
+        shieldEditor.setVisible(isShieldItem(held));
+
+        RadialMenuItem generalEditor = RadialMenuItem.screen("Item Editor", "\u2699",
+            stack(Items.BOOK),
+            () -> new ItemEditorScreen(held, EditorStartTab.GENERAL),
+            "Edit generic item data");
+        generalEditor.setVisible(isGeneralItem(held));
+
         categories.add(RadialCategory.builder("itemeditors")
             .name("Items")
             .color(0xFFFFEECC)
             .icon("\uD83D\uDDE1") // dagger
             .iconStack(stack(Items.DIAMOND_SWORD))
-            .item(RadialMenuItem.screen("Weapon Editor", "\uD83D\uDDE1",
-                stack(Items.DIAMOND_SWORD),
-                () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.WEAPON),
-                "Edit weapon stats and body part multipliers"))
-            .item(RadialMenuItem.screen("Armor Editor", "\uD83D\uDEE1",
-                stack(Items.DIAMOND_CHESTPLATE),
-                () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.ARMOR),
-                "Edit armor protection and attributes"))
+            .item(weaponEditor)
+            .item(armorEditor)
+            .item(shieldEditor)
+            .item(generalEditor)
             .build());
 
         // Category 6: Commands

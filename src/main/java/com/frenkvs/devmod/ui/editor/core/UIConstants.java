@@ -345,7 +345,7 @@ public final class UIConstants {
         /** Header height - EDITOR_DESIGN_SYSTEM.md Section 2.4 */
         public static final int HEADER_HEIGHT = 28;
         /** Footer height - EDITOR_DESIGN_SYSTEM.md Section 2.7 */
-        public static final int FOOTER_HEIGHT = 52;
+        public static final int FOOTER_HEIGHT = 60;
         /** Icon size */
         public static final int ICON = 16;
         /** Small icon */
@@ -355,7 +355,7 @@ public final class UIConstants {
         /** Scrollbar width */
         public static final int SCROLLBAR_WIDTH = 8;
         /** Slot size */
-        public static final int SLOT_SIZE = 24;
+        public static final int SLOT_SIZE = 30;
 
         private Size() {}
     }
@@ -369,8 +369,8 @@ public final class UIConstants {
         public static final int PANEL_HEIGHT = 420;
         public static final int LEFT_COLUMN_WIDTH = 140;
         public static final int CONTENT_WIDTH = 390;
-        public static final int CONTENT_HEIGHT = 340;
-        public static final int PREVIEW_SIZE = 100;
+        public static final int CONTENT_HEIGHT = 332;
+        public static final int PREVIEW_SIZE = 130;
         public static final int SLOT_AREA_HEIGHT = 70;
         public static final int INFO_PANEL_HEIGHT = 100;
 

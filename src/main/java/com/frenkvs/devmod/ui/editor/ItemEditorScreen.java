@@ -1,12 +1,22 @@
 package com.frenkvs.devmod.ui.editor;
 
+import com.frenkvs.devmod.ArmorConfigManager;
 import com.frenkvs.devmod.ArmorStats;
+import com.frenkvs.devmod.Config;
 import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.ItemEditorDataManager;
+import com.frenkvs.devmod.WeaponConfigManager;
 import com.frenkvs.devmod.WeaponStats;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.editor.core.EditorCache;
+import com.frenkvs.devmod.ui.editor.core.EditorConfig;
+import com.frenkvs.devmod.ui.editor.core.EditorLayout;
+import com.frenkvs.devmod.ui.editor.core.EditorScaleCalculator;
+import com.frenkvs.devmod.ui.editor.core.EditorSpacing;
 import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
+import com.frenkvs.devmod.ui.editor.core.GridValidator;
+import com.frenkvs.devmod.ui.editor.core.ScaledCoord;
+import com.frenkvs.devmod.ui.editor.core.Typography;
 import com.frenkvs.devmod.ui.editor.components.FooterComponent;
 import com.frenkvs.devmod.ui.editor.components.HeaderComponent;
 import com.frenkvs.devmod.ui.editor.components.LeftColumnComponent;
@@ -17,20 +27,43 @@ import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import com.frenkvs.devmod.ui.editor.core.OverlayInputGuard;
 import com.frenkvs.devmod.ui.editor.favorites.FavoritePresetStore;
 import com.frenkvs.devmod.ui.editor.modules.ArmorModule;
+import com.frenkvs.devmod.ui.editor.modules.RangedModule;
 import com.frenkvs.devmod.ui.editor.modules.WeaponModule;
 import com.frenkvs.devmod.ui.editor.systems.ConfirmDialog;
 import com.frenkvs.devmod.ui.editor.systems.HelpOverlay;
+import com.frenkvs.devmod.ui.editor.systems.CraftingInfoPanel;
 import com.frenkvs.devmod.ui.editor.systems.MultiEditManager;
 import com.frenkvs.devmod.ui.editor.systems.MultiEditPanel;
+import com.frenkvs.devmod.ui.editor.systems.TemplateOverlay;
 import com.frenkvs.devmod.ui.editor.systems.DebugPanel;
+import com.frenkvs.devmod.ui.editor.debug.DebugOverlay;
+import com.frenkvs.devmod.network.ArmorStatsPayloadV2;
+import com.frenkvs.devmod.network.EditorApplyConfirmPayload;
+import com.frenkvs.devmod.util.DatapackIO;
+import com.frenkvs.devmod.integration.PufferfishCompat;
 import net.neoforged.fml.ModList;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.entity.EquipmentSlotGroup;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
+import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
@@ -52,6 +85,8 @@ public class ItemEditorScreen extends Screen {
     // ═══════════════════════════════════════════════════════════════
 
     private final ResponsiveLayout layout;
+    private final EditorLayout editorLayout = new EditorLayout();
+    private static final String DEFAULT_DATAPACK_NAME = "devmod_balance_auto";
 
     // ═══════════════════════════════════════════════════════════════
     // STATE
@@ -62,11 +97,13 @@ public class ItemEditorScreen extends Screen {
     private final EditorStartTab requestedTab;
     private EditorModule activeModule;
     private SlotSelector.SlotInfo selectedSlot;
-
+    private static final float MIN_CONFIDENCE_FOR_AUTO_EDIT = 0.8f;
     // Mode flags
     private boolean isPreviewMode = true;
     private boolean isGlobalMode = false;
     private boolean showDevPanel = false;
+    private boolean f3Held = false;
+    private final PerformanceMonitor perfMonitor = new PerformanceMonitor();
 
     // Components
     private final HeaderComponent header = new HeaderComponent();
@@ -90,8 +127,12 @@ public class ItemEditorScreen extends Screen {
     private boolean showHistoryPanel = false;
     private int historyScrollOffset = 0;
     private boolean showPresetsPanel = false;
+    private boolean showTemplatesPanel = false;
+    private boolean showCraftingPanel = false;
+    private boolean showLowConfidenceDialog = false;
+    private WeaponTypeDetector.DetectionResult pendingDetection = null;
+    private String lowConfidenceStatus = null;
     private int presetScrollOffset = 0;
-    private boolean historyWasOpenBeforePresets = false;
     private String presetSearchQuery = "";
     private SortMode presetSortMode = SortMode.RECENT;
     private String renamingPreset = null;
@@ -100,6 +141,10 @@ public class ItemEditorScreen extends Screen {
     private String lastHoveredPreset = null;
     private boolean presetSearchFocused = true;
     private final FavoritePresetStore favoriteStore = new FavoritePresetStore();
+    private ResponsiveLayout.Rect presetPanelBounds = ResponsiveLayout.Rect.EMPTY;
+    private OverlayType activeOverlay = OverlayType.NONE;
+    private OverlayType overlayBeforeSwitch = OverlayType.NONE;
+    private final CraftingInfoPanel craftingPanel = new CraftingInfoPanel();
 
     // Help overlay
     private final HelpOverlay helpOverlay = new HelpOverlay();
@@ -111,8 +156,10 @@ public class ItemEditorScreen extends Screen {
     private MultiEditManager multiEditManager;
     private MultiEditPanel multiEditPanel;
     private boolean showMultiEditPanel = false;
+    private TemplateOverlay templateOverlay;
 
     private enum SortMode { RECENT, ALPHA }
+    private enum OverlayType { NONE, HISTORY, PRESETS, TEMPLATES, CRAFTING }
 
     // ═══════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -124,6 +171,7 @@ public class ItemEditorScreen extends Screen {
         this.originalItem = item.copy();
         this.requestedTab = startTab;
         this.layout = new ResponsiveLayout();
+        loadUserModePreference();
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -132,15 +180,27 @@ public class ItemEditorScreen extends Screen {
 
     @Override
     protected void init() {
+        // Resolve UI scale (discrete) and apply to coordinate helper
+        float uiScale = EditorScaleCalculator.getEffectiveScale(width, height, EditorConfig.getUiScaleSetting());
+        ScaledCoord.setScale(uiScale);
+        var screenFit = EditorScaleCalculator.calculateFit(width, height, uiScale);
+
         // Calculate layout for screen dimensions
-        layout.calculate(width, height);
+        layout.calculate(width, height, screenFit, uiScale);
+        editorLayout.computePositions(screenFit, uiScale);
+        EditorSpacing.ENABLE_GRID_VALIDATION = Config.EDITOR_GRID_VALIDATION.get();
+        if (EditorSpacing.ENABLE_GRID_VALIDATION) {
+            GridValidator.validate("editor", editorLayout.getPanelBounds(), editorLayout.getHeaderBounds(),
+                editorLayout.getFooterBounds(), editorLayout.getLeftColumnBounds(), editorLayout.getContentBounds());
+        }
 
         // Resolve and initialize the module
         activeModule = resolveModule(item, requestedTab);
-        activeModule.setStatusConsumer(this::showStatus);
+        activeModule.setStatusConsumer((msg, color) -> showStatus(msg, color == null ? UIConstants.Accent.INFO : color));
         activeModule.setItem(item);
         activeModule.init(layout);
-        activeModule.setDirtyTrackingEnabled(false); // preview mode: no dirty accumulation
+        warnLowConfidence(item);
+        activeModule.setDirtyTrackingEnabled(true);
         activeModule.clearDirty();
         configureHeader();
         configureLeftColumn();
@@ -148,8 +208,12 @@ public class ItemEditorScreen extends Screen {
 
         // Initialize multi-edit subsystem
         this.multiEditManager = new MultiEditManager();
-        this.multiEditPanel = new MultiEditPanel(multiEditManager);
+        this.multiEditPanel = new MultiEditPanel(multiEditManager, () -> !isPreviewMode, this::getActiveItemType);
+        this.multiEditManager.setPersistenceHandler((stack, slot) -> persistMultiEditItem(stack, slot == null ? -1 : slot));
         this.debugPanel = new DebugPanel();
+        this.templateOverlay = new TemplateOverlay();
+        this.templateOverlay.onClose(this::closeOverlay);
+        this.templateOverlay.onApply(this::handleTemplateApply);
 
         // Invalidate cache on init
         EditorCache.getInstance().invalidateAll();
@@ -157,10 +221,171 @@ public class ItemEditorScreen extends Screen {
 
     private EditorModule resolveModule(ItemStack stack, EditorStartTab requested) {
         return switch (requested) {
-            case WEAPON -> new WeaponModule();
+            case WEAPON -> {
+                var detection = WeaponTypeDetector.detectDetailed(stack);
+                if (WeaponTypeDetector.isRanged(detection.type())) {
+                    yield new RangedModule(detection.type() == WeaponTypeDetector.WeaponType.CROSSBOW
+                        ? com.frenkvs.devmod.ui.editor.modules.RangedModule.RangedVariant.CROSSBOW
+                        : com.frenkvs.devmod.ui.editor.modules.RangedModule.RangedVariant.BOW);
+                }
+                if (detection.type() == WeaponTypeDetector.WeaponType.TRIDENT) {
+                    yield new WeaponModule(com.frenkvs.devmod.ui.editor.modules.WeaponModule.WeaponVariant.TRIDENT);
+                }
+                if (detection.type() == WeaponTypeDetector.WeaponType.MACE) {
+                    yield new WeaponModule(com.frenkvs.devmod.ui.editor.modules.WeaponModule.WeaponVariant.MACE);
+                }
+                yield new WeaponModule();
+            }
             case ARMOR -> new ArmorModule();
-            case GENERAL -> new PlaceholderModule("general", "Item Editor");
+            case GENERAL -> {
+                // Auto-detect based on item type
+                if (ArmorConfigManager.isArmor(stack)) {
+                    DevMod.LOGGER.warn("[ItemEditor] Requested GENERAL but item is armor; falling back to ARMOR module.");
+                    yield new ArmorModule();
+                }
+                var detailed = WeaponTypeDetector.detectDetailed(stack);
+                if (WeaponTypeDetector.isRanged(detailed.type())) {
+                    DevMod.LOGGER.warn("[ItemEditor] Requested GENERAL but item is ranged weapon; falling back to RANGED module.");
+                    yield new RangedModule(detailed.type() == WeaponTypeDetector.WeaponType.CROSSBOW
+                        ? com.frenkvs.devmod.ui.editor.modules.RangedModule.RangedVariant.CROSSBOW
+                        : com.frenkvs.devmod.ui.editor.modules.RangedModule.RangedVariant.BOW);
+                }
+                if (WeaponTypeDetector.isMelee(detailed.type())) {
+                    DevMod.LOGGER.warn("[ItemEditor] Requested GENERAL but item is melee weapon; falling back to WEAPON module.");
+                    if (detailed.type() == WeaponTypeDetector.WeaponType.TRIDENT) {
+                        yield new WeaponModule(com.frenkvs.devmod.ui.editor.modules.WeaponModule.WeaponVariant.TRIDENT);
+                    }
+                    if (detailed.type() == WeaponTypeDetector.WeaponType.MACE) {
+                        yield new WeaponModule(com.frenkvs.devmod.ui.editor.modules.WeaponModule.WeaponVariant.MACE);
+                    }
+                    yield new WeaponModule();
+                }
+                yield new PlaceholderModule("general", "Item Editor");
+            }
         };
+    }
+
+    private void warnLowConfidence(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return;
+        var detection = WeaponTypeDetector.detectDetailed(stack);
+        if (detection == null) return;
+        boolean isWeaponPath = requestedTab == EditorStartTab.WEAPON || activeModule instanceof WeaponModule || activeModule instanceof RangedModule;
+        if (!isWeaponPath) return;
+        float threshold = (float) Math.max(Config.EDITOR_WEAPON_MIN_CONFIDENCE.get(), (double) MIN_CONFIDENCE_FOR_AUTO_EDIT);
+        if (detection.confidence() < threshold
+            && Config.EDITOR_WEAPON_HEURISTIC_ENABLED.get()
+            && detection.method() == WeaponTypeDetector.DetectionMethod.ATTRIBUTE_HEURISTIC) {
+            pendingDetection = detection;
+            showLowConfidenceDialog = true;
+            lowConfidenceStatus = null;
+            DevMod.LOGGER.warn("[ItemEditor] Low confidence detection: {} ({})", detection.type(), detection.method());
+            scrollArea.setScrollOffset(0); // ensure dialog visible
+        }
+    }
+
+    private void renderLowConfidenceDialog(GuiGraphics g, Font font, int mouseX, int mouseY) {
+        if (pendingDetection == null) return;
+        Font safeFont = Objects.requireNonNull(font, "font");
+        int w = EditorSpacing.snapToGrid(320);
+        int h = EditorSpacing.snapToGrid(176);
+        int x = (width - w) / 2;
+        int y = (height - h) / 2;
+        g.fill(x, y, x + w, y + h, UIConstants.Background.PANEL_SOLID);
+        AxiomRenderer.drawBorder(g, x, y, w, h, UIConstants.Border.ACCENT);
+        String title = "Low Confidence Detection";
+        g.drawString(safeFont, title, x + 12, y + 12, UIConstants.Text.TITLE, false);
+        var id = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item.getItem()));
+        String itemId = id == null ? "<unknown>" : id.toString();
+        g.drawString(safeFont, "Item: " + itemId, x + 12, y + 30, UIConstants.Text.SECONDARY, false);
+        g.drawString(safeFont, "Detected: " + pendingDetection.type() + " via " + pendingDetection.method(), x + 12, y + 42, UIConstants.Text.SECONDARY, false);
+        g.drawString(safeFont, "Confidence: " + String.format("%.0f%%", pendingDetection.confidence() * 100), x + 12, y + 54, UIConstants.Text.SECONDARY, false);
+        g.drawString(safeFont, "Add to whitelist/tag to skip this warning next time.", x + 12, y + 72, UIConstants.Text.MUTED, false);
+        g.drawString(safeFont, "Config: config/devmod/weapon_whitelist.json", x + 12, y + 84, UIConstants.Text.MUTED, false);
+        if (lowConfidenceStatus != null) {
+            g.drawString(safeFont, lowConfidenceStatus, x + 12, y + h - 44, UIConstants.Accent.ORANGE, false);
+        }
+
+        // Buttons
+        int btnW = EditorSpacing.snapToGrid(88);
+        int btnH = EditorSpacing.snapToGrid(16);
+        int btnSpacing = EditorSpacing.S;
+        int totalBtnWidth = btnW * 3 + btnSpacing * 2;
+        int btnStartX = x + (w - totalBtnWidth) / 2;
+        int btnY = y + h - EditorSpacing.L;
+        int btnContinueX = btnStartX;
+        int btnWhitelistX = btnStartX + btnW + btnSpacing;
+        int btnCancelX = btnStartX + (btnW + btnSpacing) * 2;
+        g.fill(btnContinueX, btnY, btnContinueX + btnW, btnY + btnH, UIConstants.Background.INPUT);
+        g.fill(btnWhitelistX, btnY, btnWhitelistX + btnW, btnY + btnH, UIConstants.Background.INPUT);
+        g.fill(btnCancelX, btnY, btnCancelX + btnW, btnY + btnH, UIConstants.Background.INPUT);
+        g.drawString(safeFont, "Continue", btnContinueX + 12, btnY + 4, UIConstants.Text.PRIMARY, false);
+        g.drawString(safeFont, "Whitelist", btnWhitelistX + 10, btnY + 4, UIConstants.Text.PRIMARY, false);
+        g.drawString(safeFont, "Cancel", btnCancelX + 18, btnY + 4, UIConstants.Text.PRIMARY, false);
+        lowConfidenceContinueBounds = new ResponsiveLayout.Rect(btnContinueX, btnY, btnW, btnH);
+        lowConfidenceWhitelistBounds = new ResponsiveLayout.Rect(btnWhitelistX, btnY, btnW, btnH);
+        lowConfidenceCancelBounds = new ResponsiveLayout.Rect(btnCancelX, btnY, btnW, btnH);
+    }
+
+    private ResponsiveLayout.Rect lowConfidenceContinueBounds = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect lowConfidenceWhitelistBounds = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect lowConfidenceCancelBounds = ResponsiveLayout.Rect.EMPTY;
+
+    private boolean handleLowConfidenceClick(double mouseX, double mouseY, int button) {
+        if (button != 0 || pendingDetection == null) return false;
+        if (lowConfidenceContinueBounds.contains(mouseX, mouseY)) {
+            showLowConfidenceDialog = false;
+            pendingDetection = null;
+            lowConfidenceStatus = null;
+            return true;
+        }
+        if (lowConfidenceWhitelistBounds.contains(mouseX, mouseY)) {
+            boolean added = addCurrentItemToWhitelist();
+            if (!added) {
+                lowConfidenceStatus = "Whitelist update failed. Check logs.";
+            } else {
+                showLowConfidenceDialog = false;
+                pendingDetection = null;
+                lowConfidenceStatus = null;
+            }
+            return true;
+        }
+        if (lowConfidenceCancelBounds.contains(mouseX, mouseY)) {
+            onClose();
+            Minecraft.getInstance().setScreen(null);
+            showLowConfidenceDialog = false;
+            pendingDetection = null;
+            lowConfidenceStatus = null;
+            return true;
+        }
+        return lowConfidenceContinueBounds.contains(mouseX, mouseY)
+            || lowConfidenceWhitelistBounds.contains(mouseX, mouseY)
+            || lowConfidenceCancelBounds.contains(mouseX, mouseY);
+    }
+
+    private boolean addCurrentItemToWhitelist() {
+        if (item == null || item.isEmpty()) {
+            return false;
+        }
+        try {
+            WeaponTypeDetector.WeaponType type = pendingDetection == null
+                ? WeaponTypeDetector.WeaponType.GENERIC_MELEE
+                : pendingDetection.type();
+            if (type == WeaponTypeDetector.WeaponType.UNKNOWN
+                || type == WeaponTypeDetector.WeaponType.NOT_A_WEAPON
+                || type == WeaponTypeDetector.WeaponType.SHIELD) {
+                type = WeaponTypeDetector.WeaponType.GENERIC_MELEE;
+            }
+            boolean added = WeaponTypeDetector.addToWhitelist(Objects.requireNonNull(item.getItem()), type);
+            var id = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item.getItem()));
+            String label = id == null ? "<unknown>" : id.toString();
+            if (added) {
+                showStatus("Whitelisted " + label, UIConstants.Accent.GREEN);
+            }
+            return added;
+        } catch (Exception e) {
+            DevMod.LOGGER.warn("[ItemEditor] Failed to add item to whitelist", e);
+            return false;
+        }
     }
 
     private void configureHeader() {
@@ -205,12 +430,25 @@ public class ItemEditorScreen extends Screen {
 
     private void updateLeftColumnStats() {
         leftColumn.clearStats();
-        leftColumn.item(item);
+        // If preview is active, prefer the module's preview item for display to avoid mutating real item
+        ItemStack displayItem = item;
+        if (isPreviewMode && activeModule != null) {
+            try {
+                var preview = activeModule.getPreviewItem();
+                if (preview != null) displayItem = preview;
+            } catch (Exception ignored) {}
+        }
+        leftColumn.item(displayItem);
         if (activeModule instanceof WeaponModule weaponModule) {
             var stats = weaponModule.getStats();
             leftColumn.addStat("Attack", stats.attackDamage, "+%.1f");
             leftColumn.addStat("Speed", stats.attackSpeed, "+%.1f");
             leftColumn.addStat("Crit", stats.critChance * 100f, "%.0f%%");
+        } else if (activeModule instanceof RangedModule rangedModule) {
+            var stats = rangedModule.getStats();
+            leftColumn.addStat("Draw", stats.drawSpeed, "%.2fx");
+            leftColumn.addStat("Proj Spd", stats.projectileSpeed, "%.2f");
+            leftColumn.addStat("Accuracy", stats.accuracy * 100f, "%.0f%%");
         } else if (activeModule instanceof ArmorModule armorModule) {
             var stats = armorModule.getStats();
             leftColumn.addStat("Defense", stats.physicalReduction * 100f, "%.0f%%");
@@ -252,22 +490,83 @@ public class ItemEditorScreen extends Screen {
         if (preview == isPreviewMode) {
             return;
         }
-        isPreviewMode = preview;
-        if (activeModule != null) {
-            activeModule.setDirtyTrackingEnabled(!isPreviewMode);
-            if (isPreviewMode) {
-                activeModule.clearDirty();
-                activeModule.applyPreview();
-                activeModule.logEvent("Switched to PREVIEW (dirty off)");
-            } else {
-                if (!activeModule.hasUnsavedChanges() && activeModule.hasPendingDiff()) {
-                    activeModule.markDirty("Pending changes from preview");
+
+        // Switching from APPLY -> PREVIEW with pending changes: confirm discard
+        if (preview && !isPreviewMode && activeModule != null && activeModule.hasUnsavedChanges()) {
+            activeDialog = ConfirmDialog.switchModeToPreview(
+                activeModule.getPendingChanges().size(),
+                () -> {
+                    switchToPreviewMode(true);
+                    header.getModeBadge().setMode(ModeBadge.Mode.PREVIEW);
+                    header.getModeBadge().closeDropdown();
+                    saveUserModePreference();
+                },
+                () -> {
+                    header.getModeBadge().setMode(ModeBadge.Mode.APPLY);
+                    header.getModeBadge().closeDropdown();
                 }
-                activeModule.logEvent("Switched to APPLY (dirty on)");
-            }
+            );
+            activeDialog.show();
+            return;
         }
-        showStatus(isPreviewMode ? "Preview Mode" : "Apply Mode",
-            isPreviewMode ? UIConstants.Accent.CYAN : UIConstants.Accent.GREEN);
+
+        if (preview) {
+            switchToPreviewMode(false);
+        } else {
+            switchToApplyMode();
+        }
+        saveUserModePreference();
+    }
+
+    private void switchToPreviewMode(boolean discardChanges) {
+        isPreviewMode = true;
+        if (activeModule != null) {
+            if (discardChanges) {
+                activeModule.resetToOriginal();
+                activeModule.clearDirty();
+            }
+            activeModule.applyPreview();
+            activeModule.logEvent(discardChanges
+                ? "Switched to PREVIEW (discarded changes)"
+                : "Switched to PREVIEW");
+        }
+        showStatus("Preview Mode", UIConstants.Accent.CYAN);
+    }
+
+    private void switchToApplyMode() {
+        isPreviewMode = false;
+        if (activeModule != null) {
+            activeModule.clearPreview();
+            if (!activeModule.hasUnsavedChanges() && activeModule.hasPendingDiff()) {
+                activeModule.markDirty("Pending changes from preview");
+            }
+            activeModule.logEvent("Switched to APPLY (dirty on)");
+        }
+        showStatus("Apply Mode", UIConstants.Accent.GREEN);
+    }
+
+    /**
+     * Persist user preference for editor mode.
+     */
+    private void saveUserModePreference() {
+        try {
+            Config.EDITOR_DEFAULT_MODE.set(isPreviewMode ? Config.EditorDefaultMode.PREVIEW : Config.EditorDefaultMode.APPLY);
+            showStatus("Default mode saved", UIConstants.Accent.BLUE);
+        } catch (Exception ignored) {
+            // Best-effort: config may be read-only in some contexts
+        }
+    }
+
+    /**
+     * Load user preference for editor mode from config.
+     */
+    private void loadUserModePreference() {
+        try {
+            Config.EditorDefaultMode pref = Config.EDITOR_DEFAULT_MODE.get();
+            isPreviewMode = pref != Config.EditorDefaultMode.APPLY;
+        } catch (Exception ignored) {
+            isPreviewMode = true;
+        }
     }
 
     private void configureFooterCallbacks() {
@@ -302,11 +601,8 @@ public class ItemEditorScreen extends Screen {
             }
             case "cancel" -> handleCloseRequest();
             case "history" -> {
-                showHistoryPanel = !showHistoryPanel;
+                toggleOverlay(OverlayType.HISTORY);
                 historyScrollOffset = 0;
-                if (showHistoryPanel) {
-                    showPresetsPanel = false;
-                }
             }
             case "export" -> handleExport();
             case "import" -> handleImport();
@@ -315,18 +611,49 @@ public class ItemEditorScreen extends Screen {
                     showStatus("Presets available only for weapons/armors", UIConstants.Accent.ORANGE);
                     return;
                 }
-                boolean newState = !showPresetsPanel;
-                if (newState) {
-                    historyWasOpenBeforePresets = showHistoryPanel;
-                    showHistoryPanel = false;
+                toggleOverlay(OverlayType.PRESETS);
+                if (activeOverlay == OverlayType.PRESETS) {
                     presetScrollOffset = 0;
                     renamingPreset = null;
-                } else {
-                    closePresetsPanel();
                 }
-                showPresetsPanel = newState;
+            }
+            case "templates" -> {
+                openTemplatesOverlay();
+            }
+            case "recipe" -> {
+                craftingPanel.show(item);
+                toggleOverlay(OverlayType.CRAFTING);
             }
             default -> {}
+        }
+    }
+
+    private void toggleOverlay(OverlayType type) {
+        if (activeOverlay == type) {
+            closeOverlay();
+            return;
+        }
+        overlayBeforeSwitch = type == OverlayType.NONE ? OverlayType.NONE : activeOverlay;
+        activeOverlay = type;
+        updateOverlayFlags();
+    }
+
+    private void closeOverlay() {
+        activeOverlay = overlayBeforeSwitch;
+        overlayBeforeSwitch = OverlayType.NONE;
+        updateOverlayFlags();
+    }
+
+    private void updateOverlayFlags() {
+        showHistoryPanel = activeOverlay == OverlayType.HISTORY;
+        showPresetsPanel = activeOverlay == OverlayType.PRESETS;
+        showTemplatesPanel = activeOverlay == OverlayType.TEMPLATES;
+        showCraftingPanel = activeOverlay == OverlayType.CRAFTING;
+        if (activeOverlay != OverlayType.TEMPLATES && templateOverlay != null) {
+            templateOverlay.resetSearch();
+        }
+        if (activeOverlay != OverlayType.CRAFTING) {
+            craftingPanel.hide();
         }
     }
 
@@ -336,30 +663,32 @@ public class ItemEditorScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        perfMonitor.startFrame();
         // Dark overlay background
         graphics.fill(0, 0, width, height, UIConstants.Background.OVERLAY);
 
-        // Get layout areas
-        ResponsiveLayout.Rect editorArea = layout.getEditorArea();
-        int headerHeight = UIConstants.Size.HEADER_HEIGHT;
-        int footerHeight = UIConstants.Size.FOOTER_HEIGHT;
-        int leftWidth = UIConstants.PanelDimensions.LEFT_COLUMN_WIDTH;
-        int contentY = editorArea.y() + headerHeight;
-        int footerY = editorArea.y() + editorArea.height() - footerHeight;
-        int contentHeight = editorArea.height() - headerHeight - footerHeight;
+        // Get layout areas (centralized in EditorLayout)
+        var panelBounds = editorLayout.getPanelBounds();
+        var headerBounds = editorLayout.getHeaderBounds();
+        var footerBounds = editorLayout.getFooterBounds();
+        var leftBounds = editorLayout.getLeftColumnBounds();
+        var contentBounds = editorLayout.getContentBounds();
+        int contentY = contentBounds.y();
+        int footerY = footerBounds.y();
+        int contentHeight = contentBounds.height();
 
         // Main panel background
-        graphics.fill(editorArea.x(), editorArea.y(),
-                     editorArea.right(), editorArea.bottom(),
+        graphics.fill(panelBounds.x(), panelBounds.y(),
+                     panelBounds.right(), panelBounds.bottom(),
                      UIConstants.Background.PANEL);
 
         // Panel border
-        AxiomRenderer.drawBorder(graphics, editorArea.x(), editorArea.y(),
-                                editorArea.width(), editorArea.height(),
+        AxiomRenderer.drawBorder(graphics, panelBounds.x(), panelBounds.y(),
+                                panelBounds.width(), panelBounds.height(),
                                 UIConstants.Border.DEFAULT);
 
         // Header (tabs + badges + close)
-        header.render(graphics, editorArea.x(), editorArea.y(), editorArea.width(), mouseX, mouseY);
+        header.render(graphics, headerBounds.x(), headerBounds.y(), headerBounds.width(), mouseX, mouseY);
         if (header.getModeBadge().isHovered()) {
             tooltipText = header.getModeBadge().getTooltipText();
             tooltipX = mouseX;
@@ -375,19 +704,19 @@ public class ItemEditorScreen extends Screen {
             updateLeftColumnStats();
             leftColumn.pendingChanges(activeModule.getPendingChanges().size());
         }
-        leftColumn.render(graphics, editorArea.x(), contentY, contentHeight, mouseX, mouseY, partialTick);
+        leftColumn.render(graphics, leftBounds.x(), leftBounds.y(), leftBounds.width(), leftBounds.height(), mouseX, mouseY, partialTick);
 
         // Render multi-edit panel if visible (placed beneath left column area)
         if (showMultiEditPanel && multiEditPanel != null) {
-            int panelX = editorArea.x() + 8;
+            int panelX = leftBounds.x() + 8;
             int panelY = contentY + 8;
-            int panelW = UIConstants.PanelDimensions.LEFT_COLUMN_WIDTH - 16;
+            int panelW = leftBounds.width() - 16;
             multiEditPanel.render(graphics, font, panelX, panelY, panelW, mouseX, mouseY);
         }
 
         // Content area (scrollable)
-        int contentX = editorArea.x() + leftWidth + UIConstants.Spacing.MD;
-        int contentWidth = editorArea.width() - leftWidth - UIConstants.Spacing.MD * 2;
+        int contentX = contentBounds.x() + UIConstants.Spacing.MD;
+        int contentWidth = contentBounds.width() - UIConstants.Spacing.MD * 2;
         graphics.fill(contentX, contentY, contentX + contentWidth, contentY + contentHeight, UIConstants.Background.CONTENT);
         if (activeModule != null) {
             int viewportHeight = contentHeight - UIConstants.Spacing.MD * 2;
@@ -400,13 +729,15 @@ public class ItemEditorScreen extends Screen {
         }
 
         // Footer
+        int pending = activeModule != null ? activeModule.getPendingChanges().size() : 0;
+        boolean dirty = activeModule != null && (activeModule.hasUnsavedChanges() || pending > 0);
         footer
             .canUndo(activeModule != null && activeModule.canUndo())
             .canRedo(activeModule != null && activeModule.canRedo())
-            .canApply(!isPreviewMode)
-            .isDirty(activeModule != null && activeModule.hasUnsavedChanges())
-            .pendingCount(activeModule != null ? activeModule.getPendingChanges().size() : 0);
-        footer.render(graphics, editorArea.x(), footerY, editorArea.width(), mouseX, mouseY);
+            .canApply(activeModule != null)
+            .isDirty(dirty)
+            .pendingCount(pending);
+        footer.render(graphics, panelBounds.x(), footerY, panelBounds.width(), mouseX, mouseY);
 
         // Render side panels if visible
         if (layout.showSidePanels()) {
@@ -425,6 +756,15 @@ public class ItemEditorScreen extends Screen {
         if (showPresetsPanel && supportsDataOps()) {
             renderPresetsPanel(graphics, mouseX, mouseY);
         }
+        if (showTemplatesPanel) {
+            templateOverlay.render(graphics, width, height, mouseX, mouseY);
+        }
+        if (showCraftingPanel) {
+            craftingPanel.render(graphics, width, height, mouseX, mouseY);
+        }
+
+        // Render header dropdown overlays last so they appear above content
+        header.renderOverlays(graphics, mouseX, mouseY);
 
         // Tooltip (rendered last, on top)
         if (tooltipText != null) {
@@ -445,6 +785,22 @@ public class ItemEditorScreen extends Screen {
         if (helpOverlay.isVisible()) {
             helpOverlay.render(graphics, font, width, height, mouseX, mouseY);
         }
+
+        // Low-confidence dialog
+        if (showLowConfidenceDialog && pendingDetection != null) {
+            renderLowConfidenceDialog(graphics, font, mouseX, mouseY);
+        }
+
+        // Performance/Debug overlay (rendered on top of everything)
+        perfMonitor.endRender();
+        var perf = perfMonitor.getMetrics();
+        DebugOverlay.setPerformanceLine(String.format("Frame %.2fms | Render %.2fms | Entities %.0f | %s",
+            perf.frameTime(), perf.renderTime(), perf.entityCount(), perf.bottleneck()));
+        var perfPanelBounds = editorLayout.getPanelBounds();
+        int contentTotalHeight = activeModule == null ? 0 : activeModule.calculateContentHeight();
+        int sectionCount = activeModule == null ? 0 : activeModule.getSections().size();
+        DebugOverlay.render(graphics, font, perfPanelBounds, headerBounds, leftBounds, contentBounds, footerBounds,
+            mouseX, mouseY, contentTotalHeight, scrollArea.getScrollOffset(), sectionCount);
     }
 
     private void renderSidePanels(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -512,9 +868,11 @@ public class ItemEditorScreen extends Screen {
         if (multiEditManager == null) return;
         multiEditManager.clearSelection();
         var mc = Minecraft.getInstance();
-        if (mc == null || mc.player == null) return;
-        var inv = mc.player.getInventory();
-        var targetItem = item.getItem();
+        if (mc == null) return;
+        var player = mc.player;
+        if (player == null) return;
+        var inv = player.getInventory();
+        var targetItem = Objects.requireNonNull(item.getItem(), "item type cannot be null");
         for (int i = 0; i < inv.items.size(); i++) {
             ItemStack stack = inv.items.get(i);
             if (!stack.isEmpty() && stack.is(targetItem)) {
@@ -529,10 +887,17 @@ public class ItemEditorScreen extends Screen {
         int msgWidth = safeFont.width(safeMessage) + 20;
         int msgX = (width - msgWidth) / 2;
         int msgY = height - 60;
+        float fontScale = Typography.withUiScale(1.0f);
 
-        graphics.fill(msgX, msgY, msgX + msgWidth, msgY + 20, 0xE0000000);
-        AxiomRenderer.drawBorder(graphics, msgX, msgY, msgWidth, 20, statusColor);
-        graphics.drawString(safeFont, safeMessage, msgX + 10, msgY + 6, statusColor, false);
+        int paddingX = 10;
+        int paddingY = 4;
+        int msgHeight = safeFont.lineHeight + paddingY * 2;
+        msgWidth = safeFont.width(safeMessage) + paddingX * 2;
+        msgX = Math.max(4, Math.min(width - msgWidth - 4, msgX));
+
+        graphics.fill(msgX, msgY, msgX + msgWidth, msgY + msgHeight, 0xE0000000);
+        AxiomRenderer.drawBorder(graphics, msgX, msgY, msgWidth, msgHeight, statusColor);
+        Typography.drawText(graphics, safeFont, safeMessage, msgX + paddingX, msgY + paddingY, statusColor, fontScale);
     }
 
     private void renderHistoryPanel(GuiGraphics graphics) {
@@ -596,7 +961,7 @@ public class ItemEditorScreen extends Screen {
 
         // Click outside closes panel
         if (mouseX < x || mouseX > x + panelWidth || mouseY < y || mouseY > y + panelHeight) {
-            showHistoryPanel = false;
+            toggleOverlay(OverlayType.NONE);
             return true;
         }
 
@@ -647,7 +1012,16 @@ public class ItemEditorScreen extends Screen {
 
         // Delegate to DebugPanel for richer info
         if (debugPanel != null) {
-            debugPanel.render(graphics, font, devArea.x(), devArea.y(), devArea.width(), devArea.height(), mouseX, mouseY, item);
+            // Prefer preview item when preview mode is active so debug reflects the preview state
+            ItemStack displayItem = item;
+            if (isPreviewMode && activeModule != null) {
+                try {
+                    var preview = activeModule.getPreviewItem();
+                    if (preview != null) displayItem = preview;
+                } catch (Exception ignored) {}
+            }
+            debugPanel.setStatSources(buildStatSources(displayItem));
+            debugPanel.render(graphics, font, devArea.x(), devArea.y(), devArea.width(), devArea.height(), mouseX, mouseY, displayItem);
             return;
         }
 
@@ -681,9 +1055,30 @@ public class ItemEditorScreen extends Screen {
             return helpOverlay.mouseClicked((int) mouseX, (int) mouseY);
         }
 
+        if (showLowConfidenceDialog && pendingDetection != null) {
+            return handleLowConfidenceClick(mouseX, mouseY, button);
+        }
+
         // Handle modal dialog
         if (activeDialog != null && activeDialog.isVisible()) {
             return activeDialog.mouseClicked((int) mouseX, (int) mouseY);
+        }
+
+        if (showCraftingPanel && craftingPanel.isVisible()) {
+            if (craftingPanel.mouseClicked(mouseX, mouseY, width, height)) {
+                toggleOverlay(OverlayType.NONE);
+                return true;
+            }
+        }
+        if (showCraftingPanel && craftingPanel.mouseScrolled(mouseX, mouseY, 0)) {
+            // allow scroll click area without closing
+            return true;
+        }
+
+        if (showTemplatesPanel && templateOverlay != null) {
+            if (templateOverlay.mouseClicked(mouseX, mouseY)) {
+                return true;
+            }
         }
 
         if (showDevPanel && debugPanel != null && debugPanel.handleClick(mouseX, mouseY)) {
@@ -765,6 +1160,7 @@ public class ItemEditorScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (showLowConfidenceDialog) return false;
         if (scrollArea.mouseReleased(mouseX, mouseY, button)) {
             return true;
         }
@@ -777,6 +1173,7 @@ public class ItemEditorScreen extends Screen {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (showLowConfidenceDialog) return false;
         if (scrollArea.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
             return true;
         }
@@ -789,9 +1186,17 @@ public class ItemEditorScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (showLowConfidenceDialog && pendingDetection != null) {
+            return true;
+        }
         if (showHistoryPanel) {
             if (isPointInHistoryPanel(mouseX, mouseY)) {
                 historyScrollOffset -= (int) (scrollY * 14);
+                return true;
+            }
+        }
+        if (showTemplatesPanel && templateOverlay != null) {
+            if (templateOverlay.mouseScrolled(mouseX, mouseY, scrollY)) {
                 return true;
             }
         }
@@ -800,6 +1205,12 @@ public class ItemEditorScreen extends Screen {
                 presetScrollOffset -= (int) (scrollY * 16);
             }
             return true; // Consume all scroll while overlay open
+        }
+        if (header.mouseScrolled(mouseX, mouseY, scrollY)) {
+            return true;
+        }
+        if (footer.mouseScrolled(mouseX, mouseY, scrollY)) {
+            return true;
         }
         if (showMultiEditPanel && multiEditPanel != null && multiEditPanel.mouseScrolled(mouseX, mouseY, scrollY)) {
             return true;
@@ -815,23 +1226,65 @@ public class ItemEditorScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Handle debug overlay shortcuts first
+        if (DebugOverlay.handleKeyPressed(keyCode, modifiers)) {
+            return true;
+        }
+
         // Handle help overlay first
         if (helpOverlay.isVisible()) {
             return helpOverlay.keyPressed(keyCode);
         }
 
+        if (showTemplatesPanel && templateOverlay != null) {
+            if (templateOverlay.keyPressed(keyCode, modifiers)) {
+                return true;
+            }
+        }
+
+        // Quick shortcut: refresh MultiEdit selection and expand panel (M)
+        if (keyCode == GLFW.GLFW_KEY_M) {
+            refreshMultiEditSelection();
+            if (multiEditPanel != null) {
+                multiEditPanel.setExpanded(true);
+            }
+            showStatus("MultiEdit refreshed", UIConstants.Accent.BLUE);
+            return true;
+        }
+
         if (showHistoryPanel && keyCode == GLFW.GLFW_KEY_ESCAPE) {
-            showHistoryPanel = false;
+            closeOverlay();
             return true;
         }
         if (showPresetsPanel && keyCode == GLFW.GLFW_KEY_ESCAPE) {
-            closePresetsPanel();
+            closeOverlay();
+            return true;
+        }
+        if (showTemplatesPanel && keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            closeOverlay();
             return true;
         }
 
         // Handle modal dialog
         if (activeDialog != null && activeDialog.isVisible()) {
             return activeDialog.keyPressed(keyCode);
+        }
+
+        // Low-confidence dialog blocks input and supports Esc/Enter
+        if (showLowConfidenceDialog && pendingDetection != null) {
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+                showLowConfidenceDialog = false;
+                pendingDetection = null;
+                lowConfidenceStatus = null;
+                return true;
+            }
+            if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
+                showLowConfidenceDialog = false;
+                pendingDetection = null;
+                lowConfidenceStatus = null;
+                return true;
+            }
+            return true; // swallow other keys while modal is up
         }
 
         if (showPresetsPanel) {
@@ -909,10 +1362,38 @@ public class ItemEditorScreen extends Screen {
             return true;
         }
 
-        // F3+D for dev panel toggle
-        if (keyCode == GLFW.GLFW_KEY_D && (modifiers & GLFW.GLFW_MOD_ALT) != 0) {
+        // Track F3 for dev toggle combo
+        if (keyCode == GLFW.GLFW_KEY_F3) {
+            f3Held = true;
+        }
+
+        // F3 + D for dev panel toggle (matching design spec)
+        if (f3Held && keyCode == GLFW.GLFW_KEY_D) {
             showDevPanel = !showDevPanel;
             return true;
+        }
+
+        // Debug panel shortcuts when visible
+        if (showDevPanel && debugPanel != null) {
+            // Ctrl+E -> export recent (10) entries
+            if (keyCode == GLFW.GLFW_KEY_E && (modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
+                try {
+                    var p = debugPanel.exportRecentToTempFile(10);
+                    debugPanel.log("Exported recent to: " + p.toString());
+                    showStatus("Exported debug recent", UIConstants.Accent.BLUE);
+                } catch (Exception e) {
+                    debugPanel.log("Export failed: " + e.getMessage());
+                    showStatus("Export failed", UIConstants.Accent.ORANGE);
+                }
+                return true;
+            }
+
+            // Ctrl+L -> clear debug log
+            if (keyCode == GLFW.GLFW_KEY_L && (modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
+                debugPanel.clear();
+                showStatus("Debug log cleared", UIConstants.Accent.BLUE);
+                return true;
+            }
         }
 
         // Toggle multi-edit panel (M)
@@ -920,6 +1401,9 @@ public class ItemEditorScreen extends Screen {
             showMultiEditPanel = !showMultiEditPanel;
             if (showMultiEditPanel) {
                 refreshMultiEditSelection();
+                if (multiEditPanel != null) {
+                    multiEditPanel.setExpanded(true);
+                }
             }
             return true;
         }
@@ -927,6 +1411,11 @@ public class ItemEditorScreen extends Screen {
         // F1 for help
         if (keyCode == GLFW.GLFW_KEY_F1) {
             helpOverlay.toggle();
+            return true;
+        }
+
+        if (showCraftingPanel && craftingPanel.isVisible() && craftingPanel.keyPressed(keyCode)) {
+            toggleOverlay(OverlayType.NONE);
             return true;
         }
 
@@ -940,6 +1429,12 @@ public class ItemEditorScreen extends Screen {
 
     @Override
     public boolean charTyped(char chr, int modifiers) {
+        if (showLowConfidenceDialog && pendingDetection != null) {
+            return true;
+        }
+        if (showTemplatesPanel && templateOverlay != null) {
+            return templateOverlay.charTyped(chr);
+        }
         if (showPresetsPanel) {
             if (Character.isISOControl(chr)) {
                 return true;
@@ -957,6 +1452,14 @@ public class ItemEditorScreen extends Screen {
         return super.charTyped(chr, modifiers);
     }
 
+    @Override
+    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == GLFW.GLFW_KEY_F3) {
+            f3Held = false;
+        }
+        return super.keyReleased(keyCode, scanCode, modifiers);
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // ACTIONS
     // ═══════════════════════════════════════════════════════════════
@@ -964,10 +1467,6 @@ public class ItemEditorScreen extends Screen {
     private void applyChanges() {
         if (activeModule == null) return;
 
-        if (isPreviewMode) {
-            showStatus("Preview mode: Apply disabled", UIConstants.Accent.ORANGE);
-            return;
-        }
         if (!activeModule.hasUnsavedChanges()) {
             showStatus("No changes to apply", UIConstants.Accent.ORANGE);
             activeModule.logEvent("Apply skipped (no changes)");
@@ -979,10 +1478,37 @@ public class ItemEditorScreen extends Screen {
                 activeModule.logEvent("Apply requested (" + (isGlobalMode ? "GLOBAL" : "SPECIFIC") + ")");
             }
             // Build and send payload
-            var payload = activeModule.buildPayload(isGlobalMode);
-            if (payload != null) {
-                PacketDistributor.sendToServer(payload);
+            CustomPacketPayload payload;
+            if (activeModule instanceof com.frenkvs.devmod.ui.editor.modules.ArmorModule armorModule) {
+                ArmorStats stats = armorModule.getStats().copy();
+                CompoundTag statsTag = new CompoundTag();
+                CompoundTag armorStats = new CompoundTag();
+                stats.save(armorStats);
+                statsTag.put("ArmorModStats", Objects.requireNonNull(armorStats.copy()));
+                statsTag.put("armor_stats_component", Objects.requireNonNull(armorStats));
+
+                int slotIndex = -1;
+                if (!isGlobalMode && selectedSlot != null && selectedSlot.slot() != null) {
+                    slotIndex = switch (selectedSlot.slot()) {
+                        case HEAD -> 0;
+                        case CHEST -> 1;
+                        case LEGS -> 2;
+                        case FEET -> 3;
+                        default -> -1;
+                    };
+                }
+                ItemStack armorItem = Objects.requireNonNull(armorModule.getItem(), "armor item");
+                payload = new ArmorStatsPayloadV2(Objects.requireNonNull(armorItem.copy()), statsTag, isGlobalMode, slotIndex);
+            } else {
+                payload = activeModule.buildPayload(isGlobalMode);
             }
+            if (payload == null) {
+                showStatus("Apply not available for this module (no payload)", UIConstants.Accent.ORANGE);
+                activeModule.logEvent("Apply skipped: no payload");
+                return;
+            }
+            PacketDistributor.sendToServer(payload);
+            activeModule.logEvent("Waiting for server confirm...");
 
             // Apply preview locally to reflect new state
             activeModule.applyPreview();
@@ -1006,6 +1532,24 @@ public class ItemEditorScreen extends Screen {
         }
     }
 
+    public void onServerConfirm(EditorApplyConfirmPayload payload) {
+        if (payload == null) return;
+        String scope = payload.scope() == null ? "editor" : payload.scope();
+        String summary = (payload.success() ? "Server confirmed" : "Server rejected") +
+            " [" + scope + "] " + (payload.global() ? "GLOBAL" : "SPECIFIC") +
+            " " + (payload.itemId() == null ? "" : payload.itemId());
+        String detail = payload.message() == null ? "" : payload.message();
+        String full = detail.isBlank() ? summary : summary + " - " + detail;
+        if (activeModule != null) {
+            activeModule.logEvent(full);
+        }
+        if (debugPanel != null) {
+            debugPanel.log(full);
+        }
+        String statusMsg = detail.isBlank() ? (payload.success() ? "Server confirmed" : "Server rejected") : detail;
+        showStatus(statusMsg, payload.success() ? UIConstants.Accent.GREEN : UIConstants.Accent.RED);
+    }
+
     private void handleCloseRequest() {
         if (!isPreviewMode && activeModule != null && activeModule.hasUnsavedChanges()) {
             activeDialog = ConfirmDialog.unsavedChanges(
@@ -1020,13 +1564,10 @@ public class ItemEditorScreen extends Screen {
     }
 
     private void closePresetsPanel() {
-        if (historyWasOpenBeforePresets) {
-            showHistoryPanel = true;
-            historyWasOpenBeforePresets = false;
-        }
-        showPresetsPanel = false;
+        toggleOverlay(OverlayType.NONE);
         renamingPreset = null;
         renameBuffer = "";
+        presetPanelBounds = ResponsiveLayout.Rect.EMPTY;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -1050,6 +1591,11 @@ public class ItemEditorScreen extends Screen {
         if (ok) {
             data.addHistoryEntry("export", config.itemName, fileName);
             showStatus("Exported to " + fileName + ".json", UIConstants.Accent.GREEN);
+            // Also emit datapack with current overrides for sharing (partial spec 06-persistence)
+            int exported = DatapackIO.exportOverrides(DEFAULT_DATAPACK_NAME);
+            if (exported > 0) {
+                showStatus("Datapack: " + DEFAULT_DATAPACK_NAME + " (" + exported + " items)", UIConstants.Accent.BLUE);
+            }
         } else {
             showStatus("Export failed", UIConstants.Accent.RED);
         }
@@ -1075,9 +1621,21 @@ public class ItemEditorScreen extends Screen {
             applyImportedStats(imported, "Imported " + fileName);
             data.addHistoryEntry("import", item.getHoverName().getString(), fileName);
             showStatus("Imported " + fileName, UIConstants.Accent.BLUE);
+            int applied = DatapackIO.importOverrides(DEFAULT_DATAPACK_NAME);
+            if (applied > 0) {
+                showStatus("Imported datapack overrides (" + applied + ")", UIConstants.Accent.BLUE);
+            }
         } catch (Exception e) {
             showStatus("Import failed: " + e.getMessage(), UIConstants.Accent.RED);
         }
+    }
+
+    private void openTemplatesOverlay() {
+        ItemEditorDataManager data = ItemEditorDataManager.INSTANCE;
+        List<ItemEditorDataManager.TemplateData> list = new ArrayList<>(data.getTemplates().values());
+        String category = detectTemplateCategory();
+        templateOverlay.setTemplates(list, category);
+        toggleOverlay(OverlayType.TEMPLATES);
     }
 
     private boolean supportsDataOps() {
@@ -1129,6 +1687,13 @@ public class ItemEditorScreen extends Screen {
         return key == null ? "unknown" : key.toString();
     }
 
+    private String detectTemplateCategory() {
+        String itemId = getCurrentItemId();
+        return ItemEditorDataManager.INSTANCE.suggestTemplate(itemId)
+            .map(t -> t.itemCategory)
+            .orElse(null);
+    }
+
     private String buildSafeFileName(String raw) {
         return raw.replace(":", "_").replace("/", "_");
     }
@@ -1164,6 +1729,12 @@ public class ItemEditorScreen extends Screen {
             stats.add(s.lifesteal);
             stats.add(s.fireDamageBonus);
             stats.add(s.magicDamageBonus);
+            stats.add(s.sweepingRatio);
+            stats.add(s.armorShred);
+            stats.add(s.damageVsUndead);
+            stats.add(s.damageVsArthropods);
+            stats.add(s.damageVsPlayers);
+            stats.add(s.trueDamagePercent);
         } else if (activeModule instanceof ArmorModule armorModule) {
             var s = armorModule.getStats();
             stats.add(s.physicalReduction);
@@ -1226,6 +1797,12 @@ public class ItemEditorScreen extends Screen {
             newStats.lifesteal = getStat(values, 12, newStats.lifesteal);
             newStats.fireDamageBonus = getStat(values, 13, newStats.fireDamageBonus);
             newStats.magicDamageBonus = getStat(values, 14, newStats.magicDamageBonus);
+            newStats.sweepingRatio = getStat(values, 15, newStats.sweepingRatio);
+            newStats.armorShred = getStat(values, 16, newStats.armorShred);
+            newStats.damageVsUndead = getStat(values, 17, newStats.damageVsUndead);
+            newStats.damageVsArthropods = getStat(values, 18, newStats.damageVsArthropods);
+            newStats.damageVsPlayers = getStat(values, 19, newStats.damageVsPlayers);
+            newStats.trueDamagePercent = getStat(values, 20, newStats.trueDamagePercent);
             weaponModule.applyExternalStats(newStats, reason);
             weaponModule.applyPreview();
         } else if (activeModule instanceof ArmorModule armorModule) {
@@ -1246,6 +1823,100 @@ public class ItemEditorScreen extends Screen {
         } else {
             showStatus("Unsupported editor for import", UIConstants.Accent.RED);
         }
+    }
+
+    private void handleTemplateApply(ItemEditorDataManager.TemplateData template) {
+        if (template == null) return;
+        if (!isPreviewMode && activeModule != null && activeModule.hasUnsavedChanges()) {
+            activeDialog = ConfirmDialog.unsavedChanges(
+                activeModule.getPendingChanges().size(),
+                () -> {
+                    applyTemplateInternal(template);
+                    closeOverlay();
+                },
+                () -> {});
+            activeDialog.show();
+            return;
+        }
+        applyTemplateInternal(template);
+        closeOverlay();
+    }
+
+    private void applyTemplateInternal(ItemEditorDataManager.TemplateData template) {
+        ItemStack target = isPreviewMode ? item.copy() : item;
+
+        // Enchantments
+        if (template.enchantments != null && !template.enchantments.isEmpty()) {
+            ItemEnchantments.Mutable mutable = new ItemEnchantments.Mutable(Objects.requireNonNull(ItemEnchantments.EMPTY));
+            var mc = Minecraft.getInstance();
+            var level = mc != null ? mc.level : null;
+            var enchantmentRegistry = level != null
+                ? level.registryAccess().registryOrThrow(Objects.requireNonNull(Registries.ENCHANTMENT))
+                : null;
+            for (ItemEditorDataManager.EnchantData ench : template.enchantments) {
+                if (ench == null || ench.id == null) continue;
+                String enchantId = Objects.requireNonNull(ench.id, "template enchant id");
+                ResourceLocation id = ResourceLocation.tryParse(enchantId);
+                if (id == null) continue;
+                ResourceKey<Enchantment> key = ResourceKey.create(Objects.requireNonNull(Registries.ENCHANTMENT), id);
+                Holder<Enchantment> holder = enchantmentRegistry != null
+                    ? enchantmentRegistry.getHolder(Objects.requireNonNull(key)).orElse(null)
+                    : null;
+                if (holder != null) {
+                    mutable.set(holder, ench.level);
+                }
+            }
+            target.set(
+                Objects.requireNonNull(DataComponents.ENCHANTMENTS),
+                Objects.requireNonNull(mutable.toImmutable())
+            );
+        }
+
+        // Attributes
+        if (template.attributes != null && !template.attributes.isEmpty()) {
+            ItemAttributeModifiers.Builder builder = ItemAttributeModifiers.builder();
+            for (ItemEditorDataManager.AttrData attr : template.attributes) {
+                if (attr == null || attr.id == null) continue;
+                String attrId = Objects.requireNonNull(attr.id, "template attr id");
+                ResourceLocation id = ResourceLocation.tryParse(attrId);
+                if (id == null) continue;
+                ResourceKey<Attribute> key = ResourceKey.create(Objects.requireNonNull(Registries.ATTRIBUTE), id);
+                Holder<Attribute> holder = BuiltInRegistries.ATTRIBUTE.getHolder(Objects.requireNonNull(key)).orElse(null);
+                // Map to Pufferfish equivalent if present
+                if (holder == null) {
+                    holder = PufferfishCompat.map(id, BuiltInRegistries.ATTRIBUTE);
+                }
+                if (holder == null) continue;
+                AttributeModifier.Operation op = switch (attr.operation) {
+                    case 1 -> AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
+                    case 2 -> AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
+                    default -> AttributeModifier.Operation.ADD_VALUE;
+                };
+                ResourceLocation modifierId = Objects.requireNonNull(
+                    ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "template_" + id.getPath())
+                );
+                AttributeModifier modifier = new AttributeModifier(modifierId, attr.value, op);
+                builder.add(Objects.requireNonNull(holder), modifier, EquipmentSlotGroup.ANY);
+            }
+            target.set(
+                Objects.requireNonNull(DataComponents.ATTRIBUTE_MODIFIERS),
+                builder.build()
+            );
+        }
+
+        if (activeModule != null) {
+            activeModule.setItem(target);
+            activeModule.applyPreview();
+            if (!isPreviewMode) {
+                activeModule.markDirty("Applied template: " + template.name);
+            }
+        }
+
+        String name = template.name == null ? "template" : template.name;
+        ItemEditorDataManager.INSTANCE.addHistoryEntry("template_apply", item.getHoverName().getString(), name);
+        lastLoadedPreset = name;
+        showStatus("Applied template " + name, UIConstants.Accent.GREEN);
+        EditorCache.getInstance().invalidateItem(getCurrentItemId());
     }
 
     private void applyPreset(ItemEditorDataManager.PresetData preset) {
@@ -1286,19 +1957,23 @@ public class ItemEditorScreen extends Screen {
         List<ItemEditorDataManager.PresetData> presets = getFilteredPresets();
         var safeFont = Objects.requireNonNull(font, "font cannot be null");
 
-        int panelWidth = 288;
-        int panelHeight = 224;
-        int x = layout.getEditorX() + 8;
-        int y = layout.getEditorY() + UIConstants.Size.HEADER_HEIGHT + 8;
+        int panelWidth = 360;
+        int panelHeight = 260;
+        int x = (width - panelWidth) / 2;
+        int y = (height - panelHeight) / 2;
+
+        // dim background
+        graphics.fill(0, 0, width, height, UIConstants.Background.OVERLAY);
 
         graphics.fill(x, y, x + panelWidth, y + panelHeight, UIConstants.Background.PANEL_SOLID);
         AxiomRenderer.drawBorder(graphics, x, y, panelWidth, panelHeight, UIConstants.Border.DEFAULT);
+        presetPanelBounds = new ResponsiveLayout.Rect(x, y, panelWidth, panelHeight);
 
         graphics.drawString(safeFont, "Presets", x + 8, y + 8, UIConstants.Text.TITLE, false);
 
         // Search box
         int searchX = x + 8;
-        int searchY = y + 24;
+        int searchY = y + 28;
         int searchW = panelWidth - 8 - 80 - 8; // leave room for sort button and save
         int searchH = 16;
         graphics.fill(searchX, searchY, searchX + searchW, searchY + searchH, UIConstants.Background.INPUT);
@@ -1326,7 +2001,7 @@ public class ItemEditorScreen extends Screen {
         graphics.drawString(safeFont, "Save", saveX + 18, saveY + 4, UIConstants.Text.PRIMARY, false);
 
         // List area
-        int listY = y + 48;
+        int listY = y + 52;
         int rowHeight = 24;
         int listHeight = panelHeight - (listY - y) - 8;
         int maxScroll = Math.max(0, Math.max(0, presets.size() * rowHeight - listHeight));
@@ -1404,10 +2079,10 @@ public class ItemEditorScreen extends Screen {
 
         List<ItemEditorDataManager.PresetData> presets = getFilteredPresets();
 
-        int panelWidth = 288;
-        int panelHeight = 224;
-        int x = layout.getEditorX() + 8;
-        int y = layout.getEditorY() + UIConstants.Size.HEADER_HEIGHT + 8;
+        int panelWidth = presetPanelBounds.width();
+        int panelHeight = presetPanelBounds.height();
+        int x = presetPanelBounds.x();
+        int y = presetPanelBounds.y();
 
         // Click outside closes panel and restores history state
         if (mouseX < x || mouseX > x + panelWidth || mouseY < y || mouseY > y + panelHeight) {
@@ -1417,7 +2092,7 @@ public class ItemEditorScreen extends Screen {
 
         // Search box click focuses search
         int searchX = x + 8;
-        int searchY = y + 24;
+        int searchY = y + 28;
         int searchW = panelWidth - 8 - 80 - 8;
         int searchH = 16;
         if (mouseX >= searchX && mouseX <= searchX + searchW && mouseY >= searchY && mouseY <= searchY + searchH) {
@@ -1451,7 +2126,7 @@ public class ItemEditorScreen extends Screen {
         }
 
         // List items
-        int listY = y + 48;
+        int listY = y + 52;
         int rowHeight = 24;
         int listHeight = panelHeight - (listY - y) - 8;
         int maxScroll = Math.max(0, Math.max(0, presets.size() * rowHeight - listHeight));
@@ -1518,11 +2193,7 @@ public class ItemEditorScreen extends Screen {
     }
 
     private boolean isPointInPresetsPanel(double mouseX, double mouseY) {
-        int panelWidth = 288;
-        int panelHeight = 224;
-        int x = layout.getEditorX() + 8;
-        int y = layout.getEditorY() + UIConstants.Size.HEADER_HEIGHT + 8;
-        return mouseX >= x && mouseX <= x + panelWidth && mouseY >= y && mouseY <= y + panelHeight;
+        return presetPanelBounds != null && presetPanelBounds.contains(mouseX, mouseY);
     }
 
     private boolean handleFavoritesClick(double mouseX, double mouseY) {
@@ -1580,6 +2251,45 @@ public class ItemEditorScreen extends Screen {
         return true; // consume clicks inside panel
     }
 
+    private boolean persistMultiEditItem(ItemStack item, int slot) {
+        try {
+            var mc = Minecraft.getInstance();
+            if (mc != null && mc.player != null) {
+                var inv = mc.player.getInventory();
+                if (slot >= 0 && slot < inv.items.size()) {
+                    inv.items.set(slot, item);
+                }
+            }
+            var custom = item.getOrDefault(
+                Objects.requireNonNull(net.minecraft.core.component.DataComponents.CUSTOM_DATA),
+                Objects.requireNonNull(net.minecraft.world.item.component.CustomData.EMPTY)
+            );
+            var tag = Objects.requireNonNull(custom.copyTag(), "custom tag missing");
+            if (tag.contains("WeaponModStats")) {
+                var statsTag = Objects.requireNonNull(tag.getCompound("WeaponModStats"), "weapon stats tag missing");
+                PacketDistributor.sendToServer(new com.frenkvs.devmod.network.WeaponStatsPayload(item, statsTag, isGlobalMode));
+            } else if (tag.contains("ArmorModStats")) {
+                var statsTag = Objects.requireNonNull(tag.getCompound("ArmorModStats"), "armor stats tag missing");
+                ArmorStats stats = ArmorStats.load(statsTag);
+                String itemName = "";
+                try {
+                    var id = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item.getItem()));
+                    if (id != null) itemName = id.toString();
+                } catch (Exception ignored) { }
+                PacketDistributor.sendToServer(
+                    Objects.requireNonNull(com.frenkvs.devmod.UpdateArmorPayload.fromArmorStats(isGlobalMode, -1, stats, itemName))
+                );
+            }
+            if (debugPanel != null) {
+                debugPanel.log("MultiEdit persist slot " + slot + " (" + item.getHoverName().getString() + ")");
+            }
+            return true;
+        } catch (Exception ignored) {
+            if (debugPanel != null) debugPanel.log("MultiEdit persist failed: " + ignored.getMessage());
+            return false;
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // UTILITY
     // ═══════════════════════════════════════════════════════════════
@@ -1621,6 +2331,57 @@ public class ItemEditorScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    private List<String> buildStatSources(ItemStack stack) {
+        List<String> sources = new ArrayList<>();
+        if (stack == null || stack.isEmpty()) {
+            return sources;
+        }
+
+        CustomData data = stack.get(Objects.requireNonNull(DataComponents.CUSTOM_DATA));
+        boolean hasWeaponSpecific = false;
+        boolean hasArmorSpecific = false;
+        if (data != null) {
+            try {
+                var tag = data.copyTag();
+                hasWeaponSpecific = tag != null && tag.contains("WeaponModStats");
+                hasArmorSpecific = tag != null && tag.contains("ArmorModStats");
+            } catch (Exception ignored) {
+                // fall through
+            }
+        }
+
+        boolean isArmor = ArmorConfigManager.isArmor(stack);
+        boolean hasGlobal = isArmor
+            ? ArmorConfigManager.hasGlobalConfig(stack.getItem())
+            : WeaponConfigManager.hasGlobalConfig(stack.getItem());
+
+        if (isArmor) {
+            if (hasArmorSpecific) {
+                sources.add("Specific (CustomData: ArmorModStats)");
+                if (hasGlobal) {
+                    sources.add("Global override available (serverconfig/devmod/devmod-items.toml)");
+                }
+            } else if (hasGlobal) {
+                sources.add("Global (serverconfig/devmod/devmod-items.toml)");
+            } else {
+                sources.add("Vanilla (no overrides)");
+            }
+        } else {
+            if (hasWeaponSpecific) {
+                sources.add("Specific (CustomData: WeaponModStats)");
+                if (hasGlobal) {
+                    sources.add("Global override available (serverconfig/devmod/devmod-items.toml)");
+                }
+            } else if (hasGlobal) {
+                sources.add("Global (serverconfig/devmod/devmod-items.toml)");
+            } else {
+                sources.add("Vanilla (no overrides)");
+            }
+        }
+
+        return sources;
     }
 
     // ═══════════════════════════════════════════════════════════════

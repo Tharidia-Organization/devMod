@@ -4,6 +4,7 @@ import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.editor.core.EditorDimensions;
 import com.frenkvs.devmod.ui.editor.core.EditorSounds;
 import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
+import com.frenkvs.devmod.ui.editor.core.ScaledCoord;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -22,14 +23,14 @@ import java.util.function.Consumer;
  * @see EDITOR_DESIGN_SYSTEM.md Section 4.7 (Slot Selectors)
  * @see EDITOR_DESIGN_SYSTEM.md Section 2.5 (Left Column)
  */
-public class SlotSelector {
+public final class SlotSelector {
 
     // ═══════════════════════════════════════════════════════════════
     // CONSTANTS
     // ═══════════════════════════════════════════════════════════════
 
-    private static final int SLOT_SIZE = EditorDimensions.SLOT_SIZE;  // 24px
-    private static final int SLOT_GAP = 4;
+    private static final int SLOT_SIZE = EditorDimensions.SLOT_SIZE;  // 30px per spec
+    private static final int SLOT_GAP = 5;
     private static final int HEIGHT = 70;
 
     // ═══════════════════════════════════════════════════════════════
@@ -121,13 +122,17 @@ public class SlotSelector {
     public int render(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
         var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
 
-        this.bounds = new ResponsiveLayout.Rect(x, y, width, HEIGHT);
+        int slotSize = ScaledCoord.scaleDim(SLOT_SIZE);
+        int slotGap = ScaledCoord.scaleDim(SLOT_GAP);
+        int height = ScaledCoord.scaleDim(HEIGHT);
+
+        this.bounds = new ResponsiveLayout.Rect(x, y, width, height);
         slotBounds.clear();
 
         // Calculate slot positions - centered horizontally
-        int totalSlotWidth = slots.size() * SLOT_SIZE + (slots.size() - 1) * SLOT_GAP;
+        int totalSlotWidth = slots.size() * slotSize + (slots.size() - 1) * slotGap;
         int startX = x + (width - totalSlotWidth) / 2;
-        int slotY = y + 8;
+        int slotY = y + ScaledCoord.scaleDim(8);
 
         // Update hover state
         hoveredIndex = -1;
@@ -135,8 +140,8 @@ public class SlotSelector {
         // Render slots
         for (int i = 0; i < slots.size(); i++) {
             SlotInfo slotInfo = slots.get(i);
-            int slotX = startX + i * (SLOT_SIZE + SLOT_GAP);
-            ResponsiveLayout.Rect slotRect = new ResponsiveLayout.Rect(slotX, slotY, SLOT_SIZE, SLOT_SIZE);
+            int slotX = startX + i * (slotSize + slotGap);
+            ResponsiveLayout.Rect slotRect = new ResponsiveLayout.Rect(slotX, slotY, slotSize, slotSize);
             slotBounds.add(slotRect);
 
             boolean isHovered = slotRect.contains(mouseX, mouseY);
@@ -149,24 +154,25 @@ public class SlotSelector {
             // Slot background
             int bgColor = isSelected ? UIConstants.Background.ACTIVE :
                          (isHovered ? UIConstants.Background.HOVER : UIConstants.Background.INPUT);
-            graphics.fill(slotX, slotY, slotX + SLOT_SIZE, slotY + SLOT_SIZE, bgColor);
+            graphics.fill(slotX, slotY, slotX + slotSize, slotY + slotSize, bgColor);
 
             // Slot border
             int borderColor = isSelected ? UIConstants.Border.ACCENT :
                              (isHovered ? UIConstants.Border.HOVER : UIConstants.Border.DEFAULT);
-            AxiomRenderer.drawBorder(graphics, slotX, slotY, SLOT_SIZE, SLOT_SIZE, borderColor);
+            AxiomRenderer.drawBorder(graphics, slotX, slotY, slotSize, slotSize, borderColor);
 
             // Render item or short label
             ItemStack itemStack = Objects.requireNonNull(slotInfo.item(), "slot item cannot be null");
             if (!itemStack.isEmpty()) {
-                graphics.renderItem(itemStack, slotX + 4, slotY + 4);
+                int iconPad = ScaledCoord.scaleDim(4);
+                graphics.renderItem(itemStack, slotX + iconPad, slotY + iconPad);
             } else {
-                // Show short label when empty
+                // Show placeholder glyph when empty
                 int textColor = isSelected ? UIConstants.Text.PRIMARY : UIConstants.Text.MUTED;
-                String shortLabel = Objects.requireNonNull(slotInfo.shortLabel(), "short label cannot be null");
-                int textX = slotX + (SLOT_SIZE - font.width(shortLabel)) / 2;
-                int textY = slotY + (SLOT_SIZE - 8) / 2;
-                graphics.drawString(font, shortLabel, textX, textY, textColor, false);
+                String placeholder = Objects.requireNonNull(placeholderFor(slotInfo), "placeholder cannot be null");
+                int textX = slotX + (slotSize - font.width(placeholder)) / 2;
+                int textY = slotY + (slotSize - font.lineHeight) / 2;
+                graphics.drawString(font, placeholder, textX, textY, textColor, false);
             }
         }
 
@@ -174,11 +180,11 @@ public class SlotSelector {
         if (selectedIndex >= 0 && selectedIndex < slots.size()) {
             String label = Objects.requireNonNull(slots.get(selectedIndex).label(), "label cannot be null");
             int labelX = x + (width - font.width(label)) / 2;
-            int labelY = slotY + SLOT_SIZE + 8;
+            int labelY = slotY + slotSize + ScaledCoord.scaleDim(8);
             graphics.drawString(font, label, labelX, labelY, UIConstants.Text.SECONDARY, false);
         }
 
-        return HEIGHT;
+        return height;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -283,5 +289,18 @@ public class SlotSelector {
             return slots.get(hoveredIndex);
         }
         return null;
+    }
+
+    private String placeholderFor(SlotInfo info) {
+        if (info == null || info.slot() == null) return "?";
+        return switch (info.slot()) {
+            case HEAD -> "🪖";
+            case CHEST -> "🦺";
+            case LEGS -> "👖";
+            case FEET -> "👢";
+            case OFFHAND -> "🛡";
+            case MAINHAND -> "⚔";
+            default -> Objects.requireNonNullElse(info.shortLabel(), "?");
+        };
     }
 }

@@ -4,6 +4,7 @@ import com.frenkvs.devmod.integration.ModIntegrationManager;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
@@ -37,6 +38,10 @@ public class DevMod {
             Objects.requireNonNull(Registries.CREATIVE_MODE_TAB),
             MODID
     );
+    public static final DeferredRegister<Attribute> ATTRIBUTES = ModAttributes.ATTRIBUTES;
+    public static final DeferredRegister<net.minecraft.core.component.DataComponentType<?>> ARMOR_COMPONENTS = ArmorComponents.COMPONENTS;
+    public static final DeferredRegister<net.minecraft.core.component.DataComponentType<?>> RANGED_COMPONENTS = RangedComponents.COMPONENTS;
+    public static final DeferredRegister<net.minecraft.core.component.DataComponentType<?>> WEAPON_COMPONENTS = WeaponComponents.COMPONENTS;
 
     // 3. "VIEWER_ITEM" ITEM
     public static final DeferredHolder<Item, Item> VIEWER_ITEM = ITEMS.register("viewer_item", () -> new Item(new Item.Properties()));
@@ -55,6 +60,10 @@ public class DevMod {
         IEventBus eventBus = Objects.requireNonNull(modEventBus);
         ITEMS.register(eventBus);
         CREATIVE_TABS.register(eventBus);
+        ATTRIBUTES.register(eventBus);
+        ARMOR_COMPONENTS.register(eventBus);
+        RANGED_COMPONENTS.register(eventBus);
+        WEAPON_COMPONENTS.register(eventBus);
 
         // Register configuration
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);

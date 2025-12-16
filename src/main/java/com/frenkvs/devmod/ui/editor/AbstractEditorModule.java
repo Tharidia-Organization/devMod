@@ -471,6 +471,24 @@ public abstract class AbstractEditorModule implements EditorModule {
         EditorCache.getInstance().invalidateAll();
     }
 
+    // Preview item: used to hold a client-side preview copy so preview does not mutate the real item
+    private ItemStack previewItem = null;
+
+    /**
+     * Returns a preview ItemStack if a preview is active, otherwise null.
+     */
+    public ItemStack getPreviewItem() { return previewItem; }
+
+    /**
+     * Sets the preview item (client-side only).
+     */
+    protected void setPreviewItem(ItemStack stack) { this.previewItem = stack; }
+
+    /**
+     * Clear any active preview.
+     */
+    public void clearPreview() { this.previewItem = null; }
+
     @Override
     public void applyPreview() {
         // Default implementation does nothing

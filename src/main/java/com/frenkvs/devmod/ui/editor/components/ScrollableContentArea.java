@@ -1,6 +1,7 @@
 package com.frenkvs.devmod.ui.editor.components;
 
 import com.frenkvs.devmod.ui.AxiomRenderer;
+import com.frenkvs.devmod.ui.editor.AdvancedScroll;
 import com.frenkvs.devmod.ui.editor.core.EditorDimensions;
 import com.frenkvs.devmod.ui.editor.core.EditorSpacing;
 import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
@@ -39,6 +40,7 @@ public class ScrollableContentArea {
     private boolean scrollbarDragging = false;
     private double dragStartY = 0;
     private float dragStartOffset = 0;
+    private final AdvancedScroll smoothScroll = new AdvancedScroll();
 
     // ═══════════════════════════════════════════════════════════════
     // CONTENT RENDERER INTERFACE
@@ -103,7 +105,10 @@ public class ScrollableContentArea {
 
         // Update scroll bounds
         float maxScroll = Math.max(0, contentHeight - viewportHeight);
-        scrollOffset = Mth.clamp(scrollOffset, 0, maxScroll);
+        smoothScroll.setMaxScroll(maxScroll);
+        smoothScroll.scrollTo(scrollOffset); // keep target in sync when layout changes
+        smoothScroll.update();
+        scrollOffset = Mth.clamp(smoothScroll.getOffset(), 0, maxScroll);
 
         // Render scrollbar (if needed)
         if (contentHeight > viewportHeight) {
@@ -191,8 +196,9 @@ public class ScrollableContentArea {
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (bounds.contains(mouseX, mouseY)) {
             float maxScroll = Math.max(0, contentHeight - contentBounds.height());
-            scrollOffset -= (float) scrollY * 20;  // 20 pixels per scroll tick
-            scrollOffset = Mth.clamp(scrollOffset, 0, maxScroll);
+            smoothScroll.setMaxScroll(maxScroll);
+            smoothScroll.scroll(scrollY * 20);
+            scrollOffset = Mth.clamp(smoothScroll.getOffset(), 0, maxScroll);
             return true;
         }
         return false;
@@ -203,22 +209,26 @@ public class ScrollableContentArea {
 
         // Page Up/Down
         if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_PAGE_UP) {
-            scrollOffset -= contentBounds.height();
-            scrollOffset = Mth.clamp(scrollOffset, 0, maxScroll);
+            smoothScroll.setMaxScroll(maxScroll);
+            smoothScroll.scroll(contentBounds.height());
+            scrollOffset = Mth.clamp(smoothScroll.getOffset(), 0, maxScroll);
             return true;
         }
         if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_PAGE_DOWN) {
-            scrollOffset += contentBounds.height();
-            scrollOffset = Mth.clamp(scrollOffset, 0, maxScroll);
+            smoothScroll.setMaxScroll(maxScroll);
+            smoothScroll.scroll(-contentBounds.height());
+            scrollOffset = Mth.clamp(smoothScroll.getOffset(), 0, maxScroll);
             return true;
         }
 
         // Home/End
         if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_HOME) {
+            smoothScroll.scrollTo(0);
             scrollOffset = 0;
             return true;
         }
         if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_END) {
+            smoothScroll.scrollTo(maxScroll);
             scrollOffset = maxScroll;
             return true;
         }
@@ -234,6 +244,7 @@ public class ScrollableContentArea {
      * Scroll to the top.
      */
     public void scrollToTop() {
+        smoothScroll.scrollTo(0);
         scrollOffset = 0;
     }
 
@@ -242,6 +253,7 @@ public class ScrollableContentArea {
      */
     public void scrollToBottom() {
         float maxScroll = Math.max(0, contentHeight - contentBounds.height());
+        smoothScroll.scrollTo(maxScroll);
         scrollOffset = maxScroll;
     }
 
@@ -257,10 +269,13 @@ public class ScrollableContentArea {
 
         if (targetY < visibleTop) {
             // Target is above viewport
+            smoothScroll.scrollTo(targetY);
             scrollOffset = targetY;
         } else if (targetY > visibleBottom) {
             // Target is below viewport
-            scrollOffset = targetY - contentBounds.height() + PADDING;
+            float target = targetY - contentBounds.height() + PADDING;
+            smoothScroll.scrollTo(target);
+            scrollOffset = target;
         }
 
         scrollOffset = Mth.clamp(scrollOffset, 0, maxScroll);
@@ -270,6 +285,7 @@ public class ScrollableContentArea {
      * Reset scroll position.
      */
     public void reset() {
+        smoothScroll.scrollTo(0);
         scrollOffset = 0;
         contentHeight = 0;
     }
@@ -285,6 +301,7 @@ public class ScrollableContentArea {
     public void setScrollOffset(float offset) {
         float maxScroll = Math.max(0, contentHeight - contentBounds.height());
         this.scrollOffset = Mth.clamp(offset, 0, maxScroll);
+        smoothScroll.scrollTo(this.scrollOffset);
     }
 
     public int getContentHeight() {

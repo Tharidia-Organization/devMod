@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.ui.editor.core;
 
+
 /**
  * Responsive layout system for editor screens.
  * Adapts UI to different screen sizes.
@@ -73,13 +74,19 @@ public class ResponsiveLayout {
         );
 
         public int calculateWidth(int availableWidth) {
-            int desired = availableWidth - paddingHorizontal * 2;
-            return Math.max(minWidth, Math.min(maxWidth, desired));
+            int scaledMin = ScaledCoord.scaleDim(minWidth);
+            int scaledMax = ScaledCoord.scaleDim(maxWidth);
+            int scaledPadding = ScaledCoord.scaleDim(paddingHorizontal);
+            int desired = availableWidth - scaledPadding * 2;
+            return ScaledCoord.alignTo4(Math.max(scaledMin, Math.min(scaledMax, desired)));
         }
 
         public int calculateHeight(int availableHeight) {
-            int desired = availableHeight - paddingVertical * 2;
-            return Math.max(minHeight, Math.min(maxHeight, desired));
+            int scaledMin = ScaledCoord.scaleDim(minHeight);
+            int scaledMax = ScaledCoord.scaleDim(maxHeight);
+            int scaledPadding = ScaledCoord.scaleDim(paddingVertical);
+            int desired = availableHeight - scaledPadding * 2;
+            return ScaledCoord.alignTo4(Math.max(scaledMin, Math.min(scaledMax, desired)));
         }
     }
 
@@ -156,49 +163,58 @@ public class ResponsiveLayout {
      * Recalculate layout for screen dimensions.
      */
     public void calculate(int screenWidth, int screenHeight) {
-        this.screenWidth = screenWidth;
-        this.screenHeight = screenHeight;
-        this.currentSize = ScreenSize.fromWidth(screenWidth);
-
-        // Calculate editor panel dimensions
-        editorWidth = constraints.calculateWidth(screenWidth);
-        editorHeight = constraints.calculateHeight(screenHeight);
-
-        // Center the editor
-        editorX = (screenWidth - editorWidth) / 2;
-        editorY = (screenHeight - editorHeight) / 2;
-
-        // Adjust internal layout based on size
-        calculateInternalLayout();
+        calculate(screenWidth, screenHeight,
+            EditorScaleCalculator.calculateFit(screenWidth, screenHeight, ScaledCoord.getScale()),
+            ScaledCoord.getScale());
     }
 
-    private void calculateInternalLayout() {
+    /**
+     * Recalculate layout using the precomputed fit (same bounds used by {@link EditorLayout}).
+     */
+    public void calculate(int screenWidth, int screenHeight,
+                          EditorScaleCalculator.ScreenFitResult fit,
+                          float scale) {
+        this.screenWidth = screenWidth;
+        this.screenHeight = screenHeight;
+        this.currentSize = ScreenSize.fromWidth(fit.panelWidth());
+
+        // Use the clamped/centered bounds from ScreenFitResult to stay aligned with EditorLayout
+        editorWidth = fit.panelWidth();
+        editorHeight = fit.panelHeight();
+        editorX = fit.panelX();
+        editorY = fit.panelY();
+
+        // Adjust internal layout based on size
+        calculateInternalLayout(scale);
+    }
+
+    private void calculateInternalLayout(float scale) {
         switch (currentSize) {
             case SMALL -> {
-                contentPadding = 6;
-                sliderWidth = editorWidth - 40;
-                tabWidth = 50;
+                contentPadding = ScaledCoord.scaleDim(6, scale);
+                sliderWidth = Math.max(ScaledCoord.scaleDim(120, scale), editorWidth - ScaledCoord.scaleDim(40, scale));
+                tabWidth = ScaledCoord.scaleDim(50, scale);
                 showSidePanels = false;
                 compactMode = true;
             }
             case MEDIUM -> {
-                contentPadding = 8;
-                sliderWidth = Math.min(250, editorWidth - 60);
-                tabWidth = 60;
+                contentPadding = ScaledCoord.scaleDim(8, scale);
+                sliderWidth = Math.min(ScaledCoord.scaleDim(250, scale), editorWidth - ScaledCoord.scaleDim(60, scale));
+                tabWidth = ScaledCoord.scaleDim(60, scale);
                 showSidePanels = false;
                 compactMode = false;
             }
             case LARGE -> {
-                contentPadding = 10;
-                sliderWidth = 280;
-                tabWidth = 70;
+                contentPadding = ScaledCoord.scaleDim(10, scale);
+                sliderWidth = ScaledCoord.scaleDim(280, scale);
+                tabWidth = ScaledCoord.scaleDim(70, scale);
                 showSidePanels = true;
                 compactMode = false;
             }
             case XLARGE -> {
-                contentPadding = 12;
-                sliderWidth = 320;
-                tabWidth = 80;
+                contentPadding = ScaledCoord.scaleDim(12, scale);
+                sliderWidth = ScaledCoord.scaleDim(320, scale);
+                tabWidth = ScaledCoord.scaleDim(80, scale);
                 showSidePanels = true;
                 compactMode = false;
             }
@@ -242,7 +258,7 @@ public class ResponsiveLayout {
             editorX,
             editorY,
             editorWidth,
-            UIConstants.Size.HEADER_HEIGHT
+            ScaledCoord.scaleDim(UIConstants.Size.HEADER_HEIGHT)
         );
     }
 
@@ -252,9 +268,9 @@ public class ResponsiveLayout {
     public Rect getTabBarArea() {
         return new Rect(
             editorX,
-            editorY + UIConstants.Size.HEADER_HEIGHT,
+            editorY + ScaledCoord.scaleDim(UIConstants.Size.HEADER_HEIGHT),
             editorWidth,
-            UIConstants.Size.TAB_HEIGHT + 4
+            ScaledCoord.scaleDim(UIConstants.Size.TAB_HEIGHT + 4)
         );
     }
 
@@ -262,8 +278,8 @@ public class ResponsiveLayout {
      * Get content area bounds.
      */
     public Rect getContentArea() {
-        int topOffset = UIConstants.Size.HEADER_HEIGHT + UIConstants.Size.TAB_HEIGHT + 8;
-        int bottomOffset = UIConstants.Size.FOOTER_HEIGHT + 8;
+        int topOffset = ScaledCoord.scaleDim(UIConstants.Size.HEADER_HEIGHT + UIConstants.Size.TAB_HEIGHT + 8);
+        int bottomOffset = ScaledCoord.scaleDim(UIConstants.Size.FOOTER_HEIGHT + 8);
         return new Rect(
             editorX + contentPadding,
             editorY + topOffset,
@@ -278,9 +294,9 @@ public class ResponsiveLayout {
     public Rect getFooterArea() {
         return new Rect(
             editorX + contentPadding,
-            editorY + editorHeight - UIConstants.Size.FOOTER_HEIGHT - 4,
+            editorY + editorHeight - ScaledCoord.scaleDim(UIConstants.Size.FOOTER_HEIGHT + 4),
             editorWidth - contentPadding * 2,
-            UIConstants.Size.FOOTER_HEIGHT
+            ScaledCoord.scaleDim(UIConstants.Size.FOOTER_HEIGHT)
         );
     }
 
@@ -290,8 +306,9 @@ public class ResponsiveLayout {
     public Rect getSidePanelArea(boolean left) {
         if (!showSidePanels) return Rect.EMPTY;
 
-        int panelWidth = 150;
-        int x = left ? editorX - panelWidth - 10 : editorX + editorWidth + 10;
+        int panelWidth = ScaledCoord.scaleDim(150);
+        int gap = ScaledCoord.scaleDim(10);
+        int x = left ? editorX - panelWidth - gap : editorX + editorWidth + gap;
 
         return new Rect(x, editorY, panelWidth, editorHeight);
     }
@@ -341,7 +358,7 @@ public class ResponsiveLayout {
      */
     public int getVisibleTabCount() {
         int availableWidth = editorWidth - contentPadding * 2;
-        return Math.max(3, availableWidth / (tabWidth + 4));
+        return Math.max(3, availableWidth / (tabWidth + ScaledCoord.scaleDim(4)));
     }
 
     /**

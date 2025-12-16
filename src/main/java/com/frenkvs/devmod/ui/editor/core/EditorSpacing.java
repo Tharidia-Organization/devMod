@@ -9,6 +9,9 @@ package com.frenkvs.devmod.ui.editor.core;
 public final class EditorSpacing {
     private EditorSpacing() {}
 
+    // Runtime validation toggle (debug-only)
+    public static boolean ENABLE_GRID_VALIDATION = false;
+
     // Base unit
     public static final int UNIT = 4;
 

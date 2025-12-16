@@ -27,6 +27,9 @@ public record UpdateArmorPayload(
     float knockbackResistance,  // Knockback resistance (0.0 - 1.0)
     boolean thornsEnabled,      // Enable thorns reflection
     float thornsPercent,        // Thorns reflection percentage (0.0 - 0.5)
+    boolean shieldReflect,      // Shield reflect projectiles
+    float shieldBlockStrength,  // Shield block strength (0.0 - 1.0)
+    float shieldRecovery,       // Shield recovery speed multiplier
     String itemName             // Item registry name (for global config key)
 ) implements CustomPacketPayload {
 
@@ -51,6 +54,9 @@ public record UpdateArmorPayload(
         buf.writeFloat(payload.knockbackResistance());
         buf.writeBoolean(payload.thornsEnabled());
         buf.writeFloat(payload.thornsPercent());
+        buf.writeBoolean(payload.shieldReflect());
+        buf.writeFloat(payload.shieldBlockStrength());
+        buf.writeFloat(payload.shieldRecovery());
         buf.writeUtf(Objects.requireNonNull(payload.itemName()), 256);
     }
 
@@ -68,6 +74,9 @@ public record UpdateArmorPayload(
             buf.readFloat(),
             buf.readFloat(),
             buf.readBoolean(),
+            buf.readFloat(),
+            buf.readBoolean(),
+            buf.readFloat(),
             buf.readFloat(),
             Objects.requireNonNull(buf.readUtf(256))
         );
@@ -98,6 +107,9 @@ public record UpdateArmorPayload(
         stats.knockbackResistance = knockbackResistance;
         stats.thornsReflect = thornsEnabled;
         stats.thornsPercent = thornsPercent;
+        stats.shieldReflectProjectiles = shieldReflect;
+        stats.shieldBlockStrength = shieldBlockStrength;
+        stats.shieldRecoverySpeed = shieldRecovery;
         return stats;
     }
 
@@ -118,6 +130,9 @@ public record UpdateArmorPayload(
             stats.knockbackResistance,
             stats.thornsReflect,
             stats.thornsPercent,
+            stats.shieldReflectProjectiles,
+            stats.shieldBlockStrength,
+            stats.shieldRecoverySpeed,
             itemName
         );
     }

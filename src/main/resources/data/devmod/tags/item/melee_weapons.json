@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "#c:tools/swords",
+    "#c:tools/axes",
+    "#forge:tools/melee_weapon",
+    "#neoforge:melee_weapons"
+  ]
+}

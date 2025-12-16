@@ -85,6 +85,20 @@ public class Config {
     // ============================================
 
     public static final ModConfigSpec.BooleanValue EDITOR_SOUNDS_ENABLED;
+    public static final ModConfigSpec.EnumValue<EditorDefaultMode> EDITOR_DEFAULT_MODE;
+    public static final ModConfigSpec.BooleanValue EDITOR_WEAPON_HEURISTIC_ENABLED;
+    public static final ModConfigSpec.DoubleValue EDITOR_WEAPON_MIN_CONFIDENCE;
+    public static final ModConfigSpec.BooleanValue EDITOR_WEAPON_LOG_DETECTION;
+    public static final ModConfigSpec.BooleanValue EDITOR_WEAPON_TREAT_PICKAXE;
+    public static final ModConfigSpec.BooleanValue EDITOR_GRID_VALIDATION;
+
+    /**
+     * Default editor mode preference.
+     */
+    public enum EditorDefaultMode {
+        PREVIEW,
+        APPLY
+    }
 
     // ============================================
     // BADGE POPUP SETTINGS
@@ -235,6 +249,32 @@ public class Config {
         EDITOR_SOUNDS_ENABLED = BUILDER
                 .comment("Enable sound effects for editor interactions (button clicks, slider ticks, toggles)")
                 .define("soundsEnabled", true);
+
+        EDITOR_DEFAULT_MODE = BUILDER
+                .comment("Default editor mode when opening the Item Editor",
+                        "PREVIEW = safe client-only mode (recommended)",
+                        "APPLY = persistent mode (requires confirmation if dirty)")
+                .defineEnum("defaultMode", EditorDefaultMode.PREVIEW);
+
+        EDITOR_WEAPON_HEURISTIC_ENABLED = BUILDER
+                .comment("Enable attribute/name heuristic detection for weapons when class/tag/whitelist are missing")
+                .define("weaponDetectionHeuristic", true);
+
+        EDITOR_WEAPON_MIN_CONFIDENCE = BUILDER
+                .comment("Minimum confidence (0.0-1.0) to auto-open editor without low-confidence warning")
+                .defineInRange("weaponDetectionMinConfidence", 0.8, 0.0, 1.0);
+
+        EDITOR_WEAPON_LOG_DETECTION = BUILDER
+                .comment("Log weapon detection results for debugging")
+                .define("weaponDetectionLog", false);
+
+        EDITOR_WEAPON_TREAT_PICKAXE = BUILDER
+                .comment("Treat pickaxes as combat weapons in the editor (false = ignore pickaxes unless explicitly whitelisted)")
+                .define("treatPickaxeAsWeapon", false);
+
+        EDITOR_GRID_VALIDATION = BUILDER
+                .comment("Enable 4px grid validation logs for editor layouts (dev/debug only)")
+                .define("gridValidation", false);
 
         BUILDER.pop();
 

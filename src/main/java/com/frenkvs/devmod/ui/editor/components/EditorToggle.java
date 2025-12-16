@@ -27,7 +27,7 @@ public class EditorToggle {
 
     // Configuration
     private final String id;
-    private final String label;
+    private String label;
     private String tooltip = null;
     private boolean enabled = true;
     private boolean playSound = true;
@@ -82,11 +82,23 @@ public class EditorToggle {
     // RENDERING
     // =========================================================================
 
+    /** Height of this control (without external spacing). */
+    public int calculateHeight() {
+        return TOGGLE_HEIGHT;
+    }
+
     /**
      * Render the toggle at the given position.
      * @return The total height consumed
      */
     public int render(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
+        // Some callers (e.g., layout measurement) may pass a null graphics; just skip drawing.
+        if (graphics == null) {
+            this.bounds = new ResponsiveLayout.Rect(x, y, width, TOGGLE_HEIGHT);
+            this.toggleBounds = ResponsiveLayout.Rect.EMPTY;
+            return TOGGLE_HEIGHT;
+        }
+
         var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
 
         int height = TOGGLE_HEIGHT;
@@ -97,7 +109,8 @@ public class EditorToggle {
 
         // Label on the left
         int labelColor = enabled ? UIConstants.Text.PRIMARY : UIConstants.Text.MUTED;
-        graphics.drawString(font, label, x, y + (height - 8) / 2, labelColor, false);
+        String safeLabel = Objects.requireNonNullElse(label, "");
+        graphics.drawString(font, safeLabel, x, y + (height - 8) / 2, labelColor, false);
 
         // Toggle on the right - centered vertically within TOGGLE_HEIGHT
         int toggleX = x + width - TOGGLE_WIDTH;
@@ -199,6 +212,10 @@ public class EditorToggle {
 
     public String getLabel() {
         return label;
+    }
+
+    public void setLabel(String newLabel) {
+        this.label = newLabel == null ? "" : newLabel;
     }
 
     public String getTooltip() {

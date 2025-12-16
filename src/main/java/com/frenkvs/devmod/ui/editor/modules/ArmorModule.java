@@ -1,7 +1,10 @@
 package com.frenkvs.devmod.ui.editor.modules;
 
 import com.frenkvs.devmod.ArmorStats;
-import com.frenkvs.devmod.network.ArmorStatsPayload;
+import com.frenkvs.devmod.ArmorConfigManager;
+import com.frenkvs.devmod.ArmorComponents;
+import com.frenkvs.devmod.DevMod;
+import com.frenkvs.devmod.network.ArmorStatsPayloadV2;
 import com.frenkvs.devmod.ui.editor.AbstractEditorModule;
 import com.frenkvs.devmod.ui.editor.EditorSection;
 import com.frenkvs.devmod.ui.editor.ModuleTab;
@@ -19,8 +22,11 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -39,8 +45,14 @@ public class ArmorModule extends AbstractEditorModule {
     // ═══════════════════════════════════════════════════════════════
 
     private static final String NBT_KEY = "ArmorModStats";
+    private static final double EPSILON = 1e-4;
+    private static final @Nonnull net.minecraft.world.item.component.ItemAttributeModifiers NONNULL_EMPTY =
+        Objects.requireNonNull(net.minecraft.world.item.component.ItemAttributeModifiers.EMPTY,
+            "ItemAttributeModifiers.EMPTY cannot be null");
     private ArmorStats stats = new ArmorStats();
     private ArmorStats originalStats = new ArmorStats();
+    public enum ArmorVariant { STANDARD, SHIELD }
+    private ArmorVariant variant = ArmorVariant.STANDARD;
 
     // ═══════════════════════════════════════════════════════════════
     // UI COMPONENTS - Damage Reduction Tab
@@ -66,6 +78,9 @@ public class ArmorModule extends AbstractEditorModule {
 
     private EditorToggle thornsToggle;
     private EditorSlider thornsPercentSlider;
+    private EditorToggle shieldReflectToggle;
+    private EditorSlider shieldBlockStrengthSlider;
+    private EditorSlider shieldRecoverySlider;
 
     // ═══════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -73,6 +88,11 @@ public class ArmorModule extends AbstractEditorModule {
 
     public ArmorModule() {
         super("armor", "Armor Editor");
+    }
+
+    public ArmorModule(ArmorVariant variant) {
+        super("armor", "Armor Editor");
+        this.variant = variant == null ? ArmorVariant.STANDARD : variant;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -90,17 +110,127 @@ public class ArmorModule extends AbstractEditorModule {
     }
 
     private void loadStatsFromItem() {
+        // Prefer component storage; fall back to legacy CustomData
+        CompoundTag componentTag = null;
+        try {
+            componentTag = item.get(Objects.requireNonNull(ArmorComponents.ARMOR_STATS.get(), "armor component type"));
+        } catch (Exception ignored) {}
+
+        var customDataType = Objects.requireNonNull(
+            DataComponents.CUSTOM_DATA,
+            "CUSTOM_DATA component type cannot be null");
+
+        DevMod.LOGGER.info("[Editor][Armor] Item={} | hasComponent={} | hasCustomData={}",
+            item.getItem().toString(),
+            componentTag != null && !componentTag.isEmpty(),
+            item.has(customDataType));
+
+        if (componentTag != null && !componentTag.isEmpty()) {
+            stats = ArmorStats.load(componentTag.copy());
+            return;
+        }
+
         CustomData customData = item.getOrDefault(
-            Objects.requireNonNull(DataComponents.CUSTOM_DATA, "CUSTOM_DATA component type cannot be null"),
+            customDataType,
             Objects.requireNonNull(CustomData.EMPTY, "CustomData.EMPTY cannot be null")
         );
-        CompoundTag tag = customData.copyTag();
+        CompoundTag tag = Objects.requireNonNull(customData.copyTag(), "custom data tag cannot be null");
 
         if (tag.contains(NBT_KEY)) {
             stats = ArmorStats.load(tag.getCompound(NBT_KEY));
         } else {
             stats = new ArmorStats();
+            applyVanillaDefaults(stats);
         }
+    }
+
+    /**
+     * Populate armor stats from vanilla attributes when no custom data exists.
+     */
+    private void applyVanillaDefaults(ArmorStats target) {
+        if (target == null) return;
+        try {
+            net.minecraft.world.entity.EquipmentSlot slot = net.minecraft.world.entity.EquipmentSlot.CHEST;
+            if (item.getItem() instanceof net.minecraft.world.item.ArmorItem armorItem) {
+                slot = armorItem.getEquipmentSlot();
+            } else if (item.getItem() instanceof net.minecraft.world.item.ShieldItem) {
+                slot = net.minecraft.world.entity.EquipmentSlot.OFFHAND;
+            }
+
+            net.minecraft.core.component.DataComponentType<net.minecraft.world.item.component.ItemAttributeModifiers> attrType =
+                Objects.requireNonNull(net.minecraft.core.component.DataComponents.ATTRIBUTE_MODIFIERS,
+                    "ATTRIBUTE_MODIFIERS component type cannot be null");
+
+            @Nonnull net.minecraft.world.item.component.ItemAttributeModifiers mods = java.util.Objects.requireNonNull(
+                safeMods(item.getOrDefault(attrType, NONNULL_EMPTY)),
+                "attribute modifiers component cannot be null");
+
+            mods = mergeAttributeSets(mods, safeMods(item.getAttributeModifiers()));
+            mods = mergeAttributeSets(mods, safeMods(item.getItem().getDefaultAttributeModifiers(item)));
+
+            double armor = 0;
+            double toughness = 0;
+            double kb = 0;
+            for (net.minecraft.world.item.component.ItemAttributeModifiers.Entry entry : mods.modifiers()) {
+                if (slot != null && entry.slot() != null && !entry.slot().test(slot)) continue;
+                var attrHolder = entry.attribute();
+                var mod = entry.modifier();
+                if (attrHolder == null || mod == null) continue;
+                var attribute = attrHolder.value();
+                if (attribute == null) continue;
+
+                if (attribute == net.minecraft.world.entity.ai.attributes.Attributes.ARMOR) {
+                    armor += mod.amount();
+                } else if (attribute == net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS) {
+                    toughness += mod.amount();
+                } else if (attribute == net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE) {
+                    kb += mod.amount();
+                }
+            }
+
+            if (armor != 0) {
+                target.armorBonus = (float) armor;
+                float reduction = Math.min(0.8f, (float) armor / 30f);
+                target.physicalReduction = reduction;
+                target.projectileReduction = reduction;
+                DevMod.LOGGER.info("[Editor][Armor] Attr armor={} -> reduction set to {}", armor, reduction);
+            }
+            if (toughness != 0) target.toughnessBonus = (float) toughness;
+            if (kb != 0) target.knockbackResistance = (float) kb;
+
+            if (item.getItem() instanceof net.minecraft.world.item.ShieldItem) {
+                target.shieldBlockStrength = 1.0f;
+                target.shieldRecoverySpeed = 1.0f;
+                DevMod.LOGGER.info("[Editor][Armor] Shield defaults applied: blockStrength=1, recovery=1");
+            }
+        } catch (Exception ignored) {
+            // best-effort fallback
+        }
+    }
+
+    @Nonnull
+    private static net.minecraft.world.item.component.ItemAttributeModifiers safeMods(
+        @Nullable net.minecraft.world.item.component.ItemAttributeModifiers mods
+    ) {
+        if (mods == null) {
+            return NONNULL_EMPTY;
+        }
+        return java.util.Objects.requireNonNull(mods, "ItemAttributeModifiers cannot be null");
+    }
+
+    @Nonnull
+    private static net.minecraft.world.item.component.ItemAttributeModifiers mergeAttributeSets(
+        @Nonnull net.minecraft.world.item.component.ItemAttributeModifiers base,
+        @Nullable net.minecraft.world.item.component.ItemAttributeModifiers extra
+    ) {
+        if (extra == null || extra == NONNULL_EMPTY || extra.modifiers().isEmpty()) {
+            return base;
+        }
+        java.util.List<net.minecraft.world.item.component.ItemAttributeModifiers.Entry> merged =
+            new java.util.ArrayList<>(base.modifiers());
+        merged.addAll(extra.modifiers());
+        boolean show = base.showInTooltip() || extra.showInTooltip();
+        return new net.minecraft.world.item.component.ItemAttributeModifiers(merged, show);
     }
 
     private void updateComponentsFromStats() {
@@ -116,6 +246,9 @@ public class ArmorModule extends AbstractEditorModule {
 
         if (thornsToggle != null) thornsToggle.setValue(stats.thornsReflect);
         if (thornsPercentSlider != null) thornsPercentSlider.setValue(stats.thornsPercent * 100);
+        if (shieldReflectToggle != null) shieldReflectToggle.setValue(stats.shieldReflectProjectiles);
+        if (shieldBlockStrengthSlider != null) shieldBlockStrengthSlider.setValue(stats.shieldBlockStrength);
+        if (shieldRecoverySlider != null) shieldRecoverySlider.setValue(stats.shieldRecoverySpeed);
     }
 
     /**
@@ -143,11 +276,15 @@ public class ArmorModule extends AbstractEditorModule {
         createDamageReductionComponents();
         createVanillaStatsComponents();
         createSpecialComponents();
+        createShieldComponents();
 
         // Add tabs
         addTab(ModuleTab.of("reduction", "Reduction", this::getDamageReductionSections));
         addTab(ModuleTab.of("stats", "Stats", this::getVanillaStatsSections));
         addTab(ModuleTab.of("special", "Special", this::getSpecialSections));
+        if (variant == ArmorVariant.SHIELD) {
+            addTab(ModuleTab.of("shield", "Shield", this::getShieldSections));
+        }
         addTab(ModuleTab.of("debug", "Debug", this::getDebugSections));
     }
 
@@ -164,9 +301,23 @@ public class ArmorModule extends AbstractEditorModule {
     private List<EditorSection> getDebugSections() {
         ItemDebugInfo info = buildDebugInfo();
         List<ValueComparison> comparisons = buildValueComparisons();
-        List<String> history = getRecentHistoryEntries(5);
-        List<String> nbtLines = DebugInfoSection.formatNbtLines(getCustomDataTag(), 8);
+        List<String> history = getRecentHistoryEntries(8);
+        List<String> nbtLines = DebugInfoSection.formatNbtLines(getCustomDataTag(), 12);
         return List.of(new DebugInfoSection(info, comparisons, history, nbtLines, this::copyDebugInfo));
+    }
+
+    private List<EditorSection> withEhp(List<EditorSection> sections) {
+        List<EditorSection> result = new ArrayList<>(sections);
+        result.add(new EhpPreviewSection());
+        return result;
+    }
+
+    private float computeEhp() {
+        return EditorCache.getInstance().getOrCompute(
+            EditorCache.Types.EHP,
+            Objects.requireNonNull(item.toString()),
+            this::calculateEHP
+        );
     }
 
     private ItemDebugInfo buildDebugInfo() {
@@ -182,19 +333,30 @@ public class ArmorModule extends AbstractEditorModule {
 
     private List<ValueComparison> buildValueComparisons() {
         List<ValueComparison> comparisons = new ArrayList<>();
-        ArmorStats actual = loadStatsFromTag(getCustomDataTag());
-        comparisons.add(makeComparison("Physical Reduction (%)", actual.physicalReduction * 100, stats.physicalReduction * 100));
-        comparisons.add(makeComparison("Fire Reduction (%)", actual.fireReduction * 100, stats.fireReduction * 100));
-        comparisons.add(makeComparison("Magic Reduction (%)", actual.magicReduction * 100, stats.magicReduction * 100));
-        comparisons.add(makeComparison("Explosion Reduction (%)", actual.explosionReduction * 100, stats.explosionReduction * 100));
-        comparisons.add(makeComparison("Projectile Reduction (%)", actual.projectileReduction * 100, stats.projectileReduction * 100));
+        CompoundTag tag = getCustomDataTag();
+        boolean hasSpecific = tag.contains(NBT_KEY);
+        boolean hasGlobal = ArmorConfigManager.hasGlobalConfig(item.getItem());
+        boolean hasServerStats = hasSpecific || hasGlobal;
+        ArmorStats serverStats = resolveServerStats(tag);
+        ArmorStats baseline = originalStats == null ? new ArmorStats() : originalStats;
 
-        comparisons.add(makeComparison("Armor Bonus", actual.armorBonus, stats.armorBonus));
-        comparisons.add(makeComparison("Toughness Bonus", actual.toughnessBonus, stats.toughnessBonus));
-        comparisons.add(makeComparison("Knockback Resist (%)", actual.knockbackResistance * 100, stats.knockbackResistance * 100));
+        comparisons.add(makeComparison("Physical Reduction (%)", baseline.physicalReduction * 100, serverStats.physicalReduction * 100, stats.physicalReduction * 100, hasServerStats));
+        comparisons.add(makeComparison("Fire Reduction (%)", baseline.fireReduction * 100, serverStats.fireReduction * 100, stats.fireReduction * 100, hasServerStats));
+        comparisons.add(makeComparison("Magic Reduction (%)", baseline.magicReduction * 100, serverStats.magicReduction * 100, stats.magicReduction * 100, hasServerStats));
+        comparisons.add(makeComparison("Explosion Reduction (%)", baseline.explosionReduction * 100, serverStats.explosionReduction * 100, stats.explosionReduction * 100, hasServerStats));
+        comparisons.add(makeComparison("Projectile Reduction (%)", baseline.projectileReduction * 100, serverStats.projectileReduction * 100, stats.projectileReduction * 100, hasServerStats));
 
-        comparisons.add(makeComparison("Thorns (%)", actual.thornsPercent * 100, stats.thornsPercent * 100));
-        comparisons.add(makeComparison("Thorns reflect", actual.thornsReflect ? 1 : 0, stats.thornsReflect ? 1 : 0));
+        comparisons.add(makeComparison("Armor Bonus", baseline.armorBonus, serverStats.armorBonus, stats.armorBonus, hasServerStats));
+        comparisons.add(makeComparison("Toughness Bonus", baseline.toughnessBonus, serverStats.toughnessBonus, stats.toughnessBonus, hasServerStats));
+        comparisons.add(makeComparison("Knockback Resist (%)", baseline.knockbackResistance * 100, serverStats.knockbackResistance * 100, stats.knockbackResistance * 100, hasServerStats));
+
+        comparisons.add(makeComparison("Thorns (%)", baseline.thornsPercent * 100, serverStats.thornsPercent * 100, stats.thornsPercent * 100, hasServerStats));
+        comparisons.add(makeComparison("Thorns reflect", baseline.thornsReflect ? 1 : 0, serverStats.thornsReflect ? 1 : 0, stats.thornsReflect ? 1 : 0, hasServerStats));
+        if (variant == ArmorVariant.SHIELD) {
+            comparisons.add(makeComparison("Shield Block", baseline.shieldBlockStrength, serverStats.shieldBlockStrength, stats.shieldBlockStrength, hasServerStats));
+            comparisons.add(makeComparison("Shield Recovery", baseline.shieldRecoverySpeed, serverStats.shieldRecoverySpeed, stats.shieldRecoverySpeed, hasServerStats));
+            comparisons.add(makeComparison("Shield Reflect", baseline.shieldReflectProjectiles ? 1 : 0, serverStats.shieldReflectProjectiles ? 1 : 0, stats.shieldReflectProjectiles ? 1 : 0, hasServerStats));
+        }
         return comparisons;
     }
 
@@ -205,21 +367,32 @@ public class ArmorModule extends AbstractEditorModule {
         return new ArmorStats();
     }
 
-    private ValueComparison makeComparison(String label, double actualValue, double current) {
-        boolean mismatch = Math.abs(actualValue - current) > 0.1e-3;
-        return new ValueComparison(label, actualValue, current, actualValue, mismatch, mismatch);
+    private ArmorStats resolveServerStats(CompoundTag tag) {
+        if (tag.contains(NBT_KEY)) {
+            return loadStatsFromTag(tag);
+        }
+        ArmorStats global = ArmorConfigManager.getGlobalStats(item.getItem());
+        return global == null ? new ArmorStats() : global;
+    }
+
+    private ValueComparison makeComparison(String label, double originalValue, double serverValue, double currentValue, boolean hasServerStats) {
+        double server = hasServerStats ? serverValue : Double.NaN;
+        boolean mismatch = hasServerStats && Math.abs(serverValue - currentValue) > EPSILON;
+        boolean modified = Math.abs(currentValue - originalValue) > EPSILON;
+        return new ValueComparison(label, originalValue, currentValue, server, modified, mismatch);
     }
 
     private void copyDebugInfo() {
         ItemDebugInfo info = buildDebugInfo();
         List<ValueComparison> comparisons = buildValueComparisons();
-        List<String> history = getRecentHistoryEntries(5);
-        List<String> nbtLines = DebugInfoSection.formatNbtLines(getCustomDataTag(), 12);
+        List<String> history = getRecentHistoryEntries(8);
+        List<String> nbtLines = DebugInfoSection.formatNbtLines(getCustomDataTag(), 16);
         String payload = buildDebugClipboardText(info, comparisons, history, nbtLines);
 
         Minecraft mc = Minecraft.getInstance();
-        if (mc.keyboardHandler != null) {
-            mc.keyboardHandler.setClipboard(payload);
+        String safePayload = java.util.Objects.requireNonNullElse(payload, "");
+        if (mc != null && mc.keyboardHandler != null) {
+            mc.keyboardHandler.setClipboard(java.util.Objects.requireNonNull(safePayload, "payload cannot be null"));
         }
         reportStatus("Debug info copied!", UIConstants.Accent.GREEN);
     }
@@ -236,9 +409,18 @@ public class ArmorModule extends AbstractEditorModule {
 
         sb.append("--- Values ---\n");
         for (ValueComparison comp : comparisons) {
-            String suffix = comp.hasMismatch() ? " [MISMATCH]" : comp.isModified() ? " [MOD]" : "";
-            sb.append(String.format(Locale.US, "%s: exp %.2f srv %.2f cur %.2f%s\n",
-                comp.attributeName(), comp.originalValue(), comp.serverValue(), comp.currentValue(), suffix));
+            String attr = comp.attributeName() == null ? "<attr>" : comp.attributeName();
+            String suffix = comp.hasMismatch() ? " [MISMATCH]" : comp.isModified() ? " [MOD]" :
+                Double.isNaN(comp.serverValue()) ? " [SERVER N/A]" : "";
+            sb.append(String.format(Locale.US, "%s: orig %s srv %s cur %s%s\n",
+                attr,
+                formatValue(comp.originalValue()),
+                formatValue(comp.serverValue()),
+                formatValue(comp.currentValue()),
+                suffix));
+        }
+        if (comparisons.stream().noneMatch(c -> !Double.isNaN(c.serverValue()))) {
+            sb.append("NOTE: Server/config baseline NOT AVAILABLE (showing item/custom data only)\n");
         }
 
         sb.append("\n--- History ---\n");
@@ -260,6 +442,16 @@ public class ArmorModule extends AbstractEditorModule {
         }
 
         return sb.toString();
+    }
+
+    private String formatValue(double value) {
+        return Double.isNaN(value) ? "n/a" : String.format(Locale.US, "%.2f", value);
+    }
+
+    private float calculateEHP() {
+        float totalReduction = stats.physicalReduction;
+        float cappedReduction = Math.min(totalReduction, 0.8f);
+        return 1f / (1f - cappedReduction);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -304,13 +496,13 @@ public class ArmorModule extends AbstractEditorModule {
     }
 
     private List<EditorSection> getDamageReductionSections() {
-        return List.of(
+        return withEhp(List.of(
             new SliderSectionAdapter(physicalReductionSlider),
             new SliderSectionAdapter(fireReductionSlider),
             new SliderSectionAdapter(magicReductionSlider),
             new SliderSectionAdapter(explosionReductionSlider),
             new SliderSectionAdapter(projectileReductionSlider)
-        );
+        ));
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -339,11 +531,11 @@ public class ArmorModule extends AbstractEditorModule {
     }
 
     private List<EditorSection> getVanillaStatsSections() {
-        return List.of(
+        return withEhp(List.of(
             new SliderSectionAdapter(armorBonusSlider),
             new SliderSectionAdapter(toughnessBonusSlider),
             new SliderSectionAdapter(knockbackResistanceSlider)
-        );
+        ));
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -362,170 +554,44 @@ public class ArmorModule extends AbstractEditorModule {
             .onChange(v -> { stats.thornsPercent = v / 100f; markDirty("Thorns damage"); });
     }
 
+    private void createShieldComponents() {
+        shieldReflectToggle = new EditorToggle("shieldReflect", "Reflect Projectiles", stats.shieldReflectProjectiles)
+            .onChange(v -> { stats.shieldReflectProjectiles = v; markDirty("Shield reflect projectiles"); });
+        shieldBlockStrengthSlider = new EditorSlider("shieldBlock", "Block Strength", 0f, 1.0f, stats.shieldBlockStrength)
+            .step(0.05f)
+            .format("%.2f")
+            .trackColor(UIConstants.SliderColors.DEFENSE)
+            .onChange(v -> { stats.shieldBlockStrength = v; markDirty("Shield block strength"); });
+        shieldRecoverySlider = new EditorSlider("shieldRecovery", "Recovery Speed", 0f, 2.0f, stats.shieldRecoverySpeed)
+            .step(0.05f)
+            .format("%.2f")
+            .trackColor(UIConstants.SliderColors.SPEED)
+            .onChange(v -> { stats.shieldRecoverySpeed = v; markDirty("Shield recovery"); });
+    }
+
     private List<EditorSection> getSpecialSections() {
-        return List.of(
+        return withEhp(List.of(
             new ToggleSectionAdapter(thornsToggle),
             new SliderSectionAdapter(thornsPercentSlider)
-        );
+        ));
+    }
+
+    private List<EditorSection> getShieldSections() {
+        return withEhp(List.of(
+            new ToggleSectionAdapter(shieldReflectToggle),
+            new SliderSectionAdapter(shieldBlockStrengthSlider),
+            new SliderSectionAdapter(shieldRecoverySlider)
+        ));
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // RENDERING
+    // INPUT (section-based with undo)
     // ═══════════════════════════════════════════════════════════════
-
-    @Override
-    public void renderContent(GuiGraphics graphics, ResponsiveLayout.Rect contentBounds, int mouseX, int mouseY) {
-        int y = contentBounds.y() + UIConstants.Spacing.MD;
-        int sliderWidth = layout != null ? layout.getSliderWidth() : 200;
-        int x = contentBounds.x() + (contentBounds.width() - sliderWidth) / 2;
-
-        // Render based on current tab
-        switch (activeTabIndex) {
-            case 0 -> renderDamageReductionTab(graphics, x, y, sliderWidth, mouseX, mouseY);
-            case 1 -> renderVanillaStatsTab(graphics, x, y, sliderWidth, mouseX, mouseY);
-            case 2 -> renderSpecialTab(graphics, x, y, sliderWidth, mouseX, mouseY);
-        }
-
-        // EHP preview at bottom
-        renderEHPPreview(graphics, contentBounds, y + calculateCurrentTabHeight());
-    }
-
-    private void renderDamageReductionTab(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
-        y += physicalReductionSlider.render(graphics, x, y, width, mouseX, mouseY) + UIConstants.Spacing.SM;
-        y += fireReductionSlider.render(graphics, x, y, width, mouseX, mouseY) + UIConstants.Spacing.SM;
-        y += magicReductionSlider.render(graphics, x, y, width, mouseX, mouseY) + UIConstants.Spacing.SM;
-        y += explosionReductionSlider.render(graphics, x, y, width, mouseX, mouseY) + UIConstants.Spacing.SM;
-        projectileReductionSlider.render(graphics, x, y, width, mouseX, mouseY);
-    }
-
-    private void renderVanillaStatsTab(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
-        y += armorBonusSlider.render(graphics, x, y, width, mouseX, mouseY) + UIConstants.Spacing.SM;
-        y += toughnessBonusSlider.render(graphics, x, y, width, mouseX, mouseY) + UIConstants.Spacing.SM;
-        knockbackResistanceSlider.render(graphics, x, y, width, mouseX, mouseY);
-    }
-
-    private void renderSpecialTab(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
-        y += thornsToggle.render(graphics, x, y, width, mouseX, mouseY) + UIConstants.Spacing.SM;
-
-        // Only show thorns percent if thorns is enabled
-        if (stats.thornsReflect) {
-            thornsPercentSlider.render(graphics, x, y, width, mouseX, mouseY);
-        }
-    }
-
-    private void renderEHPPreview(GuiGraphics graphics, ResponsiveLayout.Rect contentBounds, int startY) {
-        var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
-        int y = startY + UIConstants.Spacing.LG;
-
-        // Calculate effective health with caching
-        float ehpMultiplier = EditorCache.getInstance().getOrCompute(
-            EditorCache.Types.EHP,
-            Objects.requireNonNull(item.toString()),
-            this::calculateEHP
-        );
-
-        String ehpText = String.format("EHP: %.1fx", ehpMultiplier);
-        int textWidth = font.width(Objects.requireNonNull(ehpText, "ehpText cannot be null"));
-        int x = contentBounds.x() + (contentBounds.width() - textWidth) / 2;
-
-        graphics.drawString(font, ehpText, x, y, UIConstants.Text.VALUE, false);
-    }
-
-    /**
-     * Calculate effective health multiplier based on damage reductions.
-     * EHP = 1 / (1 - reduction), capped at 80% reduction.
-     */
-    private float calculateEHP() {
-        // Sum all reductions (physical is most common baseline)
-        float totalReduction = stats.physicalReduction;
-        // Cap at 80% to prevent invincibility
-        float cappedReduction = Math.min(totalReduction, 0.8f);
-        return 1f / (1f - cappedReduction);
-    }
-
-    private int calculateCurrentTabHeight() {
-        return switch (activeTabIndex) {
-            case 0 -> 5 * (physicalReductionSlider.calculateHeight() + UIConstants.Spacing.SM);
-            case 1 -> 3 * (armorBonusSlider.calculateHeight() + UIConstants.Spacing.SM);
-            case 2 -> thornsToggle.render(null, 0, 0, 0, 0, 0) +
-                      (stats.thornsReflect ? thornsPercentSlider.calculateHeight() + UIConstants.Spacing.SM : 0);
-            default -> 0;
-        };
-    }
-
-    @Override
-    public int calculateContentHeight() {
-        int height = UIConstants.Spacing.MD;
-
-        height += switch (activeTabIndex) {
-            case 0 -> 5 * (physicalReductionSlider.calculateHeight() + UIConstants.Spacing.SM);
-            case 1 -> 3 * (armorBonusSlider.calculateHeight() + UIConstants.Spacing.SM);
-            case 2 -> 20 + UIConstants.Spacing.SM + // Toggle height approximation
-                      (stats.thornsReflect ? thornsPercentSlider.calculateHeight() + UIConstants.Spacing.SM : 0);
-            default -> 0;
-        };
-
-        // EHP preview
-        height += UIConstants.Spacing.LG + 12;
-
-        return height + UIConstants.Spacing.MD;
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // INPUT HANDLING
-    // ═══════════════════════════════════════════════════════════════
-
-    private List<EditorSlider> getCurrentTabSliders() {
-        return switch (activeTabIndex) {
-            case 0 -> List.of(physicalReductionSlider, fireReductionSlider, magicReductionSlider,
-                             explosionReductionSlider, projectileReductionSlider);
-            case 1 -> List.of(armorBonusSlider, toughnessBonusSlider, knockbackResistanceSlider);
-            case 2 -> stats.thornsReflect ? List.of(thornsPercentSlider) : List.of();
-            default -> List.of();
-        };
-    }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // Handle toggle in special tab
-        if (activeTabIndex == 2 && thornsToggle.mouseClicked(mouseX, mouseY, button)) {
-            saveUndoState();
-            return true;
-        }
-
-        for (EditorSlider slider : getCurrentTabSliders()) {
-            if (slider.mouseClicked(mouseX, mouseY, button)) {
-                saveUndoState();
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        for (EditorSlider slider : getCurrentTabSliders()) {
-            if (slider.mouseReleased(mouseX, mouseY, button)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        for (EditorSlider slider : getCurrentTabSliders()) {
-            if (slider.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        for (EditorSlider slider : getCurrentTabSliders()) {
-            if (slider.mouseScrolled(mouseX, mouseY, scrollX, scrollY)) {
+        for (EditorSection section : getSections()) {
+            if (section.mouseClicked(mouseX, mouseY, button)) {
                 saveUndoState();
                 return true;
             }
@@ -535,13 +601,8 @@ public class ArmorModule extends AbstractEditorModule {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (activeTabIndex == 2 && thornsToggle.keyPressed(keyCode, scanCode, modifiers)) {
-            saveUndoState();
-            return true;
-        }
-
-        for (EditorSlider slider : getCurrentTabSliders()) {
-            if (slider.keyPressed(keyCode, scanCode, modifiers)) {
+        for (EditorSection section : getSections()) {
+            if (section.keyPressed(keyCode, scanCode, modifiers)) {
                 saveUndoState();
                 return true;
             }
@@ -549,35 +610,32 @@ public class ArmorModule extends AbstractEditorModule {
         return false;
     }
 
-    // ═══════════════════════════════════════════════════════════════
     // NETWORK
     // ═══════════════════════════════════════════════════════════════
 
     @Override
     public CustomPacketPayload buildPayload(boolean isGlobal) {
         CompoundTag statsTag = new CompoundTag();
-        stats.save(statsTag);
+        CompoundTag armorStats = new CompoundTag();
+        stats.save(armorStats);
+        statsTag.put(NBT_KEY, Objects.requireNonNull(armorStats.copy()));
+        statsTag.put("armor_stats_component", Objects.requireNonNull(armorStats));
 
-        return new ArmorStatsPayload(Objects.requireNonNull(item), statsTag, isGlobal);
+        // Slot is filled by ItemEditorScreen when sending; default to -1 here
+        return new ArmorStatsPayloadV2(Objects.requireNonNull(item, "item cannot be null"), statsTag, isGlobal, -1);
     }
 
     @Override
     public void applyPreview() {
-        // Apply stats to item for preview (client-side only)
-        CustomData customData = item.getOrDefault(
-            Objects.requireNonNull(DataComponents.CUSTOM_DATA, "CUSTOM_DATA component type cannot be null"),
-            Objects.requireNonNull(CustomData.EMPTY, "CustomData.EMPTY cannot be null")
-        );
-        CompoundTag tag = customData.copyTag();
-
-        CompoundTag statsTag = new CompoundTag();
-        stats.save(statsTag);
-        tag.put(NBT_KEY, statsTag);
-
-        item.set(
-            Objects.requireNonNull(DataComponents.CUSTOM_DATA, "CUSTOM_DATA component type cannot be null"),
-            CustomData.of(tag)
-        );
+        // Create a preview copy and attach CustomData to the copy only
+        try {
+            ItemStack copy = item.copy();
+            // Leverage config manager to set both component and custom data
+            ArmorConfigManager.setSpecificStats(copy, stats.copy());
+            setPreviewItem(copy);
+        } catch (Exception ignored) {
+            clearPreview();
+        }
     }
 
     @Override
@@ -614,12 +672,32 @@ public class ArmorModule extends AbstractEditorModule {
             && Float.compare(a.toughnessBonus, b.toughnessBonus) == 0
             && Float.compare(a.knockbackResistance, b.knockbackResistance) == 0
             && Float.compare(a.thornsPercent, b.thornsPercent) == 0
-            && a.thornsReflect == b.thornsReflect;
+            && a.thornsReflect == b.thornsReflect
+            && Float.compare(a.shieldBlockStrength, b.shieldBlockStrength) == 0
+            && Float.compare(a.shieldRecoverySpeed, b.shieldRecoverySpeed) == 0
+            && a.shieldReflectProjectiles == b.shieldReflectProjectiles;
     }
 
     // ═══════════════════════════════════════════════════════════════
     // SECTION ADAPTERS
     // ═══════════════════════════════════════════════════════════════
+
+    private class EhpPreviewSection implements EditorSection.CustomSection {
+        @Override public String getId() { return "ehpPreview"; }
+        @Override public String getLabel() { return "EHP Preview"; }
+        @Override public int getHeight() { return UIConstants.Spacing.LG + 14; }
+
+        @Override
+        public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
+            var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
+            float ehp = computeEhp();
+            String text = String.format("EHP: %.1fx", ehp);
+            int textWidth = font.width(Objects.requireNonNull(text, "text"));
+            int x = bounds.x() + (bounds.width() - textWidth) / 2;
+            int y = bounds.y() + UIConstants.Spacing.SM;
+            graphics.drawString(font, text, x, y, UIConstants.Text.VALUE, false);
+        }
+    }
 
     /**
      * Adapts EditorSlider to EditorSection.SliderSection interface.

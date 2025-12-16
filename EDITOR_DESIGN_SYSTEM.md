@@ -2,21 +2,25 @@
 ## Unified UI/UX Specification for Item Editors
 ### Version 1.5 - Template & Preset Architecture
 
+> **Source-of-truth (IMPORTANT):** questo documento resta allineato al codice. Dove esempi e codice divergono, **vince il comportamento reale**. Stato attuale: **MultiEdit è implementato**, lo storage per-item usa **CustomData** con tag `WeaponModStats` / `ArmorModStats`, il Recipe Editor è **FUTURE / NON ORA**.
+
 ---
 
 **Implementation Status**
 - **Implementation:** MultiEdit subsystem (manager + panel) added and wired into the editor UI (`src/main/java/com/frenkvs/devmod/ui/editor/systems/MultiEditManager.java`, `MultiEditPanel.java`).
 - **Preset adapter:** `ItemEditorPresetManager` added to map `ItemEditorDataManager.PresetData` into `WeaponStats` / `ArmorStats` and persist via existing config managers.
 - **Preset wrapper:** `DataPreset` provides a `Preset` facade over `ItemEditorDataManager.PresetData`.
-- **UI:** `MultiEditPanel` shows selection, items, remove, preset selector (dropdown scrollabile), e `[Apply to all]` / `[Clear All]` actions.
+- **UI:** `MultiEditPanel` shows selection, items, remove, preset selector (dropdown scrollabile), e `[Apply to all]` / `[Clear All]` actions. Default expanded; header toggles collapse; empty-state note quando zero match; Apply disabilitato in Preview.
 - **Feedback:** Batch apply operations producono un `BatchEditResult`; il pannello mostra success/failure count, dettagli fallimenti espandibili e bottone “Copy” per copiare gli errori.
 - **Data keys:** Per-item editor data is stored under `WeaponModStats` (weapon) e `ArmorModStats` (armor). Vecchi nomi come `devmod:stats` / `devmod:custom_stats` sono deprecati.
-- **Scope guard:** Recipe Editor (Feature B) è FUTURE/OUT-OF-SCOPE per questa iterazione (NON ORA).
+ - **Dual-mode semantics (Preview vs Apply):** Preview operations modify an editor-local copy only and do not persist per-item CustomData or send network packets. Applying with persistence invokes the persistence handler which updates the inventory slot and sends the appropriate payloads (weapon/armor) to the server; persistence failures are surfaced as batch failures in the UI.
+- **Scope update:** Recipe/Crafting panels (Feature A/C) sono ORA IN SCOPE per questa iterazione (prima marcati FUTURE); devono essere implementati in entrambi gli editor.
 
-**Remaining work:**
-- Add unit tests for `ItemEditorPresetManager` and `MultiEditManager.applyPresetToAll` (requires running in the dev/test environment with Minecraft mappings).
-- Failure UI polish (es. virtualizzazione per liste lunghe, modal dedicato) e screenshot/gif aggiornati.
-- Add integration tests and documentation updates per le feature MultiEdit/Debug.
+**Remaining work (da svolgere ora):**
+- Implementare Crafting Info Panel / Item Value Analysis (Feature A/C) per weapon/armor, UI e logica, con overlay/tab come da specifica.
+- Aggiungere unit test per `ItemEditorPresetManager` e `MultiEditManager.applyPresetToAll`; aggiungere integrazione test per MultiEdit/Debug.
+- Polish failure UI (virtualizzazione liste lunghe, modal dedicato), aggiornare screenshot/gif (nuovi media post-implementazione crafting/failure UI).
+- Aggiornare documentazione e media PR con gli elementi sopra (preset dropdown, failure summary, crafting/value panels, debug).
 
 **Media (PR4):**
 - Screenshot/gif #1: preset dropdown aperto con lista scrollabile.
@@ -84,7 +88,7 @@ Priorità: **velocità di diagnosi** > estetica > facilità d'uso per nuovi uten
 | `FOOTER_HEIGHT` | **60px** | Altezza footer con bottoni |
 | `LEFT_COLUMN_WIDTH` | **140px** | Colonna sinistra (preview + slots + info) |
 | `CONTENT_WIDTH` | **390px** | Area contenuto tabs |
-| `PREVIEW_SIZE` | **100px** | Dimensione preview 3D |
+| `PREVIEW_SIZE` | **130px** | Dimensione preview 3D |
 | `SLOT_AREA_HEIGHT` | **70px** | Area slot selector |
 | `INFO_PANEL_HEIGHT` | **100px** | Pannello info item |
 
@@ -98,7 +102,7 @@ Priorità: **velocità di diagnosi** > estetica > facilità d'uso per nuovi uten
 │  ┌────────────┐   ┌─────────────────────────────────────────────┐  │
 │  │            │   │                                             │  │
 │  │  PREVIEW   │   │                                             │  │
-│  │  100x100   │   │                                             │  │
+│  │  130x130   │   │                                             │  │
 │  │            │   │           TAB CONTENT AREA                  │  │
 │  │  [Rotate]  │   │                                             │  │  280px
 │  └────────────┘   │           - Sliders                         │  │
@@ -134,11 +138,14 @@ Priorità: **velocità di diagnosi** > estetica > facilità d'uso per nuovi uten
 ### Left Column (x: 10, width: 140)
 | Elemento | X | Y | Width | Height |
 |----------|---|---|-------|--------|
-| Preview | 20 | 38 | 100 | 100 |
-| Rotate hint | 20 | 140 | 100 | 12 |
-| Slot selector | 10 | 155 | 130 | 70 |
-| Item info | 10 | 235 | 130 | 100 |
-| Dirty indicator | 15 | 320 | 120 | 15 |
+| Preview | 12 | 20 | 130 | 130 |
+| Rotate hint | 12 | 150 | 130 | 12 |
+| Slot selector | 10 | 170 | 130 | 70 |
+| Selected piece card | 10 | 248 | 130 | 46 |
+| Item info | 10 | 300 | 130 | 100 |
+| Dirty indicator | 15 | 360 | 120 | 15 |
+
+> Nota: la card "Selected piece" sotto i quattro slot mostra il pezzo attivo (icona + label) e permette di ciclare rapidamente gli slot con un click.
 
 ### Content Area (x: 150, width: 390)
 | Elemento | X | Y | Width | Height |
@@ -152,13 +159,12 @@ Priorità: **velocità di diagnosi** > estetica > facilità d'uso per nuovi uten
 | Undo button | 10 | 365 | 50 | 22 |
 | Redo button | 65 | 365 | 50 | 22 |
 | Separator | 120 | 365 | 1 | 50 |
-| History button | 130 | 365 | 60 | 22 |
-| Export button | 195 | 365 | 55 | 22 |
-| Import button | 255 | 365 | 55 | 22 |
-| Presets button | 315 | 365 | 60 | 22 |
-| Reset button | 195 | 392 | 60 | 22 |
-| Cancel button | 260 | 392 | 60 | 22 |
+| Actions row (History/Export/Import/Presets/Reset/Cancel) | 130 | 365 | 320 | 22 |
 | Apply button | 420 | 365 | 120 | 50 |
+
+> Nota: la row di quick actions è sempre visibile; ogni pulsante ha hover/border accent, senza dropdown. Apply mostra `Preview only` / `No changes` / `Apply (n)` in base allo stato.
+
+> Nota overlay: il pannello Presets è modale (overlay scuro a schermo intero, pannello centrato) e viene renderizzato sopra al modello 3D.
 
 ---
 
@@ -413,9 +419,9 @@ Mostra informazioni sull'item correntemente in editing.
 | Weapon | Attack Damage | Attack Speed | Durability | Enchants count |
 | Armor | Defense | Toughness | Durability | Enchants count |
 
-## 2.6 Crafting Info Panel
+## 2.6 Crafting Info Panel *(IN SCOPE — DA IMPLEMENTARE ORA)*
 
-Mostra la ricetta di crafting dell'item corrente e il suo valore calcolato.
+Questa sezione è ora **in scope per l’iterazione corrente**: deve essere implementata (UI + logica) nei due editor. Mostra la ricetta di crafting dell'item corrente e il suo valore calcolato. Attualmente non ancora realizzata: seguire le specifiche sotto per lo sviluppo.
 
 ### Layout
 ```
@@ -720,6 +726,12 @@ Fornire informazioni di debug immediate per diagnosticare problemi con item/armo
 - Session log: cronologico, include set/apply/server confirm/error, mostra almeno 1 entry o placeholder “(no entries)”.
 - NBT viewer: dump leggibile del `CustomData` (`WeaponModStats` / `ArmorModStats` inclusi) con indentazione base.
 - Copy-to-clipboard: bottone “Copy Debug” esporta header + values + session log + NBT.
+
+**Stato runtime attuale (PR2):**
+- Baseline server/config: se l’item ha `WeaponModStats` / `ArmorModStats` si usa quello; in assenza, fallback alla config globale se esiste; se nessuna fonte è disponibile la UI mostra `SERVER N/A` e aggiunge nota nel clipboard.
+- Session log: include “Server confirmed/rejected” eventi inviati dal server dopo l’apply (global/specific); se il server nega o l’item manca, il messaggio riporta il motivo.
+- MultiEdit preset dropdown: limitato a 6 elementi visibili, scrollabile, mostra il nome completo in hover e la label `Preset (<itemType>)`.
+- MultiEdit failure UI: mostra conteggi success/fail, bottone “Details” per espandere i falliti (6 di default, “+more” fino a 20) e “Copy fails” per copiare solo i falliti.
 
 ### Posizione
 - **Tab dedicata "DEBUG"** - Ultima tab in entrambi gli editor
@@ -1218,7 +1230,7 @@ APPLY mode:
 
 ## 2.10 Persistence Architecture
 
-> **Architettura confermata:** Storage primario B (NBT + serverconfig), Export D (datapack)
+> **Architettura confermata:** Storage primario B (CustomData + serverconfig), Export D (datapack)
 
 ### Filosofia
 
@@ -1259,7 +1271,7 @@ APPLY mode:
 ```
 Layer 1: SPECIFIC (Per-Item Instance)
 ─────────────────────────────────────
-Dove:     NBT/DataComponents sull'ItemStack
+Dove:     CustomData (WeaponModStats/ArmorModStats) sull'ItemStack
 Scope:    Solo quell'item specifico
 Persiste: Finché l'item esiste
 Sync:     Automatico con item (inventory sync)
@@ -1290,7 +1302,7 @@ Quando un item viene valutato, le modifiche si applicano in questo ordine (ultim
     ↓
 3. Per-world serverconfig              (override mondo)
     ↓
-4. Per-item NBT/Components             (override istanza) ← VINCE
+4. Per-item CustomData                 (override istanza) ← VINCE
 ```
 
 ### Implementazione SPECIFIC (Layer 1)
@@ -1590,7 +1602,7 @@ Nel Debug Panel, mostra da dove vengono i valori correnti:
 ### Specifiche comuni
 | Proprietà | Valore |
 |-----------|--------|
-| Size | 100x100px |
+| Size | 130x130px |
 | Position | Left column, top |
 | Background | Transparent/subtle gradient |
 | Border | 1px, UIConstants.Border.MUTED |
@@ -18587,6 +18599,7 @@ public class ShortcutsHelpOverlay {
 **Stato attuale (UI)**
 - Selettore preset: dropdown scrollabile (8 visibili, mouse wheel), etichetta verde quando selezionato, fallback `(no presets)`.
 - Azioni: `[Clear All]`, `[Apply to all]` (usa `DataPreset` + `ItemEditorPresetManager`).
+- Stati UX: pannello aperto di default, header cliccabile per collapse/expand, Apply disabilitato in Preview o senza preset, empty state esplicito quando la selezione è vuota.
 - Esito batch: summary success/failure count; se fallimenti >0 mostra bottoni `Details` e `Copy` (copia lista errori nel clipboard), elenco fino a 6 righe con overflow `(+N more)`.
 - Sezione selezione: header con count, lista item con remove inline, collapse/expand.
 

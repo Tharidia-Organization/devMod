@@ -2,6 +2,8 @@ package com.frenkvs.devmod.ui.editor.systems;
 
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
+import com.frenkvs.devmod.ui.editor.core.ScaledCoord;
+import com.frenkvs.devmod.ui.editor.core.Typography;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.sounds.SoundEvents;
@@ -87,6 +89,20 @@ public final class ConfirmDialog {
         );
     }
 
+    public static ConfirmDialog switchModeToPreview(int changeCount,
+                                                    Runnable onDiscard,
+                                                    Runnable onCancel) {
+        return new ConfirmDialog(
+            "Switch to Preview",
+            "Discard " + changeCount + " unsaved changes and switch to PREVIEW mode?",
+            "Discard",
+            "Cancel",
+            UIConstants.Accent.ORANGE,
+            onDiscard,
+            onCancel
+        );
+    }
+
     // =========================================================================
     // IMPLEMENTATION
     // =========================================================================
@@ -120,35 +136,42 @@ public final class ConfirmDialog {
                        int mouseX, int mouseY) {
         if (!visible) return;
 
+        float textScale = Typography.withUiScale(Typography.BODY);
+
         // Dark overlay
         g.fill(0, 0, screenWidth, screenHeight, UIConstants.Background.OVERLAY);
 
         // Center dialog
-        int x = (screenWidth - WIDTH) / 2;
-        int y = (screenHeight - HEIGHT) / 2;
+        int panelW = ScaledCoord.scaleDim(WIDTH);
+        int panelH = ScaledCoord.scaleDim(HEIGHT);
+        int x = (screenWidth - panelW) / 2;
+        int y = (screenHeight - panelH) / 2;
 
         // Panel
-        g.fill(x, y, x + WIDTH, y + HEIGHT, UIConstants.Background.PANEL_SOLID);
-        AxiomRenderer.drawBorder(g, x, y, WIDTH, HEIGHT, UIConstants.Border.DEFAULT);
+        g.fill(x, y, x + panelW, y + panelH, UIConstants.Background.PANEL_SOLID);
+        AxiomRenderer.drawBorder(g, x, y, panelW, panelH, UIConstants.Border.DEFAULT);
 
         // Title
-        g.drawString(Objects.requireNonNull(font, "font cannot be null"), Objects.requireNonNull(title, "title cannot be null"), x + 16, y + 16, UIConstants.Text.TITLE, false);
+        Typography.drawText(g, font, Objects.requireNonNull(title, "title cannot be null"),
+            x + ScaledCoord.scaleDim(16), y + ScaledCoord.scaleDim(16),
+            UIConstants.Text.TITLE, textScale);
 
         // Message (multi-line support)
-        int msgY = y + 40;
+        int msgY = y + ScaledCoord.scaleDim(40);
         for (String line : message.split("\n")) {
-            g.drawString(Objects.requireNonNull(font, "font cannot be null"), Objects.requireNonNull(line, "line cannot be null"), x + 16, msgY, UIConstants.Text.PRIMARY, false);
-            msgY += 12;
+            Typography.drawText(g, font, Objects.requireNonNull(line, "line cannot be null"),
+                x + ScaledCoord.scaleDim(16), msgY, UIConstants.Text.PRIMARY, textScale);
+            msgY += ScaledCoord.scaleDim(12);
         }
 
         // Buttons
-        int btnY = y + HEIGHT - 44;
-        int btnWidth = 100;
-        int btnHeight = 28;
+        int btnY = y + panelH - ScaledCoord.scaleDim(44);
+        int btnWidth = ScaledCoord.scaleDim(100);
+        int btnHeight = ScaledCoord.scaleDim(28);
 
         // Update hover state
-        int confirmX = x + WIDTH / 2 - btnWidth - 8;
-        int cancelX = x + WIDTH / 2 + 8;
+        int confirmX = x + panelW / 2 - btnWidth - ScaledCoord.scaleDim(8);
+        int cancelX = x + panelW / 2 + ScaledCoord.scaleDim(8);
 
         hoveredButton = -1;
         if (mouseY >= btnY && mouseY < btnY + btnHeight) {
@@ -161,11 +184,11 @@ public final class ConfirmDialog {
 
         // Confirm button
         renderButton(g, font, confirmX, btnY, btnWidth, btnHeight,
-                    confirmText, confirmColor, hoveredButton == 0);
+                    confirmText, confirmColor, hoveredButton == 0, textScale);
 
         // Cancel button
         renderButton(g, font, cancelX, btnY, btnWidth, btnHeight,
-                    cancelText, UIConstants.Border.DEFAULT, hoveredButton == 1);
+                    cancelText, UIConstants.Border.DEFAULT, hoveredButton == 1, textScale);
     }
 
     public boolean mouseClicked(int mouseX, int mouseY) {
@@ -205,14 +228,15 @@ public final class ConfirmDialog {
 
     private void renderButton(GuiGraphics g, Font font,
                               int x, int y, int w, int h,
-                              String text, int borderColor, boolean hovered) {
+                              String text, int borderColor, boolean hovered, float textScale) {
         int bg = hovered ? UIConstants.Background.HOVER : UIConstants.Background.INPUT;
         g.fill(x, y, x + w, y + h, bg);
         AxiomRenderer.drawBorder(g, x, y, w, h, borderColor);
 
-        int textX = x + (w - font.width(Objects.requireNonNull(text, "text cannot be null"))) / 2;
-        int textY = y + (h - 8) / 2;
-        g.drawString(font, text, textX, textY, UIConstants.Text.PRIMARY, false);
+        int textWidth = Math.round(font.width(Objects.requireNonNull(text, "text cannot be null")) * textScale);
+        int textX = x + (w - textWidth) / 2;
+        int textY = y + (h - Math.round(font.lineHeight * textScale)) / 2;
+        Typography.drawText(g, font, text, textX, textY, UIConstants.Text.PRIMARY, textScale);
     }
 
     private void playButtonClick() {

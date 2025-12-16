@@ -5,13 +5,16 @@ import com.frenkvs.devmod.hud.DamageBreakdown;
 import com.frenkvs.devmod.hud.ImpactData;
 import com.frenkvs.devmod.util.DamageTypeConfig;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.tags.DamageTypeTags;
@@ -28,10 +31,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.lang.reflect.Method;
 
 /**
  * Server-side damage handler for combat mechanics.
@@ -62,6 +67,10 @@ public class DamageHandler {
             Vec3 hitPoint = null;
             Vec3 slashDirection = null;
             boolean isRanged = false;
+            float rangedBaseOverride = -1f;
+            float rangedSpeedOverride = -1f;
+            float rangedCritChance = 0f;
+            float rangedCritDamage = 1f;
 
             // 1. Identify the weapon and body part hit
             if (event.getSource().getDirectEntity() instanceof AbstractArrow arrow) {
@@ -73,6 +82,29 @@ public class DamageHandler {
                 Vec3 delta = arrow.getDeltaMovement();
                 slashDirection = (delta.lengthSqr() > 0.0001) ? delta.normalize() : arrow.getViewVector(1.0f);
                 isRanged = true;
+
+                // Enforce ammo filter defined by ranged stats, if any
+                if (!ammoMatchesFilter(weapon, arrow)) {
+                    if (attacker instanceof ServerPlayer sp) {
+                        sp.displayClientMessage(Objects.requireNonNull(Component.literal("Ammo not allowed for this preset").withStyle(s -> s.withColor(0xFFAA00))), true);
+                    }
+                    return; // Skip DevMod scaling; fall back to vanilla handling
+                }
+
+                // Apply ranged-specific overrides (base damage, speed, pierce, crit)
+                var ranged = com.frenkvs.devmod.ui.editor.RangedWeaponModule.getStats(weapon);
+                if (ranged.baseDamage > 0) {
+                    rangedBaseOverride = ranged.baseDamage;
+                }
+                if (ranged.projectileSpeed > 0 && delta.lengthSqr() > 0.0001) {
+                    Vec3 normalized = Objects.requireNonNullElseGet(delta.normalize(), () -> delta);
+                    arrow.setDeltaMovement(Objects.requireNonNull(normalized.scale(ranged.projectileSpeed)));
+                    rangedSpeedOverride = ranged.projectileSpeed;
+                }
+                if (ranged.critChance > 0) {
+                    rangedCritChance = ranged.critChance;
+                    rangedCritDamage = ranged.critDamage;
+                }
             } else {
                 // MELEE: Use AABB subdivision raycast (95% PRECISION)
                 weapon = attacker.getMainHandItem();
@@ -86,7 +118,7 @@ public class DamageHandler {
             // Confirm that damage was dealt (for Enderman evasion tracking)
             confirmHit(victim);
 
-            // 2. Retrieve Statistics (Global or Specific)
+            // 2. Retrieve Statistics (Global or Specific) - component/modifier source of truth
             WeaponStats stats = WeaponConfigManager.getStats(weapon);
 
             // 3. Calculate Multiplier
@@ -103,13 +135,26 @@ public class DamageHandler {
 
             // 4. Calculate Final Damage
             float originalDamage = event.getAmount();
+            if (rangedBaseOverride > 0) {
+                originalDamage = rangedBaseOverride;
+                event.setAmount(originalDamage);
+            }
             float newDamage = (originalDamage + stats.baseDamageBonus) * multiplier;
+            if (rangedSpeedOverride > 0) {
+                newDamage *= rangedSpeedOverride;
+            }
 
-            // 5. Armor Penetration (configurable formula via Config)
+            // Sweeping ratio: applies small additional AoE-style bonus even on single target
+            if (stats.sweepingRatio > 0) {
+                newDamage += originalDamage * stats.sweepingRatio;
+            }
+
+            // 5. Armor Penetration (configurable formula via Config) + Armor Shred
             // Calculate armor pen bonus ONCE for both damage application AND telemetry
             float armorPenBonus = 0f;
+            float targetArmor = Math.max(0f, victim.getArmorValue() - stats.armorShred);
             if (stats.armorPenetration > 0) {
-                armorPenBonus = calculateArmorPenBonus(stats.armorPenetration, victim.getArmorValue(), newDamage);
+                armorPenBonus = calculateArmorPenBonus(stats.armorPenetration, targetArmor, newDamage);
                 newDamage += armorPenBonus;
             }
 
@@ -130,7 +175,43 @@ public class DamageHandler {
             HitContext.store(victim, part, isRanged, armorPenBonus);
             HitContext.storeArmorReduction(victim, armorReduction);
 
+            // Ranged crit application (after armor reduction calc)
+            if (isRanged && rangedCritChance > 0 && Math.random() < rangedCritChance) {
+                newDamage *= rangedCritDamage;
+            }
+
+            // Damage type bonuses (component-backed)
+            if (victim instanceof Player) {
+                newDamage *= (1f + stats.damageVsPlayers);
+            } else if (victim instanceof net.minecraft.world.entity.Mob) {
+                try {
+                    // Best-effort: check undead/arthropod via built-in predicates
+                    if (victim.getType().is(Objects.requireNonNull(net.minecraft.tags.EntityTypeTags.UNDEAD))) {
+                        newDamage *= (1f + stats.damageVsUndead);
+                    } else if (victim.getType().is(Objects.requireNonNull(net.minecraft.tags.EntityTypeTags.ARTHROPOD))) {
+                        newDamage *= (1f + stats.damageVsArthropods);
+                    }
+                } catch (Exception ignored) {
+                    // fallback: no bonus
+                }
+            }
+            if (stats.fireDamageBonus > 0) {
+                newDamage *= (1f + stats.fireDamageBonus / 100f);
+            }
+            if (stats.magicDamageBonus > 0) {
+                newDamage *= (1f + stats.magicDamageBonus / 100f);
+            }
+            if (stats.trueDamagePercent > 0) {
+                float truePortion = newDamage * stats.trueDamagePercent;
+                float normalPortion = newDamage * (1f - stats.trueDamagePercent);
+                newDamage = truePortion + normalPortion;
+            }
+
             // 6. Apply
+            if (victim instanceof Player playerVictim && playerVictim.isBlocking()) {
+                newDamage = applyShieldBlock(playerVictim, event.getSource(), newDamage);
+            }
+
             event.setAmount(newDamage);
 
             // 7. Feedback Visivo (actionbar) - Uses translatable component for i18n
@@ -195,6 +276,12 @@ public class DamageHandler {
                 boolean isHeadshot = part == HitHelper.BodyPart.HEAD;
                 ClientVFXProxy.addDamageShake(hitPoint, newDamage, isCritical, isHeadshot);
             }
+
+            // Lifesteal (post-hit)
+            if (stats.lifesteal > 0 && attacker.isAlive()) {
+                float heal = newDamage * stats.lifesteal;
+                attacker.heal(heal);
+            }
         }
     }
 
@@ -238,6 +325,81 @@ public class DamageHandler {
 
         // Cap at 80% to prevent invincibility
         return Math.min(totalReduction, 0.8f);
+    }
+
+    /**
+     * Applies shield-specific tuning: block strength scaling, projectile reflection, and cooldown tuning.
+     */
+    private static float applyShieldBlock(Player player, DamageSource source, float incomingDamage) {
+        ItemStack shield = player.getUseItem();
+        if (shield.isEmpty() || !(shield.getItem() instanceof ShieldItem)) {
+            return incomingDamage;
+        }
+
+        ArmorStats stats = ArmorConfigManager.getStats(shield);
+        float blocked = Math.min(1f, Math.max(0f, stats.shieldBlockStrength));
+        float damageAfterBlock = incomingDamage * (1f - blocked);
+
+        if (stats.shieldReflectProjectiles && source.getDirectEntity() instanceof Projectile projectile) {
+            try {
+                Vec3 vel = projectile.getDeltaMovement();
+                if (vel != null) {
+                    projectile.setDeltaMovement(Objects.requireNonNull(vel.reverse()));
+                }
+                projectile.setOwner(player);
+            } catch (Exception ignored) {
+                // best-effort reflection
+            }
+        }
+
+        // Cooldown tuning: base 5 ticks scaled by recovery speed (avoid div by zero)
+        int baseCooldown = 5;
+        int cooldown = Math.max(1, Math.round(baseCooldown / Math.max(0.1f, stats.shieldRecoverySpeed)));
+        player.getCooldowns().addCooldown(Objects.requireNonNull(shield.getItem()), cooldown);
+
+        return damageAfterBlock;
+    }
+
+    private static boolean ammoMatchesFilter(ItemStack weapon, AbstractArrow arrow) {
+        try {
+            var custom = weapon.getOrDefault(Objects.requireNonNull(net.minecraft.core.component.DataComponents.CUSTOM_DATA), Objects.requireNonNull(net.minecraft.world.item.component.CustomData.EMPTY));
+            var tag = custom.copyTag();
+            if (tag == null || !tag.contains("RangedStats")) return true;
+            var ranged = tag.getCompound("RangedStats");
+            if (!ranged.contains("ammoFilter")) return true;
+            String rawFilter = ranged.getString("ammoFilter");
+            if (rawFilter == null) return true;
+            String nonNullFilter = Objects.requireNonNull(rawFilter).trim();
+            if (nonNullFilter.isEmpty()) return true;
+            final String filterValue = Objects.requireNonNull(nonNullFilter);
+            ItemStack pickup = ItemStack.EMPTY;
+            try {
+                Method m = AbstractArrow.class.getDeclaredMethod("getPickupItem");
+                m.setAccessible(true);
+                Object res = m.invoke(arrow);
+                if (res instanceof ItemStack stack) {
+                    pickup = stack;
+                }
+            } catch (Exception ignored) { }
+            var registry = net.minecraft.core.registries.BuiltInRegistries.ITEM;
+            if (filterValue.startsWith("#")) {
+                ResourceLocation tagId = ResourceLocation.tryParse(Objects.requireNonNull(filterValue.substring(1)));
+                if (tagId == null) return false;
+                net.minecraft.tags.TagKey<net.minecraft.world.item.Item> tagKey = net.minecraft.tags.TagKey.create(
+                    Objects.requireNonNull(net.minecraft.core.registries.Registries.ITEM),
+                    Objects.requireNonNull(tagId)
+                );
+                return pickup.is(Objects.requireNonNull(tagKey));
+            }
+            ResourceLocation id = pickup.isEmpty() ? null : registry.getKey(Objects.requireNonNull(pickup.getItem()));
+            if (id == null) return false;
+            String idStr = id.toString().toLowerCase(Locale.ROOT);
+            String normFilter = filterValue.trim().toLowerCase(Locale.ROOT);
+            return idStr.equals(normFilter) || idStr.endsWith(normFilter);
+        } catch (Exception e) {
+            LOGGER.debug("Ammo filter check failed: {}", e.getMessage());
+            return true;
+        }
     }
 
     /**

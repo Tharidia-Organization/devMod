@@ -28,6 +28,11 @@ public class ArmorStats {
     public boolean thornsReflect = false;     // Enable thorns damage reflection
     public float thornsPercent = 0.0f;        // How much damage to reflect (0.0 - 0.5)
 
+    // Shield-specific tuning
+    public boolean shieldReflectProjectiles = false; // Reflect projectiles while blocking
+    public float shieldBlockStrength = 0.5f;         // 0-1 strength multiplier
+    public float shieldRecoverySpeed = 1.0f;         // Recovery speed multiplier
+
     /**
      * Save armor stats to NBT compound tag.
      * Uses short keys to minimize storage overhead.
@@ -44,6 +49,9 @@ public class ArmorStats {
         if (knockbackResistance != 0.0f) tag.putFloat("KBRes", knockbackResistance);
         if (thornsReflect) tag.putBoolean("Thorns", true);
         if (thornsPercent != 0.0f) tag.putFloat("ThornsPct", thornsPercent);
+        if (shieldReflectProjectiles) tag.putBoolean("ShieldReflect", true);
+        if (Float.compare(shieldBlockStrength, 0.5f) != 0) tag.putFloat("ShieldBlock", shieldBlockStrength);
+        if (Float.compare(shieldRecoverySpeed, 1.0f) != 0) tag.putFloat("ShieldRecovery", shieldRecoverySpeed);
     }
 
     /**
@@ -61,6 +69,9 @@ public class ArmorStats {
         if (tag.contains("KBRes")) stats.knockbackResistance = tag.getFloat("KBRes");
         if (tag.contains("Thorns")) stats.thornsReflect = tag.getBoolean("Thorns");
         if (tag.contains("ThornsPct")) stats.thornsPercent = tag.getFloat("ThornsPct");
+        stats.shieldReflectProjectiles = tag.contains("ShieldReflect") && tag.getBoolean("ShieldReflect");
+        stats.shieldBlockStrength = tag.contains("ShieldBlock") ? tag.getFloat("ShieldBlock") : 0.5f;
+        stats.shieldRecoverySpeed = tag.contains("ShieldRecovery") ? tag.getFloat("ShieldRecovery") : 1.0f;
         return stats;
     }
 
@@ -77,7 +88,10 @@ public class ArmorStats {
             && toughnessBonus == 0.0f
             && knockbackResistance == 0.0f
             && !thornsReflect
-            && thornsPercent == 0.0f;
+            && thornsPercent == 0.0f
+            && !shieldReflectProjectiles
+            && Float.compare(shieldBlockStrength, 0.5f) == 0
+            && Float.compare(shieldRecoverySpeed, 1.0f) == 0;
     }
 
     /**
@@ -119,6 +133,9 @@ public class ArmorStats {
         copy.knockbackResistance = this.knockbackResistance;
         copy.thornsReflect = this.thornsReflect;
         copy.thornsPercent = this.thornsPercent;
+        copy.shieldReflectProjectiles = this.shieldReflectProjectiles;
+        copy.shieldBlockStrength = this.shieldBlockStrength;
+        copy.shieldRecoverySpeed = this.shieldRecoverySpeed;
         return copy;
     }
 
@@ -134,6 +151,7 @@ public class ArmorStats {
             ", tough=" + toughnessBonus +
             ", kb=" + knockbackResistance +
             ", thorns=" + thornsReflect + "/" + thornsPercent +
+            ", shield=" + shieldBlockStrength + "/" + shieldRecoverySpeed + "/" + shieldReflectProjectiles +
             '}';
     }
 }

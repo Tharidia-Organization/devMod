@@ -1,10 +1,14 @@
 package com.frenkvs.devmod.ui.editor.components;
 
+import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
+import com.frenkvs.devmod.ui.editor.core.ScaledCoord;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
+
+import java.util.Objects;
 
 import java.util.function.Consumer;
 
@@ -19,15 +23,14 @@ public class LeftColumnComponent {
     // DIMENSIONS (from Section 2.5)
     // ═══════════════════════════════════════════════════════════════
 
-    private static final int WIDTH = UIConstants.PanelDimensions.LEFT_COLUMN_WIDTH;  // 140px
-
     // Component positions (relative to left column origin)
-    private static final int PREVIEW_X = 20;
-    private static final int PREVIEW_Y = 10;
+    private static final int PREVIEW_X = 12;
+    private static final int PREVIEW_Y = 20;
     private static final int SLOT_SELECTOR_X = 5;
-    private static final int SLOT_SELECTOR_Y = 130;
+    private static final int SLOT_SELECTOR_Y = 170;
     private static final int ITEM_INFO_X = 5;
-    private static final int ITEM_INFO_Y = 208;
+    private static final int ITEM_INFO_Y = 260;
+    private static final int ARMOR_CARD_HEIGHT = 46;
 
     // ═══════════════════════════════════════════════════════════════
     // COMPONENTS
@@ -36,6 +39,7 @@ public class LeftColumnComponent {
     private final PreviewRenderer preview;
     private final SlotSelector slotSelector;
     private final ItemInfoPanel itemInfo;
+    private ResponsiveLayout.Rect armorCardBounds = ResponsiveLayout.Rect.EMPTY;
 
     // ═══════════════════════════════════════════════════════════════
     // STATE
@@ -164,31 +168,70 @@ public class LeftColumnComponent {
      * Render the left column at the given position.
      * @return The width consumed
      */
-    public int render(GuiGraphics graphics, int x, int y, int height, int mouseX, int mouseY, float partialTick) {
-        this.bounds = new ResponsiveLayout.Rect(x, y, WIDTH, height);
+    public int render(GuiGraphics graphics, int x, int y, int width, int height, int mouseX, int mouseY, float partialTick) {
+        // Prefer provided width (already scaled by layout) to avoid double scaling
+        int columnWidth = width > 0 ? width : ScaledCoord.scaleDim(UIConstants.PanelDimensions.LEFT_COLUMN_WIDTH);
+        this.bounds = new ResponsiveLayout.Rect(x, y, columnWidth, height);
 
         // Background
-        graphics.fill(x, y, x + WIDTH, y + height, UIConstants.Background.CONTENT);
+        graphics.fill(x, y, x + columnWidth, y + height, UIConstants.Background.CONTENT);
 
         // Right border (separator from content area)
-        graphics.fill(x + WIDTH - 1, y, x + WIDTH, y + height, UIConstants.Border.SEPARATOR);
+        graphics.fill(x + columnWidth - 1, y, x + columnWidth, y + height, UIConstants.Border.SEPARATOR);
 
         // Preview
-        int previewX = x + PREVIEW_X;
-        int previewY = y + PREVIEW_Y;
+        int previewSize = ScaledCoord.scaleDim(UIConstants.PanelDimensions.PREVIEW_SIZE);
+        int previewY = y + ScaledCoord.scaleDim(PREVIEW_Y);
+        int previewX = x + Math.max(ScaledCoord.scaleDim(PREVIEW_X), (columnWidth - previewSize) / 2);
         preview.render(graphics, previewX, previewY, mouseX, mouseY, partialTick);
 
         // Slot selector
-        int slotX = x + SLOT_SELECTOR_X;
-        int slotY = y + SLOT_SELECTOR_Y;
-        slotSelector.render(graphics, slotX, slotY, WIDTH - SLOT_SELECTOR_X * 2, mouseX, mouseY);
+        int slotX = x + ScaledCoord.scaleDim(SLOT_SELECTOR_X);
+        int slotY = y + ScaledCoord.scaleDim(SLOT_SELECTOR_Y);
+        slotSelector.render(graphics, slotX, slotY, columnWidth - ScaledCoord.scaleDim(SLOT_SELECTOR_X * 2), mouseX, mouseY);
+
+        // Selected armor piece card (click to cycle slots)
+        int slotAreaHeight = ScaledCoord.scaleDim(UIConstants.PanelDimensions.SLOT_AREA_HEIGHT);
+        renderSelectedPieceCard(graphics, slotX, slotY + slotAreaHeight + ScaledCoord.scaleDim(8),
+            columnWidth - ScaledCoord.scaleDim(SLOT_SELECTOR_X * 2), mouseX, mouseY);
 
         // Item info
-        int infoX = x + ITEM_INFO_X;
-        int infoY = y + ITEM_INFO_Y;
-        itemInfo.render(graphics, infoX, infoY, WIDTH - ITEM_INFO_X * 2, mouseX, mouseY);
+        int infoX = x + ScaledCoord.scaleDim(ITEM_INFO_X);
+        int infoY = y + ScaledCoord.scaleDim(ITEM_INFO_Y);
+        itemInfo.render(graphics, infoX, infoY, columnWidth - ScaledCoord.scaleDim(ITEM_INFO_X * 2), mouseX, mouseY);
 
-        return WIDTH;
+        return columnWidth;
+    }
+
+    private void renderSelectedPieceCard(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
+        int cardHeight = ScaledCoord.scaleDim(ARMOR_CARD_HEIGHT);
+        armorCardBounds = new ResponsiveLayout.Rect(x, y, width, cardHeight);
+        graphics.fill(x, y, x + width, y + cardHeight, UIConstants.Background.INPUT);
+        AxiomRenderer.drawBorder(graphics, x, y, width, cardHeight, UIConstants.Border.DEFAULT);
+
+        var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font, "font cannot be null");
+        String title = "Selected piece";
+        graphics.drawString(font, title, x + ScaledCoord.scaleDim(6), y + ScaledCoord.scaleDim(4), UIConstants.Text.SECONDARY, false);
+
+        SlotSelector.SlotInfo info = slotSelector.getSelectedSlot();
+        String label = info != null && info.label() != null ? info.label() : "Slot";
+        graphics.drawString(font, label, x + ScaledCoord.scaleDim(6), y + ScaledCoord.scaleDim(18), UIConstants.Text.PRIMARY, false);
+
+        // Render item icon on the right
+        int iconSize = ScaledCoord.scaleDim(16);
+        int iconX = x + width - iconSize - ScaledCoord.scaleDim(6);
+        int iconY = y + (cardHeight - iconSize) / 2;
+        if (info != null && info.item() != null && !info.item().isEmpty()) {
+            ItemStack item = Objects.requireNonNull(info.item(), "slot item cannot be null");
+            graphics.renderItem(item, iconX, iconY);
+        } else {
+            graphics.drawString(font, "⟳", iconX + 3, iconY + 3, UIConstants.Text.MUTED, false);
+        }
+
+        // Hover cue
+        if (armorCardBounds.contains(mouseX, mouseY)) {
+            graphics.fill(x, y, x + width, y + cardHeight, 0x2000D4FF);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -203,6 +246,17 @@ public class LeftColumnComponent {
 
         // Check slot selector
         if (slotSelector.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+
+        // Cycle slot when clicking the armor card
+        if (armorCardBounds.contains(mouseX, mouseY)) {
+            int current = slotSelector.getSelectedIndex();
+            int next = (current + 1) % slotSelector.getSlots().size();
+            slotSelector.setSelectedIndex(next);
+            if (onSlotSelect != null) {
+                onSlotSelect.accept(slotSelector.getSelectedSlot());
+            }
             return true;
         }
 
@@ -280,7 +334,10 @@ public class LeftColumnComponent {
     }
 
     public int getWidth() {
-        return WIDTH;
+        if (bounds != ResponsiveLayout.Rect.EMPTY && bounds.width() > 0) {
+            return bounds.width();
+        }
+        return ScaledCoord.scaleDim(UIConstants.PanelDimensions.LEFT_COLUMN_WIDTH);
     }
 
     public ResponsiveLayout.Rect getBounds() {

@@ -3,6 +3,8 @@ package com.frenkvs.devmod.ui.editor.components;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.editor.core.EditorSounds;
 import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
+import com.frenkvs.devmod.ui.editor.core.ScaledCoord;
+import com.frenkvs.devmod.ui.editor.core.Typography;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -23,12 +25,10 @@ public class FooterComponent {
     // ═══════════════════════════════════════════════════════════════
 
     private static final int HEIGHT = UIConstants.Size.FOOTER_HEIGHT;  // 52px
-    private static final int UNDO_REDO_SIZE = 32;
-    private static final int UNDO_REDO_HEIGHT = 28;
-    private static final int ACTIONS_WIDTH = 100;
     private static final int ACTIONS_HEIGHT = 28;
     private static final int APPLY_WIDTH = 112;
     private static final int APPLY_HEIGHT = 36;
+    private static final int ACTION_ARROW_WIDTH = 14;
 
     // ═══════════════════════════════════════════════════════════════
     // ACTION MENU ITEMS
@@ -57,23 +57,33 @@ public class FooterComponent {
     private boolean isDirty = false;
     private int pendingCount = 0;
 
-    // Hover states
-    private boolean undoHovered = false;
-    private boolean redoHovered = false;
-    private boolean actionsHovered = false;
+    // Hover states (locally computed during render)
     private boolean applyHovered = false;
+    private boolean leftArrowHovered = false;
+    private boolean rightArrowHovered = false;
+    private boolean actionsOverflow = false;
 
-    // Actions dropdown
-    private boolean actionsOpen = false;
+    // Action buttons (replacing dropdown)
     private final List<ActionItem> actionItems = new ArrayList<>();
-    private int hoveredActionIndex = -1;
+    private ResponsiveLayout.Rect historyBounds = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect exportBounds = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect importBounds = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect presetsBounds = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect templatesBounds = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect recipeBounds = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect resetBounds = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect cancelBounds = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect actionsViewport = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect leftArrowBounds = ResponsiveLayout.Rect.EMPTY;
+    private ResponsiveLayout.Rect rightArrowBounds = ResponsiveLayout.Rect.EMPTY;
 
     // Bounds
     private ResponsiveLayout.Rect bounds = ResponsiveLayout.Rect.EMPTY;
     private ResponsiveLayout.Rect undoBounds = ResponsiveLayout.Rect.EMPTY;
     private ResponsiveLayout.Rect redoBounds = ResponsiveLayout.Rect.EMPTY;
-    private ResponsiveLayout.Rect actionsBounds = ResponsiveLayout.Rect.EMPTY;
     private ResponsiveLayout.Rect applyBounds = ResponsiveLayout.Rect.EMPTY;
+    private double actionScrollOffset = 0;
+    private double actionMaxScroll = 0;
 
     // Callbacks
     private Runnable onUndo;
@@ -88,13 +98,12 @@ public class FooterComponent {
     public FooterComponent() {
         // Default action items
         actionItems.add(new ActionItem("history", "📋", "History"));
-        actionItems.add(ActionItem.createSeparator());
         actionItems.add(new ActionItem("export", "📤", "Export"));
         actionItems.add(new ActionItem("import", "📥", "Import"));
-        actionItems.add(ActionItem.createSeparator());
         actionItems.add(new ActionItem("presets", "💾", "Presets"));
+        actionItems.add(new ActionItem("templates", "📂", "Templates"));
+        actionItems.add(new ActionItem("recipe", "📜", "Recipe"));
         actionItems.add(new ActionItem("reset", "↺", "Reset"));
-        actionItems.add(ActionItem.createSeparator());
         actionItems.add(new ActionItem("cancel", "✗", "Cancel"));
     }
 
@@ -173,183 +182,238 @@ public class FooterComponent {
     public int render(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
         var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
 
-        this.bounds = new ResponsiveLayout.Rect(x, y, width, HEIGHT);
+        int footerHeight = ScaledCoord.scaleDim(HEIGHT);
+        int actionsHeight = ScaledCoord.scaleDim(ACTIONS_HEIGHT);
+        int applyWidth = ScaledCoord.scaleDim(APPLY_WIDTH);
+        int applyHeight = ScaledCoord.scaleDim(APPLY_HEIGHT);
+        int arrowWidth = ScaledCoord.scaleDim(ACTION_ARROW_WIDTH);
+        int arrowPad = arrowWidth + ScaledCoord.scaleDim(4);
+
+        this.bounds = new ResponsiveLayout.Rect(x, y, width, footerHeight);
 
         // Background
-        graphics.fill(x, y, x + width, y + HEIGHT, UIConstants.Background.HEADER);
+        graphics.fill(x, y, x + width, y + footerHeight, UIConstants.Background.HEADER);
 
         // Top border
         graphics.fill(x, y, x + width, y + 1, UIConstants.Border.SEPARATOR);
 
         // Calculate positions
-        int contentY = y + 12;
+        int contentY = y + ScaledCoord.scaleDim(12);
 
-        // Undo button (x=8)
-        int undoX = x + 8;
-        undoBounds = new ResponsiveLayout.Rect(undoX, contentY, UNDO_REDO_SIZE, UNDO_REDO_HEIGHT);
-        undoHovered = undoBounds.contains(mouseX, mouseY);
-        renderUndoRedoButton(graphics, font, undoX, contentY, "↶", canUndo, undoHovered);
+        // Clear undo/redo bounds (no longer rendered in footer)
+        undoBounds = ResponsiveLayout.Rect.EMPTY;
+        redoBounds = ResponsiveLayout.Rect.EMPTY;
 
-        // Redo button (x=44)
-        int redoX = x + 44;
-        redoBounds = new ResponsiveLayout.Rect(redoX, contentY, UNDO_REDO_SIZE, UNDO_REDO_HEIGHT);
-        redoHovered = redoBounds.contains(mouseX, mouseY);
-        renderUndoRedoButton(graphics, font, redoX, contentY, "↷", canRedo, redoHovered);
+        // Action buttons row (History, Export, Import, Presets, Reset, Cancel)
+        int padding = ScaledCoord.scaleDim(12);
+        int applyMargin = ScaledCoord.scaleDim(12);
+        int startX = x + padding; // initial left padding
+        int gapBase = ScaledCoord.scaleDim(6);
+        int btnY = contentY;
+        int minWidth = ScaledCoord.scaleDim(36);
 
-        // Separator (x=84)
-        int separatorX = x + 84;
-        graphics.fill(separatorX, y + 8, separatorX + 1, y + 8 + 36, UIConstants.Border.SEPARATOR);
-
-        // Actions menu (x=92)
-        int actionsX = x + 92;
-        actionsBounds = new ResponsiveLayout.Rect(actionsX, contentY, ACTIONS_WIDTH, ACTIONS_HEIGHT);
-        actionsHovered = actionsBounds.contains(mouseX, mouseY);
-        renderActionsButton(graphics, font, actionsX, contentY, mouseX, mouseY);
-
-        // Apply button (right - 120)
-        int applyX = x + width - 120;
-        int applyY = y + 8;
-        applyBounds = new ResponsiveLayout.Rect(applyX, applyY, APPLY_WIDTH, APPLY_HEIGHT);
-        applyHovered = applyBounds.contains(mouseX, mouseY);
-        renderApplyButton(graphics, font, applyX, applyY);
-
-        // Render dropdown if open
-        if (actionsOpen) {
-            renderActionsDropdown(graphics, font, actionsX, contentY + ACTIONS_HEIGHT, mouseX, mouseY);
+        String[] labels = new String[] { "History", "Export", "Import", "Presets", "Templates", "Recipe", "Reset", "Cancel" };
+        int[] widths = new int[labels.length];
+        float btnFontScale = Typography.buttonScale();
+        int innerPad = ScaledCoord.scaleDim(12);
+        for (int i = 0; i < labels.length; i++) {
+            String lbl = Objects.requireNonNull(labels[i], "label cannot be null");
+            int textW = Math.round(font.width(lbl) * btnFontScale);
+            widths[i] = Math.max(minWidth, textW + innerPad * 2);
         }
 
-        return HEIGHT;
-    }
+        // Fit buttons in available space (avoid overlap with Apply) and enable horizontal scrolling when needed
+        int gap = gapBase;
+        int baseRowWidth = gap * (widths.length - 1);
+        for (int w : widths) baseRowWidth += w;
 
-    private void renderUndoRedoButton(GuiGraphics graphics, net.minecraft.client.gui.Font font,
-                                       int x, int y, String symbol, boolean enabled, boolean hovered) {
-        // Background
-        int bgColor = !enabled ? UIConstants.Button.DISABLED :
-                     (hovered ? UIConstants.Button.HOVER : UIConstants.Button.NORMAL);
-        graphics.fill(x, y, x + UNDO_REDO_SIZE, y + UNDO_REDO_HEIGHT, bgColor);
-
-        // Border
-        int borderColor = enabled && hovered ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
-        AxiomRenderer.drawBorder(graphics, x, y, UNDO_REDO_SIZE, UNDO_REDO_HEIGHT, borderColor);
-
-        // Symbol
-        int textColor = enabled ? UIConstants.Text.PRIMARY : UIConstants.Text.DISABLED;
-        int textX = x + (UNDO_REDO_SIZE - Objects.requireNonNull(font, "font cannot be null").width(Objects.requireNonNull(symbol, "symbol cannot be null"))) / 2;
-        int textY = y + (UNDO_REDO_HEIGHT - 8) / 2;
-        graphics.drawString(font, symbol, textX, textY, textColor, false);
-    }
-
-    private void renderActionsButton(GuiGraphics graphics, net.minecraft.client.gui.Font font,
-                                      int x, int y, int mouseX, int mouseY) {
-        // Background
-        int bgColor = actionsOpen ? UIConstants.Button.PRESSED :
-                     (actionsHovered ? UIConstants.Button.HOVER : UIConstants.Button.NORMAL);
-        graphics.fill(x, y, x + ACTIONS_WIDTH, y + ACTIONS_HEIGHT, bgColor);
-
-        // Border
-        int borderColor = actionsHovered || actionsOpen ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
-        AxiomRenderer.drawBorder(graphics, x, y, ACTIONS_WIDTH, ACTIONS_HEIGHT, borderColor);
-
-        // Text
-        String label = "≡ Actions";
-        String indicator = actionsOpen ? "▲" : "▼";
-        int textX = x + 8;
-        int textY = y + (ACTIONS_HEIGHT - 8) / 2;
-        graphics.drawString(Objects.requireNonNull(font, "font cannot be null"),
-            Objects.requireNonNull(label, "label cannot be null"), textX, textY, UIConstants.Text.PRIMARY, false);
-
-        int indicatorX = x + ACTIONS_WIDTH - 12;
-        graphics.drawString(font, Objects.requireNonNull(indicator, "indicator cannot be null"),
-            indicatorX, textY, UIConstants.Text.MUTED, false);
-    }
-
-    private void renderActionsDropdown(GuiGraphics graphics, net.minecraft.client.gui.Font font,
-                                        int x, int y, int mouseX, int mouseY) {
-        int itemHeight = 24;
-        int separatorHeight = 8;
-        int dropdownHeight = 0;
-
-        // Calculate total height
-        for (ActionItem item : actionItems) {
-            dropdownHeight += item.isSeparator() ? separatorHeight : itemHeight;
-        }
-
-        // Dropdown background
-        graphics.fill(x, y, x + ACTIONS_WIDTH, y + dropdownHeight, UIConstants.Background.PANEL_SOLID);
-        AxiomRenderer.drawBorder(graphics, x, y, ACTIONS_WIDTH, dropdownHeight, UIConstants.Border.DEFAULT);
-
-        // Render items
-        hoveredActionIndex = -1;
-        int itemY = y;
-        for (int i = 0; i < actionItems.size(); i++) {
-            ActionItem item = actionItems.get(i);
-
-            if (item.isSeparator()) {
-                // Separator line
-                graphics.fill(x + 8, itemY + 3, x + ACTIONS_WIDTH - 8, itemY + 4,
-                             UIConstants.Border.SEPARATOR);
-                itemY += separatorHeight;
-            } else {
-                ResponsiveLayout.Rect itemBounds = new ResponsiveLayout.Rect(x, itemY, ACTIONS_WIDTH, itemHeight);
-                boolean itemHovered = itemBounds.contains(mouseX, mouseY);
-
-                if (itemHovered) {
-                    hoveredActionIndex = i;
-                    graphics.fill(x + 1, itemY, x + ACTIONS_WIDTH - 1, itemY + itemHeight,
-                                 UIConstants.Background.HOVER);
+        int applyX = x + width - applyWidth - applyMargin;
+        int available = Math.max(0, applyX - startX - applyMargin);
+        if (available < baseRowWidth) {
+            float scale = Math.max(0.55f, (float) available / (float) baseRowWidth);
+            gap = Math.max(ScaledCoord.scaleDim(2), Math.round(gapBase * scale));
+            for (int i = 0; i < widths.length; i++) {
+                widths[i] = Math.max(minWidth, Math.round(widths[i] * scale));
+            }
+            int scaledRowWidth = gap * (widths.length - 1);
+            for (int w : widths) scaledRowWidth += w;
+            if (scaledRowWidth > available) {
+                int overflow = scaledRowWidth - available;
+                int per = (int) Math.ceil((double) overflow / widths.length);
+                for (int i = 0; i < widths.length; i++) {
+                    widths[i] = Math.max(minWidth, widths[i] - per);
                 }
-
-                // Icon and label
-                String icon = item.icon() != null ? item.icon() : "";
-                String label = item.label() != null ? item.label() : "";
-                int textX = x + 8;
-                int textY = itemY + (itemHeight - 8) / 2;
-        graphics.drawString(Objects.requireNonNull(font, "font cannot be null"),
-            (icon == null ? "" : icon) + " " + (label == null ? "" : label),
-            textX, textY,
-            itemHovered ? UIConstants.Text.PRIMARY : UIConstants.Text.SECONDARY, false);
-
-                itemY += itemHeight;
+                scaledRowWidth = gap * (widths.length - 1);
+                for (int w : widths) scaledRowWidth += w;
+                if (scaledRowWidth > available) {
+                    int gapOverflow = scaledRowWidth - available;
+                    int gapReduce = (int) Math.ceil((double) gapOverflow / Math.max(1, widths.length - 1));
+                    gap = Math.max(ScaledCoord.scaleDim(1), gap - gapReduce);
+                }
             }
         }
+
+        actionsOverflow = false;
+        leftArrowBounds = ResponsiveLayout.Rect.EMPTY;
+        rightArrowBounds = ResponsiveLayout.Rect.EMPTY;
+        actionsViewport = ResponsiveLayout.Rect.EMPTY;
+
+        int baseActionsWidth = gap * (widths.length - 1);
+        for (int w : widths) baseActionsWidth += w;
+
+        // Center row when it fits
+        if (baseActionsWidth <= available) {
+            startX = startX + Math.max(0, (available - baseActionsWidth) / 2);
+        }
+
+        int actionsAvailable = Math.max(0, applyX - startX - applyMargin);
+        if (baseActionsWidth > actionsAvailable) {
+            actionsOverflow = true;
+            actionsAvailable = Math.max(0, actionsAvailable - arrowPad * 2);
+            actionMaxScroll = Math.max(0, baseActionsWidth - actionsAvailable);
+            actionScrollOffset = Math.max(0, Math.min(actionScrollOffset, actionMaxScroll));
+
+            leftArrowBounds = new ResponsiveLayout.Rect(startX, btnY, arrowWidth, actionsHeight);
+            actionsViewport = new ResponsiveLayout.Rect(leftArrowBounds.right() + ScaledCoord.scaleDim(2), btnY,
+                Math.max(0, actionsAvailable), actionsHeight);
+            rightArrowBounds = new ResponsiveLayout.Rect(actionsViewport.right() + ScaledCoord.scaleDim(2), btnY, arrowWidth, actionsHeight);
+            leftArrowHovered = leftArrowBounds.contains(mouseX, mouseY);
+            rightArrowHovered = rightArrowBounds.contains(mouseX, mouseY);
+        } else {
+            actionScrollOffset = 0;
+            actionMaxScroll = 0;
+            actionsViewport = new ResponsiveLayout.Rect(startX, btnY, Math.max(0, actionsAvailable), actionsHeight);
+        }
+
+        int renderStartX = actionsViewport.x() - (int) Math.round(actionScrollOffset);
+        if (actionsOverflow && !actionsViewport.isEmpty()) {
+            graphics.enableScissor(actionsViewport.x(), actionsViewport.y(),
+                actionsViewport.x() + actionsViewport.width(), actionsViewport.y() + actionsViewport.height());
+        }
+
+        int cursorX = renderStartX;
+        boolean historyHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[0], actionsHeight).contains(mouseX, mouseY);
+        historyBounds = renderActionButton(graphics, font, cursorX, btnY, widths[0], actionsHeight, "History", historyHovered);
+
+        cursorX = historyBounds.right() + gap;
+        boolean exportHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[1], actionsHeight).contains(mouseX, mouseY);
+        exportBounds = renderActionButton(graphics, font, cursorX, btnY, widths[1], actionsHeight, "Export", exportHovered);
+
+        cursorX = exportBounds.right() + gap;
+        boolean importHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[2], actionsHeight).contains(mouseX, mouseY);
+        importBounds = renderActionButton(graphics, font, cursorX, btnY, widths[2], actionsHeight, "Import", importHovered);
+
+        cursorX = importBounds.right() + gap;
+        boolean presetsHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[3], actionsHeight).contains(mouseX, mouseY);
+        presetsBounds = renderActionButton(graphics, font, cursorX, btnY, widths[3], actionsHeight, "Presets", presetsHovered);
+
+        cursorX = presetsBounds.right() + gap;
+        boolean templatesHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[4], actionsHeight).contains(mouseX, mouseY);
+        templatesBounds = renderActionButton(graphics, font, cursorX, btnY, widths[4], actionsHeight, "Templates", templatesHovered);
+
+        cursorX = templatesBounds.right() + gap;
+        boolean recipeHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[5], actionsHeight).contains(mouseX, mouseY);
+        recipeBounds = renderActionButton(graphics, font, cursorX, btnY, widths[5], actionsHeight, "Recipe", recipeHovered);
+
+        cursorX = recipeBounds.right() + gap;
+        boolean resetHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[6], actionsHeight).contains(mouseX, mouseY);
+        resetBounds = renderActionButton(graphics, font, cursorX, btnY, widths[6], actionsHeight, "Reset", resetHovered);
+
+        cursorX = resetBounds.right() + gap;
+        boolean cancelHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[7], actionsHeight).contains(mouseX, mouseY);
+        cancelBounds = renderActionButton(graphics, font, cursorX, btnY, widths[7], actionsHeight, "Cancel", cancelHovered);
+
+        if (actionsOverflow && !actionsViewport.isEmpty()) {
+            graphics.disableScissor();
+        }
+
+        if (actionsOverflow) {
+            renderArrow(graphics, font, leftArrowBounds, "◀", actionScrollOffset > 0, leftArrowHovered);
+            renderArrow(graphics, font, rightArrowBounds, "▶", actionScrollOffset < actionMaxScroll - 1, rightArrowHovered);
+        }
+
+        // Apply button (right aligned)
+        int applyY = y + ScaledCoord.scaleDim(8);
+        applyBounds = new ResponsiveLayout.Rect(applyX, applyY, applyWidth, applyHeight);
+        applyHovered = applyBounds.contains(mouseX, mouseY);
+        renderApplyButton(graphics, font, applyX, applyY, applyWidth, applyHeight);
+
+        return footerHeight;
+    }
+
+    private ResponsiveLayout.Rect renderActionButton(GuiGraphics graphics, net.minecraft.client.gui.Font font,
+                                                     int x, int y, int width, int height, String label, boolean hovered) {
+        float fontScale = Typography.buttonScale();
+        ResponsiveLayout.Rect rect = new ResponsiveLayout.Rect(x, y, width, height);
+        int bgColor = hovered ? UIConstants.Button.HOVER : UIConstants.Button.NORMAL;
+        graphics.fill(x, y, x + width, y + height, bgColor);
+        int borderColor = hovered ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
+        AxiomRenderer.drawBorder(graphics, x, y, width, height, borderColor);
+        String safeLabel = Objects.requireNonNull(label, "label cannot be null");
+        int textWidthScaled = Math.round(font.width(safeLabel) * fontScale);
+        int textHeightScaled = Math.round(font.lineHeight * fontScale);
+        int textX = x + (width - textWidthScaled) / 2;
+        int textY = y + (height - textHeightScaled) / 2;
+        Typography.drawText(graphics, font, safeLabel, textX, textY, UIConstants.Text.PRIMARY, fontScale);
+        return rect;
+    }
+
+    private void renderArrow(GuiGraphics graphics, net.minecraft.client.gui.Font font,
+                             ResponsiveLayout.Rect rect, String symbol, boolean enabled, boolean hovered) {
+        int bgColor = !enabled ? UIConstants.Button.DISABLED :
+            (hovered ? UIConstants.Button.HOVER : UIConstants.Button.NORMAL);
+        graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), bgColor);
+        int borderColor = enabled && hovered ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
+        AxiomRenderer.drawBorder(graphics, rect.x(), rect.y(), rect.width(), rect.height(), borderColor);
+        int textColor = enabled ? UIConstants.Text.PRIMARY : UIConstants.Text.DISABLED;
+        float fontScale = Typography.buttonScale();
+        String safeSymbol = Objects.requireNonNull(symbol, "symbol cannot be null");
+        int textX = rect.x() + (rect.width() - Math.round(font.width(safeSymbol) * fontScale)) / 2;
+        int textY = rect.y() + (rect.height() - Math.round(font.lineHeight * fontScale)) / 2;
+        Typography.drawText(graphics, font, safeSymbol, textX, textY, textColor, fontScale);
     }
 
     private void renderApplyButton(GuiGraphics graphics, net.minecraft.client.gui.Font font,
-                                    int x, int y) {
+                                    int x, int y, int width, int height) {
+        float fontScale = Typography.buttonScale();
         boolean enabled = canApply && isDirty;
 
         // Background - green tint for primary action
         int bgColor = !enabled ? UIConstants.Button.DISABLED :
                      (applyHovered ? UIConstants.Button.PRIMARY_HOVER : UIConstants.Button.PRIMARY);
-        graphics.fill(x, y, x + APPLY_WIDTH, y + APPLY_HEIGHT, bgColor);
+        graphics.fill(x, y, x + width, y + height, bgColor);
 
         // Border
         int borderColor = enabled ? UIConstants.Accent.GREEN : UIConstants.Border.DEFAULT;
         if (applyHovered && enabled) {
             borderColor = UIConstants.lighten(borderColor, 0.3f);
         }
-        AxiomRenderer.drawBorder(graphics, x, y, APPLY_WIDTH, APPLY_HEIGHT, borderColor);
+        AxiomRenderer.drawBorder(graphics, x, y, width, height, borderColor);
 
         // Text
         String label;
         if (!canApply) {
             label = "Preview Only";
+        } else if (!isDirty) {
+            label = "No Changes";
         } else if (pendingCount > 0) {
             label = "✓ Apply (" + pendingCount + ")";
         } else {
             label = "✓ Apply";
         }
         int textColor = enabled ? UIConstants.Text.PRIMARY : UIConstants.Text.DISABLED;
-        int textWidth = font.width(label);
-        int textX = x + (APPLY_WIDTH - textWidth) / 2;
-        int textY = y + (APPLY_HEIGHT - 8) / 2;
-        graphics.drawString(font, label, textX, textY, textColor, false);
+        int textWidthScaled = Math.round(font.width(label) * fontScale);
+        int textHeightScaled = Math.round(font.lineHeight * fontScale);
+        int textX = x + (width - textWidthScaled) / 2;
+        int textY = y + (height - textHeightScaled) / 2;
+        Typography.drawText(graphics, font, label, textX, textY, textColor, fontScale);
 
         // Dirty indicator dot
         if (isDirty) {
-            int dotX = x + APPLY_WIDTH - 12;
-            int dotY = y + 6;
-            graphics.fill(dotX, dotY, dotX + 6, dotY + 6, UIConstants.Accent.ORANGE);
+            int dotSize = ScaledCoord.scaleDim(6);
+            int dotX = x + width - ScaledCoord.scaleDim(12);
+            int dotY = y + ScaledCoord.scaleDim(6);
+            graphics.fill(dotX, dotY, dotX + dotSize, dotY + dotSize, UIConstants.Accent.ORANGE);
         }
     }
 
@@ -360,30 +424,52 @@ public class FooterComponent {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button != 0) return false;
 
-        // Check dropdown items first (if open)
-        if (actionsOpen && hoveredActionIndex >= 0) {
-            ActionItem item = actionItems.get(hoveredActionIndex);
-            if (!item.isSeparator() && item.id() != null) {
-                EditorSounds.playButtonClick();
-                actionsOpen = false;
-                if (onAction != null) {
-                    onAction.accept(item.id());
-                }
+        // Action buttons (respect viewport when overflowing)
+        boolean withinActions = !actionsOverflow || actionsViewport.contains(mouseX, mouseY);
+
+        if (historyBounds.contains(mouseX, mouseY) && withinActions) {
+            triggerAction("history");
+            return true;
+        }
+        if (exportBounds.contains(mouseX, mouseY) && withinActions) {
+            triggerAction("export");
+            return true;
+        }
+        if (importBounds.contains(mouseX, mouseY) && withinActions) {
+            triggerAction("import");
+            return true;
+        }
+        if (presetsBounds.contains(mouseX, mouseY) && withinActions) {
+            triggerAction("presets");
+            return true;
+        }
+        if (templatesBounds.contains(mouseX, mouseY) && withinActions) {
+            triggerAction("templates");
+            return true;
+        }
+        if (recipeBounds.contains(mouseX, mouseY) && withinActions) {
+            triggerAction("recipe");
+            return true;
+        }
+        if (resetBounds.contains(mouseX, mouseY) && withinActions) {
+            triggerAction("reset");
+            return true;
+        }
+        if (cancelBounds.contains(mouseX, mouseY) && withinActions) {
+            triggerAction("cancel");
+            return true;
+        }
+
+        if (actionsOverflow) {
+            double step = ScaledCoord.scaleDim(APPLY_WIDTH / 2);
+            if (leftArrowBounds.contains(mouseX, mouseY)) {
+                scrollActions(-step);
                 return true;
             }
-        }
-
-        // Check actions button (toggle dropdown)
-        if (actionsBounds.contains(mouseX, mouseY)) {
-            actionsOpen = !actionsOpen;
-            EditorSounds.playButtonClick();
-            return true;
-        }
-
-        // Close dropdown if clicking outside
-        if (actionsOpen) {
-            actionsOpen = false;
-            return true;
+            if (rightArrowBounds.contains(mouseX, mouseY)) {
+                scrollActions(step);
+                return true;
+            }
         }
 
         // Check undo button
@@ -414,6 +500,17 @@ public class FooterComponent {
         }
 
         return false;
+    }
+
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
+        if (!actionsOverflow || actionsViewport.isEmpty()) return false;
+        if (!actionsViewport.contains(mouseX, mouseY)) return false;
+        scrollActions(-scrollY * ScaledCoord.scaleDim(APPLY_WIDTH / 2));
+        return true;
+    }
+
+    private void scrollActions(double delta) {
+        actionScrollOffset = Math.max(0, Math.min(actionScrollOffset + delta, actionMaxScroll));
     }
 
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
@@ -460,20 +557,16 @@ public class FooterComponent {
         return false;
     }
 
-    /**
-     * Close the actions dropdown.
-     */
-    public void closeDropdown() {
-        actionsOpen = false;
+    private void triggerAction(String id) {
+        EditorSounds.playButtonClick();
+        if (onAction != null) {
+            onAction.accept(id);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════
     // GETTERS
     // ═══════════════════════════════════════════════════════════════
-
-    public boolean isActionsOpen() {
-        return actionsOpen;
-    }
 
     public boolean canUndo() {
         return canUndo;
@@ -498,4 +591,5 @@ public class FooterComponent {
     public ResponsiveLayout.Rect getBounds() {
         return bounds;
     }
+
 }

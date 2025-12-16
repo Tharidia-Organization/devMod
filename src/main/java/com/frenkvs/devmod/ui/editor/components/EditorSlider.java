@@ -36,7 +36,7 @@ public class EditorSlider {
     // ═══════════════════════════════════════════════════════════════
 
     private final String id;
-    private final String label;
+    private String label;
     private float min;
     private float max;
     private float step;
@@ -49,6 +49,7 @@ public class EditorSlider {
     private int trackColor = UIConstants.SliderColors.NEUTRAL;
     private boolean showLabel = true;
     private boolean showValue = true;
+    private boolean showInput = false;
 
     // State
     private boolean dragging = false;
@@ -59,9 +60,10 @@ public class EditorSlider {
     // Bounds (set during render)
     private ResponsiveLayout.Rect bounds = ResponsiveLayout.Rect.EMPTY;
     private ResponsiveLayout.Rect trackBounds = ResponsiveLayout.Rect.EMPTY;
-
     // Callback
     private Consumer<Float> onChange;
+    private EditorTextField inputField;
+    private static final int INPUT_WIDTH = 64;
 
     // ═══════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -111,6 +113,24 @@ public class EditorSlider {
         return this;
     }
 
+    public EditorSlider showInput(boolean show) {
+        this.showInput = show;
+        if (show && inputField == null) {
+            inputField = new EditorTextField(id + "_input", "");
+            inputField.numeric(true).numericRange(min, max);
+            inputField.onChange(text -> {
+                try {
+                    float parsed = inputField.getNumericValue();
+                    setValue(parsed);
+                } catch (Exception ignored) { }
+            });
+        }
+        if (inputField != null) {
+            inputField.numericRange(min, max);
+        }
+        return this;
+    }
+
     public EditorSlider onChange(Consumer<Float> callback) {
         this.onChange = callback;
         return this;
@@ -137,8 +157,10 @@ public class EditorSlider {
         this.bounds = new ResponsiveLayout.Rect(x, y, width, totalHeight);
 
         // Calculate track position using EditorSpacing (per spec Section 4.2)
-        int trackX = x + LABEL_WIDTH + EditorSpacing.S;
-        int trackWidth = width - LABEL_WIDTH - 60 - EditorSpacing.S * 2;
+        int labelWidth = showLabel ? Math.max(LABEL_WIDTH, font.width(label) + EditorSpacing.S) : 0;
+        int trackX = x + labelWidth + EditorSpacing.S;
+        int reservedRight = showInput ? INPUT_WIDTH + EditorSpacing.S : 60;
+        int trackWidth = width - labelWidth - reservedRight - EditorSpacing.S * 2;
         int trackY = y + (HEIGHT - TRACK_HEIGHT) / 2;
 
         // Update hover state based on track area
@@ -184,8 +206,17 @@ public class EditorSlider {
                                 hovered || dragging ? trackColor : UIConstants.Border.DEFAULT);
 
         // Value text on the right
-        if (showValue) {
-            String valueText = String.format(format, value) + suffix;
+        if (showInput && inputField != null) {
+            if (!inputField.isFocused()) {
+                inputField.setNumericValue(value);
+            }
+            int inputX = trackX + trackWidth + EditorSpacing.S;
+            int inputY = y + (HEIGHT - UIConstants.Size.INPUT_HEIGHT) / 2;
+            inputField.render(graphics, inputX, inputY, INPUT_WIDTH, mouseX, mouseY);
+        } else if (showValue) {
+            String safeFormat = format != null ? format : "%.2f";
+            String safeSuffix = suffix != null ? suffix : "";
+            String valueText = String.format(safeFormat, value) + safeSuffix;
             int valueX = trackX + trackWidth + EditorSpacing.S;
             int valueColor = enabled ? UIConstants.Text.VALUE : UIConstants.Text.MUTED;
             graphics.drawString(font, valueText, valueX, y + (HEIGHT - 8) / 2, valueColor, false);
@@ -218,6 +249,10 @@ public class EditorSlider {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (!enabled || button != 0) return false;
 
+        if (showInput && inputField != null && inputField.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+
         if (trackBounds.contains(mouseX, mouseY)) {
             dragging = true;
             focused = true;
@@ -229,6 +264,10 @@ public class EditorSlider {
     }
 
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (showInput && inputField != null && inputField.isFocused()) {
+            // allow clicks outside to commit
+            inputField.mouseClicked(mouseX, mouseY, button);
+        }
         if (dragging) {
             dragging = false;
             return true;
@@ -241,11 +280,18 @@ public class EditorSlider {
             updateValueFromMouse(mouseX);
             return true;
         }
+        if (showInput && inputField != null && inputField.isFocused()) {
+            return true;
+        }
         return false;
     }
 
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (!enabled) return false;
+
+        if (showInput && inputField != null && inputField.isFocused()) {
+            return false;
+        }
 
         if (bounds.contains(mouseX, mouseY) || focused) {
             float delta = (float) scrollY * step;
@@ -287,6 +333,18 @@ public class EditorSlider {
         return false;
     }
 
+    public boolean charTyped(char chr, int modifiers) {
+        if (showInput && inputField != null) {
+            if (inputField.charTyped(chr, modifiers)) {
+                if (inputField.isValid()) {
+                    setValue(inputField.getNumericValue());
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void updateValueFromMouse(double mouseX) {
         float ratio = (float) (mouseX - trackBounds.x()) / trackBounds.width();
         ratio = Mth.clamp(ratio, 0f, 1f);
@@ -317,6 +375,10 @@ public class EditorSlider {
 
     public String getLabel() {
         return label;
+    }
+
+    public void setLabel(String newLabel) {
+        this.label = newLabel == null ? "" : newLabel;
     }
 
     public float getValue() {
