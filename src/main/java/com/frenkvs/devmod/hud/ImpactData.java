@@ -1,14 +1,19 @@
 package com.frenkvs.devmod.hud;
 
 import com.frenkvs.devmod.HitHelper.BodyPart;
+import com.frenkvs.devmod.damage.DamageBreakdown;
 import com.frenkvs.devmod.integration.ModIntegrationManager;
+import com.frenkvs.devmod.util.I18n;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.loading.FMLEnvironment;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.ref.WeakReference;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -32,6 +37,8 @@ public class ImpactData {
     // HUD display duration after stopping to look at the panel
     public static final long DISPLAY_DURATION_MS = 3000; // 3 seconds after looking away
     private static final long FADE_DURATION_MS = 500;    // Fade out last 500ms
+    // BUG-005 FIX: Maximum observation time to prevent HUD from staying forever
+    private static final long MAX_OBSERVATION_TIME_MS = 30000; // 30 seconds max even if observed
 
     // Timestamp of when the player stopped looking at the HUD panel
     private volatile long stoppedLookingTimestamp = -1;
@@ -46,7 +53,7 @@ public class ImpactData {
     public final BodyPart bodyPart;
     public final float bodyPartMultiplier;
     public final DamageBreakdown breakdown;
-    public final String attackSource;
+    @Nonnull public final String attackSource;
     public final boolean isRanged;
 
     // === 3D Impact Position ===
@@ -65,6 +72,13 @@ public class ImpactData {
     private volatile float healthBefore = -1f;
     private volatile float healthAfter = -1f;
 
+    // === Damage Reduction Breakdown (BUG-003 FIX) ===
+    private volatile float armorReduction = 0f;
+    private volatile float enchantmentReduction = 0f;
+    private volatile float mobEffectReduction = 0f;  // Resistance potion, etc.
+    private volatile float absorptionReduction = 0f;
+    private volatile float blockedDamage = 0f;
+
     /**
      * Complete constructor for internal use.
      *
@@ -81,7 +95,7 @@ public class ImpactData {
         this.bodyPart = part;
         this.bodyPartMultiplier = multiplier;
         this.breakdown = breakdown;
-        this.attackSource = attackSource;
+        this.attackSource = Objects.requireNonNull(attackSource, "attackSource");
         this.isRanged = isRanged;
 
         // 3D impact position
@@ -186,7 +200,8 @@ public class ImpactData {
     private static void clearForLocalPlayer() {
         net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
         if (mc.player != null) {
-            clearForPlayer(mc.player.getUUID());
+            UUID playerId = mc.player.getUUID();
+            clearForPlayer(playerId);
         }
     }
 
@@ -196,6 +211,8 @@ public class ImpactData {
     public static void clearForPlayer(UUID playerUUID) {
         if (playerUUID != null) {
             IMPACTS_BY_PLAYER.remove(playerUUID);
+            ImpactHistory.clearForPlayer(playerUUID);
+            ImpactDpsTracker.clearForPlayer(playerUUID);
         }
     }
 
@@ -204,6 +221,16 @@ public class ImpactData {
      */
     public static void clearAll() {
         IMPACTS_BY_PLAYER.clear();
+        ImpactHistory.clearAll();
+        ImpactDpsTracker.clearAll();
+    }
+
+    /**
+     * Client-side tick hook for deterministic cleanup.
+     */
+    public static void clientTickCleanup() {
+        if (!FMLEnvironment.dist.isClient()) return;
+        maybeCleanup();
     }
 
     /**
@@ -246,21 +273,28 @@ public class ImpactData {
 
     /**
      * Checks if the impact has expired.
-     * Never expires as long as the player is looking at the panel.
+     * Expires after DISPLAY_DURATION_MS when not observed, or after MAX_OBSERVATION_TIME_MS regardless.
      */
     public boolean isExpired() {
-        // If currently observing, never expires
+        long now = System.currentTimeMillis();
+
+        // BUG-005 FIX: Always expire after max observation time, even if being observed
+        if (now - timestamp > MAX_OBSERVATION_TIME_MS) {
+            return true;
+        }
+
+        // If currently observing and within max time, don't expire
         if (isBeingObserved) {
             return false;
         }
 
         // If never stopped looking (first frame), use original timestamp
         if (stoppedLookingTimestamp < 0) {
-            return System.currentTimeMillis() - timestamp > DISPLAY_DURATION_MS;
+            return now - timestamp > DISPLAY_DURATION_MS;
         }
 
         // Otherwise, count from when they stopped looking
-        return System.currentTimeMillis() - stoppedLookingTimestamp > DISPLAY_DURATION_MS;
+        return now - stoppedLookingTimestamp > DISPLAY_DURATION_MS;
     }
 
     /**
@@ -331,6 +365,21 @@ public class ImpactData {
     }
 
     /**
+     * Gets a formatted description of the attack as a component.
+     */
+    public Component getFormattedAttackSourceComponent() {
+        if (isBetterCombatAttack()) {
+            return I18n.translate("devmod.hud.attack_source.better_combat", betterCombatAttackName);
+        }
+
+        if (attackSource.startsWith("devmod.hud.attack_source.")) {
+            return I18n.translate(attackSource);
+        }
+
+        return Component.literal(attackSource);
+    }
+
+    /**
      * Gets the body part color for the UI.
      */
     public int getBodyPartColor() {
@@ -363,6 +412,36 @@ public class ImpactData {
         this.healthBefore = healthBefore;
         this.healthAfter = healthAfter;
         this.actualDamageDealt = actualDamage;
+    }
+
+    /**
+     * Sets the damage reduction breakdown (called from LivingDamageEvent.Post).
+     * BUG-003 FIX: Provides detailed breakdown of what reduced the damage.
+     */
+    public void setDamageReductionBreakdown(float armor, float enchantments, float mobEffects,
+                                             float absorption, float blocked) {
+        this.armorReduction = armor;
+        this.enchantmentReduction = enchantments;
+        this.mobEffectReduction = mobEffects;
+        this.absorptionReduction = absorption;
+        this.blockedDamage = blocked;
+    }
+
+    /** Gets armor reduction amount. */
+    public float getArmorReduction() { return armorReduction; }
+    /** Gets enchantment (Protection) reduction amount. */
+    public float getEnchantmentReduction() { return enchantmentReduction; }
+    /** Gets mob effect (Resistance) reduction amount. */
+    public float getMobEffectReduction() { return mobEffectReduction; }
+    /** Gets absorption reduction amount. */
+    public float getAbsorptionReduction() { return absorptionReduction; }
+    /** Gets blocked damage amount (shield). */
+    public float getBlockedDamage() { return blockedDamage; }
+
+    /** Checks if any damage reduction breakdown data is available. */
+    public boolean hasReductionBreakdown() {
+        return armorReduction > 0 || enchantmentReduction > 0 || mobEffectReduction > 0
+            || absorptionReduction > 0 || blockedDamage > 0;
     }
 
     /**

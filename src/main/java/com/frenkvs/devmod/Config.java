@@ -31,6 +31,25 @@ public class Config {
         FLAT_BONUS
     }
 
+    /**
+     * Impact HUD position on screen.
+     * BUG-008 FIX: Allow users to configure where the HUD appears.
+     */
+    public enum HudPosition {
+        /** Top-right corner (default, classic position) */
+        TOP_RIGHT,
+        /** Top-left corner */
+        TOP_LEFT,
+        /** Bottom-right corner */
+        BOTTOM_RIGHT,
+        /** Bottom-left corner */
+        BOTTOM_LEFT,
+        /** Center-right (middle of screen, right side) */
+        CENTER_RIGHT,
+        /** Center-left (middle of screen, left side) */
+        CENTER_LEFT
+    }
+
     // ============================================
     // TELEMETRY SETTINGS
     // ============================================
@@ -62,8 +81,19 @@ public class Config {
 
     public static final ModConfigSpec.BooleanValue DEBUG_OVERLAY_ENABLED;
     public static final ModConfigSpec.BooleanValue IMPACT_HUD_ENABLED;
+    public static final ModConfigSpec.EnumValue<HudPosition> IMPACT_HUD_POSITION;
+    public static final ModConfigSpec.IntValue IMPACT_HUD_OFFSET_X;
+    public static final ModConfigSpec.IntValue IMPACT_HUD_OFFSET_Y;
+    public static final ModConfigSpec.BooleanValue IMPACT_HUD_HISTORY_ENABLED;
+    public static final ModConfigSpec.BooleanValue IMPACT_HUD_DPS_ENABLED;
+    public static final ModConfigSpec.IntValue IMPACT_HUD_HISTORY_COUNT;
     public static final ModConfigSpec.BooleanValue SHOW_BODY_PART_BOXES;
     public static final ModConfigSpec.IntValue IMPACT_VFX_DURATION_MS;
+    public static final ModConfigSpec.BooleanValue IMPACT_VFX_ENABLED;
+    public static final ModConfigSpec.BooleanValue IMPACT_VFX_VORTEX_ENABLED;
+    public static final ModConfigSpec.BooleanValue IMPACT_VFX_SLASH_ENABLED;
+    public static final ModConfigSpec.BooleanValue IMPACT_VFX_LINES_ENABLED;
+    public static final ModConfigSpec.DoubleValue IMPACT_VFX_INTENSITY;
 
     // ============================================
     // PERFORMANCE SETTINGS
@@ -172,6 +202,30 @@ public class Config {
                 .comment("Enable impact analysis HUD")
                 .define("impactHudEnabled", true);
 
+        IMPACT_HUD_POSITION = BUILDER
+                .comment("Position of the Impact HUD on screen (TOP_RIGHT, TOP_LEFT, BOTTOM_RIGHT, BOTTOM_LEFT, CENTER_RIGHT, CENTER_LEFT)")
+                .defineEnum("impactHudPosition", HudPosition.TOP_RIGHT);
+
+        IMPACT_HUD_OFFSET_X = BUILDER
+                .comment("Horizontal offset from screen edge (pixels)")
+                .defineInRange("impactHudOffsetX", 10, 0, 200);
+
+        IMPACT_HUD_OFFSET_Y = BUILDER
+                .comment("Vertical offset from screen edge (pixels)")
+                .defineInRange("impactHudOffsetY", 10, 0, 200);
+
+        IMPACT_HUD_HISTORY_ENABLED = BUILDER
+                .comment("Show recent impacts panel in the Impact HUD")
+                .define("impactHudHistoryEnabled", true);
+
+        IMPACT_HUD_DPS_ENABLED = BUILDER
+                .comment("Show rolling DPS in the Impact HUD history panel")
+                .define("impactHudDpsEnabled", true);
+
+        IMPACT_HUD_HISTORY_COUNT = BUILDER
+                .comment("Number of recent impacts to show in the Impact HUD")
+                .defineInRange("impactHudHistoryCount", 5, 1, 10);
+
         SHOW_BODY_PART_BOXES = BUILDER
                 .comment("Show body part bounding boxes when debug overlay is enabled (Shift+G to toggle)")
                 .define("showBodyPartBoxes", false);
@@ -179,6 +233,26 @@ public class Config {
         IMPACT_VFX_DURATION_MS = BUILDER
                 .comment("Duration of impact VFX in milliseconds")
                 .defineInRange("impactVfxDuration", 500, 100, 5000);
+
+        IMPACT_VFX_ENABLED = BUILDER
+                .comment("Enable impact VFX rendering")
+                .define("impactVfxEnabled", true);
+
+        IMPACT_VFX_VORTEX_ENABLED = BUILDER
+                .comment("Enable impact vortex VFX")
+                .define("impactVfxVortexEnabled", true);
+
+        IMPACT_VFX_SLASH_ENABLED = BUILDER
+                .comment("Enable impact slash VFX")
+                .define("impactVfxSlashEnabled", true);
+
+        IMPACT_VFX_LINES_ENABLED = BUILDER
+                .comment("Enable impact connection lines VFX")
+                .define("impactVfxLinesEnabled", true);
+
+        IMPACT_VFX_INTENSITY = BUILDER
+                .comment("Impact VFX intensity multiplier (0.1 = subtle, 1.0 = normal, 2.0 = intense)")
+                .defineInRange("impactVfxIntensity", 1.0, 0.1, 2.0);
 
         BUILDER.pop();
 

@@ -18,39 +18,39 @@ Tutti i valori devono essere multipli di 4:
 /**
  * Spacing tokens - ONLY use these values for padding/gap/margin.
  * Never use arbitrary pixel values.
+ *
+ * @see EDITOR_DESIGN_SYSTEM.md#16-grid--spacing-system
  */
 public final class EditorSpacing {
     private EditorSpacing() {}
 
+    // Runtime validation toggle (debug-only)
+    public static boolean ENABLE_GRID_VALIDATION = false;
+
     // Base unit
     public static final int UNIT = 4;
 
-    // Spacing tokens
-    public static final int XS  = 4;   // Intra-component (icon↔text, input padding)
+    // Named spacing tokens
+    public static final int XS  = 4;   // Intra-component (icon-text)
     public static final int S   = 8;   // Component padding, small gaps
     public static final int M   = 12;  // Section padding, medium gaps
     public static final int L   = 16;  // Zone padding, large gaps
-    public static final int XL  = 24;  // Panel margins, extra large gaps
+    public static final int XL  = 24;  // Panel margins
 
-    // Derived values (all multiples of 4)
-    public static final int COMPONENT_GAP = S;      // 8px between components in row
+    // Semantic aliases
+    public static final int COMPONENT_GAP = S;      // 8px between components
     public static final int SECTION_GAP = M;        // 12px between sections
-    public static final int ROW_GAP = S;            // 8px between rows in section
+    public static final int ROW_GAP = S;            // 8px between rows
     public static final int CONTENT_PADDING = S;    // 8px content area padding
     public static final int BUTTON_PADDING_H = S;   // 8px horizontal button padding
     public static final int BUTTON_PADDING_V = XS;  // 4px vertical button padding
 
-    /**
-     * Validate a value is on the 4px grid.
-     * Use in debug builds to catch errors early.
-     */
+    /** Validate value is on 4px grid */
     public static boolean isOnGrid(int value) {
         return value % UNIT == 0;
     }
 
-    /**
-     * Snap a value to nearest grid point.
-     */
+    /** Snap value to nearest grid point */
     public static int snapToGrid(int value) {
         return ((value + 2) / UNIT) * UNIT;
     }
@@ -111,44 +111,68 @@ public final class EditorSpacing {
 ```java
 /**
  * Standard component dimensions - all multiples of 4.
+ *
+ * @see EDITOR_DESIGN_SYSTEM.md#16-grid--spacing-system
  */
 public final class EditorDimensions {
     private EditorDimensions() {}
 
-    // Buttons
+    // =========================================================================
+    // BUTTONS
+    // =========================================================================
+
     public static final int BTN_HEIGHT_SMALL = 20;   // 5 units
     public static final int BTN_HEIGHT_NORMAL = 24;  // 6 units
     public static final int BTN_HEIGHT_LARGE = 32;   // 8 units
     public static final int BTN_MIN_WIDTH = 48;      // 12 units
 
-    // Inputs
+    // =========================================================================
+    // INPUTS
+    // =========================================================================
+
     public static final int INPUT_HEIGHT = 20;       // 5 units
     public static final int INPUT_MIN_WIDTH = 60;    // 15 units
 
-    // Sliders
+    // =========================================================================
+    // SLIDERS
+    // =========================================================================
+
     public static final int SLIDER_HEIGHT = 20;      // 5 units
     public static final int SLIDER_TRACK_HEIGHT = 4; // 1 unit
     public static final int SLIDER_THUMB_SIZE = 12;  // 3 units
+    public static final int SLIDER_LABEL_WIDTH = 100;// 25 units
 
-    // Toggles
+    // =========================================================================
+    // TOGGLES
+    // =========================================================================
+
     public static final int TOGGLE_WIDTH = 36;       // 9 units
     public static final int TOGGLE_HEIGHT = 20;      // 5 units
 
-    // Tabs
-    public static final int TAB_HEIGHT = 24;         // 6 units
-    public static final int TAB_MIN_WIDTH = 64;      // 16 units
+    // =========================================================================
+    // TABS
+    // =========================================================================
 
-    // Sections
+    public static final int TAB_HEIGHT = 24;         // 6 units
+    public static final int TAB_MIN_WIDTH = 72;      // 18 units
+    public static final int TAB_GAP = 4;             // 1 unit
+
+    // =========================================================================
+    // SECTIONS
+    // =========================================================================
+
     public static final int SECTION_HEADER_HEIGHT = 24;  // 6 units
     public static final int SECTION_MIN_HEIGHT = 48;     // 12 units
 
-    // Scrollbar
-    public static final int SCROLLBAR_WIDTH = 8;     // 2 units
+    // =========================================================================
+    // OTHER
+    // =========================================================================
 
-    // Icons
+    public static final int SCROLLBAR_WIDTH = 8;     // 2 units
     public static final int ICON_SMALL = 12;         // 3 units
     public static final int ICON_NORMAL = 16;        // 4 units
     public static final int ICON_LARGE = 24;         // 6 units
+    public static final int SLOT_SIZE = 32;          // 8 units, aligned to 4px grid
 }
 ```
 
@@ -157,6 +181,9 @@ public final class EditorDimensions {
 ```java
 /**
  * Helper for laying out components in a row with consistent spacing.
+ * Uses ScaledSpacing for scaled gap values and ScaledCoord.alignTo4() for grid alignment.
+ *
+ * @see ScaledSpacing#componentGap()
  */
 public final class RowLayout {
     private final int startX;
@@ -164,54 +191,34 @@ public final class RowLayout {
     private final int gap;
     private int currentX;
 
-    public RowLayout(int x, int y, int gap) {
-        this.startX = x;
-        this.y = y;
-        this.gap = EditorSpacing.snapToGrid(gap);
-        this.currentX = x;
-    }
-
+    /** Creates a row layout with scaled default component gap. */
     public RowLayout(int x, int y) {
-        this(x, y, EditorSpacing.COMPONENT_GAP);
+        this(x, y, ScaledSpacing.componentGap());
     }
 
-    /**
-     * Add a component and return its X position.
-     * Automatically advances currentX for next component.
-     */
+    /** Creates a row layout with custom gap. */
+    public RowLayout(int x, int y, int gap) {
+        this.startX = ScaledCoord.alignTo4(x);
+        this.y = ScaledCoord.alignTo4(y);
+        this.gap = ScaledCoord.alignTo4(gap);
+        this.currentX = this.startX;
+    }
+
+    /** Add a component width and return its X position. */
     public int add(int width) {
         int x = currentX;
-        currentX += EditorSpacing.snapToGrid(width) + gap;
+        currentX += ScaledCoord.alignTo4(width) + gap;
         return x;
     }
 
-    /**
-     * Add flexible space (for right-aligned components).
-     */
+    /** Add flexible space. */
     public void addSpace(int space) {
-        currentX += EditorSpacing.snapToGrid(space);
+        currentX += ScaledCoord.alignTo4(space);
     }
 
-    /**
-     * Get current X position.
-     */
-    public int getX() {
-        return currentX;
-    }
-
-    /**
-     * Get Y position (constant for row).
-     */
-    public int getY() {
-        return y;
-    }
-
-    /**
-     * Get total width used so far.
-     */
-    public int getWidth() {
-        return currentX - startX - gap; // Subtract trailing gap
-    }
+    public int getX() { return currentX; }
+    public int getY() { return y; }
+    public int getWidth() { return currentX - startX - gap; }
 }
 ```
 
@@ -219,7 +226,11 @@ public final class RowLayout {
 
 ```java
 /**
- * Helper for laying out sections vertically with consistent spacing.
+ * Helper for laying out vertical sections with consistent spacing.
+ * Uses ScaledSpacing for scaled spacing values and ScaledCoord.alignTo4() for grid alignment.
+ *
+ * @see ScaledSpacing#sectionGap()
+ * @see ScaledSpacing#rowGap()
  */
 public final class SectionLayout {
     private final int x;
@@ -228,67 +239,38 @@ public final class SectionLayout {
     private int currentY;
 
     public SectionLayout(int x, int y, int width) {
-        this.x = x;
-        this.startY = y;
-        this.width = EditorSpacing.snapToGrid(width);
-        this.currentY = y;
+        this.x = ScaledCoord.alignTo4(x);
+        this.startY = ScaledCoord.alignTo4(y);
+        this.width = ScaledCoord.alignTo4(width);
+        this.currentY = this.startY;
     }
 
-    /**
-     * Add a section header and return its Y position.
-     */
-    public int addHeader(String title) {
+    /** Add a header row and return its Y position (uses scaled header height). */
+    public int addHeader() {
         int y = currentY;
-        currentY += EditorDimensions.SECTION_HEADER_HEIGHT;
-        currentY += EditorSpacing.S; // Padding after header
+        currentY += ScaledCoord.scale(EditorDimensions.SECTION_HEADER_HEIGHT);
+        currentY += ScaledSpacing.s(); // padding after header
         return y;
     }
 
-    /**
-     * Add a row and return its Y position.
-     */
+    /** Add a row of specified height and return its Y position. */
     public int addRow(int height) {
         int y = currentY;
-        currentY += EditorSpacing.snapToGrid(height);
-        currentY += EditorSpacing.ROW_GAP;
+        currentY += ScaledCoord.alignTo4(height);
+        currentY += ScaledSpacing.rowGap();
         return y;
     }
 
-    /**
-     * End current section and add section gap.
-     */
+    /** End current section and add section gap. */
     public void endSection() {
-        currentY -= EditorSpacing.ROW_GAP; // Remove last row gap
-        currentY += EditorSpacing.SECTION_GAP;
+        currentY -= ScaledSpacing.rowGap();    // remove last row gap
+        currentY += ScaledSpacing.sectionGap();
     }
 
-    /**
-     * Get current Y position.
-     */
-    public int getY() {
-        return currentY;
-    }
-
-    /**
-     * Get total height used so far.
-     */
-    public int getHeight() {
-        return currentY - startY;
-    }
-
-    /**
-     * Get content X (with padding).
-     */
-    public int getContentX() {
-        return x + EditorSpacing.CONTENT_PADDING;
-    }
-
-    /**
-     * Get content width (minus padding).
-     */
-    public int getContentWidth() {
-        return width - (EditorSpacing.CONTENT_PADDING * 2);
-    }
+    public int getY() { return currentY; }
+    public int getHeight() { return currentY - startY; }
+    public int getContentX() { return x + ScaledSpacing.contentPadding(); }
+    public int getContentWidth() { return width - ScaledSpacing.contentPadding() * 2; }
 }
 ```
 
@@ -328,20 +310,54 @@ renderComponent(row.add(width2), row.getY());
 
 ## Integration with Scaling
 
+`ScaledSpacing` fornisce metodi per ottenere spacing tokens già scalati e allineati alla griglia 4px.
+I layout helpers (`RowLayout`, `SectionLayout`) usano `ScaledSpacing` internamente.
+
 ```java
 /**
- * Scaled spacing values - use these in render code.
+ * Scaled spacing values for use in render code.
+ * All methods return spacing tokens scaled by the current UI scale
+ * and aligned to the 4px grid.
+ *
+ * @see EditorSpacing for base unscaled values
+ * @see ScaledCoord#scale(int) for the scaling logic
  */
 public final class ScaledSpacing {
+    private ScaledSpacing() {}
 
+    // Named spacing tokens (scaled)
     public static int xs()  { return ScaledCoord.scale(EditorSpacing.XS); }
     public static int s()   { return ScaledCoord.scale(EditorSpacing.S); }
     public static int m()   { return ScaledCoord.scale(EditorSpacing.M); }
     public static int l()   { return ScaledCoord.scale(EditorSpacing.L); }
     public static int xl()  { return ScaledCoord.scale(EditorSpacing.XL); }
 
-    public static int componentGap() { return ScaledCoord.scale(EditorSpacing.COMPONENT_GAP); }
-    public static int sectionGap()   { return ScaledCoord.scale(EditorSpacing.SECTION_GAP); }
-    public static int rowGap()       { return ScaledCoord.scale(EditorSpacing.ROW_GAP); }
+    // Semantic aliases (scaled)
+    public static int componentGap()  { return ScaledCoord.scale(EditorSpacing.COMPONENT_GAP); }
+    public static int sectionGap()    { return ScaledCoord.scale(EditorSpacing.SECTION_GAP); }
+    public static int rowGap()        { return ScaledCoord.scale(EditorSpacing.ROW_GAP); }
+    public static int contentPadding(){ return ScaledCoord.scale(EditorSpacing.CONTENT_PADDING); }
+    public static int buttonPaddingH(){ return ScaledCoord.scale(EditorSpacing.BUTTON_PADDING_H); }
+    public static int buttonPaddingV(){ return ScaledCoord.scale(EditorSpacing.BUTTON_PADDING_V); }
 }
 ```
+
+---
+
+## Implementation Status (2025-01)
+
+| Component | File | Status |
+|-----------|------|--------|
+| `EditorSpacing` | `ui/editor/core/EditorSpacing.java` | ✅ Implemented |
+| `EditorDimensions` | `ui/editor/core/EditorDimensions.java` | ✅ Implemented |
+| `RowLayout` | `ui/editor/core/RowLayout.java` | ✅ Implemented (uses ScaledSpacing) |
+| `SectionLayout` | `ui/editor/core/SectionLayout.java` | ✅ Implemented (uses ScaledSpacing) |
+| `ScaledSpacing` | `ui/editor/core/ScaledSpacing.java` | ✅ Implemented |
+| `ScaledCoord.alignTo4()` | `ui/editor/core/ScaledCoord.java` | ✅ Implemented |
+
+**Notes:**
+- `RowLayout` e `SectionLayout` usano `ScaledSpacing` per gap/padding scalati
+- `ScaledCoord.alignTo4()` usato per allineamento coordinate alla griglia 4px
+- `SectionLayout.addHeader()` non richiede parametro `title` (rendering del titolo gestito esternamente)
+- `EditorDimensions` include costanti aggiuntive: `SLIDER_LABEL_WIDTH`, `TAB_GAP`, `SLOT_SIZE`
+- `TAB_MIN_WIDTH` aumentato da 64 a 72 per miglior resa visiva

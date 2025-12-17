@@ -1,7 +1,7 @@
 package com.frenkvs.devmod.ui.editor.components;
 
 import com.frenkvs.devmod.ui.AxiomRenderer;
-import com.frenkvs.devmod.ui.editor.core.EditorDimensions;
+import com.frenkvs.devmod.ui.editor.core.EditorConstants;
 import com.frenkvs.devmod.ui.editor.core.EditorSounds;
 import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
 import com.frenkvs.devmod.ui.editor.core.ScaledCoord;
@@ -29,9 +29,32 @@ public final class SlotSelector {
     // CONSTANTS
     // ═══════════════════════════════════════════════════════════════
 
-    private static final int SLOT_SIZE = EditorDimensions.SLOT_SIZE;  // 30px per spec
-    private static final int SLOT_GAP = 5;
-    private static final int HEIGHT = 70;
+    private static final int SLOT_SIZE = EditorConstants.SLOT_SIZE;  // 32px per spec
+    private static final int SLOT_GAP = EditorConstants.SLOT_GAP;
+    private static final int HEIGHT = EditorConstants.SLOT_AREA_HEIGHT;
+    private static final int DEFAULT_SELECTED_INDEX = 0;
+    private static final int NO_HOVER_INDEX = -1;
+    private static final int PRIMARY_MOUSE_BUTTON = 0;
+
+    private static final String LABEL_HELMET = "Helmet";
+    private static final String LABEL_CHESTPLATE = "Chestplate";
+    private static final String LABEL_LEGGINGS = "Leggings";
+    private static final String LABEL_BOOTS = "Boots";
+    private static final String LABEL_MAIN_HAND = "Main Hand";
+    private static final String LABEL_OFF_HAND = "Off Hand";
+    private static final String SHORT_LABEL_HEAD = "H";
+    private static final String SHORT_LABEL_CHEST = "C";
+    private static final String SHORT_LABEL_LEGS = "L";
+    private static final String SHORT_LABEL_FEET = "F";
+    private static final String SHORT_LABEL_MAIN_HAND = "M";
+    private static final String SHORT_LABEL_OFF_HAND = "O";
+    private static final String PLACEHOLDER_UNKNOWN = "?";
+    private static final String PLACEHOLDER_HEAD = "🪖";
+    private static final String PLACEHOLDER_CHEST = "🦺";
+    private static final String PLACEHOLDER_LEGS = "👖";
+    private static final String PLACEHOLDER_FEET = "👢";
+    private static final String PLACEHOLDER_OFFHAND = "🛡";
+    private static final String PLACEHOLDER_MAINHAND = "⚔";
 
     // ═══════════════════════════════════════════════════════════════
     // SLOT TYPE
@@ -59,8 +82,8 @@ public final class SlotSelector {
 
     private SlotType type = SlotType.WEAPON;
     private final List<SlotInfo> slots = new ArrayList<>();
-    private int selectedIndex = 0;
-    private int hoveredIndex = -1;
+    private int selectedIndex = DEFAULT_SELECTED_INDEX;
+    private int hoveredIndex = NO_HOVER_INDEX;
 
     // Bounds
     private ResponsiveLayout.Rect bounds = ResponsiveLayout.Rect.EMPTY;
@@ -88,16 +111,16 @@ public final class SlotSelector {
         slotBounds.clear();
 
         if (type == SlotType.ARMOR) {
-            slots.add(new SlotInfo(EquipmentSlot.HEAD, "Helmet", "H", ItemStack.EMPTY));
-            slots.add(new SlotInfo(EquipmentSlot.CHEST, "Chestplate", "C", ItemStack.EMPTY));
-            slots.add(new SlotInfo(EquipmentSlot.LEGS, "Leggings", "L", ItemStack.EMPTY));
-            slots.add(new SlotInfo(EquipmentSlot.FEET, "Boots", "F", ItemStack.EMPTY));
+            slots.add(new SlotInfo(EquipmentSlot.HEAD, LABEL_HELMET, SHORT_LABEL_HEAD, ItemStack.EMPTY));
+            slots.add(new SlotInfo(EquipmentSlot.CHEST, LABEL_CHESTPLATE, SHORT_LABEL_CHEST, ItemStack.EMPTY));
+            slots.add(new SlotInfo(EquipmentSlot.LEGS, LABEL_LEGGINGS, SHORT_LABEL_LEGS, ItemStack.EMPTY));
+            slots.add(new SlotInfo(EquipmentSlot.FEET, LABEL_BOOTS, SHORT_LABEL_FEET, ItemStack.EMPTY));
         } else {
-            slots.add(new SlotInfo(EquipmentSlot.MAINHAND, "Main Hand", "M", ItemStack.EMPTY));
-            slots.add(new SlotInfo(EquipmentSlot.OFFHAND, "Off Hand", "O", ItemStack.EMPTY));
+            slots.add(new SlotInfo(EquipmentSlot.MAINHAND, LABEL_MAIN_HAND, SHORT_LABEL_MAIN_HAND, ItemStack.EMPTY));
+            slots.add(new SlotInfo(EquipmentSlot.OFFHAND, LABEL_OFF_HAND, SHORT_LABEL_OFF_HAND, ItemStack.EMPTY));
         }
 
-        selectedIndex = 0;
+        selectedIndex = DEFAULT_SELECTED_INDEX;
     }
 
     public void setSlotItem(EquipmentSlot slot, ItemStack item) {
@@ -147,10 +170,11 @@ public final class SlotSelector {
         // Calculate slot positions - centered horizontally
         int totalSlotWidth = slots.size() * slotSize + (slots.size() - 1) * slotGap;
         int startX = x + (width - totalSlotWidth) / 2;
-        int slotY = y + ScaledCoord.scaleDim(8);
+        int innerPadding = ScaledCoord.scaleDim(UIConstants.Spacing.MD);
+        int slotY = y + innerPadding;
 
         // Update hover state
-        hoveredIndex = -1;
+        hoveredIndex = NO_HOVER_INDEX;
 
         // Render slots
         for (int i = 0; i < slots.size(); i++) {
@@ -179,7 +203,7 @@ public final class SlotSelector {
             // Render item or short label
             ItemStack itemStack = Objects.requireNonNull(slotInfo.item(), "slot item cannot be null");
             if (!itemStack.isEmpty()) {
-                int iconPad = ScaledCoord.scaleDim(4);
+                int iconPad = ScaledCoord.scaleDim(UIConstants.Spacing.SM);
                 graphics.renderItem(itemStack, slotX + iconPad, slotY + iconPad);
             } else {
                 // Show placeholder glyph when empty
@@ -195,7 +219,7 @@ public final class SlotSelector {
         if (selectedIndex >= 0 && selectedIndex < slots.size()) {
             String label = Objects.requireNonNull(slots.get(selectedIndex).label(), "label cannot be null");
             int labelX = x + (width - font.width(label)) / 2;
-            int labelY = slotY + slotSize + ScaledCoord.scaleDim(8);
+            int labelY = slotY + slotSize + innerPadding;
             graphics.drawString(font, label, labelX, labelY, UIConstants.Text.SECONDARY(), false);
         }
 
@@ -207,7 +231,7 @@ public final class SlotSelector {
     // ═══════════════════════════════════════════════════════════════
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button != 0) return false;
+        if (button != PRIMARY_MOUSE_BUTTON) return false;
 
         for (int i = 0; i < slotBounds.size(); i++) {
             if (slotBounds.get(i).contains(mouseX, mouseY)) {
@@ -307,15 +331,15 @@ public final class SlotSelector {
     }
 
     private String placeholderFor(SlotInfo info) {
-        if (info == null || info.slot() == null) return "?";
+        if (info == null || info.slot() == null) return PLACEHOLDER_UNKNOWN;
         return switch (info.slot()) {
-            case HEAD -> "🪖";
-            case CHEST -> "🦺";
-            case LEGS -> "👖";
-            case FEET -> "👢";
-            case OFFHAND -> "🛡";
-            case MAINHAND -> "⚔";
-            default -> Objects.requireNonNullElse(info.shortLabel(), "?");
+            case HEAD -> PLACEHOLDER_HEAD;
+            case CHEST -> PLACEHOLDER_CHEST;
+            case LEGS -> PLACEHOLDER_LEGS;
+            case FEET -> PLACEHOLDER_FEET;
+            case OFFHAND -> PLACEHOLDER_OFFHAND;
+            case MAINHAND -> PLACEHOLDER_MAINHAND;
+            default -> Objects.requireNonNullElse(info.shortLabel(), PLACEHOLDER_UNKNOWN);
         };
     }
 }

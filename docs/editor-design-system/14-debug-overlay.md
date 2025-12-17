@@ -438,28 +438,56 @@ debugShowBounds = true
 ## Implementation Tasks
 
 ### P0 - Core System
-- [ ] Implementare `DebugOverlay` class con toggle F9
-- [ ] Creare `DebugInfo` e `DebugWarning` records
-- [ ] Implementare rendering layers (grid, bounds, warnings)
+- [x] Implementare `DebugOverlay` class con toggle F9
+- [x] Creare `DebugInfo` e `DebugWarning` records
+- [x] Implementare rendering layers (grid, bounds, warnings)
 
 ### P1 - Detection
-- [ ] Implementare `OverflowDetector` utilities
-- [ ] Aggiungere `DebugReporter` interface per componenti
-- [ ] Integrare con sistema di grid alignment
+- [x] Implementare `OverflowDetector` utilities
+- [x] Aggiungere `DebugReporter` interface per componenti
+- [x] Integrare con sistema di grid alignment (`checkAlignment`)
 
 ### P2 - UI Integration
-- [ ] Aggiungere debug info panel in corner
-- [ ] Implementare keyboard shortcuts (F9, F10, F11)
-- [ ] Integrare con sistema di scaling UI
+- [x] Aggiungere debug info panel in corner
+- [x] Implementare keyboard shortcuts (F9, F10, F11, Shift+F9)
+- [x] Integrare con sistema di scaling UI via `Bounds` record
 
 ### P3 - Advanced
-- [ ] Aggiungere performance profiling
-- [ ] Implementare component bounds registration
+- [x] Aggiungere performance profiling (`setPerformanceLine()`)
+- [x] Implementare component bounds registration (`DebugReporter`)
 - [ ] Creare config options per debug overlay
 
 ---
 
+## Implementation Status (2025-01)
+
+| Component | File | Status |
+|-----------|------|--------|
+| `DebugOverlay` | `ui/editor/debug/DebugOverlay.java` | ✅ Implemented |
+| `DetailLevel` | `ui/editor/debug/DebugOverlay.java` | ✅ Implemented (enum) |
+| `DebugInfo` | `ui/editor/debug/DebugInfo.java` | ✅ Implemented (record + builder) |
+| `DebugWarning` | `ui/editor/debug/DebugWarning.java` | ✅ Implemented (record) |
+| `WarningType` | `ui/editor/debug/WarningType.java` | ✅ Implemented (enum) |
+| `OverflowDetector` | `ui/editor/debug/OverflowDetector.java` | ✅ Implemented |
+| `DebugReporter` | `ui/editor/debug/DebugReporter.java` | ✅ Implemented (interface) |
+| `Bounds` | `ui/editor/core/Bounds.java` | ✅ Implemented |
+| `DebugInfoSection` | `ui/editor/debug/DebugInfoSection.java` | ✅ Implemented |
+| `ItemDebugInfo` | `ui/editor/debug/ItemDebugInfo.java` | ✅ Implemented |
+| Config options | - | ⏳ Not implemented |
+
+**Features:**
+- Keyboard shortcuts: F9 (toggle), Shift+F9 (cycle detail), F10 (grid), F11 (bounds)
+- Detail levels: LOW (warnings only), MEDIUM (+ bounds + info), HIGH (+ grid + coordinates)
+- Grid rendering: 4px grid with brighter lines every 16px
+- Zone boundaries: HEADER, LEFT, CONTENT, FOOTER labels
+- Warning types: OVERFLOW, TRUNCATED, MISALIGNED, OUT_OF_VIEWPORT
+- OverflowDetector: `checkTextTruncation`, `checkViewportOverflow`, `checkAlignment`, `checkOutOfViewport`, `checkAll`
+- DebugReporter: interface for components to report bounds and warnings
+- DebugInfo: immutable record with builder pattern for frame state
+
+---
+
 **Riferimenti:**
-- [13-grid-spacing.md](13-grid-spacing.md) - Sistema di griglia 4px
-- [12-ui-scaling.md](12-ui-scaling.md) - Sistema di scaling UI
+- [12-grid-spacing.md](12-grid-spacing.md) - Sistema di griglia 4px
+- [07-ui-scaling.md](07-ui-scaling.md) - Sistema di scaling UI
 - [04-debug-system.md](04-debug-system.md) - Debug panel principale

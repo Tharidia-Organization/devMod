@@ -26,12 +26,16 @@ public class HeaderComponent {
     // ═══════════════════════════════════════════════════════════════
 
     private static final int HEIGHT = UIConstants.Size.HEADER_HEIGHT;  // 28px base
-    private static final int TAB_WIDTH = 70;
-    private static final int TAB_HEIGHT = 22;
-    private static final int TAB_GAP = 2;
+    private static final int TAB_WIDTH = UIConstants.Size.TAB_WIDTH;
+    private static final int TAB_HEIGHT = UIConstants.Size.TAB_HEIGHT;
+    private static final int TAB_GAP = UIConstants.Size.TAB_GAP;
     private static final int CLOSE_BUTTON_SIZE = 20;
     private static final int ARROW_WIDTH = 14;
     private static final int LEFT_PADDING = 10;
+    private static final int BORDER_THICKNESS = 1;
+    private static final int SCROLL_TOLERANCE = 1;
+    private static final int FADE_COLOR_SOLID = 0xAA101010;
+    private static final int FADE_COLOR_TRANSPARENT = 0x00101010;
 
     // ═══════════════════════════════════════════════════════════════
     // TAB INFO
@@ -168,11 +172,12 @@ public class HeaderComponent {
         graphics.fill(x, y, x + width, y + headerHeight, UIConstants.Background.HEADER());
 
         // Bottom border
-        graphics.fill(x, y + headerHeight - 1, x + width, y + headerHeight, UIConstants.Border.SEPARATOR());
+        graphics.fill(x, y + headerHeight - BORDER_THICKNESS, x + width, y + headerHeight,
+            UIConstants.Border.SEPARATOR());
 
         // Calculate available width for tabs (reserve space for badges + close)
-        int badgeGap = ScaledCoord.scaleDim(8);
-        int rightPadding = ScaledCoord.scaleDim(8);
+        int badgeGap = ScaledCoord.scaleDim(UIConstants.Spacing.MD);
+        int rightPadding = ScaledCoord.scaleDim(UIConstants.Spacing.MD);
         int reservedRight = rightPadding + closeSize + badgeGap
             + scopeBadge.getWidth() + badgeGap + modeBadge.getWidth();
         int availableWidth = Math.max(0, width - reservedRight - leftPadding);
@@ -187,7 +192,7 @@ public class HeaderComponent {
 
         // Adjust for arrow buttons when overflowing
         if (tabsOverflow) {
-            int arrowPad = arrowWidth + ScaledCoord.scaleDim(4);
+            int arrowPad = arrowWidth + ScaledCoord.scaleDim(UIConstants.Spacing.SM);
             tabsAreaX += arrowPad;
             tabsAreaWidth -= arrowPad * 2;
             tabMaxScroll = Math.max(0, totalTabWidth - tabsAreaWidth);
@@ -237,16 +242,17 @@ public class HeaderComponent {
         // Fade edges + arrows on overflow
         if (tabsOverflow) {
             renderArrow(graphics, font, leftArrowBounds, "◀", tabScrollOffset > 0, leftArrowHovered);
-            renderArrow(graphics, font, rightArrowBounds, "▶", tabScrollOffset < tabMaxScroll - 1, rightArrowHovered);
+            renderArrow(graphics, font, rightArrowBounds, "▶", tabScrollOffset < tabMaxScroll - SCROLL_TOLERANCE,
+                rightArrowHovered);
 
-            int fadeWidth = ScaledCoord.scaleDim(8);
+            int fadeWidth = ScaledCoord.scaleDim(UIConstants.Spacing.MD);
             int fadeTop = tabY;
             int fadeBottom = tabY + tabHeight;
             graphics.fillGradient(tabsViewport.x(), fadeTop, tabsViewport.x() + fadeWidth, fadeBottom,
-                0xAA101010, 0x00101010);
+                FADE_COLOR_SOLID, FADE_COLOR_TRANSPARENT);
             graphics.fillGradient(tabsViewport.x() + tabsViewport.width() - fadeWidth, fadeTop,
                 tabsViewport.x() + tabsViewport.width(), fadeBottom,
-                0x00101010, 0xAA101010);
+                FADE_COLOR_TRANSPARENT, FADE_COLOR_SOLID);
         }
 
         // Right side components
@@ -286,7 +292,7 @@ public class HeaderComponent {
 
         // Selected indicator (bottom line)
         if (selected) {
-            int indicatorH = ScaledCoord.scaleDim(2);
+            int indicatorH = ScaledCoord.scaleDim(UIConstants.Spacing.XS);
             graphics.fill(x, y + height - indicatorH, x + width, y + height,
                     UIConstants.Tab.INDICATOR);
         }

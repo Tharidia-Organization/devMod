@@ -6,6 +6,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
@@ -74,6 +76,7 @@ public class Impact3DPanelManager {
         if (mc.player == null) return;
 
         Vec3 cameraPos = mc.gameRenderer.getMainCamera().getPosition();
+        Vec3 panelPosition = resolvePanelPosition(mc, hitPoint, cameraPos);
 
         // Remove excess panels (FIFO)
         while (activePanels.size() >= MAX_PANELS) {
@@ -81,8 +84,39 @@ public class Impact3DPanelManager {
         }
 
         // Create and add the new panel
-        Impact3DPanel panel = new Impact3DPanel(hitPoint, data, cameraPos);
+        Impact3DPanel panel = new Impact3DPanel(hitPoint, panelPosition, data);
         activePanels.add(panel);
+    }
+
+    private Vec3 resolvePanelPosition(Minecraft mc, Vec3 hitPoint, Vec3 cameraPos) {
+        Vec3 rightCandidate = Impact3DRenderer.INSTANCE.calculatePanelPosition(hitPoint, cameraPos);
+        Vec3 leftCandidate = hitPoint.subtract(rightCandidate.subtract(hitPoint));
+
+        ClientLevel level = mc.level;
+        LocalPlayer player = mc.player;
+        if (level == null || player == null) {
+            return rightCandidate;
+        }
+
+        if (isVisible(level, player, cameraPos, rightCandidate)) {
+            return rightCandidate;
+        }
+        if (isVisible(level, player, cameraPos, leftCandidate)) {
+            return leftCandidate;
+        }
+        return rightCandidate;
+    }
+
+    private boolean isVisible(ClientLevel level, LocalPlayer player, Vec3 from, Vec3 to) {
+        ClipContext context = new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player);
+        var hitResult = level.clip(context);
+        if (hitResult.getType() == HitResult.Type.MISS) {
+            return true;
+        }
+
+        double hitDistSq = hitResult.getLocation().distanceToSqr(from);
+        double targetDistSq = to.distanceToSqr(from);
+        return hitDistSq >= targetDistSq - 0.01;
     }
 
     /**

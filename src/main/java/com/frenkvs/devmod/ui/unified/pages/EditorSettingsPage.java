@@ -3,6 +3,7 @@ package com.frenkvs.devmod.ui.unified.pages;
 import com.frenkvs.devmod.EditorClientConfig;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.core.EditorConstants;
 import com.frenkvs.devmod.ui.editor.core.EditorScaleCalculator;
 import com.frenkvs.devmod.ui.editor.core.ScaledCoord;
 import com.frenkvs.devmod.ui.unified.SettingsCategory;
@@ -24,6 +25,9 @@ public class EditorSettingsPage implements SettingsPage {
     private static final int BUTTON_HEIGHT = 22;
     private static final int BUTTON_WIDTH = 60;
     private static final int BUTTON_GAP = 8;
+    private static final int PREVIEW_HEIGHT = 110;
+    private static final int PREVIEW_WIDTH_MAX = 240;
+    private static final int PREVIEW_PADDING = 6;
 
     // Track original values
     private EditorClientConfig.EditorUiScale originalUiScale;
@@ -91,9 +95,11 @@ public class EditorSettingsPage implements SettingsPage {
         }
         currentY += BUTTON_HEIGHT + 8;
 
-        // Current scale info
-        renderScaleInfo(graphics, font, x, currentY, width);
-        currentY += ROW_HEIGHT + 8;
+        // Current scale info + preview
+        float effectiveScale = renderScaleInfo(graphics, font, x, currentY, width);
+        currentY += ROW_HEIGHT + UIConstants.Spacing.GAP_SMALL;
+        renderScalePreview(graphics, font, x, currentY, width, effectiveScale);
+        currentY += PREVIEW_HEIGHT + UIConstants.Spacing.GAP_LARGE;
 
         // Separator
         AxiomRenderer.drawSeparator(graphics, x, currentY, width);
@@ -138,7 +144,7 @@ public class EditorSettingsPage implements SettingsPage {
         AxiomRenderer.drawHint(graphics, font, x, currentY, "Changes are applied when you click Apply.");
     }
 
-    private void renderScaleInfo(GuiGraphics graphics, Font font, int x, int y, int width) {
+    private float renderScaleInfo(GuiGraphics graphics, Font font, int x, int y, int width) {
         Minecraft mc = Minecraft.getInstance();
         int screenW = mc.getWindow().getGuiScaledWidth();
         int screenH = mc.getWindow().getGuiScaledHeight();
@@ -156,18 +162,56 @@ public class EditorSettingsPage implements SettingsPage {
         }
 
         // Calculate panel size
-        int panelW = ScaledCoord.scaleDim(550, effectiveScale);
-        int panelH = ScaledCoord.scaleDim(420, effectiveScale);
+        int panelW = ScaledCoord.scaleDim(EditorConstants.PANEL_WIDTH, effectiveScale);
+        int panelH = ScaledCoord.scaleDim(EditorConstants.PANEL_HEIGHT, effectiveScale);
 
         // Current info
         String info = String.format("Current: %s → %.2fx | Panel: %d×%d px | Screen: %d×%d",
                 scaleSource, effectiveScale, panelW, panelH, screenW, screenH);
 
         graphics.drawString(Objects.requireNonNull(font), info, x, y, UIConstants.Text.MUTED(), false);
+        return effectiveScale;
+    }
+
+    private void renderScalePreview(GuiGraphics graphics, Font font, int x, int y, int width, float effectiveScale) {
+        Font safeFont = Objects.requireNonNull(font, "font");
+        int previewWidth = Math.min(width, PREVIEW_WIDTH_MAX);
+        int previewHeight = PREVIEW_HEIGHT;
+        int previewX = x;
+        int previewY = y;
+
+        graphics.fill(previewX, previewY, previewX + previewWidth, previewY + previewHeight, UIConstants.Background.INPUT());
+        AxiomRenderer.drawBorder(graphics, previewX, previewY, previewWidth, previewHeight, UIConstants.Border.MUTED());
+
+        int panelW = ScaledCoord.scaleDim(EditorConstants.PANEL_WIDTH, effectiveScale);
+        int panelH = ScaledCoord.scaleDim(EditorConstants.PANEL_HEIGHT, effectiveScale);
+        float fitScale = Math.min(
+                (previewWidth - PREVIEW_PADDING * 2) / (float) panelW,
+                (previewHeight - PREVIEW_PADDING * 2) / (float) panelH
+        );
+        int scaledW = Math.max(1, Math.round(panelW * fitScale));
+        int scaledH = Math.max(1, Math.round(panelH * fitScale));
+        int panelX = previewX + (previewWidth - scaledW) / 2;
+        int panelY = previewY + (previewHeight - scaledH) / 2;
+
+        graphics.fill(panelX, panelY, panelX + scaledW, panelY + scaledH, UIConstants.Background.PANEL());
+        AxiomRenderer.drawBorder(graphics, panelX, panelY, scaledW, scaledH, UIConstants.Border.DEFAULT());
+
+        int headerH = Math.max(1, Math.round(ScaledCoord.scaleDim(EditorConstants.HEADER_HEIGHT, effectiveScale) * fitScale));
+        graphics.fill(panelX, panelY, panelX + scaledW, panelY + headerH, UIConstants.Background.HEADER());
+
+        int leftW = Math.max(1, Math.round(ScaledCoord.scaleDim(EditorConstants.LEFT_COLUMN_WIDTH, effectiveScale) * fitScale));
+        graphics.fill(panelX, panelY + headerH, panelX + leftW, panelY + scaledH, UIConstants.Background.INPUT());
+        graphics.fill(panelX + leftW, panelY + headerH, panelX + leftW + 1, panelY + scaledH, UIConstants.Border.SEPARATOR());
+
+        String label = String.format("Preview %.2fx", effectiveScale);
+        graphics.drawString(safeFont, Objects.requireNonNull(label, "label"),
+            previewX + 6, previewY + previewHeight - 12, UIConstants.Text.MUTED(), false);
     }
 
     private void drawScaleButton(GuiGraphics graphics, Font font, int x, int y, int w, int h,
                                   String label, boolean selected, boolean hovered) {
+        Font safeFont = Objects.requireNonNull(font, "font");
         // Background
         int bgColor;
         if (selected) {
@@ -184,15 +228,16 @@ public class EditorSettingsPage implements SettingsPage {
         AxiomRenderer.drawBorder(graphics, x, y, w, h, borderColor);
 
         // Text centered
-        int textW = font.width(Objects.requireNonNull(label));
+        int textW = safeFont.width(Objects.requireNonNull(label, "label"));
         int textX = x + (w - textW) / 2;
         int textY = y + (h - 8) / 2;
         int textColor = selected ? UIConstants.Text.PRIMARY() : (hovered ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY());
-        graphics.drawString(font, label, textX, textY, textColor, false);
+        graphics.drawString(safeFont, Objects.requireNonNull(label, "label"), textX, textY, textColor, false);
     }
 
     private void drawModeButton(GuiGraphics graphics, Font font, int x, int y, int w, int h,
                                  String label, String desc, boolean selected, boolean hovered, int accentColor) {
+        Font safeFont = Objects.requireNonNull(font, "font");
         // Background
         int bgColor;
         if (selected) {
@@ -215,10 +260,12 @@ public class EditorSettingsPage implements SettingsPage {
 
         // Label
         int textX = x + 8;
-        graphics.drawString(Objects.requireNonNull(font), label, textX, y + 4, selected ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(safeFont, Objects.requireNonNull(label, "label"),
+            textX, y + 4, selected ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY(), false);
 
         // Description (smaller)
-        graphics.drawString(Objects.requireNonNull(font), desc, textX, y + 13, UIConstants.Text.MUTED(), false);
+        graphics.drawString(safeFont, Objects.requireNonNull(desc, "description"),
+            textX, y + 13, UIConstants.Text.MUTED(), false);
     }
 
     private void renderToggleRow(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
@@ -269,8 +316,9 @@ public class EditorSettingsPage implements SettingsPage {
         }
         currentY += BUTTON_HEIGHT + 8;
 
-        // Scale info row
-        currentY += ROW_HEIGHT + 8;
+        // Scale info row + preview
+        currentY += ROW_HEIGHT + UIConstants.Spacing.GAP_SMALL;
+        currentY += PREVIEW_HEIGHT + UIConstants.Spacing.GAP_LARGE;
 
         // Separator
         currentY += 16;
@@ -340,7 +388,7 @@ public class EditorSettingsPage implements SettingsPage {
 
     @Override
     public int getContentHeight() {
-        return 280;
+        return 280 + PREVIEW_HEIGHT + UIConstants.Spacing.GAP_LARGE;
     }
 
     private boolean isMouseOver(int mouseX, int mouseY, int x, int y, int width, int height) {

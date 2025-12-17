@@ -21,9 +21,15 @@ import java.util.function.Consumer;
  */
 public class VirtualizedList<T> {
 
+    private static final int DEFAULT_ROW_HEIGHT = 24;
+    private static final int SCROLLBAR_WIDTH = 3;
+    private static final int FADE_ALPHA_MAX = 128;
+    private static final int FADE_LINE_HEIGHT = 1;
+    private static final int MIN_PAGE_SIZE = 1;
+
     private final String id;
     private List<T> items = new ArrayList<>();
-    private int rowHeight = ScaledCoord.scaleDim(24);
+    private int rowHeight = ScaledCoord.scaleDim(DEFAULT_ROW_HEIGHT);
     private int selectedIndex = -1;
     private final ScrollState scrollState = new ScrollState();
 
@@ -261,7 +267,7 @@ public class VirtualizedList<T> {
 
         // Optional scrollbar
         if (scrollState.isScrollable()) {
-            renderScrollbar(graphics, x + width - ScaledCoord.scaleDim(4), y, height);
+            renderScrollbar(graphics, x + width - ScaledCoord.scaleDim(UIConstants.Spacing.SM), y, height);
         }
     }
 
@@ -272,27 +278,28 @@ public class VirtualizedList<T> {
     }
 
     private void renderScrollIndicators(GuiGraphics graphics, int x, int y, int width, int height) {
-        int fadeH = ScaledCoord.scaleDim(8);
+        int fadeH = ScaledCoord.scaleDim(UIConstants.Spacing.MD);
 
         if (scrollState.canScrollUp()) {
             // Top fade
             for (int i = 0; i < fadeH; i++) {
-                int alpha = (int) (128 * (1.0f - (float) i / fadeH));
-                graphics.fill(x, y + i, x + width, y + i + 1, (alpha << 24));
+                int alpha = (int) (FADE_ALPHA_MAX * (1.0f - (float) i / fadeH));
+                graphics.fill(x, y + i, x + width, y + i + FADE_LINE_HEIGHT, (alpha << 24));
             }
         }
 
         if (scrollState.canScrollDown()) {
             // Bottom fade
             for (int i = 0; i < fadeH; i++) {
-                int alpha = (int) (128 * ((float) i / fadeH));
-                graphics.fill(x, y + height - fadeH + i, x + width, y + height - fadeH + i + 1, (alpha << 24));
+                int alpha = (int) (FADE_ALPHA_MAX * ((float) i / fadeH));
+                graphics.fill(x, y + height - fadeH + i, x + width, y + height - fadeH + i + FADE_LINE_HEIGHT,
+                    (alpha << 24));
             }
         }
     }
 
     private void renderScrollbar(GuiGraphics graphics, int x, int y, int height) {
-        int trackWidth = ScaledCoord.scaleDim(3);
+        int trackWidth = ScaledCoord.scaleDim(SCROLLBAR_WIDTH);
         ScrollState.ScrollbarMetrics metrics = scrollState.calculateScrollbar(height);
 
         // Track
@@ -386,12 +393,12 @@ public class VirtualizedList<T> {
         }
         // Page up/down
         if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_PAGE_UP) {
-            int pageSize = Math.max(1, height / rowHeight);
+            int pageSize = Math.max(MIN_PAGE_SIZE, height / rowHeight);
             setSelectedIndex(Math.max(0, selectedIndex - pageSize));
             return true;
         }
         if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_PAGE_DOWN) {
-            int pageSize = Math.max(1, height / rowHeight);
+            int pageSize = Math.max(MIN_PAGE_SIZE, height / rowHeight);
             setSelectedIndex(Math.min(items.size() - 1, selectedIndex + pageSize));
             return true;
         }

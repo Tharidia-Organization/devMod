@@ -73,24 +73,6 @@ public final class RadialMenuRegistry {
         return detection.type() == WeaponTypeDetector.WeaponType.SHIELD;
     }
 
-    private static void openEditor(EditorStartTab tab) {
-        var mc = Minecraft.getInstance();
-        var player = mc.player;
-        if (player == null) return;
-        ItemStack held = player.getMainHandItem();
-        if (held.isEmpty()) {
-            player.displayClientMessage(
-                Objects.requireNonNull(
-                    net.minecraft.network.chat.Component.translatable("devmod.message.must_hold_item")
-                        .withStyle(s -> s.withColor(0xFFAA00))
-                ),
-                true
-            );
-            return;
-        }
-        mc.setScreen(new ItemEditorScreen(held, tab));
-    }
-
     /**
      * Provides category definitions for each macro-category.
      * Categories are built lazily to allow proper initialization order.
@@ -116,7 +98,7 @@ public final class RadialMenuRegistry {
 
         // Build all categories
         buildAnalyzeCategories(map);
-        buildCombatCategories(map, mobEditorItemSupplier);
+        buildCombatCategories(map);
         buildToolsCategories(map, mobEditorItemSupplier);
         buildPlayCategories(map);
 
@@ -253,8 +235,7 @@ public final class RadialMenuRegistry {
     // MACRO: COMBAT - Combat analysis and tools
     // ================================================================
 
-    private static void buildCombatCategories(Map<MacroCategory, List<RadialCategory>> map,
-            Supplier<RadialMenuItem> mobEditorItemSupplier) {
+    private static void buildCombatCategories(Map<MacroCategory, List<RadialCategory>> map) {
         List<RadialCategory> categories = map.get(MacroCategory.COMBAT);
 
         // Category 1: Combat Stats
@@ -275,26 +256,7 @@ public final class RadialMenuRegistry {
                 "Track skill effectiveness"))
             .build());
 
-        // Category 2: Editors
-        RadialCategory.Builder editorsBuilder = RadialCategory.builder("combateditors")
-            .name("Editors")
-            .color(0xFFFF6666)
-            .icon("\u270F") // pencil
-            .iconStack(stack(Items.ANVIL))
-            .item(RadialMenuItem.action("Weapon Editor", "\uD83D\uDDE1",
-                stack(Items.DIAMOND_SWORD),
-                () -> openEditor(EditorStartTab.WEAPON),
-                "Edit weapon stats and body part multipliers"))
-            .item(RadialMenuItem.action("Armor Editor", "\uD83D\uDEE1",
-                stack(Items.DIAMOND_CHESTPLATE),
-                () -> openEditor(EditorStartTab.ARMOR),
-                "Edit armor protection and attributes"));
-        if (mobEditorItemSupplier != null) {
-            editorsBuilder.item(mobEditorItemSupplier.get());
-        }
-        categories.add(editorsBuilder.build());
-
-        // Category 3: Heatmaps
+        // Category 2: Heatmaps
         categories.add(RadialCategory.builder("heatmaps")
             .name("Heatmaps")
             .color(0xFFFF8888)
@@ -307,7 +269,7 @@ public final class RadialMenuRegistry {
                 "Toggle death heatmap visualization"))
             .build());
 
-        // Category 4: Boss Tools
+        // Category 3: Boss Tools
         categories.add(RadialCategory.builder("bosstools")
             .name("Boss")
             .color(0xFFFFAAAA)
@@ -315,7 +277,7 @@ public final class RadialMenuRegistry {
             .iconStack(stack(Items.DRAGON_HEAD))
             .build());
 
-        // Category 5: Economy
+        // Category 4: Economy
         categories.add(RadialCategory.builder("economy")
             .name("Economy")
             .color(0xFFFFCCCC)
@@ -328,12 +290,20 @@ public final class RadialMenuRegistry {
                 "Show loot and gold statistics"))
             .build());
 
-        // Category 6: Attributes
+        // Category 5: Attributes
         categories.add(RadialCategory.builder("attributes")
             .name("Attrs")
             .color(0xFFFFEEEE)
             .icon("\uD83D\uDCCA") // chart
             .iconStack(stack(Items.NETHER_STAR))
+            .build());
+
+        // Category 6: Combat Analysis
+        categories.add(RadialCategory.builder("combatanalysis")
+            .name("Analysis")
+            .color(0xFFFFFFFF)
+            .icon("\uD83D\uDD0D") // magnifying glass
+            .iconStack(stack(Items.SPYGLASS))
             .build());
     }
 
@@ -410,31 +380,32 @@ public final class RadialMenuRegistry {
         categories.add(mobEditorBuilder.build());
 
         // Category 5: Item Editors
-        ItemStack held = getHeldItem();
+        // Note: Using dynamic visibility suppliers and fresh getHeldItem() in actions
+        // so the menu responds to item changes in real-time
         RadialMenuItem weaponEditor = RadialMenuItem.screen("Weapon Editor", "\uD83D\uDDE1",
             stack(Items.DIAMOND_SWORD),
-            () -> new ItemEditorScreen(held, EditorStartTab.WEAPON),
-            "Edit weapon stats and body part multipliers");
-        weaponEditor.setVisible(isWeaponItem(held));
+            () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.WEAPON),
+            "Edit weapon stats and body part multipliers")
+            .setVisibilitySupplier(() -> isWeaponItem(getHeldItem()));
 
         RadialMenuItem armorEditor = RadialMenuItem.screen("Armor Editor", "\uD83D\uDEE1",
             stack(Items.DIAMOND_CHESTPLATE),
-            () -> new ItemEditorScreen(held, EditorStartTab.ARMOR),
-            "Edit armor protection and attributes");
-        armorEditor.setVisible(isArmorItem(held));
+            () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.ARMOR),
+            "Edit armor protection and attributes")
+            .setVisibilitySupplier(() -> isArmorItem(getHeldItem()));
 
         RadialMenuItem shieldEditor = RadialMenuItem.screen("Shield Editor", "盾",
             stack(Items.SHIELD),
-            () -> new ItemEditorScreen(held, EditorStartTab.ARMOR),
+            () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.ARMOR),
             "Edit shield block/reflect")
-            .setCustomColor(0xFFDDDDDD);
-        shieldEditor.setVisible(isShieldItem(held));
+            .setCustomColor(0xFFDDDDDD)
+            .setVisibilitySupplier(() -> isShieldItem(getHeldItem()));
 
         RadialMenuItem generalEditor = RadialMenuItem.screen("Item Editor", "\u2699",
             stack(Items.BOOK),
-            () -> new ItemEditorScreen(held, EditorStartTab.GENERAL),
-            "Edit generic item data");
-        generalEditor.setVisible(isGeneralItem(held));
+            () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.GENERAL),
+            "Edit generic item data")
+            .setVisibilitySupplier(() -> isGeneralItem(getHeldItem()));
 
         categories.add(RadialCategory.builder("itemeditors")
             .name("Items")

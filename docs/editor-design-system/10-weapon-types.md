@@ -8,7 +8,7 @@ Supporto per armi non-standard (asce, tridenti, archi, balestre) e rilevamento a
 |-------------|------------|--------|--------------|-------|
 | **Sword** | `SwordItem` | WeaponModule | - | MVP |
 | **Axe** | `AxeItem` | WeaponModule | - | MVP |
-| **Pickaxe** (combat) | `PickaxeItem` | WeaponModule | - | MVP |
+| **Pickaxe** (combat) | `PickaxeItem` | WeaponModule | - | MVP (configurable) |
 | **Mace** | `MaceItem` | WeaponModule | MACE | Phase 1 |
 | **Trident** | `TridentItem` | WeaponModule | TRIDENT | Phase 2 |
 | **Bow** | `BowItem` | RangedModule | BOW | Phase 2 |
@@ -22,7 +22,7 @@ Supporto per armi non-standard (asce, tridenti, archi, balestre) e rilevamento a
 ```java
 /**
  * Weapon type detection with fallback chain.
- * Priority: Class → Tags → Attributes → Config → Fallback
+ * Priority: Blacklist → Whitelist → Class → Tags → Attributes → Fallback
  */
 public final class WeaponTypeDetector {
 
@@ -63,66 +63,111 @@ public final class WeaponTypeDetector {
     }
 
     public enum DetectionMethod {
-        CLASS_INSTANCEOF,      // Highest confidence
-        ITEM_TAG,              // High confidence
-        ATTRIBUTE_HEURISTIC,   // Medium confidence
-        CONFIG_WHITELIST,      // Explicit override
-        CONFIG_BLACKLIST,      // Explicit exclusion
+        CLASS_INSTANCEOF,      // Highest confidence (1.0 for most, 0.9 for MaceItem)
+        ITEM_TAG,              // High confidence (0.8)
+        ATTRIBUTE_HEURISTIC,   // Medium confidence (0.4-0.55)
+        CONFIG_WHITELIST,      // Explicit override (1.0)
+        CONFIG_BLACKLIST,      // Explicit exclusion (1.0)
         FALLBACK_GENERIC       // Lowest confidence
     }
 
     /**
-     * Detect weapon type for an ItemStack.
+     * Detect weapon type with full details (method, confidence, warning).
      */
-    public static DetectionResult detect(ItemStack stack) {
-        if (stack.isEmpty()) {
-            return new DetectionResult(WeaponType.NOT_A_WEAPON, null, 1.0f, null);
+    public static DetectionResult detectDetailed(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return new DetectionResult(WeaponType.NOT_A_WEAPON,
+                DetectionMethod.FALLBACK_GENERIC, 1.0f, null);
         }
 
         Item item = stack.getItem();
+        boolean heuristicsEnabled = EditorClientConfig.EDITOR_WEAPON_HEURISTIC_ENABLED.get();
+        boolean allowPickaxe = EditorClientConfig.EDITOR_WEAPON_TREAT_PICKAXE.get();
 
         // PRIORITY 1: Config blacklist (explicit exclusion)
-        if (isBlacklisted(item)) {
+        if (ConfigWeaponLists.isBlacklisted(item)) {
             return new DetectionResult(WeaponType.NOT_A_WEAPON,
                 DetectionMethod.CONFIG_BLACKLIST, 1.0f, null);
         }
 
         // PRIORITY 2: Config whitelist (explicit override)
-        WeaponType whitelistType = getWhitelistType(item);
+        WeaponType whitelistType = ConfigWeaponLists.getWhitelist(item);
         if (whitelistType != null) {
             return new DetectionResult(whitelistType,
                 DetectionMethod.CONFIG_WHITELIST, 1.0f, null);
         }
 
         // PRIORITY 3: Java class hierarchy (instanceof)
-        DetectionResult classResult = detectByClass(item);
-        if (classResult != null) {
-            return classResult;
-        }
+        DetectionResult classResult = detectByClass(item, allowPickaxe);
+        if (classResult != null) return classResult;
 
         // PRIORITY 4: Item tags (data-driven)
         DetectionResult tagResult = detectByTags(stack);
-        if (tagResult != null) {
-            return tagResult;
-        }
+        if (tagResult != null) return tagResult;
 
-        // PRIORITY 5: Attribute/Component heuristics
-        DetectionResult attrResult = detectByAttributes(stack);
-        if (attrResult != null) {
-            return attrResult;
+        // PRIORITY 5: Attribute/Component heuristics (if enabled)
+        if (heuristicsEnabled) {
+            DetectionResult attrResult = detectByAttributes(stack);
+            if (attrResult != null) return attrResult;
+
+            // Fallback generic melee if attack damage present
+            if (hasAttackDamage(stack)) {
+                return new DetectionResult(WeaponType.GENERIC_MELEE,
+                    DetectionMethod.ATTRIBUTE_HEURISTIC, 0.5f,
+                    "Detected via attack damage attribute");
+            }
         }
 
         // FALLBACK: Not a weapon
-        return new DetectionResult(WeaponType.NOT_A_WEAPON, null, 1.0f, null);
+        return new DetectionResult(WeaponType.NOT_A_WEAPON,
+            DetectionMethod.FALLBACK_GENERIC, 1.0f, null);
+    }
+
+    /**
+     * Backward-compatible detection returning only the type.
+     */
+    public static WeaponType detect(ItemStack stack) {
+        return detectDetailed(stack).type();
+    }
+
+    // Helper methods
+    public static boolean isRanged(WeaponType type) {
+        return type == WeaponType.BOW || type == WeaponType.CROSSBOW
+            || type == WeaponType.GENERIC_RANGED;
+    }
+
+    public static boolean isMelee(WeaponType type) {
+        return switch (type) {
+            case SWORD, AXE, PICKAXE_COMBAT, MACE, TRIDENT, GENERIC_MELEE -> true;
+            default -> false;
+        };
+    }
+
+    public static boolean isShield(WeaponType type) {
+        return type == WeaponType.SHIELD;
     }
 }
 ```
+
+## Confidence Levels by Detection Method
+
+| Method | Confidence | Description |
+|--------|------------|-------------|
+| CLASS_INSTANCEOF (SwordItem, AxeItem, etc.) | 1.0 | Direct class match |
+| CLASS_INSTANCEOF (MaceItem) | 0.9 | Reflection-based match |
+| CLASS_INSTANCEOF (PickaxeItem) | 0.6 | Configurable, lower confidence |
+| ITEM_TAG | 0.8 | Data-driven tag match |
+| ATTRIBUTE_HEURISTIC (name keywords) | 0.5-0.55 | Name + attack_damage |
+| ATTRIBUTE_HEURISTIC (generic ranged) | 0.4 | Name keywords only |
+| CONFIG_WHITELIST | 1.0 | Explicit user override |
+| CONFIG_BLACKLIST | 1.0 | Explicit user exclusion |
 
 ## Tag Definitions
 
 ```java
 /**
  * DevMod item tags for weapon detection.
+ * Located in: com.frenkvs.devmod.tags.ModTags
  */
 public final class ModTags {
     public static final class Items {
@@ -145,7 +190,8 @@ public final class ModTags {
             tag("not_editable");
 
         private static TagKey<Item> tag(String name) {
-            return TagKey.create(Registries.ITEM, DevMod.rl(name));
+            return TagKey.create(Registries.ITEM,
+                ResourceLocation.fromNamespaceAndPath(DevMod.MODID, name));
         }
     }
 }
@@ -157,7 +203,8 @@ public final class ModTags {
 data/devmod/tags/item/
 ├── editable_melee_weapons.json    # Empty, for modders to populate
 ├── editable_ranged_weapons.json   # Empty, for modders to populate
-├── melee_weapons.json             # Includes #c:tools/swords, #c:tools/axes
+├── editable_shields.json          # Empty, for modders to populate
+├── melee_weapons.json             # Includes common convention tags
 ├── ranged_weapons.json            # Includes #c:ranged_weapons
 └── not_editable.json              # Items to exclude from editor
 ```
@@ -167,20 +214,35 @@ data/devmod/tags/item/
 {
   "replace": false,
   "values": [
-    "#c:tools/swords",
-    "#c:tools/axes",
-    "#forge:tools/melee_weapon",
-    "#neoforge:melee_weapons"
+    { "id": "#c:tools/swords", "required": false },
+    { "id": "#c:tools/axes", "required": false },
+    { "id": "#forge:tools/melee_weapon", "required": false },
+    { "id": "#neoforge:melee_weapons", "required": false }
   ]
 }
 ```
 
+```json
+// data/devmod/tags/item/ranged_weapons.json
+{
+  "replace": false,
+  "values": [
+    { "id": "#c:ranged_weapons", "required": false }
+  ]
+}
+```
+
+> **Nota:** Il formato `{ "id": "...", "required": false }` permette ai tag
+> opzionali di non causare errori se la mod che li definisce non è presente.
+
 ## Config Whitelist/Blacklist
+
+I file di whitelist/blacklist sono creati dinamicamente in `config/devmod/`:
 
 ```json
 // config/devmod/weapon_whitelist.json
 {
-  "_comment": "Items to explicitly treat as weapons (overrides detection)",
+  "_comment": "Items explicitly whitelisted for the DevMod weapon editor",
   "melee": [
     "somemod:custom_sword",
     "anothermod:battle_axe"
@@ -196,13 +258,51 @@ data/devmod/tags/item/
 ```json
 // config/devmod/weapon_blacklist.json
 {
-  "_comment": "Items to explicitly exclude from weapon editor",
+  "_comment": "Items explicitly excluded from weapon editor",
   "items": [
     "minecraft:stick",
     "somemod:decorative_sword"
   ]
 }
 ```
+
+### Aggiungere items via API
+
+```java
+// Add item to whitelist programmatically
+WeaponTypeDetector.addToWhitelist(myItem, WeaponType.GENERIC_MELEE);
+
+// Reload lists from disk
+WeaponTypeDetector.reloadWeaponLists();
+```
+
+## Config Options
+
+Le opzioni sono definite in `EditorClientConfig` (config **client-side**):
+
+```toml
+# config/devmod-client.toml
+
+[editor]
+# Enable attribute-based heuristic detection for unknown items
+weaponDetectionHeuristic = true
+
+# Minimum confidence level to show editor without warning (0.0 - 1.0)
+weaponDetectionMinConfidence = 0.8
+
+# Treat pickaxes as weapons (shows in weapon editor)
+treatPickaxeAsWeapon = false
+
+# Log detection results for debugging
+weaponDetectionLog = false
+```
+
+| Config Key | Default | Description |
+|------------|---------|-------------|
+| `weaponDetectionHeuristic` | `true` | Abilita detection basata su attributi |
+| `weaponDetectionMinConfidence` | `0.8` | Soglia minima per evitare warning |
+| `treatPickaxeAsWeapon` | `false` | Include pickaxe nel weapon editor |
+| `weaponDetectionLog` | `false` | Log detection per debug |
 
 ## Weapon-Specific Tabs
 
@@ -249,13 +349,47 @@ data/devmod/tags/item/
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## Module Selection Logic (stato attuale)
+## Module Selection Logic
 
-- Le varianti `WeaponVariant` e `RangedVariant` sono supportate a livello di selezione e tab placeholder (mace/trident/bow/crossbow).
-- La selezione modulo in `ItemEditorScreen` sceglie la variante in base alla detection; shield usa ancora `ArmorModule` standard con tab “Shield” placeholder.
-- Low-confidence: warning/dialog quando la detection è heuristica sotto la soglia config.
+La selezione del modulo in `ItemEditorScreen.resolveModule()`:
+
+```java
+private EditorModule resolveModule(ItemStack stack, EditorStartTab requested) {
+    return switch (requested) {
+        case WEAPON -> {
+            var detection = WeaponTypeDetector.detectDetailed(stack);
+            if (detection.type() == WeaponType.NOT_A_WEAPON) {
+                LOGGER.warn("[ItemEditor] Requested WEAPON but not a weapon; fallback to GENERAL.");
+                yield new GeneralModule();
+            }
+            // Auto-select between melee and ranged
+            if (WeaponTypeDetector.isRanged(detection.type())) {
+                yield new RangedModule();
+            }
+            yield new WeaponModule();
+        }
+        case ARMOR -> new ArmorModule();
+        case GENERAL -> {
+            // Auto-detect if item is actually armor or weapon
+            if (ArmorConfigManager.isArmor(stack)) {
+                yield new ArmorModule();
+            }
+            var detection = WeaponTypeDetector.detectDetailed(stack);
+            if (detection.type() != WeaponType.NOT_A_WEAPON) {
+                if (WeaponTypeDetector.isRanged(detection.type())) {
+                    yield new RangedModule();
+                }
+                yield new WeaponModule();
+            }
+            yield new GeneralModule();
+        }
+    };
+}
+```
 
 ## Low Confidence Warning UI
+
+Quando la detection ha confidence < `weaponDetectionMinConfidence`:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -283,27 +417,18 @@ data/devmod/tags/item/
 
 | Phase | Weapon Types | Detection Methods |
 |-------|--------------|-------------------|
-| **MVP** | Sword, Axe, Generic Melee | Class + Tags + Attributes |
+| **MVP** | Sword, Axe, Pickaxe (opt-in), Generic Melee | Class + Tags + Attributes |
 | **Phase 1** | + Mace | + MACE tab |
 | **Phase 2** | + Trident, Bow, Crossbow | + RangedModule |
 | **Phase 3** | + Shield | + Shield in ArmorModule |
 | **Future** | Custom weapon types | + Plugin API |
 
-## Config Options
+## File Correlati
 
-```toml
-# config/devmod-server.toml
-
-[editor]
-# Enable attribute-based heuristic detection for unknown items
-weaponDetectionHeuristic = true
-
-# Minimum confidence level to show editor without warning
-weaponDetectionMinConfidence = 0.8
-
-# Treat pickaxes as weapons (shows in weapon editor)
-treatPickaxeAsWeapon = false
-
-# Log detection results for debugging
-weaponDetectionLog = true
-```
+| File | Responsabilità |
+|------|----------------|
+| `WeaponTypeDetector.java` | Detection logic, whitelist/blacklist, helper methods |
+| `ModTags.java` | Tag definitions |
+| `EditorClientConfig.java` | Config options (client-side) |
+| `ConfigPaths.java` | Whitelist/blacklist file paths |
+| `ItemEditorScreen.java` | Module selection based on detection |

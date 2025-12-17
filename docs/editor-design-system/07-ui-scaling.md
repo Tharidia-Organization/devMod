@@ -232,7 +232,7 @@ public static void drawScaledText(GuiGraphics graphics, String text, int x, int 
 
 ## In-Game Settings UI
 
-UI disponibile nella `UnifiedSettingsScreen` (tab Editor), accessibile con il keybind `K` o dal Radial Menu. La registrazione nel menu opzioni Minecraft resta da fare.
+UI disponibile nella `UnifiedSettingsScreen` (tab Editor), accessibile con il keybind `K` o dal Radial Menu, con preview live della scala. La registrazione nel menu opzioni Minecraft resta da fare.
 
 ### UI Attuale
 
@@ -256,7 +256,7 @@ UI disponibile nella `UnifiedSettingsScreen` (tab Editor), accessibile con il ke
 
 1. UI editor settings nella `UnifiedSettingsScreen` (implementato, accesso via `K`)
 2. Config NeoForge client (`devmod-client.toml`) per la persistenza (implementato)
-3. Mostrare preview live dell'effetto scale (da implementare)
+3. Mostrare preview live dell'effetto scale (implementato)
 4. Registrare via `RegisterMenuScreensEvent` o equivalente NeoForge (da implementare)
 
 ---

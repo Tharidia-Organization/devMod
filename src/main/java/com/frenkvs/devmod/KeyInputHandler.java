@@ -209,6 +209,19 @@ public class KeyInputHandler {
     );
 
     /**
+     * Dismisses the Impact HUD and clears active panels/VFX.
+     *
+     * <p><b>Default key:</b> Backspace</p>
+     */
+    public static final KeyMapping DISMISS_IMPACT_HUD_KEY = new KeyMapping(
+            "key.devmod.dismiss_impact_hud",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_BACKSPACE,
+            "key.categories.devmod"
+    );
+
+    /**
      * Toggles Room Bounds Visualizer showing detected room boundaries.
      *
      * <p>Displays wireframe boxes around detected enclosed spaces,

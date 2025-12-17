@@ -92,6 +92,59 @@ public class CraftingInfoPanel extends BaseOverlay {
     private record PanelMetrics(int panelHeight, int valueHeight) {}
 
     private static final int PANEL_WIDTH = 300;
+    private static final int PANEL_HEIGHT = 200;
+    private static final int PANEL_PADDING = 10;
+    private static final int PANEL_SCREEN_MARGIN = 20;
+
+    private static final int GRID_CELL_SIZE = 24;
+    private static final int GRID_ROWS = 3;
+    private static final int GRID_COLS = 3;
+    private static final int GRID_SECTION_GAP = 20;
+    private static final int GRID_BLOCK_HEIGHT = GRID_CELL_SIZE * GRID_ROWS + GRID_SECTION_GAP;
+    private static final int GRID_ARROW_OFFSET = 10;
+    private static final int GRID_RESULT_OFFSET = 20;
+
+    private static final int RECIPE_TITLE_HEIGHT = 16;
+    private static final int VALUE_TITLE_HEIGHT = 14;
+    private static final int TITLE_GAP = 2;
+
+    private static final int RECIPE_SELECTOR_WIDTH = 90;
+    private static final int RECIPE_SELECTOR_Y_OFFSET = 2;
+    private static final int RECIPE_SELECTOR_BTN_WIDTH = 16;
+    private static final int RECIPE_SELECTOR_BTN_HEIGHT = 14;
+    private static final int RECIPE_SELECTOR_BTN_X_PAD = 2;
+    private static final int RECIPE_SELECTOR_BTN_Y_PAD = 1;
+    private static final int RECIPE_SELECTOR_BTN_Y_TRIM = 2;
+    private static final int RECIPE_SELECTOR_GAP = 6;
+    private static final int RECIPE_SELECTOR_LABEL_WIDTH = 50;
+    private static final int RECIPE_SELECTOR_LABEL_OFFSET = 40;
+    private static final int RECIPE_SELECTOR_LABEL_Y = 3;
+
+    private static final int INGREDIENT_HEADER_HEIGHT = 14;
+    private static final int INGREDIENT_LINE_HEIGHT = 12;
+    private static final int INGREDIENT_TEXT_OFFSET = 5;
+    private static final int INGREDIENT_TAG_OFFSET = 150;
+    private static final int INGREDIENT_VALUE_OFFSET = 230;
+
+    private static final int SEPARATOR_BLOCK_HEIGHT = UIConstants.Spacing.SM + UIConstants.Spacing.MD + 1;
+    private static final int SUMMARY_SEPARATOR_WIDTH = 260;
+    private static final int SUMMARY_VALUE_OFFSET = 200;
+    private static final int SUMMARY_LINE_HEIGHT = 14;
+    private static final int SUMMARY_SEPARATOR_HEIGHT = 1;
+
+    private static final int VALUE_BASE_HEIGHT = 50;
+    private static final int VALUE_MIN_HEIGHT = 60;
+
+    private static final String TITLE_RECIPE_TEXT = "CRAFTING RECIPE";
+    private static final String TITLE_VALUE_TEXT = "ITEM VALUE ANALYSIS";
+    private static final String CLOSE_HINT_TEXT = "Click outside or press ESC to close";
+    private static final String INGREDIENTS_LABEL = "Ingredients:";
+    private static final String TOTAL_VALUE_LABEL = "Total Value:";
+    private static final String RARITY_LABEL = "Rarity Tier:";
+    private static final String INGREDIENT_LINE_FORMAT = "• %dx %s";
+    private static final String RARITY_TAG_FORMAT = "(%s)";
+    private static final String VALUE_FORMAT = "+%d";
+    private static final String ARROW_GLYPH = "→";
 
     private ItemStack targetItem = ItemStack.EMPTY;
     private RecipeHolder<CraftingRecipe> recipe = null;
@@ -146,16 +199,16 @@ public class CraftingInfoPanel extends BaseOverlay {
     @Override
     protected int getPanelHeight() {
         // Default height, but dynamic height is used via getPanelHeight(screenHeight)
-        return 200;
+        return PANEL_HEIGHT;
     }
 
     @Override
     protected int getPanelHeight(int screenHeight) {
         Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
-        int padding = ScaledCoord.scaleDim(10);
-        int gridSize = ScaledCoord.scaleDim(24 * 3 + 20);
-        int titleH = ScaledCoord.scaleDim(16);
-        int valueTitleH = ScaledCoord.scaleDim(14);
+        int padding = ScaledCoord.scaleDim(PANEL_PADDING);
+        int gridSize = ScaledCoord.scaleDim(GRID_BLOCK_HEIGHT);
+        int titleH = ScaledCoord.scaleDim(RECIPE_TITLE_HEIGHT);
+        int valueTitleH = ScaledCoord.scaleDim(VALUE_TITLE_HEIGHT);
         // computePanelMetrics returns scaled values, we need to return unscaled for BaseOverlay
         PanelMetrics metrics = computePanelMetrics(screenHeight, font, padding, gridSize, titleH, valueTitleH);
         this.cachedValueHeight = metrics.valueHeight();
@@ -173,20 +226,23 @@ public class CraftingInfoPanel extends BaseOverlay {
     protected void renderContent(GuiGraphics g, Font font, int x, int y, int panelW, int panelH,
                                   int mouseX, int mouseY) {
         Font safeFont = Objects.requireNonNull(font, "font cannot be null");
-        int padding = ScaledCoord.scaleDim(10);
-        int gridSize = ScaledCoord.scaleDim(24 * 3 + 20);
-        int titleH = ScaledCoord.scaleDim(16);
-        int valueTitleH = ScaledCoord.scaleDim(14);
+        int padding = ScaledCoord.scaleDim(PANEL_PADDING);
+        int gridSize = ScaledCoord.scaleDim(GRID_BLOCK_HEIGHT);
+        int titleH = ScaledCoord.scaleDim(RECIPE_TITLE_HEIGHT);
+        int valueTitleH = ScaledCoord.scaleDim(VALUE_TITLE_HEIGHT);
 
         int cursorY = y + padding;
-        g.drawString(safeFont, "CRAFTING RECIPE", x + padding, cursorY, UIConstants.Text.TITLE(), false);
-        drawRecipeSelector(g, safeFont, x + panelW - padding - ScaledCoord.scaleDim(90), cursorY - ScaledCoord.scaleDim(2), mouseX, mouseY);
-        cursorY += titleH + ScaledCoord.scaleDim(2);
+        g.drawString(safeFont, TITLE_RECIPE_TEXT, x + padding, cursorY, UIConstants.Text.TITLE(), false);
+        drawRecipeSelector(g, safeFont,
+            x + panelW - padding - ScaledCoord.scaleDim(RECIPE_SELECTOR_WIDTH),
+            cursorY - ScaledCoord.scaleDim(RECIPE_SELECTOR_Y_OFFSET),
+            mouseX, mouseY);
+        cursorY += titleH + ScaledCoord.scaleDim(TITLE_GAP);
 
         renderCraftingGrid(g, safeFont, x + padding, cursorY);
         cursorY += gridSize + padding;
 
-        g.drawString(safeFont, "ITEM VALUE ANALYSIS", x + padding, cursorY, UIConstants.Text.TITLE(), false);
+        g.drawString(safeFont, TITLE_VALUE_TEXT, x + padding, cursorY, UIConstants.Text.TITLE(), false);
         cursorY += valueTitleH;
         // Track ingredient area for scroll handling
         this.ingredientAreaX = x + padding;
@@ -196,18 +252,18 @@ public class CraftingInfoPanel extends BaseOverlay {
         renderValueAnalysis(g, safeFont, ingredientAreaX, ingredientAreaY, cachedValueHeight, ingredientAreaW);
 
         // Close hint
-        String closeHint = "Click outside or press ESC to close";
-        g.drawString(safeFont, closeHint, x + padding, y + panelH - padding - safeFont.lineHeight, UIConstants.Text.MUTED(), false);
+        g.drawString(safeFont, CLOSE_HINT_TEXT, x + padding, y + panelH - padding - safeFont.lineHeight,
+            UIConstants.Text.MUTED(), false);
     }
 
     private void renderCraftingGrid(GuiGraphics g, Font font, int x, int y) {
         Font safeFont = Objects.requireNonNull(font, "font cannot be null");
-        int cellSize = ScaledCoord.scaleDim(24);
-        int gridSize = cellSize * 3;
+        int cellSize = ScaledCoord.scaleDim(GRID_CELL_SIZE);
+        int gridSize = cellSize * GRID_COLS;
 
         // Background grid
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 3; col++) {
+        for (int row = 0; row < GRID_ROWS; row++) {
+            for (int col = 0; col < GRID_COLS; col++) {
                 int cellX = x + col * cellSize;
                 int cellY = y + row * cellSize;
 
@@ -216,19 +272,20 @@ public class CraftingInfoPanel extends BaseOverlay {
 
                 ItemStack ingredient = getIngredient(row, col);
                 if (!ingredient.isEmpty()) {
-                    int iconPad = ScaledCoord.scaleDim(4);
+                    int iconPad = ScaledCoord.scaleDim(UIConstants.Spacing.SM);
                     g.renderItem(ingredient, cellX + iconPad, cellY + iconPad);
                 }
             }
         }
 
         // Arrow
-        int arrowX = x + gridSize + ScaledCoord.scaleDim(10);
+        int arrowX = x + gridSize + ScaledCoord.scaleDim(GRID_ARROW_OFFSET);
         int arrowY = y + cellSize;
-        g.drawString(safeFont, "→", arrowX, arrowY + ScaledCoord.scaleDim(4), UIConstants.Text.SECONDARY(), false);
+        g.drawString(safeFont, ARROW_GLYPH, arrowX, arrowY + ScaledCoord.scaleDim(UIConstants.Spacing.SM),
+            UIConstants.Text.SECONDARY(), false);
 
         // Result
-        int resultX = arrowX + ScaledCoord.scaleDim(20);
+        int resultX = arrowX + ScaledCoord.scaleDim(GRID_RESULT_OFFSET);
         g.renderItem(Objects.requireNonNull(targetItem, "targetItem cannot be null"), resultX, arrowY);
     }
 
@@ -246,7 +303,7 @@ public class CraftingInfoPanel extends BaseOverlay {
             idx = row * w + col;
         } else {
             // shapeless: place ingredients row-major
-            idx = row * 3 + col;
+            idx = row * GRID_COLS + col;
         }
         if (idx < 0 || idx >= ingredients.size()) return ItemStack.EMPTY;
 
@@ -257,13 +314,13 @@ public class CraftingInfoPanel extends BaseOverlay {
         Font safeFont = Objects.requireNonNull(font, "font cannot be null");
 
         int lineY = y;
-        g.drawString(safeFont, "Ingredients:", x, lineY, UIConstants.Text.SECONDARY(), false);
-        int headerHeight = ScaledCoord.scaleDim(14);
+        g.drawString(safeFont, INGREDIENTS_LABEL, x, lineY, UIConstants.Text.SECONDARY(), false);
+        int headerHeight = ScaledCoord.scaleDim(INGREDIENT_HEADER_HEIGHT);
         lineY += headerHeight;
 
-        int ingredientLineHeight = ScaledCoord.scaleDim(12);
-        int separatorBlock = ScaledCoord.scaleDim(4 + 1 + 8); // spacing + line + spacing
-        int summaryHeight = separatorBlock + ScaledCoord.scaleDim(14) * 2; // total + rarity lines
+        int ingredientLineHeight = ScaledCoord.scaleDim(INGREDIENT_LINE_HEIGHT);
+        int separatorBlock = ScaledCoord.scaleDim(SEPARATOR_BLOCK_HEIGHT); // spacing + line + spacing
+        int summaryHeight = separatorBlock + ScaledCoord.scaleDim(SUMMARY_LINE_HEIGHT) * 2; // total + rarity lines
 
         int availableForIngredients = Math.max(0, maxHeight - headerHeight - summaryHeight);
         int totalIngredients = analysis.ingredients().size();
@@ -281,15 +338,16 @@ public class CraftingInfoPanel extends BaseOverlay {
         for (int i = startIndex; i < totalIngredients && (i - startIndex) * ingredientLineHeight + offsetY < availableForIngredients; i++) {
             IngredientValue ing = analysis.ingredients().get(i);
             int rowY = lineY + (i - startIndex) * ingredientLineHeight + offsetY;
-            String line = String.format("• %dx %s", ing.count(), ing.item().getHoverName().getString());
-            g.drawString(safeFont, line, x + ScaledCoord.scaleDim(5), rowY, UIConstants.Text.PRIMARY(), false);
+            String line = String.format(INGREDIENT_LINE_FORMAT, ing.count(), ing.item().getHoverName().getString());
+            g.drawString(safeFont, line, x + ScaledCoord.scaleDim(INGREDIENT_TEXT_OFFSET), rowY,
+                UIConstants.Text.PRIMARY(), false);
 
-            String rarityTag = String.format("(%s)", ing.rarity().displayName);
-            int tagX = x + ScaledCoord.scaleDim(150);
+            String rarityTag = String.format(RARITY_TAG_FORMAT, ing.rarity().displayName);
+            int tagX = x + ScaledCoord.scaleDim(INGREDIENT_TAG_OFFSET);
             g.drawString(safeFont, rarityTag, tagX, rowY, ing.rarity().color, false);
 
-            String valueStr = String.format("+%d", ing.value());
-            int valueX = x + ScaledCoord.scaleDim(230);
+            String valueStr = String.format(VALUE_FORMAT, ing.value());
+            int valueX = x + ScaledCoord.scaleDim(INGREDIENT_VALUE_OFFSET);
             g.drawString(safeFont, valueStr, valueX, rowY, UIConstants.Text.VALUE(), false);
         }
 
@@ -297,16 +355,19 @@ public class CraftingInfoPanel extends BaseOverlay {
 
         lineY += availableForIngredients;
 
-        lineY += ScaledCoord.scaleDim(4);
-        g.fill(x, lineY, x + Math.min(areaWidth, ScaledCoord.scaleDim(260)), lineY + 1, UIConstants.Border.SEPARATOR());
-        lineY += ScaledCoord.scaleDim(8);
+        lineY += ScaledCoord.scaleDim(UIConstants.Spacing.SM);
+        g.fill(x, lineY, x + Math.min(areaWidth, ScaledCoord.scaleDim(SUMMARY_SEPARATOR_WIDTH)),
+            lineY + SUMMARY_SEPARATOR_HEIGHT, UIConstants.Border.SEPARATOR());
+        lineY += ScaledCoord.scaleDim(UIConstants.Spacing.MD);
 
-        g.drawString(safeFont, "Total Value:", x, lineY, UIConstants.Text.SECONDARY(), false);
-        g.drawString(safeFont, String.valueOf(analysis.totalValue()), x + ScaledCoord.scaleDim(200), lineY, UIConstants.Text.VALUE(), false);
-        lineY += ScaledCoord.scaleDim(14);
+        g.drawString(safeFont, TOTAL_VALUE_LABEL, x, lineY, UIConstants.Text.SECONDARY(), false);
+        g.drawString(safeFont, String.valueOf(analysis.totalValue()), x + ScaledCoord.scaleDim(SUMMARY_VALUE_OFFSET),
+            lineY, UIConstants.Text.VALUE(), false);
+        lineY += ScaledCoord.scaleDim(SUMMARY_LINE_HEIGHT);
 
-        g.drawString(safeFont, "Rarity Tier:", x, lineY, UIConstants.Text.SECONDARY(), false);
-        g.drawString(safeFont, analysis.rarityTier().displayName, x + ScaledCoord.scaleDim(200), lineY, analysis.rarityTier().color, false);
+        g.drawString(safeFont, RARITY_LABEL, x, lineY, UIConstants.Text.SECONDARY(), false);
+        g.drawString(safeFont, analysis.rarityTier().displayName, x + ScaledCoord.scaleDim(SUMMARY_VALUE_OFFSET),
+            lineY, analysis.rarityTier().color, false);
     }
 
     private List<RecipeHolder<CraftingRecipe>> findRecipesFor(ItemStack stack) {
@@ -433,7 +494,7 @@ public class CraftingInfoPanel extends BaseOverlay {
         if (mouseX >= ingredientAreaX && mouseX <= ingredientAreaX + ingredientAreaW &&
             mouseY >= ingredientAreaY && mouseY <= ingredientAreaY + ingredientAreaH) {
             ingredientScrollOffset = Math.max(0, Math.min(ingredientMaxScroll,
-                ingredientScrollOffset - (int) (scrollDelta * ScaledCoord.scaleDim(12))));
+                ingredientScrollOffset - (int) (scrollDelta * ScaledCoord.scaleDim(INGREDIENT_LINE_HEIGHT))));
             return true;
         }
         return false;
@@ -442,13 +503,13 @@ public class CraftingInfoPanel extends BaseOverlay {
     private PanelMetrics computePanelMetrics(int screenHeight, Font font, int padding, int gridSize, int titleH, int valueTitleH) {
         Font safeFont = Objects.requireNonNull(font, "font cannot be null");
         int hintH = safeFont.lineHeight;
-        int idealValueHeight = ScaledCoord.scaleDim(analysis.ingredients().size() * 12 + 50);
-        int maxPanelH = screenHeight - ScaledCoord.scaleDim(20);
+        int idealValueHeight = ScaledCoord.scaleDim(analysis.ingredients().size() * INGREDIENT_LINE_HEIGHT + VALUE_BASE_HEIGHT);
+        int maxPanelH = screenHeight - ScaledCoord.scaleDim(PANEL_SCREEN_MARGIN);
         int baseWithoutValue = padding + titleH + gridSize + padding + valueTitleH + padding + hintH;
-        int valueHeight = Math.max(ScaledCoord.scaleDim(60), idealValueHeight);
+        int valueHeight = Math.max(ScaledCoord.scaleDim(VALUE_MIN_HEIGHT), idealValueHeight);
         int panelH = baseWithoutValue + valueHeight;
         if (panelH > maxPanelH) {
-            valueHeight = Math.max(ScaledCoord.scaleDim(60), maxPanelH - baseWithoutValue);
+            valueHeight = Math.max(ScaledCoord.scaleDim(VALUE_MIN_HEIGHT), maxPanelH - baseWithoutValue);
             panelH = baseWithoutValue + valueHeight;
         }
         return new PanelMetrics(panelH, valueHeight);
@@ -459,10 +520,10 @@ public class CraftingInfoPanel extends BaseOverlay {
             return;
         }
         Font safeFont = Objects.requireNonNull(font, "font cannot be null");
-        int btnW = ScaledCoord.scaleDim(16);
-        int btnH = ScaledCoord.scaleDim(14);
-        int gap = ScaledCoord.scaleDim(6);
-        int totalW = btnW * 2 + gap + ScaledCoord.scaleDim(50);
+        int btnW = ScaledCoord.scaleDim(RECIPE_SELECTOR_BTN_WIDTH);
+        int btnH = ScaledCoord.scaleDim(RECIPE_SELECTOR_BTN_HEIGHT);
+        int gap = ScaledCoord.scaleDim(RECIPE_SELECTOR_GAP);
+        int totalW = btnW * 2 + gap + ScaledCoord.scaleDim(RECIPE_SELECTOR_LABEL_WIDTH);
 
         int boxX = x;
         int boxY = y;
@@ -470,19 +531,22 @@ public class CraftingInfoPanel extends BaseOverlay {
         AxiomRenderer.drawBorder(g, boxX, boxY, totalW, btnH, UIConstants.Border.MUTED());
 
         // Prev button using EditorButton
-        int prevX = boxX + ScaledCoord.scaleDim(2);
+        int prevX = boxX + ScaledCoord.scaleDim(RECIPE_SELECTOR_BTN_X_PAD);
         prevButton.setEnabled(selectedRecipeIndex > 0);
-        prevButton.render(g, prevX, boxY + ScaledCoord.scaleDim(1), btnW, btnH - ScaledCoord.scaleDim(2), mouseX, mouseY);
+        prevButton.render(g, prevX, boxY + ScaledCoord.scaleDim(RECIPE_SELECTOR_BTN_Y_PAD),
+            btnW, btnH - ScaledCoord.scaleDim(RECIPE_SELECTOR_BTN_Y_TRIM), mouseX, mouseY);
 
         // Label
         String label = (selectedRecipeIndex + 1) + "/" + recipes.size();
         int labelX = prevX + btnW + gap;
-        g.drawString(safeFont, label, labelX, boxY + ScaledCoord.scaleDim(3), UIConstants.Text.SECONDARY(), false);
+        g.drawString(safeFont, label, labelX, boxY + ScaledCoord.scaleDim(RECIPE_SELECTOR_LABEL_Y),
+            UIConstants.Text.SECONDARY(), false);
 
         // Next button using EditorButton
-        int nextX = labelX + ScaledCoord.scaleDim(40);
+        int nextX = labelX + ScaledCoord.scaleDim(RECIPE_SELECTOR_LABEL_OFFSET);
         nextButton.setEnabled(selectedRecipeIndex < recipes.size() - 1);
-        nextButton.render(g, nextX, boxY + ScaledCoord.scaleDim(1), btnW, btnH - ScaledCoord.scaleDim(2), mouseX, mouseY);
+        nextButton.render(g, nextX, boxY + ScaledCoord.scaleDim(RECIPE_SELECTOR_BTN_Y_PAD),
+            btnW, btnH - ScaledCoord.scaleDim(RECIPE_SELECTOR_BTN_Y_TRIM), mouseX, mouseY);
     }
 
     private void selectRecipe(int index) {

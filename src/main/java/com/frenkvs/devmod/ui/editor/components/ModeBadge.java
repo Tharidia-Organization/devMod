@@ -28,6 +28,10 @@ public class ModeBadge {
 
     private static final int WIDTH = 100;
     private static final int HEIGHT = 20;
+    private static final int DROPDOWN_PADDING = 10;
+    private static final int OPTION_TEXT_INSET = 6;
+    private static final int OPTION_BORDER_INSET = 1;
+    private static final int OPTION_INDICATOR_WIDTH = 2;
 
     // ═══════════════════════════════════════════════════════════════
     // BADGE TYPES
@@ -201,7 +205,7 @@ public class ModeBadge {
 
         int badgeWidth = ScaledCoord.scaleDim(WIDTH);
         int badgeHeight = ScaledCoord.scaleDim(HEIGHT);
-        int dropdownPadding = ScaledCoord.scale(10);
+        int dropdownPadding = ScaledCoord.scale(DROPDOWN_PADDING);
         float textScale = Typography.buttonScale();
 
         this.bounds = new ResponsiveLayout.Rect(x, y, badgeWidth, badgeHeight);
@@ -309,15 +313,17 @@ public class ModeBadge {
             // Option background
             int optionBg = isSelected ? UIConstants.Background.ACTIVE() :
                           (optionHovered ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT());
-            graphics.fill(x + 1, optionY, x + badgeWidth - 1, optionY + badgeHeight, optionBg);
+            graphics.fill(x + OPTION_BORDER_INSET, optionY, x + badgeWidth - OPTION_BORDER_INSET,
+                optionY + badgeHeight, optionBg);
 
             // Selection indicator
             if (isSelected) {
-                graphics.fill(x + 1, optionY, x + 3, optionY + badgeHeight, borderColor);
+                graphics.fill(x + OPTION_BORDER_INSET, optionY, x + OPTION_BORDER_INSET + OPTION_INDICATOR_WIDTH,
+                    optionY + badgeHeight, borderColor);
             }
 
             // Option text
-            int textX = x + 6;
+            int textX = x + OPTION_TEXT_INSET;
             int textY = optionY + (badgeHeight - Math.round(font.lineHeight * textScale)) / 2;
             int textColor = isSelected ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY();
             Typography.drawText(graphics, font, label, textX, textY, textColor, textScale);
@@ -330,8 +336,9 @@ public class ModeBadge {
             ResponsiveLayout.Rect optionBounds = new ResponsiveLayout.Rect(x, optionY, badgeWidth, badgeHeight);
             boolean optionHovered = optionBounds.contains(mouseX, mouseY);
             int optionBg = optionHovered ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT();
-            graphics.fill(x + 1, optionY, x + badgeWidth - 1, optionY + badgeHeight, optionBg);
-            int textX = x + 6;
+            graphics.fill(x + OPTION_BORDER_INSET, optionY, x + badgeWidth - OPTION_BORDER_INSET,
+                optionY + badgeHeight, optionBg);
+            int textX = x + OPTION_TEXT_INSET;
             int textY = optionY + (badgeHeight - Math.round(font.lineHeight * textScale)) / 2;
             Typography.drawText(graphics, font, "Set current as default", textX, textY,
                 UIConstants.Text.SECONDARY(), textScale);

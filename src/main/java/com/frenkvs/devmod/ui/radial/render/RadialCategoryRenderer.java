@@ -260,8 +260,9 @@ public final class RadialCategoryRenderer {
         Objects.requireNonNull(categories, "categories cannot be null");
         Objects.requireNonNull(config, "config cannot be null");
 
-        List<RadialMenuItem> items = category.getItems();
-        int numItems = items.size();
+        // Use getVisibleItems() so indices match selectedItemIndex from RadialMenuScreenV3
+        List<RadialMenuItem> visibleItems = category.getVisibleItems();
+        int numItems = visibleItems.size();
         if (numItems == 0) return;
 
         double segmentAngle = RadialMenuConstants.TWO_PI / categories.size();
@@ -273,8 +274,7 @@ public final class RadialCategoryRenderer {
         int itemSize = 34;
 
         for (int i = 0; i < numItems; i++) {
-            RadialMenuItem item = items.get(i);
-            if (!item.isVisible()) continue;
+            RadialMenuItem item = visibleItems.get(i);
 
             renderItem(graphics, font, item, i, config, category,
                 catStartAngle, itemAngleStep, baseRadius, itemSize);

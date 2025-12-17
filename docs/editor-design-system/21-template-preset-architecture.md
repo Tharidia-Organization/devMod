@@ -1,354 +1,438 @@
 # Template & Preset Architecture
 
-I template/preset seguono una **gerarchia a 3 livelli** con risoluzione prioritaria:
+## Overview
 
-## Gerarchia dei Livelli
+Il sistema preset di DevMod supporta una **gerarchia a 3 livelli** per la risoluzione dei preset, con supporto per modpack detection automatico e preset bundled.
+
+## Architettura Sistema Preset
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    TEMPLATE RESOLUTION ORDER                     │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  LEVEL 3: MODPACK PRESETS (highest priority)                    │
-│  └─ config/devmod/presets/modpack/<modpack-id>/                 │
-│     └─ Definiti dal modpack, override tutto                     │
-│                                                                 │
-│  LEVEL 2: CATEGORY PRESETS                                      │
-│  └─ config/devmod/presets/category/<category>/                  │
-│     └─ Per categoria item (swords, bows, helmets...)            │
-│                                                                 │
-│  LEVEL 1: GLOBAL PRESETS (lowest priority)                      │
-│  └─ config/devmod/presets/global/                               │
-│     └─ Disponibili ovunque, base defaults                       │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         PRESET SYSTEM (v2 - Hierarchical)                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                        PresetRegistry (Singleton)                    │   │
+│  │  ┌─────────────────┬─────────────────┬─────────────────────────┐   │   │
+│  │  │ MODPACK (P=3)   │ CATEGORY (P=2)  │ GLOBAL (P=1)            │   │   │
+│  │  │ rlcraft/sword/* │ category/sword/*│ global/*                │   │   │
+│  │  └─────────────────┴─────────────────┴─────────────────────────┘   │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                      │                                      │
+│                              resolveForItem()                               │
+│                                      ▼                                      │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                          PresetBridge                                │   │
+│  │         RegistryPreset ◄──────────────────► PresetData              │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                      │                                      │
+│                                      ▼                                      │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                    ItemEditorDataManager.PresetData                  │   │
+│  │                     (User presets + converted registry)              │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
-Resolution: MODPACK → CATEGORY → GLOBAL (first match wins)
+## Gerarchia Scope (PresetScope)
+
+```java
+public sealed interface PresetScope permits
+    PresetScope.Global,
+    PresetScope.Category,
+    PresetScope.Modpack {
+
+    record Global() implements PresetScope {}          // Priority 1
+    record Category(String category) implements PresetScope {}  // Priority 2
+    record Modpack(String modpackId, String category) implements PresetScope {} // Priority 3
+
+    default int priority() {
+        return switch (this) {
+            case Modpack m -> 3;   // Highest - modpack-specific
+            case Category c -> 2;  // Medium - category-specific
+            case Global g -> 1;    // Lowest - global defaults
+        };
+    }
+
+    default String label() {
+        return switch (this) {
+            case Modpack m -> "MODPACK: " + m.modpackId();
+            case Category c -> "CATEGORY: " + c.category();
+            case Global g -> "GLOBAL";
+        };
+    }
+}
 ```
 
 ## Struttura File System
 
 ```
-config/devmod/presets/
-├── global/                          # LEVEL 1: Global presets
-│   ├── weapon/
+config/devmod/
+├── presets.json                    # User presets (legacy format)
+├── modpack.txt                     # Optional: explicit modpack ID
+├── presets/
+│   ├── global/                     # Global presets (all items)
 │   │   ├── vanilla_default.json
 │   │   ├── balanced_pvp.json
 │   │   └── overpowered_debug.json
-│   └── armor/
-│       ├── vanilla_default.json
-│       ├── tank_build.json
-│       └── glass_cannon.json
+│   ├── category/                   # Category-specific presets
+│   │   ├── sword/
+│   │   │   └── diamond_tier.json
+│   │   ├── armor/
+│   │   │   ├── tank_build.json
+│   │   │   └── glass_cannon.json
+│   │   └── bow/
+│   └── modpack/                    # Modpack-specific presets
+│       ├── rlcraft/
+│       │   └── rlcraft_balanced.json
+│       └── better_minecraft/
 │
-├── category/                        # LEVEL 2: Category-specific
-│   ├── sword/
-│   │   ├── diamond_tier.json
-│   │   └── netherite_tier.json
-│   ├── bow/
-│   │   ├── sniper.json
-│   │   └── rapid_fire.json
-│   ├── helmet/
-│   │   └── night_vision_focus.json
-│   ├── chestplate/
-│   │   └── thorns_tank.json
-│   ├── leggings/
-│   │   └── speed_focus.json
-│   └── boots/
-│       └── feather_fall.json
-│
-└── modpack/                         # LEVEL 3: Modpack overrides
-    ├── rlcraft/
-    │   ├── manifest.json            # Modpack metadata
-    │   ├── weapon/
-    │   │   └── rlcraft_balanced.json
-    │   └── armor/
-    │       └── rlcraft_survival.json
-    └── better_minecraft/
-        ├── manifest.json
-        └── weapon/
-            └── bmc_standard.json
+resources/data/devmod/presets/      # Bundled presets (copied on first run)
+├── vanilla_default.json
+├── balanced_pvp.json
+├── overpowered_debug.json
+├── tank_build.json
+├── glass_cannon.json
+└── diamond_tier.json
 ```
 
-## Formato Preset JSON
+## Formato Preset JSON (Registry Format)
 
 ```json
-// config/devmod/presets/category/sword/diamond_tier.json
 {
-  "id": "diamond_tier",
-  "name": "Diamond Tier Standard",
-  "description": "Balanced stats for diamond-tier swords",
+  "id": "balanced_pvp",
+  "name": "Balanced PvP",
+  "description": "Balanced stats for player vs player combat",
   "version": "1.0.0",
   "author": "DevMod",
-  "scope": {
-    "level": "category",
-    "category": "sword",
-    "itemFilter": {
-      "material": ["diamond", "netherite"],
-      "tags": ["minecraft:swords"]
-    }
-  },
+  "category": "weapon",
+  "scope": "global",
   "values": {
-    "baseDamage": 7.0,
-    "attackSpeed": 1.6,
+    "headMult": 1.5,
+    "bodyMult": 1.0,
+    "limbMult": 0.75,
+    "baseDamage": 6.0,
+    "attackSpeed": 1.8,
     "critChance": 0.15,
-    "critMultiplier": 1.5,
-    "durabilityMultiplier": 1.0,
-    "enchantability": 10
+    "critMultiplier": 1.75,
+    "armorPen": 0.1,
+    "lifesteal": 0.0,
+    "knockback": 0.2,
+    "damageBonus": 0.0,
+    "range": 3.5,
+    "blockBreakSpeed": 1.0,
+    "durabilityMult": 1.0,
+    "enchantability": 12.0
   },
-  "metadata": {
-    "created": "2025-01-15T10:30:00Z",
-    "modified": "2025-01-15T10:30:00Z",
-    "tags": ["balanced", "pvp", "official"]
-  }
+  "tags": ["pvp", "balanced", "official"]
 }
 ```
 
-```json
-// config/devmod/presets/modpack/rlcraft/manifest.json
-{
-  "modpackId": "rlcraft",
-  "modpackName": "RLCraft",
-  "modpackVersion": "2.9.3",
-  "devmodPresetVersion": "1.0.0",
-  "description": "Preset pack for RLCraft hardcore survival",
-  "author": "Shivaxi",
-  "overrideGlobal": true,
-  "overrideCategory": true,
-  "presets": [
-    "weapon/rlcraft_balanced.json",
-    "armor/rlcraft_survival.json"
-  ]
-}
-```
+## ModpackDetector
 
-## Categorie Item Supportate
-
-| Categoria | Items Inclusi | Preset Type |
-|-----------|---------------|-------------|
-| `sword` | Tutte le spade (vanilla + modded) | WeaponPreset |
-| `axe` | Tutte le asce | WeaponPreset |
-| `pickaxe` | Picconi (se weapon-enabled) | WeaponPreset |
-| `bow` | Archi | WeaponPreset |
-| `crossbow` | Balestre | WeaponPreset |
-| `trident` | Tridenti | WeaponPreset |
-| `helmet` | Tutti gli elmi | ArmorPreset |
-| `chestplate` | Tutti i corpetti | ArmorPreset |
-| `leggings` | Tutti i pantaloni | ArmorPreset |
-| `boots` | Tutti gli stivali | ArmorPreset |
-| `shield` | Scudi | ArmorPreset |
-
-## Java Interface
+Rileva automaticamente il modpack in uso tramite 3 strategie:
 
 ```java
-/**
- * Sealed hierarchy for preset scopes.
- */
-public sealed interface PresetScope {
-    record Global() implements PresetScope {}
-    record Category(String category) implements PresetScope {}
-    record Modpack(String modpackId, String category) implements PresetScope {}
-}
+public final class ModpackDetector {
+    // Strategy 1: Explicit config file
+    // config/devmod/modpack.txt -> "rlcraft"
 
-/**
- * A preset definition with metadata and values.
- */
-public record Preset<T>(
-    String id,
-    String name,
-    String description,
-    PresetScope scope,
-    T values,
-    PresetMetadata metadata
-) {
-    public record PresetMetadata(
-        String version,
-        String author,
-        Instant created,
-        Instant modified,
-        List<String> tags
-    ) {}
-}
+    // Strategy 2: Manifest detection
+    // manifest.json in game root
 
-/**
- * Registry and resolver for presets.
- */
-public final class PresetRegistry {
-    private final Map<PresetScope, List<Preset<?>>> presets = new HashMap<>();
-
-    /**
-     * Load all presets from config directory.
-     */
-    public void loadFromConfig(Path configDir) { /* ... */ }
-
-    /**
-     * Resolve applicable presets for an item, respecting hierarchy.
-     * Returns presets in priority order: MODPACK → CATEGORY → GLOBAL
-     */
-    public List<Preset<?>> resolveForItem(ItemStack item) {
-        List<Preset<?>> result = new ArrayList<>();
-
-        // 1. Check modpack presets (highest priority)
-        String modpackId = detectActiveModpack();
-        if (modpackId != null) {
-            String category = ItemTypeHelper.getCategory(item);
-            result.addAll(getPresets(new PresetScope.Modpack(modpackId, category)));
-        }
-
-        // 2. Check category presets
-        String category = ItemTypeHelper.getCategory(item);
-        result.addAll(getPresets(new PresetScope.Category(category)));
-
-        // 3. Check global presets (lowest priority)
-        result.addAll(getPresets(new PresetScope.Global()));
-
-        return result;
-    }
-
-    /**
-     * Detect active modpack from environment.
-     * Checks: modpack.json, manifest.json, known mod combinations
-     */
-    @Nullable
-    private String detectActiveModpack() { /* ... */ }
-
-    /**
-     * Save a user-created preset.
-     */
-    public void savePreset(Preset<?> preset, PresetScope scope) { /* ... */ }
-
-    /**
-     * Delete a preset (only user-created, not bundled).
-     */
-    public boolean deletePreset(String presetId, PresetScope scope) { /* ... */ }
+    // Strategy 3: Mod signature detection
+    private static final Map<String, Set<String>> KNOWN_MODPACKS = Map.of(
+        "rlcraft", Set.of("lycanitesmobs", "iceandfire", "spartanweaponry"),
+        "better_minecraft", Set.of("create", "farmers_delight", "supplementaries"),
+        "all_the_mods_9", Set.of("mekanism", "thermal", "applied_energistics_2")
+        // ... more modpacks
+    );
 }
 ```
 
-## UI: Preset Selector
+## Core Classes
+
+| File | LOC | Responsabilita |
+|------|-----|----------------|
+| `PresetScope.java` | ~53 | Sealed interface per scope hierarchy |
+| `ModpackDetector.java` | ~201 | Rilevamento automatico modpack |
+| `PresetRegistry.java` | ~480 | Registry centrale, loading, risoluzione |
+| `PresetBridge.java` | ~238 | Conversione RegistryPreset ↔ PresetData |
+| `PresetSelectorOverlay.java` | ~789 | UI overlay per selezione/gestione preset |
+
+### PresetRegistry
+
+```java
+public final class PresetRegistry {
+    private static PresetRegistry INSTANCE;
+    private final Map<PresetScope, List<RegistryPreset>> presets;
+    private String detectedModpack = null;
+
+    // Singleton
+    public static void init() { ... }
+    public static PresetRegistry getInstance() { ... }
+
+    // Loading
+    public void loadFromConfig() { ... }
+    private void copyBundledPresets(Path targetDir) { ... }
+
+    // Resolution
+    public List<RegistryPreset> resolveForItem(ItemStack item) { ... }
+    public List<RegistryPreset> getPresetsForCategory(String category) { ... }
+    public List<RegistryPreset> getAllPresets() { ... }
+
+    // Records
+    public record RegistryPreset(
+        String id, String name, String description,
+        PresetScope scope, String category,
+        Map<String, Object> values, PresetMetadata metadata
+    ) {}
+
+    public record PresetMetadata(
+        String version, String author, Instant created, List<String> tags
+    ) {}
+}
+```
+
+### PresetBridge
+
+```java
+public class PresetBridge {
+    // RegistryPreset → PresetData (per UI compatibility)
+    public static ItemEditorDataManager.PresetData toPresetData(RegistryPreset rp) { ... }
+
+    // PresetData → RegistryPreset (per salvataggio in registry format)
+    public static RegistryPreset toRegistryPreset(ItemEditorDataManager.PresetData pd) { ... }
+
+    // Helper per generare ID univoci
+    public static String generateId(String name) { ... }
+}
+```
+
+## UI: PresetSelectorOverlay
+
+Estende `BaseOverlay` per un'esperienza utente coerente con altri overlay dell'editor.
+
+### Layout
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  PRESETS                                                   [X]  │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  📁 Filter: [All ▾] [🔍 Search...]                              │
-│                                                                 │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │ 🎮 MODPACK: RLCraft                                       │  │
-│  │   └─ ⚔️ rlcraft_balanced      "RLCraft weapon balance"    │  │
-│  │   └─ 🛡️ rlcraft_survival     "Survival-focused armor"    │  │
-│  ├───────────────────────────────────────────────────────────┤  │
-│  │ 📂 CATEGORY: Sword                                        │  │
-│  │   └─ ⚔️ diamond_tier         "Diamond tier standard"      │  │
-│  │   └─ ⚔️ netherite_tier       "Netherite tier standard"    │  │
-│  ├───────────────────────────────────────────────────────────┤  │
-│  │ 🌐 GLOBAL                                                 │  │
-│  │   └─ ⚔️ vanilla_default      "Vanilla-like stats"         │  │
-│  │   └─ ⚔️ balanced_pvp         "PvP balanced"               │  │
-│  │   └─ ⚔️ overpowered_debug    "Debug testing"      [🔧]    │  │
-│  └───────────────────────────────────────────────────────────┘  │
-│                                                                 │
-│  Selected: diamond_tier                                         │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │ Preview:                                                  │  │
-│  │   Base Damage: 7.0 → 8.5 (+1.5)                           │  │
-│  │   Attack Speed: 1.6 → 1.8 (+0.2)                          │  │
-│  │   Crit Chance: 15% → 20% (+5%)                            │  │
-│  └───────────────────────────────────────────────────────────┘  │
-│                                                                 │
+│  Category: sword                                                │
 ├─────────────────────────────────────────────────────────────────┤
-│  [Save Current as Preset]    [Delete]    [Load] [Apply]         │
+│  [Search presets...]                                            │
+├─────────────────────────────────────────────────────────────────┤
+│  ▌ rlcraft_balanced        weapon      │ ← Orange = MODPACK     │
+│  ▌ diamond_tier            sword       │ ← Blue = CATEGORY      │
+│  ▌ vanilla_default         weapon      │ ← Green = GLOBAL       │
+│  ▌ balanced_pvp            weapon      │                        │
+│  ▌ my_custom_preset        sword [User]│ ← Light green = USER   │
+├─────────────────────────────────────────────────────────────────┤
+│  Selected: diamond_tier                                         │
+│  CATEGORY: sword                                                │
+│  "Diamond tier standard weapon stats"                           │
+├─────────────────────────────────────────────────────────────────┤
+│  [Save Current]         [Delete]              [Apply]           │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## Preset Operazioni
+### Scope Color Indicators
 
-| Operazione | Scope | Descrizione |
-|------------|-------|-------------|
-| **Load** | Read-only | Mostra preview dei valori |
-| **Apply** | Write | Applica valori all'item corrente |
-| **Save As** | Write | Salva config corrente come nuovo preset |
-| **Delete** | Write | Rimuove preset (solo user-created) |
-| **Export** | Read | Esporta preset come file JSON |
-| **Import** | Write | Importa preset da file JSON |
+| Scope | Color | Hex |
+|-------|-------|-----|
+| MODPACK | Orange | `0xFFFF9900` |
+| CATEGORY | Blue | `0xFF66AAFF` |
+| GLOBAL | Green | `0xFF88FF88` |
+| GLOBAL (User) | Light Green | `0xFFAAFF88` |
 
-## Modpack Detection Strategy
+### Features
+
+- **VirtualizedList** per performance con molti preset
+- **Search** real-time con filtro nome/descrizione/scope
+- **Preview** del preset selezionato
+- **Scope indicator** colorato per ogni riga
+- **Delete** solo per user presets
+- **Rename inline** per user presets (bottone o F2)
+- **Double-click** per applicare rapidamente
+- **Keyboard navigation** completa (frecce, Enter, Escape, Delete, F2, Ctrl+F)
+
+### Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `↑` / `↓` | Navigate list |
+| `Enter` | Apply selected preset |
+| `Delete` | Delete selected user preset |
+| `F2` | Start rename (user presets only) |
+| `Escape` | Cancel rename / Close overlay |
+| `Ctrl+F` | Focus search box |
+
+### Rename Mode
+
+Quando si preme **F2** o il bottone **Rename** su un preset utente:
+
+1. La **preview box** si trasforma in **rename input box**
+2. Il testo del nome corrente appare nel campo
+3. Si può digitare il nuovo nome
+4. **Enter** conferma la rinomina
+5. **Escape** annulla
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Rename preset:                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ my_new_preset_name█                                      │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│  Press Enter to confirm, Escape to cancel                       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Integration Points
+
+### ItemEditorScreen
 
 ```java
-public final class ModpackDetector {
+// Field
+private PresetSelectorOverlay presetSelectorOverlay;
 
-    private static final Map<String, Set<String>> KNOWN_MODPACKS = Map.of(
-        "rlcraft", Set.of("lycanitesmobs", "iceandfire", "spartan_weaponry"),
-        "better_minecraft", Set.of("create", "farmers_delight", "supplementaries"),
-        "all_the_mods_9", Set.of("mekanism", "thermal", "applied_energistics_2")
-    );
+// In init()
+this.presetSelectorOverlay = new PresetSelectorOverlay();
+this.presetSelectorOverlay.setContext(getActiveItemType());
+this.presetSelectorOverlay.onClose(this::closeOverlay);
+this.presetSelectorOverlay.onApply(this::applyPreset);
+this.presetSelectorOverlay.onDelete(this::deletePreset);
+this.presetSelectorOverlay.onRename(this::renamePreset);  // NEW
+this.presetSelectorOverlay.onSaveCurrent(this::saveCurrentAsPreset);
 
-    /**
-     * Detect modpack by checking:
-     * 1. Explicit config (config/devmod/modpack.txt)
-     * 2. manifest.json in minecraft root
-     * 3. Known mod combinations
-     */
-    @Nullable
-    public static String detect() {
-        // 1. Explicit config
-        Path explicit = FMLPaths.CONFIGDIR.get().resolve("devmod/modpack.txt");
-        if (Files.exists(explicit)) {
-            return Files.readString(explicit).trim();
-        }
+// In render() when PRESETS overlay active
+presetSelectorOverlay.render(graphics, font, width, height, mouseX, mouseY);
+```
 
-        // 2. Manifest check
-        Path manifest = FMLPaths.GAMEDIR.get().resolve("manifest.json");
-        if (Files.exists(manifest)) {
-            JsonObject json = JsonParser.parseReader(
-                Files.newBufferedReader(manifest)
-            ).getAsJsonObject();
-            if (json.has("name")) {
-                return normalizeModpackName(json.get("name").getAsString());
-            }
-        }
+#### Rename Handler
 
-        // 3. Mod combination detection
-        Set<String> loadedMods = ModList.get().getMods().stream()
-            .map(ModInfo::getModId)
-            .collect(Collectors.toSet());
+```java
+private void renamePreset(ItemEditorDataManager.PresetData preset, String newName) {
+    if (preset == null || preset.name == null || newName == null || newName.isBlank()) return;
+    String oldName = preset.name;
 
-        for (var entry : KNOWN_MODPACKS.entrySet()) {
-            if (loadedMods.containsAll(entry.getValue())) {
-                return entry.getKey();
-            }
-        }
+    // Update the preset with new name
+    preset.name = newName.trim();
+    ItemEditorDataManager.INSTANCE.deletePreset(oldName);
+    ItemEditorDataManager.INSTANCE.savePreset(preset);
+    ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_rename", ...);
 
-        return null; // No modpack detected
+    if (presetSelectorOverlay != null) {
+        presetSelectorOverlay.refreshPresets();
     }
 }
 ```
 
-## Bundled Default Presets
+### MultiEditPanel
 
-DevMod include preset di default per testing:
+```java
+private List<ItemEditorDataManager.PresetData> availablePresets() {
+    List<ItemEditorDataManager.PresetData> result = new ArrayList<>();
+    HashSet<String> seenNames = new HashSet<>();
 
-| Preset ID | Scope | Tipo | Descrizione |
-|-----------|-------|------|-------------|
-| `vanilla_default` | Global | Both | Stats vanilla-like |
-| `balanced_pvp` | Global | Weapon | Bilanciato per PvP |
-| `overpowered_debug` | Global | Both | Valori alti per debug |
-| `tank_build` | Global | Armor | Alta difesa, bassa mobilità |
-| `glass_cannon` | Global | Armor | Bassa difesa, alta mobilità |
-| `diamond_tier` | Category | Weapon | Standard tier diamante |
-| `netherite_tier` | Category | Weapon | Standard tier netherite |
+    // 1. Load from PresetRegistry (hierarchical - higher priority)
+    List<PresetRegistry.RegistryPreset> registryPresets =
+        PresetRegistry.getInstance().getPresetsForCategory(type);
+    for (var rp : registryPresets) {
+        result.add(PresetBridge.toPresetData(rp));
+    }
 
-## Stima Implementazione
+    // 2. Load user presets from ItemEditorDataManager
+    List<ItemEditorDataManager.PresetData> userPresets =
+        ItemEditorDataManager.INSTANCE.getPresetsForItemType(type);
+    // ... merge avoiding duplicates
 
-| Componente | LOC | Complessità |
-|------------|-----|-------------|
-| PresetScope + Preset records | ~80 | Bassa |
-| PresetRegistry | ~250 | Media |
-| PresetSerializer (JSON) | ~150 | Media |
-| ModpackDetector | ~100 | Media |
-| ItemTypeHelper (extended) | ~100 | Bassa |
-| PresetSelectorScreen | ~400 | Alta |
-| UI integration | ~100 | Media |
-| Default preset JSONs | ~20 files | Bassa |
-| **Totale** | **~1180** | **Media** |
+    return result;
+}
+```
 
-**Priorità:** P2 - Implementare DOPO single editor (Fase 0-3), PRIMA di batch edit.
+### DevMod Bootstrap
+
+```java
+// In DevMod constructor, after ModIntegrationManager.init()
+PresetRegistry.init();
+PresetRegistry.getInstance().loadFromConfig();
+```
+
+## Bundled Presets
+
+6 preset inclusi di default, copiati in `config/devmod/presets/global/` al primo avvio:
+
+| Preset | Category | Description |
+|--------|----------|-------------|
+| `vanilla_default` | weapon | Valori vanilla-like |
+| `balanced_pvp` | weapon | Bilanciato per PvP |
+| `overpowered_debug` | weapon | Valori estremi per testing |
+| `tank_build` | armor | Alta difesa |
+| `glass_cannon` | armor | Alta offesa, bassa difesa |
+| `diamond_tier` | weapon | Standard tier diamante |
+
+## Legacy Compatibility
+
+Il sistema mantiene **backward compatibility** con `ItemEditorDataManager.PresetData`:
+
+- User presets esistenti in `config/devmod/presets.json` continuano a funzionare
+- `PresetBridge` converte tra i due formati
+- UI unificata mostra entrambi i tipi
+
+## Stato Implementazione
+
+| Componente | File | Stato |
+|------------|------|-------|
+| PresetScope (sealed interface) | `systems/PresetScope.java` | ✅ Completo |
+| ModpackDetector | `systems/ModpackDetector.java` | ✅ Completo |
+| PresetRegistry | `systems/PresetRegistry.java` | ✅ Completo |
+| PresetBridge | `systems/PresetBridge.java` | ✅ Completo |
+| PresetSelectorOverlay | `systems/PresetSelectorOverlay.java` | ✅ Completo |
+| Bundled presets JSON | `resources/data/devmod/presets/` | ✅ Completo |
+| ItemEditorScreen integration | `ItemEditorScreen.java` | ✅ Completo |
+| MultiEditPanel integration | `systems/MultiEditPanel.java` | ✅ Completo |
+| DevMod bootstrap | `DevMod.java` | ✅ Completo |
+| **Rename inline** | `PresetSelectorOverlay.java` | ✅ Completo |
+| **Test funzionali** | `testing/DevModPresetTestCases.java` | ✅ Completo |
+
+## Test Funzionali
+
+I test funzionali per il sistema preset sono definiti in `DevModPresetTestCases.java` e vengono eseguiti automaticamente tramite il framework QA Testing.
+
+### Test Categories
+
+| Test ID | Nome | Priorità |
+|---------|------|----------|
+| `preset_scope_hierarchy` | PresetScope Hierarchy | HIGH |
+| `preset_scope_labels` | PresetScope Labels | MEDIUM |
+| `preset_registry_singleton` | PresetRegistry Singleton | CRITICAL |
+| `preset_registry_bundled_presets` | Bundled Presets Loaded | HIGH |
+| `preset_registry_category_filter` | Category Filtering | HIGH |
+| `preset_bridge_to_preset_data` | PresetBridge toPresetData | HIGH |
+| `preset_bridge_to_registry_preset` | PresetBridge toRegistryPreset | HIGH |
+| `preset_bridge_id_generation` | PresetBridge ID Generation | MEDIUM |
+| `modpack_detector_init` | ModpackDetector Initialization | MEDIUM |
+| `user_preset_save` | User Preset Save | HIGH |
+| `user_preset_delete` | User Preset Delete | HIGH |
+| `user_preset_rename` | User Preset Rename | MEDIUM |
+| `preset_overlay_data_flow` | PresetSelectorOverlay Data Flow | HIGH |
+| `preset_priority_resolution` | Preset Priority Resolution | HIGH |
+
+### Running Tests
+
+I test sono integrati nel `DynamicTestGenerator` e vengono eseguiti come parte dei DevMod Core Tests:
+
+```java
+// In DynamicTestGenerator.DevModCoreTestTemplate
+tests.addAll(DevModPresetTestCases.generateTestCases());
+```
+
+## Future Evolutions (P3)
+
+1. **Import/Export** - Importare/esportare preset come file JSON
+2. **Preview diff** - Mostrare differenze prima di applicare
+3. **Preset sharing** - Condividere preset tramite URL/codice
+4. **Cloud sync** - Sincronizzazione preset cross-instance
+5. **Modpack preset packs** - Preset bundle scaricabili per modpack popolari

@@ -3,6 +3,7 @@ package com.frenkvs.devmod.ui.radial;
 import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nullable;
+import java.util.function.BooleanSupplier;
 
 /**
  * Represents a single item in a radial menu category.
@@ -17,6 +18,8 @@ public class RadialMenuItem {
 
     // Custom properties for advanced items
     private boolean visible = true;
+    @Nullable
+    private BooleanSupplier visibilitySupplier = null;  // Dynamic visibility
     private int customColor = -1;  // -1 means use category color
 
     public RadialMenuItem(String name, RadialAction action, String iconEmoji, @Nullable ItemStack iconStack) {
@@ -98,12 +101,31 @@ public class RadialMenuItem {
         return actionStack != null ? actionStack : iconStack;
     }
 
+    /**
+     * Check if item is visible. Uses dynamic supplier if set, otherwise static value.
+     */
     public boolean isVisible() {
+        if (visibilitySupplier != null) {
+            return visibilitySupplier.getAsBoolean();
+        }
         return visible;
     }
 
+    /**
+     * Set static visibility (evaluated once).
+     */
     public RadialMenuItem setVisible(boolean visible) {
         this.visible = visible;
+        this.visibilitySupplier = null;  // Clear dynamic supplier
+        return this;
+    }
+
+    /**
+     * Set dynamic visibility supplier (evaluated on each access).
+     * Use this for items whose visibility depends on runtime state (e.g., held item).
+     */
+    public RadialMenuItem setVisibilitySupplier(BooleanSupplier supplier) {
+        this.visibilitySupplier = supplier;
         return this;
     }
 

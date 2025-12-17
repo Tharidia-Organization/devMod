@@ -1,0 +1,27 @@
+{
+  "id": "overpowered_debug",
+  "name": "Overpowered Debug",
+  "description": "Extremely high values for testing and debugging",
+  "version": "1.0.0",
+  "author": "DevMod",
+  "category": "weapon",
+  "scope": "global",
+  "values": {
+    "headMult": 3.0,
+    "bodyMult": 2.0,
+    "limbMult": 1.5,
+    "baseDamage": 50.0,
+    "attackSpeed": 4.0,
+    "critChance": 0.5,
+    "critMultiplier": 3.0,
+    "armorPen": 0.5,
+    "lifesteal": 0.25,
+    "knockback": 1.0,
+    "damageBonus": 0.5,
+    "range": 6.0,
+    "blockBreakSpeed": 5.0,
+    "durabilityMult": 10.0,
+    "enchantability": 50.0
+  },
+  "tags": ["debug", "overpowered", "testing", "official"]
+}

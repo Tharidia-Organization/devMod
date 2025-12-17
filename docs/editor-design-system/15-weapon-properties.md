@@ -45,6 +45,7 @@
 | **Crit Multiplier** | `devmod:crit_multiplier` | 1.5 | 1.0–5.0 | COMBAT |
 | **Armor Shred** | `devmod:armor_shred` | 0 | 0–66 | COMBAT |
 | **Life Steal** | `devmod:life_steal` | 0 | 0–100 | COMBAT |
+| **Damage Bonus** | `devmod:damage_bonus` | 0 | 0–100 | STATS |
 
 ### TIER 4: Damage Type Bonuses
 
@@ -68,36 +69,40 @@ public final class ModAttributes {
         DeferredRegister.create(Registries.ATTRIBUTE, DevMod.MODID);
 
     // Combat attributes
-    public static final Holder<Attribute> CRIT_CHANCE = ATTRIBUTES.register("crit_chance",
+    public static final DeferredHolder<Attribute, Attribute> CRIT_CHANCE = ATTRIBUTES.register("crit_chance",
         () -> new RangedAttribute("attribute.devmod.crit_chance", 0.0D, 0.0D, 100.0D)
             .setSyncable(true));
 
-    public static final Holder<Attribute> CRIT_MULTIPLIER = ATTRIBUTES.register("crit_multiplier",
+    public static final DeferredHolder<Attribute, Attribute> CRIT_MULTIPLIER = ATTRIBUTES.register("crit_multiplier",
         () -> new RangedAttribute("attribute.devmod.crit_multiplier", 1.5D, 1.0D, 5.0D)
             .setSyncable(true));
 
-    public static final Holder<Attribute> ARMOR_SHRED = ATTRIBUTES.register("armor_shred",
+    public static final DeferredHolder<Attribute, Attribute> ARMOR_SHRED = ATTRIBUTES.register("armor_shred",
         () -> new RangedAttribute("attribute.devmod.armor_shred", 0.0D, 0.0D, 66.0D)
             .setSyncable(true));
 
-    public static final Holder<Attribute> LIFE_STEAL = ATTRIBUTES.register("life_steal",
+    public static final DeferredHolder<Attribute, Attribute> LIFE_STEAL = ATTRIBUTES.register("life_steal",
         () -> new RangedAttribute("attribute.devmod.life_steal", 0.0D, 0.0D, 100.0D)
             .setSyncable(true));
 
+    public static final DeferredHolder<Attribute, Attribute> DAMAGE_BONUS = ATTRIBUTES.register("damage_bonus",
+        () -> new RangedAttribute("attribute.devmod.damage_bonus", 0.0D, 0.0D, 100.0D)
+            .setSyncable(true));
+
     // Damage type bonuses
-    public static final Holder<Attribute> DAMAGE_VS_UNDEAD = ATTRIBUTES.register("damage_vs_undead",
+    public static final DeferredHolder<Attribute, Attribute> DAMAGE_VS_UNDEAD = ATTRIBUTES.register("damage_vs_undead",
         () -> new RangedAttribute("attribute.devmod.damage_vs_undead", 0.0D, 0.0D, 200.0D)
             .setSyncable(true));
 
-    public static final Holder<Attribute> DAMAGE_VS_ARTHROPODS = ATTRIBUTES.register("damage_vs_arthropods",
+    public static final DeferredHolder<Attribute, Attribute> DAMAGE_VS_ARTHROPODS = ATTRIBUTES.register("damage_vs_arthropods",
         () -> new RangedAttribute("attribute.devmod.damage_vs_arthropods", 0.0D, 0.0D, 200.0D)
             .setSyncable(true));
 
-    public static final Holder<Attribute> DAMAGE_VS_PLAYERS = ATTRIBUTES.register("damage_vs_players",
+    public static final DeferredHolder<Attribute, Attribute> DAMAGE_VS_PLAYERS = ATTRIBUTES.register("damage_vs_players",
         () -> new RangedAttribute("attribute.devmod.damage_vs_players", 0.0D, 0.0D, 200.0D)
             .setSyncable(true));
 
-    public static final Holder<Attribute> TRUE_DAMAGE_PERCENT = ATTRIBUTES.register("true_damage_percent",
+    public static final DeferredHolder<Attribute, Attribute> TRUE_DAMAGE_PERCENT = ATTRIBUTES.register("true_damage_percent",
         () -> new RangedAttribute("attribute.devmod.true_damage_percent", 0.0D, 0.0D, 100.0D)
             .setSyncable(true));
 }
@@ -105,7 +110,7 @@ public final class ModAttributes {
 
 **Implementazione attuale:** gli attributi sopra sono registrati in `ModAttributes` e iscritti nel mod event bus (`DevMod`). Il routing editor → server usa `WeaponStatsPayload` (canale 7) con clamping server-side (`PacketSecurityService`) per tutte le proprietà elencate; il payload legacy rimane solo per compatibilità. Se è presente il mod `puffish_attributes` (Pufferfish’s Attributes), gli attributi sovrapponibili vengono mappati automaticamente (`armor_shred`, `life_steal`) verso `puffish_attributes:*` tramite `PufferfishCompat`.
 
-**Runtime:** `DamageHandler` applica armor shred, bonus vs undead/arthropods/player (via tag/instance), fire/magic bonus, true-damage percentuale, sweeping ratio, lifesteal e durabilità. Il tab Tool Rules ora scrive il componente `minecraft:tool` (default speed, damage per block, fino a 3 regole tag + drop flag); la toggle “Clear Tool Rules” rimuove il componente `tool` dal dato item quando attivata.
+**Runtime:** `DamageHandler` applica armor shred, damage bonus, bonus vs undead/arthropods/player (via tag/instance), fire/magic bonus, true-damage percentuale, lifesteal e durabilità. Il tab Tool Rules ora scrive il componente `minecraft:tool` (default speed, damage per block, fino a 3 regole tag + drop flag); la toggle "Clear Tool Rules" rimuove il componente `tool` dal dato item quando attivata.
 
 ## Validation Rules per Custom Attributes
 
@@ -118,7 +123,7 @@ Alla base, ogni attributo custom viene registrato con un range di valori leciti 
 **Esempio:**
 ```java
 // In ModAttributes.java
-public static final Holder<Attribute> CRIT_CHANCE = ATTRIBUTES.register("crit_chance",
+public static final DeferredHolder<Attribute, Attribute> CRIT_CHANCE = ATTRIBUTES.register("crit_chance",
     () -> new RangedAttribute("attribute.devmod.crit_chance", 0.0D, 0.0D, 100.0D) // min: 0.0, max: 100.0
         .setSyncable(true));
 ```
@@ -280,60 +285,43 @@ Il mod include un `PerformanceProfiler` che permette agli sviluppatori di monito
 
 ```java
 /**
- * Transient model for weapon stats editing.
+ * Mutable model for weapon stats editing.
  * Maps to/from ItemStack components and attributes.
+ * Note: This is a class with public fields, not a record, to allow in-place editing.
  */
-public record WeaponStats(
+public class WeaponStats {
     // Tier 1: Vanilla Core
-    float attackDamage,
-    float attackSpeed,
-    float attackKnockback,
-    float attackReach,
-    float sweepingRatio,
+    public float attackDamage = 0.0f;
+    public float attackSpeed = 0.0f;
+    public float attackKnockback = 0.0f;
+    public float attackReach = 0.0f;
+    public float sweepingRatio = 0.0f;  // AoE damage multiplier (0-1)
 
     // Tier 2: Durability
-    int maxDurability,
-    int currentDamage,
-    int repairCost,
-    boolean unbreakable,
+    public int maxDurability = 0;
+    public int currentDamage = 0;
+    public int repairCost = 0;
+    public boolean unbreakable = false;
 
     // Tier 3: DevMod Custom
-    float critChance,
-    float critMultiplier,
-    float armorShred,
-    float lifeSteal,
+    public float critChance = 0.0f;
+    public float critDamage = 1.5f;  // Crit multiplier
+    public float armorShred = 0.0f;
+    public float lifesteal = 0.0f;
+    public float damageBonus = 0.0f;  // Direct damage bonus (0-1)
 
     // Tier 4: Damage Type Bonuses
-    float damageVsUndead,
-    float damageVsArthropods,
-    float damageVsPlayers,
-    float fireDamageBonus,
-    float trueDamagePercent
-) {
-    /**
-     * Extract stats from an ItemStack.
-     */
-    public static WeaponStats fromItemStack(ItemStack stack, LivingEntity holder) {
-        // Read vanilla attributes
-        float damage = (float) holder.getAttributeValue(Attributes.ATTACK_DAMAGE);
-        float speed = (float) holder.getAttributeValue(Attributes.ATTACK_SPEED);
-        // ... extract all values from components and attributes
-        return new WeaponStats(/* ... */);
-    }
+    public float damageVsUndead = 0.0f;
+    public float damageVsArthropods = 0.0f;
+    public float damageVsPlayers = 0.0f;
+    public float fireDamageBonus = 0.0f;
+    public float trueDamagePercent = 0.0f;
 
-    /**
-     * Build payload for server sync.
-     */
-    public UpdateWeaponPayload toPayload(boolean isGlobal, String itemName) {
-        return new UpdateWeaponPayload(
-            isGlobal, itemName,
-            attackDamage, attackSpeed, attackKnockback, attackReach, sweepingRatio,
-            maxDurability, repairCost, unbreakable,
-            critChance, critMultiplier, armorShred, lifeSteal,
-            damageVsUndead, damageVsArthropods, damageVsPlayers,
-            fireDamageBonus, trueDamagePercent
-        );
-    }
+    // Tool rules
+    public boolean clearToolRules = false;
+    public float toolDefaultMiningSpeed = 1.0f;
+    public int toolDamagePerBlock = 1;
+    public List<ToolRuleData> toolRules = new ArrayList<>();
 }
 ```
 
@@ -462,6 +450,7 @@ public final class WeaponTypeDetector {
 │  ├─────────────────────────────────────────────────────────┤   │
 │  │ Entity Reach      [━━━━━━━━━━] 2.5    blocks            │   │
 │  │ Sweeping Ratio    [━━━━━━━━━━] 0%     AoE multiplier    │   │
+│  │ Damage Bonus      [━━━━━━━━━━] 0%     direct bonus      │   │
 │  └─────────────────────────────────────────────────────────┘   │
 │                                                                 │
 │  TAB: COMBAT (DevMod Custom)                                    │
@@ -665,14 +654,15 @@ public final class PufferfishCompat {
 
 ## Implementation Phases
 
-| Phase | Scope | Priority |
-|-------|-------|----------|
-| **MVP** | STATS + COMBAT + DURABILITY tabs | P0 |
-| **Phase 1** | DAMAGE TYPES tab (predefined bonuses) | P1 |
-| **Phase 2** | DEBUG tab (raw component viewer) | P1 |
-| **Phase 3** | ADVANCED/Tool tab (tool rules editing + clear toggle) | P1 |
-| **Phase 4** | Ranged weapons module | P3 |
-| **Future** | Custom damage type creator | P4+ |
+| Phase | Scope | Priority | Status |
+|-------|-------|----------|--------|
+| **MVP** | STATS + COMBAT + DURABILITY tabs | P0 | ✅ Complete |
+| **Phase 1** | DAMAGE TYPES tab (predefined bonuses) | P1 | ✅ Complete |
+| **Phase 2** | DEBUG tab (raw component viewer) | P1 | ✅ Complete |
+| **Phase 3** | ADVANCED/Tool tab (tool rules editing + clear toggle) | P1 | ✅ Complete |
+| **Phase 4** | Ranged weapons module | P3 | ✅ Complete (see [16-ranged-weapons.md](16-ranged-weapons.md)) |
+| **Phase 5** | Weapon variants (MACE, TRIDENT) | P2 | ✅ Complete |
+| **Future** | Custom damage type creator | P4+ | ⏳ Planned |
 
 ## Config Options
 
@@ -718,19 +708,26 @@ logDetectionResults = true
 - [x] Creare `WeaponStats` record con tutti i tier
 - [x] Implementare `WeaponTypeDetector` con priority chain
 
-### Stato implementazione (snapshot)
-- `weapon_stats` data component introdotto e popolato dall'editor; `WeaponModStats` legacy viene migrato automaticamente e ricostruito dai modifiers DevMod se assente, poi persistito.
-- Salvataggio armi applica attribute modifiers (vanilla + DevMod, con mapping Pufferfish) clampati via `PacketSecurityService`, prunando i valori zero e mantenendo altri modifiers invariati; global/specific materializzano component + modifiers sullo stack.
-- Payload editor invia sia tag legacy sia component; preview applica component + attribute modifiers per rendering corretto.
-- Lettura editor preferisce il component; variant data viene letta anche dal component; import/export copre sweeping, armor shred, vs-* e true damage.
-- Runtime attuale continua a usare `WeaponStats` caricati (DamageHandler) per applicare bonus; allineamento completo a component/attribute runtime è ancora TODO.
+### Stato implementazione (snapshot - Updated 2025-01)
+- ✅ `WeaponComponents.WEAPON_STATS` data component registrato e usato come source of truth.
+- ✅ `WeaponModStats` legacy migrato automaticamente; ricostruito dai modifiers DevMod se assente, poi persistito.
+- ✅ Salvataggio armi applica attribute modifiers (vanilla + DevMod, con mapping Pufferfish) clampati via `PacketSecurityService`, prunando valori zero e mantenendo altri modifiers invariati.
+- ✅ Global/specific materializzano component + modifiers sullo stack.
+- ✅ `WeaponStatsPayloadV2` typed record + StreamCodec; payload invia sia tag legacy sia component.
+- ✅ Preview applica component + attribute modifiers per rendering corretto.
+- ✅ Lettura editor preferisce il component; variant data viene letta anche dal component.
+- ✅ Import/export copre tutti i campi avanzati: `sweepingRatio`, `damage_bonus`, `armor_shred`, `vs-*`, `true_damage`, `clear_tool_rules`.
+- ✅ `DamageHandler` applica: armor shred (L155), vs-* bonuses (L184-197), fire/magic (L198-203), true damage (L204-208), lifesteal (L281-284).
+- ✅ Tool rules enforcement con clear toggle funzionante (equip/breakspeed/drop events).
+- ✅ `WeaponModule` UI tabs: STATS, COMBAT, DAMAGE TYPES, DURABILITY, TOOL RULES, MACE, TRIDENT, DEBUG.
+- ✅ Value-source prefixes `[DEV]/[NBT]/[VANILLA]` su tutti gli slider.
 
 ### Gaps & next steps (doc15)
-- Runtime: spostare DamageHandler e tool enforcement a leggere solo component/modifier, con validazioni anche su equip/apply.
-- Payload: completare la migrazione a payload tipizzato (v2 già attivo) deprecando gradualmente il legacy.
-- Test: GameTests per serialization/migrazione `weapon_stats`, calc armor shred + true damage + vs-*, regressione tool rules/clear toggle.
-  - Nota: test JUnit placeholder esiste ma è disabilitato; servono GameTests con runtime MC per copertura reale.
-- Datapack export: ora include campi avanzati (sweeping, armor_shred, vs-*, true_damage, clear_tool_rules) per evitare stacking/partial overrides; import continua a sostituire le globali DevMod.
+- ⏳ GameTests: serialization/migrazione `weapon_stats`, calc armor shred + true damage + vs-*, tool rules/clear toggle.
+  - Nota: `DamageCalculationTest.java` e `EnvironmentalDamageTest.java` esistono ma necessitano espansione.
+  - JUnit placeholder esiste ma è disabilitato; servono GameTests con runtime MC per copertura reale.
+- ⏳ Validazione attribute modifier ranges su equip/apply (non solo payload clamp) - LOW PRIORITY.
+- ✅ Datapack export: include campi avanzati per evitare stacking/partial overrides.
 
 ### Datapack compatibilità modpack
 - I datapack `devmod` generati possono essere inclusi in un modpack: DevMod li carica come datapack vanilla e applica gli override (component + modifier) senza logica speciale.

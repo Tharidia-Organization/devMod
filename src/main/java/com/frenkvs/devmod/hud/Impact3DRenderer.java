@@ -10,6 +10,8 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
+import java.util.List;
+
 /**
  * Manages the rendering of the Impact Analysis panel in 3D in the world.
  *
@@ -34,18 +36,15 @@ public class Impact3DRenderer {
     private static final int PANEL_BG = 0xDD1A1A2E;           // Dark blue 87% opacity
     private static final int PANEL_BORDER = 0xFF3D5AFE;       // Electric blue
 
-    private static final int TEXT_TITLE = 0x00FFFF;           // Cyan (no alpha for font)
-    private static final int TEXT_NORMAL = 0xFFFFFF;          // White
-    private static final int TEXT_VALUE = 0x00FF00;           // Green
-    private static final int TEXT_FORMULA = 0xFFD700;         // Gold
-    private static final int TEXT_MUTED = 0xAAAAAA;           // Gray
-
     // === Internal dimensions (in font pixels, 1:1 scale with Minecraft font) ===
     private static final float PANEL_WIDTH_PX = 320f;   // Panel width in font pixels
     private static final float PANEL_HEIGHT_PX = 220f;  // Panel height in font pixels
     private static final float PADDING = 6f;
     private static final float LINE_HEIGHT = 11f;
     private static final float SECTION_SPACING = 5f;
+
+    private static final ImpactHudContentBuilder.NumberFormat NUMBER_FORMAT =
+        new ImpactHudContentBuilder.NumberFormat("%.1f", "%.2f");
 
     private Impact3DRenderer() {}
 
@@ -145,122 +144,53 @@ public class Impact3DRenderer {
         float textX = PADDING;
         float textY = PADDING;
 
-        // === TITLE ===
-        renderText3D(poseStack, bufferSource, font,
-            "Impact Analysis (Multi-Part & Mod Integrated)",
-            textX, textY, applyAlpha(TEXT_TITLE, alpha), alpha);
-        textY += LINE_HEIGHT + 2;
-
-        // Separator line (rendered as thin quad)
-        renderSeparatorLine(poseStack, bufferSource, 4, textY, PANEL_WIDTH_PX - 12, alpha);
-        textY += SECTION_SPACING;
-
-        // === PART HIT ===
-        String partText = "Part Hit: " + data.bodyPart.name() + " (Modifier: x" +
-                          String.format("%.2f", data.bodyPartMultiplier) + ")";
-        renderText3D(poseStack, bufferSource, font, partText,
-            textX, textY, applyAlpha(TEXT_NORMAL, alpha), alpha);
-        textY += LINE_HEIGHT + 2;
-
-        // === SOURCE ===
-        renderText3D(poseStack, bufferSource, font,
-            "Source: " + data.getFormattedAttackSource(),
-            textX, textY, applyAlpha(TEXT_MUTED, alpha), alpha);
-        textY += LINE_HEIGHT + SECTION_SPACING;
-
-        // === BREAKDOWN ===
-        DamageBreakdown bd = data.breakdown;
-
-        // Base Weapon Dmg
-        renderText3D(poseStack, bufferSource, font,
-            String.format("Base Weapon Dmg: %.1f", bd.baseWeaponDamage),
-            textX, textY, applyAlpha(TEXT_NORMAL, alpha), alpha);
-        textY += LINE_HEIGHT;
-
-        // Enchants
-        for (DamageBreakdown.EnchantBonus eb : bd.enchantBonuses) {
-            if (eb.bonus() > 0) {
-                renderText3D(poseStack, bufferSource, font,
-                    String.format("Enchant (%s): +%.1f", eb.name(), eb.bonus()),
-                    textX, textY, applyAlpha(TEXT_VALUE, alpha), alpha);
-                textY += LINE_HEIGHT;
+        List<ImpactHudContentBuilder.HudSection> sections =
+            ImpactHudContentBuilder.buildContent(data, NUMBER_FORMAT);
+        for (int i = 0; i < sections.size(); i++) {
+            if (i > 0) {
+                textY += LINE_HEIGHT + SECTION_SPACING;
             }
-        }
-
-        // Pehkui Size Bonus
-        if (bd.pehkuiSizeBonus > 0) {
-            renderText3D(poseStack, bufferSource, font,
-                String.format("Pehkui Size Bonus (+25%% of Base): +%.1f", bd.pehkuiSizeBonus),
-                textX, textY, applyAlpha(TEXT_VALUE, alpha), alpha);
-            textY += LINE_HEIGHT;
-        }
-
-        textY += SECTION_SPACING;
-
-        // === FORMULA ===
-        renderText3D(poseStack, bufferSource, font,
-            "Local Part Calc: " + bd.getFormulaString(),
-            textX, textY, applyAlpha(TEXT_FORMULA, alpha), alpha);
-        textY += LINE_HEIGHT + 2;
-
-        // === ACTUAL OR CALCULATED DAMAGE ===
-        if (data.hasActualDamage()) {
-            float actualDmg = data.getActualDamageDealt();
-            renderText3D(poseStack, bufferSource, font,
-                String.format("ACTUAL DAMAGE: %.1f", actualDmg),
-                textX, textY, applyAlpha(0xFF4444, alpha), alpha);
-            textY += LINE_HEIGHT + 2;
-
-            String healthText = String.format("HP: %.1f -> %.1f",
-                data.getHealthBefore(), data.getHealthAfter());
-            renderText3D(poseStack, bufferSource, font, healthText,
-                textX, textY, applyAlpha(TEXT_MUTED, alpha), alpha);
-            textY += LINE_HEIGHT;
-
-            float reduction = data.getDamageReduction();
-            if (Math.abs(reduction) > 0.1f) {
-                String reductionText;
-                int reductionColor;
-                if (reduction > 0) {
-                    reductionText = String.format("Armor/Effects reduced: -%.1f", reduction);
-                    reductionColor = 0xFF8888;
-                } else {
-                    reductionText = String.format("Damage amplified: +%.1f", -reduction);
-                    reductionColor = 0x88FF88;
-                }
-                renderText3D(poseStack, bufferSource, font, reductionText,
-                    textX, textY, applyAlpha(reductionColor, alpha), alpha);
-            }
-        } else {
-            String finalText = String.format("*Calculated Dmg: %.1f*", bd.finalDamage);
-            renderText3D(poseStack, bufferSource, font, finalText,
-                textX, textY, applyAlpha(TEXT_VALUE, alpha), alpha);
-        }
-
-        // === MOD SPECIFICS (if present) ===
-        if (data.hasPehkuiModification() || data.isBetterCombatAttack()) {
-            textY += LINE_HEIGHT + SECTION_SPACING;
-
-            renderText3D(poseStack, bufferSource, font, "Mod Specifics",
-                textX, textY, applyAlpha(TEXT_TITLE, alpha), alpha);
-            textY += LINE_HEIGHT + 4;
-
-            if (data.isBetterCombatAttack()) {
-                renderText3D(poseStack, bufferSource, font,
-                    "Better Combat: Arc Collision Detected",
-                    textX, textY, applyAlpha(TEXT_MUTED, alpha), alpha);
-                textY += LINE_HEIGHT;
-            }
-
-            if (data.hasPehkuiModification()) {
-                String scaleText = String.format("Pehkui: Entity Size Modified (Scale %.1f)",
-                    data.pehkuiVisualScale != null ? data.pehkuiVisualScale : 1.0f);
-                renderText3D(poseStack, bufferSource, font, scaleText,
-                    textX, textY, applyAlpha(TEXT_MUTED, alpha), alpha);
-            }
+            textY = renderSection(poseStack, bufferSource, font, sections.get(i), textX, textY, alpha);
         }
 
         poseStack.popPose();
+    }
+
+    private float renderSection(PoseStack poseStack, MultiBufferSource bufferSource, Font font,
+                                ImpactHudContentBuilder.HudSection section,
+                                float textX, float textY, float alpha) {
+        renderText3D(poseStack, bufferSource, font,
+            section.title().getString(),
+            textX, textY, applyAlpha(ImpactHudContentBuilder.Colors.TITLE, alpha), alpha);
+        textY += LINE_HEIGHT + spacingPixels(section.titleSpacing());
+
+        if (section.drawSeparator()) {
+            renderSeparatorLine(poseStack, bufferSource, 4, textY, PANEL_WIDTH_PX - 12, alpha);
+            textY += SECTION_SPACING;
+        }
+
+        for (ImpactHudContentBuilder.HudLine line : section.lines()) {
+            renderLine(poseStack, bufferSource, font, line, textX, textY, alpha);
+            textY += LINE_HEIGHT + spacingPixels(line.spacingAfter());
+        }
+
+        return textY;
+    }
+
+    private void renderLine(PoseStack poseStack, MultiBufferSource bufferSource, Font font,
+                            ImpactHudContentBuilder.HudLine line, float x, float y, float alpha) {
+        renderText3D(poseStack, bufferSource, font,
+            line.text().getString(),
+            x, y, applyAlpha(line.color(), alpha), alpha);
+    }
+
+    private float spacingPixels(ImpactHudContentBuilder.Spacing spacing) {
+        return switch (spacing) {
+            case NONE -> 0f;
+            case SMALL -> 2f;
+            case SECTION -> SECTION_SPACING;
+            case LARGE -> 4f;
+        };
     }
 
     /**

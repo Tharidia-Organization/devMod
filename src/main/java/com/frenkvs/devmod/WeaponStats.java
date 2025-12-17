@@ -29,6 +29,7 @@ public class WeaponStats {
     public float attackReach = 0.0f;        // Attack reach override (0 = use item default)
     public float attackKnockback = 0.0f;    // Additional knockback
     public float damageBonus = 0.0f;      // Direct damage bonus (0-1)
+    public float sweepingRatio = 0.0f;    // AoE damage multiplier (0-1), uses minecraft:sweeping_damage_ratio
 
     // ═══════════════════════════════════════════════════════════════
     // CRITICAL HIT
@@ -131,6 +132,7 @@ public class WeaponStats {
         if (attackReach != 0.0f) tag.putFloat("AtkRch", attackReach);
         if (attackKnockback != 0.0f) tag.putFloat("AtkKB", attackKnockback);
         if (damageBonus != 0.0f) tag.putFloat("DmgBonus", damageBonus);
+        if (sweepingRatio != 0.0f) tag.putFloat("SweepRatio", sweepingRatio);
 
         // Critical hit
         if (critChance != 0.0f) tag.putFloat("CritCh", critChance);
@@ -192,6 +194,7 @@ public class WeaponStats {
         if (tag.contains("AtkRch")) stats.attackReach = tag.getFloat("AtkRch");
         if (tag.contains("AtkKB")) stats.attackKnockback = tag.getFloat("AtkKB");
         if (tag.contains("DmgBonus")) stats.damageBonus = tag.getFloat("DmgBonus");
+        if (tag.contains("SweepRatio")) stats.sweepingRatio = tag.getFloat("SweepRatio");
 
         // Critical hit
         if (tag.contains("CritCh")) stats.critChance = tag.getFloat("CritCh");
@@ -259,6 +262,7 @@ public class WeaponStats {
             && attackReach == 0.0f
             && attackKnockback == 0.0f
             && damageBonus == 0.0f
+            && sweepingRatio == 0.0f
             && critChance == 0.0f
             && critDamage == 1.5f
             && armorShred == 0.0f
@@ -295,6 +299,7 @@ public class WeaponStats {
         copy.attackReach = this.attackReach;
         copy.attackKnockback = this.attackKnockback;
         copy.damageBonus = this.damageBonus;
+        copy.sweepingRatio = this.sweepingRatio;
         copy.critChance = this.critChance;
         copy.critDamage = this.critDamage;
         copy.armorShred = this.armorShred;
@@ -339,6 +344,7 @@ public class WeaponStats {
             ", vsPlayers=" + damageVsPlayers +
             ", truePct=" + trueDamagePercent +
             ", bonus=" + damageBonus +
+            ", sweeping=" + sweepingRatio +
             ", maxDur=" + maxDurability +
             ", curDmg=" + currentDamage +
             ", repair=" + repairCost +

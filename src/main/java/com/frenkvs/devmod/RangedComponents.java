@@ -35,4 +35,27 @@ public final class RangedComponents {
         COMPONENTS.register("piercing_level", () -> DataComponentType.<Integer>builder().persistent(Objects.requireNonNull(Codec.INT)).build());
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<ResourceLocation>> AMMO_TAG_FILTER =
         COMPONENTS.register("ammo_tag_filter", () -> DataComponentType.<ResourceLocation>builder().persistent(Objects.requireNonNull(ResourceLocation.CODEC)).build());
+
+    /**
+     * Check if any ranged component is bound (registry initialized).
+     * Useful for safe access patterns in runtime code.
+     */
+    public static boolean isAnyBound() {
+        try {
+            return DRAW_TIME_TICKS.isBound();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Check if the ammo tag filter component is bound.
+     */
+    public static boolean isAmmoFilterBound() {
+        try {
+            return AMMO_TAG_FILTER.isBound();
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }

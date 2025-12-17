@@ -1,6 +1,7 @@
 package com.frenkvs.devmod.ui.editor.components;
 
 import com.frenkvs.devmod.ui.editor.core.EditorSpacing;
+import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import net.minecraft.client.gui.GuiGraphics;
 
 import java.util.ArrayList;
@@ -130,7 +131,7 @@ public class ButtonRow {
     public void render(GuiGraphics graphics, int x, int y, int availableWidth, int mouseX, int mouseY) {
         if (buttons.isEmpty()) return;
 
-        int defaultWidth = 80;  // Default button width if not specified
+        int defaultWidth = UIConstants.Size.BUTTON_WIDTH;
         int width = buttonWidth > 0 ? buttonWidth : defaultWidth;
         int totalWidth = calculateTotalWidth(defaultWidth);
 

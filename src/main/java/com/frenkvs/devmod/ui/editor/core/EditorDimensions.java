@@ -31,7 +31,7 @@ public final class EditorDimensions {
     public static final int SLIDER_HEIGHT = 20;      // 5 units
     public static final int SLIDER_TRACK_HEIGHT = 4; // 1 unit
     public static final int SLIDER_THUMB_SIZE = 12;  // 3 units
-    public static final int SLIDER_LABEL_WIDTH = 100;// 25 units
+    public static final int SLIDER_LABEL_WIDTH = 160;// 40 units - fits "[DEV] Armor Penetration ?"
 
     // =========================================================================
     // TOGGLES
@@ -45,7 +45,7 @@ public final class EditorDimensions {
     // =========================================================================
 
     public static final int TAB_HEIGHT = 24;         // 6 units
-    public static final int TAB_MIN_WIDTH = 64;      // 16 units
+    public static final int TAB_MIN_WIDTH = 72;      // 18 units
     public static final int TAB_GAP = 4;             // 1 unit
 
     // =========================================================================

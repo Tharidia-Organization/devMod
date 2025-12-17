@@ -5,6 +5,9 @@ import net.minecraft.client.gui.GuiGraphics;
 
 import java.util.Objects;
 
+import static com.frenkvs.devmod.ui.editor.core.StringBuilderCache.acquire;
+import static com.frenkvs.devmod.ui.editor.core.StringBuilderCache.release;
+
 /**
  * Typography constants and text rendering utilities for the editor.
  * Uses Minecraft's built-in font with scale multipliers.
@@ -166,15 +169,17 @@ public final class Typography {
             int ellipsisWidth = font.width(ellipsis);
             int availableWidth = maxWidth - ellipsisWidth;
 
-            StringBuilder truncated = new StringBuilder();
+            // Use StringBuilderCache to avoid allocations in render loop
+            StringBuilder truncated = acquire();
             for (char c : text.toCharArray()) {
                 if (font.width(truncated.toString() + c) > availableWidth) {
                     break;
                 }
                 truncated.append(c);
             }
+            String result = release(truncated);
 
-            g.drawString(font, truncated + ellipsis, x, y, color, false);
+            g.drawString(font, result + ellipsis, x, y, color, false);
         }
     }
 

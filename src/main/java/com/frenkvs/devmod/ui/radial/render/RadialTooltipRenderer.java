@@ -128,11 +128,12 @@ public final class RadialTooltipRenderer {
             return "★ " + favorites.get(selectedFavoriteIndex).itemName();
         }
 
-        // Category item tooltip
+        // Category item tooltip (use visible items to match selectedItemIndex)
         if (selectedCategoryIndex >= 0 && selectedCategoryIndex < categories.size()) {
             RadialCategory cat = categories.get(selectedCategoryIndex);
-            if (selectedItemIndex >= 0 && selectedItemIndex < cat.getItems().size()) {
-                RadialMenuItem item = cat.getItems().get(selectedItemIndex);
+            java.util.List<RadialMenuItem> visibleItems = cat.getVisibleItems();
+            if (selectedItemIndex >= 0 && selectedItemIndex < visibleItems.size()) {
+                RadialMenuItem item = visibleItems.get(selectedItemIndex);
                 String tooltip = item.getDescription();
                 if (editMode) {
                     tooltip += " §8| §cShift+Click to favorite";

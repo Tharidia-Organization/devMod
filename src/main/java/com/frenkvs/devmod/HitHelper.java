@@ -250,7 +250,9 @@ public class HitHelper {
 
         // ===== HEAD (TOP 25%) =====
         // Maximum priority: headshot must take precedence
-        double headHeight = height * 0.25;
+        // BUG-006 FIX: Clamp head height between 0.3 blocks (min) and 0.6 blocks (max)
+        // For very tall mobs, 25% would be too large; for small mobs, too small
+        double headHeight = Math.max(0.3, Math.min(0.6, height * 0.25));
         AABB headBox = new AABB(
             center.x - width/2, mainBox.maxY - headHeight, center.z - depth/2,
             center.x + width/2, mainBox.maxY, center.z + depth/2
@@ -399,7 +401,9 @@ public class HitHelper {
         double width = mainBox.getXsize();
         double depth = mainBox.getZsize();
 
-        double headHeight = height * 0.15;
+        // BUG-006 FIX: Ensure a minimum head zone for tall mobs.
+        // For tall mobs (Enderman ~2.9, Iron Golem ~2.7), 15% can be too small.
+        double headHeight = Math.max(0.5, height * 0.15);
         AABB headBox = new AABB(
             center.x - width/2, mainBox.maxY - headHeight, center.z - depth/2,
             center.x + width/2, mainBox.maxY, center.z + depth/2

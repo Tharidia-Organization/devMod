@@ -3,7 +3,7 @@ package com.frenkvs.devmod.client;
 import com.frenkvs.devmod.HitHelper.BodyPart;
 import com.frenkvs.devmod.effects.ShakeEffect;
 import com.frenkvs.devmod.effects.ShakeManager;
-import com.frenkvs.devmod.hud.DamageBreakdown;
+import com.frenkvs.devmod.damage.DamageBreakdown;
 import com.frenkvs.devmod.hud.HeadshotFlashEffect;
 import com.frenkvs.devmod.hud.Impact3DPanelManager;
 import com.frenkvs.devmod.hud.ImpactData;
@@ -29,6 +29,7 @@ public class ClientVFXHelper {
         mc.execute(() -> {
             DamageBreakdown evasionBreakdown = new DamageBreakdown(
                 shooter.getMainHandItem(),
+                shooter,  // Attacker (shooter) for Pehkui scale
                 target,
                 0f,
                 0f,
@@ -61,6 +62,7 @@ public class ClientVFXHelper {
         mc.execute(() -> {
             DamageBreakdown evasionBreakdown = new DamageBreakdown(
                 player.getMainHandItem(),
+                player,  // Attacker (player) for Pehkui scale
                 target,
                 0f,
                 0f,

@@ -71,36 +71,36 @@ public record ScaledCoord(int x, int y) {
 
     /** @return Scaled panel width (base: 550px) */
     public static int panelWidth() {
-        return scaleDim(UIConstants.PanelDimensions.PANEL_WIDTH);
+        return scaleDim(EditorConstants.PANEL_WIDTH);
     }
 
     /** @return Scaled panel height (base: 420px) */
     public static int panelHeight() {
-        return scaleDim(UIConstants.PanelDimensions.PANEL_HEIGHT);
+        return scaleDim(EditorConstants.PANEL_HEIGHT);
     }
 
     /** @return Scaled header height (base: 28px) */
     public static int headerHeight() {
-        return scaleDim(UIConstants.Size.HEADER_HEIGHT);
+        return scaleDim(EditorConstants.HEADER_HEIGHT);
     }
 
     /** @return Scaled footer height (base: 60px) */
     public static int footerHeight() {
-        return scaleDim(UIConstants.Size.FOOTER_HEIGHT);
+        return scaleDim(EditorConstants.FOOTER_HEIGHT);
     }
 
     /** @return Scaled left column width (base: 140px) */
     public static int leftColumnWidth() {
-        return scaleDim(UIConstants.PanelDimensions.LEFT_COLUMN_WIDTH);
+        return scaleDim(EditorConstants.LEFT_COLUMN_WIDTH);
     }
 
     /** @return Scaled content area width (base: 390px) */
     public static int contentWidth() {
-        return scaleDim(UIConstants.PanelDimensions.CONTENT_WIDTH);
+        return scaleDim(EditorConstants.CONTENT_WIDTH);
     }
 
     /** @return Scaled preview size (base: 100px) */
     public static int previewSize() {
-        return scaleDim(UIConstants.PanelDimensions.PREVIEW_SIZE);
+        return scaleDim(EditorConstants.PREVIEW_SIZE);
     }
 }

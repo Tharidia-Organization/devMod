@@ -1,8 +1,10 @@
 package com.frenkvs.devmod.ui.editor.components;
 
 import com.frenkvs.devmod.ui.AxiomRenderer;
+import com.frenkvs.devmod.ui.editor.core.EditorConstants;
 import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
 import com.frenkvs.devmod.ui.editor.core.ScaledCoord;
+import com.frenkvs.devmod.ui.editor.core.StringBuilderCache;
 import com.frenkvs.devmod.ui.editor.core.Typography;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
@@ -26,9 +28,22 @@ public class ItemInfoPanel {
     // DIMENSIONS (from Section 2.5)
     // ═══════════════════════════════════════════════════════════════
 
-    private static final int HEIGHT = UIConstants.PanelDimensions.INFO_PANEL_HEIGHT;  // 100px
+    private static final int HEIGHT = EditorConstants.INFO_PANEL_HEIGHT;  // 100px
     private static final int LINE_HEIGHT = 12;
     private static final int PADDING = 8;
+    private static final String LABEL_SEPARATOR = ":";
+    private static final String UNSAVED_CHANGES_PREFIX = "● ";
+    private static final String UNSAVED_CHANGES_SUFFIX = " unsaved changes";
+    private static final String SAVED_PREFIX = "✓ Saved ";
+    private static final String ELLIPSIS = "...";
+    private static final String TIME_JUST_NOW = "just now";
+    private static final String TIME_MINUTES_SUFFIX = "m ago";
+    private static final String TIME_HOURS_SUFFIX = "h ago";
+    private static final String TIME_YESTERDAY = "yesterday";
+    private static final long MILLIS_PER_SECOND = 1000L;
+    private static final long SECONDS_PER_MINUTE = 60L;
+    private static final long MINUTES_PER_HOUR = 60L;
+    private static final long HOURS_PER_DAY = 24L;
 
     // ═══════════════════════════════════════════════════════════════
     // STATE
@@ -161,7 +176,9 @@ public class ItemInfoPanel {
         }
 
         // Dirty indicator at bottom
-        renderDirtyIndicator(graphics, font, x, y + panelHeight - lineHeight - ScaledCoord.scaleDim(4), width, lineHeight, dirtyScale);
+        renderDirtyIndicator(graphics, font, x,
+            y + panelHeight - lineHeight - ScaledCoord.scaleDim(UIConstants.Spacing.SM),
+            width, lineHeight, dirtyScale);
 
         return panelHeight;
     }
@@ -171,7 +188,7 @@ public class ItemInfoPanel {
         // Label on left
         String label = Objects.requireNonNull(stat.label(), "stat label cannot be null");
         Typography.drawText(graphics, Objects.requireNonNull(font, "font cannot be null"),
-            label + ":", x, y, UIConstants.Text.SECONDARY(), scale);
+            label + LABEL_SEPARATOR, x, y, UIConstants.Text.SECONDARY(), scale);
 
         // Value on right
         String value = stat.value();
@@ -188,12 +205,12 @@ public class ItemInfoPanel {
         int color;
 
         if (pendingChanges > 0) {
-            text = "● " + pendingChanges + " unsaved changes";
+            text = UNSAVED_CHANGES_PREFIX + pendingChanges + UNSAVED_CHANGES_SUFFIX;
             color = UIConstants.Accent.ORANGE();
         } else if (lastSaveTimestamp > 0) {
             long ago = System.currentTimeMillis() - lastSaveTimestamp;
             String timeText = formatTimeAgo(ago);
-            text = "✓ Saved " + timeText;
+            text = SAVED_PREFIX + timeText;
             color = UIConstants.Accent.GREEN();
         } else {
             // No indicator needed
@@ -212,11 +229,11 @@ public class ItemInfoPanel {
             return safeText;
         }
 
-        String ellipsis = "...";
-        int ellipsisWidth = font.width(ellipsis);
+        int ellipsisWidth = font.width(ELLIPSIS);
         int availableWidth = maxWidth - ellipsisWidth;
 
-        StringBuilder sb = new StringBuilder();
+        // Use StringBuilderCache to avoid allocations in render loop
+        StringBuilder sb = StringBuilderCache.acquire();
         for (char c : text.toCharArray()) {
             if (font.width(sb.toString() + c) > availableWidth) {
                 break;
@@ -224,17 +241,17 @@ public class ItemInfoPanel {
             sb.append(c);
         }
 
-        return sb + ellipsis;
+        return StringBuilderCache.release(sb) + ELLIPSIS;
     }
 
     private String formatTimeAgo(long millis) {
-        long seconds = millis / 1000;
-        if (seconds < 60) return "just now";
-        long minutes = seconds / 60;
-        if (minutes < 60) return minutes + "m ago";
-        long hours = minutes / 60;
-        if (hours < 24) return hours + "h ago";
-        return "yesterday";
+        long seconds = millis / MILLIS_PER_SECOND;
+        if (seconds < SECONDS_PER_MINUTE) return TIME_JUST_NOW;
+        long minutes = seconds / SECONDS_PER_MINUTE;
+        if (minutes < MINUTES_PER_HOUR) return minutes + TIME_MINUTES_SUFFIX;
+        long hours = minutes / MINUTES_PER_HOUR;
+        if (hours < HOURS_PER_DAY) return hours + TIME_HOURS_SUFFIX;
+        return TIME_YESTERDAY;
     }
 
     // ═══════════════════════════════════════════════════════════════

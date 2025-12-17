@@ -25,6 +25,14 @@ public class EditorTextField {
     // ═══════════════════════════════════════════════════════════════
 
     private static final int CURSOR_BLINK_MS = 500;
+    private static final int LABEL_LINE_HEIGHT = 12;
+    private static final int TEXT_HEIGHT = 8;
+    private static final int TEXT_PADDING = 4;
+    private static final int INPUT_PADDING = 14;
+    private static final int CURSOR_WIDTH = 1;
+    private static final int CURSOR_INSET = 2;
+    private static final int SELECTION_ALPHA = 0x60;
+    private static final int CURSOR_SCROLL_MARGIN = 10;
 
     // ═══════════════════════════════════════════════════════════════
     // CONFIGURATION
@@ -127,7 +135,7 @@ public class EditorTextField {
     public int render(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
         var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
 
-        int height = UIConstants.Size.INPUT_HEIGHT + 14; // Label + input
+        int height = UIConstants.Size.INPUT_HEIGHT + INPUT_PADDING; // Label + input
         this.bounds = new ResponsiveLayout.Rect(x, y, width, height);
 
         // Check hover
@@ -139,7 +147,7 @@ public class EditorTextField {
         if (label != null && !label.isEmpty()) {
             int labelColor = enabled ? UIConstants.Text.PRIMARY() : UIConstants.Text.MUTED();
             graphics.drawString(font, label, x, currentY, labelColor, false);
-            currentY += 12;
+            currentY += LABEL_LINE_HEIGHT;
         }
 
         // Input field
@@ -164,11 +172,11 @@ public class EditorTextField {
         AxiomRenderer.drawBorder(graphics, x, currentY, width, inputHeight, borderColor);
 
         // Enable scissor for text clipping
-        int textPadding = 4;
+        int textPadding = TEXT_PADDING;
         graphics.enableScissor(x + textPadding, currentY, x + width - textPadding, currentY + inputHeight);
 
         // Text content
-        int textY = currentY + (inputHeight - 8) / 2;
+        int textY = currentY + (inputHeight - TEXT_HEIGHT) / 2;
         int textX = x + textPadding - scrollOffset;
 
         if (value.isEmpty() && !focused) {
@@ -187,15 +195,15 @@ public class EditorTextField {
                 String prefixEnd = Objects.requireNonNull(value.substring(0, selEnd), "selection end prefix cannot be null");
                 int selX1 = textX + font.width(prefixStart);
                 int selX2 = textX + font.width(prefixEnd);
-                graphics.fill(selX1, currentY + 2, selX2, currentY + inputHeight - 2,
-                             UIConstants.withAlpha(UIConstants.Accent.CYAN(), 0x60));
+                graphics.fill(selX1, currentY + CURSOR_INSET, selX2, currentY + inputHeight - CURSOR_INSET,
+                             UIConstants.withAlpha(UIConstants.Accent.CYAN(), SELECTION_ALPHA));
             }
 
             // Cursor
             if (focused && cursorVisible) {
                 String cursorPrefix = Objects.requireNonNull(value.substring(0, cursorPosition), "cursor prefix cannot be null");
                 int cursorX = textX + font.width(cursorPrefix);
-                graphics.fill(cursorX, currentY + 2, cursorX + 1, currentY + inputHeight - 2,
+                graphics.fill(cursorX, currentY + CURSOR_INSET, cursorX + CURSOR_WIDTH, currentY + inputHeight - CURSOR_INSET,
                              UIConstants.Text.PRIMARY());
             }
         }
@@ -206,7 +214,7 @@ public class EditorTextField {
     }
 
     public int calculateHeight() {
-        return UIConstants.Size.INPUT_HEIGHT + 14;
+        return UIConstants.Size.INPUT_HEIGHT + INPUT_PADDING;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -223,7 +231,7 @@ public class EditorTextField {
                 selectionStart = -1;
             } else {
                 // Calculate cursor position from click
-                int relativeX = (int) mouseX - inputBounds.x() - 4 + scrollOffset;
+                int relativeX = (int) mouseX - inputBounds.x() - TEXT_PADDING + scrollOffset;
                 cursorPosition = getCharacterIndexAt(relativeX);
                 selectionStart = -1;
             }
@@ -489,12 +497,12 @@ public class EditorTextField {
         var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
         String cursorPrefix = Objects.requireNonNull(value.substring(0, cursorPosition), "cursor prefix cannot be null");
         int cursorX = font.width(cursorPrefix);
-        int visibleWidth = inputBounds.width() - 8;
+        int visibleWidth = inputBounds.width() - TEXT_PADDING * 2;
 
         if (cursorX - scrollOffset < 0) {
-            scrollOffset = Math.max(0, cursorX - 10);
+            scrollOffset = Math.max(0, cursorX - CURSOR_SCROLL_MARGIN);
         } else if (cursorX - scrollOffset > visibleWidth) {
-            scrollOffset = cursorX - visibleWidth + 10;
+            scrollOffset = cursorX - visibleWidth + CURSOR_SCROLL_MARGIN;
         }
     }
 

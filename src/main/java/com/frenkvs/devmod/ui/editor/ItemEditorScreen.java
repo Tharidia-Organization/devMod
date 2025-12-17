@@ -24,7 +24,6 @@ import com.frenkvs.devmod.ui.editor.components.ModeBadge;
 import com.frenkvs.devmod.ui.editor.components.ScrollableContentArea;
 import com.frenkvs.devmod.ui.editor.components.SlotSelector;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
-import com.frenkvs.devmod.ui.editor.core.OverlayInputGuard;
 import com.frenkvs.devmod.ui.editor.favorites.FavoritePresetStore;
 import com.frenkvs.devmod.ui.editor.modules.ArmorModule;
 import com.frenkvs.devmod.ui.editor.modules.RangedModule;
@@ -35,6 +34,7 @@ import com.frenkvs.devmod.ui.editor.systems.CraftingInfoPanel;
 import com.frenkvs.devmod.ui.editor.systems.MultiEditManager;
 import com.frenkvs.devmod.ui.editor.systems.MultiEditPanel;
 import com.frenkvs.devmod.ui.editor.systems.TemplateOverlay;
+import com.frenkvs.devmod.ui.editor.systems.PresetSelectorOverlay;
 import com.frenkvs.devmod.ui.editor.systems.DebugPanel;
 import com.frenkvs.devmod.ui.editor.debug.DebugOverlay;
 import com.frenkvs.devmod.network.ArmorStatsPayloadV2;
@@ -87,6 +87,107 @@ public class ItemEditorScreen extends Screen {
     private final ResponsiveLayout layout;
     private final EditorLayout editorLayout = new EditorLayout();
     private static final String DEFAULT_DATAPACK_NAME = "devmod_balance_auto";
+    private static final int LOW_CONF_DIALOG_WIDTH = 320;
+    private static final int LOW_CONF_DIALOG_HEIGHT = 176;
+    private static final int LOW_CONF_DIALOG_PADDING = 12;
+    private static final int LOW_CONF_DIALOG_TEXT_START_Y = 30;
+    private static final int LOW_CONF_DIALOG_TEXT_LINE_STEP = 12;
+    private static final int LOW_CONF_DIALOG_HINT_START_Y = 72;
+    private static final int LOW_CONF_DIALOG_STATUS_OFFSET_Y = 44;
+    private static final int LOW_CONF_DIALOG_BTN_WIDTH = 88;
+    private static final int LOW_CONF_DIALOG_BTN_HEIGHT = 16;
+    private static final int LOW_CONF_DIALOG_BTN_TEXT_Y = 4;
+    private static final int LOW_CONF_DIALOG_BTN_TEXT_CONTINUE_X = 12;
+    private static final int LOW_CONF_DIALOG_BTN_TEXT_WHITELIST_X = 10;
+    private static final int LOW_CONF_DIALOG_BTN_TEXT_CANCEL_X = 18;
+    private static final int STATUS_MESSAGE_BOTTOM_OFFSET = 60;
+    private static final int STATUS_MESSAGE_PADDING_X = 10;
+    private static final int STATUS_MESSAGE_PADDING_Y = 4;
+    private static final int STATUS_MESSAGE_SCREEN_MARGIN = 4;
+    private static final int STATUS_MESSAGE_BG = 0xE0000000;
+    private static final int HISTORY_PANEL_WIDTH = 260;
+    private static final int HISTORY_PANEL_HEIGHT = 200;
+    private static final int HISTORY_PANEL_MARGIN_RIGHT = 8;
+    private static final int HISTORY_PANEL_MARGIN_TOP = 8;
+    private static final int HISTORY_PANEL_TITLE_OFFSET_X = 8;
+    private static final int HISTORY_PANEL_TITLE_OFFSET_Y = 8;
+    private static final int HISTORY_PANEL_LIST_OFFSET_Y = 24;
+    private static final int HISTORY_PANEL_LIST_HEIGHT_PADDING = 50;
+    private static final int HISTORY_PANEL_LINE_HEIGHT = 14;
+    private static final int HISTORY_PANEL_FOOTER_OFFSET_Y = 18;
+    private static final int HISTORY_PANEL_TEXT_OFFSET_X = 8;
+    private static final int HISTORY_PANEL_CLEAR_WIDTH = 60;
+    private static final int HISTORY_PANEL_CLEAR_HEIGHT = 14;
+    private static final int HISTORY_PANEL_CLEAR_OFFSET_X = 8;
+    private static final int HISTORY_PANEL_CLEAR_OFFSET_Y = 2;
+    private static final int HISTORY_PANEL_CLEAR_TEXT_OFFSET_X = 12;
+    private static final int HISTORY_PANEL_CLEAR_TEXT_OFFSET_Y = 3;
+    private static final String FAVORITES_TITLE_TEXT = "Favorites";
+    private static final String FAVORITES_LABEL_PREFIX = "★ ";
+    private static final String FAVORITES_LABEL_FALLBACK = "Preset";
+    private static final String FAVORITES_PIN_TEXT = "Pin last";
+    private static final String FAVORITES_UNPIN_TEXT = "Unpin last";
+    private static final String DEV_PANEL_HEADER_TEXT = "Dev Mode";
+    private static final String HISTORY_TITLE_TEXT = "Edit History";
+    private static final String HISTORY_EMPTY_TEXT = "No history yet";
+    private static final String HISTORY_SHOWING_EMPTY = "Showing 0/0";
+    private static final String HISTORY_SHOWING_PREFIX = "Showing ";
+    private static final String HISTORY_SHOWING_SEPARATOR = "/";
+    private static final String HISTORY_CLEAR_TEXT = "Clear";
+    private static final String PINNED_PREFIX = "Pinned ";
+    private static final String UNPINNED_PREFIX = "Unpinned ";
+    private static final String WEAPON_STATS_KEY = "WeaponModStats";
+    private static final String ARMOR_STATS_KEY = "ArmorModStats";
+    private static final String ARMOR_STATS_COMPONENT_KEY = "armor_stats_component";
+    private static final String CUSTOM_TAG_MISSING = "custom tag missing";
+    private static final String WEAPON_STATS_MISSING = "weapon stats tag missing";
+    private static final String ARMOR_STATS_MISSING = "armor stats tag missing";
+    private static final String MULTI_EDIT_PERSIST_PREFIX = "MultiEdit persist slot ";
+    private static final String MULTI_EDIT_PERSIST_FAILED_PREFIX = "MultiEdit persist failed: ";
+    private static final String SOURCE_SPECIFIC_ARMOR = "Specific (CustomData: ArmorModStats)";
+    private static final String SOURCE_SPECIFIC_WEAPON = "Specific (CustomData: WeaponModStats)";
+    private static final String SOURCE_GLOBAL_OVERRIDE = "Global override available (serverconfig/devmod/devmod-items.toml)";
+    private static final String SOURCE_GLOBAL = "Global (serverconfig/devmod/devmod-items.toml)";
+    private static final String SOURCE_VANILLA = "Vanilla (no overrides)";
+    private static final int TOOLTIP_WIDTH_PADDING = 8;
+    private static final int TOOLTIP_HEIGHT = 14;
+    private static final int TOOLTIP_OFFSET_X = 12;
+    private static final int TOOLTIP_OFFSET_Y = 20;
+    private static final int TOOLTIP_SCREEN_MARGIN = 4;
+    private static final int TOOLTIP_TEXT_OFFSET_X = 4;
+    private static final int TOOLTIP_TEXT_OFFSET_Y = 3;
+    private static final int TOOLTIP_BG = 0xF0100010;
+    private static final int FAVORITES_TITLE_OFFSET_X = 8;
+    private static final int FAVORITES_TITLE_OFFSET_Y = 8;
+    private static final int FAVORITES_ROW_HEIGHT = 18;
+    private static final int FAVORITES_LIST_START_Y = 20;
+    private static final int FAVORITES_LIST_BOTTOM_PADDING = 28;
+    private static final int FAVORITES_ROW_HIT_INSET = 4;
+    private static final int FAVORITES_ROW_HOVER_INSET = 2;
+    private static final int FAVORITES_ROW_TEXT_OFFSET_X = 8;
+    private static final int FAVORITES_ROW_TEXT_OFFSET_Y = 5;
+    private static final int FAVORITES_PIN_BUTTON_OFFSET_X = 8;
+    private static final int FAVORITES_PIN_BUTTON_OFFSET_Y = 18;
+    private static final int FAVORITES_PIN_BUTTON_WIDTH = 80;
+    private static final int FAVORITES_PIN_BUTTON_HEIGHT = 14;
+    private static final int FAVORITES_PIN_TEXT_OFFSET_X = 12;
+    private static final int FAVORITES_PIN_TEXT_OFFSET_Y = 3;
+    private static final int DEV_PANEL_FALLBACK_WIDTH = 150;
+    private static final int DEV_PANEL_FALLBACK_HEIGHT = 200;
+    private static final int DEV_PANEL_FALLBACK_MARGIN_TOP = 10;
+    private static final int DEV_PANEL_FALLBACK_MARGIN_RIGHT = 10;
+    private static final int DEV_PANEL_TEXT_OFFSET_X = 8;
+    private static final int DEV_PANEL_TEXT_OFFSET_Y = 8;
+    private static final int DEV_PANEL_TITLE_LINE_STEP = 12;
+    private static final int DEV_PANEL_LINE_STEP = 10;
+    private static final int DEV_PANEL_BG = 0xE0101020;
+    private static final int DEV_PANEL_TITLE_COLOR = 0xFFFFFFFF;
+    private static final String DEV_PANEL_TITLE_TEXT = "§b[Dev Mode]";
+    private static final int STATUS_TICKS_DURATION = 60;
+    private static final int HOTBAR_WIDTH = 182;
+    private static final int HOTBAR_SLOT_SIZE = 20;
+    private static final int HOTBAR_SLOT_COUNT = 9;
+    private static final int HOTBAR_BOTTOM_OFFSET = 22;
 
     // ═══════════════════════════════════════════════════════════════
     // STATE
@@ -103,7 +204,7 @@ public class ItemEditorScreen extends Screen {
     private boolean isGlobalMode = false;
     private boolean showDevPanel = false;
     private boolean f3Held = false;
-    private final PerformanceMonitor perfMonitor = new PerformanceMonitor();
+    private final PerformanceMonitor perfMonitor = PerformanceMonitor.getInstance();
 
     // Components
     private final HeaderComponent header = new HeaderComponent();
@@ -132,16 +233,8 @@ public class ItemEditorScreen extends Screen {
     private boolean showLowConfidenceDialog = false;
     private WeaponTypeDetector.DetectionResult pendingDetection = null;
     private String lowConfidenceStatus = null;
-    private int presetScrollOffset = 0;
-    private String presetSearchQuery = "";
-    private SortMode presetSortMode = SortMode.RECENT;
-    private String renamingPreset = null;
-    private String renameBuffer = "";
     private String lastLoadedPreset = null;
-    private String lastHoveredPreset = null;
-    private boolean presetSearchFocused = true;
     private final FavoritePresetStore favoriteStore = new FavoritePresetStore();
-    private ResponsiveLayout.Rect presetPanelBounds = ResponsiveLayout.Rect.EMPTY;
     private OverlayType activeOverlay = OverlayType.NONE;
     private OverlayType overlayBeforeSwitch = OverlayType.NONE;
     private final CraftingInfoPanel craftingPanel = new CraftingInfoPanel();
@@ -157,8 +250,8 @@ public class ItemEditorScreen extends Screen {
     private MultiEditPanel multiEditPanel;
     private boolean showMultiEditPanel = false;
     private TemplateOverlay templateOverlay;
+    private PresetSelectorOverlay presetSelectorOverlay;
 
-    private enum SortMode { RECENT, ALPHA }
     private enum OverlayType { NONE, HISTORY, PRESETS, TEMPLATES, CRAFTING }
 
     // ═══════════════════════════════════════════════════════════════
@@ -209,11 +302,23 @@ public class ItemEditorScreen extends Screen {
         // Initialize multi-edit subsystem
         this.multiEditManager = new MultiEditManager();
         this.multiEditPanel = new MultiEditPanel(multiEditManager, () -> !isPreviewMode, this::getActiveItemType);
+        this.multiEditPanel.setShowDialogCallback(dialog -> {
+            activeDialog = dialog;
+            activeDialog.show();
+        });
         this.multiEditManager.setPersistenceHandler((stack, slot) -> persistMultiEditItem(stack, slot == null ? -1 : slot));
         this.debugPanel = new DebugPanel();
         this.templateOverlay = new TemplateOverlay();
         this.templateOverlay.onClose(this::closeOverlay);
         this.templateOverlay.onApply(this::handleTemplateApply);
+
+        this.presetSelectorOverlay = new PresetSelectorOverlay();
+        this.presetSelectorOverlay.setContext(getActiveItemType());
+        this.presetSelectorOverlay.onClose(this::closeOverlay);
+        this.presetSelectorOverlay.onApply(this::applyPreset);
+        this.presetSelectorOverlay.onDelete(this::deletePreset);
+        this.presetSelectorOverlay.onRename(this::renamePreset);
+        this.presetSelectorOverlay.onSaveCurrent(this::saveCurrentAsPreset);
 
         // Invalidate cache on init
         EditorCache.getInstance().invalidateAll();
@@ -262,6 +367,7 @@ public class ItemEditorScreen extends Screen {
                 }
                 yield new PlaceholderModule("general", "Item Editor");
             }
+            case RECIPE -> new com.frenkvs.devmod.ui.editor.modules.RecipeModule();
         };
     }
 
@@ -286,28 +392,40 @@ public class ItemEditorScreen extends Screen {
     private void renderLowConfidenceDialog(GuiGraphics g, Font font, int mouseX, int mouseY) {
         if (pendingDetection == null) return;
         Font safeFont = Objects.requireNonNull(font, "font");
-        int w = EditorSpacing.snapToGrid(320);
-        int h = EditorSpacing.snapToGrid(176);
+        int w = EditorSpacing.snapToGrid(LOW_CONF_DIALOG_WIDTH);
+        int h = EditorSpacing.snapToGrid(LOW_CONF_DIALOG_HEIGHT);
         int x = (width - w) / 2;
         int y = (height - h) / 2;
         g.fill(x, y, x + w, y + h, UIConstants.Background.PANEL_SOLID());
         AxiomRenderer.drawBorder(g, x, y, w, h, UIConstants.Border.ACCENT());
         String title = "Low Confidence Detection";
-        g.drawString(safeFont, title, x + 12, y + 12, UIConstants.Text.TITLE(), false);
+        g.drawString(safeFont, title, x + LOW_CONF_DIALOG_PADDING, y + LOW_CONF_DIALOG_PADDING,
+            UIConstants.Text.TITLE(), false);
         var id = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item.getItem()));
         String itemId = id == null ? "<unknown>" : id.toString();
-        g.drawString(safeFont, "Item: " + itemId, x + 12, y + 30, UIConstants.Text.SECONDARY(), false);
-        g.drawString(safeFont, "Detected: " + pendingDetection.type() + " via " + pendingDetection.method(), x + 12, y + 42, UIConstants.Text.SECONDARY(), false);
-        g.drawString(safeFont, "Confidence: " + String.format("%.0f%%", pendingDetection.confidence() * 100), x + 12, y + 54, UIConstants.Text.SECONDARY(), false);
-        g.drawString(safeFont, "Add to whitelist/tag to skip this warning next time.", x + 12, y + 72, UIConstants.Text.MUTED(), false);
-        g.drawString(safeFont, "Config: config/devmod/weapon_whitelist.json", x + 12, y + 84, UIConstants.Text.MUTED(), false);
+        int textX = x + LOW_CONF_DIALOG_PADDING;
+        int textY = y + LOW_CONF_DIALOG_TEXT_START_Y;
+        g.drawString(safeFont, "Item: " + itemId, textX, textY, UIConstants.Text.SECONDARY(), false);
+        textY += LOW_CONF_DIALOG_TEXT_LINE_STEP;
+        g.drawString(safeFont, "Detected: " + pendingDetection.type() + " via " + pendingDetection.method(),
+            textX, textY, UIConstants.Text.SECONDARY(), false);
+        textY += LOW_CONF_DIALOG_TEXT_LINE_STEP;
+        g.drawString(safeFont, "Confidence: " + String.format("%.0f%%", pendingDetection.confidence() * 100),
+            textX, textY, UIConstants.Text.SECONDARY(), false);
+        textY = y + LOW_CONF_DIALOG_HINT_START_Y;
+        g.drawString(safeFont, "Add to whitelist/tag to skip this warning next time.",
+            textX, textY, UIConstants.Text.MUTED(), false);
+        textY += LOW_CONF_DIALOG_TEXT_LINE_STEP;
+        g.drawString(safeFont, "Config: config/devmod/weapon_whitelist.json",
+            textX, textY, UIConstants.Text.MUTED(), false);
         if (lowConfidenceStatus != null) {
-            g.drawString(safeFont, lowConfidenceStatus, x + 12, y + h - 44, UIConstants.Accent.ORANGE(), false);
+            g.drawString(safeFont, lowConfidenceStatus, textX, y + h - LOW_CONF_DIALOG_STATUS_OFFSET_Y,
+                UIConstants.Accent.ORANGE(), false);
         }
 
         // Buttons
-        int btnW = EditorSpacing.snapToGrid(88);
-        int btnH = EditorSpacing.snapToGrid(16);
+        int btnW = EditorSpacing.snapToGrid(LOW_CONF_DIALOG_BTN_WIDTH);
+        int btnH = EditorSpacing.snapToGrid(LOW_CONF_DIALOG_BTN_HEIGHT);
         int btnSpacing = EditorSpacing.S;
         int totalBtnWidth = btnW * 3 + btnSpacing * 2;
         int btnStartX = x + (w - totalBtnWidth) / 2;
@@ -318,9 +436,12 @@ public class ItemEditorScreen extends Screen {
         g.fill(btnContinueX, btnY, btnContinueX + btnW, btnY + btnH, UIConstants.Background.INPUT());
         g.fill(btnWhitelistX, btnY, btnWhitelistX + btnW, btnY + btnH, UIConstants.Background.INPUT());
         g.fill(btnCancelX, btnY, btnCancelX + btnW, btnY + btnH, UIConstants.Background.INPUT());
-        g.drawString(safeFont, "Continue", btnContinueX + 12, btnY + 4, UIConstants.Text.PRIMARY(), false);
-        g.drawString(safeFont, "Whitelist", btnWhitelistX + 10, btnY + 4, UIConstants.Text.PRIMARY(), false);
-        g.drawString(safeFont, "Cancel", btnCancelX + 18, btnY + 4, UIConstants.Text.PRIMARY(), false);
+        g.drawString(safeFont, "Continue", btnContinueX + LOW_CONF_DIALOG_BTN_TEXT_CONTINUE_X,
+            btnY + LOW_CONF_DIALOG_BTN_TEXT_Y, UIConstants.Text.PRIMARY(), false);
+        g.drawString(safeFont, "Whitelist", btnWhitelistX + LOW_CONF_DIALOG_BTN_TEXT_WHITELIST_X,
+            btnY + LOW_CONF_DIALOG_BTN_TEXT_Y, UIConstants.Text.PRIMARY(), false);
+        g.drawString(safeFont, "Cancel", btnCancelX + LOW_CONF_DIALOG_BTN_TEXT_CANCEL_X,
+            btnY + LOW_CONF_DIALOG_BTN_TEXT_Y, UIConstants.Text.PRIMARY(), false);
         lowConfidenceContinueBounds = new ResponsiveLayout.Rect(btnContinueX, btnY, btnW, btnH);
         lowConfidenceWhitelistBounds = new ResponsiveLayout.Rect(btnWhitelistX, btnY, btnW, btnH);
         lowConfidenceCancelBounds = new ResponsiveLayout.Rect(btnCancelX, btnY, btnW, btnH);
@@ -612,10 +733,6 @@ public class ItemEditorScreen extends Screen {
                     return;
                 }
                 toggleOverlay(OverlayType.PRESETS);
-                if (activeOverlay == OverlayType.PRESETS) {
-                    presetScrollOffset = 0;
-                    renamingPreset = null;
-                }
             }
             case "templates" -> {
                 openTemplatesOverlay();
@@ -655,6 +772,16 @@ public class ItemEditorScreen extends Screen {
         if (activeOverlay != OverlayType.CRAFTING) {
             craftingPanel.hide();
         }
+        // Manage PresetSelectorOverlay visibility
+        if (presetSelectorOverlay != null) {
+            if (activeOverlay == OverlayType.PRESETS) {
+                presetSelectorOverlay.setContext(getActiveItemType());
+                presetSelectorOverlay.show();
+            } else {
+                presetSelectorOverlay.resetSearch();
+                presetSelectorOverlay.hide();
+            }
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -665,7 +792,7 @@ public class ItemEditorScreen extends Screen {
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         perfMonitor.startFrame();
         // Dark overlay background, but leave vanilla hotbar area unobscured
-        int hotbarReserve = ScaledCoord.scaleDim(24);
+        int hotbarReserve = ScaledCoord.scaleDim(UIConstants.Spacing.XXL);
         graphics.fill(0, 0, width, Math.max(0, height - hotbarReserve), UIConstants.Background.OVERLAY());
 
         // Get layout areas (centralized in EditorLayout)
@@ -709,9 +836,9 @@ public class ItemEditorScreen extends Screen {
 
         // Render multi-edit panel if visible (placed beneath left column area)
         if (showMultiEditPanel && multiEditPanel != null) {
-            int panelX = leftBounds.x() + 8;
-            int panelY = contentY + 8;
-            int panelW = leftBounds.width() - 16;
+            int panelX = leftBounds.x() + UIConstants.Spacing.MD;
+            int panelY = contentY + UIConstants.Spacing.MD;
+            int panelW = leftBounds.width() - UIConstants.Spacing.MD * 2;
             multiEditPanel.render(graphics, font, panelX, panelY, panelW, mouseX, mouseY);
         }
 
@@ -720,13 +847,17 @@ public class ItemEditorScreen extends Screen {
         int contentWidth = contentBounds.width() - UIConstants.Spacing.MD * 2;
         graphics.fill(contentX, contentY, contentX + contentWidth, contentY + contentHeight, UIConstants.Background.CONTENT());
         if (activeModule != null) {
+            perfMonitor.startTiming("render_content");
             int viewportHeight = contentHeight - UIConstants.Spacing.MD * 2;
             scrollArea.render(graphics, contentX, contentY, contentWidth, contentHeight,
                 mouseX, mouseY, partialTick, (g, x, y, w, mx, my) -> {
                     ResponsiveLayout.Rect bounds = new ResponsiveLayout.Rect(x, y, w, viewportHeight);
-                    activeModule.renderContent(g, bounds, mx, my + (int) scrollArea.getScrollOffset());
+                    // Pass raw mouseY (screen space) - render Y coordinates are also screen space
+                    // Scroll adjustment is only needed for click handling, not hover detection
+                    activeModule.renderContent(g, bounds, mx, my);
                     return activeModule.calculateContentHeight();
                 });
+            perfMonitor.endTiming("render_content");
         }
 
         // Footer
@@ -754,8 +885,8 @@ public class ItemEditorScreen extends Screen {
             renderHistoryPanel(graphics);
         }
 
-        if (showPresetsPanel && supportsDataOps()) {
-            renderPresetsPanel(graphics, mouseX, mouseY);
+        if (showPresetsPanel && supportsDataOps() && presetSelectorOverlay != null) {
+            presetSelectorOverlay.render(graphics, font, width, height, mouseX, mouseY);
         }
         if (showTemplatesPanel) {
             templateOverlay.render(graphics, font, width, height, mouseX, mouseY);
@@ -814,40 +945,47 @@ public class ItemEditorScreen extends Screen {
                          UIConstants.Background.PANEL());
             AxiomRenderer.drawBorder(graphics, leftPanel.x(), leftPanel.y(),
                                     leftPanel.width(), leftPanel.height(), UIConstants.Border.DEFAULT());
-            graphics.drawString(safeFont, "Favorites", leftPanel.x() + 8, leftPanel.y() + 8,
+            graphics.drawString(safeFont, FAVORITES_TITLE_TEXT, leftPanel.x() + FAVORITES_TITLE_OFFSET_X,
+                leftPanel.y() + FAVORITES_TITLE_OFFSET_Y,
                                UIConstants.Text.SECONDARY(), false);
 
             List<ItemEditorDataManager.PresetData> favorites = getFavoritePresetsForActiveType();
-            int rowHeight = 18;
-            int startY = leftPanel.y() + 20;
-            int maxRows = Math.max(0, (leftPanel.height() - 28) / rowHeight);
+            int rowHeight = FAVORITES_ROW_HEIGHT;
+            int startY = leftPanel.y() + FAVORITES_LIST_START_Y;
+            int maxRows = Math.max(0, (leftPanel.height() - FAVORITES_LIST_BOTTOM_PADDING) / rowHeight);
             for (int i = 0; i < Math.min(maxRows, favorites.size()); i++) {
                 ItemEditorDataManager.PresetData preset = favorites.get(i);
                 int rowY = startY + i * rowHeight;
-                boolean hovered = mouseX >= leftPanel.x() + 4 && mouseX <= leftPanel.right() - 4
+                boolean hovered = mouseX >= leftPanel.x() + FAVORITES_ROW_HIT_INSET
+                    && mouseX <= leftPanel.right() - FAVORITES_ROW_HIT_INSET
                     && mouseY >= rowY && mouseY <= rowY + rowHeight;
                 if (hovered) {
-                    graphics.fill(leftPanel.x() + 2, rowY, leftPanel.right() - 2, rowY + rowHeight, UIConstants.Background.HOVER());
+                    graphics.fill(leftPanel.x() + FAVORITES_ROW_HOVER_INSET, rowY,
+                        leftPanel.right() - FAVORITES_ROW_HOVER_INSET, rowY + rowHeight, UIConstants.Background.HOVER());
                     if (tooltipText == null) {
                         tooltipText = preset.name;
                         tooltipX = mouseX;
                         tooltipY = mouseY;
                     }
                 }
-                String label = preset.name == null ? "Preset" : preset.name;
-                graphics.drawString(safeFont, "★ " + label, leftPanel.x() + 8, rowY + 5,
+                String label = preset.name == null ? FAVORITES_LABEL_FALLBACK : preset.name;
+                graphics.drawString(safeFont, FAVORITES_LABEL_PREFIX + label, leftPanel.x() + FAVORITES_ROW_TEXT_OFFSET_X,
+                    rowY + FAVORITES_ROW_TEXT_OFFSET_Y,
                     hovered ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY(), false);
             }
 
             // Pin toggle for last loaded preset
             if (lastLoadedPreset != null) {
                 boolean isFav = favoriteStore.isFavorite(getActiveItemType(), lastLoadedPreset);
-                String pinLabel = isFav ? "Unpin last" : "Pin last";
-                int btnY = leftPanel.bottom() - 18;
-                int btnW = 80;
-                graphics.fill(leftPanel.x() + 8, btnY, leftPanel.x() + 8 + btnW, btnY + 14, UIConstants.Button.NORMAL());
-                AxiomRenderer.drawBorder(graphics, leftPanel.x() + 8, btnY, btnW, 14, UIConstants.Border.DEFAULT());
-                graphics.drawString(safeFont, pinLabel, leftPanel.x() + 12, btnY + 3, UIConstants.Text.PRIMARY(), false);
+                String pinLabel = isFav ? FAVORITES_UNPIN_TEXT : FAVORITES_PIN_TEXT;
+                int btnY = leftPanel.bottom() - FAVORITES_PIN_BUTTON_OFFSET_Y;
+                int btnW = FAVORITES_PIN_BUTTON_WIDTH;
+                int btnH = FAVORITES_PIN_BUTTON_HEIGHT;
+                int btnX = leftPanel.x() + FAVORITES_PIN_BUTTON_OFFSET_X;
+                graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, UIConstants.Button.NORMAL());
+                AxiomRenderer.drawBorder(graphics, btnX, btnY, btnW, btnH, UIConstants.Border.DEFAULT());
+                graphics.drawString(safeFont, pinLabel, btnX + FAVORITES_PIN_TEXT_OFFSET_X,
+                    btnY + FAVORITES_PIN_TEXT_OFFSET_Y, UIConstants.Text.PRIMARY(), false);
             }
         }
 
@@ -859,7 +997,8 @@ public class ItemEditorScreen extends Screen {
                              UIConstants.Background.PANEL());
                 AxiomRenderer.drawBorder(graphics, rightPanel.x(), rightPanel.y(),
                                         rightPanel.width(), rightPanel.height(), UIConstants.Border.DEFAULT());
-                graphics.drawString(safeFont, "Dev Mode", rightPanel.x() + 8, rightPanel.y() + 8,
+                graphics.drawString(safeFont, DEV_PANEL_HEADER_TEXT, rightPanel.x() + DEV_PANEL_TEXT_OFFSET_X,
+                    rightPanel.y() + DEV_PANEL_TEXT_OFFSET_Y,
                                    UIConstants.Text.SECONDARY(), false);
             }
         }
@@ -885,18 +1024,18 @@ public class ItemEditorScreen extends Screen {
     private void renderStatusMessage(GuiGraphics graphics) {
         var safeFont = Objects.requireNonNull(font, "font cannot be null");
         String safeMessage = Objects.requireNonNull(statusMessage, "statusMessage cannot be null");
-        int msgWidth = safeFont.width(safeMessage) + 20;
+        int msgWidth = safeFont.width(safeMessage) + STATUS_MESSAGE_PADDING_X * 2;
         int msgX = (width - msgWidth) / 2;
-        int msgY = height - 60;
+        int msgY = height - STATUS_MESSAGE_BOTTOM_OFFSET;
         float fontScale = Typography.withUiScale(1.0f);
 
-        int paddingX = 10;
-        int paddingY = 4;
+        int paddingX = STATUS_MESSAGE_PADDING_X;
+        int paddingY = STATUS_MESSAGE_PADDING_Y;
         int msgHeight = safeFont.lineHeight + paddingY * 2;
         msgWidth = safeFont.width(safeMessage) + paddingX * 2;
-        msgX = Math.max(4, Math.min(width - msgWidth - 4, msgX));
+        msgX = Math.max(STATUS_MESSAGE_SCREEN_MARGIN, Math.min(width - msgWidth - STATUS_MESSAGE_SCREEN_MARGIN, msgX));
 
-        graphics.fill(msgX, msgY, msgX + msgWidth, msgY + msgHeight, 0xE0000000);
+        graphics.fill(msgX, msgY, msgX + msgWidth, msgY + msgHeight, STATUS_MESSAGE_BG);
         AxiomRenderer.drawBorder(graphics, msgX, msgY, msgWidth, msgHeight, statusColor);
         Typography.drawText(graphics, safeFont, safeMessage, msgX + paddingX, msgY + paddingY, statusColor, fontScale);
     }
@@ -904,25 +1043,28 @@ public class ItemEditorScreen extends Screen {
     private void renderHistoryPanel(GuiGraphics graphics) {
         if (activeModule == null) return;
         var safeFont = Objects.requireNonNull(font, "font cannot be null");
-        int panelWidth = 260;
-        int panelHeight = 200;
-        int x = layout.getEditorX() + layout.getEditorWidth() - panelWidth - 8;
-        int y = layout.getEditorY() + UIConstants.Size.HEADER_HEIGHT + 8;
+        ResponsiveLayout.Rect historyBounds = getHistoryPanelBounds();
+        int panelWidth = historyBounds.width();
+        int panelHeight = historyBounds.height();
+        int x = historyBounds.x();
+        int y = historyBounds.y();
 
         graphics.fill(x, y, x + panelWidth, y + panelHeight, UIConstants.Background.PANEL_SOLID());
         AxiomRenderer.drawBorder(graphics, x, y, panelWidth, panelHeight, UIConstants.Border.DEFAULT());
 
-        graphics.drawString(safeFont, "Edit History", x + 8, y + 8, UIConstants.Text.TITLE(), false);
-        int listY = y + 24;
+        graphics.drawString(safeFont, HISTORY_TITLE_TEXT, x + HISTORY_PANEL_TITLE_OFFSET_X, y + HISTORY_PANEL_TITLE_OFFSET_Y,
+            UIConstants.Text.TITLE(), false);
+        int listY = y + HISTORY_PANEL_LIST_OFFSET_Y;
         var entries = activeModule.getHistoryEntries();
-        int lineHeight = 14;
-        int listHeight = panelHeight - 50;
+        int lineHeight = HISTORY_PANEL_LINE_HEIGHT;
+        int listHeight = panelHeight - HISTORY_PANEL_LIST_HEIGHT_PADDING;
         int maxScroll = Math.max(0, Math.max(0, entries.size() * lineHeight - listHeight));
         historyScrollOffset = Math.max(0, Math.min(historyScrollOffset, maxScroll));
 
         int visibleLines = listHeight / lineHeight;
         if (entries.isEmpty()) {
-            graphics.drawString(safeFont, "No history yet", x + 8, listY, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, HISTORY_EMPTY_TEXT, x + HISTORY_PANEL_TEXT_OFFSET_X, listY,
+                UIConstants.Text.MUTED(), false);
         } else {
             int startFromEnd = historyScrollOffset / lineHeight;
             int startIndex = Math.max(0, entries.size() - visibleLines - startFromEnd);
@@ -931,34 +1073,38 @@ public class ItemEditorScreen extends Screen {
             for (int i = startIndex; i < endIndex; i++) {
                 String entry = entries.get(entries.size() - 1 - i);
                 int entryY = listY + (i - startIndex) * lineHeight;
-                graphics.drawString(safeFont, entry, x + 8, entryY, UIConstants.Text.SECONDARY(), false);
+                graphics.drawString(safeFont, entry, x + HISTORY_PANEL_TEXT_OFFSET_X, entryY,
+                    UIConstants.Text.SECONDARY(), false);
             }
         }
 
         // Footer with clear button and counter
-        int footerY = y + panelHeight - 18;
+        int footerY = y + panelHeight - HISTORY_PANEL_FOOTER_OFFSET_Y;
         String countText = entries.isEmpty()
-            ? "Showing 0/0"
-            : "Showing " + Math.min(visibleLines, entries.size()) + "/" + entries.size();
-        graphics.drawString(safeFont, countText, x + 8, footerY, UIConstants.Text.MUTED(), false);
+            ? HISTORY_SHOWING_EMPTY
+            : HISTORY_SHOWING_PREFIX + Math.min(visibleLines, entries.size()) + HISTORY_SHOWING_SEPARATOR + entries.size();
+        graphics.drawString(safeFont, countText, x + HISTORY_PANEL_TEXT_OFFSET_X, footerY,
+            UIConstants.Text.MUTED(), false);
 
         // Clear button
-        int clearW = 60;
-        int clearH = 14;
-        int clearX = x + panelWidth - clearW - 8;
-        int clearY = footerY - 2;
+        int clearW = HISTORY_PANEL_CLEAR_WIDTH;
+        int clearH = HISTORY_PANEL_CLEAR_HEIGHT;
+        int clearX = x + panelWidth - clearW - HISTORY_PANEL_CLEAR_OFFSET_X;
+        int clearY = footerY - HISTORY_PANEL_CLEAR_OFFSET_Y;
         int clearBg = entries.isEmpty() ? UIConstants.Button.DISABLED() : UIConstants.Background.INPUT();
         graphics.fill(clearX, clearY, clearX + clearW, clearY + clearH, clearBg);
         AxiomRenderer.drawBorder(graphics, clearX, clearY, clearW, clearH, UIConstants.Border.DEFAULT());
         int clearColor = entries.isEmpty() ? UIConstants.Text.DISABLED() : UIConstants.Text.PRIMARY();
-        graphics.drawString(safeFont, "Clear", clearX + 12, clearY + 3, clearColor, false);
+        graphics.drawString(safeFont, HISTORY_CLEAR_TEXT, clearX + HISTORY_PANEL_CLEAR_TEXT_OFFSET_X,
+            clearY + HISTORY_PANEL_CLEAR_TEXT_OFFSET_Y, clearColor, false);
     }
 
     private boolean handleHistoryClick(double mouseX, double mouseY) {
-        int panelWidth = 260;
-        int panelHeight = 200;
-        int x = layout.getEditorX() + layout.getEditorWidth() - panelWidth - 8;
-        int y = layout.getEditorY() + UIConstants.Size.HEADER_HEIGHT + 8;
+        ResponsiveLayout.Rect historyBounds = getHistoryPanelBounds();
+        int panelWidth = historyBounds.width();
+        int panelHeight = historyBounds.height();
+        int x = historyBounds.x();
+        int y = historyBounds.y();
 
         // Click outside closes panel
         if (mouseX < x || mouseX > x + panelWidth || mouseY < y || mouseY > y + panelHeight) {
@@ -967,11 +1113,11 @@ public class ItemEditorScreen extends Screen {
         }
 
         // Clear button
-        int clearW = 60;
-        int clearH = 14;
-        int footerY = y + panelHeight - 18;
-        int clearX = x + panelWidth - clearW - 8;
-        int clearY = footerY - 2;
+        int clearW = HISTORY_PANEL_CLEAR_WIDTH;
+        int clearH = HISTORY_PANEL_CLEAR_HEIGHT;
+        int footerY = y + panelHeight - HISTORY_PANEL_FOOTER_OFFSET_Y;
+        int clearX = x + panelWidth - clearW - HISTORY_PANEL_CLEAR_OFFSET_X;
+        int clearY = footerY - HISTORY_PANEL_CLEAR_OFFSET_Y;
         if (mouseX >= clearX && mouseX <= clearX + clearW && mouseY >= clearY && mouseY <= clearY + clearH) {
             if (activeModule != null) {
                 activeModule.clearHistory();
@@ -984,23 +1130,26 @@ public class ItemEditorScreen extends Screen {
     }
 
     private boolean isPointInHistoryPanel(double mouseX, double mouseY) {
-        int panelWidth = 260;
-        int panelHeight = 200;
-        int x = layout.getEditorX() + layout.getEditorWidth() - panelWidth - 8;
-        int y = layout.getEditorY() + UIConstants.Size.HEADER_HEIGHT + 8;
-        return mouseX >= x && mouseX <= x + panelWidth && mouseY >= y && mouseY <= y + panelHeight;
+        return getHistoryPanelBounds().contains(mouseX, mouseY);
+    }
+
+    private ResponsiveLayout.Rect getHistoryPanelBounds() {
+        int x = layout.getEditorX() + layout.getEditorWidth() - HISTORY_PANEL_WIDTH - HISTORY_PANEL_MARGIN_RIGHT;
+        int y = layout.getEditorY() + UIConstants.Size.HEADER_HEIGHT + HISTORY_PANEL_MARGIN_TOP;
+        return new ResponsiveLayout.Rect(x, y, HISTORY_PANEL_WIDTH, HISTORY_PANEL_HEIGHT);
     }
 
     private void renderTooltip(GuiGraphics graphics, String text, int x, int y) {
         var safeFont = Objects.requireNonNull(font, "font cannot be null");
         String safeText = Objects.requireNonNull(text, "text cannot be null");
-        int tipWidth = safeFont.width(safeText) + 8;
-        int tipX = Math.min(x + 12, width - tipWidth - 4);
-        int tipY = Math.max(y - 20, 4);
+        int tipWidth = safeFont.width(safeText) + TOOLTIP_WIDTH_PADDING;
+        int tipX = Math.min(x + TOOLTIP_OFFSET_X, width - tipWidth - TOOLTIP_SCREEN_MARGIN);
+        int tipY = Math.max(y - TOOLTIP_OFFSET_Y, TOOLTIP_SCREEN_MARGIN);
 
-        graphics.fill(tipX, tipY, tipX + tipWidth, tipY + 14, 0xF0100010);
-        AxiomRenderer.drawBorder(graphics, tipX, tipY, tipWidth, 14, UIConstants.Border.DEFAULT());
-        graphics.drawString(safeFont, safeText, tipX + 4, tipY + 3, UIConstants.Text.PRIMARY(), false);
+        graphics.fill(tipX, tipY, tipX + tipWidth, tipY + TOOLTIP_HEIGHT, TOOLTIP_BG);
+        AxiomRenderer.drawBorder(graphics, tipX, tipY, tipWidth, TOOLTIP_HEIGHT, UIConstants.Border.DEFAULT());
+        graphics.drawString(safeFont, safeText, tipX + TOOLTIP_TEXT_OFFSET_X, tipY + TOOLTIP_TEXT_OFFSET_Y,
+            UIConstants.Text.PRIMARY(), false);
 
         tooltipText = null;
     }
@@ -1008,7 +1157,12 @@ public class ItemEditorScreen extends Screen {
     private void renderDevPanel(GuiGraphics graphics, int mouseX, int mouseY) {
         ResponsiveLayout.Rect devArea = layout.getDevModePanelArea();
         if (devArea.isEmpty()) {
-            devArea = new ResponsiveLayout.Rect(width - 160, 10, 150, 200);
+            devArea = new ResponsiveLayout.Rect(
+                width - DEV_PANEL_FALLBACK_WIDTH - DEV_PANEL_FALLBACK_MARGIN_RIGHT,
+                DEV_PANEL_FALLBACK_MARGIN_TOP,
+                DEV_PANEL_FALLBACK_WIDTH,
+                DEV_PANEL_FALLBACK_HEIGHT
+            );
         }
 
         // Delegate to DebugPanel for richer info
@@ -1027,22 +1181,27 @@ public class ItemEditorScreen extends Screen {
         }
 
         var safeFont = Objects.requireNonNull(font, "font cannot be null");
-        graphics.fill(devArea.x(), devArea.y(), devArea.right(), devArea.bottom(), 0xE0101020);
+        graphics.fill(devArea.x(), devArea.y(), devArea.right(), devArea.bottom(), DEV_PANEL_BG);
         AxiomRenderer.drawBorder(graphics, devArea.x(), devArea.y(), devArea.width(), devArea.height(), UIConstants.Border.ACCENT());
 
-        int textY = devArea.y() + 8;
-        graphics.drawString(safeFont, "§b[Dev Mode]", devArea.x() + 8, textY, 0xFFFFFFFF, false);
-        textY += 12;
+        int textY = devArea.y() + DEV_PANEL_TEXT_OFFSET_Y;
+        graphics.drawString(safeFont, DEV_PANEL_TITLE_TEXT, devArea.x() + DEV_PANEL_TEXT_OFFSET_X, textY,
+            DEV_PANEL_TITLE_COLOR, false);
+        textY += DEV_PANEL_TITLE_LINE_STEP;
 
         EditorCache.CacheStats stats = EditorCache.getInstance().getStats();
-        graphics.drawString(safeFont, "Cache: " + stats.valid() + "/" + stats.total(), devArea.x() + 8, textY, UIConstants.Text.SECONDARY(), false);
-        textY += 10;
-        graphics.drawString(safeFont, String.format("Hit: %.1f%%", stats.hitRate() * 100), devArea.x() + 8, textY, UIConstants.Text.SECONDARY(), false);
-        textY += 10;
+        graphics.drawString(safeFont, "Cache: " + stats.valid() + "/" + stats.total(), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
+            textY, UIConstants.Text.SECONDARY(), false);
+        textY += DEV_PANEL_LINE_STEP;
+        graphics.drawString(safeFont, String.format("Hit: %.1f%%", stats.hitRate() * 100), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
+            textY, UIConstants.Text.SECONDARY(), false);
+        textY += DEV_PANEL_LINE_STEP;
 
-        graphics.drawString(safeFont, "Size: " + layout.getScreenSize(), devArea.x() + 8, textY, UIConstants.Text.SECONDARY(), false);
-        textY += 10;
-        graphics.drawString(safeFont, "Scroll: " + (int) scrollArea.getScrollOffset(), devArea.x() + 8, textY, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(safeFont, "Size: " + layout.getScreenSize(), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
+            textY, UIConstants.Text.SECONDARY(), false);
+        textY += DEV_PANEL_LINE_STEP;
+        graphics.drawString(safeFont, "Scroll: " + (int) scrollArea.getScrollOffset(), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
+            textY, UIConstants.Text.SECONDARY(), false);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -1088,10 +1247,10 @@ public class ItemEditorScreen extends Screen {
         if (showHistoryPanel && handleHistoryClick(mouseX, mouseY)) {
             return true;
         }
-        if (OverlayInputGuard.shouldConsumePresetInput(showPresetsPanel)) {
-            presetSearchFocused = true;
-            handlePresetsClick(mouseX, mouseY);
-            return true;
+        if (showPresetsPanel && presetSelectorOverlay != null) {
+            if (presetSelectorOverlay.mouseClicked(mouseX, mouseY, width, height)) {
+                return true;
+            }
         }
         if (handleFavoritesClick(mouseX, mouseY)) {
             return true;
@@ -1118,7 +1277,9 @@ public class ItemEditorScreen extends Screen {
         }
 
         if (activeModule != null) {
-            return activeModule.mouseClicked(mouseX, mouseY + scrollArea.getScrollOffset(), button);
+            // Pass raw mouseY (screen space) - module components store bounds in screen space
+            // The scrollArea handles clipping, we just need hit detection on visible elements
+            return activeModule.mouseClicked(mouseX, mouseY, button);
         }
 
         // If not handled by other components, give multi-edit panel a chance
@@ -1171,7 +1332,8 @@ public class ItemEditorScreen extends Screen {
             return true;
         }
         if (activeModule != null) {
-            return activeModule.mouseReleased(mouseX, mouseY + scrollArea.getScrollOffset(), button);
+            // Pass raw mouseY (screen space) - consistent with mouseClicked
+            return activeModule.mouseReleased(mouseX, mouseY, button);
         }
 
         return super.mouseReleased(mouseX, mouseY, button);
@@ -1194,12 +1356,12 @@ public class ItemEditorScreen extends Screen {
         if (player == null) return false;
 
         // Mirror the vanilla HUD placement: centered at bottom, 9 slots
-        final int hotbarWidth = 182;
-        final int slotSize = 20;
+        final int hotbarWidth = HOTBAR_WIDTH;
+        final int slotSize = HOTBAR_SLOT_SIZE;
         final int startX = (this.width - hotbarWidth) / 2;
-        final int startY = this.height - 22;
+        final int startY = this.height - HOTBAR_BOTTOM_OFFSET;
 
-        for (int i = 0; i < 9; i++) {
+        for (int i = 0; i < HOTBAR_SLOT_COUNT; i++) {
             int slotX = startX + i * slotSize;
             if (mouseX >= slotX && mouseX < slotX + slotSize && mouseY >= startY && mouseY < startY + slotSize) {
                 var inv = player.getInventory();
@@ -1232,7 +1394,8 @@ public class ItemEditorScreen extends Screen {
             return true;
         }
         if (activeModule != null) {
-            return activeModule.mouseDragged(mouseX, mouseY + scrollArea.getScrollOffset(), button, dragX, dragY);
+            // Pass raw mouseY (screen space) - consistent with mouseClicked
+            return activeModule.mouseDragged(mouseX, mouseY, button, dragX, dragY);
         }
 
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
@@ -1245,7 +1408,7 @@ public class ItemEditorScreen extends Screen {
         }
         if (showHistoryPanel) {
             if (isPointInHistoryPanel(mouseX, mouseY)) {
-                historyScrollOffset -= (int) (scrollY * 14);
+                historyScrollOffset -= (int) (scrollY * HISTORY_PANEL_LINE_HEIGHT);
                 return true;
             }
         }
@@ -1259,11 +1422,10 @@ public class ItemEditorScreen extends Screen {
                 return true;
             }
         }
-        if (showPresetsPanel) {
-            if (isPointInPresetsPanel(mouseX, mouseY)) {
-                presetScrollOffset -= (int) (scrollY * 16);
+        if (showPresetsPanel && presetSelectorOverlay != null) {
+            if (presetSelectorOverlay.mouseScrolled(mouseX, mouseY, scrollY, width, height)) {
+                return true;
             }
-            return true; // Consume all scroll while overlay open
         }
         if (header.mouseScrolled(mouseX, mouseY, scrollY)) {
             return true;
@@ -1346,41 +1508,10 @@ public class ItemEditorScreen extends Screen {
             return true; // swallow other keys while modal is up
         }
 
-        if (showPresetsPanel) {
-            if (keyCode == GLFW.GLFW_KEY_BACKSPACE) {
-                if (renamingPreset != null && !renameBuffer.isEmpty()) {
-                    renameBuffer = renameBuffer.substring(0, renameBuffer.length() - 1);
-                } else if (renamingPreset == null && !presetSearchQuery.isEmpty()) {
-                    presetSearchQuery = presetSearchQuery.substring(0, presetSearchQuery.length() - 1);
-                }
+        if (showPresetsPanel && presetSelectorOverlay != null) {
+            if (presetSelectorOverlay.keyPressed(keyCode)) {
                 return true;
             }
-            if (keyCode == GLFW.GLFW_KEY_ENTER && renamingPreset != null) {
-                commitRename();
-                return true;
-            }
-            if (keyCode == GLFW.GLFW_KEY_ENTER) {
-                return true; // do nothing else
-            }
-            if (keyCode == GLFW.GLFW_KEY_F && (modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
-                renamingPreset = null;
-                presetSearchFocused = true;
-                return true;
-            }
-            if (keyCode == GLFW.GLFW_KEY_DELETE && lastHoveredPreset != null) {
-                ItemEditorDataManager.INSTANCE.getPreset(lastHoveredPreset).ifPresent(preset -> {
-                    activeDialog = ConfirmDialog.deletePreset(preset.name == null ? "preset" : preset.name,
-                        () -> {
-                            ItemEditorDataManager.INSTANCE.deletePreset(preset.name);
-                            ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_delete", item.getHoverName().getString(), preset.name);
-                            DevMod.LOGGER.info("[Editor] Preset deleted via keyboard: {}", preset.name);
-                        },
-                        () -> {});
-                    activeDialog.show();
-                });
-                return true;
-            }
-            return true;
         }
 
         // Escape to close
@@ -1405,6 +1536,20 @@ public class ItemEditorScreen extends Screen {
                 showStatus("No changes to apply", UIConstants.Accent.ORANGE());
             }
             return true;
+        }
+
+        // Ctrl+Z batch undo (when MultiEdit snapshot is available)
+        if (keyCode == GLFW.GLFW_KEY_Z && (modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
+            if (multiEditManager != null && multiEditManager.hasSnapshot()) {
+                var result = multiEditManager.restoreSnapshot();
+                if (result.failureCount() == 0) {
+                    showStatus("Batch undo: " + result.successCount() + " items restored", UIConstants.Accent.GREEN());
+                } else {
+                    showStatus("Batch undo: " + result.successCount() + " ok, " + result.failureCount() + " failed", UIConstants.Accent.ORANGE());
+                }
+                return true;
+            }
+            // If no batch snapshot, let module handle undo
         }
 
         // Component shortcuts
@@ -1494,16 +1639,8 @@ public class ItemEditorScreen extends Screen {
         if (showTemplatesPanel && templateOverlay != null) {
             return templateOverlay.charTyped(chr, modifiers);
         }
-        if (showPresetsPanel) {
-            if (Character.isISOControl(chr)) {
-                return true;
-            }
-            if (renamingPreset != null) {
-                renameBuffer += chr;
-            } else if (presetSearchFocused) {
-                presetSearchQuery += chr;
-            }
-            return true;
+        if (showPresetsPanel && presetSelectorOverlay != null) {
+            return presetSelectorOverlay.charTyped(chr, modifiers);
         }
         if (activeModule != null) {
             return activeModule.charTyped(chr, modifiers);
@@ -1543,8 +1680,8 @@ public class ItemEditorScreen extends Screen {
                 CompoundTag statsTag = new CompoundTag();
                 CompoundTag armorStats = new CompoundTag();
                 stats.save(armorStats);
-                statsTag.put("ArmorModStats", Objects.requireNonNull(armorStats.copy()));
-                statsTag.put("armor_stats_component", Objects.requireNonNull(armorStats));
+                statsTag.put(ARMOR_STATS_KEY, Objects.requireNonNull(armorStats.copy()));
+                statsTag.put(ARMOR_STATS_COMPONENT_KEY, Objects.requireNonNull(armorStats));
 
                 int slotIndex = -1;
                 if (!isGlobalMode && selectedSlot != null && selectedSlot.slot() != null) {
@@ -1622,13 +1759,6 @@ public class ItemEditorScreen extends Screen {
         onClose();
     }
 
-    private void closePresetsPanel() {
-        toggleOverlay(OverlayType.NONE);
-        renamingPreset = null;
-        renameBuffer = "";
-        presetPanelBounds = ResponsiveLayout.Rect.EMPTY;
-    }
-
     // ═══════════════════════════════════════════════════════════════
     // DATA OPS: EXPORT / IMPORT / PRESETS
     // ═══════════════════════════════════════════════════════════════
@@ -1699,32 +1829,6 @@ public class ItemEditorScreen extends Screen {
 
     private boolean supportsDataOps() {
         return activeModule instanceof WeaponModule || activeModule instanceof ArmorModule;
-    }
-
-    private List<ItemEditorDataManager.PresetData> getFilteredPresets() {
-        ItemEditorDataManager data = ItemEditorDataManager.INSTANCE;
-        List<ItemEditorDataManager.PresetData> base = data.getPresetsForItemType(getActiveItemType());
-
-        String query = presetSearchQuery == null ? "" : presetSearchQuery.trim().toLowerCase();
-        List<ItemEditorDataManager.PresetData> filtered = new ArrayList<>();
-        for (ItemEditorDataManager.PresetData preset : base) {
-            if (preset == null) continue;
-            String name = preset.name == null ? "" : preset.name.toLowerCase();
-            if (!query.isEmpty() && !name.contains(query)) continue;
-            filtered.add(preset);
-        }
-
-        filtered.sort((a, b) -> {
-            if (presetSortMode == SortMode.ALPHA) {
-                String an = a.name == null ? "" : a.name.toLowerCase();
-                String bn = b.name == null ? "" : b.name.toLowerCase();
-                int cmp = an.compareTo(bn);
-                if (cmp != 0) return cmp;
-            }
-            return Long.compare(b.createdAt, a.createdAt); // recent first
-        });
-
-        return filtered;
     }
 
     private List<ItemEditorDataManager.PresetData> getFavoritePresetsForActiveType() {
@@ -1817,19 +1921,6 @@ public class ItemEditorScreen extends Screen {
         preset.devmodVersion = getDevModVersion();
         preset.statValues = collectStatsForExport();
         return preset;
-    }
-
-    private String formatRelativeTime(long timestampMs) {
-        java.time.Instant instant = java.time.Instant.ofEpochMilli(timestampMs);
-        java.time.Duration dur = java.time.Duration.between(instant, java.time.Instant.now());
-        long seconds = Math.max(0, dur.getSeconds());
-        if (seconds < 60) return seconds + "s ago";
-        long minutes = seconds / 60;
-        if (minutes < 60) return minutes + "m ago";
-        long hours = minutes / 60;
-        if (hours < 24) return hours + "h ago";
-        long days = hours / 24;
-        return days + "d ago";
     }
 
     private void applyImportedStats(ItemEditorDataManager.ItemConfigExport config, String reason) {
@@ -1989,270 +2080,65 @@ public class ItemEditorScreen extends Screen {
         lastLoadedPreset = preset.name;
     }
 
+    private void deletePreset(ItemEditorDataManager.PresetData preset) {
+        if (preset == null || preset.name == null) return;
+        activeDialog = ConfirmDialog.deletePreset(preset.name,
+            () -> {
+                ItemEditorDataManager.INSTANCE.deletePreset(preset.name);
+                ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_delete", item.getHoverName().getString(), preset.name);
+                DevMod.LOGGER.info("[Editor] Preset deleted: {}", preset.name);
+                showStatus("Preset deleted: " + preset.name, UIConstants.Accent.BLUE());
+                if (presetSelectorOverlay != null) {
+                    presetSelectorOverlay.refreshPresets();
+                }
+            },
+            () -> {}  // onCancel - no action needed
+        );
+        activeDialog.show();
+    }
+
+    private void renamePreset(ItemEditorDataManager.PresetData preset, String newName) {
+        if (preset == null || preset.name == null || newName == null || newName.isBlank()) return;
+        String oldName = preset.name;
+
+        // Update the preset with new name
+        preset.name = newName.trim();
+        ItemEditorDataManager.INSTANCE.deletePreset(oldName);
+        ItemEditorDataManager.INSTANCE.savePreset(preset);
+        ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_rename", item.getHoverName().getString(), oldName + " -> " + newName);
+        DevMod.LOGGER.info("[Editor] Preset renamed: {} -> {}", oldName, newName);
+        showStatus("Preset renamed: " + newName, UIConstants.Accent.BLUE());
+
+        // Update lastLoadedPreset if it was the renamed one
+        if (oldName.equals(lastLoadedPreset)) {
+            lastLoadedPreset = newName;
+        }
+
+        if (presetSelectorOverlay != null) {
+            presetSelectorOverlay.refreshPresets();
+        }
+    }
+
+    private void saveCurrentAsPreset() {
+        String itemType = getActiveItemType();
+        String presetName = buildPresetName(itemType);
+        ItemEditorDataManager.PresetData preset = buildPresetFromCurrent(presetName, itemType);
+        ItemEditorDataManager.INSTANCE.savePreset(preset);
+        ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_save", item.getHoverName().getString(), presetName);
+        DevMod.LOGGER.info("[Editor] Preset saved: {}", presetName);
+        showStatus("Preset saved: " + presetName, UIConstants.Accent.GREEN());
+        lastLoadedPreset = presetName;
+        if (presetSelectorOverlay != null) {
+            presetSelectorOverlay.refreshPresets();
+        }
+    }
+
     private float getStat(List<Float> values, int index, float fallback) {
         if (values == null || index < 0 || index >= values.size()) {
             return fallback;
         }
         Float value = values.get(index);
         return value == null ? fallback : value;
-    }
-
-    private void commitRename() {
-        if (renamingPreset == null) return;
-        ItemEditorDataManager data = ItemEditorDataManager.INSTANCE;
-        data.getPreset(renamingPreset).ifPresent(p -> {
-            String newName = renameBuffer.isBlank() ? p.name : renameBuffer.trim();
-            p.name = newName;
-            data.savePreset(p);
-            data.addHistoryEntry("preset_rename", item.getHoverName().getString(), newName);
-            DevMod.LOGGER.info("[Editor] Preset renamed to {}", newName);
-            showStatus("Preset renamed: " + newName, UIConstants.Accent.BLUE());
-        });
-        renamingPreset = null;
-        renameBuffer = "";
-    }
-
-    private void renderPresetsPanel(GuiGraphics graphics, int mouseX, int mouseY) {
-        List<ItemEditorDataManager.PresetData> presets = getFilteredPresets();
-        var safeFont = Objects.requireNonNull(font, "font cannot be null");
-
-        int panelWidth = 360;
-        int panelHeight = 260;
-        int x = (width - panelWidth) / 2;
-        int y = (height - panelHeight) / 2;
-
-        // dim background
-        graphics.fill(0, 0, width, height, UIConstants.Background.OVERLAY());
-
-        graphics.fill(x, y, x + panelWidth, y + panelHeight, UIConstants.Background.PANEL_SOLID());
-        AxiomRenderer.drawBorder(graphics, x, y, panelWidth, panelHeight, UIConstants.Border.DEFAULT());
-        presetPanelBounds = new ResponsiveLayout.Rect(x, y, panelWidth, panelHeight);
-
-        graphics.drawString(safeFont, "Presets", x + 8, y + 8, UIConstants.Text.TITLE(), false);
-
-        // Search box
-        int searchX = x + 8;
-        int searchY = y + 28;
-        int searchW = panelWidth - 8 - 80 - 8; // leave room for sort button and save
-        int searchH = 16;
-        graphics.fill(searchX, searchY, searchX + searchW, searchY + searchH, UIConstants.Background.INPUT());
-        AxiomRenderer.drawBorder(graphics, searchX, searchY, searchW, searchH, UIConstants.Border.DEFAULT());
-        String searchLabel = presetSearchQuery.isEmpty() ? "Search..." : presetSearchQuery;
-        int searchColor = presetSearchQuery.isEmpty() ? UIConstants.Text.MUTED() : UIConstants.Text.PRIMARY();
-        graphics.drawString(safeFont, searchLabel, searchX + 4, searchY + 4, searchColor, false);
-
-        // Sort toggle
-        int sortW = 36;
-        int sortX = searchX + searchW + 4;
-        graphics.fill(sortX, searchY, sortX + sortW, searchY + searchH,
-            presetSortMode == SortMode.ALPHA ? UIConstants.Button.HOVER() : UIConstants.Button.NORMAL());
-        AxiomRenderer.drawBorder(graphics, sortX, searchY, sortW, searchH, UIConstants.Border.DEFAULT());
-        String sortLabel = presetSortMode == SortMode.ALPHA ? "A-Z" : "Rec";
-        graphics.drawString(safeFont, sortLabel, sortX + 6, searchY + 4, UIConstants.Text.PRIMARY(), false);
-
-        // Save button
-        int saveW = 64;
-        int saveH = 16;
-        int saveX = x + panelWidth - saveW - 8;
-        int saveY = searchY;
-        graphics.fill(saveX, saveY, saveX + saveW, saveY + saveH, UIConstants.Button.NORMAL());
-        AxiomRenderer.drawBorder(graphics, saveX, saveY, saveW, saveH, UIConstants.Border.DEFAULT());
-        graphics.drawString(safeFont, "Save", saveX + 18, saveY + 4, UIConstants.Text.PRIMARY(), false);
-
-        // List area
-        int listY = y + 52;
-        int rowHeight = 24;
-        int listHeight = panelHeight - (listY - y) - 8;
-        int maxScroll = Math.max(0, Math.max(0, presets.size() * rowHeight - listHeight));
-        presetScrollOffset = Math.max(0, Math.min(presetScrollOffset, maxScroll));
-        int startRow = presetScrollOffset / rowHeight;
-        int visibleRows = listHeight / rowHeight + 1;
-        int endRow = Math.min(presets.size(), startRow + visibleRows);
-
-        if (presets.isEmpty()) {
-            graphics.drawString(safeFont, "No presets yet", x + 8, listY, UIConstants.Text.MUTED(), false);
-        } else {
-            for (int i = startRow; i < endRow; i++) {
-                ItemEditorDataManager.PresetData preset = presets.get(i);
-                int rowY = listY + (i - startRow) * rowHeight;
-                boolean hovered = mouseX >= x + 4 && mouseX <= x + panelWidth - 4
-                    && mouseY >= rowY && mouseY <= rowY + rowHeight;
-                if (hovered) {
-                    graphics.fill(x + 2, rowY, x + panelWidth - 2, rowY + rowHeight, UIConstants.Background.HOVER());
-                }
-                if (hovered) {
-                    lastHoveredPreset = preset.name;
-                }
-
-                // Name line
-                String label = preset.name != null ? preset.name : "Preset " + i;
-                if (Objects.equals(label, lastLoadedPreset)) {
-                    label = "✓ " + label;
-                }
-                graphics.drawString(safeFont, label, x + 8, rowY + 6,
-                    hovered ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY(), false);
-
-                // Metadata line
-                String metaTime = formatRelativeTime(preset.createdAt);
-                String meta = (preset.scope == null ? "SPECIFIC" : preset.scope)
-                    + " • " + (preset.itemType == null ? "item" : preset.itemType)
-                    + " • " + metaTime
-                    + " • v" + (preset.devmodVersion == null ? "?" : preset.devmodVersion);
-                graphics.drawString(safeFont, meta, x + 8, rowY + 16, UIConstants.Text.MUTED(), false);
-                if (hovered) {
-                    tooltipText = java.time.Instant.ofEpochMilli(preset.createdAt)
-                        .atZone(java.time.ZoneId.systemDefault())
-                        .toString();
-                    tooltipX = mouseX + 12;
-                    tooltipY = mouseY;
-                }
-
-                // Row buttons (rename/delete)
-                int btnY = rowY + 4;
-                int btnSize = 12;
-                int deleteX = x + panelWidth - btnSize - 8;
-                int renameX = deleteX - btnSize - 4;
-                graphics.fill(renameX, btnY, renameX + btnSize, btnY + btnSize, UIConstants.Button.NORMAL());
-                AxiomRenderer.drawBorder(graphics, renameX, btnY, btnSize, btnSize, UIConstants.Border.DEFAULT());
-                graphics.drawString(safeFont, "R", renameX + 3, btnY + 2, UIConstants.Text.PRIMARY(), false);
-
-                graphics.fill(deleteX, btnY, deleteX + btnSize, btnY + btnSize, UIConstants.Button.NORMAL());
-                AxiomRenderer.drawBorder(graphics, deleteX, btnY, btnSize, btnSize, UIConstants.Border.DEFAULT());
-                graphics.drawString(safeFont, "X", deleteX + 3, btnY + 2, UIConstants.Text.PRIMARY(), false);
-
-                if (renamingPreset != null && renamingPreset.equals(preset.name)) {
-                    int rnW = panelWidth - 32;
-                    int rnX = x + 8;
-                    int rnY = rowY - 18;
-                    graphics.fill(rnX, rnY, rnX + rnW, rnY + 16, UIConstants.Background.INPUT());
-                    AxiomRenderer.drawBorder(graphics, rnX, rnY, rnW, 16, UIConstants.Border.ACCENT());
-                    String text = renameBuffer.isEmpty() ? preset.name : renameBuffer;
-                    graphics.drawString(safeFont, text, rnX + 4, rnY + 4, UIConstants.Text.PRIMARY(), false);
-                }
-            }
-        }
-    }
-
-    private boolean handlePresetsClick(double mouseX, double mouseY) {
-        if (!supportsDataOps()) return true;
-
-        List<ItemEditorDataManager.PresetData> presets = getFilteredPresets();
-
-        int panelWidth = presetPanelBounds.width();
-        int panelHeight = presetPanelBounds.height();
-        int x = presetPanelBounds.x();
-        int y = presetPanelBounds.y();
-
-        // Click outside closes panel and restores history state
-        if (mouseX < x || mouseX > x + panelWidth || mouseY < y || mouseY > y + panelHeight) {
-            closePresetsPanel();
-            return true;
-        }
-
-        // Search box click focuses search
-        int searchX = x + 8;
-        int searchY = y + 28;
-        int searchW = panelWidth - 8 - 80 - 8;
-        int searchH = 16;
-        if (mouseX >= searchX && mouseX <= searchX + searchW && mouseY >= searchY && mouseY <= searchY + searchH) {
-            renamingPreset = null;
-            presetSearchFocused = true;
-            return true;
-        }
-
-        // Sort toggle
-        int sortW = 36;
-        int sortX = searchX + searchW + 4;
-        if (mouseX >= sortX && mouseX <= sortX + sortW && mouseY >= searchY && mouseY <= searchY + searchH) {
-            presetSortMode = presetSortMode == SortMode.RECENT ? SortMode.ALPHA : SortMode.RECENT;
-            return true;
-        }
-
-        // Save button
-        int saveW = 64;
-        int saveH = 16;
-        int saveX = x + panelWidth - saveW - 8;
-        int saveY = searchY;
-        if (mouseX >= saveX && mouseX <= saveX + saveW && mouseY >= saveY && mouseY <= saveY + saveH) {
-            String presetName = buildPresetName(getActiveItemType());
-            ItemEditorDataManager.PresetData preset = buildPresetFromCurrent(presetName, getActiveItemType());
-            ItemEditorDataManager.INSTANCE.savePreset(preset);
-            ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_save", item.getHoverName().getString(), presetName);
-            DevMod.LOGGER.info("[Editor] Preset saved: {}", presetName);
-            showStatus("Preset saved: " + presetName, UIConstants.Accent.GREEN());
-            lastLoadedPreset = presetName;
-            return true;
-        }
-
-        // List items
-        int listY = y + 52;
-        int rowHeight = 24;
-        int listHeight = panelHeight - (listY - y) - 8;
-        int maxScroll = Math.max(0, Math.max(0, presets.size() * rowHeight - listHeight));
-        presetScrollOffset = Math.max(0, Math.min(presetScrollOffset, maxScroll));
-        int startRow = presetScrollOffset / rowHeight;
-        int visibleRows = listHeight / rowHeight + 1;
-        int endRow = Math.min(presets.size(), startRow + visibleRows);
-
-        for (int i = startRow; i < endRow; i++) {
-            ItemEditorDataManager.PresetData preset = presets.get(i);
-            int rowY = listY + (i - startRow) * rowHeight;
-
-            int btnY = rowY + 4;
-            int btnSize = 12;
-            int deleteX = x + panelWidth - btnSize - 8;
-            int renameX = deleteX - btnSize - 4;
-
-            if (mouseX >= renameX && mouseX <= renameX + btnSize && mouseY >= btnY && mouseY <= btnY + btnSize) {
-                renamingPreset = preset.name;
-                renameBuffer = preset.name == null ? "" : preset.name;
-                return true;
-            }
-            if (mouseX >= deleteX && mouseX <= deleteX + btnSize && mouseY >= btnY && mouseY <= btnY + btnSize) {
-                activeDialog = ConfirmDialog.deletePreset(preset.name == null ? "preset" : preset.name,
-                    () -> {
-                        ItemEditorDataManager.INSTANCE.deletePreset(preset.name);
-                        ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_delete", item.getHoverName().getString(), preset.name);
-                        DevMod.LOGGER.info("[Editor] Preset deleted: {}", preset.name);
-                    },
-                    () -> {});
-                activeDialog.show();
-                return true;
-            }
-
-            if (mouseY >= rowY && mouseY <= rowY + rowHeight) {
-                Runnable loadAction = () -> {
-                    applyPreset(preset);
-                    ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_load", item.getHoverName().getString(), preset.name);
-                    DevMod.LOGGER.info("[Editor] Preset loaded: {}", preset.name);
-                    showStatus("Preset loaded: " + preset.name, UIConstants.Accent.BLUE());
-                    closePresetsPanel();
-                };
-
-                if (activeModule != null && activeModule.hasUnsavedChanges()) {
-                    int changes = activeModule.getPendingChanges().size();
-                    activeDialog = new ConfirmDialog(
-                        "Overwrite with preset",
-                        "Discard " + changes + " pending changes and load '" + preset.name + "'?",
-                        "Load",
-                        "Cancel",
-                        UIConstants.Accent.ORANGE(),
-                        loadAction,
-                        () -> {}
-                    );
-                    activeDialog.show();
-                } else {
-                    loadAction.run();
-                }
-                return true;
-            }
-        }
-
-        return true;
-    }
-
-    private boolean isPointInPresetsPanel(double mouseX, double mouseY) {
-        return presetPanelBounds != null && presetPanelBounds.contains(mouseX, mouseY);
     }
 
     private boolean handleFavoritesClick(double mouseX, double mouseY) {
@@ -2263,9 +2149,9 @@ public class ItemEditorScreen extends Screen {
         }
 
         List<ItemEditorDataManager.PresetData> favorites = getFavoritePresetsForActiveType();
-        int rowHeight = 18;
-        int startY = leftPanel.y() + 20;
-        int maxRows = Math.max(0, (leftPanel.height() - 28) / rowHeight);
+        int rowHeight = FAVORITES_ROW_HEIGHT;
+        int startY = leftPanel.y() + FAVORITES_LIST_START_Y;
+        int maxRows = Math.max(0, (leftPanel.height() - FAVORITES_LIST_BOTTOM_PADDING) / rowHeight);
         for (int i = 0; i < Math.min(maxRows, favorites.size()); i++) {
             int rowY = startY + i * rowHeight;
             if (mouseY >= rowY && mouseY <= rowY + rowHeight) {
@@ -2295,13 +2181,14 @@ public class ItemEditorScreen extends Screen {
 
         // Pin/unpin last loaded
         if (lastLoadedPreset != null) {
-            int btnY = leftPanel.bottom() - 18;
-            int btnW = 80;
-            int btnX = leftPanel.x() + 8;
-            if (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + 14) {
+            int btnY = leftPanel.bottom() - FAVORITES_PIN_BUTTON_OFFSET_Y;
+            int btnW = FAVORITES_PIN_BUTTON_WIDTH;
+            int btnH = FAVORITES_PIN_BUTTON_HEIGHT;
+            int btnX = leftPanel.x() + FAVORITES_PIN_BUTTON_OFFSET_X;
+            if (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH) {
                 favoriteStore.toggleFavorite(getActiveItemType(), lastLoadedPreset);
                 boolean nowFav = favoriteStore.isFavorite(getActiveItemType(), lastLoadedPreset);
-                String msg = nowFav ? "Pinned " : "Unpinned ";
+                String msg = nowFav ? PINNED_PREFIX : UNPINNED_PREFIX;
                 showStatus(msg + lastLoadedPreset, UIConstants.Accent.BLUE());
                 return true;
             }
@@ -2323,12 +2210,12 @@ public class ItemEditorScreen extends Screen {
                 Objects.requireNonNull(net.minecraft.core.component.DataComponents.CUSTOM_DATA),
                 Objects.requireNonNull(net.minecraft.world.item.component.CustomData.EMPTY)
             );
-            var tag = Objects.requireNonNull(custom.copyTag(), "custom tag missing");
-            if (tag.contains("WeaponModStats")) {
-                var statsTag = Objects.requireNonNull(tag.getCompound("WeaponModStats"), "weapon stats tag missing");
+            var tag = Objects.requireNonNull(custom.copyTag(), CUSTOM_TAG_MISSING);
+            if (tag.contains(WEAPON_STATS_KEY)) {
+                var statsTag = Objects.requireNonNull(tag.getCompound(WEAPON_STATS_KEY), WEAPON_STATS_MISSING);
                 PacketDistributor.sendToServer(new com.frenkvs.devmod.network.WeaponStatsPayload(item, statsTag, isGlobalMode));
-            } else if (tag.contains("ArmorModStats")) {
-                var statsTag = Objects.requireNonNull(tag.getCompound("ArmorModStats"), "armor stats tag missing");
+            } else if (tag.contains(ARMOR_STATS_KEY)) {
+                var statsTag = Objects.requireNonNull(tag.getCompound(ARMOR_STATS_KEY), ARMOR_STATS_MISSING);
                 ArmorStats stats = ArmorStats.load(statsTag);
                 String itemName = "";
                 try {
@@ -2340,11 +2227,11 @@ public class ItemEditorScreen extends Screen {
                 );
             }
             if (debugPanel != null) {
-                debugPanel.log("MultiEdit persist slot " + slot + " (" + item.getHoverName().getString() + ")");
+                debugPanel.log(MULTI_EDIT_PERSIST_PREFIX + slot + " (" + item.getHoverName().getString() + ")");
             }
             return true;
         } catch (Exception ignored) {
-            if (debugPanel != null) debugPanel.log("MultiEdit persist failed: " + ignored.getMessage());
+            if (debugPanel != null) debugPanel.log(MULTI_EDIT_PERSIST_FAILED_PREFIX + ignored.getMessage());
             return false;
         }
     }
@@ -2356,7 +2243,7 @@ public class ItemEditorScreen extends Screen {
     private void showStatus(String message, int color) {
         this.statusMessage = message;
         this.statusColor = color;
-        this.statusTicks = 60; // 3 seconds at 20 TPS
+        this.statusTicks = STATUS_TICKS_DURATION; // 3 seconds at 20 TPS
     }
 
     private void playSound(net.minecraft.sounds.SoundEvent sound) {
@@ -2404,8 +2291,8 @@ public class ItemEditorScreen extends Screen {
         if (data != null) {
             try {
                 var tag = data.copyTag();
-                hasWeaponSpecific = tag != null && tag.contains("WeaponModStats");
-                hasArmorSpecific = tag != null && tag.contains("ArmorModStats");
+                hasWeaponSpecific = tag != null && tag.contains(WEAPON_STATS_KEY);
+                hasArmorSpecific = tag != null && tag.contains(ARMOR_STATS_KEY);
             } catch (Exception ignored) {
                 // fall through
             }
@@ -2418,25 +2305,25 @@ public class ItemEditorScreen extends Screen {
 
         if (isArmor) {
             if (hasArmorSpecific) {
-                sources.add("Specific (CustomData: ArmorModStats)");
+                sources.add(SOURCE_SPECIFIC_ARMOR);
                 if (hasGlobal) {
-                    sources.add("Global override available (serverconfig/devmod/devmod-items.toml)");
+                    sources.add(SOURCE_GLOBAL_OVERRIDE);
                 }
             } else if (hasGlobal) {
-                sources.add("Global (serverconfig/devmod/devmod-items.toml)");
+                sources.add(SOURCE_GLOBAL);
             } else {
-                sources.add("Vanilla (no overrides)");
+                sources.add(SOURCE_VANILLA);
             }
         } else {
             if (hasWeaponSpecific) {
-                sources.add("Specific (CustomData: WeaponModStats)");
+                sources.add(SOURCE_SPECIFIC_WEAPON);
                 if (hasGlobal) {
-                    sources.add("Global override available (serverconfig/devmod/devmod-items.toml)");
+                    sources.add(SOURCE_GLOBAL_OVERRIDE);
                 }
             } else if (hasGlobal) {
-                sources.add("Global (serverconfig/devmod/devmod-items.toml)");
+                sources.add(SOURCE_GLOBAL);
             } else {
-                sources.add("Vanilla (no overrides)");
+                sources.add(SOURCE_VANILLA);
             }
         }
 

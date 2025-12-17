@@ -10,7 +10,9 @@ import com.frenkvs.devmod.ui.editor.EditorSection;
 import com.frenkvs.devmod.ui.editor.ModuleTab;
 import com.frenkvs.devmod.ui.editor.components.EditorSlider;
 import com.frenkvs.devmod.ui.editor.components.EditorToggle;
+import com.frenkvs.devmod.ui.editor.components.SourceBadge;
 import com.frenkvs.devmod.ui.editor.core.EditorCache;
+import com.frenkvs.devmod.ui.editor.core.EditorDimensions;
 import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import com.frenkvs.devmod.ui.editor.debug.DebugInfoSection;
@@ -46,6 +48,11 @@ public class ArmorModule extends AbstractEditorModule {
 
     private static final String NBT_KEY = "ArmorModStats";
     private static final double EPSILON = 1e-4;
+
+    // Source tracking for badges
+    private boolean hasComponentData = false;
+    private boolean hasNbtData = false;
+    private boolean hasGlobalConfig = false;
     private static final @Nonnull net.minecraft.world.item.component.ItemAttributeModifiers NONNULL_EMPTY =
         Objects.requireNonNull(net.minecraft.world.item.component.ItemAttributeModifiers.EMPTY,
             "ItemAttributeModifiers.EMPTY cannot be null");
@@ -110,6 +117,11 @@ public class ArmorModule extends AbstractEditorModule {
     }
 
     private void loadStatsFromItem() {
+        // Reset source tracking
+        hasComponentData = false;
+        hasNbtData = false;
+        hasGlobalConfig = ArmorConfigManager.hasGlobalConfig(item.getItem());
+
         // Prefer component storage; fall back to legacy CustomData
         CompoundTag componentTag = null;
         try {
@@ -128,6 +140,7 @@ public class ArmorModule extends AbstractEditorModule {
 
         if (componentTag != null && !componentTag.isEmpty()) {
             stats = ArmorStats.load(componentTag.copy());
+            hasComponentData = true;
             return;
         }
 
@@ -139,10 +152,24 @@ public class ArmorModule extends AbstractEditorModule {
 
         if (tag.contains(NBT_KEY)) {
             stats = ArmorStats.load(tag.getCompound(NBT_KEY));
+            hasNbtData = true;
         } else {
             stats = new ArmorStats();
             applyVanillaDefaults(stats);
         }
+    }
+
+    /**
+     * Determine the source badge type based on current data origin.
+     */
+    private SourceBadge.Source determineSource() {
+        if (hasComponentData || hasGlobalConfig) {
+            return SourceBadge.Source.DEV;
+        }
+        if (hasNbtData) {
+            return SourceBadge.Source.NBT;
+        }
+        return SourceBadge.Source.VANILLA;
     }
 
     /**
@@ -163,7 +190,7 @@ public class ArmorModule extends AbstractEditorModule {
                     "ATTRIBUTE_MODIFIERS component type cannot be null");
 
             @Nonnull net.minecraft.world.item.component.ItemAttributeModifiers mods = java.util.Objects.requireNonNull(
-                safeMods(item.getOrDefault(attrType, NONNULL_EMPTY)),
+                safeMods(Objects.requireNonNull(item.getOrDefault(attrType, NONNULL_EMPTY))),
                 "attribute modifiers component cannot be null");
 
             mods = mergeAttributeSets(mods, safeMods(item.getAttributeModifiers()));
@@ -180,11 +207,11 @@ public class ArmorModule extends AbstractEditorModule {
                 var attribute = attrHolder.value();
                 if (attribute == null) continue;
 
-                if (attribute == net.minecraft.world.entity.ai.attributes.Attributes.ARMOR) {
+                if (attribute == net.minecraft.world.entity.ai.attributes.Attributes.ARMOR.value()) {
                     armor += mod.amount();
-                } else if (attribute == net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS) {
+                } else if (attribute == net.minecraft.world.entity.ai.attributes.Attributes.ARMOR_TOUGHNESS.value()) {
                     toughness += mod.amount();
-                } else if (attribute == net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE) {
+                } else if (attribute == net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE.value()) {
                     kb += mod.amount();
                 }
             }
@@ -460,11 +487,15 @@ public class ArmorModule extends AbstractEditorModule {
     // ═══════════════════════════════════════════════════════════════
 
     private void createDamageReductionComponents() {
+        SourceBadge.Source source = determineSource();
+
         physicalReductionSlider = new EditorSlider("physRed", "Physical Reduction", 0f, 80f, 0f)
             .step(1f)
             .format("%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.DEFENSE)
+            .source(source)
+            .info("Reduces physical damage (melee attacks, falls). Max 80%. Formula: Damage * (1 - Reduction%). Stacks with armor value.")
             .onChange(v -> { stats.physicalReduction = v / 100f; markDirty("Physical reduction"); });
 
         fireReductionSlider = new EditorSlider("fireRed", "Fire Reduction", 0f, 80f, 0f)
@@ -472,6 +503,8 @@ public class ArmorModule extends AbstractEditorModule {
             .format("%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .source(source)
+            .info("Reduces fire damage (burning, lava, Fire Aspect). Max 80%. Similar to Fire Protection enchant.")
             .onChange(v -> { stats.fireReduction = v / 100f; markDirty("Fire reduction"); });
 
         magicReductionSlider = new EditorSlider("magicRed", "Magic Reduction", 0f, 80f, 0f)
@@ -479,6 +512,8 @@ public class ArmorModule extends AbstractEditorModule {
             .format("%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.SPECIAL)
+            .source(source)
+            .info("Reduces magic damage (potions, Guardians, Evokers). Max 80%. Bypassed by true damage.")
             .onChange(v -> { stats.magicReduction = v / 100f; markDirty("Magic reduction"); });
 
         explosionReductionSlider = new EditorSlider("explRed", "Explosion Reduction", 0f, 80f, 0f)
@@ -486,6 +521,8 @@ public class ArmorModule extends AbstractEditorModule {
             .format("%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .source(source)
+            .info("Reduces explosion damage (Creepers, TNT, Ghast fireballs). Max 80%. Similar to Blast Protection.")
             .onChange(v -> { stats.explosionReduction = v / 100f; markDirty("Explosion reduction"); });
 
         projectileReductionSlider = new EditorSlider("projRed", "Projectile Reduction", 0f, 80f, 0f)
@@ -493,6 +530,8 @@ public class ArmorModule extends AbstractEditorModule {
             .format("%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.DEFENSE)
+            .source(source)
+            .info("Reduces projectile damage (arrows, tridents, fireballs). Max 80%. Similar to Projectile Protection.")
             .onChange(v -> { stats.projectileReduction = v / 100f; markDirty("Projectile reduction"); });
     }
 
@@ -511,16 +550,22 @@ public class ArmorModule extends AbstractEditorModule {
     // ═══════════════════════════════════════════════════════════════
 
     private void createVanillaStatsComponents() {
+        SourceBadge.Source source = determineSource();
+
         armorBonusSlider = new EditorSlider("armorBon", "Armor Bonus", 0f, 30f, 0f)
             .step(1f)
             .format("+%.0f")
             .trackColor(UIConstants.SliderColors.DEFENSE)
+            .source(source)
+            .info("Adds to armor points (shields icon). Each point reduces damage by ~4% up to 80% cap. Uses minecraft:armor attribute.")
             .onChange(v -> { stats.armorBonus = v; markDirty("Armor bonus"); });
 
         toughnessBonusSlider = new EditorSlider("toughBon", "Toughness Bonus", 0f, 20f, 0f)
             .step(0.5f)
             .format("+%.1f")
             .trackColor(UIConstants.SliderColors.DEFENSE)
+            .source(source)
+            .info("Reduces armor effectiveness loss from heavy hits. Diamond/Netherite have 2-3 base. Uses minecraft:armor_toughness.")
             .onChange(v -> { stats.toughnessBonus = v; markDirty("Toughness bonus"); });
 
         knockbackResistanceSlider = new EditorSlider("kbRes", "Knockback Resistance", 0f, 100f, 0f)
@@ -528,6 +573,8 @@ public class ArmorModule extends AbstractEditorModule {
             .format("%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .source(source)
+            .info("Reduces knockback from hits. 100% = no knockback. Netherite gives 10% per piece. Uses minecraft:knockback_resistance.")
             .onChange(v -> { stats.knockbackResistance = v / 100f; markDirty("Knockback resistance"); });
     }
 
@@ -544,7 +591,11 @@ public class ArmorModule extends AbstractEditorModule {
     // ═══════════════════════════════════════════════════════════════
 
     private void createSpecialComponents() {
+        SourceBadge.Source source = determineSource();
+
         thornsToggle = new EditorToggle("thorns", "Thorns Reflect", false)
+            .source(source)
+            .tooltip("Enable thorns damage reflection when hit")
             .onChange(v -> { stats.thornsReflect = v; markDirty("Thorns enabled"); });
 
         thornsPercentSlider = new EditorSlider("thornsPct", "Thorns Damage", 0f, 50f, 0f)
@@ -552,21 +603,31 @@ public class ArmorModule extends AbstractEditorModule {
             .format("%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .source(source)
+            .info("Reflects damage back to attacker. 50% means attacker takes half the damage they dealt. Only works if Thorns Reflect is enabled.")
             .onChange(v -> { stats.thornsPercent = v / 100f; markDirty("Thorns damage"); });
     }
 
     private void createShieldComponents() {
+        SourceBadge.Source source = determineSource();
+
         shieldReflectToggle = new EditorToggle("shieldReflect", "Reflect Projectiles", stats.shieldReflectProjectiles)
+            .source(source)
+            .tooltip("Enables reflecting arrows and projectiles back at attackers when blocking")
             .onChange(v -> { stats.shieldReflectProjectiles = v; markDirty("Shield reflect projectiles"); });
         shieldBlockStrengthSlider = new EditorSlider("shieldBlock", "Block Strength", 0f, 1.0f, stats.shieldBlockStrength)
             .step(0.05f)
             .format("%.2f")
             .trackColor(UIConstants.SliderColors.DEFENSE)
+            .source(source)
+            .info("Damage blocked when shielding. 1.0 = full block, 0.5 = half damage still passes through.")
             .onChange(v -> { stats.shieldBlockStrength = v; markDirty("Shield block strength"); });
         shieldRecoverySlider = new EditorSlider("shieldRecovery", "Recovery Speed", 0f, 2.0f, stats.shieldRecoverySpeed)
             .step(0.05f)
             .format("%.2f")
             .trackColor(UIConstants.SliderColors.SPEED)
+            .source(source)
+            .info("How fast the shield recovers after being disabled by an axe. 2.0 = instant recovery, 0.5 = very slow.")
             .onChange(v -> { stats.shieldRecoverySpeed = v; markDirty("Shield recovery"); });
     }
 
@@ -684,9 +745,11 @@ public class ArmorModule extends AbstractEditorModule {
     // ═══════════════════════════════════════════════════════════════
 
     private class EhpPreviewSection implements EditorSection.CustomSection {
+        private static final int HEIGHT_EXTRA = 14;
+        private static final int TEXT_OFFSET_Y = UIConstants.Spacing.SM;
         @Override public String getId() { return "ehpPreview"; }
         @Override public String getLabel() { return "EHP Preview"; }
-        @Override public int getHeight() { return UIConstants.Spacing.LG + 14; }
+        @Override public int getHeight() { return UIConstants.Spacing.LG + HEIGHT_EXTRA; }
 
         @Override
         public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
@@ -695,7 +758,7 @@ public class ArmorModule extends AbstractEditorModule {
             String text = String.format("EHP: %.1fx", ehp);
             int textWidth = font.width(Objects.requireNonNull(text, "text"));
             int x = bounds.x() + (bounds.width() - textWidth) / 2;
-            int y = bounds.y() + UIConstants.Spacing.SM;
+            int y = bounds.y() + TEXT_OFFSET_Y;
             graphics.drawString(font, text, x, y, UIConstants.Text.VALUE(), false);
         }
     }
@@ -755,7 +818,7 @@ public class ArmorModule extends AbstractEditorModule {
 
         @Override public String getId() { return toggle.getId(); }
         @Override public String getLabel() { return toggle.getLabel(); }
-        @Override public int getHeight() { return 20; }
+        @Override public int getHeight() { return EditorDimensions.TOGGLE_HEIGHT; }
 
         @Override
         public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {

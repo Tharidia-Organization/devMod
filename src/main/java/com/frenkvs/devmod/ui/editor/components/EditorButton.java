@@ -40,6 +40,37 @@ public class EditorButton {
     // CONFIGURATION
     // ═══════════════════════════════════════════════════════════════
 
+    private static final int GRADIENT_BAND_HEIGHT = 1;
+    private static final int PRIMARY_MOUSE_BUTTON = 0;
+    private static final int RING_INSET = 1;
+    private static final int RING_EXPAND = 2;
+    private static final int RING_ALPHA = 0x40;
+    private static final int PRESSED_TEXT_OFFSET = 1;
+    private static final int TEXT_SHADOW_OFFSET = 1;
+    private static final int TEXT_SHADOW_COLOR = 0xFF000000;
+    private static final int SMALL_HEIGHT = 16;
+    private static final int LARGE_HEIGHT = 24;
+
+    private static final float HIGHLIGHT_LIGHTEN = 0.05f;
+    private static final float MID_DARKEN = 0.02f;
+    private static final float SHADOW_DARKEN = 0.08f;
+    private static final float ACCENT_OVERRIDE_DARKEN = 0.35f;
+    private static final float DANGER_BASE_DARKEN = 0.04f;
+    private static final float SUCCESS_BASE_DARKEN = 0.05f;
+    private static final float PRIMARY_HOVER_LIGHTEN = 0.08f;
+    private static final float PRIMARY_PRESS_DARKEN = 0.10f;
+    private static final float DANGER_HOVER_LIGHTEN = 0.06f;
+    private static final float DANGER_PRESS_DARKEN = 0.12f;
+    private static final float SUCCESS_HOVER_LIGHTEN = 0.08f;
+    private static final float SUCCESS_PRESS_DARKEN = 0.12f;
+    private static final float GHOST_HOVER_LIGHTEN = 0.05f;
+    private static final float GHOST_PRESS_DARKEN = 0.06f;
+    private static final float DEFAULT_HOVER_LIGHTEN = 0.04f;
+    private static final float DEFAULT_PRESS_DARKEN = 0.12f;
+    private static final float DISABLED_BG_DARKEN = 0.25f;
+
+    private static final String ELLIPSIS = "...";
+
     private final String id;
     private final String label;
     private Style style = Style.NORMAL;
@@ -173,10 +204,10 @@ public class EditorButton {
 
         // Background + impact-style bevel
         graphics.fill(x, y, x + width, y + height, bgColor);
-        int highlight = UIConstants.lighten(bgColor, 0.05f);
-        int mid = UIConstants.darken(bgColor, 0.02f);
-        int shadow = UIConstants.darken(bgColor, 0.08f);
-        int gradBand = Math.max(1, ScaledCoord.scaleDim(1));
+        int highlight = UIConstants.lighten(bgColor, HIGHLIGHT_LIGHTEN);
+        int mid = UIConstants.darken(bgColor, MID_DARKEN);
+        int shadow = UIConstants.darken(bgColor, SHADOW_DARKEN);
+        int gradBand = Math.max(GRADIENT_BAND_HEIGHT, ScaledCoord.scaleDim(GRADIENT_BAND_HEIGHT));
         // top glow
         graphics.fill(x, y, x + width, y + gradBand, highlight);
         // mid tone
@@ -188,12 +219,13 @@ public class EditorButton {
         AxiomRenderer.drawBorder(graphics, x, y, width, height, borderColor);
         // Focus/hover ring (impact accent)
         if ((hovered || active) && enabled) {
-            int ringColor = UIConstants.withAlpha(borderColor, 0x40);
-            AxiomRenderer.drawBorder(graphics, x - 1, y - 1, width + 2, height + 2, ringColor);
+            int ringColor = UIConstants.withAlpha(borderColor, RING_ALPHA);
+            AxiomRenderer.drawBorder(graphics, x - RING_INSET, y - RING_INSET,
+                width + RING_EXPAND, height + RING_EXPAND, ringColor);
         }
 
         // Pressed effect (slightly offset text)
-        int textOffsetY = pressed && hovered ? 1 : 0;
+        int textOffsetY = pressed && hovered ? PRESSED_TEXT_OFFSET : 0;
 
         // Content layout
         int padding = UIConstants.Spacing.SM;
@@ -222,7 +254,8 @@ public class EditorButton {
         int textWidth = font.width(labelText);
         int textX = labelStartX + Math.max(0, (labelAreaWidth - textWidth) / 2);
         // Soft shadow per la leggibilità (opaco per evitare trasparenze sui testi)
-        graphics.drawString(font, labelText, textX + 1, contentY + 1, 0xFF000000, false);
+        graphics.drawString(font, labelText, textX + TEXT_SHADOW_OFFSET, contentY + TEXT_SHADOW_OFFSET,
+            TEXT_SHADOW_COLOR, false);
         graphics.drawString(font, labelText, textX, contentY, textColor, false);
     }
 
@@ -258,36 +291,37 @@ public class EditorButton {
         int ghostBase = UIConstants.ImpactButton.GHOST_BASE;
 
         int accent = accentOverride != null ? accentOverride : UIConstants.ImpactButton.PRIMARY_BORDER;
-        int primaryBase = accentOverride != null ? UIConstants.darken(accentOverride, 0.35f) : UIConstants.ImpactButton.PRIMARY_BASE;
-        int dangerBase = UIConstants.darken(UIConstants.ImpactButton.DANGER_BASE, 0.04f);
-        int successBase = UIConstants.darken(UIConstants.ImpactButton.SUCCESS_BASE, 0.05f);
+        int primaryBase = accentOverride != null ? UIConstants.darken(accentOverride, ACCENT_OVERRIDE_DARKEN)
+            : UIConstants.ImpactButton.PRIMARY_BASE;
+        int dangerBase = UIConstants.darken(UIConstants.ImpactButton.DANGER_BASE, DANGER_BASE_DARKEN);
+        int successBase = UIConstants.darken(UIConstants.ImpactButton.SUCCESS_BASE, SUCCESS_BASE_DARKEN);
 
         return switch (style) {
             case PRIMARY -> new Palette(primaryBase,
-                UIConstants.lighten(primaryBase, 0.08f),
-                UIConstants.darken(primaryBase, 0.10f),
+                UIConstants.lighten(primaryBase, PRIMARY_HOVER_LIGHTEN),
+                UIConstants.darken(primaryBase, PRIMARY_PRESS_DARKEN),
                 accent,
                 UIConstants.Text.PRIMARY());
             case DANGER -> new Palette(dangerBase,
-                UIConstants.lighten(dangerBase, 0.06f),
-                UIConstants.darken(dangerBase, 0.12f),
+                UIConstants.lighten(dangerBase, DANGER_HOVER_LIGHTEN),
+                UIConstants.darken(dangerBase, DANGER_PRESS_DARKEN),
                 UIConstants.ImpactButton.DANGER_BORDER,
                 UIConstants.Text.PRIMARY());
             case SUCCESS -> new Palette(successBase,
-                UIConstants.lighten(successBase, 0.08f),
-                UIConstants.darken(successBase, 0.12f),
+                UIConstants.lighten(successBase, SUCCESS_HOVER_LIGHTEN),
+                UIConstants.darken(successBase, SUCCESS_PRESS_DARKEN),
                 UIConstants.ImpactButton.SUCCESS_BORDER,
                 UIConstants.Text.PRIMARY());
             case GHOST -> new Palette(
                 ghostBase,
-                UIConstants.lighten(ghostBase, 0.05f),
-                UIConstants.darken(ghostBase, 0.06f),
+                UIConstants.lighten(ghostBase, GHOST_HOVER_LIGHTEN),
+                UIConstants.darken(ghostBase, GHOST_PRESS_DARKEN),
                 UIConstants.Border.MUTED(),
                 UIConstants.Text.PRIMARY());
             default -> new Palette(
                 defaultBase,
-                UIConstants.lighten(defaultBase, 0.04f),
-                UIConstants.darken(defaultBase, 0.12f),
+                UIConstants.lighten(defaultBase, DEFAULT_HOVER_LIGHTEN),
+                UIConstants.darken(defaultBase, DEFAULT_PRESS_DARKEN),
                 UIConstants.Border.DEFAULT(),
                 UIConstants.Text.PRIMARY());
         };
@@ -298,7 +332,7 @@ public class EditorButton {
     // ═══════════════════════════════════════════════════════════════
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (!enabled || button != 0) return false;
+        if (!enabled || button != PRIMARY_MOUSE_BUTTON) return false;
 
         if (bounds.contains(mouseX, mouseY)) {
             pressed = true;
@@ -314,7 +348,7 @@ public class EditorButton {
         }
 
         pressed = false;
-        if (button != 0) {
+        if (button != PRIMARY_MOUSE_BUTTON) {
             return false;
         }
 
@@ -357,7 +391,7 @@ public class EditorButton {
             this.border = border;
             this.text = text;
             this.hoverBorder = UIConstants.Border.ACCENT();
-            this.disabledBg = UIConstants.darken(UIConstants.Background.INPUT(), 0.25f);
+            this.disabledBg = UIConstants.darken(UIConstants.Background.INPUT(), DISABLED_BG_DARKEN);
             this.disabledBorder = UIConstants.Border.MUTED();
             this.disabledText = UIConstants.Text.DISABLED();
         }
@@ -502,23 +536,22 @@ public class EditorButton {
         if (font.width(safeText) <= maxWidth) {
             return safeText;
         }
-        String ellipsis = "...";
-        int ellipsisWidth = font.width(ellipsis);
+        int ellipsisWidth = font.width(ELLIPSIS);
         if (ellipsisWidth >= maxWidth) {
-            return ellipsis;
+            return ELLIPSIS;
         }
         int allowed = maxWidth - ellipsisWidth;
         String slice = font.plainSubstrByWidth(safeText, allowed);
-        return slice + ellipsis;
+        return slice + ELLIPSIS;
     }
 
     /**
      * Taglie base per altezze differenti.
      */
     public enum Size {
-        SMALL(16),
+        SMALL(SMALL_HEIGHT),
         MEDIUM(UIConstants.Size.BUTTON_HEIGHT),
-        LARGE(24);
+        LARGE(LARGE_HEIGHT);
 
         final int height;
 

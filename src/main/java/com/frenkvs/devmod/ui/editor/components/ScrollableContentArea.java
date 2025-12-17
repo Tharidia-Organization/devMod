@@ -2,6 +2,7 @@ package com.frenkvs.devmod.ui.editor.components;
 
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.editor.AdvancedScroll;
+import com.frenkvs.devmod.ui.editor.core.DirtyRegionTracker;
 import com.frenkvs.devmod.ui.editor.core.EditorDimensions;
 import com.frenkvs.devmod.ui.editor.core.EditorSpacing;
 import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
@@ -24,6 +25,11 @@ public class ScrollableContentArea {
 
     private static final int SCROLLBAR_WIDTH = EditorDimensions.SCROLLBAR_WIDTH;  // 8px
     private static final int PADDING = EditorSpacing.S;  // 8px
+    private static final int MIN_SCROLL_RANGE = 1;
+    private static final int MIN_THUMB_HEIGHT = 20;
+    private static final int THUMB_INSET = 1;
+    private static final int SCROLL_STEP = 20;
+    private static final float SCROLL_CHANGE_THRESHOLD = 0.5f;
 
     // ═══════════════════════════════════════════════════════════════
     // STATE
@@ -35,12 +41,14 @@ public class ScrollableContentArea {
 
     // Scroll state
     private float scrollOffset = 0;
+    private float lastScrollOffset = 0;
     private int contentHeight = 0;
     private boolean scrollbarHovered = false;
     private boolean scrollbarDragging = false;
     private double dragStartY = 0;
     private float dragStartOffset = 0;
     private final AdvancedScroll smoothScroll = new AdvancedScroll();
+    private final DirtyRegionTracker dirtyTracker = DirtyRegionTracker.getInstance();
 
     // ═══════════════════════════════════════════════════════════════
     // CONTENT RENDERER INTERFACE
@@ -90,6 +98,13 @@ public class ScrollableContentArea {
 
         this.contentBounds = new ResponsiveLayout.Rect(contentX, contentY, contentWidth, viewportHeight);
 
+        // Track scroll changes for dirty region optimization
+        boolean scrollChanged = Math.abs(scrollOffset - lastScrollOffset) > SCROLL_CHANGE_THRESHOLD;
+        if (scrollChanged) {
+            // Mark content area as dirty when scroll position changes
+            dirtyTracker.markDirty(contentX, contentY, contentWidth, viewportHeight);
+        }
+
         // Background
         graphics.fill(x, y, x + width, y + height, UIConstants.Background.CONTENT());
 
@@ -108,6 +123,7 @@ public class ScrollableContentArea {
         smoothScroll.setMaxScroll(maxScroll);
         smoothScroll.scrollTo(scrollOffset); // keep target in sync when layout changes
         smoothScroll.update();
+        lastScrollOffset = scrollOffset;
         scrollOffset = Mth.clamp(smoothScroll.getOffset(), 0, maxScroll);
 
         // Render scrollbar (if needed)
@@ -124,8 +140,8 @@ public class ScrollableContentArea {
 
         // Calculate thumb size and position
         float visibleRatio = (float) viewportHeight / contentHeight;
-        int thumbHeight = Math.max(20, (int) (height * visibleRatio));
-        float scrollRatio = scrollOffset / Math.max(1, contentHeight - viewportHeight);
+        int thumbHeight = Math.max(MIN_THUMB_HEIGHT, (int) (height * visibleRatio));
+        float scrollRatio = scrollOffset / Math.max(MIN_SCROLL_RANGE, contentHeight - viewportHeight);
         int thumbY = y + (int) ((height - thumbHeight) * scrollRatio);
 
         // Update bounds
@@ -135,7 +151,7 @@ public class ScrollableContentArea {
         // Thumb
         int thumbColor = scrollbarDragging ? UIConstants.Slider.THUMB_DRAG :
                         (scrollbarHovered ? UIConstants.Slider.THUMB_HOVER : UIConstants.Slider.THUMB);
-        graphics.fill(x + 1, thumbY, x + width - 1, thumbY + thumbHeight, thumbColor);
+        graphics.fill(x + THUMB_INSET, thumbY, x + width - THUMB_INSET, thumbY + thumbHeight, thumbColor);
 
         // Thumb border
         if (scrollbarHovered || scrollbarDragging) {
@@ -197,7 +213,7 @@ public class ScrollableContentArea {
         if (bounds.contains(mouseX, mouseY)) {
             float maxScroll = Math.max(0, contentHeight - contentBounds.height());
             smoothScroll.setMaxScroll(maxScroll);
-            smoothScroll.scroll(scrollY * 20);
+            smoothScroll.scroll(scrollY * SCROLL_STEP);
             scrollOffset = Mth.clamp(smoothScroll.getOffset(), 0, maxScroll);
             return true;
         }
@@ -317,7 +333,7 @@ public class ScrollableContentArea {
     }
 
     public float getScrollProgress() {
-        float maxScroll = Math.max(1, contentHeight - contentBounds.height());
+        float maxScroll = Math.max(MIN_SCROLL_RANGE, contentHeight - contentBounds.height());
         return scrollOffset / maxScroll;
     }
 

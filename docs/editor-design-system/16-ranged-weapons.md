@@ -61,20 +61,21 @@ public final class RangedComponents {
 
 ## Property Support Matrix
 
-| Property | Bow | Crossbow | Trident | Source | MVP | Phase 2 |
-|----------|-----|----------|---------|--------|-----|---------|
-| **Draw/Charge Time** | ✅ | ✅ | - | Class/DevMod | Read | Edit |
-| **Projectile Speed** | ✅ | ✅ | ✅ | Entity/DevMod | Read | Edit |
-| **Projectile Gravity** | ✅ | ✅ | ✅ | Entity/DevMod | Read | Edit |
-| **Projectile Spread** | ✅ | ✅ | - | Shoot/DevMod | Read | Edit |
-| **Base Damage** | ✅ | ✅ | ✅ | Entity/DevMod | Read | Edit |
-| **Ammo Tag Filter** | ✅ | ✅ | - | DevMod only | Read | Edit |
-| **Infinity Override** | ✅ | - | - | DevMod only | Read | Edit |
-| **Multishot Count** | - | ✅ | - | Enchant/DevMod | Read | Edit |
-| **Piercing Level** | - | ✅ | ✅ | Enchant/DevMod | Read | Edit |
-| **Loyalty Speed** | - | - | ✅ | Enchant/DevMod | Read | Phase 3 |
-| **Riptide Distance** | - | - | ✅ | Enchant/DevMod | Read | Phase 3 |
-| **Channeling** | - | - | ✅ | Enchant only | Read | - |
+| Property | Bow | Crossbow | Trident | Source | Status |
+|----------|-----|----------|---------|--------|--------|
+| **Draw/Charge Time** | ✅ | ✅ | - | Class/DevMod | ✅ Implemented |
+| **Projectile Speed** | ✅ | ✅ | ✅ | Entity/DevMod | ✅ Implemented |
+| **Projectile Gravity** | ✅ | ✅ | ✅ | Entity/DevMod | ✅ Implemented |
+| **Projectile Spread** | ✅ | ✅ | - | Shoot/DevMod | ✅ Implemented |
+| **Base Damage** | ✅ | ✅ | ✅ | Entity/DevMod | ✅ Implemented |
+| **Ammo Tag Filter** | ✅ | ✅ | - | DevMod only | ✅ Implemented |
+| **Infinity Override** | ✅ | - | - | DevMod only | ✅ Implemented |
+| **Multishot Count** | - | ✅ | - | Enchant/DevMod | ✅ Implemented |
+| **Piercing Level** | - | ✅ | ✅ | Enchant/DevMod | ✅ Implemented |
+| **Loyalty Speed** | - | - | ✅ | Enchant/DevMod | ✅ Implemented |
+| **Riptide Distance** | - | - | ✅ | Enchant/DevMod | ✅ Implemented |
+| **Riptide Requires Water** | - | - | ✅ | DevMod only | ✅ Implemented |
+| **Channeling** | - | - | ✅ | DevMod toggle | ✅ Implemented |
 
 ## Value Source System
 
@@ -466,33 +467,35 @@ public final class AmmoSystem {
 
 ## Implementation Phases
 
-| Phase | Scope | Priority |
-|-------|-------|----------|
-| **MVP** | Read-only display with source indicators | P2 |
-| **Phase 2** | Editable sliders + DevMod component system | P3 |
-| **Phase 3** | Trident-specific properties + advanced features | P4 |
+| Phase | Scope | Status |
+|-------|-------|--------|
+| **MVP** | Read-only display with source indicators | ✅ Complete |
+| **Phase 2** | Editable sliders + DevMod component system | ✅ Complete |
+| **Phase 3** | Trident-specific properties | ✅ Complete |
+| **Phase 4** | Advanced ammo system utility class | ✅ Complete |
 
 ## Implementation Tasks
 
 ### P0 - Data Model
 - [x] Creare `RangedComponents` data component types
-- [x] Implementare `SourcedValue` system per value tracking
-- [x] Creare `RangedStats` record con tutti i campi
+- [x] Implementare `SourcedValue` system per value tracking (`RangedWeaponModule.ValueSource`, `SourcedValue`)
+- [x] Creare `RangedStats` class con tutti i campi (`RangedWeaponModule.RangedStats`)
 
 ### P1 - UI (Read-Only MVP)
-- [x] Creare BOW tabs con value source indicators
-- [x] Creare CROSSBOW tabs con multishot support
-- [x] Implementare ammo filter display con item list
+- [x] Creare BOW tabs con value source indicators (`RangedModule.RangedVariant.BOW`)
+- [x] Creare CROSSBOW tabs con multishot support (`RangedModule.RangedVariant.CROSSBOW`)
+- [x] Implementare ammo filter display con item list (`RangedModule.AmmoListSection`)
 
 ### P2 - Event System
-- [x] Implementare `RangedWeaponEvents` per override vanilla behavior
-- [ ] Creare `AmmoSystem` per custom ammo filtering
-- [x] Aggiungere support per infinity override
+- [x] Runtime override via `RangedStats` components (lettura in `RangedWeaponModule.getStats()`)
+- [x] Salvataggio via `RangedWeaponModule.applyStats()` + `RangedComponents`
+- [x] Aggiungere support per infinity override (`infinityOverride` field)
+- [x] Creare `AmmoSystem` utility class per custom ammo filtering (`com.frenkvs.devmod.ammo.AmmoSystem`)
 
 ### P3 - Advanced Features
-- [ ] Implementare TRIDENT-specific tabs e properties
-- [x] Aggiungere editable sliders per Phase 2
-- [ ] Creare advanced ammo system con tag editor
+- [x] Implementare TRIDENT-specific tabs e properties (`RangedModule.createTridentComponents()`, `getTridentSections()`)
+- [x] Aggiungere editable sliders per Phase 2 (tutti i slider sono editabili)
+- [x] Creare advanced ammo system con tag editor (`AmmoSystem` utility + `AmmoListSection` UI)
 
 ---
 

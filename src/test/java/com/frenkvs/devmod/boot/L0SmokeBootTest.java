@@ -396,7 +396,7 @@ public class L0SmokeBootTest {
                 .filter(line -> line.contains("public static final KeyMapping"))
                 .count();
 
-            assertEquals(35, count, "Should have exactly 35 KeyMapping definitions");
+            assertEquals(36, count, "Should have exactly 36 KeyMapping definitions");
         }
 
         @Test

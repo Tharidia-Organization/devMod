@@ -90,6 +90,31 @@ public class RadialCategory {
     }
 
     /**
+     * Get only visible items (filtered dynamically).
+     * Use this for rendering and selection logic.
+     */
+    public List<RadialMenuItem> getVisibleItems() {
+        List<RadialMenuItem> visible = new ArrayList<>();
+        for (RadialMenuItem item : items) {
+            if (item.isVisible()) {
+                visible.add(item);
+            }
+        }
+        return visible;
+    }
+
+    /**
+     * Get visible item count
+     */
+    public int getVisibleItemCount() {
+        int count = 0;
+        for (RadialMenuItem item : items) {
+            if (item.isVisible()) count++;
+        }
+        return count;
+    }
+
+    /**
      * Check if this category has a parent (is a subcategory)
      */
     public boolean hasParent() {

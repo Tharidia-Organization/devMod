@@ -1,12 +1,12 @@
 # Crafting Info Panel
 
-> **NOTA:** Questa sezione è ora **in scope per l'iterazione corrente**: deve essere implementata (UI + logica) nei due editor. Mostra la ricetta di crafting dell'item corrente e il suo valore calcolato. Attualmente non ancora realizzata: seguire le specifiche sotto per lo sviluppo.
+> **STATUS:** ✅ **Implementato** in `ui/editor/systems/CraftingInfoPanel.java`. Estende `BaseOverlay` per comportamento modale consistente.
 
 ## Layout
 
 ```
 ┌────────────────────────────────────────┐
-│           CRAFTING RECIPE              │
+│  CRAFTING RECIPE            [< 1/3 >]  │  ← Recipe selector (se multiple)
 ├────────────────────────────────────────┤
 │                                        │
 │    ┌───┬───┬───┐                       │
@@ -20,13 +20,14 @@
 ├────────────────────────────────────────┤
 │  ITEM VALUE ANALYSIS                   │
 │                                        │
-│  Ingredients:                          │
+│  Ingredients:                          │  ← Scrollable se > 5 ingredienti
 │   • 2x Diamond      (Rare)    +80      │
 │   • 1x Stick        (Common)   +2      │
 │                           ─────────    │
 │  Total Value:                  82      │
 │  Rarity Tier:              RARE        │
 │                                        │
+│  Click outside or press ESC to close   │
 └────────────────────────────────────────┘
 ```
 
@@ -34,66 +35,49 @@
 
 | Proprietà | Valore |
 |-----------|--------|
-| Width | 300px (popup/overlay) |
-| Height | Auto (based on content) |
-| Trigger | Button "Recipe" in footer o Tab dedicata |
-| Position | Centered overlay o integrato in tab COMPONENTS |
+| Width | 300px (PANEL_WIDTH) |
+| Height | Dinamico (basato su screen height e numero ingredienti) |
+| Min Value Height | 60px |
+| Trigger | `showCraftingPanel` toggle in ItemEditorScreen |
+| Position | Centered overlay (via BaseOverlay) |
+| Base Class | `BaseOverlay` |
 
-## Visualizzazione Ricetta (Feature A)
+## Architettura
 
-Mostra la griglia di crafting 3x3 con gli ingredienti posizionati:
-
-```java
-private void renderCraftingGrid(GuiGraphics graphics, int x, int y, CraftingRecipe recipe) {
-    int cellSize = 24;
-    int gridSize = cellSize * 3;
-
-    // Background grid
-    for (int row = 0; row < 3; row++) {
-        for (int col = 0; col < 3; col++) {
-            int cellX = x + col * cellSize;
-            int cellY = y + row * cellSize;
-
-            graphics.fill(cellX, cellY, cellX + cellSize, cellY + cellSize,
-                UIConstants.Background.INPUT);
-            AxiomRenderer.drawBorder(graphics, cellX, cellY, cellSize, cellSize,
-                UIConstants.Border.MUTED);
-
-            // Render ingredient if present
-            ItemStack ingredient = recipe.getIngredient(row, col);
-            if (!ingredient.isEmpty()) {
-                graphics.renderItem(ingredient, cellX + 4, cellY + 4);
-            }
-        }
-    }
-
-    // Arrow
-    int arrowX = x + gridSize + 10;
-    int arrowY = y + cellSize;
-    graphics.drawString(font, "→", arrowX, arrowY + 4, UIConstants.Text.SECONDARY, false);
-
-    // Result
-    int resultX = arrowX + 20;
-    graphics.renderItem(recipe.getResult(), resultX, arrowY);
-}
+```
+CraftingInfoPanel extends BaseOverlay
+├── Records
+│   ├── IngredientValue(item, count, rarity, value)
+│   ├── ItemValueAnalysis(ingredients, totalValue, rarityTier)
+│   └── RecipeAnalysis(recipe, analysis) [interno]
+├── Enum
+│   └── RarityTier(COMMON, UNCOMMON, RARE, EPIC, LEGENDARY)
+├── UI Components
+│   ├── prevButton: EditorButton (recipe navigation)
+│   └── nextButton: EditorButton (recipe navigation)
+└── State
+    ├── targetItem: ItemStack
+    ├── recipe: RecipeHolder<CraftingRecipe>
+    ├── recipes: List<RecipeHolder> (tutte le ricette disponibili)
+    ├── selectedRecipeIndex: int
+    ├── analysis: ItemValueAnalysis
+    └── ingredientScrollOffset: int
 ```
 
-## Sistema di Valutazione Item (Feature C)
-
-Calcola un valore numerico basato sulla rarità degli ingredienti:
+## Data Types
 
 ```java
-public record ItemValueAnalysis(
-    List<IngredientValue> ingredients,
-    int totalValue,
-    RarityTier rarityTier
-) {}
-
 public record IngredientValue(
     ItemStack item,
     int count,
     RarityTier rarity,
     int value
+) {}
+
+public record ItemValueAnalysis(
+    List<IngredientValue> ingredients,
+    int totalValue,
+    RarityTier rarityTier
 ) {}
 
 public enum RarityTier {
@@ -103,118 +87,212 @@ public enum RarityTier {
     EPIC(100, 0xFFAA00AA, "Epic"),        // Netherite, Emerald
     LEGENDARY(250, 0xFFFFAA00, "Legendary"); // Dragon Egg, Nether Star
 
-    final int baseValue;
-    final int color;
-    final String displayName;
-}
-
-// Calcolo valore
-private ItemValueAnalysis analyzeItemValue(ItemStack stack) {
-    Optional<CraftingRecipe> recipe = findRecipeFor(stack);
-    if (recipe.isEmpty()) {
-        return new ItemValueAnalysis(List.of(), 0, RarityTier.COMMON);
-    }
-
-    List<IngredientValue> ingredients = new ArrayList<>();
-    int totalValue = 0;
-    RarityTier highestRarity = RarityTier.COMMON;
-
-    for (ItemStack ingredient : recipe.get().getIngredients()) {
-        RarityTier rarity = determineRarity(ingredient);
-        int value = rarity.baseValue * ingredient.getCount();
-
-        ingredients.add(new IngredientValue(ingredient, ingredient.getCount(), rarity, value));
-        totalValue += value;
-
-        if (rarity.ordinal() > highestRarity.ordinal()) {
-            highestRarity = rarity;
-        }
-    }
-
-    return new ItemValueAnalysis(ingredients, totalValue, highestRarity);
-}
-
-// Rendering
-private void renderValueAnalysis(GuiGraphics graphics, int x, int y, ItemValueAnalysis analysis) {
-    graphics.drawString(font, "ITEM VALUE ANALYSIS", x, y, UIConstants.Text.TITLE, false);
-
-    int lineY = y + 18;
-    graphics.drawString(font, "Ingredients:", x, lineY, UIConstants.Text.SECONDARY, false);
-    lineY += 14;
-
-    for (IngredientValue ing : analysis.ingredients()) {
-        String line = String.format("• %dx %s", ing.count(), ing.item().getHoverName().getString());
-        graphics.drawString(font, line, x + 5, lineY, UIConstants.Text.PRIMARY, false);
-
-        // Rarity tag
-        String rarityTag = String.format("(%s)", ing.rarity().displayName);
-        int tagX = x + 150;
-        graphics.drawString(font, rarityTag, tagX, lineY, ing.rarity().color, false);
-
-        // Value
-        String valueStr = String.format("+%d", ing.value());
-        int valueX = x + 230;
-        graphics.drawString(font, valueStr, valueX, lineY, UIConstants.Text.VALUE, false);
-
-        lineY += 12;
-    }
-
-    // Separator
-    lineY += 4;
-    graphics.fill(x, lineY, x + 260, lineY + 1, UIConstants.Border.SEPARATOR);
-    lineY += 8;
-
-    // Total
-    graphics.drawString(font, "Total Value:", x, lineY, UIConstants.Text.SECONDARY, false);
-    graphics.drawString(font, String.valueOf(analysis.totalValue()), x + 200, lineY,
-        UIConstants.Text.VALUE, false);
-
-    lineY += 14;
-    graphics.drawString(font, "Rarity Tier:", x, lineY, UIConstants.Text.SECONDARY, false);
-    graphics.drawString(font, analysis.rarityTier().displayName, x + 200, lineY,
-        analysis.rarityTier().color, false);
+    public final int baseValue;
+    public final int color;
+    public final String displayName;
 }
 ```
 
-## Integrazione negli Editor
+## Features
 
-| Editor | Posizione |
-|--------|-----------|
-| Weapon | Tab "COMPONENTS" o bottone "Recipe" nel footer |
-| Armor | Tab "COMPONENTS" (nuova) o bottone "Recipe" nel footer |
+### Multi-Recipe Support
 
-## Mappa Rarità Ingredienti (Configurabile)
+Se un item ha più ricette di crafting disponibili, il pannello mostra un selettore:
 
 ```java
-private static final Map<String, RarityTier> INGREDIENT_RARITY = Map.ofEntries(
+// Navigation buttons using EditorButton component
+private final EditorButton prevButton = new EditorButton("prev", "<")
+    .style(EditorButton.Style.GHOST)
+    .size(EditorButton.Size.SMALL)
+    .onClick(() -> selectRecipe(selectedRecipeIndex - 1));
+
+private final EditorButton nextButton = new EditorButton("next", ">")
+    .style(EditorButton.Style.GHOST)
+    .size(EditorButton.Size.SMALL)
+    .onClick(() -> selectRecipe(selectedRecipeIndex + 1));
+```
+
+**Keyboard shortcuts:** `←` / `→` per navigare tra ricette.
+
+### Best Recipe Selection
+
+Alla prima apertura, seleziona automaticamente la ricetta "migliore" basandosi su:
+1. Valore totale più alto
+2. A parità di valore, rarità più alta
+
+```java
+private RecipeAnalysis selectBestRecipe(ItemStack stack) {
+    List<RecipeHolder<CraftingRecipe>> candidates = findRecipesFor(stack);
+    RecipeAnalysis best = null;
+    for (RecipeHolder<CraftingRecipe> holder : candidates) {
+        ItemValueAnalysis result = analyzeRecipe(holder);
+        if (best == null || result.totalValue() > best.analysis().totalValue() ||
+            (result.totalValue() == best.analysis().totalValue() &&
+                result.rarityTier().ordinal() > best.analysis().rarityTier().ordinal())) {
+            best = new RecipeAnalysis(holder, result);
+        }
+    }
+    return best;
+}
+```
+
+### Ingredient Aggregation
+
+Gli ingredienti identici vengono aggregati per ResourceLocation:
+
+```java
+Map<ResourceLocation, IngredientValue> aggregated = new HashMap<>();
+for (Ingredient ing : recipe.getIngredients()) {
+    ItemStack ingredient = resolveIngredientStack(ing);
+    ResourceLocation id = BuiltInRegistries.ITEM.getKey(ingredient.getItem());
+
+    IngredientValue existing = aggregated.get(id);
+    int newCount = (existing == null ? 1 : existing.count() + 1);
+    int value = rarity.baseValue * newCount;
+
+    aggregated.put(id, new IngredientValue(ingredient, newCount, rarity, value));
+}
+```
+
+### Dynamic Height
+
+L'altezza del pannello si adatta automaticamente:
+
+```java
+@Override
+protected int getPanelHeight(int screenHeight) {
+    // Calcola altezza ideale basata su numero ingredienti
+    int idealValueHeight = analysis.ingredients().size() * INGREDIENT_LINE_HEIGHT + VALUE_BASE_HEIGHT;
+    int maxPanelH = screenHeight - PANEL_SCREEN_MARGIN;
+
+    // Limita se troppo alto per lo schermo
+    int valueHeight = Math.max(VALUE_MIN_HEIGHT, idealValueHeight);
+    if (panelH > maxPanelH) {
+        valueHeight = Math.max(VALUE_MIN_HEIGHT, maxPanelH - baseWithoutValue);
+    }
+    return panelH;
+}
+```
+
+### Ingredient Scrolling
+
+Se la lista ingredienti è troppo lunga, supporta scroll con mouse wheel:
+
+```java
+@Override
+protected boolean handleMouseScrolled(double mouseX, double mouseY, double scrollDelta,
+                                       int panelX, int panelY, int panelW, int panelH) {
+    if (mouseX >= ingredientAreaX && mouseX <= ingredientAreaX + ingredientAreaW &&
+        mouseY >= ingredientAreaY && mouseY <= ingredientAreaY + ingredientAreaH) {
+        ingredientScrollOffset = Math.max(0, Math.min(ingredientMaxScroll,
+            ingredientScrollOffset - (int) (scrollDelta * INGREDIENT_LINE_HEIGHT)));
+        return true;
+    }
+    return false;
+}
+```
+
+## Mappa Rarità Ingredienti
+
+```java
+private static final Map<String, RarityTier> INGREDIENT_RARITY = new HashMap<>();
+
+static {
     // Common
-    Map.entry("minecraft:stick", RarityTier.COMMON),
-    Map.entry("minecraft:cobblestone", RarityTier.COMMON),
-    Map.entry("minecraft:oak_planks", RarityTier.COMMON),
-    Map.entry("minecraft:leather", RarityTier.COMMON),
-    Map.entry("minecraft:string", RarityTier.COMMON),
+    INGREDIENT_RARITY.put("minecraft:stick", RarityTier.COMMON);
+    INGREDIENT_RARITY.put("minecraft:cobblestone", RarityTier.COMMON);
+    INGREDIENT_RARITY.put("minecraft:oak_planks", RarityTier.COMMON);
+    INGREDIENT_RARITY.put("minecraft:leather", RarityTier.COMMON);
+    INGREDIENT_RARITY.put("minecraft:string", RarityTier.COMMON);
 
     // Uncommon
-    Map.entry("minecraft:iron_ingot", RarityTier.UNCOMMON),
-    Map.entry("minecraft:gold_ingot", RarityTier.UNCOMMON),
-    Map.entry("minecraft:redstone", RarityTier.UNCOMMON),
-    Map.entry("minecraft:coal", RarityTier.UNCOMMON),
-    Map.entry("minecraft:copper_ingot", RarityTier.UNCOMMON),
+    INGREDIENT_RARITY.put("minecraft:iron_ingot", RarityTier.UNCOMMON);
+    INGREDIENT_RARITY.put("minecraft:gold_ingot", RarityTier.UNCOMMON);
+    INGREDIENT_RARITY.put("minecraft:redstone", RarityTier.UNCOMMON);
+    INGREDIENT_RARITY.put("minecraft:coal", RarityTier.UNCOMMON);
+    INGREDIENT_RARITY.put("minecraft:copper_ingot", RarityTier.UNCOMMON);
 
     // Rare
-    Map.entry("minecraft:diamond", RarityTier.RARE),
-    Map.entry("minecraft:lapis_lazuli", RarityTier.RARE),
-    Map.entry("minecraft:obsidian", RarityTier.RARE),
-    Map.entry("minecraft:blaze_rod", RarityTier.RARE),
+    INGREDIENT_RARITY.put("minecraft:diamond", RarityTier.RARE);
+    INGREDIENT_RARITY.put("minecraft:lapis_lazuli", RarityTier.RARE);
+    INGREDIENT_RARITY.put("minecraft:obsidian", RarityTier.RARE);
+    INGREDIENT_RARITY.put("minecraft:blaze_rod", RarityTier.RARE);
 
     // Epic
-    Map.entry("minecraft:netherite_ingot", RarityTier.EPIC),
-    Map.entry("minecraft:emerald", RarityTier.EPIC),
-    Map.entry("minecraft:echo_shard", RarityTier.EPIC),
+    INGREDIENT_RARITY.put("minecraft:netherite_ingot", RarityTier.EPIC);
+    INGREDIENT_RARITY.put("minecraft:emerald", RarityTier.EPIC);
+    INGREDIENT_RARITY.put("minecraft:echo_shard", RarityTier.EPIC);
 
     // Legendary
-    Map.entry("minecraft:nether_star", RarityTier.LEGENDARY),
-    Map.entry("minecraft:dragon_egg", RarityTier.LEGENDARY),
-    Map.entry("minecraft:elytra", RarityTier.LEGENDARY)
-);
+    INGREDIENT_RARITY.put("minecraft:nether_star", RarityTier.LEGENDARY);
+    INGREDIENT_RARITY.put("minecraft:dragon_egg", RarityTier.LEGENDARY);
+    INGREDIENT_RARITY.put("minecraft:elytra", RarityTier.LEGENDARY);
+}
 ```
+
+**Fallback:** Se un item non è nella mappa, usa `stack.getRarity()` di Minecraft.
+
+## Integrazione in ItemEditorScreen
+
+```java
+// In ItemEditorScreen.java
+private boolean showCraftingPanel = false;
+private final CraftingInfoPanel craftingPanel = new CraftingInfoPanel();
+
+// Toggle
+public void toggleCraftingPanel() {
+    if (showCraftingPanel) {
+        craftingPanel.hide();
+    } else {
+        craftingPanel.show(getActiveItem());
+    }
+    showCraftingPanel = !showCraftingPanel;
+}
+
+// In render()
+if (showCraftingPanel) {
+    craftingPanel.render(graphics, font, width, height, mouseX, mouseY);
+}
+```
+
+## Layout Constants
+
+```java
+private static final int PANEL_WIDTH = 300;
+private static final int PANEL_PADDING = 10;
+private static final int PANEL_SCREEN_MARGIN = 20;
+
+private static final int GRID_CELL_SIZE = 24;
+private static final int GRID_ROWS = 3;
+private static final int GRID_COLS = 3;
+
+private static final int INGREDIENT_LINE_HEIGHT = 12;
+private static final int VALUE_MIN_HEIGHT = 60;
+private static final int VALUE_BASE_HEIGHT = 50;
+```
+
+---
+
+## Implementation Status (2025-01)
+
+| Component | Status |
+|-----------|--------|
+| `CraftingInfoPanel` class | ✅ Implemented |
+| `BaseOverlay` extension | ✅ Implemented |
+| `RarityTier` enum | ✅ Implemented |
+| `ItemValueAnalysis` record | ✅ Implemented |
+| `IngredientValue` record | ✅ Implemented |
+| Multi-recipe selector | ✅ Implemented |
+| Best recipe selection | ✅ Implemented |
+| Ingredient aggregation | ✅ Implemented |
+| Dynamic height | ✅ Implemented |
+| Ingredient scrolling | ✅ Implemented |
+| Keyboard navigation | ✅ Implemented (←/→) |
+| Rarity map | ✅ Implemented |
+| Fallback rarity | ✅ Implemented |
+
+---
+
+**Riferimenti:**
+- [03-crafting-analysis.md](03-crafting-analysis.md) - Dettagli analisi crafting
+- [BaseOverlay](../src/main/java/com/frenkvs/devmod/ui/editor/core/BaseOverlay.java) - Classe base overlay

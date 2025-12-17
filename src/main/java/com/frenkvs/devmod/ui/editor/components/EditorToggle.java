@@ -24,6 +24,10 @@ public class EditorToggle {
     private static final int TRACK_HEIGHT = 14;  // Per spec Section 4.3
     private static final int HANDLE_SIZE = 12;   // Per spec Section 4.3
     private static final int HANDLE_MARGIN = 2;
+    private static final int TEXT_HEIGHT = 8;
+    private static final int TEXT_OFFSET_Y = (TOGGLE_HEIGHT - TEXT_HEIGHT) / 2;
+    private static final int BADGE_GAP = 4;
+    private static final int STATE_TEXT_GAP = 8;
 
     // Configuration
     private final String id;
@@ -43,6 +47,9 @@ public class EditorToggle {
 
     // Callback
     private Consumer<Boolean> onChange;
+
+    // Source badge (optional, shows value origin)
+    private SourceBadge sourceBadge = null;
 
     // =========================================================================
     // CONSTRUCTOR
@@ -78,6 +85,32 @@ public class EditorToggle {
         return this;
     }
 
+    /**
+     * Set a source badge to display the value's origin (DEV/NBT/VANILLA).
+     */
+    public EditorToggle sourceBadge(SourceBadge badge) {
+        this.sourceBadge = badge;
+        return this;
+    }
+
+    /**
+     * Set the source badge source type directly.
+     */
+    public EditorToggle source(SourceBadge.Source source) {
+        if (this.sourceBadge == null) {
+            this.sourceBadge = new SourceBadge();
+        }
+        this.sourceBadge.setSource(source);
+        return this;
+    }
+
+    /**
+     * Get the current source badge (may be null).
+     */
+    public SourceBadge getSourceBadge() {
+        return sourceBadge;
+    }
+
     // =========================================================================
     // RENDERING
     // =========================================================================
@@ -111,7 +144,14 @@ public class EditorToggle {
         // Label on the left
         int labelColor = enabled ? UIConstants.Text.PRIMARY() : UIConstants.Text.MUTED();
         String safeLabel = Objects.requireNonNullElse(label, "");
-        safeGraphics.drawString(font, safeLabel, x, y + (height - 8) / 2, labelColor, false);
+        safeGraphics.drawString(font, safeLabel, x, y + TEXT_OFFSET_Y, labelColor, false);
+
+        // Source badge (inline after label)
+        if (sourceBadge != null) {
+            int badgeX = x + font.width(Objects.requireNonNull(safeLabel)) + BADGE_GAP;
+            int badgeY = y + (height - sourceBadge.getHeight()) / 2;
+            sourceBadge.render(graphics, badgeX, badgeY, mouseX, mouseY);
+        }
 
         // Toggle on the right - centered vertically within TOGGLE_HEIGHT
         int toggleX = x + width - TOGGLE_WIDTH;
@@ -157,8 +197,8 @@ public class EditorToggle {
         int stateColor = enabled ?
             (value ? UIConstants.Accent.GREEN() : UIConstants.Text.MUTED()) :
             UIConstants.Text.DISABLED();
-        int stateX = toggleX - font.width(stateText) - 8;
-        safeGraphics.drawString(font, stateText, stateX, y + (height - 8) / 2, stateColor, false);
+        int stateX = toggleX - font.width(stateText) - STATE_TEXT_GAP;
+        safeGraphics.drawString(font, stateText, stateX, y + TEXT_OFFSET_Y, stateColor, false);
 
         return height;
     }

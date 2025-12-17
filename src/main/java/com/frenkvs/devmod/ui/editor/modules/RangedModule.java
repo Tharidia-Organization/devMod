@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.ui.editor.modules;
 
+import com.frenkvs.devmod.ammo.AmmoSystem;
 import com.frenkvs.devmod.network.RangedWeaponStatsPayload;
 import com.frenkvs.devmod.ui.editor.AbstractEditorModule;
 import com.frenkvs.devmod.ui.editor.EditorSection;
@@ -23,8 +24,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
-import net.minecraft.tags.TagKey;
-import net.minecraft.core.registries.Registries;
 
 import java.util.List;
 import java.util.Locale;
@@ -139,6 +138,7 @@ public class RangedModule extends AbstractEditorModule {
             .format("%.2f")
             .suffix("x")
             .trackColor(UIConstants.SliderColors.SPEED)
+            .info("Multiplier for bow draw/crossbow reload speed. 1.0 = normal, 2.0 = twice as fast, 0.5 = twice as slow.")
             .onChange(v -> { stats.drawSpeed = v; markDirty(drawLabel); });
         if (variant == RangedVariant.CROSSBOW) {
             chargeTimeSlider = new EditorSlider("chargeTime", chargeLabel, 0.2f, 3.0f, stats.chargeTime)
@@ -146,6 +146,7 @@ public class RangedModule extends AbstractEditorModule {
                 .format("%.2f")
                 .suffix("x")
                 .trackColor(UIConstants.SliderColors.SPEED)
+                .info("Time to fully charge the crossbow. 1.0 = normal, higher = slower charge.")
                 .onChange(v -> { stats.chargeTime = v; markDirty(chargeLabel); });
         }
 
@@ -153,6 +154,7 @@ public class RangedModule extends AbstractEditorModule {
             .step(0.01f)
             .format("%.2f")
             .trackColor(UIConstants.SliderColors.SPEED)
+            .info("Shot precision. 1.0 = perfect accuracy, <1.0 = more spread, >1.0 = tighter grouping.")
             .onChange(v -> { stats.accuracy = v; markDirty(accuracyLabel); });
 
         rangeSlider = new EditorSlider("range", rangeLabel, 0.5f, 3.5f, stats.range)
@@ -160,6 +162,7 @@ public class RangedModule extends AbstractEditorModule {
             .format("%.2f")
             .suffix("x")
             .trackColor(UIConstants.SliderColors.SPEED)
+            .info("Maximum effective range multiplier. Affects how far projectiles travel before losing damage.")
             .onChange(v -> { stats.range = v; markDirty(rangeLabel); });
     }
 
@@ -169,52 +172,59 @@ public class RangedModule extends AbstractEditorModule {
             .step(0.05f)
             .format("%.2f")
             .trackColor(UIConstants.SliderColors.SPEED)
+            .info("How fast the projectile travels. Higher = flatter trajectory, more damage. 1.0 = vanilla arrow speed.")
             .onChange(v -> { stats.projectileSpeed = v; markDirty(projSpeedLabel); });
 
         projectileGravitySlider = new EditorSlider("projectileGravity", "Gravity", 0f, 0.2f, stats.projectileGravity)
             .step(0.005f)
             .format("%.3f")
             .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .info("Downward acceleration per tick. 0.05 = normal arrow, 0 = no drop (laser-like), 0.2 = very heavy.")
             .onChange(v -> { stats.projectileGravity = v; markDirty("Gravity"); });
 
         projectileSpreadSlider = new EditorSlider("projectileSpread", "Spread", 0f, 3f, stats.projectileSpread)
             .step(0.05f)
             .format("%.2f")
             .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .info("Random deviation added to each shot. 0 = perfectly straight, 3 = very inaccurate spread.")
             .onChange(v -> { stats.projectileSpread = v; markDirty("Spread"); });
 
         baseDamageSlider = new EditorSlider("baseDamage", "Base Damage", 0f, 20f, stats.baseDamage)
             .step(0.1f)
             .format("%.1f")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .info("Base damage before Power enchant and velocity bonuses. Vanilla arrow = 2.0, Power V adds +12.5.")
             .onChange(v -> { stats.baseDamage = v; markDirty("Base damage"); });
 
         multishotToggle = new EditorToggle("multishot", "Enable Multishot", stats.multishot)
+            .tooltip("Fire multiple projectiles per shot (uses one ammo)")
             .onChange(val -> { stats.multishot = val; markDirty("Multishot"); });
 
         piercingSlider = new EditorSlider("piercing", "Piercing Level", 0f, 5f, stats.piercing)
             .step(1f)
             .format("%.0f")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .info("Number of entities the projectile can pass through. Like Piercing enchant. 0 = stops on first hit.")
             .onChange(v -> { stats.piercing = Math.round(v); markDirty("Piercing"); });
 
         multishotCountSlider = new EditorSlider("multishotCount", "Projectile Count", 1f, 5f, stats.multishotCount)
             .step(1f)
             .format("%.0f")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .info("Number of projectiles fired when Multishot is enabled. Vanilla Multishot = 3. All consume only 1 ammo.")
             .onChange(v -> { stats.multishotCount = Math.round(v); markDirty("Projectile count"); });
     }
 
     private void createMetadataComponents() {
         ammoFilterInput = new EditorTextField("ammoFilter", "Ammo Filter")
-            .placeholder("e.g. minecraft:arrow")
+            .placeholder("e.g. minecraft:arrow or #minecraft:arrows")
             .onChange(val -> {
                 stats.ammoFilter = val == null ? "" : val.trim();
                 markDirty("Ammo filter");
             });
         ammoFilterInput.setValue(stats.ammoFilter == null ? "" : stats.ammoFilter);
         infinityToggle = new EditorToggle("infinity", "Infinity Override", stats.infinityOverride)
-            .tooltip("Force infinite ammo even without enchant")
+            .tooltip("Force infinite ammo even without Infinity enchant. First arrow in inventory is used as template.")
             .onChange(v -> { stats.infinityOverride = v; markDirty("Infinity override"); });
     }
 
@@ -224,6 +234,7 @@ public class RangedModule extends AbstractEditorModule {
             .format("%.2f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .info("Chance for projectile to deal critical damage (0-1). Vanilla arrows crit at full velocity. This adds bonus crit chance.")
             .onChange(v -> { stats.critChance = v; markDirty("Crit chance"); });
 
         critDamageSlider = new EditorSlider("critDamage", "Crit Damage", 1.0f, 3.5f, stats.critDamage)
@@ -231,6 +242,7 @@ public class RangedModule extends AbstractEditorModule {
             .format("%.2f")
             .suffix("x")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .info("Damage multiplier on critical hit. 1.5x = 50% bonus damage. Stacks with Power enchant.")
             .onChange(v -> { stats.critDamage = v; markDirty("Crit damage"); });
     }
 
@@ -239,15 +251,19 @@ public class RangedModule extends AbstractEditorModule {
             .step(0.1f)
             .format("%.1f")
             .trackColor(UIConstants.SliderColors.SPEED)
+            .info("How fast the trident returns to the player. Higher = faster return. 0 = no return (requires pickup).")
             .onChange(v -> { stats.loyaltySpeed = v; markDirty("Loyalty speed"); });
         riptideDistanceSlider = new EditorSlider("riptideDistance", "Riptide Distance", 0f, 64f, stats.riptideDistance)
             .step(1f)
             .format("%.0f")
             .trackColor(UIConstants.SliderColors.SPEED)
+            .info("Maximum distance the player can travel when using Riptide in water/rain. 0 = disabled.")
             .onChange(v -> { stats.riptideDistance = v; markDirty("Riptide distance"); });
         riptideRequiresWaterToggle = new EditorToggle("riptideWater", "Riptide Requires Water", stats.riptideRequiresWater)
+            .tooltip("If enabled, Riptide only works in water or rain. If disabled, works anywhere.")
             .onChange(v -> { stats.riptideRequiresWater = v; markDirty("Riptide requires water"); });
         channelingToggle = new EditorToggle("channeling", "Channeling Allowed", stats.channeling)
+            .tooltip("When enabled, trident summons lightning on hit during thunderstorms.")
             .onChange(v -> { stats.channeling = v; markDirty("Channeling"); });
     }
 
@@ -297,32 +313,38 @@ public class RangedModule extends AbstractEditorModule {
     }
 
     private List<String> computeAmmoMatches(String filter) {
-        List<String> result = new ArrayList<>();
-        if (filter == null || filter.isBlank()) return result;
-        ResourceLocation id = ResourceLocation.tryParse(java.util.Objects.requireNonNull(filter));
-        if (id == null) return result;
-        try {
-            TagKey<net.minecraft.world.item.Item> tag = TagKey.create(
-                java.util.Objects.requireNonNull(Registries.ITEM),
-                java.util.Objects.requireNonNull(id)
-            );
-            BuiltInRegistries.ITEM.getTag(java.util.Objects.requireNonNull(tag)).ifPresent(set -> {
-                set.stream().limit(16).forEach(h -> {
-                    var item = h.value();
-                    String name = item.getDescriptionId();
-                    try {
-                        name = item.getDescription().getString();
-                    } catch (Exception ignored) { }
-                    result.add(name);
-                });
-            });
-        } catch (Exception ignored) {
-            // best effort
+        if (filter == null || filter.isBlank()) {
+            return new ArrayList<>();
         }
-        return result;
+        // Delegate to AmmoSystem utility for consistent behavior
+        // Use tag string directly for lookup
+        List<ItemStack> matches = AmmoSystem.getItemsFromTagString(filter);
+        List<String> names = new ArrayList<>();
+        int count = 0;
+        for (ItemStack stack : matches) {
+            if (count >= 16) break;
+            try {
+                names.add(stack.getHoverName().getString());
+            } catch (Exception e) {
+                names.add(stack.getItem().getDescriptionId());
+            }
+            count++;
+        }
+        return names;
     }
 
     private class AmmoListSection implements EditorSection.CustomSection {
+        private static final int HEADER_BLOCK_HEIGHT = 14;
+        private static final int ENTRY_LINE_HEIGHT = 12;
+        private static final int MATCHES_BOTTOM_PADDING = 8;
+        private static final int SUGGESTION_ROW_HEIGHT = 14;
+        private static final int SUGGESTION_BLOCK_PADDING = 20;
+        private static final int SUGGESTION_TITLE_GAP = 6;
+        private static final int SUGGESTION_TITLE_LINE_HEIGHT = 14;
+        private static final int BUTTON_TEXT_OFFSET_X = 6;
+        private static final int BUTTON_TEXT_OFFSET_Y = 3;
+        private static final int BUTTON_GAP = 4;
+        private static final int MAX_MATCHES_SHOWN = 8;
         private final List<ResponsiveLayout.Rect> suggestionRects = new ArrayList<>();
 
         @Override
@@ -333,7 +355,8 @@ public class RangedModule extends AbstractEditorModule {
         public int getHeight() {
             int lines = Math.max(1, ammoMatches.size());
             int suggLines = ammoSuggestions.size();
-            return 14 + lines * 12 + 8 + suggLines * 14 + 20;
+            return HEADER_BLOCK_HEIGHT + lines * ENTRY_LINE_HEIGHT + MATCHES_BOTTOM_PADDING
+                + suggLines * SUGGESTION_ROW_HEIGHT + SUGGESTION_BLOCK_PADDING;
         }
         @Override
         public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
@@ -342,33 +365,35 @@ public class RangedModule extends AbstractEditorModule {
             int y = bounds.y() + UIConstants.Spacing.SM;
             String header = ammoMatches.isEmpty() ? "No items match this tag" : "Matching ammo (" + ammoMatches.size() + "):";
             graphics.drawString(font, header, x, y, UIConstants.Text.SECONDARY(), false);
-            y += 12;
+            y += ENTRY_LINE_HEIGHT;
             int shown = 0;
             for (String entry : ammoMatches) {
-                if (shown >= 8) break;
+                if (shown >= MAX_MATCHES_SHOWN) break;
                 graphics.drawString(font, "- " + entry, x, y, UIConstants.Text.PRIMARY(), false);
-                y += 12;
+                y += ENTRY_LINE_HEIGHT;
                 shown++;
             }
 
             // Suggestions + clear
-            y += 6;
+            y += SUGGESTION_TITLE_GAP;
             graphics.drawString(font, "Suggestions:", x, y, UIConstants.Text.SECONDARY(), false);
-            y += 14;
+            y += SUGGESTION_TITLE_LINE_HEIGHT;
             suggestionRects.clear();
-            int btnHeight = 14;
+            int btnHeight = SUGGESTION_ROW_HEIGHT;
             int btnWidth = bounds.width() - UIConstants.Spacing.SM * 2;
             // Clear button
             int clearX = x;
             graphics.fill(clearX, y, clearX + btnWidth, y + btnHeight, UIConstants.Background.INPUT());
-            graphics.drawString(font, "Clear filter", clearX + 6, y + 3, UIConstants.Text.PRIMARY(), false);
+            graphics.drawString(font, "Clear filter", clearX + BUTTON_TEXT_OFFSET_X,
+                y + BUTTON_TEXT_OFFSET_Y, UIConstants.Text.PRIMARY(), false);
             suggestionRects.add(new ResponsiveLayout.Rect(clearX, y, btnWidth, btnHeight));
-            y += btnHeight + 4;
+            y += btnHeight + BUTTON_GAP;
             for (Suggestion sugg : ammoSuggestions) {
                 graphics.fill(clearX, y, clearX + btnWidth, y + btnHeight, UIConstants.Background.PANEL());
-                graphics.drawString(font, sugg.label(), clearX + 6, y + 3, UIConstants.Text.PRIMARY(), false);
+                graphics.drawString(font, sugg.label(), clearX + BUTTON_TEXT_OFFSET_X,
+                    y + BUTTON_TEXT_OFFSET_Y, UIConstants.Text.PRIMARY(), false);
                 suggestionRects.add(new ResponsiveLayout.Rect(clearX, y, btnWidth, btnHeight));
-                y += btnHeight + 4;
+                y += btnHeight + BUTTON_GAP;
             }
         }
 

@@ -17,8 +17,8 @@ public final class EditorScaleCalculator {
     public static float calculateAutoScale(int screenWidth, int screenHeight) {
         float maxScale = SCALE_OPTIONS[0];
         for (float scale : SCALE_OPTIONS) {
-            int scaledWidth = Math.round(UIConstants.PanelDimensions.PANEL_WIDTH * scale) + SCREEN_MARGIN * 2;
-            int scaledHeight = Math.round(UIConstants.PanelDimensions.PANEL_HEIGHT * scale) + SCREEN_MARGIN * 2;
+            int scaledWidth = Math.round(EditorConstants.PANEL_WIDTH * scale) + SCREEN_MARGIN * 2;
+            int scaledHeight = Math.round(EditorConstants.PANEL_HEIGHT * scale) + SCREEN_MARGIN * 2;
             if (scaledWidth <= screenWidth && scaledHeight <= screenHeight) {
                 maxScale = scale;
             } else {
@@ -67,8 +67,8 @@ public final class EditorScaleCalculator {
      * Header/footer are never shrunk; clamp occurs on the overall panel bounds.
      */
     public static ScreenFitResult calculateFit(int screenWidth, int screenHeight, float scale) {
-        int scaledWidth = ScaledCoord.scaleDim(UIConstants.PanelDimensions.PANEL_WIDTH, scale);
-        int scaledHeight = ScaledCoord.scaleDim(UIConstants.PanelDimensions.PANEL_HEIGHT, scale);
+        int scaledWidth = ScaledCoord.scaleDim(EditorConstants.PANEL_WIDTH, scale);
+        int scaledHeight = ScaledCoord.scaleDim(EditorConstants.PANEL_HEIGHT, scale);
 
         int panelX = ScaledCoord.alignTo4((screenWidth - scaledWidth) / 2);
         int panelY = ScaledCoord.alignTo4((screenHeight - scaledHeight) / 2);

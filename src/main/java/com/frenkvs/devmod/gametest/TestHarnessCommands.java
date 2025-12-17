@@ -5,6 +5,7 @@ import com.frenkvs.devmod.HitHelper;
 import com.frenkvs.devmod.WeaponStats;
 import com.frenkvs.devmod.hud.Impact3DPanelManager;
 import com.frenkvs.devmod.hud.ImpactHudOverlay;
+import com.frenkvs.devmod.hud.ImpactHudPresets;
 import com.frenkvs.devmod.rendering.DebugRenderer;
 import com.frenkvs.devmod.ui.hub.TestingHub;
 import com.frenkvs.devmod.util.I18n;
@@ -21,6 +22,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
+import java.nio.file.Path;
 import java.util.Objects;
 
 /**
@@ -71,6 +73,28 @@ public class TestHarnessCommands {
                         boolean enabled = ImpactHudOverlay.isEnabled();
                         ctx.getSource().sendSuccess(() -> I18n.translate(enabled ? "devmod.testing.impact_hud_enabled" : "devmod.testing.impact_hud_disabled"), false);
                         return 1;
+                    }))
+                .then(Commands.literal("export")
+                    .executes(ctx -> {
+                        Path path = ImpactHudPresets.getDefaultPresetFile();
+                        boolean exported = ImpactHudPresets.exportToFile(path);
+                        if (exported) {
+                            ctx.getSource().sendSuccess(() -> I18n.translate("devmod.testing.impact_hud_preset_exported", path.toString()), false);
+                            return 1;
+                        }
+                        ctx.getSource().sendFailure(I18n.translate("devmod.testing.impact_hud_preset_export_failed", path.toString()));
+                        return 0;
+                    }))
+                .then(Commands.literal("import")
+                    .executes(ctx -> {
+                        Path path = ImpactHudPresets.getDefaultPresetFile();
+                        boolean imported = ImpactHudPresets.importFromFile(path);
+                        if (imported) {
+                            ctx.getSource().sendSuccess(() -> I18n.translate("devmod.testing.impact_hud_preset_imported", path.toString()), false);
+                            return 1;
+                        }
+                        ctx.getSource().sendFailure(I18n.translate("devmod.testing.impact_hud_preset_import_failed", path.toString()));
+                        return 0;
                     })))
 
             // /devtest panel <on|off>

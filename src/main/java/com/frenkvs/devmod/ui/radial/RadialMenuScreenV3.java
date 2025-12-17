@@ -356,7 +356,7 @@ public class RadialMenuScreenV3 extends Screen {
 
         if (selectedCategoryIndex >= 0 && selectedCategoryIndex < categories.size()) {
             RadialCategory cat = categories.get(selectedCategoryIndex);
-            animator.updateItemAnimations(selectedItemIndex, cat.getItems().size());
+            animator.updateItemAnimations(selectedItemIndex, cat.getVisibleItemCount());
         }
 
         animator.updateFavoriteAnimations(selectedFavoriteIndex, favorites.size());
@@ -417,17 +417,18 @@ public class RadialMenuScreenV3 extends Screen {
         selectedCategoryIndex = (int)(adjustedAngle / segmentAngle) % numCategories;
 
         // Select item if mouse is beyond the outer ring
+        // Use getVisibleItems() to only consider visible items for selection
         if (distance > outerRadius && selectedCategoryIndex >= 0 && selectedCategoryIndex < categories.size()) {
             RadialCategory cat = categories.get(selectedCategoryIndex);
-            int numItems = cat.getItems().size();
-            if (numItems > 0) {
-                double itemSegment = segmentAngle / numItems;
+            int numVisibleItems = cat.getVisibleItemCount();
+            if (numVisibleItems > 0) {
+                double itemSegment = segmentAngle / numVisibleItems;
                 double catStartAngle = startOffset + selectedCategoryIndex * segmentAngle;
                 double relativeAngle = angle - catStartAngle;
                 if (relativeAngle < 0) relativeAngle += Math.PI * 2;
                 if (relativeAngle > Math.PI) relativeAngle -= Math.PI * 2;
 
-                selectedItemIndex = Mth.clamp((int)(relativeAngle / itemSegment), 0, numItems - 1);
+                selectedItemIndex = Mth.clamp((int)(relativeAngle / itemSegment), 0, numVisibleItems - 1);
             }
         }
 
@@ -690,8 +691,11 @@ public class RadialMenuScreenV3 extends Screen {
         // Shift+click to toggle favorite
         if (shiftHeld && selectedItemIndex >= 0 && selectedCategoryIndex >= 0) {
             RadialCategory cat = getActiveCategories().get(selectedCategoryIndex);
-            RadialMenuItem item = cat.getItems().get(selectedItemIndex);
-            toggleFavorite(item, cat);
+            List<RadialMenuItem> visibleItems = cat.getVisibleItems();
+            if (selectedItemIndex < visibleItems.size()) {
+                RadialMenuItem item = visibleItems.get(selectedItemIndex);
+                toggleFavorite(item, cat);
+            }
             return true;
         }
 
@@ -835,14 +839,15 @@ public class RadialMenuScreenV3 extends Screen {
 
         if (selectedCategoryIndex >= 0) {
             RadialCategory cat = getActiveCategories().get(selectedCategoryIndex);
+            List<RadialMenuItem> visibleItems = cat.getVisibleItems();
             int itemNum = getItemKeyIndex(keyCode);
 
-            if (itemNum >= 0 && itemNum < cat.getItems().size()) {
+            if (itemNum >= 0 && itemNum < visibleItems.size()) {
                 if (editMode) {
                     selectedItemIndex = itemNum;
                     openItemEditor();
                 } else {
-                    executeItem(cat.getItems().get(itemNum), cat);
+                    executeItem(visibleItems.get(itemNum), cat);
                 }
                 return true;
             }
@@ -914,8 +919,9 @@ public class RadialMenuScreenV3 extends Screen {
 
         if (selectedCategoryIndex >= 0 && selectedCategoryIndex < getActiveCategories().size()) {
             RadialCategory cat = getActiveCategories().get(selectedCategoryIndex);
-            if (selectedItemIndex >= 0 && selectedItemIndex < cat.getItems().size()) {
-                RadialMenuItem item = cat.getItems().get(selectedItemIndex);
+            List<RadialMenuItem> visibleItems = cat.getVisibleItems();
+            if (selectedItemIndex >= 0 && selectedItemIndex < visibleItems.size()) {
+                RadialMenuItem item = visibleItems.get(selectedItemIndex);
 
                 if (item.isSubcategoryLink()) {
                     RadialCategory subcategory = item.getLinkedSubcategory();
@@ -982,8 +988,9 @@ public class RadialMenuScreenV3 extends Screen {
     private void openItemEditor() {
         if (selectedCategoryIndex >= 0 && selectedItemIndex >= 0) {
             RadialCategory cat = getActiveCategories().get(selectedCategoryIndex);
-            if (selectedItemIndex < cat.getItems().size()) {
-                RadialMenuItem item = cat.getItems().get(selectedItemIndex);
+            List<RadialMenuItem> visibleItems = cat.getVisibleItems();
+            if (selectedItemIndex < visibleItems.size()) {
+                RadialMenuItem item = visibleItems.get(selectedItemIndex);
                 showMessage(Minecraft.getInstance(),
                     "§6[Edit] " + item.getName() + " - Shift+Click to toggle ★ favorite");
             }

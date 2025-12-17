@@ -43,12 +43,21 @@ public class Impact3DPanel {
      * @param cameraPos Camera position (to calculate panel offset)
      */
     public Impact3DPanel(Vec3 hitPoint, ImpactData data, Vec3 cameraPos) {
+        this(hitPoint, Impact3DRenderer.INSTANCE.calculatePanelPosition(hitPoint, cameraPos), data);
+    }
+
+    /**
+     * Creates a new 3D panel with a precomputed position.
+     *
+     * @param hitPoint Impact point in the world
+     * @param panelPosition Panel position in the world
+     * @param data Impact data
+     */
+    public Impact3DPanel(Vec3 hitPoint, Vec3 panelPosition, ImpactData data) {
         this.hitPoint = hitPoint;
         this.data = data;
         this.spawnTime = System.currentTimeMillis();
-
-        // Calculate initial panel position
-        this.panelPosition = Impact3DRenderer.INSTANCE.calculatePanelPosition(hitPoint, cameraPos);
+        this.panelPosition = panelPosition;
     }
 
     /**

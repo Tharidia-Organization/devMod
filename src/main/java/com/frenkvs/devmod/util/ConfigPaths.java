@@ -122,6 +122,13 @@ public final class ConfigPaths {
         return getConfigDir().resolve("damage_statistics.json");
     }
 
+    /**
+     * Impact HUD presets file: config/devmod/impact_hud_presets.json
+     */
+    public static Path getImpactHudPresetsFile() {
+        return getConfigDir().resolve("impact_hud_presets.json");
+    }
+
     // ==================== ITEM EDITOR ====================
 
     /**

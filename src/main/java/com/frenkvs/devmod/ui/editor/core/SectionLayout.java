@@ -2,7 +2,12 @@ package com.frenkvs.devmod.ui.editor.core;
 
 /**
  * Helper for laying out vertical sections with consistent spacing.
- * Mirrors EDITOR_DESIGN_SYSTEM.md Section 2.19.
+ * Uses {@link ScaledSpacing} for scaled spacing values and {@link ScaledCoord#alignTo4(int)}
+ * for grid alignment.
+ *
+ * @see ScaledSpacing#sectionGap()
+ * @see ScaledSpacing#rowGap()
+ * @see docs/editor-design-system/12-grid-spacing.md
  */
 public final class SectionLayout {
     private final int x;
@@ -10,6 +15,12 @@ public final class SectionLayout {
     private final int width;
     private int currentY;
 
+    /**
+     * Creates a section layout.
+     * @param x X position (will be aligned to 4px grid)
+     * @param y starting Y position (will be aligned to 4px grid)
+     * @param width section width (will be aligned to 4px grid)
+     */
     public SectionLayout(int x, int y, int width) {
         this.x = ScaledCoord.alignTo4(x);
         this.startY = ScaledCoord.alignTo4(y);
@@ -17,30 +28,48 @@ public final class SectionLayout {
         this.currentY = this.startY;
     }
 
-    /** Add a header row and return its Y position. */
+    /**
+     * Add a header row and return its Y position.
+     * Uses scaled header height and padding.
+     * @return Y position for the header
+     */
     public int addHeader() {
         int y = currentY;
-        currentY += EditorDimensions.SECTION_HEADER_HEIGHT;
-        currentY += EditorSpacing.S; // padding after header
+        currentY += ScaledCoord.scale(EditorDimensions.SECTION_HEADER_HEIGHT);
+        currentY += ScaledSpacing.s(); // padding after header
         return y;
     }
 
-    /** Add a row of specified height and return its Y position. */
+    /**
+     * Add a row of specified height and return its Y position.
+     * @param height row height (will be aligned to 4px grid)
+     * @return Y position for this row
+     */
     public int addRow(int height) {
         int y = currentY;
         currentY += ScaledCoord.alignTo4(height);
-        currentY += EditorSpacing.ROW_GAP;
+        currentY += ScaledSpacing.rowGap();
         return y;
     }
 
-    /** End current section and add section gap. */
+    /**
+     * End current section and add section gap.
+     * Removes the trailing row gap and adds section gap instead.
+     */
     public void endSection() {
-        currentY -= EditorSpacing.ROW_GAP; // remove last row gap
-        currentY += EditorSpacing.SECTION_GAP;
+        currentY -= ScaledSpacing.rowGap(); // remove last row gap
+        currentY += ScaledSpacing.sectionGap();
     }
 
+    /** @return current Y position */
     public int getY() { return currentY; }
+
+    /** @return total height used so far */
     public int getHeight() { return currentY - startY; }
-    public int getContentX() { return x + EditorSpacing.CONTENT_PADDING; }
-    public int getContentWidth() { return width - EditorSpacing.CONTENT_PADDING * 2; }
+
+    /** @return content X position (with scaled padding) */
+    public int getContentX() { return x + ScaledSpacing.contentPadding(); }
+
+    /** @return content width (minus scaled padding on both sides) */
+    public int getContentWidth() { return width - ScaledSpacing.contentPadding() * 2; }
 }

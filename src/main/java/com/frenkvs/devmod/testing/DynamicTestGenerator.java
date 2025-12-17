@@ -62,6 +62,9 @@ public class DynamicTestGenerator {
      * Register default test templates.
      */
     private void registerDefaultTemplates() {
+        // DevMod core tests (always run first)
+        templates.add(new DevModCoreTestTemplate());
+
         // Iron's Spellbooks specialized template (must be before generic templates)
         templates.add(new IronSpellbooksTestTemplate());
 
@@ -79,6 +82,35 @@ public class DynamicTestGenerator {
 
         // Generic mod functionality template
         templates.add(new GenericModTestTemplate());
+    }
+
+    /**
+     * Template for DevMod core functionality tests.
+     * Always generates tests regardless of mod content.
+     */
+    private static class DevModCoreTestTemplate implements TestTemplate {
+        @Override
+        public String getName() { return "DevMod Core Tests"; }
+
+        @Override
+        public boolean appliesTo(ModInfo mod) {
+            // Only apply to DevMod itself
+            return "devmod".equals(mod.getModId());
+        }
+
+        @Override
+        public List<TestCase> generateTests(ModInfo mod) {
+            List<TestCase> tests = new ArrayList<>();
+
+            // Add all DevMod armor test cases
+            tests.addAll(DevModArmorTestCases.generateTestCases());
+
+            // Add all DevMod preset system test cases
+            tests.addAll(DevModPresetTestCases.generateTestCases());
+
+            LOGGER.info("[DevModCoreTestTemplate] Generated {} DevMod core tests", tests.size());
+            return tests;
+        }
     }
 
     /**

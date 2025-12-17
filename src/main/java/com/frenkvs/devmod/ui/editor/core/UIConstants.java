@@ -387,39 +387,39 @@ public final class UIConstants {
 
     public static final class Size {
         /** Default button height */
-        public static final int BUTTON_HEIGHT = 20;
+        public static final int BUTTON_HEIGHT = EditorDimensions.BTN_HEIGHT_SMALL;
         /** Default button width */
         public static final int BUTTON_WIDTH = 80;
         /** Tab height - EDITOR_DESIGN_SYSTEM.md Section 2.4 */
-        public static final int TAB_HEIGHT = 24;
-        /** Tab min width */
-        public static final int TAB_WIDTH = 64;
+        public static final int TAB_HEIGHT = EditorDimensions.TAB_HEIGHT;
+        /** Tab width (aligned to 4px grid) */
+        public static final int TAB_WIDTH = EditorDimensions.TAB_MIN_WIDTH;
         /** Tab gap */
-        public static final int TAB_GAP = 4;
+        public static final int TAB_GAP = EditorDimensions.TAB_GAP;
         /** Slider height */
-        public static final int SLIDER_HEIGHT = 20;
+        public static final int SLIDER_HEIGHT = EditorDimensions.SLIDER_HEIGHT;
         /** Slider thumb size */
-        public static final int SLIDER_THUMB = 14;
+        public static final int SLIDER_THUMB = EditorDimensions.SLIDER_THUMB_SIZE;
         /** Default slider width */
         public static final int SLIDER_WIDTH = 200;
         /** Input field height */
-        public static final int INPUT_HEIGHT = 20;
+        public static final int INPUT_HEIGHT = EditorDimensions.INPUT_HEIGHT;
         /** Line height for text */
         public static final int LINE_HEIGHT = 10;
         /** Header height - EDITOR_DESIGN_SYSTEM.md Section 2.4 */
-        public static final int HEADER_HEIGHT = 28;
+        public static final int HEADER_HEIGHT = EditorConstants.HEADER_HEIGHT;
         /** Footer height - EDITOR_DESIGN_SYSTEM.md Section 2.7 */
-        public static final int FOOTER_HEIGHT = 60;
+        public static final int FOOTER_HEIGHT = EditorConstants.FOOTER_HEIGHT;
         /** Icon size */
-        public static final int ICON = 16;
+        public static final int ICON = EditorDimensions.ICON_NORMAL;
         /** Small icon */
-        public static final int ICON_SM = 12;
+        public static final int ICON_SM = EditorDimensions.ICON_SMALL;
         /** Large icon */
-        public static final int ICON_LG = 24;
+        public static final int ICON_LG = EditorDimensions.ICON_LARGE;
         /** Scrollbar width */
-        public static final int SCROLLBAR_WIDTH = 8;
+        public static final int SCROLLBAR_WIDTH = EditorDimensions.SCROLLBAR_WIDTH;
         /** Slot size */
-        public static final int SLOT_SIZE = 30;
+        public static final int SLOT_SIZE = EditorDimensions.SLOT_SIZE;
 
         private Size() {}
     }
@@ -429,14 +429,14 @@ public final class UIConstants {
      * Based on EDITOR_DESIGN_SYSTEM.md Section 2.1
      */
     public static final class PanelDimensions {
-        public static final int PANEL_WIDTH = 550;
-        public static final int PANEL_HEIGHT = 420;
-        public static final int LEFT_COLUMN_WIDTH = 140;
-        public static final int CONTENT_WIDTH = 390;
-        public static final int CONTENT_HEIGHT = 332;
-        public static final int PREVIEW_SIZE = 130;
-        public static final int SLOT_AREA_HEIGHT = 70;
-        public static final int INFO_PANEL_HEIGHT = 100;
+        public static final int PANEL_WIDTH = EditorConstants.PANEL_WIDTH;
+        public static final int PANEL_HEIGHT = EditorConstants.PANEL_HEIGHT;
+        public static final int LEFT_COLUMN_WIDTH = EditorConstants.LEFT_COLUMN_WIDTH;
+        public static final int CONTENT_WIDTH = EditorConstants.CONTENT_WIDTH;
+        public static final int CONTENT_HEIGHT = EditorConstants.CONTENT_HEIGHT;
+        public static final int PREVIEW_SIZE = EditorConstants.PREVIEW_SIZE;
+        public static final int SLOT_AREA_HEIGHT = EditorConstants.SLOT_AREA_HEIGHT;
+        public static final int INFO_PANEL_HEIGHT = EditorConstants.INFO_PANEL_HEIGHT;
 
         private PanelDimensions() {}
     }

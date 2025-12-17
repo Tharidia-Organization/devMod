@@ -1,7 +1,10 @@
 package com.frenkvs.devmod;
 
 import com.frenkvs.devmod.integration.ModIntegrationManager;
+import com.frenkvs.devmod.ui.editor.core.EditorConfig;
+import com.frenkvs.devmod.ui.editor.systems.PresetRegistry;
 import com.mojang.logging.LogUtils;
+import net.neoforged.fml.event.config.ModConfigEvent;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -69,8 +72,18 @@ public class DevMod {
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
         modContainer.registerConfig(ModConfig.Type.CLIENT, EditorClientConfig.SPEC);
 
+        // Register config reload listener for runtime updates
+        eventBus.addListener(DevMod::onConfigReload);
+
+        // Initialize EditorConfig cache (after config registration)
+        EditorConfig.initCache();
+
         // Initialize external mod integration (Pehkui, Better Combat, etc.)
         ModIntegrationManager.init();
+
+        // Initialize PresetRegistry (hierarchical preset system)
+        PresetRegistry.init();
+        PresetRegistry.getInstance().loadFromConfig();
 
         // Network payload registration (mod bus)
         eventBus.addListener(DebugNetworkHandler::registerPayloads);
@@ -84,6 +97,18 @@ public class DevMod {
         LOGGER.info("DevMod loaded successfully!");
     }
 
+    /**
+     * Handle config reload events for runtime config updates.
+     * Called when any devmod config file is reloaded.
+     */
+    private static void onConfigReload(ModConfigEvent.Reloading event) {
+        // Only handle our client config for editor settings
+        if (event.getConfig().getSpec() == EditorClientConfig.SPEC) {
+            LOGGER.debug("[DevMod] Client config reloaded, checking for changes...");
+            EditorConfig.onConfigReload();
+        }
+    }
+
     private static void registerKeyMappings(RegisterKeyMappingsEvent event) {
         LOGGER.info("[DevMod] Registering keybinds including N for QA Testing");
         event.register(Objects.requireNonNull(KeyInputHandler.OPEN_SETTINGS_KEY));
@@ -91,6 +116,7 @@ public class DevMod {
         event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_DEBUG_OVERLAY_KEY));
         event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_LIGHT_OVERLAY_KEY));
         event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_HEATMAP_KEY));
+        event.register(Objects.requireNonNull(KeyInputHandler.DISMISS_IMPACT_HUD_KEY));
         event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_ROOM_BOUNDS_KEY));
         event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_PATHFINDING_KEY));
         event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_LOS_KEY));

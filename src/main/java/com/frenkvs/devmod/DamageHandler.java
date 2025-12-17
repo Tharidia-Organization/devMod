@@ -1,10 +1,14 @@
 package com.frenkvs.devmod;
 
 import com.frenkvs.devmod.client.ClientVFXProxy;
-import com.frenkvs.devmod.hud.DamageBreakdown;
+import com.frenkvs.devmod.hud.ImpactHudService;
+import com.frenkvs.devmod.damage.DamageCalculator;
+import com.frenkvs.devmod.damage.DamageBreakdown;
 import com.frenkvs.devmod.hud.ImpactData;
 import com.frenkvs.devmod.util.DamageTypeConfig;
+import com.frenkvs.devmod.util.I18n;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -12,15 +16,11 @@ import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.Projectile;
-import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.tags.DamageTypeTags;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.loading.FMLEnvironment;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.item.MaceItem;
@@ -121,93 +121,41 @@ public class DamageHandler {
             // 2. Retrieve Statistics (Global or Specific) - component/modifier source of truth
             WeaponStats stats = WeaponConfigManager.getStats(weapon);
 
-            // 3. Calculate Multiplier
-            float multiplier = 1.0f;
-            String partKey = "devmod.bodypart.body";
-            int color = 0xFFFFFF;
+            // 3. Resolve part labels/colors for UI
+            PartPresentation partPresentation = getPartPresentation(part);
+            String partKey = partPresentation.partKey();
+            int color = partPresentation.color();
 
-            switch (part) {
-                case HEAD -> { multiplier = stats.headMult; partKey = "devmod.bodypart.head"; color = 0xFF5555; }
-                case BODY -> { multiplier = stats.bodyMult; partKey = "devmod.bodypart.body"; color = 0x55FF55; }
-                case ARMS -> { multiplier = stats.armsMult; partKey = "devmod.bodypart.arms"; color = 0xFFAA00; }
-                case LEGS -> { multiplier = stats.legsMult; partKey = "devmod.bodypart.legs"; color = 0x55FFFF; }
-            }
-
-            // 4. Calculate Final Damage
+            // 4. Calculate Final Damage using DamageCalculator
             float originalDamage = event.getAmount();
             if (rangedBaseOverride > 0) {
                 originalDamage = rangedBaseOverride;
                 event.setAmount(originalDamage);
             }
-            float newDamage = (originalDamage + stats.baseDamageBonus) * multiplier;
-            if (rangedSpeedOverride > 0) {
-                newDamage *= rangedSpeedOverride;
-            }
 
-            // Damage Bonus: applies additional damage bonus on single target
-            if (stats.damageBonus > 0) {
-                newDamage += originalDamage * stats.damageBonus;
-            }
+            // Use centralized damage calculation with HUD breakdown
+            DamageCalculator.CalculationDetails calcDetails = DamageCalculator.calculateWithBreakdown(
+                weapon, attacker, victim, part, originalDamage, stats, event.getSource());
+            DamageCalculator.CalculationResult calcResult = calcDetails.result();
 
-            // 5. Armor Penetration (configurable formula via Config) + Armor Shred
-            // Calculate armor pen bonus ONCE for both damage application AND telemetry
-            float armorPenBonus = 0f;
-            float targetArmor = Math.max(0f, victim.getArmorValue() - stats.armorShred);
-            if (stats.armorPenetration > 0) {
-                armorPenBonus = calculateArmorPenBonus(stats.armorPenetration, targetArmor, newDamage);
-                newDamage += armorPenBonus;
-            }
+            float newDamage = calcResult.finalDamage();
+            float armorPenBonus = calcResult.armorPenBonus();
+            float armorReduction = calcResult.armorReduction();
+            float multiplier = calcResult.bodyPartMultiplier();
 
-            // 5b. Custom Armor Reduction (DevMod ArmorStats)
-            // Applied AFTER weapon stats, BEFORE final damage
-            float armorReduction = 0f;
-            if (victim instanceof Player playerVictim) {
-                armorReduction = calculateCustomArmorReduction(playerVictim, event.getSource());
-                if (armorReduction > 0) {
-                    float reducedDamage = newDamage * (1.0f - armorReduction);
-                    LOGGER.debug("Armor reduction: {}% -> damage {} -> {}",
-                        (int)(armorReduction * 100), newDamage, reducedDamage);
-                    newDamage = reducedDamage;
-                }
+            // Apply ranged modifiers (speed scaling, crit)
+            if (isRanged) {
+                newDamage = DamageCalculator.applyRangedModifiers(
+                    calcResult, rangedSpeedOverride, rangedCritChance, rangedCritDamage);
             }
 
             // Store body part, armor pen bonus, AND armor reduction in context for telemetry
-            HitContext.store(victim, part, isRanged, armorPenBonus);
-            HitContext.storeArmorReduction(victim, armorReduction);
+            recordHitContext(victim, part, isRanged, armorPenBonus, armorReduction);
 
-            // Ranged crit application (after armor reduction calc)
-            if (isRanged && rangedCritChance > 0 && Math.random() < rangedCritChance) {
-                newDamage *= rangedCritDamage;
-            }
+            LOGGER.debug("Damage calc: base={}, final={}, armorPen={}, armorReduction={}",
+                originalDamage, newDamage, armorPenBonus, armorReduction);
 
-            // Damage type bonuses (component-backed)
-            if (victim instanceof Player) {
-                newDamage *= (1f + stats.damageVsPlayers);
-            } else if (victim instanceof net.minecraft.world.entity.Mob) {
-                try {
-                    // Best-effort: check undead/arthropod via built-in predicates
-                    if (victim.getType().is(Objects.requireNonNull(net.minecraft.tags.EntityTypeTags.UNDEAD))) {
-                        newDamage *= (1f + stats.damageVsUndead);
-                    } else if (victim.getType().is(Objects.requireNonNull(net.minecraft.tags.EntityTypeTags.ARTHROPOD))) {
-                        newDamage *= (1f + stats.damageVsArthropods);
-                    }
-                } catch (Exception ignored) {
-                    // fallback: no bonus
-                }
-            }
-            if (stats.fireDamageBonus > 0) {
-                newDamage *= (1f + stats.fireDamageBonus / 100f);
-            }
-            if (stats.magicDamageBonus > 0) {
-                newDamage *= (1f + stats.magicDamageBonus / 100f);
-            }
-            if (stats.trueDamagePercent > 0) {
-                float truePortion = newDamage * stats.trueDamagePercent;
-                float normalPortion = newDamage * (1f - stats.trueDamagePercent);
-                newDamage = truePortion + normalPortion;
-            }
-
-            // 6. Apply
+            // 5. Apply shield block
             if (victim instanceof Player playerVictim && playerVictim.isBlocking()) {
                 newDamage = applyShieldBlock(playerVictim, event.getSource(), newDamage);
             }
@@ -215,116 +163,90 @@ public class DamageHandler {
             event.setAmount(newDamage);
 
             // 7. Feedback Visivo (actionbar) - Uses translatable component for i18n
-            if (attacker instanceof ServerPlayer player) {
-                String dmgText = String.format("%.1f", newDamage);
-                String penText = stats.armorPenetration > 0 ? " [Pen]" : "";
-
-                var partComponent = Objects.requireNonNull(Component.translatable(partKey));
-                var damageComponent = Objects.requireNonNull(Component.literal(" §fDmg: " + dmgText + penText));
-                var feedback = Objects.requireNonNull(
-                    Component.literal("§7Hit: §" + getChar(color))
-                        .append(partComponent)
-                        .append(damageComponent)
-                );
-
-                player.displayClientMessage(feedback, true);
-            }
+            sendDamageFeedback(attacker, partKey, color, newDamage, stats);
 
             // 8. HUD Impact Analysis - Create and save data for the overlay
             // Note: armorPenBonus already calculated above for damage and telemetry
 
-            // Create detailed breakdown
-            DamageBreakdown breakdown = new DamageBreakdown(
-                weapon,
-                victim,
-                originalDamage,
-                multiplier,
-                armorPenBonus
-            );
+            DamageBreakdown breakdown = calcDetails.breakdown();
 
-            // Determine attack source
-            String attackSource = isRanged ? "Ranged Attack" : "Melee Attack";
+            String attackSource = getAttackSource(isRanged);
 
             // Create and store ImpactData for HUD (with hit position)
-            // MULTIPLAYER-SAFE: pass attacker UUID for data isolation
-            ImpactData impactData = new ImpactData(
-                attacker.getUUID(),
-                victim,
-                part,
-                multiplier,
-                breakdown,
-                attackSource,
-                isRanged,
-                hitPoint,
-                slashDirection
-            );
-            ImpactData.store(impactData);
+            ImpactData impactData = ImpactHudService.createAndStoreImpactData(
+                attacker, victim, part, multiplier, breakdown, attackSource, isRanged, hitPoint, slashDirection);
 
-            // Add 3D VFX effect (marker + slash animation)
-            // In singleplayer, the damage event runs on the integrated server but we can
-            // access client classes because we're on the same process
-            LOGGER.debug("dist.isClient={}, hitPoint={}, target={}",
-                FMLEnvironment.dist.isClient(), hitPoint, victim.getName().getString());
+            ImpactHudService.triggerImpactVfx(impactData, hitPoint, slashDirection, victim);
+            ImpactHudService.triggerDamageShakeIfApplicable(victim, part, multiplier, newDamage, hitPoint);
 
-            // Delegate VFX to proxy (safe on both client and server)
-            ClientVFXProxy.addImpactVFX(hitPoint, slashDirection, impactData);
-
-            // 9. Screen Shake Effect - adds tactile feedback for combat
-            // Only trigger shake when PLAYER takes damage (not when dealing damage)
-            if (victim instanceof Player && hitPoint != null) {
-                boolean isCritical = multiplier > 1.5f;
-                boolean isHeadshot = part == HitHelper.BodyPart.HEAD;
-                ClientVFXProxy.addDamageShake(hitPoint, newDamage, isCritical, isHeadshot);
-            }
-
-            // Lifesteal (post-hit)
-            if (stats.lifesteal > 0 && attacker.isAlive()) {
-                float heal = newDamage * stats.lifesteal;
-                attacker.heal(heal);
-            }
+            applyPostHitEffects(attacker, stats, newDamage);
         }
     }
 
-    private static char getChar(int color) {
-        if (color == 0xFF5555) return 'c';
-        if (color == 0x55FFFF) return 'b';
-        return 'a';
-    }
+    private record PartPresentation(String partKey, int color) {}
 
-    /**
-     * Calculates custom armor reduction from DevMod ArmorStats.
-     * Sums reduction from all equipped armor pieces, capped at 80%.
-     *
-     * @param player The player taking damage
-     * @param source The damage source
-     * @return Total reduction percentage (0.0 - 0.8)
-     */
-    private static float calculateCustomArmorReduction(Player player, DamageSource source) {
-        float totalReduction = 0f;
-
-        // Determine damage type flags
-        boolean isFire = source.is(Objects.requireNonNull(DamageTypeTags.IS_FIRE));
-        boolean isExplosion = source.is(Objects.requireNonNull(DamageTypeTags.IS_EXPLOSION));
-        boolean isProjectile = source.is(Objects.requireNonNull(DamageTypeTags.IS_PROJECTILE));
-        boolean isMagic = source.is(Objects.requireNonNull(DamageTypeTags.WITCH_RESISTANT_TO)); // Magic damage type
-        boolean isPhysical = !isFire && !isExplosion && !isMagic; // Default to physical
-
-        // Sum reductions from all armor slots
-        for (EquipmentSlot slot : EquipmentSlot.values()) {
-            if (slot.getType() != EquipmentSlot.Type.HUMANOID_ARMOR) continue;
-
-            ItemStack armor = player.getItemBySlot(slot);
-            if (armor.isEmpty() || !(armor.getItem() instanceof ArmorItem)) continue;
-
-            ArmorStats stats = ArmorConfigManager.getStats(armor);
-            if (stats.isDefault()) continue; // Skip default stats (no custom config)
-
-            // Get reduction for this damage type
-            totalReduction += stats.getReductionFor(isPhysical, isFire, isMagic, isExplosion, isProjectile);
+    private static PartPresentation getPartPresentation(HitHelper.BodyPart part) {
+        if (part == null) {
+            return new PartPresentation("devmod.bodypart.body", 0xFFFFFF);
         }
 
-        // Cap at 80% to prevent invincibility
-        return Math.min(totalReduction, 0.8f);
+        return switch (part) {
+            case HEAD -> new PartPresentation("devmod.bodypart.head", 0xFF5555);
+            case BODY -> new PartPresentation("devmod.bodypart.body", 0x55FF55);
+            case ARMS -> new PartPresentation("devmod.bodypart.arms", 0xFFAA00);
+            case LEGS -> new PartPresentation("devmod.bodypart.legs", 0x55FFFF);
+        };
+    }
+
+    private static void recordHitContext(LivingEntity victim, HitHelper.BodyPart part, boolean isRanged,
+                                         float armorPenBonus, float armorReduction) {
+        HitContext.store(victim, part, isRanged, armorPenBonus);
+        HitContext.storeArmorReduction(victim, armorReduction);
+    }
+
+    private static void sendDamageFeedback(LivingEntity attacker, String partKey, int color,
+                                           float newDamage, WeaponStats stats) {
+        if (!(attacker instanceof ServerPlayer player)) {
+            return;
+        }
+
+        String dmgText = String.format("%.1f", newDamage);
+        String penText = stats.armorPenetration > 0 ? " [Pen]" : "";
+
+        MutableComponent hitLabel = Objects.requireNonNull(I18n.translate("devmod.message.hit")
+            .withStyle(s -> s.withColor(0xAAAAAA)));
+        MutableComponent hitSeparator = Objects.requireNonNull(Component.literal(": ")
+            .withStyle(s -> s.withColor(0xAAAAAA)));
+        MutableComponent partComponent = Objects.requireNonNull(I18n.translate(partKey)
+            .withStyle(s -> s.withColor(color)));
+        MutableComponent damageLabel = Objects.requireNonNull(I18n.translate("devmod.hud.damage")
+            .withStyle(s -> s.withColor(0xFFFFFF)));
+        MutableComponent damageSeparator = Objects.requireNonNull(Component.literal(": ")
+            .withStyle(s -> s.withColor(0xFFFFFF)));
+        MutableComponent damageValue = Objects.requireNonNull(Component.literal(dmgText + penText)
+            .withStyle(s -> s.withColor(0xFFFFFF)));
+        MutableComponent feedback = Objects.requireNonNull(Component.empty())
+            .append(hitLabel)
+            .append(hitSeparator)
+            .append(partComponent)
+            .append(Objects.requireNonNull(Component.literal(" ")
+                .withStyle(s -> s.withColor(0xFFFFFF))))
+            .append(damageLabel)
+            .append(damageSeparator)
+            .append(damageValue);
+
+        player.displayClientMessage(Objects.requireNonNull(feedback, "feedback"), true);
+    }
+
+    private static String getAttackSource(boolean isRanged) {
+        return isRanged ? "devmod.hud.attack_source.ranged" : "devmod.hud.attack_source.melee";
+    }
+
+    private static void applyPostHitEffects(LivingEntity attacker, WeaponStats stats, float damageDealt) {
+        if (stats.lifesteal > 0 && attacker.isAlive()) {
+            float heal = damageDealt * stats.lifesteal;
+            attacker.heal(heal);
+        }
     }
 
     /**
@@ -400,63 +322,6 @@ public class DamageHandler {
             LOGGER.debug("Ammo filter check failed: {}", e.getMessage());
             return true;
         }
-    }
-
-    /**
-     * Calculates armor penetration bonus based on configured formula.
-     * Designers can choose which formula fits their PvP/PvE balance via config.
-     *
-     * @param armorPen Armor penetration percentage (0.0 - 1.0)
-     * @param armorValue Target's armor value
-     * @param baseDamage Base damage before armor pen
-     * @return Bonus damage to add
-     */
-    private static float calculateArmorPenBonus(float armorPen, float armorValue, float baseDamage) {
-        Config.ArmorPenFormula formula;
-        double multiplier;
-        double flatBonus;
-
-        // Safe config access with fallbacks
-        try {
-            formula = Config.ARMOR_PEN_FORMULA.get();
-            multiplier = Config.ARMOR_PEN_MULTIPLIER.get();
-            flatBonus = Config.ARMOR_PEN_FLAT_BONUS.get();
-        } catch (Exception e) {
-            // Config not loaded yet, use defaults
-            formula = Config.ArmorPenFormula.SIMPLE;
-            multiplier = 0.5;
-            flatBonus = 2.0;
-        }
-
-        return switch (formula) {
-            case SIMPLE -> {
-                // Original formula: armorPen * armorValue * multiplier
-                float ignoredArmor = armorValue * armorPen;
-                yield ignoredArmor * (float) multiplier;
-            }
-            case VANILLA_ACCURATE -> {
-                // Uses Minecraft's armor reduction formula for accurate penetration
-                // Vanilla formula: damage * (1 - min(20, max(armor/5, armor - damage/(2 + toughness/4)))/25)
-                // We calculate how much armor would have blocked and ignore that percentage
-                float effectiveArmor = Math.min(20f, Math.max(armorValue / 5f, armorValue - baseDamage / 2f));
-                float armorReduction = effectiveArmor / 25f; // 0.0 - 0.8 (max 80% reduction)
-                float blockedDamage = baseDamage * armorReduction;
-                yield blockedDamage * armorPen * (float) multiplier;
-            }
-            case PERCENTAGE -> {
-                // Directly reduces armor effectiveness by percentage
-                // E.g., 50% armor pen means armor only blocks 50% of what it normally would
-                float effectiveArmor = Math.min(20f, armorValue);
-                float normalReduction = effectiveArmor / 25f;
-                float reducedReduction = normalReduction * (1f - armorPen);
-                float bonusDamage = baseDamage * (normalReduction - reducedReduction);
-                yield bonusDamage * (float) multiplier;
-            }
-            case FLAT_BONUS -> {
-                // Adds flat true damage bonus regardless of armor
-                yield armorPen * (float) flatBonus;
-            }
-        };
     }
 
     // === Tracking to detect Enderman evasions ===
@@ -635,19 +500,14 @@ public class DamageHandler {
         // Hit position = center of victim
         Vec3 hitPoint = victim.position().add(0, victim.getBbHeight() * 0.5, 0);
 
-        // Create breakdown for environmental damage
-        DamageBreakdown breakdown = new DamageBreakdown(
-            ItemStack.EMPTY,       // No weapon
-            victim,
-            damage,
-            1.0f,                  // No body part multiplier
-            0f                     // No armor pen
-        );
+        DamageBreakdown breakdown = DamageCalculator
+            .calculateEnvironmentalWithBreakdown(victim, damage)
+            .breakdown();
 
         // Create ImpactData
         // MULTIPLAYER-SAFE: for environmental damage, the "receiver" is the player itself
         // Use victim's UUID because we want the player to see their own received damage
-        ImpactData impactData = new ImpactData(
+        ImpactData impactData = ImpactHudService.createAndStoreImpactData(
             victim.getUUID(),         // UUID of player taking damage
             victim,
             HitHelper.BodyPart.BODY,  // Environmental damage = generic body
@@ -659,15 +519,12 @@ public class DamageHandler {
             new Vec3(0, -1, 0)        // Generic direction (downward)
         );
 
-        // Store for HUD overlay
-        ImpactData.store(impactData);
-
         LOGGER.debug("Environmental damage: {}, amount={}, victim={}",
             damageSourceName, damage, victim.getName().getString());
 
         // Spawn 3D panel (proxy handles dist check)
         if (hitPoint != null) {
-            ClientVFXProxy.addImpactVFX(hitPoint, new Vec3(0, 1, 0), impactData);
+            ImpactHudService.triggerImpactVfx(impactData, hitPoint, new Vec3(0, 1, 0), victim);
         }
     }
 

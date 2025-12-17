@@ -9,6 +9,7 @@ import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 import com.frenkvs.devmod.hud.BossPhaseOverlay;
 import com.frenkvs.devmod.hud.EntityDensityOverlay;
 import com.frenkvs.devmod.hud.Impact3DPanelManager;
+import com.frenkvs.devmod.hud.ImpactData;
 import com.frenkvs.devmod.hud.ImpactVFX;
 import com.frenkvs.devmod.panels.context.ContextDetector;
 import com.frenkvs.devmod.panels.core.FloatingPanelManager;
@@ -371,6 +372,13 @@ public class RenderEvents {
                     );
                 }
             }
+        }
+
+        // Dismiss current Impact HUD/panels/VFX
+        while (KeyInputHandler.DISMISS_IMPACT_HUD_KEY.consumeClick()) {
+            ImpactData.clear();
+            Impact3DPanelManager.INSTANCE.clear();
+            ImpactVFX.clear();
         }
 
         // PHASE 4: If you press R (Toggle Room Bounds Visualizer)
@@ -891,6 +899,8 @@ public class RenderEvents {
         long t0 = profiler.startTiming("PanelManager.tick");
         Impact3DPanelManager.INSTANCE.clientTick();
         profiler.endTiming("PanelManager.tick", t0);
+
+        ImpactData.clientTickCleanup();
 
         // PHASE 7: Update the attribute monitoring system
         long t1 = profiler.startTiming("AttrMonitor.tick");

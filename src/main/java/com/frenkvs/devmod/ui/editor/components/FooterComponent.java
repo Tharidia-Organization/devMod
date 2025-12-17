@@ -24,11 +24,20 @@ public class FooterComponent {
     // DIMENSIONS (from Section 2.7)
     // ═══════════════════════════════════════════════════════════════
 
-    private static final int HEIGHT = UIConstants.Size.FOOTER_HEIGHT;  // 52px
+    private static final int HEIGHT = UIConstants.Size.FOOTER_HEIGHT;  // 60px
     private static final int ACTIONS_HEIGHT = 28;
     private static final int APPLY_WIDTH = 112;
     private static final int APPLY_HEIGHT = 36;
     private static final int ACTION_ARROW_WIDTH = 14;
+    private static final int ACTION_GAP_BASE = 6;
+    private static final int ACTION_MIN_WIDTH = 36;
+    private static final int ACTION_GAP_MIN = 1;
+    private static final int DIRTY_DOT_SIZE = 6;
+    private static final int DIRTY_DOT_Y_OFFSET = 6;
+    private static final int BORDER_THICKNESS = 1;
+    private static final int SCROLL_TOLERANCE = 1;
+    private static final float ACTION_SCALE_MIN = 0.55f;
+    private static final float APPLY_BORDER_LIGHTEN = 0.3f;
 
     // ═══════════════════════════════════════════════════════════════
     // ACTION MENU ITEMS
@@ -187,7 +196,7 @@ public class FooterComponent {
         int applyWidth = ScaledCoord.scaleDim(APPLY_WIDTH);
         int applyHeight = ScaledCoord.scaleDim(APPLY_HEIGHT);
         int arrowWidth = ScaledCoord.scaleDim(ACTION_ARROW_WIDTH);
-        int arrowPad = arrowWidth + ScaledCoord.scaleDim(4);
+        int arrowPad = arrowWidth + ScaledCoord.scaleDim(UIConstants.Spacing.SM);
 
         this.bounds = new ResponsiveLayout.Rect(x, y, width, footerHeight);
 
@@ -195,27 +204,27 @@ public class FooterComponent {
         graphics.fill(x, y, x + width, y + footerHeight, UIConstants.Background.HEADER());
 
         // Top border
-        graphics.fill(x, y, x + width, y + 1, UIConstants.Border.SEPARATOR());
+        graphics.fill(x, y, x + width, y + BORDER_THICKNESS, UIConstants.Border.SEPARATOR());
 
         // Calculate positions
-        int contentY = y + ScaledCoord.scaleDim(12);
+        int contentY = y + ScaledCoord.scaleDim(UIConstants.Spacing.LG);
 
         // Clear undo/redo bounds (no longer rendered in footer)
         undoBounds = ResponsiveLayout.Rect.EMPTY;
         redoBounds = ResponsiveLayout.Rect.EMPTY;
 
         // Action buttons row (History, Export, Import, Presets, Reset, Cancel)
-        int padding = ScaledCoord.scaleDim(12);
-        int applyMargin = ScaledCoord.scaleDim(12);
+        int padding = ScaledCoord.scaleDim(UIConstants.Spacing.LG);
+        int applyMargin = ScaledCoord.scaleDim(UIConstants.Spacing.LG);
         int startX = x + padding; // initial left padding
-        int gapBase = ScaledCoord.scaleDim(6);
+        int gapBase = ScaledCoord.scaleDim(ACTION_GAP_BASE);
         int btnY = contentY;
-        int minWidth = ScaledCoord.scaleDim(36);
+        int minWidth = ScaledCoord.scaleDim(ACTION_MIN_WIDTH);
 
         String[] labels = new String[] { "History", "Export", "Import", "Presets", "Templates", "Recipe", "Reset", "Cancel" };
         int[] widths = new int[labels.length];
         float btnFontScale = Typography.buttonScale();
-        int innerPad = ScaledCoord.scaleDim(12);
+        int innerPad = ScaledCoord.scaleDim(UIConstants.Spacing.LG);
         for (int i = 0; i < labels.length; i++) {
             String lbl = Objects.requireNonNull(labels[i], "label cannot be null");
             int textW = Math.round(font.width(lbl) * btnFontScale);
@@ -230,8 +239,8 @@ public class FooterComponent {
         int applyX = x + width - applyWidth - applyMargin;
         int available = Math.max(0, applyX - startX - applyMargin);
         if (available < baseRowWidth) {
-            float scale = Math.max(0.55f, (float) available / (float) baseRowWidth);
-            gap = Math.max(ScaledCoord.scaleDim(2), Math.round(gapBase * scale));
+            float scale = Math.max(ACTION_SCALE_MIN, (float) available / (float) baseRowWidth);
+            gap = Math.max(ScaledCoord.scaleDim(UIConstants.Spacing.XS), Math.round(gapBase * scale));
             for (int i = 0; i < widths.length; i++) {
                 widths[i] = Math.max(minWidth, Math.round(widths[i] * scale));
             }
@@ -248,7 +257,7 @@ public class FooterComponent {
                 if (scaledRowWidth > available) {
                     int gapOverflow = scaledRowWidth - available;
                     int gapReduce = (int) Math.ceil((double) gapOverflow / Math.max(1, widths.length - 1));
-                    gap = Math.max(ScaledCoord.scaleDim(1), gap - gapReduce);
+                    gap = Math.max(ScaledCoord.scaleDim(ACTION_GAP_MIN), gap - gapReduce);
                 }
             }
         }
@@ -274,9 +283,9 @@ public class FooterComponent {
             actionScrollOffset = Math.max(0, Math.min(actionScrollOffset, actionMaxScroll));
 
             leftArrowBounds = new ResponsiveLayout.Rect(startX, btnY, arrowWidth, actionsHeight);
-            actionsViewport = new ResponsiveLayout.Rect(leftArrowBounds.right() + ScaledCoord.scaleDim(2), btnY,
+            actionsViewport = new ResponsiveLayout.Rect(leftArrowBounds.right() + ScaledCoord.scaleDim(UIConstants.Spacing.XS), btnY,
                 Math.max(0, actionsAvailable), actionsHeight);
-            rightArrowBounds = new ResponsiveLayout.Rect(actionsViewport.right() + ScaledCoord.scaleDim(2), btnY, arrowWidth, actionsHeight);
+            rightArrowBounds = new ResponsiveLayout.Rect(actionsViewport.right() + ScaledCoord.scaleDim(UIConstants.Spacing.XS), btnY, arrowWidth, actionsHeight);
             leftArrowHovered = leftArrowBounds.contains(mouseX, mouseY);
             rightArrowHovered = rightArrowBounds.contains(mouseX, mouseY);
         } else {
@@ -329,11 +338,12 @@ public class FooterComponent {
 
         if (actionsOverflow) {
             renderArrow(graphics, font, leftArrowBounds, "◀", actionScrollOffset > 0, leftArrowHovered);
-            renderArrow(graphics, font, rightArrowBounds, "▶", actionScrollOffset < actionMaxScroll - 1, rightArrowHovered);
+            renderArrow(graphics, font, rightArrowBounds, "▶", actionScrollOffset < actionMaxScroll - SCROLL_TOLERANCE,
+                rightArrowHovered);
         }
 
         // Apply button (right aligned)
-        int applyY = y + ScaledCoord.scaleDim(8);
+        int applyY = y + ScaledCoord.scaleDim(UIConstants.Spacing.MD);
         applyBounds = new ResponsiveLayout.Rect(applyX, applyY, applyWidth, applyHeight);
         applyHovered = applyBounds.contains(mouseX, mouseY);
         renderApplyButton(graphics, font, applyX, applyY, applyWidth, applyHeight);
@@ -386,7 +396,7 @@ public class FooterComponent {
         // Border
         int borderColor = enabled ? UIConstants.Accent.GREEN() : UIConstants.Border.DEFAULT();
         if (applyHovered && enabled) {
-            borderColor = UIConstants.lighten(borderColor, 0.3f);
+            borderColor = UIConstants.lighten(borderColor, APPLY_BORDER_LIGHTEN);
         }
         AxiomRenderer.drawBorder(graphics, x, y, width, height, borderColor);
 
@@ -410,9 +420,9 @@ public class FooterComponent {
 
         // Dirty indicator dot
         if (isDirty) {
-            int dotSize = ScaledCoord.scaleDim(6);
-            int dotX = x + width - ScaledCoord.scaleDim(12);
-            int dotY = y + ScaledCoord.scaleDim(6);
+            int dotSize = ScaledCoord.scaleDim(DIRTY_DOT_SIZE);
+            int dotX = x + width - ScaledCoord.scaleDim(UIConstants.Spacing.LG);
+            int dotY = y + ScaledCoord.scaleDim(DIRTY_DOT_Y_OFFSET);
             graphics.fill(dotX, dotY, dotX + dotSize, dotY + dotSize, UIConstants.Accent.ORANGE());
         }
     }

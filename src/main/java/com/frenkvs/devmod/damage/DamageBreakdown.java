@@ -1,4 +1,4 @@
-package com.frenkvs.devmod.hud;
+package com.frenkvs.devmod.damage;
 
 import com.frenkvs.devmod.integration.ModIntegrationManager;
 import net.minecraft.core.Holder;
@@ -25,9 +25,22 @@ public class DamageBreakdown {
     public final float armorPenetrationBonus;
     public final float finalDamage;
 
+    // Cached formula strings (computed once at construction)
+    private final String cachedFormulaString;
+    private final String cachedCompactString;
+
     public record EnchantBonus(String name, int level, float bonus) {}
 
-    public DamageBreakdown(ItemStack weapon, LivingEntity target,
+    /**
+     * Creates a damage breakdown.
+     * @param weapon The weapon used
+     * @param attacker The attacking entity (used for Pehkui scale bonus)
+     * @param target The target entity (used for enchant conditionals like Smite vs undead)
+     * @param baseDmg Base weapon damage
+     * @param bodyPartMult Body part multiplier
+     * @param armorPenBonus Armor penetration bonus
+     */
+    public DamageBreakdown(ItemStack weapon, LivingEntity attacker, LivingEntity target,
                            float baseDmg, float bodyPartMult, float armorPenBonus) {
         this.baseWeaponDamage = baseDmg;
         this.bodyPartMultiplier = bodyPartMult;
@@ -38,7 +51,9 @@ public class DamageBreakdown {
         calculateEnchantBonuses(weapon, target);
 
         // Pehkui size bonus (25% of base for each 1.0 of scale above 1.0)
-        Float scale = ModIntegrationManager.getPehkuiScale(target);
+        // BUG-001 FIX: Use ATTACKER scale, not target scale
+        // A larger attacker should deal more damage, not the other way around
+        Float scale = attacker != null ? ModIntegrationManager.getPehkuiScale(attacker) : null;
         if (scale != null && scale > 1.0f) {
             this.pehkuiScale = scale;
             this.pehkuiSizeBonus = baseDmg * 0.25f * (scale - 1.0f);
@@ -48,10 +63,13 @@ public class DamageBreakdown {
         }
 
         // Final calculation: (base + enchants + pehkui) * bodyPartMult + armorPen
-        // Note: calculate enchant bonus inline to avoid this-escape warning
         float enchantTotal = (float) this.enchantBonuses.stream().mapToDouble(EnchantBonus::bonus).sum();
         float subtotal = baseWeaponDamage + enchantTotal + pehkuiSizeBonus;
         this.finalDamage = (subtotal * bodyPartMultiplier) + armorPenetrationBonus;
+
+        // BUG-010 FIX: Cache formula strings at construction (immutable data)
+        this.cachedFormulaString = buildFormulaString();
+        this.cachedCompactString = buildCompactString();
     }
 
     private void calculateEnchantBonuses(ItemStack weapon, LivingEntity target) {
@@ -69,29 +87,32 @@ public class DamageBreakdown {
 
             String enchName = Objects.requireNonNull(safeHolder.getRegisteredName(), "enchantment id");
 
-            // Sharpness: +1.0 + 0.5 per additional level
+            // Sharpness: +1.0 + 0.5 per additional level (always applies)
             if (enchName.contains("sharpness")) {
                 float bonus = 1.0f + (level - 1) * 0.5f;
                 enchantBonuses.add(new EnchantBonus("Sharpness " + toRoman(level), level, bonus));
             }
-            // Smite: +2.5 per level vs undead
+            // Smite: +2.5 per level vs undead ONLY
+            // BUG-004 FIX: Only add bonus if target exists and is undead
             else if (enchName.contains("smite")) {
-                if (target.isInvertedHealAndHarm()) { // Undead check
+                if (target != null && target.isInvertedHealAndHarm()) {
                     float bonus = level * 2.5f;
                     enchantBonuses.add(new EnchantBonus("Smite " + toRoman(level), level, bonus));
                 }
+                // Note: Smite enchant exists but doesn't apply - don't show it
             }
-            // Bane of Arthropods: +2.5 per livello vs arthropods
+            // Bane of Arthropods: +2.5 per level vs arthropods ONLY
+            // BUG-004 FIX: Only add bonus if target exists and is arthropod
             else if (enchName.contains("bane_of_arthropods")) {
-                // Arthropod check - spiders, silverfish, endermites, bees
-                if (isArthropod(target)) {
+                if (target != null && isArthropod(target)) {
                     float bonus = level * 2.5f;
                     enchantBonuses.add(new EnchantBonus("Bane " + toRoman(level), level, bonus));
                 }
+                // Note: Bane enchant exists but doesn't apply - don't show it
             }
-            // Fire Aspect: nota che aggiunge danno fuoco, non diretto
+            // Fire Aspect: adds fire damage over time, not direct damage
             else if (enchName.contains("fire_aspect")) {
-                // Fire aspect non aggiunge danno diretto, ma lo notiamo
+                // Fire aspect doesn't add direct damage, but we note it for completeness
                 enchantBonuses.add(new EnchantBonus("Fire Aspect " + toRoman(level), level, 0f));
             }
         }
@@ -126,10 +147,24 @@ public class DamageBreakdown {
     }
 
     /**
-     * Generates formula string for HUD.
+     * Returns cached formula string for HUD.
      * Example: "(12.0+3.0+3.0) * 0.90 = 16.2"
      */
     public String getFormulaString() {
+        return cachedFormulaString;
+    }
+
+    /**
+     * Returns cached compact string for debug.
+     */
+    public String toCompactString() {
+        return cachedCompactString;
+    }
+
+    /**
+     * Builds formula string (called once at construction).
+     */
+    private String buildFormulaString() {
         StringBuilder sb = new StringBuilder();
         sb.append(String.format("(%.1f", baseWeaponDamage));
 
@@ -154,10 +189,12 @@ public class DamageBreakdown {
     }
 
     /**
-     * Generates compact string for debug.
+     * Builds compact string (called once at construction).
+     * Note: Uses inline calculation to avoid this-escape warning from calling getTotalEnchantBonus()
      */
-    public String toCompactString() {
+    private String buildCompactString() {
+        float enchantTotal = (float) enchantBonuses.stream().mapToDouble(EnchantBonus::bonus).sum();
         return String.format("Base:%.1f + Ench:%.1f + Pehkui:%.1f * BodyPart:%.2f = %.1f",
-            baseWeaponDamage, getTotalEnchantBonus(), pehkuiSizeBonus, bodyPartMultiplier, finalDamage);
+            baseWeaponDamage, enchantTotal, pehkuiSizeBonus, bodyPartMultiplier, finalDamage);
     }
 }

@@ -2,18 +2,18 @@ package com.frenkvs.devmod.hud;
 
 import com.frenkvs.devmod.Config;
 import com.frenkvs.devmod.DevMod;
-import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.Font;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+
+import java.util.List;
 
 /**
  * HUD Overlay to show real-time impact analysis.
@@ -36,16 +36,14 @@ public class ImpactHudOverlay {
     private static final int PANEL_BORDER = 0xFF3D5AFE;       // Electric blue
     private static final int PANEL_BORDER_GLOW = 0x553D5AFE;  // Glow border
 
-    private static final int TEXT_TITLE = 0xFF00FFFF;         // Cyan
-    private static final int TEXT_NORMAL = 0xFFFFFFFF;        // White
-    private static final int TEXT_VALUE = 0xFF00FF00;         // Green
-    private static final int TEXT_FORMULA = 0xFFFFD700;       // Gold
-    private static final int TEXT_MUTED = 0xFFAAAAAA;         // Gray
-
     // === Dimensions ===
     private static final int PANEL_PADDING = 8;
     private static final int LINE_HEIGHT = 10;
     private static final int SECTION_SPACING = 6;
+    private static final int PANEL_GAP = 8;
+
+    private static final ImpactHudContentBuilder.NumberFormat NUMBER_FORMAT =
+        new ImpactHudContentBuilder.NumberFormat("%.2f", "%.2f");
 
     // === Toggle (initialized from config) ===
     private static boolean enabled = getConfigEnabled();
@@ -87,20 +85,36 @@ public class ImpactHudOverlay {
         int screenHeight = graphics.guiHeight();
         Font font = mc.font;
 
+        ImpactHudContentBuilder.HudSection mainSection =
+            ImpactHudContentBuilder.buildMainSection(data, NUMBER_FORMAT);
+        ImpactHudContentBuilder.HudSection modSection =
+            ImpactHudContentBuilder.buildModSection(data, NUMBER_FORMAT).orElse(null);
+        ImpactHudContentBuilder.HudSection historySection =
+            ImpactHudContentBuilder.buildHistorySection(data, NUMBER_FORMAT).orElse(null);
+
+        List<ImpactHudContentBuilder.HudSection> panels = new java.util.ArrayList<>();
+        panels.add(mainSection);
+        if (modSection != null) {
+            panels.add(modSection);
+        }
+        if (historySection != null) {
+            panels.add(historySection);
+        }
+
         // Calculate panel dimensions
         int panelWidth = 260;
-        int panelHeight = calculatePanelHeight(data, font);
-
-        // Position: right corner with margin
-        int panelX = screenWidth - panelWidth - 10;
-        int panelY = 10;
-
-        // Calculate total height (includes mod specifics if present)
-        int totalHeight = panelHeight;
-        if (data.hasPehkuiModification() || data.isBetterCombatAttack()) {
-            int modHeight = (data.hasPehkuiModification() && data.isBetterCombatAttack()) ? 52 : 40;
-            totalHeight += 8 + modHeight;
+        int totalHeight = 0;
+        for (ImpactHudContentBuilder.HudSection section : panels) {
+            totalHeight += calculatePanelHeight(section);
         }
+        if (panels.size() > 1) {
+            totalHeight += PANEL_GAP * (panels.size() - 1);
+        }
+
+        // BUG-008 FIX: Position based on config setting
+        int[] position = calculatePanelPosition(screenWidth, screenHeight, panelWidth, totalHeight);
+        int panelX = position[0];
+        int panelY = position[1];
 
         // Save position for hit-test
         lastPanelX = panelX;
@@ -119,14 +133,35 @@ public class ImpactHudOverlay {
         float alpha = data.getRemainingAlpha();
         if (alpha <= 0.01f) return;
 
-        // Render Impact Analysis Panel
-        renderImpactPanel(graphics, font, data, panelX, panelY, panelWidth, panelHeight, alpha);
-
-        // Render Mod Specifics Panel (below the first one)
-        if (data.hasPehkuiModification() || data.isBetterCombatAttack()) {
-            int modPanelY = panelY + panelHeight + 8;
-            renderModSpecificsPanel(graphics, font, data, panelX, modPanelY, panelWidth, alpha);
+        int currentY = panelY;
+        for (ImpactHudContentBuilder.HudSection section : panels) {
+            renderPanel(graphics, font, section, panelX, currentY, panelWidth, alpha);
+            currentY += calculatePanelHeight(section) + PANEL_GAP;
         }
+    }
+
+    /**
+     * Calculates the panel position based on config setting.
+     * BUG-008 FIX: Configurable HUD position.
+     * @return int array [x, y] for panel position
+     */
+    private static int[] calculatePanelPosition(int screenWidth, int screenHeight, int panelWidth, int panelHeight) {
+        Config.HudPosition pos = Config.IMPACT_HUD_POSITION.get();
+        int offsetX = 10;
+        int offsetY = 10;
+        try {
+            offsetX = Config.IMPACT_HUD_OFFSET_X.get();
+            offsetY = Config.IMPACT_HUD_OFFSET_Y.get();
+        } catch (Exception ignored) {}
+
+        return switch (pos) {
+            case TOP_RIGHT -> new int[] { screenWidth - panelWidth - offsetX, offsetY };
+            case TOP_LEFT -> new int[] { offsetX, offsetY };
+            case BOTTOM_RIGHT -> new int[] { screenWidth - panelWidth - offsetX, screenHeight - panelHeight - offsetY };
+            case BOTTOM_LEFT -> new int[] { offsetX, screenHeight - panelHeight - offsetY };
+            case CENTER_RIGHT -> new int[] { screenWidth - panelWidth - offsetX, (screenHeight - panelHeight) / 2 };
+            case CENTER_LEFT -> new int[] { offsetX, (screenHeight - panelHeight) / 2 };
+        };
     }
 
     /**
@@ -137,147 +172,41 @@ public class ImpactHudOverlay {
                crosshairY >= lastPanelY && crosshairY <= lastPanelY + lastPanelHeight;
     }
 
-    /**
-     * Renders the main "Impact Analysis" panel.
-     */
-    private static void renderImpactPanel(GuiGraphics g, Font font, ImpactData data,
-                                          int x, int y, int width, int height, float alpha) {
-        // Background with border
+    private static void renderPanel(GuiGraphics g, Font font, ImpactHudContentBuilder.HudSection section,
+                                    int x, int y, int width, float alpha) {
+        int height = calculatePanelHeight(section);
         renderPanelBackground(g, x, y, width, height, alpha);
 
         int textX = x + PANEL_PADDING;
         int textY = y + PANEL_PADDING;
 
-        // === Title ===
-        String title = "Impact Analysis (Multi-Part & Mod Integrated)";
-        g.drawString(font, title, textX, textY, applyAlpha(TEXT_TITLE, alpha), false);
-        textY += LINE_HEIGHT + 2;
+        renderSection(g, font, section, x, width, textX, textY, alpha);
+    }
 
-        // Separator line
-        g.fill(x + 4, textY, x + width - 4, textY + 1, applyAlpha(PANEL_BORDER, alpha * 0.5f));
-        textY += SECTION_SPACING;
+    private static void renderSection(GuiGraphics g, Font font, ImpactHudContentBuilder.HudSection section,
+                                      int panelX, int panelWidth, int textX, int textY, float alpha) {
+        g.drawString(font, section.title(), textX, textY,
+            applyAlpha(ImpactHudContentBuilder.Colors.TITLE, alpha), false);
+        textY += LINE_HEIGHT + spacingPixels(section.titleSpacing());
 
-        // === Part Hit ===
-        Component partHit = I18n.translate("devmod.hud.part_hit").append(Component.literal(": "))
-            .append(Component.literal(data.bodyPart.name()).withStyle(s -> s.withColor(data.getBodyPartColor())))
-            .append(Component.literal(" (")).append(I18n.translate("devmod.hud.modifier")).append(Component.literal(": "))
-            .append(Component.literal(String.format("x%.2f", data.bodyPartMultiplier)).withStyle(s -> s.withColor(0x00FF00)))
-            .append(Component.literal(")"));
-        g.drawString(font, partHit, textX, textY, applyAlpha(TEXT_NORMAL, alpha), false);
-        textY += LINE_HEIGHT + 2;
-
-        // === Source ===
-        g.drawString(font, "Source: " + data.getFormattedAttackSource(),
-            textX, textY, applyAlpha(TEXT_MUTED, alpha), false);
-        textY += LINE_HEIGHT + SECTION_SPACING;
-
-        // === Breakdown ===
-        DamageBreakdown bd = data.breakdown;
-
-        // Base Weapon Dmg
-        g.drawString(font,
-            String.format("Base Weapon Dmg: %.2f", bd.baseWeaponDamage),
-            textX, textY, applyAlpha(TEXT_NORMAL, alpha), false);
-        textY += LINE_HEIGHT;
-
-        // Enchants
-        for (DamageBreakdown.EnchantBonus eb : bd.enchantBonuses) {
-            if (eb.bonus() > 0) {
-                g.drawString(font,
-                    String.format("Enchant (%s): +%.2f", eb.name(), eb.bonus()),
-                    textX, textY, applyAlpha(TEXT_VALUE, alpha), false);
-                textY += LINE_HEIGHT;
-            }
+        if (section.drawSeparator()) {
+            g.fill(panelX + 4, textY, panelX + panelWidth - 4, textY + 1,
+                applyAlpha(PANEL_BORDER, alpha * 0.5f));
+            textY += SECTION_SPACING;
         }
 
-        // Pehkui Size Bonus
-        if (bd.pehkuiSizeBonus > 0) {
-            g.drawString(font,
-                String.format("Pehkui Size Bonus (+25%% of Base): +%.2f", bd.pehkuiSizeBonus),
-                textX, textY, applyAlpha(TEXT_VALUE, alpha), false);
-            textY += LINE_HEIGHT;
-        }
-
-        textY += SECTION_SPACING;
-
-        // === Formula ===
-        g.drawString(font, "Local Part Calc: " + bd.getFormulaString(),
-            textX, textY, applyAlpha(TEXT_FORMULA, alpha), false);
-        textY += LINE_HEIGHT + 2;
-
-        // === Actual Damage (NEW) ===
-        if (data.hasActualDamage()) {
-            // Show actual damage with highlighting
-            float actualDmg = data.getActualDamageDealt();
-            float reduction = data.getDamageReduction();
-
-            // Actual damage in large text
-            String actualText = String.format("ACTUAL DAMAGE: %.2f", actualDmg);
-            // Simulate bold with shadow
-            g.drawString(font, actualText, textX + 1, textY, applyAlpha(0x550000, alpha), false);
-            g.drawString(font, actualText, textX, textY, applyAlpha(0xFF4444, alpha), false);
-            textY += LINE_HEIGHT + 2;
-
-            // Health bar info
-            String healthText = String.format("HP: %.2f -> %.2f",
-                data.getHealthBefore(), data.getHealthAfter());
-            g.drawString(font, healthText, textX, textY, applyAlpha(TEXT_MUTED, alpha), false);
-            textY += LINE_HEIGHT;
-
-            // Show reduction/amplification
-            if (Math.abs(reduction) > 0.1f) {
-                String reductionText;
-                int reductionColor;
-                if (reduction > 0) {
-                    reductionText = String.format("Armor/Effects reduced: -%.2f", reduction);
-                    reductionColor = 0xFF8888; // Light red
-                } else {
-                    reductionText = String.format("Damage amplified: +%.2f", -reduction);
-                    reductionColor = 0x88FF88; // Light green
-                }
-                g.drawString(font, reductionText, textX, textY, applyAlpha(reductionColor, alpha), false);
-                textY += LINE_HEIGHT;
-            }
-        } else {
-            // Fallback to calculated damage (old behavior)
-            String finalText = String.format("*Calculated Dmg: %.2f*", bd.finalDamage);
-            g.drawString(font, finalText, textX + 1, textY, applyAlpha(0x005500, alpha), false);
-            g.drawString(font, finalText, textX, textY, applyAlpha(TEXT_VALUE, alpha), false);
+        for (ImpactHudContentBuilder.HudLine line : section.lines()) {
+            renderLine(g, font, line, textX, textY, alpha);
+            textY += LINE_HEIGHT + spacingPixels(line.spacingAfter());
         }
     }
 
-    /**
-     * Renders the "Mod Specifics" panel.
-     */
-    private static void renderModSpecificsPanel(GuiGraphics g, Font font, ImpactData data,
-                                                 int x, int y, int width, float alpha) {
-        int height = 40;
-        if (data.hasPehkuiModification() && data.isBetterCombatAttack()) {
-            height = 52;
+    private static void renderLine(GuiGraphics g, Font font, ImpactHudContentBuilder.HudLine line,
+                                   int x, int y, float alpha) {
+        if (line.hasShadow()) {
+            g.drawString(font, line.text(), x + 1, y, applyAlpha(line.shadowColor(), alpha), false);
         }
-
-        renderPanelBackground(g, x, y, width, height, alpha);
-
-        int textX = x + PANEL_PADDING;
-        int textY = y + PANEL_PADDING;
-
-        // Title
-        g.drawString(font, "Mod Specifics", textX, textY, applyAlpha(TEXT_TITLE, alpha), false);
-        textY += LINE_HEIGHT + 4;
-
-        // Better Combat
-        if (data.isBetterCombatAttack()) {
-            g.drawString(font, "Better Combat: Arc Collision Detected",
-                textX, textY, applyAlpha(TEXT_MUTED, alpha), false);
-            textY += LINE_HEIGHT;
-        }
-
-        // Pehkui
-        if (data.hasPehkuiModification()) {
-            String scaleText = String.format("Pehkui: Entity Size Modified (Scale %.2f)",
-                data.pehkuiVisualScale != null ? data.pehkuiVisualScale : 1.0f);
-            g.drawString(font, scaleText, textX, textY, applyAlpha(TEXT_MUTED, alpha), false);
-        }
+        g.drawString(font, line.text(), x, y, applyAlpha(line.color(), alpha), false);
     }
 
     /**
@@ -298,47 +227,28 @@ public class ImpactHudOverlay {
         g.fill(x + width - 1, y, x + width, y + height, borderColor);   // Right
     }
 
-    /**
-     * Calculates dynamic panel height based on data.
-     */
-    private static int calculatePanelHeight(ImpactData data, Font font) {
-        int height = PANEL_PADDING * 2;  // Top + bottom padding
+    private static int calculatePanelHeight(ImpactHudContentBuilder.HudSection section) {
+        int height = PANEL_PADDING * 2;
 
-        height += LINE_HEIGHT + 2;  // Title
-        height += SECTION_SPACING;  // Separator
-        height += LINE_HEIGHT + 2;  // Part Hit
-        height += LINE_HEIGHT + SECTION_SPACING;  // Source
-
-        height += LINE_HEIGHT;  // Base Weapon Dmg
-
-        // Enchants
-        DamageBreakdown bd = data.breakdown;
-        for (DamageBreakdown.EnchantBonus eb : bd.enchantBonuses) {
-            if (eb.bonus() > 0) {
-                height += LINE_HEIGHT;
-            }
+        height += LINE_HEIGHT + spacingPixels(section.titleSpacing());
+        if (section.drawSeparator()) {
+            height += SECTION_SPACING;
         }
 
-        // Pehkui bonus
-        if (bd.pehkuiSizeBonus > 0) {
-            height += LINE_HEIGHT;
-        }
-
-        height += SECTION_SPACING;
-        height += LINE_HEIGHT;  // Formula
-
-        // Actual damage section (multiple lines)
-        if (data.hasActualDamage()) {
-            height += LINE_HEIGHT + 2;  // ACTUAL DAMAGE
-            height += LINE_HEIGHT;      // HP: before -> after
-            if (Math.abs(data.getDamageReduction()) > 0.1f) {
-                height += LINE_HEIGHT;  // Armor/Effects reduced
-            }
-        } else {
-            height += LINE_HEIGHT + 2;  // Calculated Dmg (fallback)
+        for (ImpactHudContentBuilder.HudLine line : section.lines()) {
+            height += LINE_HEIGHT + spacingPixels(line.spacingAfter());
         }
 
         return height;
+    }
+
+    private static int spacingPixels(ImpactHudContentBuilder.Spacing spacing) {
+        return switch (spacing) {
+            case NONE -> 0;
+            case SMALL -> 2;
+            case SECTION -> SECTION_SPACING;
+            case LARGE -> 4;
+        };
     }
 
     /**

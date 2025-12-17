@@ -1,6 +1,6 @@
 package com.frenkvs.devmod.panels.types;
 
-import com.frenkvs.devmod.hud.DamageBreakdown;
+import com.frenkvs.devmod.damage.DamageBreakdown;
 import com.frenkvs.devmod.hud.ImpactData;
 import com.frenkvs.devmod.panels.core.FloatingPanel;
 import com.frenkvs.devmod.panels.core.PanelType;

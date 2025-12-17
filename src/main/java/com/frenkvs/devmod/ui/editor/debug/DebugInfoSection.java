@@ -23,6 +23,11 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
     private static final int LINE_HEIGHT = 12;
     private static final int BUTTON_WIDTH = 90;
     private static final int BUTTON_HEIGHT = 18;
+    private static final int TEXT_HEIGHT = 8;
+    private static final int HEADER_TEXT_OFFSET_Y =
+        (EditorDimensions.SECTION_HEADER_HEIGHT - TEXT_HEIGHT) / 2;
+    private static final int BUTTON_TEXT_OFFSET_Y = (BUTTON_HEIGHT - TEXT_HEIGHT) / 2;
+    private static final int DETAIL_INSET = UIConstants.Spacing.SM;
 
     private final ItemDebugInfo debugInfo;
     private final List<ValueComparison> comparisons;
@@ -97,7 +102,7 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
         // Header background
         graphics.fill(x, y, x + width, y + EditorDimensions.SECTION_HEADER_HEIGHT, UIConstants.Background.HEADER());
         String title = "DEBUG INFO";
-        graphics.drawString(font, title, x + UIConstants.Spacing.SM, y + (EditorDimensions.SECTION_HEADER_HEIGHT - 8) / 2,
+        graphics.drawString(font, title, x + UIConstants.Spacing.SM, y + HEADER_TEXT_OFFSET_Y,
             UIConstants.Accent.CYAN(), false);
 
         int btnX = x + width - BUTTON_WIDTH - UIConstants.Spacing.SM;
@@ -109,7 +114,7 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
         AxiomRenderer.drawBorder(graphics, btnX, btnY, BUTTON_WIDTH, BUTTON_HEIGHT, UIConstants.Border.ACCENT());
         String buttonText = "Copy Debug";
         int textX = btnX + (BUTTON_WIDTH - font.width(buttonText)) / 2;
-        int textY = btnY + (BUTTON_HEIGHT - 8) / 2;
+        int textY = btnY + BUTTON_TEXT_OFFSET_Y;
         graphics.drawString(font, buttonText, textX, textY, UIConstants.Text.PRIMARY(), false);
 
         int contentY = y + EditorDimensions.SECTION_HEADER_HEIGHT + UIConstants.Spacing.SM;
@@ -133,12 +138,12 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
         graphics.drawString(safeFont, "Value comparisons", x, y, UIConstants.Text.TITLE(), false);
         y += LINE_HEIGHT;
         if (comparisons.isEmpty()) {
-            graphics.drawString(safeFont, "(none)", x + 4, y, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, "(none)", x + DETAIL_INSET, y, UIConstants.Text.MUTED(), false);
             return y + LINE_HEIGHT;
         }
         boolean hasServerBaseline = comparisons.stream().anyMatch(c -> !Double.isNaN(c.serverValue()));
         if (!hasServerBaseline) {
-            graphics.drawString(safeFont, "(Server/config baseline not available — showing item only)", x + 4, y,
+            graphics.drawString(safeFont, "(Server/config baseline not available — showing item only)", x + DETAIL_INSET, y,
                 UIConstants.Text.MUTED(), false);
             y += LINE_HEIGHT;
         }
@@ -171,11 +176,11 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
         graphics.drawString(safeFont, "Session log", x, y, UIConstants.Text.TITLE(), false);
         y += LINE_HEIGHT;
         if (changeLog.isEmpty()) {
-            graphics.drawString(safeFont, "(no entries)", x + 4, y, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, "(no entries)", x + DETAIL_INSET, y, UIConstants.Text.MUTED(), false);
             return y + LINE_HEIGHT;
         }
         for (String entry : changeLog) {
-            graphics.drawString(safeFont, entry, x + 4, y, UIConstants.Text.SECONDARY(), false);
+            graphics.drawString(safeFont, entry, x + DETAIL_INSET, y, UIConstants.Text.SECONDARY(), false);
             y += LINE_HEIGHT;
         }
         return y;
@@ -186,11 +191,11 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
         graphics.drawString(safeFont, "NBT data", x, y, UIConstants.Text.TITLE(), false);
         y += LINE_HEIGHT;
         if (nbtLines.isEmpty()) {
-            graphics.drawString(safeFont, "(empty)", x + 4, y, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, "(empty)", x + DETAIL_INSET, y, UIConstants.Text.MUTED(), false);
             return y + LINE_HEIGHT;
         }
         for (String line : nbtLines) {
-            graphics.drawString(safeFont, line, x + 4, y, UIConstants.Text.FORMULA(), false);
+            graphics.drawString(safeFont, line, x + DETAIL_INSET, y, UIConstants.Text.FORMULA(), false);
             y += LINE_HEIGHT;
         }
         return y;

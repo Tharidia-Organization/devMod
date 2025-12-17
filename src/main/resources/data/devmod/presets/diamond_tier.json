@@ -1,0 +1,27 @@
+{
+  "id": "diamond_tier",
+  "name": "Diamond Tier Standard",
+  "description": "Standard stats for diamond-tier weapons",
+  "version": "1.0.0",
+  "author": "DevMod",
+  "category": "sword",
+  "scope": "global",
+  "values": {
+    "headMult": 1.2,
+    "bodyMult": 1.0,
+    "limbMult": 0.8,
+    "baseDamage": 7.0,
+    "attackSpeed": 1.6,
+    "critChance": 0.1,
+    "critMultiplier": 1.5,
+    "armorPen": 0.05,
+    "lifesteal": 0.0,
+    "knockback": 0.1,
+    "damageBonus": 0.0,
+    "range": 3.0,
+    "blockBreakSpeed": 1.0,
+    "durabilityMult": 1.0,
+    "enchantability": 10.0
+  },
+  "tags": ["diamond", "tier", "sword", "official"]
+}

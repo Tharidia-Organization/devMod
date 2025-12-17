@@ -17,7 +17,7 @@
 │  [Edit Item]    ──→  ItemEditorScreen(item, GENERAL)            │
 │                                                                 │
 │  Visibilità basata su tipo item in mano (class/tag/detection).  │
-│  Auto-detect: se tab richiesto non è valido → GENERAL + warning.│
+│  Auto-detect: se tab richiesto non è valido → fallback + warn.  │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -26,11 +26,14 @@
 
 ```java
 public enum EditorStartTab {
-    WEAPON,   // Apre WeaponModule
-    ARMOR,    // Apre ArmorModule
+    WEAPON,   // Apre WeaponModule (melee o ranged via detection)
+    ARMOR,    // Apre ArmorModule (include shield)
     GENERAL;  // Apre GeneralModule (fallback)
 }
 ```
+
+> **Nota:** Non esiste un valore RANGED separato. Il modulo RangedModule viene
+> selezionato automaticamente da `resolveModule()` quando rileva un arco/balestra.
 
 ## Constructor ItemEditorScreen
 
@@ -38,6 +41,7 @@ public enum EditorStartTab {
 public class ItemEditorScreen extends Screen {
 
     private final ItemStack item;
+    private final ItemStack originalItem;
     private final EditorStartTab requestedTab;
     private EditorModule activeModule;
 
@@ -48,172 +52,259 @@ public class ItemEditorScreen extends Screen {
      */
     public ItemEditorScreen(ItemStack item, EditorStartTab startTab) {
         super(Component.literal("Item Editor"));
-        this.item = item;
+        this.item = item.copy();
+        this.originalItem = item.copy();
         this.requestedTab = startTab;
-        this.activeModule = resolveModule(item, startTab);
+        // Il modulo viene inizializzato dopo in init()
     }
 
-    /**
-     * Risolve il modulo da usare.
-     * Se startTab non è applicabile all'item, fallback a GENERAL + warning.
-     */
-    private EditorModule resolveModule(ItemStack item, EditorStartTab requested) {
-        return switch (requested) {
-            case WEAPON -> {
-                if (isWeapon(item)) {
-                    yield new WeaponModule(item);
-                } else {
-                    LOGGER.warn("Requested WEAPON tab but item {} is not a weapon. Falling back to GENERAL.",
-                        item.getItem().getDescriptionId());
-                    yield new GeneralModule(item);
-                }
-            }
-            case ARMOR -> {
-                if (isArmor(item)) {
-                    yield new ArmorModule(item);
-                } else {
-                    LOGGER.warn("Requested ARMOR tab but item {} is not armor. Falling back to GENERAL.",
-                        item.getItem().getDescriptionId());
-                    yield new GeneralModule(item);
-                }
-            }
-            case GENERAL -> new GeneralModule(item);
-        };
+    @Override
+    protected void init() {
+        activeModule = resolveModule(item, requestedTab);
+        activeModule.setItem(item);
+        activeModule.init(layout);
+        // ... resto dell'inizializzazione
     }
 }
 ```
 
-## Helper Methods per Type Detection
+## resolveModule() - Implementazione Attuale
 
 ```java
-/**
- * Utility per determinare il tipo di item.
- * Usato sia dal Radial Menu che dall'Editor.
- */
-public final class ItemTypeHelper {
-
-    private ItemTypeHelper() {}
-
-    /**
-     * Verifica se l'item è un'arma editabile.
-     */
-    public static boolean isWeapon(ItemStack stack) {
-        if (stack.isEmpty()) return false;
-        Item item = stack.getItem();
-        return item instanceof SwordItem
-            || item instanceof AxeItem
-            || item instanceof TridentItem
-            || item instanceof MaceItem
-            // Aggiungi altri tipi se necessario
-            || hasWeaponAttributes(stack);
-    }
-
-    /**
-     * Verifica se l'item è un'armatura editabile.
-     */
-    public static boolean isArmor(ItemStack stack) {
-        if (stack.isEmpty()) return false;
-        Item item = stack.getItem();
-        return item instanceof ArmorItem;
-    }
-
-    /**
-     * Verifica se l'item è editabile in generale.
-     * True per qualsiasi item non-vuoto.
-     */
-    public static boolean isEditable(ItemStack stack) {
-        return !stack.isEmpty();
-    }
-
-    /**
-     * Check per armi custom che non estendono SwordItem.
-     */
-    private static boolean hasWeaponAttributes(ItemStack stack) {
-        // Check se ha attack_damage attribute
-        return stack.getAttributeModifiers(EquipmentSlot.MAINHAND)
-            .keySet()
-            .stream()
-            .anyMatch(attr -> attr.equals(Attributes.ATTACK_DAMAGE));
-    }
+private EditorModule resolveModule(ItemStack stack, EditorStartTab requested) {
+    return switch (requested) {
+        case WEAPON -> {
+            var detection = WeaponTypeDetector.detectDetailed(stack);
+            if (detection.type() == WeaponType.NOT_A_WEAPON) {
+                LOGGER.warn("[ItemEditor] Requested WEAPON but item is not a weapon; fallback to GENERAL.");
+                yield new GeneralModule();
+            }
+            // Auto-select tra melee e ranged
+            if (WeaponTypeDetector.isRanged(detection.type())) {
+                yield new RangedModule();
+            }
+            yield new WeaponModule();
+        }
+        case ARMOR -> new ArmorModule();
+        case GENERAL -> {
+            // Auto-detect: se item è armor o weapon, reindirizza
+            if (ArmorConfigManager.isArmor(stack)) {
+                LOGGER.warn("[ItemEditor] Requested GENERAL but item is armor; falling back to ARMOR module.");
+                yield new ArmorModule();
+            }
+            var detection = WeaponTypeDetector.detectDetailed(stack);
+            if (detection.type() != WeaponType.NOT_A_WEAPON) {
+                LOGGER.warn("[ItemEditor] Requested GENERAL but item is weapon; auto-selecting module.");
+                if (WeaponTypeDetector.isRanged(detection.type())) {
+                    yield new RangedModule();
+                }
+                yield new WeaponModule();
+            }
+            yield new GeneralModule();
+        }
+    };
 }
 ```
+
+> **Nota importante:** I moduli (`WeaponModule`, `ArmorModule`, etc.) **non**
+> ricevono l'item nel costruttore. L'item viene passato via `setItem()` dopo
+> la creazione, per permettere la separazione tra creazione e inizializzazione.
+
+## Type Detection
+
+L'implementazione **non usa** una classe `ItemTypeHelper` separata. Invece:
+
+### WeaponTypeDetector
+
+Classe dedicata per la detection delle armi con confidenza e metodo di rilevamento:
+
+```java
+public class WeaponTypeDetector {
+
+    public record DetectionResult(
+        WeaponType type,
+        DetectionMethod method,
+        float confidence,
+        @Nullable String warning
+    ) {
+        public boolean isHighConfidence() {
+            return confidence >= 0.8f;
+        }
+    }
+
+    public enum WeaponType {
+        SWORD, AXE, PICKAXE_COMBAT, MACE, TRIDENT,
+        GENERIC_MELEE, BOW, CROSSBOW, GENERIC_RANGED,
+        SHIELD, UNKNOWN, NOT_A_WEAPON
+    }
+
+    public enum DetectionMethod {
+        CLASS_INSTANCEOF,      // SwordItem, AxeItem, etc.
+        ITEM_TAG,              // ModTags.Items.MELEE_WEAPONS, etc.
+        ATTRIBUTE_HEURISTIC,   // attack_damage attribute + name keywords
+        CONFIG_WHITELIST,      // JSON whitelist file
+        CONFIG_BLACKLIST,      // JSON blacklist file
+        FALLBACK_GENERIC
+    }
+
+    public static DetectionResult detectDetailed(ItemStack stack) { ... }
+    public static WeaponType detect(ItemStack stack) { ... }
+    public static boolean isRanged(WeaponType type) { ... }
+    public static boolean isMelee(WeaponType type) { ... }
+    public static boolean isShield(WeaponType type) { ... }
+}
+```
+
+### ArmorConfigManager.isArmor()
+
+```java
+// In ArmorConfigManager.java
+public static boolean isArmor(ItemStack stack) {
+    if (stack.isEmpty()) return false;
+    var item = stack.getItem();
+    return item instanceof ArmorItem || item instanceof ShieldItem;
+}
+```
+
+> **Nota:** Gli shield sono considerati "armor" ai fini dell'editor, ma hanno
+> una voce dedicata nel radial menu.
 
 ## Radial Menu Integration
 
+### Struttura Category
+
+Gli editor sono disponibili in **due location** nel radial menu:
+
+1. **COMBAT > Editors** - Accesso rapido senza controllo visibilità
+2. **TOOLS > Items** - Con visibilità dinamica basata sull'item in mano
+
+### Helper Functions (in RadialMenuRegistry)
+
 ```java
-// Nel RadialMenuRegistry o dove registri le voci
+private static ItemStack getHeldItem() {
+    var mc = Minecraft.getInstance();
+    var player = mc.player;
+    if (player == null) return ItemStack.EMPTY;
+    ItemStack held = player.getMainHandItem();
+    return held.isEmpty() ? ItemStack.EMPTY : held.copy();
+}
 
-// Voce "Edit Weapon" - visibile solo se isWeapon()
-RadialMenuRegistry.register(new RadialMenuItem(
-    "edit_weapon",
-    Component.translatable("devmod.radial.edit_weapon"),
-    WEAPON_ICON,
-    (player) -> {
-        ItemStack held = player.getMainHandItem();
-        if (ItemTypeHelper.isWeapon(held)) {
-            Minecraft.getInstance().setScreen(
-                new ItemEditorScreen(held, EditorStartTab.WEAPON)
-            );
-        }
-    },
-    // Condizione visibilità
-    (player) -> ItemTypeHelper.isWeapon(player.getMainHandItem())
-));
+private static boolean isWeaponItem(ItemStack stack) {
+    if (stack == null || stack.isEmpty()) return false;
+    var detection = WeaponTypeDetector.detectDetailed(stack);
+    return WeaponTypeDetector.isMelee(detection.type())
+        || WeaponTypeDetector.isRanged(detection.type());
+}
 
-// Voce "Edit Armor" - visibile solo se isArmor()
-RadialMenuRegistry.register(new RadialMenuItem(
-    "edit_armor",
-    Component.translatable("devmod.radial.edit_armor"),
-    ARMOR_ICON,
-    (player) -> {
-        ItemStack held = player.getMainHandItem();
-        if (ItemTypeHelper.isArmor(held)) {
-            Minecraft.getInstance().setScreen(
-                new ItemEditorScreen(held, EditorStartTab.ARMOR)
-            );
-        }
-    },
-    // Condizione visibilità
-    (player) -> ItemTypeHelper.isArmor(player.getMainHandItem())
-));
+private static boolean isArmorItem(ItemStack stack) {
+    return stack != null && ArmorConfigManager.isArmor(stack);
+}
 
-// Voce "Edit Item" (General) - visibile se item editabile ma non weapon/armor
-RadialMenuRegistry.register(new RadialMenuItem(
-    "edit_item",
-    Component.translatable("devmod.radial.edit_item"),
-    GENERAL_ICON,
-    (player) -> {
-        ItemStack held = player.getMainHandItem();
-        if (ItemTypeHelper.isEditable(held)) {
-            Minecraft.getInstance().setScreen(
-                new ItemEditorScreen(held, EditorStartTab.GENERAL)
-            );
-        }
-    },
-    // Condizione visibilità: editabile ma NON weapon e NON armor
-    (player) -> {
-        ItemStack held = player.getMainHandItem();
-        return ItemTypeHelper.isEditable(held)
-            && !ItemTypeHelper.isWeapon(held)
-            && !ItemTypeHelper.isArmor(held);
+private static boolean isShieldItem(ItemStack stack) {
+    if (stack == null || stack.isEmpty()) return false;
+    var detection = WeaponTypeDetector.detectDetailed(stack);
+    return detection.type() == WeaponTypeDetector.WeaponType.SHIELD;
+}
+
+private static boolean isGeneralItem(ItemStack stack) {
+    if (stack == null || stack.isEmpty()) return false;
+    var detection = WeaponTypeDetector.detectDetailed(stack);
+    return !isWeaponItem(stack) && !isArmorItem(stack)
+        && detection.type() != WeaponTypeDetector.WeaponType.SHIELD;
+}
+
+private static void openEditor(EditorStartTab tab) {
+    var mc = Minecraft.getInstance();
+    var player = mc.player;
+    if (player == null) return;
+    ItemStack held = player.getMainHandItem();
+    if (held.isEmpty()) {
+        player.displayClientMessage(
+            Component.translatable("devmod.message.must_hold_item")
+                .withStyle(s -> s.withColor(0xFFAA00)),
+            true
+        );
+        return;
     }
-));
+    mc.setScreen(new ItemEditorScreen(held, tab));
+}
 ```
 
-### Stato implementazione attuale
-- Weapon/Armor/General: voci presenti nel radial, visibilità condizionata sui helper (`WeaponTypeDetector` + `ArmorConfigManager`).
-- Fallback in `ItemEditorScreen`: se viene richiesto GENERAL su armor/weapon/ranged, log di warning e switch forzato.
-- Shield/mace/trident: ancora senza voce dedicata nel radial.
+### COMBAT > Editors (Accesso diretto)
+
+```java
+// Category 2: Editors in COMBAT macro
+RadialCategory.builder("combateditors")
+    .name("Editors")
+    .color(0xFFFF6666)
+    .icon("✏")
+    .iconStack(stack(Items.ANVIL))
+    .item(RadialMenuItem.action("Weapon Editor", "🗡",
+        stack(Items.DIAMOND_SWORD),
+        () -> openEditor(EditorStartTab.WEAPON),
+        "Edit weapon stats and body part multipliers"))
+    .item(RadialMenuItem.action("Armor Editor", "🛡",
+        stack(Items.DIAMOND_CHESTPLATE),
+        () -> openEditor(EditorStartTab.ARMOR),
+        "Edit armor protection and attributes"))
+    // + eventuale Mob Editor
+    .build();
+```
+
+### TOOLS > Items (Visibilità dinamica)
+
+```java
+// Category 5: Item Editors in TOOLS macro
+ItemStack held = getHeldItem();
+
+RadialMenuItem weaponEditor = RadialMenuItem.screen("Weapon Editor", "🗡",
+    stack(Items.DIAMOND_SWORD),
+    () -> new ItemEditorScreen(held, EditorStartTab.WEAPON),
+    "Edit weapon stats and body part multipliers");
+weaponEditor.setVisible(isWeaponItem(held));
+
+RadialMenuItem armorEditor = RadialMenuItem.screen("Armor Editor", "🛡",
+    stack(Items.DIAMOND_CHESTPLATE),
+    () -> new ItemEditorScreen(held, EditorStartTab.ARMOR),
+    "Edit armor protection and attributes");
+armorEditor.setVisible(isArmorItem(held));
+
+RadialMenuItem shieldEditor = RadialMenuItem.screen("Shield Editor", "盾",
+    stack(Items.SHIELD),
+    () -> new ItemEditorScreen(held, EditorStartTab.ARMOR),
+    "Edit shield block/reflect")
+    .setCustomColor(0xFFDDDDDD);
+shieldEditor.setVisible(isShieldItem(held));
+
+RadialMenuItem generalEditor = RadialMenuItem.screen("Item Editor", "⚙",
+    stack(Items.BOOK),
+    () -> new ItemEditorScreen(held, EditorStartTab.GENERAL),
+    "Edit generic item data");
+generalEditor.setVisible(isGeneralItem(held));
+
+RadialCategory.builder("itemeditors")
+    .name("Items")
+    .color(0xFFFFEECC)
+    .icon("🗡")
+    .iconStack(stack(Items.DIAMOND_SWORD))
+    .item(weaponEditor)
+    .item(armorEditor)
+    .item(shieldEditor)
+    .item(generalEditor)
+    .build();
+```
 
 ## Comportamento Fallback
 
 | Scenario | Azione | Log |
 |----------|--------|-----|
-| WEAPON richiesto + item è weapon | Apre WeaponModule | - |
-| WEAPON richiesto + item NON è weapon | Apre GeneralModule | `WARN: Falling back to GENERAL` |
-| ARMOR richiesto + item è armor | Apre ArmorModule | - |
-| ARMOR richiesto + item NON è armor | Apre GeneralModule | `WARN: Falling back to GENERAL` |
-| GENERAL richiesto | Apre GeneralModule | - |
+| WEAPON + item è melee | WeaponModule | - |
+| WEAPON + item è ranged | RangedModule | - |
+| WEAPON + item NON è weapon | GeneralModule | `WARN: Requested WEAPON but item is not a weapon` |
+| ARMOR + qualsiasi armor/shield | ArmorModule | - |
+| GENERAL + item è armor | ArmorModule | `WARN: Requested GENERAL but item is armor` |
+| GENERAL + item è weapon | WeaponModule/RangedModule | `WARN: Requested GENERAL but item is weapon` |
+| GENERAL + altro | GeneralModule | - |
 
 ## Translation Keys
 
@@ -221,19 +312,34 @@ RadialMenuRegistry.register(new RadialMenuItem(
 {
     "devmod.radial.edit_weapon": "Edit Weapon",
     "devmod.radial.edit_armor": "Edit Armor",
-    "devmod.radial.edit_item": "Edit Item"
+    "devmod.radial.edit_shield": "Edit Shield",
+    "devmod.radial.edit_item": "Edit Item",
+    "devmod.message.must_hold_item": "You must be holding an item!"
 }
 ```
 
-## Debug: Nessuna Voce Visibile
+## File Correlati
 
-Se l'utente apre il radial menu con un item che non mostra nessuna voce editor:
+| File | Responsabilità |
+|------|----------------|
+| `EditorStartTab.java` | Enum per tab iniziale |
+| `ItemEditorScreen.java` | Screen principale, `resolveModule()` |
+| `WeaponTypeDetector.java` | Detection armi con confidenza |
+| `ArmorConfigManager.java` | `isArmor()` per armature/shield |
+| `RadialMenuRegistry.java` | Definizione voci radial menu |
+| `RadialMenuItem.java` | Model per singola voce |
 
-```java
-// Nel GeneralModule o come fallback globale
-// Opzionale: mostrare comunque "Edit Item" per QUALSIASI item
-// Decidi se vuoi questo comportamento
-```
+## Note Implementazione
 
-**Decisione attuale:** "Edit Item" visibile solo se NON weapon e NON armor.
-Se vuoi che sia sempre visibile come fallback, cambia la condizione.
+1. **Shield come ARMOR:** Gli shield usano `EditorStartTab.ARMOR` ma hanno
+   voce dedicata nel radial per chiarezza UX.
+
+2. **Dual Location:** Gli editor sono accessibili sia da COMBAT (sempre visibili)
+   che da TOOLS (visibilità dinamica). Questo permette accesso rapido a chi
+   sa cosa vuole modificare, e discovery guidata per chi esplora.
+
+3. **Item copy:** L'`ItemEditorScreen` lavora su una copia dell'item (`item.copy()`)
+   per evitare modifiche accidentali prima dell'Apply esplicito.
+
+4. **Confidenza detection:** `WeaponTypeDetector` fornisce una confidence score.
+   Item con bassa confidenza possono mostrare warning o prompt di conferma.

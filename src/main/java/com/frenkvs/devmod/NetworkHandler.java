@@ -372,6 +372,12 @@ public class NetworkHandler {
                 nn(com.frenkvs.devmod.network.GlobalConfigSyncPayload.STREAM_CODEC),
                 NetworkHandler::handleGlobalConfigSync
         );
+        // Channel 39: Recipe Sync (client to server)
+        event.registrar("39").playToServer(
+                nn(com.frenkvs.devmod.network.RecipeSyncPayload.TYPE),
+                nn(com.frenkvs.devmod.network.RecipeSyncPayload.STREAM_CODEC),
+                NetworkHandler::handleRecipeSync
+        );
     }
 
     // =================================================================================
@@ -1482,6 +1488,59 @@ public class NetworkHandler {
             // Apply received configs to client-side managers
             payload.applyToClientConfigs();
             LOGGER.debug("[NetworkHandler] Received global config sync");
+        });
+    }
+
+    // =================================================================================
+    // RECIPE SYNC HANDLER
+    // =================================================================================
+    private static void handleRecipeSync(com.frenkvs.devmod.network.RecipeSyncPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer player) {
+                // SECURITY: Validate packet and check permissions
+                PacketSecurityService security = PacketSecurityService.INSTANCE;
+                ValidationResult validation = security.validatePacket(player, "recipe_sync", true);
+                if (!validation.isSuccess()) {
+                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
+                    return;
+                }
+
+                // Process each recipe based on operation
+                var operation = payload.operation();
+                var recipes = payload.recipes();
+
+                boolean firstSyncAll = true;
+                for (var recipe : recipes) {
+                    switch (operation) {
+                        case ADD, UPDATE -> {
+                            // Validate recipe
+                            var validationResult = com.frenkvs.devmod.recipe.RecipeValidator.validate(recipe);
+                            if (!validationResult.valid()) {
+                                player.sendSystemMessage(I18n.errorWithDetails("devmod.recipe.invalid", validationResult.getFirstError()));
+                                continue;
+                            }
+                            // Add to config manager
+                            com.frenkvs.devmod.recipe.RecipeConfigManager.addRecipe(recipe);
+                            LOGGER.debug("[NetworkHandler] Added/updated recipe: {}", recipe.id());
+                        }
+                        case DELETE -> {
+                            com.frenkvs.devmod.recipe.RecipeConfigManager.removeRecipe(recipe.id());
+                            LOGGER.debug("[NetworkHandler] Deleted recipe: {}", recipe.id());
+                        }
+                        case SYNC_ALL -> {
+                            // Full sync - clear on first recipe, then add
+                            if (firstSyncAll) {
+                                com.frenkvs.devmod.recipe.RecipeConfigManager.clearAllRecipes();
+                                firstSyncAll = false;
+                            }
+                            com.frenkvs.devmod.recipe.RecipeConfigManager.addRecipe(recipe);
+                        }
+                    }
+                }
+
+                // Notify player
+                player.sendSystemMessage(I18n.translate("devmod.recipe.saved"));
+            }
         });
     }
 

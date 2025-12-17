@@ -8,5 +8,6 @@ package com.frenkvs.devmod.ui.editor;
 public enum EditorStartTab {
     WEAPON,
     ARMOR,
-    GENERAL
+    GENERAL,
+    RECIPE
 }

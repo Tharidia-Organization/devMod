@@ -231,6 +231,7 @@ public final class DatapackIO {
         values.addProperty("crit_chance", stats.critChance);
         values.addProperty("crit_damage", stats.critDamage);
         values.addProperty("damage_bonus", stats.damageBonus);
+        values.addProperty("sweeping_ratio", stats.sweepingRatio);
         values.addProperty("armor_shred", stats.armorShred);
         values.addProperty("damage_vs_undead", stats.damageVsUndead);
         values.addProperty("damage_vs_arthropods", stats.damageVsArthropods);
@@ -317,6 +318,7 @@ public final class DatapackIO {
         if (values.has("crit_chance")) stats.critChance = values.get("crit_chance").getAsFloat();
         if (values.has("crit_damage")) stats.critDamage = values.get("crit_damage").getAsFloat();
         if (values.has("damage_bonus")) stats.damageBonus = values.get("damage_bonus").getAsFloat();
+        if (values.has("sweeping_ratio")) stats.sweepingRatio = values.get("sweeping_ratio").getAsFloat();
         if (values.has("armor_shred")) stats.armorShred = values.get("armor_shred").getAsFloat();
         if (values.has("damage_vs_undead")) stats.damageVsUndead = values.get("damage_vs_undead").getAsFloat();
         if (values.has("damage_vs_arthropods")) stats.damageVsArthropods = values.get("damage_vs_arthropods").getAsFloat();

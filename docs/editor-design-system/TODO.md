@@ -165,14 +165,14 @@
 - [x] Integrare con NeoForge config system ✓ (`EditorClientConfig.java`)
 - [x] Creare `config/devmod-client.toml` con sezione `[editor]` ✓ (auto-generato da NeoForge)
 - [x] Migrare da System.property/env a config file persistente ✓ (config-first, fallback in `EditorConfig.java`)
-- [ ] Aggiungere listener per reload config a runtime
+- [x] Aggiungere listener per reload config a runtime ✓ (`EditorConfig.ConfigChangeListener`, `DevMod::onConfigReload`)
 
 ### In-Game Settings UI
 - [x] Creare `EditorSettingsPage.java` ✓ (integrato in UnifiedSettingsScreen)
 - [x] UI con ButtonRow per selezione scale (Auto, 1.0x, 1.25x, 1.5x, 2.0x) ✓
 - [x] Mostrare info scale corrente e dimensioni pannello ✓
 - [x] Registrare pagina nel menu impostazioni (SettingsCategory.EDITOR) ✓
-- [ ] Mostrare preview live dell'effetto scale (P3)
+- [x] Mostrare preview live dell'effetto scale ✓ (EditorSettingsPage)
 
 ### Riferimenti
 - Documentazione: `docs/editor-design-system/07-ui-scaling.md`
@@ -238,6 +238,17 @@
 ---
 
 ## Changelog
+
+### 2025-12-17 (Sessione 4)
+
+- **Completato: Config Reload Listener a Runtime**
+  - EditorConfig.java: aggiunto ConfigChangeListener interface
+  - EditorConfig.java: aggiunto listener management (add/remove/notify)
+  - EditorConfig.java: aggiunto onConfigReload() con change detection
+  - EditorConfig.java: aggiunto initCache() per inizializzazione valori cached
+  - DevMod.java: registrato listener per ModConfigEvent.Reloading
+  - DevMod.java: chiamata EditorConfig.initCache() all'avvio
+  - UI può ora reagire a cambi config runtime (uiScale, soundsEnabled, defaultMode)
 
 ### 2025-12-17 (Sessione 3)
 

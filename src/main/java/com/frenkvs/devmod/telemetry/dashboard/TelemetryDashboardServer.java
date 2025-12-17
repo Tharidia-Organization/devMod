@@ -287,18 +287,11 @@ public class TelemetryDashboardServer {
         Map<String, String> params = parseQueryParams(exchange);
         int limit = getIntParam(params.get("limit"), 50);
         // Aggregate mob kills by type - show total kills and loot rate per mob
-        String sql = """
-            SELECT
-                mob_type,
-                COUNT(*) as total_kills,
-                SUM(CASE WHEN had_loot THEN 1 ELSE 0 END) as kills_with_loot,
-                ROUND(100.0 * SUM(CASE WHEN had_loot THEN 1 ELSE 0 END) / COUNT(*), 1) as loot_rate_pct,
-                MIN(ts) as first_kill,
-                MAX(ts) as last_kill
-            FROM economy_mob_kills
-            GROUP BY mob_type
-            ORDER BY total_kills DESC
-            LIMIT """ + limit;
+        String sql = "SELECT mob_type, COUNT(*) as total_kills, " +
+            "SUM(CASE WHEN had_loot THEN 1 ELSE 0 END) as kills_with_loot, " +
+            "ROUND(100.0 * SUM(CASE WHEN had_loot THEN 1 ELSE 0 END) / COUNT(*), 1) as loot_rate_pct, " +
+            "MIN(ts) as first_kill, MAX(ts) as last_kill " +
+            "FROM economy_mob_kills GROUP BY mob_type ORDER BY total_kills DESC LIMIT " + limit;
         return gson.toJson(executeQuery(sql));
     }
 

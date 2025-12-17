@@ -132,6 +132,23 @@ public class ResponsiveLayout {
     private int screenWidth;
     private int screenHeight;
 
+    private static final int SIDE_PANEL_WIDTH = 150;
+    private static final int SIDE_PANEL_GAP = 10;
+    private static final int CONTENT_PADDING_SMALL = 6;
+    private static final int CONTENT_PADDING_MEDIUM = 8;
+    private static final int CONTENT_PADDING_LARGE = 10;
+    private static final int CONTENT_PADDING_XLARGE = 12;
+    private static final int SLIDER_WIDTH_MIN_SMALL = 120;
+    private static final int SLIDER_WIDTH_MAX_MEDIUM = 250;
+    private static final int SLIDER_WIDTH_LARGE = 280;
+    private static final int SLIDER_WIDTH_XLARGE = 320;
+    private static final int SLIDER_WIDTH_OFFSET_SMALL = 40;
+    private static final int SLIDER_WIDTH_OFFSET_MEDIUM = 60;
+    private static final int TAB_WIDTH_SMALL = 50;
+    private static final int TAB_WIDTH_MEDIUM = 60;
+    private static final int TAB_WIDTH_LARGE = 70;
+    private static final int TAB_WIDTH_XLARGE = 80;
+
     // Calculated values
     private int editorX;
     private int editorY;
@@ -191,30 +208,32 @@ public class ResponsiveLayout {
     private void calculateInternalLayout(float scale) {
         switch (currentSize) {
             case SMALL -> {
-                contentPadding = ScaledCoord.scaleDim(6, scale);
-                sliderWidth = Math.max(ScaledCoord.scaleDim(120, scale), editorWidth - ScaledCoord.scaleDim(40, scale));
-                tabWidth = ScaledCoord.scaleDim(50, scale);
+                contentPadding = ScaledCoord.scaleDim(CONTENT_PADDING_SMALL, scale);
+                sliderWidth = Math.max(ScaledCoord.scaleDim(SLIDER_WIDTH_MIN_SMALL, scale),
+                    editorWidth - ScaledCoord.scaleDim(SLIDER_WIDTH_OFFSET_SMALL, scale));
+                tabWidth = ScaledCoord.scaleDim(TAB_WIDTH_SMALL, scale);
                 showSidePanels = false;
                 compactMode = true;
             }
             case MEDIUM -> {
-                contentPadding = ScaledCoord.scaleDim(8, scale);
-                sliderWidth = Math.min(ScaledCoord.scaleDim(250, scale), editorWidth - ScaledCoord.scaleDim(60, scale));
-                tabWidth = ScaledCoord.scaleDim(60, scale);
+                contentPadding = ScaledCoord.scaleDim(CONTENT_PADDING_MEDIUM, scale);
+                sliderWidth = Math.min(ScaledCoord.scaleDim(SLIDER_WIDTH_MAX_MEDIUM, scale),
+                    editorWidth - ScaledCoord.scaleDim(SLIDER_WIDTH_OFFSET_MEDIUM, scale));
+                tabWidth = ScaledCoord.scaleDim(TAB_WIDTH_MEDIUM, scale);
                 showSidePanels = false;
                 compactMode = false;
             }
             case LARGE -> {
-                contentPadding = ScaledCoord.scaleDim(10, scale);
-                sliderWidth = ScaledCoord.scaleDim(280, scale);
-                tabWidth = ScaledCoord.scaleDim(70, scale);
+                contentPadding = ScaledCoord.scaleDim(CONTENT_PADDING_LARGE, scale);
+                sliderWidth = ScaledCoord.scaleDim(SLIDER_WIDTH_LARGE, scale);
+                tabWidth = ScaledCoord.scaleDim(TAB_WIDTH_LARGE, scale);
                 showSidePanels = true;
                 compactMode = false;
             }
             case XLARGE -> {
-                contentPadding = ScaledCoord.scaleDim(12, scale);
-                sliderWidth = ScaledCoord.scaleDim(320, scale);
-                tabWidth = ScaledCoord.scaleDim(80, scale);
+                contentPadding = ScaledCoord.scaleDim(CONTENT_PADDING_XLARGE, scale);
+                sliderWidth = ScaledCoord.scaleDim(SLIDER_WIDTH_XLARGE, scale);
+                tabWidth = ScaledCoord.scaleDim(TAB_WIDTH_XLARGE, scale);
                 showSidePanels = true;
                 compactMode = false;
             }
@@ -270,7 +289,7 @@ public class ResponsiveLayout {
             editorX,
             editorY + ScaledCoord.scaleDim(UIConstants.Size.HEADER_HEIGHT),
             editorWidth,
-            ScaledCoord.scaleDim(UIConstants.Size.TAB_HEIGHT + 4)
+            ScaledCoord.scaleDim(UIConstants.Size.TAB_HEIGHT + UIConstants.Size.TAB_GAP)
         );
     }
 
@@ -278,8 +297,8 @@ public class ResponsiveLayout {
      * Get content area bounds.
      */
     public Rect getContentArea() {
-        int topOffset = ScaledCoord.scaleDim(UIConstants.Size.HEADER_HEIGHT + UIConstants.Size.TAB_HEIGHT + 8);
-        int bottomOffset = ScaledCoord.scaleDim(UIConstants.Size.FOOTER_HEIGHT + 8);
+        int topOffset = ScaledCoord.scaleDim(UIConstants.Size.HEADER_HEIGHT + UIConstants.Size.TAB_HEIGHT + UIConstants.Spacing.MD);
+        int bottomOffset = ScaledCoord.scaleDim(UIConstants.Size.FOOTER_HEIGHT + UIConstants.Spacing.MD);
         return new Rect(
             editorX + contentPadding,
             editorY + topOffset,
@@ -294,7 +313,7 @@ public class ResponsiveLayout {
     public Rect getFooterArea() {
         return new Rect(
             editorX + contentPadding,
-            editorY + editorHeight - ScaledCoord.scaleDim(UIConstants.Size.FOOTER_HEIGHT + 4),
+            editorY + editorHeight - ScaledCoord.scaleDim(UIConstants.Size.FOOTER_HEIGHT + UIConstants.Spacing.SM),
             editorWidth - contentPadding * 2,
             ScaledCoord.scaleDim(UIConstants.Size.FOOTER_HEIGHT)
         );
@@ -306,8 +325,8 @@ public class ResponsiveLayout {
     public Rect getSidePanelArea(boolean left) {
         if (!showSidePanels) return Rect.EMPTY;
 
-        int panelWidth = ScaledCoord.scaleDim(150);
-        int gap = ScaledCoord.scaleDim(10);
+        int panelWidth = ScaledCoord.scaleDim(SIDE_PANEL_WIDTH);
+        int gap = ScaledCoord.scaleDim(SIDE_PANEL_GAP);
         int x = left ? editorX - panelWidth - gap : editorX + editorWidth + gap;
 
         return new Rect(x, editorY, panelWidth, editorHeight);
@@ -358,7 +377,7 @@ public class ResponsiveLayout {
      */
     public int getVisibleTabCount() {
         int availableWidth = editorWidth - contentPadding * 2;
-        return Math.max(3, availableWidth / (tabWidth + ScaledCoord.scaleDim(4)));
+        return Math.max(3, availableWidth / (tabWidth + ScaledCoord.scaleDim(UIConstants.Size.TAB_GAP)));
     }
 
     /**

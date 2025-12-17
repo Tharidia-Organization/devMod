@@ -97,12 +97,14 @@ public class GeneralModule extends AbstractEditorModule {
             .step(1)
             .format("%.0f")
             .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .info("Maximum items per inventory slot. Vanilla max is 64. Some items (tools, armor) stack to 1 by default.")
             .onChange(value -> {
                 // Stack size is read-only in vanilla, but could be modded
                 markDirty("stack size");
             });
 
         unbreakableToggle = new EditorToggle("unbreakable", "Unbreakable", false)
+            .tooltip("When enabled, item never loses durability. Sets minecraft:unbreakable component.")
             .onChange(value -> markDirty("unbreakable"));
     }
 
@@ -125,12 +127,14 @@ public class GeneralModule extends AbstractEditorModule {
             .step(1)
             .format("%.0f")
             .trackColor(UIConstants.SliderColors.DURABILITY)
+            .info("Current durability points. 0 = broken. Unbreaking enchant gives chance to not consume durability per use.")
             .onChange(value -> markDirty("durability"));
 
         repairCostSlider = new EditorSlider("repairCost", "Repair Cost", 0, 40, 0)
             .step(1)
             .format("%.0f")
             .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .info("XP level cost to repair/rename in anvil. Increases each repair. Max 39 before 'Too Expensive'. Reset by renaming.")
             .onChange(value -> markDirty("repair cost"));
     }
 
@@ -235,6 +239,11 @@ public class GeneralModule extends AbstractEditorModule {
 
     private static class InfoSection implements EditorSection.CustomSection {
         private static final int LINE_HEIGHT = 12;
+        private static final int TEXT_INSET_X = 8;
+        private static final int HEADER_TEXT_HEIGHT = 8;
+        private static final int HEADER_TEXT_OFFSET_Y =
+            (EditorDimensions.SECTION_HEADER_HEIGHT - HEADER_TEXT_HEIGHT) / 2;
+        private static final int SECTION_BOTTOM_PADDING = 8;
         private final String id;
         private final String title;
         private final List<String> lines;
@@ -253,7 +262,7 @@ public class GeneralModule extends AbstractEditorModule {
 
         @Override
         public int getHeight() {
-            return EditorDimensions.SECTION_HEADER_HEIGHT + lines.size() * LINE_HEIGHT + 8;
+            return EditorDimensions.SECTION_HEADER_HEIGHT + lines.size() * LINE_HEIGHT + SECTION_BOTTOM_PADDING;
         }
 
         @Override
@@ -262,11 +271,12 @@ public class GeneralModule extends AbstractEditorModule {
             int y = bounds.y();
             // Header bar
             graphics.fill(bounds.x(), y, bounds.x() + bounds.width(), y + EditorDimensions.SECTION_HEADER_HEIGHT, UIConstants.Background.HEADER());
-            graphics.drawString(font, title, bounds.x() + 8, y + (EditorDimensions.SECTION_HEADER_HEIGHT - 8) / 2, UIConstants.Text.TITLE(), false);
+            graphics.drawString(font, title, bounds.x() + TEXT_INSET_X, y + HEADER_TEXT_OFFSET_Y,
+                UIConstants.Text.TITLE(), false);
             y += EditorDimensions.SECTION_HEADER_HEIGHT;
             // Lines
             for (String line : lines) {
-                graphics.drawString(font, line, bounds.x() + 8, y, UIConstants.Text.SECONDARY(), false);
+                graphics.drawString(font, line, bounds.x() + TEXT_INSET_X, y, UIConstants.Text.SECONDARY(), false);
                 y += LINE_HEIGHT;
             }
         }

@@ -21,6 +21,9 @@ public final class ConfirmDialog extends BaseOverlay {
 
     private static final int WIDTH = 320;
     private static final int HEIGHT = 140;
+    private static final int MESSAGE_OFFSET_Y = 40;
+    private static final int BUTTON_WIDTH = 100;
+    private static final int BUTTON_HEIGHT = 28;
 
     private final String title;
     private final String message;
@@ -104,6 +107,19 @@ public final class ConfirmDialog extends BaseOverlay {
         );
     }
 
+    public static ConfirmDialog batchApply(int itemCount, String presetName,
+                                           Runnable onApply, Runnable onCancel) {
+        return new ConfirmDialog(
+            "Batch Apply",
+            "Apply preset '" + presetName + "' to " + itemCount + " items?\nThis may take a moment.",
+            "Apply",
+            "Cancel",
+            UIConstants.Accent.ORANGE(),
+            onApply,
+            onCancel
+        );
+    }
+
     // =========================================================================
     // IMPLEMENTATION
     // =========================================================================
@@ -167,23 +183,23 @@ public final class ConfirmDialog extends BaseOverlay {
 
         // Title
         Typography.drawText(graphics, font, Objects.requireNonNull(title, "title cannot be null"),
-            x + ScaledCoord.scaleDim(16), y + ScaledCoord.scaleDim(16),
+            x + ScaledCoord.scaleDim(UIConstants.Spacing.XL), y + ScaledCoord.scaleDim(UIConstants.Spacing.XL),
             UIConstants.Text.TITLE(), textScale);
 
         // Message (multi-line support)
-        int msgY = y + ScaledCoord.scaleDim(40);
+        int msgY = y + ScaledCoord.scaleDim(MESSAGE_OFFSET_Y);
         for (String line : message.split("\n")) {
             Typography.drawText(graphics, font, Objects.requireNonNull(line, "line cannot be null"),
-                x + ScaledCoord.scaleDim(16), msgY, UIConstants.Text.PRIMARY(), textScale);
-            msgY += ScaledCoord.scaleDim(12);
+                x + ScaledCoord.scaleDim(UIConstants.Spacing.XL), msgY, UIConstants.Text.PRIMARY(), textScale);
+            msgY += ScaledCoord.scaleDim(UIConstants.Spacing.LG);
         }
 
         // Calculate and cache button positions
-        this.btnY = y + height - ScaledCoord.scaleDim(44);
-        this.btnWidth = ScaledCoord.scaleDim(100);
-        this.btnHeight = ScaledCoord.scaleDim(28);
-        this.confirmX = x + width / 2 - btnWidth - ScaledCoord.scaleDim(8);
-        this.cancelX = x + width / 2 + ScaledCoord.scaleDim(8);
+        this.btnWidth = ScaledCoord.scaleDim(BUTTON_WIDTH);
+        this.btnHeight = ScaledCoord.scaleDim(BUTTON_HEIGHT);
+        this.btnY = y + height - btnHeight - ScaledCoord.scaleDim(UIConstants.Spacing.XL);
+        this.confirmX = x + width / 2 - btnWidth - ScaledCoord.scaleDim(UIConstants.Spacing.MD);
+        this.cancelX = x + width / 2 + ScaledCoord.scaleDim(UIConstants.Spacing.MD);
 
         // Render buttons using EditorButton component
         confirmButton.render(graphics, confirmX, btnY, btnWidth, btnHeight, mouseX, mouseY);

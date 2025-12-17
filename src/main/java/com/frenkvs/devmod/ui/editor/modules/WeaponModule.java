@@ -99,6 +99,7 @@ public class WeaponModule extends AbstractEditorModule {
     private EditorSlider armorPenetrationSlider;
     private EditorSlider baseDamageBonusSlider;
     private EditorSlider damageBonusSlider;
+    private EditorSlider sweepingRatioSlider;
     // Variant-specific sliders
     private EditorSlider smashBonusSlider;
     private EditorSlider smashCapSlider;
@@ -253,9 +254,17 @@ public class WeaponModule extends AbstractEditorModule {
             double dmg = 0;
             double spd = 0;
             double kb = 0;
+            double reach = 0;
+            double sweep = 0;
             double critCh = 0;
             double critDmg = 0;
             double shred = 0;
+            double lifesteal = 0;
+            double dmgBonus = 0;
+            double vsUndead = 0;
+            double vsArthro = 0;
+            double vsPlayers = 0;
+            double trueDmg = 0;
             DevMod.LOGGER.info("[Editor][Weapon] Attribute modifiers merged: {}", mods.modifiers().size());
             for (net.minecraft.world.item.component.ItemAttributeModifiers.Entry entry : mods.modifiers()) {
                 var slotGroup = entry.slot();
@@ -272,12 +281,28 @@ public class WeaponModule extends AbstractEditorModule {
                     attr == net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_SPEED.value();
                 boolean isKb = attrKey == net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_KNOCKBACK ||
                     attr == net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_KNOCKBACK.value();
+                boolean isReach = attrKey == net.minecraft.world.entity.ai.attributes.Attributes.ENTITY_INTERACTION_RANGE ||
+                    attr == net.minecraft.world.entity.ai.attributes.Attributes.ENTITY_INTERACTION_RANGE.value();
+                boolean isSweep = attrKey == net.minecraft.world.entity.ai.attributes.Attributes.SWEEPING_DAMAGE_RATIO ||
+                    attr == net.minecraft.world.entity.ai.attributes.Attributes.SWEEPING_DAMAGE_RATIO.value();
                 boolean isCritCh = attrKey == com.frenkvs.devmod.ModAttributes.CRIT_CHANCE.getKey() ||
                     attr == com.frenkvs.devmod.ModAttributes.CRIT_CHANCE.get();
                 boolean isCritDmg = attrKey == com.frenkvs.devmod.ModAttributes.CRIT_MULTIPLIER.getKey() ||
                     attr == com.frenkvs.devmod.ModAttributes.CRIT_MULTIPLIER.get();
                 boolean isShred = attrKey == com.frenkvs.devmod.ModAttributes.ARMOR_SHRED.getKey() ||
                     attr == com.frenkvs.devmod.ModAttributes.ARMOR_SHRED.get();
+                boolean isLifesteal = attrKey == com.frenkvs.devmod.ModAttributes.LIFE_STEAL.getKey() ||
+                    attr == com.frenkvs.devmod.ModAttributes.LIFE_STEAL.get();
+                boolean isDmgBonus = attrKey == com.frenkvs.devmod.ModAttributes.DAMAGE_BONUS.getKey() ||
+                    attr == com.frenkvs.devmod.ModAttributes.DAMAGE_BONUS.get();
+                boolean isVsUndead = attrKey == com.frenkvs.devmod.ModAttributes.DAMAGE_VS_UNDEAD.getKey() ||
+                    attr == com.frenkvs.devmod.ModAttributes.DAMAGE_VS_UNDEAD.get();
+                boolean isVsArthro = attrKey == com.frenkvs.devmod.ModAttributes.DAMAGE_VS_ARTHROPODS.getKey() ||
+                    attr == com.frenkvs.devmod.ModAttributes.DAMAGE_VS_ARTHROPODS.get();
+                boolean isVsPlayers = attrKey == com.frenkvs.devmod.ModAttributes.DAMAGE_VS_PLAYERS.getKey() ||
+                    attr == com.frenkvs.devmod.ModAttributes.DAMAGE_VS_PLAYERS.get();
+                boolean isTrueDmg = attrKey == com.frenkvs.devmod.ModAttributes.TRUE_DAMAGE_PERCENT.getKey() ||
+                    attr == com.frenkvs.devmod.ModAttributes.TRUE_DAMAGE_PERCENT.get();
 
                 if (isDmg) {
                     dmg += mod.amount();
@@ -285,22 +310,48 @@ public class WeaponModule extends AbstractEditorModule {
                     spd += mod.amount();
                 } else if (isKb) {
                     kb += mod.amount();
+                } else if (isReach) {
+                    reach += mod.amount();
+                } else if (isSweep) {
+                    sweep += mod.amount();
                 } else if (isCritCh) {
                     critCh += mod.amount();
                 } else if (isCritDmg) {
                     critDmg += mod.amount();
                 } else if (isShred) {
                     shred += mod.amount();
+                } else if (isLifesteal) {
+                    lifesteal += mod.amount();
+                } else if (isDmgBonus) {
+                    dmgBonus += mod.amount();
+                } else if (isVsUndead) {
+                    vsUndead += mod.amount();
+                } else if (isVsArthro) {
+                    vsArthro += mod.amount();
+                } else if (isVsPlayers) {
+                    vsPlayers += mod.amount();
+                } else if (isTrueDmg) {
+                    trueDmg += mod.amount();
                 }
             }
             if (dmg != 0) target.attackDamage = (float) dmg;
             if (spd != 0) target.attackSpeed = (float) spd;
             if (kb != 0) target.attackKnockback = (float) kb;
+            if (reach != 0) target.attackReach = (float) reach;
+            if (sweep != 0) target.sweepingRatio = (float) sweep;
             if (critCh != 0) target.critChance = (float) (critCh / 100f);
             if (critDmg != 0) target.critDamage = (float) critDmg;
             if (shred != 0) target.armorShred = (float) shred;
-            DevMod.LOGGER.info("[Editor][Weapon] From attributes -> dmg={} spd={} kb={} critCh={} critDmg={} shred={}",
-                target.attackDamage, target.attackSpeed, target.attackKnockback, target.critChance, target.critDamage, target.armorShred);
+            if (lifesteal != 0) target.lifesteal = (float) (lifesteal / 100f);
+            if (dmgBonus != 0) target.damageBonus = (float) (dmgBonus / 100f);
+            if (vsUndead != 0) target.damageVsUndead = (float) (vsUndead / 100f);
+            if (vsArthro != 0) target.damageVsArthropods = (float) (vsArthro / 100f);
+            if (vsPlayers != 0) target.damageVsPlayers = (float) (vsPlayers / 100f);
+            if (trueDmg != 0) target.trueDamagePercent = (float) (trueDmg / 100f);
+            DevMod.LOGGER.info("[Editor][Weapon] From attributes -> dmg={} spd={} kb={} reach={} sweep={} critCh={} critDmg={} shred={} lifesteal={} dmgBonus={} vsUndead={} vsArthro={} vsPlayers={} trueDmg={}",
+                target.attackDamage, target.attackSpeed, target.attackKnockback, target.attackReach, target.sweepingRatio,
+                target.critChance, target.critDamage, target.armorShred, target.lifesteal, target.damageBonus,
+                target.damageVsUndead, target.damageVsArthropods, target.damageVsPlayers, target.trueDamagePercent);
         } catch (Exception ignored) {
             DevMod.LOGGER.warn("[Editor][Weapon] Failed to apply vanilla defaults", ignored);
         }
@@ -370,6 +421,7 @@ public class WeaponModule extends AbstractEditorModule {
         if (armorPenetrationSlider != null) armorPenetrationSlider.setValue(stats.armorPenetration * 100);
         if (baseDamageBonusSlider != null) baseDamageBonusSlider.setValue(stats.baseDamageBonus);
         if (damageBonusSlider != null) damageBonusSlider.setValue(stats.damageBonus * 100);
+        if (sweepingRatioSlider != null) sweepingRatioSlider.setValue(stats.sweepingRatio * 100);
 
         if (critChanceSlider != null) critChanceSlider.setValue(stats.critChance * 100);
         if (critDamageSlider != null) critDamageSlider.setValue(stats.critDamage);
@@ -560,6 +612,7 @@ public class WeaponModule extends AbstractEditorModule {
             .format("%.1f")
             .trackColor(UIConstants.SliderColors.DAMAGE)
             .showInput(true)
+            .info("Base damage added to attacks. Final = (Base + Attack Damage) * Multipliers. Uses minecraft:attack_damage attribute.")
             .onChange(v -> { stats.attackDamage = v; markDirty("Attack damage"); });
 
         // Allow vanilla negative speeds (e.g., -2.4) by setting a negative minimum.
@@ -568,6 +621,7 @@ public class WeaponModule extends AbstractEditorModule {
             .format("%.1f")
             .trackColor(UIConstants.SliderColors.SPEED)
             .showInput(true)
+            .info("Modifier to attack cooldown. Player base is 4.0, so -2.4 means 1.6 attacks/sec. DPS = Damage * (4 + Speed).")
             .onChange(v -> { stats.attackSpeed = v; markDirty("Attack speed"); });
 
         attackReachSlider = new EditorSlider("atkRch", "Attack Reach", 0f, 6f, 0f)
@@ -576,6 +630,7 @@ public class WeaponModule extends AbstractEditorModule {
             .suffix(" blocks")
             .trackColor(UIConstants.SliderColors.NEUTRAL)
             .showInput(true)
+            .info("Additional melee range. Player base reach is 3.0 blocks. Uses minecraft:entity_interaction_range.")
             .onChange(v -> { stats.attackReach = v; markDirty("Attack reach"); });
 
         attackKnockbackSlider = new EditorSlider("atkKB", "Knockback", 0f, 5f, 0f)
@@ -583,6 +638,7 @@ public class WeaponModule extends AbstractEditorModule {
             .format("%.1f")
             .trackColor(UIConstants.SliderColors.NEUTRAL)
             .showInput(true)
+            .info("Additional knockback strength. 1.0 = one Knockback enchantment level. Uses minecraft:attack_knockback.")
             .onChange(v -> { stats.attackKnockback = v; markDirty("Knockback"); });
 
         damageBonusSlider = new EditorSlider("damageBonus", "Damage Bonus", 0f, 100f, 0f)
@@ -591,7 +647,17 @@ public class WeaponModule extends AbstractEditorModule {
             .suffix("%")
             .trackColor(UIConstants.SliderColors.NEUTRAL)
             .showInput(true)
+            .info("Percentage multiplier to final damage. 50% = 1.5x damage. Uses devmod:damage_bonus custom attribute.")
             .onChange(v -> { stats.damageBonus = v / 100f; markDirty("Damage bonus"); });
+
+        sweepingRatioSlider = new EditorSlider("sweepRatio", "Sweeping Ratio", 0f, 100f, 0f)
+            .step(1f)
+            .format("%.0f")
+            .suffix("%")
+            .trackColor(UIConstants.SliderColors.SPECIAL)
+            .showInput(true)
+            .info("AoE sweep damage ratio. 100% = full damage to nearby enemies. Similar to Sweeping Edge. Uses minecraft:sweeping_damage_ratio.")
+            .onChange(v -> { stats.sweepingRatio = v / 100f; markDirty("Sweeping ratio"); });
 
         armorPenetrationSlider = new EditorSlider("armorPen", "Armor Penetration", 0f, 100f, 0f)
             .step(1f)
@@ -599,6 +665,7 @@ public class WeaponModule extends AbstractEditorModule {
             .suffix("%")
             .trackColor(UIConstants.SliderColors.SPECIAL)
             .showInput(true)
+            .info("Percentage of target's armor ignored. 50% pen vs 20 armor = effective 10 armor. Applied before damage reduction.")
             .onChange(v -> { stats.armorPenetration = v / 100f; markDirty("Armor penetration"); });
 
         baseDamageBonusSlider = new EditorSlider("baseDmg", "Base Damage Bonus", -50f, 50f, 0f)
@@ -606,6 +673,7 @@ public class WeaponModule extends AbstractEditorModule {
             .format("+%.1f")
             .trackColor(UIConstants.SliderColors.DAMAGE)
             .showInput(true)
+            .info("Flat bonus to weapon's base damage before multipliers. Negative values reduce damage.")
             .onChange(v -> { stats.baseDamageBonus = v; markDirty("Base damage bonus"); });
 
         armorShredSlider = new EditorSlider("armorShred", "Armor Shred", 0f, 66f, 0f)
@@ -614,6 +682,7 @@ public class WeaponModule extends AbstractEditorModule {
             .suffix("%")
             .trackColor(UIConstants.SliderColors.DAMAGE)
             .showInput(true)
+            .info("Permanently reduces target's armor on hit. Stacks up to cap. Uses devmod:armor_shred attribute.")
             .onChange(v -> { stats.armorShred = v; markDirty("Armor shred"); });
     }
 
@@ -624,6 +693,7 @@ public class WeaponModule extends AbstractEditorModule {
             new SliderSectionAdapter(attackReachSlider),
             new SliderSectionAdapter(attackKnockbackSlider),
             new SliderSectionAdapter(damageBonusSlider),
+            new SliderSectionAdapter(sweepingRatioSlider),
             new SliderSectionAdapter(armorPenetrationSlider),
             new SliderSectionAdapter(baseDamageBonusSlider),
             new SliderSectionAdapter(armorShredSlider)
@@ -699,6 +769,7 @@ public class WeaponModule extends AbstractEditorModule {
             .suffix("%")
             .trackColor(UIConstants.SliderColors.PERCENT)
             .enabled(stats.critChance > 0)
+            .info("Chance to deal critical hit. Rolled on each attack. Uses devmod:crit_chance attribute.")
             .onChange(v -> { stats.critChance = v / 100f; markDirty("Critical chance"); });
 
         critDamageSlider = new EditorSlider("critDmg", "Critical Damage", 1f, 5f, 1.5f)
@@ -707,6 +778,7 @@ public class WeaponModule extends AbstractEditorModule {
             .suffix("x")
             .trackColor(UIConstants.SliderColors.DAMAGE)
             .enabled(stats.critChance > 0)
+            .info("Damage multiplier on critical hit. 2.0x = double damage. Uses devmod:crit_multiplier attribute.")
             .onChange(v -> { stats.critDamage = v; markDirty("Critical damage"); });
 
         // Lifesteal Toggle & Slider
@@ -727,6 +799,7 @@ public class WeaponModule extends AbstractEditorModule {
             .suffix("%")
             .trackColor(UIConstants.SliderColors.SPECIAL)
             .enabled(stats.lifesteal > 0)
+            .info("Heals attacker for percentage of damage dealt. 10% lifesteal on 20 damage = 2 HP healed.")
             .onChange(v -> { stats.lifesteal = v / 100f; markDirty("Lifesteal"); });
 
         // Fire Damage Toggle & Slider
@@ -746,6 +819,7 @@ public class WeaponModule extends AbstractEditorModule {
             .format("+%.1f")
             .trackColor(UIConstants.SliderColors.DAMAGE)
             .enabled(stats.fireDamageBonus > 0)
+            .info("Extra fire damage added to attacks. Sets target on fire. Ignores some armor.")
             .onChange(v -> { stats.fireDamageBonus = v; markDirty("Fire damage"); });
 
         // Magic Damage Toggle & Slider
@@ -765,6 +839,7 @@ public class WeaponModule extends AbstractEditorModule {
             .format("+%.1f")
             .trackColor(UIConstants.SliderColors.SPECIAL)
             .enabled(stats.magicDamageBonus > 0)
+            .info("Extra magic damage added to attacks. Bypasses physical armor. Affected by magic resistance.")
             .onChange(v -> { stats.magicDamageBonus = v; markDirty("Magic damage"); });
     }
 
@@ -784,6 +859,7 @@ public class WeaponModule extends AbstractEditorModule {
             .format("+%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .info("Bonus damage vs undead mobs (Zombies, Skeletons, Phantoms, etc.). Similar to Smite enchant.")
             .onChange(v -> { stats.damageVsUndead = v / 100f; markDirty("Damage vs undead"); });
 
         vsArthroSlider = new EditorSlider("vsArthro", "Damage vs Arthropods", 0f, 200f, 0f)
@@ -791,6 +867,7 @@ public class WeaponModule extends AbstractEditorModule {
             .format("+%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .info("Bonus damage vs arthropods (Spiders, Silverfish, Bees, Endermites). Similar to Bane of Arthropods.")
             .onChange(v -> { stats.damageVsArthropods = v / 100f; markDirty("Damage vs arthropods"); });
 
         vsPlayersSlider = new EditorSlider("vsPlayers", "Damage vs Players", 0f, 200f, 0f)
@@ -798,6 +875,7 @@ public class WeaponModule extends AbstractEditorModule {
             .format("+%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .info("Bonus damage specifically against players. PvP-focused modifier.")
             .onChange(v -> { stats.damageVsPlayers = v / 100f; markDirty("Damage vs players"); });
 
         trueDamageSlider = new EditorSlider("trueDmg", "True Damage Portion", 0f, 100f, 0f)
@@ -805,6 +883,7 @@ public class WeaponModule extends AbstractEditorModule {
             .format("%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.SPECIAL)
+            .info("Percentage of damage that bypasses ALL armor and protection. 100% = full true damage.")
             .onChange(v -> { stats.trueDamagePercent = v / 100f; markDirty("True damage"); });
     }
 
@@ -1011,6 +1090,9 @@ public class WeaponModule extends AbstractEditorModule {
     }
 
     private static class TextNoteSection implements EditorSection.CustomSection {
+        private static final int NOTE_HEIGHT = 24;
+        private static final int TEXT_OFFSET_Y = 6;
+        private static final int TEXT_INSET_X = UIConstants.Spacing.SM;
         private final String id;
         private final String text;
 
@@ -1021,11 +1103,11 @@ public class WeaponModule extends AbstractEditorModule {
 
         @Override public String getId() { return id; }
         @Override public String getLabel() { return ""; }
-        @Override public int getHeight() { return 24; }
+        @Override public int getHeight() { return NOTE_HEIGHT; }
         @Override
         public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
             graphics.drawString(Objects.requireNonNull(Minecraft.getInstance().font), text,
-                bounds.x() + UIConstants.Spacing.SM, bounds.y() + 6, UIConstants.Text.SECONDARY(), false);
+                bounds.x() + TEXT_INSET_X, bounds.y() + TEXT_OFFSET_Y, UIConstants.Text.SECONDARY(), false);
         }
     }
 
@@ -1110,6 +1192,7 @@ public class WeaponModule extends AbstractEditorModule {
         applySourceLabel(attackReachSlider);
         applySourceLabel(attackKnockbackSlider);
         applySourceLabel(damageBonusSlider);
+        applySourceLabel(sweepingRatioSlider);
         applySourceLabel(armorPenetrationSlider);
         applySourceLabel(baseDamageBonusSlider);
         applySourceLabel(armorShredSlider);
@@ -1556,12 +1639,14 @@ public class WeaponModule extends AbstractEditorModule {
     // ═══════════════════════════════════════════════════════════════
 
     private class DpsPreviewSection implements EditorSection.CustomSection {
+        private static final int HEIGHT_EXTRA = 14;
+        private static final int TEXT_OFFSET_Y = UIConstants.Spacing.SM;
         @Override
         public String getId() { return "dpsPreview"; }
         @Override
         public String getLabel() { return "DPS Preview"; }
         @Override
-        public int getHeight() { return UIConstants.Spacing.LG + 14; }
+        public int getHeight() { return UIConstants.Spacing.LG + HEIGHT_EXTRA; }
 
         @Override
         public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
@@ -1570,7 +1655,7 @@ public class WeaponModule extends AbstractEditorModule {
             String dpsText = String.format("DPS: %.1f", dps);
             int textWidth = font.width(Objects.requireNonNull(dpsText));
             int x = bounds.x() + (bounds.width() - textWidth) / 2;
-            int y = bounds.y() + UIConstants.Spacing.SM;
+            int y = bounds.y() + TEXT_OFFSET_Y;
             graphics.drawString(font, dpsText, x, y, UIConstants.Text.VALUE(), false);
         }
     }
@@ -1664,7 +1749,7 @@ public class WeaponModule extends AbstractEditorModule {
 
         @Override public String getId() { return toggle.getId(); }
         @Override public String getLabel() { return toggle.getLabel(); }
-        @Override public int getHeight() { return 20; }
+        @Override public int getHeight() { return EditorDimensions.TOGGLE_HEIGHT; }
 
         @Override
         public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {

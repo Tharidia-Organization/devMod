@@ -16,26 +16,31 @@ public final class EditorConstants {
     public static final int FOOTER_HEIGHT = 60;
     public static final int LEFT_COLUMN_WIDTH = 140;
     public static final int CONTENT_WIDTH = 390;
+    public static final int CONTENT_HEIGHT = 332;
 
     // Preview
-    public static final int PREVIEW_SIZE = 100;
-    public static final int PREVIEW_X = 20;
-    public static final int PREVIEW_Y = 38;
+    public static final int PREVIEW_SIZE = 130;
+    public static final int PREVIEW_X = 5;
+    public static final int PREVIEW_Y = 20;
 
     // Slots
-    public static final int SLOT_SIZE = 30;
+    public static final int SLOT_SIZE = EditorDimensions.SLOT_SIZE;
     public static final int SLOT_GAP = 5;
-    public static final int SLOT_AREA_Y = 155;
+    public static final int SLOT_AREA_Y = 170;
     public static final int SLOT_AREA_HEIGHT = 70;
 
     // Item Info
-    public static final int INFO_PANEL_Y = 235;
+    public static final int INFO_PANEL_Y = 260;
     public static final int INFO_PANEL_HEIGHT = 100;
 
+    // Left column layout
+    public static final int LEFT_COLUMN_PADDING = 5;
+    public static final int ARMOR_CARD_HEIGHT = 46;
+
     // Tabs
-    public static final int TAB_WIDTH = 70;
-    public static final int TAB_HEIGHT = 22;
-    public static final int TAB_GAP = 2;
+    public static final int TAB_WIDTH = EditorDimensions.TAB_MIN_WIDTH;
+    public static final int TAB_HEIGHT = EditorDimensions.TAB_HEIGHT;
+    public static final int TAB_GAP = EditorDimensions.TAB_GAP;
 
     // Buttons
     public static final int BTN_SMALL_WIDTH = 50;

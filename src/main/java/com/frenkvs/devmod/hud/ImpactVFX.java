@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.hud;
 
+import com.frenkvs.devmod.Config;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
@@ -41,6 +42,17 @@ public class ImpactVFX {
      * Spawns both VFX effects (vortex, slash, lines) and the 3D panel.
      */
     public static void addImpact(Vec3 hitPoint, Vec3 slashDirection, ImpactData data) {
+        if (!isVfxEnabled()) {
+            Impact3DPanelManager.INSTANCE.spawnPanelFromImpact(data);
+            return;
+        }
+
+        boolean anyEffectEnabled = isVortexEnabled() || isSlashEnabled() || isLinesEnabled();
+        if (!anyEffectEnabled) {
+            Impact3DPanelManager.INSTANCE.spawnPanelFromImpact(data);
+            return;
+        }
+
         // Remove old effects if there are too many
         while (activeEffects.size() > 5) {
             activeEffects.remove(0);
@@ -58,6 +70,11 @@ public class ImpactVFX {
      * Called from RenderEvents during AFTER_ENTITIES.
      */
     public static void render(PoseStack poseStack, MultiBufferSource bufferSource, Vec3 cameraPos) {
+        if (!isVfxEnabled()) {
+            activeEffects.clear();
+            return;
+        }
+
         if (activeEffects.isEmpty()) return;
 
         // Remove expired effects
@@ -77,12 +94,13 @@ public class ImpactVFX {
 
     private static void renderEffect(PoseStack poseStack, MultiBufferSource bufferSource,
                                      Vec3 cameraPos, ImpactEffect effect, long now) {
-        float coreAlpha = effect.getCoreAlpha(now);
+        float intensity = getIntensity();
+        float coreAlpha = applyIntensity(effect.getCoreAlpha(now), intensity);
         Vec3 hitPoint = nnVec(effect.hitPoint, "hitPoint");
         Vec3 cam = nnVec(cameraPos, "cameraPos");
 
         // 1. Render Energy Vortex Core (spirale di energia)
-        if (coreAlpha > 0.01f) {
+        if (isVortexEnabled() && coreAlpha > 0.01f) {
             poseStack.pushPose();
             Vec3 rel = Objects.requireNonNull(hitPoint.subtract(cam), "relative position");
             poseStack.translate(rel.x, rel.y, rel.z);
@@ -93,21 +111,25 @@ public class ImpactVFX {
         }
 
         // 2. Render Slash Animation (arco che segue il colpo)
-        float slashProgress = effect.getSlashProgress(now);
-        if (slashProgress >= 0 && slashProgress <= 1.0f) {
-            poseStack.pushPose();
-            Vec3 rel = Objects.requireNonNull(hitPoint.subtract(cam), "relative position");
-            poseStack.translate(rel.x, rel.y, rel.z);
+        if (isSlashEnabled()) {
+            float slashProgress = effect.getSlashProgress(now);
+            if (slashProgress >= 0 && slashProgress <= 1.0f) {
+                poseStack.pushPose();
+                Vec3 rel = Objects.requireNonNull(hitPoint.subtract(cam), "relative position");
+                poseStack.translate(rel.x, rel.y, rel.z);
 
-            renderSlashTrail(poseStack, bufferSource, effect.slashDirection, slashProgress);
+                renderSlashTrail(poseStack, bufferSource, effect.slashDirection, slashProgress, intensity);
 
-            poseStack.popPose();
+                poseStack.popPose();
+            }
         }
 
         // 3. Render Connection Lines (from core towards screen/HUD)
-        float lineAlpha = effect.getLineAlpha(now);
-        if (lineAlpha > 0.05f) {
-            renderConnectionLines(poseStack, bufferSource, cameraPos, hitPoint, lineAlpha, effect.getRotation(now));
+        if (isLinesEnabled()) {
+            float lineAlpha = applyIntensity(effect.getLineAlpha(now), intensity);
+            if (lineAlpha > 0.05f) {
+                renderConnectionLines(poseStack, bufferSource, cameraPos, hitPoint, lineAlpha, effect.getRotation(now));
+            }
         }
     }
 
@@ -231,7 +253,7 @@ public class ImpactVFX {
      * The animation shows a "blade" moving through the impact point.
      */
     private static void renderSlashTrail(PoseStack poseStack, MultiBufferSource bufferSource,
-                                          Vec3 direction, float progress) {
+                                          Vec3 direction, float progress, float intensity) {
         Vec3 dir = nnVec(direction, "slash direction");
         Matrix4f matrix = nn(poseStack.last().pose(), "slash matrix");
         VertexConsumer consumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.debugLineStrip(5.0)));
@@ -242,6 +264,7 @@ public class ImpactVFX {
 
         // Base alpha that decreases with progress
         float baseAlpha = Math.max(0, 1.0f - progress * 0.8f);
+        baseAlpha = applyIntensity(baseAlpha, intensity);
 
         // === SLASH LINE (line that "cuts" through the point) ===
         // Perpendicular direction to view (simulates lateral sword movement)
@@ -556,6 +579,52 @@ public class ImpactVFX {
             double pulse = Math.sin(elapsed * 0.008) * 0.15 + 1.0;
             return (float) pulse;
         }
+    }
+
+    private static boolean isVfxEnabled() {
+        try {
+            return Config.IMPACT_VFX_ENABLED.get();
+        } catch (Exception ignored) {
+            return true;
+        }
+    }
+
+    private static boolean isVortexEnabled() {
+        try {
+            return Config.IMPACT_VFX_VORTEX_ENABLED.get();
+        } catch (Exception ignored) {
+            return true;
+        }
+    }
+
+    private static boolean isSlashEnabled() {
+        try {
+            return Config.IMPACT_VFX_SLASH_ENABLED.get();
+        } catch (Exception ignored) {
+            return true;
+        }
+    }
+
+    private static boolean isLinesEnabled() {
+        try {
+            return Config.IMPACT_VFX_LINES_ENABLED.get();
+        } catch (Exception ignored) {
+            return true;
+        }
+    }
+
+    private static float getIntensity() {
+        try {
+            return (float) (double) Config.IMPACT_VFX_INTENSITY.get();
+        } catch (Exception ignored) {
+            return 1.0f;
+        }
+    }
+
+    private static float applyIntensity(float alpha, float intensity) {
+        float scaled = alpha * intensity;
+        if (scaled < 0f) return 0f;
+        return Math.min(scaled, 1.0f);
     }
 
     @Nonnull

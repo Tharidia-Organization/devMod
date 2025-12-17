@@ -1,16 +1,129 @@
 package com.frenkvs.devmod.ui.editor.core;
 
+import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.EditorClientConfig;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Editor config bridge for UI scale and related toggles.
  * Uses NeoForge config system with fallback to system properties / env.
+ *
+ * Supports runtime config change listeners for reactive UI updates.
  */
 public final class EditorConfig {
 
     private EditorConfig() {}
+
+    // ═══════════════════════════════════════════════════════════════
+    // CONFIG CHANGE LISTENERS
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Listener interface for config changes.
+     */
+    @FunctionalInterface
+    public interface ConfigChangeListener {
+        /**
+         * Called when editor config values change.
+         * @param key the config key that changed (e.g., "uiScale", "soundsEnabled")
+         */
+        void onConfigChanged(String key);
+    }
+
+    private static final List<ConfigChangeListener> listeners = new CopyOnWriteArrayList<>();
+
+    // Cache previous values to detect actual changes
+    private static EditorClientConfig.EditorUiScale cachedUiScale = null;
+    private static Boolean cachedSoundsEnabled = null;
+    private static EditorClientConfig.EditorDefaultMode cachedDefaultMode = null;
+
+    /**
+     * Register a listener for config changes.
+     * @param listener the listener to add
+     */
+    public static void addConfigChangeListener(ConfigChangeListener listener) {
+        if (listener != null && !listeners.contains(listener)) {
+            listeners.add(listener);
+        }
+    }
+
+    /**
+     * Remove a previously registered listener.
+     * @param listener the listener to remove
+     */
+    public static void removeConfigChangeListener(ConfigChangeListener listener) {
+        listeners.remove(listener);
+    }
+
+    /**
+     * Notify all listeners of a config change.
+     * @param key the config key that changed
+     */
+    private static void notifyListeners(String key) {
+        for (ConfigChangeListener listener : listeners) {
+            try {
+                listener.onConfigChanged(key);
+            } catch (Exception e) {
+                DevMod.LOGGER.warn("[EditorConfig] Listener error for key '{}': {}", key, e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Called when NeoForge config is reloaded.
+     * Checks for actual value changes and notifies listeners.
+     */
+    public static void onConfigReload() {
+        DevMod.LOGGER.debug("[EditorConfig] Config reload triggered");
+
+        try {
+            // Check UI Scale
+            EditorClientConfig.EditorUiScale newUiScale = EditorClientConfig.EDITOR_UI_SCALE.get();
+            if (cachedUiScale != newUiScale) {
+                cachedUiScale = newUiScale;
+                DevMod.LOGGER.info("[EditorConfig] UI Scale changed to: {}", newUiScale);
+                notifyListeners("uiScale");
+            }
+
+            // Check Sounds Enabled
+            Boolean newSoundsEnabled = EditorClientConfig.EDITOR_SOUNDS_ENABLED.get();
+            if (!Objects.equals(cachedSoundsEnabled, newSoundsEnabled)) {
+                cachedSoundsEnabled = newSoundsEnabled;
+                DevMod.LOGGER.info("[EditorConfig] Sounds enabled changed to: {}", newSoundsEnabled);
+                notifyListeners("soundsEnabled");
+            }
+
+            // Check Default Mode
+            EditorClientConfig.EditorDefaultMode newDefaultMode = EditorClientConfig.EDITOR_DEFAULT_MODE.get();
+            if (cachedDefaultMode != newDefaultMode) {
+                cachedDefaultMode = newDefaultMode;
+                DevMod.LOGGER.info("[EditorConfig] Default mode changed to: {}", newDefaultMode);
+                notifyListeners("defaultMode");
+            }
+
+        } catch (Exception e) {
+            DevMod.LOGGER.warn("[EditorConfig] Error during config reload check: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Initialize cached values from current config.
+     * Call this after config is first loaded.
+     */
+    public static void initCache() {
+        try {
+            cachedUiScale = EditorClientConfig.EDITOR_UI_SCALE.get();
+            cachedSoundsEnabled = EditorClientConfig.EDITOR_SOUNDS_ENABLED.get();
+            cachedDefaultMode = EditorClientConfig.EDITOR_DEFAULT_MODE.get();
+            DevMod.LOGGER.debug("[EditorConfig] Cache initialized - scale={}, sounds={}, mode={}",
+                cachedUiScale, cachedSoundsEnabled, cachedDefaultMode);
+        } catch (Exception e) {
+            DevMod.LOGGER.warn("[EditorConfig] Could not initialize cache: {}", e.getMessage());
+        }
+    }
 
     // Fallback properties (used when config not yet loaded)
     private static final String UI_SCALE_PROP = "devmod.editor.uiScale";

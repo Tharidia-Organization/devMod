@@ -60,7 +60,7 @@
 ### Header Zone (y: 0 → 28)
 | Elemento | X | Y | Width | Height |
 |----------|---|---|-------|--------|
-| Tab buttons | centered | 4 | 70 each | 20 |
+| Tab buttons | centered | 4 | 72 each | 24 |
 | Mode badge | PANEL_WIDTH - 110 | 4 | 100 | 20 |
 | Close button | PANEL_WIDTH - 25 | 4 | 20 | 20 |
 

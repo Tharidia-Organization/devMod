@@ -22,6 +22,13 @@ public class SectionHeader {
     // ═══════════════════════════════════════════════════════════════
 
     private static final int HEIGHT = EditorDimensions.SECTION_HEADER_HEIGHT;  // 24px
+    private static final int TEXT_HEIGHT = 8;
+    private static final int TEXT_OFFSET_Y = (HEIGHT - TEXT_HEIGHT) / 2;
+    private static final int TEXT_INSET_X = 8;
+    private static final int ACCENT_WIDTH = 2;
+    private static final int COLLAPSE_INDICATOR_X = 6;
+    private static final int COLLAPSE_TEXT_INSET_X = 18;
+    private static final int SEPARATOR_HEIGHT = 1;
 
     // ═══════════════════════════════════════════════════════════════
     // CONFIGURATION
@@ -93,23 +100,23 @@ public class SectionHeader {
         graphics.fill(x, y, x + width, y + HEIGHT, UIConstants.Background.HEADER());
 
         // Left border accent
-        graphics.fill(x, y, x + 2, y + HEIGHT, UIConstants.Accent.CYAN());
+        graphics.fill(x, y, x + ACCENT_WIDTH, y + HEIGHT, UIConstants.Accent.CYAN());
 
         // Collapse indicator (if collapsible)
-        int textX = x + 8;
+        int textX = x + TEXT_INSET_X;
         if (collapsible) {
             String indicator = collapsed ? "▶" : "▼";
             int indicatorColor = hovered ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY();
-            graphics.drawString(font, indicator, x + 6, y + (HEIGHT - 8) / 2, indicatorColor, false);
-            textX = x + 18;
+            graphics.drawString(font, indicator, x + COLLAPSE_INDICATOR_X, y + TEXT_OFFSET_Y, indicatorColor, false);
+            textX = x + COLLAPSE_TEXT_INSET_X;
         }
 
         // Title
         int titleColor = UIConstants.Text.TITLE();
-        graphics.drawString(font, title, textX, y + (HEIGHT - 8) / 2, titleColor, false);
+        graphics.drawString(font, title, textX, y + TEXT_OFFSET_Y, titleColor, false);
 
         // Bottom separator line
-        graphics.fill(x, y + HEIGHT - 1, x + width, y + HEIGHT, UIConstants.Border.SEPARATOR());
+        graphics.fill(x, y + HEIGHT - SEPARATOR_HEIGHT, x + width, y + HEIGHT, UIConstants.Border.SEPARATOR());
 
         return HEIGHT;
     }

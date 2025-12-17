@@ -275,12 +275,14 @@ public class WeaponConfigManager {
         float attackReach = (float) security.validateMultiplier(stats.attackReach > 0 ? stats.attackReach : 0);
         float attackKnockback = (float) security.validateMultiplier(stats.attackKnockback > 0 ? stats.attackKnockback : 0);
         float damageBonus = (float) security.validateSweeping(stats.damageBonus > 0 ? stats.damageBonus : 0);
+        float sweepingRatio = (float) security.validateSweeping(stats.sweepingRatio > 0 ? stats.sweepingRatio : 0);
 
         addModifier(entries, holder(Attributes.ATTACK_DAMAGE), attackDamage, AttributeModifier.Operation.ADD_VALUE, "attack_damage");
         addModifier(entries, holder(Attributes.ATTACK_SPEED), attackSpeed, AttributeModifier.Operation.ADD_VALUE, "attack_speed");
         addModifier(entries, holder(Attributes.ENTITY_INTERACTION_RANGE), attackReach, AttributeModifier.Operation.ADD_VALUE, "attack_reach");
         addModifier(entries, holder(Attributes.ATTACK_KNOCKBACK), attackKnockback, AttributeModifier.Operation.ADD_VALUE, "attack_knockback");
         addModifier(entries, holder(ModAttributes.DAMAGE_BONUS), damageBonus, AttributeModifier.Operation.ADD_VALUE, "damage_bonus");
+        addModifier(entries, holder(Attributes.SWEEPING_DAMAGE_RATIO), sweepingRatio, AttributeModifier.Operation.ADD_VALUE, "sweeping_ratio");
 
         // Custom DevMod attributes (mapped to Pufferfish when available)
         float critChance = (float) security.validateMultiplier(stats.critChance > 0 ? stats.critChance : 0);
@@ -338,6 +340,7 @@ public class WeaponConfigManager {
             stats.damageVsPlayers = (float) security.validateDamageVs(stats.damageVsPlayers);
             stats.trueDamagePercent = (float) security.validateTrueDamage(stats.trueDamagePercent);
             stats.damageBonus = (float) security.validateSweeping(stats.damageBonus);
+            stats.sweepingRatio = (float) security.validateSweeping(stats.sweepingRatio);
             stats.lifesteal = (float) security.validateMultiplier(stats.lifesteal);
             stats.fireDamageBonus = (float) security.validateMultiplier(stats.fireDamageBonus);
             stats.magicDamageBonus = (float) security.validateMultiplier(stats.magicDamageBonus);
@@ -416,6 +419,7 @@ public class WeaponConfigManager {
                 case "weapon_editor_attack_reach" -> { stats.attackReach = (float) val; found = true; }
                 case "weapon_editor_attack_knockback" -> { stats.attackKnockback = (float) val; found = true; }
                 case "weapon_editor_damage_bonus" -> { stats.damageBonus = (float) val; found = true; }
+                case "weapon_editor_sweeping_ratio" -> { stats.sweepingRatio = (float) val; found = true; }
                 case "weapon_editor_crit_chance" -> { stats.critChance = (float) val; found = true; }
                 case "weapon_editor_crit_multiplier" -> { stats.critDamage = (float) val; found = true; }
                 case "weapon_editor_armor_shred" -> { stats.armorShred = (float) val; found = true; }

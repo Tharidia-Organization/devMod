@@ -3,8 +3,14 @@ package com.frenkvs.devmod.ui.editor.debug;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.Font;
 import org.lwjgl.glfw.GLFW;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+
 import com.frenkvs.devmod.ui.editor.core.Bounds;
+import com.frenkvs.devmod.ui.editor.core.RenderObjectPool;
+import com.frenkvs.devmod.ui.editor.core.StringBuilderCache;
 
 /**
  * Debug overlay system for editor development and troubleshooting.
@@ -27,6 +33,28 @@ public final class DebugOverlay {
     private static final int COLOR_OVERFLOW = 0x80FF0000;    // Red 50%
     private static final int COLOR_INFO_BG = 0xE0000000;     // Black 88%
     private static final int COLOR_INFO_TEXT = 0xFFCCCCCC;   // Light gray
+    private static final int COLOR_GRID_MAJOR = 0x60FFFFFF;  // White 37%
+
+    // Layout constants
+    private static final int GRID_SIZE = 4;
+    private static final int GRID_MAJOR_STEP = 16;
+    private static final int ZONE_LABEL_OFFSET = 4;
+    private static final int OVERFLOW_BAR_HEIGHT = 6;
+    private static final int OVERFLOW_TEXT_OFFSET_X = 4;
+    private static final int OVERFLOW_TEXT_OFFSET_Y = 14;
+    private static final int BBOX_MARKER_OFFSET = 6;
+    private static final int BBOX_MARKER_SIZE = 4;
+    private static final int INFO_PANEL_WIDTH = 340;
+    private static final int INFO_PANEL_LINE_HEIGHT = 12;
+    private static final int INFO_PANEL_PADDING = 4;
+    private static final int INFO_PANEL_PADDING_DOUBLE = 8;
+    private static final int INFO_PANEL_MARGIN_RIGHT = 8;
+    private static final int INFO_PANEL_MARGIN_BOTTOM = 8;
+    private static final int INFO_PANEL_FOOTER_OFFSET = 60;
+    private static final int REPORTER_LABEL_OFFSET = 2;
+    private static final int REPORTER_DETAIL_OFFSET_Y = 12;
+    private static final int WARNING_LABEL_OFFSET_Y = 10;
+    private static final int WARNING_OVERLAY_ALPHA = 0x40000000; // 25% alpha
     
     public enum DetailLevel {
         LOW,    // Only warnings
@@ -114,37 +142,76 @@ public final class DebugOverlay {
         int panelY = panelBounds.y();
         int panelWidth = panelBounds.width();
         int panelHeight = panelBounds.height();
-        
+
+        // Collect warnings from reporters at start of frame
+        collectWarnings();
+
         // Layer 1: Grid (if enabled)
         if (showGrid || detailLevel == DetailLevel.HIGH) {
             renderGrid(safeGraphics, panelX, panelY, panelWidth, panelHeight);
         }
-        
+
         // Layer 2: Zone boundaries
         renderZoneBoundaries(safeGraphics, safeFont, headerBounds, leftBounds, footerBounds, panelBounds);
-        
+
         // Layer 3: Panel bounding boxes when bounds are shown
         if (showBounds || detailLevel != DetailLevel.LOW) {
             renderBoundingBoxes(safeGraphics, panelBounds, contentBounds);
+            // Also render bounds for all registered reporters
+            renderReporterBounds(safeGraphics, safeFont, mouseX, mouseY);
         }
 
-        // Layer 4: Overflow warning for content
+        // Layer 4: Overflow warning for content + reporter warnings
         renderWarnings(safeGraphics, safeFont, contentBounds, contentTotalHeight, scrollOffset);
 
-        // Layer 5: Info panel
-        renderInfoPanel(safeGraphics, safeFont, panelBounds, contentBounds, mouseX, mouseY, contentTotalHeight, sectionCount, scrollOffset);
+        // Layer 5: Info panel (now includes warning count and hovered component)
+        String hoveredComponent = getHoveredReporterName(mouseX, mouseY);
+        renderInfoPanel(safeGraphics, safeFont, panelBounds, contentBounds, mouseX, mouseY,
+            contentTotalHeight, sectionCount, scrollOffset, hoveredComponent);
+    }
+
+    /**
+     * Get the name of the reporter under the mouse cursor.
+     *
+     * @param mouseX Mouse X position
+     * @param mouseY Mouse Y position
+     * @return Name of hovered reporter, or empty string if none
+     */
+    public static String getHoveredReporterName(int mouseX, int mouseY) {
+        for (DebugReporter reporter : reporters) {
+            Bounds bounds = reporter.getDebugBounds();
+            if (bounds != null && bounds != Bounds.EMPTY && bounds.contains(mouseX, mouseY)) {
+                return reporter.getDebugName();
+            }
+        }
+        return "";
     }
 
     private static void renderWarnings(GuiGraphics graphics, Font font, Bounds contentBounds, int contentTotalHeight, float scrollOffset) {
-        Font safeFont = java.util.Objects.requireNonNull(font, "font");
+        Font safeFont = Objects.requireNonNull(font, "font");
         int viewport = contentBounds.height();
-        if (contentTotalHeight > viewport) {
-            int overflow = contentTotalHeight - viewport;
-            graphics.fill(contentBounds.x(), contentBounds.bottom() - 6, contentBounds.right(), contentBounds.bottom(),
-                COLOR_OVERFLOW);
-            graphics.drawString(safeFont, "Overflow +" + overflow + "px",
-                contentBounds.x() + 4, contentBounds.bottom() - 14, COLOR_WARNING, false);
+
+        // Use OverflowDetector to check content overflow
+        var overflowWarning = OverflowDetector.checkViewportOverflow(
+            "Content",
+            contentBounds.x(), contentBounds.y(),
+            contentBounds.width(), contentTotalHeight,
+            contentBounds.x(), contentBounds.y(),
+            contentBounds.width(), viewport
+        );
+
+        if (overflowWarning.isPresent()) {
+            DebugWarning warning = overflowWarning.get();
+            // Render overflow indicator at bottom of content area
+            graphics.fill(contentBounds.x(), contentBounds.bottom() - OVERFLOW_BAR_HEIGHT,
+                contentBounds.right(), contentBounds.bottom(), COLOR_OVERFLOW);
+            graphics.drawString(safeFont, warning.type().getIcon() + " " + warning.message(),
+                contentBounds.x() + OVERFLOW_TEXT_OFFSET_X, contentBounds.bottom() - OVERFLOW_TEXT_OFFSET_Y,
+                warning.type().getColor(), false);
         }
+
+        // Also render warnings from registered reporters
+        renderCollectedWarnings(graphics, safeFont);
     }
 
     /**
@@ -162,14 +229,14 @@ public final class DebugOverlay {
         int endY = startY + height;
         
         // Vertical lines
-        for (int x = startX; x <= endX; x += 4) {
-            int color = (x % 16 == 0) ? 0x60FFFFFF : COLOR_GRID;
+        for (int x = startX; x <= endX; x += GRID_SIZE) {
+            int color = (x % GRID_MAJOR_STEP == 0) ? COLOR_GRID_MAJOR : COLOR_GRID;
             graphics.vLine(x, startY, endY, color);
         }
         
         // Horizontal lines
-        for (int y = startY; y <= endY; y += 4) {
-            int color = (y % 16 == 0) ? 0x60FFFFFF : COLOR_GRID;
+        for (int y = startY; y <= endY; y += GRID_SIZE) {
+            int color = (y % GRID_MAJOR_STEP == 0) ? COLOR_GRID_MAJOR : COLOR_GRID;
             graphics.hLine(startX, endX, y, color);
         }
     }
@@ -196,10 +263,14 @@ public final class DebugOverlay {
         graphics.hLine(panelX, panelX + panelWidth, footerTop, COLOR_ZONE_BOUNDARY);
 
         if (detailLevel == DetailLevel.HIGH) {
-            graphics.drawString(safeFont, "HEADER", panelX + 4, panelY + 4, COLOR_INFO_TEXT, false);
-            graphics.drawString(safeFont, "LEFT", panelX + 4, headerBottom + 4, COLOR_INFO_TEXT, false);
-            graphics.drawString(safeFont, "CONTENT", leftRight + 4, headerBottom + 4, COLOR_INFO_TEXT, false);
-            graphics.drawString(safeFont, "FOOTER", panelX + 4, footerTop + 4, COLOR_INFO_TEXT, false);
+            graphics.drawString(safeFont, "HEADER", panelX + ZONE_LABEL_OFFSET, panelY + ZONE_LABEL_OFFSET,
+                COLOR_INFO_TEXT, false);
+            graphics.drawString(safeFont, "LEFT", panelX + ZONE_LABEL_OFFSET, headerBottom + ZONE_LABEL_OFFSET,
+                COLOR_INFO_TEXT, false);
+            graphics.drawString(safeFont, "CONTENT", leftRight + ZONE_LABEL_OFFSET, headerBottom + ZONE_LABEL_OFFSET,
+                COLOR_INFO_TEXT, false);
+            graphics.drawString(safeFont, "FOOTER", panelX + ZONE_LABEL_OFFSET, footerTop + ZONE_LABEL_OFFSET,
+                COLOR_INFO_TEXT, false);
         }
     }
 
@@ -210,7 +281,9 @@ public final class DebugOverlay {
                                             Bounds contentBounds) {
         graphics.renderOutline(panelBounds.x(), panelBounds.y(), panelBounds.width(), panelBounds.height(), COLOR_BBOX);
         graphics.renderOutline(contentBounds.x(), contentBounds.y(), contentBounds.width(), contentBounds.height(), COLOR_BBOX_HOVERED);
-        graphics.fill(panelBounds.x() + 6, panelBounds.y() + 6, panelBounds.x() + 10, panelBounds.y() + 10, COLOR_WARNING);
+        int markerX = panelBounds.x() + BBOX_MARKER_OFFSET;
+        int markerY = panelBounds.y() + BBOX_MARKER_OFFSET;
+        graphics.fill(markerX, markerY, markerX + BBOX_MARKER_SIZE, markerY + BBOX_MARKER_SIZE, COLOR_WARNING);
     }
     
     /**
@@ -222,7 +295,8 @@ public final class DebugOverlay {
                                         int mouseX, int mouseY,
                                         int contentTotalHeight,
                                         int sectionCount,
-                                        float scrollOffset) {
+                                        float scrollOffset,
+                                        String hoveredComponent) {
         Font safeFont = Objects.requireNonNull(font, "font");
         int panelX = panelBounds.x();
         int panelY = panelBounds.y();
@@ -231,34 +305,61 @@ public final class DebugOverlay {
 
         int viewport = contentBounds.height();
         int maxScroll = Math.max(0, contentTotalHeight - viewport);
-        String[] lines = {
-            "Debug: " + detailLevel.name() + " | F9:Toggle F10:Grid F11:Bounds",
-            "Mouse: " + mouseX + "," + mouseY + " | Panel: " + panelWidth + "x" + panelHeight,
-            "Grid: " + (showGrid ? "ON" : "OFF") + " | Bounds: " + (showBounds ? "ON" : "OFF"),
-            "Scroll: " + (int) scrollOffset + "/" + maxScroll + " | Sections: " + sectionCount + " | Height: " + contentTotalHeight,
-            perfLine == null ? "" : perfLine
-        };
-        
+
+        // Build info lines using pooled list to reduce allocations
+        RenderObjectPool pool = RenderObjectPool.getInstance();
+        List<String> lines = pool.borrowStringList();
+
+        // Use StringBuilderCache for formatted strings
+        lines.add(StringBuilderCache.build(sb -> sb
+            .append("Debug: ").append(detailLevel.name())
+            .append(" | F9:Toggle F10:Grid F11:Bounds")));
+        lines.add(StringBuilderCache.build(sb -> sb
+            .append("Mouse: ").append(mouseX).append(",").append(mouseY)
+            .append(" | Panel: ").append(panelWidth).append("x").append(panelHeight)));
+        lines.add(StringBuilderCache.build(sb -> sb
+            .append("Grid: ").append(showGrid ? "ON" : "OFF")
+            .append(" | Bounds: ").append(showBounds ? "ON" : "OFF")));
+        lines.add(StringBuilderCache.build(sb -> sb
+            .append("Scroll: ").append((int) scrollOffset).append("/").append(maxScroll)
+            .append(" | Sections: ").append(sectionCount)
+            .append(" | H:").append(contentTotalHeight)));
+
+        // Add hovered component info
+        if (hoveredComponent != null && !hoveredComponent.isEmpty()) {
+            lines.add("Hovered: " + hoveredComponent);
+        }
+
+        // Add warnings count
+        if (!collectedWarnings.isEmpty()) {
+            lines.add(StringBuilderCache.build(sb -> sb
+                .append("\u26A0 Warnings: ").append(collectedWarnings.size())));
+        }
+
+        // Add performance line if set
+        if (perfLine != null && !perfLine.isEmpty()) {
+            lines.add(perfLine);
+        }
+
         // Calculate panel size
-        int infoWidth = 320;
-        int infoHeight = lines.length * 12 + 8;
-        int infoX = panelX + panelWidth - infoWidth - 8;
-        int infoY = panelY + panelHeight - 60 - infoHeight - 8; // Above footer
-        
+        int infoWidth = INFO_PANEL_WIDTH;
+        int infoHeight = lines.size() * INFO_PANEL_LINE_HEIGHT + INFO_PANEL_PADDING_DOUBLE;
+        int infoX = panelX + panelWidth - infoWidth - INFO_PANEL_MARGIN_RIGHT;
+        int infoY = panelY + panelHeight - INFO_PANEL_FOOTER_OFFSET - infoHeight - INFO_PANEL_MARGIN_BOTTOM;
+
         // Background
         graphics.fill(infoX, infoY, infoX + infoWidth, infoY + infoHeight, COLOR_INFO_BG);
-        
+
         // Text
-        int y = infoY + 4;
+        int y = infoY + INFO_PANEL_PADDING;
         for (String line : lines) {
-            if (!line.isEmpty()) {
-                graphics.drawString(safeFont, line, infoX + 4, y, COLOR_INFO_TEXT, false);
-                y += 12;
-            }
-            else {
-                // skip empty lines without changing y
-            }
+            int color = line.startsWith("\u26A0") ? COLOR_WARNING : COLOR_INFO_TEXT;
+            graphics.drawString(safeFont, line, infoX + INFO_PANEL_PADDING, y, color, false);
+            y += INFO_PANEL_LINE_HEIGHT;
         }
+
+        // Return list to pool
+        pool.returnStringList(lines);
     }
     
     /**
@@ -266,5 +367,176 @@ public final class DebugOverlay {
      */
     public static DetailLevel getDetailLevel() {
         return detailLevel;
+    }
+
+    /**
+     * Check if grid overlay is enabled.
+     */
+    public static boolean isGridEnabled() {
+        return showGrid;
+    }
+
+    /**
+     * Check if bounds overlay is enabled.
+     */
+    public static boolean isBoundsEnabled() {
+        return showBounds;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // DebugReporter support
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    private static final List<DebugReporter> reporters = new ArrayList<>();
+    private static final List<DebugWarning> collectedWarnings = new ArrayList<>();
+
+    /**
+     * Register a component as a debug reporter.
+     * Registered reporters will have their bounds drawn and warnings collected.
+     *
+     * @param reporter The component to register
+     */
+    public static void registerReporter(DebugReporter reporter) {
+        if (reporter != null && !reporters.contains(reporter)) {
+            reporters.add(reporter);
+        }
+    }
+
+    /**
+     * Unregister a debug reporter.
+     *
+     * @param reporter The component to unregister
+     */
+    public static void unregisterReporter(DebugReporter reporter) {
+        reporters.remove(reporter);
+    }
+
+    /**
+     * Clear all registered reporters.
+     * Call this when closing the editor screen.
+     */
+    public static void clearReporters() {
+        reporters.clear();
+        collectedWarnings.clear();
+    }
+
+    /**
+     * Collect warnings from all registered reporters.
+     * Call this at the start of each frame before rendering.
+     */
+    public static void collectWarnings() {
+        collectedWarnings.clear();
+        for (DebugReporter reporter : reporters) {
+            collectedWarnings.addAll(reporter.getDebugWarnings());
+        }
+    }
+
+    /**
+     * Get all collected warnings.
+     *
+     * @return List of warnings from all reporters
+     */
+    public static List<DebugWarning> getCollectedWarnings() {
+        return List.copyOf(collectedWarnings);
+    }
+
+    /**
+     * Render bounds for all registered reporters.
+     *
+     * @param graphics The graphics context
+     * @param font     The font for labels
+     * @param mouseX   Current mouse X
+     * @param mouseY   Current mouse Y
+     */
+    public static void renderReporterBounds(GuiGraphics graphics, Font font, int mouseX, int mouseY) {
+        if (!enabled || detailLevel == DetailLevel.LOW) return;
+
+        Font safeFont = Objects.requireNonNull(font, "font");
+        for (DebugReporter reporter : reporters) {
+            Bounds bounds = reporter.getDebugBounds();
+            if (bounds == null || bounds == Bounds.EMPTY) continue;
+
+            boolean hovered = bounds.contains(mouseX, mouseY);
+            int color = hovered ? COLOR_BBOX_HOVERED : COLOR_BBOX;
+
+            graphics.renderOutline(bounds.x(), bounds.y(), bounds.width(), bounds.height(), color);
+
+            // Show name on hover or in HIGH detail
+            if (hovered || detailLevel == DetailLevel.HIGH) {
+                String name = reporter.getDebugName();
+                if (name != null && !name.isEmpty()) {
+                    graphics.drawString(safeFont, name, bounds.x() + REPORTER_LABEL_OFFSET, bounds.y() + REPORTER_LABEL_OFFSET,
+                        COLOR_INFO_TEXT, false);
+                }
+
+                // Show details on hover
+                if (hovered) {
+                    String details = reporter.getDebugDetails();
+                    if (details != null) {
+                        graphics.drawString(safeFont, details, bounds.x() + REPORTER_LABEL_OFFSET,
+                            bounds.y() + REPORTER_DETAIL_OFFSET_Y, COLOR_INFO_TEXT, false);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Render all collected warnings.
+     *
+     * @param graphics The graphics context
+     * @param font     The font for labels
+     */
+    public static void renderCollectedWarnings(GuiGraphics graphics, Font font) {
+        if (!enabled) return;
+
+        Font safeFont = Objects.requireNonNull(font, "font");
+        for (DebugWarning warning : collectedWarnings) {
+            // Red/colored overlay on problem area
+            int overlayColor = (warning.type().getColor() & 0x00FFFFFF) | WARNING_OVERLAY_ALPHA;
+            graphics.fill(warning.x(), warning.y(),
+                warning.x() + warning.width(), warning.y() + warning.height(),
+                overlayColor);
+
+            // Warning icon and message
+            String text = warning.type().getIcon() + ": " + warning.message();
+            graphics.drawString(safeFont, text, warning.x(), warning.y() - WARNING_LABEL_OFFSET_Y,
+                warning.type().getColor(), false);
+        }
+    }
+
+    /**
+     * Build a DebugInfo record from current state.
+     *
+     * @param panelWidth         Panel width
+     * @param panelHeight        Panel height
+     * @param scrollOffset       Current scroll offset
+     * @param maxScroll          Maximum scroll value
+     * @param visibleSections    Number of visible sections
+     * @param totalSections      Total number of sections
+     * @param mouseX             Mouse X position
+     * @param mouseY             Mouse Y position
+     * @param hoveredComponent   Name of hovered component
+     * @param focusedComponent   Name of focused component
+     * @return DebugInfo record with current state
+     */
+    public static DebugInfo buildDebugInfo(
+            int panelWidth, int panelHeight,
+            float scrollOffset, float maxScroll,
+            int visibleSections, int totalSections,
+            int mouseX, int mouseY,
+            String hoveredComponent, String focusedComponent) {
+
+        return DebugInfo.builder()
+            .scale(1.0f) // NOTE: Use ScaledCoord value when wiring editor scale here.
+            .gridSize(GRID_SIZE)
+            .panelSize(panelWidth, panelHeight)
+            .scroll(scrollOffset, maxScroll)
+            .sections(visibleSections, totalSections)
+            .mouse(mouseX, mouseY)
+            .hoveredComponent(hoveredComponent)
+            .focusedComponent(focusedComponent)
+            .warnings(collectedWarnings)
+            .build();
     }
 }

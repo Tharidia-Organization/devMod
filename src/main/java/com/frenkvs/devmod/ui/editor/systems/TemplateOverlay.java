@@ -3,10 +3,12 @@ package com.frenkvs.devmod.ui.editor.systems;
 import com.frenkvs.devmod.ItemEditorDataManager;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
+import com.frenkvs.devmod.ui.editor.components.VirtualizedList;
 import com.frenkvs.devmod.ui.editor.core.BaseOverlay;
 import com.frenkvs.devmod.ui.editor.core.ScaledCoord;
 import com.frenkvs.devmod.ui.editor.core.Typography;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import org.lwjgl.glfw.GLFW;
@@ -20,24 +22,72 @@ import java.util.function.Consumer;
 /**
  * Templates overlay (MVP) with virtualized list and preview.
  * Extends BaseOverlay for consistent modal behavior.
- * Based on EDITOR_DESIGN_SYSTEM section 2.42.
+ * Uses VirtualizedList component for consistent scroll behavior.
+ *
+ * @see EDITOR_DESIGN_SYSTEM.md Section 2.42 (Templates)
+ * @see 13-scroll-system.md (Scroll Policy)
  */
 public class TemplateOverlay extends BaseOverlay {
 
     private static final int PANEL_WIDTH = 340;
     private static final int PANEL_HEIGHT = 280;
     private static final int LIST_ROW_HEIGHT = 24;
+    private static final int VISIBLE_ROWS = 8;
+    private static final int TITLE_OFFSET_Y = 10;
+    private static final int SEARCH_OFFSET_Y = 40;
+    private static final int ROW_TEXT_INSET = 6;
+    private static final int PREVIEW_HEIGHT = 60;
+    private static final int PREVIEW_LINE_HEIGHT = 12;
+    private static final int BUTTON_ROW_OFFSET = 28;
+    private static final int BUTTON_WIDTH = 100;
+    private static final int BUTTON_HEIGHT = 18;
+    private static final String TITLE_TEXT = "Templates";
+    private static final String FILTER_ALL_LABEL = "(all types)";
+    private static final String FILTER_PREFIX = "For: ";
+    private static final String SEARCH_PLACEHOLDER = "Search (Ctrl+F)";
+    private static final String TEMPLATE_NAME_FALLBACK = "(template)";
+    private static final String TEMPLATE_NONE_LABEL = "(no templates)";
+    private static final String SCOPE_PREFIX = "Scope: ";
+    private static final String SCOPE_UNKNOWN = "Unknown";
+    private static final String TOUCHES_FORMAT = "Touches: Enchants (%d), Attributes (%d)";
 
     private final List<ItemEditorDataManager.TemplateData> templates = new ArrayList<>();
     private String searchQuery = "";
-    private int selectedIndex = -1;
-    private int scrollOffset = 0;
     private String filterCategory = null;
+    private String lastSearchQuery = "";  // Track search changes
 
     private Consumer<ItemEditorDataManager.TemplateData> applyCallback = t -> {};
     private Runnable closeCallback = () -> {};
 
     private boolean searchFocused = false;
+
+    // VirtualizedList for template list - uses standard scroll system
+    private final VirtualizedList<ItemEditorDataManager.TemplateData> templateList =
+        new VirtualizedList<ItemEditorDataManager.TemplateData>("template_list")
+            .rowHeight(LIST_ROW_HEIGHT)
+            .onSelect(t -> {})  // Selection handled internally
+            .onDoubleClick(t -> {
+                if (t != null) {
+                    applyCallback.accept(t);
+                }
+            })
+            .rowRenderer((ctx, template) -> {
+                String name = template.name == null ? TEMPLATE_NAME_FALLBACK : template.name;
+                String scope = template.itemCategory == null ? "" : " [" + template.itemCategory + "]";
+
+                float textScale = Typography.withUiScale(Typography.BODY);
+                Font rowFont = Minecraft.getInstance().font;
+                Typography.drawText(ctx.graphics(), rowFont, name,
+                    ctx.x() + ScaledCoord.scaleDim(ROW_TEXT_INSET),
+                    ctx.y() + ScaledCoord.scaleDim(ROW_TEXT_INSET),
+                    UIConstants.Text.PRIMARY(), textScale);
+
+                int scopeWidth = Math.round(rowFont.width(scope) * textScale);
+                Typography.drawText(ctx.graphics(), rowFont, scope,
+                    ctx.x() + ctx.width() - scopeWidth - ScaledCoord.scaleDim(ROW_TEXT_INSET),
+                    ctx.y() + ScaledCoord.scaleDim(ROW_TEXT_INSET),
+                    UIConstants.Text.SECONDARY(), textScale);
+            });
 
     // Buttons using EditorButton component
     private final EditorButton cancelButton = new EditorButton("cancel", "Cancel")
@@ -51,8 +101,20 @@ public class TemplateOverlay extends BaseOverlay {
         this.templates.clear();
         this.templates.addAll(data == null ? Collections.emptyList() : data);
         this.filterCategory = filterCategory;
-        this.selectedIndex = this.templates.isEmpty() ? -1 : 0;
-        this.scrollOffset = 0;
+        this.searchQuery = "";
+        this.lastSearchQuery = "";
+        updateFilteredList();
+    }
+
+    /**
+     * Update the VirtualizedList with filtered items.
+     */
+    private void updateFilteredList() {
+        List<ItemEditorDataManager.TemplateData> filtered = getFiltered();
+        templateList.items(filtered);
+        if (!filtered.isEmpty() && templateList.getSelectedIndex() < 0) {
+            templateList.setSelectedIndex(0);
+        }
     }
 
     public void onApply(Consumer<ItemEditorDataManager.TemplateData> cb) {
@@ -65,7 +127,9 @@ public class TemplateOverlay extends BaseOverlay {
 
     public void resetSearch() {
         this.searchQuery = "";
+        this.lastSearchQuery = "";
         this.searchFocused = false;
+        updateFilteredList();
     }
 
     // =========================================================================
@@ -88,100 +152,75 @@ public class TemplateOverlay extends BaseOverlay {
                                   int mouseX, int mouseY) {
         float textScale = Typography.withUiScale(Typography.BODY);
 
+        // Check if search changed and update list
+        if (!searchQuery.equals(lastSearchQuery)) {
+            lastSearchQuery = searchQuery;
+            updateFilteredList();
+        }
+
         // Header
-        Typography.drawText(graphics, font, "Templates", panelX + ScaledCoord.scaleDim(12), panelY + ScaledCoord.scaleDim(10), UIConstants.Text.TITLE(), textScale);
+        Typography.drawText(graphics, font, TITLE_TEXT, panelX + ScaledCoord.scaleDim(UIConstants.Spacing.LG),
+            panelY + ScaledCoord.scaleDim(TITLE_OFFSET_Y), UIConstants.Text.TITLE(), textScale);
         // Filter label
-        String filterLabel = filterCategory == null ? "(all types)" : ("For: " + filterCategory);
-        Typography.drawText(graphics, font, filterLabel, panelX + ScaledCoord.scaleDim(12), panelY + ScaledCoord.scaleDim(24), UIConstants.Text.SECONDARY(), textScale);
+        String filterLabel = filterCategory == null ? FILTER_ALL_LABEL : (FILTER_PREFIX + filterCategory);
+        Typography.drawText(graphics, font, filterLabel, panelX + ScaledCoord.scaleDim(UIConstants.Spacing.LG),
+            panelY + ScaledCoord.scaleDim(UIConstants.Spacing.XXL), UIConstants.Text.SECONDARY(), textScale);
 
         // Search box (lightweight)
-        int searchX = panelX + ScaledCoord.scaleDim(12);
-        int searchY = panelY + ScaledCoord.scaleDim(40);
-        int searchW = panelW - ScaledCoord.scaleDim(24);
-        int searchH = ScaledCoord.scaleDim(16);
-        boolean searchHover = mouseX >= searchX && mouseX <= searchX + searchW && mouseY >= searchY && mouseY <= searchY + searchH;
+        SearchBounds search = getSearchBounds(panelX, panelY, panelW);
+        boolean searchHover = mouseX >= search.x() && mouseX <= search.x() + search.w()
+            && mouseY >= search.y() && mouseY <= search.y() + search.h();
         int searchBg = searchHover || searchFocused ? UIConstants.Background.ACTIVE() : UIConstants.Background.INPUT();
-        graphics.fill(searchX, searchY, searchX + searchW, searchY + searchH, searchBg);
-        AxiomRenderer.drawBorder(graphics, searchX, searchY, searchW, searchH, UIConstants.Border.MUTED());
-        String placeholder = searchQuery.isEmpty() ? "Search (Ctrl+F)" : searchQuery;
+        graphics.fill(search.x(), search.y(), search.x() + search.w(), search.y() + search.h(), searchBg);
+        AxiomRenderer.drawBorder(graphics, search.x(), search.y(), search.w(), search.h(), UIConstants.Border.MUTED());
+        String placeholder = searchQuery.isEmpty() ? SEARCH_PLACEHOLDER : searchQuery;
         int searchColor = searchQuery.isEmpty() ? UIConstants.Text.MUTED() : UIConstants.Text.PRIMARY();
-        Typography.drawText(graphics, font, placeholder, searchX + ScaledCoord.scaleDim(4), searchY + ScaledCoord.scaleDim(4), searchColor, textScale);
+        Typography.drawText(graphics, font, placeholder, search.x() + ScaledCoord.scaleDim(UIConstants.Spacing.SM),
+            search.y() + ScaledCoord.scaleDim(UIConstants.Spacing.SM), searchColor, textScale);
 
-        // List area
-        int listX = panelX + ScaledCoord.scaleDim(12);
-        int listY = searchY + searchH + ScaledCoord.scaleDim(8);
-        int listW = panelW - ScaledCoord.scaleDim(24);
-        int listH = ScaledCoord.scaleDim(8 * LIST_ROW_HEIGHT); // visible rows
-        int rowHeight = ScaledCoord.scaleDim(LIST_ROW_HEIGHT);
+        // List area - using VirtualizedList
+        int listX = panelX + ScaledCoord.scaleDim(UIConstants.Spacing.LG);
+        int listY = search.y() + search.h() + ScaledCoord.scaleDim(UIConstants.Spacing.MD);
+        int listW = panelW - ScaledCoord.scaleDim(UIConstants.Spacing.XXL);
+        int listH = ScaledCoord.scaleDim(VISIBLE_ROWS * LIST_ROW_HEIGHT);
 
-        // Scissor for virtualization
-        graphics.enableScissor(listX, listY, listX + listW, listY + listH);
-
-        List<ItemEditorDataManager.TemplateData> filtered = getFiltered();
-        if (!filtered.isEmpty() && (selectedIndex < 0 || selectedIndex >= filtered.size())) {
-            selectedIndex = 0;
-        }
-        int totalRows = filtered.size();
-        int maxScroll = Math.max(0, totalRows * rowHeight - listH);
-        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScroll));
-        int startRow = rowHeight == 0 ? 0 : scrollOffset / rowHeight;
-        int offsetY = rowHeight == 0 ? 0 : -(scrollOffset % rowHeight);
-
-        for (int i = startRow; i < totalRows && (i - startRow) * rowHeight + offsetY < listH; i++) {
-            int rowTop = listY + (i - startRow) * rowHeight + offsetY;
-            ItemEditorDataManager.TemplateData template = filtered.get(i);
-            boolean hovered = mouseX >= listX && mouseX <= listX + listW && mouseY >= rowTop && mouseY <= rowTop + rowHeight;
-            boolean selected = i == selectedIndex;
-            int rowBg = selected ? UIConstants.Background.ACTIVE() : hovered ? UIConstants.Background.HOVER() : UIConstants.Background.PANEL();
-            graphics.fill(listX, rowTop, listX + listW, rowTop + rowHeight, rowBg);
-            String name = template.name == null ? "(template)" : template.name;
-            String scope = template.itemCategory == null ? "" : " [" + template.itemCategory + "]";
-            Typography.drawText(graphics, font, name, listX + ScaledCoord.scaleDim(6), rowTop + ScaledCoord.scaleDim(6), UIConstants.Text.PRIMARY(), textScale);
-            int scopeWidth = Math.round(font.width(scope) * textScale);
-            Typography.drawText(graphics, font, scope, listX + listW - scopeWidth - ScaledCoord.scaleDim(6), rowTop + ScaledCoord.scaleDim(6), UIConstants.Text.SECONDARY(), textScale);
-        }
-
-        graphics.disableScissor();
-
-        // Fade indicators if overflowing
-        int fadeH = ScaledCoord.scaleDim(6);
-        if (scrollOffset > 0) {
-            graphics.fill(listX, listY, listX + listW, listY + fadeH, 0x80000000);
-        }
-        if (maxScroll > 0 && scrollOffset < maxScroll) {
-            graphics.fill(listX, listY + listH - fadeH, listX + listW, listY + listH, 0x80000000);
-        }
+        // Render the VirtualizedList (rowRenderer configured at initialization)
+        templateList.render(graphics, listX, listY, listW, listH, mouseX, mouseY);
 
         // Preview box
-        int previewX = panelX + ScaledCoord.scaleDim(12);
-        int previewY = listY + listH + ScaledCoord.scaleDim(8);
-        int previewH = ScaledCoord.scaleDim(60);
+        int previewX = panelX + ScaledCoord.scaleDim(UIConstants.Spacing.LG);
+        int previewY = listY + listH + ScaledCoord.scaleDim(UIConstants.Spacing.MD);
+        int previewH = ScaledCoord.scaleDim(PREVIEW_HEIGHT);
         graphics.fill(previewX, previewY, previewX + listW, previewY + previewH, UIConstants.Background.CONTENT());
         AxiomRenderer.drawBorder(graphics, previewX, previewY, listW, previewH, UIConstants.Border.DEFAULT());
 
-        if (!filtered.isEmpty() && selectedIndex >= 0 && selectedIndex < filtered.size()) {
-            ItemEditorDataManager.TemplateData selectedTemplate = filtered.get(selectedIndex);
-            String name = selectedTemplate.name == null ? "(template)" : selectedTemplate.name;
-            Typography.drawText(graphics, font, name, previewX + ScaledCoord.scaleDim(6), previewY + ScaledCoord.scaleDim(6), UIConstants.Text.PRIMARY(), textScale);
-            String scope = "Scope: " + (selectedTemplate.itemCategory == null ? "Unknown" : selectedTemplate.itemCategory);
-            Typography.drawText(graphics, font, scope, previewX + ScaledCoord.scaleDim(6), previewY + ScaledCoord.scaleDim(18), UIConstants.Text.SECONDARY(), textScale);
+        ItemEditorDataManager.TemplateData selectedTemplate = templateList.getSelectedItem();
+        if (selectedTemplate != null) {
+            String name = selectedTemplate.name == null ? TEMPLATE_NAME_FALLBACK : selectedTemplate.name;
+            Typography.drawText(graphics, font, name, previewX + ScaledCoord.scaleDim(ROW_TEXT_INSET),
+                previewY + ScaledCoord.scaleDim(ROW_TEXT_INSET), UIConstants.Text.PRIMARY(), textScale);
+            String scope = SCOPE_PREFIX + (selectedTemplate.itemCategory == null ? SCOPE_UNKNOWN : selectedTemplate.itemCategory);
+            Typography.drawText(graphics, font, scope, previewX + ScaledCoord.scaleDim(ROW_TEXT_INSET),
+                previewY + ScaledCoord.scaleDim(ROW_TEXT_INSET + PREVIEW_LINE_HEIGHT), UIConstants.Text.SECONDARY(), textScale);
 
             int ench = selectedTemplate.enchantments == null ? 0 : selectedTemplate.enchantments.size();
             int attrs = selectedTemplate.attributes == null ? 0 : selectedTemplate.attributes.size();
-            String touches = "Touches: Enchants (" + ench + "), Attributes (" + attrs + ")";
-            Typography.drawText(graphics, font, touches, previewX + ScaledCoord.scaleDim(6), previewY + ScaledCoord.scaleDim(30), UIConstants.Text.MUTED(), textScale);
+            String touches = String.format(TOUCHES_FORMAT, ench, attrs);
+            Typography.drawText(graphics, font, touches, previewX + ScaledCoord.scaleDim(ROW_TEXT_INSET),
+                previewY + ScaledCoord.scaleDim(ROW_TEXT_INSET + PREVIEW_LINE_HEIGHT * 2), UIConstants.Text.MUTED(), textScale);
         } else {
-            Typography.drawText(graphics, font, "(no templates)", previewX + ScaledCoord.scaleDim(6), previewY + ScaledCoord.scaleDim(6), UIConstants.Text.MUTED(), textScale);
+            Typography.drawText(graphics, font, TEMPLATE_NONE_LABEL, previewX + ScaledCoord.scaleDim(ROW_TEXT_INSET),
+                previewY + ScaledCoord.scaleDim(ROW_TEXT_INSET), UIConstants.Text.MUTED(), textScale);
         }
 
         // Buttons using EditorButton components
-        int btnY = panelY + panelH - ScaledCoord.scaleDim(28);
-        int btnW = ScaledCoord.scaleDim(100);
-        int btnH = ScaledCoord.scaleDim(18);
-        int applyX = panelX + panelW - btnW - ScaledCoord.scaleDim(12);
-        int cancelX = applyX - btnW - ScaledCoord.scaleDim(8);
+        int btnY = panelY + panelH - ScaledCoord.scaleDim(BUTTON_ROW_OFFSET);
+        int btnW = ScaledCoord.scaleDim(BUTTON_WIDTH);
+        int btnH = ScaledCoord.scaleDim(BUTTON_HEIGHT);
+        int applyX = panelX + panelW - btnW - ScaledCoord.scaleDim(UIConstants.Spacing.LG);
+        int cancelX = applyX - btnW - ScaledCoord.scaleDim(UIConstants.Spacing.MD);
 
-        boolean canApply = !filtered.isEmpty() && selectedIndex >= 0 && selectedIndex < filtered.size();
+        boolean canApply = selectedTemplate != null;
         applyButton.setEnabled(canApply);
 
         cancelButton.render(graphics, cancelX, btnY, btnW, btnH, mouseX, mouseY);
@@ -197,20 +236,29 @@ public class TemplateOverlay extends BaseOverlay {
     protected boolean handleKeyPressed(int keyCode) {
         // Enter applies
         if (keyCode == GLFW.GLFW_KEY_ENTER) {
-            List<ItemEditorDataManager.TemplateData> filtered = getFiltered();
-            if (!filtered.isEmpty() && selectedIndex >= 0 && selectedIndex < filtered.size()) {
-                applyCallback.accept(filtered.get(selectedIndex));
+            ItemEditorDataManager.TemplateData selected = templateList.getSelectedItem();
+            if (selected != null) {
+                applyCallback.accept(selected);
             }
             return true;
         }
+
+        // Arrow keys delegate to VirtualizedList
         if (keyCode == GLFW.GLFW_KEY_DOWN) {
-            moveSelection(1);
+            templateList.selectNext();
             return true;
         }
         if (keyCode == GLFW.GLFW_KEY_UP) {
-            moveSelection(-1);
+            templateList.selectPrevious();
             return true;
         }
+
+        // Page up/down and Home/End
+        if (templateList.keyPressed(keyCode, 0, 0)) {
+            return true;
+        }
+
+        // Backspace for search
         if (keyCode == GLFW.GLFW_KEY_BACKSPACE && searchFocused && !searchQuery.isEmpty()) {
             searchQuery = searchQuery.substring(0, searchQuery.length() - 1);
             return true;
@@ -237,29 +285,14 @@ public class TemplateOverlay extends BaseOverlay {
 
     @Override
     protected boolean handleMouseClicked(double mouseX, double mouseY,
-                                          int panelX, int panelY, int panelW, int panelH) {
+        int panelX, int panelY, int panelW, int panelH) {
         // Search focus
-        int searchX = panelX + ScaledCoord.scaleDim(12);
-        int searchY = panelY + ScaledCoord.scaleDim(40);
-        int searchW = panelW - ScaledCoord.scaleDim(24);
-        int searchH = ScaledCoord.scaleDim(16);
-        searchFocused = mouseX >= searchX && mouseX <= searchX + searchW && mouseY >= searchY && mouseY <= searchY + searchH;
+        SearchBounds search = getSearchBounds(panelX, panelY, panelW);
+        searchFocused = mouseX >= search.x() && mouseX <= search.x() + search.w()
+            && mouseY >= search.y() && mouseY <= search.y() + search.h();
 
-        // List click
-        int listX = panelX + ScaledCoord.scaleDim(12);
-        int listY = searchY + searchH + ScaledCoord.scaleDim(8);
-        int listW = panelW - ScaledCoord.scaleDim(24);
-        int listH = ScaledCoord.scaleDim(8 * LIST_ROW_HEIGHT);
-        int rowHeight = ScaledCoord.scaleDim(LIST_ROW_HEIGHT);
-        if (mouseX >= listX && mouseX <= listX + listW && mouseY >= listY && mouseY <= listY + listH) {
-            List<ItemEditorDataManager.TemplateData> filtered = getFiltered();
-            int maxScroll = Math.max(0, filtered.size() * rowHeight - listH);
-            scrollOffset = Math.max(0, Math.min(scrollOffset, maxScroll));
-            int localY = (int) mouseY - listY + scrollOffset;
-            int index = rowHeight == 0 ? 0 : localY / rowHeight;
-            if (index >= 0 && index < filtered.size()) {
-                selectedIndex = index;
-            }
+        // Delegate list click to VirtualizedList
+        if (templateList.mouseClicked(mouseX, mouseY, 0)) {
             return true;
         }
 
@@ -271,9 +304,9 @@ public class TemplateOverlay extends BaseOverlay {
         }
         if (applyButton.mouseClicked(mouseX, mouseY, 0)) {
             applyButton.mouseReleased(mouseX, mouseY, 0);
-            List<ItemEditorDataManager.TemplateData> filtered = getFiltered();
-            if (!filtered.isEmpty() && selectedIndex >= 0 && selectedIndex < filtered.size()) {
-                applyCallback.accept(filtered.get(selectedIndex));
+            ItemEditorDataManager.TemplateData selected = templateList.getSelectedItem();
+            if (selected != null) {
+                applyCallback.accept(selected);
             }
             return true;
         }
@@ -284,19 +317,8 @@ public class TemplateOverlay extends BaseOverlay {
     @Override
     protected boolean handleMouseScrolled(double mouseX, double mouseY, double scrollDelta,
                                            int panelX, int panelY, int panelW, int panelH) {
-        int searchY = panelY + ScaledCoord.scaleDim(40);
-        int listX = panelX + ScaledCoord.scaleDim(12);
-        int listY = searchY + ScaledCoord.scaleDim(16) + ScaledCoord.scaleDim(8);
-        int listW = panelW - ScaledCoord.scaleDim(24);
-        int listH = ScaledCoord.scaleDim(8 * LIST_ROW_HEIGHT);
-        int rowHeight = ScaledCoord.scaleDim(LIST_ROW_HEIGHT);
-
-        if (mouseX >= listX && mouseX <= listX + listW && mouseY >= listY && mouseY <= listY + listH) {
-            int maxScroll = Math.max(0, getFiltered().size() * rowHeight - listH);
-            scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) (scrollDelta * rowHeight)));
-            return true;
-        }
-        return false;
+        // Delegate scroll to VirtualizedList
+        return templateList.mouseScrolled(mouseX, mouseY, scrollDelta);
     }
 
     @Override
@@ -308,12 +330,6 @@ public class TemplateOverlay extends BaseOverlay {
             return true;
         }
         return false;
-    }
-
-    private void moveSelection(int delta) {
-        List<ItemEditorDataManager.TemplateData> filtered = getFiltered();
-        if (filtered.isEmpty()) return;
-        selectedIndex = Math.max(0, Math.min(filtered.size() - 1, selectedIndex + delta));
     }
 
     private List<ItemEditorDataManager.TemplateData> getFiltered() {
@@ -334,4 +350,14 @@ public class TemplateOverlay extends BaseOverlay {
         }
         return filtered;
     }
+
+    private SearchBounds getSearchBounds(int panelX, int panelY, int panelW) {
+        int searchX = panelX + ScaledCoord.scaleDim(UIConstants.Spacing.LG);
+        int searchY = panelY + ScaledCoord.scaleDim(SEARCH_OFFSET_Y);
+        int searchW = panelW - ScaledCoord.scaleDim(UIConstants.Spacing.XXL);
+        int searchH = ScaledCoord.scaleDim(UIConstants.Spacing.XL);
+        return new SearchBounds(searchX, searchY, searchW, searchH);
+    }
+
+    private record SearchBounds(int x, int y, int w, int h) {}
 }

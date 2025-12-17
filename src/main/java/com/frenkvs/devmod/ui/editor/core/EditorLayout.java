@@ -17,6 +17,8 @@ public class EditorLayout {
     private Bounds footerBounds = Bounds.EMPTY;
     private Bounds leftColumnBounds = Bounds.EMPTY;
     private Bounds contentBounds = Bounds.EMPTY;
+    private static final int HOTBAR_RESERVE = 24;
+    private static final int MIN_CONTENT_HEIGHT = 32;
 
     private final Map<String, List<SectionBounds>> columnSections = new HashMap<>();
 
@@ -40,16 +42,16 @@ public class EditorLayout {
 
         int panelWidth = fit.panelWidth();
         int panelHeight = fit.panelHeight();
-        int hotbarReserve = ScaledCoord.scaleDim(24, scale); // leave space for vanilla hotbar
-        int headerHeight = ScaledCoord.scaleDim(UIConstants.Size.HEADER_HEIGHT, scale);
-        int footerHeight = ScaledCoord.scaleDim(UIConstants.Size.FOOTER_HEIGHT, scale);
-        int leftWidth = ScaledCoord.scaleDim(UIConstants.PanelDimensions.LEFT_COLUMN_WIDTH, scale);
+        int hotbarReserve = ScaledCoord.scaleDim(HOTBAR_RESERVE, scale); // leave space for vanilla hotbar
+        int headerHeight = ScaledCoord.scaleDim(EditorConstants.HEADER_HEIGHT, scale);
+        int footerHeight = ScaledCoord.scaleDim(EditorConstants.FOOTER_HEIGHT, scale);
+        int leftWidth = ScaledCoord.scaleDim(EditorConstants.LEFT_COLUMN_WIDTH, scale);
 
         int panelX = fit.panelX();
         int panelY = fit.panelY();
 
         // ensure we don't cover the vanilla hotbar; keep minimum height for header/footer/content
-        int minHeight = headerHeight + footerHeight + ScaledCoord.scaleDim(32, scale);
+        int minHeight = headerHeight + footerHeight + ScaledCoord.scaleDim(MIN_CONTENT_HEIGHT, scale);
         panelHeight = Math.max(panelHeight - hotbarReserve, minHeight);
 
         panelBounds = new Bounds(panelX, panelY, panelWidth, panelHeight);
