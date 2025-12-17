@@ -46,12 +46,12 @@ public class PanelRenderer {
     private static final float PADDING = 6f;
 
     // === Colors (Axiom style) ===
-    private static final int BG_COLOR = UIConstants.Background.PANEL;
-    private static final int HEADER_BG = UIConstants.Background.HEADER;
-    private static final int BORDER_COLOR = UIConstants.Border.DEFAULT;
-    private static final int BORDER_HOVER = UIConstants.Border.ACCENT;
-    private static final int TITLE_COLOR = UIConstants.Text.PRIMARY;
-    private static final int PIN_COLOR = UIConstants.Status.WARNING;
+    private static final int BG_COLOR = UIConstants.Background.PANEL();
+    private static final int HEADER_BG = UIConstants.Background.HEADER();
+    private static final int BORDER_COLOR = UIConstants.Border.DEFAULT();
+    private static final int BORDER_HOVER = UIConstants.Border.ACCENT();
+    private static final int TITLE_COLOR = UIConstants.Text.PRIMARY();
+    private static final int PIN_COLOR = UIConstants.Status.WARNING();
 
     // === Title truncation cache ===
     // Key: "title|maxWidth", Value: truncated title
@@ -228,7 +228,7 @@ public class PanelRenderer {
         // Pin icon
         if (panel.getType().canPin()) {
             String pinIcon = panel.isPinned() ? "*" : "o";
-            int pinColor = panel.isPinned() ? applyAlpha(PIN_COLOR, alpha) : applyAlpha(UIConstants.Text.MUTED, alpha);
+            int pinColor = panel.isPinned() ? applyAlpha(PIN_COLOR, alpha) : applyAlpha(UIConstants.Text.MUTED(), alpha);
             poseStack.translate(iconX - 10, iconY, -0.5f);
             renderText3D(poseStack, bufferSource, font, pinIcon, 0, 0, pinColor);
             poseStack.translate(-(iconX - 10), -iconY, 0.5f);
@@ -237,7 +237,7 @@ public class PanelRenderer {
         // Minimize icon
         String minIcon = panel.isMinimized() ? "+" : "-";
         poseStack.translate(iconX, iconY, -0.5f);
-        renderText3D(poseStack, bufferSource, font, minIcon, 0, 0, applyAlpha(UIConstants.Text.SECONDARY, alpha));
+        renderText3D(poseStack, bufferSource, font, minIcon, 0, 0, applyAlpha(UIConstants.Text.SECONDARY(), alpha));
 
         poseStack.popPose();
     }

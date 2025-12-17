@@ -8,19 +8,19 @@ import com.frenkvs.devmod.ui.UIConstants;
  */
 public enum PanelType {
     /** Entity info panel - shows target mob/player stats */
-    ENTITY_INFO("Entity Info", 180, 120, 8000, true, UIConstants.Status.INFO),
+    ENTITY_INFO("Entity Info", 180, 120, 8000, true, UIConstants.Status.INFO()),
 
     /** Combat panel - shows damage dealt/received */
-    COMBAT("Combat", 160, 100, 4000, false, UIConstants.Status.ERROR),
+    COMBAT("Combat", 160, 100, 4000, false, UIConstants.Status.ERROR()),
 
     /** Tool status panel - shows active overlays */
-    TOOL_STATUS("Tools", 140, 80, 0, true, UIConstants.Text.ACCENT),
+    TOOL_STATUS("Tools", 140, 80, 0, true, UIConstants.Text.ACCENT()),
 
     /** Test progress panel - shows current test */
-    TEST_PROGRESS("Test", 200, 90, 0, true, UIConstants.Status.SUCCESS),
+    TEST_PROGRESS("Test", 200, 90, 0, true, UIConstants.Status.SUCCESS()),
 
     /** Generic custom panel */
-    CUSTOM("Custom", 150, 100, 5000, true, UIConstants.Text.PRIMARY);
+    CUSTOM("Custom", 150, 100, 5000, true, UIConstants.Text.PRIMARY());
 
     private final String displayName;
     private final int defaultWidth;

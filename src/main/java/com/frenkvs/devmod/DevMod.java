@@ -67,6 +67,7 @@ public class DevMod {
 
         // Register configuration
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        modContainer.registerConfig(ModConfig.Type.CLIENT, EditorClientConfig.SPEC);
 
         // Initialize external mod integration (Pehkui, Better Combat, etc.)
         ModIntegrationManager.init();

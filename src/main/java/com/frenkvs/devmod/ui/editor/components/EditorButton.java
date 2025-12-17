@@ -204,7 +204,7 @@ public class EditorButton {
         int hintX = hotkeyHint != null ? x + width - padding - hintWidth : x + width - padding;
 
         if (hotkeyHint != null) {
-            graphics.drawString(font, hotkeyHint, hintX, contentY, UIConstants.Text.MUTED, false);
+            graphics.drawString(font, hotkeyHint, hintX, contentY, UIConstants.Text.MUTED(), false);
         }
 
         // Left icon
@@ -248,7 +248,7 @@ public class EditorButton {
 
     private int pickText(Palette palette, boolean active) {
         if (!enabled) return palette.disabledText;
-        if (style == Style.GHOST && !hovered && !active) return UIConstants.Text.SECONDARY;
+        if (style == Style.GHOST && !hovered && !active) return UIConstants.Text.SECONDARY();
         return palette.text;
     }
 
@@ -267,29 +267,29 @@ public class EditorButton {
                 UIConstants.lighten(primaryBase, 0.08f),
                 UIConstants.darken(primaryBase, 0.10f),
                 accent,
-                UIConstants.Text.PRIMARY);
+                UIConstants.Text.PRIMARY());
             case DANGER -> new Palette(dangerBase,
                 UIConstants.lighten(dangerBase, 0.06f),
                 UIConstants.darken(dangerBase, 0.12f),
                 UIConstants.ImpactButton.DANGER_BORDER,
-                UIConstants.Text.PRIMARY);
+                UIConstants.Text.PRIMARY());
             case SUCCESS -> new Palette(successBase,
                 UIConstants.lighten(successBase, 0.08f),
                 UIConstants.darken(successBase, 0.12f),
                 UIConstants.ImpactButton.SUCCESS_BORDER,
-                UIConstants.Text.PRIMARY);
+                UIConstants.Text.PRIMARY());
             case GHOST -> new Palette(
                 ghostBase,
                 UIConstants.lighten(ghostBase, 0.05f),
                 UIConstants.darken(ghostBase, 0.06f),
-                UIConstants.Border.MUTED,
-                UIConstants.Text.PRIMARY);
+                UIConstants.Border.MUTED(),
+                UIConstants.Text.PRIMARY());
             default -> new Palette(
                 defaultBase,
                 UIConstants.lighten(defaultBase, 0.04f),
                 UIConstants.darken(defaultBase, 0.12f),
-                UIConstants.Border.DEFAULT,
-                UIConstants.Text.PRIMARY);
+                UIConstants.Border.DEFAULT(),
+                UIConstants.Text.PRIMARY());
         };
     }
 
@@ -356,10 +356,10 @@ public class EditorButton {
             this.press = press;
             this.border = border;
             this.text = text;
-            this.hoverBorder = UIConstants.Border.ACCENT;
-            this.disabledBg = UIConstants.darken(UIConstants.Background.INPUT, 0.25f);
-            this.disabledBorder = UIConstants.Border.MUTED;
-            this.disabledText = UIConstants.Text.DISABLED;
+            this.hoverBorder = UIConstants.Border.ACCENT();
+            this.disabledBg = UIConstants.darken(UIConstants.Background.INPUT(), 0.25f);
+            this.disabledBorder = UIConstants.Border.MUTED();
+            this.disabledText = UIConstants.Text.DISABLED();
         }
     }
 

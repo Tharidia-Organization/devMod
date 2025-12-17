@@ -395,7 +395,7 @@ public class ArmorModule extends AbstractEditorModule {
         if (mc != null && mc.keyboardHandler != null) {
             mc.keyboardHandler.setClipboard(java.util.Objects.requireNonNull(safePayload, "payload cannot be null"));
         }
-        reportStatus("Debug info copied!", UIConstants.Accent.GREEN);
+        reportStatus("Debug info copied!", UIConstants.Accent.GREEN());
     }
 
     private String buildDebugClipboardText(ItemDebugInfo info, List<ValueComparison> comparisons,
@@ -696,7 +696,7 @@ public class ArmorModule extends AbstractEditorModule {
             int textWidth = font.width(Objects.requireNonNull(text, "text"));
             int x = bounds.x() + (bounds.width() - textWidth) / 2;
             int y = bounds.y() + UIConstants.Spacing.SM;
-            graphics.drawString(font, text, x, y, UIConstants.Text.VALUE, false);
+            graphics.drawString(font, text, x, y, UIConstants.Text.VALUE(), false);
         }
     }
 

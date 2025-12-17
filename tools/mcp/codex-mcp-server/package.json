@@ -1,0 +1,19 @@
+{
+  "name": "codex-mcp-server",
+  "version": "0.1.0",
+  "description": "MCP stdio server that exposes Codex CLI as a tool.",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "codex-mcp-server": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node ./src/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

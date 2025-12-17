@@ -187,11 +187,11 @@ public class ScrollableArea {
 
         // Track background
         graphics.fill(scrollbarX, y + 2, scrollbarX + SCROLLBAR_WIDTH, y + height - 2,
-                UIConstants.Background.INPUT);
+                UIConstants.Background.INPUT());
 
         // Thumb
         int[] thumbBounds = getScrollbarThumbBounds();
-        int thumbColor = isDraggingScrollbar ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
+        int thumbColor = isDraggingScrollbar ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
         graphics.fill(scrollbarX, thumbBounds[0], scrollbarX + SCROLLBAR_WIDTH, thumbBounds[1], thumbColor);
     }
 

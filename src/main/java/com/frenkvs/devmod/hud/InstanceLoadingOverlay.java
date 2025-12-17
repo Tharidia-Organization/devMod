@@ -66,8 +66,8 @@ public class InstanceLoadingOverlay {
         graphics.fill(0, 0, screenWidth, screenHeight, 0x88000000);
 
         // Panel background
-        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT + 2, UIConstants.Border.DEFAULT);
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, UIConstants.Background.PANEL_SOLID);
+        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT + 2, UIConstants.Border.DEFAULT());
+        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, UIConstants.Background.PANEL_SOLID());
 
         // Spinner
         int spinnerCenterX = panelX + 30;
@@ -79,25 +79,25 @@ public class InstanceLoadingOverlay {
             int dotX = spinnerCenterX + (int) (Math.cos(angle) * spinnerRadius);
             int dotY = spinnerCenterY + (int) (Math.sin(angle) * spinnerRadius);
             int alpha = 255 - (i * 28);
-            int dotColor = (alpha << 24) | (UIConstants.Accent.BLUE & 0x00FFFFFF);
+            int dotColor = (alpha << 24) | (UIConstants.Accent.BLUE() & 0x00FFFFFF);
             graphics.fill(dotX - 2, dotY - 2, dotX + 2, dotY + 2, dotColor);
         }
 
         // Title
         String title = I18n.translate("devmod.loading.preparing_quest").getString();
-        graphics.drawString(font, "§l" + title, panelX + 55, panelY + 15, UIConstants.Text.PRIMARY);
+        graphics.drawString(font, "§l" + title, panelX + 55, panelY + 15, UIConstants.Text.PRIMARY());
 
         // Status message
-        graphics.drawString(font, statusMessage, panelX + 55, panelY + 32, UIConstants.Text.SECONDARY);
+        graphics.drawString(font, statusMessage, panelX + 55, panelY + 32, UIConstants.Text.SECONDARY());
 
         // Elapsed time
         long elapsed = System.currentTimeMillis() - startTime;
         String timeText = String.format("%.1fs", elapsed / 1000.0);
-        graphics.drawString(font, timeText, panelX + 55, panelY + 50, UIConstants.Text.MUTED);
+        graphics.drawString(font, timeText, panelX + 55, panelY + 50, UIConstants.Text.MUTED());
 
         // Hint
         String hint = I18n.translate("devmod.loading.please_wait").getString();
-        graphics.drawCenteredString(font, "§8" + hint, panelX + PANEL_WIDTH / 2, panelY + PANEL_HEIGHT - 12, UIConstants.Text.MUTED);
+        graphics.drawCenteredString(font, "§8" + hint, panelX + PANEL_WIDTH / 2, panelY + PANEL_HEIGHT - 12, UIConstants.Text.MUTED());
     }
 
     // === Public API ===

@@ -5,6 +5,7 @@ import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.ui.unified.pages.CombatSettingsPage;
 import com.frenkvs.devmod.ui.unified.pages.DebugOverlaysPage;
+import com.frenkvs.devmod.ui.unified.pages.EditorSettingsPage;
 import com.frenkvs.devmod.ui.unified.pages.GeneralSettingsPage;
 import com.frenkvs.devmod.ui.unified.pages.KeybindsPage;
 import com.frenkvs.devmod.ui.unified.pages.MobConfigPage;
@@ -97,6 +98,7 @@ public class UnifiedSettingsScreen extends Screen {
 
         // Initialize pages
         pages.put(SettingsCategory.GENERAL, new GeneralSettingsPage());
+        pages.put(SettingsCategory.EDITOR, new EditorSettingsPage());
         pages.put(SettingsCategory.DEBUG, new DebugOverlaysPage());
         pages.put(SettingsCategory.VISUALIZERS, new VisualizersPage());
         pages.put(SettingsCategory.COMBAT, new CombatSettingsPage());
@@ -136,7 +138,7 @@ public class UnifiedSettingsScreen extends Screen {
         this.mouseY = mouseY;
 
         // Dark background
-        graphics.fill(0, 0, width, height, UIConstants.Background.SCREEN);
+        graphics.fill(0, 0, width, height, UIConstants.Background.SCREEN());
 
         // Header
         renderHeader(graphics);
@@ -146,7 +148,7 @@ public class UnifiedSettingsScreen extends Screen {
 
         // Vertical separator
         int separatorX = SIDEBAR_WIDTH;
-        graphics.fill(separatorX, HEADER_HEIGHT, separatorX + 1, height - FOOTER_HEIGHT, UIConstants.Border.DEFAULT);
+        graphics.fill(separatorX, HEADER_HEIGHT, separatorX + 1, height - FOOTER_HEIGHT, UIConstants.Border.DEFAULT());
 
         // Content area
         renderContent(graphics, mouseX, mouseY);
@@ -197,9 +199,9 @@ public class UnifiedSettingsScreen extends Screen {
                         int tipX = Math.min(mouseX + 10, width - tipWidth - 5);
                         int tipY = mouseY - tipHeight - 5;
 
-                        graphics.fill(tipX, tipY, tipX + tipWidth, tipY + tipHeight, UIConstants.Background.PANEL);
-                        AxiomRenderer.drawBorder(graphics, tipX, tipY, tipWidth, tipHeight, UIConstants.Border.DEFAULT);
-                        graphics.drawString(font, tooltipText, tipX + 4, tipY + 3, UIConstants.Text.PRIMARY, false);
+                        graphics.fill(tipX, tipY, tipX + tipWidth, tipY + tipHeight, UIConstants.Background.PANEL());
+                        AxiomRenderer.drawBorder(graphics, tipX, tipY, tipWidth, tipHeight, UIConstants.Border.DEFAULT());
+                        graphics.drawString(font, tooltipText, tipX + 4, tipY + 3, UIConstants.Text.PRIMARY(), false);
                     }
                     return;
                 }
@@ -223,18 +225,18 @@ public class UnifiedSettingsScreen extends Screen {
         int dialogY = (height - dialogHeight) / 2;
 
         // Background
-        graphics.fill(dialogX, dialogY, dialogX + dialogWidth, dialogY + dialogHeight, UIConstants.Background.PANEL);
-        AxiomRenderer.drawBorder(graphics, dialogX, dialogY, dialogWidth, dialogHeight, UIConstants.Border.ACCENT);
+        graphics.fill(dialogX, dialogY, dialogX + dialogWidth, dialogY + dialogHeight, UIConstants.Background.PANEL());
+        AxiomRenderer.drawBorder(graphics, dialogX, dialogY, dialogWidth, dialogHeight, UIConstants.Border.ACCENT());
 
         // Title
         String title = "Reset Settings?";
         int titleWidth = font.width(title);
-        graphics.drawString(font, title, dialogX + (dialogWidth - titleWidth) / 2, dialogY + 12, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, title, dialogX + (dialogWidth - titleWidth) / 2, dialogY + 12, UIConstants.Text.PRIMARY(), false);
 
         // Message
         String message = "This will reset " + currentCategory.getLabel() + " to defaults.";
         int messageWidth = font.width(message);
-        graphics.drawString(font, message, dialogX + (dialogWidth - messageWidth) / 2, dialogY + 32, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, message, dialogX + (dialogWidth - messageWidth) / 2, dialogY + 32, UIConstants.Text.SECONDARY(), false);
 
         // Buttons
         int buttonWidth = 80;
@@ -301,13 +303,13 @@ public class UnifiedSettingsScreen extends Screen {
         int dialogY = (height - dialogHeight) / 2;
 
         // Background with red border
-        graphics.fill(dialogX - 2, dialogY - 2, dialogX + dialogWidth + 2, dialogY + dialogHeight + 2, UIConstants.Status.ERROR);
-        graphics.fill(dialogX, dialogY, dialogX + dialogWidth, dialogY + dialogHeight, UIConstants.Background.PANEL);
+        graphics.fill(dialogX - 2, dialogY - 2, dialogX + dialogWidth + 2, dialogY + dialogHeight + 2, UIConstants.Status.ERROR());
+        graphics.fill(dialogX, dialogY, dialogX + dialogWidth, dialogY + dialogHeight, UIConstants.Background.PANEL());
 
         // Warning icon and title
         String title = "!! FACTORY RESET !!";
         int titleWidth = font.width(title);
-        graphics.drawString(font, title, dialogX + (dialogWidth - titleWidth) / 2, dialogY + 12, UIConstants.Status.ERROR, false);
+        graphics.drawString(font, title, dialogX + (dialogWidth - titleWidth) / 2, dialogY + 12, UIConstants.Status.ERROR(), false);
 
         // Warning messages
         String[] messages = {
@@ -321,7 +323,7 @@ public class UnifiedSettingsScreen extends Screen {
         int y = dialogY + 30;
         for (String msg : messages) {
             int msgWidth = font.width(msg);
-            int color = msg.startsWith("-") ? UIConstants.Text.SECONDARY : UIConstants.Text.PRIMARY;
+            int color = msg.startsWith("-") ? UIConstants.Text.SECONDARY() : UIConstants.Text.PRIMARY();
             graphics.drawString(font, msg, dialogX + (dialogWidth - msgWidth) / 2, y, color, false);
             y += 11;
         }
@@ -407,13 +409,13 @@ public class UnifiedSettingsScreen extends Screen {
         int dialogY = (height - dialogHeight) / 2;
 
         // Background with orange border (warning, not destructive)
-        graphics.fill(dialogX - 2, dialogY - 2, dialogX + dialogWidth + 2, dialogY + dialogHeight + 2, UIConstants.Accent.ORANGE);
-        graphics.fill(dialogX, dialogY, dialogX + dialogWidth, dialogY + dialogHeight, UIConstants.Background.PANEL);
+        graphics.fill(dialogX - 2, dialogY - 2, dialogX + dialogWidth + 2, dialogY + dialogHeight + 2, UIConstants.Accent.ORANGE());
+        graphics.fill(dialogX, dialogY, dialogX + dialogWidth, dialogY + dialogHeight, UIConstants.Background.PANEL());
 
         // Title
         String title = "Reset Player Progress";
         int titleWidth = font.width(title);
-        graphics.drawString(font, title, dialogX + (dialogWidth - titleWidth) / 2, dialogY + 12, UIConstants.Accent.ORANGE, false);
+        graphics.drawString(font, title, dialogX + (dialogWidth - titleWidth) / 2, dialogY + 12, UIConstants.Accent.ORANGE(), false);
 
         // Description
         String[] messages = {
@@ -428,7 +430,7 @@ public class UnifiedSettingsScreen extends Screen {
         int y = dialogY + 32;
         for (String msg : messages) {
             int msgWidth = font.width(msg);
-            int color = msg.startsWith("-") ? UIConstants.Text.SECONDARY : UIConstants.Text.PRIMARY;
+            int color = msg.startsWith("-") ? UIConstants.Text.SECONDARY() : UIConstants.Text.PRIMARY();
             graphics.drawString(font, msg, dialogX + (dialogWidth - msgWidth) / 2, y, color, false);
             y += 11;
         }
@@ -512,11 +514,11 @@ public class UnifiedSettingsScreen extends Screen {
 
     private void renderHeader(GuiGraphics graphics) {
         // Background header
-        graphics.fill(0, 0, width, HEADER_HEIGHT, UIConstants.Background.HEADER);
-        graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, UIConstants.Border.DEFAULT);
+        graphics.fill(0, 0, width, HEADER_HEIGHT, UIConstants.Background.HEADER());
+        graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, UIConstants.Border.DEFAULT());
 
         // Title
-        graphics.drawString(font, "VOXEL-LAB Settings", PADDING, (HEADER_HEIGHT - 9) / 2, UIConstants.Text.TITLE, false);
+        graphics.drawString(font, "VOXEL-LAB Settings", PADDING, (HEADER_HEIGHT - 9) / 2, UIConstants.Text.TITLE(), false);
 
         // Breadcrumb on the right
         String breadcrumb = currentCategory.getLabel();
@@ -528,7 +530,7 @@ public class UnifiedSettingsScreen extends Screen {
         int closeX = width - 20;
         int closeY = (HEADER_HEIGHT - 12) / 2;
         boolean closeHovered = mouseX >= closeX && mouseX < closeX + 12 && mouseY >= closeY && mouseY < closeY + 12;
-        int closeColor = closeHovered ? UIConstants.Status.ERROR : UIConstants.Text.MUTED;
+        int closeColor = closeHovered ? UIConstants.Status.ERROR() : UIConstants.Text.MUTED();
         graphics.drawString(font, "X", closeX, closeY, closeColor, false);
     }
 
@@ -559,18 +561,18 @@ public class UnifiedSettingsScreen extends Screen {
 
     private void renderSearchBox(GuiGraphics graphics, int x, int y, int boxWidth, int mouseX, int mouseY) {
         // Background
-        int bgColor = searchFocused ? UIConstants.Background.INPUT : UIConstants.Background.PANEL;
+        int bgColor = searchFocused ? UIConstants.Background.INPUT() : UIConstants.Background.PANEL();
         graphics.fill(x, y, x + boxWidth, y + SEARCH_HEIGHT, bgColor);
 
         // Border
-        int borderColor = searchFocused ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
+        int borderColor = searchFocused ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
         AxiomRenderer.drawBorder(graphics, x, y, boxWidth, SEARCH_HEIGHT, borderColor);
 
         // Search icon or text
         if (searchQuery.isEmpty() && !searchFocused) {
-            graphics.drawString(font, "Search...", x + 6, y + 6, UIConstants.Text.MUTED, false);
+            graphics.drawString(font, "Search...", x + 6, y + 6, UIConstants.Text.MUTED(), false);
         } else {
-            graphics.drawString(font, searchQuery + (searchFocused ? "_" : ""), x + 6, y + 6, UIConstants.Text.PRIMARY, false);
+            graphics.drawString(font, searchQuery + (searchFocused ? "_" : ""), x + 6, y + 6, UIConstants.Text.PRIMARY(), false);
         }
 
         // Clear button if has text (larger hit area for better usability)
@@ -578,7 +580,7 @@ public class UnifiedSettingsScreen extends Screen {
             int clearX = x + boxWidth - 16;
             int clearHitWidth = 16; // Larger hit area than visual "x"
             boolean clearHovered = mouseX >= clearX && mouseX < clearX + clearHitWidth && mouseY >= y && mouseY < y + SEARCH_HEIGHT;
-            graphics.drawString(font, "x", clearX + 3, y + 6, clearHovered ? UIConstants.Status.ERROR : UIConstants.Text.MUTED, false);
+            graphics.drawString(font, "x", clearX + 3, y + 6, clearHovered ? UIConstants.Status.ERROR() : UIConstants.Text.MUTED(), false);
         }
     }
 
@@ -601,17 +603,17 @@ public class UnifiedSettingsScreen extends Screen {
             graphics.fill(0, y - 2, 3, y + SIDEBAR_ITEM_HEIGHT - 6, category.getAccentColor());
         } else if (hovered && hasPage) {
             graphics.fill(x - 2, y - 2, x + itemWidth + 2, y + SIDEBAR_ITEM_HEIGHT - 6,
-                UIConstants.Background.HOVER);
+                UIConstants.Background.HOVER());
         }
 
         // Icon
         int iconColor = selected ? category.getAccentColor() :
-            (hasPage ? UIConstants.Text.SECONDARY : UIConstants.Text.DISABLED);
+            (hasPage ? UIConstants.Text.SECONDARY() : UIConstants.Text.DISABLED());
         graphics.drawString(font, "[" + category.getIcon() + "]", x, y + 4, iconColor, false);
 
         // Label
-        int labelColor = selected ? UIConstants.Text.PRIMARY :
-            (hasPage ? UIConstants.Text.SECONDARY : UIConstants.Text.DISABLED);
+        int labelColor = selected ? UIConstants.Text.PRIMARY() :
+            (hasPage ? UIConstants.Text.SECONDARY() : UIConstants.Text.DISABLED());
         graphics.drawString(font, category.getLabel(), x + 28, y + 4, labelColor, false);
 
         // "coming soon" indicator for unimplemented pages
@@ -619,7 +621,7 @@ public class UnifiedSettingsScreen extends Screen {
             String soon = "soon";
             int soonWidth = font.width(soon);
             graphics.drawString(font, soon, SIDEBAR_WIDTH - soonWidth - PADDING, y + 4,
-                UIConstants.Text.DISABLED, false);
+                UIConstants.Text.DISABLED(), false);
         }
     }
 
@@ -648,17 +650,17 @@ public class UnifiedSettingsScreen extends Screen {
 
         // Animate title with fade
         int titleAlpha = (int) (255 * categoryTransitionProgress);
-        int titleColor = (titleAlpha << 24) | (UIConstants.Text.PRIMARY & 0x00FFFFFF);
+        int titleColor = (titleAlpha << 24) | (UIConstants.Text.PRIMARY() & 0x00FFFFFF);
         graphics.drawString(font, pageTitle, contentX + animOffset, contentY, titleColor, false);
 
         // Description (animated)
         int descAlpha = (int) (255 * categoryTransitionProgress * 0.7f);
-        int descColor = (descAlpha << 24) | (UIConstants.Text.MUTED & 0x00FFFFFF);
+        int descColor = (descAlpha << 24) | (UIConstants.Text.MUTED() & 0x00FFFFFF);
         graphics.drawString(font, currentCategory.getDescription(), contentX + animOffset, contentY + 12, descColor, false);
 
         // Separator
         int sepY = contentY + 28;
-        graphics.fill(contentX, sepY, contentX + contentWidth, sepY + 1, UIConstants.Border.SEPARATOR);
+        graphics.fill(contentX, sepY, contentX + contentWidth, sepY + 1, UIConstants.Border.SEPARATOR());
 
         // Page content
         int pageY = sepY + PADDING;
@@ -676,7 +678,7 @@ public class UnifiedSettingsScreen extends Screen {
             graphics.drawString(font, placeholder,
                 contentX + (contentWidth - placeholderWidth) / 2,
                 pageY + pageHeight / 2,
-                UIConstants.Text.DISABLED, false);
+                UIConstants.Text.DISABLED(), false);
         }
     }
 
@@ -686,8 +688,8 @@ public class UnifiedSettingsScreen extends Screen {
         int footerY = height - FOOTER_HEIGHT;
 
         // Background
-        graphics.fill(0, footerY, width, height, UIConstants.Background.HEADER);
-        graphics.fill(0, footerY, width, footerY + 1, UIConstants.Border.DEFAULT);
+        graphics.fill(0, footerY, width, height, UIConstants.Background.HEADER());
+        graphics.fill(0, footerY, width, footerY + 1, UIConstants.Border.DEFAULT());
 
         // Left buttons
         int buttonY = footerY + (FOOTER_HEIGHT - UIConstants.Size.BUTTON_HEIGHT) / 2;
@@ -733,7 +735,7 @@ public class UnifiedSettingsScreen extends Screen {
         // Hint at center
         String hint = "Press ESC or K to close";
         int hintWidth = font.width(hint);
-        graphics.drawString(font, hint, (width - hintWidth) / 2, buttonY + 5, UIConstants.Text.MUTED, false);
+        graphics.drawString(font, hint, (width - hintWidth) / 2, buttonY + 5, UIConstants.Text.MUTED(), false);
     }
 
     // === Input Handling ===
@@ -1045,7 +1047,7 @@ public class UnifiedSettingsScreen extends Screen {
     public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Override to disable the default blurred background completely
         // Just fill with solid color, no blur
-        graphics.fill(0, 0, this.width, this.height, UIConstants.Background.SCREEN);
+        graphics.fill(0, 0, this.width, this.height, UIConstants.Background.SCREEN());
     }
 
     @Override
@@ -1056,7 +1058,7 @@ public class UnifiedSettingsScreen extends Screen {
     @Override
     protected void renderMenuBackground(GuiGraphics graphics) {
         // Just solid background, no dimming or blur
-        graphics.fill(0, 0, this.width, this.height, UIConstants.Background.SCREEN);
+        graphics.fill(0, 0, this.width, this.height, UIConstants.Background.SCREEN());
     }
 
     // === Utility ===

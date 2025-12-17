@@ -192,10 +192,10 @@ public class FooterComponent {
         this.bounds = new ResponsiveLayout.Rect(x, y, width, footerHeight);
 
         // Background
-        graphics.fill(x, y, x + width, y + footerHeight, UIConstants.Background.HEADER);
+        graphics.fill(x, y, x + width, y + footerHeight, UIConstants.Background.HEADER());
 
         // Top border
-        graphics.fill(x, y, x + width, y + 1, UIConstants.Border.SEPARATOR);
+        graphics.fill(x, y, x + width, y + 1, UIConstants.Border.SEPARATOR());
 
         // Calculate positions
         int contentY = y + ScaledCoord.scaleDim(12);
@@ -345,27 +345,27 @@ public class FooterComponent {
                                                      int x, int y, int width, int height, String label, boolean hovered) {
         float fontScale = Typography.buttonScale();
         ResponsiveLayout.Rect rect = new ResponsiveLayout.Rect(x, y, width, height);
-        int bgColor = hovered ? UIConstants.Button.HOVER : UIConstants.Button.NORMAL;
+        int bgColor = hovered ? UIConstants.Button.HOVER() : UIConstants.Button.NORMAL();
         graphics.fill(x, y, x + width, y + height, bgColor);
-        int borderColor = hovered ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
+        int borderColor = hovered ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
         AxiomRenderer.drawBorder(graphics, x, y, width, height, borderColor);
         String safeLabel = Objects.requireNonNull(label, "label cannot be null");
         int textWidthScaled = Math.round(font.width(safeLabel) * fontScale);
         int textHeightScaled = Math.round(font.lineHeight * fontScale);
         int textX = x + (width - textWidthScaled) / 2;
         int textY = y + (height - textHeightScaled) / 2;
-        Typography.drawText(graphics, font, safeLabel, textX, textY, UIConstants.Text.PRIMARY, fontScale);
+        Typography.drawText(graphics, font, safeLabel, textX, textY, UIConstants.Text.PRIMARY(), fontScale);
         return rect;
     }
 
     private void renderArrow(GuiGraphics graphics, net.minecraft.client.gui.Font font,
                              ResponsiveLayout.Rect rect, String symbol, boolean enabled, boolean hovered) {
-        int bgColor = !enabled ? UIConstants.Button.DISABLED :
-            (hovered ? UIConstants.Button.HOVER : UIConstants.Button.NORMAL);
+        int bgColor = !enabled ? UIConstants.Button.DISABLED() :
+            (hovered ? UIConstants.Button.HOVER() : UIConstants.Button.NORMAL());
         graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), bgColor);
-        int borderColor = enabled && hovered ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
+        int borderColor = enabled && hovered ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
         AxiomRenderer.drawBorder(graphics, rect.x(), rect.y(), rect.width(), rect.height(), borderColor);
-        int textColor = enabled ? UIConstants.Text.PRIMARY : UIConstants.Text.DISABLED;
+        int textColor = enabled ? UIConstants.Text.PRIMARY() : UIConstants.Text.DISABLED();
         float fontScale = Typography.buttonScale();
         String safeSymbol = Objects.requireNonNull(symbol, "symbol cannot be null");
         int textX = rect.x() + (rect.width() - Math.round(font.width(safeSymbol) * fontScale)) / 2;
@@ -379,12 +379,12 @@ public class FooterComponent {
         boolean enabled = canApply && isDirty;
 
         // Background - green tint for primary action
-        int bgColor = !enabled ? UIConstants.Button.DISABLED :
+        int bgColor = !enabled ? UIConstants.Button.DISABLED() :
                      (applyHovered ? UIConstants.Button.PRIMARY_HOVER : UIConstants.Button.PRIMARY);
         graphics.fill(x, y, x + width, y + height, bgColor);
 
         // Border
-        int borderColor = enabled ? UIConstants.Accent.GREEN : UIConstants.Border.DEFAULT;
+        int borderColor = enabled ? UIConstants.Accent.GREEN() : UIConstants.Border.DEFAULT();
         if (applyHovered && enabled) {
             borderColor = UIConstants.lighten(borderColor, 0.3f);
         }
@@ -401,7 +401,7 @@ public class FooterComponent {
         } else {
             label = "✓ Apply";
         }
-        int textColor = enabled ? UIConstants.Text.PRIMARY : UIConstants.Text.DISABLED;
+        int textColor = enabled ? UIConstants.Text.PRIMARY() : UIConstants.Text.DISABLED();
         int textWidthScaled = Math.round(font.width(label) * fontScale);
         int textHeightScaled = Math.round(font.lineHeight * fontScale);
         int textX = x + (width - textWidthScaled) / 2;
@@ -413,7 +413,7 @@ public class FooterComponent {
             int dotSize = ScaledCoord.scaleDim(6);
             int dotX = x + width - ScaledCoord.scaleDim(12);
             int dotY = y + ScaledCoord.scaleDim(6);
-            graphics.fill(dotX, dotY, dotX + dotSize, dotY + dotSize, UIConstants.Accent.ORANGE);
+            graphics.fill(dotX, dotY, dotX + dotSize, dotY + dotSize, UIConstants.Accent.ORANGE());
         }
     }
 

@@ -113,12 +113,12 @@ public class TestProgressPanel extends FloatingPanel {
             }
             testText += ellipsis;
         }
-        graphics.drawString(font, testText, 0, y, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, testText, 0, y, UIConstants.Text.PRIMARY(), false);
         y += lineHeight;
 
         // Categoria
         if (!currentCategory.isEmpty()) {
-            graphics.drawString(font, currentCategory, 0, y, UIConstants.Text.MUTED, false);
+            graphics.drawString(font, currentCategory, 0, y, UIConstants.Text.MUTED(), false);
             y += lineHeight;
         }
         y += 4;
@@ -128,7 +128,7 @@ public class TestProgressPanel extends FloatingPanel {
         int barWidth = contentWidth - 4;
 
         // Background
-        graphics.fill(0, y, barWidth, y + barHeight, UIConstants.Background.INPUT);
+        graphics.fill(0, y, barWidth, y + barHeight, UIConstants.Background.INPUT());
 
         // Progress fill
         int progressWidth = (int)(barWidth * sessionProgress);
@@ -136,12 +136,12 @@ public class TestProgressPanel extends FloatingPanel {
         graphics.fill(0, y, progressWidth, y + barHeight, progressColor);
 
         // Border
-        drawBorder(graphics, 0, y, barWidth, barHeight, UIConstants.Border.MUTED);
+        drawBorder(graphics, 0, y, barWidth, barHeight, UIConstants.Border.MUTED());
         y += barHeight + 4;
 
         // Counters
         String statsText = String.format("P:%d F:%d /%d", passedCount, failedCount, totalCount);
-        graphics.drawString(font, statsText, 0, y, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, statsText, 0, y, UIConstants.Text.SECONDARY(), false);
 
         // Percentage on the right
         String percentText = Objects.requireNonNull(String.format("%.0f%%", sessionProgress * 100));
@@ -164,12 +164,12 @@ public class TestProgressPanel extends FloatingPanel {
      */
     private int getProgressColor() {
         if (failedCount > 0) {
-            return UIConstants.Status.WARNING; // Orange if there are failures
+            return UIConstants.Status.WARNING(); // Orange if there are failures
         }
         if (sessionProgress >= 1.0f) {
-            return UIConstants.Status.SUCCESS; // Green if completed
+            return UIConstants.Status.SUCCESS(); // Green if completed
         }
-        return UIConstants.Status.INFO; // Blue during progress
+        return UIConstants.Status.INFO(); // Blue during progress
     }
 
     @Override
@@ -188,12 +188,12 @@ public class TestProgressPanel extends FloatingPanel {
             }
             testText += ellipsis;
         }
-        renderText3D(poseStack, bufferSource, font, testText, 0, y, applyAlpha(UIConstants.Text.PRIMARY, alpha));
+        renderText3D(poseStack, bufferSource, font, testText, 0, y, applyAlpha(UIConstants.Text.PRIMARY(), alpha));
         y += lineHeight;
 
         // Categoria
         if (!currentCategory.isEmpty()) {
-            renderText3D(poseStack, bufferSource, font, Objects.requireNonNull(currentCategory), 0, y, applyAlpha(UIConstants.Text.MUTED, alpha));
+            renderText3D(poseStack, bufferSource, font, Objects.requireNonNull(currentCategory), 0, y, applyAlpha(UIConstants.Text.MUTED(), alpha));
             y += lineHeight;
         }
         y += 4;
@@ -206,7 +206,7 @@ public class TestProgressPanel extends FloatingPanel {
 
         // Contatori
         String statsText = Objects.requireNonNull(String.format("Passed: %d | Failed: %d | Total: %d", passedCount, failedCount, totalCount));
-        renderText3D(poseStack, bufferSource, font, statsText, 0, y, applyAlpha(UIConstants.Text.SECONDARY, alpha));
+        renderText3D(poseStack, bufferSource, font, statsText, 0, y, applyAlpha(UIConstants.Text.SECONDARY(), alpha));
     }
 
     @Override

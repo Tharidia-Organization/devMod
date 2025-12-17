@@ -23,30 +23,30 @@ public class EnduranceShopScreen extends Screen {
     private static final int ITEM_MARGIN = UIConstants.Spacing.GAP_SMALL + 1;
 
     // Colors - Standardized to UIConstants
-    private static final int COLOR_BG = UIConstants.Background.PANEL;
-    private static final int COLOR_CATEGORY_BG = UIConstants.Background.HEADER;
-    private static final int COLOR_ITEM_BG = UIConstants.Background.INPUT;
-    private static final int COLOR_ITEM_HOVER = UIConstants.Background.HOVER;
-    private static final int COLOR_ITEM_DISABLED = UIConstants.Text.DISABLED;
-    private static final int COLOR_ACCENT = UIConstants.Accent.GOLD;  // Gold for tokens
-    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY;
-    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY;
-    private static final int COLOR_SUCCESS = UIConstants.Accent.GREEN;
-    private static final int COLOR_ERROR = UIConstants.Accent.RED;
+    private static final int COLOR_BG = UIConstants.Background.PANEL();
+    private static final int COLOR_CATEGORY_BG = UIConstants.Background.HEADER();
+    private static final int COLOR_ITEM_BG = UIConstants.Background.INPUT();
+    private static final int COLOR_ITEM_HOVER = UIConstants.Background.HOVER();
+    private static final int COLOR_ITEM_DISABLED = UIConstants.Text.DISABLED();
+    private static final int COLOR_ACCENT = UIConstants.Accent.GOLD();  // Gold for tokens
+    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY();
+    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY();
+    private static final int COLOR_SUCCESS = UIConstants.Accent.GREEN();
+    private static final int COLOR_ERROR = UIConstants.Accent.RED();
 
     // Category colors matching ShopCategory
     private static final Map<RewardSystem.ShopCategory, Integer> CATEGORY_COLORS = Map.of(
-        RewardSystem.ShopCategory.STATS, UIConstants.Accent.GREEN,
-        RewardSystem.ShopCategory.PERKS, UIConstants.Accent.BLUE,
-        RewardSystem.ShopCategory.UTILITY, UIConstants.Accent.GOLD,
-        RewardSystem.ShopCategory.COSMETICS, UIConstants.Accent.PURPLE
+        RewardSystem.ShopCategory.STATS, UIConstants.Accent.GREEN(),
+        RewardSystem.ShopCategory.PERKS, UIConstants.Accent.BLUE(),
+        RewardSystem.ShopCategory.UTILITY, UIConstants.Accent.GOLD(),
+        RewardSystem.ShopCategory.COSMETICS, UIConstants.Accent.PURPLE()
     );
 
     // Currency colors
     private static final Map<RewardSystem.Currency, Integer> CURRENCY_COLORS = Map.of(
-        RewardSystem.Currency.TOKENS, UIConstants.Accent.GOLD,
-        RewardSystem.Currency.PRESTIGE, UIConstants.Accent.PURPLE,
-        RewardSystem.Currency.BLOOD_GEMS, UIConstants.Accent.RED
+        RewardSystem.Currency.TOKENS, UIConstants.Accent.GOLD(),
+        RewardSystem.Currency.PRESTIGE, UIConstants.Accent.PURPLE(),
+        RewardSystem.Currency.BLOOD_GEMS, UIConstants.Accent.RED()
     );
 
     // State
@@ -181,7 +181,7 @@ public class EnduranceShopScreen extends Screen {
             int catColor = CATEGORY_COLORS.get(category);
 
             String catName = I18n.translate("devmod.shop.category." + category.name().toLowerCase()).getString();
-            renderButton(graphics, catBtnX, catY, catBtnW, catBtnH, catName, isHovered, isSelected ? catColor : UIConstants.Border.DEFAULT);
+            renderButton(graphics, catBtnX, catY, catBtnW, catBtnH, catName, isHovered, isSelected ? catColor : UIConstants.Border.DEFAULT());
 
             catY += catBtnH + UIConstants.Spacing.GAP_SMALL;
         }
@@ -210,7 +210,7 @@ public class EnduranceShopScreen extends Screen {
         if (maxScroll > 0) {
             int scrollbarHeight = (int) ((float) listHeight / (listHeight + maxScroll) * listHeight);
             int scrollbarY = listY + (int) ((float) scrollOffset / maxScroll * (listHeight - scrollbarHeight));
-            graphics.fill(listX + listWidth - 5, listY, listX + listWidth, listY + listHeight, UIConstants.Border.SEPARATOR);
+            graphics.fill(listX + listWidth - 5, listY, listX + listWidth, listY + listHeight, UIConstants.Border.SEPARATOR());
             graphics.fill(listX + listWidth - 5, scrollbarY, listX + listWidth, scrollbarY + scrollbarHeight, COLOR_ACCENT);
         }
     }
@@ -227,7 +227,7 @@ public class EnduranceShopScreen extends Screen {
         if (maxedOut) {
             bgColor = COLOR_ITEM_DISABLED;
         } else if (isSelected) {
-            bgColor = UIConstants.Background.ACTIVE;
+            bgColor = UIConstants.Background.ACTIVE();
         } else if (isHovered) {
             bgColor = COLOR_ITEM_HOVER;
         } else {
@@ -289,7 +289,7 @@ public class EnduranceShopScreen extends Screen {
         y += 25;
 
         // Divider
-        graphics.fill(panelX + 10, y, panelX + panelWidth - 10, y + 1, UIConstants.Border.SEPARATOR);
+        graphics.fill(panelX + 10, y, panelX + panelWidth - 10, y + 1, UIConstants.Border.SEPARATOR());
         y += 10;
 
         // Description (word wrap)
@@ -330,7 +330,7 @@ public class EnduranceShopScreen extends Screen {
         int backX = UIConstants.Spacing.PANEL_MARGIN;
         boolean backHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, backX, buttonY, backW, backH);
         renderButton(graphics, backX, buttonY, backW, backH,
-            I18n.translate("devmod.ui.back").getString(), backHovered, UIConstants.Border.DEFAULT);
+            I18n.translate("devmod.ui.back").getString(), backHovered, UIConstants.Border.DEFAULT());
 
         // Purchase button (primary CTA - green, right side)
         int purchaseW = UIConstants.Size.BUTTON_WIDTH_SMALL;
@@ -339,7 +339,7 @@ public class EnduranceShopScreen extends Screen {
         boolean canPurchase = selectedItem != null && canAfford(selectedItem)
             && playerPurchases.getOrDefault(selectedItem.id, 0) < selectedItem.maxPurchases;
         boolean purchaseHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, purchaseX, buttonY, purchaseW, purchaseH);
-        int purchaseColor = canPurchase ? UIConstants.Accent.GREEN : UIConstants.Text.DISABLED;
+        int purchaseColor = canPurchase ? UIConstants.Accent.GREEN() : UIConstants.Text.DISABLED();
         renderButton(graphics, purchaseX, buttonY, purchaseW, purchaseH,
             I18n.translate("devmod.ui.purchase").getString(), purchaseHovered && canPurchase, purchaseColor);
     }
@@ -348,12 +348,12 @@ public class EnduranceShopScreen extends Screen {
      * Render a custom styled button.
      */
     private void renderButton(GuiGraphics graphics, int x, int y, int w, int h, String text, boolean hovered, int color) {
-        int bgColor = hovered ? color : UIConstants.Background.INPUT;
+        int bgColor = hovered ? color : UIConstants.Background.INPUT();
         graphics.fill(x, y, x + w, y + h, bgColor);
         AxiomRenderer.drawBorder(graphics, x, y, w, h, color);
         int textX = x + (w - Objects.requireNonNull(font).width(Objects.requireNonNull(text))) / 2;
         int textY = y + (h - 8) / 2;
-        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(text), textX, textY, hovered ? UIConstants.Text.WHITE : color, false);
+        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(text), textX, textY, hovered ? UIConstants.Text.WHITE() : color, false);
     }
 
     private List<String> wrapText(String text, int maxWidth) {

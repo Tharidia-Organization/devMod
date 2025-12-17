@@ -246,27 +246,27 @@ public class QATestingScreen extends Screen {
         int y = 70;
 
         // Instructions
-        graphics.drawCenteredString(font, "Welcome to the QA Testing Session", centerX, y, UIConstants.Text.PRIMARY);
+        graphics.drawCenteredString(font, "Welcome to the QA Testing Session", centerX, y, UIConstants.Text.PRIMARY());
         y += 16;
-        graphics.drawCenteredString(font, "Complete tests to verify all mod features", centerX, y, UIConstants.Text.SECONDARY);
+        graphics.drawCenteredString(font, "Complete tests to verify all mod features", centerX, y, UIConstants.Text.SECONDARY());
         y += 12;
-        graphics.drawCenteredString(font, "Progress is tracked like achievements", centerX, y, UIConstants.Text.SECONDARY);
+        graphics.drawCenteredString(font, "Progress is tracked like achievements", centerX, y, UIConstants.Text.SECONDARY());
 
         // Show existing session info if available
         boolean hasExisting = TestingSession.INSTANCE.hasExistingSession() &&
                               TestingSession.INSTANCE.getCompletedTests() > 0;
         if (hasExisting) {
             y = this.height / 2 - 70;
-            graphics.drawCenteredString(font, "Previous Session Found!", centerX, y, UIConstants.Status.SUCCESS);
+            graphics.drawCenteredString(font, "Previous Session Found!", centerX, y, UIConstants.Status.SUCCESS());
             y += 15;
             String progress = String.format("Progress: %d/%d tests completed (%.0f%%)",
                 TestingSession.INSTANCE.getCompletedTests(),
                 TestingSession.INSTANCE.getTotalTests(),
                 TestingSession.INSTANCE.getProgressPercent());
-            graphics.drawCenteredString(font, progress, centerX, y, UIConstants.Text.PRIMARY);
+            graphics.drawCenteredString(font, progress, centerX, y, UIConstants.Text.PRIMARY());
             y += 12;
             graphics.drawCenteredString(font, "Tester: " + TestingSession.INSTANCE.getTesterName(),
-                centerX, y, UIConstants.Text.SECONDARY);
+                centerX, y, UIConstants.Text.SECONDARY());
         }
 
         // Stats preview
@@ -274,7 +274,7 @@ public class QATestingScreen extends Screen {
         int total = TestingSession.INSTANCE.getTotalTests();
         graphics.drawCenteredString(font, total + " tests across " +
             TestingSession.INSTANCE.getCategories().size() + " categories",
-            centerX, y, UIConstants.Text.MUTED);
+            centerX, y, UIConstants.Text.MUTED());
     }
 
     /**
@@ -288,25 +288,25 @@ public class QATestingScreen extends Screen {
 
         // Panel background
         graphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, 0xE0202035);
-        AxiomRenderer.drawBorder(graphics, panelX, panelY, panelWidth, panelHeight, UIConstants.Border.ACCENT);
+        AxiomRenderer.drawBorder(graphics, panelX, panelY, panelWidth, panelHeight, UIConstants.Border.ACCENT());
 
         // Header
         graphics.fill(panelX, panelY, panelX + panelWidth, panelY + 18, 0xFF303050);
-        graphics.drawString(font, "Tutorial Guide", panelX + 8, panelY + 5, UIConstants.Text.TITLE, false);
+        graphics.drawString(font, "Tutorial Guide", panelX + 8, panelY + 5, UIConstants.Text.TITLE(), false);
 
         int contentY = panelY + 24;
 
         // Current phase
         TutorialManager.TutorialPhase phase = TutorialManager.INSTANCE.getCurrentPhase();
-        graphics.drawString(font, "Phase: " + phase.getDisplayName(), panelX + 8, contentY, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, "Phase: " + phase.getDisplayName(), panelX + 8, contentY, UIConstants.Text.PRIMARY(), false);
         contentY += 12;
-        graphics.drawString(font, phase.getDescription(), panelX + 8, contentY, UIConstants.Text.MUTED, false);
+        graphics.drawString(font, phase.getDescription(), panelX + 8, contentY, UIConstants.Text.MUTED(), false);
         contentY += 16;
 
         // Current step instructions
         TutorialStep step = TutorialManager.INSTANCE.getCurrentStep();
         if (step != null) {
-            graphics.drawString(font, "Current Step:", panelX + 8, contentY, UIConstants.Text.SECONDARY, false);
+            graphics.drawString(font, "Current Step:", panelX + 8, contentY, UIConstants.Text.SECONDARY(), false);
             contentY += 11;
 
             // Step title
@@ -314,7 +314,7 @@ public class QATestingScreen extends Screen {
             if (font.width(title) > panelWidth - 16) {
                 title = title.substring(0, Math.min(title.length(), 22)) + "...";
             }
-            graphics.drawString(font, title, panelX + 8, contentY, UIConstants.Text.ACCENT, false);
+            graphics.drawString(font, title, panelX + 8, contentY, UIConstants.Text.ACCENT(), false);
             contentY += 14;
 
             // Step instructions (first 3)
@@ -322,7 +322,7 @@ public class QATestingScreen extends Screen {
             for (int i = 0; i < Math.min(3, instructions.length); i++) {
                 String instr = instructions[i];
                 if (instr.length() > 28) instr = instr.substring(0, 25) + "...";
-                graphics.drawString(font, "- " + instr, panelX + 8, contentY, UIConstants.Text.MUTED, false);
+                graphics.drawString(font, "- " + instr, panelX + 8, contentY, UIConstants.Text.MUTED(), false);
                 contentY += 10;
             }
 
@@ -355,7 +355,7 @@ public class QATestingScreen extends Screen {
 
         // Level
         int level = TutorialManager.INSTANCE.getLevel();
-        graphics.drawString(font, "Level: " + level, panelX + 8, contentY, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, "Level: " + level, panelX + 8, contentY, UIConstants.Text.PRIMARY(), false);
         contentY += 14;
 
         // XP bar
@@ -363,7 +363,7 @@ public class QATestingScreen extends Screen {
         float levelProgress = TutorialManager.INSTANCE.getLevelProgress();
         int xpToNext = TutorialManager.INSTANCE.getXPToNextLevel();
 
-        graphics.drawString(font, "XP: " + xp, panelX + 8, contentY, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, "XP: " + xp, panelX + 8, contentY, UIConstants.Text.SECONDARY(), false);
         contentY += 12;
 
         // Progress bar
@@ -372,22 +372,22 @@ public class QATestingScreen extends Screen {
         graphics.fill(panelX + 8, contentY, panelX + 8 + (int)(barWidth * levelProgress), contentY + 8, 0xFFFFAA00);
         contentY += 12;
 
-        graphics.drawString(font, xpToNext + " XP to next level", panelX + 8, contentY, UIConstants.Text.MUTED, false);
+        graphics.drawString(font, xpToNext + " XP to next level", panelX + 8, contentY, UIConstants.Text.MUTED(), false);
         contentY += 16;
 
         // Achievements count
         int achievements = TutorialManager.INSTANCE.getAchievementCount();
-        graphics.drawString(font, "Achievements: " + achievements, panelX + 8, contentY, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, "Achievements: " + achievements, panelX + 8, contentY, UIConstants.Text.PRIMARY(), false);
         contentY += 14;
 
         // Suggested test
         TestCase suggested = TutorialManager.INSTANCE.getSuggestedTest();
         if (suggested != null) {
-            graphics.drawString(font, "Suggested:", panelX + 8, contentY, UIConstants.Text.SECONDARY, false);
+            graphics.drawString(font, "Suggested:", panelX + 8, contentY, UIConstants.Text.SECONDARY(), false);
             contentY += 11;
             String testName = suggested.getName();
             if (testName.length() > 22) testName = testName.substring(0, 19) + "...";
-            graphics.drawString(font, testName, panelX + 8, contentY, UIConstants.Status.SUCCESS, false);
+            graphics.drawString(font, testName, panelX + 8, contentY, UIConstants.Status.SUCCESS(), false);
         }
     }
 
@@ -412,25 +412,25 @@ public class QATestingScreen extends Screen {
 
     private void renderHeader(GuiGraphics graphics) {
         // Header background
-        graphics.fill(0, 0, this.width, HEADER_HEIGHT, UIConstants.Background.HEADER);
+        graphics.fill(0, 0, this.width, HEADER_HEIGHT, UIConstants.Background.HEADER());
         AxiomRenderer.drawSeparator(graphics, 0, HEADER_HEIGHT - 1, this.width);
 
         // Title
-        graphics.drawString(font, "DevMod QA Testing", PADDING, 8, UIConstants.Text.WHITE, false);
+        graphics.drawString(font, "DevMod QA Testing", PADDING, 8, UIConstants.Text.WHITE(), false);
 
         // Session info
         String sessionInfo = "Tester: " + TestingSession.INSTANCE.getTesterName();
-        graphics.drawString(font, sessionInfo, PADDING, 25, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, sessionInfo, PADDING, 25, UIConstants.Text.SECONDARY(), false);
 
         // Progress bar in header
         int progressBarWidth = 200;
         int progressBarX = this.width - progressBarWidth - PADDING;
         int progressBarY = 15;
         float progress = TestingSession.INSTANCE.getProgressPercent() / 100f;
-        AxiomRenderer.drawProgressBar(graphics, progressBarX, progressBarY, progressBarWidth, 12, progress, UIConstants.Status.SUCCESS);
+        AxiomRenderer.drawProgressBar(graphics, progressBarX, progressBarY, progressBarWidth, 12, progress, UIConstants.Status.SUCCESS());
 
         String progressText = String.format("%.0f%% Complete", TestingSession.INSTANCE.getProgressPercent());
-        graphics.drawString(font, progressText, progressBarX, progressBarY + 15, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, progressText, progressBarX, progressBarY + 15, UIConstants.Text.PRIMARY(), false);
     }
 
     private void renderSidebar(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -439,12 +439,12 @@ public class QATestingScreen extends Screen {
         int sidebarHeight = this.height - HEADER_HEIGHT - FOOTER_HEIGHT;
 
         // Sidebar background
-        graphics.fill(sidebarX, sidebarY, SIDEBAR_WIDTH, sidebarY + sidebarHeight, UIConstants.Background.PANEL);
+        graphics.fill(sidebarX, sidebarY, SIDEBAR_WIDTH, sidebarY + sidebarHeight, UIConstants.Background.PANEL());
         AxiomRenderer.drawSeparator(graphics, SIDEBAR_WIDTH - 1, sidebarY, 1);
 
         // Category list header
         int headerY = sidebarY + PADDING;
-        graphics.drawString(font, "Categories", PADDING, headerY, UIConstants.Text.TITLE, false);
+        graphics.drawString(font, "Categories", PADDING, headerY, UIConstants.Text.TITLE(), false);
         headerY += 20;
 
         Map<String, List<TestCase>> categories = TestingSession.INSTANCE.getCategorizedTests();
@@ -487,9 +487,9 @@ public class QATestingScreen extends Screen {
 
             // Background for selected/hovered
             if (isSelected) {
-                graphics.fill(PADDING - 2, y - 2, SIDEBAR_WIDTH - PADDING + 2, y + 22, UIConstants.Background.ACTIVE);
+                graphics.fill(PADDING - 2, y - 2, SIDEBAR_WIDTH - PADDING + 2, y + 22, UIConstants.Background.ACTIVE());
             } else if (isHovered) {
-                graphics.fill(PADDING - 2, y - 2, SIDEBAR_WIDTH - PADDING + 2, y + 22, UIConstants.Background.HOVER);
+                graphics.fill(PADDING - 2, y - 2, SIDEBAR_WIDTH - PADDING + 2, y + 22, UIConstants.Background.HOVER());
             }
 
             // Truncate long category names (keep at least 6 chars for readability)
@@ -504,18 +504,18 @@ public class QATestingScreen extends Screen {
             }
 
             // Category name
-            int textColor = isSelected ? UIConstants.Text.ACCENT : UIConstants.Text.PRIMARY;
+            int textColor = isSelected ? UIConstants.Text.ACCENT() : UIConstants.Text.PRIMARY();
             graphics.drawString(font, displayCategory, PADDING + 5, y + 2, textColor, false);
 
             // Progress indicator
             String progressStr = completed + "/" + tests.size();
-            int progressColor = completed == tests.size() ? UIConstants.Status.SUCCESS : UIConstants.Text.MUTED;
+            int progressColor = completed == tests.size() ? UIConstants.Status.SUCCESS() : UIConstants.Text.MUTED();
             int progressWidth = font.width(progressStr);
             graphics.drawString(font, progressStr, SIDEBAR_WIDTH - PADDING - progressWidth - 10, y + 2, progressColor, false);
 
             // Progress bar mini
             float catProgress = tests.isEmpty() ? 0 : (float) completed / tests.size();
-            int barColor = catProgress == 1f ? UIConstants.Status.SUCCESS : UIConstants.Border.ACCENT;
+            int barColor = catProgress == 1f ? UIConstants.Status.SUCCESS() : UIConstants.Border.ACCENT();
             graphics.fill(PADDING, y + 15, PADDING + (int)((SIDEBAR_WIDTH - PADDING * 2 - 15) * catProgress), y + 17, barColor);
 
             y += categoryItemHeight;
@@ -544,7 +544,7 @@ public class QATestingScreen extends Screen {
         }
 
         // Title
-        graphics.drawString(font, selectedCategory + " Tests", listX, listY, UIConstants.Text.TITLE, false);
+        graphics.drawString(font, selectedCategory + " Tests", listX, listY, UIConstants.Text.TITLE(), false);
         listY += 20;
 
         List<TestCase> tests = TestingSession.INSTANCE.getCategorizedTests().get(selectedCategory);
@@ -623,8 +623,8 @@ public class QATestingScreen extends Screen {
         int height = TEST_CARD_HEIGHT - 10;
 
         // Card background
-        int bgColor = selected ? UIConstants.Background.ACTIVE :
-                      (hovered ? UIConstants.Background.HOVER : UIConstants.Background.PANEL);
+        int bgColor = selected ? UIConstants.Background.ACTIVE() :
+                      (hovered ? UIConstants.Background.HOVER() : UIConstants.Background.PANEL());
         graphics.fill(x, y, x + width, y + height, bgColor);
 
         // Left border color based on status
@@ -637,11 +637,11 @@ public class QATestingScreen extends Screen {
 
         // Test name (truncated to fit card width)
         String testName = truncateText(test.getName(), width - 40); // Leave room for priority indicator
-        graphics.drawString(font, testName, x + 12, y + 5, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, testName, x + 12, y + 5, UIConstants.Text.PRIMARY(), false);
 
         // Description (truncated to fit card width)
         String desc = truncateText(test.getDescription(), width - 24);
-        graphics.drawString(font, desc, x + 12, y + 18, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, desc, x + 12, y + 18, UIConstants.Text.SECONDARY(), false);
 
         // Status text
         String statusText = "[" + test.getStatus().name() + "]";
@@ -649,7 +649,7 @@ public class QATestingScreen extends Screen {
 
         // Auto-validate indicator
         if (test.hasAutoValidator()) {
-            graphics.drawString(font, "[AUTO]", x + 80, y + 32, UIConstants.Text.MUTED, false);
+            graphics.drawString(font, "[AUTO]", x + 80, y + 32, UIConstants.Text.MUTED(), false);
         }
 
         // Action buttons when hovered
@@ -658,11 +658,11 @@ public class QATestingScreen extends Screen {
             String hint = test.getStatus() == TestCase.TestStatus.PENDING ?
                 "Click to start" : "Click for details";
             int hintWidth = font.width(hint);
-            graphics.drawString(font, hint, x + width - hintWidth - 25, y + height - 15, UIConstants.Text.MUTED, false);
+            graphics.drawString(font, hint, x + width - hintWidth - 25, y + height - 15, UIConstants.Text.MUTED(), false);
         }
 
         // Border
-        int borderColor = selected ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
+        int borderColor = selected ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
         AxiomRenderer.drawBorder(graphics, x, y, width, height, borderColor);
     }
 
@@ -681,7 +681,7 @@ public class QATestingScreen extends Screen {
         // Test name (truncated to fit panel width)
         int maxTextWidth = detailsWidth - PADDING * 2;
         String detailName = truncateText(selectedTest.getName(), maxTextWidth);
-        graphics.drawString(font, detailName, contentX, contentY, UIConstants.Text.WHITE, false);
+        graphics.drawString(font, detailName, contentX, contentY, UIConstants.Text.WHITE(), false);
         contentY += 15;
 
         // Status and Priority
@@ -694,7 +694,7 @@ public class QATestingScreen extends Screen {
         AxiomRenderer.drawSectionHeader(graphics, font, contentX, contentY, "Description:");
         contentY += 12;
         String detailDesc = truncateText(selectedTest.getDescription(), maxTextWidth);
-        graphics.drawString(font, detailDesc, contentX, contentY, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, detailDesc, contentX, contentY, UIConstants.Text.SECONDARY(), false);
         contentY += 20;
 
         // Instructions (truncated per line to fit panel width)
@@ -704,7 +704,7 @@ public class QATestingScreen extends Screen {
         String[] lines = selectedTest.getInstructions().split("\n");
         for (String line : lines) {
             String truncatedLine = truncateText(line, maxTextWidth);
-            graphics.drawString(font, truncatedLine, contentX, contentY, UIConstants.Text.PRIMARY, false);
+            graphics.drawString(font, truncatedLine, contentX, contentY, UIConstants.Text.PRIMARY(), false);
             contentY += 12;
         }
         contentY += 10;
@@ -713,7 +713,7 @@ public class QATestingScreen extends Screen {
         if (selectedTest.getComments() != null && !selectedTest.getComments().isEmpty()) {
             AxiomRenderer.drawSectionHeader(graphics, font, contentX, contentY, "Tester Comments:");
             contentY += 12;
-            graphics.drawString(font, selectedTest.getComments(), contentX, contentY, UIConstants.Text.MUTED, false);
+            graphics.drawString(font, selectedTest.getComments(), contentX, contentY, UIConstants.Text.MUTED(), false);
             contentY += 15;
         }
 
@@ -748,7 +748,7 @@ public class QATestingScreen extends Screen {
         int footerY = this.height - FOOTER_HEIGHT;
 
         // Footer background
-        graphics.fill(0, footerY, this.width, this.height, UIConstants.Background.HEADER);
+        graphics.fill(0, footerY, this.width, this.height, UIConstants.Background.HEADER());
         AxiomRenderer.drawSeparator(graphics, 0, footerY, this.width);
 
         // Stats
@@ -759,12 +759,12 @@ public class QATestingScreen extends Screen {
 
         String stats = String.format("Passed: %d | Failed: %d | Remaining: %d / %d",
             passed, failed, remaining, total);
-        graphics.drawString(font, stats, PADDING, footerY + 12, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, stats, PADDING, footerY + 12, UIConstants.Text.PRIMARY(), false);
 
         // Keyboard hints
         String hints = "[Enter] Confirm | [1-3] Pass/Fail/Skip | [Esc] Close";
         int hintsWidth = font.width(hints);
-        graphics.drawString(font, hints, this.width / 2 - hintsWidth / 2, footerY + 12, UIConstants.Text.MUTED, false);
+        graphics.drawString(font, hints, this.width / 2 - hintsWidth / 2, footerY + 12, UIConstants.Text.MUTED(), false);
     }
 
     @Override

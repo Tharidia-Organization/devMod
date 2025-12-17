@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.ui;
 
+import com.frenkvs.devmod.ui.editor.core.ThemeManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
@@ -13,72 +14,114 @@ public final class UIConstants {
 
     // === BACKGROUND COLORS (Impact UI Style) ===
     public static final class Background {
+        public static int SCREEN() { return ThemeManager.get().panelBg(); }
         public static final int SCREEN = 0xE01A1A2E;        // Dark blue (Impact style)
+        public static int PANEL() { return ThemeManager.get().panelBg(); }
         public static final int PANEL = 0xCC1A1A2E;         // Panel 80% opacity
+        public static int PANEL_SOLID() { return ThemeManager.get().panelBgSolid(); }
         public static final int PANEL_SOLID = 0xFF1A1A2E;   // Panel 100% opacity
+        public static int HEADER() { return ThemeManager.get().headerBg(); }
         public static final int HEADER = 0xFF252538;        // Header slightly lighter
+        public static int INPUT() { return ThemeManager.get().inputBg(); }
         public static final int INPUT = 0xFF151525;         // Dark input field
+        public static int HOVER() { return ThemeManager.get().hoverBg(); }
         public static final int HOVER = 0xFF2A2A42;         // Dark blue hover
+        public static int ACTIVE() { return ThemeManager.get().activeBg(); }
         public static final int ACTIVE = 0xFF3D3D5A;        // Active state
+        public static int TOOLTIP() { return setAlpha(ThemeManager.get().inputBg(), 0xF0); }
         public static final int TOOLTIP = 0xF0151525;       // Dark tooltip
+        public static int HUD_PANEL() { return setAlpha(ThemeManager.get().panelBgSolid(), 0xCC); }
         public static final int HUD_PANEL = 0xCC1A1A2E;     // HUD panel (Impact)
+        public static int GLOW() { return setAlpha(ThemeManager.get().borderAccent(), 0x55); }
         public static final int GLOW = 0x553D5AFE;          // Glow effect
         private Background() {}
     }
 
     // === BORDER COLORS (Impact UI Style) ===
     public static final class Border {
+        public static int DEFAULT() { return ThemeManager.get().border(); }
         public static final int DEFAULT = 0xFF3D5AFE;       // Electric blue (Impact main)
+        public static int LIGHT() { return ThemeManager.get().current().borderHover(); }
         public static final int LIGHT = 0xFF5C7AFF;         // Lighter variant
+        public static int ACCENT() { return ThemeManager.get().borderAccent(); }
         public static final int ACCENT = 0xFF00FFFF;        // Cyan (accent/hover border)
+        public static int SEPARATOR() { return ThemeManager.get().separator(); }
         public static final int SEPARATOR = 0x803D5AFE;     // Separator 50% alpha
+        public static int GLOW() { return setAlpha(ThemeManager.get().borderAccent(), 0x55); }
         public static final int GLOW = 0x553D5AFE;          // Glow border
+        public static int MUTED() { return ThemeManager.get().borderMuted(); }
         public static final int MUTED = 0xFF2A2A4A;         // Muted border
         private Border() {}
     }
 
     // === TEXT COLORS (Impact UI Style) ===
     public static final class Text {
+        public static int PRIMARY() { return ThemeManager.get().textPrimary(); }
         public static final int PRIMARY = 0xFFFFFFFF;       // Primary white
+        public static int SECONDARY() { return ThemeManager.get().textSecondary(); }
         public static final int SECONDARY = 0xFFAAAAAA;     // Secondary gray (muted)
+        public static int MUTED() { return ThemeManager.get().textMuted(); }
         public static final int MUTED = 0xFF888888;         // Muted gray
+        public static int DISABLED() { return ThemeManager.get().textDisabled(); }
         public static final int DISABLED = 0xFF555555;      // Disabled gray
+        public static int ACCENT() { return ThemeManager.get().accent(); }
         public static final int ACCENT = 0xFF3D5AFE;        // Electric blue
+        public static int TITLE() { return ThemeManager.get().textTitle(); }
         public static final int TITLE = 0xFF00FFFF;         // Cyan (Impact titles)
+        public static int VALUE() { return ThemeManager.get().current().textValue(); }
         public static final int VALUE = 0xFF00FF00;         // Green (Impact values)
+        public static int FORMULA() { return ThemeManager.get().current().textFormula(); }
         public static final int FORMULA = 0xFFFFD700;       // Gold (Impact formulas)
+        public static int WHITE() { return WHITE; }
         public static final int WHITE = 0xFFFFFFFF;         // Pure white
         private Text() {}
     }
 
     // === ACCENT COLORS (Impact UI Style) ===
     public static final class Accent {
+        public static int BLUE() { return ThemeManager.get().info(); }
         public static final int BLUE = 0xFF3D5AFE;          // Blu elettrico Impact
+        public static int GREEN() { return ThemeManager.get().success(); }
         public static final int GREEN = 0xFF00FF00;         // Verde Impact
+        public static int RED() { return ThemeManager.get().error(); }
         public static final int RED = 0xFFFF4444;           // Rosso Impact
+        public static int YELLOW() { return YELLOW; }
         public static final int YELLOW = 0xFFFFFF00;        // Giallo
+        public static int ORANGE() { return ThemeManager.get().warning(); }
         public static final int ORANGE = 0xFFFF9800;        // Arancione
+        public static int PURPLE() { return PURPLE; }
         public static final int PURPLE = 0xFF9C27B0;        // Viola
+        public static int CYAN() { return ThemeManager.get().accent(); }
         public static final int CYAN = 0xFF00FFFF;          // Cyan Impact (titoli)
+        public static int GOLD() { return GOLD; }
         public static final int GOLD = 0xFFFFD700;          // Oro Impact (formule)
         private Accent() {}
     }
 
     // === TOGGLE COLORS (Impact UI Style) ===
     public static final class Toggle {
+        public static int ON() { return ThemeManager.get().success(); }
         public static final int ON = Accent.GREEN;          // Verde Impact
+        public static int OFF() { return ThemeManager.get().inputBg(); }
         public static final int OFF = Background.INPUT;     // Scuro
+        public static int ON_HOVER() { return lighten(ThemeManager.get().success(), 0.15f); }
         public static final int ON_HOVER = 0xFF44FF44;      // Lighter green
+        public static int OFF_HOVER() { return ThemeManager.get().hoverBg(); }
         public static final int OFF_HOVER = Background.HOVER;
         private Toggle() {}
     }
 
     // === STATUS COLORS (Impact UI Style) ===
     public static final class Status {
+        public static int SUCCESS() { return ThemeManager.get().success(); }
         public static final int SUCCESS = 0xFF00FF00;       // Verde Impact
+        public static int ERROR() { return ThemeManager.get().error(); }
         public static final int ERROR = 0xFFFF4444;         // Rosso Impact
+        public static int WARNING() { return ThemeManager.get().warning(); }
         public static final int WARNING = 0xFFFFD700;       // Oro Impact
+        public static int INFO() { return ThemeManager.get().info(); }
         public static final int INFO = 0xFF3D5AFE;          // Blu Impact
+        public static int PENDING() { return ThemeManager.get().textMuted(); }
         public static final int PENDING = 0xFFAAAAAA;       // Grigio muted
         private Status() {}
     }

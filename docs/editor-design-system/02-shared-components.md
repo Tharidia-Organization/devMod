@@ -34,7 +34,7 @@ Il Slot Selector gestisce la selezione degli slot equipment. Una singola classe 
 
 | Proprietà | Valore |
 |-----------|--------|
-| Slot Size | 30x30px (`EditorDimensions.SLOT_SIZE`) |
+| Slot Size | 32x32px (`EditorDimensions.SLOT_SIZE`) - allineato a griglia 4px |
 | Slot Gap | 5px |
 | Height totale | 70px |
 | Border Active | `UIConstants.Border.ACCENT` (Cyan) |
@@ -266,12 +266,14 @@ Formato quando fresh:    (nessun indicatore)
 
 ### Formattazione Tempo
 
-| Intervallo | Testo |
-|------------|-------|
-| < 60 secondi | "just now" |
-| < 60 minuti | "Xm ago" |
-| < 24 ore | "Xh ago" |
-| ≥ 24 ore | "yesterday" |
+| Intervallo | Testo (ItemInfoPanel) | Testo (DirtyState) |
+|------------|----------------------|-------------------|
+| < 60 secondi | "just now" | "just now" |
+| < 60 minuti | "Xm ago" | "X min ago" |
+| < 24 ore | "Xh ago" | "over 1h ago" |
+| ≥ 24 ore | "yesterday" | "over 1h ago" |
+
+> **Nota**: `ItemInfoPanel` e `DirtyState` hanno formattazioni leggermente diverse. `ItemInfoPanel` usa formato compatto per spazio limitato.
 
 ## Confirmation Dialog
 

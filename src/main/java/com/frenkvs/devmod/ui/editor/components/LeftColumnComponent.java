@@ -175,10 +175,10 @@ public class LeftColumnComponent {
         this.bounds = new ResponsiveLayout.Rect(x, y, columnWidth, height);
 
         // Background
-        graphics.fill(x, y, x + columnWidth, y + height, UIConstants.Background.CONTENT);
+        graphics.fill(x, y, x + columnWidth, y + height, UIConstants.Background.CONTENT());
 
         // Right border (separator from content area)
-        graphics.fill(x + columnWidth - 1, y, x + columnWidth, y + height, UIConstants.Border.SEPARATOR);
+        graphics.fill(x + columnWidth - 1, y, x + columnWidth, y + height, UIConstants.Border.SEPARATOR());
 
         // Preview
         int previewSize = ScaledCoord.scaleDim(UIConstants.PanelDimensions.PREVIEW_SIZE);
@@ -207,16 +207,16 @@ public class LeftColumnComponent {
     private void renderSelectedPieceCard(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
         int cardHeight = ScaledCoord.scaleDim(ARMOR_CARD_HEIGHT);
         armorCardBounds = new ResponsiveLayout.Rect(x, y, width, cardHeight);
-        graphics.fill(x, y, x + width, y + cardHeight, UIConstants.Background.INPUT);
-        AxiomRenderer.drawBorder(graphics, x, y, width, cardHeight, UIConstants.Border.DEFAULT);
+        graphics.fill(x, y, x + width, y + cardHeight, UIConstants.Background.INPUT());
+        AxiomRenderer.drawBorder(graphics, x, y, width, cardHeight, UIConstants.Border.DEFAULT());
 
         var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font, "font cannot be null");
         String title = "Selected piece";
-        graphics.drawString(font, title, x + ScaledCoord.scaleDim(6), y + ScaledCoord.scaleDim(4), UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, title, x + ScaledCoord.scaleDim(6), y + ScaledCoord.scaleDim(4), UIConstants.Text.SECONDARY(), false);
 
         SlotSelector.SlotInfo info = slotSelector.getSelectedSlot();
         String label = info != null && info.label() != null ? info.label() : "Slot";
-        graphics.drawString(font, label, x + ScaledCoord.scaleDim(6), y + ScaledCoord.scaleDim(18), UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, label, x + ScaledCoord.scaleDim(6), y + ScaledCoord.scaleDim(18), UIConstants.Text.PRIMARY(), false);
 
         // Render item icon on the right
         int iconSize = ScaledCoord.scaleDim(16);
@@ -226,7 +226,7 @@ public class LeftColumnComponent {
             ItemStack item = Objects.requireNonNull(info.item(), "slot item cannot be null");
             graphics.renderItem(item, iconX, iconY);
         } else {
-            graphics.drawString(font, "⟳", iconX + 3, iconY + 3, UIConstants.Text.MUTED, false);
+            graphics.drawString(font, "⟳", iconX + 3, iconY + 3, UIConstants.Text.MUTED(), false);
         }
 
         // Hover cue

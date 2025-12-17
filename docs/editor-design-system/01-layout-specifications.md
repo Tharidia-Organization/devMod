@@ -19,6 +19,7 @@
 | `CONTENT_WIDTH` | **390px** | Area contenuto tabs |
 | `PREVIEW_SIZE` | **130px** | Dimensione preview 3D |
 | `SLOT_AREA_HEIGHT` | **70px** | Area slot selector |
+| `SLOT_SIZE` | **32px** | Dimensione singolo slot (allineato a griglia 4px) |
 | `INFO_PANEL_HEIGHT` | **100px** | Pannello info item |
 
 ## 1.2 Layout Master
@@ -292,3 +293,143 @@ actionButtons.render(graphics, x, y, width, mouseX, mouseY);
 4. **Usare ScaledCoord.scaleDim()** per tutte le coordinate
 5. **Estendere BaseOverlay** per overlay modali
 6. **Usare ButtonRow** per gruppi di bottoni orizzontali
+
+---
+
+## Sistema Animazioni
+
+### AnimationState
+
+Classe utility per gestire animazioni UI con easing:
+
+```java
+// Fade animation (150ms default)
+overlay.withAnimation();
+
+// Custom animation
+overlay.withAnimation(AnimationState.fadeSlide());
+overlay.withAnimation(AnimationState.scale());
+overlay.withAnimation(new AnimationState(AnimationState.Type.SLIDE_UP, 200));
+```
+
+### Tipi di Animazione
+
+| Tipo | Descrizione |
+|------|-------------|
+| `FADE` | Transizione alpha (0→1) |
+| `SLIDE_UP` | Slide dal basso verso l'alto |
+| `SLIDE_DOWN` | Slide dall'alto verso il basso |
+| `SCALE` | Scale da 0.8 a 1.0 con pop effect |
+
+### Easing Functions
+
+- `easeOutCubic` (default): Decelerazione naturale
+- `easeInOutCubic`: Accelerazione/decelerazione simmetrica
+- `easeOutBack`: Overshoot con rimbalzo
+
+---
+
+## Sistema Temi
+
+### ThemeManager
+
+Singleton per gestione temi UI:
+
+```java
+// Get current theme
+Theme theme = ThemeManager.get().current();
+int bg = theme.panelBackground();
+
+// Switch theme
+ThemeManager.get().setTheme(LightTheme.INSTANCE);
+
+// Toggle dark/light
+ThemeManager.get().toggle();
+
+// Convenience accessors
+int panelBg = ThemeManager.get().panelBg();
+int textColor = ThemeManager.get().textPrimary();
+
+// Listen for changes
+ThemeManager.get().addListener((newTheme, oldTheme) -> {
+    refreshColors();
+});
+```
+
+### Temi Disponibili
+
+| Tema | Classe | Descrizione |
+|------|--------|-------------|
+| Dark | `DarkTheme.INSTANCE` | Tema scuro (default), colori UIConstants |
+| Light | `LightTheme.INSTANCE` | Tema chiaro con colori invertiti |
+
+### Theme Interface
+
+Metodi principali:
+- `panelBackground()`, `inputBackground()`, `hoverBackground()`
+- `borderDefault()`, `borderAccent()`, `borderMuted()`
+- `textPrimary()`, `textSecondary()`, `textMuted()`
+- `accentPrimary()`, `accentSuccess()`, `accentError()`
+- `buttonNormal()`, `buttonHover()`, `sliderTrack()`
+
+---
+
+## Focus Management
+
+### FocusManager
+
+Gestisce la navigazione keyboard tra componenti:
+
+```java
+FocusManager focus = new FocusManager();
+
+// Register focusable components
+focus.register(button1);
+focus.register(slider1);
+focus.register(toggle1);
+
+// Handle Tab/Shift+Tab navigation
+if (focus.handleKeyPressed(keyCode, modifiers)) {
+    return true;
+}
+
+// Check focus state
+boolean isFocused = focus.isFocused(button1);
+
+// Programmatic focus control
+focus.focusNext();
+focus.focusPrevious();
+focus.setFocusById("apply");
+focus.clearFocus();
+```
+
+### Focusable Interface
+
+```java
+public interface Focusable {
+    String getId();
+    default boolean canFocus() { return true; }
+    default void onFocusGained() {}
+    default void onFocusLost() {}
+}
+```
+
+### Keyboard Navigation
+
+| Key | Action |
+|-----|--------|
+| Tab | Focus next component |
+| Shift+Tab | Focus previous component |
+| Enter | Activate focused button |
+| Space | Toggle focused toggle/checkbox |
+| Arrow keys | Adjust focused slider |
+
+---
+
+## Changelog
+
+### 2025-12-17
+- Aggiunta documentazione AnimationState
+- Aggiunta documentazione ThemeManager
+- Aggiunta documentazione FocusManager
+- Documentati tutti i nuovi file Fase 6

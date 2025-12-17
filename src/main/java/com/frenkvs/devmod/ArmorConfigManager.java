@@ -36,6 +36,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manages armor configuration storage and retrieval.
@@ -62,8 +63,8 @@ public class ArmorConfigManager {
     // NBT key for armor mod stats
     private static final String NBT_KEY = "ArmorModStats";
 
-    // Global stats map (per item type)
-    private static final Map<Item, ArmorStats> globalArmorStats = new HashMap<>();
+    // Global stats map (per item type) - ConcurrentHashMap for thread safety
+    private static final Map<Item, ArmorStats> globalArmorStats = new ConcurrentHashMap<>();
 
     private static Path dataDirectory = null;
 
@@ -165,6 +166,16 @@ public class ArmorConfigManager {
         stats = clampStats(stats);
         globalArmorStats.put(item, stats);
         save(); // AUTO-SAVE on modification
+    }
+
+    /**
+     * Set global stats without saving to disk.
+     * Used for client-side sync from server.
+     */
+    public static void setGlobalStatsClientOnly(Item item, ArmorStats stats) {
+        stats = clampStats(stats);
+        globalArmorStats.put(item, stats);
+        // No save - client-side only
     }
 
     /**
@@ -556,6 +567,34 @@ public class ArmorConfigManager {
      */
     public static Map<Item, ArmorStats> getAllGlobalStats() {
         return Map.copyOf(globalArmorStats);
+    }
+
+    /**
+     * Sync global configs to all connected clients.
+     * Should be called after setGlobalStats() when running on server.
+     * Uses GlobalConfigSyncPayload to broadcast changes.
+     */
+    public static void syncToAllClients() {
+        try {
+            net.minecraft.server.MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+            if (server == null) {
+                LOGGER.debug("[ArmorConfig] No server available for sync");
+                return;
+            }
+
+            var payload = com.frenkvs.devmod.network.GlobalConfigSyncPayload.fromCurrentConfigs();
+
+            for (net.minecraft.server.level.ServerPlayer player : server.getPlayerList().getPlayers()) {
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+                    java.util.Objects.requireNonNull(player),
+                    java.util.Objects.requireNonNull(payload)
+                );
+            }
+
+            LOGGER.info("[ArmorConfig] Synced global configs to {} clients", server.getPlayerList().getPlayerCount());
+        } catch (Exception e) {
+            LOGGER.warn("[ArmorConfig] Failed to sync to clients: {}", e.getMessage());
+        }
     }
 
     // ========== TOML STORAGE (per doc 06-persistence) ==========

@@ -15,78 +15,77 @@ Base 1080p con UI scale dedicato, indipendente dalla GUI scale di Minecraft.
 
 ## Config Option
 
-```toml
-# config/devmod-client.toml
+L'implementazione attuale usa la config client NeoForge (`config/devmod-client.toml`) con fallback su system property/env durante l'early init:
 
-[editor]
-# UI Scale for Item Editor
-# Values: "auto", "1.0", "1.25", "1.5", "2.0"
-# Auto selects largest scale that fits screen with margin
-uiScale = "auto"
+```java
+// EditorConfig.java
+private static final String UI_SCALE_PROP = "devmod.editor.uiScale";
+private static final String UI_SCALE_ENV = "DEVMOD_EDITOR_UISCALE";
+
+public static String getUiScaleSetting() {
+    try {
+        EditorClientConfig.EditorUiScale scale = EditorClientConfig.EDITOR_UI_SCALE.get();
+        if (scale != null) return scale.getValue();
+    } catch (Exception ignored) {
+        // Config may not be loaded yet
+    }
+
+    String sys = System.getProperty(UI_SCALE_PROP);
+    if (sys != null && !sys.isBlank()) return sys.trim();
+
+    String env = System.getenv(UI_SCALE_ENV);
+    if (env != null && !env.isBlank()) return env.trim();
+
+    return "auto";
+}
 ```
+
+**Valori accettati:** `"auto"`, `"1.0"`, `"1.25"`, `"1.5"`, `"2.0"`
 
 ## Auto Scale Algorithm
 
 ```java
-/**
- * UI Scale calculator for editor.
- * Independent from Minecraft GUI scale.
- */
+// EditorScaleCalculator.java - Implementazione attuale
+
 public final class EditorScaleCalculator {
 
     private static final float[] SCALE_OPTIONS = {1.0f, 1.25f, 1.5f, 2.0f};
     private static final int SCREEN_MARGIN = 24; // px margin from screen edges
 
-    // Base dimensions (1080p reference)
-    public static final int BASE_WIDTH = 550;
-    public static final int BASE_HEIGHT = 420;
-
-    /**
-     * Calculate optimal scale factor.
-     * Returns largest scale that keeps panel within screen bounds.
-     */
+    /** Calculate auto scale based on available screen size. */
     public static float calculateAutoScale(int screenWidth, int screenHeight) {
-        float maxScale = 1.0f;
-
+        float maxScale = SCALE_OPTIONS[0];
         for (float scale : SCALE_OPTIONS) {
-            int scaledWidth = Math.round(BASE_WIDTH * scale);
-            int scaledHeight = Math.round(BASE_HEIGHT * scale);
-
-            // Check if fits with margin
-            if (scaledWidth + (SCREEN_MARGIN * 2) <= screenWidth &&
-                scaledHeight + (SCREEN_MARGIN * 2) <= screenHeight) {
+            int scaledWidth = Math.round(UIConstants.PanelDimensions.PANEL_WIDTH * scale) + SCREEN_MARGIN * 2;
+            int scaledHeight = Math.round(UIConstants.PanelDimensions.PANEL_HEIGHT * scale) + SCREEN_MARGIN * 2;
+            if (scaledWidth <= screenWidth && scaledHeight <= screenHeight) {
                 maxScale = scale;
             } else {
-                break; // Scales are ordered, stop at first that doesn't fit
+                break; // options are ordered
             }
         }
-
         return maxScale;
     }
 
     /**
-     * Get scale from config, resolving "auto" if needed.
+     * Resolve effective scale from a config string ("auto", "1.0", etc.).
+     * Falls back to auto on invalid input.
      */
-    public static float getEffectiveScale(int screenWidth, int screenHeight) {
-        String configValue = Config.CLIENT.editorUiScale.get();
-
-        if ("auto".equals(configValue)) {
+    public static float getEffectiveScale(int screenWidth, int screenHeight, String configValue) {
+        if (configValue == null || "auto".equalsIgnoreCase(configValue)) {
             return calculateAutoScale(screenWidth, screenHeight);
         }
-
         try {
-            float scale = Float.parseFloat(configValue);
-            // Validate against allowed values
+            float requested = Float.parseFloat(configValue);
             for (float allowed : SCALE_OPTIONS) {
-                if (Math.abs(scale - allowed) < 0.01f) {
+                if (Math.abs(requested - allowed) < 0.01f) {
                     return allowed;
                 }
             }
-        } catch (NumberFormatException e) {
-            // Fallback
+        } catch (NumberFormatException ignored) {
+            // fall through to auto
         }
-
-        return 1.0f; // Default fallback
+        return calculateAutoScale(screenWidth, screenHeight);
     }
 }
 ```
@@ -94,47 +93,51 @@ public final class EditorScaleCalculator {
 ## Coordinate Scaling Rules
 
 ```java
-/**
- * All coordinates must be scaled through this utility.
- * Ensures alignment to 4px grid after scaling.
- */
-public final class ScaledCoord {
+// ScaledCoord.java - Implementazione attuale
+
+public record ScaledCoord(int x, int y) {
 
     private static float currentScale = 1.0f;
 
-    public static void setScale(float scale) {
-        currentScale = scale;
+    /** Aligns a value to the nearest 4px grid unit. */
+    public static int alignTo4(int value) {
+        return Math.round(value / 4.0f) * 4;
     }
 
-    /**
-     * Scale a coordinate and align to 4px grid.
-     */
-    public static int scale(int base) {
-        return alignTo4(Math.round(base * currentScale));
+    public static void setScale(float scale) { currentScale = scale; }
+    public static float getScale() { return currentScale; }
+
+    /** Scales a value using the current scale and aligns it to the 4px grid. */
+    public static int scale(int value) {
+        return alignTo4(Math.round(value * currentScale));
     }
 
-    /**
-     * Scale a dimension (width/height) and align to 4px grid.
-     */
-    public static int scaleDim(int base) {
-        return alignTo4(Math.round(base * currentScale));
+    /** Scales a dimension using the current scale and aligns it to the 4px grid. */
+    public static int scaleDim(int dimension) {
+        return scale(dimension);
     }
 
-    /**
-     * Align value to nearest multiple of 4.
-     */
-    private static int alignTo4(int value) {
-        return ((value + 2) / 4) * 4;
+    /** Scales a dimension and aligns it to the 4px grid (explicit scale). */
+    public static int scaleDim(int dimension, float scale) {
+        return alignTo4(Math.round(dimension * scale));
     }
 
-    // Pre-scaled constants for common values
-    public static int panelWidth() { return scaleDim(550); }
-    public static int panelHeight() { return scaleDim(420); }
-    public static int headerHeight() { return scaleDim(28); }
-    public static int footerHeight() { return scaleDim(60); }
-    public static int leftColumnWidth() { return scaleDim(140); }
-    public static int contentWidth() { return scaleDim(390); }
-    public static int previewSize() { return scaleDim(100); }
+    public ScaledCoord add(int dx, int dy) {
+        return new ScaledCoord(x + dx, y + dy);
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // Pre-scaled constants for common panel dimensions
+    // Uses UIConstants for base values, auto-aligned to 4px grid
+    // ─────────────────────────────────────────────────────────────────
+
+    public static int panelWidth() { return scaleDim(UIConstants.PanelDimensions.PANEL_WIDTH); }       // 550
+    public static int panelHeight() { return scaleDim(UIConstants.PanelDimensions.PANEL_HEIGHT); }     // 420
+    public static int headerHeight() { return scaleDim(UIConstants.Size.HEADER_HEIGHT); }              // 28
+    public static int footerHeight() { return scaleDim(UIConstants.Size.FOOTER_HEIGHT); }              // 60
+    public static int leftColumnWidth() { return scaleDim(UIConstants.PanelDimensions.LEFT_COLUMN_WIDTH); } // 140
+    public static int contentWidth() { return scaleDim(UIConstants.PanelDimensions.CONTENT_WIDTH); }   // 390
+    public static int previewSize() { return scaleDim(UIConstants.PanelDimensions.PREVIEW_SIZE); }     // 130
 }
 ```
 
@@ -150,49 +153,51 @@ public final class ScaledCoord {
 ## Screen Fit Validation
 
 ```java
+// EditorScaleCalculator.java - ScreenFitResult implementation
+
+public record ScreenFitResult(
+    int panelX,
+    int panelY,
+    int panelWidth,
+    int panelHeight,
+    boolean contentNeedsExtraScroll
+) {}
+
 /**
- * Validate panel fits in screen, apply clamp if needed.
+ * Calculate panel placement after applying scale and clamp rules.
+ * Header/footer are never shrunk; clamp occurs on the overall panel bounds.
  */
-public static class ScreenFitResult {
-    public final int panelX;
-    public final int panelY;
-    public final int panelWidth;
-    public final int panelHeight;
-    public final boolean contentNeedsExtraScroll;
+public static ScreenFitResult calculateFit(int screenWidth, int screenHeight, float scale) {
+    int scaledWidth = ScaledCoord.scaleDim(UIConstants.PanelDimensions.PANEL_WIDTH, scale);
+    int scaledHeight = ScaledCoord.scaleDim(UIConstants.PanelDimensions.PANEL_HEIGHT, scale);
 
-    public static ScreenFitResult calculate(int screenWidth, int screenHeight, float scale) {
-        int scaledWidth = ScaledCoord.scaleDim(BASE_WIDTH);
-        int scaledHeight = ScaledCoord.scaleDim(BASE_HEIGHT);
+    int panelX = ScaledCoord.alignTo4((screenWidth - scaledWidth) / 2);
+    int panelY = ScaledCoord.alignTo4((screenHeight - scaledHeight) / 2);
 
-        // Center panel
-        int panelX = (screenWidth - scaledWidth) / 2;
-        int panelY = (screenHeight - scaledHeight) / 2;
+    boolean needsClamp = false;
 
-        boolean needsClamp = false;
-
-        // Horizontal clamp
-        if (scaledWidth > screenWidth - SCREEN_MARGIN * 2) {
-            scaledWidth = screenWidth - SCREEN_MARGIN * 2;
-            panelX = SCREEN_MARGIN;
-            needsClamp = true;
-        }
-
-        // Vertical clamp - never shrink header/footer
-        if (scaledHeight > screenHeight - SCREEN_MARGIN * 2) {
-            scaledHeight = screenHeight - SCREEN_MARGIN * 2;
-            panelY = SCREEN_MARGIN;
-            needsClamp = true;
-            // Content area gets reduced, scroll compensates
-        }
-
-        return new ScreenFitResult(
-            ScaledCoord.alignTo4(panelX),
-            ScaledCoord.alignTo4(panelY),
-            ScaledCoord.alignTo4(scaledWidth),
-            ScaledCoord.alignTo4(scaledHeight),
-            needsClamp
-        );
+    // Horizontal clamp
+    if (scaledWidth + SCREEN_MARGIN * 2 > screenWidth) {
+        scaledWidth = screenWidth - SCREEN_MARGIN * 2;
+        panelX = SCREEN_MARGIN;
+        needsClamp = true;
     }
+
+    // Vertical clamp (content must add scroll if clamped)
+    if (scaledHeight + SCREEN_MARGIN * 2 > screenHeight) {
+        scaledHeight = screenHeight - SCREEN_MARGIN * 2;
+        panelY = SCREEN_MARGIN;
+        needsClamp = true;
+    }
+
+    // Align to grid for final bounds
+    return new ScreenFitResult(
+        ScaledCoord.alignTo4(panelX),
+        ScaledCoord.alignTo4(panelY),
+        ScaledCoord.alignTo4(scaledWidth),
+        ScaledCoord.alignTo4(scaledHeight),
+        needsClamp
+    );
 }
 ```
 
@@ -227,6 +232,10 @@ public static void drawScaledText(GuiGraphics graphics, String text, int x, int 
 
 ## In-Game Settings UI
 
+UI disponibile nella `UnifiedSettingsScreen` (tab Editor), accessibile con il keybind `K` o dal Radial Menu. La registrazione nel menu opzioni Minecraft resta da fare.
+
+### UI Attuale
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  DEVMOD SETTINGS                                                │
@@ -242,3 +251,18 @@ public static void drawScaledText(GuiGraphics graphics, String text, int x, int 
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+### Requisiti Implementazione
+
+1. UI editor settings nella `UnifiedSettingsScreen` (implementato, accesso via `K`)
+2. Config NeoForge client (`devmod-client.toml`) per la persistenza (implementato)
+3. Mostrare preview live dell'effetto scale (da implementare)
+4. Registrare via `RegisterMenuScreensEvent` o equivalente NeoForge (da implementare)
+
+---
+
+## Changelog
+
+| Data | Modifica |
+|------|----------|
+| 2025-12-17 | Aggiornata documentazione per riflettere config client e UI settings effettiva. |

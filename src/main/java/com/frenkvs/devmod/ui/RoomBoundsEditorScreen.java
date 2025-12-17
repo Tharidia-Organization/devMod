@@ -41,14 +41,14 @@ public class RoomBoundsEditorScreen extends Screen {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     // === UI Colors - Standardized to UIConstants ===
-    private static final int PANEL_BG = UIConstants.Background.PANEL_SOLID;
-    private static final int PANEL_BORDER = UIConstants.Border.DEFAULT;  // Blue instead of green
-    private static final int TEXT_TITLE = UIConstants.Text.TITLE;  // Cyan
-    private static final int TEXT_NORMAL = UIConstants.Text.PRIMARY;
-    private static final int TEXT_DIM = UIConstants.Text.SECONDARY;
-    private static final int TEXT_ACCENT = UIConstants.Accent.BLUE;  // Blue instead of green
-    private static final int TEXT_WARNING = UIConstants.Accent.ORANGE;
-    private static final int TEXT_ERROR = UIConstants.Accent.RED;
+    private static final int PANEL_BG = UIConstants.Background.PANEL_SOLID();
+    private static final int PANEL_BORDER = UIConstants.Border.DEFAULT();  // Blue instead of green
+    private static final int TEXT_TITLE = UIConstants.Text.TITLE();  // Cyan
+    private static final int TEXT_NORMAL = UIConstants.Text.PRIMARY();
+    private static final int TEXT_DIM = UIConstants.Text.SECONDARY();
+    private static final int TEXT_ACCENT = UIConstants.Accent.BLUE();  // Blue instead of green
+    private static final int TEXT_WARNING = UIConstants.Accent.ORANGE();
+    private static final int TEXT_ERROR = UIConstants.Accent.RED();
 
     // === Dimensions ===
     private static final int PANEL_WIDTH = 320;

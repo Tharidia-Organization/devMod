@@ -167,13 +167,13 @@ public final class SlotSelector {
             }
 
             // Slot background
-            int bgColor = isSelected ? UIConstants.Background.ACTIVE :
-                         (isHovered ? UIConstants.Background.HOVER : UIConstants.Background.INPUT);
+            int bgColor = isSelected ? UIConstants.Background.ACTIVE() :
+                         (isHovered ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT());
             graphics.fill(slotX, slotY, slotX + slotSize, slotY + slotSize, bgColor);
 
             // Slot border
-            int borderColor = isSelected ? UIConstants.Border.ACCENT :
-                             (isHovered ? UIConstants.Border.HOVER : UIConstants.Border.DEFAULT);
+            int borderColor = isSelected ? UIConstants.Border.ACCENT() :
+                             (isHovered ? UIConstants.Border.HOVER() : UIConstants.Border.DEFAULT());
             AxiomRenderer.drawBorder(graphics, slotX, slotY, slotSize, slotSize, borderColor);
 
             // Render item or short label
@@ -183,7 +183,7 @@ public final class SlotSelector {
                 graphics.renderItem(itemStack, slotX + iconPad, slotY + iconPad);
             } else {
                 // Show placeholder glyph when empty
-                int textColor = isSelected ? UIConstants.Text.PRIMARY : UIConstants.Text.MUTED;
+                int textColor = isSelected ? UIConstants.Text.PRIMARY() : UIConstants.Text.MUTED();
                 String placeholder = Objects.requireNonNull(placeholderFor(slotInfo), "placeholder cannot be null");
                 int textX = slotX + (slotSize - font.width(placeholder)) / 2;
                 int textY = slotY + (slotSize - font.lineHeight) / 2;
@@ -196,7 +196,7 @@ public final class SlotSelector {
             String label = Objects.requireNonNull(slots.get(selectedIndex).label(), "label cannot be null");
             int labelX = x + (width - font.width(label)) / 2;
             int labelY = slotY + slotSize + ScaledCoord.scaleDim(8);
-            graphics.drawString(font, label, labelX, labelY, UIConstants.Text.SECONDARY, false);
+            graphics.drawString(font, label, labelX, labelY, UIConstants.Text.SECONDARY(), false);
         }
 
         return height;

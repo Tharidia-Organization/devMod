@@ -1,6 +1,6 @@
 package com.frenkvs.devmod.ui.editor;
 
-import com.frenkvs.devmod.Config;
+import com.frenkvs.devmod.EditorClientConfig;
 import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.tags.ModTags;
 import com.frenkvs.devmod.util.ConfigPaths;
@@ -86,8 +86,8 @@ public class WeaponTypeDetector {
         }
 
         Item item = stack.getItem();
-        boolean heuristicsEnabled = Config.EDITOR_WEAPON_HEURISTIC_ENABLED.get();
-        boolean allowPickaxe = Config.EDITOR_WEAPON_TREAT_PICKAXE.get();
+        boolean heuristicsEnabled = EditorClientConfig.EDITOR_WEAPON_HEURISTIC_ENABLED.get();
+        boolean allowPickaxe = EditorClientConfig.EDITOR_WEAPON_TREAT_PICKAXE.get();
 
         // Config blacklist/whitelist stubs (extendable)
         if (ConfigWeaponLists.isBlacklisted(item)) {
@@ -261,7 +261,7 @@ public class WeaponTypeDetector {
     }
 
     private static DetectionResult logResult(ItemStack stack, DetectionResult result) {
-        if (!Config.EDITOR_WEAPON_LOG_DETECTION.get()) {
+        if (!EditorClientConfig.EDITOR_WEAPON_LOG_DETECTION.get()) {
             return result;
         }
         ResourceLocation id = Optional.ofNullable(stack)

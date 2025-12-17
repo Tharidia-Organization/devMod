@@ -172,7 +172,7 @@ public class EditorSlider {
 
         // Label on the left
         if (showLabel) {
-            int labelColor = enabled ? UIConstants.Text.PRIMARY : UIConstants.Text.MUTED;
+            int labelColor = enabled ? UIConstants.Text.PRIMARY() : UIConstants.Text.MUTED();
             graphics.drawString(font, safeLabel, x, y + (HEIGHT - 8) / 2, labelColor, false);
         }
 
@@ -187,8 +187,8 @@ public class EditorSlider {
         graphics.fill(trackX, trackY, trackX + filledWidth, trackY + TRACK_HEIGHT, fillColor);
 
         // Track border
-        int borderColor = focused ? UIConstants.Border.ACCENT :
-                         (hovered ? UIConstants.Border.HOVER : UIConstants.Border.DEFAULT);
+        int borderColor = focused ? UIConstants.Border.ACCENT() :
+                         (hovered ? UIConstants.Border.HOVER() : UIConstants.Border.DEFAULT());
         AxiomRenderer.drawBorder(graphics, trackX, trackY, trackWidth, TRACK_HEIGHT, borderColor);
 
         // Thumb
@@ -199,12 +199,12 @@ public class EditorSlider {
         thumbX = Mth.clamp(thumbX, trackX, trackX + trackWidth - THUMB_SIZE);
 
         int thumbColor = dragging ? trackColor :
-                        (hovered ? UIConstants.Background.ACTIVE : UIConstants.Background.HOVER);
+                        (hovered ? UIConstants.Background.ACTIVE() : UIConstants.Background.HOVER());
         if (!enabled) thumbColor = UIConstants.Slider.THUMB_DISABLED;
 
         graphics.fill(thumbX, thumbY, thumbX + THUMB_SIZE, thumbY + THUMB_SIZE, thumbColor);
         AxiomRenderer.drawBorder(graphics, thumbX, thumbY, THUMB_SIZE, THUMB_SIZE,
-                                hovered || dragging ? trackColor : UIConstants.Border.DEFAULT);
+                                hovered || dragging ? trackColor : UIConstants.Border.DEFAULT());
 
         // Value text on the right
         if (showInput && inputField != null) {
@@ -219,7 +219,7 @@ public class EditorSlider {
             String safeSuffix = suffix != null ? suffix : "";
             String valueText = String.format(safeFormat, value) + safeSuffix;
             int valueX = trackX + trackWidth + EditorSpacing.S;
-            int valueColor = enabled ? UIConstants.Text.VALUE : UIConstants.Text.MUTED;
+            int valueColor = enabled ? UIConstants.Text.VALUE() : UIConstants.Text.MUTED();
             graphics.drawString(font, valueText, valueX, y + (HEIGHT - 8) / 2, valueColor, false);
         }
 
@@ -233,7 +233,7 @@ public class EditorSlider {
             float defaultRatio = (defaultValue - min) / (max - min);
             int markerX = trackX + (int) (trackWidth * defaultRatio);
             graphics.fill(markerX - 1, trackY + TRACK_HEIGHT - 2, markerX + 1, trackY + TRACK_HEIGHT,
-                         UIConstants.Text.MUTED);
+                         UIConstants.Text.MUTED());
         }
 
         return totalHeight;

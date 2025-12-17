@@ -77,25 +77,25 @@ public class CombatPanel extends FloatingPanel {
 
         // Parte colpita
         String partText = Objects.requireNonNull(partHit + " (x" + String.format("%.2f", partMultiplier) + ")", "partText");
-        graphics.drawString(font, partText, 0, y, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, partText, 0, y, UIConstants.Text.SECONDARY(), false);
         y += lineHeight + 2;
 
         // Breakdown se c'e' spazio
         if (contentHeight > 60) {
             // Linea separatrice
-            graphics.fill(0, y, contentWidth - 4, y + 1, UIConstants.Border.SEPARATOR);
+            graphics.fill(0, y, contentWidth - 4, y + 1, UIConstants.Border.SEPARATOR());
             y += 4;
 
             // Base damage
             String baseText = Objects.requireNonNull(String.format("Base: %.1f", baseDamage), "baseText");
-            graphics.drawString(font, baseText, 0, y, UIConstants.Text.MUTED, false);
+            graphics.drawString(font, baseText, 0, y, UIConstants.Text.MUTED(), false);
             y += lineHeight;
 
             // Calculated vs Actual
             if (hasActualDamage && Math.abs(actualDamage - finalDamage) > 0.1f) {
                 float diff = actualDamage - finalDamage;
                 String diffText = Objects.requireNonNull(String.format("Armor: %s%.1f", diff < 0 ? "" : "+", diff), "diffText");
-                int diffColor = diff < 0 ? UIConstants.Status.ERROR : UIConstants.Status.SUCCESS;
+                int diffColor = diff < 0 ? UIConstants.Status.ERROR() : UIConstants.Status.SUCCESS();
                 graphics.drawString(font, diffText, 0, y, diffColor, false);
             }
         }
@@ -125,19 +125,19 @@ public class CombatPanel extends FloatingPanel {
 
         // Parte colpita
         String partText = Objects.requireNonNull(partHit + " (x" + String.format("%.2f", partMultiplier) + ")", "partText");
-        renderText3D(poseStack, bufferSource, font, partText, 0, y, applyAlpha(UIConstants.Text.SECONDARY, alpha));
+        renderText3D(poseStack, bufferSource, font, partText, 0, y, applyAlpha(UIConstants.Text.SECONDARY(), alpha));
         y += lineHeight + 2;
 
         // Base damage
         String baseText = Objects.requireNonNull(String.format("Base: %.1f", baseDamage), "baseText");
-        renderText3D(poseStack, bufferSource, font, baseText, 0, y, applyAlpha(UIConstants.Text.MUTED, alpha));
+        renderText3D(poseStack, bufferSource, font, baseText, 0, y, applyAlpha(UIConstants.Text.MUTED(), alpha));
         y += lineHeight;
 
         // Differenza armor se significativa
         if (hasActualDamage && Math.abs(actualDamage - finalDamage) > 0.1f) {
             float diff = actualDamage - finalDamage;
             String diffText = Objects.requireNonNull(String.format("Armor: %s%.1f", diff < 0 ? "" : "+", diff), "diffText");
-            int diffColor = diff < 0 ? UIConstants.Status.ERROR : UIConstants.Status.SUCCESS;
+            int diffColor = diff < 0 ? UIConstants.Status.ERROR() : UIConstants.Status.SUCCESS();
             renderText3D(poseStack, bufferSource, font, diffText, 0, y, applyAlpha(diffColor, alpha));
         }
     }

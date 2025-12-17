@@ -113,20 +113,20 @@ public class GeneralSettingsPage implements SettingsPage {
         currentY += ROW_HEIGHT;
 
         // Current color preview
-        graphics.drawString(font, "Current:", x, currentY + 4, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, "Current:", x, currentY + 4, UIConstants.Text.SECONDARY(), false);
 
         // Color preview square
         int previewX = x + 60;
         graphics.fill(previewX, currentY, previewX + COLOR_PREVIEW_SIZE, currentY + COLOR_PREVIEW_SIZE, followRangeColor);
-        AxiomRenderer.drawBorder(graphics, previewX, currentY, COLOR_PREVIEW_SIZE, COLOR_PREVIEW_SIZE, UIConstants.Border.DEFAULT);
+        AxiomRenderer.drawBorder(graphics, previewX, currentY, COLOR_PREVIEW_SIZE, COLOR_PREVIEW_SIZE, UIConstants.Border.DEFAULT());
 
         // Color name
         String colorName = getColorName(followRangeColor);
-        graphics.drawString(font, colorName, previewX + COLOR_PREVIEW_SIZE + 8, currentY + 4, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, colorName, previewX + COLOR_PREVIEW_SIZE + 8, currentY + 4, UIConstants.Text.PRIMARY(), false);
         currentY += ROW_HEIGHT + 4;
 
         // Color presets
-        graphics.drawString(font, "Presets:", x, currentY + 4, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, "Presets:", x, currentY + 4, UIConstants.Text.SECONDARY(), false);
         int colorX = x + 60;
         for (int i = 0; i < COLOR_PRESETS.length; i++) {
             boolean selected = followRangeColor == COLOR_PRESETS[i];
@@ -135,15 +135,15 @@ public class GeneralSettingsPage implements SettingsPage {
             // Background for selected
             if (selected) {
                 graphics.fill(colorX - 2, currentY - 2, colorX + COLOR_PREVIEW_SIZE + 2, currentY + COLOR_PREVIEW_SIZE + 2,
-                        UIConstants.Background.ACTIVE);
+                        UIConstants.Background.ACTIVE());
             } else if (hovered) {
                 graphics.fill(colorX - 2, currentY - 2, colorX + COLOR_PREVIEW_SIZE + 2, currentY + COLOR_PREVIEW_SIZE + 2,
-                        UIConstants.Background.HOVER);
+                        UIConstants.Background.HOVER());
             }
 
             // Color square
             graphics.fill(colorX, currentY, colorX + COLOR_PREVIEW_SIZE, currentY + COLOR_PREVIEW_SIZE, COLOR_PRESETS[i]);
-            int borderColor = selected ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
+            int borderColor = selected ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
             AxiomRenderer.drawBorder(graphics, colorX, currentY, COLOR_PREVIEW_SIZE, COLOR_PREVIEW_SIZE, borderColor);
 
             colorX += COLOR_PREVIEW_SIZE + 8;
@@ -162,10 +162,10 @@ public class GeneralSettingsPage implements SettingsPage {
         int btnWidth = 140;
         int btnHeight = 22;
         boolean btnHovered = isMouseOver(mouseX, mouseY, x, currentY, btnWidth, btnHeight);
-        drawActionButton(graphics, font, x, currentY, btnWidth, btnHeight, "Replay Tutorial", btnHovered, UIConstants.Accent.BLUE);
+        drawActionButton(graphics, font, x, currentY, btnWidth, btnHeight, "Replay Tutorial", btnHovered, UIConstants.Accent.BLUE());
 
         // Description
-        graphics.drawString(font, "Restart the interactive guide", x + btnWidth + 12, currentY + 6, UIConstants.Text.MUTED, false);
+        graphics.drawString(font, "Restart the interactive guide", x + btnWidth + 12, currentY + 6, UIConstants.Text.MUTED(), false);
         currentY += ROW_HEIGHT + 8;
 
         // Hint
@@ -178,21 +178,21 @@ public class GeneralSettingsPage implements SettingsPage {
     private void drawActionButton(GuiGraphics graphics, @Nonnull Font font, int x, int y, int w, int h,
                                    @Nonnull String text, boolean hovered, int accentColor) {
         // Background
-        int bgColor = hovered ? UIConstants.setAlpha(accentColor, 60) : UIConstants.Background.INPUT;
+        int bgColor = hovered ? UIConstants.setAlpha(accentColor, 60) : UIConstants.Background.INPUT();
         graphics.fill(x, y, x + w, y + h, bgColor);
 
         // Accent bar on left
         graphics.fill(x, y, x + 3, y + h, accentColor);
 
         // Border
-        int borderColor = hovered ? accentColor : UIConstants.Border.MUTED;
+        int borderColor = hovered ? accentColor : UIConstants.Border.MUTED();
         AxiomRenderer.drawBorder(graphics, x, y, w, h, borderColor);
 
         // Text centered
         int textW = font.width(text);
         int textX = x + (w - textW) / 2;
         int textY = y + (h - 8) / 2;
-        graphics.drawString(font, text, textX, textY, hovered ? UIConstants.Text.WHITE : UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, text, textX, textY, hovered ? UIConstants.Text.WHITE() : UIConstants.Text.PRIMARY(), false);
     }
 
     private void renderToggleRow(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
@@ -202,14 +202,14 @@ public class GeneralSettingsPage implements SettingsPage {
 
         // Draw subtle hover background for entire row
         if (rowHovered) {
-            graphics.fill(x, y, x + width, y + ROW_HEIGHT, UIConstants.Background.HOVER);
+            graphics.fill(x, y, x + width, y + ROW_HEIGHT, UIConstants.Background.HOVER());
         }
 
         // Label
-        graphics.drawString(font, label, x, y + 4, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, label, x, y + 4, UIConstants.Text.PRIMARY(), false);
 
         // Description (smaller, muted)
-        graphics.drawString(font, description, x, y + 14, UIConstants.Text.MUTED, false);
+        graphics.drawString(font, description, x, y + 14, UIConstants.Text.MUTED(), false);
 
         // Toggle on right - use standardized dimensions from UIConstants
         int toggleX = x + width - UIConstants.Size.TOGGLE_WIDTH;

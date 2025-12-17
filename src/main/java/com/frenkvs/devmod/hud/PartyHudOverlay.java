@@ -38,18 +38,18 @@ public class PartyHudOverlay {
 
     // === Colors ===
     private static final int PANEL_BG = 0xCC1A1A2E;           // Dark blue 80% opacity
-    private static final int PANEL_BORDER = UIConstants.Border.DEFAULT;
-    private static final int TEXT_PRIMARY = UIConstants.Text.PRIMARY;
-    private static final int TEXT_SECONDARY = UIConstants.Text.SECONDARY;
-    private static final int COLOR_LEADER = UIConstants.Accent.GOLD;
-    private static final int COLOR_READY = UIConstants.Accent.GREEN;
-    private static final int COLOR_NOT_READY = UIConstants.Accent.RED;
-    private static final int COLOR_OFFLINE = UIConstants.Text.DISABLED;
+    private static final int PANEL_BORDER = UIConstants.Border.DEFAULT();
+    private static final int TEXT_PRIMARY = UIConstants.Text.PRIMARY();
+    private static final int TEXT_SECONDARY = UIConstants.Text.SECONDARY();
+    private static final int COLOR_LEADER = UIConstants.Accent.GOLD();
+    private static final int COLOR_READY = UIConstants.Accent.GREEN();
+    private static final int COLOR_NOT_READY = UIConstants.Accent.RED();
+    private static final int COLOR_OFFLINE = UIConstants.Text.DISABLED();
 
     private static final int HEALTH_BG = 0xFF333333;
-    private static final int HEALTH_HIGH = UIConstants.Accent.GREEN;
-    private static final int HEALTH_MED = UIConstants.Accent.GOLD;
-    private static final int HEALTH_LOW = UIConstants.Accent.RED;
+    private static final int HEALTH_HIGH = UIConstants.Accent.GREEN();
+    private static final int HEALTH_MED = UIConstants.Accent.GOLD();
+    private static final int HEALTH_LOW = UIConstants.Accent.RED();
 
     // === Dimensions ===
     private static final int PANEL_WIDTH = 120;

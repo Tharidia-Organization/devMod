@@ -638,7 +638,7 @@ public class WeaponModule extends AbstractEditorModule {
                 @Override public String getLabel() { return "Smash Attack"; }
                 @Override public int getHeight() { return EditorDimensions.SECTION_HEADER_HEIGHT; }
                 @Override public void render(GuiGraphics g, ResponsiveLayout.Rect b, int mx, int my) {
-                    g.drawString(Objects.requireNonNull(Minecraft.getInstance().font), getLabel(), b.x() + UIConstants.Spacing.SM, b.y() + 4, UIConstants.Text.TITLE, false);
+                    g.drawString(Objects.requireNonNull(Minecraft.getInstance().font), getLabel(), b.x() + UIConstants.Spacing.SM, b.y() + 4, UIConstants.Text.TITLE(), false);
                 }
                 @Override public boolean isCollapsible() { return false; }
                 @Override public boolean isCollapsed() { return collapsed; }
@@ -660,7 +660,7 @@ public class WeaponModule extends AbstractEditorModule {
                 @Override public String getLabel() { return "Throw / Riptide"; }
                 @Override public int getHeight() { return EditorDimensions.SECTION_HEADER_HEIGHT; }
                 @Override public void render(GuiGraphics g, ResponsiveLayout.Rect b, int mx, int my) {
-                    g.drawString(Objects.requireNonNull(Minecraft.getInstance().font), getLabel(), b.x() + UIConstants.Spacing.SM, b.y() + 4, UIConstants.Text.TITLE, false);
+                    g.drawString(Objects.requireNonNull(Minecraft.getInstance().font), getLabel(), b.x() + UIConstants.Spacing.SM, b.y() + 4, UIConstants.Text.TITLE(), false);
                 }
                 @Override public boolean isCollapsible() { return false; }
                 @Override public boolean isCollapsed() { return collapsed; }
@@ -1025,7 +1025,7 @@ public class WeaponModule extends AbstractEditorModule {
         @Override
         public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
             graphics.drawString(Objects.requireNonNull(Minecraft.getInstance().font), text,
-                bounds.x() + UIConstants.Spacing.SM, bounds.y() + 6, UIConstants.Text.SECONDARY, false);
+                bounds.x() + UIConstants.Spacing.SM, bounds.y() + 6, UIConstants.Text.SECONDARY(), false);
         }
     }
 
@@ -1242,7 +1242,7 @@ public class WeaponModule extends AbstractEditorModule {
         if (mc != null && mc.keyboardHandler != null) {
             mc.keyboardHandler.setClipboard(java.util.Objects.requireNonNull(safePayload, "payload cannot be null"));
         }
-        reportStatus("Debug info copied!", UIConstants.Accent.GREEN);
+        reportStatus("Debug info copied!", UIConstants.Accent.GREEN());
     }
 
     private String buildDebugClipboardText(ItemDebugInfo info, List<ValueComparison> comparisons,
@@ -1571,7 +1571,7 @@ public class WeaponModule extends AbstractEditorModule {
             int textWidth = font.width(Objects.requireNonNull(dpsText));
             int x = bounds.x() + (bounds.width() - textWidth) / 2;
             int y = bounds.y() + UIConstants.Spacing.SM;
-            graphics.drawString(font, dpsText, x, y, UIConstants.Text.VALUE, false);
+            graphics.drawString(font, dpsText, x, y, UIConstants.Text.VALUE(), false);
         }
     }
 

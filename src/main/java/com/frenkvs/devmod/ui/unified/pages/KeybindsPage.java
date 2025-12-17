@@ -169,7 +169,7 @@ public class KeybindsPage implements SettingsPage {
 
             // Section header
             if (currentY >= y - ROW_HEIGHT) {
-                graphics.drawString(font, section.title, x, currentY + 2, UIConstants.Text.PRIMARY, false);
+                graphics.drawString(font, section.title, x, currentY + 2, UIConstants.Text.PRIMARY(), false);
             }
             currentY += ROW_HEIGHT;
 
@@ -195,8 +195,8 @@ public class KeybindsPage implements SettingsPage {
         // Hint at bottom - fixed position below scrollable content
         int hintY = y + height - HINT_HEIGHT + 4;
         // Draw background for better visibility
-        graphics.fill(x - 4, hintY - 4, x + width + 4, hintY + 14, UIConstants.Background.HEADER);
-        graphics.drawString(font, "ℹ To rebind keys: ESC → Options → Controls → DevMod", x, hintY, UIConstants.Text.SECONDARY, false);
+        graphics.fill(x - 4, hintY - 4, x + width + 4, hintY + 14, UIConstants.Background.HEADER());
+        graphics.drawString(font, "ℹ To rebind keys: ESC → Options → Controls → DevMod", x, hintY, UIConstants.Text.SECONDARY(), false);
     }
 
     /**
@@ -204,7 +204,7 @@ public class KeybindsPage implements SettingsPage {
      */
     private void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height) {
         // Track background
-        graphics.fill(x, y, x + barWidth, y + height, UIConstants.Background.INPUT);
+        graphics.fill(x, y, x + barWidth, y + height, UIConstants.Background.INPUT());
 
         // Calculate thumb size and position
         float visibleRatio = (float) visibleHeight / totalContentHeight;
@@ -219,7 +219,7 @@ public class KeybindsPage implements SettingsPage {
         }
 
         // Thumb
-        int thumbColor = isDraggingScrollbar ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
+        int thumbColor = isDraggingScrollbar ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
         graphics.fill(x, thumbY, x + barWidth, thumbY + thumbHeight, thumbColor);
     }
 
@@ -230,7 +230,7 @@ public class KeybindsPage implements SettingsPage {
 
         // Hover background
         if (hovered) {
-            graphics.fill(x - 4, y - 1, x + rowWidth + 4, y + ROW_HEIGHT - 3, UIConstants.Background.HOVER);
+            graphics.fill(x - 4, y - 1, x + rowWidth + 4, y + ROW_HEIGHT - 3, UIConstants.Background.HOVER());
         }
 
         // Key badge
@@ -240,15 +240,15 @@ public class KeybindsPage implements SettingsPage {
         int textWidth = font.width(entry.key);
         int actualBadgeWidth = Math.max(KEY_BADGE_WIDTH, textWidth + 8);
 
-        graphics.fill(badgeX, badgeY, badgeX + actualBadgeWidth, badgeY + badgeHeight, UIConstants.Background.INPUT);
-        AxiomRenderer.drawBorder(graphics, badgeX, badgeY, actualBadgeWidth, badgeHeight, UIConstants.Border.ACCENT);
+        graphics.fill(badgeX, badgeY, badgeX + actualBadgeWidth, badgeY + badgeHeight, UIConstants.Background.INPUT());
+        AxiomRenderer.drawBorder(graphics, badgeX, badgeY, actualBadgeWidth, badgeHeight, UIConstants.Border.ACCENT());
 
         int keyTextX = badgeX + (actualBadgeWidth - textWidth) / 2;
-        graphics.drawString(font, entry.key, keyTextX, badgeY + (badgeHeight - 8) / 2, UIConstants.Text.TITLE, false);
+        graphics.drawString(font, entry.key, keyTextX, badgeY + (badgeHeight - 8) / 2, UIConstants.Text.TITLE(), false);
 
         // Action name
         int nameX = badgeX + actualBadgeWidth + 10;
-        graphics.drawString(font, entry.name, nameX, y + 2, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, entry.name, nameX, y + 2, UIConstants.Text.PRIMARY(), false);
 
         // Description (muted, to the right) - only if space allows
         int descX = nameX + font.width(entry.name) + 16;
@@ -264,7 +264,7 @@ public class KeybindsPage implements SettingsPage {
                 }
                 desc = desc + ellipsis;
             }
-            graphics.drawString(font, desc, descX, y + 2, UIConstants.Text.MUTED, false);
+            graphics.drawString(font, desc, descX, y + 2, UIConstants.Text.MUTED(), false);
         }
     }
 

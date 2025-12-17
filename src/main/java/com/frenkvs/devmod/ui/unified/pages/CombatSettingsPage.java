@@ -71,7 +71,7 @@ public class CombatSettingsPage implements SettingsPage {
         ItemStack heldItem = mc.player != null ? mc.player.getMainHandItem() : ItemStack.EMPTY;
 
         if (heldItem.isEmpty()) {
-            graphics.drawString(font, "No weapon in hand", x, currentY, UIConstants.Text.MUTED, false);
+            graphics.drawString(font, "No weapon in hand", x, currentY, UIConstants.Text.MUTED(), false);
             currentY += ROW_HEIGHT;
 
             AxiomRenderer.drawHint(graphics, font, x, currentY, "Hold a weapon to see its stats");
@@ -79,7 +79,7 @@ public class CombatSettingsPage implements SettingsPage {
         } else {
             // Weapon name and icon
             String weaponName = heldItem.getHoverName().getString();
-            graphics.drawString(font, weaponName, x, currentY, UIConstants.Text.PRIMARY, false);
+            graphics.drawString(font, weaponName, x, currentY, UIConstants.Text.PRIMARY(), false);
             currentY += ROW_HEIGHT;
 
             // Get weapon stats
@@ -93,9 +93,9 @@ public class CombatSettingsPage implements SettingsPage {
             currentY = renderStatRow(graphics, font, x, currentY, width, "Legs Multiplier",
                 String.format("%.1fx", stats.legsMult), UIConstants.BodyPart.LEGS);
             currentY = renderStatRow(graphics, font, x, currentY, width, "Armor Penetration",
-                String.format("%.0f%%", stats.armorPenetration * 100), UIConstants.Accent.ORANGE);
+                String.format("%.0f%%", stats.armorPenetration * 100), UIConstants.Accent.ORANGE());
             currentY = renderStatRow(graphics, font, x, currentY, width, "Base Damage Bonus",
-                String.format("+%.1f", stats.baseDamageBonus), UIConstants.Accent.RED);
+                String.format("+%.1f", stats.baseDamageBonus), UIConstants.Accent.RED());
 
             currentY += SECTION_SPACING;
         }
@@ -148,18 +148,18 @@ public class CombatSettingsPage implements SettingsPage {
     }
 
     private void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height) {
-        graphics.fill(x, y, x + barWidth, y + height, UIConstants.Background.INPUT);
+        graphics.fill(x, y, x + barWidth, y + height, UIConstants.Background.INPUT());
         float visibleRatio = (float) visibleHeight / totalContentHeight;
         int thumbHeight = Math.max(20, (int) (height * visibleRatio));
         float scrollRatio = maxScrollOffset > 0 ? (float) scrollOffset / maxScrollOffset : 0;
         int thumbY = y + (int) ((height - thumbHeight) * scrollRatio);
-        int thumbColor = isDraggingScrollbar ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
+        int thumbColor = isDraggingScrollbar ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
         graphics.fill(x, thumbY, x + barWidth, thumbY + thumbHeight, thumbColor);
     }
 
     private int renderStatRow(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
                                String label, String value, int valueColor) {
-        graphics.drawString(font, label, x, y + 2, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, label, x, y + 2, UIConstants.Text.SECONDARY(), false);
 
         int valueWidth = font.width(Objects.requireNonNull(value));
         graphics.drawString(font, value, x + width - valueWidth - 20, y + 2, valueColor, false);

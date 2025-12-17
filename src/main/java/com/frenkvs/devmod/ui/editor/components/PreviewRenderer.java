@@ -171,7 +171,7 @@ public class PreviewRenderer {
             String safeHintText = Objects.requireNonNull(hintText, "hintText cannot be null");
             int hintWidth = font.width(safeHintText);
             int hintX = x + (size - hintWidth) / 2;
-            graphics.drawString(font, safeHintText, hintX, hintY, UIConstants.Text.MUTED, false);
+            graphics.drawString(font, safeHintText, hintX, hintY, UIConstants.Text.MUTED(), false);
         }
 
         // Render carried stack (from vanilla "carried" slot) following the cursor
@@ -265,10 +265,10 @@ public class PreviewRenderer {
             boolean hovered = rect.contains(mouseX, mouseY);
             boolean selected = slot == this.slot;
 
-            int bg = selected ? 0x4020C0FF : (hovered ? UIConstants.Background.HOVER : UIConstants.Background.INPUT);
+            int bg = selected ? 0x4020C0FF : (hovered ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT());
             graphics.fill(rect.x(), rect.y(), rect.x() + rect.width(), rect.y() + rect.height(), bg);
 
-            int border = selected ? UIConstants.Accent.CYAN : (hovered ? UIConstants.Border.HOVER : UIConstants.Border.DEFAULT);
+            int border = selected ? UIConstants.Accent.CYAN() : (hovered ? UIConstants.Border.HOVER() : UIConstants.Border.DEFAULT());
             AxiomRenderer.drawBorder(graphics, rect.x(), rect.y(), rect.width(), rect.height(), border);
 
             ItemStack stack = ItemStack.EMPTY;
@@ -283,12 +283,12 @@ public class PreviewRenderer {
                 // Tooltip-like name
                 if (hovered) {
                     String name = safeStack.getHoverName().getString();
-                    graphics.drawString(Objects.requireNonNull(font, "font cannot be null"), name, rect.x() + rect.width() + ScaledCoord.scaleDim(4), rect.y(), UIConstants.Text.PRIMARY, false);
+                    graphics.drawString(Objects.requireNonNull(font, "font cannot be null"), name, rect.x() + rect.width() + ScaledCoord.scaleDim(4), rect.y(), UIConstants.Text.PRIMARY(), false);
                 }
             } else {
                 String glyph = Objects.requireNonNull(placeholderFor(slot), "placeholder cannot be null");
                 var safeFont = Objects.requireNonNull(font, "font cannot be null");
-                int textColor = selected ? UIConstants.Text.PRIMARY : UIConstants.Text.MUTED;
+                int textColor = selected ? UIConstants.Text.PRIMARY() : UIConstants.Text.MUTED();
                 int textX = rect.x() + (slotSize - safeFont.width(glyph)) / 2;
                 int textY = rect.y() + (slotSize - safeFont.lineHeight) / 2;
                 graphics.drawString(safeFont, glyph, textX, textY, textColor, false);
@@ -303,7 +303,7 @@ public class PreviewRenderer {
             String placeholder = "?";
             int textX = x + (size - font.width(placeholder)) / 2;
             int textY = y + (size - font.lineHeight) / 2;
-            graphics.drawString(font, placeholder, textX, textY, UIConstants.Text.MUTED, false);
+            graphics.drawString(font, placeholder, textX, textY, UIConstants.Text.MUTED(), false);
             return;
         }
 

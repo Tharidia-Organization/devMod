@@ -89,10 +89,10 @@ public class TemplateOverlay extends BaseOverlay {
         float textScale = Typography.withUiScale(Typography.BODY);
 
         // Header
-        Typography.drawText(graphics, font, "Templates", panelX + ScaledCoord.scaleDim(12), panelY + ScaledCoord.scaleDim(10), UIConstants.Text.TITLE, textScale);
+        Typography.drawText(graphics, font, "Templates", panelX + ScaledCoord.scaleDim(12), panelY + ScaledCoord.scaleDim(10), UIConstants.Text.TITLE(), textScale);
         // Filter label
         String filterLabel = filterCategory == null ? "(all types)" : ("For: " + filterCategory);
-        Typography.drawText(graphics, font, filterLabel, panelX + ScaledCoord.scaleDim(12), panelY + ScaledCoord.scaleDim(24), UIConstants.Text.SECONDARY, textScale);
+        Typography.drawText(graphics, font, filterLabel, panelX + ScaledCoord.scaleDim(12), panelY + ScaledCoord.scaleDim(24), UIConstants.Text.SECONDARY(), textScale);
 
         // Search box (lightweight)
         int searchX = panelX + ScaledCoord.scaleDim(12);
@@ -100,11 +100,11 @@ public class TemplateOverlay extends BaseOverlay {
         int searchW = panelW - ScaledCoord.scaleDim(24);
         int searchH = ScaledCoord.scaleDim(16);
         boolean searchHover = mouseX >= searchX && mouseX <= searchX + searchW && mouseY >= searchY && mouseY <= searchY + searchH;
-        int searchBg = searchHover || searchFocused ? UIConstants.Background.ACTIVE : UIConstants.Background.INPUT;
+        int searchBg = searchHover || searchFocused ? UIConstants.Background.ACTIVE() : UIConstants.Background.INPUT();
         graphics.fill(searchX, searchY, searchX + searchW, searchY + searchH, searchBg);
-        AxiomRenderer.drawBorder(graphics, searchX, searchY, searchW, searchH, UIConstants.Border.MUTED);
+        AxiomRenderer.drawBorder(graphics, searchX, searchY, searchW, searchH, UIConstants.Border.MUTED());
         String placeholder = searchQuery.isEmpty() ? "Search (Ctrl+F)" : searchQuery;
-        int searchColor = searchQuery.isEmpty() ? UIConstants.Text.MUTED : UIConstants.Text.PRIMARY;
+        int searchColor = searchQuery.isEmpty() ? UIConstants.Text.MUTED() : UIConstants.Text.PRIMARY();
         Typography.drawText(graphics, font, placeholder, searchX + ScaledCoord.scaleDim(4), searchY + ScaledCoord.scaleDim(4), searchColor, textScale);
 
         // List area
@@ -132,13 +132,13 @@ public class TemplateOverlay extends BaseOverlay {
             ItemEditorDataManager.TemplateData template = filtered.get(i);
             boolean hovered = mouseX >= listX && mouseX <= listX + listW && mouseY >= rowTop && mouseY <= rowTop + rowHeight;
             boolean selected = i == selectedIndex;
-            int rowBg = selected ? UIConstants.Background.ACTIVE : hovered ? UIConstants.Background.HOVER : UIConstants.Background.PANEL;
+            int rowBg = selected ? UIConstants.Background.ACTIVE() : hovered ? UIConstants.Background.HOVER() : UIConstants.Background.PANEL();
             graphics.fill(listX, rowTop, listX + listW, rowTop + rowHeight, rowBg);
             String name = template.name == null ? "(template)" : template.name;
             String scope = template.itemCategory == null ? "" : " [" + template.itemCategory + "]";
-            Typography.drawText(graphics, font, name, listX + ScaledCoord.scaleDim(6), rowTop + ScaledCoord.scaleDim(6), UIConstants.Text.PRIMARY, textScale);
+            Typography.drawText(graphics, font, name, listX + ScaledCoord.scaleDim(6), rowTop + ScaledCoord.scaleDim(6), UIConstants.Text.PRIMARY(), textScale);
             int scopeWidth = Math.round(font.width(scope) * textScale);
-            Typography.drawText(graphics, font, scope, listX + listW - scopeWidth - ScaledCoord.scaleDim(6), rowTop + ScaledCoord.scaleDim(6), UIConstants.Text.SECONDARY, textScale);
+            Typography.drawText(graphics, font, scope, listX + listW - scopeWidth - ScaledCoord.scaleDim(6), rowTop + ScaledCoord.scaleDim(6), UIConstants.Text.SECONDARY(), textScale);
         }
 
         graphics.disableScissor();
@@ -156,22 +156,22 @@ public class TemplateOverlay extends BaseOverlay {
         int previewX = panelX + ScaledCoord.scaleDim(12);
         int previewY = listY + listH + ScaledCoord.scaleDim(8);
         int previewH = ScaledCoord.scaleDim(60);
-        graphics.fill(previewX, previewY, previewX + listW, previewY + previewH, UIConstants.Background.CONTENT);
-        AxiomRenderer.drawBorder(graphics, previewX, previewY, listW, previewH, UIConstants.Border.DEFAULT);
+        graphics.fill(previewX, previewY, previewX + listW, previewY + previewH, UIConstants.Background.CONTENT());
+        AxiomRenderer.drawBorder(graphics, previewX, previewY, listW, previewH, UIConstants.Border.DEFAULT());
 
         if (!filtered.isEmpty() && selectedIndex >= 0 && selectedIndex < filtered.size()) {
             ItemEditorDataManager.TemplateData selectedTemplate = filtered.get(selectedIndex);
             String name = selectedTemplate.name == null ? "(template)" : selectedTemplate.name;
-            Typography.drawText(graphics, font, name, previewX + ScaledCoord.scaleDim(6), previewY + ScaledCoord.scaleDim(6), UIConstants.Text.PRIMARY, textScale);
+            Typography.drawText(graphics, font, name, previewX + ScaledCoord.scaleDim(6), previewY + ScaledCoord.scaleDim(6), UIConstants.Text.PRIMARY(), textScale);
             String scope = "Scope: " + (selectedTemplate.itemCategory == null ? "Unknown" : selectedTemplate.itemCategory);
-            Typography.drawText(graphics, font, scope, previewX + ScaledCoord.scaleDim(6), previewY + ScaledCoord.scaleDim(18), UIConstants.Text.SECONDARY, textScale);
+            Typography.drawText(graphics, font, scope, previewX + ScaledCoord.scaleDim(6), previewY + ScaledCoord.scaleDim(18), UIConstants.Text.SECONDARY(), textScale);
 
             int ench = selectedTemplate.enchantments == null ? 0 : selectedTemplate.enchantments.size();
             int attrs = selectedTemplate.attributes == null ? 0 : selectedTemplate.attributes.size();
             String touches = "Touches: Enchants (" + ench + "), Attributes (" + attrs + ")";
-            Typography.drawText(graphics, font, touches, previewX + ScaledCoord.scaleDim(6), previewY + ScaledCoord.scaleDim(30), UIConstants.Text.MUTED, textScale);
+            Typography.drawText(graphics, font, touches, previewX + ScaledCoord.scaleDim(6), previewY + ScaledCoord.scaleDim(30), UIConstants.Text.MUTED(), textScale);
         } else {
-            Typography.drawText(graphics, font, "(no templates)", previewX + ScaledCoord.scaleDim(6), previewY + ScaledCoord.scaleDim(6), UIConstants.Text.MUTED, textScale);
+            Typography.drawText(graphics, font, "(no templates)", previewX + ScaledCoord.scaleDim(6), previewY + ScaledCoord.scaleDim(6), UIConstants.Text.MUTED(), textScale);
         }
 
         // Buttons using EditorButton components

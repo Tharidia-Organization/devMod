@@ -1,6 +1,6 @@
 package com.frenkvs.devmod.ui.editor.core;
 
-import com.frenkvs.devmod.Config;
+import com.frenkvs.devmod.EditorClientConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvent;
@@ -104,7 +104,7 @@ public final class EditorSounds {
 
     private static boolean isSoundEnabled() {
         try {
-            return Config.EDITOR_SOUNDS_ENABLED.get();
+            return EditorClientConfig.EDITOR_SOUNDS_ENABLED.get();
         } catch (Exception e) {
             // Config not yet loaded, default to enabled
             return true;

@@ -192,14 +192,14 @@ public class TestingHub extends Screen {
         int contentY = panelY + UIConstants.Spacing.HEADER_HEIGHT + UIConstants.Spacing.PANEL_PADDING + 10;
 
         // Instructions
-        graphics.drawString(font, "Welcome to DevMod QA Testing!", contentX, contentY, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, "Welcome to DevMod QA Testing!", contentX, contentY, UIConstants.Text.PRIMARY(), false);
         contentY += 16;
 
-        graphics.drawString(font, "Enter your name to start tracking tests.", contentX, contentY, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, "Enter your name to start tracking tests.", contentX, contentY, UIConstants.Text.SECONDARY(), false);
         contentY += 30;
 
         // Name label
-        graphics.drawString(font, "Tester Name:", contentX, contentY + 6, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, "Tester Name:", contentX, contentY + 6, UIConstants.Text.SECONDARY(), false);
         contentY += 40;
 
         // Buttons
@@ -264,7 +264,7 @@ public class TestingHub extends Screen {
      * Render focus indicator (accent border) around the focused panel.
      */
     private void renderFocusIndicator(GuiGraphics graphics, int x, int y, int width, int height) {
-        int color = UIConstants.Border.ACCENT;
+        int color = UIConstants.Border.ACCENT();
         // Draw 2px thick border on top of panel
         graphics.fill(x - 1, y - 1, x + width + 1, y, color);           // Top
         graphics.fill(x - 1, y + height, x + width + 1, y + height + 1, color); // Bottom
@@ -274,18 +274,18 @@ public class TestingHub extends Screen {
 
     private void renderHeader(GuiGraphics graphics, int mouseX, int mouseY) {
         // Background header
-        graphics.fill(hubX, hubY, hubX + hubWidth, hubY + HEADER_HEIGHT, UIConstants.Background.HEADER);
+        graphics.fill(hubX, hubY, hubX + hubWidth, hubY + HEADER_HEIGHT, UIConstants.Background.HEADER());
 
         // Bottom border
-        graphics.fill(hubX, hubY + HEADER_HEIGHT - 1, hubX + hubWidth, hubY + HEADER_HEIGHT, UIConstants.Border.DEFAULT);
+        graphics.fill(hubX, hubY + HEADER_HEIGHT - 1, hubX + hubWidth, hubY + HEADER_HEIGHT, UIConstants.Border.DEFAULT());
 
         // Title
-        graphics.drawString(font, "DEVMOD TESTING HUB", hubX + 12, hubY + 10, UIConstants.Text.TITLE, false);
+        graphics.drawString(font, "DEVMOD TESTING HUB", hubX + 12, hubY + 10, UIConstants.Text.TITLE(), false);
 
         // Session info
         String tester = "Tester: " + TestingSession.INSTANCE.getTesterName();
         int testerWidth = font.width(tester);
-        graphics.drawString(font, tester, hubX + hubWidth - testerWidth - 80, hubY + 10, UIConstants.Text.MUTED, false);
+        graphics.drawString(font, tester, hubX + hubWidth - testerWidth - 80, hubY + 10, UIConstants.Text.MUTED(), false);
 
         int buttonHeight = EditorButton.Size.SMALL.height();
         int buttonY = hubY + (HEADER_HEIGHT - buttonHeight) / 2;

@@ -2,7 +2,7 @@ package com.frenkvs.devmod.ui.editor;
 
 import com.frenkvs.devmod.ArmorConfigManager;
 import com.frenkvs.devmod.ArmorStats;
-import com.frenkvs.devmod.Config;
+import com.frenkvs.devmod.EditorClientConfig;
 import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.ItemEditorDataManager;
 import com.frenkvs.devmod.WeaponConfigManager;
@@ -188,7 +188,7 @@ public class ItemEditorScreen extends Screen {
         // Calculate layout for screen dimensions
         layout.calculate(width, height, screenFit, uiScale);
         editorLayout.computePositions(screenFit, uiScale);
-        EditorSpacing.ENABLE_GRID_VALIDATION = Config.EDITOR_GRID_VALIDATION.get();
+        EditorSpacing.ENABLE_GRID_VALIDATION = EditorClientConfig.EDITOR_GRID_VALIDATION.get();
         if (EditorSpacing.ENABLE_GRID_VALIDATION) {
             GridValidator.validate("editor", editorLayout.getPanelBounds(), editorLayout.getHeaderBounds(),
                 editorLayout.getFooterBounds(), editorLayout.getLeftColumnBounds(), editorLayout.getContentBounds());
@@ -196,7 +196,7 @@ public class ItemEditorScreen extends Screen {
 
         // Resolve and initialize the module
         activeModule = resolveModule(item, requestedTab);
-        activeModule.setStatusConsumer((msg, color) -> showStatus(msg, color == null ? UIConstants.Accent.INFO : color));
+        activeModule.setStatusConsumer((msg, color) -> showStatus(msg, color == null ? UIConstants.Accent.INFO() : color));
         activeModule.setItem(item);
         activeModule.init(layout);
         warnLowConfidence(item);
@@ -271,9 +271,9 @@ public class ItemEditorScreen extends Screen {
         if (detection == null) return;
         boolean isWeaponPath = requestedTab == EditorStartTab.WEAPON || activeModule instanceof WeaponModule || activeModule instanceof RangedModule;
         if (!isWeaponPath) return;
-        float threshold = (float) Math.max(Config.EDITOR_WEAPON_MIN_CONFIDENCE.get(), (double) MIN_CONFIDENCE_FOR_AUTO_EDIT);
+        float threshold = (float) Math.max(EditorClientConfig.EDITOR_WEAPON_MIN_CONFIDENCE.get(), (double) MIN_CONFIDENCE_FOR_AUTO_EDIT);
         if (detection.confidence() < threshold
-            && Config.EDITOR_WEAPON_HEURISTIC_ENABLED.get()
+            && EditorClientConfig.EDITOR_WEAPON_HEURISTIC_ENABLED.get()
             && detection.method() == WeaponTypeDetector.DetectionMethod.ATTRIBUTE_HEURISTIC) {
             pendingDetection = detection;
             showLowConfidenceDialog = true;
@@ -290,19 +290,19 @@ public class ItemEditorScreen extends Screen {
         int h = EditorSpacing.snapToGrid(176);
         int x = (width - w) / 2;
         int y = (height - h) / 2;
-        g.fill(x, y, x + w, y + h, UIConstants.Background.PANEL_SOLID);
-        AxiomRenderer.drawBorder(g, x, y, w, h, UIConstants.Border.ACCENT);
+        g.fill(x, y, x + w, y + h, UIConstants.Background.PANEL_SOLID());
+        AxiomRenderer.drawBorder(g, x, y, w, h, UIConstants.Border.ACCENT());
         String title = "Low Confidence Detection";
-        g.drawString(safeFont, title, x + 12, y + 12, UIConstants.Text.TITLE, false);
+        g.drawString(safeFont, title, x + 12, y + 12, UIConstants.Text.TITLE(), false);
         var id = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item.getItem()));
         String itemId = id == null ? "<unknown>" : id.toString();
-        g.drawString(safeFont, "Item: " + itemId, x + 12, y + 30, UIConstants.Text.SECONDARY, false);
-        g.drawString(safeFont, "Detected: " + pendingDetection.type() + " via " + pendingDetection.method(), x + 12, y + 42, UIConstants.Text.SECONDARY, false);
-        g.drawString(safeFont, "Confidence: " + String.format("%.0f%%", pendingDetection.confidence() * 100), x + 12, y + 54, UIConstants.Text.SECONDARY, false);
-        g.drawString(safeFont, "Add to whitelist/tag to skip this warning next time.", x + 12, y + 72, UIConstants.Text.MUTED, false);
-        g.drawString(safeFont, "Config: config/devmod/weapon_whitelist.json", x + 12, y + 84, UIConstants.Text.MUTED, false);
+        g.drawString(safeFont, "Item: " + itemId, x + 12, y + 30, UIConstants.Text.SECONDARY(), false);
+        g.drawString(safeFont, "Detected: " + pendingDetection.type() + " via " + pendingDetection.method(), x + 12, y + 42, UIConstants.Text.SECONDARY(), false);
+        g.drawString(safeFont, "Confidence: " + String.format("%.0f%%", pendingDetection.confidence() * 100), x + 12, y + 54, UIConstants.Text.SECONDARY(), false);
+        g.drawString(safeFont, "Add to whitelist/tag to skip this warning next time.", x + 12, y + 72, UIConstants.Text.MUTED(), false);
+        g.drawString(safeFont, "Config: config/devmod/weapon_whitelist.json", x + 12, y + 84, UIConstants.Text.MUTED(), false);
         if (lowConfidenceStatus != null) {
-            g.drawString(safeFont, lowConfidenceStatus, x + 12, y + h - 44, UIConstants.Accent.ORANGE, false);
+            g.drawString(safeFont, lowConfidenceStatus, x + 12, y + h - 44, UIConstants.Accent.ORANGE(), false);
         }
 
         // Buttons
@@ -315,12 +315,12 @@ public class ItemEditorScreen extends Screen {
         int btnContinueX = btnStartX;
         int btnWhitelistX = btnStartX + btnW + btnSpacing;
         int btnCancelX = btnStartX + (btnW + btnSpacing) * 2;
-        g.fill(btnContinueX, btnY, btnContinueX + btnW, btnY + btnH, UIConstants.Background.INPUT);
-        g.fill(btnWhitelistX, btnY, btnWhitelistX + btnW, btnY + btnH, UIConstants.Background.INPUT);
-        g.fill(btnCancelX, btnY, btnCancelX + btnW, btnY + btnH, UIConstants.Background.INPUT);
-        g.drawString(safeFont, "Continue", btnContinueX + 12, btnY + 4, UIConstants.Text.PRIMARY, false);
-        g.drawString(safeFont, "Whitelist", btnWhitelistX + 10, btnY + 4, UIConstants.Text.PRIMARY, false);
-        g.drawString(safeFont, "Cancel", btnCancelX + 18, btnY + 4, UIConstants.Text.PRIMARY, false);
+        g.fill(btnContinueX, btnY, btnContinueX + btnW, btnY + btnH, UIConstants.Background.INPUT());
+        g.fill(btnWhitelistX, btnY, btnWhitelistX + btnW, btnY + btnH, UIConstants.Background.INPUT());
+        g.fill(btnCancelX, btnY, btnCancelX + btnW, btnY + btnH, UIConstants.Background.INPUT());
+        g.drawString(safeFont, "Continue", btnContinueX + 12, btnY + 4, UIConstants.Text.PRIMARY(), false);
+        g.drawString(safeFont, "Whitelist", btnWhitelistX + 10, btnY + 4, UIConstants.Text.PRIMARY(), false);
+        g.drawString(safeFont, "Cancel", btnCancelX + 18, btnY + 4, UIConstants.Text.PRIMARY(), false);
         lowConfidenceContinueBounds = new ResponsiveLayout.Rect(btnContinueX, btnY, btnW, btnH);
         lowConfidenceWhitelistBounds = new ResponsiveLayout.Rect(btnWhitelistX, btnY, btnW, btnH);
         lowConfidenceCancelBounds = new ResponsiveLayout.Rect(btnCancelX, btnY, btnW, btnH);
@@ -379,7 +379,7 @@ public class ItemEditorScreen extends Screen {
             var id = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item.getItem()));
             String label = id == null ? "<unknown>" : id.toString();
             if (added) {
-                showStatus("Whitelisted " + label, UIConstants.Accent.GREEN);
+                showStatus("Whitelisted " + label, UIConstants.Accent.GREEN());
             }
             return added;
         } catch (Exception e) {
@@ -472,14 +472,14 @@ public class ItemEditorScreen extends Screen {
             activeDialog = ConfirmDialog.switchSlot(slot.label(), activeModule.getPendingChanges().size(),
                 () -> {
                     selectedSlot = slot;
-                    showStatus("Switched to " + slot.label(), UIConstants.Accent.BLUE);
+                    showStatus("Switched to " + slot.label(), UIConstants.Accent.BLUE());
                 },
                 () -> {});
             activeDialog.show();
             return;
         }
         selectedSlot = slot;
-        showStatus("Switched to " + slot.label(), UIConstants.Accent.BLUE);
+        showStatus("Switched to " + slot.label(), UIConstants.Accent.BLUE());
         if (showMultiEditPanel) {
             refreshMultiEditSelection();
         }
@@ -530,7 +530,7 @@ public class ItemEditorScreen extends Screen {
                 ? "Switched to PREVIEW (discarded changes)"
                 : "Switched to PREVIEW");
         }
-        showStatus("Preview Mode", UIConstants.Accent.CYAN);
+        showStatus("Preview Mode", UIConstants.Accent.CYAN());
     }
 
     private void switchToApplyMode() {
@@ -542,7 +542,7 @@ public class ItemEditorScreen extends Screen {
             }
             activeModule.logEvent("Switched to APPLY (dirty on)");
         }
-        showStatus("Apply Mode", UIConstants.Accent.GREEN);
+        showStatus("Apply Mode", UIConstants.Accent.GREEN());
     }
 
     /**
@@ -550,8 +550,8 @@ public class ItemEditorScreen extends Screen {
      */
     private void saveUserModePreference() {
         try {
-            Config.EDITOR_DEFAULT_MODE.set(isPreviewMode ? Config.EditorDefaultMode.PREVIEW : Config.EditorDefaultMode.APPLY);
-            showStatus("Default mode saved", UIConstants.Accent.BLUE);
+            EditorClientConfig.EDITOR_DEFAULT_MODE.set(isPreviewMode ? EditorClientConfig.EditorDefaultMode.PREVIEW : EditorClientConfig.EditorDefaultMode.APPLY);
+            showStatus("Default mode saved", UIConstants.Accent.BLUE());
         } catch (Exception ignored) {
             // Best-effort: config may be read-only in some contexts
         }
@@ -562,8 +562,8 @@ public class ItemEditorScreen extends Screen {
      */
     private void loadUserModePreference() {
         try {
-            Config.EditorDefaultMode pref = Config.EDITOR_DEFAULT_MODE.get();
-            isPreviewMode = pref != Config.EditorDefaultMode.APPLY;
+            EditorClientConfig.EditorDefaultMode pref = EditorClientConfig.EDITOR_DEFAULT_MODE.get();
+            isPreviewMode = pref != EditorClientConfig.EditorDefaultMode.APPLY;
         } catch (Exception ignored) {
             isPreviewMode = true;
         }
@@ -574,13 +574,13 @@ public class ItemEditorScreen extends Screen {
             .onUndo(() -> {
                 if (activeModule != null && activeModule.canUndo()) {
                     activeModule.undo();
-                    showStatus("Undone", UIConstants.Accent.BLUE);
+                    showStatus("Undone", UIConstants.Accent.BLUE());
                 }
             })
             .onRedo(() -> {
                 if (activeModule != null && activeModule.canRedo()) {
                     activeModule.redo();
-                    showStatus("Redone", UIConstants.Accent.BLUE);
+                    showStatus("Redone", UIConstants.Accent.BLUE());
                 }
             })
             .onApply(this::applyChanges)
@@ -594,7 +594,7 @@ public class ItemEditorScreen extends Screen {
                 if (activeModule != null) {
                     activeDialog = ConfirmDialog.resetToDefault(() -> {
                         activeModule.resetToOriginal();
-                        showStatus("Reset to original", UIConstants.Accent.ORANGE);
+                        showStatus("Reset to original", UIConstants.Accent.ORANGE());
                     }, () -> {});
                     activeDialog.show();
                 }
@@ -608,7 +608,7 @@ public class ItemEditorScreen extends Screen {
             case "import" -> handleImport();
             case "presets" -> {
                 if (!supportsDataOps()) {
-                    showStatus("Presets available only for weapons/armors", UIConstants.Accent.ORANGE);
+                    showStatus("Presets available only for weapons/armors", UIConstants.Accent.ORANGE());
                     return;
                 }
                 toggleOverlay(OverlayType.PRESETS);
@@ -666,7 +666,7 @@ public class ItemEditorScreen extends Screen {
         perfMonitor.startFrame();
         // Dark overlay background, but leave vanilla hotbar area unobscured
         int hotbarReserve = ScaledCoord.scaleDim(24);
-        graphics.fill(0, 0, width, Math.max(0, height - hotbarReserve), UIConstants.Background.OVERLAY);
+        graphics.fill(0, 0, width, Math.max(0, height - hotbarReserve), UIConstants.Background.OVERLAY());
 
         // Get layout areas (centralized in EditorLayout)
         var panelBounds = editorLayout.getPanelBounds();
@@ -681,12 +681,12 @@ public class ItemEditorScreen extends Screen {
         // Main panel background
         graphics.fill(panelBounds.x(), panelBounds.y(),
                      panelBounds.right(), panelBounds.bottom(),
-                     UIConstants.Background.PANEL);
+                     UIConstants.Background.PANEL());
 
         // Panel border
         AxiomRenderer.drawBorder(graphics, panelBounds.x(), panelBounds.y(),
                                 panelBounds.width(), panelBounds.height(),
-                                UIConstants.Border.DEFAULT);
+                                UIConstants.Border.DEFAULT());
 
         // Header (tabs + badges + close)
         header.render(graphics, headerBounds.x(), headerBounds.y(), headerBounds.width(), mouseX, mouseY);
@@ -718,7 +718,7 @@ public class ItemEditorScreen extends Screen {
         // Content area (scrollable)
         int contentX = contentBounds.x() + UIConstants.Spacing.MD;
         int contentWidth = contentBounds.width() - UIConstants.Spacing.MD * 2;
-        graphics.fill(contentX, contentY, contentX + contentWidth, contentY + contentHeight, UIConstants.Background.CONTENT);
+        graphics.fill(contentX, contentY, contentX + contentWidth, contentY + contentHeight, UIConstants.Background.CONTENT());
         if (activeModule != null) {
             int viewportHeight = contentHeight - UIConstants.Spacing.MD * 2;
             scrollArea.render(graphics, contentX, contentY, contentWidth, contentHeight,
@@ -811,11 +811,11 @@ public class ItemEditorScreen extends Screen {
         ResponsiveLayout.Rect leftPanel = layout.getFavoritesPanelArea();
         if (!leftPanel.isEmpty()) {
             graphics.fill(leftPanel.x(), leftPanel.y(), leftPanel.right(), leftPanel.bottom(),
-                         UIConstants.Background.PANEL);
+                         UIConstants.Background.PANEL());
             AxiomRenderer.drawBorder(graphics, leftPanel.x(), leftPanel.y(),
-                                    leftPanel.width(), leftPanel.height(), UIConstants.Border.DEFAULT);
+                                    leftPanel.width(), leftPanel.height(), UIConstants.Border.DEFAULT());
             graphics.drawString(safeFont, "Favorites", leftPanel.x() + 8, leftPanel.y() + 8,
-                               UIConstants.Text.SECONDARY, false);
+                               UIConstants.Text.SECONDARY(), false);
 
             List<ItemEditorDataManager.PresetData> favorites = getFavoritePresetsForActiveType();
             int rowHeight = 18;
@@ -827,7 +827,7 @@ public class ItemEditorScreen extends Screen {
                 boolean hovered = mouseX >= leftPanel.x() + 4 && mouseX <= leftPanel.right() - 4
                     && mouseY >= rowY && mouseY <= rowY + rowHeight;
                 if (hovered) {
-                    graphics.fill(leftPanel.x() + 2, rowY, leftPanel.right() - 2, rowY + rowHeight, UIConstants.Background.HOVER);
+                    graphics.fill(leftPanel.x() + 2, rowY, leftPanel.right() - 2, rowY + rowHeight, UIConstants.Background.HOVER());
                     if (tooltipText == null) {
                         tooltipText = preset.name;
                         tooltipX = mouseX;
@@ -836,7 +836,7 @@ public class ItemEditorScreen extends Screen {
                 }
                 String label = preset.name == null ? "Preset" : preset.name;
                 graphics.drawString(safeFont, "★ " + label, leftPanel.x() + 8, rowY + 5,
-                    hovered ? UIConstants.Text.PRIMARY : UIConstants.Text.SECONDARY, false);
+                    hovered ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY(), false);
             }
 
             // Pin toggle for last loaded preset
@@ -845,9 +845,9 @@ public class ItemEditorScreen extends Screen {
                 String pinLabel = isFav ? "Unpin last" : "Pin last";
                 int btnY = leftPanel.bottom() - 18;
                 int btnW = 80;
-                graphics.fill(leftPanel.x() + 8, btnY, leftPanel.x() + 8 + btnW, btnY + 14, UIConstants.Button.NORMAL);
-                AxiomRenderer.drawBorder(graphics, leftPanel.x() + 8, btnY, btnW, 14, UIConstants.Border.DEFAULT);
-                graphics.drawString(safeFont, pinLabel, leftPanel.x() + 12, btnY + 3, UIConstants.Text.PRIMARY, false);
+                graphics.fill(leftPanel.x() + 8, btnY, leftPanel.x() + 8 + btnW, btnY + 14, UIConstants.Button.NORMAL());
+                AxiomRenderer.drawBorder(graphics, leftPanel.x() + 8, btnY, btnW, 14, UIConstants.Border.DEFAULT());
+                graphics.drawString(safeFont, pinLabel, leftPanel.x() + 12, btnY + 3, UIConstants.Text.PRIMARY(), false);
             }
         }
 
@@ -856,11 +856,11 @@ public class ItemEditorScreen extends Screen {
             ResponsiveLayout.Rect rightPanel = layout.getDevModePanelArea();
             if (!rightPanel.isEmpty()) {
                 graphics.fill(rightPanel.x(), rightPanel.y(), rightPanel.right(), rightPanel.bottom(),
-                             UIConstants.Background.PANEL);
+                             UIConstants.Background.PANEL());
                 AxiomRenderer.drawBorder(graphics, rightPanel.x(), rightPanel.y(),
-                                        rightPanel.width(), rightPanel.height(), UIConstants.Border.DEFAULT);
+                                        rightPanel.width(), rightPanel.height(), UIConstants.Border.DEFAULT());
                 graphics.drawString(safeFont, "Dev Mode", rightPanel.x() + 8, rightPanel.y() + 8,
-                                   UIConstants.Text.SECONDARY, false);
+                                   UIConstants.Text.SECONDARY(), false);
             }
         }
     }
@@ -909,10 +909,10 @@ public class ItemEditorScreen extends Screen {
         int x = layout.getEditorX() + layout.getEditorWidth() - panelWidth - 8;
         int y = layout.getEditorY() + UIConstants.Size.HEADER_HEIGHT + 8;
 
-        graphics.fill(x, y, x + panelWidth, y + panelHeight, UIConstants.Background.PANEL_SOLID);
-        AxiomRenderer.drawBorder(graphics, x, y, panelWidth, panelHeight, UIConstants.Border.DEFAULT);
+        graphics.fill(x, y, x + panelWidth, y + panelHeight, UIConstants.Background.PANEL_SOLID());
+        AxiomRenderer.drawBorder(graphics, x, y, panelWidth, panelHeight, UIConstants.Border.DEFAULT());
 
-        graphics.drawString(safeFont, "Edit History", x + 8, y + 8, UIConstants.Text.TITLE, false);
+        graphics.drawString(safeFont, "Edit History", x + 8, y + 8, UIConstants.Text.TITLE(), false);
         int listY = y + 24;
         var entries = activeModule.getHistoryEntries();
         int lineHeight = 14;
@@ -922,7 +922,7 @@ public class ItemEditorScreen extends Screen {
 
         int visibleLines = listHeight / lineHeight;
         if (entries.isEmpty()) {
-            graphics.drawString(safeFont, "No history yet", x + 8, listY, UIConstants.Text.MUTED, false);
+            graphics.drawString(safeFont, "No history yet", x + 8, listY, UIConstants.Text.MUTED(), false);
         } else {
             int startFromEnd = historyScrollOffset / lineHeight;
             int startIndex = Math.max(0, entries.size() - visibleLines - startFromEnd);
@@ -931,7 +931,7 @@ public class ItemEditorScreen extends Screen {
             for (int i = startIndex; i < endIndex; i++) {
                 String entry = entries.get(entries.size() - 1 - i);
                 int entryY = listY + (i - startIndex) * lineHeight;
-                graphics.drawString(safeFont, entry, x + 8, entryY, UIConstants.Text.SECONDARY, false);
+                graphics.drawString(safeFont, entry, x + 8, entryY, UIConstants.Text.SECONDARY(), false);
             }
         }
 
@@ -940,17 +940,17 @@ public class ItemEditorScreen extends Screen {
         String countText = entries.isEmpty()
             ? "Showing 0/0"
             : "Showing " + Math.min(visibleLines, entries.size()) + "/" + entries.size();
-        graphics.drawString(safeFont, countText, x + 8, footerY, UIConstants.Text.MUTED, false);
+        graphics.drawString(safeFont, countText, x + 8, footerY, UIConstants.Text.MUTED(), false);
 
         // Clear button
         int clearW = 60;
         int clearH = 14;
         int clearX = x + panelWidth - clearW - 8;
         int clearY = footerY - 2;
-        int clearBg = entries.isEmpty() ? UIConstants.Button.DISABLED : UIConstants.Background.INPUT;
+        int clearBg = entries.isEmpty() ? UIConstants.Button.DISABLED() : UIConstants.Background.INPUT();
         graphics.fill(clearX, clearY, clearX + clearW, clearY + clearH, clearBg);
-        AxiomRenderer.drawBorder(graphics, clearX, clearY, clearW, clearH, UIConstants.Border.DEFAULT);
-        int clearColor = entries.isEmpty() ? UIConstants.Text.DISABLED : UIConstants.Text.PRIMARY;
+        AxiomRenderer.drawBorder(graphics, clearX, clearY, clearW, clearH, UIConstants.Border.DEFAULT());
+        int clearColor = entries.isEmpty() ? UIConstants.Text.DISABLED() : UIConstants.Text.PRIMARY();
         graphics.drawString(safeFont, "Clear", clearX + 12, clearY + 3, clearColor, false);
     }
 
@@ -999,8 +999,8 @@ public class ItemEditorScreen extends Screen {
         int tipY = Math.max(y - 20, 4);
 
         graphics.fill(tipX, tipY, tipX + tipWidth, tipY + 14, 0xF0100010);
-        AxiomRenderer.drawBorder(graphics, tipX, tipY, tipWidth, 14, UIConstants.Border.DEFAULT);
-        graphics.drawString(safeFont, safeText, tipX + 4, tipY + 3, UIConstants.Text.PRIMARY, false);
+        AxiomRenderer.drawBorder(graphics, tipX, tipY, tipWidth, 14, UIConstants.Border.DEFAULT());
+        graphics.drawString(safeFont, safeText, tipX + 4, tipY + 3, UIConstants.Text.PRIMARY(), false);
 
         tooltipText = null;
     }
@@ -1028,21 +1028,21 @@ public class ItemEditorScreen extends Screen {
 
         var safeFont = Objects.requireNonNull(font, "font cannot be null");
         graphics.fill(devArea.x(), devArea.y(), devArea.right(), devArea.bottom(), 0xE0101020);
-        AxiomRenderer.drawBorder(graphics, devArea.x(), devArea.y(), devArea.width(), devArea.height(), UIConstants.Border.ACCENT);
+        AxiomRenderer.drawBorder(graphics, devArea.x(), devArea.y(), devArea.width(), devArea.height(), UIConstants.Border.ACCENT());
 
         int textY = devArea.y() + 8;
         graphics.drawString(safeFont, "§b[Dev Mode]", devArea.x() + 8, textY, 0xFFFFFFFF, false);
         textY += 12;
 
         EditorCache.CacheStats stats = EditorCache.getInstance().getStats();
-        graphics.drawString(safeFont, "Cache: " + stats.valid() + "/" + stats.total(), devArea.x() + 8, textY, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(safeFont, "Cache: " + stats.valid() + "/" + stats.total(), devArea.x() + 8, textY, UIConstants.Text.SECONDARY(), false);
         textY += 10;
-        graphics.drawString(safeFont, String.format("Hit: %.1f%%", stats.hitRate() * 100), devArea.x() + 8, textY, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(safeFont, String.format("Hit: %.1f%%", stats.hitRate() * 100), devArea.x() + 8, textY, UIConstants.Text.SECONDARY(), false);
         textY += 10;
 
-        graphics.drawString(safeFont, "Size: " + layout.getScreenSize(), devArea.x() + 8, textY, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(safeFont, "Size: " + layout.getScreenSize(), devArea.x() + 8, textY, UIConstants.Text.SECONDARY(), false);
         textY += 10;
-        graphics.drawString(safeFont, "Scroll: " + (int) scrollArea.getScrollOffset(), devArea.x() + 8, textY, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(safeFont, "Scroll: " + (int) scrollArea.getScrollOffset(), devArea.x() + 8, textY, UIConstants.Text.SECONDARY(), false);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -1081,7 +1081,7 @@ public class ItemEditorScreen extends Screen {
         }
 
         if (showDevPanel && debugPanel != null && debugPanel.handleClick(mouseX, mouseY)) {
-            showStatus("Copied debug log", UIConstants.Accent.BLUE);
+            showStatus("Copied debug log", UIConstants.Accent.BLUE());
             return true;
         }
 
@@ -1129,11 +1129,11 @@ public class ItemEditorScreen extends Screen {
                 int succ = result.successCount();
                 int fail = result.failureCount();
                 if (fail == 0) {
-                    showStatus("Applied preset to " + succ + " items", UIConstants.Accent.GREEN);
+                    showStatus("Applied preset to " + succ + " items", UIConstants.Accent.GREEN());
                     if (debugPanel != null) debugPanel.log("MultiEdit apply: " + succ + " successes");
                 } else {
                     // Show brief summary and log detailed failures
-                    showStatus("Applied: " + succ + " successes, " + fail + " failures", UIConstants.Accent.ORANGE);
+                    showStatus("Applied: " + succ + " successes, " + fail + " failures", UIConstants.Accent.ORANGE());
                     try {
                         var failures = result.failures();
                         // Build short list (up to 5) for immediate feedback
@@ -1145,7 +1145,7 @@ public class ItemEditorScreen extends Screen {
                         }
                         if (failures.size() > limit) sb.append(" (+" + (failures.size() - limit) + " more)");
                         DevMod.LOGGER.warn("MultiEdit apply failures: {}", failures);
-                        showStatus("Failures: " + sb.toString(), UIConstants.Accent.RED);
+                        showStatus("Failures: " + sb.toString(), UIConstants.Accent.RED());
                         if (debugPanel != null) {
                             String first = failures.isEmpty() ? "" : failures.get(0);
                             debugPanel.log("MultiEdit apply: " + succ + " successes, " + fail + " failures - first: " + first);
@@ -1307,7 +1307,7 @@ public class ItemEditorScreen extends Screen {
             if (multiEditPanel != null) {
                 multiEditPanel.setExpanded(true);
             }
-            showStatus("MultiEdit refreshed", UIConstants.Accent.BLUE);
+            showStatus("MultiEdit refreshed", UIConstants.Accent.BLUE());
             return true;
         }
 
@@ -1398,11 +1398,11 @@ public class ItemEditorScreen extends Screen {
         // Ctrl+Enter quick apply (only APPLY + dirty)
         if (keyCode == GLFW.GLFW_KEY_ENTER && (modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
             if (isPreviewMode) {
-                showStatus("Preview mode: cannot apply", UIConstants.Accent.ORANGE);
+                showStatus("Preview mode: cannot apply", UIConstants.Accent.ORANGE());
             } else if (activeModule != null && activeModule.hasUnsavedChanges()) {
                 applyChanges();
             } else {
-                showStatus("No changes to apply", UIConstants.Accent.ORANGE);
+                showStatus("No changes to apply", UIConstants.Accent.ORANGE());
             }
             return true;
         }
@@ -1439,10 +1439,10 @@ public class ItemEditorScreen extends Screen {
                 try {
                     var p = debugPanel.exportRecentToTempFile(10);
                     debugPanel.log("Exported recent to: " + p.toString());
-                    showStatus("Exported debug recent", UIConstants.Accent.BLUE);
+                    showStatus("Exported debug recent", UIConstants.Accent.BLUE());
                 } catch (Exception e) {
                     debugPanel.log("Export failed: " + e.getMessage());
-                    showStatus("Export failed", UIConstants.Accent.ORANGE);
+                    showStatus("Export failed", UIConstants.Accent.ORANGE());
                 }
                 return true;
             }
@@ -1450,7 +1450,7 @@ public class ItemEditorScreen extends Screen {
             // Ctrl+L -> clear debug log
             if (keyCode == GLFW.GLFW_KEY_L && (modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
                 debugPanel.clear();
-                showStatus("Debug log cleared", UIConstants.Accent.BLUE);
+                showStatus("Debug log cleared", UIConstants.Accent.BLUE());
                 return true;
             }
         }
@@ -1527,7 +1527,7 @@ public class ItemEditorScreen extends Screen {
         if (activeModule == null) return;
 
         if (!activeModule.hasUnsavedChanges()) {
-            showStatus("No changes to apply", UIConstants.Accent.ORANGE);
+            showStatus("No changes to apply", UIConstants.Accent.ORANGE());
             activeModule.logEvent("Apply skipped (no changes)");
             return;
         }
@@ -1562,7 +1562,7 @@ public class ItemEditorScreen extends Screen {
                 payload = activeModule.buildPayload(isGlobalMode);
             }
             if (payload == null) {
-                showStatus("Apply not available for this module (no payload)", UIConstants.Accent.ORANGE);
+                showStatus("Apply not available for this module (no payload)", UIConstants.Accent.ORANGE());
                 activeModule.logEvent("Apply skipped: no payload");
                 return;
             }
@@ -1580,11 +1580,11 @@ public class ItemEditorScreen extends Screen {
             EditorCache.getInstance().invalidateAll();
 
             playSound(SoundEvents.UI_BUTTON_CLICK.value());
-            showStatus("Changes applied!", UIConstants.Accent.GREEN);
+            showStatus("Changes applied!", UIConstants.Accent.GREEN());
             activeModule.logEvent("Apply sent to server");
 
         } catch (Exception e) {
-            showStatus("Failed to apply: " + e.getMessage(), UIConstants.Accent.RED);
+            showStatus("Failed to apply: " + e.getMessage(), UIConstants.Accent.RED());
             if (activeModule != null) {
                 activeModule.logEvent("Apply error: " + e.getMessage());
             }
@@ -1606,7 +1606,7 @@ public class ItemEditorScreen extends Screen {
             debugPanel.log(full);
         }
         String statusMsg = detail.isBlank() ? (payload.success() ? "Server confirmed" : "Server rejected") : detail;
-        showStatus(statusMsg, payload.success() ? UIConstants.Accent.GREEN : UIConstants.Accent.RED);
+        showStatus(statusMsg, payload.success() ? UIConstants.Accent.GREEN() : UIConstants.Accent.RED());
     }
 
     private void handleCloseRequest() {
@@ -1635,7 +1635,7 @@ public class ItemEditorScreen extends Screen {
 
     private void handleExport() {
         if (!supportsDataOps()) {
-            showStatus("Export available only for weapons/armors", UIConstants.Accent.ORANGE);
+            showStatus("Export available only for weapons/armors", UIConstants.Accent.ORANGE());
             return;
         }
 
@@ -1649,27 +1649,27 @@ public class ItemEditorScreen extends Screen {
         boolean ok = data.exportToFile(config, fileName);
         if (ok) {
             data.addHistoryEntry("export", config.itemName, fileName);
-            showStatus("Exported to " + fileName + ".json", UIConstants.Accent.GREEN);
+            showStatus("Exported to " + fileName + ".json", UIConstants.Accent.GREEN());
             // Also emit datapack with current overrides for sharing (partial spec 06-persistence)
             int exported = DatapackIO.exportOverrides(DEFAULT_DATAPACK_NAME);
             if (exported > 0) {
-                showStatus("Datapack: " + DEFAULT_DATAPACK_NAME + " (" + exported + " items)", UIConstants.Accent.BLUE);
+                showStatus("Datapack: " + DEFAULT_DATAPACK_NAME + " (" + exported + " items)", UIConstants.Accent.BLUE());
             }
         } else {
-            showStatus("Export failed", UIConstants.Accent.RED);
+            showStatus("Export failed", UIConstants.Accent.RED());
         }
     }
 
     private void handleImport() {
         if (!supportsDataOps()) {
-            showStatus("Import available only for weapons/armors", UIConstants.Accent.ORANGE);
+            showStatus("Import available only for weapons/armors", UIConstants.Accent.ORANGE());
             return;
         }
 
         ItemEditorDataManager data = ItemEditorDataManager.INSTANCE;
         List<String> exports = data.listExportFiles();
         if (exports.isEmpty()) {
-            showStatus("No exports found", UIConstants.Accent.ORANGE);
+            showStatus("No exports found", UIConstants.Accent.ORANGE());
             return;
         }
 
@@ -1679,13 +1679,13 @@ public class ItemEditorScreen extends Screen {
             ItemEditorDataManager.ItemConfigExport imported = data.importFromFile(fileName);
             applyImportedStats(imported, "Imported " + fileName);
             data.addHistoryEntry("import", item.getHoverName().getString(), fileName);
-            showStatus("Imported " + fileName, UIConstants.Accent.BLUE);
+            showStatus("Imported " + fileName, UIConstants.Accent.BLUE());
             int applied = DatapackIO.importOverrides(DEFAULT_DATAPACK_NAME);
             if (applied > 0) {
-                showStatus("Imported datapack overrides (" + applied + ")", UIConstants.Accent.BLUE);
+                showStatus("Imported datapack overrides (" + applied + ")", UIConstants.Accent.BLUE());
             }
         } catch (Exception e) {
-            showStatus("Import failed: " + e.getMessage(), UIConstants.Accent.RED);
+            showStatus("Import failed: " + e.getMessage(), UIConstants.Accent.RED());
         }
     }
 
@@ -1834,7 +1834,7 @@ public class ItemEditorScreen extends Screen {
 
     private void applyImportedStats(ItemEditorDataManager.ItemConfigExport config, String reason) {
         if (config == null || config.stats == null) {
-            showStatus("Import file missing stats", UIConstants.Accent.RED);
+            showStatus("Import file missing stats", UIConstants.Accent.RED());
             return;
         }
 
@@ -1880,7 +1880,7 @@ public class ItemEditorScreen extends Screen {
             armorModule.applyExternalStats(newStats, reason);
             armorModule.applyPreview();
         } else {
-            showStatus("Unsupported editor for import", UIConstants.Accent.RED);
+            showStatus("Unsupported editor for import", UIConstants.Accent.RED());
         }
     }
 
@@ -1974,13 +1974,13 @@ public class ItemEditorScreen extends Screen {
         String name = template.name == null ? "template" : template.name;
         ItemEditorDataManager.INSTANCE.addHistoryEntry("template_apply", item.getHoverName().getString(), name);
         lastLoadedPreset = name;
-        showStatus("Applied template " + name, UIConstants.Accent.GREEN);
+        showStatus("Applied template " + name, UIConstants.Accent.GREEN());
         EditorCache.getInstance().invalidateItem(getCurrentItemId());
     }
 
     private void applyPreset(ItemEditorDataManager.PresetData preset) {
         if (preset == null) {
-            showStatus("Preset not found", UIConstants.Accent.RED);
+            showStatus("Preset not found", UIConstants.Accent.RED());
             return;
         }
         ItemEditorDataManager.ItemConfigExport wrapper = new ItemEditorDataManager.ItemConfigExport();
@@ -2006,7 +2006,7 @@ public class ItemEditorScreen extends Screen {
             data.savePreset(p);
             data.addHistoryEntry("preset_rename", item.getHoverName().getString(), newName);
             DevMod.LOGGER.info("[Editor] Preset renamed to {}", newName);
-            showStatus("Preset renamed: " + newName, UIConstants.Accent.BLUE);
+            showStatus("Preset renamed: " + newName, UIConstants.Accent.BLUE());
         });
         renamingPreset = null;
         renameBuffer = "";
@@ -2022,42 +2022,42 @@ public class ItemEditorScreen extends Screen {
         int y = (height - panelHeight) / 2;
 
         // dim background
-        graphics.fill(0, 0, width, height, UIConstants.Background.OVERLAY);
+        graphics.fill(0, 0, width, height, UIConstants.Background.OVERLAY());
 
-        graphics.fill(x, y, x + panelWidth, y + panelHeight, UIConstants.Background.PANEL_SOLID);
-        AxiomRenderer.drawBorder(graphics, x, y, panelWidth, panelHeight, UIConstants.Border.DEFAULT);
+        graphics.fill(x, y, x + panelWidth, y + panelHeight, UIConstants.Background.PANEL_SOLID());
+        AxiomRenderer.drawBorder(graphics, x, y, panelWidth, panelHeight, UIConstants.Border.DEFAULT());
         presetPanelBounds = new ResponsiveLayout.Rect(x, y, panelWidth, panelHeight);
 
-        graphics.drawString(safeFont, "Presets", x + 8, y + 8, UIConstants.Text.TITLE, false);
+        graphics.drawString(safeFont, "Presets", x + 8, y + 8, UIConstants.Text.TITLE(), false);
 
         // Search box
         int searchX = x + 8;
         int searchY = y + 28;
         int searchW = panelWidth - 8 - 80 - 8; // leave room for sort button and save
         int searchH = 16;
-        graphics.fill(searchX, searchY, searchX + searchW, searchY + searchH, UIConstants.Background.INPUT);
-        AxiomRenderer.drawBorder(graphics, searchX, searchY, searchW, searchH, UIConstants.Border.DEFAULT);
+        graphics.fill(searchX, searchY, searchX + searchW, searchY + searchH, UIConstants.Background.INPUT());
+        AxiomRenderer.drawBorder(graphics, searchX, searchY, searchW, searchH, UIConstants.Border.DEFAULT());
         String searchLabel = presetSearchQuery.isEmpty() ? "Search..." : presetSearchQuery;
-        int searchColor = presetSearchQuery.isEmpty() ? UIConstants.Text.MUTED : UIConstants.Text.PRIMARY;
+        int searchColor = presetSearchQuery.isEmpty() ? UIConstants.Text.MUTED() : UIConstants.Text.PRIMARY();
         graphics.drawString(safeFont, searchLabel, searchX + 4, searchY + 4, searchColor, false);
 
         // Sort toggle
         int sortW = 36;
         int sortX = searchX + searchW + 4;
         graphics.fill(sortX, searchY, sortX + sortW, searchY + searchH,
-            presetSortMode == SortMode.ALPHA ? UIConstants.Button.HOVER : UIConstants.Button.NORMAL);
-        AxiomRenderer.drawBorder(graphics, sortX, searchY, sortW, searchH, UIConstants.Border.DEFAULT);
+            presetSortMode == SortMode.ALPHA ? UIConstants.Button.HOVER() : UIConstants.Button.NORMAL());
+        AxiomRenderer.drawBorder(graphics, sortX, searchY, sortW, searchH, UIConstants.Border.DEFAULT());
         String sortLabel = presetSortMode == SortMode.ALPHA ? "A-Z" : "Rec";
-        graphics.drawString(safeFont, sortLabel, sortX + 6, searchY + 4, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(safeFont, sortLabel, sortX + 6, searchY + 4, UIConstants.Text.PRIMARY(), false);
 
         // Save button
         int saveW = 64;
         int saveH = 16;
         int saveX = x + panelWidth - saveW - 8;
         int saveY = searchY;
-        graphics.fill(saveX, saveY, saveX + saveW, saveY + saveH, UIConstants.Button.NORMAL);
-        AxiomRenderer.drawBorder(graphics, saveX, saveY, saveW, saveH, UIConstants.Border.DEFAULT);
-        graphics.drawString(safeFont, "Save", saveX + 18, saveY + 4, UIConstants.Text.PRIMARY, false);
+        graphics.fill(saveX, saveY, saveX + saveW, saveY + saveH, UIConstants.Button.NORMAL());
+        AxiomRenderer.drawBorder(graphics, saveX, saveY, saveW, saveH, UIConstants.Border.DEFAULT());
+        graphics.drawString(safeFont, "Save", saveX + 18, saveY + 4, UIConstants.Text.PRIMARY(), false);
 
         // List area
         int listY = y + 52;
@@ -2070,7 +2070,7 @@ public class ItemEditorScreen extends Screen {
         int endRow = Math.min(presets.size(), startRow + visibleRows);
 
         if (presets.isEmpty()) {
-            graphics.drawString(safeFont, "No presets yet", x + 8, listY, UIConstants.Text.MUTED, false);
+            graphics.drawString(safeFont, "No presets yet", x + 8, listY, UIConstants.Text.MUTED(), false);
         } else {
             for (int i = startRow; i < endRow; i++) {
                 ItemEditorDataManager.PresetData preset = presets.get(i);
@@ -2078,7 +2078,7 @@ public class ItemEditorScreen extends Screen {
                 boolean hovered = mouseX >= x + 4 && mouseX <= x + panelWidth - 4
                     && mouseY >= rowY && mouseY <= rowY + rowHeight;
                 if (hovered) {
-                    graphics.fill(x + 2, rowY, x + panelWidth - 2, rowY + rowHeight, UIConstants.Background.HOVER);
+                    graphics.fill(x + 2, rowY, x + panelWidth - 2, rowY + rowHeight, UIConstants.Background.HOVER());
                 }
                 if (hovered) {
                     lastHoveredPreset = preset.name;
@@ -2090,7 +2090,7 @@ public class ItemEditorScreen extends Screen {
                     label = "✓ " + label;
                 }
                 graphics.drawString(safeFont, label, x + 8, rowY + 6,
-                    hovered ? UIConstants.Text.PRIMARY : UIConstants.Text.SECONDARY, false);
+                    hovered ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY(), false);
 
                 // Metadata line
                 String metaTime = formatRelativeTime(preset.createdAt);
@@ -2098,7 +2098,7 @@ public class ItemEditorScreen extends Screen {
                     + " • " + (preset.itemType == null ? "item" : preset.itemType)
                     + " • " + metaTime
                     + " • v" + (preset.devmodVersion == null ? "?" : preset.devmodVersion);
-                graphics.drawString(safeFont, meta, x + 8, rowY + 16, UIConstants.Text.MUTED, false);
+                graphics.drawString(safeFont, meta, x + 8, rowY + 16, UIConstants.Text.MUTED(), false);
                 if (hovered) {
                     tooltipText = java.time.Instant.ofEpochMilli(preset.createdAt)
                         .atZone(java.time.ZoneId.systemDefault())
@@ -2112,22 +2112,22 @@ public class ItemEditorScreen extends Screen {
                 int btnSize = 12;
                 int deleteX = x + panelWidth - btnSize - 8;
                 int renameX = deleteX - btnSize - 4;
-                graphics.fill(renameX, btnY, renameX + btnSize, btnY + btnSize, UIConstants.Button.NORMAL);
-                AxiomRenderer.drawBorder(graphics, renameX, btnY, btnSize, btnSize, UIConstants.Border.DEFAULT);
-                graphics.drawString(safeFont, "R", renameX + 3, btnY + 2, UIConstants.Text.PRIMARY, false);
+                graphics.fill(renameX, btnY, renameX + btnSize, btnY + btnSize, UIConstants.Button.NORMAL());
+                AxiomRenderer.drawBorder(graphics, renameX, btnY, btnSize, btnSize, UIConstants.Border.DEFAULT());
+                graphics.drawString(safeFont, "R", renameX + 3, btnY + 2, UIConstants.Text.PRIMARY(), false);
 
-                graphics.fill(deleteX, btnY, deleteX + btnSize, btnY + btnSize, UIConstants.Button.NORMAL);
-                AxiomRenderer.drawBorder(graphics, deleteX, btnY, btnSize, btnSize, UIConstants.Border.DEFAULT);
-                graphics.drawString(safeFont, "X", deleteX + 3, btnY + 2, UIConstants.Text.PRIMARY, false);
+                graphics.fill(deleteX, btnY, deleteX + btnSize, btnY + btnSize, UIConstants.Button.NORMAL());
+                AxiomRenderer.drawBorder(graphics, deleteX, btnY, btnSize, btnSize, UIConstants.Border.DEFAULT());
+                graphics.drawString(safeFont, "X", deleteX + 3, btnY + 2, UIConstants.Text.PRIMARY(), false);
 
                 if (renamingPreset != null && renamingPreset.equals(preset.name)) {
                     int rnW = panelWidth - 32;
                     int rnX = x + 8;
                     int rnY = rowY - 18;
-                    graphics.fill(rnX, rnY, rnX + rnW, rnY + 16, UIConstants.Background.INPUT);
-                    AxiomRenderer.drawBorder(graphics, rnX, rnY, rnW, 16, UIConstants.Border.ACCENT);
+                    graphics.fill(rnX, rnY, rnX + rnW, rnY + 16, UIConstants.Background.INPUT());
+                    AxiomRenderer.drawBorder(graphics, rnX, rnY, rnW, 16, UIConstants.Border.ACCENT());
                     String text = renameBuffer.isEmpty() ? preset.name : renameBuffer;
-                    graphics.drawString(safeFont, text, rnX + 4, rnY + 4, UIConstants.Text.PRIMARY, false);
+                    graphics.drawString(safeFont, text, rnX + 4, rnY + 4, UIConstants.Text.PRIMARY(), false);
                 }
             }
         }
@@ -2179,7 +2179,7 @@ public class ItemEditorScreen extends Screen {
             ItemEditorDataManager.INSTANCE.savePreset(preset);
             ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_save", item.getHoverName().getString(), presetName);
             DevMod.LOGGER.info("[Editor] Preset saved: {}", presetName);
-            showStatus("Preset saved: " + presetName, UIConstants.Accent.GREEN);
+            showStatus("Preset saved: " + presetName, UIConstants.Accent.GREEN());
             lastLoadedPreset = presetName;
             return true;
         }
@@ -2225,7 +2225,7 @@ public class ItemEditorScreen extends Screen {
                     applyPreset(preset);
                     ItemEditorDataManager.INSTANCE.addHistoryEntry("preset_load", item.getHoverName().getString(), preset.name);
                     DevMod.LOGGER.info("[Editor] Preset loaded: {}", preset.name);
-                    showStatus("Preset loaded: " + preset.name, UIConstants.Accent.BLUE);
+                    showStatus("Preset loaded: " + preset.name, UIConstants.Accent.BLUE());
                     closePresetsPanel();
                 };
 
@@ -2236,7 +2236,7 @@ public class ItemEditorScreen extends Screen {
                         "Discard " + changes + " pending changes and load '" + preset.name + "'?",
                         "Load",
                         "Cancel",
-                        UIConstants.Accent.ORANGE,
+                        UIConstants.Accent.ORANGE(),
                         loadAction,
                         () -> {}
                     );
@@ -2273,7 +2273,7 @@ public class ItemEditorScreen extends Screen {
                 Runnable loadAction = () -> {
                     applyPreset(preset);
                     ItemEditorDataManager.INSTANCE.addHistoryEntry("favorite_load", item.getHoverName().getString(), preset.name);
-                    showStatus("Favorite applied: " + preset.name, UIConstants.Accent.BLUE);
+                    showStatus("Favorite applied: " + preset.name, UIConstants.Accent.BLUE());
                 };
                 if (activeModule != null && activeModule.hasUnsavedChanges()) {
                     activeDialog = new ConfirmDialog(
@@ -2281,7 +2281,7 @@ public class ItemEditorScreen extends Screen {
                         "Overwrite current changes with favorite '" + preset.name + "'?",
                         "Apply",
                         "Cancel",
-                        UIConstants.Accent.ORANGE,
+                        UIConstants.Accent.ORANGE(),
                         loadAction,
                         () -> {}
                     );
@@ -2302,7 +2302,7 @@ public class ItemEditorScreen extends Screen {
                 favoriteStore.toggleFavorite(getActiveItemType(), lastLoadedPreset);
                 boolean nowFav = favoriteStore.isFavorite(getActiveItemType(), lastLoadedPreset);
                 String msg = nowFav ? "Pinned " : "Unpinned ";
-                showStatus(msg + lastLoadedPreset, UIConstants.Accent.BLUE);
+                showStatus(msg + lastLoadedPreset, UIConstants.Accent.BLUE());
                 return true;
             }
         }

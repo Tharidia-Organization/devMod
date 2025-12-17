@@ -1,6 +1,6 @@
 # DevMod Editor - TODO & Tracking
 
-## Stato: Completato - Fase 1 Refactoring
+## Stato: Completato - Tutte le Fasi (1-6)
 
 ### Fase 1: Refactoring Bottoni Hardcoded - COMPLETATO
 
@@ -98,29 +98,86 @@
   - [x] Implementato `handleMouseScrolled()` per scroll ingredienti
   - [x] Aggiornate chiamate in ItemEditorScreen
 
-### Fase 5: Miglioramenti Architetturali
+### Fase 5: Miglioramenti Architetturali - COMPLETATO
 
-- [ ] Creare EditorComponent interface base
-- [ ] Creare InputHandler interface
-- [ ] Estrarre InteractiveComponent abstract class
+- [x] Creare EditorComponent interface base
+  - [x] Interface con getId(), render(), isEnabled(), isHovered(), mouseClicked(), etc.
+  - [x] Supporto bounds, focus, visibility
+  - [x] Lifecycle methods (tick, onClose)
+- [x] Creare InputHandler interface
+  - [x] Interface separata per input handling
+  - [x] Static utility methods per modifier keys
+- [x] Creare ScrollState utility class
+  - [x] Gestione offset, maxOffset, viewport
+  - [x] Metodi scroll(), scrollToItem(), reset()
+  - [x] Supporto virtualized rendering (getFirstVisibleRow, getRowOffset)
+  - [x] Calcolo scrollbar metrics
+- [x] Creare VirtualizedList component
+  - [x] Generic list con tipo parametrico
+  - [x] Fluent configuration API
+  - [x] RowRenderContext per custom rendering
+  - [x] Selection management (single select)
+  - [x] Double-click support
+  - [x] Keyboard navigation (arrows, home/end, page up/down)
+  - [x] Scroll indicators e scrollbar
 
 ---
 
-## Miglioramenti Futuri (P3)
+## Fase 6: Feature Avanzate P3 - COMPLETATO
 
-- [ ] VirtualizedList component per liste scrollabili lunghe
-- [ ] ScrollState utility class
-- [ ] Animazioni transizione per overlay
-- [ ] Tema scuro/chiaro configurabile
-- [ ] Accessibilità keyboard navigation
+- [x] **Animazioni transizione overlay**
+  - [x] AnimationState.java: utility class per gestione animazioni
+  - [x] Supporto fade, slide-up, slide-down, scale
+  - [x] Easing functions (ease-out-cubic, ease-in-out, ease-out-back)
+  - [x] Integrazione in BaseOverlay con `withAnimation()`
+
+- [x] **Sistema Tema configurabile**
+  - [x] Theme.java: interface per definizione colori
+  - [x] DarkTheme.java: tema scuro (default, colori UIConstants)
+  - [x] LightTheme.java: tema chiaro
+  - [x] ThemeManager.java: singleton per gestione/switch tema
+  - [x] Listener pattern per notifiche cambio tema
+
+- [x] **FocusManager per keyboard navigation**
+  - [x] FocusManager.java: gestione focus tra componenti
+  - [x] Focusable interface per componenti focusabili
+  - [x] Tab/Shift+Tab navigation
+  - [x] Focus callbacks (onFocusGained, onFocusLost)
+
+- [x] **GeneralModule completato**
+  - [x] Implementato buildPayload() con ModifyItemPayload
+  - [x] Supporto durability, unbreakable, repairCost
 
 ---
 
 ## Bug Noti
 
-- [ ] **ArmorModule.java** - Type mismatch (se presente)
+- [x] **ArmorModule.java** - Type mismatch (RISOLTO)
   - Confronto `Holder<Attribute>` vs `Attribute`
   - Causa: chiamata equals() con tipo sbagliato
+  - Fix: usato Holder correttamente
+
+---
+
+## TODO: UI Scaling & Config
+
+### Config TOML Persistente
+- [x] Integrare con NeoForge config system ✓ (`EditorClientConfig.java`)
+- [x] Creare `config/devmod-client.toml` con sezione `[editor]` ✓ (auto-generato da NeoForge)
+- [x] Migrare da System.property/env a config file persistente ✓ (config-first, fallback in `EditorConfig.java`)
+- [ ] Aggiungere listener per reload config a runtime
+
+### In-Game Settings UI
+- [x] Creare `EditorSettingsPage.java` ✓ (integrato in UnifiedSettingsScreen)
+- [x] UI con ButtonRow per selezione scale (Auto, 1.0x, 1.25x, 1.5x, 2.0x) ✓
+- [x] Mostrare info scale corrente e dimensioni pannello ✓
+- [x] Registrare pagina nel menu impostazioni (SettingsCategory.EDITOR) ✓
+- [ ] Mostrare preview live dell'effetto scale (P3)
+
+### Riferimenti
+- Documentazione: `docs/editor-design-system/07-ui-scaling.md`
+- Implementazione: `EditorClientConfig.java`, `EditorConfig.java`, `EditorScaleCalculator.java`, `ScaledCoord.java`
+- Settings UI: `EditorSettingsPage.java`, `UnifiedSettingsScreen.java`
 
 ---
 
@@ -158,12 +215,66 @@
 | BaseOverlay.java | Classe astratta per overlay modali |
 | ButtonRow.java | Layout orizzontale per bottoni |
 
+### File Creati in Fase 5
+
+| File | Descrizione |
+|------|-------------|
+| EditorComponent.java | Interface base per componenti UI |
+| InputHandler.java | Interface per gestione input |
+| ScrollState.java | Utility class per scroll management |
+| VirtualizedList.java | Componente lista virtualizzata |
+
+### File Creati in Fase 6
+
+| File | Descrizione |
+|------|-------------|
+| AnimationState.java | Gestione animazioni con easing |
+| Theme.java | Interface per definizione temi |
+| DarkTheme.java | Implementazione tema scuro |
+| LightTheme.java | Implementazione tema chiaro |
+| ThemeManager.java | Singleton per gestione temi |
+| FocusManager.java | Gestione focus keyboard navigation |
+
 ---
 
 ## Changelog
 
-### 2025-12-17
+### 2025-12-17 (Sessione 3)
 
+- **Integrazione Feature Fase 6 nell'Editor**
+  - Animazioni: aggiunto `.withAnimation()` a craftingPanel, helpOverlay, templateOverlay
+  - ConfirmDialog: animazioni abilitate di default nel costruttore
+  - ThemeManager: integrato in UIConstants con metodi themed (PANEL(), BORDER(), TEXT(), etc.)
+  - Theme interface: aggiunti metodi `darkerBackground()`, `textValue()`, `textFormula()`
+  - FocusManager: EditorButton implementa `FocusManager.Focusable`
+  - EditorButton: aggiunto supporto focus ring (cyan), keyPressed per Enter/Space
+  - ConfirmDialog: aggiunto `registerFocusables(FocusManager)` per Tab navigation
+  - ItemEditorScreen: aggiunto `showDialog()` helper per focus registration automatica
+  - Aggiornati 5 dialogs chiave per usare `showDialog()` invece di `activeDialog.show()`
+
+### 2025-12-17 (Sessione 2)
+
+- **Completata Fase 6: Feature Avanzate P3**
+  - AnimationState.java: sistema animazioni con fade, slide, scale e easing functions
+  - BaseOverlay: integrato supporto animazioni con `withAnimation()`
+  - Theme.java + DarkTheme.java + LightTheme.java: sistema temi configurabili
+  - ThemeManager.java: singleton per switch temi con listener pattern
+  - FocusManager.java: gestione keyboard focus con Tab navigation
+  - GeneralModule: completato buildPayload() con ModifyItemPayload
+- **Aggiornata documentazione TODO.md**
+
+### 2025-12-17 (Sessione 1)
+
+- **Completata Fase 5: Miglioramenti Architetturali**
+  - EditorComponent.java: interface base per tutti i componenti UI
+  - InputHandler.java: interface separata per input handling con utility methods
+  - ScrollState.java: utility class riutilizzabile per scroll management
+  - VirtualizedList.java: componente generico per liste lunghe con virtualization
+- **Aggiornata documentazione 03-architecture.md**
+  - Sincronizzata con implementazione reale
+  - Documentato AbstractEditorModule e sistema Undo/Redo
+  - Documentato BaseOverlay e overlay system
+  - Aggiunto RangedModule, feature avanzate, file structure
 - **Completata Fase 4D: CraftingInfoPanel con altezza dinamica**
   - BaseOverlay: aggiunto supporto altezza dinamica con `getPanelHeight(int)` e `usesDynamicHeight()`
   - CraftingInfoPanel: estende BaseOverlay, rimosso ~70 LOC duplicato

@@ -69,17 +69,17 @@ public class QuickToolsPanel implements HubPanel {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Background
-        graphics.fill(x, y, x + width, y + height, UIConstants.Background.PANEL);
+        graphics.fill(x, y, x + width, y + height, UIConstants.Background.PANEL());
 
         // Left border separator
-        graphics.fill(x, y, x + 1, y + height, UIConstants.Border.SEPARATOR);
+        graphics.fill(x, y, x + 1, y + height, UIConstants.Border.SEPARATOR());
 
         int contentY = y + PADDING;
         int contentX = x + PADDING;
         int contentWidth = width - PADDING * 2;
 
         // === OVERLAYS SECTION ===
-        graphics.drawString(font, "OVERLAYS", contentX, contentY, UIConstants.Text.TITLE, false);
+        graphics.drawString(font, "OVERLAYS", contentX, contentY, UIConstants.Text.TITLE(), false);
         contentY += SECTION_HEADER_HEIGHT;
 
         for (ToolType tool : ToolType.values()) {
@@ -94,7 +94,7 @@ public class QuickToolsPanel implements HubPanel {
         contentY += 12;
 
         // === EDITORS SECTION ===
-        graphics.drawString(font, "EDITORS", contentX, contentY, UIConstants.Text.TITLE, false);
+        graphics.drawString(font, "EDITORS", contentX, contentY, UIConstants.Text.TITLE(), false);
         contentY += SECTION_HEADER_HEIGHT;
 
         for (EditorType editor : EditorType.values()) {
@@ -107,7 +107,7 @@ public class QuickToolsPanel implements HubPanel {
         contentY += 12;
 
         // === SESSION SECTION ===
-        graphics.drawString(font, "SESSION", contentX, contentY, UIConstants.Text.TITLE, false);
+        graphics.drawString(font, "SESSION", contentX, contentY, UIConstants.Text.TITLE(), false);
         contentY += SECTION_HEADER_HEIGHT;
 
         renderSessionInfo(graphics, contentX, contentY, contentWidth);
@@ -121,7 +121,7 @@ public class QuickToolsPanel implements HubPanel {
         // Sync state every frame in case external toggles changed it.
         button.toggled(enabled);
         button.style(required && !enabled ? EditorButton.Style.DANGER : EditorButton.Style.NORMAL);
-        button.accent(required && !enabled ? UIConstants.Status.WARNING : UIConstants.Border.DEFAULT);
+        button.accent(required && !enabled ? UIConstants.Status.WARNING() : UIConstants.Border.DEFAULT());
         button.render(graphics, rx, ry, rwidth, BUTTON_HEIGHT, mouseX, mouseY);
     }
 
@@ -139,7 +139,7 @@ public class QuickToolsPanel implements HubPanel {
         if (font.width(tester) > rwidth) {
             tester = tester.substring(0, Math.min(tester.length(), 20)) + "...";
         }
-        graphics.drawString(font, tester, rx, ry, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, tester, rx, ry, UIConstants.Text.SECONDARY(), false);
         ry += SESSION_LINE_HEIGHT + 2;
 
         // Session duration
@@ -148,7 +148,7 @@ public class QuickToolsPanel implements HubPanel {
         long minutes = (durationMs % 3600000) / 60000;
         long seconds = (durationMs % 60000) / 1000;
         String time = String.format("Time: %02d:%02d:%02d", hours, minutes, seconds);
-        graphics.drawString(font, time, rx, ry, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, time, rx, ry, UIConstants.Text.SECONDARY(), false);
         ry += SESSION_LINE_HEIGHT + 2;
 
         // Progress
@@ -156,15 +156,15 @@ public class QuickToolsPanel implements HubPanel {
         int failed = TestingSession.INSTANCE.getFailedTests();
         int total = TestingSession.INSTANCE.getTotalTests();
         String progress = String.format("Tests: %d/%d", passed + failed, total);
-        graphics.drawString(font, progress, rx, ry, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, progress, rx, ry, UIConstants.Text.SECONDARY(), false);
         ry += SESSION_LINE_HEIGHT + 2;
 
         // Pass rate
         if (passed + failed > 0) {
             float passRate = (float) passed / (passed + failed) * 100;
             String rate = String.format("Pass Rate: %.0f%%", passRate);
-            int rateColor = passRate >= 80 ? UIConstants.Status.SUCCESS :
-                           passRate >= 50 ? UIConstants.Status.WARNING : UIConstants.Status.ERROR;
+            int rateColor = passRate >= 80 ? UIConstants.Status.SUCCESS() :
+                           passRate >= 50 ? UIConstants.Status.WARNING() : UIConstants.Status.ERROR();
             graphics.drawString(font, rate, rx, ry, rateColor, false);
         }
     }

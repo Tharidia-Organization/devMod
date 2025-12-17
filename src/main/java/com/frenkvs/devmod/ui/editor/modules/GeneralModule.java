@@ -261,12 +261,12 @@ public class GeneralModule extends AbstractEditorModule {
             var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
             int y = bounds.y();
             // Header bar
-            graphics.fill(bounds.x(), y, bounds.x() + bounds.width(), y + EditorDimensions.SECTION_HEADER_HEIGHT, UIConstants.Background.HEADER);
-            graphics.drawString(font, title, bounds.x() + 8, y + (EditorDimensions.SECTION_HEADER_HEIGHT - 8) / 2, UIConstants.Text.TITLE, false);
+            graphics.fill(bounds.x(), y, bounds.x() + bounds.width(), y + EditorDimensions.SECTION_HEADER_HEIGHT, UIConstants.Background.HEADER());
+            graphics.drawString(font, title, bounds.x() + 8, y + (EditorDimensions.SECTION_HEADER_HEIGHT - 8) / 2, UIConstants.Text.TITLE(), false);
             y += EditorDimensions.SECTION_HEADER_HEIGHT;
             // Lines
             for (String line : lines) {
-                graphics.drawString(font, line, bounds.x() + 8, y, UIConstants.Text.SECONDARY, false);
+                graphics.drawString(font, line, bounds.x() + 8, y, UIConstants.Text.SECONDARY(), false);
                 y += LINE_HEIGHT;
             }
         }

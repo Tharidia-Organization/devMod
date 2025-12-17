@@ -125,7 +125,7 @@ public class DebugOverlaysPage implements SettingsPage {
         // ==========================================
         // Section: Core Debug
         // ==========================================
-        graphics.drawString(font, "Core Debug Tools", x, currentY, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, "Core Debug Tools", x, currentY, UIConstants.Text.PRIMARY(), false);
         currentY += 14;
 
         // Debug Renderer toggle
@@ -141,7 +141,7 @@ public class DebugOverlaysPage implements SettingsPage {
         currentY += SECTION_SPACING;
 
         // Section: Custom AI Tools
-        graphics.drawString(font, "Custom AI Tools", x, currentY, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, "Custom AI Tools", x, currentY, UIConstants.Text.PRIMARY(), false);
         currentY += 14;
 
         // Line of Sight toggle
@@ -157,7 +157,7 @@ public class DebugOverlaysPage implements SettingsPage {
         currentY += SECTION_SPACING;
 
         // Section: Spatial
-        graphics.drawString(font, "Spatial Analysis", x, currentY, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, "Spatial Analysis", x, currentY, UIConstants.Text.PRIMARY(), false);
         currentY += 14;
 
         // Room Bounds toggle
@@ -168,7 +168,7 @@ public class DebugOverlaysPage implements SettingsPage {
         currentY += SECTION_SPACING;
 
         // Quick actions
-        graphics.drawString(font, "Quick Actions", x, currentY, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, "Quick Actions", x, currentY, UIConstants.Text.PRIMARY(), false);
         currentY += 14;
 
         // Disable All / Enable All buttons
@@ -229,7 +229,7 @@ public class DebugOverlaysPage implements SettingsPage {
      */
     private void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height) {
         // Track background
-        graphics.fill(x, y, x + barWidth, y + height, UIConstants.Background.INPUT);
+        graphics.fill(x, y, x + barWidth, y + height, UIConstants.Background.INPUT());
 
         // Calculate thumb size and position
         float visibleRatio = (float) visibleHeight / totalContentHeight;
@@ -238,7 +238,7 @@ public class DebugOverlaysPage implements SettingsPage {
         int thumbY = y + (int) ((height - thumbHeight) * scrollRatio);
 
         // Thumb
-        int thumbColor = isDraggingScrollbar ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
+        int thumbColor = isDraggingScrollbar ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
         graphics.fill(x, thumbY, x + barWidth, thumbY + thumbHeight, thumbColor);
     }
 
@@ -252,17 +252,17 @@ public class DebugOverlaysPage implements SettingsPage {
         boolean hovered = mouseX >= x && mouseX < x + rowWidth && mouseY >= y && mouseY < y + ROW_HEIGHT;
 
         if (hovered) {
-            graphics.fill(x - 4, y - 2, x + rowWidth + 4, y + ROW_HEIGHT - 2, UIConstants.Background.HOVER);
+            graphics.fill(x - 4, y - 2, x + rowWidth + 4, y + ROW_HEIGHT - 2, UIConstants.Background.HOVER());
         }
 
         // Orange indicator for native API
         graphics.fill(x, y + 2, x + 3, y + 12, 0xFFFF8800);
 
         // Label
-        graphics.drawString(font, label, x + 8, y + 2, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, label, x + 8, y + 2, UIConstants.Text.PRIMARY(), false);
 
         // Description
-        graphics.drawString(font, description, x + 8, y + 12, UIConstants.Text.MUTED, false);
+        graphics.drawString(font, description, x + 8, y + 12, UIConstants.Text.MUTED(), false);
 
         // Toggle switch
         int toggleX = x + rowWidth - UIConstants.Size.TOGGLE_WIDTH;
@@ -281,21 +281,21 @@ public class DebugOverlaysPage implements SettingsPage {
 
         // Background on hover
         if (hovered) {
-            graphics.fill(x - 4, y - 2, x + rowWidth + 4, y + ROW_HEIGHT - 2, UIConstants.Background.HOVER);
+            graphics.fill(x - 4, y - 2, x + rowWidth + 4, y + ROW_HEIGHT - 2, UIConstants.Background.HOVER());
         }
 
         // Label
-        graphics.drawString(font, label, x, y + 2, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, label, x, y + 2, UIConstants.Text.PRIMARY(), false);
 
         // Hotkey badge (if present)
         if (!hotkey.isEmpty()) {
             int hotkeyX = x + font.width(label) + 8;
-            graphics.fill(hotkeyX - 2, y, hotkeyX + font.width(hotkey) + 2, y + 10, UIConstants.Background.INPUT);
-            graphics.drawString(font, hotkey, hotkeyX, y + 1, UIConstants.Text.MUTED, false);
+            graphics.fill(hotkeyX - 2, y, hotkeyX + font.width(hotkey) + 2, y + 10, UIConstants.Background.INPUT());
+            graphics.drawString(font, hotkey, hotkeyX, y + 1, UIConstants.Text.MUTED(), false);
         }
 
         // Description
-        graphics.drawString(font, description, x, y + 12, UIConstants.Text.MUTED, false);
+        graphics.drawString(font, description, x, y + 12, UIConstants.Text.MUTED(), false);
 
         // Toggle switch
         int toggleX = x + rowWidth - UIConstants.Size.TOGGLE_WIDTH;

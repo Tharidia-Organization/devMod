@@ -240,14 +240,14 @@ public class ModeBadge {
         int textHeight = Math.round(font.lineHeight * textScale);
         int textX = x + (badgeWidth - textWidth) / 2;
         int textY = y + (badgeHeight - textHeight) / 2;
-        Typography.drawText(graphics, font, label, textX, textY, UIConstants.Text.PRIMARY, textScale);
+        Typography.drawText(graphics, font, label, textX, textY, UIConstants.Text.PRIMARY(), textScale);
 
         // Dropdown indicator (if clickable)
         if (clickable) {
             String indicator = showDropdown ? "▲" : "▼";
             int indicatorWidth = Math.round(font.width(indicator) * textScale);
             int indicatorX = x + badgeWidth - dropdownPadding - indicatorWidth / 2;
-            Typography.drawText(graphics, font, indicator, indicatorX, textY, UIConstants.Text.MUTED, textScale);
+            Typography.drawText(graphics, font, indicator, indicatorX, textY, UIConstants.Text.MUTED(), textScale);
         }
 
         return badgeWidth;
@@ -281,8 +281,8 @@ public class ModeBadge {
         }
 
         // Dropdown background
-        graphics.fill(x, y, x + badgeWidth, y + dropdownHeight, UIConstants.Background.PANEL_SOLID);
-        AxiomRenderer.drawBorder(graphics, x, y, badgeWidth, dropdownHeight, UIConstants.Border.DEFAULT);
+        graphics.fill(x, y, x + badgeWidth, y + dropdownHeight, UIConstants.Background.PANEL_SOLID());
+        AxiomRenderer.drawBorder(graphics, x, y, badgeWidth, dropdownHeight, UIConstants.Border.DEFAULT());
 
         // Render options
         int optionY = y;
@@ -307,8 +307,8 @@ public class ModeBadge {
             boolean optionHovered = optionBounds.contains(mouseX, mouseY);
 
             // Option background
-            int optionBg = isSelected ? UIConstants.Background.ACTIVE :
-                          (optionHovered ? UIConstants.Background.HOVER : UIConstants.Background.INPUT);
+            int optionBg = isSelected ? UIConstants.Background.ACTIVE() :
+                          (optionHovered ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT());
             graphics.fill(x + 1, optionY, x + badgeWidth - 1, optionY + badgeHeight, optionBg);
 
             // Selection indicator
@@ -319,7 +319,7 @@ public class ModeBadge {
             // Option text
             int textX = x + 6;
             int textY = optionY + (badgeHeight - Math.round(font.lineHeight * textScale)) / 2;
-            int textColor = isSelected ? UIConstants.Text.PRIMARY : UIConstants.Text.SECONDARY;
+            int textColor = isSelected ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY();
             Typography.drawText(graphics, font, label, textX, textY, textColor, textScale);
 
             optionY += badgeHeight;
@@ -329,12 +329,12 @@ public class ModeBadge {
         if (includeDefaultAction) {
             ResponsiveLayout.Rect optionBounds = new ResponsiveLayout.Rect(x, optionY, badgeWidth, badgeHeight);
             boolean optionHovered = optionBounds.contains(mouseX, mouseY);
-            int optionBg = optionHovered ? UIConstants.Background.HOVER : UIConstants.Background.INPUT;
+            int optionBg = optionHovered ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT();
             graphics.fill(x + 1, optionY, x + badgeWidth - 1, optionY + badgeHeight, optionBg);
             int textX = x + 6;
             int textY = optionY + (badgeHeight - Math.round(font.lineHeight * textScale)) / 2;
             Typography.drawText(graphics, font, "Set current as default", textX, textY,
-                UIConstants.Text.SECONDARY, textScale);
+                UIConstants.Text.SECONDARY(), textScale);
         }
     }
 

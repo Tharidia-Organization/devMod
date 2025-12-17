@@ -285,8 +285,8 @@ public class QuestEditorScreen extends ModScreen {
         int contentTop = HEADER_HEIGHT + PADDING;
 
         // === Header ===
-        graphics.fill(0, 0, width, HEADER_HEIGHT, UIConstants.Background.HEADER);
-        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), "Quest Editor", width / 2, 10, UIConstants.Text.TITLE);
+        graphics.fill(0, 0, width, HEADER_HEIGHT, UIConstants.Background.HEADER());
+        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), "Quest Editor", width / 2, 10, UIConstants.Text.TITLE());
 
         // === Quest List Panel ===
         renderQuestListPanel(graphics, PADDING, contentTop, mouseX, mouseY);
@@ -310,14 +310,14 @@ public class QuestEditorScreen extends ModScreen {
         int panelHeight = height - y - 65;
 
         // Panel background
-        g.fill(x, y, x + QUEST_LIST_WIDTH, y + panelHeight, UIConstants.Background.PANEL);
-        g.fill(x, y, x + QUEST_LIST_WIDTH, y + 1, UIConstants.Border.DEFAULT);
-        g.fill(x, y + panelHeight - 1, x + QUEST_LIST_WIDTH, y + panelHeight, UIConstants.Border.DEFAULT);
-        g.fill(x, y, x + 1, y + panelHeight, UIConstants.Border.DEFAULT);
-        g.fill(x + QUEST_LIST_WIDTH - 1, y, x + QUEST_LIST_WIDTH, y + panelHeight, UIConstants.Border.DEFAULT);
+        g.fill(x, y, x + QUEST_LIST_WIDTH, y + panelHeight, UIConstants.Background.PANEL());
+        g.fill(x, y, x + QUEST_LIST_WIDTH, y + 1, UIConstants.Border.DEFAULT());
+        g.fill(x, y + panelHeight - 1, x + QUEST_LIST_WIDTH, y + panelHeight, UIConstants.Border.DEFAULT());
+        g.fill(x, y, x + 1, y + panelHeight, UIConstants.Border.DEFAULT());
+        g.fill(x + QUEST_LIST_WIDTH - 1, y, x + QUEST_LIST_WIDTH, y + panelHeight, UIConstants.Border.DEFAULT());
 
         // Header
-        g.drawString(Objects.requireNonNull(font, "font"), "Quest", x + 5, y + 5, UIConstants.Text.TITLE, false);
+        g.drawString(Objects.requireNonNull(font, "font"), "Quest", x + 5, y + 5, UIConstants.Text.TITLE(), false);
 
         // Quest list
         List<QuestData> quests = QuestManager.INSTANCE.getAllQuests();
@@ -343,12 +343,12 @@ public class QuestEditorScreen extends ModScreen {
             // Quest name with status icon
             String prefix = isActive ? "\u2605 " : "  ";
             String name = prefix + truncate(quest.getName(), QUEST_LIST_WIDTH - 30);
-            int color = isActive ? UIConstants.Accent.GOLD : (quest.isComplete() ? UIConstants.Accent.GREEN : UIConstants.Text.PRIMARY);
+            int color = isActive ? UIConstants.Accent.GOLD() : (quest.isComplete() ? UIConstants.Accent.GREEN() : UIConstants.Text.PRIMARY());
             g.drawString(Objects.requireNonNull(font, "font"), name, x + 5, itemY + 2, color, false);
 
             // Progress indicator
             String progress = Objects.requireNonNull(quest.getProgressSummary(), "progress");
-            g.drawString(Objects.requireNonNull(font, "font"), progress, x + QUEST_LIST_WIDTH - font.width(progress) - 25, itemY + 2, UIConstants.Text.MUTED, false);
+            g.drawString(Objects.requireNonNull(font, "font"), progress, x + QUEST_LIST_WIDTH - font.width(progress) - 25, itemY + 2, UIConstants.Text.MUTED(), false);
         }
     }
 
@@ -356,17 +356,17 @@ public class QuestEditorScreen extends ModScreen {
         int panelHeight = height - y - 65;
 
         // Panel background
-        g.fill(x, y, x + TASK_LIST_WIDTH, y + panelHeight, UIConstants.Background.PANEL);
-        g.fill(x, y, x + TASK_LIST_WIDTH, y + 1, UIConstants.Border.DEFAULT);
-        g.fill(x, y + panelHeight - 1, x + TASK_LIST_WIDTH, y + panelHeight, UIConstants.Border.DEFAULT);
-        g.fill(x, y, x + 1, y + panelHeight, UIConstants.Border.DEFAULT);
-        g.fill(x + TASK_LIST_WIDTH - 1, y, x + TASK_LIST_WIDTH, y + panelHeight, UIConstants.Border.DEFAULT);
+        g.fill(x, y, x + TASK_LIST_WIDTH, y + panelHeight, UIConstants.Background.PANEL());
+        g.fill(x, y, x + TASK_LIST_WIDTH, y + 1, UIConstants.Border.DEFAULT());
+        g.fill(x, y + panelHeight - 1, x + TASK_LIST_WIDTH, y + panelHeight, UIConstants.Border.DEFAULT());
+        g.fill(x, y, x + 1, y + panelHeight, UIConstants.Border.DEFAULT());
+        g.fill(x + TASK_LIST_WIDTH - 1, y, x + TASK_LIST_WIDTH, y + panelHeight, UIConstants.Border.DEFAULT());
 
         // Header
-        g.drawString(Objects.requireNonNull(font, "font"), "Task", x + 5, y + 5, UIConstants.Text.TITLE, false);
+        g.drawString(Objects.requireNonNull(font, "font"), "Task", x + 5, y + 5, UIConstants.Text.TITLE(), false);
 
         if (selectedQuest == null) {
-            g.drawString(Objects.requireNonNull(font, "font"), "Select a quest", x + 10, y + 30, UIConstants.Text.MUTED, false);
+            g.drawString(Objects.requireNonNull(font, "font"), "Select a quest", x + 10, y + 30, UIConstants.Text.MUTED(), false);
             return;
         }
 
@@ -394,12 +394,12 @@ public class QuestEditorScreen extends ModScreen {
             // Task with status
             String prefix = task.isCompleted() ? "\u2713 " : (isCurrent ? "\u25B6 " : "  ");
             String desc = prefix + truncate(task.getDescription(), TASK_LIST_WIDTH - 20);
-            int color = task.isCompleted() ? UIConstants.Accent.GREEN : (isCurrent ? UIConstants.Accent.GOLD : UIConstants.Text.PRIMARY);
+            int color = task.isCompleted() ? UIConstants.Accent.GREEN() : (isCurrent ? UIConstants.Accent.GOLD() : UIConstants.Text.PRIMARY());
             g.drawString(Objects.requireNonNull(font, "font"), desc, x + 5, itemY + 2, color, false);
 
             // Note indicator
             if (task.hasNote()) {
-                g.drawString(Objects.requireNonNull(font, "font"), "\u270E", x + TASK_LIST_WIDTH - 15, itemY + 2, UIConstants.Accent.BLUE, false);
+                g.drawString(Objects.requireNonNull(font, "font"), "\u270E", x + TASK_LIST_WIDTH - 15, itemY + 2, UIConstants.Accent.BLUE(), false);
             }
         }
     }
@@ -408,26 +408,26 @@ public class QuestEditorScreen extends ModScreen {
         if (panelWidth < 50) return;
 
         // Section: Quest Note
-        g.drawString(Objects.requireNonNull(font, "font"), "Quest Note:", x, y + 25, UIConstants.Text.MUTED, false);
+        g.drawString(Objects.requireNonNull(font, "font"), "Quest Note:", x, y + 25, UIConstants.Text.MUTED(), false);
 
         // Section: Task Note
-        g.drawString(Objects.requireNonNull(font, "font"), "Task Note:", x, y + 105, UIConstants.Text.MUTED, false);
+        g.drawString(Objects.requireNonNull(font, "font"), "Task Note:", x, y + 105, UIConstants.Text.MUTED(), false);
 
         // Current selection info
         if (selectedQuest != null) {
-            g.drawString(Objects.requireNonNull(font, "font"), "Quest: " + selectedQuest.getName(), x, y + 5, UIConstants.Text.TITLE, false);
+            g.drawString(Objects.requireNonNull(font, "font"), "Quest: " + selectedQuest.getName(), x, y + 5, UIConstants.Text.TITLE(), false);
         }
 
         if (selectedTask != null) {
-            g.drawString(Objects.requireNonNull(font, "font"), "Task: " + truncate(selectedTask.getDescription(), panelWidth / 6), x, y + 85, UIConstants.Text.TITLE, false);
+            g.drawString(Objects.requireNonNull(font, "font"), "Task: " + truncate(selectedTask.getDescription(), panelWidth / 6), x, y + 85, UIConstants.Text.TITLE(), false);
         }
 
         // Help text
         int helpY = y + 190;
-        g.drawString(Objects.requireNonNull(font, "font"), "Keybind:", x, helpY, UIConstants.Text.MUTED, false);
-        g.drawString(Objects.requireNonNull(font, "font"), "] = Complete task", x, helpY + 12, UIConstants.Text.DISABLED, false);
-        g.drawString(Objects.requireNonNull(font, "font"), "\\ = Toggle HUD", x, helpY + 24, UIConstants.Text.DISABLED, false);
-        g.drawString(Objects.requireNonNull(font, "font"), "[ = Open editor", x, helpY + 36, UIConstants.Text.DISABLED, false);
+        g.drawString(Objects.requireNonNull(font, "font"), "Keybind:", x, helpY, UIConstants.Text.MUTED(), false);
+        g.drawString(Objects.requireNonNull(font, "font"), "] = Complete task", x, helpY + 12, UIConstants.Text.DISABLED(), false);
+        g.drawString(Objects.requireNonNull(font, "font"), "\\ = Toggle HUD", x, helpY + 24, UIConstants.Text.DISABLED(), false);
+        g.drawString(Objects.requireNonNull(font, "font"), "[ = Open editor", x, helpY + 36, UIConstants.Text.DISABLED(), false);
     }
 
     @Override
@@ -767,14 +767,14 @@ public class QuestEditorScreen extends ModScreen {
         graphics.fill(0, 0, width, height, 0xAA000000);
 
         // Modal background
-        graphics.fill(modalX, modalY, modalX + modalWidth, modalY + modalHeight, UIConstants.Background.PANEL_SOLID);
-        graphics.fill(modalX, modalY, modalX + modalWidth, modalY + 1, UIConstants.Border.DEFAULT);
-        graphics.fill(modalX, modalY + modalHeight - 1, modalX + modalWidth, modalY + modalHeight, UIConstants.Border.DEFAULT);
-        graphics.fill(modalX, modalY, modalX + 1, modalY + modalHeight, UIConstants.Border.DEFAULT);
-        graphics.fill(modalX + modalWidth - 1, modalY, modalX + modalWidth, modalY + modalHeight, UIConstants.Border.DEFAULT);
+        graphics.fill(modalX, modalY, modalX + modalWidth, modalY + modalHeight, UIConstants.Background.PANEL_SOLID());
+        graphics.fill(modalX, modalY, modalX + modalWidth, modalY + 1, UIConstants.Border.DEFAULT());
+        graphics.fill(modalX, modalY + modalHeight - 1, modalX + modalWidth, modalY + modalHeight, UIConstants.Border.DEFAULT());
+        graphics.fill(modalX, modalY, modalX + 1, modalY + modalHeight, UIConstants.Border.DEFAULT());
+        graphics.fill(modalX + modalWidth - 1, modalY, modalX + modalWidth, modalY + modalHeight, UIConstants.Border.DEFAULT());
 
         // Title
-        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), "\u2694 New Endurance Quest", modalX + modalWidth / 2, modalY + 10, UIConstants.Accent.GOLD);
+        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), "\u2694 New Endurance Quest", modalX + modalWidth / 2, modalY + 10, UIConstants.Accent.GOLD());
 
         // Mob list area
         int listX = modalX + 10;
@@ -782,7 +782,7 @@ public class QuestEditorScreen extends ModScreen {
         int listWidth = modalWidth - 20;
         int listHeight = modalHeight - 145;
 
-        graphics.fill(listX, listY, listX + listWidth, listY + listHeight, UIConstants.Background.PANEL);
+        graphics.fill(listX, listY, listX + listWidth, listY + listHeight, UIConstants.Background.PANEL());
 
         // Render mob list
         int itemHeight = 20;
@@ -797,9 +797,9 @@ public class QuestEditorScreen extends ModScreen {
                                mouseY >= itemY && mouseY < itemY + itemHeight;
 
             if (isSelected) {
-                graphics.fill(listX + 1, itemY, listX + listWidth - 1, itemY + itemHeight, UIConstants.Background.ACTIVE);
+                graphics.fill(listX + 1, itemY, listX + listWidth - 1, itemY + itemHeight, UIConstants.Background.ACTIVE());
             } else if (isHovered) {
-                graphics.fill(listX + 1, itemY, listX + listWidth - 1, itemY + itemHeight, UIConstants.Background.HOVER);
+                graphics.fill(listX + 1, itemY, listX + listWidth - 1, itemY + itemHeight, UIConstants.Background.HOVER());
             }
 
             // Tier color indicator
@@ -807,7 +807,7 @@ public class QuestEditorScreen extends ModScreen {
             graphics.fill(listX + 2, itemY + 2, listX + 5, itemY + itemHeight - 2, tierColor);
 
             // Mob name
-            graphics.drawString(Objects.requireNonNull(font, "font"), mob.displayName, listX + 10, itemY + 5, UIConstants.Text.PRIMARY, false);
+            graphics.drawString(Objects.requireNonNull(font, "font"), mob.displayName, listX + 10, itemY + 5, UIConstants.Text.PRIMARY(), false);
 
             // Tier badge
             String tierText = Objects.requireNonNull(mob.tier.name(), "tierText");
@@ -819,32 +819,32 @@ public class QuestEditorScreen extends ModScreen {
         if (filteredMobs.size() > maxVisible) {
             int scrollbarHeight = (int) ((float) listHeight / filteredMobs.size() * maxVisible * itemHeight);
             int scrollbarY = listY + (int) ((float) mobListScroll / (filteredMobs.size() - maxVisible) * (listHeight - scrollbarHeight));
-            graphics.fill(listX + listWidth - 3, listY, listX + listWidth, listY + listHeight, UIConstants.Border.SEPARATOR);
-            graphics.fill(listX + listWidth - 3, scrollbarY, listX + listWidth, scrollbarY + scrollbarHeight, UIConstants.Border.DEFAULT);
+            graphics.fill(listX + listWidth - 3, listY, listX + listWidth, listY + listHeight, UIConstants.Border.SEPARATOR());
+            graphics.fill(listX + listWidth - 3, scrollbarY, listX + listWidth, scrollbarY + scrollbarHeight, UIConstants.Border.DEFAULT());
         }
 
         // Stats info
-        graphics.drawString(Objects.requireNonNull(font, "font"), filteredMobs.size() + " mobs available", listX, listY + listHeight + 5, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), filteredMobs.size() + " mobs available", listX, listY + listHeight + 5, UIConstants.Text.SECONDARY(), false);
 
         // Wave count display
         String waveText = "Waves: " + enduranceWaves;
-        graphics.drawString(Objects.requireNonNull(font, "font"), waveText, modalX + modalWidth - 125, modalY + modalHeight - 65, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(Objects.requireNonNull(font, "font"), waveText, modalX + modalWidth - 125, modalY + modalHeight - 65, UIConstants.Text.PRIMARY(), false);
 
         // Selected mob info
         if (selectedMob != null) {
             int infoY = modalY + modalHeight - 95;
-            graphics.drawString(Objects.requireNonNull(font, "font"), "Selected: " + selectedMob.displayName, listX, infoY, UIConstants.Accent.GREEN, false);
+            graphics.drawString(Objects.requireNonNull(font, "font"), "Selected: " + selectedMob.displayName, listX, infoY, UIConstants.Accent.GREEN(), false);
         }
     }
 
     private int getTierColor(EnduranceQuestRegistry.MobTier tier) {
         return switch (tier) {
-            case TRIVIAL -> UIConstants.Text.MUTED;
-            case EASY -> UIConstants.Accent.GREEN;
-            case MEDIUM -> UIConstants.Accent.GOLD;
-            case HARD -> UIConstants.Accent.ORANGE;
-            case ELITE -> UIConstants.Accent.PURPLE;
-            case BOSS -> UIConstants.Accent.RED;
+            case TRIVIAL -> UIConstants.Text.MUTED();
+            case EASY -> UIConstants.Accent.GREEN();
+            case MEDIUM -> UIConstants.Accent.GOLD();
+            case HARD -> UIConstants.Accent.ORANGE();
+            case ELITE -> UIConstants.Accent.PURPLE();
+            case BOSS -> UIConstants.Accent.RED();
         };
     }
 

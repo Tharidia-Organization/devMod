@@ -129,11 +129,11 @@ public class MobEquipmentScreen extends Screen {
         contentY += 16;
 
         // Weapon slots
-        drawEquipmentLabel(graphics, contentX, contentY, "Main Hand:", UIConstants.Accent.RED,
+        drawEquipmentLabel(graphics, contentX, contentY, "Main Hand:", UIConstants.Accent.RED(),
             mob.getItemBySlot(EquipmentSlot.MAINHAND));
         contentY += ROW_HEIGHT;
 
-        drawEquipmentLabel(graphics, contentX, contentY, "Off Hand:", UIConstants.Accent.BLUE,
+        drawEquipmentLabel(graphics, contentX, contentY, "Off Hand:", UIConstants.Accent.BLUE(),
             mob.getItemBySlot(EquipmentSlot.OFFHAND));
         contentY += ROW_HEIGHT;
 
@@ -158,7 +158,7 @@ public class MobEquipmentScreen extends Screen {
             mob.getItemBySlot(EquipmentSlot.LEGS));
         contentY += ROW_HEIGHT;
 
-        drawEquipmentLabel(graphics, contentX, contentY, "Feet:", UIConstants.Accent.PURPLE,
+        drawEquipmentLabel(graphics, contentX, contentY, "Feet:", UIConstants.Accent.PURPLE(),
             mob.getItemBySlot(EquipmentSlot.FEET));
         contentY += ROW_HEIGHT + UIConstants.Spacing.GAP_LARGE;
 
@@ -184,15 +184,15 @@ public class MobEquipmentScreen extends Screen {
             int fw = errorField.getWidth() + 2;
             int fh = errorField.getHeight() + 2;
             // Draw red border
-            graphics.fill(fx, fy, fx + fw, fy + 1, UIConstants.Accent.RED); // top
-            graphics.fill(fx, fy + fh - 1, fx + fw, fy + fh, UIConstants.Accent.RED); // bottom
-            graphics.fill(fx, fy, fx + 1, fy + fh, UIConstants.Accent.RED); // left
-            graphics.fill(fx + fw - 1, fy, fx + fw, fy + fh, UIConstants.Accent.RED); // right
+            graphics.fill(fx, fy, fx + fw, fy + 1, UIConstants.Accent.RED()); // top
+            graphics.fill(fx, fy + fh - 1, fx + fw, fy + fh, UIConstants.Accent.RED()); // bottom
+            graphics.fill(fx, fy, fx + 1, fy + fh, UIConstants.Accent.RED()); // left
+            graphics.fill(fx + fw - 1, fy, fx + fw, fy + fh, UIConstants.Accent.RED()); // right
 
             // Show error message
             int textWidth = font.width(errorMessage);
             int errorX = (this.width - textWidth) / 2;
-            graphics.drawString(font, errorMessage, errorX, panelY + PANEL_HEIGHT + 8, UIConstants.Accent.RED, false);
+            graphics.drawString(font, errorMessage, errorX, panelY + PANEL_HEIGHT + 8, UIConstants.Accent.RED(), false);
 
             errorDisplayTicks--;
             if (errorDisplayTicks <= 0) {
@@ -211,7 +211,7 @@ public class MobEquipmentScreen extends Screen {
         graphics.fill(x, y + 4, x + 3, y + 14, accentColor);
 
         // Label
-        graphics.drawString(font, label, x + 8, y + 5, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, label, x + 8, y + 5, UIConstants.Text.PRIMARY(), false);
 
         // Current item preview (if any)
         if (!currentItem.isEmpty()) {

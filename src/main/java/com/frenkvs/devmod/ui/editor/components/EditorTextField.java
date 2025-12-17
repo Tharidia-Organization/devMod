@@ -137,7 +137,7 @@ public class EditorTextField {
 
         // Label
         if (label != null && !label.isEmpty()) {
-            int labelColor = enabled ? UIConstants.Text.PRIMARY : UIConstants.Text.MUTED;
+            int labelColor = enabled ? UIConstants.Text.PRIMARY() : UIConstants.Text.MUTED();
             graphics.drawString(font, label, x, currentY, labelColor, false);
             currentY += 12;
         }
@@ -147,19 +147,19 @@ public class EditorTextField {
         this.inputBounds = new ResponsiveLayout.Rect(x, currentY, width, inputHeight);
 
         // Background
-        int bgColor = enabled ? UIConstants.Background.INPUT : UIConstants.Background.DARKER;
+        int bgColor = enabled ? UIConstants.Background.INPUT() : UIConstants.Background.DARKER();
         graphics.fill(x, currentY, x + width, currentY + inputHeight, bgColor);
 
         // Border
         int borderColor;
         if (!valid) {
-            borderColor = UIConstants.Border.ERROR;
+            borderColor = UIConstants.Border.ERROR();
         } else if (focused) {
-            borderColor = UIConstants.Border.ACCENT;
+            borderColor = UIConstants.Border.ACCENT();
         } else if (hovered) {
-            borderColor = UIConstants.Border.HOVER;
+            borderColor = UIConstants.Border.HOVER();
         } else {
-            borderColor = UIConstants.Border.DEFAULT;
+            borderColor = UIConstants.Border.DEFAULT();
         }
         AxiomRenderer.drawBorder(graphics, x, currentY, width, inputHeight, borderColor);
 
@@ -173,10 +173,10 @@ public class EditorTextField {
 
         if (value.isEmpty() && !focused) {
             // Placeholder
-            graphics.drawString(font, Objects.requireNonNull(placeholder, "placeholder cannot be null"), textX, textY, UIConstants.Text.MUTED, false);
+            graphics.drawString(font, Objects.requireNonNull(placeholder, "placeholder cannot be null"), textX, textY, UIConstants.Text.MUTED(), false);
         } else {
             // Actual text
-            int textColor = enabled ? UIConstants.Text.PRIMARY : UIConstants.Text.MUTED;
+            int textColor = enabled ? UIConstants.Text.PRIMARY() : UIConstants.Text.MUTED();
             graphics.drawString(font, Objects.requireNonNull(value, "value cannot be null"), textX, textY, textColor, false);
 
             // Selection highlight
@@ -188,7 +188,7 @@ public class EditorTextField {
                 int selX1 = textX + font.width(prefixStart);
                 int selX2 = textX + font.width(prefixEnd);
                 graphics.fill(selX1, currentY + 2, selX2, currentY + inputHeight - 2,
-                             UIConstants.withAlpha(UIConstants.Accent.CYAN, 0x60));
+                             UIConstants.withAlpha(UIConstants.Accent.CYAN(), 0x60));
             }
 
             // Cursor
@@ -196,7 +196,7 @@ public class EditorTextField {
                 String cursorPrefix = Objects.requireNonNull(value.substring(0, cursorPosition), "cursor prefix cannot be null");
                 int cursorX = textX + font.width(cursorPrefix);
                 graphics.fill(cursorX, currentY + 2, cursorX + 1, currentY + inputHeight - 2,
-                             UIConstants.Text.PRIMARY);
+                             UIConstants.Text.PRIMARY());
             }
         }
 

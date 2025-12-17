@@ -341,32 +341,32 @@ public class RangedModule extends AbstractEditorModule {
             int x = bounds.x() + UIConstants.Spacing.SM;
             int y = bounds.y() + UIConstants.Spacing.SM;
             String header = ammoMatches.isEmpty() ? "No items match this tag" : "Matching ammo (" + ammoMatches.size() + "):";
-            graphics.drawString(font, header, x, y, UIConstants.Text.SECONDARY, false);
+            graphics.drawString(font, header, x, y, UIConstants.Text.SECONDARY(), false);
             y += 12;
             int shown = 0;
             for (String entry : ammoMatches) {
                 if (shown >= 8) break;
-                graphics.drawString(font, "- " + entry, x, y, UIConstants.Text.PRIMARY, false);
+                graphics.drawString(font, "- " + entry, x, y, UIConstants.Text.PRIMARY(), false);
                 y += 12;
                 shown++;
             }
 
             // Suggestions + clear
             y += 6;
-            graphics.drawString(font, "Suggestions:", x, y, UIConstants.Text.SECONDARY, false);
+            graphics.drawString(font, "Suggestions:", x, y, UIConstants.Text.SECONDARY(), false);
             y += 14;
             suggestionRects.clear();
             int btnHeight = 14;
             int btnWidth = bounds.width() - UIConstants.Spacing.SM * 2;
             // Clear button
             int clearX = x;
-            graphics.fill(clearX, y, clearX + btnWidth, y + btnHeight, UIConstants.Background.INPUT);
-            graphics.drawString(font, "Clear filter", clearX + 6, y + 3, UIConstants.Text.PRIMARY, false);
+            graphics.fill(clearX, y, clearX + btnWidth, y + btnHeight, UIConstants.Background.INPUT());
+            graphics.drawString(font, "Clear filter", clearX + 6, y + 3, UIConstants.Text.PRIMARY(), false);
             suggestionRects.add(new ResponsiveLayout.Rect(clearX, y, btnWidth, btnHeight));
             y += btnHeight + 4;
             for (Suggestion sugg : ammoSuggestions) {
-                graphics.fill(clearX, y, clearX + btnWidth, y + btnHeight, UIConstants.Background.PANEL);
-                graphics.drawString(font, sugg.label(), clearX + 6, y + 3, UIConstants.Text.PRIMARY, false);
+                graphics.fill(clearX, y, clearX + btnWidth, y + btnHeight, UIConstants.Background.PANEL());
+                graphics.drawString(font, sugg.label(), clearX + 6, y + 3, UIConstants.Text.PRIMARY(), false);
                 suggestionRects.add(new ResponsiveLayout.Rect(clearX, y, btnWidth, btnHeight));
                 y += btnHeight + 4;
             }

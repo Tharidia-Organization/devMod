@@ -173,7 +173,7 @@ public abstract class AbstractEditorModule implements EditorModule {
                 graphics.drawString(Objects.requireNonNull(font, "font cannot be null"), headerSection.getLabel(),
                     contentBounds.x() + UIConstants.Spacing.SM,
                     y + (section.getHeight() - 8) / 2,
-                    UIConstants.Text.TITLE, false);
+                    UIConstants.Text.TITLE(), false);
             }
 
             section.render(graphics, sectionBounds, mouseX, mouseY);

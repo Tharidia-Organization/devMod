@@ -50,7 +50,12 @@ public final class ArmorComponents {
                 return ARMOR_STATS.get();
             }
         } catch (Exception ignored) {}
-        return fallbackArmorStats();
+
+        if (Boolean.getBoolean("devmod.allowFallbackComponents")) {
+            DevMod.LOGGER.warn("[ArmorComponents] Using fallback armor_stats component (test-mode only)");
+            return fallbackArmorStats();
+        }
+        throw new IllegalStateException("[ArmorComponents] armor_stats component is not bound; DeferredRegister not initialized");
     }
 
     public static boolean isArmorStatsBound() {

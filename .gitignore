@@ -46,3 +46,7 @@ replay_pid*
 /run/command_history.txt
 /run/options.txt
 /run/usercache.json
+
+# Node tooling
+**/node_modules/
+**/npm-debug.log*

@@ -16,11 +16,11 @@ import net.neoforged.neoforge.network.PacketDistributor;
 public class QuestExitConfirmScreen extends Screen {
 
     // Colors - standardized to UIConstants
-    private static final int COLOR_BG = UIConstants.Background.PANEL_SOLID;
-    private static final int COLOR_BORDER = UIConstants.Border.DEFAULT;  // Blue instead of orange
-    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY;
-    private static final int COLOR_WARNING = UIConstants.Accent.ORANGE;
-    private static final int COLOR_DANGER = UIConstants.Accent.RED;
+    private static final int COLOR_BG = UIConstants.Background.PANEL_SOLID();
+    private static final int COLOR_BORDER = UIConstants.Border.DEFAULT();  // Blue instead of orange
+    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY();
+    private static final int COLOR_WARNING = UIConstants.Accent.ORANGE();
+    private static final int COLOR_DANGER = UIConstants.Accent.RED();
 
     // Dimensions - using UIConstants for consistency
     private static final int PANEL_WIDTH = UIConstants.Size.DIALOG_WIDTH_SMALL;

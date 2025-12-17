@@ -116,11 +116,11 @@ public class EntityInfoPanel extends FloatingPanel {
 
         // Entity name
         Font font = Objects.requireNonNull(mc.font);
-        graphics.drawString(font, entityName, 0, y, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, entityName, 0, y, UIConstants.Text.PRIMARY(), false);
         y += lineHeight + 2;
 
         // Type
-        graphics.drawString(font, entityType, 0, y, UIConstants.Text.MUTED, false);
+        graphics.drawString(font, entityType, 0, y, UIConstants.Text.MUTED(), false);
         y += lineHeight + 4;
 
         // Health bar
@@ -129,7 +129,7 @@ public class EntityInfoPanel extends FloatingPanel {
         float healthPercent = maxHealth > 0 ? currentHealth / maxHealth : 0;
 
         // Background bar
-        graphics.fill(0, y, barWidth, y + barHeight, UIConstants.Background.INPUT);
+        graphics.fill(0, y, barWidth, y + barHeight, UIConstants.Background.INPUT());
         // Health fill
         int healthColor = getHealthColor(healthPercent);
         graphics.fill(0, y, (int)(barWidth * healthPercent), y + barHeight, healthColor);
@@ -137,23 +137,23 @@ public class EntityInfoPanel extends FloatingPanel {
 
         // Health text
         String healthText = String.format("%.1f / %.1f", currentHealth, maxHealth);
-        graphics.drawString(font, healthText, 0, y, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, healthText, 0, y, UIConstants.Text.SECONDARY(), false);
         y += lineHeight + 4;
 
         // Stats
         if (attackDamage > 0) {
-            graphics.drawString(font, String.format("ATK: %.1f", attackDamage), 0, y, UIConstants.Status.ERROR, false);
+            graphics.drawString(font, String.format("ATK: %.1f", attackDamage), 0, y, UIConstants.Status.ERROR(), false);
             y += lineHeight;
         }
 
         if (armor > 0) {
-            graphics.drawString(font, String.format("DEF: %.1f", armor), 0, y, UIConstants.Status.INFO, false);
+            graphics.drawString(font, String.format("DEF: %.1f", armor), 0, y, UIConstants.Status.INFO(), false);
             y += lineHeight;
         }
 
         // Effects count
         if (effectCount > 0) {
-            graphics.drawString(font, String.format("Effects: %d", effectCount), 0, y, UIConstants.Status.WARNING, false);
+            graphics.drawString(font, String.format("Effects: %d", effectCount), 0, y, UIConstants.Status.WARNING(), false);
         }
     }
 
@@ -161,9 +161,9 @@ public class EntityInfoPanel extends FloatingPanel {
      * Gets the health bar color based on percentage.
      */
     private int getHealthColor(float percent) {
-        if (percent > 0.6f) return UIConstants.Status.SUCCESS;
-        if (percent > 0.3f) return UIConstants.Status.WARNING;
-        return UIConstants.Status.ERROR;
+        if (percent > 0.6f) return UIConstants.Status.SUCCESS();
+        if (percent > 0.3f) return UIConstants.Status.WARNING();
+        return UIConstants.Status.ERROR();
     }
 
     @Override
@@ -173,11 +173,11 @@ public class EntityInfoPanel extends FloatingPanel {
         int lineHeight = 10;
 
         // Entity name
-        renderText3D(poseStack, bufferSource, font, Objects.requireNonNull(entityName, "entityName"), 0, y, applyAlpha(UIConstants.Text.PRIMARY, alpha));
+        renderText3D(poseStack, bufferSource, font, Objects.requireNonNull(entityName, "entityName"), 0, y, applyAlpha(UIConstants.Text.PRIMARY(), alpha));
         y += lineHeight + 2;
 
         // Type
-        renderText3D(poseStack, bufferSource, font, Objects.requireNonNull(entityType, "entityType"), 0, y, applyAlpha(UIConstants.Text.MUTED, alpha));
+        renderText3D(poseStack, bufferSource, font, Objects.requireNonNull(entityType, "entityType"), 0, y, applyAlpha(UIConstants.Text.MUTED(), alpha));
         y += lineHeight + 4;
 
         // Health (testo)
@@ -190,20 +190,20 @@ public class EntityInfoPanel extends FloatingPanel {
         // Stats
         if (attackDamage > 0) {
             String atkText = Objects.requireNonNull(String.format("ATK: %.1f", attackDamage), "atkText");
-            renderText3D(poseStack, bufferSource, font, atkText, 0, y, applyAlpha(UIConstants.Status.ERROR, alpha));
+            renderText3D(poseStack, bufferSource, font, atkText, 0, y, applyAlpha(UIConstants.Status.ERROR(), alpha));
             y += lineHeight;
         }
 
         if (armor > 0) {
             String defText = Objects.requireNonNull(String.format("DEF: %.1f", armor), "defText");
-            renderText3D(poseStack, bufferSource, font, defText, 0, y, applyAlpha(UIConstants.Status.INFO, alpha));
+            renderText3D(poseStack, bufferSource, font, defText, 0, y, applyAlpha(UIConstants.Status.INFO(), alpha));
             y += lineHeight;
         }
 
         // Effects count
         if (effectCount > 0) {
             String effectText = Objects.requireNonNull(String.format("Effects: %d", effectCount), "effectText");
-            renderText3D(poseStack, bufferSource, font, effectText, 0, y, applyAlpha(UIConstants.Status.WARNING, alpha));
+            renderText3D(poseStack, bufferSource, font, effectText, 0, y, applyAlpha(UIConstants.Status.WARNING(), alpha));
         }
     }
 

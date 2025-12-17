@@ -24,14 +24,14 @@ public class QuestCompletionScreen extends Screen {
     // === Colors - Thematic victory screen (gold theme) ===
     private static final int COLOR_BG = 0xEE0a1428;           // Dark blue-tinted background
     private static final int COLOR_PANEL_BG = 0xDD0f1e38;     // Dark panel
-    private static final int COLOR_BORDER = UIConstants.Accent.GOLD;
-    private static final int COLOR_BORDER_GLOW = UIConstants.setAlpha(UIConstants.Accent.GOLD, 0x44);
-    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY;
-    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY;
-    private static final int COLOR_GOLD = UIConstants.Accent.GOLD;
-    private static final int COLOR_GEM = UIConstants.Accent.PURPLE;  // Blood gems
-    private static final int COLOR_SUCCESS = UIConstants.Accent.GREEN;
-    private static final int COLOR_BONUS = UIConstants.Accent.CYAN;
+    private static final int COLOR_BORDER = UIConstants.Accent.GOLD();
+    private static final int COLOR_BORDER_GLOW = UIConstants.setAlpha(UIConstants.Accent.GOLD(), 0x44);
+    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY();
+    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY();
+    private static final int COLOR_GOLD = UIConstants.Accent.GOLD();
+    private static final int COLOR_GEM = UIConstants.Accent.PURPLE();  // Blood gems
+    private static final int COLOR_SUCCESS = UIConstants.Accent.GREEN();
+    private static final int COLOR_BONUS = UIConstants.Accent.CYAN();
 
     // === Dimensions (base values, may be scaled for small screens) - using UIConstants ===
     private static final int BASE_PANEL_WIDTH = UIConstants.Size.DIALOG_WIDTH_LARGE;
@@ -136,7 +136,7 @@ public class QuestCompletionScreen extends Screen {
         // Keybind hint
         if (fadeProgress > 0.8f) {
             float hintAlpha = (fadeProgress - 0.8f) / 0.2f;
-            int hintColor = applyAlpha(UIConstants.Text.MUTED, hintAlpha);
+            int hintColor = applyAlpha(UIConstants.Text.MUTED(), hintAlpha);
             graphics.drawCenteredString(font, "ESC / Enter: Continue", centerX, panelY + PANEL_HEIGHT + 10, hintColor);
         }
 
@@ -199,7 +199,7 @@ public class QuestCompletionScreen extends Screen {
         y += 25;
 
         // Separator
-        int sepColor = applyAlpha(UIConstants.Border.SEPARATOR, alpha);
+        int sepColor = applyAlpha(UIConstants.Border.SEPARATOR(), alpha);
         g.fill(panelX + 30, y, panelX + PANEL_WIDTH - 30, y + 1, sepColor);
         y += 15;
 
@@ -229,7 +229,7 @@ public class QuestCompletionScreen extends Screen {
 
         // Prestige points
         if (data.prestigeEarned() > 0) {
-            g.drawCenteredString(font, "\u2726 " + data.prestigeEarned() + " Prestige", centerX, y, applyAlpha(UIConstants.Accent.PURPLE, alpha));
+            g.drawCenteredString(font, "\u2726 " + data.prestigeEarned() + " Prestige", centerX, y, applyAlpha(UIConstants.Accent.PURPLE(), alpha));
             y += 14;
         }
         y += 8;
@@ -248,7 +248,7 @@ public class QuestCompletionScreen extends Screen {
                 y += 12;
             }
             if (data.activeMutators() > 0) {
-                g.drawCenteredString(font, "\u2714 " + data.activeMutators() + " Mutators Active", centerX, y, applyAlpha(UIConstants.Accent.ORANGE, alpha));
+                g.drawCenteredString(font, "\u2714 " + data.activeMutators() + " Mutators Active", centerX, y, applyAlpha(UIConstants.Accent.ORANGE(), alpha));
                 y += 12;
             }
             y += 6;
@@ -271,17 +271,17 @@ public class QuestCompletionScreen extends Screen {
         y += 12;
 
         if (data.totalDamageTaken() > 0) {
-            g.drawString(font, "Damage Taken: " + String.format("%.0f", data.totalDamageTaken()), leftX, y, applyAlpha(UIConstants.Accent.RED, alpha));
+            g.drawString(font, "Damage Taken: " + String.format("%.0f", data.totalDamageTaken()), leftX, y, applyAlpha(UIConstants.Accent.RED(), alpha));
         }
         if (data.deaths() > 0) {
-            g.drawString(font, "Deaths: " + data.deaths(), rightX, y, applyAlpha(UIConstants.Accent.RED, alpha));
+            g.drawString(font, "Deaths: " + data.deaths(), rightX, y, applyAlpha(UIConstants.Accent.RED(), alpha));
         }
         y += 18;
 
         // === ACHIEVEMENTS ===
         List<String> achievements = data.achievementNames();
         if (!achievements.isEmpty()) {
-            g.drawCenteredString(font, "-- ACHIEVEMENTS UNLOCKED --", centerX, y, applyAlpha(UIConstants.Accent.GOLD, alpha));
+            g.drawCenteredString(font, "-- ACHIEVEMENTS UNLOCKED --", centerX, y, applyAlpha(UIConstants.Accent.GOLD(), alpha));
             y += 14;
 
             int maxY = panelY + PANEL_HEIGHT - 60;
@@ -290,10 +290,10 @@ public class QuestCompletionScreen extends Screen {
                 if (y > maxY) {
                     // Show indicator for remaining achievements
                     int remaining = achievements.size() - achievementsShown;
-                    g.drawCenteredString(font, "+" + remaining + " more...", centerX, y, applyAlpha(UIConstants.Text.MUTED, alpha));
+                    g.drawCenteredString(font, "+" + remaining + " more...", centerX, y, applyAlpha(UIConstants.Text.MUTED(), alpha));
                     break;
                 }
-                g.drawCenteredString(font, "\u2605 " + achievement, centerX, y, applyAlpha(UIConstants.Accent.ORANGE, alpha));
+                g.drawCenteredString(font, "\u2605 " + achievement, centerX, y, applyAlpha(UIConstants.Accent.ORANGE(), alpha));
                 y += 11;
                 achievementsShown++;
             }

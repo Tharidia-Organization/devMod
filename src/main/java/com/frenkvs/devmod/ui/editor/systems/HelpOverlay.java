@@ -84,8 +84,8 @@ public final class HelpOverlay extends BaseOverlay {
     @Override
     protected void renderPanel(GuiGraphics graphics, int x, int y, int width, int height) {
         // Use ACCENT border instead of DEFAULT for help overlay
-        graphics.fill(x, y, x + width, y + height, UIConstants.Background.PANEL_SOLID);
-        AxiomRenderer.drawBorder(graphics, x, y, width, height, UIConstants.Border.ACCENT);
+        graphics.fill(x, y, x + width, y + height, UIConstants.Background.PANEL_SOLID());
+        AxiomRenderer.drawBorder(graphics, x, y, width, height, UIConstants.Border.ACCENT());
     }
 
     @Override
@@ -98,11 +98,11 @@ public final class HelpOverlay extends BaseOverlay {
         String title = "Help - Keyboard Shortcuts";
         int titleWidth = Math.round(font.width(Objects.requireNonNull(title)) * textScale);
         Typography.drawText(graphics, font, title, x + (width - titleWidth) / 2, y + ScaledCoord.scaleDim(12),
-            UIConstants.Text.TITLE, textScale);
+            UIConstants.Text.TITLE(), textScale);
 
         // Separator
         graphics.fill(x + ScaledCoord.scaleDim(16), y + ScaledCoord.scaleDim(28),
-               x + width - ScaledCoord.scaleDim(16), y + ScaledCoord.scaleDim(29), UIConstants.Border.DEFAULT);
+               x + width - ScaledCoord.scaleDim(16), y + ScaledCoord.scaleDim(29), UIConstants.Border.DEFAULT());
 
         // Render sections
         int sectionY = y + ScaledCoord.scaleDim(40);
@@ -120,17 +120,17 @@ public final class HelpOverlay extends BaseOverlay {
 
             // Section title
             Typography.drawText(graphics, font, Objects.requireNonNull(section.title()), sectionX, sectionY,
-                UIConstants.Accent.CYAN, textScale);
+                UIConstants.Accent.CYAN(), textScale);
 
             int entryY = sectionY + ScaledCoord.scaleDim(14);
             for (HelpEntry entry : section.entries()) {
                 // Key
                 Typography.drawText(graphics, font, Objects.requireNonNull(entry.key()), sectionX, entryY,
-                    UIConstants.Text.VALUE, textScale);
+                    UIConstants.Text.VALUE(), textScale);
                 // Description
                 Typography.drawText(graphics, font, Objects.requireNonNull(entry.description()),
                     sectionX + ScaledCoord.scaleDim(110), entryY,
-                    UIConstants.Text.SECONDARY, textScale);
+                    UIConstants.Text.SECONDARY(), textScale);
                 entryY += ScaledCoord.scaleDim(12);
             }
         }
@@ -139,7 +139,7 @@ public final class HelpOverlay extends BaseOverlay {
         String closeHint = "Press F1 or Escape to close";
         int hintWidth = Math.round(font.width(Objects.requireNonNull(closeHint)) * textScale);
         Typography.drawText(graphics, font, closeHint, x + (width - hintWidth) / 2,
-            y + height - ScaledCoord.scaleDim(20), UIConstants.Text.MUTED, textScale);
+            y + height - ScaledCoord.scaleDim(20), UIConstants.Text.MUTED(), textScale);
     }
 
     @Override

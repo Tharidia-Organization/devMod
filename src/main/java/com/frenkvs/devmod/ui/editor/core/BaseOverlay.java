@@ -86,7 +86,7 @@ public abstract class BaseOverlay {
      * Subclasses can override to customize.
      */
     protected void renderBackdrop(GuiGraphics graphics, int screenWidth, int screenHeight) {
-        graphics.fill(0, 0, screenWidth, screenHeight, UIConstants.Background.OVERLAY);
+        graphics.fill(0, 0, screenWidth, screenHeight, UIConstants.Background.OVERLAY());
     }
 
     /**
@@ -94,8 +94,8 @@ public abstract class BaseOverlay {
      * Subclasses can override to customize.
      */
     protected void renderPanel(GuiGraphics graphics, int x, int y, int width, int height) {
-        graphics.fill(x, y, x + width, y + height, UIConstants.Background.PANEL_SOLID);
-        AxiomRenderer.drawBorder(graphics, x, y, width, height, UIConstants.Border.DEFAULT);
+        graphics.fill(x, y, x + width, y + height, UIConstants.Background.PANEL_SOLID());
+        AxiomRenderer.drawBorder(graphics, x, y, width, height, UIConstants.Border.DEFAULT());
     }
 
     /**

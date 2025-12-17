@@ -25,15 +25,15 @@ import java.util.List;
 public class PerkSelectionScreen extends Screen {
 
     // === Colors - Standardized to UIConstants ===
-    private static final int COLOR_BG = UIConstants.Background.SCREEN;
-    private static final int COLOR_PANEL_BG = UIConstants.Background.PANEL;
-    private static final int COLOR_CARD_BG = UIConstants.Background.INPUT;
-    private static final int COLOR_CARD_HOVER = UIConstants.Background.HOVER;
-    private static final int COLOR_CARD_SELECTED = UIConstants.Background.ACTIVE;
-    private static final int COLOR_BORDER = UIConstants.Border.DEFAULT;  // Blue instead of purple
-    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY;
-    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY;
-    private static final int COLOR_ACCENT = UIConstants.Accent.BLUE;  // Blue instead of purple
+    private static final int COLOR_BG = UIConstants.Background.SCREEN();
+    private static final int COLOR_PANEL_BG = UIConstants.Background.PANEL();
+    private static final int COLOR_CARD_BG = UIConstants.Background.INPUT();
+    private static final int COLOR_CARD_HOVER = UIConstants.Background.HOVER();
+    private static final int COLOR_CARD_SELECTED = UIConstants.Background.ACTIVE();
+    private static final int COLOR_BORDER = UIConstants.Border.DEFAULT();  // Blue instead of purple
+    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY();
+    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY();
+    private static final int COLOR_ACCENT = UIConstants.Accent.BLUE();  // Blue instead of purple
 
     // === Dimensions (base values, may be scaled down for small screens) ===
     private static final int BASE_CARD_WIDTH = 200;
@@ -180,7 +180,7 @@ public class PerkSelectionScreen extends Screen {
 
         // Background
         int bgAlpha = (int) (0xEE * fadeProgress);
-        graphics.fill(0, 0, width, height, (bgAlpha << 24) | (UIConstants.Background.SCREEN & 0x00FFFFFF));
+        graphics.fill(0, 0, width, height, (bgAlpha << 24) | (UIConstants.Background.SCREEN() & 0x00FFFFFF));
 
         // Title
         if (fadeProgress > 0.3f) {
@@ -224,7 +224,7 @@ public class PerkSelectionScreen extends Screen {
         // Keybind hints
         if (fadeProgress > 0.8f) {
             graphics.drawCenteredString(font, I18n.translate("devmod.perk.keybind_hint").getString(),
-                width / 2, height - 25, applyAlpha(UIConstants.Text.MUTED, fadeProgress));
+                width / 2, height - 25, applyAlpha(UIConstants.Text.MUTED(), fadeProgress));
         }
 
         super.render(graphics, mouseX, mouseY, partialTick);
@@ -295,7 +295,7 @@ public class PerkSelectionScreen extends Screen {
             // Draw comparison arrow hint
             int hintY = cardY + cardH - 35;
             String hintText = "▲ " + getCompactStatHint(perk);
-            int hintColor = applyAlpha(UIConstants.Accent.GREEN, alpha);
+            int hintColor = applyAlpha(UIConstants.Accent.GREEN(), alpha);
             g.drawString(font, hintText, cardX + 10, hintY - 12, hintColor);
         }
     }
@@ -329,7 +329,7 @@ public class PerkSelectionScreen extends Screen {
         int panelY = 60;
 
         // Panel background
-        g.fill(panelX, panelY, panelX + panelW, panelY + panelH, applyAlpha(UIConstants.Background.PANEL, alpha));
+        g.fill(panelX, panelY, panelX + panelW, panelY + panelH, applyAlpha(UIConstants.Background.PANEL(), alpha));
 
         // Panel border
         int borderColor = applyAlpha(COLOR_BORDER, alpha);
@@ -349,7 +349,7 @@ public class PerkSelectionScreen extends Screen {
 
             // Highlight bar for hovered
             if (isHovered) {
-                g.fill(panelX + 4, lineY - 2, panelX + panelW - 4, lineY + 16, applyAlpha(UIConstants.Background.HOVER, alpha));
+                g.fill(panelX + 4, lineY - 2, panelX + panelW - 4, lineY + 16, applyAlpha(UIConstants.Background.HOVER(), alpha));
             }
 
             // Tier indicator (colored dot)
@@ -378,7 +378,7 @@ public class PerkSelectionScreen extends Screen {
             // Stack indicator if applicable
             if (perk.stackable() && perk.currentStacks() > 0) {
                 String stackStr = "x" + perk.currentStacks();
-                g.drawString(font, stackStr, panelX + 120, lineY, applyAlpha(UIConstants.Accent.GREEN, alpha));
+                g.drawString(font, stackStr, panelX + 120, lineY, applyAlpha(UIConstants.Accent.GREEN(), alpha));
             }
 
             lineY += 20;
@@ -390,10 +390,10 @@ public class PerkSelectionScreen extends Screen {
      */
     private int getCategoryStatColor(PerkChoicesPayload.PerkChoice perk) {
         String cat = perk.categoryName().toLowerCase();
-        if (cat.contains("offense") || cat.contains("damage")) return UIConstants.Accent.RED;
-        if (cat.contains("defense") || cat.contains("armor")) return UIConstants.Accent.BLUE;
-        if (cat.contains("utility") || cat.contains("speed")) return UIConstants.Accent.GOLD;
-        if (cat.contains("heal") || cat.contains("regen")) return UIConstants.Accent.GREEN;
+        if (cat.contains("offense") || cat.contains("damage")) return UIConstants.Accent.RED();
+        if (cat.contains("defense") || cat.contains("armor")) return UIConstants.Accent.BLUE();
+        if (cat.contains("utility") || cat.contains("speed")) return UIConstants.Accent.GOLD();
+        if (cat.contains("heal") || cat.contains("regen")) return UIConstants.Accent.GREEN();
         return perk.categoryColor() | 0xFF000000;
     }
 

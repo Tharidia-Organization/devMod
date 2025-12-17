@@ -91,7 +91,7 @@ public class ScrollableContentArea {
         this.contentBounds = new ResponsiveLayout.Rect(contentX, contentY, contentWidth, viewportHeight);
 
         // Background
-        graphics.fill(x, y, x + width, y + height, UIConstants.Background.CONTENT);
+        graphics.fill(x, y, x + width, y + height, UIConstants.Background.CONTENT());
 
         // Enable scissoring to clip content
         graphics.enableScissor(contentX, contentY, contentX + contentWidth, contentY + viewportHeight);
@@ -120,7 +120,7 @@ public class ScrollableContentArea {
     private void renderScrollbar(GuiGraphics graphics, int x, int y, int width, int height,
                                   int viewportHeight, int mouseX, int mouseY) {
         // Track background
-        graphics.fill(x, y, x + width, y + height, UIConstants.Background.DARKER);
+        graphics.fill(x, y, x + width, y + height, UIConstants.Background.DARKER());
 
         // Calculate thumb size and position
         float visibleRatio = (float) viewportHeight / contentHeight;
@@ -139,7 +139,7 @@ public class ScrollableContentArea {
 
         // Thumb border
         if (scrollbarHovered || scrollbarDragging) {
-            AxiomRenderer.drawBorder(graphics, x, thumbY, width, thumbHeight, UIConstants.Border.ACCENT);
+            AxiomRenderer.drawBorder(graphics, x, thumbY, width, thumbHeight, UIConstants.Border.ACCENT());
         }
     }
 

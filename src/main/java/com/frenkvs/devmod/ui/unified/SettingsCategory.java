@@ -7,13 +7,14 @@ import com.frenkvs.devmod.ui.UIConstants;
  * Each category has an icon, label, and accent color.
  */
 public enum SettingsCategory {
-    GENERAL("General", "G", UIConstants.Status.INFO, "General mod settings"),
-    DEBUG("Debug", "D", UIConstants.Status.WARNING, "Debug overlays and tools"),
-    VISUALIZERS("Visualizers", "V", UIConstants.Accent.PURPLE, "Heatmaps and visualizations"),
-    COMBAT("Combat", "C", UIConstants.Status.ERROR, "Weapon and damage settings"),
-    MOBS("Mobs", "M", UIConstants.Accent.ORANGE, "Mob configuration"),
-    TELEMETRY("Telemetry", "T", UIConstants.Status.SUCCESS, "Analytics and export"),
-    KEYBINDS("Keybinds", "K", UIConstants.Text.MUTED, "Keyboard shortcuts");
+    GENERAL("General", "G", UIConstants.Status.INFO(), "General mod settings"),
+    EDITOR("Editor", "E", UIConstants.Accent.CYAN(), "Item Editor UI settings"),
+    DEBUG("Debug", "D", UIConstants.Status.WARNING(), "Debug overlays and tools"),
+    VISUALIZERS("Visualizers", "V", UIConstants.Accent.PURPLE(), "Heatmaps and visualizations"),
+    COMBAT("Combat", "C", UIConstants.Status.ERROR(), "Weapon and damage settings"),
+    MOBS("Mobs", "M", UIConstants.Accent.ORANGE(), "Mob configuration"),
+    TELEMETRY("Telemetry", "T", UIConstants.Status.SUCCESS(), "Analytics and export"),
+    KEYBINDS("Keybinds", "K", UIConstants.Text.MUTED(), "Keyboard shortcuts");
 
     private final String label;
     private final String icon;

@@ -165,10 +165,10 @@ public class HeaderComponent {
         tabsViewport = ResponsiveLayout.Rect.EMPTY;
 
         // Background
-        graphics.fill(x, y, x + width, y + headerHeight, UIConstants.Background.HEADER);
+        graphics.fill(x, y, x + width, y + headerHeight, UIConstants.Background.HEADER());
 
         // Bottom border
-        graphics.fill(x, y + headerHeight - 1, x + width, y + headerHeight, UIConstants.Border.SEPARATOR);
+        graphics.fill(x, y + headerHeight - 1, x + width, y + headerHeight, UIConstants.Border.SEPARATOR());
 
         // Calculate available width for tabs (reserve space for badges + close)
         int badgeGap = ScaledCoord.scaleDim(8);
@@ -293,7 +293,7 @@ public class HeaderComponent {
 
         // Border on hover
         if (hovered && !selected) {
-            AxiomRenderer.drawBorder(graphics, x, y, width, height, UIConstants.Border.HOVER);
+            AxiomRenderer.drawBorder(graphics, x, y, width, height, UIConstants.Border.HOVER());
         }
 
         // Text (centered) with UI-scale-aware font
@@ -304,8 +304,8 @@ public class HeaderComponent {
         int textX = x + (width - textWidthScaled) / 2;
         int textHeight = Math.round(font.lineHeight * fontScale);
         int textY = y + (height - textHeight) / 2;
-        int textColor = selected ? UIConstants.Text.PRIMARY :
-                (hovered ? UIConstants.Text.PRIMARY : UIConstants.Text.SECONDARY);
+        int textColor = selected ? UIConstants.Text.PRIMARY() :
+                (hovered ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY());
         Typography.drawText(graphics, font, displayLabel, textX, textY, textColor, fontScale);
     }
 
@@ -314,16 +314,16 @@ public class HeaderComponent {
                              boolean enabled, boolean hovered) {
         String safeLabel = Objects.requireNonNull(label, "arrow label cannot be null");
         float fontScale = Typography.buttonScale();
-        int bgColor = !enabled ? UIConstants.Button.DISABLED :
-            (hovered ? UIConstants.Button.HOVER : UIConstants.Button.NORMAL);
+        int bgColor = !enabled ? UIConstants.Button.DISABLED() :
+            (hovered ? UIConstants.Button.HOVER() : UIConstants.Button.NORMAL());
         graphics.fill(bounds.x(), bounds.y(), bounds.x() + bounds.width(), bounds.y() + bounds.height(), bgColor);
-        int borderColor = enabled && hovered ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
+        int borderColor = enabled && hovered ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
         AxiomRenderer.drawBorder(graphics, bounds.x(), bounds.y(), bounds.width(), bounds.height(), borderColor);
         int textWidthScaled = Math.round(font.width(safeLabel) * fontScale);
         int textHeightScaled = Math.round(font.lineHeight * fontScale);
         int textX = bounds.x() + (bounds.width() - textWidthScaled) / 2;
         int textY = bounds.y() + (bounds.height() - textHeightScaled) / 2;
-        int textColor = enabled ? UIConstants.Text.PRIMARY : UIConstants.Text.DISABLED;
+        int textColor = enabled ? UIConstants.Text.PRIMARY() : UIConstants.Text.DISABLED();
         Typography.drawText(graphics, font, safeLabel, textX, textY, textColor, fontScale);
     }
 
@@ -331,11 +331,11 @@ public class HeaderComponent {
                                    int x, int y) {
         int size = ScaledCoord.scaleDim(CLOSE_BUTTON_SIZE);
         // Background
-        int bgColor = closeButtonHovered ? UIConstants.Button.DANGER_HOVER : UIConstants.Background.INPUT;
+        int bgColor = closeButtonHovered ? UIConstants.Button.DANGER_HOVER : UIConstants.Background.INPUT();
         graphics.fill(x, y, x + size, y + size, bgColor);
 
         // Border
-        int borderColor = closeButtonHovered ? UIConstants.Accent.RED : UIConstants.Border.DEFAULT;
+        int borderColor = closeButtonHovered ? UIConstants.Accent.RED() : UIConstants.Border.DEFAULT();
         AxiomRenderer.drawBorder(graphics, x, y, size, size, borderColor);
 
         // X symbol
@@ -343,7 +343,7 @@ public class HeaderComponent {
         int textWidth = font.width(closeSymbol);
         int textX = x + (size - textWidth) / 2;
         int textY = y + (size - font.lineHeight) / 2;
-        int textColor = closeButtonHovered ? UIConstants.Text.PRIMARY : UIConstants.Text.SECONDARY;
+        int textColor = closeButtonHovered ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY();
         graphics.drawString(font, closeSymbol, textX, textY, textColor, false);
     }
 

@@ -37,7 +37,7 @@ public class MobConfigPage implements SettingsPage {
     // Status message for user feedback
     private String statusMessage = null;
     private long statusMessageTime = 0;
-    private int statusMessageColor = UIConstants.Text.MUTED;
+    private int statusMessageColor = UIConstants.Text.MUTED();
     private final EditorButton clearAllBtn = new EditorButton("mob-clear-configs", "Clear All Configs").style(EditorButton.Style.DANGER);
 
     @Override
@@ -89,7 +89,7 @@ public class MobConfigPage implements SettingsPage {
         currentY += ROW_HEIGHT;
 
         if (nearbyMobs.isEmpty()) {
-            graphics.drawString(font, "No mobs nearby", x, currentY, UIConstants.Text.MUTED, false);
+            graphics.drawString(font, "No mobs nearby", x, currentY, UIConstants.Text.MUTED(), false);
             currentY += ROW_HEIGHT;
         } else {
             // Show up to 8 mobs
@@ -104,7 +104,7 @@ public class MobConfigPage implements SettingsPage {
                 currentY += 4;
                 String scrollHint = "Scroll for more (" + (scrollOffset + 1) + "-" +
                     Math.min(scrollOffset + displayCount, nearbyMobs.size()) + " of " + nearbyMobs.size() + ")";
-                graphics.drawString(font, scrollHint, x, currentY, UIConstants.Text.MUTED, false);
+                graphics.drawString(font, scrollHint, x, currentY, UIConstants.Text.MUTED(), false);
                 currentY += ROW_HEIGHT;
             }
         }
@@ -122,7 +122,7 @@ public class MobConfigPage implements SettingsPage {
         // Count configured mob types
         int configuredCount = countConfiguredMobTypes();
         graphics.drawString(font, configuredCount + " mob types have custom stats", x, currentY,
-            configuredCount > 0 ? UIConstants.Text.PRIMARY : UIConstants.Text.MUTED, false);
+            configuredCount > 0 ? UIConstants.Text.PRIMARY() : UIConstants.Text.MUTED(), false);
         currentY += ROW_HEIGHT;
 
         // Clear all button
@@ -132,7 +132,7 @@ public class MobConfigPage implements SettingsPage {
             .enabled(configuredCount > 0)
             .onClick(() -> {
                 MobConfigManager.clearAllGlobalStats();
-                showStatusMessage("Cleared all configs", UIConstants.Status.SUCCESS);
+                showStatusMessage("Cleared all configs", UIConstants.Status.SUCCESS());
             });
         clearAllBtn.render(graphics, x, currentY, buttonWidth, buttonHeight, mouseX, mouseY);
         currentY += buttonHeight + 12;
@@ -166,7 +166,7 @@ public class MobConfigPage implements SettingsPage {
 
         // Background on hover
         if (hovered) {
-            graphics.fill(x - 4, y - 2, x + rowWidth + 4, y + ROW_HEIGHT - 2, UIConstants.Background.HOVER);
+            graphics.fill(x - 4, y - 2, x + rowWidth + 4, y + ROW_HEIGHT - 2, UIConstants.Background.HOVER());
         }
 
         // Mob name
@@ -174,13 +174,13 @@ public class MobConfigPage implements SettingsPage {
         EntityType<?> mobType = mob.getType();
         boolean hasConfig = MobConfigManager.hasConfig(mobType);
 
-        graphics.drawString(font, mobName, x, y + 2, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, mobName, x, y + 2, UIConstants.Text.PRIMARY(), false);
 
         // Config indicator
         if (hasConfig) {
             int tagX = x + font.width(mobName) + 8;
-            graphics.fill(tagX - 2, y, tagX + font.width("configured") + 2, y + 12, UIConstants.Background.ACTIVE);
-            graphics.drawString(font, "configured", tagX, y + 2, UIConstants.Status.SUCCESS, false);
+            graphics.fill(tagX - 2, y, tagX + font.width("configured") + 2, y + 12, UIConstants.Background.ACTIVE());
+            graphics.drawString(font, "configured", tagX, y + 2, UIConstants.Status.SUCCESS(), false);
         }
 
         // Health bar
@@ -190,17 +190,17 @@ public class MobConfigPage implements SettingsPage {
         int barWidth = 50;
         int barHeight = 8;
 
-        graphics.fill(barX, barY, barX + barWidth, barY + barHeight, UIConstants.Background.INPUT);
+        graphics.fill(barX, barY, barX + barWidth, barY + barHeight, UIConstants.Background.INPUT());
         int healthColor = UIConstants.getHealthColor(healthPercent * 100);
         graphics.fill(barX, barY, barX + (int)(barWidth * healthPercent), barY + barHeight, healthColor);
-        AxiomRenderer.drawBorder(graphics, barX, barY, barWidth, barHeight, UIConstants.Border.MUTED);
+        AxiomRenderer.drawBorder(graphics, barX, barY, barWidth, barHeight, UIConstants.Border.MUTED());
 
         // Distance
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
             double distance = mob.distanceTo(mc.player);
             String distText = String.format("%.1fm", distance);
-            graphics.drawString(font, distText, x, y + 12, UIConstants.Text.MUTED, false);
+            graphics.drawString(font, distText, x, y + 12, UIConstants.Text.MUTED(), false);
         }
 
         return y + ROW_HEIGHT;
@@ -237,7 +237,7 @@ public class MobConfigPage implements SettingsPage {
                 } else {
                     // Show feedback for non-configurable entities (players, armor stands, etc.)
                     String entityName = entity.getName().getString();
-                    showStatusMessage(entityName + " cannot be configured (not a Mob)", UIConstants.Status.WARNING);
+                    showStatusMessage(entityName + " cannot be configured (not a Mob)", UIConstants.Status.WARNING());
                     return true; // Consume the click even though we can't configure
                 }
             }

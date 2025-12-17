@@ -52,7 +52,7 @@ public class ItemInfoPanel {
      */
     public record StatLine(String label, String value, int valueColor) {
         public StatLine(String label, String value) {
-            this(label, value, UIConstants.Text.VALUE);
+            this(label, value, UIConstants.Text.VALUE());
         }
     }
 
@@ -94,8 +94,8 @@ public class ItemInfoPanel {
 
     public ItemInfoPanel addStat(String label, float value, String format) {
         String formatted = String.format(format, value);
-        int color = value > 0 ? UIConstants.Accent.GREEN :
-                   (value < 0 ? UIConstants.Accent.RED : UIConstants.Text.VALUE);
+        int color = value > 0 ? UIConstants.Accent.GREEN() :
+                   (value < 0 ? UIConstants.Accent.RED() : UIConstants.Text.VALUE());
         String prefix = value > 0 ? "+" : "";
         this.stats.add(new StatLine(label, prefix + formatted, color));
         return this;
@@ -132,10 +132,10 @@ public class ItemInfoPanel {
         this.bounds = new ResponsiveLayout.Rect(x, y, width, panelHeight);
 
         // Background
-        graphics.fill(x, y, x + width, y + panelHeight, UIConstants.Background.INPUT);
+        graphics.fill(x, y, x + width, y + panelHeight, UIConstants.Background.INPUT());
 
         // Border
-        AxiomRenderer.drawBorder(graphics, x, y, width, panelHeight, UIConstants.Border.DEFAULT);
+        AxiomRenderer.drawBorder(graphics, x, y, width, panelHeight, UIConstants.Border.DEFAULT());
 
         int contentX = x + padding;
         int contentWidth = width - padding * 2;
@@ -146,7 +146,7 @@ public class ItemInfoPanel {
             // Truncate if too long
             String displayName = truncateText(font, itemName, contentWidth);
             int nameHeight = Math.round(font.lineHeight * nameScale);
-            Typography.drawText(graphics, font, displayName, contentX, currentY, UIConstants.Text.TITLE, nameScale);
+            Typography.drawText(graphics, font, displayName, contentX, currentY, UIConstants.Text.TITLE(), nameScale);
             currentY += Math.max(lineHeight, nameHeight);
         }
 
@@ -171,7 +171,7 @@ public class ItemInfoPanel {
         // Label on left
         String label = Objects.requireNonNull(stat.label(), "stat label cannot be null");
         Typography.drawText(graphics, Objects.requireNonNull(font, "font cannot be null"),
-            label + ":", x, y, UIConstants.Text.SECONDARY, scale);
+            label + ":", x, y, UIConstants.Text.SECONDARY(), scale);
 
         // Value on right
         String value = stat.value();
@@ -189,12 +189,12 @@ public class ItemInfoPanel {
 
         if (pendingChanges > 0) {
             text = "● " + pendingChanges + " unsaved changes";
-            color = UIConstants.Accent.ORANGE;
+            color = UIConstants.Accent.ORANGE();
         } else if (lastSaveTimestamp > 0) {
             long ago = System.currentTimeMillis() - lastSaveTimestamp;
             String timeText = formatTimeAgo(ago);
             text = "✓ Saved " + timeText;
-            color = UIConstants.Accent.GREEN;
+            color = UIConstants.Accent.GREEN();
         } else {
             // No indicator needed
             return;

@@ -62,4 +62,45 @@ public record ScaledCoord(int x, int y) {
     public ScaledCoord add(ScaledCoord other) {
         return new ScaledCoord(x + other.x, y + other.y);
     }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Pre-scaled constants for common panel dimensions
+    // These use the current scale and align to 4px grid automatically.
+    // Reference: docs/editor-design-system/07-ui-scaling.md
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /** @return Scaled panel width (base: 550px) */
+    public static int panelWidth() {
+        return scaleDim(UIConstants.PanelDimensions.PANEL_WIDTH);
+    }
+
+    /** @return Scaled panel height (base: 420px) */
+    public static int panelHeight() {
+        return scaleDim(UIConstants.PanelDimensions.PANEL_HEIGHT);
+    }
+
+    /** @return Scaled header height (base: 28px) */
+    public static int headerHeight() {
+        return scaleDim(UIConstants.Size.HEADER_HEIGHT);
+    }
+
+    /** @return Scaled footer height (base: 60px) */
+    public static int footerHeight() {
+        return scaleDim(UIConstants.Size.FOOTER_HEIGHT);
+    }
+
+    /** @return Scaled left column width (base: 140px) */
+    public static int leftColumnWidth() {
+        return scaleDim(UIConstants.PanelDimensions.LEFT_COLUMN_WIDTH);
+    }
+
+    /** @return Scaled content area width (base: 390px) */
+    public static int contentWidth() {
+        return scaleDim(UIConstants.PanelDimensions.CONTENT_WIDTH);
+    }
+
+    /** @return Scaled preview size (base: 100px) */
+    public static int previewSize() {
+        return scaleDim(UIConstants.PanelDimensions.PREVIEW_SIZE);
+    }
 }

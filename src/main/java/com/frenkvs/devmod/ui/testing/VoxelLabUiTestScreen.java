@@ -48,8 +48,8 @@ public class VoxelLabUiTestScreen extends Screen {
 
         // Header
         var safeFont = Objects.requireNonNull(font, "font");
-        graphics.drawString(safeFont, "Voxel Lab / UI Showcase", PADDING, PADDING, UIConstants.Text.TITLE, false);
-        graphics.drawString(safeFont, "Click il bottone per mostrare le varianti di EditorButton", PADDING, PADDING + 14, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(safeFont, "Voxel Lab / UI Showcase", PADDING, PADDING, UIConstants.Text.TITLE(), false);
+        graphics.drawString(safeFont, "Click il bottone per mostrare le varianti di EditorButton", PADDING, PADDING + 14, UIConstants.Text.SECONDARY(), false);
 
         int buttonY = PADDING + 32;
         showCasesButton.render(graphics, PADDING, buttonY, 160, showCasesButton.getSize().height(), mouseX, mouseY);
@@ -63,7 +63,7 @@ public class VoxelLabUiTestScreen extends Screen {
     }
 
     private void renderBackgroundLayer(GuiGraphics graphics) {
-        graphics.fill(0, 0, width, height, UIConstants.Background.CONTENT);
+        graphics.fill(0, 0, width, height, UIConstants.Background.CONTENT());
     }
 
     private void ensureDemoButtons() {
@@ -131,11 +131,11 @@ public class VoxelLabUiTestScreen extends Screen {
 
     private void renderDemoGrid(GuiGraphics graphics, int mouseX, int mouseY) {
         int areaTop = PADDING + 56;
-        graphics.fill(PADDING - 6, areaTop, width - PADDING + 6, height - PADDING, UIConstants.Background.PANEL);
+        graphics.fill(PADDING - 6, areaTop, width - PADDING + 6, height - PADDING, UIConstants.Background.PANEL());
         graphics.drawString(Objects.requireNonNull(font, "font"),
-            "Varianti EditorButton", PADDING, areaTop + 8, UIConstants.Text.PRIMARY, false);
+            "Varianti EditorButton", PADDING, areaTop + 8, UIConstants.Text.PRIMARY(), false);
         graphics.drawString(Objects.requireNonNull(font, "font"),
-            "Tip: icona a sx, hotkey a dx, toggle cambia stato/colore", PADDING, areaTop + 20, UIConstants.Text.SECONDARY, false);
+            "Tip: icona a sx, hotkey a dx, toggle cambia stato/colore", PADDING, areaTop + 20, UIConstants.Text.SECONDARY(), false);
 
         for (DemoButton demo : demoButtons) {
             demo.button.render(graphics, demo.x, demo.y, demo.width, demo.button.getSize().height(), mouseX, mouseY);

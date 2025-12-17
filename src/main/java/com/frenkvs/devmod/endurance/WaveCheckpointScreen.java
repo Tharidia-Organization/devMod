@@ -33,14 +33,14 @@ import java.util.Random;
 public class WaveCheckpointScreen extends Screen {
 
     // === Colors - Standardized to UIConstants ===
-    private static final int COLOR_BG_TOP = UIConstants.Background.PANEL;
-    private static final int COLOR_BG_BOTTOM = UIConstants.Background.INPUT;
-    private static final int COLOR_BORDER = UIConstants.Border.DEFAULT;  // Blue instead of orange
-    private static final int COLOR_SUCCESS = UIConstants.Accent.GREEN;
-    private static final int COLOR_GOLD = UIConstants.Accent.GOLD;
-    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY;
-    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY;
-    private static final int COLOR_ACCENT = UIConstants.Accent.BLUE;  // Blue instead of orange
+    private static final int COLOR_BG_TOP = UIConstants.Background.PANEL();
+    private static final int COLOR_BG_BOTTOM = UIConstants.Background.INPUT();
+    private static final int COLOR_BORDER = UIConstants.Border.DEFAULT();  // Blue instead of orange
+    private static final int COLOR_SUCCESS = UIConstants.Accent.GREEN();
+    private static final int COLOR_GOLD = UIConstants.Accent.GOLD();
+    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY();
+    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY();
+    private static final int COLOR_ACCENT = UIConstants.Accent.BLUE();  // Blue instead of orange
 
     // === Dimensions - using UIConstants for consistency ===
     private static final int PANEL_WIDTH = UIConstants.Size.DIALOG_WIDTH_MEDIUM;
@@ -219,7 +219,7 @@ public class WaveCheckpointScreen extends Screen {
         // === Hint ===
         if (elapsed > BUTTONS_REVEAL_DELAY) {
             float hintAlpha = Math.min(1.0f, (elapsed - BUTTONS_REVEAL_DELAY) / 300.0f);
-            int hintColor = applyAlpha(UIConstants.Text.MUTED, hintAlpha);
+            int hintColor = applyAlpha(UIConstants.Text.MUTED(), hintAlpha);
             graphics.drawCenteredString(font, "ESC/F11: Continue  |  F12: Exit", centerX, panelY + PANEL_HEIGHT - 22, hintColor);
         }
 
@@ -265,7 +265,7 @@ public class WaveCheckpointScreen extends Screen {
         }
 
         // Inner border highlight (top)
-        int highlightColor = applyAlpha(UIConstants.Border.SEPARATOR, alpha);
+        int highlightColor = applyAlpha(UIConstants.Border.SEPARATOR(), alpha);
         g.fill(x, y, x + w, y + 1, highlightColor);
     }
 
@@ -309,7 +309,7 @@ public class WaveCheckpointScreen extends Screen {
             new StatEntry("Time", formatDuration(sessionDurationMs), COLOR_TEXT, 0, false),
             new StatEntry("Points", "+" + pointsEarned, COLOR_ACCENT, 0, true),
             new StatEntry("Kills", String.valueOf(mobsKilled), COLOR_SUCCESS, 1, true),
-            new StatEntry("Damage", String.valueOf(damageDealt), UIConstants.Accent.RED, 1, true),
+            new StatEntry("Damage", String.valueOf(damageDealt), UIConstants.Accent.RED(), 1, true),
             new StatEntry("Combo", String.valueOf(maxCombo), COLOR_GOLD, 2, true)
         };
 
@@ -342,11 +342,11 @@ public class WaveCheckpointScreen extends Screen {
         // Background box
         int boxWidth = 140;
         int boxHeight = 22;
-        int bgColor = applyAlpha(UIConstants.Background.INPUT, alpha);
+        int bgColor = applyAlpha(UIConstants.Background.INPUT(), alpha);
         g.fill(x, y, x + boxWidth, y + boxHeight, bgColor);
 
         // Border
-        int borderColor = applyAlpha(UIConstants.Border.SEPARATOR, alpha);
+        int borderColor = applyAlpha(UIConstants.Border.SEPARATOR(), alpha);
         g.fill(x, y, x + boxWidth, y + 1, borderColor);
 
         // Label
@@ -401,7 +401,7 @@ public class WaveCheckpointScreen extends Screen {
         g.drawCenteredString(font, progressText, panelX + panelWidth / 2, y - 2, labelColor);
 
         // Bar background
-        int bgColor = applyAlpha(UIConstants.Background.INPUT, alpha);
+        int bgColor = applyAlpha(UIConstants.Background.INPUT(), alpha);
         g.fill(barX, y + 10, barX + barWidth, y + 10 + barHeight, bgColor);
 
         // Animated fill (guard against division by zero)
@@ -422,12 +422,12 @@ public class WaveCheckpointScreen extends Screen {
         // Shine effect
         if (fillWidth > 10) {
             int shineX = barX + (int)((elapsed / 20) % fillWidth);
-            int shineColor = applyAlpha(UIConstants.Border.SEPARATOR, alpha);
+            int shineColor = applyAlpha(UIConstants.Border.SEPARATOR(), alpha);
             g.fill(shineX, y + 10, shineX + 3, y + 10 + barHeight, shineColor);
         }
 
         // Border
-        int borderColor = applyAlpha(UIConstants.Border.MUTED, alpha);
+        int borderColor = applyAlpha(UIConstants.Border.MUTED(), alpha);
         g.fill(barX, y + 10, barX + barWidth, y + 11, borderColor);
         g.fill(barX, y + 10 + barHeight - 1, barX + barWidth, y + 10 + barHeight, borderColor);
     }

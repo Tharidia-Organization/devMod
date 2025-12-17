@@ -86,6 +86,8 @@ public class ItemEditorScreen extends Screen {
 
 ## EditorModule Interface
 
+L'interfaccia completa implementata in `EditorModule.java`:
+
 ```java
 /**
  * Interface per i moduli di contenuto.
@@ -93,37 +95,184 @@ public class ItemEditorScreen extends Screen {
  */
 public interface EditorModule {
 
+    // ═══════════════════════════════════════════════════════════════
+    // IDENTIFICATION
+    // ═══════════════════════════════════════════════════════════════
+
     /** ID del modulo (weapon, armor, general) */
     String getId();
 
     /** Titolo mostrato nel tab */
     String getTitle();
 
-    /** Icona del tab */
-    ResourceLocation getIcon();
+    /** Icona del tab (opzionale) */
+    default ResourceLocation getIcon() { return null; }
+
+    // ═══════════════════════════════════════════════════════════════
+    // TABS
+    // ═══════════════════════════════════════════════════════════════
 
     /** Tabs interni del modulo */
     List<ModuleTab> getTabs();
 
+    /** Indice del tab attivo */
+    int getActiveTabIndex();
+
+    /** Imposta il tab attivo */
+    void setActiveTab(int index);
+
+    // ═══════════════════════════════════════════════════════════════
+    // CONTENT
+    // ═══════════════════════════════════════════════════════════════
+
     /** Inizializza con l'item da editare */
     void setItem(ItemStack item);
 
+    /** Ottieni l'item corrente */
+    ItemStack getItem();
+
+    /** Inizializza il modulo con le info di layout */
+    void init(ResponsiveLayout layout);
+
+    /** Ottieni le sezioni per il tab corrente */
+    List<EditorSection> getSections();
+
     /** Renderizza il contenuto nell'area assegnata */
-    void render(GuiGraphics graphics, Bounds contentBounds, int mouseX, int mouseY);
+    void renderContent(GuiGraphics graphics, ResponsiveLayout.Rect contentBounds, int mouseX, int mouseY);
 
-    /** Handle input */
+    /** Calcola l'altezza totale del contenuto per lo scroll */
+    int calculateContentHeight();
+
+    // ═══════════════════════════════════════════════════════════════
+    // INPUT HANDLING
+    // ═══════════════════════════════════════════════════════════════
+
     boolean mouseClicked(double mouseX, double mouseY, int button);
+    boolean mouseReleased(double mouseX, double mouseY, int button);
+    boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY);
+    boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY);
     boolean keyPressed(int keyCode, int scanCode, int modifiers);
+    boolean charTyped(char chr, int modifiers);
 
-    /** Dirty state */
+    // ═══════════════════════════════════════════════════════════════
+    // STATE MANAGEMENT
+    // ═══════════════════════════════════════════════════════════════
+
+    /** Verifica se ci sono modifiche non salvate */
     boolean hasUnsavedChanges();
-    void markDirty(String change);
+
+    /** Lista delle modifiche pendenti (per dirty indicator) */
+    List<String> getPendingChanges();
+
+    /** Marca una modifica come pendente */
+    void markDirty(String changeDescription);
+
+    /** Pulisci lo stato dirty (dopo il salvataggio) */
     void clearDirty();
 
-    /** Build payload per server */
-    CustomPacketPayload buildPayload();
+    /** Consumer per messaggi di stato */
+    default void setStatusConsumer(BiConsumer<String, Integer> statusConsumer) {}
+
+    /** Ottieni le entry della cronologia */
+    List<String> getHistoryEntries();
+
+    /** Pulisci la cronologia */
+    void clearHistory();
+
+    /** Logga un evento nella timeline (per debug/session log) */
+    default void logEvent(String description) {}
+
+    /** Abilita/disabilita il tracking dirty (es. preview mode) */
+    default void setDirtyTrackingEnabled(boolean enabled) {}
+
+    /** Rileva se lo stato attuale differisce dall'originale */
+    default boolean hasPendingDiff() { return hasUnsavedChanges(); }
+
+    /** Fornisce una copia preview dell'item (opzionale) */
+    default ItemStack getPreviewItem() { return null; }
+
+    /** Pulisci lo stato di preview (opzionale) */
+    default void clearPreview() {}
+
+    // ═══════════════════════════════════════════════════════════════
+    // NETWORK
+    // ═══════════════════════════════════════════════════════════════
+
+    /** Build payload per sync con il server */
+    CustomPacketPayload buildPayload(boolean isGlobal);
+
+    /** Applica le modifiche localmente (preview mode) */
+    void applyPreview();
+
+    /** Resetta ai valori originali */
+    void resetToOriginal();
+
+    // ═══════════════════════════════════════════════════════════════
+    // UNDO/REDO
+    // ═══════════════════════════════════════════════════════════════
+
+    boolean canUndo();
+    boolean canRedo();
+    void undo();
+    void redo();
+    void saveUndoState();
+
+    // ═══════════════════════════════════════════════════════════════
+    // LIFECYCLE
+    // ═══════════════════════════════════════════════════════════════
+
+    /** Chiamato quando il modulo viene chiuso */
+    default void onClose() {}
+
+    /** Chiamato ogni tick */
+    default void tick() {}
 }
 ```
+
+## AbstractEditorModule - Classe Base
+
+La classe `AbstractEditorModule` implementa la logica comune per tutti i moduli:
+
+```java
+/**
+ * Classe base astratta per i moduli dell'editor.
+ * Fornisce funzionalità comuni per tab management, undo/redo e dirty tracking.
+ */
+public abstract class AbstractEditorModule implements EditorModule {
+
+    protected final String id;
+    protected final String title;
+    protected ItemStack item = ItemStack.EMPTY;
+    protected ItemStack originalItem = ItemStack.EMPTY;
+    protected ResponsiveLayout layout;
+
+    // Tabs
+    protected final List<ModuleTab> tabs = new ArrayList<>();
+    protected int activeTabIndex = 0;
+
+    // Dirty tracking
+    protected final List<String> pendingChanges = new ArrayList<>();
+    protected final List<String> historyEntries = new ArrayList<>();
+
+    // Undo/Redo stacks
+    protected final Stack<UndoState> undoStack = new Stack<>();
+    protected final Stack<UndoState> redoStack = new Stack<>();
+    private static final int MAX_UNDO_STATES = 50;
+
+    // UndoState record
+    protected record UndoState(String description, byte[] itemData, int tabIndex) {}
+
+    // Metodi astratti che le sottoclassi devono implementare:
+    protected abstract void onItemSet();
+    protected abstract void initializeTabs();
+}
+```
+
+**Moduli che estendono AbstractEditorModule:**
+- `WeaponModule` - Statistiche armi (damage, speed, reach, etc.)
+- `ArmorModule` - Statistiche armature (resistenze, bonus, etc.)
+- `RangedModule` - Armi a distanza (archi, balestre)
+- `GeneralModule` - Proprietà generali (durabilità, enchantments)
 
 ## EditorSection - Unità di contenuto
 
@@ -149,8 +298,12 @@ public sealed interface EditorSection permits
 
     void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY);
 
+    // Input handling con defaults
     default boolean mouseClicked(double mouseX, double mouseY, int button) { return false; }
+    default boolean mouseReleased(double mouseX, double mouseY, int button) { return false; }
+    default boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) { return false; }
     default boolean keyPressed(int keyCode, int scanCode, int modifiers) { return false; }
+    default boolean charTyped(char chr, int modifiers) { return false; }
 
     // --- TIPI DI SEZIONE ---
 
@@ -160,6 +313,13 @@ public sealed interface EditorSection permits
     non-sealed interface SliderSection extends EditorSection {
         float getValue();
         void setValue(float value);
+        float getMin();
+        float getMax();
+        float getStep();
+        String getFormat();
+        int getColor();
+        boolean isDragging();
+        void setDragging(boolean dragging);
     }
 
     /**
@@ -176,13 +336,46 @@ public sealed interface EditorSection permits
     non-sealed interface InputSection extends EditorSection {
         String getText();
         void setText(String text);
+        String getPlaceholder();
+        boolean isNumeric();
     }
-    
+
+    /**
+     * Sezione per selezione da lista.
+     */
+    non-sealed interface ListSection extends EditorSection {
+        List<String> getOptions();
+        int getSelectedIndex();
+        void setSelectedIndex(int index);
+    }
+
+    /**
+     * Sezione header/titolo per raggruppamento.
+     */
+    non-sealed interface HeaderSection extends EditorSection {
+        boolean isCollapsible();
+        boolean isCollapsed();
+        void setCollapsed(boolean collapsed);
+    }
+
+    /**
+     * Spacer per layout purposes.
+     */
+    non-sealed interface SpacerSection extends EditorSection {
+        @Override
+        default String getLabel() { return ""; }
+
+        @Override
+        default void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
+            // Spacers don't render anything
+        }
+    }
+
     /**
      * Sezione custom per contenuti complessi con logica di rendering propria.
      */
     non-sealed interface CustomSection extends EditorSection {
-        // Implementazione custom
+        // Custom sections implement their own rendering logic
     }
 }
 ```
@@ -193,49 +386,83 @@ public sealed interface EditorSection permits
 /**
  * Layout engine centralizzato.
  * UNICO posto dove esistono coordinate.
+ * Usa UIConstants per dimensioni base e ScaledCoord per scaling dinamico.
  */
 public class EditorLayout {
 
-    // Dimensioni fisse
-    public static final int PANEL_WIDTH = 550;
-    public static final int PANEL_HEIGHT = 420;
-    public static final int HEADER_HEIGHT = 28;
-    public static final int FOOTER_HEIGHT = 60;
-    public static final int LEFT_COLUMN_WIDTH = 140;
+    // Bounds calcolati (inizializzati a EMPTY)
+    private Bounds panelBounds = Bounds.EMPTY;
+    private Bounds headerBounds = Bounds.EMPTY;
+    private Bounds footerBounds = Bounds.EMPTY;
+    private Bounds leftColumnBounds = Bounds.EMPTY;
+    private Bounds contentBounds = Bounds.EMPTY;
 
-    // Bounds calcolati
-    private Bounds panelBounds;
-    private Bounds headerBounds;
-    private Bounds footerBounds;
-    private Bounds leftColumnBounds;
-    private Bounds contentBounds;
+    // Cache per bounds delle sezioni per colonna
+    private final Map<String, List<SectionBounds>> columnSections = new HashMap<>();
 
+    /**
+     * Calcola tutte le posizioni dato lo screen size e la scala UI.
+     * Usa EditorScaleCalculator per determinare dimensioni pannello clamped.
+     */
     public void computePositions(int screenWidth, int screenHeight) {
-        // Centro il pannello
-        int panelX = (screenWidth - PANEL_WIDTH) / 2;
-        int panelY = (screenHeight - PANEL_HEIGHT) / 2;
+        computePositions(screenWidth, screenHeight, ScaledCoord.getScale());
+    }
 
-        panelBounds = new Bounds(panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT);
+    public void computePositions(int screenWidth, int screenHeight, float scale) {
+        EditorScaleCalculator.ScreenFitResult fit = EditorScaleCalculator.calculateFit(screenWidth, screenHeight, scale);
+        computePositions(fit, scale);
+    }
 
-        headerBounds = new Bounds(
-            panelX, panelY,
-            PANEL_WIDTH, HEADER_HEIGHT
-        );
+    public void computePositions(EditorScaleCalculator.ScreenFitResult fit, float scale) {
+        columnSections.clear();
 
-        footerBounds = new Bounds(
-            panelX, panelY + PANEL_HEIGHT - FOOTER_HEIGHT,
-            PANEL_WIDTH, FOOTER_HEIGHT
-        );
+        int panelWidth = fit.panelWidth();
+        int panelHeight = fit.panelHeight();
+        int hotbarReserve = ScaledCoord.scaleDim(24, scale); // spazio per hotbar vanilla
+        int headerHeight = ScaledCoord.scaleDim(UIConstants.Size.HEADER_HEIGHT, scale);
+        int footerHeight = ScaledCoord.scaleDim(UIConstants.Size.FOOTER_HEIGHT, scale);
+        int leftWidth = ScaledCoord.scaleDim(UIConstants.PanelDimensions.LEFT_COLUMN_WIDTH, scale);
 
-        leftColumnBounds = new Bounds(
-            panelX, panelY + HEADER_HEIGHT,
-            LEFT_COLUMN_WIDTH, PANEL_HEIGHT - HEADER_HEIGHT - FOOTER_HEIGHT
-        );
+        int panelX = fit.panelX();
+        int panelY = fit.panelY();
 
-        contentBounds = new Bounds(
-            panelX + LEFT_COLUMN_WIDTH, panelY + HEADER_HEIGHT,
-            PANEL_WIDTH - LEFT_COLUMN_WIDTH, PANEL_HEIGHT - HEADER_HEIGHT - FOOTER_HEIGHT
-        );
+        // Garantisci altezza minima per header/footer/content
+        int minHeight = headerHeight + footerHeight + ScaledCoord.scaleDim(32, scale);
+        panelHeight = Math.max(panelHeight - hotbarReserve, minHeight);
+
+        panelBounds = new Bounds(panelX, panelY, panelWidth, panelHeight);
+        headerBounds = new Bounds(panelX, panelY, panelWidth, headerHeight);
+        footerBounds = new Bounds(panelX, panelY + panelHeight - footerHeight, panelWidth, footerHeight);
+        leftColumnBounds = new Bounds(panelX, panelY + headerHeight, leftWidth,
+            panelHeight - headerHeight - footerHeight);
+        contentBounds = new Bounds(panelX + leftWidth, panelY + headerHeight,
+            panelWidth - leftWidth, panelHeight - headerHeight - footerHeight);
+
+        // Validazione allineamento griglia 4px
+        validateBounds(panelBounds, "panelBounds");
+        validateBounds(headerBounds, "headerBounds");
+        validateBounds(footerBounds, "footerBounds");
+        validateBounds(leftColumnBounds, "leftColumnBounds");
+        validateBounds(contentBounds, "contentBounds");
+    }
+
+    /**
+     * Layout delle sezioni in una colonna specifica.
+     */
+    public void layoutSectionsInColumn(String columnId, List<EditorSection> sections,
+                                        Bounds area, int padding, int gap) {
+        List<SectionBounds> boundsList = new ArrayList<>();
+        int currentY = area.y() + padding;
+        int sectionWidth = area.width() - (2 * padding);
+
+        for (EditorSection section : sections) {
+            int sectionHeight = section.getHeight();
+            Bounds sectionArea = new Bounds(area.x() + padding, currentY, sectionWidth, sectionHeight);
+            boundsList.add(new SectionBounds(section.getId(), sectionArea));
+            currentY += sectionHeight + gap;
+        }
+
+        columnSections.put(columnId, boundsList);
     }
 
     // Getters
@@ -245,91 +472,95 @@ public class EditorLayout {
     public Bounds getLeftColumnBounds() { return leftColumnBounds; }
     public Bounds getContentBounds() { return contentBounds; }
 
-    /**
-     * Calcola posizioni per una lista di sezioni nel content area.
-     */
-    public List<SectionBounds> layoutSections(List<EditorSection> sections) {
-        List<SectionBounds> result = new ArrayList<>();
-        int y = contentBounds.y() + 8; // padding top
+    public Bounds getSectionBounds(String columnId, String sectionId) { ... }
+    public List<SectionBounds> getSectionsForColumn(String columnId) { ... }
 
-        for (EditorSection section : sections) {
-            int height = getSectionHeight(section);
-            result.add(new SectionBounds(
-                section,
-                contentBounds.x() + 8,
-                y,
-                contentBounds.width() - 16,
-                height
-            ));
-            y += height + 4; // gap between sections
+    private void validateBounds(Bounds bounds, String context) {
+        // Valida allineamento alla griglia 4px
+        if (bounds.x() % 4 != 0 || bounds.y() % 4 != 0 ||
+            bounds.width() % 4 != 0 || bounds.height() % 4 != 0) {
+            System.err.println("Layout Validation Warning: " + context + " not aligned to 4px grid.");
         }
-
-        return result;
-    }
-
-    private int getSectionHeight(EditorSection section) {
-        return switch (section) {
-            case EditorSection.SliderSection s -> 24;
-            case EditorSection.ToggleSection s -> 20;
-            case EditorSection.ListSection s -> Math.min(100, 20 + s.items().size() * 16);
-            case EditorSection.SeparatorSection s -> 18;
-            case EditorSection.InputSection s -> 22;
-        };
     }
 }
+```
 
+## Bounds e SectionBounds Records
+
+```java
+/**
+ * Rectangle bounds con metodi helper.
+ */
 public record Bounds(int x, int y, int width, int height) {
+    public static final Bounds EMPTY = new Bounds(0, 0, 0, 0);
+
+    public int right() { return x + width; }
+    public int bottom() { return y + height; }
+
     public boolean contains(int px, int py) {
+        return px >= x && px < x + width && py >= y && py < y + height;
+    }
+
+    public boolean contains(double px, double py) {
         return px >= x && px < x + width && py >= y && py < y + height;
     }
 }
 
-public record SectionBounds(EditorSection section, int x, int y, int width, int height) {}
+/**
+ * Bounds associati a una sezione specifica.
+ */
+public record SectionBounds(String sectionId, Bounds bounds) {}
 ```
 
 ## Esempio: WeaponModule
 
+L'implementazione reale estende `AbstractEditorModule`:
+
 ```java
-public class WeaponModule implements EditorModule {
+public class WeaponModule extends AbstractEditorModule {
 
-    private ItemStack weapon;
-    private float damage;
-    private float speed;
-    private boolean isDirty = false;
-    private final List<String> pendingChanges = new ArrayList<>();
+    private WeaponStats stats = new WeaponStats();
+    private WeaponStats originalStats = new WeaponStats();
+
+    // UI Components - creati come campi per gestire stato
+    private EditorSlider attackDamageSlider;
+    private EditorSlider attackSpeedSlider;
+    private EditorSlider attackReachSlider;
+    // ... altri slider
+
+    public WeaponModule() {
+        super("weapon", "Weapon");
+    }
 
     @Override
-    public String getId() { return "weapon"; }
+    protected void onItemSet() {
+        // Carica stats dall'item (NBT o global config)
+        stats = loadWeaponStats(item);
+        originalStats = stats.copy();
+        initializeSliders();
+    }
 
     @Override
-    public String getTitle() { return "Weapon"; }
+    protected void initializeTabs() {
+        addTab(new ModuleTab("STATS", "Hit Location", this::getHitLocationSections));
+        addTab(new ModuleTab("COMBAT", "Combat", this::getCombatSections));
+        addTab(new ModuleTab("EFFECTS", "Effects", this::getEffectsSections));
+        addTab(new ModuleTab("DEBUG", "Debug", this::getDebugSections));
+    }
 
-    @Override
-    public List<ModuleTab> getTabs() {
+    private List<EditorSection> getHitLocationSections() {
         return List.of(
-            new ModuleTab("STATS", this::getStatsSections),
-            new ModuleTab("ENCHANTS", this::getEnchantSections),
-            new ModuleTab("DURABILITY", this::getDurabilitySections),
-            new ModuleTab("DEBUG", this::getDebugSections)
+            createHeaderSection("Hit Location Multipliers"),
+            wrapSlider(headMultSlider),
+            wrapSlider(bodyMultSlider),
+            wrapSlider(armsMultSlider),
+            wrapSlider(legsMultSlider)
         );
     }
 
-    private List<EditorSection> getStatsSections() {
-        return List.of(
-            new EditorSection.SeparatorSection("Combat Stats"),
-            new EditorSection.SliderSection(
-                "Attack Damage",
-                0, 50, damage,
-                UIConstants.Accent.RED,
-                v -> { damage = v; markDirty("damage=" + v); }
-            ),
-            new EditorSection.SliderSection(
-                "Attack Speed",
-                0, 4, speed,
-                UIConstants.Accent.GREEN,
-                v -> { speed = v; markDirty("speed=" + v); }
-            )
-        );
+    @Override
+    public CustomPacketPayload buildPayload(boolean isGlobal) {
+        return new WeaponStatsPayload(item, stats, isGlobal);
     }
 
     // ... altri metodi
@@ -338,29 +569,43 @@ public class WeaponModule implements EditorModule {
 
 ## Auto-Select su Apertura
 
+L'`ItemEditorScreen` usa `resolveModule()` per selezionare il modulo in base al tipo di item e al tab richiesto:
+
 ```java
-// In ItemEditorScreen constructor
-private EditorModule detectModule(ItemStack item) {
+// In ItemEditorScreen
+private EditorModule resolveModule(ItemStack item, EditorStartTab requestedTab) {
+    // Se il tab è esplicito, usa quello
+    if (requestedTab == EditorStartTab.WEAPON) {
+        return new WeaponModule();
+    } else if (requestedTab == EditorStartTab.ARMOR) {
+        return new ArmorModule();
+    } else if (requestedTab == EditorStartTab.RANGED) {
+        return new RangedModule();
+    }
+
+    // Auto-detect basato sul tipo di item
     if (item.getItem() instanceof ArmorItem) {
         return new ArmorModule();
+    } else if (isRangedWeapon(item)) {
+        return new RangedModule();
     } else if (item.getItem() instanceof SwordItem ||
                item.getItem() instanceof AxeItem ||
-               item.getItem() instanceof TridentItem) {
+               item.getItem() instanceof TridentItem ||
+               item.getItem() instanceof MaceItem) {
         return new WeaponModule();
     } else {
-        return new GeneralModule(); // fallback
+        return new GeneralModule(); // fallback per tutti gli altri item
     }
 }
 
-// Switch manuale tra moduli (tab click)
+// Switch manuale tra moduli (via tab click o menu)
 private void switchModule(EditorModule newModule) {
     if (activeModule.hasUnsavedChanges()) {
-        showConfirmDialog(
-            "Switch Module",
-            "Unsaved changes will be lost. Continue?",
+        showDialog(ConfirmDialog.unsavedChanges(
+            activeModule.getPendingChanges().size(),
             () -> doSwitch(newModule),
             () -> {}
-        );
+        ));
     } else {
         doSwitch(newModule);
     }
@@ -376,6 +621,9 @@ private void switchModule(EditorModule newModule) {
 | **Testing** | 2 screen da testare | 1 screen, moduli isolati |
 | **Coerenza UI** | Dipende da disciplina | Garantita da architettura |
 | **Coordinate** | Sparse ovunque | Solo in EditorLayout |
+| **Undo/Redo** | Da implementare per ogni editor | Ereditato da AbstractEditorModule |
+| **Dirty tracking** | Codice duplicato | Centralizzato in AbstractEditorModule |
+| **Preview mode** | Complesso da sincronizzare | Integrato nel ciclo di vita modulo |
 
 ## Migration Path Dettagliato
 
@@ -594,3 +842,223 @@ public void onClose() {
 ```
 
 In sintesi, l'architettura non reinventa la gestione della memoria, ma si integra correttamente con il ciclo di vita del garbage collector di Java, fornendo gli hook (`onClose`) e le pratiche (`clear()`) necessarie per una gestione pulita dello stato dei moduli.
+
+---
+
+## Feature Avanzate Implementate
+
+Questa sezione documenta le feature avanzate che sono state implementate oltre al design iniziale.
+
+### UI Scaling Dinamico
+
+L'editor supporta scaling dinamico dell'UI con più modalità:
+
+```java
+// In EditorClientConfig.java
+public enum EditorUiScale {
+    AUTO("auto"),       // Scala automatica basata su risoluzione
+    SCALE_1_0("1.0"),   // 100% - nessuno scaling
+    SCALE_1_25("1.25"), // 125%
+    SCALE_1_5("1.5"),   // 150%
+    SCALE_2_0("2.0");   // 200% - HiDPI
+}
+```
+
+Le coordinate sono gestite centralmente da `ScaledCoord`:
+
+```java
+public class ScaledCoord {
+    private static float currentScale = 1.0f;
+
+    public static int scaleDim(int base, float scale) {
+        return Math.round(base * scale);
+    }
+
+    public static int scaleDim(int base) {
+        return scaleDim(base, currentScale);
+    }
+}
+```
+
+### Sistema Overlay con BaseOverlay
+
+Gli overlay modali (dialoghi, pannelli, help) estendono `BaseOverlay`:
+
+```java
+public abstract class BaseOverlay {
+    protected boolean visible = false;
+    protected AnimationState animationState;
+
+    // Metodi base
+    public void show() { visible = true; animationState.reset(); }
+    public void hide() { visible = false; }
+    public void toggle() { if (visible) hide(); else show(); }
+    public boolean isVisible() { return visible; }
+
+    // Template method per il rendering
+    public final void render(GuiGraphics g, Font font, int screenW, int screenH, int mouseX, int mouseY) {
+        if (!visible) return;
+        float progress = animationState != null ? animationState.getProgress() : 1.0f;
+        renderBackdrop(g, screenW, screenH, progress);
+        // ... render panel e contenuto
+    }
+
+    // Hooks per le sottoclassi
+    protected abstract void renderContent(...);
+    protected abstract int getPanelWidth();
+    protected abstract int getPanelHeight();
+
+    // Supporto animazioni
+    public BaseOverlay withAnimation() {
+        this.animationState = new AnimationState(AnimationState.Type.FADE, 200);
+        return this;
+    }
+}
+```
+
+**Overlay che estendono BaseOverlay:**
+- `ConfirmDialog` - Dialoghi di conferma
+- `HelpOverlay` - Pannello aiuto (F1)
+- `TemplateOverlay` - Selezione template
+- `CraftingInfoPanel` - Info ricette crafting
+
+### Sistema Animazioni
+
+```java
+public class AnimationState {
+    public enum Type { FADE, SLIDE_UP, SLIDE_DOWN, SCALE }
+    public enum Easing { LINEAR, EASE_OUT_CUBIC, EASE_IN_OUT, EASE_OUT_BACK }
+
+    private final Type type;
+    private final int durationMs;
+    private long startTime;
+
+    public float getProgress() {
+        float raw = (System.currentTimeMillis() - startTime) / (float) durationMs;
+        return applyEasing(Math.min(1.0f, raw));
+    }
+}
+```
+
+### Sistema Temi
+
+L'editor supporta temi configurabili:
+
+```java
+public interface Theme {
+    int panelBackground();
+    int panelBorder();
+    int headerBackground();
+    int textPrimary();
+    int textSecondary();
+    int accentPrimary();
+    // ... altri colori
+}
+
+public class ThemeManager {
+    private static Theme currentTheme = new DarkTheme();
+
+    public static Theme current() { return currentTheme; }
+    public static void setTheme(Theme theme) { currentTheme = theme; notifyListeners(); }
+}
+```
+
+### Focus Management
+
+Supporto navigazione da tastiera tra componenti:
+
+```java
+public class FocusManager {
+    public interface Focusable {
+        boolean isFocused();
+        void setFocused(boolean focused);
+        void onFocusGained();
+        void onFocusLost();
+    }
+
+    private final List<Focusable> focusables = new ArrayList<>();
+    private int focusIndex = -1;
+
+    public void focusNext() { ... }      // Tab
+    public void focusPrevious() { ... }  // Shift+Tab
+}
+```
+
+### EditorCache
+
+Sistema di cache per ottimizzare il rendering:
+
+```java
+public class EditorCache {
+    public enum Types { PREVIEW, LAYOUT, STATS, ALL }
+
+    private final Map<String, CachedValue<?>> cache = new ConcurrentHashMap<>();
+
+    public void invalidateType(Types type) { ... }
+    public void invalidateItem(String itemId) { ... }
+    public void invalidateAll() { cache.clear(); }
+}
+```
+
+---
+
+## File Structure Implementata
+
+```
+ui/editor/
+├── ItemEditorScreen.java          # Screen principale (shell)
+├── EditorModule.java              # Interface per moduli
+├── EditorSection.java             # Interface sealed per sezioni
+├── AbstractEditorModule.java      # Classe base per moduli
+├── ModuleTab.java                 # Definizione tab
+├── EditorStartTab.java            # Enum per tab iniziale
+│
+├── modules/
+│   ├── WeaponModule.java          # Modulo armi melee
+│   ├── ArmorModule.java           # Modulo armature
+│   ├── RangedModule.java          # Modulo armi a distanza
+│   └── GeneralModule.java         # Modulo proprietà generali
+│
+├── components/
+│   ├── EditorButton.java          # Bottone multi-stile
+│   ├── EditorSlider.java          # Slider numerico
+│   ├── EditorToggle.java          # Toggle boolean
+│   ├── EditorTextField.java       # Campo testo
+│   ├── HeaderComponent.java       # Header con tabs
+│   ├── FooterComponent.java       # Footer con azioni
+│   ├── LeftColumnComponent.java   # Colonna sinistra
+│   ├── ScrollableContentArea.java # Area contenuto scrollabile
+│   └── ButtonRow.java             # Layout orizzontale bottoni
+│
+├── core/
+│   ├── EditorLayout.java          # Layout engine
+│   ├── Bounds.java                # Record bounds
+│   ├── SectionBounds.java         # Bounds per sezione
+│   ├── UIConstants.java           # Colori e costanti
+│   ├── EditorSpacing.java         # Spacing constants
+│   ├── EditorDimensions.java      # Dimensioni componenti
+│   ├── ScaledCoord.java           # Coordinate scalate
+│   ├── EditorScaleCalculator.java # Calcolo scala UI
+│   ├── BaseOverlay.java           # Classe base overlay
+│   ├── AnimationState.java        # Gestione animazioni
+│   ├── Theme.java                 # Interface tema
+│   ├── ThemeManager.java          # Gestione temi
+│   ├── FocusManager.java          # Focus keyboard
+│   └── EditorCache.java           # Sistema cache
+│
+├── systems/
+│   ├── ConfirmDialog.java         # Dialoghi conferma
+│   ├── HelpOverlay.java           # Pannello aiuto
+│   ├── TemplateOverlay.java       # Selezione template
+│   ├── CraftingInfoPanel.java     # Info crafting
+│   ├── DebugPanel.java            # Debug info
+│   ├── MultiEditPanel.java        # Multi-edit UI
+│   ├── MultiEditManager.java      # Logica multi-edit
+│   ├── DirtyState.java            # Tracking modifiche
+│   └── UndoRedoStack.java         # Undo/Redo stack
+│
+└── debug/
+    ├── DebugOverlay.java          # Overlay debug
+    ├── DebugInfoSection.java      # Sezione info debug
+    └── ValueComparison.java       # Comparazione valori
+```

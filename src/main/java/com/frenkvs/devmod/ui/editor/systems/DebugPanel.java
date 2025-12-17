@@ -73,7 +73,7 @@ public class DebugPanel {
         int pad = 6;
         int lineH = 12;
         graphics.fill(x, y, x + width, y + height, 0xE0101020);
-        AxiomRenderer.drawBorder(graphics, x, y, width, height, UIConstants.Border.ACCENT);
+        AxiomRenderer.drawBorder(graphics, x, y, width, height, UIConstants.Border.ACCENT());
 
         int curY = y + pad;
         graphics.drawString(font, "Debug", x + pad, curY, 0xFFFFFF, false);

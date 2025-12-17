@@ -91,7 +91,7 @@ public abstract class ScrollableSettingsPage implements SettingsPage {
      */
     protected void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height) {
         // Track background
-        graphics.fill(x, y, x + barWidth, y + height, UIConstants.Background.INPUT);
+        graphics.fill(x, y, x + barWidth, y + height, UIConstants.Background.INPUT());
 
         // Calculate thumb size and position
         float visibleRatio = (float) visibleHeight / totalContentHeight;
@@ -106,7 +106,7 @@ public abstract class ScrollableSettingsPage implements SettingsPage {
         }
 
         // Thumb
-        int thumbColor = isDraggingScrollbar ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
+        int thumbColor = isDraggingScrollbar ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
         graphics.fill(x, thumbY, x + barWidth, thumbY + thumbHeight, thumbColor);
     }
 

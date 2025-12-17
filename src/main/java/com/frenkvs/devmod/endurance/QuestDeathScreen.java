@@ -25,14 +25,14 @@ public class QuestDeathScreen extends Screen {
     // === Colors - Thematic death screen (red theme) ===
     private static final int COLOR_BG = 0xEE0a0a14;           // Dark red-tinted background
     private static final int COLOR_PANEL_BG = 0xDD1a0a0a;     // Dark panel
-    private static final int COLOR_BORDER = UIConstants.Accent.RED;
-    private static final int COLOR_BORDER_GLOW = UIConstants.setAlpha(UIConstants.Accent.RED, 0x44);
-    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY;
-    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY;
-    private static final int COLOR_DEATH = UIConstants.Accent.RED;
-    private static final int COLOR_SUCCESS = UIConstants.Accent.GREEN;
-    private static final int COLOR_WARNING = UIConstants.Accent.ORANGE;
-    private static final int COLOR_GOLD = UIConstants.Accent.GOLD;
+    private static final int COLOR_BORDER = UIConstants.Accent.RED();
+    private static final int COLOR_BORDER_GLOW = UIConstants.setAlpha(UIConstants.Accent.RED(), 0x44);
+    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY();
+    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY();
+    private static final int COLOR_DEATH = UIConstants.Accent.RED();
+    private static final int COLOR_SUCCESS = UIConstants.Accent.GREEN();
+    private static final int COLOR_WARNING = UIConstants.Accent.ORANGE();
+    private static final int COLOR_GOLD = UIConstants.Accent.GOLD();
 
     // === Dimensions ===
     private static final int PANEL_WIDTH = 340;
@@ -147,7 +147,7 @@ public class QuestDeathScreen extends Screen {
         // Keybind hints
         if (fadeProgress > 0.8f) {
             float hintAlpha = (fadeProgress - 0.8f) / 0.2f;
-            int hintColor = applyAlpha(UIConstants.Text.MUTED, hintAlpha);
+            int hintColor = applyAlpha(UIConstants.Text.MUTED(), hintAlpha);
             graphics.drawCenteredString(font, I18n.translate("devmod.death.keybind_hint").getString(), centerX, panelY + PANEL_HEIGHT + 5, hintColor);
         }
 
@@ -221,7 +221,7 @@ public class QuestDeathScreen extends Screen {
         y += 30;
 
         // Separator
-        int sepColor = applyAlpha(UIConstants.Border.SEPARATOR, alpha);
+        int sepColor = applyAlpha(UIConstants.Border.SEPARATOR(), alpha);
         g.fill(panelX + 30, y, panelX + PANEL_WIDTH - 30, y + 1, sepColor);
         y += 15;
 

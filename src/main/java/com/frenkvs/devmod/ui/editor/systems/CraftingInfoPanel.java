@@ -172,31 +172,32 @@ public class CraftingInfoPanel extends BaseOverlay {
     @Override
     protected void renderContent(GuiGraphics g, Font font, int x, int y, int panelW, int panelH,
                                   int mouseX, int mouseY) {
+        Font safeFont = Objects.requireNonNull(font, "font cannot be null");
         int padding = ScaledCoord.scaleDim(10);
         int gridSize = ScaledCoord.scaleDim(24 * 3 + 20);
         int titleH = ScaledCoord.scaleDim(16);
         int valueTitleH = ScaledCoord.scaleDim(14);
 
         int cursorY = y + padding;
-        g.drawString(font, "CRAFTING RECIPE", x + padding, cursorY, UIConstants.Text.TITLE, false);
-        drawRecipeSelector(g, font, x + panelW - padding - ScaledCoord.scaleDim(90), cursorY - ScaledCoord.scaleDim(2), mouseX, mouseY);
+        g.drawString(safeFont, "CRAFTING RECIPE", x + padding, cursorY, UIConstants.Text.TITLE(), false);
+        drawRecipeSelector(g, safeFont, x + panelW - padding - ScaledCoord.scaleDim(90), cursorY - ScaledCoord.scaleDim(2), mouseX, mouseY);
         cursorY += titleH + ScaledCoord.scaleDim(2);
 
-        renderCraftingGrid(g, font, x + padding, cursorY);
+        renderCraftingGrid(g, safeFont, x + padding, cursorY);
         cursorY += gridSize + padding;
 
-        g.drawString(font, "ITEM VALUE ANALYSIS", x + padding, cursorY, UIConstants.Text.TITLE, false);
+        g.drawString(safeFont, "ITEM VALUE ANALYSIS", x + padding, cursorY, UIConstants.Text.TITLE(), false);
         cursorY += valueTitleH;
         // Track ingredient area for scroll handling
         this.ingredientAreaX = x + padding;
         this.ingredientAreaY = cursorY;
         this.ingredientAreaW = panelW - padding * 2;
         this.ingredientAreaH = cachedValueHeight;
-        renderValueAnalysis(g, font, ingredientAreaX, ingredientAreaY, cachedValueHeight, ingredientAreaW);
+        renderValueAnalysis(g, safeFont, ingredientAreaX, ingredientAreaY, cachedValueHeight, ingredientAreaW);
 
         // Close hint
         String closeHint = "Click outside or press ESC to close";
-        g.drawString(font, closeHint, x + padding, y + panelH - padding - font.lineHeight, UIConstants.Text.MUTED, false);
+        g.drawString(safeFont, closeHint, x + padding, y + panelH - padding - safeFont.lineHeight, UIConstants.Text.MUTED(), false);
     }
 
     private void renderCraftingGrid(GuiGraphics g, Font font, int x, int y) {
@@ -210,8 +211,8 @@ public class CraftingInfoPanel extends BaseOverlay {
                 int cellX = x + col * cellSize;
                 int cellY = y + row * cellSize;
 
-                g.fill(cellX, cellY, cellX + cellSize, cellY + cellSize, UIConstants.Background.INPUT);
-                AxiomRenderer.drawBorder(g, cellX, cellY, cellSize, cellSize, UIConstants.Border.MUTED);
+                g.fill(cellX, cellY, cellX + cellSize, cellY + cellSize, UIConstants.Background.INPUT());
+                AxiomRenderer.drawBorder(g, cellX, cellY, cellSize, cellSize, UIConstants.Border.MUTED());
 
                 ItemStack ingredient = getIngredient(row, col);
                 if (!ingredient.isEmpty()) {
@@ -224,7 +225,7 @@ public class CraftingInfoPanel extends BaseOverlay {
         // Arrow
         int arrowX = x + gridSize + ScaledCoord.scaleDim(10);
         int arrowY = y + cellSize;
-        g.drawString(safeFont, "→", arrowX, arrowY + ScaledCoord.scaleDim(4), UIConstants.Text.SECONDARY, false);
+        g.drawString(safeFont, "→", arrowX, arrowY + ScaledCoord.scaleDim(4), UIConstants.Text.SECONDARY(), false);
 
         // Result
         int resultX = arrowX + ScaledCoord.scaleDim(20);
@@ -256,7 +257,7 @@ public class CraftingInfoPanel extends BaseOverlay {
         Font safeFont = Objects.requireNonNull(font, "font cannot be null");
 
         int lineY = y;
-        g.drawString(safeFont, "Ingredients:", x, lineY, UIConstants.Text.SECONDARY, false);
+        g.drawString(safeFont, "Ingredients:", x, lineY, UIConstants.Text.SECONDARY(), false);
         int headerHeight = ScaledCoord.scaleDim(14);
         lineY += headerHeight;
 
@@ -281,7 +282,7 @@ public class CraftingInfoPanel extends BaseOverlay {
             IngredientValue ing = analysis.ingredients().get(i);
             int rowY = lineY + (i - startIndex) * ingredientLineHeight + offsetY;
             String line = String.format("• %dx %s", ing.count(), ing.item().getHoverName().getString());
-            g.drawString(safeFont, line, x + ScaledCoord.scaleDim(5), rowY, UIConstants.Text.PRIMARY, false);
+            g.drawString(safeFont, line, x + ScaledCoord.scaleDim(5), rowY, UIConstants.Text.PRIMARY(), false);
 
             String rarityTag = String.format("(%s)", ing.rarity().displayName);
             int tagX = x + ScaledCoord.scaleDim(150);
@@ -289,7 +290,7 @@ public class CraftingInfoPanel extends BaseOverlay {
 
             String valueStr = String.format("+%d", ing.value());
             int valueX = x + ScaledCoord.scaleDim(230);
-            g.drawString(safeFont, valueStr, valueX, rowY, UIConstants.Text.VALUE, false);
+            g.drawString(safeFont, valueStr, valueX, rowY, UIConstants.Text.VALUE(), false);
         }
 
         g.disableScissor();
@@ -297,14 +298,14 @@ public class CraftingInfoPanel extends BaseOverlay {
         lineY += availableForIngredients;
 
         lineY += ScaledCoord.scaleDim(4);
-        g.fill(x, lineY, x + Math.min(areaWidth, ScaledCoord.scaleDim(260)), lineY + 1, UIConstants.Border.SEPARATOR);
+        g.fill(x, lineY, x + Math.min(areaWidth, ScaledCoord.scaleDim(260)), lineY + 1, UIConstants.Border.SEPARATOR());
         lineY += ScaledCoord.scaleDim(8);
 
-        g.drawString(safeFont, "Total Value:", x, lineY, UIConstants.Text.SECONDARY, false);
-        g.drawString(safeFont, String.valueOf(analysis.totalValue()), x + ScaledCoord.scaleDim(200), lineY, UIConstants.Text.VALUE, false);
+        g.drawString(safeFont, "Total Value:", x, lineY, UIConstants.Text.SECONDARY(), false);
+        g.drawString(safeFont, String.valueOf(analysis.totalValue()), x + ScaledCoord.scaleDim(200), lineY, UIConstants.Text.VALUE(), false);
         lineY += ScaledCoord.scaleDim(14);
 
-        g.drawString(safeFont, "Rarity Tier:", x, lineY, UIConstants.Text.SECONDARY, false);
+        g.drawString(safeFont, "Rarity Tier:", x, lineY, UIConstants.Text.SECONDARY(), false);
         g.drawString(safeFont, analysis.rarityTier().displayName, x + ScaledCoord.scaleDim(200), lineY, analysis.rarityTier().color, false);
     }
 
@@ -465,8 +466,8 @@ public class CraftingInfoPanel extends BaseOverlay {
 
         int boxX = x;
         int boxY = y;
-        g.fill(boxX, boxY, boxX + totalW, boxY + btnH, UIConstants.Background.INPUT);
-        AxiomRenderer.drawBorder(g, boxX, boxY, totalW, btnH, UIConstants.Border.MUTED);
+        g.fill(boxX, boxY, boxX + totalW, boxY + btnH, UIConstants.Background.INPUT());
+        AxiomRenderer.drawBorder(g, boxX, boxY, totalW, btnH, UIConstants.Border.MUTED());
 
         // Prev button using EditorButton
         int prevX = boxX + ScaledCoord.scaleDim(2);
@@ -476,7 +477,7 @@ public class CraftingInfoPanel extends BaseOverlay {
         // Label
         String label = (selectedRecipeIndex + 1) + "/" + recipes.size();
         int labelX = prevX + btnW + gap;
-        g.drawString(safeFont, label, labelX, boxY + ScaledCoord.scaleDim(3), UIConstants.Text.SECONDARY, false);
+        g.drawString(safeFont, label, labelX, boxY + ScaledCoord.scaleDim(3), UIConstants.Text.SECONDARY(), false);
 
         // Next button using EditorButton
         int nextX = labelX + ScaledCoord.scaleDim(40);

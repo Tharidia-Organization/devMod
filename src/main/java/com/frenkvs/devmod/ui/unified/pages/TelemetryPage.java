@@ -58,19 +58,19 @@ public class TelemetryPage implements SettingsPage {
         // Weapon summaries count
         List<String> weaponSummaries = TelemetryService.INSTANCE.getWeaponSummaries();
         graphics.drawString(font, "Weapons tracked: " + weaponSummaries.size(), x, currentY,
-            UIConstants.Text.PRIMARY, false);
+            UIConstants.Text.PRIMARY(), false);
         currentY += ROW_HEIGHT;
 
         // Room summaries count
         List<String> roomSummaries = TelemetryService.INSTANCE.getRoomSummaries();
         graphics.drawString(font, "Rooms explored: " + roomSummaries.size(), x, currentY,
-            UIConstants.Text.PRIMARY, false);
+            UIConstants.Text.PRIMARY(), false);
         currentY += ROW_HEIGHT;
 
         // Fight summaries count
         List<String> fightSummaries = TelemetryService.INSTANCE.getFightSummaries();
         graphics.drawString(font, "Fights recorded: " + fightSummaries.size(), x, currentY,
-            UIConstants.Text.PRIMARY, false);
+            UIConstants.Text.PRIMARY(), false);
         currentY += ROW_HEIGHT + SECTION_SPACING;
 
         // Separator
@@ -179,7 +179,7 @@ public class TelemetryPage implements SettingsPage {
 
         // Status message
         if (!statusMessage.isEmpty() && System.currentTimeMillis() - statusDisplayTime < 3000) {
-            graphics.drawString(font, statusMessage, x, currentY, UIConstants.Status.SUCCESS, false);
+            graphics.drawString(font, statusMessage, x, currentY, UIConstants.Status.SUCCESS(), false);
             currentY += ROW_HEIGHT;
         }
 

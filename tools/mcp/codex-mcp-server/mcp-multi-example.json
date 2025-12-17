@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "codex-build": {
+      "command": "node",
+      "args": ["tools/mcp/codex-mcp-server/src/index.js"],
+      "transport": "stdio",
+      "cwd": ".",
+      "env": {
+        "CODEX_MCP_TIMEOUT_MS": "600000"
+      }
+    },
+    "codex-tests": {
+      "command": "node",
+      "args": ["tools/mcp/codex-mcp-server/src/index.js"],
+      "transport": "stdio",
+      "cwd": ".",
+      "env": {
+        "CODEX_MCP_TIMEOUT_MS": "300000"
+      }
+    },
+    "codex-docs": {
+      "command": "node",
+      "args": ["tools/mcp/codex-mcp-server/src/index.js"],
+      "transport": "stdio",
+      "cwd": "docs"
+    }
+  }
+}

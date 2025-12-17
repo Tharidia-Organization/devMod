@@ -31,6 +31,9 @@ public final class DatapackIO {
     private static final Logger LOGGER = LoggerFactory.getLogger(DatapackIO.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
+    /** Include _meta block in exported JSON for traceability */
+    private static final boolean INCLUDE_EXPORT_METADATA = true;
+
     private DatapackIO() {}
 
     /**
@@ -40,7 +43,13 @@ public final class DatapackIO {
      * @return number of files exported
      */
     public static int exportOverrides(String packName) {
-        Path base = ConfigPaths.getGameDir().resolve("datapacks").resolve(packName);
+        // Null safety on game directory
+        Path gameDir = ConfigPaths.getGameDir();
+        if (gameDir == null) {
+            LOGGER.error("[DatapackIO] Game directory is null, cannot export datapack");
+            return 0;
+        }
+        Path base = gameDir.resolve("datapacks").resolve(packName);
         int count = 0;
         try {
             // pack.mcmeta
@@ -49,7 +58,11 @@ public final class DatapackIO {
             // Armor overrides
             Path armorDir = base.resolve("data/devmod/item_modifiers/armor");
             for (Map.Entry<Item, ArmorStats> entry : ArmorConfigManager.getAllGlobalStats().entrySet()) {
-                Item item = Objects.requireNonNull(entry.getKey());
+                Item item = entry.getKey();
+                if (item == null) {
+                    LOGGER.warn("[DatapackIO] Skipping null armor item in export");
+                    continue;
+                }
                 ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
                 Path out = armorDir.resolve(id.toString().replace(":", "_") + ".json");
                 writeArmor(out, id, entry.getValue());
@@ -59,7 +72,11 @@ public final class DatapackIO {
             // Weapon overrides
             Path weaponDir = base.resolve("data/devmod/item_modifiers/weapons");
             for (Map.Entry<Item, WeaponStats> entry : WeaponConfigManager.getAllGlobalStats().entrySet()) {
-                Item item = Objects.requireNonNull(entry.getKey());
+                Item item = entry.getKey();
+                if (item == null) {
+                    LOGGER.warn("[DatapackIO] Skipping null weapon item in export");
+                    continue;
+                }
                 ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
                 Path out = weaponDir.resolve(id.toString().replace(":", "_") + ".json");
                 writeWeapon(out, id, entry.getValue());
@@ -80,7 +97,13 @@ public final class DatapackIO {
      * @return number of overrides imported
      */
     public static int importOverrides(String packName) {
-        Path base = ConfigPaths.getGameDir().resolve("datapacks").resolve(packName);
+        // Null safety on game directory
+        Path gameDir = ConfigPaths.getGameDir();
+        if (gameDir == null) {
+            LOGGER.error("[DatapackIO] Game directory is null, cannot import datapack");
+            return 0;
+        }
+        Path base = gameDir.resolve("datapacks").resolve(packName);
         int imported = 0;
 
         // Armor
@@ -108,7 +131,9 @@ public final class DatapackIO {
                         LOGGER.warn("[DatapackIO] Failed to import armor file {}", file.getFileName(), e);
                     }
                 }
-            } catch (IOException ignored) {}
+            } catch (IOException e) {
+                LOGGER.warn("[DatapackIO] Failed to list armor directory {}: {}", armorDir, e.getMessage());
+            }
         }
 
         // Weapons
@@ -136,7 +161,9 @@ public final class DatapackIO {
                         LOGGER.warn("[DatapackIO] Failed to import weapon file {}", file.getFileName(), e);
                     }
                 }
-            } catch (IOException ignored) {}
+            } catch (IOException e) {
+                LOGGER.warn("[DatapackIO] Failed to list weapon directory {}: {}", weaponDir, e.getMessage());
+            }
         }
 
         if (imported > 0) {
@@ -179,6 +206,12 @@ public final class DatapackIO {
         values.addProperty("shield_recovery_speed", stats.shieldRecoverySpeed);
 
         json.add("values", values);
+
+        // Add export metadata for traceability
+        if (INCLUDE_EXPORT_METADATA) {
+            json.add("_meta", createExportMetadata());
+        }
+
         Files.writeString(path, GSON.toJson(json), StandardCharsets.UTF_8);
     }
 
@@ -209,7 +242,38 @@ public final class DatapackIO {
         values.addProperty("clear_tool_rules", stats.clearToolRules);
 
         json.add("values", values);
+
+        // Add export metadata for traceability
+        if (INCLUDE_EXPORT_METADATA) {
+            json.add("_meta", createExportMetadata());
+        }
+
         Files.writeString(path, GSON.toJson(json), StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Creates the _meta block for export traceability.
+     * Contains export timestamp and mod version.
+     */
+    private static JsonObject createExportMetadata() {
+        JsonObject meta = new JsonObject();
+        meta.addProperty("exported_at", LocalDateTime.now().toString());
+        meta.addProperty("devmod_version", getModVersion());
+        return meta;
+    }
+
+    /**
+     * Gets the mod version from NeoForge ModContainer or falls back to "unknown".
+     */
+    private static String getModVersion() {
+        try {
+            return net.neoforged.fml.ModList.get()
+                    .getModContainerById("devmod")
+                    .map(container -> container.getModInfo().getVersion().toString())
+                    .orElse("unknown");
+        } catch (Exception e) {
+            return "unknown";
+        }
     }
 
     private static JsonObject readJson(Path file) {

@@ -193,7 +193,7 @@ public class QuestSequenceOverlay {
         int boxY = 40;
 
         // Background
-        int bgColor = UIConstants.setAlpha(UIConstants.Background.PANEL_SOLID, (int) (0xE0 * animationProgress));
+        int bgColor = UIConstants.setAlpha(UIConstants.Background.PANEL_SOLID(), (int) (0xE0 * animationProgress));
         graphics.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, bgColor);
 
         // Border with glow effect based on phase
@@ -203,7 +203,7 @@ public class QuestSequenceOverlay {
 
         // Phase title
         Component phaseText = Objects.requireNonNull(getPhaseText(), "phase text");
-        int textColor = UIConstants.setAlpha(UIConstants.Text.PRIMARY, alpha);
+        int textColor = UIConstants.setAlpha(UIConstants.Text.PRIMARY(), alpha);
         graphics.drawCenteredString(font, phaseText, boxX + boxWidth / 2, boxY + 8, textColor);
 
         // Render based on phase
@@ -238,7 +238,7 @@ public class QuestSequenceOverlay {
      * Render "GO!" message.
      */
     private void renderGoMessage(GuiGraphics graphics, net.minecraft.client.gui.Font font, int boxX, int boxY, int boxWidth, int alpha) {
-        int goColor = UIConstants.setAlpha(UIConstants.Accent.GREEN, alpha);
+        int goColor = UIConstants.setAlpha(UIConstants.Accent.GREEN(), alpha);
         graphics.pose().pushPose();
         graphics.pose().translate(boxX + boxWidth / 2f, boxY + 32, 0);
         graphics.pose().scale(2f, 2f, 1f);
@@ -255,7 +255,7 @@ public class QuestSequenceOverlay {
 
         // Arrival count
         String arrivalText = Objects.requireNonNull(arrived + " / " + total + " arrived", "arrival text");
-        int arrivalColor = UIConstants.setAlpha(UIConstants.Text.PRIMARY, alpha);
+        int arrivalColor = UIConstants.setAlpha(UIConstants.Text.PRIMARY(), alpha);
         var safeFont = Objects.requireNonNull(font, "font");
         graphics.drawCenteredString(safeFont, arrivalText, boxX + boxWidth / 2, boxY + 28, arrivalColor);
 
@@ -271,14 +271,14 @@ public class QuestSequenceOverlay {
             boolean isArrived = i < arrived;
 
             int dotColor = isArrived
-                ? UIConstants.setAlpha(UIConstants.Accent.GREEN, alpha)
-                : UIConstants.setAlpha(UIConstants.Text.DISABLED, alpha);
+                ? UIConstants.setAlpha(UIConstants.Accent.GREEN(), alpha)
+                : UIConstants.setAlpha(UIConstants.Text.DISABLED(), alpha);
 
             graphics.fill(dotX, dotY, dotX + dotSize, dotY + dotSize, dotColor);
 
             // Checkmark for arrived
             if (isArrived) {
-                int checkColor = UIConstants.setAlpha(UIConstants.Text.PRIMARY, alpha);
+                int checkColor = UIConstants.setAlpha(UIConstants.Text.PRIMARY(), alpha);
                 graphics.drawString(safeFont, "✓", dotX + 1, dotY, checkColor);
             }
         }
@@ -286,7 +286,7 @@ public class QuestSequenceOverlay {
         // Timeout warning
         if (secondsRemaining <= 10 && secondsRemaining > 0) {
             String timeoutText = Objects.requireNonNull("Timeout in " + secondsRemaining + "s", "timeout text");
-            int timeoutColor = UIConstants.setAlpha(UIConstants.Accent.GOLD, alpha);
+            int timeoutColor = UIConstants.setAlpha(UIConstants.Accent.GOLD(), alpha);
             graphics.drawCenteredString(safeFont, timeoutText, boxX + boxWidth / 2, boxY + 62, timeoutColor);
         }
     }
@@ -301,7 +301,7 @@ public class QuestSequenceOverlay {
         int barHeight = 4;
 
         // Bar background
-        int barBgColor = UIConstants.setAlpha(UIConstants.Background.INPUT, alpha);
+        int barBgColor = UIConstants.setAlpha(UIConstants.Background.INPUT(), alpha);
         graphics.fill(barX, barY, barX + barWidth, barY + barHeight, barBgColor);
 
         // Bar progress
@@ -325,20 +325,20 @@ public class QuestSequenceOverlay {
 
     private int getPhaseColor() {
         return switch (currentPhase) {
-            case COUNTDOWN_START -> UIConstants.Accent.GOLD;
-            case TELEPORTING -> UIConstants.Accent.CYAN;
-            case WAITING_FOR_ARRIVALS -> UIConstants.Accent.PURPLE;
-            case SYNCING -> UIConstants.Accent.CYAN;
-            case STARTING -> UIConstants.Accent.GREEN;
-            case STARTED -> UIConstants.Accent.GREEN;
-            case CANCELLED -> UIConstants.Accent.RED;
+            case COUNTDOWN_START -> UIConstants.Accent.GOLD();
+            case TELEPORTING -> UIConstants.Accent.CYAN();
+            case WAITING_FOR_ARRIVALS -> UIConstants.Accent.PURPLE();
+            case SYNCING -> UIConstants.Accent.CYAN();
+            case STARTING -> UIConstants.Accent.GREEN();
+            case STARTED -> UIConstants.Accent.GREEN();
+            case CANCELLED -> UIConstants.Accent.RED();
         };
     }
 
     private int getCountdownColor() {
-        if (secondsRemaining <= 1) return UIConstants.Accent.RED;
-        if (secondsRemaining <= 3) return UIConstants.Accent.GOLD;
-        return UIConstants.Text.PRIMARY;
+        if (secondsRemaining <= 1) return UIConstants.Accent.RED();
+        if (secondsRemaining <= 3) return UIConstants.Accent.GOLD();
+        return UIConstants.Text.PRIMARY();
     }
 
     private float getPhaseProgress() {

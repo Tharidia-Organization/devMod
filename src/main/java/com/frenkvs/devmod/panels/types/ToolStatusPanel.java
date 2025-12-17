@@ -72,7 +72,7 @@ public class ToolStatusPanel extends FloatingPanel {
                 tool.getLabel(),
                 tool.getHotkey(),
                 enabled,
-                enabled ? UIConstants.Status.SUCCESS : UIConstants.Text.MUTED
+                enabled ? UIConstants.Status.SUCCESS() : UIConstants.Text.MUTED()
             ));
         }
     }
@@ -88,7 +88,7 @@ public class ToolStatusPanel extends FloatingPanel {
         // Header with count
         String header = "Active: " + activeCount + "/" + toolStates.size();
         Font font = Objects.requireNonNull(mc.font);
-        graphics.drawString(font, header, 0, y, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, header, 0, y, UIConstants.Text.SECONDARY(), false);
         y += lineHeight + 4;
 
         // Tool list (show only the first ones that fit)
@@ -105,7 +105,7 @@ public class ToolStatusPanel extends FloatingPanel {
 
             // Name and hotkey
             String text = "[" + tool.hotkey + "] " + tool.name;
-            int textColor = tool.enabled ? UIConstants.Text.PRIMARY : UIConstants.Text.MUTED;
+            int textColor = tool.enabled ? UIConstants.Text.PRIMARY() : UIConstants.Text.MUTED();
             graphics.drawString(font, text, dotSize + 4, y, textColor, false);
 
             y += lineHeight;
@@ -121,7 +121,7 @@ public class ToolStatusPanel extends FloatingPanel {
 
         // Header with count
         String header = "Active: " + activeCount + "/" + toolStates.size();
-        renderText3D(poseStack, bufferSource, font, header, 0, y, applyAlpha(UIConstants.Text.SECONDARY, alpha));
+        renderText3D(poseStack, bufferSource, font, header, 0, y, applyAlpha(UIConstants.Text.SECONDARY(), alpha));
         y += lineHeight + 4;
 
         // Tool list (show only the first ones that fit)
@@ -133,7 +133,7 @@ public class ToolStatusPanel extends FloatingPanel {
 
             // Name and hotkey
             String text = "[" + tool.hotkey + "] " + tool.name;
-            int textColor = tool.enabled ? UIConstants.Text.PRIMARY : UIConstants.Text.MUTED;
+            int textColor = tool.enabled ? UIConstants.Text.PRIMARY() : UIConstants.Text.MUTED();
             renderText3D(poseStack, bufferSource, font, text, 0, y, applyAlpha(textColor, alpha));
 
             y += lineHeight;

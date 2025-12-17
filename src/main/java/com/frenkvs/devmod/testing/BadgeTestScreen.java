@@ -117,18 +117,18 @@ public class BadgeTestScreen extends Screen {
         Component titleComponent = getTitleComponent();
 
         // Title
-        graphics.drawCenteredString(font, titleComponent, this.width / 2, 20, UIConstants.Text.PRIMARY);
+        graphics.drawCenteredString(font, titleComponent, this.width / 2, 20, UIConstants.Text.PRIMARY());
 
         // Subtitle
         graphics.drawCenteredString(font,
             "Click a button to test badge popup",
-            this.width / 2, 40, UIConstants.Text.MUTED);
+            this.width / 2, 40, UIConstants.Text.MUTED());
 
         // Queue status
         int queueSize = BadgePopupOverlay.getQueueSize();
         String queueText = "Queue: " + queueSize + " badge" + (queueSize != 1 ? "s" : "");
         graphics.drawCenteredString(font, queueText, this.width / 2, this.height - 30,
-            queueSize > 0 ? 0xFF00FF00 : UIConstants.Text.MUTED);
+            queueSize > 0 ? 0xFF00FF00 : UIConstants.Text.MUTED());
 
         // Render widgets
         super.render(graphics, mouseX, mouseY, partialTick);

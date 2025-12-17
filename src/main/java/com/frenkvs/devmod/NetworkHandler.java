@@ -366,6 +366,12 @@ public class NetworkHandler {
                 nn(com.frenkvs.devmod.network.ArmorStatsPayloadV2.STREAM_CODEC),
                 NetworkHandler::handleArmorStatsDataV2
         );
+        // Channel 38: Global Config Sync (server to client)
+        event.registrar("38").playToClient(
+                nn(com.frenkvs.devmod.network.GlobalConfigSyncPayload.TYPE),
+                nn(com.frenkvs.devmod.network.GlobalConfigSyncPayload.STREAM_CODEC),
+                NetworkHandler::handleGlobalConfigSync
+        );
     }
 
     // =================================================================================
@@ -1465,6 +1471,17 @@ public class NetworkHandler {
         context.enqueueWork(() -> {
             // Update client-side cache
             ClientQuestCache.update(payload);
+        });
+    }
+
+    // =================================================================================
+    // GLOBAL CONFIG SYNC HANDLER (server to client)
+    // =================================================================================
+    private static void handleGlobalConfigSync(com.frenkvs.devmod.network.GlobalConfigSyncPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            // Apply received configs to client-side managers
+            payload.applyToClientConfigs();
+            LOGGER.debug("[NetworkHandler] Received global config sync");
         });
     }
 

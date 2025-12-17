@@ -39,10 +39,10 @@ public class ProgressFooter implements HubPanel {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Background
-        graphics.fill(x, y, x + width, y + height, UIConstants.Background.HEADER);
+        graphics.fill(x, y, x + width, y + height, UIConstants.Background.HEADER());
 
         // Top border
-        graphics.fill(x, y, x + width, y + 1, UIConstants.Border.DEFAULT);
+        graphics.fill(x, y, x + width, y + 1, UIConstants.Border.DEFAULT());
 
         int contentY = y + PADDING;
 
@@ -55,7 +55,7 @@ public class ProgressFooter implements HubPanel {
 
         String statsText = String.format("Progress: %d/%d | Passed: %d | Failed: %d | Pending: %d",
             passed + failed, total, passed, failed, pending);
-        graphics.drawString(font, statsText, x + PADDING, contentY, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, statsText, x + PADDING, contentY, UIConstants.Text.SECONDARY(), false);
         contentY += 14;
 
         // Progress bar
@@ -78,41 +78,41 @@ public class ProgressFooter implements HubPanel {
                                    int passed, int failed, int pending, int total) {
         if (total == 0) {
             // Empty bar
-            graphics.fill(bx, by, bx + bw, by + PROGRESS_BAR_HEIGHT, UIConstants.Background.INPUT);
+            graphics.fill(bx, by, bx + bw, by + PROGRESS_BAR_HEIGHT, UIConstants.Background.INPUT());
             return;
         }
 
         // Background
-        graphics.fill(bx, by, bx + bw, by + PROGRESS_BAR_HEIGHT, UIConstants.Background.INPUT);
+        graphics.fill(bx, by, bx + bw, by + PROGRESS_BAR_HEIGHT, UIConstants.Background.INPUT());
 
         // Passed segment (green)
         int passedWidth = (int)((float)passed / total * bw);
         if (passedWidth > 0) {
-            graphics.fill(bx, by, bx + passedWidth, by + PROGRESS_BAR_HEIGHT, UIConstants.Status.SUCCESS);
+            graphics.fill(bx, by, bx + passedWidth, by + PROGRESS_BAR_HEIGHT, UIConstants.Status.SUCCESS());
         }
 
         // Failed segment (red)
         int failedWidth = (int)((float)failed / total * bw);
         if (failedWidth > 0) {
             int failedX = bx + passedWidth;
-            graphics.fill(failedX, by, failedX + failedWidth, by + PROGRESS_BAR_HEIGHT, UIConstants.Status.ERROR);
+            graphics.fill(failedX, by, failedX + failedWidth, by + PROGRESS_BAR_HEIGHT, UIConstants.Status.ERROR());
         }
 
         // Pending is the remaining space (stays as background)
 
         // Border
-        AxiomRenderer.drawBorder(graphics, bx, by, bw, PROGRESS_BAR_HEIGHT, UIConstants.Border.DEFAULT);
+        AxiomRenderer.drawBorder(graphics, bx, by, bw, PROGRESS_BAR_HEIGHT, UIConstants.Border.DEFAULT());
     }
 
     private void renderButton(GuiGraphics graphics, int bx, int by, @Nonnull String label, boolean hovered) {
-        int bgColor = hovered ? UIConstants.Background.HOVER : UIConstants.Background.INPUT;
+        int bgColor = hovered ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT();
         graphics.fill(bx, by, bx + BUTTON_WIDTH, by + BUTTON_HEIGHT, bgColor);
-        AxiomRenderer.drawBorder(graphics, bx, by, BUTTON_WIDTH, BUTTON_HEIGHT, UIConstants.Border.DEFAULT);
+        AxiomRenderer.drawBorder(graphics, bx, by, BUTTON_WIDTH, BUTTON_HEIGHT, UIConstants.Border.DEFAULT());
 
         int labelWidth = font.width(label);
         int labelX = bx + (BUTTON_WIDTH - labelWidth) / 2;
         int labelY = by + (BUTTON_HEIGHT - 9) / 2;
-        graphics.drawString(font, label, labelX, labelY, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, label, labelX, labelY, UIConstants.Text.PRIMARY(), false);
     }
 
     @Override

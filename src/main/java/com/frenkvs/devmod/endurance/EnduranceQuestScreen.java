@@ -28,27 +28,27 @@ public class EnduranceQuestScreen extends Screen {
     private static final int QUEST_CARD_MARGIN = UIConstants.Spacing.GAP_SMALL;
 
     // Colors - standardized to UIConstants
-    private static final int COLOR_BG = UIConstants.Background.PANEL;
-    private static final int COLOR_SIDEBAR_BG = UIConstants.Background.HEADER;
-    private static final int COLOR_CARD_BG = UIConstants.Background.INPUT;
-    private static final int COLOR_CARD_HOVER = UIConstants.Background.HOVER;
-    private static final int COLOR_CARD_SELECTED = UIConstants.Background.ACTIVE;
-    private static final int COLOR_ACCENT = UIConstants.Border.DEFAULT;  // Blue instead of pink
-    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY;
-    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY;
-    private static final int COLOR_SUCCESS = UIConstants.Accent.GREEN;
-    private static final int COLOR_WARNING = UIConstants.Accent.GOLD;
+    private static final int COLOR_BG = UIConstants.Background.PANEL();
+    private static final int COLOR_SIDEBAR_BG = UIConstants.Background.HEADER();
+    private static final int COLOR_CARD_BG = UIConstants.Background.INPUT();
+    private static final int COLOR_CARD_HOVER = UIConstants.Background.HOVER();
+    private static final int COLOR_CARD_SELECTED = UIConstants.Background.ACTIVE();
+    private static final int COLOR_ACCENT = UIConstants.Border.DEFAULT();  // Blue instead of pink
+    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY();
+    private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY();
+    private static final int COLOR_SUCCESS = UIConstants.Accent.GREEN();
+    private static final int COLOR_WARNING = UIConstants.Accent.GOLD();
     @SuppressWarnings("unused") // Reserved for future error state styling
-    private static final int COLOR_DANGER = UIConstants.Accent.RED;
+    private static final int COLOR_DANGER = UIConstants.Accent.RED();
 
     // Tier colors - using UIConstants where applicable
     private static final Map<EnduranceQuestRegistry.MobTier, Integer> TIER_COLORS = Map.of(
-        EnduranceQuestRegistry.MobTier.TRIVIAL, UIConstants.Text.MUTED,
-        EnduranceQuestRegistry.MobTier.EASY, UIConstants.Accent.GREEN,
-        EnduranceQuestRegistry.MobTier.MEDIUM, UIConstants.Accent.GOLD,
-        EnduranceQuestRegistry.MobTier.HARD, UIConstants.Accent.ORANGE,
-        EnduranceQuestRegistry.MobTier.ELITE, UIConstants.Accent.PURPLE,
-        EnduranceQuestRegistry.MobTier.BOSS, UIConstants.Accent.RED
+        EnduranceQuestRegistry.MobTier.TRIVIAL, UIConstants.Text.MUTED(),
+        EnduranceQuestRegistry.MobTier.EASY, UIConstants.Accent.GREEN(),
+        EnduranceQuestRegistry.MobTier.MEDIUM, UIConstants.Accent.GOLD(),
+        EnduranceQuestRegistry.MobTier.HARD, UIConstants.Accent.ORANGE(),
+        EnduranceQuestRegistry.MobTier.ELITE, UIConstants.Accent.PURPLE(),
+        EnduranceQuestRegistry.MobTier.BOSS, UIConstants.Accent.RED()
     );
 
     // State
@@ -241,7 +241,7 @@ public class EnduranceQuestScreen extends Screen {
 
         // Panel background
         graphics.fill(panelX - 2, panelY - 2, panelX + panelW + 2, panelY + panelH + 2, COLOR_ACCENT);
-        graphics.fill(panelX, panelY, panelX + panelW, panelY + panelH, UIConstants.Background.PANEL_SOLID);
+        graphics.fill(panelX, panelY, panelX + panelW, panelY + panelH, UIConstants.Background.PANEL_SOLID());
 
         int y = panelY + 15;
         int centerX = panelX + panelW / 2;
@@ -251,7 +251,7 @@ public class EnduranceQuestScreen extends Screen {
         y += 25;
 
         // Separator
-        graphics.fill(panelX + 20, y, panelX + panelW - 20, y + 1, UIConstants.Border.SEPARATOR);
+        graphics.fill(panelX + 20, y, panelX + panelW - 20, y + 1, UIConstants.Border.SEPARATOR());
         y += 15;
 
         // Description
@@ -280,7 +280,7 @@ public class EnduranceQuestScreen extends Screen {
         boolean btnHovered = mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= y && mouseY <= y + 22;
 
         // Button
-        int btnColor = btnHovered ? UIConstants.Background.ACTIVE : UIConstants.Background.INPUT;
+        int btnColor = btnHovered ? UIConstants.Background.ACTIVE() : UIConstants.Background.INPUT();
         graphics.fill(btnX, y, btnX + btnW, y + 22, btnColor);
         graphics.fill(btnX, y, btnX + btnW, y + 1, COLOR_ACCENT);
         graphics.fill(btnX, y + 21, btnX + btnW, y + 22, COLOR_ACCENT);
@@ -321,7 +321,7 @@ public class EnduranceQuestScreen extends Screen {
             boolean isSelected = ns.equals(selectedNamespace);
             boolean isHovered = mouseX >= 10 && mouseX <= SIDEBAR_WIDTH - 10 && mouseY >= y && mouseY < y + 14;
 
-            int bgColor = isSelected ? COLOR_ACCENT : (isHovered ? UIConstants.Border.SEPARATOR : 0x00000000);
+            int bgColor = isSelected ? COLOR_ACCENT : (isHovered ? UIConstants.Border.SEPARATOR() : 0x00000000);
             if (bgColor != 0) {
                 graphics.fill(10, y - 1, SIDEBAR_WIDTH - 10, y + 13, bgColor);
             }
@@ -344,7 +344,7 @@ public class EnduranceQuestScreen extends Screen {
         boolean allTiersSelected = selectedTier == null;
         boolean allTiersHovered = mouseX >= 10 && mouseX <= SIDEBAR_WIDTH - 10 && mouseY >= y && mouseY < y + 14;
         if (allTiersSelected || allTiersHovered) {
-            graphics.fill(10, y - 1, SIDEBAR_WIDTH - 10, y + 13, allTiersSelected ? COLOR_ACCENT : UIConstants.Border.SEPARATOR);
+            graphics.fill(10, y - 1, SIDEBAR_WIDTH - 10, y + 13, allTiersSelected ? COLOR_ACCENT : UIConstants.Border.SEPARATOR());
         }
         graphics.drawString(font, "All Difficulties", 15, y, COLOR_TEXT);
         y += 16;
@@ -353,7 +353,7 @@ public class EnduranceQuestScreen extends Screen {
             boolean isSelected = tier == selectedTier;
             boolean isHovered = mouseX >= 10 && mouseX <= SIDEBAR_WIDTH - 10 && mouseY >= y && mouseY < y + 14;
 
-            int bgColor = isSelected ? TIER_COLORS.get(tier) : (isHovered ? UIConstants.Border.SEPARATOR : 0x00000000);
+            int bgColor = isSelected ? TIER_COLORS.get(tier) : (isHovered ? UIConstants.Border.SEPARATOR() : 0x00000000);
             if (bgColor != 0) {
                 graphics.fill(10, y - 1, SIDEBAR_WIDTH - 10, y + 13, bgColor);
             }
@@ -402,7 +402,7 @@ public class EnduranceQuestScreen extends Screen {
         if (hasScrollbar) {
             int scrollbarHeight = (int) ((float) listHeight / (listHeight + maxScroll) * listHeight);
             int scrollbarY = listY + (int) ((float) scrollOffset / maxScroll * (listHeight - scrollbarHeight));
-            graphics.fill(listX + listWidth - 5, listY, listX + listWidth, listY + listHeight, UIConstants.Border.SEPARATOR);
+            graphics.fill(listX + listWidth - 5, listY, listX + listWidth, listY + listHeight, UIConstants.Border.SEPARATOR());
             graphics.fill(listX + listWidth - 5, scrollbarY, listX + listWidth, scrollbarY + scrollbarHeight, COLOR_ACCENT);
         }
     }
@@ -477,7 +477,7 @@ public class EnduranceQuestScreen extends Screen {
 
         // Divider
         if (y < maxY) {
-            graphics.fill(panelX + 10, y, panelX + panelWidth - 10, y + 1, UIConstants.Border.SEPARATOR);
+            graphics.fill(panelX + 10, y, panelX + panelWidth - 10, y + 1, UIConstants.Border.SEPARATOR());
         }
         y += 10;
 
@@ -548,14 +548,14 @@ public class EnduranceQuestScreen extends Screen {
         int startH = UIConstants.Size.BUTTON_HEIGHT_LARGE;
         int startX = width - startW - 10;
         boolean startHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, startX, buttonY, startW, startH);
-        renderButton(graphics, startX, buttonY, startW, startH, "Start Quest", startHovered, UIConstants.Accent.GREEN);
+        renderButton(graphics, startX, buttonY, startW, startH, "Start Quest", startHovered, UIConstants.Accent.GREEN());
 
         // Shop button (secondary - gold)
         int shopW = 80;
         int shopH = UIConstants.Size.BUTTON_HEIGHT_LARGE;
         int shopX = UIConstants.Spacing.PANEL_MARGIN;
         boolean shopHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, shopX, buttonY, shopW, shopH);
-        renderButton(graphics, shopX, buttonY, shopW, shopH, "Shop", shopHovered, UIConstants.Accent.GOLD);
+        renderButton(graphics, shopX, buttonY, shopW, shopH, "Shop", shopHovered, UIConstants.Accent.GOLD());
 
         // Wave control buttons
         int waveY = height - 85;
@@ -564,12 +564,12 @@ public class EnduranceQuestScreen extends Screen {
         // Minus button
         int minusBtnSize = 24;
         boolean minusHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, controlX, waveY, minusBtnSize, minusBtnSize);
-        renderButton(graphics, controlX, waveY, minusBtnSize, minusBtnSize, "-", minusHovered, UIConstants.Border.DEFAULT);
+        renderButton(graphics, controlX, waveY, minusBtnSize, minusBtnSize, "-", minusHovered, UIConstants.Border.DEFAULT());
 
         // Plus button
         int plusX = controlX + 80;
         boolean plusHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, plusX, waveY, minusBtnSize, minusBtnSize);
-        renderButton(graphics, plusX, waveY, minusBtnSize, minusBtnSize, "+", plusHovered, UIConstants.Border.DEFAULT);
+        renderButton(graphics, plusX, waveY, minusBtnSize, minusBtnSize, "+", plusHovered, UIConstants.Border.DEFAULT());
 
         // Endless toggle button
         int toggleY = height - 55;
@@ -577,7 +577,7 @@ public class EnduranceQuestScreen extends Screen {
         int toggleH = UIConstants.Size.BUTTON_HEIGHT;
         boolean toggleHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, controlX, toggleY, toggleW, toggleH);
         String toggleText = endlessMode ? "Endless: ON" : "Endless: OFF";
-        int toggleColor = endlessMode ? UIConstants.Accent.GREEN : UIConstants.Border.DEFAULT;
+        int toggleColor = endlessMode ? UIConstants.Accent.GREEN() : UIConstants.Border.DEFAULT();
         renderButton(graphics, controlX, toggleY, toggleW, toggleH, toggleText, toggleHovered, toggleColor);
     }
 
@@ -585,13 +585,13 @@ public class EnduranceQuestScreen extends Screen {
      * Render a custom styled button.
      */
     private void renderButton(GuiGraphics graphics, int x, int y, int w, int h, String text, boolean hovered, int color) {
-        int bgColor = hovered ? color : UIConstants.Background.INPUT;
+        int bgColor = hovered ? color : UIConstants.Background.INPUT();
         graphics.fill(x, y, x + w, y + h, bgColor);
         AxiomRenderer.drawBorder(graphics, x, y, w, h, color);
 
         int textX = x + (w - font.width(text)) / 2;
         int textY = y + (h - 8) / 2;
-        graphics.drawString(font, text, textX, textY, hovered ? UIConstants.Text.WHITE : color, false);
+        graphics.drawString(font, text, textX, textY, hovered ? UIConstants.Text.WHITE() : color, false);
     }
 
     @Override

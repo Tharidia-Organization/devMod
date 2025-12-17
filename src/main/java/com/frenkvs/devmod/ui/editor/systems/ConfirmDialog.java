@@ -46,7 +46,7 @@ public final class ConfirmDialog extends BaseOverlay {
             "You have " + changeCount + " unsaved changes.\nDiscard and close?",
             "Discard",
             "Cancel",
-            UIConstants.Accent.RED,
+            UIConstants.Accent.RED(),
             onDiscard,
             onCancel
         );
@@ -58,7 +58,7 @@ public final class ConfirmDialog extends BaseOverlay {
             "This will reset all values to their defaults.\nThis cannot be undone.",
             "Reset",
             "Cancel",
-            UIConstants.Accent.ORANGE,
+            UIConstants.Accent.ORANGE(),
             onReset,
             onCancel
         );
@@ -71,7 +71,7 @@ public final class ConfirmDialog extends BaseOverlay {
             "Discard " + changeCount + " changes to " + slotName + "?",
             "Discard & Switch",
             "Cancel",
-            UIConstants.Accent.ORANGE,
+            UIConstants.Accent.ORANGE(),
             onSwitch,
             onCancel
         );
@@ -84,7 +84,7 @@ public final class ConfirmDialog extends BaseOverlay {
             "Delete preset '" + presetName + "'?\nThis cannot be undone.",
             "Delete",
             "Cancel",
-            UIConstants.Accent.RED,
+            UIConstants.Accent.RED(),
             onDelete,
             onCancel
         );
@@ -98,7 +98,7 @@ public final class ConfirmDialog extends BaseOverlay {
             "Discard " + changeCount + " unsaved changes and switch to PREVIEW mode?",
             "Discard",
             "Cancel",
-            UIConstants.Accent.ORANGE,
+            UIConstants.Accent.ORANGE(),
             onDiscard,
             onCancel
         );
@@ -119,11 +119,11 @@ public final class ConfirmDialog extends BaseOverlay {
 
         // Determine button style based on confirmColor
         EditorButton.Style confirmStyle = EditorButton.Style.PRIMARY;
-        if (confirmColor == UIConstants.Accent.RED) {
+        if (confirmColor == UIConstants.Accent.RED()) {
             confirmStyle = EditorButton.Style.DANGER;
-        } else if (confirmColor == UIConstants.Accent.ORANGE) {
+        } else if (confirmColor == UIConstants.Accent.ORANGE()) {
             confirmStyle = EditorButton.Style.DANGER;  // Use danger for orange warnings too
-        } else if (confirmColor == UIConstants.Accent.GREEN) {
+        } else if (confirmColor == UIConstants.Accent.GREEN()) {
             confirmStyle = EditorButton.Style.SUCCESS;
         }
 
@@ -168,13 +168,13 @@ public final class ConfirmDialog extends BaseOverlay {
         // Title
         Typography.drawText(graphics, font, Objects.requireNonNull(title, "title cannot be null"),
             x + ScaledCoord.scaleDim(16), y + ScaledCoord.scaleDim(16),
-            UIConstants.Text.TITLE, textScale);
+            UIConstants.Text.TITLE(), textScale);
 
         // Message (multi-line support)
         int msgY = y + ScaledCoord.scaleDim(40);
         for (String line : message.split("\n")) {
             Typography.drawText(graphics, font, Objects.requireNonNull(line, "line cannot be null"),
-                x + ScaledCoord.scaleDim(16), msgY, UIConstants.Text.PRIMARY, textScale);
+                x + ScaledCoord.scaleDim(16), msgY, UIConstants.Text.PRIMARY(), textScale);
             msgY += ScaledCoord.scaleDim(12);
         }
 

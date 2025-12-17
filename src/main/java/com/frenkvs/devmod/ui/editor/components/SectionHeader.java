@@ -90,26 +90,26 @@ public class SectionHeader {
         this.hovered = bounds.contains(mouseX, mouseY);
 
         // Background - subtle darker bar
-        graphics.fill(x, y, x + width, y + HEIGHT, UIConstants.Background.HEADER);
+        graphics.fill(x, y, x + width, y + HEIGHT, UIConstants.Background.HEADER());
 
         // Left border accent
-        graphics.fill(x, y, x + 2, y + HEIGHT, UIConstants.Accent.CYAN);
+        graphics.fill(x, y, x + 2, y + HEIGHT, UIConstants.Accent.CYAN());
 
         // Collapse indicator (if collapsible)
         int textX = x + 8;
         if (collapsible) {
             String indicator = collapsed ? "▶" : "▼";
-            int indicatorColor = hovered ? UIConstants.Text.PRIMARY : UIConstants.Text.SECONDARY;
+            int indicatorColor = hovered ? UIConstants.Text.PRIMARY() : UIConstants.Text.SECONDARY();
             graphics.drawString(font, indicator, x + 6, y + (HEIGHT - 8) / 2, indicatorColor, false);
             textX = x + 18;
         }
 
         // Title
-        int titleColor = UIConstants.Text.TITLE;
+        int titleColor = UIConstants.Text.TITLE();
         graphics.drawString(font, title, textX, y + (HEIGHT - 8) / 2, titleColor, false);
 
         // Bottom separator line
-        graphics.fill(x, y + HEIGHT - 1, x + width, y + HEIGHT, UIConstants.Border.SEPARATOR);
+        graphics.fill(x, y + HEIGHT - 1, x + width, y + HEIGHT, UIConstants.Border.SEPARATOR());
 
         return HEIGHT;
     }

@@ -43,6 +43,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("null") // Minecraft APIs lack null annotations
 public class WeaponConfigManager {
@@ -60,8 +61,8 @@ public class WeaponConfigManager {
     private static final net.minecraft.core.component.DataComponentType<CustomData> CUSTOM_DATA =
             Objects.requireNonNull(DataComponents.CUSTOM_DATA);
 
-    // Map for GLOBAL settings (Per item type)
-    private static final Map<Item, WeaponStats> globalStats = new HashMap<>();
+    // Map for GLOBAL settings (Per item type) - ConcurrentHashMap for thread safety
+    private static final Map<Item, WeaponStats> globalStats = new ConcurrentHashMap<>();
 
     private static Path dataDirectory = null;
 
@@ -82,13 +83,16 @@ public class WeaponConfigManager {
     // Gets the final statistics for a specific weapon
     public static WeaponStats getStats(ItemStack stack) {
         stack = Objects.requireNonNull(stack);
-        // 1a. Check typed data component first (new path)
-        CompoundTag componentTag = stack.get(Objects.requireNonNull(WeaponComponents.WEAPON_STATS.get()));
-        if (componentTag != null && !componentTag.isEmpty()) {
-            WeaponStats loaded = WeaponStats.load(componentTag.copy());
-            ensureAttributeModifiers(stack, clampStats(loaded));
-            applyToolClearIfNeeded(stack, loaded);
-            return loaded;
+        // 1a. Check typed data component first (new path) - safe component access
+        var weaponComponent = WeaponComponents.weaponStatsComponent();
+        if (weaponComponent != null) {
+            CompoundTag componentTag = stack.get(weaponComponent);
+            if (componentTag != null && !componentTag.isEmpty()) {
+                WeaponStats loaded = WeaponStats.load(componentTag.copy());
+                ensureAttributeModifiers(stack, clampStats(loaded));
+                applyToolClearIfNeeded(stack, loaded);
+                return loaded;
+            }
         }
 
         // 1b. Legacy CustomData path
@@ -96,11 +100,14 @@ public class WeaponConfigManager {
         if (customData != null && customData.contains("WeaponModStats")) {
             CompoundTag legacy = customData.copyTag().getCompound("WeaponModStats");
             WeaponStats stats = WeaponStats.load(legacy);
-            // Migrate forward to typed component when missing
-            try {
-                stack.set(Objects.requireNonNull(WeaponComponents.WEAPON_STATS.get()), legacy.copy());
-            } catch (Exception e) {
-                LOGGER.debug("[WeaponConfig] Failed to migrate legacy WeaponModStats to component: {}", e.getMessage());
+            // Migrate forward to typed component when missing - safe component access
+            var migrateComponent = WeaponComponents.weaponStatsComponent();
+            if (migrateComponent != null) {
+                try {
+                    stack.set(migrateComponent, legacy.copy());
+                } catch (Exception e) {
+                    LOGGER.debug("[WeaponConfig] Failed to migrate legacy WeaponModStats to component: {}", e.getMessage());
+                }
             }
             ensureAttributeModifiers(stack, clampStats(stats));
             applyToolClearIfNeeded(stack, stats);
@@ -110,13 +117,16 @@ public class WeaponConfigManager {
         // 1c. Reconstruct from attribute modifiers if present (best-effort)
         WeaponStats fromAttributes = loadFromAttributeModifiers(stack);
         if (fromAttributes != null) {
-            try {
-                // Persist reconstruction into component to avoid repeated rebuilds
-                CompoundTag migrated = new CompoundTag();
-                fromAttributes.save(migrated);
-                stack.set(Objects.requireNonNull(WeaponComponents.WEAPON_STATS.get()), migrated);
-            } catch (Exception e) {
-                LOGGER.debug("[WeaponConfig] Failed to persist reconstructed stats: {}", e.getMessage());
+            // Persist reconstruction into component to avoid repeated rebuilds - safe component access
+            var persistComponent = WeaponComponents.weaponStatsComponent();
+            if (persistComponent != null) {
+                try {
+                    CompoundTag migrated = new CompoundTag();
+                    fromAttributes.save(migrated);
+                    stack.set(persistComponent, migrated);
+                } catch (Exception e) {
+                    LOGGER.debug("[WeaponConfig] Failed to persist reconstructed stats: {}", e.getMessage());
+                }
             }
             WeaponStats clamped = clampStats(fromAttributes);
             ensureAttributeModifiers(stack, clamped);
@@ -145,6 +155,16 @@ public class WeaponConfigManager {
         save(); // AUTO-SAVE on modification
     }
 
+    /**
+     * Set global stats without saving to disk.
+     * Used for client-side sync from server.
+     */
+    public static void setGlobalStatsClientOnly(Item item, WeaponStats stats) {
+        WeaponStats clamped = clampStats(stats.copy());
+        globalStats.put(item, clamped);
+        // No save - client-side only
+    }
+
     public static void setSpecificStats(ItemStack stack, WeaponStats stats) {
         setSpecificStats(stack, stats, null);
     }
@@ -168,11 +188,14 @@ public class WeaponConfigManager {
                 }
             }
             tag.put("WeaponModStats", statsTag.copy());
-            // Also mirror to typed data component for forward compatibility
-            try {
-                stack.set(Objects.requireNonNull(WeaponComponents.WEAPON_STATS.get()), statsTag.copy());
-            } catch (Exception e) {
-                LOGGER.warn("[WeaponConfig] Failed to apply weapon_stats component", e);
+            // Also mirror to typed data component for forward compatibility - safe component access
+            var setComponent = WeaponComponents.weaponStatsComponent();
+            if (setComponent != null) {
+                try {
+                    stack.set(setComponent, statsTag.copy());
+                } catch (Exception e) {
+                    LOGGER.warn("[WeaponConfig] Failed to apply weapon_stats component", e);
+                }
             }
         });
 
@@ -460,7 +483,7 @@ public class WeaponConfigManager {
                         ResourceLocation resLoc = ResourceLocation.tryParse(key);
                         if (resLoc != null && BuiltInRegistries.ITEM.containsKey(resLoc)) {
                             Item item = BuiltInRegistries.ITEM.get(resLoc);
-                            globalStats.put(item, stats);
+                            globalStats.put(item, clampStats(stats));
                         } else {
                             LOGGER.warn("[WeaponConfig] Unknown item in config: {}", key);
                         }
@@ -658,6 +681,31 @@ public class WeaponConfigManager {
      */
     public static Map<Item, WeaponStats> getAllGlobalStats() {
         return Map.copyOf(globalStats);
+    }
+
+    /**
+     * Sync global configs to all connected clients.
+     * Should be called after setGlobalStats() when running on server.
+     * Uses GlobalConfigSyncPayload to broadcast changes.
+     */
+    public static void syncToAllClients() {
+        try {
+            net.minecraft.server.MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+            if (server == null) {
+                LOGGER.debug("[WeaponConfig] No server available for sync");
+                return;
+            }
+
+            var payload = com.frenkvs.devmod.network.GlobalConfigSyncPayload.fromCurrentConfigs();
+
+            for (net.minecraft.server.level.ServerPlayer player : server.getPlayerList().getPlayers()) {
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+            }
+
+            LOGGER.info("[WeaponConfig] Synced global configs to {} clients", server.getPlayerList().getPlayerCount());
+        } catch (Exception e) {
+            LOGGER.warn("[WeaponConfig] Failed to sync to clients: {}", e.getMessage());
+        }
     }
 
     // ========== TOML STORAGE (per doc 06-persistence) ==========

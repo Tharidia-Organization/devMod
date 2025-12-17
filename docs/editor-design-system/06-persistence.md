@@ -13,7 +13,8 @@
 │                  Persiste con l'item, funziona in multiplayer   │
 │                                                                 │
 │  GLOBAL mode   → Per-world serverconfig                         │
-│                  File: world/serverconfig/devmod-items.toml     │
+│                  Files: serverconfig/devmod/armor_configs.json  │
+│                         serverconfig/devmod/weapon_configs.json │
 │                  Applicato a tutti gli item di quel tipo        │
 │                                                                 │
 ├─────────────────────────────────────────────────────────────────┤
@@ -48,7 +49,7 @@ Sync:     Automatico con item (inventory sync)
 
 Layer 2: GLOBAL (Per-World Rules)
 ─────────────────────────────────────
-Dove:     world/serverconfig/devmod/devmod-items.toml (configurazione per mondo)
+Dove:     serverconfig/devmod/armor_configs.json + weapon_configs.json (JSON separati)
 Scope:    Tutti gli item di quel tipo in quel mondo
 Persiste: Finché il mondo esiste
 Sync:     Server → Client al login
@@ -147,91 +148,100 @@ public void clearCustomStats(ItemStack stack) {
 ## Implementazione GLOBAL (Layer 2)
 
 ```java
-// File: world/serverconfig/devmod-items.toml
-// Formato:
-// [armor."minecraft:diamond_chestplate"]
-// physicalReduction = 0.8
-// fireReduction = 0.5
-// ...
+// Files: serverconfig/devmod/armor_configs.json
+//        serverconfig/devmod/weapon_configs.json
+// Formato JSON con map di item_id -> stats
 
-public class DevModItemConfig {
-    private static final Map<String, ArmorStats> ARMOR_OVERRIDES = new HashMap<>();
-    private static final Map<String, WeaponStats> WEAPON_OVERRIDES = new HashMap<>();
+// ArmorConfigManager.java
+public class ArmorConfigManager {
+    private static final Map<Item, ArmorStats> globalArmorStats = new HashMap<>();
+    private static Path dataDirectory = null;
 
-    // Chiamato al caricamento del mondo
-    public static void loadWorldConfig(Path worldPath) {
-        Path configPath = worldPath.resolve("serverconfig/devmod-items.toml");
-        if (Files.exists(configPath)) {
-            // Parse TOML e popola mappe
-            parseConfigFile(configPath);
+    // Chiamato durante mod init
+    public static void initialize(Path configDir) {
+        dataDirectory = configDir.resolve("devmod");
+        Files.createDirectories(dataDirectory);
+        load();  // Carica armor_configs.json
+    }
+
+    // Priorità: Component → NBT → Global → Default
+    public static ArmorStats getStats(ItemStack stack) {
+        // 1. Check typed data component (new path)
+        CompoundTag componentTag = stack.get(ArmorComponents.armorStatsComponent());
+        if (componentTag != null && !componentTag.isEmpty()) {
+            return ArmorStats.load(componentTag.copy());
         }
+
+        // 2. Check CustomData NBT (legacy path)
+        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+        if (customData != null && customData.contains("ArmorModStats")) {
+            return ArmorStats.load(customData.copyTag().getCompound("ArmorModStats"));
+        }
+
+        // 3. Check global overrides
+        Item item = stack.getItem();
+        if (globalArmorStats.containsKey(item)) {
+            return globalArmorStats.get(item);
+        }
+
+        // 4. Return default
+        return new ArmorStats();
     }
 
-    // Chiamato quando un editor applica modifiche GLOBAL
-    public static void saveGlobalOverride(String itemId, ArmorStats stats) {
-        ARMOR_OVERRIDES.put(itemId, stats);
-        writeConfigFile();
-
-        // Sync a tutti i client
-        syncToAllClients();
+    public static void setGlobalStats(Item item, ArmorStats stats) {
+        globalArmorStats.put(item, stats);
+        save();  // Persiste su armor_configs.json
     }
 
-    // Ottieni stats per un item type
-    public static ArmorStats getGlobalOverride(String itemId) {
-        return ARMOR_OVERRIDES.get(itemId);
+    public static Map<Item, ArmorStats> getAllGlobalStats() {
+        return Collections.unmodifiableMap(globalArmorStats);
     }
 }
+
+// WeaponConfigManager.java - stessa struttura per weapon_configs.json
 ```
 
 ## Implementazione EXPORT (Layer 3)
 
 ```java
-// Export a Datapack
-public class DatapackExporter {
+// DatapackIO.java - Export/Import utilities
+// Struttura: datapacks/<pack>/data/devmod/item_modifiers/{armor|weapons}/<item>.json
 
-    public static void exportToDatapack(String packName) {
-        Path packPath = getDatapacksPath().resolve(packName);
+public final class DatapackIO {
 
-        // Struttura:
-        // datapacks/devmod_balance/
-        //   pack.mcmeta
-        //   data/
-        //     devmod/
-        //       item_modifiers/
-        //         armor/
-        //           diamond_chestplate.json
-        //         weapons/
-        //           diamond_sword.json
+    /**
+     * Export current global overrides into a datapack.
+     * @param packName directory under datapacks/
+     * @return number of files exported
+     */
+    public static int exportOverrides(String packName) {
+        Path base = ConfigPaths.getGameDir().resolve("datapacks").resolve(packName);
 
-        createPackMeta(packPath, packName);
+        // pack.mcmeta
+        writePackMeta(base);
 
-        // Export armor overrides
-        for (var entry : DevModItemConfig.getArmorOverrides().entrySet()) {
-            String itemId = entry.getKey();
-            ArmorStats stats = entry.getValue();
-
-            Path jsonPath = packPath.resolve(
-                "data/devmod/item_modifiers/armor/" +
-                itemId.replace(":", "_") + ".json"
-            );
-
-            writeArmorJson(jsonPath, itemId, stats);
+        // Armor overrides
+        Path armorDir = base.resolve("data/devmod/item_modifiers/armor");
+        for (Map.Entry<Item, ArmorStats> entry : ArmorConfigManager.getAllGlobalStats().entrySet()) {
+            ResourceLocation id = BuiltInRegistries.ITEM.getKey(entry.getKey());
+            Path out = armorDir.resolve(id.toString().replace(":", "_") + ".json");
+            writeArmor(out, id, entry.getValue());
         }
 
-        // Export weapon overrides
-        for (var entry : DevModItemConfig.getWeaponOverrides().entrySet()) {
-            // ... similar
+        // Weapon overrides
+        Path weaponDir = base.resolve("data/devmod/item_modifiers/weapons");
+        for (Map.Entry<Item, WeaponStats> entry : WeaponConfigManager.getAllGlobalStats().entrySet()) {
+            ResourceLocation id = BuiltInRegistries.ITEM.getKey(entry.getKey());
+            Path out = weaponDir.resolve(id.toString().replace(":", "_") + ".json");
+            writeWeapon(out, id, entry.getValue());
         }
-
-        LOGGER.info("Exported {} items to datapack: {}",
-            getExportedCount(), packName);
     }
 
-    // Formato JSON per armor modifier
-    private static void writeArmorJson(Path path, String itemId, ArmorStats stats) {
+    // Formato JSON per armor modifier (include shield stats)
+    private static void writeArmor(Path path, ResourceLocation id, ArmorStats stats) {
         JsonObject json = new JsonObject();
         json.addProperty("type", "devmod:armor_stats");
-        json.addProperty("target", itemId);
+        json.addProperty("target", id.toString());
 
         JsonObject values = new JsonObject();
         values.addProperty("physical_reduction", stats.physicalReduction);
@@ -244,45 +254,81 @@ public class DatapackExporter {
         values.addProperty("knockback_resistance", stats.knockbackResistance);
         values.addProperty("thorns_reflect", stats.thornsReflect);
         values.addProperty("thorns_percent", stats.thornsPercent);
+        // Shield-specific stats
+        values.addProperty("shield_reflect_projectiles", stats.shieldReflectProjectiles);
+        values.addProperty("shield_block_strength", stats.shieldBlockStrength);
+        values.addProperty("shield_recovery_speed", stats.shieldRecoverySpeed);
 
         json.add("values", values);
 
-        // Metadata
-        JsonObject meta = new JsonObject();
-        meta.addProperty("exported_at", LocalDateTime.now().toString());
-        meta.addProperty("devmod_version", DevMod.VERSION);
-        json.add("_meta", meta);
+        // TODO: Aggiungere metadata per tracciabilità
+        // JsonObject meta = new JsonObject();
+        // meta.addProperty("exported_at", LocalDateTime.now().toString());
+        // meta.addProperty("devmod_version", DevMod.VERSION);
+        // json.add("_meta", meta);
 
         Files.writeString(path, GSON.toJson(json));
     }
-}
 
-// Import da Datapack
-public class DatapackImporter {
+    // Formato JSON per weapon modifier (extended stats)
+    private static void writeWeapon(Path path, ResourceLocation id, WeaponStats stats) {
+        JsonObject json = new JsonObject();
+        json.addProperty("type", "devmod:weapon_stats");
+        json.addProperty("target", id.toString());
 
-    public static int importFromDatapack(String packName) {
-        Path packPath = getDatapacksPath().resolve(packName);
+        JsonObject values = new JsonObject();
+        values.addProperty("attack_damage", stats.attackDamage);
+        values.addProperty("attack_speed", stats.attackSpeed);
+        values.addProperty("attack_reach", stats.attackReach);
+        values.addProperty("attack_knockback", stats.attackKnockback);
+        values.addProperty("armor_penetration", stats.armorPenetration);
+        values.addProperty("base_damage_bonus", stats.baseDamageBonus);
+        values.addProperty("crit_chance", stats.critChance);
+        values.addProperty("crit_damage", stats.critDamage);
+        values.addProperty("damage_bonus", stats.damageBonus);
+        values.addProperty("armor_shred", stats.armorShred);
+        // Extended damage types
+        values.addProperty("damage_vs_undead", stats.damageVsUndead);
+        values.addProperty("damage_vs_arthropods", stats.damageVsArthropods);
+        values.addProperty("damage_vs_players", stats.damageVsPlayers);
+        values.addProperty("true_damage_percent", stats.trueDamagePercent);
+        values.addProperty("fire_damage_bonus", stats.fireDamageBonus);
+        values.addProperty("magic_damage_bonus", stats.magicDamageBonus);
+        values.addProperty("lifesteal", stats.lifesteal);
+        values.addProperty("clear_tool_rules", stats.clearToolRules);
 
-        if (!Files.exists(packPath)) {
-            LOGGER.warn("Datapack not found: {}", packName);
-            return 0;
-        }
+        json.add("values", values);
+        Files.writeString(path, GSON.toJson(json));
+    }
 
+    /**
+     * Import overrides from an existing datapack folder.
+     */
+    public static int importOverrides(String packName) {
+        Path base = ConfigPaths.getGameDir().resolve("datapacks").resolve(packName);
         int imported = 0;
 
-        // Import armor
-        Path armorPath = packPath.resolve("data/devmod/item_modifiers/armor");
-        if (Files.exists(armorPath)) {
-            imported += importArmorModifiers(armorPath);
+        // Import armor from data/devmod/item_modifiers/armor/*.json
+        Path armorDir = base.resolve("data/devmod/item_modifiers/armor");
+        if (Files.exists(armorDir)) {
+            for (Path file : Files.list(armorDir).toList()) {
+                JsonObject json = readJson(file);
+                String target = json.get("target").getAsString();
+                ArmorStats stats = parseArmor(json.getAsJsonObject("values"));
+                Item item = ItemLookup.getItem(ResourceLocation.tryParse(target));
+                if (item != null) {
+                    ArmorConfigManager.setGlobalStats(item, stats);
+                    imported++;
+                }
+            }
         }
 
-        // Import weapons
-        Path weaponPath = packPath.resolve("data/devmod/item_modifiers/weapons");
-        if (Files.exists(weaponPath)) {
-            imported += importWeaponModifiers(weaponPath);
+        // Import weapons from data/devmod/item_modifiers/weapons/*.json
+        Path weaponDir = base.resolve("data/devmod/item_modifiers/weapons");
+        if (Files.exists(weaponDir)) {
+            // ... similar pattern
         }
 
-        LOGGER.info("Imported {} items from datapack: {}", imported, packName);
         return imported;
     }
 }
@@ -370,3 +416,46 @@ Nel Debug Panel, mostra da dove vengono i valori correnti:
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Changelog
+
+| Data | Modifica |
+|------|----------|
+| 2025-12-17 | Aggiornato Layer 2 GLOBAL: usa JSON separati invece di TOML unificato |
+| 2025-12-17 | Aggiornato path: `serverconfig/devmod/armor_configs.json` + `weapon_configs.json` |
+| 2025-12-17 | Aggiornato GLOBAL impl con ArmorConfigManager/WeaponConfigManager reali |
+| 2025-12-17 | Aggiornato EXPORT impl con DatapackIO.java (include shield/extended weapon stats) |
+| 2025-12-17 | Aggiunti campi armor: shield_reflect_projectiles, shield_block_strength, shield_recovery_speed |
+| 2025-12-17 | Aggiunti campi weapon: damage_vs_*, true_damage_percent, fire/magic_damage_bonus, lifesteal |
+
+---
+
+## Funzionalità Implementate
+
+### ✅ Export Metadata (Implementato 2025-12-17)
+Blocco `_meta` aggiunto ai JSON esportati per tracciabilità:
+
+```json
+{
+  "type": "devmod:armor_stats",
+  "target": "minecraft:diamond_chestplate",
+  "values": { ... },
+  "_meta": {
+    "exported_at": "2025-12-17T14:30:00",
+    "devmod_version": "1.0.0"
+  }
+}
+```
+
+**Implementazione:** `DatapackIO.java` - metodi `createExportMetadata()`, `writeArmor()`, `writeWeapon()`
+
+### ✅ syncToAllClients() (Implementato 2025-12-17)
+Sync automatico delle modifiche GLOBAL a tutti i client connessi.
+
+**Implementazione:**
+- `ArmorConfigManager.syncToAllClients()` - broadcast a tutti i player connessi
+- `WeaponConfigManager.syncToAllClients()` - broadcast a tutti i player connessi
+- `GlobalConfigSyncPayload.java` - payload server→client per sync config
+- `NetworkHandler.java` - handler per ricevere e applicare config su client

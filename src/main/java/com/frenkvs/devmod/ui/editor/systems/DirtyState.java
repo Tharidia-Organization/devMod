@@ -67,7 +67,7 @@ public final class DirtyState {
         if (hasUnsavedChanges()) {
             return new DirtyIndicator(
                 "● " + pendingChanges.size() + " unsaved",
-                UIConstants.Accent.ORANGE,
+                UIConstants.Accent.ORANGE(),
                 true
             );
         } else if (lastSaveTimestamp > 0) {
@@ -75,7 +75,7 @@ public final class DirtyState {
             String timeText = formatTimeAgo(ago);
             return new DirtyIndicator(
                 "✓ Saved " + timeText,
-                UIConstants.Accent.GREEN,
+                UIConstants.Accent.GREEN(),
                 false
             );
         } else {

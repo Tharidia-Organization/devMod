@@ -111,7 +111,7 @@ public class VisualizersPage implements SettingsPage {
         // Radius slider
         // Calculate effective width accounting for scrollbar if present
         int effectiveWidth = totalContentHeight > visibleHeight ? width - SCROLLBAR_WIDTH - 8 : width;
-        graphics.drawString(font, "Radius: " + lightLevelRadius + " blocks", x, currentY + 4, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, "Radius: " + lightLevelRadius + " blocks", x, currentY + 4, UIConstants.Text.SECONDARY(), false);
         int labelWidth = 120;
         int buttonsWidth = 56; // Two 20px buttons + 8px gap + 8px margin
         int sliderX = x + labelWidth;
@@ -220,7 +220,7 @@ public class VisualizersPage implements SettingsPage {
 
         // View Distance slider
         // Calculate effective width accounting for scrollbar if present (reuse from earlier)
-        graphics.drawString(font, "View Distance: " + viewDistance + " blocks", x, currentY + 4, UIConstants.Text.SECONDARY, false);
+        graphics.drawString(font, "View Distance: " + viewDistance + " blocks", x, currentY + 4, UIConstants.Text.SECONDARY(), false);
         int vdLabelWidth = 140;
         int vdButtonsWidth = 56; // Two 20px buttons + 8px gap + 8px margin
         int vdSliderX = x + vdLabelWidth;
@@ -254,7 +254,7 @@ public class VisualizersPage implements SettingsPage {
         currentY += ROW_HEIGHT;
 
         // Hint about view distance
-        graphics.drawString(font, "Affects all visualizers render range", x, currentY, UIConstants.Text.MUTED, false);
+        graphics.drawString(font, "Affects all visualizers render range", x, currentY, UIConstants.Text.MUTED(), false);
         currentY += 16;
 
         // Hint
@@ -304,12 +304,12 @@ public class VisualizersPage implements SettingsPage {
      * Render the scrollbar.
      */
     private void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height) {
-        graphics.fill(x, y, x + barWidth, y + height, UIConstants.Background.INPUT);
+        graphics.fill(x, y, x + barWidth, y + height, UIConstants.Background.INPUT());
         float visibleRatio = (float) visibleHeight / totalContentHeight;
         int thumbHeight = Math.max(20, (int) (height * visibleRatio));
         float scrollRatio = maxScrollOffset > 0 ? (float) scrollOffset / maxScrollOffset : 0;
         int thumbY = y + (int) ((height - thumbHeight) * scrollRatio);
-        int thumbColor = isDraggingScrollbar ? UIConstants.Border.ACCENT : UIConstants.Border.DEFAULT;
+        int thumbColor = isDraggingScrollbar ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
         graphics.fill(x, thumbY, x + barWidth, thumbY + thumbHeight, thumbColor);
     }
 
@@ -319,12 +319,12 @@ public class VisualizersPage implements SettingsPage {
         boolean hovered = mouseX >= x && mouseX < x + rowWidth && mouseY >= y && mouseY < y + ROW_HEIGHT;
 
         if (hovered) {
-            graphics.fill(x - 4, y - 2, x + rowWidth + 4, y + ROW_HEIGHT - 2, UIConstants.Background.HOVER);
+            graphics.fill(x - 4, y - 2, x + rowWidth + 4, y + ROW_HEIGHT - 2, UIConstants.Background.HOVER());
         }
 
         // Label and description
-        graphics.drawString(font, label, x, y + 2, UIConstants.Text.PRIMARY, false);
-        graphics.drawString(font, description, x, y + 12, UIConstants.Text.MUTED, false);
+        graphics.drawString(font, label, x, y + 2, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(font, description, x, y + 12, UIConstants.Text.MUTED(), false);
 
         // Toggle - use standardized dimensions
         int toggleX = x + rowWidth - UIConstants.Size.TOGGLE_WIDTH;
@@ -341,15 +341,15 @@ public class VisualizersPage implements SettingsPage {
         boolean hovered = mouseX >= x && mouseX < x + rowWidth && mouseY >= y && mouseY < y + 20;
 
         if (hovered) {
-            graphics.fill(x - 4, y - 2, x + rowWidth + 4, y + 18, UIConstants.Background.HOVER);
+            graphics.fill(x - 4, y - 2, x + rowWidth + 4, y + 18, UIConstants.Background.HOVER());
         }
 
         // Color indicator
         graphics.fill(x, y + 2, x + 12, y + 14, color);
-        AxiomRenderer.drawBorder(graphics, x, y + 2, 12, 12, UIConstants.Border.DEFAULT);
+        AxiomRenderer.drawBorder(graphics, x, y + 2, 12, 12, UIConstants.Border.DEFAULT());
 
         // Label
-        graphics.drawString(font, label, x + 18, y + 4, UIConstants.Text.PRIMARY, false);
+        graphics.drawString(font, label, x + 18, y + 4, UIConstants.Text.PRIMARY(), false);
 
         // Toggle - use standardized dimensions
         int toggleX = x + rowWidth - UIConstants.Size.TOGGLE_WIDTH;
@@ -368,11 +368,11 @@ public class VisualizersPage implements SettingsPage {
     private void renderSlider(GuiGraphics graphics, int x, int y, int width, int height,
                                float value, int mouseX, int mouseY, float pulseAnimation) {
         // Background track
-        graphics.fill(x, y + height / 2 - 2, x + width, y + height / 2 + 2, UIConstants.Background.INPUT);
+        graphics.fill(x, y + height / 2 - 2, x + width, y + height / 2 + 2, UIConstants.Background.INPUT());
 
         // Fill track
         int fillWidth = (int) (width * value);
-        graphics.fill(x, y + height / 2 - 2, x + fillWidth, y + height / 2 + 2, UIConstants.Border.ACCENT);
+        graphics.fill(x, y + height / 2 - 2, x + fillWidth, y + height / 2 + 2, UIConstants.Border.ACCENT());
 
         // Handle
         int handleX = x + fillWidth - 4;
@@ -384,10 +384,10 @@ public class VisualizersPage implements SettingsPage {
             int glowAlpha = 60 + (int) (pulseAnimation * 100);
             graphics.fill(handleX - 2 - pulseExpand, y - pulseExpand,
                 handleX + 10 + pulseExpand, y + height + pulseExpand,
-                UIConstants.setAlpha(UIConstants.Border.ACCENT, glowAlpha));
+                UIConstants.setAlpha(UIConstants.Border.ACCENT(), glowAlpha));
         }
 
-        graphics.fill(handleX, y, handleX + 8, y + height, UIConstants.Border.DEFAULT);
+        graphics.fill(handleX, y, handleX + 8, y + height, UIConstants.Border.DEFAULT());
     }
 
     @Override
