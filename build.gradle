@@ -259,7 +259,15 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
-    options.compilerArgs += ['-Xlint:all', '-Xlint:-processing', '-Xlint:-path']
+    // Enable useful warnings, disable only non-actionable noise:
+    // - processing: annotation processor output
+    // - path: classpath element warnings (Gradle manages this)
+    // Note: unchecked, this-escape, removal handled via @SuppressWarnings where needed
+    options.compilerArgs += [
+        '-Xlint:all',
+        '-Xlint:-processing',
+        '-Xlint:-path'
+    ]
 }
 
 // Configure JUnit 5 testing
