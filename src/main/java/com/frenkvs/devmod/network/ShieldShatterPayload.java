@@ -45,9 +45,8 @@ public record ShieldShatterPayload(
 
     @Override
     @Nonnull
-    @SuppressWarnings("null")
     public Type<ShieldShatterPayload> type() {
-        return TYPE;
+        return Objects.requireNonNull(TYPE, "payload type");
     }
 
     /**

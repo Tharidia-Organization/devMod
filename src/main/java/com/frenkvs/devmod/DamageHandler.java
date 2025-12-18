@@ -313,7 +313,7 @@ public class DamageHandler {
 
         // Check for shield shatter (high damage threshold)
         if (incomingDamage >= stats.shieldShatterThreshold && player instanceof ServerPlayer serverPlayer) {
-            sendShieldShatterPacket(serverPlayer, impactPos, incomingDamage);
+            sendShieldShatterPacket(serverPlayer, finalImpactPos, incomingDamage);
             // Shield is shattered - apply full damage this hit
             damageAfterBlock = incomingDamage;
         }

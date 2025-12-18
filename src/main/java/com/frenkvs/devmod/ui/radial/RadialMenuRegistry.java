@@ -244,6 +244,11 @@ public final class RadialMenuRegistry {
             .color(0xFFFF4444)
             .icon("\u2694") // crossed swords
             .iconStack(stack(Items.DIAMOND_SWORD))
+            .item(RadialMenuItem.toggle("Impact HUD", "\uD83D\uDCA5",
+                stack(Items.NETHERITE_SWORD),
+                () -> ImpactHudOverlay.isEnabled(),
+                v -> ImpactHudOverlay.setEnabled(v),
+                "Show real-time damage breakdown on hit"))
             .item(RadialMenuItem.toggle("Boss Phases", "\uD83D\uDC79",
                 stack(Items.WITHER_SKELETON_SKULL),
                 () -> BossPhaseOverlay.isEnabled(),

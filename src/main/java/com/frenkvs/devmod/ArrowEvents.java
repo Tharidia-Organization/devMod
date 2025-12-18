@@ -128,17 +128,18 @@ public class ArrowEvents {
      * Registers a potential arrow hit on Enderman to check for evasion.
      * IMPORTANT: Save the target's position NOW, before it teleports!
      */
-    @SuppressWarnings("null") // Vec3 from record fields are guaranteed non-null
     private static void trackPotentialEvasion(ServerPlayer shooter, LivingEntity target, Vec3 hitPos) {
         if (!(target instanceof EnderMan)) return;
 
         long now = System.currentTimeMillis();
         // Save the target's position at the moment of impact!
-        Vec3 targetPos = target.position().add(0, target.getBbHeight() * 0.5, 0);
+        Vec3 targetPos = Objects.requireNonNull(target.position(), "target position")
+            .add(0, target.getBbHeight() * 0.5, 0);
+        Vec3 safeHitPos = Objects.requireNonNull(hitPos, "hit position");
 
-        pendingArrowHits.put(target.getId(), new PendingArrowHit(now, hitPos, targetPos, shooter));
+        pendingArrowHits.put(target.getId(), new PendingArrowHit(now, safeHitPos, targetPos, shooter));
 
-        LOGGER.debug("Arrow hit on Enderman tracked at hitPos={}, targetPos={}", hitPos, targetPos);
+        LOGGER.debug("Arrow hit on Enderman tracked at hitPos={}, targetPos={}", safeHitPos, targetPos);
 
         // Schedule evasion check after 150ms (uses ScheduledExecutor instead of Thread.sleep)
         final int targetId = target.getId();
@@ -148,8 +149,10 @@ public class ArrowEvents {
 
             // Check if the Enderman moved significantly (teleport)
             // NOTE: target may no longer be valid, we use saved data
-            Vec3 currentPos = target.isAlive() ? target.position() : pending.targetPos;
-            double distMoved = currentPos.distanceTo(pending.targetPos);
+            Vec3 currentPos = target.isAlive()
+                ? Objects.requireNonNull(target.position(), "current target position")
+                : pending.targetPos;
+            double distMoved = currentPos.distanceTo(Objects.requireNonNull(pending.targetPos(), "saved target position"));
             boolean probablyEvaded = distMoved > 5.0; // If it moved more than 5 blocks, it evaded
 
             LOGGER.debug("Enderman moved {} blocks, evaded={}", String.format("%.1f", distMoved), probablyEvaded);

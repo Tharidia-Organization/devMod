@@ -48,9 +48,8 @@ public record ShieldImpactPayload(
 
     @Override
     @Nonnull
-    @SuppressWarnings("null")
     public Type<ShieldImpactPayload> type() {
-        return TYPE;
+        return Objects.requireNonNull(TYPE, "payload type");
     }
 
     /**

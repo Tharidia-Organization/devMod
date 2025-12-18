@@ -50,9 +50,8 @@ public record ShieldStatePayload(
 
     @Override
     @Nonnull
-    @SuppressWarnings("null")
     public Type<ShieldStatePayload> type() {
-        return TYPE;
+        return Objects.requireNonNull(TYPE, "payload type");
     }
 
     /**

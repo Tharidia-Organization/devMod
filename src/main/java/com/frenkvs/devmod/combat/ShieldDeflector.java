@@ -68,7 +68,7 @@ public class ShieldDeflector {
             "shield center");
 
         // Calculate impact point on shield sphere
-        @Nullable Vec3 impactPoint = calculateImpactPoint(projectilePos, projectileVel, shieldCenter, shieldRadius);
+        Vec3 impactPoint = calculateImpactPoint(projectilePos, projectileVel, shieldCenter, shieldRadius);
         if (impactPoint == null) {
             // Fallback: use projectile position
             impactPoint = projectilePos;
@@ -108,7 +108,7 @@ public class ShieldDeflector {
 
         // Trigger visual feedback
         float damage = estimateProjectileDamage(projectile);
-        EnergyShieldRenderer.recordImpact(impactPoint, damage);
+        EnergyShieldRenderer.recordImpact(impactPointNonNull, damage);
 
         LOGGER.debug("Deflected {} at angle {}, speed {}->{}",
             projectile.getType().getDescriptionId(),
@@ -250,9 +250,12 @@ public class ShieldDeflector {
 
         // Rotate direction by spreadAngle around axis (perp1 * cosRot + perp2 * sinRot)
         final @Nonnull Vec3 rotAxis = Objects.requireNonNull(
-            Objects.requireNonNull(perp1.scale(cosRot), "perp1 scaled")
-                .add(Objects.requireNonNull(perp2.scale(sinRot), "perp2 scaled")),
-            "rotation axis base").normalize();
+            Objects.requireNonNull(
+                Objects.requireNonNull(perp1.scale(cosRot), "perp1 scaled")
+                    .add(Objects.requireNonNull(perp2.scale(sinRot), "perp2 scaled")),
+                "rotation axis base"
+            ).normalize(),
+            "rotation axis");
 
         // Rodrigues' rotation formula
         final @Nonnull Vec3 scaledDir = Objects.requireNonNull(direction.scale(cosSpread), "scaled direction");
@@ -302,8 +305,10 @@ public class ShieldDeflector {
             return false;
         }
 
-        final @Nonnull Vec3 shieldCenter = Objects.requireNonNull(shieldOwner.position(), "shield owner position")
-            .add(0, shieldOwner.getBbHeight() * 0.5, 0);
+        final @Nonnull Vec3 shieldCenter = Objects.requireNonNull(
+            Objects.requireNonNull(shieldOwner.position(), "shield owner position")
+                .add(0, shieldOwner.getBbHeight() * 0.5, 0),
+            "shield center");
         final @Nonnull Vec3 projectilePos = Objects.requireNonNull(projectile.position(), "projectile position");
         double distSq = projectilePos.distanceToSqr(shieldCenter);
 

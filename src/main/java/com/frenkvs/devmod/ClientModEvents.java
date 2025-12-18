@@ -37,8 +37,6 @@ import com.frenkvs.devmod.ui.WelcomeScreen;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 
 @EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
-// Minecraft API methods are not annotated but never return null in practice
-@SuppressWarnings("null")
 public class ClientModEvents {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientModEvents.class);
 
@@ -51,6 +49,7 @@ public class ClientModEvents {
 
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
+        Objects.requireNonNull(event, "RegisterGuiLayersEvent");
         event.registerAboveAll(Objects.requireNonNull(MOB_STATS_ID), new MobStatsLayer());
         event.registerAboveAll(Objects.requireNonNull(QA_NOTIFICATIONS_ID), new QANotificationsLayer());
 
@@ -102,6 +101,7 @@ public class ClientModEvents {
      */
     @SubscribeEvent
     public static void onPlayerLogin(ClientPlayerNetworkEvent.LoggingIn event) {
+        Objects.requireNonNull(event, "LoggingIn event");
         LOGGER.debug("Player logging in, scheduling dynamic tests load...");
 
         // Load quest data
@@ -178,7 +178,8 @@ public class ClientModEvents {
                 }
 
                 // Try to show screen if no other screen is open
-                if (mc.screen == null) {
+                var currentScreen = mc.screen;
+                if (currentScreen == null) {
                     mc.setScreen(new WelcomeScreen());
                     welcomeScreenShown = true;
                     LOGGER.info("Showing welcome screen for first-time user (attempt {})", attempt + 1);
@@ -186,7 +187,7 @@ public class ClientModEvents {
                     // Another screen is open - retry if under max attempts
                     if (attempt < WELCOME_MAX_RETRIES) {
                         LOGGER.debug("Welcome screen blocked by {} - retrying (attempt {}/{})",
-                            mc.screen.getClass().getSimpleName(), attempt + 1, WELCOME_MAX_RETRIES);
+                            currentScreen.getClass().getSimpleName(), attempt + 1, WELCOME_MAX_RETRIES);
                         scheduleWelcomeScreen(attempt + 1);
                     } else {
                         // Max retries reached - show notification instead
@@ -205,19 +206,22 @@ public class ClientModEvents {
      * This ensures first-time users still learn about the mod.
      */
     private static void showWelcomeFallbackNotification(Minecraft mc) {
-        if (mc.player != null) {
-            mc.player.displayClientMessage(
-                I18n.translate("devmod.onboarding.welcome_fallback"),
-                false  // Show in chat, not action bar
-            );
-            mc.player.displayClientMessage(
-                I18n.translate("devmod.onboarding.welcome_tip"),
-                false
-            );
-            // Mark as seen so we don't keep trying
-            SettingsManager.INSTANCE.getSettings().onboarding.hasSeenWelcome = true;
-            SettingsManager.INSTANCE.markDirty();
+        var player = mc.player;
+        if (player == null) {
+            return;
         }
+
+        player.displayClientMessage(
+            I18n.translate("devmod.onboarding.welcome_fallback"),
+            false  // Show in chat, not action bar
+        );
+        player.displayClientMessage(
+            I18n.translate("devmod.onboarding.welcome_tip"),
+            false
+        );
+        // Mark as seen so we don't keep trying
+        SettingsManager.INSTANCE.getSettings().onboarding.hasSeenWelcome = true;
+        SettingsManager.INSTANCE.markDirty();
     }
 
     /**
