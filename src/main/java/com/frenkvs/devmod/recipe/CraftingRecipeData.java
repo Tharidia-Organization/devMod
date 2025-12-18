@@ -60,10 +60,14 @@ public record CraftingRecipeData(
 
     /**
      * Create an empty recipe for a given result item.
+     * The recipe ID is deterministic based on the item, so editing the same
+     * item will always produce the same recipe ID (allowing overwrites).
      */
     public static CraftingRecipeData empty(ItemStack resultItem) {
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(resultItem.getItem()));
-        String path = "custom_" + itemId.getPath() + "_" + (System.currentTimeMillis() % 100000);
+        // Use deterministic ID based on item - this ensures editing the same item
+        // overwrites the previous recipe instead of creating duplicates
+        String path = "custom_" + itemId.getPath().replace("/", "_");
         ResourceLocation recipeId = ResourceLocation.fromNamespaceAndPath("devmod", path);
 
         return new CraftingRecipeData(

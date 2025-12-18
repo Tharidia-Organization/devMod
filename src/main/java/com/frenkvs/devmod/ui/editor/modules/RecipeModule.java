@@ -4,12 +4,19 @@ import com.frenkvs.devmod.network.RecipeSyncPayload;
 import com.frenkvs.devmod.recipe.*;
 import com.frenkvs.devmod.ui.editor.*;
 import com.frenkvs.devmod.ui.editor.components.EditorSlider;
+import com.frenkvs.devmod.ui.editor.components.ItemPickerOverlay;
 import com.frenkvs.devmod.util.I18n;
 import com.frenkvs.devmod.ui.editor.components.EditorTextField;
 import com.frenkvs.devmod.ui.editor.components.EditorToggle;
 import com.frenkvs.devmod.ui.editor.components.RecipeGridComponent;
 import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
+import com.frenkvs.devmod.ui.editor.sections.SliderSectionAdapter;
+import com.frenkvs.devmod.ui.editor.sections.ToggleSectionAdapter;
+import com.frenkvs.devmod.ui.editor.sections.InputSectionAdapter;
+import com.frenkvs.devmod.ui.editor.sections.SimpleHeaderSection;
+import com.frenkvs.devmod.ui.editor.sections.SimpleSpacer;
+import com.frenkvs.devmod.ui.editor.sections.TextNoteSection;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -47,6 +54,7 @@ public class RecipeModule extends AbstractEditorModule {
     // ═══════════════════════════════════════════════════════════════
 
     private final RecipeGridComponent recipeGrid = new RecipeGridComponent();
+    private final ItemPickerOverlay itemPicker = new ItemPickerOverlay();
     private EditorToggle shapedToggle;
     private EditorTextField idField;
     private EditorTextField groupField;
@@ -58,6 +66,9 @@ public class RecipeModule extends AbstractEditorModule {
 
     // Tracks if callbacks have been initialized
     private boolean callbacksInitialized = false;
+
+    // Track which slot is being edited (for item picker callback)
+    private int editingSlotIndex = -1;
 
     // ═══════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -72,6 +83,12 @@ public class RecipeModule extends AbstractEditorModule {
         if (callbacksInitialized) return;
         callbacksInitialized = true;
 
+        // When slot is clicked, open item picker
+        recipeGrid.setOnSlotClick(slotIndex -> {
+            editingSlotIndex = slotIndex;
+            itemPicker.show();
+        });
+
         recipeGrid.setOnSlotChange((index, data) -> {
             markDirty("Changed ingredient at slot " + index);
             validationDirty = true;
@@ -79,6 +96,21 @@ public class RecipeModule extends AbstractEditorModule {
 
         recipeGrid.setOnGridChange(() -> {
             validationDirty = true;
+        });
+
+        // Item picker callbacks
+        itemPicker.onItemSelected(stack -> {
+            if (editingSlotIndex >= 0) {
+                recipeGrid.setSlotFromItem(editingSlotIndex, stack);
+                editingSlotIndex = -1;
+            }
+        });
+
+        itemPicker.onTagSelected(tag -> {
+            if (editingSlotIndex >= 0) {
+                recipeGrid.setSlot(editingSlotIndex, IngredientData.ofTag(tag));
+                editingSlotIndex = -1;
+            }
         });
     }
 
@@ -176,7 +208,7 @@ public class RecipeModule extends AbstractEditorModule {
         String typeInfo = craftingType == CraftingType.SHAPED
             ? "Items must match exact positions"
             : "Items can be in any position";
-        sections.add(new InfoSection("type_info", typeInfo));
+        sections.add(new TextNoteSection("type_info", typeInfo));
 
         // Spacer
         sections.add(new SimpleSpacer("spacer1", 8));
@@ -305,11 +337,14 @@ public class RecipeModule extends AbstractEditorModule {
         }
 
         try {
-            // Store locally
-            RecipeConfigManager.addRecipe(recipe);
+            // Store locally on client for immediate use
+            RecipeConfigManager.addRecipeClientOnly(recipe);
 
-            // Notify server/clients about the change
-            RecipeReloadListener.onRecipeModified(recipe);
+            // Send to server for persistence and broadcast
+            // The server will handle saving and syncing to all clients
+            net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                (CustomPacketPayload) Objects.requireNonNull(RecipeSyncPayload.add(recipe, true), "recipe sync payload")
+            );
 
             // Update state
             currentRecipe = recipe;
@@ -332,15 +367,68 @@ public class RecipeModule extends AbstractEditorModule {
         // Let parent render sections
         super.renderContent(graphics, contentBounds, mouseX, mouseY);
 
-        // Render grid tooltip if on grid tab
-        if (activeTabIndex == 0) {
+        // Render grid tooltip if on grid tab (only if picker is not visible)
+        if (activeTabIndex == 0 && !itemPicker.isVisible()) {
+            var mc = Minecraft.getInstance();
             recipeGrid.renderTooltip(
                 graphics,
-                Objects.requireNonNull(Minecraft.getInstance().font, "font"),
+                Objects.requireNonNull(mc.font, "font"),
                 mouseX,
                 mouseY
             );
         }
+        // Note: ItemPicker overlay is now rendered via renderOverlay() from ItemEditorScreen
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // OVERLAY METHODS (for ItemPickerOverlay)
+    // ═══════════════════════════════════════════════════════════════
+
+    @Override
+    public boolean hasActiveOverlay() {
+        return itemPicker.isVisible();
+    }
+
+    @Override
+    public void renderOverlay(GuiGraphics graphics, net.minecraft.client.gui.Font font,
+                              int screenWidth, int screenHeight, int mouseX, int mouseY) {
+        if (itemPicker.isVisible()) {
+            itemPicker.render(graphics, font, screenWidth, screenHeight, mouseX, mouseY);
+        }
+    }
+
+    @Override
+    public boolean overlayMouseClicked(double mouseX, double mouseY, int button,
+                                       int screenWidth, int screenHeight) {
+        if (itemPicker.isVisible()) {
+            return itemPicker.mouseClicked(mouseX, mouseY, screenWidth, screenHeight);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean overlayMouseScrolled(double mouseX, double mouseY, double scrollDelta,
+                                        int screenWidth, int screenHeight) {
+        if (itemPicker.isVisible()) {
+            return itemPicker.mouseScrolled(mouseX, mouseY, scrollDelta, screenWidth, screenHeight);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean overlayKeyPressed(int keyCode) {
+        if (itemPicker.isVisible()) {
+            return itemPicker.keyPressed(keyCode);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean overlayCharTyped(char chr, int modifiers) {
+        if (itemPicker.isVisible()) {
+            return itemPicker.charTyped(chr, modifiers);
+        }
+        return false;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -349,6 +437,8 @@ public class RecipeModule extends AbstractEditorModule {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // Item picker input is now handled by ItemEditorScreen via overlayMouseClicked
+
         // Grid handles its own clicks on grid tab
         if (activeTabIndex == 0 && recipeGrid.mouseClicked(mouseX, mouseY, button)) {
             return true;
@@ -358,6 +448,11 @@ public class RecipeModule extends AbstractEditorModule {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        // Item picker consumes drag when visible
+        if (itemPicker.isVisible()) {
+            return true;
+        }
+
         if (activeTabIndex == 0 && recipeGrid.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
             return true;
         }
@@ -366,10 +461,33 @@ public class RecipeModule extends AbstractEditorModule {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        // Item picker consumes release when visible
+        if (itemPicker.isVisible()) {
+            return true;
+        }
+
         if (activeTabIndex == 0 && recipeGrid.mouseReleased(mouseX, mouseY, button)) {
             return true;
         }
         return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        // Item picker scroll is now handled by ItemEditorScreen via overlayMouseScrolled
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Item picker key handling is now handled by ItemEditorScreen via overlayKeyPressed
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean charTyped(char chr, int modifiers) {
+        // Item picker char handling is now handled by ItemEditorScreen via overlayCharTyped
+        return super.charTyped(chr, modifiers);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -408,68 +526,6 @@ public class RecipeModule extends AbstractEditorModule {
         @Override
         public boolean mouseReleased(double mouseX, double mouseY, int button) {
             return grid.mouseReleased(mouseX, mouseY, button);
-        }
-    }
-
-    /**
-     * Simple header section.
-     */
-    private record SimpleHeaderSection(String id, String label) implements EditorSection.HeaderSection {
-        @Override
-        public String getId() { return id; }
-
-        @Override
-        public String getLabel() { return label; }
-
-        @Override
-        public int getHeight() { return 20; }
-
-        @Override
-        public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
-            Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
-            graphics.drawString(font, Objects.requireNonNull(label, "label"),
-                bounds.x() + 4, bounds.y() + 6, UIConstants.Text.TITLE(), false);
-        }
-
-        @Override
-        public boolean isCollapsible() { return false; }
-
-        @Override
-        public boolean isCollapsed() { return false; }
-
-        @Override
-        public void setCollapsed(boolean collapsed) {}
-    }
-
-    /**
-     * Simple spacer section.
-     */
-    private record SimpleSpacer(String id, int height) implements EditorSection.SpacerSection {
-        @Override
-        public String getId() { return id; }
-
-        @Override
-        public int getHeight() { return height; }
-    }
-
-    /**
-     * Info text section.
-     */
-    private record InfoSection(String id, String text) implements EditorSection.CustomSection {
-        @Override
-        public String getId() { return id; }
-
-        @Override
-        public String getLabel() { return ""; }
-
-        @Override
-        public int getHeight() { return 16; }
-
-        @Override
-        public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
-            Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
-            graphics.drawString(font, Objects.requireNonNull(text, "text"),
-                bounds.x() + 8, bounds.y() + 4, UIConstants.Text.MUTED(), false);
         }
     }
 
@@ -615,140 +671,4 @@ public class RecipeModule extends AbstractEditorModule {
         }
     }
 
-    /**
-     * Adapter for EditorToggle to EditorSection.
-     */
-    private record ToggleSectionAdapter(EditorToggle toggle) implements EditorSection.ToggleSection {
-        @Override
-        public String getId() { return toggle.getId(); }
-
-        @Override
-        public String getLabel() { return toggle.getLabel(); }
-
-        @Override
-        public int getHeight() { return toggle.calculateHeight(); }
-
-        @Override
-        public boolean getValue() { return toggle.getValue(); }
-
-        @Override
-        public void setValue(boolean value) { toggle.setValue(value); }
-
-        @Override
-        public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
-            toggle.render(graphics, bounds.x(), bounds.y(), bounds.width(), mouseX, mouseY);
-        }
-
-        @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            return toggle.mouseClicked(mouseX, mouseY, button);
-        }
-    }
-
-    /**
-     * Adapter for EditorSlider to EditorSection.
-     */
-    private record SliderSectionAdapter(EditorSlider slider) implements EditorSection.SliderSection {
-        @Override
-        public String getId() { return slider.getId(); }
-
-        @Override
-        public String getLabel() { return slider.getLabel(); }
-
-        @Override
-        public int getHeight() { return slider.calculateHeight(); }
-
-        @Override
-        public float getValue() { return slider.getValue(); }
-
-        @Override
-        public void setValue(float value) { slider.setValue(value); }
-
-        @Override
-        public float getMin() { return slider.getMin(); }
-
-        @Override
-        public float getMax() { return slider.getMax(); }
-
-        @Override
-        public float getStep() { return slider.getStep(); }
-
-        @Override
-        public String getFormat() { return "%.2f"; } // Default format
-
-        @Override
-        public int getColor() { return UIConstants.SliderColors.NEUTRAL; }
-
-        @Override
-        public boolean isDragging() { return slider.isDragging(); }
-
-        @Override
-        public void setDragging(boolean dragging) { /* No-op, handled internally */ }
-
-        @Override
-        public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
-            slider.render(graphics, bounds.x(), bounds.y(), bounds.width(), mouseX, mouseY);
-        }
-
-        @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            return slider.mouseClicked(mouseX, mouseY, button);
-        }
-
-        @Override
-        public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-            return slider.mouseDragged(mouseX, mouseY, button, dragX, dragY);
-        }
-
-        @Override
-        public boolean mouseReleased(double mouseX, double mouseY, int button) {
-            return slider.mouseReleased(mouseX, mouseY, button);
-        }
-    }
-
-    /**
-     * Adapter for EditorTextField to EditorSection.
-     */
-    private record InputSectionAdapter(EditorTextField field) implements EditorSection.InputSection {
-        @Override
-        public String getId() { return field.getId(); }
-
-        @Override
-        public String getLabel() { return field.getLabel(); }
-
-        @Override
-        public int getHeight() { return field.calculateHeight(); }
-
-        @Override
-        public String getText() { return field.getValue(); }
-
-        @Override
-        public void setText(String text) { field.setValue(text); }
-
-        @Override
-        public String getPlaceholder() { return ""; } // Placeholder is internal to EditorTextField
-
-        @Override
-        public boolean isNumeric() { return false; }
-
-        @Override
-        public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
-            field.render(graphics, bounds.x(), bounds.y(), bounds.width(), mouseX, mouseY);
-        }
-
-        @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            return field.mouseClicked(mouseX, mouseY, button);
-        }
-
-        @Override
-        public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-            return field.keyPressed(keyCode, scanCode, modifiers);
-        }
-
-        @Override
-        public boolean charTyped(char chr, int modifiers) {
-            return field.charTyped(chr, modifiers);
-        }
-    }
 }

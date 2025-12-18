@@ -20,7 +20,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import org.lwjgl.glfw.GLFW;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -76,23 +75,27 @@ public class RadialMenuScreenV3 extends Screen {
     private RadialCategory currentCategory = null;
 
     // === Selection State ===
-    private int selectedCategoryIndex = -1;
-    private int selectedItemIndex = -1;
-    private int selectedFavoriteIndex = -1;
-    private int prevSelectedCategory = -1;
+    private int selectedCategoryIndex = RadialMenuConstants.NO_SELECTION;
+    private int selectedItemIndex = RadialMenuConstants.NO_SELECTION;
+    private int selectedFavoriteIndex = RadialMenuConstants.NO_SELECTION;
+    private int prevSelectedCategory = RadialMenuConstants.NO_SELECTION;
     private int centerX, centerY;
     private double lastMouseX = 0;
     private double lastMouseY = 0;
 
     // === Animation System ===
-    private final RadialAnimator animator = new RadialAnimator(6, 10, RadialMenuConstants.MAX_FAVORITES);
+    private final RadialAnimator animator = new RadialAnimator(
+        RadialMenuConstants.CATEGORIES_PER_MACRO,
+        RadialMenuConstants.MAX_ITEMS_PER_CATEGORY,
+        RadialMenuConstants.MAX_FAVORITES,
+        buildAnimConfig());
     private long openTime;
 
     // === Search System ===
     private boolean searchMode = false;
     private StringBuilder searchQuery = new StringBuilder();
     private List<RadialSearchHandler.SearchResult> searchResults = new ArrayList<>();
-    private int selectedSearchResult = -1;
+    private int selectedSearchResult = RadialMenuConstants.NO_SELECTION;
 
     // === Favorites System ===
     private final List<FavoriteItem> favorites = new ArrayList<>();
@@ -136,13 +139,33 @@ public class RadialMenuScreenV3 extends Screen {
         }
     }
 
+    private static RadialAnimator.AnimationConfig buildAnimConfig() {
+        RadialMenuConfig cfg = RadialMenuConfig.INSTANCE;
+        float openSpeed = cfg.openAnimationSpeed > 0 ? cfg.openAnimationSpeed : RadialMenuConstants.OPEN_ANIM_SPEED;
+        float closeSpeed = cfg.closeAnimationSpeed > 0 ? cfg.closeAnimationSpeed : RadialMenuConstants.CLOSE_ANIM_SPEED;
+        float hoverIn = cfg.hoverInSpeed > 0 ? cfg.hoverInSpeed : RadialMenuConstants.HOVER_ANIM_IN;
+        float hoverOut = cfg.hoverOutSpeed > 0 ? cfg.hoverOutSpeed : RadialMenuConstants.HOVER_ANIM_OUT;
+        float morphSpeed = cfg.morphAnimationSpeed > 0 ? cfg.morphAnimationSpeed : RadialMenuConstants.MORPH_SPEED;
+        float searchSpeed = cfg.searchBoxAnimationSpeed > 0 ? cfg.searchBoxAnimationSpeed : RadialMenuConstants.SEARCH_BOX_LERP;
+        return new RadialAnimator.AnimationConfig(
+            openSpeed,
+            closeSpeed,
+            RadialMenuConstants.TRANSITION_SPEED,
+            hoverIn,
+            hoverOut,
+            morphSpeed,
+            searchSpeed,
+            cfg.enableAnimations
+        );
+    }
+
     // ================================================================
     // SEARCH SYSTEM
     // ================================================================
 
     private void updateSearchResults() {
         searchResults = RadialSearchHandler.search(searchQuery.toString(), rootCategories);
-        selectedSearchResult = searchResults.isEmpty() ? -1 : 0;
+        selectedSearchResult = searchResults.isEmpty() ? RadialMenuConstants.NO_SELECTION : 0;
     }
 
     // ================================================================
@@ -176,7 +199,7 @@ public class RadialMenuScreenV3 extends Screen {
         for (int i = 0; i < favorites.size(); i++) {
             if (favorites.get(i).key.equals(key)) {
                 favorites.remove(i);
-                playSound(0.7f);
+                playSound(RadialMenuConstants.SOUND_PITCH_FAVORITE_REMOVE);
                 return;
             }
         }
@@ -184,20 +207,20 @@ public class RadialMenuScreenV3 extends Screen {
         // Add to favorites
         if (favorites.size() < RadialMenuConstants.MAX_FAVORITES) {
             favorites.add(new FavoriteItem(key, item, category));
-            playSound(1.3f);
+            playSound(RadialMenuConstants.SOUND_PITCH_FAVORITE_ADD);
         }
     }
 
     private void nextCategory() {
         selectedCategoryIndex = (selectedCategoryIndex + 1) % rootCategories.size();
         animator.startMorph();
-        playSound(1.05f);
+        playSound(RadialMenuConstants.SOUND_PITCH_CATEGORY_NEXT);
     }
 
     private void prevCategory() {
         selectedCategoryIndex = (selectedCategoryIndex - 1 + rootCategories.size()) % rootCategories.size();
         animator.startMorph();
-        playSound(0.95f);
+        playSound(RadialMenuConstants.SOUND_PITCH_CATEGORY_PREV);
     }
 
     // ================================================================
@@ -374,9 +397,9 @@ public class RadialMenuScreenV3 extends Screen {
         double dy = mouseY - centerY;
         double distance = Math.sqrt(dx * dx + dy * dy);
 
-        selectedCategoryIndex = -1;
-        selectedItemIndex = -1;
-        selectedFavoriteIndex = -1;
+        selectedCategoryIndex = RadialMenuConstants.NO_SELECTION;
+        selectedItemIndex = RadialMenuConstants.NO_SELECTION;
+        selectedFavoriteIndex = RadialMenuConstants.NO_SELECTION;
 
         // Macro hub area (center with 4 segments) - handled in renderCenterHub
         if (distance < macroHubRadius) {
@@ -384,22 +407,22 @@ public class RadialMenuScreenV3 extends Screen {
         }
 
         double angle = Math.atan2(dy, dx);
-        if (angle < 0) angle += Math.PI * 2;
+        if (angle < 0) angle += RadialMenuConstants.TWO_PI;
 
         // Check favorites ring (between macro hub and inner radius)
         if (!favorites.isEmpty() && distance >= macroHubRadius && distance < innerRadius) {
             int numFavorites = favorites.size();
-            double favSegmentAngle = (Math.PI * 2) / numFavorites;
-            double favStartOffset = -Math.PI / 2;
+            double favSegmentAngle = RadialMenuConstants.TWO_PI / numFavorites;
+            double favStartOffset = RadialMenuConstants.CATEGORY_START_OFFSET;
 
             double favAdjustedAngle = angle - favStartOffset;
-            if (favAdjustedAngle < 0) favAdjustedAngle += Math.PI * 2;
+            if (favAdjustedAngle < 0) favAdjustedAngle += RadialMenuConstants.TWO_PI;
 
             selectedFavoriteIndex = (int)(favAdjustedAngle / favSegmentAngle) % numFavorites;
 
             // Play sound on favorite hover change
             if (config.enableSounds && selectedFavoriteIndex != prevSelectedFavorite && selectedFavoriteIndex >= 0) {
-                playSound(1.2f, 0.2f);
+                playSound(RadialMenuConstants.SOUND_PITCH_HOVER, RadialMenuConstants.SOUND_VOLUME_HOVER);
             }
             return;
         }
@@ -408,11 +431,11 @@ public class RadialMenuScreenV3 extends Screen {
         int numCategories = categories.size();
         if (numCategories == 0) return;
 
-        double segmentAngle = (Math.PI * 2) / numCategories;
-        double startOffset = -Math.PI / 2 - segmentAngle / 2;
+        double segmentAngle = RadialMenuConstants.TWO_PI / numCategories;
+        double startOffset = RadialMenuConstants.CATEGORY_START_OFFSET - segmentAngle / 2;
 
         double adjustedAngle = angle - startOffset;
-        if (adjustedAngle < 0) adjustedAngle += Math.PI * 2;
+        if (adjustedAngle < 0) adjustedAngle += RadialMenuConstants.TWO_PI;
 
         selectedCategoryIndex = (int)(adjustedAngle / segmentAngle) % numCategories;
 
@@ -425,8 +448,8 @@ public class RadialMenuScreenV3 extends Screen {
                 double itemSegment = segmentAngle / numVisibleItems;
                 double catStartAngle = startOffset + selectedCategoryIndex * segmentAngle;
                 double relativeAngle = angle - catStartAngle;
-                if (relativeAngle < 0) relativeAngle += Math.PI * 2;
-                if (relativeAngle > Math.PI) relativeAngle -= Math.PI * 2;
+                if (relativeAngle < 0) relativeAngle += RadialMenuConstants.TWO_PI;
+                if (relativeAngle > Math.PI) relativeAngle -= RadialMenuConstants.TWO_PI;
 
                 selectedItemIndex = Mth.clamp((int)(relativeAngle / itemSegment), 0, numVisibleItems - 1);
             }
@@ -434,7 +457,8 @@ public class RadialMenuScreenV3 extends Screen {
 
         // Play selection sound on category change
         if (config.enableSounds && selectedCategoryIndex != prevSelectedCategory && selectedCategoryIndex >= 0) {
-            playSound(1.0f, 0.25f);
+            playSound(RadialMenuConstants.SOUND_PITCH_CATEGORY_CHANGE,
+                RadialMenuConstants.SOUND_VOLUME_CATEGORY_CHANGE);
         }
     }
 
@@ -455,8 +479,8 @@ public class RadialMenuScreenV3 extends Screen {
         if (favorites.isEmpty()) return;
 
         int numFavorites = favorites.size();
-        double segmentAngle = (Math.PI * 2) / numFavorites;
-        double startOffset = -Math.PI / 2;
+        double segmentAngle = RadialMenuConstants.TWO_PI / numFavorites;
+        double startOffset = RadialMenuConstants.CATEGORY_START_OFFSET;
 
         for (int i = 0; i < numFavorites; i++) {
             FavoriteItem fav = favorites.get(i);
@@ -467,21 +491,30 @@ public class RadialMenuScreenV3 extends Screen {
             int favX = (int)(centerX + Math.cos(midAngle) * favoritesRadius);
             int favY = (int)(centerY + Math.sin(midAngle) * favoritesRadius);
 
-            int size = 14 + (int)(4 * anim);
+            int size = RadialMenuConstants.FAVORITE_BASE_SIZE +
+                (int) (RadialMenuConstants.FAVORITE_SIZE_BONUS * anim);
 
             // Star background
-            int bgColor = selected ? 0xDDFFD700 : 0x88FFD700;
+            int bgColor = selected
+                ? RadialMenuConstants.FAVORITE_BG_SELECTED
+                : RadialMenuConstants.FAVORITE_BG_UNSELECTED;
             RadialGeometry.renderCircle(graphics, favX, favY, size, bgColor);
 
             // Icon
             if (fav.item.getIconStack() != null) {
                 graphics.pose().pushPose();
-                graphics.pose().translate(favX - 8, favY - 8, 0);
-                graphics.pose().scale(0.7f, 0.7f, 1f);
+                graphics.pose().translate(
+                    favX + RadialMenuConstants.FAVORITE_ICON_OFFSET_X,
+                    favY + RadialMenuConstants.FAVORITE_ICON_OFFSET_Y,
+                    0);
+                graphics.pose().scale(RadialMenuConstants.FAVORITE_ICON_SCALE,
+                    RadialMenuConstants.FAVORITE_ICON_SCALE, 1f);
                 graphics.renderItem(fav.item.getIconStack(), 0, 0);
                 graphics.pose().popPose();
             } else {
-                graphics.drawCenteredString(font, "★", favX, favY - 4, 0xFFFFD700);
+                graphics.drawCenteredString(font, "★", favX,
+                    favY + RadialMenuConstants.FAVORITE_STAR_OFFSET_Y,
+                    RadialMenuConstants.FAVORITE_STAR_COLOR);
             }
         }
     }
@@ -492,7 +525,7 @@ public class RadialMenuScreenV3 extends Screen {
 
     private void renderSearchOverlay(GuiGraphics graphics) {
         float searchBoxAnimation = animator.getSearchBoxAnimation();
-        if (searchBoxAnimation < 0.01f) return;
+        if (searchBoxAnimation < RadialMenuConstants.SEARCH_ANIMATION_EPSILON) return;
 
         RadialTooltipRenderer.SearchConfig searchConfig = new RadialTooltipRenderer.SearchConfig(
             width, height, centerX, config.theme
@@ -519,8 +552,8 @@ public class RadialMenuScreenV3 extends Screen {
 
     private void renderBackground(GuiGraphics graphics) {
         // Solid dark background - more opaque for visibility
-        int alpha = (int)(0xE0 * animator.getOpenAnimation()); // Much more opaque (224/255 vs 144/255)
-        graphics.fill(0, 0, width, height, (alpha << 24) | 0x0D0D15);
+        int alpha = (int) (RadialMenuConstants.BACKGROUND_ALPHA_MAX * animator.getOpenAnimation());
+        graphics.fill(0, 0, width, height, (alpha << 24) | RadialMenuConstants.BACKGROUND_COLOR);
     }
 
     private void renderCategoryGlow(GuiGraphics graphics, int categoryIndex) {
@@ -546,7 +579,8 @@ public class RadialMenuScreenV3 extends Screen {
         animator.updateCenterHoverAnimation(centerHovered);
 
         // Update segment animations via animator
-        animator.updateMacroSegmentAnimations(selectedMacro.ordinal(), hoveredMacro != null ? hoveredMacro.ordinal() : -1);
+        animator.updateMacroSegmentAnimations(selectedMacro.ordinal(),
+            hoveredMacro != null ? hoveredMacro.ordinal() : RadialMenuConstants.NO_SELECTION);
 
         // Build hub state and render
         boolean inSubcategory = currentCategory != null && currentCategory.hasParent();
@@ -729,7 +763,7 @@ public class RadialMenuScreenV3 extends Screen {
 
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == GLFW.GLFW_KEY_G && config.releaseToSelect) {
+        if (keyCode == config.input.keyReleaseSelect && config.releaseToSelect) {
                 activateSelection(lastMouseX, lastMouseY);
             return true;
         }
@@ -740,41 +774,41 @@ public class RadialMenuScreenV3 extends Screen {
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         // Search mode input
         if (searchMode) {
-            if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            if (keyCode == config.input.keyMenuClose) {
                 searchMode = false;
                 searchQuery.setLength(0);
                 searchResults.clear();
                 return true;
             }
-            if (keyCode == GLFW.GLFW_KEY_ENTER && selectedSearchResult >= 0) {
+            if (keyCode == config.input.keySearchConfirm && selectedSearchResult >= 0) {
                 RadialSearchHandler.SearchResult result = searchResults.get(selectedSearchResult);
                 executeItem(result.getItem(), result.getCategory());
                 searchMode = false;
                 return true;
             }
-            if (keyCode == GLFW.GLFW_KEY_BACKSPACE && searchQuery.length() > 0) {
+            if (keyCode == config.input.keySearchBackspace && searchQuery.length() > 0) {
                 searchQuery.deleteCharAt(searchQuery.length() - 1);
                 updateSearchResults();
                 return true;
             }
-            if (keyCode == GLFW.GLFW_KEY_UP) {
+            if (keyCode == config.input.keySearchUp) {
                 selectedSearchResult = Math.max(0, selectedSearchResult - 1);
                 return true;
             }
-            if (keyCode == GLFW.GLFW_KEY_DOWN) {
+            if (keyCode == config.input.keySearchDown) {
                 selectedSearchResult = Math.min(searchResults.size() - 1, selectedSearchResult + 1);
                 return true;
             }
             return super.keyPressed(keyCode, scanCode, modifiers);
         }
 
-        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+        if (keyCode == config.input.keyMenuClose) {
             animator.startClose();
             return true;
         }
 
         // / or F to toggle search
-        if (keyCode == GLFW.GLFW_KEY_SLASH || keyCode == GLFW.GLFW_KEY_F) {
+        if (keyCode == config.input.keySearchTogglePrimary || keyCode == config.input.keySearchToggleSecondary) {
             searchMode = !searchMode;
             if (!searchMode) {
                 searchQuery.setLength(0);
@@ -783,56 +817,48 @@ public class RadialMenuScreenV3 extends Screen {
             return true;
         }
 
-        if (keyCode == GLFW.GLFW_KEY_LEFT_SHIFT || keyCode == GLFW.GLFW_KEY_RIGHT_SHIFT) {
+        if (keyCode == config.input.keyEditModeToggleLeft || keyCode == config.input.keyEditModeToggleRight) {
             editMode = !editMode;
             return true;
         }
 
-        if (keyCode == GLFW.GLFW_KEY_T) {
+        if (keyCode == config.input.keyThemeCycle) {
             config.cycleTheme();
-            playSound(1.2f);
+            playSound(RadialMenuConstants.SOUND_PITCH_THEME_CYCLE);
             return true;
         }
 
         // Keys 1-4 switch macro-categories
-        if (keyCode >= GLFW.GLFW_KEY_1 && keyCode <= GLFW.GLFW_KEY_4) {
-            int macroIndex = keyCode - GLFW.GLFW_KEY_1;
+        int macroIndex = indexOfKey(keyCode, config.input.macroKeys);
+        if (macroIndex != RadialMenuConstants.NO_SELECTION) {
             MacroCategory[] macros = MacroCategory.values();
             if (macroIndex < macros.length && macros[macroIndex] != selectedMacro) {
                 transitionFromMacro = selectedMacro;
                 selectedMacro = macros[macroIndex];
                 animator.startMacroTransition();
-                selectedCategoryIndex = -1;
-                selectedItemIndex = -1;
-                playSound(1.1f);
+                selectedCategoryIndex = RadialMenuConstants.NO_SELECTION;
+                selectedItemIndex = RadialMenuConstants.NO_SELECTION;
+                playSound(RadialMenuConstants.SOUND_PITCH_MACRO_SWITCH);
             }
             return true;
         }
 
         // Keys 5-9 and 0 select categories within current macro (Q-P for items)
-        if (keyCode >= GLFW.GLFW_KEY_5 && keyCode <= GLFW.GLFW_KEY_9) {
-            int num = keyCode - GLFW.GLFW_KEY_5;
-            if (num < getActiveCategories().size()) {
+        int categoryIndex = indexOfKey(keyCode, config.input.categoryKeys);
+        if (categoryIndex != RadialMenuConstants.NO_SELECTION) {
+            if (categoryIndex < getActiveCategories().size()) {
                 animator.startMorph();
-                selectedCategoryIndex = num;
-            }
-            return true;
-        }
-        if (keyCode == GLFW.GLFW_KEY_0) {
-            // Key 0 selects 6th category (index 5)
-            if (5 < getActiveCategories().size()) {
-                animator.startMorph();
-                selectedCategoryIndex = 5;
+                selectedCategoryIndex = categoryIndex;
             }
             return true;
         }
 
         // Left/Right arrows for categories
-        if (keyCode == GLFW.GLFW_KEY_LEFT) {
+        if (keyCode == config.input.keyCategoryLeft) {
             prevCategory();
             return true;
         }
-        if (keyCode == GLFW.GLFW_KEY_RIGHT) {
+        if (keyCode == config.input.keyCategoryRight) {
             nextCategory();
             return true;
         }
@@ -858,7 +884,7 @@ public class RadialMenuScreenV3 extends Screen {
 
     @Override
     public boolean charTyped(char chr, int modifiers) {
-        if (searchMode && Character.isLetterOrDigit(chr) || chr == ' ') {
+        if ((searchMode && Character.isLetterOrDigit(chr)) || chr == config.input.searchQuerySpace) {
             searchQuery.append(chr);
             updateSearchResults();
             return true;
@@ -867,18 +893,19 @@ public class RadialMenuScreenV3 extends Screen {
     }
 
     private int getItemKeyIndex(int keyCode) {
-        return switch (keyCode) {
-            case GLFW.GLFW_KEY_Q -> 0;
-            case GLFW.GLFW_KEY_W -> 1;
-            case GLFW.GLFW_KEY_E -> 2;
-            case GLFW.GLFW_KEY_R -> 3;
-            case GLFW.GLFW_KEY_Y -> 4;
-            case GLFW.GLFW_KEY_U -> 5;
-            case GLFW.GLFW_KEY_I -> 6;
-            case GLFW.GLFW_KEY_O -> 7;
-            case GLFW.GLFW_KEY_P -> 8;
-            default -> -1;
-        };
+        return indexOfKey(keyCode, config.input.itemKeys);
+    }
+
+    private static int indexOfKey(int keyCode, int[] keys) {
+        if (keys == null || keys.length == 0) {
+            return RadialMenuConstants.NO_SELECTION;
+        }
+        for (int i = 0; i < keys.length; i++) {
+            if (keyCode == keys[i]) {
+                return i;
+            }
+        }
+        return RadialMenuConstants.NO_SELECTION;
     }
 
     private void activateSelection(double mouseX, double mouseY) {
@@ -887,7 +914,7 @@ public class RadialMenuScreenV3 extends Screen {
         double distance = Math.sqrt(dx * dx + dy * dy);
 
         // Check if clicking on center close button (very center)
-        if (distance < centerButtonRadius * 0.4) {
+        if (distance < centerButtonRadius * RadialMenuConstants.CLOSE_BUTTON_RATIO) {
             if (currentCategory != null && currentCategory.hasParent()) {
                 navigateBack();
             } else {
@@ -903,9 +930,9 @@ public class RadialMenuScreenV3 extends Screen {
                 transitionFromMacro = selectedMacro;
                 selectedMacro = hoveredMacro;
                 animator.startMacroTransition();
-                selectedCategoryIndex = -1;
-                selectedItemIndex = -1;
-                playSound(1.1f);
+                selectedCategoryIndex = RadialMenuConstants.NO_SELECTION;
+                selectedItemIndex = RadialMenuConstants.NO_SELECTION;
+                playSound(RadialMenuConstants.SOUND_PITCH_MACRO_SWITCH);
             }
             return;
         }
@@ -957,7 +984,11 @@ public class RadialMenuScreenV3 extends Screen {
         }
 
         if (config.enableSounds) {
-            float pitch = item.isToggle() ? (item.isActive() ? 1.2f : 0.8f) : 1.0f;
+            float pitch = item.isToggle()
+                ? (item.isActive()
+                    ? RadialMenuConstants.SOUND_PITCH_TOGGLE_ON
+                    : RadialMenuConstants.SOUND_PITCH_TOGGLE_OFF)
+                : RadialMenuConstants.SOUND_PITCH_ACTION_DEFAULT;
             playSound(pitch);
         }
 
@@ -971,8 +1002,8 @@ public class RadialMenuScreenV3 extends Screen {
             navigationStack.push(currentCategory);
         }
         currentCategory = category;
-        selectedItemIndex = -1;
-        playSound(1.1f);
+        selectedItemIndex = RadialMenuConstants.NO_SELECTION;
+        playSound(RadialMenuConstants.SOUND_PITCH_NAVIGATE_TO);
     }
 
     private void navigateBack() {
@@ -981,8 +1012,8 @@ public class RadialMenuScreenV3 extends Screen {
         } else {
             currentCategory = null;
         }
-        selectedItemIndex = -1;
-        playSound(0.9f);
+        selectedItemIndex = RadialMenuConstants.NO_SELECTION;
+        playSound(RadialMenuConstants.SOUND_PITCH_NAVIGATE_BACK);
     }
 
     private void openItemEditor() {
@@ -1002,7 +1033,7 @@ public class RadialMenuScreenV3 extends Screen {
     // ================================================================
 
     private void playSound(float pitch) {
-        playSound(pitch, 1.0f);
+        playSound(pitch, RadialMenuConstants.SOUND_VOLUME_DEFAULT);
     }
 
     private void playSound(float pitch, float volume) {

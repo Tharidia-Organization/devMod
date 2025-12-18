@@ -1,7 +1,7 @@
 package com.frenkvs.devmod.recipe;
 
 import com.frenkvs.devmod.DevMod;
-import com.frenkvs.devmod.network.RecipeSyncPayload;
+import com.frenkvs.devmod.network.RecipeClientSyncPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -76,7 +76,7 @@ public final class RecipeReloadListener {
 
     /**
      * Called when datapacks are synced to a player (on join or /reload).
-     * Sends all custom recipes to the joining player.
+     * Syncs custom recipes to client and re-injects into RecipeManager on reload.
      */
     @SubscribeEvent
     public static void onDatapackSync(OnDatapackSyncEvent event) {
@@ -89,10 +89,10 @@ public final class RecipeReloadListener {
         ServerPlayer player = event.getPlayer();
 
         if (player != null) {
-            // Single player joining - send recipes to them
+            // Single player joining - sync all recipes to them
             syncRecipesToPlayer(player);
         } else {
-            // Server reload (/reload command) - sync to all players
+            // Server reload (/reload command)
             var playerList = event.getPlayerList();
             if (playerList == null) {
                 DevMod.LOGGER.warn("[RecipeReloadListener] PlayerList is null in OnDatapackSyncEvent");
@@ -105,100 +105,44 @@ public final class RecipeReloadListener {
                 return;
             }
 
-            for (ServerPlayer p : server.getPlayerList().getPlayers()) {
-                if (p != null) {
-                    syncRecipesToPlayer(p);
-                }
-            }
-
             // Re-inject recipes after reload
             RecipeInjector.injectAll(server.getRecipeManager());
-        }
-    }
+            DevMod.LOGGER.info("[RecipeReloadListener] Reloaded {} custom recipes",
+                RecipeConfigManager.getRecipeCount());
 
-    // ═══════════════════════════════════════════════════════════════
-    // SYNC HELPERS
-    // ═══════════════════════════════════════════════════════════════
-
-    /**
-     * Send all custom recipes to a specific player.
-     */
-    public static void syncRecipesToPlayer(ServerPlayer player) {
-        if (player == null) {
-            DevMod.LOGGER.warn("[RecipeReloadListener] Cannot sync recipes to null player");
-            return;
-        }
-
-        try {
-            List<RecipeData> recipes = RecipeConfigManager.getAllCustomRecipes();
-
-            if (recipes.isEmpty()) {
-                DevMod.LOGGER.debug("[RecipeReloadListener] No custom recipes to sync to {}",
-                    player.getName().getString());
-                return;
+            // Sync to all connected players
+            for (ServerPlayer p : playerList.getPlayers()) {
+                syncRecipesToPlayer(p);
             }
-
-            RecipeSyncPayload payload = RecipeSyncPayload.syncAll(Objects.requireNonNull(recipes, "recipes"));
-            PacketDistributor.sendToPlayer(
-                Objects.requireNonNull(player, "player"),
-                Objects.requireNonNull(payload, "payload")
-            );
-
-            DevMod.LOGGER.debug("[RecipeReloadListener] Synced {} recipes to {}",
-                recipes.size(), player.getName().getString());
-        } catch (Exception e) {
-            DevMod.LOGGER.error("[RecipeReloadListener] Failed to sync recipes to player: {}",
-                e.getMessage());
         }
     }
 
     /**
-     * Broadcast a recipe change to all connected players.
+     * Sync all custom recipes to a specific player.
      */
-    public static void broadcastRecipeChange(RecipeData recipe, RecipeSyncPayload.SyncOperation operation) {
-        if (recipe == null || recipe.id() == null) {
-            DevMod.LOGGER.warn("[RecipeReloadListener] Cannot broadcast null recipe");
+    private static void syncRecipesToPlayer(ServerPlayer player) {
+        ServerPlayer safePlayer = Objects.requireNonNull(player, "player");
+        List<RecipeData> recipes = RecipeConfigManager.getAllCustomRecipes();
+        if (recipes.isEmpty()) {
+            DevMod.LOGGER.debug("[RecipeReloadListener] No recipes to sync to player {}",
+                safePlayer.getName().getString());
             return;
         }
 
-        if (operation == null) {
-            DevMod.LOGGER.warn("[RecipeReloadListener] Cannot broadcast with null operation");
-            return;
-        }
+        RecipeClientSyncPayload payload = RecipeClientSyncPayload.syncAll(recipes);
+        PacketDistributor.sendToPlayer(safePlayer, Objects.requireNonNull(payload, "recipe sync payload"));
 
-        var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
-        if (server == null) {
-            DevMod.LOGGER.debug("[RecipeReloadListener] Server not available for broadcast");
-            return;
-        }
-
-        try {
-            RecipeSyncPayload payload = new RecipeSyncPayload(
-                Objects.requireNonNull(List.of(recipe), "recipes"),
-                true,
-                Objects.requireNonNull(operation, "operation")
-            );
-
-            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                if (player != null) {
-                    PacketDistributor.sendToPlayer(
-                        Objects.requireNonNull(player, "player"),
-                        Objects.requireNonNull(payload, "payload")
-                    );
-                }
-            }
-
-            DevMod.LOGGER.debug("[RecipeReloadListener] Broadcast {} for recipe {}",
-                operation, recipe.id());
-        } catch (Exception e) {
-            DevMod.LOGGER.error("[RecipeReloadListener] Failed to broadcast recipe change: {}",
-                e.getMessage());
-        }
+        DevMod.LOGGER.debug("[RecipeReloadListener] Synced {} recipes to player {}",
+            recipes.size(), safePlayer.getName().getString());
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // RECIPE MODIFICATION HANDLERS
+    // ═══════════════════════════════════════════════════════════════
 
     /**
      * Called after a recipe is added/updated on the server.
-     * Re-injects recipes and notifies clients.
+     * Re-injects recipe into RecipeManager and broadcasts to all clients.
      */
     public static void onRecipeModified(RecipeData recipe) {
         if (recipe == null || recipe.id() == null) {
@@ -214,13 +158,17 @@ public final class RecipeReloadListener {
 
         // Re-inject into RecipeManager
         RecipeInjector.injectSingle(server.getRecipeManager(), recipe);
+        DevMod.LOGGER.debug("[RecipeReloadListener] Recipe {} injected into RecipeManager", recipe.id());
 
-        // Broadcast to clients
-        broadcastRecipeChange(recipe, RecipeSyncPayload.SyncOperation.UPDATE);
+        // Broadcast to all connected clients
+        RecipeClientSyncPayload payload = RecipeClientSyncPayload.add(recipe);
+        PacketDistributor.sendToAllPlayers(Objects.requireNonNull(payload, "recipe add payload"));
+        DevMod.LOGGER.debug("[RecipeReloadListener] Broadcasted recipe {} to all clients", recipe.id());
     }
 
     /**
      * Called after a recipe is deleted on the server.
+     * Removes from RecipeManager and broadcasts deletion to all clients.
      */
     public static void onRecipeDeleted(RecipeData recipe) {
         if (recipe == null || recipe.id() == null) {
@@ -236,8 +184,11 @@ public final class RecipeReloadListener {
 
         // Remove from RecipeManager
         RecipeInjector.removeSingle(server.getRecipeManager(), recipe.id());
+        DevMod.LOGGER.debug("[RecipeReloadListener] Recipe {} removed from RecipeManager", recipe.id());
 
-        // Broadcast to clients
-        broadcastRecipeChange(recipe, RecipeSyncPayload.SyncOperation.DELETE);
+        // Broadcast deletion to all connected clients
+        RecipeClientSyncPayload payload = RecipeClientSyncPayload.delete(recipe);
+        PacketDistributor.sendToAllPlayers(Objects.requireNonNull(payload, "recipe delete payload"));
+        DevMod.LOGGER.debug("[RecipeReloadListener] Broadcasted recipe deletion {} to all clients", recipe.id());
     }
 }

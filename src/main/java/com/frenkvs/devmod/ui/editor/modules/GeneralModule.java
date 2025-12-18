@@ -5,15 +5,13 @@ import com.frenkvs.devmod.ui.editor.EditorSection;
 import com.frenkvs.devmod.ui.editor.ModuleTab;
 import com.frenkvs.devmod.ui.editor.components.EditorSlider;
 import com.frenkvs.devmod.ui.editor.components.EditorToggle;
-import com.frenkvs.devmod.ui.editor.core.EditorDimensions;
-import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import com.frenkvs.devmod.ui.editor.sections.InfoListSection;
+import com.frenkvs.devmod.ui.editor.sections.SliderSectionAdapter;
+import com.frenkvs.devmod.ui.editor.sections.ToggleSectionAdapter;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
 import java.util.List;
-import java.util.Objects;
 
 /**
  * General/fallback editor module for items that don't match specific types.
@@ -151,7 +149,7 @@ public class GeneralModule extends AbstractEditorModule {
 
     private List<EditorSection> getInfoSections() {
         // Info tab shows read-only information about the item
-        return List.of(new InfoSection(
+        return List.of(new InfoListSection(
             "info",
             "Item Information",
             List.of(
@@ -179,106 +177,4 @@ public class GeneralModule extends AbstractEditorModule {
     // ADAPTERS
     // ═══════════════════════════════════════════════════════════════
 
-    private static class SliderSectionAdapter implements EditorSection.SliderSection {
-        private final EditorSlider slider;
-
-        SliderSectionAdapter(EditorSlider slider) {
-            this.slider = slider;
-        }
-
-        @Override
-        public String getId() { return slider.getId(); }
-
-        @Override
-        public String getLabel() { return slider.getLabel(); }
-
-        @Override
-        public int getHeight() { return slider.calculateHeight(); }
-
-        @Override
-        public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
-            slider.render(graphics, bounds.x(), bounds.y(), bounds.width(), mouseX, mouseY);
-        }
-
-        @Override public boolean mouseClicked(double mouseX, double mouseY, int button) { return slider.mouseClicked(mouseX, mouseY, button); }
-        @Override public boolean mouseReleased(double mouseX, double mouseY, int button) { return slider.mouseReleased(mouseX, mouseY, button); }
-        @Override public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) { return slider.mouseDragged(mouseX, mouseY, button, dragX, dragY); }
-        @Override public boolean keyPressed(int keyCode, int scanCode, int modifiers) { return slider.keyPressed(keyCode, scanCode, modifiers); }
-        @Override public float getValue() { return slider.getValue(); }
-        @Override public void setValue(float value) { slider.setValue(value); }
-        @Override public float getMin() { return slider.getMin(); }
-        @Override public float getMax() { return slider.getMax(); }
-        @Override public float getStep() { return slider.getStep(); }
-        @Override public String getFormat() { return "%.2f"; }
-        @Override public int getColor() { return UIConstants.SliderColors.NEUTRAL; }
-        @Override public boolean isDragging() { return slider.isDragging(); }
-        @Override public void setDragging(boolean dragging) { /* handled internally */ }
-    }
-
-    private static class ToggleSectionAdapter implements EditorSection.ToggleSection {
-        private final EditorToggle toggle;
-
-        ToggleSectionAdapter(EditorToggle toggle) {
-            this.toggle = toggle;
-        }
-
-        @Override public String getId() { return toggle.getId(); }
-        @Override public String getLabel() { return toggle.getLabel(); }
-        @Override public int getHeight() { return EditorDimensions.TOGGLE_HEIGHT; }
-
-        @Override
-        public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
-            toggle.render(graphics, bounds.x(), bounds.y(), bounds.width(), mouseX, mouseY);
-        }
-
-        @Override public boolean mouseClicked(double mouseX, double mouseY, int button) { return toggle.mouseClicked(mouseX, mouseY, button); }
-        @Override public boolean keyPressed(int keyCode, int scanCode, int modifiers) { return toggle.keyPressed(keyCode, scanCode, modifiers); }
-        @Override public boolean getValue() { return toggle.getValue(); }
-        @Override public void setValue(boolean value) { toggle.setValue(value); }
-    }
-
-    private static class InfoSection implements EditorSection.CustomSection {
-        private static final int LINE_HEIGHT = 12;
-        private static final int TEXT_INSET_X = 8;
-        private static final int HEADER_TEXT_HEIGHT = 8;
-        private static final int HEADER_TEXT_OFFSET_Y =
-            (EditorDimensions.SECTION_HEADER_HEIGHT - HEADER_TEXT_HEIGHT) / 2;
-        private static final int SECTION_BOTTOM_PADDING = 8;
-        private final String id;
-        private final String title;
-        private final List<String> lines;
-
-        InfoSection(String id, String title, List<String> lines) {
-            this.id = id;
-            this.title = title;
-            this.lines = lines;
-        }
-
-        @Override
-        public String getId() { return id; }
-
-        @Override
-        public String getLabel() { return title; }
-
-        @Override
-        public int getHeight() {
-            return EditorDimensions.SECTION_HEADER_HEIGHT + lines.size() * LINE_HEIGHT + SECTION_BOTTOM_PADDING;
-        }
-
-        @Override
-        public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
-            var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
-            int y = bounds.y();
-            // Header bar
-            graphics.fill(bounds.x(), y, bounds.x() + bounds.width(), y + EditorDimensions.SECTION_HEADER_HEIGHT, UIConstants.Background.HEADER());
-            graphics.drawString(font, title, bounds.x() + TEXT_INSET_X, y + HEADER_TEXT_OFFSET_Y,
-                UIConstants.Text.TITLE(), false);
-            y += EditorDimensions.SECTION_HEADER_HEIGHT;
-            // Lines
-            for (String line : lines) {
-                graphics.drawString(font, line, bounds.x() + TEXT_INSET_X, y, UIConstants.Text.SECONDARY(), false);
-                y += LINE_HEIGHT;
-            }
-        }
-    }
 }

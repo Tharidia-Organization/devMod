@@ -79,8 +79,7 @@ public class QuickToolsPanel implements HubPanel {
         int contentWidth = width - PADDING * 2;
 
         // === OVERLAYS SECTION ===
-        graphics.drawString(font, "OVERLAYS", contentX, contentY, UIConstants.Text.TITLE(), false);
-        contentY += SECTION_HEADER_HEIGHT;
+        contentY = HubSectionHeader.draw(graphics, font, "OVERLAYS", contentX, contentY, SECTION_HEADER_HEIGHT);
 
         for (ToolType tool : ToolType.values()) {
             boolean enabled = tool.isEnabled();
@@ -94,8 +93,7 @@ public class QuickToolsPanel implements HubPanel {
         contentY += 12;
 
         // === EDITORS SECTION ===
-        graphics.drawString(font, "EDITORS", contentX, contentY, UIConstants.Text.TITLE(), false);
-        contentY += SECTION_HEADER_HEIGHT;
+        contentY = HubSectionHeader.draw(graphics, font, "EDITORS", contentX, contentY, SECTION_HEADER_HEIGHT);
 
         for (EditorType editor : EditorType.values()) {
             renderEditorButton(graphics, contentX, contentY, contentWidth, editor, mouseX, mouseY);
@@ -107,8 +105,7 @@ public class QuickToolsPanel implements HubPanel {
         contentY += 12;
 
         // === SESSION SECTION ===
-        graphics.drawString(font, "SESSION", contentX, contentY, UIConstants.Text.TITLE(), false);
-        contentY += SECTION_HEADER_HEIGHT;
+        contentY = HubSectionHeader.draw(graphics, font, "SESSION", contentX, contentY, SECTION_HEADER_HEIGHT);
 
         renderSessionInfo(graphics, contentX, contentY, contentWidth);
     }

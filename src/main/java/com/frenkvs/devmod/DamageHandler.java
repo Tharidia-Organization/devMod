@@ -1,10 +1,13 @@
 package com.frenkvs.devmod;
 
 import com.frenkvs.devmod.client.ClientVFXProxy;
+import com.frenkvs.devmod.combat.ShieldDeflector;
 import com.frenkvs.devmod.hud.ImpactHudService;
 import com.frenkvs.devmod.damage.DamageCalculator;
 import com.frenkvs.devmod.damage.DamageBreakdown;
 import com.frenkvs.devmod.hud.ImpactData;
+import com.frenkvs.devmod.network.ShieldImpactPayload;
+import com.frenkvs.devmod.network.ShieldShatterPayload;
 import com.frenkvs.devmod.util.DamageTypeConfig;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.network.chat.Component;
@@ -156,8 +159,12 @@ public class DamageHandler {
                 originalDamage, newDamage, armorPenBonus, armorReduction);
 
             // 5. Apply shield block
-            if (victim instanceof Player playerVictim && playerVictim.isBlocking()) {
-                newDamage = applyShieldBlock(playerVictim, event.getSource(), newDamage);
+            if (victim instanceof Player playerVictim) {
+                LOGGER.info("[Shield Debug] Player victim: isBlocking={}, useItem={}",
+                    playerVictim.isBlocking(), playerVictim.getUseItem());
+                if (playerVictim.isBlocking()) {
+                    newDamage = applyShieldBlock(playerVictim, event.getSource(), newDamage);
+                }
             }
 
             event.setAmount(newDamage);
@@ -250,28 +257,65 @@ public class DamageHandler {
     }
 
     /**
-     * Applies shield-specific tuning: block strength scaling, projectile reflection, and cooldown tuning.
+     * Applies shield-specific tuning: block strength scaling, projectile deflection, shatter mechanics,
+     * and visual feedback via network payloads.
      */
     private static float applyShieldBlock(Player player, DamageSource source, float incomingDamage) {
+        LOGGER.info("[Shield Debug] applyShieldBlock called! incomingDamage={}", incomingDamage);
+
         ItemStack shield = player.getUseItem();
         if (shield.isEmpty() || !(shield.getItem() instanceof ShieldItem)) {
+            LOGGER.info("[Shield Debug] No shield in use item");
             return incomingDamage;
         }
 
         ArmorStats stats = ArmorConfigManager.getStats(shield);
+        LOGGER.info("[Shield Debug] Shield stats: blockStrength={}, opacity={}, reflectProjectiles={}",
+            stats.shieldBlockStrength, stats.shieldOpacity, stats.shieldReflectProjectiles);
         float blocked = Math.min(1f, Math.max(0f, stats.shieldBlockStrength));
         float damageAfterBlock = incomingDamage * (1f - blocked);
 
+        // Calculate impact position for visual effects
+        final Vec3 impactBase = Objects.requireNonNull(player.position(), "player position");
+        final Vec3 impactPosCenter = Objects.requireNonNull(impactBase.add(0, player.getBbHeight() * 0.5, 0), "impact center");
+        Vec3 impactPos = impactPosCenter;
+        var directEntity = source.getDirectEntity();
+        if (directEntity != null) {
+            // Use attacker direction to place impact on shield surface
+            final Vec3 attackerPos = Objects.requireNonNull(directEntity.position(), "attacker position");
+            final Vec3 toAttacker = Objects.requireNonNull(
+                Objects.requireNonNull(attackerPos.subtract(impactPos), "toAttacker vec").normalize(),
+                "toAttacker");
+            final Vec3 surfaceOffset = Objects.requireNonNull(toAttacker.scale(1.0), "toAttacker scaled");
+            impactPos = Objects.requireNonNull(impactPos.add(surfaceOffset), "impactPos surface"); // Shield surface
+        }
+        final Vec3 finalImpactPos = Objects.requireNonNull(impactPos, "impactPos final");
+
+        // Projectile deflection using ShieldDeflector (physics-based)
         if (stats.shieldReflectProjectiles && source.getDirectEntity() instanceof Projectile projectile) {
-            try {
-                Vec3 vel = projectile.getDeltaMovement();
-                if (vel != null) {
-                    projectile.setDeltaMovement(Objects.requireNonNull(vel.reverse()));
-                }
-                projectile.setOwner(player);
-            } catch (Exception ignored) {
-                // best-effort reflection
+            boolean deflected = ShieldDeflector.deflectProjectile(
+                projectile,
+                player,
+                stats.shieldDeflectionSpread,
+                stats.shieldDeflectSpeedMult,
+                stats.shieldDeflectToOwner,
+                1.2f // Default shield radius
+            );
+
+            // Send deflection visual effect to nearby clients
+            if (deflected && player instanceof ServerPlayer serverPlayer) {
+                sendShieldImpactPacket(serverPlayer, finalImpactPos, damageAfterBlock, true);
             }
+        } else if (player instanceof ServerPlayer serverPlayer) {
+            // Non-projectile damage: send regular impact visual
+            sendShieldImpactPacket(serverPlayer, finalImpactPos, damageAfterBlock, false);
+        }
+
+        // Check for shield shatter (high damage threshold)
+        if (incomingDamage >= stats.shieldShatterThreshold && player instanceof ServerPlayer serverPlayer) {
+            sendShieldShatterPacket(serverPlayer, impactPos, incomingDamage);
+            // Shield is shattered - apply full damage this hit
+            damageAfterBlock = incomingDamage;
         }
 
         // Cooldown tuning: base 5 ticks scaled by recovery speed (avoid div by zero)
@@ -280,6 +324,41 @@ public class DamageHandler {
         player.getCooldowns().addCooldown(Objects.requireNonNull(shield.getItem()), cooldown);
 
         return damageAfterBlock;
+    }
+
+    /**
+     * Sends shield impact visual effect packet to nearby players.
+     */
+    private static void sendShieldImpactPacket(ServerPlayer player, Vec3 impactPos, float damage, boolean wasDeflection) {
+        ShieldImpactPayload payload = wasDeflection
+            ? ShieldImpactPayload.projectileDeflected(player.getId(), impactPos.x, impactPos.y, impactPos.z, damage)
+            : ShieldImpactPayload.damageBlocked(player.getId(), impactPos.x, impactPos.y, impactPos.z, damage);
+
+        // Send to all players within 32 blocks
+        var level = player.serverLevel();
+        for (ServerPlayer nearby : level.players()) {
+            if (nearby.distanceToSqr(player) <= 32 * 32) {
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+                    nearby, Objects.requireNonNull(payload, "shield impact payload"));
+            }
+        }
+    }
+
+    /**
+     * Sends shield shatter effect packet to nearby players.
+     */
+    private static void sendShieldShatterPacket(ServerPlayer player, Vec3 center, float finalDamage) {
+        ShieldShatterPayload payload = ShieldShatterPayload.at(
+            player.getId(), center.x, center.y, center.z, finalDamage);
+
+        // Send to all players within 32 blocks
+        var level = player.serverLevel();
+        for (ServerPlayer nearby : level.players()) {
+            if (nearby.distanceToSqr(player) <= 32 * 32) {
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+                    nearby, Objects.requireNonNull(payload, "shield shatter payload"));
+            }
+        }
     }
 
     private static boolean ammoMatchesFilter(ItemStack weapon, AbstractArrow arrow) {

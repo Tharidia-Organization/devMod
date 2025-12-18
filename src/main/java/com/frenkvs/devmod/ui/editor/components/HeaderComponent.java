@@ -25,7 +25,8 @@ public class HeaderComponent {
     // DIMENSIONS (from Section 2.4)
     // ═══════════════════════════════════════════════════════════════
 
-    private static final int HEIGHT = UIConstants.Size.HEADER_HEIGHT;  // 28px base
+    private static final int HEIGHT = UIConstants.Size.HEADER_HEIGHT;  // 56px (2 rows)
+    private static final int ROW_HEIGHT = 28;  // Single row height
     private static final int TAB_WIDTH = UIConstants.Size.TAB_WIDTH;
     private static final int TAB_HEIGHT = UIConstants.Size.TAB_HEIGHT;
     private static final int TAB_GAP = UIConstants.Size.TAB_GAP;
@@ -149,12 +150,16 @@ public class HeaderComponent {
 
     /**
      * Render the header at the given position.
+     * 2-row layout:
+     * - Row 1: Close button (X), ModeBadge (Preview), ScopeBadge (Specific) - right aligned
+     * - Row 2: Tabs - full width
      * @return The height consumed
      */
     public int render(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
         var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
         // Scale dimensions to current UI scale
         int headerHeight = ScaledCoord.scaleDim(HEIGHT);
+        int rowHeight = ScaledCoord.scaleDim(ROW_HEIGHT);
         int tabWidth = ScaledCoord.scaleDim(TAB_WIDTH);
         int tabHeight = ScaledCoord.scaleDim(TAB_HEIGHT);
         int tabGap = ScaledCoord.scaleDim(TAB_GAP);
@@ -168,26 +173,54 @@ public class HeaderComponent {
         rightArrowBounds = ResponsiveLayout.Rect.EMPTY;
         tabsViewport = ResponsiveLayout.Rect.EMPTY;
 
-        // Background
+        // Background for entire header
         graphics.fill(x, y, x + width, y + headerHeight, UIConstants.Background.HEADER());
 
-        // Bottom border
+        // ═══════════════════════════════════════════════════════════════
+        // ROW 1: Controls (Close, ModeBadge, ScopeBadge) - right aligned
+        // ═══════════════════════════════════════════════════════════════
+        int row1Y = y;
+        int badgeGap = ScaledCoord.scaleDim(UIConstants.Spacing.MD);
+        int rightPadding = ScaledCoord.scaleDim(UIConstants.Spacing.MD);
+
+        // Separator between row 1 and row 2
+        graphics.fill(x, row1Y + rowHeight - BORDER_THICKNESS, x + width, row1Y + rowHeight,
+            UIConstants.Border.SEPARATOR());
+
+        // Close button (right aligned)
+        int closeX = x + width - closeSize - rightPadding;
+        int closeY = row1Y + (rowHeight - closeSize) / 2;
+        closeBounds = new ResponsiveLayout.Rect(closeX, closeY, closeSize, closeSize);
+        closeButtonHovered = closeBounds.contains(mouseX, mouseY);
+        renderCloseButton(graphics, font, closeX, closeY);
+
+        // Scope badge (left of close button)
+        int badgeY = row1Y + (rowHeight - scopeBadge.getHeight()) / 2;
+        int scopeX = closeX - badgeGap - scopeBadge.getWidth();
+        scopeBadge.render(graphics, scopeX, badgeY, mouseX, mouseY);
+
+        // Mode badge (left of scope badge)
+        int modeX = scopeX - badgeGap - modeBadge.getWidth();
+        modeBadge.render(graphics, modeX, badgeY, mouseX, mouseY);
+
+        // ═══════════════════════════════════════════════════════════════
+        // ROW 2: Tabs - full width
+        // ═══════════════════════════════════════════════════════════════
+        int row2Y = y + rowHeight;
+
+        // Bottom border of header
         graphics.fill(x, y + headerHeight - BORDER_THICKNESS, x + width, y + headerHeight,
             UIConstants.Border.SEPARATOR());
 
-        // Calculate available width for tabs (reserve space for badges + close)
-        int badgeGap = ScaledCoord.scaleDim(UIConstants.Spacing.MD);
-        int rightPadding = ScaledCoord.scaleDim(UIConstants.Spacing.MD);
-        int reservedRight = rightPadding + closeSize + badgeGap
-            + scopeBadge.getWidth() + badgeGap + modeBadge.getWidth();
-        int availableWidth = Math.max(0, width - reservedRight - leftPadding);
+        // Tabs now have the full width available (no badges to reserve space for)
+        int tabsAreaX = x + leftPadding;
+        int availableWidth = Math.max(0, width - leftPadding * 2);
 
         int totalTabWidth = tabs.isEmpty() ? 0 :
             tabs.size() * tabWidth + (tabs.size() - 1) * tabGap;
         tabsOverflow = totalTabWidth > availableWidth;
 
-        int tabY = y + (headerHeight - tabHeight) / 2;
-        int tabsAreaX = x + leftPadding;
+        int tabY = row2Y + (rowHeight - tabHeight) / 2;
         int tabsAreaWidth = availableWidth;
 
         // Adjust for arrow buttons when overflowing
@@ -200,7 +233,7 @@ public class HeaderComponent {
 
             // Arrow bounds
             leftArrowBounds = new ResponsiveLayout.Rect(x + leftPadding, tabY, arrowWidth, tabHeight);
-            rightArrowBounds = new ResponsiveLayout.Rect(x + width - reservedRight - arrowWidth, tabY, arrowWidth, tabHeight);
+            rightArrowBounds = new ResponsiveLayout.Rect(x + width - leftPadding - arrowWidth, tabY, arrowWidth, tabHeight);
             leftArrowHovered = leftArrowBounds.contains(mouseX, mouseY);
             rightArrowHovered = rightArrowBounds.contains(mouseX, mouseY);
         } else {
@@ -218,6 +251,7 @@ public class HeaderComponent {
         if (tabsOverflow) {
             tabStartX = tabsViewport.x() - (int) Math.round(tabScrollOffset);
         } else {
+            // Center tabs when they fit
             int centeredOffset = (tabsAreaWidth - totalTabWidth) / 2;
             tabStartX = tabsViewport.x() + Math.max(0, centeredOffset);
         }
@@ -254,23 +288,6 @@ public class HeaderComponent {
                 tabsViewport.x() + tabsViewport.width(), fadeBottom,
                 FADE_COLOR_TRANSPARENT, FADE_COLOR_SOLID);
         }
-
-        // Right side components
-        int rightX = x + width;
-
-        // Close button (right aligned with padding)
-        int closeX = rightX - closeSize - rightPadding;
-        int closeY = y + (headerHeight - closeSize) / 2;
-        closeBounds = new ResponsiveLayout.Rect(closeX, closeY, closeSize, closeSize);
-        closeButtonHovered = closeBounds.contains(mouseX, mouseY);
-        renderCloseButton(graphics, font, closeX, closeY);
-
-        int badgeY = y + (headerHeight - scopeBadge.getHeight()) / 2;
-        int scopeX = closeX - badgeGap - scopeBadge.getWidth();
-        scopeBadge.render(graphics, scopeX, badgeY, mouseX, mouseY);
-
-        int modeX = scopeX - badgeGap - modeBadge.getWidth();
-        modeBadge.render(graphics, modeX, badgeY, mouseX, mouseY);
 
         return headerHeight;
     }

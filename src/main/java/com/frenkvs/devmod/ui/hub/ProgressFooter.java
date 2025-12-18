@@ -3,6 +3,7 @@ package com.frenkvs.devmod.ui.hub;
 import com.frenkvs.devmod.testing.TestingSession;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -17,8 +18,8 @@ public class ProgressFooter implements HubPanel {
     private final int x, y, width, height;
     @Nonnull
     private final Font font;
-    private final Runnable onSaveReport;
-    private final Runnable onMinimize;
+    private final EditorButton saveButton;
+    private final EditorButton minimizeButton;
 
     private static final int PADDING = 10;
     private static final int BUTTON_WIDTH = 100;
@@ -32,8 +33,14 @@ public class ProgressFooter implements HubPanel {
         this.width = width;
         this.height = height;
         this.font = font;
-        this.onSaveReport = onSaveReport;
-        this.onMinimize = onMinimize;
+        this.saveButton = EditorButton.builder("hub-save-report", "Save Report")
+            .style(EditorButton.Style.NORMAL)
+            .onClick(onSaveReport)
+            .build();
+        this.minimizeButton = EditorButton.builder("hub-minimize", "Minimize")
+            .style(EditorButton.Style.NORMAL)
+            .onClick(onMinimize)
+            .build();
     }
 
     @Override
@@ -66,12 +73,10 @@ public class ProgressFooter implements HubPanel {
         // Buttons on the right
         int buttonY = contentY - 6;
         int saveX = x + width - PADDING - BUTTON_WIDTH * 2 - 8;
-        boolean saveHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, saveX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT);
-        renderButton(graphics, saveX, buttonY, "Save Report", saveHovered);
+        saveButton.render(graphics, saveX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT, mouseX, mouseY);
 
         int minX = x + width - PADDING - BUTTON_WIDTH;
-        boolean minHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, minX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT);
-        renderButton(graphics, minX, buttonY, "Minimize", minHovered);
+        minimizeButton.render(graphics, minX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT, mouseX, mouseY);
     }
 
     private void renderProgressBar(GuiGraphics graphics, int bx, int by, int bw,
@@ -104,40 +109,28 @@ public class ProgressFooter implements HubPanel {
         AxiomRenderer.drawBorder(graphics, bx, by, bw, PROGRESS_BAR_HEIGHT, UIConstants.Border.DEFAULT());
     }
 
-    private void renderButton(GuiGraphics graphics, int bx, int by, @Nonnull String label, boolean hovered) {
-        int bgColor = hovered ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT();
-        graphics.fill(bx, by, bx + BUTTON_WIDTH, by + BUTTON_HEIGHT, bgColor);
-        AxiomRenderer.drawBorder(graphics, bx, by, BUTTON_WIDTH, BUTTON_HEIGHT, UIConstants.Border.DEFAULT());
-
-        int labelWidth = font.width(label);
-        int labelX = bx + (BUTTON_WIDTH - labelWidth) / 2;
-        int labelY = by + (BUTTON_HEIGHT - 9) / 2;
-        graphics.drawString(font, label, labelX, labelY, UIConstants.Text.PRIMARY(), false);
-    }
-
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button != 0) return false;
 
-        int mx = (int) mouseX;
-        int my = (int) mouseY;
-
-        int buttonY = y + PADDING + 14 - 6;
-
-        // Save Report
-        int saveX = x + width - PADDING - BUTTON_WIDTH * 2 - 8;
-        if (AxiomRenderer.isMouseOver(mx, my, saveX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
-            onSaveReport.run();
+        if (saveButton.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+        if (minimizeButton.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
 
-        // Minimize
-        int minX = x + width - PADDING - BUTTON_WIDTH;
-        if (AxiomRenderer.isMouseOver(mx, my, minX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
-            onMinimize.run();
+        return false;
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (saveButton.mouseReleased(mouseX, mouseY, button)) {
             return true;
         }
-
+        if (minimizeButton.mouseReleased(mouseX, mouseY, button)) {
+            return true;
+        }
         return false;
     }
 

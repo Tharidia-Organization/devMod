@@ -3,9 +3,11 @@ package com.frenkvs.devmod.ui.hub;
 import com.frenkvs.devmod.testing.TestCase;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import java.util.EnumMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -23,6 +25,7 @@ public class TestDetailPanel implements HubPanel {
     private final Font font;
     private final TestingHubState state;
     private final BiConsumer<TestCase, Verdict> onVerdictGiven;
+    private final EnumMap<Verdict, EditorButton> verdictButtons;
 
     // Current test
     private TestCase currentTest = null;
@@ -53,6 +56,7 @@ public class TestDetailPanel implements HubPanel {
         this.font = font;
         this.state = state;
         this.onVerdictGiven = onVerdictGiven;
+        this.verdictButtons = buildVerdictButtons();
     }
 
     public void setTest(TestCase test) {
@@ -141,16 +145,18 @@ public class TestDetailPanel implements HubPanel {
         contentY += 8;
 
         // === DESCRIPTION ===
-        graphics.drawString(Objects.requireNonNull(font, "font"), "Description:", contentX, contentY, UIConstants.Text.TITLE(), false);
-        contentY += LINE_HEIGHT + 2;
+        contentY = HubSectionHeader.draw(graphics, Objects.requireNonNull(font, "font"),
+            "Description:", contentX, contentY, LINE_HEIGHT, 0);
+        contentY += 2;
 
         String desc = currentTest.getDescription();
         contentY = renderWrappedText(graphics, contentX + 4, contentY, contentWidth - 8, desc, UIConstants.Text.SECONDARY());
         contentY += 12;
 
         // === ISTRUZIONI ===
-        graphics.drawString(Objects.requireNonNull(font, "font"), "Instructions:", contentX, contentY, UIConstants.Text.TITLE(), false);
-        contentY += LINE_HEIGHT + 4;
+        contentY = HubSectionHeader.draw(graphics, Objects.requireNonNull(font, "font"),
+            "Instructions:", contentX, contentY, LINE_HEIGHT, 0);
+        contentY += 4;
 
         int instructionsHeight = height - contentY - y - BUTTON_HEIGHT - 60;
         contentY = renderInstructions(graphics, contentX, contentY, contentWidth, instructionsHeight);
@@ -278,8 +284,9 @@ public class TestDetailPanel implements HubPanel {
     }
 
     private int renderRequiredTools(GuiGraphics graphics, int cx, int cy, int cw, int mouseX, int mouseY) {
-        graphics.drawString(Objects.requireNonNull(font, "font"), "Required Tools:", cx, cy, UIConstants.Text.TITLE(), false);
-        cy += LINE_HEIGHT + 4;
+        cy = HubSectionHeader.draw(graphics, Objects.requireNonNull(font, "font"),
+            "Required Tools:", cx, cy, LINE_HEIGHT, 0);
+        cy += 4;
 
         int toolX = cx + 4;
         for (ToolType tool : requiredTools) {
@@ -312,26 +319,12 @@ public class TestDetailPanel implements HubPanel {
 
         for (Verdict verdict : Verdict.values()) {
             int bx = buttonsX + verdict.ordinal() * (BUTTON_WIDTH + BUTTON_GAP);
-            boolean hovered = AxiomRenderer.isMouseOver(mouseX, mouseY, bx, buttonsY, BUTTON_WIDTH, BUTTON_HEIGHT);
-
-            // Background
-            int bgColor = hovered ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT();
-            graphics.fill(bx, buttonsY, bx + BUTTON_WIDTH, buttonsY + BUTTON_HEIGHT, bgColor);
-
-            // Border with verdict color
-            int borderColor = hovered ? verdict.getColor() : UIConstants.Border.DEFAULT();
-            AxiomRenderer.drawBorder(graphics, bx, buttonsY, BUTTON_WIDTH, BUTTON_HEIGHT, borderColor);
-
-            // Label
-            String label = verdict.getLabel();
-            int labelWidth = Objects.requireNonNull(font, "font").width(Objects.requireNonNull(label, "label"));
-            int labelColor = hovered ? verdict.getColor() : UIConstants.Text.PRIMARY();
-            graphics.drawString(Objects.requireNonNull(font, "font"), label, bx + (BUTTON_WIDTH - labelWidth) / 2, buttonsY + 8, labelColor, false);
-
-            // Hotkey hint below
-            String hotkey = "[" + verdict.getHotkey() + "]";
-            int hotkeyWidth = Objects.requireNonNull(font, "font").width(hotkey);
-            graphics.drawString(Objects.requireNonNull(font, "font"), hotkey, bx + (BUTTON_WIDTH - hotkeyWidth) / 2, buttonsY + BUTTON_HEIGHT + 2, UIConstants.Text.MUTED(), false);
+            EditorButton button = verdictButtons.get(verdict);
+            if (button == null) {
+                continue;
+            }
+            button.setEnabled(currentTest != null);
+            button.render(graphics, bx, buttonsY, BUTTON_WIDTH, BUTTON_HEIGHT, mouseX, mouseY);
         }
     }
 
@@ -339,22 +332,23 @@ public class TestDetailPanel implements HubPanel {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button != 0 || currentTest == null) return false;
 
-        int mx = (int) mouseX;
-        int my = (int) mouseY;
-
-        // Check verdict buttons
-        int buttonsY = y + height - PADDING - BUTTON_HEIGHT;
-        int totalWidth = BUTTON_WIDTH * 3 + BUTTON_GAP * 2;
-        int buttonsX = x + (width - totalWidth) / 2;
-
-        for (Verdict verdict : Verdict.values()) {
-            int bx = buttonsX + verdict.ordinal() * (BUTTON_WIDTH + BUTTON_GAP);
-            if (AxiomRenderer.isMouseOver(mx, my, bx, buttonsY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
-                onVerdictGiven.accept(currentTest, verdict);
+        for (EditorButton buttonItem : verdictButtons.values()) {
+            if (buttonItem.mouseClicked(mouseX, mouseY, button)) {
                 return true;
             }
         }
+        return false;
+    }
 
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (button != 0 || currentTest == null) return false;
+
+        for (EditorButton buttonItem : verdictButtons.values()) {
+            if (buttonItem.mouseReleased(mouseX, mouseY, button)) {
+                return true;
+            }
+        }
         return false;
     }
 
@@ -383,5 +377,30 @@ public class TestDetailPanel implements HubPanel {
 
     public TestingHubState getState() {
         return state;
+    }
+
+    private EnumMap<Verdict, EditorButton> buildVerdictButtons() {
+        EnumMap<Verdict, EditorButton> buttons = new EnumMap<>(Verdict.class);
+        for (Verdict verdict : Verdict.values()) {
+            EditorButton.Style style = switch (verdict) {
+                case PASS -> EditorButton.Style.SUCCESS;
+                case FAIL -> EditorButton.Style.DANGER;
+                case SKIP -> EditorButton.Style.GHOST;
+            };
+            EditorButton button = EditorButton.builder("verdict-" + verdict.name().toLowerCase(), verdict.getLabel())
+                .style(style)
+                .hotkeyHint("[" + verdict.getHotkey() + "]")
+                .onClick(() -> handleVerdict(verdict))
+                .build();
+            buttons.put(verdict, button);
+        }
+        return buttons;
+    }
+
+    private void handleVerdict(Verdict verdict) {
+        if (currentTest == null) {
+            return;
+        }
+        onVerdictGiven.accept(currentTest, verdict);
     }
 }

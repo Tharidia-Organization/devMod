@@ -15,6 +15,9 @@ import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import com.frenkvs.devmod.ui.editor.debug.DebugInfoSection;
 import com.frenkvs.devmod.ui.editor.debug.ItemDebugInfo;
 import com.frenkvs.devmod.ui.editor.debug.ValueComparison;
+import com.frenkvs.devmod.ui.editor.sections.InputSectionAdapter;
+import com.frenkvs.devmod.ui.editor.sections.SliderSectionAdapter;
+import com.frenkvs.devmod.ui.editor.sections.ToggleSectionAdapter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.component.DataComponents;
@@ -42,6 +45,7 @@ public class RangedModule extends AbstractEditorModule {
     private RangedWeaponModule.RangedStats stats = new RangedWeaponModule.RangedStats();
     private RangedWeaponModule.RangedStats originalStats = new RangedWeaponModule.RangedStats();
     private RangedWeaponModule.SourcedStats sourcedStats;
+    private static final int TOGGLE_SECTION_HEIGHT = EditorDimensions.TOGGLE_HEIGHT + UIConstants.Spacing.SM;
 
     // UI components
     private EditorSlider drawSpeedSlider;
@@ -282,10 +286,10 @@ public class RangedModule extends AbstractEditorModule {
             new SliderSectionAdapter(projectileGravitySlider),
             new SliderSectionAdapter(projectileSpreadSlider),
             new SliderSectionAdapter(baseDamageSlider),
-            new ToggleSectionAdapter(multishotToggle),
+            new ToggleSectionAdapter(multishotToggle, TOGGLE_SECTION_HEIGHT),
             new SliderSectionAdapter(multishotCountSlider),
             new SliderSectionAdapter(piercingSlider),
-            new ToggleSectionAdapter(infinityToggle)
+            new ToggleSectionAdapter(infinityToggle, TOGGLE_SECTION_HEIGHT)
         );
     }
 
@@ -300,14 +304,14 @@ public class RangedModule extends AbstractEditorModule {
         return List.of(
             new SliderSectionAdapter(loyaltySpeedSlider),
             new SliderSectionAdapter(riptideDistanceSlider),
-            new ToggleSectionAdapter(riptideRequiresWaterToggle),
-            new ToggleSectionAdapter(channelingToggle)
+            new ToggleSectionAdapter(riptideRequiresWaterToggle, TOGGLE_SECTION_HEIGHT),
+            new ToggleSectionAdapter(channelingToggle, TOGGLE_SECTION_HEIGHT)
         );
     }
 
     private List<EditorSection> getAmmoSections() {
         return List.of(
-            new InputSectionAdapter(ammoFilterInput),
+            new InputSectionAdapter(ammoFilterInput, true),
             new AmmoListSection()
         );
     }
@@ -666,144 +670,4 @@ public class RangedModule extends AbstractEditorModule {
     // SECTION ADAPTERS
     // ═══════════════════════════════════════════════════════════════
 
-    private static class SliderSectionAdapter implements EditorSection.SliderSection {
-        private final EditorSlider slider;
-
-        SliderSectionAdapter(EditorSlider slider) {
-            this.slider = slider;
-        }
-
-        @Override
-        public String getId() { return slider.getId(); }
-
-        @Override
-        public String getLabel() { return slider.getLabel(); }
-
-        @Override
-        public int getHeight() { return slider.calculateHeight(); }
-
-        @Override
-        public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
-            slider.render(graphics, bounds.x(), bounds.y(), bounds.width(), mouseX, mouseY);
-        }
-
-        @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            return slider.mouseClicked(mouseX, mouseY, button);
-        }
-
-        @Override
-        public boolean mouseReleased(double mouseX, double mouseY, int button) {
-            return slider.mouseReleased(mouseX, mouseY, button);
-        }
-
-        @Override
-        public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-            return slider.mouseDragged(mouseX, mouseY, button, dragX, dragY);
-        }
-
-        @Override
-        public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-            return slider.keyPressed(keyCode, scanCode, modifiers);
-        }
-
-        @Override
-        public float getValue() { return slider.getValue(); }
-
-        @Override
-        public void setValue(float value) { slider.setValue(value); }
-
-        @Override
-        public float getMin() { return slider.getMin(); }
-
-        @Override
-        public float getMax() { return slider.getMax(); }
-
-        @Override
-        public float getStep() { return slider.getStep(); }
-
-        @Override
-        public String getFormat() { return "%.2f"; }
-
-        @Override
-        public int getColor() { return UIConstants.SliderColors.NEUTRAL; }
-
-        @Override
-        public boolean isDragging() { return slider.isDragging(); }
-
-        @Override
-        public void setDragging(boolean dragging) { }
-    }
-
-    private static class ToggleSectionAdapter implements EditorSection.ToggleSection {
-        private final EditorToggle toggle;
-
-        ToggleSectionAdapter(EditorToggle toggle) {
-            this.toggle = toggle;
-        }
-
-        @Override
-        public String getId() { return toggle.getId(); }
-
-        @Override
-        public String getLabel() { return toggle.getLabel(); }
-
-        @Override
-        public int getHeight() { return EditorDimensions.TOGGLE_HEIGHT + UIConstants.Spacing.SM; }
-
-        @Override
-        public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
-            toggle.render(graphics, bounds.x(), bounds.y(), bounds.width(), mouseX, mouseY);
-        }
-
-        @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            return toggle.mouseClicked(mouseX, mouseY, button);
-        }
-
-        @Override
-        public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-            return toggle.keyPressed(keyCode, scanCode, modifiers);
-        }
-
-        @Override
-        public boolean getValue() { return toggle.getValue(); }
-
-        @Override
-        public void setValue(boolean value) { toggle.setValue(value); }
-    }
-
-    private static class InputSectionAdapter implements EditorSection.InputSection {
-        private final EditorTextField input;
-
-        InputSectionAdapter(EditorTextField input) {
-            this.input = input;
-        }
-
-        @Override public String getId() { return input.getId(); }
-        @Override public String getLabel() { return input.getLabel(); }
-        @Override public int getHeight() { return input.calculateHeight(); }
-
-        @Override
-        public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
-            input.render(graphics, bounds.x(), bounds.y(), bounds.width(), mouseX, mouseY);
-        }
-
-        @Override public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            // Right-click to clear quickly
-            if (button == 1 && input.getBounds().contains((int) mouseX, (int) mouseY)) {
-                input.setValue("");
-                return true;
-            }
-            return input.mouseClicked(mouseX, mouseY, button);
-        }
-        @Override public boolean mouseReleased(double mouseX, double mouseY, int button) { return false; }
-        @Override public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) { return false; }
-        @Override public boolean keyPressed(int keyCode, int scanCode, int modifiers) { return input.keyPressed(keyCode, scanCode, modifiers); }
-        @Override public boolean charTyped(char chr, int modifiers) { return input.charTyped(chr, modifiers); }
-        @Override public String getText() { return input.getValue(); }
-        @Override public void setText(String text) { input.setValue(text); }
-        @Override public String getPlaceholder() { return ""; }
-        @Override public boolean isNumeric() { return false; }
-    }
 }

@@ -3,6 +3,8 @@ package com.frenkvs.devmod.rendering;
 import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.KeyInputHandler;
 import com.frenkvs.devmod.util.I18n;
+import com.frenkvs.devmod.ArmorConfigManager;
+import com.frenkvs.devmod.ArmorStats;
 import com.frenkvs.devmod.attributes.AttributeMonitoringSystem;
 import com.frenkvs.devmod.attributes.AttributeRayVisualizer;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
@@ -18,18 +20,22 @@ import com.frenkvs.devmod.quest.QuestEditorScreen;
 import com.frenkvs.devmod.quest.QuestHudOverlay;
 import com.frenkvs.devmod.quest.QuestManager;
 import com.frenkvs.devmod.quest.QuestTask;
+import com.frenkvs.devmod.rendering.shield.EnergyShieldRenderer;
 import com.frenkvs.devmod.telemetry.FpsTracker;
 import com.frenkvs.devmod.telemetry.PerformanceProfiler;
 import com.frenkvs.devmod.testing.TestingSession;
 import com.frenkvs.devmod.effects.TrailManager;
+import com.frenkvs.devmod.combat.WeaponTrailVFX;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ShieldItem;
 import com.frenkvs.devmod.ui.editor.ItemEditorScreen;
 import com.frenkvs.devmod.ui.editor.EditorStartTab;
 import net.neoforged.api.distmarker.Dist;
@@ -174,6 +180,23 @@ public class RenderEvents {
                 event.getCamera().getPosition()
             );
             profiler.endTiming("ProjectileTrails", t7);
+        }
+
+        // === Energy Shield Rendering (for players using shields) ===
+        long t8 = profiler.startTiming("EnergyShields");
+        renderEnergyShields(poseStack, bufferSource, event.getCamera().getPosition(),
+            event.getPartialTick().getGameTimeDeltaPartialTick(true));
+        profiler.endTiming("EnergyShields", t8);
+
+        // === Weapon Trail VFX (sword swing trails) ===
+        if (WeaponTrailVFX.INSTANCE.isEnabled()) {
+            long t9 = profiler.startTiming("WeaponTrailVFX");
+            WeaponTrailVFX.INSTANCE.render(
+                poseStack,
+                bufferSource,
+                event.getCamera().getPosition()
+            );
+            profiler.endTiming("WeaponTrailVFX", t9);
         }
 
         // Flush the buffer to ensure all lines are rendered
@@ -918,6 +941,11 @@ public class RenderEvents {
         TrailManager.INSTANCE.tick();
         profiler.endTiming("TrailManager.tick", t3);
 
+        // === Weapon Trail VFX (sword swing trails) ===
+        long t4 = profiler.startTiming("WeaponTrailVFX.tick");
+        WeaponTrailVFX.INSTANCE.tick();
+        profiler.endTiming("WeaponTrailVFX.tick", t4);
+
         // === PHASE 2 UX: Tick Floating Panels and Context Detector ===
         long t2 = profiler.startTiming("FloatingPanels.tick");
         FloatingPanelManager.INSTANCE.tick();
@@ -1007,6 +1035,44 @@ public class RenderEvents {
         if (now - lastDamageStatsSaveTime >= DAMAGE_STATS_SAVE_INTERVAL_MS) {
             com.frenkvs.devmod.testing.stats.DamageStatistics.INSTANCE.save();
             lastDamageStatsSaveTime = now;
+        }
+    }
+
+    /**
+     * Renders energy shields for all nearby players who are actively blocking with a shield.
+     * Uses ArmorStats to determine shield visual properties (color, opacity, glow).
+     */
+    private static void renderEnergyShields(PoseStack poseStack, MultiBufferSource bufferSource,
+                                             net.minecraft.world.phys.Vec3 cameraPos, float partialTick) {
+        Minecraft mc = Minecraft.getInstance();
+        var level = mc.level;
+        if (level == null) return;
+
+        // Render shields for all players in render distance
+        for (Player player : level.players()) {
+            // Check if player is blocking with a shield
+            if (!player.isBlocking()) continue;
+
+            ItemStack useItem = player.getUseItem();
+            if (useItem.isEmpty() || !(useItem.getItem() instanceof ShieldItem)) continue;
+
+            // Get shield visual properties from ArmorStats
+            ArmorStats stats = ArmorConfigManager.getStats(useItem);
+
+            // Only render if shield has visual properties enabled (opacity > 0)
+            if (stats.shieldOpacity <= 0.01f) continue;
+
+            // Render the energy shield
+            EnergyShieldRenderer.render(
+                poseStack,
+                bufferSource,
+                player,
+                stats.shieldColor,
+                stats.shieldOpacity,
+                1.2f, // Default shield radius
+                partialTick,
+                cameraPos
+            );
         }
     }
 }

@@ -908,6 +908,12 @@ public class ItemEditorScreen extends Screen {
             renderDevPanel(graphics, mouseX, mouseY);
         }
 
+        // Module overlay (e.g., ItemPickerOverlay from RecipeModule)
+        // Rendered after other overlays but before modal dialogs
+        if (activeModule != null && activeModule.hasActiveOverlay()) {
+            activeModule.renderOverlay(graphics, font, width, height, mouseX, mouseY);
+        }
+
         // Modal dialog (rendered last, on top of everything)
         if (activeDialog != null && activeDialog.isVisible()) {
             activeDialog.render(graphics, font, width, height, mouseX, mouseY);
@@ -1224,6 +1230,11 @@ public class ItemEditorScreen extends Screen {
             return activeDialog.mouseClicked(mouseX, mouseY, width, height);
         }
 
+        // Handle module overlay (e.g., ItemPickerOverlay from RecipeModule)
+        if (activeModule != null && activeModule.hasActiveOverlay()) {
+            return activeModule.overlayMouseClicked(mouseX, mouseY, button, width, height);
+        }
+
         if (showCraftingPanel && craftingPanel.isVisible()) {
             if (craftingPanel.mouseClicked(mouseX, mouseY, width, height)) {
                 if (!craftingPanel.isVisible()) {
@@ -1406,6 +1417,10 @@ public class ItemEditorScreen extends Screen {
         if (showLowConfidenceDialog && pendingDetection != null) {
             return true;
         }
+        // Handle module overlay scroll (e.g., ItemPickerOverlay from RecipeModule)
+        if (activeModule != null && activeModule.hasActiveOverlay()) {
+            return activeModule.overlayMouseScrolled(mouseX, mouseY, scrollY, width, height);
+        }
         if (showHistoryPanel) {
             if (isPointInHistoryPanel(mouseX, mouseY)) {
                 historyScrollOffset -= (int) (scrollY * HISTORY_PANEL_LINE_HEIGHT);
@@ -1455,6 +1470,11 @@ public class ItemEditorScreen extends Screen {
         // Handle help overlay first
         if (helpOverlay.isVisible()) {
             return helpOverlay.keyPressed(keyCode);
+        }
+
+        // Handle module overlay keys (e.g., ItemPickerOverlay from RecipeModule)
+        if (activeModule != null && activeModule.hasActiveOverlay()) {
+            return activeModule.overlayKeyPressed(keyCode);
         }
 
         if (showTemplatesPanel && templateOverlay != null) {
@@ -1635,6 +1655,10 @@ public class ItemEditorScreen extends Screen {
     public boolean charTyped(char chr, int modifiers) {
         if (showLowConfidenceDialog && pendingDetection != null) {
             return true;
+        }
+        // Handle module overlay char input (e.g., ItemPickerOverlay search)
+        if (activeModule != null && activeModule.hasActiveOverlay()) {
+            return activeModule.overlayCharTyped(chr, modifiers);
         }
         if (showTemplatesPanel && templateOverlay != null) {
             return templateOverlay.charTyped(chr, modifiers);

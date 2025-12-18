@@ -1,10 +1,12 @@
 package com.frenkvs.devmod.rendering;
 
+import com.frenkvs.devmod.rendering.shader.VFXShaderRegistry;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -27,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * - HeatmapVisualizer.INSTANCE.toggle(HeatmapType.DEATH)
  * - HeatmapVisualizer.INSTANCE.setData(HeatmapType.DEATH, data)
  */
+@SuppressWarnings("null") // Rendering API lacks null annotations
 public class HeatmapVisualizer {
     public static final HeatmapVisualizer INSTANCE = new HeatmapVisualizer();
 
@@ -176,6 +179,71 @@ public class HeatmapVisualizer {
 
     private void renderHeatmap(PoseStack poseStack, MultiBufferSource buffer, Vec3 cameraPos,
                                Map<BlockPos, Integer> data, int maxCount, HeatmapType type) {
+        // Check if GPU shader is available
+        boolean useGPU = VFXShaderRegistry.isHeatmapShaderReady();
+
+        if (useGPU) {
+            renderHeatmapGPU(poseStack, buffer, cameraPos, data, maxCount, type);
+        } else {
+            renderHeatmapCPU(poseStack, buffer, cameraPos, data, maxCount, type);
+        }
+    }
+
+    /**
+     * GPU-accelerated heatmap rendering using custom shader.
+     * Shader handles: gradient calculation, shimmer effect, edge darkening.
+     */
+    private void renderHeatmapGPU(PoseStack poseStack, MultiBufferSource buffer, Vec3 cameraPos,
+                                   Map<BlockPos, Integer> data, int maxCount, HeatmapType type) {
+        ShaderInstance shader = VFXShaderRegistry.getHeatmapShader();
+        RenderType renderType = VFXShaderRegistry.getHeatmapRenderType();
+        if (shader == null || renderType == null) {
+            renderHeatmapCPU(poseStack, buffer, cameraPos, data, maxCount, type);
+            return;
+        }
+
+        // Set shader uniforms
+        setShaderUniform(shader, "GameTime", (float)(System.currentTimeMillis() % 100000) / 1000.0f);
+        setShaderUniform(shader, "MaxIntensity", (float) maxCount);
+        setShaderUniform(shader, "HeatmapType", type.ordinal());
+        setShaderUniform(shader, "BaseAlpha", 0.3f);
+        setShaderUniform(shader, "UseGradient",
+            (type != HeatmapType.LIGHT_SPAWNABLE && type != HeatmapType.LIGHT_DARK) ? 1 : 0);
+
+        VertexConsumer consumer = buffer.getBuffer(renderType);
+
+        poseStack.pushPose();
+        poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
+        var pose = Objects.requireNonNull(poseStack.last());
+
+        double maxDistSqr = SettingsManager.INSTANCE.getSettings().visualizers.getRenderDistanceSq();
+
+        for (Map.Entry<BlockPos, Integer> entry : data.entrySet()) {
+            BlockPos pos = entry.getKey();
+            int count = entry.getValue();
+
+            double dx = pos.getX() + 0.5 - cameraPos.x;
+            double dy = pos.getY() + 0.5 - cameraPos.y;
+            double dz = pos.getZ() + 0.5 - cameraPos.z;
+            if (dx*dx + dy*dy + dz*dz > maxDistSqr) continue;
+
+            float intensity = Math.min(1.0f, (float) count / maxCount);
+
+            // Pass intensity in red channel - shader will compute gradient
+            AABB box = new AABB(pos.getX(), pos.getY() + 1.01, pos.getZ(),
+                               pos.getX() + 1, pos.getY() + 1.01 + intensity * 0.5, pos.getZ() + 1);
+            renderSolidBoxGPU(consumer, matrix, pose, box, intensity);
+        }
+
+        poseStack.popPose();
+    }
+
+    /**
+     * CPU fallback heatmap rendering.
+     */
+    private void renderHeatmapCPU(PoseStack poseStack, MultiBufferSource buffer, Vec3 cameraPos,
+                                   Map<BlockPos, Integer> data, int maxCount, HeatmapType type) {
         VertexConsumer consumer = buffer.getBuffer(Objects.requireNonNull(RenderType.debugQuads()));
 
         poseStack.pushPose();
@@ -274,6 +342,44 @@ public class HeatmapVisualizer {
         Objects.requireNonNull(consumer.addVertex(Objects.requireNonNull(matrix), minX, maxY, maxZ).setColor(r, g, b, a)).setNormal(Objects.requireNonNull(pose), 0f, 1f, 0f);
         Objects.requireNonNull(consumer.addVertex(Objects.requireNonNull(matrix), maxX, maxY, maxZ).setColor(r, g, b, a)).setNormal(Objects.requireNonNull(pose), 0f, 1f, 0f);
         Objects.requireNonNull(consumer.addVertex(Objects.requireNonNull(matrix), maxX, maxY, minZ).setColor(r, g, b, a)).setNormal(Objects.requireNonNull(pose), 0f, 1f, 0f);
+    }
+
+    /**
+     * GPU version: passes intensity in color.r for shader gradient calculation.
+     */
+    private void renderSolidBoxGPU(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose, AABB box,
+                                    float intensity) {
+        float minX = (float) box.minX;
+        float minZ = (float) box.minZ;
+        float maxX = (float) box.maxX;
+        float maxY = (float) box.maxY;
+        float maxZ = (float) box.maxZ;
+
+        // Pass intensity in red channel - shader computes gradient
+        float a = 0.3f + intensity * 0.4f;
+        consumer.addVertex(matrix, minX, maxY, minZ).setColor(intensity, intensity, intensity, a).setNormal(pose, 0f, 1f, 0f);
+        consumer.addVertex(matrix, minX, maxY, maxZ).setColor(intensity, intensity, intensity, a).setNormal(pose, 0f, 1f, 0f);
+        consumer.addVertex(matrix, maxX, maxY, maxZ).setColor(intensity, intensity, intensity, a).setNormal(pose, 0f, 1f, 0f);
+        consumer.addVertex(matrix, maxX, maxY, minZ).setColor(intensity, intensity, intensity, a).setNormal(pose, 0f, 1f, 0f);
+    }
+
+    // Shader uniform helper methods
+    private void setShaderUniform(ShaderInstance shader, String name, float value) {
+        try {
+            var uniform = shader.getUniform(name);
+            if (uniform != null) {
+                uniform.set(value);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void setShaderUniform(ShaderInstance shader, String name, int value) {
+        try {
+            var uniform = shader.getUniform(name);
+            if (uniform != null) {
+                uniform.set(value);
+            }
+        } catch (Exception ignored) {}
     }
 
     /**

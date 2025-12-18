@@ -1,6 +1,8 @@
 package com.frenkvs.devmod.ui.editor.systems;
 
 import com.frenkvs.devmod.ui.AxiomRenderer;
+import com.frenkvs.devmod.ui.editor.EditorStartTab;
+import com.frenkvs.devmod.ui.editor.ItemEditorScreen;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.editor.core.BaseOverlay;
 import com.frenkvs.devmod.ui.editor.core.ScaledCoord;
@@ -169,6 +171,12 @@ public class CraftingInfoPanel extends BaseOverlay {
         .size(EditorButton.Size.SMALL)
         .onClick(() -> selectRecipe(selectedRecipeIndex + 1));
 
+    // Edit button to open Recipe Editor
+    private final EditorButton editButton = new EditorButton("edit", "Edit Recipe")
+        .style(EditorButton.Style.PRIMARY)
+        .size(EditorButton.Size.SMALL)
+        .onClick(this::openRecipeEditor);
+
     // Cached metrics for current frame (set during render)
     private int cachedValueHeight = 0;
 
@@ -251,9 +259,16 @@ public class CraftingInfoPanel extends BaseOverlay {
         this.ingredientAreaH = cachedValueHeight;
         renderValueAnalysis(g, safeFont, ingredientAreaX, ingredientAreaY, cachedValueHeight, ingredientAreaW);
 
-        // Close hint
-        g.drawString(safeFont, CLOSE_HINT_TEXT, x + padding, y + panelH - padding - safeFont.lineHeight,
-            UIConstants.Text.MUTED(), false);
+        // Close hint at bottom left, Edit button at bottom right
+        int bottomY = y + panelH - padding - safeFont.lineHeight;
+        g.drawString(safeFont, CLOSE_HINT_TEXT, x + padding, bottomY, UIConstants.Text.MUTED(), false);
+
+        // Edit Recipe button - positioned at bottom right, same line as close hint
+        int editBtnW = ScaledCoord.scaleDim(70);
+        int editBtnH = ScaledCoord.scaleDim(18);
+        int editBtnX = x + panelW - padding - editBtnW;
+        int editBtnY = bottomY - ScaledCoord.scaleDim(2); // Align with close hint text
+        editButton.render(g, editBtnX, editBtnY, editBtnW, editBtnH, mouseX, mouseY);
     }
 
     private void renderCraftingGrid(GuiGraphics g, Font font, int x, int y) {
@@ -461,6 +476,12 @@ public class CraftingInfoPanel extends BaseOverlay {
     @Override
     protected boolean handleMouseClicked(double mouseX, double mouseY,
                                           int panelX, int panelY, int panelW, int panelH) {
+        // Edit button click
+        if (editButton.mouseClicked(mouseX, mouseY, 0)) {
+            editButton.mouseReleased(mouseX, mouseY, 0);
+            return true;
+        }
+
         // Recipe selector clicks using EditorButton
         if (!recipes.isEmpty()) {
             if (prevButton.mouseClicked(mouseX, mouseY, 0)) {
@@ -557,5 +578,19 @@ public class CraftingInfoPanel extends BaseOverlay {
         this.recipe = newRecipe;
         this.analysis = analyzeRecipe(newRecipe);
         this.selectedRecipeIndex = newIndex;
+    }
+
+    /**
+     * Open the Recipe Editor for the current item.
+     */
+    private void openRecipeEditor() {
+        if (targetItem.isEmpty()) return;
+
+        // Close this panel first
+        hide();
+
+        // Open the ItemEditorScreen with Recipe tab
+        Minecraft mc = Minecraft.getInstance();
+        mc.setScreen(new ItemEditorScreen(targetItem.copy(), EditorStartTab.RECIPE));
     }
 }

@@ -3,6 +3,7 @@ package com.frenkvs.devmod.ui.radial.render;
 import com.frenkvs.devmod.ui.radial.RadialCategory;
 import com.frenkvs.devmod.ui.radial.RadialMenuConfig;
 import com.frenkvs.devmod.ui.radial.RadialMenuItem;
+import com.frenkvs.devmod.ui.radial.config.RadialMenuConstants;
 import com.frenkvs.devmod.ui.radial.model.MacroCategory;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -70,19 +71,21 @@ public final class RadialTooltipRenderer {
 
         int tooltipWidth = font.width(tooltip);
         int tooltipX = context.centerX - tooltipWidth / 2;
-        int tooltipY = context.centerY + context.outerRadius + 70;
+        int tooltipY = context.centerY + context.outerRadius + RadialMenuConstants.TOOLTIP_OFFSET_Y;
 
-        int padding = 6;
+        int padding = RadialMenuConstants.TOOLTIP_PADDING;
+        int border = RadialMenuConstants.TOOLTIP_BORDER_THICKNESS;
+        int textHeight = RadialMenuConstants.TOOLTIP_TEXT_HEIGHT;
 
         // Border
-        graphics.fill(tooltipX - padding - 1, tooltipY - padding - 1,
-            tooltipX + tooltipWidth + padding + 1, tooltipY + 10 + padding + 1,
+        graphics.fill(tooltipX - padding - border, tooltipY - padding - border,
+            tooltipX + tooltipWidth + padding + border, tooltipY + textHeight + padding + border,
             context.theme.border);
 
         // Background
         graphics.fill(tooltipX - padding, tooltipY - padding,
-            tooltipX + tooltipWidth + padding, tooltipY + 10 + padding,
-            0xF0101020);
+            tooltipX + tooltipWidth + padding, tooltipY + textHeight + padding,
+            RadialMenuConstants.TOOLTIP_BG_COLOR);
 
         // Text
         graphics.drawString(font, tooltip, tooltipX, tooltipY, context.theme.textPrimary, false);
@@ -182,8 +185,9 @@ public final class RadialTooltipRenderer {
         Objects.requireNonNull(selectedMacro, "selectedMacro cannot be null");
         Objects.requireNonNull(theme, "theme cannot be null");
 
-        float helpAlpha = Math.min(1f, (System.currentTimeMillis() - openTime) / 200f);
-        int textAlpha = (int) (0xAA * helpAlpha);
+        float helpAlpha = Math.min(1f,
+            (System.currentTimeMillis() - openTime) / (float) RadialMenuConstants.HELP_FADE_DURATION_MS);
+        int textAlpha = (int) (RadialMenuConstants.HELP_TEXT_ALPHA * helpAlpha);
         int helpColor = (textAlpha << 24) | (theme.textSecondary & 0x00FFFFFF);
 
         String helpLine;
@@ -194,7 +198,8 @@ public final class RadialTooltipRenderer {
                 "§f] §7Click center to switch §8| §7[/] Search §8| §7[1-4] Macro";
         }
 
-        graphics.drawCenteredString(font, helpLine, screenWidth / 2, screenHeight - 25, helpColor);
+        graphics.drawCenteredString(font, helpLine, screenWidth / 2,
+            screenHeight - RadialMenuConstants.HELP_TEXT_MARGIN_BOTTOM, helpColor);
     }
 
     // ================================================================
@@ -226,7 +231,9 @@ public final class RadialTooltipRenderer {
             breadcrumb.append("§f").append(currentCategory.getName());
         }
 
-        graphics.drawString(font, breadcrumb.toString(), 10, 10, 0xFFFFFFFF, true);
+        graphics.drawString(font, breadcrumb.toString(),
+            RadialMenuConstants.BREADCRUMB_X, RadialMenuConstants.BREADCRUMB_Y,
+            RadialMenuConstants.BREADCRUMB_COLOR, true);
     }
 
     // ================================================================
@@ -247,9 +254,14 @@ public final class RadialTooltipRenderer {
         String editText = "§c§l[EDIT MODE] §7Shift+Click to ★ favorite";
         int textWidth = font.width(editText);
 
-        graphics.fill(screenWidth / 2 - textWidth / 2 - 5, 5,
-            screenWidth / 2 + textWidth / 2 + 5, 20, 0xCC000000);
-        graphics.drawCenteredString(font, editText, screenWidth / 2, 8, 0xFFFF4444);
+        int centerX = screenWidth / 2;
+        graphics.fill(centerX - textWidth / 2 - RadialMenuConstants.EDIT_MODE_PADDING_X,
+            RadialMenuConstants.EDIT_MODE_BG_TOP_Y,
+            centerX + textWidth / 2 + RadialMenuConstants.EDIT_MODE_PADDING_X,
+            RadialMenuConstants.EDIT_MODE_BG_BOTTOM_Y,
+            RadialMenuConstants.EDIT_MODE_BG_COLOR);
+        graphics.drawCenteredString(font, editText, centerX,
+            RadialMenuConstants.EDIT_MODE_TEXT_Y, RadialMenuConstants.EDIT_MODE_TEXT_COLOR);
     }
 
     /**
@@ -268,14 +280,17 @@ public final class RadialTooltipRenderer {
         Objects.requireNonNull(themeName, "themeName cannot be null");
 
         long elapsed = System.currentTimeMillis() - openTime;
-        if (elapsed >= 2000) return;
+        if (elapsed >= RadialMenuConstants.THEME_INDICATOR_DURATION_MS) return;
 
-        float alpha = 1f - Math.max(0, (elapsed - 1000) / 1000f);
+        long fadeStart = RadialMenuConstants.THEME_INDICATOR_FADE_START_MS;
+        long fadeDuration = RadialMenuConstants.THEME_INDICATOR_DURATION_MS - fadeStart;
+        float alpha = 1f - Math.max(0f, (elapsed - fadeStart) / (float) fadeDuration);
         if (alpha <= 0) return;
 
-        int color = ((int) (alpha * 255) << 24) | 0xFFFFFF;
+        int color = ((int) (alpha * 255) << 24) | RadialMenuConstants.THEME_INDICATOR_COLOR;
         String themeText = "Theme: " + themeName;
-        graphics.drawCenteredString(font, themeText, screenWidth / 2, 30, color);
+        graphics.drawCenteredString(font, themeText, screenWidth / 2,
+            RadialMenuConstants.THEME_INDICATOR_Y, color);
     }
 
     // ================================================================
@@ -347,50 +362,62 @@ public final class RadialTooltipRenderer {
         Objects.requireNonNull(searchQuery, "searchQuery cannot be null");
         Objects.requireNonNull(searchResults, "searchResults cannot be null");
 
-        if (searchBoxAnimation < 0.01f) return;
+        if (searchBoxAnimation < RadialMenuConstants.SEARCH_ANIMATION_EPSILON) return;
 
         // Darken background
-        int overlayAlpha = (int) (0x80 * searchBoxAnimation);
+        int overlayAlpha = (int) (RadialMenuConstants.SEARCH_OVERLAY_ALPHA * searchBoxAnimation);
         graphics.fill(0, 0, config.screenWidth, config.screenHeight, (overlayAlpha << 24));
 
         // Search box
-        int boxWidth = (int) (300 * searchBoxAnimation);
-        int boxHeight = 30;
+        int boxWidth = (int) (RadialMenuConstants.SEARCH_BOX_WIDTH * searchBoxAnimation);
+        int boxHeight = RadialMenuConstants.SEARCH_BOX_HEIGHT;
         int boxX = config.centerX - boxWidth / 2;
-        int boxY = 50;
+        int boxY = RadialMenuConstants.SEARCH_BOX_Y;
+        int border = RadialMenuConstants.SEARCH_BOX_BORDER;
 
         // Box border and background
-        graphics.fill(boxX - 2, boxY - 2, boxX + boxWidth + 2, boxY + boxHeight + 2, config.theme.border);
-        graphics.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, 0xEE101020);
+        graphics.fill(boxX - border, boxY - border, boxX + boxWidth + border, boxY + boxHeight + border,
+            config.theme.border);
+        graphics.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, RadialMenuConstants.SEARCH_BOX_BG);
 
         // Search icon and text
         String displayText = !searchQuery.isEmpty() ? searchQuery : "§7Type to search...";
-        graphics.drawString(font, "🔍 " + displayText, boxX + 10, boxY + 10, config.theme.textPrimary);
+        graphics.drawString(font, "🔍 " + displayText,
+            boxX + RadialMenuConstants.SEARCH_BOX_TEXT_OFFSET_X,
+            boxY + RadialMenuConstants.SEARCH_BOX_TEXT_OFFSET_Y,
+            config.theme.textPrimary);
 
         // Blinking cursor
-        if (!searchQuery.isEmpty() && (System.currentTimeMillis() / 500) % 2 == 0) {
-            int cursorX = boxX + 10 + font.width("🔍 " + searchQuery);
-            graphics.fill(cursorX, boxY + 8, cursorX + 2, boxY + 22, config.theme.textPrimary);
+        if (!searchQuery.isEmpty() &&
+            (System.currentTimeMillis() / RadialMenuConstants.SEARCH_CURSOR_BLINK_MS) % 2 == 0) {
+            int cursorX = boxX + RadialMenuConstants.SEARCH_BOX_TEXT_OFFSET_X + font.width("🔍 " + searchQuery);
+            graphics.fill(cursorX, boxY + RadialMenuConstants.SEARCH_CURSOR_Y_START,
+                cursorX + RadialMenuConstants.SEARCH_CURSOR_WIDTH,
+                boxY + RadialMenuConstants.SEARCH_CURSOR_Y_END, config.theme.textPrimary);
         }
 
         // Results
-        int resultY = boxY + boxHeight + 10;
+        int resultY = boxY + boxHeight + RadialMenuConstants.SEARCH_RESULTS_TOP_GAP;
         for (int i = 0; i < searchResults.size(); i++) {
             SearchResultDisplay result = searchResults.get(i);
             boolean selected = (i == selectedResultIndex);
 
-            int resultBg = selected ? config.theme.selected : 0xCC101020;
-            graphics.fill(boxX, resultY, boxX + boxWidth, resultY + 25, resultBg);
+            int resultBg = selected ? config.theme.selected : RadialMenuConstants.SEARCH_RESULT_BG;
+            graphics.fill(boxX, resultY, boxX + boxWidth, resultY + RadialMenuConstants.SEARCH_RESULT_HEIGHT, resultBg);
 
             String catName = "§7[" + result.categoryName + "]";
             graphics.drawString(font, result.icon + " " + result.name + " " + catName,
-                boxX + 10, resultY + 8, config.theme.textPrimary);
+                boxX + RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_X,
+                resultY + RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_Y,
+                config.theme.textPrimary);
 
             if (result.isToggle && result.isActive) {
-                graphics.drawString(font, "§a● ON", boxX + boxWidth - 40, resultY + 8, config.theme.active);
+                graphics.drawString(font, "§a● ON",
+                    boxX + boxWidth - RadialMenuConstants.SEARCH_RESULT_STATUS_OFFSET_X,
+                    resultY + RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_Y, config.theme.active);
             }
 
-            resultY += 28;
+            resultY += RadialMenuConstants.SEARCH_RESULT_GAP;
         }
     }
 }

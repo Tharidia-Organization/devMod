@@ -12,12 +12,13 @@ import com.frenkvs.devmod.ui.editor.components.EditorSlider;
 import com.frenkvs.devmod.ui.editor.components.EditorToggle;
 import com.frenkvs.devmod.ui.editor.components.SourceBadge;
 import com.frenkvs.devmod.ui.editor.core.EditorCache;
-import com.frenkvs.devmod.ui.editor.core.EditorDimensions;
 import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import com.frenkvs.devmod.ui.editor.debug.DebugInfoSection;
 import com.frenkvs.devmod.ui.editor.debug.ItemDebugInfo;
 import com.frenkvs.devmod.ui.editor.debug.ValueComparison;
+import com.frenkvs.devmod.ui.editor.sections.SliderSectionAdapter;
+import com.frenkvs.devmod.ui.editor.sections.ToggleSectionAdapter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.component.DataComponents;
@@ -90,6 +91,32 @@ public class ArmorModule extends AbstractEditorModule {
     private EditorSlider shieldRecoverySlider;
 
     // ═══════════════════════════════════════════════════════════════
+    // UI COMPONENTS - Shield Visual Tab (Prismatic Integration)
+    // ═══════════════════════════════════════════════════════════════
+
+    private EditorSlider shieldOpacitySlider;
+    private EditorToggle shieldGlowToggle;
+    private EditorSlider shieldGlowIntensitySlider;
+    private EditorSlider shieldNoiseIntensitySlider;
+    private EditorSlider shieldPulseSpeedSlider;
+
+    // ═══════════════════════════════════════════════════════════════
+    // UI COMPONENTS - Shield Deflection Tab
+    // ═══════════════════════════════════════════════════════════════
+
+    private EditorSlider shieldDeflectionSpreadSlider;
+    private EditorToggle shieldDeflectToOwnerToggle;
+    private EditorSlider shieldDeflectSpeedMultSlider;
+
+    // ═══════════════════════════════════════════════════════════════
+    // UI COMPONENTS - Shield Shatter Tab
+    // ═══════════════════════════════════════════════════════════════
+
+    private EditorSlider shieldShatterThresholdSlider;
+    private EditorToggle shieldAutoRegenerateToggle;
+    private EditorSlider shieldRegenDelaySlider;
+
+    // ═══════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════
 
@@ -108,12 +135,36 @@ public class ArmorModule extends AbstractEditorModule {
 
     @Override
     protected void onItemSet() {
+        // Auto-detect shield variant from item type
+        detectVariantFromItem();
+
         // Load existing armor stats from item NBT
         loadStatsFromItem();
         originalStats = stats.copy();
 
+        // Reinitialize tabs now that we know the variant
+        initializeTabs();
+
         // Update all components to reflect current stats
         updateComponentsFromStats();
+    }
+
+    /**
+     * Detects if the item is a shield and sets the variant accordingly.
+     */
+    private void detectVariantFromItem() {
+        if (item == null) {
+            variant = ArmorVariant.STANDARD;
+            return;
+        }
+
+        // Check if item is a ShieldItem
+        if (item.getItem() instanceof net.minecraft.world.item.ShieldItem) {
+            variant = ArmorVariant.SHIELD;
+            DevMod.LOGGER.info("[Editor][Armor] Detected SHIELD variant for item: {}", item.getItem());
+        } else {
+            variant = ArmorVariant.STANDARD;
+        }
     }
 
     private void loadStatsFromItem() {
@@ -277,6 +328,23 @@ public class ArmorModule extends AbstractEditorModule {
         if (shieldReflectToggle != null) shieldReflectToggle.setValue(stats.shieldReflectProjectiles);
         if (shieldBlockStrengthSlider != null) shieldBlockStrengthSlider.setValue(stats.shieldBlockStrength);
         if (shieldRecoverySlider != null) shieldRecoverySlider.setValue(stats.shieldRecoverySpeed);
+
+        // Shield Visual Tab
+        if (shieldOpacitySlider != null) shieldOpacitySlider.setValue(stats.shieldOpacity);
+        if (shieldGlowToggle != null) shieldGlowToggle.setValue(stats.shieldGlowEnabled);
+        if (shieldGlowIntensitySlider != null) shieldGlowIntensitySlider.setValue(stats.shieldGlowIntensity);
+        if (shieldNoiseIntensitySlider != null) shieldNoiseIntensitySlider.setValue(stats.shieldNoiseIntensity);
+        if (shieldPulseSpeedSlider != null) shieldPulseSpeedSlider.setValue(stats.shieldPulseSpeed);
+
+        // Shield Deflection Tab
+        if (shieldDeflectionSpreadSlider != null) shieldDeflectionSpreadSlider.setValue((float) Math.toDegrees(stats.shieldDeflectionSpread));
+        if (shieldDeflectToOwnerToggle != null) shieldDeflectToOwnerToggle.setValue(stats.shieldDeflectToOwner);
+        if (shieldDeflectSpeedMultSlider != null) shieldDeflectSpeedMultSlider.setValue(stats.shieldDeflectSpeedMult);
+
+        // Shield Shatter Tab
+        if (shieldShatterThresholdSlider != null) shieldShatterThresholdSlider.setValue(stats.shieldShatterThreshold);
+        if (shieldAutoRegenerateToggle != null) shieldAutoRegenerateToggle.setValue(stats.shieldAutoRegenerate);
+        if (shieldRegenDelaySlider != null) shieldRegenDelaySlider.setValue(stats.shieldRegenDelay);
     }
 
     /**
@@ -305,6 +373,9 @@ public class ArmorModule extends AbstractEditorModule {
         createVanillaStatsComponents();
         createSpecialComponents();
         createShieldComponents();
+        createShieldVisualComponents();
+        createShieldDeflectionComponents();
+        createShieldShatterComponents();
 
         // Add tabs
         addTab(ModuleTab.of("reduction", "Reduction", this::getDamageReductionSections));
@@ -312,6 +383,9 @@ public class ArmorModule extends AbstractEditorModule {
         addTab(ModuleTab.of("special", "Special", this::getSpecialSections));
         if (variant == ArmorVariant.SHIELD) {
             addTab(ModuleTab.of("shield", "Shield", this::getShieldSections));
+            addTab(ModuleTab.of("visual", "Visual", this::getShieldVisualSections));
+            addTab(ModuleTab.of("deflect", "Deflect", this::getShieldDeflectionSections));
+            addTab(ModuleTab.of("shatter", "Shatter", this::getShieldShatterSections));
         }
         addTab(ModuleTab.of("debug", "Debug", this::getDebugSections));
     }
@@ -647,6 +721,143 @@ public class ArmorModule extends AbstractEditorModule {
     }
 
     // ═══════════════════════════════════════════════════════════════
+    // SHIELD VISUAL TAB (Prismatic Integration)
+    // ═══════════════════════════════════════════════════════════════
+
+    private void createShieldVisualComponents() {
+        SourceBadge.Source source = determineSource();
+
+        shieldOpacitySlider = new EditorSlider("shieldOpacity", "Shield Opacity", 0.1f, 1.0f, stats.shieldOpacity)
+            .step(0.05f)
+            .format("%.2f")
+            .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .source(source)
+            .info("Base transparency of the energy shield. 1.0 = fully opaque, 0.1 = barely visible.")
+            .onChange(v -> { stats.shieldOpacity = v; markDirty("Shield opacity"); });
+
+        shieldGlowToggle = new EditorToggle("shieldGlow", "Edge Glow", stats.shieldGlowEnabled)
+            .source(source)
+            .tooltip("Enable Fresnel edge glow effect for a sci-fi look")
+            .onChange(v -> { stats.shieldGlowEnabled = v; markDirty("Shield glow"); });
+
+        shieldGlowIntensitySlider = new EditorSlider("shieldGlowInt", "Glow Intensity", 0f, 2.0f, stats.shieldGlowIntensity)
+            .step(0.1f)
+            .format("%.1f")
+            .trackColor(UIConstants.SliderColors.SPECIAL)
+            .source(source)
+            .info("Strength of the edge glow effect. Higher = brighter edges.")
+            .onChange(v -> { stats.shieldGlowIntensity = v; markDirty("Glow intensity"); });
+
+        shieldNoiseIntensitySlider = new EditorSlider("shieldNoise", "Energy Intensity", 0f, 0.5f, stats.shieldNoiseIntensity)
+            .step(0.05f)
+            .format("%.2f")
+            .trackColor(UIConstants.SliderColors.SPECIAL)
+            .source(source)
+            .info("Animated energy field noise pattern intensity. 0 = smooth, 0.5 = very turbulent.")
+            .onChange(v -> { stats.shieldNoiseIntensity = v; markDirty("Energy intensity"); });
+
+        shieldPulseSpeedSlider = new EditorSlider("shieldPulse", "Animation Speed", 0.5f, 2.0f, stats.shieldPulseSpeed)
+            .step(0.1f)
+            .format("%.1f")
+            .suffix("x")
+            .trackColor(UIConstants.SliderColors.SPEED)
+            .source(source)
+            .info("Speed of shield animation effects. 1.0 = normal, 2.0 = double speed.")
+            .onChange(v -> { stats.shieldPulseSpeed = v; markDirty("Animation speed"); });
+    }
+
+    private List<EditorSection> getShieldVisualSections() {
+        return withEhp(List.of(
+            new SliderSectionAdapter(shieldOpacitySlider),
+            new ToggleSectionAdapter(shieldGlowToggle),
+            new SliderSectionAdapter(shieldGlowIntensitySlider),
+            new SliderSectionAdapter(shieldNoiseIntensitySlider),
+            new SliderSectionAdapter(shieldPulseSpeedSlider)
+        ));
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SHIELD DEFLECTION TAB
+    // ═══════════════════════════════════════════════════════════════
+
+    private void createShieldDeflectionComponents() {
+        SourceBadge.Source source = determineSource();
+
+        // Convert radians to degrees for display (0.15 rad ≈ 8.6°)
+        float spreadDegrees = (float) Math.toDegrees(stats.shieldDeflectionSpread);
+
+        shieldDeflectionSpreadSlider = new EditorSlider("deflectSpread", "Deflection Spread", 0f, 30f, spreadDegrees)
+            .step(1f)
+            .format("%.0f")
+            .suffix("°")
+            .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .source(source)
+            .info("Maximum random angle for deflected projectiles. 0° = perfect reflection, 30° = very scattered.")
+            .onChange(v -> { stats.shieldDeflectionSpread = (float) Math.toRadians(v); markDirty("Deflection spread"); });
+
+        shieldDeflectToOwnerToggle = new EditorToggle("deflectReturn", "Return to Sender", stats.shieldDeflectToOwner)
+            .source(source)
+            .tooltip("Deflect projectiles back toward the original shooter")
+            .onChange(v -> { stats.shieldDeflectToOwner = v; markDirty("Return to sender"); });
+
+        shieldDeflectSpeedMultSlider = new EditorSlider("deflectSpeed", "Deflect Speed", 0.5f, 1.5f, stats.shieldDeflectSpeedMult)
+            .step(0.05f)
+            .format("%.0f")
+            .suffix("%")
+            .trackColor(UIConstants.SliderColors.SPEED)
+            .source(source)
+            .info("Projectile speed after deflection. 100% = same speed, 50% = half speed, 150% = faster.")
+            .onChange(v -> { stats.shieldDeflectSpeedMult = v; markDirty("Deflect speed"); });
+    }
+
+    private List<EditorSection> getShieldDeflectionSections() {
+        return withEhp(List.of(
+            new SliderSectionAdapter(shieldDeflectionSpreadSlider),
+            new ToggleSectionAdapter(shieldDeflectToOwnerToggle),
+            new SliderSectionAdapter(shieldDeflectSpeedMultSlider)
+        ));
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SHIELD SHATTER TAB
+    // ═══════════════════════════════════════════════════════════════
+
+    private void createShieldShatterComponents() {
+        SourceBadge.Source source = determineSource();
+
+        shieldShatterThresholdSlider = new EditorSlider("shatterThresh", "Shatter Threshold", 5f, 50f, stats.shieldShatterThreshold)
+            .step(1f)
+            .format("%.0f")
+            .suffix(" dmg")
+            .trackColor(UIConstants.SliderColors.DAMAGE)
+            .source(source)
+            .info("Damage required in a single hit to break the shield. Higher = more durable.")
+            .onChange(v -> { stats.shieldShatterThreshold = v; markDirty("Shatter threshold"); });
+
+        shieldAutoRegenerateToggle = new EditorToggle("autoRegen", "Auto Regenerate", stats.shieldAutoRegenerate)
+            .source(source)
+            .tooltip("Shield automatically regenerates after being shattered")
+            .onChange(v -> { stats.shieldAutoRegenerate = v; markDirty("Auto regenerate"); });
+
+        shieldRegenDelaySlider = new EditorSlider("regenDelay", "Regen Delay", 1f, 10f, stats.shieldRegenDelay)
+            .step(0.5f)
+            .format("%.1f")
+            .suffix("s")
+            .trackColor(UIConstants.SliderColors.SPEED)
+            .source(source)
+            .info("Seconds before shield starts regenerating after being shattered.")
+            .onChange(v -> { stats.shieldRegenDelay = v; markDirty("Regen delay"); });
+    }
+
+    private List<EditorSection> getShieldShatterSections() {
+        return withEhp(List.of(
+            new SliderSectionAdapter(shieldShatterThresholdSlider),
+            new ToggleSectionAdapter(shieldAutoRegenerateToggle),
+            new SliderSectionAdapter(shieldRegenDelaySlider)
+        ));
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // INPUT (section-based with undo)
     // ═══════════════════════════════════════════════════════════════
 
@@ -737,7 +948,22 @@ public class ArmorModule extends AbstractEditorModule {
             && a.thornsReflect == b.thornsReflect
             && Float.compare(a.shieldBlockStrength, b.shieldBlockStrength) == 0
             && Float.compare(a.shieldRecoverySpeed, b.shieldRecoverySpeed) == 0
-            && a.shieldReflectProjectiles == b.shieldReflectProjectiles;
+            && a.shieldReflectProjectiles == b.shieldReflectProjectiles
+            // Shield Visual
+            && a.shieldColor == b.shieldColor
+            && Float.compare(a.shieldOpacity, b.shieldOpacity) == 0
+            && a.shieldGlowEnabled == b.shieldGlowEnabled
+            && Float.compare(a.shieldGlowIntensity, b.shieldGlowIntensity) == 0
+            && Float.compare(a.shieldNoiseIntensity, b.shieldNoiseIntensity) == 0
+            && Float.compare(a.shieldPulseSpeed, b.shieldPulseSpeed) == 0
+            // Shield Deflection
+            && Float.compare(a.shieldDeflectionSpread, b.shieldDeflectionSpread) == 0
+            && a.shieldDeflectToOwner == b.shieldDeflectToOwner
+            && Float.compare(a.shieldDeflectSpeedMult, b.shieldDeflectSpeedMult) == 0
+            // Shield Shatter
+            && Float.compare(a.shieldShatterThreshold, b.shieldShatterThreshold) == 0
+            && a.shieldAutoRegenerate == b.shieldAutoRegenerate
+            && Float.compare(a.shieldRegenDelay, b.shieldRegenDelay) == 0;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -761,78 +987,5 @@ public class ArmorModule extends AbstractEditorModule {
             int y = bounds.y() + TEXT_OFFSET_Y;
             graphics.drawString(font, text, x, y, UIConstants.Text.VALUE(), false);
         }
-    }
-
-    /**
-     * Adapts EditorSlider to EditorSection.SliderSection interface.
-     */
-    private static class SliderSectionAdapter implements EditorSection.SliderSection {
-        private final EditorSlider slider;
-
-        SliderSectionAdapter(EditorSlider slider) {
-            this.slider = slider;
-        }
-
-        @Override public String getId() { return slider.getId(); }
-        @Override public String getLabel() { return slider.getLabel(); }
-        @Override public int getHeight() { return slider.calculateHeight(); }
-
-        @Override
-        public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
-            slider.render(graphics, bounds.x(), bounds.y(), bounds.width(), mouseX, mouseY);
-        }
-
-        @Override public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            return slider.mouseClicked(mouseX, mouseY, button);
-        }
-        @Override public boolean mouseReleased(double mouseX, double mouseY, int button) {
-            return slider.mouseReleased(mouseX, mouseY, button);
-        }
-        @Override public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-            return slider.mouseDragged(mouseX, mouseY, button, dragX, dragY);
-        }
-        @Override public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-            return slider.keyPressed(keyCode, scanCode, modifiers);
-        }
-
-        @Override public float getValue() { return slider.getValue(); }
-        @Override public void setValue(float value) { slider.setValue(value); }
-        @Override public float getMin() { return slider.getMin(); }
-        @Override public float getMax() { return slider.getMax(); }
-        @Override public float getStep() { return slider.getStep(); }
-        @Override public String getFormat() { return "%.2f"; }
-        @Override public int getColor() { return UIConstants.SliderColors.NEUTRAL; }
-        @Override public boolean isDragging() { return slider.isDragging(); }
-        @Override public void setDragging(boolean dragging) { }
-    }
-
-    /**
-     * Adapts EditorToggle to EditorSection.ToggleSection interface.
-     */
-    private static class ToggleSectionAdapter implements EditorSection.ToggleSection {
-        private final EditorToggle toggle;
-
-        ToggleSectionAdapter(EditorToggle toggle) {
-            this.toggle = toggle;
-        }
-
-        @Override public String getId() { return toggle.getId(); }
-        @Override public String getLabel() { return toggle.getLabel(); }
-        @Override public int getHeight() { return EditorDimensions.TOGGLE_HEIGHT; }
-
-        @Override
-        public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
-            toggle.render(graphics, bounds.x(), bounds.y(), bounds.width(), mouseX, mouseY);
-        }
-
-        @Override public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            return toggle.mouseClicked(mouseX, mouseY, button);
-        }
-        @Override public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-            return toggle.keyPressed(keyCode, scanCode, modifiers);
-        }
-
-        @Override public boolean getValue() { return toggle.getValue(); }
-        @Override public void setValue(boolean value) { toggle.setValue(value); }
     }
 }

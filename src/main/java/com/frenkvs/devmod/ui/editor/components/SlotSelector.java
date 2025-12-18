@@ -203,8 +203,21 @@ public final class SlotSelector {
             // Render item or short label
             ItemStack itemStack = Objects.requireNonNull(slotInfo.item(), "slot item cannot be null");
             if (!itemStack.isEmpty()) {
-                int iconPad = ScaledCoord.scaleDim(UIConstants.Spacing.SM);
-                graphics.renderItem(itemStack, slotX + iconPad, slotY + iconPad);
+                // Scale item to fit slot (16px base item size -> slot size with padding)
+                int itemPadding = ScaledCoord.scaleDim(UIConstants.Spacing.XS);
+                int targetItemSize = slotSize - itemPadding * 2;
+                float itemScale = targetItemSize / 16.0f;  // 16px is Minecraft's base item render size
+
+                int itemX = slotX + itemPadding;
+                int itemY = slotY + itemPadding;
+
+                // Use pose matrix to scale the item rendering
+                var pose = graphics.pose();
+                pose.pushPose();
+                pose.translate(itemX, itemY, 0);
+                pose.scale(itemScale, itemScale, 1.0f);
+                graphics.renderItem(itemStack, 0, 0);
+                pose.popPose();
             } else {
                 // Show placeholder glyph when empty
                 int textColor = isSelected ? UIConstants.Text.PRIMARY() : UIConstants.Text.MUTED();

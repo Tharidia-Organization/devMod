@@ -114,11 +114,11 @@ public final class RadialHubRenderer {
         if (angle < 0) angle += RadialMenuConstants.TWO_PI;
 
         // 4 segments, starting from top (-PI/2), going clockwise
-        double startOffset = -Math.PI / 2 - Math.PI / 4; // Offset so ANALYZE is at top
+        double startOffset = RadialMenuConstants.MACRO_START_OFFSET;
         double adjustedAngle = angle - startOffset;
         if (adjustedAngle < 0) adjustedAngle += RadialMenuConstants.TWO_PI;
 
-        int macroIndex = (int) (adjustedAngle / (Math.PI / 2)) % 4;
+        int macroIndex = (int) (adjustedAngle / RadialMenuConstants.MACRO_SEGMENT_ANGLE) % RadialMenuConstants.MACRO_COUNT;
         return new HoverResult(MacroCategory.values()[macroIndex], false);
     }
 
@@ -171,8 +171,8 @@ public final class RadialHubRenderer {
      */
     private static void renderMacroSegments(GuiGraphics graphics, Font font, HubState state) {
         MacroCategory[] macros = MacroCategory.values();
-        double segmentAngle = Math.PI / 2; // 90 degrees per segment
-        double startOffset = -Math.PI / 2 - Math.PI / 4; // Start from top-left
+        double segmentAngle = RadialMenuConstants.MACRO_SEGMENT_ANGLE;
+        double startOffset = RadialMenuConstants.MACRO_START_OFFSET;
 
         int innerR = (int) (state.centerButtonRadius * RadialMenuConstants.CLOSE_BUTTON_RATIO);
         int outerR = state.macroHubRadius;
@@ -187,10 +187,11 @@ public final class RadialHubRenderer {
 
             // Segment colors
             int baseColor = isSelected
-                ? RadialGeometry.blendColors(0xFF252540, macro.getColor(), 0.4f)
-                : 0xF0202035;
+                ? RadialGeometry.blendColors(RadialMenuConstants.COLOR_MACRO_SELECTED_BASE, macro.getColor(),
+                    RadialMenuConstants.MACRO_SELECTED_BLEND)
+                : RadialMenuConstants.COLOR_BG_DARK;
             if (isHovered && !isSelected) {
-                baseColor = RadialGeometry.blendColors(baseColor, macro.getColor(), 0.25f);
+                baseColor = RadialGeometry.blendColors(baseColor, macro.getColor(), RadialMenuConstants.MACRO_HOVER_BLEND);
             }
 
             // Render segment arc
@@ -201,9 +202,12 @@ public final class RadialHubRenderer {
             int borderColor = isSelected
                 ? macro.getColor()
                 : (isHovered
-                    ? RadialGeometry.blendColors(0xFF606080, macro.getColor(), 0.5f)
-                    : 0xFF404060);
-            int borderWidth = isSelected ? 3 : 2;
+                    ? RadialGeometry.blendColors(RadialMenuConstants.COLOR_MACRO_HOVER_BORDER, macro.getColor(),
+                        RadialMenuConstants.BORDER_HOVER_BLEND)
+                    : RadialMenuConstants.COLOR_BORDER);
+            int borderWidth = isSelected
+                ? RadialMenuConstants.BORDER_WIDTH_SELECTED
+                : RadialMenuConstants.BORDER_WIDTH_DEFAULT;
             RadialGeometry.renderArcOutline(graphics, state.centerX, state.centerY,
                 outerR, segStart, segEnd, borderColor, borderWidth);
 
@@ -226,7 +230,7 @@ public final class RadialHubRenderer {
         int y1 = (int) (cy + Math.sin(angle) * innerR);
         int x2 = (int) (cx + Math.cos(angle) * outerR);
         int y2 = (int) (cy + Math.sin(angle) * outerR);
-        RadialGeometry.drawLine(graphics, x1, y1, x2, y2, 0xFF505070);
+        RadialGeometry.drawLine(graphics, x1, y1, x2, y2, RadialMenuConstants.COLOR_DIVIDER);
     }
 
     /**
@@ -243,11 +247,16 @@ public final class RadialHubRenderer {
 
         ResourceLocation tex = macro.getIconTexture();
         if (tex != null) {
-            int size = 18;
-            graphics.blit(tex, iconX - size / 2, iconY - size / 2 - 2, 0, 0, size, size, size, size);
+            int size = RadialMenuConstants.MACRO_ICON_SIZE;
+            graphics.blit(tex, iconX - size / 2,
+                iconY - size / 2 + RadialMenuConstants.MACRO_ICON_TEXTURE_OFFSET_Y,
+                0, 0, size, size, size, size);
         } else {
-            int iconColor = isSelected ? 0xFFFFFFFF : (isHovered ? macro.getColor() : 0xFFAAAAAA);
-            graphics.drawCenteredString(font, macro.getIcon(), iconX, iconY - 4, iconColor);
+            int iconColor = isSelected
+                ? RadialMenuConstants.COLOR_TEXT_PRIMARY
+                : (isHovered ? macro.getColor() : RadialMenuConstants.COLOR_INACTIVE);
+            graphics.drawCenteredString(font, macro.getIcon(), iconX,
+                iconY + RadialMenuConstants.MACRO_ICON_TEXT_OFFSET_Y, iconColor);
         }
     }
 
@@ -256,19 +265,20 @@ public final class RadialHubRenderer {
      */
     private static void renderCenterButton(GuiGraphics graphics, Font font, HubState state) {
         boolean centerHovered = state.hoveredMacro == null &&
-            state.categoryHoverAnim > 0.5f;
+            state.categoryHoverAnim > RadialMenuConstants.CENTER_HOVER_THRESHOLD;
 
         int closeBtnRadius = (int) (state.centerButtonRadius * RadialMenuConstants.CLOSE_BUTTON_RATIO);
 
         // Background
-        int closeBgColor = centerHovered ? 0xFF453545 : 0xF0252530;
+        int closeBgColor = centerHovered ? RadialMenuConstants.COLOR_CLOSE_HOVER : RadialMenuConstants.COLOR_CLOSE_NORMAL;
         RadialGeometry.renderCircle(graphics, state.centerX, state.centerY,
             closeBtnRadius, closeBgColor);
 
         // Border
-        int closeBorderColor = centerHovered ? 0xFFFF6666 : 0xFF505070;
+        int closeBorderColor = centerHovered ? RadialMenuConstants.COLOR_CLOSE_BORDER_HOVER : RadialMenuConstants.COLOR_DIVIDER;
         RadialGeometry.renderRing(graphics, state.centerX, state.centerY,
-            closeBtnRadius - 2, closeBtnRadius, closeBorderColor);
+            closeBtnRadius - RadialMenuConstants.RING_BORDER_THICKNESS,
+            closeBtnRadius, closeBorderColor);
 
         // Icon
         String centerIcon;
@@ -277,10 +287,11 @@ public final class RadialHubRenderer {
 
         if (centerHovered) {
             centerIcon = state.inSubcategory ? "←" : "✕";
-            centerIconColor = state.inSubcategory ? 0xFF80AAFF : 0xFFFF6666;
+            centerIconColor = state.inSubcategory ? RadialMenuConstants.COLOR_CENTER_ICON_BACK
+                : RadialMenuConstants.COLOR_CLOSE_BORDER_HOVER;
         } else if (state.searchMode) {
             centerIcon = "🔍";
-            centerIconColor = 0xFF8080FF;
+            centerIconColor = RadialMenuConstants.COLOR_CENTER_ICON_SEARCH;
         } else {
             // Show selected macro icon in center when not hovered
             centerIcon = state.selectedMacro.getIcon();
@@ -289,10 +300,13 @@ public final class RadialHubRenderer {
         }
 
         if (centerTex != null && !centerHovered && !state.searchMode) {
-            int size = (int) (closeBtnRadius * 1.2);
-            graphics.blit(centerTex, state.centerX - size / 2, state.centerY - size / 2 - 2, 0, 0, size, size, size, size);
+            int size = (int) (closeBtnRadius * RadialMenuConstants.CENTER_ICON_SCALE);
+            graphics.blit(centerTex, state.centerX - size / 2,
+                state.centerY - size / 2 + RadialMenuConstants.CENTER_ICON_TEXTURE_OFFSET_Y,
+                0, 0, size, size, size, size);
         } else {
-            graphics.drawCenteredString(font, centerIcon, state.centerX, state.centerY - 3, centerIconColor);
+            graphics.drawCenteredString(font, centerIcon, state.centerX,
+                state.centerY + RadialMenuConstants.CENTER_ICON_TEXT_OFFSET_Y, centerIconColor);
         }
     }
 
@@ -300,9 +314,12 @@ public final class RadialHubRenderer {
      * Renders the outer ring around the entire hub.
      */
     private static void renderOuterRing(GuiGraphics graphics, HubState state) {
-        int ringColor = RadialGeometry.blendColors(0xFF505070, state.selectedMacro.getColor(), 0.3f);
+        int ringColor = RadialGeometry.blendColors(RadialMenuConstants.COLOR_DIVIDER,
+            state.selectedMacro.getColor(), RadialMenuConstants.OUTER_RING_BLEND);
         RadialGeometry.renderRing(graphics, state.centerX, state.centerY,
-            state.macroHubRadius, state.macroHubRadius + 2, ringColor);
+            state.macroHubRadius,
+            state.macroHubRadius + RadialMenuConstants.RING_BORDER_THICKNESS,
+            ringColor);
     }
 
     // ================================================================

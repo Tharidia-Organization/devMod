@@ -407,6 +407,11 @@ public final class RadialMenuRegistry {
             "Edit generic item data")
             .setVisibilitySupplier(() -> isGeneralItem(getHeldItem()));
 
+        RadialMenuItem recipeEditor = RadialMenuItem.screen("Recipe Editor", "\uD83D\uDCD6",
+            stack(Items.CRAFTING_TABLE),
+            () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.RECIPE),
+            "Create and edit crafting recipes");
+
         categories.add(RadialCategory.builder("itemeditors")
             .name("Items")
             .color(0xFFFFEECC)
@@ -416,6 +421,7 @@ public final class RadialMenuRegistry {
             .item(armorEditor)
             .item(shieldEditor)
             .item(generalEditor)
+            .item(recipeEditor)
             .build());
 
         // Category 6: Commands

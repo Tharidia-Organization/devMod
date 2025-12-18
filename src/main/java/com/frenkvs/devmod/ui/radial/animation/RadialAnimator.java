@@ -49,7 +49,7 @@ public final class RadialAnimator {
     /** Favorite item animations */
     private final float[] favoriteAnimations;
 
-    /** Macro segment animations (4 segments) */
+    /** Macro segment animations (one per macro category) */
     private final float[] macroSegmentAnimations;
 
     /** Center button hover animation */
@@ -97,7 +97,7 @@ public final class RadialAnimator {
         this.categoryAnimations = new float[maxCategories];
         this.itemAnimations = new float[maxItems];
         this.favoriteAnimations = new float[maxFavorites];
-        this.macroSegmentAnimations = new float[4]; // Always 4 macro categories
+        this.macroSegmentAnimations = new float[RadialMenuConstants.MACRO_COUNT];
         this.config = Objects.requireNonNull(config, "config cannot be null");
     }
 
@@ -128,8 +128,8 @@ public final class RadialAnimator {
         boolean enabled
     ) {
         public static final AnimationConfig DEFAULT = new AnimationConfig(
-            0.15f,  // openSpeed
-            0.2f,   // closeSpeed
+            RadialMenuConstants.OPEN_ANIM_SPEED,
+            RadialMenuConstants.CLOSE_ANIM_SPEED,
             RadialMenuConstants.TRANSITION_SPEED,
             RadialMenuConstants.HOVER_ANIM_IN,
             RadialMenuConstants.HOVER_ANIM_OUT,
@@ -162,7 +162,7 @@ public final class RadialAnimator {
             return;
         }
 
-        float delta = partialTick * 0.05f;
+        float delta = partialTick * RadialMenuConstants.ANIMATION_TIME_SCALE;
 
         // Open/close animation
         float targetAnim = closing ? 0f : 1f;
@@ -180,8 +180,8 @@ public final class RadialAnimator {
         }
 
         // Pulse and wave phases
-        pulsePhase += delta * 3f;
-        wavePhase += delta * 2f;
+        pulsePhase += delta * RadialMenuConstants.PULSE_PHASE_SPEED;
+        wavePhase += delta * RadialMenuConstants.WAVE_PHASE_SPEED;
         if (pulsePhase > RadialMenuConstants.TWO_PI) pulsePhase -= (float) RadialMenuConstants.TWO_PI;
         if (wavePhase > RadialMenuConstants.TWO_PI) wavePhase -= (float) RadialMenuConstants.TWO_PI;
     }
@@ -237,7 +237,7 @@ public final class RadialAnimator {
     public void updateMacroSegmentAnimations(int selectedIndex, int hoveredIndex) {
         for (int i = 0; i < macroSegmentAnimations.length; i++) {
             float target = (i == selectedIndex || i == hoveredIndex) ? 1f : 0f;
-            macroSegmentAnimations[i] = Mth.lerp(0.15f, macroSegmentAnimations[i], target);
+            macroSegmentAnimations[i] = Mth.lerp(RadialMenuConstants.LERP_FACTOR, macroSegmentAnimations[i], target);
         }
     }
 
@@ -324,7 +324,7 @@ public final class RadialAnimator {
     }
 
     public boolean isFullyClosed() {
-        return closing && openAnimation < 0.05f;
+        return closing && openAnimation < RadialMenuConstants.FULLY_CLOSED_THRESHOLD;
     }
 
     public float getMacroTransitionProgress() {
@@ -399,7 +399,8 @@ public final class RadialAnimator {
      * @return pulsed value
      */
     public float pulse(float baseValue, float amplitude) {
-        return baseValue + amplitude * (float) Math.sin(pulsePhase * 2);
+        return baseValue + amplitude *
+            (float) Math.sin(pulsePhase * RadialMenuConstants.PULSE_PHASE_MULTIPLIER);
     }
 
     /**

@@ -88,8 +88,8 @@ public class CategoryPanel implements HubPanel {
         int contentY = y + PADDING;
 
         // Header
-        graphics.drawString(font, "CATEGORIES", x + PADDING, contentY + 4, UIConstants.Text.TITLE(), false);
-        contentY += HEADER_HEIGHT + 4;
+        contentY = HubSectionHeader.draw(graphics, font, "CATEGORIES", x + PADDING, contentY, HEADER_HEIGHT, 4);
+        contentY += 4;
 
         // Search box
         searchBox.setX(x + PADDING);

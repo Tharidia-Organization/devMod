@@ -145,6 +145,7 @@ key_key.devmod.weapon_editor:key.keyboard.m
 key_key.devmod.debug_overlay:key.keyboard.o
 key_key.devmod.light_overlay:key.keyboard.l
 key_key.devmod.heatmap:key.keyboard.h
+key_key.devmod.dismiss_impact_hud:key.keyboard.backspace
 key_key.devmod.room_bounds:key.keyboard.r
 key_key.devmod.pathfinding:key.keyboard.p
 key_key.devmod.los:key.keyboard.v

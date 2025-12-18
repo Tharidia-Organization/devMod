@@ -1,25 +1,3 @@
-/effect give @p minecraft:hunger 10 1
-/damage @p 1
-/gamemode creative
-/summon zombie ~ ~ ~
-/effect give @s minecraft:strength 10 1
-/summon zombie ~ ~ ~
-/damage @p 1
-/gamemode survival
-/damage @p 1
-/summon zombie ~ ~ ~
-/gamemode creative
-/gamemode survival
-/gamemode creative
-/summon minecraft:villager
-/summon zombie ~ ~ ~
-/gamemode survival
-/summon minecraft:villager
-/gamemode creative
-/gamemode survival
-/gamemode creative
-/give deve minecraft:barrier
-/give dev minecraft:barrier
 /time set night
 /gamemode survival
 /gamemode creative
@@ -48,3 +26,25 @@
 /devmod dashboard start
 /summon zombie ~ ~ ~
 /devmod dashboard start
+/gamemode survival
+/gamemode creative
+/gamemode survival
+/gamemode creative
+/gamemode survival
+/gamemode creative
+/gamemode survival
+/gamemode creative
+/gamemode survival
+/gamemode creative
+/gamemode survival
+/gamemode creative
+/gamemode survival
+/gamemode creative
+/gamemode survival
+/gamemode creative
+/gamemode survival
+/gamemode creative
+/gamemode survival
+/gamemode creative
+/gamemode survival
+/gamemode creative

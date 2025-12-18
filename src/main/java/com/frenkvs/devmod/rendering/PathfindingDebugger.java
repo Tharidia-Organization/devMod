@@ -1,11 +1,13 @@
 package com.frenkvs.devmod.rendering;
 
+import com.frenkvs.devmod.rendering.shader.VFXShaderRegistry;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.level.pathfinder.Path;
@@ -239,12 +241,68 @@ public class PathfindingDebugger {
 
         if (cachedPaths.isEmpty()) return;
 
-        VertexConsumer consumer = buffer.getBuffer(RenderType.lines());
+        // Check if GPU shader is available
+        boolean useGPU = VFXShaderRegistry.isPathfindingShaderReady();
 
         poseStack.pushPose();
         poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
         Matrix4f matrix = poseStack.last().pose();
         var pose = poseStack.last();
+
+        if (useGPU) {
+            renderPathsGPU(buffer, matrix, pose, now);
+        } else {
+            renderPathsCPU(buffer, matrix, pose, now);
+        }
+
+        poseStack.popPose();
+    }
+
+    /**
+     * GPU-accelerated path rendering using custom shader.
+     * Shader handles: marching ants, gradient colors, beacon animations.
+     */
+    private void renderPathsGPU(MultiBufferSource buffer, Matrix4f matrix, PoseStack.Pose pose, long now) {
+        ShaderInstance shader = VFXShaderRegistry.getPathfindingShader();
+        RenderType renderType = VFXShaderRegistry.getPathfindingRenderType();
+        if (shader == null || renderType == null) {
+            renderPathsCPU(buffer, matrix, pose, now);
+            return;
+        }
+
+        float time = (animationTick % 4000) / 4000.0f;
+        float pulse = (float) (0.7f + 0.3f * Math.sin(time * Math.PI * 2 * 3));
+        float rotation = time * (float)(Math.PI * 2);
+        float marchOffset = time * 10.0f;
+
+        // Set shader uniforms
+        setShaderUniform(shader, "GameTime", (float)(System.currentTimeMillis() % 100000) / 1000.0f);
+        setShaderUniform(shader, "MarchOffset", marchOffset);
+        setShaderUniform(shader, "PulseScale", pulse);
+        setShaderUniform(shader, "Rotation", rotation);
+        setShaderUniformVec3(shader, "StartColor", 0.0f, 1.0f, 1.0f);
+        setShaderUniformVec3(shader, "EndColor", 1.0f, 0.84f, 0.0f);
+
+        VertexConsumer consumer = buffer.getBuffer(renderType);
+
+        for (Map.Entry<UUID, CachedPath> entry : cachedPaths.entrySet()) {
+            CachedPath pathData = entry.getValue();
+
+            float age = (now - pathData.timestamp) / (float) (PATH_CACHE_DURATION * 3);
+            float alpha = Math.max(0.2f, 1.0f - age * 0.7f);
+
+            setShaderUniform(shader, "Alpha", alpha);
+            setShaderUniform(shader, "CanReach", pathData.canReach ? 1 : 0);
+
+            renderSpectacularPathGPU(consumer, matrix, pose, pathData, alpha, time, shader);
+        }
+    }
+
+    /**
+     * CPU fallback path rendering.
+     */
+    private void renderPathsCPU(MultiBufferSource buffer, Matrix4f matrix, PoseStack.Pose pose, long now) {
+        VertexConsumer consumer = buffer.getBuffer(RenderType.lines());
 
         for (Map.Entry<UUID, CachedPath> entry : cachedPaths.entrySet()) {
             CachedPath pathData = entry.getValue();
@@ -255,8 +313,6 @@ public class PathfindingDebugger {
 
             renderSpectacularPath(consumer, matrix, pose, pathData, alpha);
         }
-
-        poseStack.popPose();
     }
 
     /**
@@ -623,6 +679,181 @@ public class PathfindingDebugger {
                       float r, float g, float b, float a) {
         consumer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
         consumer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
+    }
+
+    // ==================== GPU SHADER METHODS ====================
+
+    /**
+     * GPU version of spectacular path rendering.
+     * Uses shader for marching ants and gradient effects.
+     */
+    private void renderSpectacularPathGPU(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix,
+                                           @Nonnull PoseStack.Pose pose, @Nonnull CachedPath pathData,
+                                           float alpha, float time, ShaderInstance shader) {
+        List<Vec3> nodes = pathData.nodes;
+        if (nodes.isEmpty()) return;
+
+        float pulse = (float) (0.7f + 0.3f * Math.sin(time * Math.PI * 2 * 3));
+        float rotation = time * 360.0f;
+
+        Vec3 startPos = nodes.get(0);
+        Vec3 endPos = nodes.size() > 1 ? nodes.get(nodes.size() - 1) : startPos;
+        Vec3 targetPos = pathData.target != null ? pathData.target : endPos;
+
+        // Render START beacon with GPU shader
+        setShaderUniform(shader, "BeaconType", 1); // START
+        renderBeaconGPU(consumer, matrix, pose, startPos, alpha, pulse, rotation);
+
+        // Render DESTINATION beacon with GPU shader
+        setShaderUniform(shader, "BeaconType", 2); // DESTINATION
+        renderBeaconGPU(consumer, matrix, pose, targetPos, alpha, pulse, rotation);
+
+        // Render PATH with GPU shader (marching ants handled by shader)
+        if (nodes.size() >= 2) {
+            setShaderUniform(shader, "BeaconType", 0); // PATH
+            renderAnimatedPathGPU(consumer, matrix, pose, nodes, pathData.canReach, alpha);
+        }
+
+        // Labels (still CPU - text rendering)
+        DebugRenderer.INSTANCE.addLabel(startPos.add(0, 2.5, 0),
+                "▶ START: " + pathData.mobName, 0xFF00FFFF, 50);
+
+        String destLabel = pathData.canReach ? "◆ DESTINATION" : "✗ UNREACHABLE";
+        int destColor = pathData.canReach ? 0xFFFFD700 : 0xFFFF4444;
+        DebugRenderer.INSTANCE.addLabel(targetPos.add(0, 2.5, 0), destLabel, destColor, 50);
+
+        double distance = startPos.distanceTo(targetPos);
+        DebugRenderer.INSTANCE.addLabel(startPos.add(targetPos).scale(0.5).add(0, 1.0, 0),
+                String.format("%.1f blocks", distance), 0xFFAAAAAA, 50);
+    }
+
+    /**
+     * GPU beacon rendering - simplified geometry, shader handles animation.
+     */
+    private void renderBeaconGPU(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix,
+                                  @Nonnull PoseStack.Pose pose, @Nonnull Vec3 pos,
+                                  float alpha, float pulse, float rotation) {
+        float x = (float) pos.x;
+        float y = (float) pos.y;
+        float z = (float) pos.z;
+
+        // Build beacon geometry as triangles (shader handles rotation/pulse)
+        float beaconHeight = 3.0f;
+        float radius = 0.6f;
+        int segments = 12;
+        float thickness = 0.05f;
+
+        // Vertical beam (thin quad strip)
+        for (int i = 0; i < 4; i++) {
+            float angle = (float)(i * Math.PI / 2);
+            float ox = (float)Math.cos(angle) * thickness;
+            float oz = (float)Math.sin(angle) * thickness;
+
+            // Build as triangles
+            consumer.addVertex(matrix, x + ox, y, z + oz).setColor(1f, 1f, 1f, alpha).setNormal(pose, 0, 0, 0);
+            consumer.addVertex(matrix, x + ox, y + beaconHeight, z + oz).setColor(1f, 1f, 1f, alpha * 0.5f).setNormal(pose, 0, 1, 0);
+            consumer.addVertex(matrix, x - ox, y + beaconHeight, z - oz).setColor(1f, 1f, 1f, alpha * 0.5f).setNormal(pose, 0, 1, 0);
+
+            consumer.addVertex(matrix, x + ox, y, z + oz).setColor(1f, 1f, 1f, alpha).setNormal(pose, 0, 0, 0);
+            consumer.addVertex(matrix, x - ox, y + beaconHeight, z - oz).setColor(1f, 1f, 1f, alpha * 0.5f).setNormal(pose, 0, 1, 0);
+            consumer.addVertex(matrix, x - ox, y, z - oz).setColor(1f, 1f, 1f, alpha).setNormal(pose, 0, 0, 0);
+        }
+
+        // Ground ring (shader rotates it)
+        for (int i = 0; i < segments; i++) {
+            float angle1 = (float)(2 * Math.PI * i / segments);
+            float angle2 = (float)(2 * Math.PI * (i + 1) / segments);
+
+            float x1 = x + (float)Math.cos(angle1) * radius;
+            float z1 = z + (float)Math.sin(angle1) * radius;
+            float x2 = x + (float)Math.cos(angle2) * radius;
+            float z2 = z + (float)Math.sin(angle2) * radius;
+
+            float innerRadius = radius * 0.9f;
+            float ix1 = x + (float)Math.cos(angle1) * innerRadius;
+            float iz1 = z + (float)Math.sin(angle1) * innerRadius;
+            float ix2 = x + (float)Math.cos(angle2) * innerRadius;
+            float iz2 = z + (float)Math.sin(angle2) * innerRadius;
+
+            // Ring as triangles
+            consumer.addVertex(matrix, x1, y + 0.1f, z1).setColor(1f, 1f, 1f, alpha).setNormal(pose, 0, 0.5f, 0);
+            consumer.addVertex(matrix, ix1, y + 0.1f, iz1).setColor(1f, 1f, 1f, alpha).setNormal(pose, 0, 0.5f, 0);
+            consumer.addVertex(matrix, x2, y + 0.1f, z2).setColor(1f, 1f, 1f, alpha).setNormal(pose, 0, 0.5f, 0);
+
+            consumer.addVertex(matrix, ix1, y + 0.1f, iz1).setColor(1f, 1f, 1f, alpha).setNormal(pose, 0, 0.5f, 0);
+            consumer.addVertex(matrix, ix2, y + 0.1f, iz2).setColor(1f, 1f, 1f, alpha).setNormal(pose, 0, 0.5f, 0);
+            consumer.addVertex(matrix, x2, y + 0.1f, z2).setColor(1f, 1f, 1f, alpha).setNormal(pose, 0, 0.5f, 0);
+        }
+    }
+
+    /**
+     * GPU path rendering - passes path progress in normal.x for shader gradient/marching.
+     */
+    private void renderAnimatedPathGPU(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix,
+                                        @Nonnull PoseStack.Pose pose, @Nonnull List<Vec3> nodes,
+                                        boolean canReach, float alpha) {
+        double totalLength = 0;
+        for (int i = 0; i < nodes.size() - 1; i++) {
+            totalLength += nodes.get(i).distanceTo(nodes.get(i + 1));
+        }
+
+        double currentLength = 0;
+        float pathThickness = 0.05f;
+
+        for (int i = 0; i < nodes.size() - 1; i++) {
+            Vec3 p1 = nodes.get(i);
+            Vec3 p2 = nodes.get(i + 1);
+            double segmentLength = p1.distanceTo(p2);
+
+            float progress1 = (float) (currentLength / totalLength);
+            float progress2 = (float) ((currentLength + segmentLength) / totalLength);
+
+            // Build path segment as thin quad (2 triangles)
+            // Normal.x carries path progress for shader gradient/marching
+            consumer.addVertex(matrix, (float)p1.x - pathThickness, (float)p1.y, (float)p1.z)
+                .setColor(1f, 1f, 1f, alpha).setNormal(pose, progress1, 0, 0);
+            consumer.addVertex(matrix, (float)p1.x + pathThickness, (float)p1.y, (float)p1.z)
+                .setColor(1f, 1f, 1f, alpha).setNormal(pose, progress1, 0, 0);
+            consumer.addVertex(matrix, (float)p2.x - pathThickness, (float)p2.y, (float)p2.z)
+                .setColor(1f, 1f, 1f, alpha).setNormal(pose, progress2, 0, 0);
+
+            consumer.addVertex(matrix, (float)p1.x + pathThickness, (float)p1.y, (float)p1.z)
+                .setColor(1f, 1f, 1f, alpha).setNormal(pose, progress1, 0, 0);
+            consumer.addVertex(matrix, (float)p2.x + pathThickness, (float)p2.y, (float)p2.z)
+                .setColor(1f, 1f, 1f, alpha).setNormal(pose, progress2, 0, 0);
+            consumer.addVertex(matrix, (float)p2.x - pathThickness, (float)p2.y, (float)p2.z)
+                .setColor(1f, 1f, 1f, alpha).setNormal(pose, progress2, 0, 0);
+
+            currentLength += segmentLength;
+        }
+    }
+
+    // Shader uniform helper methods
+    private void setShaderUniform(ShaderInstance shader, String name, float value) {
+        try {
+            var uniform = shader.getUniform(name);
+            if (uniform != null) {
+                uniform.set(value);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void setShaderUniform(ShaderInstance shader, String name, int value) {
+        try {
+            var uniform = shader.getUniform(name);
+            if (uniform != null) {
+                uniform.set(value);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void setShaderUniformVec3(ShaderInstance shader, String name, float x, float y, float z) {
+        try {
+            var uniform = shader.getUniform(name);
+            if (uniform != null) {
+                uniform.set(x, y, z);
+            }
+        } catch (Exception ignored) {}
     }
 
     /**

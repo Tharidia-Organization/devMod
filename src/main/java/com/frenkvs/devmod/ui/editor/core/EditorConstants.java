@@ -12,7 +12,8 @@ public final class EditorConstants {
     public static final int PANEL_HEIGHT = 420;
 
     // Zones
-    public static final int HEADER_HEIGHT = 28;
+    public static final int HEADER_ROW_HEIGHT = 28;  // Single row height
+    public static final int HEADER_HEIGHT = 56;      // 2-row header: controls row + tabs row
     public static final int FOOTER_HEIGHT = 60;
     public static final int LEFT_COLUMN_WIDTH = 140;
     public static final int CONTENT_WIDTH = 390;

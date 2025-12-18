@@ -4,7 +4,8 @@
   "package": "com.frenkvs.devmod.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "MinecraftServerAccessor"
+    "MinecraftServerAccessor",
+    "RecipeManagerMixin"
   ],
   "client": [
     "GameRendererMixin",

@@ -63,6 +63,10 @@ import com.frenkvs.devmod.network.MobConfigConfirmPayload;
 import com.frenkvs.devmod.network.PacketSecurityService;
 import com.frenkvs.devmod.network.PacketSecurityService.ValidationResult;
 import com.frenkvs.devmod.network.RangedWeaponStatsPayload;
+import com.frenkvs.devmod.network.ShieldImpactPayload;
+import com.frenkvs.devmod.network.ShieldShatterPayload;
+import com.frenkvs.devmod.network.ShieldStatePayload;
+import com.frenkvs.devmod.rendering.shield.EnergyShieldRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
@@ -377,6 +381,32 @@ public class NetworkHandler {
                 nn(com.frenkvs.devmod.network.RecipeSyncPayload.TYPE),
                 nn(com.frenkvs.devmod.network.RecipeSyncPayload.STREAM_CODEC),
                 NetworkHandler::handleRecipeSync
+        );
+
+        // === Shield Visual Effect Payloads (server to client) ===
+        // Channel 40: Shield State Sync
+        event.registrar("40").playToClient(
+                nn(ShieldStatePayload.TYPE),
+                nn(ShieldStatePayload.STREAM_CODEC),
+                NetworkHandler::handleShieldState
+        );
+        // Channel 41: Shield Impact Effect
+        event.registrar("41").playToClient(
+                nn(ShieldImpactPayload.TYPE),
+                nn(ShieldImpactPayload.STREAM_CODEC),
+                NetworkHandler::handleShieldImpact
+        );
+        // Channel 42: Shield Shatter Effect
+        event.registrar("42").playToClient(
+                nn(ShieldShatterPayload.TYPE),
+                nn(ShieldShatterPayload.STREAM_CODEC),
+                NetworkHandler::handleShieldShatter
+        );
+        // Channel 43: Recipe Sync (server to client)
+        event.registrar("43").playToClient(
+                nn(com.frenkvs.devmod.network.RecipeClientSyncPayload.TYPE),
+                nn(com.frenkvs.devmod.network.RecipeClientSyncPayload.STREAM_CODEC),
+                NetworkHandler::handleRecipeClientSync
         );
     }
 
@@ -1519,13 +1549,16 @@ public class NetworkHandler {
                                 player.sendSystemMessage(I18n.errorWithDetails("devmod.recipe.invalid", validationResult.getFirstError()));
                                 continue;
                             }
-                            // Add to config manager
+                            // Add to config manager (persists to disk)
                             com.frenkvs.devmod.recipe.RecipeConfigManager.addRecipe(recipe);
-                            LOGGER.debug("[NetworkHandler] Added/updated recipe: {}", recipe.id());
+                            // Inject into RecipeManager (makes it craftable immediately)
+                            com.frenkvs.devmod.recipe.RecipeReloadListener.onRecipeModified(recipe);
+                            LOGGER.info("[NetworkHandler] Added/updated recipe: {}", recipe.id());
                         }
                         case DELETE -> {
                             com.frenkvs.devmod.recipe.RecipeConfigManager.removeRecipe(recipe.id());
-                            LOGGER.debug("[NetworkHandler] Deleted recipe: {}", recipe.id());
+                            com.frenkvs.devmod.recipe.RecipeReloadListener.onRecipeDeleted(recipe);
+                            LOGGER.info("[NetworkHandler] Deleted recipe: {}", recipe.id());
                         }
                         case SYNC_ALL -> {
                             // Full sync - clear on first recipe, then add
@@ -1541,6 +1574,42 @@ public class NetworkHandler {
                 // Notify player
                 player.sendSystemMessage(I18n.translate("devmod.recipe.saved"));
             }
+        });
+    }
+
+    // =================================================================================
+    // RECIPE CLIENT SYNC HANDLER (server to client)
+    // =================================================================================
+    private static void handleRecipeClientSync(com.frenkvs.devmod.network.RecipeClientSyncPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            // This runs on client - update local recipe cache
+            var operation = payload.operation();
+            var recipes = payload.recipes();
+
+            boolean firstSyncAll = true;
+            for (var recipe : recipes) {
+                switch (operation) {
+                    case ADD -> {
+                        // Add to client-side cache
+                        com.frenkvs.devmod.recipe.RecipeConfigManager.addRecipeClientOnly(recipe);
+                        LOGGER.debug("[NetworkHandler] Client received recipe: {}", recipe.id());
+                    }
+                    case DELETE -> {
+                        com.frenkvs.devmod.recipe.RecipeConfigManager.removeRecipeClientOnly(recipe.id());
+                        LOGGER.debug("[NetworkHandler] Client removed recipe: {}", recipe.id());
+                    }
+                    case SYNC_ALL -> {
+                        // Full sync - clear on first recipe, then add
+                        if (firstSyncAll) {
+                            com.frenkvs.devmod.recipe.RecipeConfigManager.clearClientRecipes();
+                            firstSyncAll = false;
+                        }
+                        com.frenkvs.devmod.recipe.RecipeConfigManager.addRecipeClientOnly(recipe);
+                    }
+                }
+            }
+
+            LOGGER.info("[NetworkHandler] Client synced {} recipes (operation: {})", recipes.size(), operation);
         });
     }
 
@@ -2483,6 +2552,58 @@ public class NetworkHandler {
             if (context.player() instanceof ServerPlayer player) {
                 TelemetryPacketHandler.INSTANCE.handleBatch(player, payload);
             }
+        });
+    }
+
+    // =================================================================================
+    // SHIELD VISUAL EFFECTS (Client-side handlers)
+    // =================================================================================
+
+    /**
+     * Handle shield state sync from server.
+     * Updates client-side shield rendering state.
+     */
+    private static void handleShieldState(ShieldStatePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            // Client-side: update shield visual state
+            if (payload.isShattered()) {
+                EnergyShieldRenderer.triggerShatter(
+                    new net.minecraft.world.phys.Vec3(0, 0, 0)); // Will be updated per-entity
+            } else if (!payload.isActive()) {
+                EnergyShieldRenderer.clearEffects();
+            }
+            // Shield strength affects opacity in render
+        });
+    }
+
+    /**
+     * Handle shield impact effect from server.
+     * Triggers visual ripple/flash at impact point.
+     */
+    private static void handleShieldImpact(ShieldImpactPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            // Client-side: record impact for visual feedback
+            net.minecraft.world.phys.Vec3 impactPoint = new net.minecraft.world.phys.Vec3(
+                payload.impactX(), payload.impactY(), payload.impactZ());
+            EnergyShieldRenderer.recordImpact(impactPoint, payload.damage());
+
+            // Could also play sound here based on wasDeflection
+            LOGGER.debug("Shield impact at {} (deflection={})", impactPoint, payload.wasDeflection());
+        });
+    }
+
+    /**
+     * Handle shield shatter effect from server.
+     * Triggers fragment animation at shatter point.
+     */
+    private static void handleShieldShatter(ShieldShatterPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            // Client-side: trigger shatter animation
+            net.minecraft.world.phys.Vec3 center = new net.minecraft.world.phys.Vec3(
+                payload.centerX(), payload.centerY(), payload.centerZ());
+            EnergyShieldRenderer.triggerShatter(center);
+
+            LOGGER.debug("Shield shattered at {} (damage={})", center, payload.finalDamage());
         });
     }
 

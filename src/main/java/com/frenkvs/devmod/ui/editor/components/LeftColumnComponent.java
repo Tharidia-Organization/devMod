@@ -24,11 +24,9 @@ public class LeftColumnComponent {
     // DIMENSIONS (from Section 2.5)
     // ═══════════════════════════════════════════════════════════════
 
-    // Component positions (relative to left column origin)
-    private static final int PREVIEW_Y = EditorConstants.PREVIEW_Y;
+    // Component positions are now calculated relative to available height
     private static final int COLUMN_PADDING = EditorConstants.LEFT_COLUMN_PADDING;
-    private static final int SLOT_SELECTOR_Y = EditorConstants.SLOT_AREA_Y;
-    private static final int ITEM_INFO_Y = EditorConstants.INFO_PANEL_Y;
+    private static final int SECTION_GAP = 8;  // Gap between sections
     private static final int ARMOR_CARD_HEIGHT = EditorConstants.ARMOR_CARD_HEIGHT;
     private static final int ARMOR_CARD_TEXT_PADDING = 6;
     private static final int ARMOR_CARD_LABEL_Y = 18;
@@ -36,6 +34,11 @@ public class LeftColumnComponent {
     private static final int ARMOR_CARD_ICON_SIZE = UIConstants.Size.ICON;
     private static final int ARMOR_CARD_ICON_GLYPH_OFFSET = 3;
     private static final int ARMOR_CARD_HOVER_FILL = 0x2000D4FF;
+
+    // Layout proportions (how height is distributed)
+    private static final float PREVIEW_PROPORTION = 0.52f;  // 52% for preview (player render needs space)
+    private static final float SLOT_AREA_PROPORTION = 0.20f; // 20% for slot selector + armor card
+    // Remaining ~28% for item info panel
 
     // ═══════════════════════════════════════════════════════════════
     // COMPONENTS
@@ -173,6 +176,7 @@ public class LeftColumnComponent {
 
     /**
      * Render the left column at the given position.
+     * Uses proportional layout based on available height to prevent overflow.
      * @return The width consumed
      */
     public int render(GuiGraphics graphics, int x, int y, int width, int height, int mouseX, int mouseY, float partialTick) {
@@ -186,26 +190,35 @@ public class LeftColumnComponent {
         // Right border (separator from content area)
         graphics.fill(x + columnWidth - 1, y, x + columnWidth, y + height, UIConstants.Border.SEPARATOR());
 
-        // Preview
-        int previewSize = ScaledCoord.scaleDim(EditorConstants.PREVIEW_SIZE);
-        int previewY = y + ScaledCoord.scaleDim(PREVIEW_Y);
+        // Calculate layout based on available height (proportional positioning)
+        int padding = ScaledCoord.scaleDim(COLUMN_PADDING);
+        int gap = ScaledCoord.scaleDim(SECTION_GAP);
+        int contentPadding = padding * 2;
+        int innerWidth = columnWidth - contentPadding;
+
+        // Calculate section heights based on proportions
+        int previewAreaHeight = Math.round(height * PREVIEW_PROPORTION);
+        int slotAreaHeight = Math.round(height * SLOT_AREA_PROPORTION);
+
+        // Preview (centered in its allocated area)
+        int previewSize = Math.min(ScaledCoord.scaleDim(EditorConstants.PREVIEW_SIZE), previewAreaHeight - gap * 2);
+        int previewY = y + (previewAreaHeight - previewSize) / 2;
         int previewX = x + (columnWidth - previewSize) / 2;
         preview.render(graphics, previewX, previewY, mouseX, mouseY, partialTick);
 
-        // Slot selector
-        int slotX = x + ScaledCoord.scaleDim(COLUMN_PADDING);
-        int slotY = y + ScaledCoord.scaleDim(SLOT_SELECTOR_Y);
-        slotSelector.render(graphics, slotX, slotY, columnWidth - ScaledCoord.scaleDim(COLUMN_PADDING * 2), mouseX, mouseY);
+        // Slot selector (after preview area)
+        int slotY = y + previewAreaHeight;
+        int slotX = x + padding;
+        int slotSelectorHeight = ScaledCoord.scaleDim(EditorConstants.SLOT_AREA_HEIGHT);
+        slotSelector.render(graphics, slotX, slotY, innerWidth, mouseX, mouseY);
 
-        // Selected armor piece card (click to cycle slots)
-        int slotAreaHeight = ScaledCoord.scaleDim(EditorConstants.SLOT_AREA_HEIGHT);
-        renderSelectedPieceCard(graphics, slotX, slotY + slotAreaHeight + ScaledCoord.scaleDim(UIConstants.Spacing.MD),
-            columnWidth - ScaledCoord.scaleDim(COLUMN_PADDING * 2), mouseX, mouseY);
+        // Selected armor piece card (below slot selector)
+        int cardY = slotY + slotSelectorHeight + gap;
+        renderSelectedPieceCard(graphics, slotX, cardY, innerWidth, mouseX, mouseY);
 
-        // Item info
-        int infoX = x + ScaledCoord.scaleDim(COLUMN_PADDING);
-        int infoY = y + ScaledCoord.scaleDim(ITEM_INFO_Y);
-        itemInfo.render(graphics, infoX, infoY, columnWidth - ScaledCoord.scaleDim(COLUMN_PADDING * 2), mouseX, mouseY);
+        // Item info (in remaining space)
+        int infoY = y + previewAreaHeight + slotAreaHeight;
+        itemInfo.render(graphics, slotX, infoY, innerWidth, mouseX, mouseY);
 
         return columnWidth;
     }

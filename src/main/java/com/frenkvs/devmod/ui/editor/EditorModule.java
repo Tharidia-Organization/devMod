@@ -142,6 +142,56 @@ public interface EditorModule {
     void saveUndoState();
 
     // ═══════════════════════════════════════════════════════════════
+    // OVERLAY
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Check if this module has a modal overlay currently visible.
+     * Used by the editor screen to determine rendering/input priority.
+     */
+    default boolean hasActiveOverlay() { return false; }
+
+    /**
+     * Render the module's overlay if visible.
+     * Called after all other overlays to ensure it appears on top.
+     *
+     * @param graphics The graphics context
+     * @param font The font to use
+     * @param screenWidth Screen width for centering
+     * @param screenHeight Screen height for centering
+     * @param mouseX Current mouse X
+     * @param mouseY Current mouse Y
+     */
+    default void renderOverlay(GuiGraphics graphics, net.minecraft.client.gui.Font font,
+                               int screenWidth, int screenHeight, int mouseX, int mouseY) {}
+
+    /**
+     * Handle mouse click for module overlay (when overlay is visible).
+     * @return true if the click was consumed
+     */
+    default boolean overlayMouseClicked(double mouseX, double mouseY, int button,
+                                        int screenWidth, int screenHeight) { return false; }
+
+    /**
+     * Handle mouse scroll for module overlay (when overlay is visible).
+     * @return true if the scroll was consumed
+     */
+    default boolean overlayMouseScrolled(double mouseX, double mouseY, double scrollDelta,
+                                         int screenWidth, int screenHeight) { return false; }
+
+    /**
+     * Handle key press for module overlay (when overlay is visible).
+     * @return true if the key was consumed
+     */
+    default boolean overlayKeyPressed(int keyCode) { return false; }
+
+    /**
+     * Handle character typed for module overlay (when overlay is visible).
+     * @return true if the character was consumed
+     */
+    default boolean overlayCharTyped(char chr, int modifiers) { return false; }
+
+    // ═══════════════════════════════════════════════════════════════
     // LIFECYCLE
     // ═══════════════════════════════════════════════════════════════
 

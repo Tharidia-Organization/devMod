@@ -169,6 +169,38 @@ UnifiedSettingsScreen ──► SettingsPage (interface)
 | `RoomBoundsVisualizer` | Room boundaries |
 | `SafeSpotVisualizer` | Exploit locations |
 
+### Custom Shader System
+**Package:** `com.frenkvs.devmod.rendering.shield`, `com.frenkvs.devmod.rendering.shader`
+
+GPU-accelerated visual effects using NeoForge's shader registration system.
+
+```
+RegisterShadersEvent ──► ShieldShaderRegistry
+                              │
+                              ▼
+                       ShaderInstance
+                              │
+                              ▼
+                    Custom RenderType
+                   (ShaderStateShard)
+                              │
+                              ▼
+                   EnergyShieldRenderer
+                   (Uniforms: color, impact, time)
+```
+
+**Key Components:**
+| Component | Purpose |
+|-----------|---------|
+| `ShieldShaderRegistry` | Registers shader via `RegisterShadersEvent`, creates custom `RenderType` |
+| `EnergyShieldRenderer` | Renders shield sphere, sets shader uniforms |
+| `ShaderManager` | GPU capability detection, quality auto-adjustment |
+| `energy_shield.fsh` | Fragment shader with noise, fresnel, impact wave effects |
+
+**Shader Files Location:** `assets/devmod/shaders/core/`
+
+See [SHADER_SYSTEM.md](SHADER_SYSTEM.md) for detailed implementation guide.
+
 ## Network Layer
 **Package:** `com.frenkvs.devmod` (payloads)
 

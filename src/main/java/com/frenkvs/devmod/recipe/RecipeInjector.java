@@ -293,6 +293,9 @@ public final class RecipeInjector {
             // Map unique ingredients to keys
             Map<String, Character> ingredientToKey = new HashMap<>();
 
+            DevMod.LOGGER.debug("[RecipeInjector] Creating shaped recipe {} with {} grid entries",
+                data.id(), grid.size());
+
             for (int i = 0; i < 9; i++) {
                 int row = i / 3;
                 int col = i % 3;
@@ -309,6 +312,10 @@ public final class RecipeInjector {
                         Ingredient mcIng = convertIngredient(ing);
                         if (mcIng != null && !mcIng.isEmpty()) {
                             keyMap.put(key, mcIng);
+                            DevMod.LOGGER.debug("[RecipeInjector] Slot {} -> key '{}' = {}",
+                                i, key, ing);
+                        } else {
+                            DevMod.LOGGER.warn("[RecipeInjector] Slot {} has invalid ingredient: {}", i, ing);
                         }
                     }
                     patternChars[row][col] = key;
@@ -322,6 +329,9 @@ public final class RecipeInjector {
                 return null;
             }
 
+            DevMod.LOGGER.debug("[RecipeInjector] Pattern for {}: {}, keyMap: {}",
+                data.id(), pattern, keyMap.keySet());
+
             // Create shaped pattern
             ShapedRecipePattern shapedPattern = Objects.requireNonNull(ShapedRecipePattern.of(keyMap, pattern), "pattern");
             ItemStack resultStack = Objects.requireNonNull(data.result().toItemStack(), "result");
@@ -331,6 +341,9 @@ public final class RecipeInjector {
                 "craftingCategory"
             );
 
+            DevMod.LOGGER.info("[RecipeInjector] Created shaped recipe {} -> {}",
+                data.id(), resultStack);
+
             return new ShapedRecipe(
                 group,
                 category,
@@ -338,7 +351,7 @@ public final class RecipeInjector {
                 resultStack
             );
         } catch (Exception e) {
-            DevMod.LOGGER.error("[RecipeInjector] Failed to create shaped recipe: {}", e.getMessage());
+            DevMod.LOGGER.error("[RecipeInjector] Failed to create shaped recipe: {}", e.getMessage(), e);
             return null;
         }
     }

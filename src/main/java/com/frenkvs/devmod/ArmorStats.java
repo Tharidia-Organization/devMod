@@ -33,6 +33,24 @@ public class ArmorStats {
     public float shieldBlockStrength = 0.5f;         // 0-1 strength multiplier
     public float shieldRecoverySpeed = 1.0f;         // Recovery speed multiplier
 
+    // === Shield Visual Settings (Prismatic Integration) ===
+    public int shieldColor = 0x3D5AFE;           // RGB color (Electric Blue)
+    public float shieldOpacity = 0.6f;           // Base opacity (0.0-1.0)
+    public boolean shieldGlowEnabled = true;     // Fresnel edge glow
+    public float shieldGlowIntensity = 1.0f;     // Glow strength (0.0-2.0)
+    public float shieldNoiseIntensity = 0.15f;   // Energy field noise (0.0-0.5)
+    public float shieldPulseSpeed = 1.0f;        // Animation speed (0.5-2.0)
+
+    // === Shield Deflection Settings ===
+    public float shieldDeflectionSpread = 0.15f; // Max angular spread (radians)
+    public boolean shieldDeflectToOwner = false; // Deflect back to shooter
+    public float shieldDeflectSpeedMult = 0.8f;  // Speed after deflection (0.5-1.5)
+
+    // === Shield Shatter Settings ===
+    public float shieldShatterThreshold = 10.0f; // Damage threshold to trigger shatter
+    public boolean shieldAutoRegenerate = true;  // Auto-regen after shatter
+    public float shieldRegenDelay = 3.0f;        // Seconds before regen starts
+
     /**
      * Save armor stats to NBT compound tag.
      * Uses short keys to minimize storage overhead.
@@ -52,6 +70,24 @@ public class ArmorStats {
         if (shieldReflectProjectiles) tag.putBoolean("ShieldReflect", true);
         if (Float.compare(shieldBlockStrength, 0.5f) != 0) tag.putFloat("ShieldBlock", shieldBlockStrength);
         if (Float.compare(shieldRecoverySpeed, 1.0f) != 0) tag.putFloat("ShieldRecovery", shieldRecoverySpeed);
+
+        // Shield Visual Settings
+        if (shieldColor != 0x3D5AFE) tag.putInt("ShieldColor", shieldColor);
+        if (Float.compare(shieldOpacity, 0.6f) != 0) tag.putFloat("ShieldOpacity", shieldOpacity);
+        if (!shieldGlowEnabled) tag.putBoolean("ShieldGlow", false);
+        if (Float.compare(shieldGlowIntensity, 1.0f) != 0) tag.putFloat("ShieldGlowInt", shieldGlowIntensity);
+        if (Float.compare(shieldNoiseIntensity, 0.15f) != 0) tag.putFloat("ShieldNoise", shieldNoiseIntensity);
+        if (Float.compare(shieldPulseSpeed, 1.0f) != 0) tag.putFloat("ShieldPulse", shieldPulseSpeed);
+
+        // Shield Deflection Settings
+        if (Float.compare(shieldDeflectionSpread, 0.15f) != 0) tag.putFloat("DeflectSpread", shieldDeflectionSpread);
+        if (shieldDeflectToOwner) tag.putBoolean("DeflectReturn", true);
+        if (Float.compare(shieldDeflectSpeedMult, 0.8f) != 0) tag.putFloat("DeflectSpeed", shieldDeflectSpeedMult);
+
+        // Shield Shatter Settings
+        if (Float.compare(shieldShatterThreshold, 10.0f) != 0) tag.putFloat("ShatterThresh", shieldShatterThreshold);
+        if (!shieldAutoRegenerate) tag.putBoolean("ShieldAutoRegen", false);
+        if (Float.compare(shieldRegenDelay, 3.0f) != 0) tag.putFloat("RegenDelay", shieldRegenDelay);
     }
 
     /**
@@ -72,6 +108,25 @@ public class ArmorStats {
         stats.shieldReflectProjectiles = tag.contains("ShieldReflect") && tag.getBoolean("ShieldReflect");
         stats.shieldBlockStrength = tag.contains("ShieldBlock") ? tag.getFloat("ShieldBlock") : 0.5f;
         stats.shieldRecoverySpeed = tag.contains("ShieldRecovery") ? tag.getFloat("ShieldRecovery") : 1.0f;
+
+        // Shield Visual Settings
+        stats.shieldColor = tag.contains("ShieldColor") ? tag.getInt("ShieldColor") : 0x3D5AFE;
+        stats.shieldOpacity = tag.contains("ShieldOpacity") ? tag.getFloat("ShieldOpacity") : 0.6f;
+        stats.shieldGlowEnabled = !tag.contains("ShieldGlow") || tag.getBoolean("ShieldGlow");
+        stats.shieldGlowIntensity = tag.contains("ShieldGlowInt") ? tag.getFloat("ShieldGlowInt") : 1.0f;
+        stats.shieldNoiseIntensity = tag.contains("ShieldNoise") ? tag.getFloat("ShieldNoise") : 0.15f;
+        stats.shieldPulseSpeed = tag.contains("ShieldPulse") ? tag.getFloat("ShieldPulse") : 1.0f;
+
+        // Shield Deflection Settings
+        stats.shieldDeflectionSpread = tag.contains("DeflectSpread") ? tag.getFloat("DeflectSpread") : 0.15f;
+        stats.shieldDeflectToOwner = tag.contains("DeflectReturn") && tag.getBoolean("DeflectReturn");
+        stats.shieldDeflectSpeedMult = tag.contains("DeflectSpeed") ? tag.getFloat("DeflectSpeed") : 0.8f;
+
+        // Shield Shatter Settings
+        stats.shieldShatterThreshold = tag.contains("ShatterThresh") ? tag.getFloat("ShatterThresh") : 10.0f;
+        stats.shieldAutoRegenerate = !tag.contains("ShieldAutoRegen") || tag.getBoolean("ShieldAutoRegen");
+        stats.shieldRegenDelay = tag.contains("RegenDelay") ? tag.getFloat("RegenDelay") : 3.0f;
+
         return stats;
     }
 
@@ -91,7 +146,22 @@ public class ArmorStats {
             && thornsPercent == 0.0f
             && !shieldReflectProjectiles
             && Float.compare(shieldBlockStrength, 0.5f) == 0
-            && Float.compare(shieldRecoverySpeed, 1.0f) == 0;
+            && Float.compare(shieldRecoverySpeed, 1.0f) == 0
+            // Shield Visual
+            && shieldColor == 0x3D5AFE
+            && Float.compare(shieldOpacity, 0.6f) == 0
+            && shieldGlowEnabled
+            && Float.compare(shieldGlowIntensity, 1.0f) == 0
+            && Float.compare(shieldNoiseIntensity, 0.15f) == 0
+            && Float.compare(shieldPulseSpeed, 1.0f) == 0
+            // Shield Deflection
+            && Float.compare(shieldDeflectionSpread, 0.15f) == 0
+            && !shieldDeflectToOwner
+            && Float.compare(shieldDeflectSpeedMult, 0.8f) == 0
+            // Shield Shatter
+            && Float.compare(shieldShatterThreshold, 10.0f) == 0
+            && shieldAutoRegenerate
+            && Float.compare(shieldRegenDelay, 3.0f) == 0;
     }
 
     /**
@@ -136,6 +206,21 @@ public class ArmorStats {
         copy.shieldReflectProjectiles = this.shieldReflectProjectiles;
         copy.shieldBlockStrength = this.shieldBlockStrength;
         copy.shieldRecoverySpeed = this.shieldRecoverySpeed;
+        // Shield Visual
+        copy.shieldColor = this.shieldColor;
+        copy.shieldOpacity = this.shieldOpacity;
+        copy.shieldGlowEnabled = this.shieldGlowEnabled;
+        copy.shieldGlowIntensity = this.shieldGlowIntensity;
+        copy.shieldNoiseIntensity = this.shieldNoiseIntensity;
+        copy.shieldPulseSpeed = this.shieldPulseSpeed;
+        // Shield Deflection
+        copy.shieldDeflectionSpread = this.shieldDeflectionSpread;
+        copy.shieldDeflectToOwner = this.shieldDeflectToOwner;
+        copy.shieldDeflectSpeedMult = this.shieldDeflectSpeedMult;
+        // Shield Shatter
+        copy.shieldShatterThreshold = this.shieldShatterThreshold;
+        copy.shieldAutoRegenerate = this.shieldAutoRegenerate;
+        copy.shieldRegenDelay = this.shieldRegenDelay;
         return copy;
     }
 

@@ -1,0 +1,26 @@
+{
+    "blend": {
+        "func": "add",
+        "srcrgb": "srcalpha",
+        "dstrgb": "one_minus_srcalpha"
+    },
+    "vertex": "devmod:energy_shield",
+    "fragment": "devmod:energy_shield",
+    "attributes": [
+        "Position",
+        "Color",
+        "Normal"
+    ],
+    "samplers": [],
+    "uniforms": [
+        { "name": "ModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "ProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "GameTime", "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "ShieldColor", "type": "float", "count": 3, "values": [ 0.24, 0.35, 1.0 ] },
+        { "name": "ShieldStrength", "type": "float", "count": 1, "values": [ 0.6 ] },
+        { "name": "ImpactTime", "type": "float", "count": 1, "values": [ 999.0 ] },
+        { "name": "ImpactPoint", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.0 ] },
+        { "name": "NoiseIntensity", "type": "float", "count": 1, "values": [ 0.15 ] },
+        { "name": "PulseSpeed", "type": "float", "count": 1, "values": [ 1.0 ] }
+    ]
+}

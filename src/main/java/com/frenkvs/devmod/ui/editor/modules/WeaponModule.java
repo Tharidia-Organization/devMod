@@ -16,6 +16,10 @@ import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import com.frenkvs.devmod.ui.editor.debug.DebugInfoSection;
 import com.frenkvs.devmod.ui.editor.debug.ItemDebugInfo;
 import com.frenkvs.devmod.ui.editor.debug.ValueComparison;
+import com.frenkvs.devmod.ui.editor.sections.SimpleHeaderSection;
+import com.frenkvs.devmod.ui.editor.sections.SliderSectionAdapter;
+import com.frenkvs.devmod.ui.editor.sections.ToggleSectionAdapter;
+import com.frenkvs.devmod.ui.editor.sections.TextNoteSection;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.component.DataComponents;
@@ -702,18 +706,13 @@ public class WeaponModule extends AbstractEditorModule {
 
     private List<EditorSection> getMaceSections() {
         return withDps(List.of(
-            new EditorSection.HeaderSection() {
-                private boolean collapsed;
-                @Override public String getId() { return "maceHeader"; }
-                @Override public String getLabel() { return "Smash Attack"; }
-                @Override public int getHeight() { return EditorDimensions.SECTION_HEADER_HEIGHT; }
-                @Override public void render(GuiGraphics g, ResponsiveLayout.Rect b, int mx, int my) {
-                    g.drawString(Objects.requireNonNull(Minecraft.getInstance().font), getLabel(), b.x() + UIConstants.Spacing.SM, b.y() + 4, UIConstants.Text.TITLE(), false);
-                }
-                @Override public boolean isCollapsible() { return false; }
-                @Override public boolean isCollapsed() { return collapsed; }
-                @Override public void setCollapsed(boolean collapsed) { this.collapsed = collapsed; }
-            },
+            new SimpleHeaderSection(
+                "maceHeader",
+                "Smash Attack",
+                EditorDimensions.SECTION_HEADER_HEIGHT,
+                UIConstants.Spacing.SM,
+                4
+            ),
             new SliderSectionAdapter(smashBonusSlider),
             new SliderSectionAdapter(smashCapSlider),
             new SliderSectionAdapter(smashKnockbackSlider),
@@ -724,18 +723,13 @@ public class WeaponModule extends AbstractEditorModule {
 
     private List<EditorSection> getTridentSections() {
         return withDps(List.of(
-            new EditorSection.HeaderSection() {
-                private boolean collapsed;
-                @Override public String getId() { return "tridentHeader"; }
-                @Override public String getLabel() { return "Throw / Riptide"; }
-                @Override public int getHeight() { return EditorDimensions.SECTION_HEADER_HEIGHT; }
-                @Override public void render(GuiGraphics g, ResponsiveLayout.Rect b, int mx, int my) {
-                    g.drawString(Objects.requireNonNull(Minecraft.getInstance().font), getLabel(), b.x() + UIConstants.Spacing.SM, b.y() + 4, UIConstants.Text.TITLE(), false);
-                }
-                @Override public boolean isCollapsible() { return false; }
-                @Override public boolean isCollapsed() { return collapsed; }
-                @Override public void setCollapsed(boolean collapsed) { this.collapsed = collapsed; }
-            },
+            new SimpleHeaderSection(
+                "tridentHeader",
+                "Throw / Riptide",
+                EditorDimensions.SECTION_HEADER_HEIGHT,
+                UIConstants.Spacing.SM,
+                4
+            ),
             new SliderSectionAdapter(throwDamageSlider),
             new SliderSectionAdapter(throwSpeedSlider),
             new SliderSectionAdapter(loyaltySpeedSlider),
@@ -961,7 +955,14 @@ public class WeaponModule extends AbstractEditorModule {
         sections.add(new SliderSectionAdapter(toolDamagePerBlockSlider));
         toolRuleSections.forEach(sections::add);
         sections.add(new ToggleSectionAdapter(clearToolRulesToggle));
-        sections.add(new TextNoteSection("toolRulesNote", "Block tags (e.g. minecraft:mineable/pickaxe) with speed + drops"));
+        sections.add(new TextNoteSection(
+            "toolRulesNote",
+            "Block tags (e.g. minecraft:mineable/pickaxe) with speed + drops",
+            24,
+            UIConstants.Spacing.SM,
+            6,
+            UIConstants.Text.SECONDARY()
+        ));
         return sections;
     }
 
@@ -1086,28 +1087,6 @@ public class WeaponModule extends AbstractEditorModule {
         @Override
         public boolean charTyped(char chr, int modifiers) {
             return tagField.charTyped(chr, modifiers);
-        }
-    }
-
-    private static class TextNoteSection implements EditorSection.CustomSection {
-        private static final int NOTE_HEIGHT = 24;
-        private static final int TEXT_OFFSET_Y = 6;
-        private static final int TEXT_INSET_X = UIConstants.Spacing.SM;
-        private final String id;
-        private final String text;
-
-        TextNoteSection(String id, String text) {
-            this.id = id;
-            this.text = text;
-        }
-
-        @Override public String getId() { return id; }
-        @Override public String getLabel() { return ""; }
-        @Override public int getHeight() { return NOTE_HEIGHT; }
-        @Override
-        public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
-            graphics.drawString(Objects.requireNonNull(Minecraft.getInstance().font), text,
-                bounds.x() + TEXT_INSET_X, bounds.y() + TEXT_OFFSET_Y, UIConstants.Text.SECONDARY(), false);
         }
     }
 
@@ -1660,113 +1639,4 @@ public class WeaponModule extends AbstractEditorModule {
         }
     }
 
-    /**
-     * Adapts EditorSlider to EditorSection interface.
-     */
-    private static class SliderSectionAdapter implements EditorSection.SliderSection {
-        private final EditorSlider slider;
-
-        SliderSectionAdapter(EditorSlider slider) {
-            this.slider = slider;
-        }
-
-        @Override
-        public String getId() { return slider.getId(); }
-
-        @Override
-        public String getLabel() { return slider.getLabel(); }
-
-        @Override
-        public int getHeight() { return slider.calculateHeight(); }
-
-        @Override
-        public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
-            slider.render(graphics, bounds.x(), bounds.y(), bounds.width(), mouseX, mouseY);
-        }
-
-        @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            return slider.mouseClicked(mouseX, mouseY, button);
-        }
-
-        @Override
-        public boolean mouseReleased(double mouseX, double mouseY, int button) {
-            return slider.mouseReleased(mouseX, mouseY, button);
-        }
-
-        @Override
-        public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-            return slider.mouseDragged(mouseX, mouseY, button, dragX, dragY);
-        }
-
-        @Override
-        public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-            return slider.keyPressed(keyCode, scanCode, modifiers);
-        }
-
-        @Override
-        public boolean charTyped(char chr, int modifiers) {
-            return slider.charTyped(chr, modifiers);
-        }
-
-        @Override
-        public float getValue() { return slider.getValue(); }
-
-        @Override
-        public void setValue(float value) { slider.setValue(value); }
-
-        @Override
-        public float getMin() { return slider.getMin(); }
-
-        @Override
-        public float getMax() { return slider.getMax(); }
-
-        @Override
-        public float getStep() { return slider.getStep(); }
-
-        @Override
-        public String getFormat() { return "%.2f"; }
-
-        @Override
-        public int getColor() { return UIConstants.SliderColors.NEUTRAL; }
-
-        @Override
-        public boolean isDragging() { return slider.isDragging(); }
-
-        @Override
-        public void setDragging(boolean dragging) { /* handled internally */ }
-    }
-
-    /**
-     * Adapts EditorToggle to EditorSection.ToggleSection.
-     */
-    private static class ToggleSectionAdapter implements EditorSection.ToggleSection {
-        private final EditorToggle toggle;
-
-        ToggleSectionAdapter(EditorToggle toggle) {
-            this.toggle = toggle;
-        }
-
-        @Override public String getId() { return toggle.getId(); }
-        @Override public String getLabel() { return toggle.getLabel(); }
-        @Override public int getHeight() { return EditorDimensions.TOGGLE_HEIGHT; }
-
-        @Override
-        public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
-            toggle.render(graphics, bounds.x(), bounds.y(), bounds.width(), mouseX, mouseY);
-        }
-
-        @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            return toggle.mouseClicked(mouseX, mouseY, button);
-        }
-
-        @Override
-        public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-            return toggle.keyPressed(keyCode, scanCode, modifiers);
-        }
-
-        @Override public boolean getValue() { return toggle.getValue(); }
-        @Override public void setValue(boolean value) { toggle.setValue(value); }
-    }
 }

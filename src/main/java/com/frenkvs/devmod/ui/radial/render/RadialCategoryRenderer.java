@@ -90,7 +90,7 @@ public final class RadialCategoryRenderer {
         if (numCategories == 0) return;
 
         double segmentAngle = RadialMenuConstants.TWO_PI / numCategories;
-        double startOffset = -Math.PI / 2;
+        double startOffset = RadialMenuConstants.CATEGORY_START_OFFSET;
         int alphaInt = (int) (alpha * 255);
 
         // Render each category segment
@@ -114,9 +114,9 @@ public final class RadialCategoryRenderer {
         double endAngle = startAngle + segmentAngle;
 
         // Segment fill
-        int baseColor = selected ? 0xEE252540 : 0xDD1a1a30;
+        int baseColor = selected ? RadialMenuConstants.COLOR_SELECTED_BG : RadialMenuConstants.COLOR_UNSELECTED_BG;
         int segColor = selected
-            ? RadialGeometry.blendColors(baseColor, cat.getColor(), 0.25f)
+            ? RadialGeometry.blendColors(baseColor, cat.getColor(), RadialMenuConstants.CATEGORY_SELECTED_BLEND)
             : baseColor;
         segColor = RadialGeometry.applyAlpha(segColor, alphaInt);
 
@@ -124,13 +124,13 @@ public final class RadialCategoryRenderer {
             config.innerRadius, config.outerRadius, startAngle, endAngle, segColor);
 
         // Outer border
-        int borderCol = selected ? cat.getColor() : 0xFF404060;
+        int borderCol = selected ? cat.getColor() : RadialMenuConstants.COLOR_BORDER;
         borderCol = RadialGeometry.applyAlpha(borderCol, alphaInt);
         RadialGeometry.renderArcOutline(graphics, config.centerX, config.centerY,
-            config.outerRadius, startAngle, endAngle, borderCol, 2);
+            config.outerRadius, startAngle, endAngle, borderCol, RadialMenuConstants.BORDER_WIDTH_DEFAULT);
 
         // Divider line
-        int dividerColor = RadialGeometry.applyAlpha(0xFF404060, alphaInt);
+        int dividerColor = RadialGeometry.applyAlpha(RadialMenuConstants.COLOR_BORDER, alphaInt);
         int divX1 = (int) (config.centerX + Math.cos(startAngle) * config.innerRadius);
         int divY1 = (int) (config.centerY + Math.sin(startAngle) * config.innerRadius);
         int divX2 = (int) (config.centerX + Math.cos(startAngle) * config.outerRadius);
@@ -143,18 +143,24 @@ public final class RadialCategoryRenderer {
         int iconY = (int) (config.centerY + Math.sin(midAngle) * config.itemRadius);
 
         // Render icon
-        renderCategoryIcon(graphics, font, cat, iconX, iconY - 8, selected, alphaInt, config);
+        renderCategoryIcon(graphics, font, cat, iconX,
+            iconY + RadialMenuConstants.CATEGORY_ICON_OFFSET_Y, selected, alphaInt, config);
 
         // Category name
-        int textColor = selected ? 0xFFFFFFFF : 0xFFBBBBCC;
+        int textColor = selected ? RadialMenuConstants.COLOR_TEXT_PRIMARY : RadialMenuConstants.COLOR_TEXT_SECONDARY;
         textColor = RadialGeometry.applyAlpha(textColor, alphaInt);
-        graphics.drawCenteredString(font, cat.getName(), iconX, iconY + 6, textColor);
+        graphics.drawCenteredString(font, cat.getName(), iconX,
+            iconY + RadialMenuConstants.CATEGORY_LABEL_OFFSET_Y, textColor);
 
         // Active items badge
         int activeCount = cat.countActiveItems();
-        if (activeCount > 0 && alphaInt > 127) { // Only show badges when mostly visible
+        int badgeThreshold = (int) (RadialMenuConstants.BADGE_ALPHA_THRESHOLD * 255);
+        if (activeCount > 0 && alphaInt > badgeThreshold) { // Only show badges when mostly visible
             int badgeColor = RadialGeometry.applyAlpha(config.theme.active, alphaInt);
-            renderBadge(graphics, font, iconX + 20, iconY - 14, activeCount, badgeColor, config.pulsePhase);
+            renderBadge(graphics, font,
+                iconX + RadialMenuConstants.CATEGORY_BADGE_OFFSET_X,
+                iconY + RadialMenuConstants.CATEGORY_BADGE_OFFSET_Y,
+                activeCount, badgeColor, config.pulsePhase);
         }
     }
 
@@ -172,7 +178,9 @@ public final class RadialCategoryRenderer {
 
         if (useItemStack && cat.getIconStack() != null && alpha > RadialMenuConstants.ITEMSTACK_ALPHA_THRESHOLD) {
             // Only render item stacks when mostly opaque (they don't support alpha well)
-            graphics.renderItem(cat.getIconStack(), x - 8, y - 4);
+            graphics.renderItem(cat.getIconStack(),
+                x + RadialMenuConstants.CATEGORY_ITEMSTACK_OFFSET_X,
+                y + RadialMenuConstants.CATEGORY_ITEMSTACK_OFFSET_Y);
         } else {
             graphics.drawCenteredString(font, cat.getIcon(), x, y, iconColor);
         }
@@ -183,11 +191,20 @@ public final class RadialCategoryRenderer {
      */
     private static void renderBadge(GuiGraphics graphics, Font font,
                                      int x, int y, int count, int color, float pulsePhase) {
-        float pulse = 0.8f + 0.2f * (float) Math.sin(pulsePhase * 2);
-        int badgeColor = RadialGeometry.blendColors(color, 0xFFFFFFFF, pulse * 0.3f);
+        float pulse = RadialMenuConstants.BADGE_PULSE_BASE +
+            RadialMenuConstants.BADGE_PULSE_VARIATION *
+                (float) Math.sin(pulsePhase * RadialMenuConstants.BADGE_PULSE_SPEED);
+        int badgeColor = RadialGeometry.blendColors(color, 0xFFFFFFFF,
+            pulse * RadialMenuConstants.BADGE_BLEND_FACTOR);
 
-        graphics.fill(x - 6, y - 4, x + 6, y + 6, 0xDD000000);
-        graphics.drawCenteredString(font, String.valueOf(count), x, y - 2, badgeColor);
+        graphics.fill(
+            x - RadialMenuConstants.BADGE_HALF_WIDTH,
+            y + RadialMenuConstants.BADGE_TOP_OFFSET,
+            x + RadialMenuConstants.BADGE_HALF_WIDTH,
+            y + RadialMenuConstants.BADGE_BOTTOM_OFFSET,
+            RadialMenuConstants.BADGE_BG_COLOR);
+        graphics.drawCenteredString(font, String.valueOf(count), x,
+            y + RadialMenuConstants.BADGE_TEXT_OFFSET_Y, badgeColor);
     }
 
     /**
@@ -204,11 +221,14 @@ public final class RadialCategoryRenderer {
                                           int innerRadius, int outerRadius) {
         // Inner ring border
         RadialGeometry.renderRing(graphics, centerX, centerY,
-            innerRadius - 2, innerRadius, 0xFF303050);
+            innerRadius - RadialMenuConstants.RING_BORDER_THICKNESS,
+            innerRadius, RadialMenuConstants.COLOR_INNER_RING);
 
         // Outer ring border
         RadialGeometry.renderRing(graphics, centerX, centerY,
-            outerRadius, outerRadius + 2, 0xFF505070);
+            outerRadius,
+            outerRadius + RadialMenuConstants.RING_BORDER_THICKNESS,
+            RadialMenuConstants.COLOR_DIVIDER);
     }
 
     // ================================================================
@@ -266,12 +286,12 @@ public final class RadialCategoryRenderer {
         if (numItems == 0) return;
 
         double segmentAngle = RadialMenuConstants.TWO_PI / categories.size();
-        double startOffset = -Math.PI / 2;
+        double startOffset = RadialMenuConstants.CATEGORY_START_OFFSET;
         double catStartAngle = startOffset + (config.selectedCategoryIndex - 0.5) * segmentAngle;
         double itemAngleStep = segmentAngle / numItems;
 
-        int baseRadius = config.outerRadius + 55;
-        int itemSize = 34;
+        int baseRadius = config.outerRadius + RadialMenuConstants.ITEM_RING_OFFSET;
+        int itemSize = RadialMenuConstants.ITEM_BASE_SIZE;
 
         for (int i = 0; i < numItems; i++) {
             RadialMenuItem item = visibleItems.get(i);
@@ -296,29 +316,37 @@ public final class RadialCategoryRenderer {
         double itemAngle = catStartAngle + (index + 0.5) * itemAngleStep;
 
         // Position with slight expansion on hover
-        int itemX = (int) (config.centerX + Math.cos(itemAngle) * (baseRadius + 6 * itemAnim));
-        int itemY = (int) (config.centerY + Math.sin(itemAngle) * (baseRadius + 6 * itemAnim));
+        int itemX = (int) (config.centerX + Math.cos(itemAngle) *
+            (baseRadius + RadialMenuConstants.ITEM_HOVER_OFFSET * itemAnim));
+        int itemY = (int) (config.centerY + Math.sin(itemAngle) *
+            (baseRadius + RadialMenuConstants.ITEM_HOVER_OFFSET * itemAnim));
 
-        int itemRadiusSize = itemSize + (int) (4 * itemAnim);
+        int itemRadiusSize = itemSize + (int) (RadialMenuConstants.ITEM_HOVER_SIZE_BONUS * itemAnim);
 
         // Background
-        int bgColor = itemSelected ? 0xFF303050 : 0xF0202035;
+        int bgColor = itemSelected
+            ? RadialMenuConstants.COLOR_INNER_RING
+            : RadialMenuConstants.COLOR_BG_DARK;
         if (isActive) {
-            bgColor = RadialGeometry.blendColors(bgColor, config.theme.active, 0.25f);
+            bgColor = RadialGeometry.blendColors(bgColor, config.theme.active,
+                RadialMenuConstants.ITEM_ACTIVE_BLEND);
         }
         RadialGeometry.renderCircle(graphics, itemX, itemY, itemRadiusSize, bgColor);
 
         // Border
         int borderColor = isActive
             ? config.theme.active
-            : (itemSelected ? category.getColor() : 0xFF505070);
-        int borderWidth = itemSelected ? 3 : 2;
+            : (itemSelected ? category.getColor() : RadialMenuConstants.COLOR_DIVIDER);
+        int borderWidth = itemSelected
+            ? RadialMenuConstants.BORDER_WIDTH_SELECTED
+            : RadialMenuConstants.BORDER_WIDTH_DEFAULT;
         RadialGeometry.renderRing(graphics, itemX, itemY,
             itemRadiusSize - borderWidth, itemRadiusSize, borderColor);
 
         // Inner highlight for depth when selected
         if (itemSelected) {
-            int highlightColor = RadialGeometry.blendColors(category.getColor(), 0xFFFFFFFF, 0.3f);
+            int highlightColor = RadialGeometry.blendColors(category.getColor(), 0xFFFFFFFF,
+                RadialMenuConstants.ITEM_HIGHLIGHT_BLEND);
             RadialGeometry.renderRing(graphics, itemX, itemY,
                 itemRadiusSize - borderWidth - 1, itemRadiusSize - borderWidth, highlightColor);
         }
@@ -341,10 +369,13 @@ public final class RadialCategoryRenderer {
                                          boolean selected, RadialMenuConfig.ColorTheme theme) {
         ItemStack iconStack = item.getIconStack();
         if (iconStack != null) {
-            graphics.renderItem(iconStack, x - 8, y - 16);
+            graphics.renderItem(iconStack,
+                x + RadialMenuConstants.ITEM_ICON_STACK_OFFSET_X,
+                y + RadialMenuConstants.ITEM_ICON_STACK_OFFSET_Y);
         } else {
             int iconColor = selected ? theme.textPrimary : theme.textSecondary;
-            graphics.drawCenteredString(font, item.getIconEmoji(), x, y - 12, iconColor);
+            graphics.drawCenteredString(font, item.getIconEmoji(), x,
+                y + RadialMenuConstants.ITEM_ICON_TEXT_OFFSET_Y, iconColor);
         }
     }
 
@@ -356,11 +387,11 @@ public final class RadialCategoryRenderer {
                                          boolean selected, boolean isActive,
                                          RadialMenuConfig.ColorTheme theme) {
         String name = item.getName();
-        int maxWidth = 56;
+        int maxWidth = RadialMenuConstants.ITEM_NAME_MAX_WIDTH;
 
         if (font.width(name) > maxWidth) {
             String ellipsis = "...";
-            int minChars = Math.min(6, name.length());
+            int minChars = Math.min(RadialMenuConstants.ITEM_NAME_MIN_CHARS, name.length());
             while (font.width(name + ellipsis) > maxWidth && name.length() > minChars) {
                 name = name.substring(0, name.length() - 1);
             }
@@ -370,7 +401,7 @@ public final class RadialCategoryRenderer {
         int nameColor = selected
             ? theme.textPrimary
             : (isActive ? theme.active : theme.textSecondary);
-        graphics.drawCenteredString(font, name, x, y + 4, nameColor);
+        graphics.drawCenteredString(font, name, x, y + RadialMenuConstants.ITEM_NAME_OFFSET_Y, nameColor);
     }
 
     /**
@@ -381,10 +412,12 @@ public final class RadialCategoryRenderer {
                                           boolean isActive, RadialMenuConfig.ColorTheme theme) {
         if (item.isToggle()) {
             String status = isActive ? "ON" : "OFF";
-            int statusColor = isActive ? theme.active : 0xFF666666;
-            graphics.drawCenteredString(font, status, x, y + 16, statusColor);
+            int statusColor = isActive ? theme.active : RadialMenuConstants.ITEM_STATUS_INACTIVE_COLOR;
+            graphics.drawCenteredString(font, status, x,
+                y + RadialMenuConstants.ITEM_STATUS_OFFSET_Y, statusColor);
         } else if (item.isSubcategoryLink()) {
-            graphics.drawCenteredString(font, "▸", x, y + 16, theme.textSecondary);
+            graphics.drawCenteredString(font, "▸", x,
+                y + RadialMenuConstants.ITEM_STATUS_OFFSET_Y, theme.textSecondary);
         }
     }
 
@@ -418,13 +451,14 @@ public final class RadialCategoryRenderer {
         float anim = categoryIndex < categoryAnimations.length ? categoryAnimations[categoryIndex] : 0;
 
         double segmentAngle = RadialMenuConstants.TWO_PI / categories.size();
-        double midAngle = -Math.PI / 2 + categoryIndex * segmentAngle;
+        double midAngle = RadialMenuConstants.CATEGORY_START_OFFSET + categoryIndex * segmentAngle;
 
         int glowX = (int) (centerX + Math.cos(midAngle) * itemRadius);
         int glowY = (int) (centerY + Math.sin(midAngle) * itemRadius);
 
-        int glowRadius = (int) (60 * anim);
-        int glowColorVal = (cat.getColor() & 0x00FFFFFF) | ((int) (0x40 * anim) << 24);
+        int glowRadius = (int) (RadialMenuConstants.CATEGORY_GLOW_RADIUS * anim);
+        int glowAlpha = (int) (RadialMenuConstants.CATEGORY_GLOW_ALPHA * anim);
+        int glowColorVal = (cat.getColor() & 0x00FFFFFF) | (glowAlpha << 24);
         RadialGeometry.renderRadialGradient(graphics, glowX, glowY, glowRadius, glowColorVal, 0x00000000);
     }
 }
