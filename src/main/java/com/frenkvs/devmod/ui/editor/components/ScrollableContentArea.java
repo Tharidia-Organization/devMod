@@ -48,7 +48,7 @@ public class ScrollableContentArea {
     private double dragStartY = 0;
     private float dragStartOffset = 0;
     private final AdvancedScroll smoothScroll = new AdvancedScroll();
-    private final DirtyRegionTracker dirtyTracker = DirtyRegionTracker.getInstance();
+    private final DirtyRegionTracker dirtyTracker = DirtyRegionTracker.INSTANCE;
 
     // ═══════════════════════════════════════════════════════════════
     // CONTENT RENDERER INTERFACE

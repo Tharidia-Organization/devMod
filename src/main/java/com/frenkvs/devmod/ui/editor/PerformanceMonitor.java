@@ -32,14 +32,7 @@ public class PerformanceMonitor {
     // SINGLETON
     // ═══════════════════════════════════════════════════════════════
 
-    private static PerformanceMonitor instance;
-
-    public static PerformanceMonitor getInstance() {
-        if (instance == null) {
-            instance = new PerformanceMonitor();
-        }
-        return instance;
-    }
+    public static final PerformanceMonitor INSTANCE = new PerformanceMonitor();
 
     // ═══════════════════════════════════════════════════════════════
     // FRAME TIMING
@@ -59,7 +52,7 @@ public class PerformanceMonitor {
     private final Map<String, OperationMetric> operationMetrics = new ConcurrentHashMap<>();
     private final Map<String, Long> activeOperations = new ConcurrentHashMap<>();
 
-    public PerformanceMonitor() {}
+    private PerformanceMonitor() {}
 
     // ═══════════════════════════════════════════════════════════════
     // FRAME METHODS

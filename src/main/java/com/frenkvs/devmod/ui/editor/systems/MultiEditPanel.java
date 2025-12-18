@@ -201,7 +201,7 @@ public class MultiEditPanel {
         try {
             // 1. Load from PresetRegistry (hierarchical presets - higher priority)
             List<PresetRegistry.RegistryPreset> registryPresets =
-                PresetRegistry.getInstance().getPresetsForCategory(type != null ? type : "general");
+                PresetRegistry.INSTANCE.getPresetsForCategory(type != null ? type : "general");
             for (var rp : registryPresets) {
                 ItemEditorDataManager.PresetData converted = PresetBridge.toPresetData(rp);
                 if (seenNames.add(converted.name.toLowerCase())) {

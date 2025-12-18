@@ -3,12 +3,12 @@ package com.frenkvs.devmod.ui;
 import com.frenkvs.devmod.rendering.RoomBoundsVisualizer;
 import com.frenkvs.devmod.telemetry.RoomDefinition;
 import com.frenkvs.devmod.telemetry.TelemetryConfig;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.util.ConfigPaths;
 import com.frenkvs.devmod.util.I18n;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
@@ -35,7 +35,7 @@ import java.util.List;
  *
  * Keybind: Shift+R (when Room Bounds visualizer is active)
  */
-@SuppressWarnings("null")
+
 public class RoomBoundsEditorScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomBoundsEditorScreen.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -67,11 +67,17 @@ public class RoomBoundsEditorScreen extends Screen {
 
     // === Widgets ===
     private EditBox roomNameBox;
-    private Button setPointAButton;
-    private Button setPointBButton;
-    private Button saveButton;
-    private Button cancelButton;
-    private Button deleteLastButton;
+    private EditorButton setPointAButton;
+    private EditorButton setPointBButton;
+    private EditorButton saveButton;
+    private EditorButton cancelButton;
+    private EditorButton deleteLastButton;
+
+    // Modal overlays
+    private ConfirmDialog deleteDialog;
+    private ConfirmDialog overwriteDialog;
+    private RoomDefinition pendingDeleteRoom;
+    private RoomDefinition pendingSaveRoom;
 
     // === Messages ===
     private String statusMessage = "";
@@ -108,39 +114,68 @@ public class RoomBoundsEditorScreen extends Screen {
         addRenderableWidget(roomNameBox);
 
         // Set Point A Button
-        setPointAButton = Button.builder(I18n.ui("set_point_a"), btn -> setPointA())
-                .pos(panelX + 20, panelY + 80)
-                .size(130, 20)
-                .build();
-        addRenderableWidget(setPointAButton);
+        setPointAButton = EditorButton.builder("set-point-a", I18n.ui("set_point_a").getString())
+            .style(EditorButton.Style.PRIMARY)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::setPointA)
+            .build();
+        addRenderableWidget(setPointAButton.asVanilla(panelX + 20, panelY + 80, 130, 20));
 
         // Set Point B Button
-        setPointBButton = Button.builder(I18n.ui("set_point_b"), btn -> setPointB())
-                .pos(panelX + 170, panelY + 80)
-                .size(130, 20)
-                .build();
-        addRenderableWidget(setPointBButton);
+        setPointBButton = EditorButton.builder("set-point-b", I18n.ui("set_point_b").getString())
+            .style(EditorButton.Style.PRIMARY)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::setPointB)
+            .build();
+        addRenderableWidget(setPointBButton.asVanilla(panelX + 170, panelY + 80, 130, 20));
 
         // Save Button
-        saveButton = Button.builder(I18n.ui("save_room"), btn -> saveRoom())
-                .pos(panelX + 20, panelY + 200)
-                .size(130, 20)
-                .build();
-        addRenderableWidget(saveButton);
+        saveButton = EditorButton.builder("save-room", I18n.ui("save_room").getString())
+            .style(EditorButton.Style.SUCCESS)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::saveRoom)
+            .build();
+        addRenderableWidget(saveButton.asVanilla(panelX + 20, panelY + 200, 130, 20));
 
         // Cancel Button
-        cancelButton = Button.builder(I18n.ui("cancel"), btn -> onClose())
-                .pos(panelX + 170, panelY + 200)
-                .size(130, 20)
-                .build();
-        addRenderableWidget(cancelButton);
+        cancelButton = EditorButton.builder("cancel", I18n.ui("cancel").getString())
+            .style(EditorButton.Style.GHOST)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::onClose)
+            .build();
+        addRenderableWidget(cancelButton.asVanilla(panelX + 170, panelY + 200, 130, 20));
 
         // Delete Last Room Button
-        deleteLastButton = Button.builder(I18n.ui("delete_last"), btn -> deleteLastRoom())
-                .pos(panelX + 20, panelY + 230)
-                .size(130, 20)
-                .build();
-        addRenderableWidget(deleteLastButton);
+        deleteLastButton = EditorButton.builder("delete-last-room", I18n.ui("delete_last").getString())
+            .style(EditorButton.Style.DANGER)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::deleteLastRoom)
+            .build();
+        addRenderableWidget(deleteLastButton.asVanilla(panelX + 20, panelY + 230, 130, 20));
+
+        initDialogs();
+    }
+
+    private void initDialogs() {
+        deleteDialog = ConfirmDialog.create(
+            "Delete Room",
+            "Delete",
+            "Cancel",
+            ConfirmDialog.Style.DANGER,
+            this::deletePendingRoom,
+            this::clearPendingDelete,
+            "This will delete the selected room."
+        );
+
+        overwriteDialog = ConfirmDialog.create(
+            "Overwrite Room",
+            "Overwrite",
+            "Cancel",
+            ConfirmDialog.Style.WARNING,
+            this::applyPendingSave,
+            this::clearPendingSave,
+            "A room with this name already exists."
+        );
     }
 
     private void loadExistingRooms() {
@@ -201,14 +236,6 @@ public class RoomBoundsEditorScreen extends Screen {
             return;
         }
 
-        // Check for duplicate name
-        for (RoomDefinition room : existingRooms) {
-            if (room.id().equals(roomName)) {
-                setStatus("Error: Room '" + roomName + "' already exists!", TEXT_ERROR);
-                return;
-            }
-        }
-
         // Calculate min/max
         BlockPos min = new BlockPos(
                 Math.min(pointA.getX(), pointB.getX()),
@@ -223,27 +250,30 @@ public class RoomBoundsEditorScreen extends Screen {
 
         // Create new room definition
         RoomDefinition newRoom = new RoomDefinition(roomName, currentDimension, min, max);
-        existingRooms.add(newRoom);
 
-        // Save to file
-        if (saveRoomsToFile()) {
-            setStatus("Room '" + roomName + "' saved!", TEXT_ACCENT);
-
-            // Remove preview and add actual room
-            RoomBoundsVisualizer.INSTANCE.removeRoom("_preview_" + roomName);
-            RoomBoundsVisualizer.INSTANCE.reload();
-
-            // Clear pending markers from visualizer
-            RoomBoundsVisualizer.INSTANCE.clearPendingPoints();
-
-            // Reset static state for next room
-            pointA = null;
-            pointB = null;
-            pendingRoomName = "new_room_" + (existingRooms.size() + 1);
-            roomNameBox.setValue(pendingRoomName);
-        } else {
-            setStatus("Error: Failed to save file!", TEXT_ERROR);
+        // Duplicate check with overwrite confirmation
+        RoomDefinition existing = null;
+        for (RoomDefinition room : existingRooms) {
+            if (room.id().equals(roomName)) {
+                existing = room;
+                break;
+            }
         }
+
+        if (existing != null) {
+            pendingSaveRoom = newRoom;
+            overwriteDialog.configure(
+                "Overwrite room '" + roomName + "'?",
+                List.of(
+                    "A room with this name already exists.",
+                    "Overwrite its bounds with the current selection?"
+                )
+            ).show();
+            return;
+        }
+
+        // No duplicate, proceed
+        persistRoom(newRoom, false);
     }
 
     private void deleteLastRoom() {
@@ -252,16 +282,14 @@ public class RoomBoundsEditorScreen extends Screen {
             return;
         }
 
-        RoomDefinition removed = existingRooms.remove(existingRooms.size() - 1);
-
-        if (saveRoomsToFile()) {
-            setStatus("Deleted room: " + removed.id(), TEXT_WARNING);
-            RoomBoundsVisualizer.INSTANCE.reload();
-        } else {
-            // Restore if save failed
-            existingRooms.add(removed);
-            setStatus("Error: Failed to save file!", TEXT_ERROR);
-        }
+        pendingDeleteRoom = existingRooms.get(existingRooms.size() - 1);
+        deleteDialog.configure(
+            "Delete room '" + pendingDeleteRoom.id() + "'?",
+            List.of(
+                "This will remove the most recently saved room.",
+                "This action cannot be undone."
+            )
+        ).show();
     }
 
     private boolean saveRoomsToFile() {
@@ -363,6 +391,9 @@ public class RoomBoundsEditorScreen extends Screen {
                 centerX, panelY + PANEL_HEIGHT + 5, TEXT_DIM);
 
         super.render(graphics, mouseX, mouseY, partialTick);
+
+        // Modal overlays on top
+        renderDialogs(graphics, mouseX, mouseY);
     }
 
     private int applyAlpha(int color, float alpha) {
@@ -384,5 +415,179 @@ public class RoomBoundsEditorScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // MODAL HANDLERS
+    // ═══════════════════════════════════════════════════════════════
+
+    private void renderDialogs(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (deleteDialog != null) {
+            deleteDialog.render(graphics, font, width, height, mouseX, mouseY);
+        }
+        if (overwriteDialog != null) {
+            overwriteDialog.render(graphics, font, width, height, mouseX, mouseY);
+        }
+    }
+
+    private boolean handleDialogClick(double mouseX, double mouseY) {
+        boolean handled = false;
+        if (deleteDialog != null) {
+            handled |= deleteDialog.mouseClicked(mouseX, mouseY, width, height);
+        }
+        if (overwriteDialog != null) {
+            handled |= overwriteDialog.mouseClicked(mouseX, mouseY, width, height);
+        }
+        return handled;
+    }
+
+    private boolean handleDialogScroll(double mouseX, double mouseY, double scrollDelta) {
+        boolean handled = false;
+        if (deleteDialog != null) {
+            handled |= deleteDialog.mouseScrolled(mouseX, mouseY, scrollDelta, width, height);
+        }
+        if (overwriteDialog != null) {
+            handled |= overwriteDialog.mouseScrolled(mouseX, mouseY, scrollDelta, width, height);
+        }
+        return handled;
+    }
+
+    private boolean handleDialogKey(int keyCode) {
+        boolean handled = false;
+        if (deleteDialog != null) {
+            handled |= deleteDialog.keyPressed(keyCode);
+        }
+        if (overwriteDialog != null) {
+            handled |= overwriteDialog.keyPressed(keyCode);
+        }
+        return handled;
+    }
+
+    private boolean handleDialogChar(char codePoint, int modifiers) {
+        boolean handled = false;
+        if (deleteDialog != null) {
+            handled |= deleteDialog.charTyped(codePoint, modifiers);
+        }
+        if (overwriteDialog != null) {
+            handled |= overwriteDialog.charTyped(codePoint, modifiers);
+        }
+        return handled;
+    }
+
+    private boolean isDialogOpen() {
+        return (deleteDialog != null && deleteDialog.isVisible()) ||
+               (overwriteDialog != null && overwriteDialog.isVisible());
+    }
+
+    private void deletePendingRoom() {
+        if (pendingDeleteRoom == null) {
+            return;
+        }
+
+        List<RoomDefinition> backup = new ArrayList<>(existingRooms);
+        existingRooms.removeIf(room -> room.id().equals(pendingDeleteRoom.id()));
+
+        if (saveRoomsToFile()) {
+            setStatus("Deleted room: " + pendingDeleteRoom.id(), TEXT_WARNING);
+            RoomBoundsVisualizer.INSTANCE.reload();
+        } else {
+            existingRooms = backup;
+            setStatus("Error: Failed to save file!", TEXT_ERROR);
+        }
+
+        clearPendingDelete();
+    }
+
+    private void clearPendingDelete() {
+        pendingDeleteRoom = null;
+    }
+
+    private void applyPendingSave() {
+        if (pendingSaveRoom == null) {
+            return;
+        }
+
+        persistRoom(pendingSaveRoom, true);
+        clearPendingSave();
+    }
+
+    private void clearPendingSave() {
+        pendingSaveRoom = null;
+    }
+
+    private void persistRoom(RoomDefinition room, boolean replacing) {
+        List<RoomDefinition> backup = new ArrayList<>(existingRooms);
+        existingRooms.removeIf(r -> r.id().equals(room.id()));
+        existingRooms.add(room);
+
+        if (saveRoomsToFile()) {
+            String action = replacing ? "overwritten" : "saved";
+            setStatus("Room '" + room.id() + "' " + action + "!", replacing ? TEXT_WARNING : TEXT_ACCENT);
+
+            // Remove preview and add actual room
+            RoomBoundsVisualizer.INSTANCE.removeRoom("_preview_" + room.id());
+            RoomBoundsVisualizer.INSTANCE.reload();
+
+            // Clear pending markers from visualizer
+            RoomBoundsVisualizer.INSTANCE.clearPendingPoints();
+
+            // Reset static state for next room
+            pointA = null;
+            pointB = null;
+            pendingRoomName = "new_room_" + (existingRooms.size() + 1);
+            if (roomNameBox != null) {
+                roomNameBox.setValue(pendingRoomName);
+            }
+        } else {
+            existingRooms = backup;
+            setStatus("Error: Failed to save file!", TEXT_ERROR);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // INPUT BLOCKING FOR MODALS
+    // ═══════════════════════════════════════════════════════════════
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (handleDialogClick(mouseX, mouseY)) {
+            return true;
+        }
+        if (isDialogOpen()) {
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (isDialogOpen()) {
+            return true;
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (handleDialogScroll(mouseX, mouseY, scrollY)) {
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (handleDialogKey(keyCode)) {
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        if (handleDialogChar(codePoint, modifiers)) {
+            return true;
+        }
+        return super.charTyped(codePoint, modifiers);
     }
 }

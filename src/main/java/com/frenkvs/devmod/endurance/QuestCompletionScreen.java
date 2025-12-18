@@ -1,8 +1,8 @@
 package com.frenkvs.devmod.endurance;
 
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
@@ -18,14 +18,9 @@ import java.util.List;
  * Displayed when player successfully completes all waves or exits at checkpoint.
  */
 @OnlyIn(Dist.CLIENT)
-@SuppressWarnings({"null", "unused"})
 public class QuestCompletionScreen extends Screen {
 
     // === Colors - Thematic victory screen (gold theme) ===
-    private static final int COLOR_BG = 0xEE0a1428;           // Dark blue-tinted background
-    private static final int COLOR_PANEL_BG = 0xDD0f1e38;     // Dark panel
-    private static final int COLOR_BORDER = UIConstants.Accent.GOLD();
-    private static final int COLOR_BORDER_GLOW = UIConstants.setAlpha(UIConstants.Accent.GOLD(), 0x44);
     private static final int COLOR_TEXT = UIConstants.Text.PRIMARY();
     private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY();
     private static final int COLOR_GOLD = UIConstants.Accent.GOLD();
@@ -55,6 +50,7 @@ public class QuestCompletionScreen extends Screen {
     private boolean victoryFanfarePlayed = false;
     private int animatedTokens = 0;
     private int animatedGems = 0;
+    private EditorButton continueButton;
 
     public QuestCompletionScreen(QuestCompletionPayload data) {
         super(Component.literal("Quest Complete!"));
@@ -72,16 +68,11 @@ public class QuestCompletionScreen extends Screen {
         PANEL_WIDTH = Math.max(MIN_PANEL_WIDTH, Math.min(BASE_PANEL_WIDTH, maxWidth));
         PANEL_HEIGHT = Math.max(MIN_PANEL_WIDTH, Math.min(BASE_PANEL_HEIGHT, maxHeight));
 
-        int centerX = width / 2;
-        int panelY = (height - PANEL_HEIGHT) / 2;
-
-        // Continue button (primary CTA - prominent height)
-        addRenderableWidget(Button.builder(
-                Component.literal("Continue"),
-                btn -> closeScreen())
-            .bounds(centerX - UIConstants.Size.BUTTON_WIDTH_MEDIUM / 2, panelY + PANEL_HEIGHT - 40,
-                    UIConstants.Size.BUTTON_WIDTH_MEDIUM, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
-            .build());
+        continueButton = EditorButton.builder("completion-continue", "Continue")
+            .style(EditorButton.Style.SUCCESS)
+            .size(EditorButton.Size.LARGE)
+            .onClick(this::closeScreen)
+            .build();
     }
 
     @Override
@@ -140,7 +131,7 @@ public class QuestCompletionScreen extends Screen {
             graphics.drawCenteredString(font, "ESC / Enter: Continue", centerX, panelY + PANEL_HEIGHT + 10, hintColor);
         }
 
-        super.render(graphics, mouseX, mouseY, partialTick);
+        renderButtons(graphics, mouseX, mouseY, fadeProgress);
     }
 
     private void renderPanel(GuiGraphics g, int x, int y, int w, int h, float alpha) {
@@ -306,6 +297,19 @@ public class QuestCompletionScreen extends Screen {
         return (a << 24) | (color & 0x00FFFFFF);
     }
 
+    private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY, float fadeProgress) {
+        int centerX = width / 2;
+        int panelY = (height - PANEL_HEIGHT) / 2;
+        int buttonWidth = UIConstants.Size.BUTTON_WIDTH_MEDIUM;
+        int buttonHeight = UIConstants.Size.BUTTON_HEIGHT_PROMINENT;
+        int buttonX = centerX - buttonWidth / 2;
+        int buttonY = panelY + PANEL_HEIGHT - 40;
+
+        if (continueButton != null) {
+            continueButton.render(graphics, buttonX, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
+        }
+    }
+
     /**
      * Truncate text to fit within maxWidth pixels, adding ellipsis if needed.
      */
@@ -335,6 +339,24 @@ public class QuestCompletionScreen extends Screen {
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && continueButton != null && continueButton.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        boolean handled = false;
+        if (continueButton != null) {
+            handled = continueButton.mouseReleased(mouseX, mouseY, button);
+        }
+        if (handled) return true;
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override

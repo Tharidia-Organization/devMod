@@ -3,13 +3,15 @@ package com.frenkvs.devmod.testing;
 import com.frenkvs.devmod.endurance.GamificationManager.BadgeRarity;
 import com.frenkvs.devmod.hud.BadgePopupOverlay;
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -26,6 +28,8 @@ public class BadgeTestScreen extends Screen {
     private static final int BUTTON_HEIGHT = 24;
     private static final int BUTTON_SPACING = 30;
 
+    private final List<PositionedButton> buttons = new ArrayList<>();
+
     public BadgeTestScreen() {
         super(Objects.requireNonNull(Component.literal("Badge Popup Tests")));
     }
@@ -41,13 +45,17 @@ public class BadgeTestScreen extends Screen {
     }
 
     @Nonnull
-    private static Button createButton(Component text, Button.OnPress onPress, int x, int y, int width, int height) {
-        return Objects.requireNonNull(
-            Button.builder(
-                Objects.requireNonNull(text),
-                Objects.requireNonNull(onPress)
-            ).bounds(x, y, width, height).build()
-        );
+    private static PositionedButton createButton(String id, Component text, Runnable onPress,
+                                       int x, int y, int width, int height,
+                                       EditorButton.Style style, Integer accent) {
+        EditorButton.Builder builder = EditorButton.builder(id, Objects.requireNonNull(text).getString())
+            .style(style)
+            .size(EditorButton.Size.LARGE)
+            .onClick(Objects.requireNonNull(onPress));
+        if (accent != null) {
+            builder.accent(accent);
+        }
+        return new PositionedButton(builder.build(), x, y, width, height);
     }
 
     @Override
@@ -55,6 +63,7 @@ public class BadgeTestScreen extends Screen {
         super.init();
 
         int centerX = this.width / 2;
+        buttons.clear();
         int startY = 60;
 
         // Individual rarity test buttons
@@ -65,13 +74,22 @@ public class BadgeTestScreen extends Screen {
             Component buttonText = Objects.requireNonNull(
                 Component.literal("Test " + rarity.displayName + " Badge")
             );
+            EditorButton.Style style = EditorButton.Style.PRIMARY;
+            Integer accent = 0xFF000000 | rarity.color;
+            if (rarity == BadgeRarity.LEGENDARY) {
+                style = EditorButton.Style.SUCCESS;
+            } else if (rarity == BadgeRarity.COMMON) {
+                style = EditorButton.Style.NORMAL;
+            }
 
-            Button button = createButton(
+            PositionedButton button = createButton(
+                "badge-" + rarity.name().toLowerCase(),
                 buttonText,
-                btn -> BadgePopupOverlay.testBadge(finalRarity),
-                centerX - BUTTON_WIDTH / 2, y, BUTTON_WIDTH, BUTTON_HEIGHT
+                () -> BadgePopupOverlay.testBadge(finalRarity),
+                centerX - BUTTON_WIDTH / 2, y, BUTTON_WIDTH, BUTTON_HEIGHT,
+                style, accent
             );
-            addRenderableWidget(button);
+            buttons.add(button);
 
             y += BUTTON_SPACING;
         }
@@ -80,32 +98,38 @@ public class BadgeTestScreen extends Screen {
         y += 10;
 
         // Test all badges button
-        Button testAllButton = createButton(
+        PositionedButton testAllButton = createButton(
+            "badge-test-all",
             Objects.requireNonNull(Component.literal("Test ALL Badges (Queue)")),
-            btn -> BadgePopupOverlay.testAllBadges(),
-            centerX - BUTTON_WIDTH / 2, y, BUTTON_WIDTH, BUTTON_HEIGHT
+            BadgePopupOverlay::testAllBadges,
+            centerX - BUTTON_WIDTH / 2, y, BUTTON_WIDTH, BUTTON_HEIGHT,
+            EditorButton.Style.PRIMARY, null
         );
-        addRenderableWidget(testAllButton);
+        buttons.add(testAllButton);
 
         y += BUTTON_SPACING;
 
         // Clear queue button
-        Button clearButton = createButton(
+        PositionedButton clearButton = createButton(
+            "badge-clear-queue",
             Objects.requireNonNull(Component.literal("Clear Queue")),
-            btn -> BadgePopupOverlay.clearQueue(),
-            centerX - BUTTON_WIDTH / 2, y, BUTTON_WIDTH, BUTTON_HEIGHT
+            BadgePopupOverlay::clearQueue,
+            centerX - BUTTON_WIDTH / 2, y, BUTTON_WIDTH, BUTTON_HEIGHT,
+            EditorButton.Style.GHOST, null
         );
-        addRenderableWidget(clearButton);
+        buttons.add(clearButton);
 
         y += BUTTON_SPACING + 20;
 
         // Back button
-        Button backButton = createButton(
+        PositionedButton backButton = createButton(
+            "badge-back",
             Objects.requireNonNull(Component.literal("Back")),
-            btn -> onClose(),
-            centerX - 50, y, 100, 20
+            this::onClose,
+            centerX - 50, y, 100, 20,
+            EditorButton.Style.GHOST, null
         );
-        addRenderableWidget(backButton);
+        buttons.add(backButton);
     }
 
     @Override
@@ -131,7 +155,9 @@ public class BadgeTestScreen extends Screen {
             queueSize > 0 ? 0xFF00FF00 : UIConstants.Text.MUTED());
 
         // Render widgets
-        super.render(graphics, mouseX, mouseY, partialTick);
+        for (PositionedButton pb : buttons) {
+            pb.button.render(graphics, pb.x, pb.y, pb.width, pb.height, mouseX, mouseY);
+        }
 
         // Rarity color indicators next to buttons
         int centerX = this.width / 2;
@@ -148,4 +174,28 @@ public class BadgeTestScreen extends Screen {
     public boolean isPauseScreen() {
         return false; // Don't pause so we can see the popup animate
     }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0) {
+            for (PositionedButton pb : buttons) {
+                if (pb.button.mouseClicked(mouseX, mouseY, button)) {
+                    return true;
+                }
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        boolean handled = false;
+        for (PositionedButton pb : buttons) {
+            handled |= pb.button.mouseReleased(mouseX, mouseY, button);
+        }
+        if (handled) return true;
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    private record PositionedButton(EditorButton button, int x, int y, int width, int height) {}
 }

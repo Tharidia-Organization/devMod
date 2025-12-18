@@ -35,7 +35,7 @@ import java.util.Deque;
  *   <li>CPU fallback when shader unavailable</li>
  * </ul>
  */
-@SuppressWarnings("null")
+
 public class WeaponTrailVFX {
 
     // Singleton instance

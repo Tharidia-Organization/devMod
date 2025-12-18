@@ -15,6 +15,7 @@ import java.util.Objects;
  * Summary section showing key stats from another module.
  * Provides a quick overview without switching modules.
  */
+
 public final class ModuleSummarySection implements EditorSection.CustomSection {
 
     private static final int HEADER_HEIGHT = 20;

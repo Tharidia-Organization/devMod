@@ -29,7 +29,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
  * - Synchronization with QuestEditorScreen
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
-@SuppressWarnings("null")
+
 public class QuestHudOverlay {
 
     private static final ResourceLocation LAYER_ID =

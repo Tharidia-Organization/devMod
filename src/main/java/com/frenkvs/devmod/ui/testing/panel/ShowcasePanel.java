@@ -22,9 +22,6 @@ public final class ShowcasePanel implements UIPanel {
     private final List<ShowcaseItem> items;
     private final int columns;
 
-    // Calculated layout
-    private int panelX, panelY, panelWidth;
-
     private ShowcasePanel(String id, String title, List<ShowcaseItem> items, int columns) {
         this.id = id;
         this.title = title;
@@ -51,10 +48,6 @@ public final class ShowcasePanel implements UIPanel {
 
     @Override
     public void render(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
-        this.panelX = x;
-        this.panelY = y;
-        this.panelWidth = width;
-
         var font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
 
         // Title

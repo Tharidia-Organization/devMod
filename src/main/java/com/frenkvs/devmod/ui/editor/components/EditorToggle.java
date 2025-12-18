@@ -61,6 +61,31 @@ public class EditorToggle {
         this.value = defaultValue;
     }
 
+    /**
+     * Adapter to expose this toggle as a vanilla checkbox-style widget for legacy screens.
+     */
+    public net.minecraft.client.gui.components.AbstractWidget asVanilla(int x, int y, int width, int height) {
+        net.minecraft.client.gui.components.Checkbox checkbox = net.minecraft.client.gui.components.Checkbox.builder(net.minecraft.network.chat.Component.literal(label), Objects.requireNonNull(Minecraft.getInstance()).font)
+            .pos(x, y)
+            .selected(value)
+            .onValueChange((cb, selected) -> {
+                if (!enabled) return;
+                if (selected != value) {
+                    setValue(selected);
+                }
+            })
+            .build();
+        checkbox.active = enabled;
+        return checkbox;
+    }
+
+    /**
+     * Convenience to update visibility on wrapped vanilla widget in legacy screens.
+     */
+    public void setVisible(boolean visible) {
+        // Intentionally no-op; legacy callers store the wrapped widget for visibility.
+    }
+
     // =========================================================================
     // BUILDER METHODS
     // =========================================================================

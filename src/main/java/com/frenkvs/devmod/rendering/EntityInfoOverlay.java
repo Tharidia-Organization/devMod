@@ -39,7 +39,7 @@ import java.util.List;
  * Toggle: Part of Debug Overlay system (G key)
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
-@SuppressWarnings("null")
+
 public class EntityInfoOverlay {
 
     public static final EntityInfoOverlay INSTANCE = new EntityInfoOverlay();

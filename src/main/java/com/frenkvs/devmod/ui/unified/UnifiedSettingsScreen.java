@@ -1,6 +1,7 @@
 package com.frenkvs.devmod.ui.unified;
 
 import com.frenkvs.devmod.ui.AxiomRenderer;
+import com.frenkvs.devmod.ui.ConfirmDialog;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.ui.unified.pages.CombatSettingsPage;
@@ -21,13 +22,14 @@ import com.frenkvs.devmod.util.I18n;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Unified settings screen for all mod settings.
  * Layout with sidebar for navigation and content area for pages.
  */
-@SuppressWarnings("null")
+
 public class UnifiedSettingsScreen extends Screen {
 
     // === Layout Constants ===
@@ -42,17 +44,10 @@ public class UnifiedSettingsScreen extends Screen {
     private final Map<SettingsCategory, SettingsPage> pages = new EnumMap<>(SettingsCategory.class);
     private int mouseX, mouseY;
 
-    // Reset confirmation dialog
-    private boolean showResetConfirmation = false;
-    private boolean showFactoryResetConfirmation = false;
-    private boolean showPlayerProgressResetConfirmation = false;
-    // Dialog buttons (reused to preserve bounds/hit state)
-    private final EditorButton resetCancelBtn = new EditorButton("reset-cancel", "Cancel");
-    private final EditorButton resetConfirmBtn = new EditorButton("reset-confirm", "Reset").style(EditorButton.Style.DANGER);
-    private final EditorButton factoryCancelBtn = new EditorButton("factory-cancel", "Cancel");
-    private final EditorButton factoryConfirmBtn = new EditorButton("factory-confirm", "RESET ALL").style(EditorButton.Style.DANGER);
-    private final EditorButton progressCancelBtn = new EditorButton("progress-cancel", "Cancel");
-    private final EditorButton progressConfirmBtn = new EditorButton("progress-confirm", "Reset Progress").style(EditorButton.Style.DANGER);
+    // Confirmation dialogs (reusable overlay component)
+    private ConfirmDialog resetDialog;
+    private ConfirmDialog factoryResetDialog;
+    private ConfirmDialog progressResetDialog;
     // Footer buttons
     private final EditorButton footerResetPageBtn = new EditorButton("footer-reset-page", "Reset Page");
     private final EditorButton footerResetProgressBtn = new EditorButton("footer-reset-progress", "Reset Progress");
@@ -92,9 +87,52 @@ public class UnifiedSettingsScreen extends Screen {
         }
     }
 
+    private void initDialogs() {
+        this.resetDialog = ConfirmDialog.create(
+            "Reset Settings?",
+            "Reset",
+            "Cancel",
+            ConfirmDialog.Style.WARNING,
+            this::resetCurrentPage,
+            () -> {},
+            "This will reset the current category to defaults."
+        );
+
+        this.factoryResetDialog = ConfirmDialog.create(
+            "!! FACTORY RESET !!",
+            "RESET ALL",
+            "Cancel",
+            ConfirmDialog.Style.DANGER,
+            this::performFactoryReset,
+            () -> {},
+            "This will permanently reset:",
+            "- All settings to defaults",
+            "- Tutorial/Onboarding progress",
+            "- Quest data & achievements",
+            "Restart may be required."
+        );
+
+        this.progressResetDialog = ConfirmDialog.create(
+            "Reset Player Progress",
+            "Reset Progress",
+            "Cancel",
+            ConfirmDialog.Style.WARNING,
+            this::performPlayerProgressReset,
+            () -> {},
+            "This will reset ALL player progress:",
+            "- Endurance Quest stats & records",
+            "- Tokens, rewards & achievements",
+            "- Item Editor presets & favorites",
+            "- Leaderboard rankings",
+            "Settings will NOT be affected."
+        );
+    }
+
     @Override
     protected void init() {
         super.init();
+
+        initDialogs();
 
         // Initialize pages
         pages.put(SettingsCategory.GENERAL, new GeneralSettingsPage());
@@ -156,23 +194,13 @@ public class UnifiedSettingsScreen extends Screen {
         // Footer
         renderFooter(graphics, mouseX, mouseY);
 
-        // Reset confirmation dialog (rendered on top)
-        if (showResetConfirmation) {
-            renderResetConfirmationDialog(graphics, mouseX, mouseY);
-        }
-
-        // Factory reset confirmation dialog (rendered on top)
-        if (showFactoryResetConfirmation) {
-            renderFactoryResetDialog(graphics, mouseX, mouseY);
-        }
-
-        // Player progress reset confirmation dialog (rendered on top)
-        if (showPlayerProgressResetConfirmation) {
-            renderPlayerProgressResetDialog(graphics, mouseX, mouseY);
-        }
+        // Modal overlays (rendered on top)
+        renderDialogs(graphics, mouseX, mouseY);
 
         // Tooltip (rendered last, on top of everything)
-        renderTooltip(graphics, mouseX, mouseY);
+        if (!isDialogOpen()) {
+            renderTooltip(graphics, mouseX, mouseY);
+        }
     }
 
     private void renderTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -214,170 +242,40 @@ public class UnifiedSettingsScreen extends Screen {
         tooltipText = "";
     }
 
-    private void renderResetConfirmationDialog(GuiGraphics graphics, int mouseX, int mouseY) {
-        // Dim background
-        graphics.fill(0, 0, width, height, 0x80000000);
-
-        // Dialog box
-        int dialogWidth = 260;
-        int dialogHeight = 100;
-        int dialogX = (width - dialogWidth) / 2;
-        int dialogY = (height - dialogHeight) / 2;
-
-        // Background
-        graphics.fill(dialogX, dialogY, dialogX + dialogWidth, dialogY + dialogHeight, UIConstants.Background.PANEL());
-        AxiomRenderer.drawBorder(graphics, dialogX, dialogY, dialogWidth, dialogHeight, UIConstants.Border.ACCENT());
-
-        // Title
-        String title = "Reset Settings?";
-        int titleWidth = font.width(title);
-        graphics.drawString(font, title, dialogX + (dialogWidth - titleWidth) / 2, dialogY + 12, UIConstants.Text.PRIMARY(), false);
-
-        // Message
-        String message = "This will reset " + currentCategory.getLabel() + " to defaults.";
-        int messageWidth = font.width(message);
-        graphics.drawString(font, message, dialogX + (dialogWidth - messageWidth) / 2, dialogY + 32, UIConstants.Text.SECONDARY(), false);
-
-        // Buttons
-        int buttonWidth = 80;
-        int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
-        int buttonY = dialogY + dialogHeight - buttonHeight - 16;
-
-        // Cancel button
-        int cancelX = dialogX + dialogWidth / 2 - buttonWidth - 10;
-        resetCancelBtn
-            .style(EditorButton.Style.NORMAL)
-            .onClick(() -> showResetConfirmation = false);
-        resetCancelBtn.render(graphics, cancelX, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
-
-        // Confirm button
-        int confirmX = dialogX + dialogWidth / 2 + 10;
-        resetConfirmBtn
-            .style(EditorButton.Style.DANGER)
-            .onClick(() -> {
-                resetCurrentPage();
-                showResetConfirmation = false;
-            });
-        resetConfirmBtn.render(graphics, confirmX, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
+    private void renderDialogs(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (resetDialog != null) resetDialog.render(graphics, font, width, height, mouseX, mouseY);
+        if (factoryResetDialog != null) factoryResetDialog.render(graphics, font, width, height, mouseX, mouseY);
+        if (progressResetDialog != null) progressResetDialog.render(graphics, font, width, height, mouseX, mouseY);
     }
 
-    private boolean handleResetDialogClick(int mouseX, int mouseY) {
-        int dialogWidth = 260;
-        int dialogHeight = 100;
-        int dialogX = (width - dialogWidth) / 2;
-        int dialogY = (height - dialogHeight) / 2;
-
-        // Cancel button
-        if (resetCancelBtn.mouseClicked(mouseX, mouseY, 0)) {
-            showResetConfirmation = false;
-            return true;
-        }
-
-        // Confirm button
-        if (resetConfirmBtn.mouseClicked(mouseX, mouseY, 0)) {
-            resetCurrentPage();
-            showResetConfirmation = false;
-            return true;
-        }
-
-        // Click outside dialog cancels
-        if (mouseX < dialogX || mouseX > dialogX + dialogWidth ||
-            mouseY < dialogY || mouseY > dialogY + dialogHeight) {
-            showResetConfirmation = false;
-            return true;
-        }
-
-        return true; // Consume all clicks when dialog is open
+    private boolean isDialogOpen() {
+        return (resetDialog != null && resetDialog.isVisible()) ||
+               (factoryResetDialog != null && factoryResetDialog.isVisible()) ||
+               (progressResetDialog != null && progressResetDialog.isVisible());
     }
 
-    // === Factory Reset Dialog ===
-
-    private void renderFactoryResetDialog(GuiGraphics graphics, int mouseX, int mouseY) {
-        // Dim background (darker for dangerous action)
-        graphics.fill(0, 0, width, height, 0xAA000000);
-
-        // Dialog box
-        int dialogWidth = 320;
-        int dialogHeight = 140;
-        int dialogX = (width - dialogWidth) / 2;
-        int dialogY = (height - dialogHeight) / 2;
-
-        // Background with red border
-        graphics.fill(dialogX - 2, dialogY - 2, dialogX + dialogWidth + 2, dialogY + dialogHeight + 2, UIConstants.Status.ERROR());
-        graphics.fill(dialogX, dialogY, dialogX + dialogWidth, dialogY + dialogHeight, UIConstants.Background.PANEL());
-
-        // Warning icon and title
-        String title = "!! FACTORY RESET !!";
-        int titleWidth = font.width(title);
-        graphics.drawString(font, title, dialogX + (dialogWidth - titleWidth) / 2, dialogY + 12, UIConstants.Status.ERROR(), false);
-
-        // Warning messages
-        String[] messages = {
-            "This will PERMANENTLY reset:",
-            "- All settings to defaults",
-            "- Tutorial/Onboarding progress",
-            "- Quest data & achievements",
-            "Restart required for full effect."
-        };
-
-        int y = dialogY + 30;
-        for (String msg : messages) {
-            int msgWidth = font.width(msg);
-            int color = msg.startsWith("-") ? UIConstants.Text.SECONDARY() : UIConstants.Text.PRIMARY();
-            graphics.drawString(font, msg, dialogX + (dialogWidth - msgWidth) / 2, y, color, false);
-            y += 11;
-        }
-
-        // Buttons
-        int buttonWidth = 100;
-        int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
-        int buttonY = dialogY + dialogHeight - buttonHeight - 12;
-
-        // Cancel button
-        int cancelX = dialogX + dialogWidth / 2 - buttonWidth - 15;
-        factoryCancelBtn
-            .style(EditorButton.Style.NORMAL)
-            .onClick(() -> showFactoryResetConfirmation = false);
-        factoryCancelBtn.render(graphics, cancelX, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
-
-        // Confirm button (red)
-        int confirmX = dialogX + dialogWidth / 2 + 15;
-        factoryConfirmBtn
-            .style(EditorButton.Style.DANGER)
-            .onClick(() -> {
-                performFactoryReset();
-                showFactoryResetConfirmation = false;
-            });
-        factoryConfirmBtn.render(graphics, confirmX, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
+    private boolean handleDialogClick(double mouseX, double mouseY) {
+        return (resetDialog != null && resetDialog.mouseClicked(mouseX, mouseY, width, height)) ||
+               (factoryResetDialog != null && factoryResetDialog.mouseClicked(mouseX, mouseY, width, height)) ||
+               (progressResetDialog != null && progressResetDialog.mouseClicked(mouseX, mouseY, width, height));
     }
 
-    private boolean handleFactoryResetDialogClick(int mouseX, int mouseY) {
-        int dialogWidth = 320;
-        int dialogHeight = 140;
-        int dialogX = (width - dialogWidth) / 2;
-        int dialogY = (height - dialogHeight) / 2;
+    private boolean handleDialogScroll(double mouseX, double mouseY, double scrollDelta) {
+        return (resetDialog != null && resetDialog.mouseScrolled(mouseX, mouseY, scrollDelta, width, height)) ||
+               (factoryResetDialog != null && factoryResetDialog.mouseScrolled(mouseX, mouseY, scrollDelta, width, height)) ||
+               (progressResetDialog != null && progressResetDialog.mouseScrolled(mouseX, mouseY, scrollDelta, width, height));
+    }
 
-        // Cancel button
-        if (factoryCancelBtn.mouseClicked(mouseX, mouseY, 0)) {
-            showFactoryResetConfirmation = false;
-            return true;
-        }
+    private boolean handleDialogKey(int keyCode) {
+        return (resetDialog != null && resetDialog.keyPressed(keyCode)) ||
+               (factoryResetDialog != null && factoryResetDialog.keyPressed(keyCode)) ||
+               (progressResetDialog != null && progressResetDialog.keyPressed(keyCode));
+    }
 
-        // Confirm button - perform factory reset
-        if (factoryConfirmBtn.mouseClicked(mouseX, mouseY, 0)) {
-            performFactoryReset();
-            showFactoryResetConfirmation = false;
-            return true;
-        }
-
-        // Click outside dialog cancels
-        if (mouseX < dialogX || mouseX > dialogX + dialogWidth ||
-            mouseY < dialogY || mouseY > dialogY + dialogHeight) {
-            showFactoryResetConfirmation = false;
-            return true;
-        }
-
-        return true; // Consume all clicks when dialog is open
+    private boolean handleDialogChar(char codePoint, int modifiers) {
+        return (resetDialog != null && resetDialog.charTyped(codePoint, modifiers)) ||
+               (factoryResetDialog != null && factoryResetDialog.charTyped(codePoint, modifiers)) ||
+               (progressResetDialog != null && progressResetDialog.charTyped(codePoint, modifiers));
     }
 
     private void performFactoryReset() {
@@ -394,96 +292,6 @@ public class UnifiedSettingsScreen extends Screen {
 
         // Close settings screen
         onClose();
-    }
-
-    // === Player Progress Reset Dialog ===
-
-    private void renderPlayerProgressResetDialog(GuiGraphics graphics, int mouseX, int mouseY) {
-        // Dim background
-        graphics.fill(0, 0, width, height, 0x90000000);
-
-        // Dialog box
-        int dialogWidth = 340;
-        int dialogHeight = 160;
-        int dialogX = (width - dialogWidth) / 2;
-        int dialogY = (height - dialogHeight) / 2;
-
-        // Background with orange border (warning, not destructive)
-        graphics.fill(dialogX - 2, dialogY - 2, dialogX + dialogWidth + 2, dialogY + dialogHeight + 2, UIConstants.Accent.ORANGE());
-        graphics.fill(dialogX, dialogY, dialogX + dialogWidth, dialogY + dialogHeight, UIConstants.Background.PANEL());
-
-        // Title
-        String title = "Reset Player Progress";
-        int titleWidth = font.width(title);
-        graphics.drawString(font, title, dialogX + (dialogWidth - titleWidth) / 2, dialogY + 12, UIConstants.Accent.ORANGE(), false);
-
-        // Description
-        String[] messages = {
-            "This will reset ALL player progress:",
-            "- Endurance Quest stats & records",
-            "- Tokens, rewards & achievements",
-            "- Item Editor presets & favorites",
-            "- Leaderboard rankings",
-            "Settings will NOT be affected."
-        };
-
-        int y = dialogY + 32;
-        for (String msg : messages) {
-            int msgWidth = font.width(msg);
-            int color = msg.startsWith("-") ? UIConstants.Text.SECONDARY() : UIConstants.Text.PRIMARY();
-            graphics.drawString(font, msg, dialogX + (dialogWidth - msgWidth) / 2, y, color, false);
-            y += 11;
-        }
-
-        // Buttons
-        int buttonWidth = 100;
-        int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
-        int buttonY = dialogY + dialogHeight - buttonHeight - 12;
-
-        // Cancel button
-        int cancelX = dialogX + dialogWidth / 2 - buttonWidth - 15;
-        progressCancelBtn
-            .style(EditorButton.Style.NORMAL)
-            .onClick(() -> showPlayerProgressResetConfirmation = false);
-        progressCancelBtn.render(graphics, cancelX, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
-
-        // Confirm button (orange)
-        int confirmX = dialogX + dialogWidth / 2 + 15;
-        progressConfirmBtn
-            .style(EditorButton.Style.DANGER)
-            .onClick(() -> {
-                performPlayerProgressReset();
-                showPlayerProgressResetConfirmation = false;
-            });
-        progressConfirmBtn.render(graphics, confirmX, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
-    }
-
-    private boolean handlePlayerProgressResetDialogClick(int mouseX, int mouseY) {
-        int dialogWidth = 340;
-        int dialogHeight = 160;
-        int dialogX = (width - dialogWidth) / 2;
-        int dialogY = (height - dialogHeight) / 2;
-
-        // Cancel button
-        if (progressCancelBtn.mouseClicked(mouseX, mouseY, 0)) {
-            showPlayerProgressResetConfirmation = false;
-            return true;
-        }
-
-        // Confirm button - perform player progress reset
-        if (progressConfirmBtn.mouseClicked(mouseX, mouseY, 0)) {
-            showPlayerProgressResetConfirmation = false;
-            return true;
-        }
-
-        // Click outside dialog cancels
-        if (mouseX < dialogX || mouseX > dialogX + dialogWidth ||
-            mouseY < dialogY || mouseY > dialogY + dialogHeight) {
-            showPlayerProgressResetConfirmation = false;
-            return true;
-        }
-
-        return true; // Consume all clicks when dialog is open
     }
 
     private void performPlayerProgressReset() {
@@ -698,21 +506,26 @@ public class UnifiedSettingsScreen extends Screen {
         // Reset Page button
         footerResetPageBtn
             .style(EditorButton.Style.NORMAL)
-            .onClick(() -> showResetConfirmation = true);
+            .onClick(() -> {
+                resetDialog.configure(
+                    "Reset Settings?",
+                    List.of("This will reset " + currentCategory.getLabel() + " to defaults.")
+                ).show();
+            });
         footerResetPageBtn.render(graphics, buttonX, buttonY, 80, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
         // Reset Progress button (orange - warning action)
         buttonX += 90;
         footerResetProgressBtn
             .style(EditorButton.Style.DANGER)
-            .onClick(() -> showPlayerProgressResetConfirmation = true);
+            .onClick(progressResetDialog::show);
         footerResetProgressBtn.render(graphics, buttonX, buttonY, 105, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
         // Factory Reset button (dangerous action - red color)
         buttonX += 115;
         footerFactoryResetBtn
             .style(EditorButton.Style.DANGER)
-            .onClick(() -> showFactoryResetConfirmation = true);
+            .onClick(factoryResetDialog::show);
         footerFactoryResetBtn.render(graphics, buttonX, buttonY, 100, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
         // Right buttons
@@ -742,19 +555,9 @@ public class UnifiedSettingsScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // Handle reset confirmation dialog first (blocks other interactions)
-        if (showResetConfirmation) {
-            return handleResetDialogClick((int) mouseX, (int) mouseY);
-        }
-
-        // Handle factory reset confirmation dialog
-        if (showFactoryResetConfirmation) {
-            return handleFactoryResetDialogClick((int) mouseX, (int) mouseY);
-        }
-
-        // Handle player progress reset confirmation dialog
-        if (showPlayerProgressResetConfirmation) {
-            return handlePlayerProgressResetDialogClick((int) mouseX, (int) mouseY);
+        // Modal dialogs intercept all clicks
+        if (handleDialogClick(mouseX, mouseY)) {
+            return true;
         }
 
         // Header close button
@@ -847,11 +650,11 @@ public class UnifiedSettingsScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (isDialogOpen()) {
+            return true;
+        }
+
         boolean handled = false;
-        handled |= resetCancelBtn.mouseReleased(mouseX, mouseY, button);
-        handled |= resetConfirmBtn.mouseReleased(mouseX, mouseY, button);
-        handled |= factoryCancelBtn.mouseReleased(mouseX, mouseY, button);
-        handled |= factoryConfirmBtn.mouseReleased(mouseX, mouseY, button);
         handled |= footerResetPageBtn.mouseReleased(mouseX, mouseY, button);
         handled |= footerResetProgressBtn.mouseReleased(mouseX, mouseY, button);
         handled |= footerFactoryResetBtn.mouseReleased(mouseX, mouseY, button);
@@ -870,6 +673,10 @@ public class UnifiedSettingsScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (handleDialogKey(keyCode)) {
+            return true;
+        }
+
         // Handle search input
         if (searchFocused) {
             if (keyCode == 259) { // Backspace
@@ -923,8 +730,12 @@ public class UnifiedSettingsScreen extends Screen {
 
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
+        if (handleDialogChar(codePoint, modifiers)) {
+            return true;
+        }
+
         // Handle search text input
-        if (searchFocused && Character.isLetterOrDigit(codePoint) || codePoint == ' ') {
+        if (searchFocused && (Character.isLetterOrDigit(codePoint) || codePoint == ' ')) {
             if (searchQuery.length() < 20) {
                 searchQuery += codePoint;
             }
@@ -960,6 +771,10 @@ public class UnifiedSettingsScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (handleDialogScroll(mouseX, mouseY, scrollY)) {
+            return true;
+        }
+
         SettingsPage page = pages.get(currentCategory);
         if (page != null) {
             return page.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
@@ -969,6 +784,10 @@ public class UnifiedSettingsScreen extends Screen {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (isDialogOpen()) {
+            return true;
+        }
+
         SettingsPage page = pages.get(currentCategory);
         if (page != null && page.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
             return true;

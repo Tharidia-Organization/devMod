@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * - Can be dismissed or skipped
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
-@SuppressWarnings("null")
+
 public class OnboardingOverlay {
     private static final Logger LOGGER = LoggerFactory.getLogger(OnboardingOverlay.class);
 

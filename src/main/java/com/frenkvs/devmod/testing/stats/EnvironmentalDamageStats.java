@@ -14,7 +14,7 @@ import java.util.Map;
  * <p>Now uses {@link HazardTypeRegistry} for config-driven hazard classification
  * instead of hardcoded string matching.
  */
-@SuppressWarnings("null") // Map.merge BiFunction boxing
+
 public class EnvironmentalDamageStats {
     public static final EnvironmentalDamageStats INSTANCE = new EnvironmentalDamageStats();
 

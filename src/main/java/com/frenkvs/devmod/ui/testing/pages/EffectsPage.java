@@ -13,6 +13,7 @@ import static com.frenkvs.devmod.ui.testing.pages.PageUtils.nonNullDouble;
  * Effects Page - Configuration for VFX and visual effects.
  * Controls impact effects, screen shake, and particle systems.
  */
+
 public class EffectsPage extends AbstractVoxelLabPage {
 
     // VFX Master toggle

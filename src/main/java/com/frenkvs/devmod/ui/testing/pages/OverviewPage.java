@@ -142,7 +142,7 @@ public class OverviewPage extends AbstractVoxelLabPage {
         telemetryToggle.toggled(safeGetBool(Config.TELEMETRY_ENABLED));
     }
 
-    @SuppressWarnings("null")
+
     private String getSystemStats() {
         Minecraft mc = Minecraft.getInstance();
         if (mc == null || mc.level == null) return "";

@@ -39,11 +39,6 @@ public final class ModelPartTransformExtractor {
      */
     private static final Map<Integer, AnimationSnapshot> TRANSFORM_CACHE = new ConcurrentHashMap<>();
 
-    /**
-     * Maximum cache age in ticks before re-extraction.
-     */
-    private static final int CACHE_TTL_TICKS = 2;
-
     // ==================== Public API ====================
 
     /**

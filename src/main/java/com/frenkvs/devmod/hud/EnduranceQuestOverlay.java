@@ -36,7 +36,7 @@ import java.util.List;
  * Style: Compact, semi-transparent, consistent with other DevMod overlays
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
-@SuppressWarnings("null")
+
 public class EnduranceQuestOverlay {
 
     private static final ResourceLocation LAYER_ID =

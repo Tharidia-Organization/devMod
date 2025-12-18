@@ -24,7 +24,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
  * Toggle: Tasto F (configurabile)
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
-@SuppressWarnings("null")
+
 public class FpsTracker {
 
     public static final FpsTracker INSTANCE = new FpsTracker();

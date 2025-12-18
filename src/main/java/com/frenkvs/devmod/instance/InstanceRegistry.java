@@ -354,7 +354,7 @@ public class InstanceRegistry {
     /**
      * Load registry from disk (for crash recovery).
      */
-    @SuppressWarnings("unchecked")
+
     public void load() {
         Path registryFile = getRegistryFile();
         if (!Files.exists(registryFile)) {
@@ -369,38 +369,34 @@ public class InstanceRegistry {
 
             if (data == null) return;
 
-            // Load instances
-            List<Map<String, Object>> instanceList = (List<Map<String, Object>>) data.get("instances");
-            if (instanceList != null) {
-                for (Map<String, Object> instanceMap : instanceList) {
-                    try {
-                        InstanceData instance = InstanceData.fromMap(instanceMap);
-                        instances.put(instance.getInstanceId(), instance);
+            // Load instances (type-safe extraction)
+            List<Map<String, Object>> instanceList = getMapList(data, "instances");
+            for (Map<String, Object> instanceMap : instanceList) {
+                try {
+                    InstanceData instance = InstanceData.fromMap(instanceMap);
+                    instances.put(instance.getInstanceId(), instance);
 
-                        if (instance.getDimensionKey() != null) {
-                            dimensionToInstance.put(instance.getDimensionKey(), instance.getInstanceId());
-                        }
-
-                        if (instance.isMarkedForDestruction()) {
-                            pendingDestruction.add(instance.getInstanceId());
-                        }
-                    } catch (Exception e) {
-                        LOGGER.warn("[InstanceRegistry] Failed to load instance: {}", e.getMessage());
+                    if (instance.getDimensionKey() != null) {
+                        dimensionToInstance.put(instance.getDimensionKey(), instance.getInstanceId());
                     }
+
+                    if (instance.isMarkedForDestruction()) {
+                        pendingDestruction.add(instance.getInstanceId());
+                    }
+                } catch (Exception e) {
+                    LOGGER.warn("[InstanceRegistry] Failed to load instance: {}", e.getMessage());
                 }
             }
 
-            // Load player mappings
-            Map<String, String> playerMappings = (Map<String, String>) data.get("playerMappings");
-            if (playerMappings != null) {
-                for (Map.Entry<String, String> entry : playerMappings.entrySet()) {
-                    try {
-                        UUID playerId = UUID.fromString(entry.getKey());
-                        UUID instanceId = UUID.fromString(entry.getValue());
-                        playerToInstance.put(playerId, instanceId);
-                    } catch (Exception e) {
-                        LOGGER.warn("[InstanceRegistry] Invalid player mapping: {}", e.getMessage());
-                    }
+            // Load player mappings (type-safe extraction)
+            Map<String, String> playerMappings = getStringMap(data, "playerMappings");
+            for (Map.Entry<String, String> entry : playerMappings.entrySet()) {
+                try {
+                    UUID playerId = UUID.fromString(entry.getKey());
+                    UUID instanceId = UUID.fromString(entry.getValue());
+                    playerToInstance.put(playerId, instanceId);
+                } catch (Exception e) {
+                    LOGGER.warn("[InstanceRegistry] Invalid player mapping: {}", e.getMessage());
                 }
             }
 
@@ -408,6 +404,50 @@ public class InstanceRegistry {
         } catch (Exception e) {
             LOGGER.error("[InstanceRegistry] Failed to load registry", e);
         }
+    }
+
+    // =========================================================================
+    // JSON PARSING HELPERS (type-safe)
+    // =========================================================================
+
+    /**
+     * Safely extracts a List of Maps from a parent Map.
+     */
+    private static List<Map<String, Object>> getMapList(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value instanceof List<?> list) {
+            List<Map<String, Object>> result = new ArrayList<>();
+            for (Object item : list) {
+                if (item instanceof Map<?, ?> m) {
+                    Map<String, Object> typedMap = new HashMap<>();
+                    for (Map.Entry<?, ?> entry : m.entrySet()) {
+                        if (entry.getKey() instanceof String k) {
+                            typedMap.put(k, entry.getValue());
+                        }
+                    }
+                    result.add(typedMap);
+                }
+            }
+            return result;
+        }
+        return List.of();
+    }
+
+    /**
+     * Safely extracts a Map of String to String from a parent Map.
+     */
+    private static Map<String, String> getStringMap(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value instanceof Map<?, ?> m) {
+            Map<String, String> result = new HashMap<>();
+            for (Map.Entry<?, ?> entry : m.entrySet()) {
+                if (entry.getKey() instanceof String k && entry.getValue() instanceof String v) {
+                    result.put(k, v);
+                }
+            }
+            return result;
+        }
+        return Map.of();
     }
 
     /**

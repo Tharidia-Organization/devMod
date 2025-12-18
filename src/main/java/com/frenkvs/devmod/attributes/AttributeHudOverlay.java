@@ -24,7 +24,7 @@ import java.util.List;
  * Inspired by the "Attribute Monitoring System" reference image
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
-@SuppressWarnings("null")
+
 public class AttributeHudOverlay {
     public static final AttributeHudOverlay INSTANCE = new AttributeHudOverlay();
 

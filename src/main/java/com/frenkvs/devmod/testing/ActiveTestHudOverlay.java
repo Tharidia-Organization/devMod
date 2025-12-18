@@ -26,7 +26,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
  * - Minimized mode when no test is active
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
-@SuppressWarnings("null")
+
 public class ActiveTestHudOverlay {
 
     private static final ResourceLocation LAYER_ID =

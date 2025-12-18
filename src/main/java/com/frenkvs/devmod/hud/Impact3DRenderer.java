@@ -21,7 +21,7 @@ import java.util.List;
  * This approach is simpler, more performant, and integrates better
  * with the Minecraft 1.21.1 rendering system.
  */
-@SuppressWarnings("null") // Minecraft API methods are not annotated but never return null in practice
+
 public class Impact3DRenderer {
 
     // Singleton instance

@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * BodyPartRegistry.INSTANCE.register(MyEntityType.MY_MOB, myHierarchy);
  * </pre>
  */
+
 public final class BodyPartRegistry {
 
     /**
@@ -215,7 +216,7 @@ public final class BodyPartRegistry {
      */
     @Nonnull
     private BodyPartHierarchy getAdaptiveHierarchy(@Nonnull Entity entity) {
-        if (!(entity instanceof LivingEntity living)) {
+        if (!(entity instanceof LivingEntity)) {
             return getDefaultHumanoid();
         }
 

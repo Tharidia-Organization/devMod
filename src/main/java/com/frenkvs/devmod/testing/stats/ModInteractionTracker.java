@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Tracks interactions with modded content (weapons, mobs, effects, armor).
  * Extracted from TesterProgress for single responsibility.
  */
-@SuppressWarnings("null")
+
 public class ModInteractionTracker {
     public static final ModInteractionTracker INSTANCE = new ModInteractionTracker();
 

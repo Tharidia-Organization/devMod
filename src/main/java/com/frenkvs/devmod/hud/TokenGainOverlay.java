@@ -21,7 +21,7 @@ import java.util.List;
  * Shows "+X Tokens" floating upward with fade-out effect.
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
-@SuppressWarnings("null")
+
 public class TokenGainOverlay {
 
     private static final ResourceLocation LAYER_ID =

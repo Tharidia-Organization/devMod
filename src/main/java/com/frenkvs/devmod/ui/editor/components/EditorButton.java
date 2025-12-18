@@ -36,6 +36,26 @@ public class EditorButton {
         GHOST
     }
 
+    /**
+     * Convenience: render as a vanilla Button for screens still using vanilla widgets.
+     * This preserves our styling/state and delegates clicks back to this component.
+     */
+    public net.minecraft.client.gui.components.Button asVanilla(int x, int y, int width, int height) {
+        return net.minecraft.client.gui.components.Button.builder(net.minecraft.network.chat.Component.literal(label), btn -> {
+                if (!enabled) return;
+                if (onClick != null) onClick.run();
+            })
+            .bounds(x, y, width, height)
+            .build();
+    }
+
+    /**
+     * Wrapper to set visibility on the underlying vanilla widget when used via asVanilla.
+     */
+    public void setVisible(boolean visible) {
+        // no-op placeholder to avoid null checks in callers; visibility handled on the vanilla widget
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // CONFIGURATION
     // ═══════════════════════════════════════════════════════════════

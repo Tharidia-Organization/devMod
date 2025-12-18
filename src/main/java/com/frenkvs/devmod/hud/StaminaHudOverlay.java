@@ -17,7 +17,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
  * Shows stamina bar above the hotbar when not full or recently used.
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
-@SuppressWarnings("null")
+
 public class StaminaHudOverlay {
 
     private static final ResourceLocation LAYER_ID =

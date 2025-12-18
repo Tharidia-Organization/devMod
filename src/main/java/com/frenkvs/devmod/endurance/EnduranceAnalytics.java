@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  * Analytics storage and aggregation for Endurance Quest data.
  * Stores detailed combat logs and provides analysis for game balance.
  */
-@SuppressWarnings("null") // Stream reduce/merge operations with method references
+
 public class EnduranceAnalytics {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceAnalytics.class);
     private static final Gson GSON = new GsonBuilder()
@@ -386,10 +386,11 @@ public class EnduranceAnalytics {
         }
     }
 
+    /** JSON serialization container for aggregate analytics data. */
+    @SuppressWarnings("unused") // Fields used by GSON serialization
     private static class AggregateData {
         public Map<String, MobAnalytics> mobAnalytics;
         public Map<String, WeaponAnalytics> weaponAnalytics;
-        @SuppressWarnings("unused") // Reserved for persistence timestamp
         public long lastUpdated;
     }
 

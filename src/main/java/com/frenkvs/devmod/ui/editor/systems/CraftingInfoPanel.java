@@ -161,30 +161,37 @@ public class CraftingInfoPanel extends BaseOverlay {
     private int ingredientAreaW = 0;
     private int ingredientAreaH = 0;
 
-    // Navigation buttons using EditorButton component
-    private final EditorButton prevButton;
-    private final EditorButton nextButton;
-
-    // Edit button to open Recipe Editor
-    private final EditorButton editButton;
+    // Navigation buttons using EditorButton component (lazy init to avoid this-escape)
+    private EditorButton prevButton;
+    private EditorButton nextButton;
+    private EditorButton editButton;
+    private boolean buttonsInitialized = false;
 
     // Cached metrics for current frame (set during render)
     private int cachedValueHeight = 0;
 
-    @SuppressWarnings("this-escape")
+
     public CraftingInfoPanel() {
-        prevButton = new EditorButton("prev", "<")
-            .style(EditorButton.Style.GHOST)
-            .size(EditorButton.Size.SMALL)
-            .onClick(() -> selectRecipe(selectedRecipeIndex - 1));
-        nextButton = new EditorButton("next", ">")
-            .style(EditorButton.Style.GHOST)
-            .size(EditorButton.Size.SMALL)
-            .onClick(() -> selectRecipe(selectedRecipeIndex + 1));
-        editButton = new EditorButton("edit", "Edit Recipe")
-            .style(EditorButton.Style.PRIMARY)
-            .size(EditorButton.Size.SMALL)
-            .onClick(() -> openRecipeEditor());
+        // Buttons initialized lazily to avoid this-escape warning
+    }
+
+    /** Ensures buttons are initialized (lazy init to avoid this-escape). */
+    private void ensureButtons() {
+        if (!buttonsInitialized) {
+            prevButton = new EditorButton("prev", "<")
+                .style(EditorButton.Style.GHOST)
+                .size(EditorButton.Size.SMALL)
+                .onClick(() -> selectRecipe(selectedRecipeIndex - 1));
+            nextButton = new EditorButton("next", ">")
+                .style(EditorButton.Style.GHOST)
+                .size(EditorButton.Size.SMALL)
+                .onClick(() -> selectRecipe(selectedRecipeIndex + 1));
+            editButton = new EditorButton("edit", "Edit Recipe")
+                .style(EditorButton.Style.PRIMARY)
+                .size(EditorButton.Size.SMALL)
+                .onClick(() -> openRecipeEditor());
+            buttonsInitialized = true;
+        }
     }
 
     public void show(ItemStack item) {
@@ -240,6 +247,7 @@ public class CraftingInfoPanel extends BaseOverlay {
     @Override
     protected void renderContent(GuiGraphics g, Font font, int x, int y, int panelW, int panelH,
                                   int mouseX, int mouseY) {
+        ensureButtons();
         Font safeFont = Objects.requireNonNull(font, "font cannot be null");
         int padding = ScaledCoord.scaleDim(PANEL_PADDING);
         int gridSize = ScaledCoord.scaleDim(GRID_BLOCK_HEIGHT);

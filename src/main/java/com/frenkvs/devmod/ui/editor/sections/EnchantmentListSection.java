@@ -79,9 +79,10 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
 
     private void addCommonEnchantments(ItemEnchantments existing) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null) return;
+        var level = mc.level;
+        if (level == null) return;
 
-        RegistryAccess registries = mc.level.registryAccess();
+        RegistryAccess registries = level.registryAccess();
         var enchantRegistry = registries.registryOrThrow(Objects.requireNonNull(Registries.ENCHANTMENT));
 
         // List of common enchantment IDs to show
@@ -354,8 +355,7 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
      */
     private static class EnchantmentEntry {
         final Holder<Enchantment> holder;
-        @SuppressWarnings("unused")
-        final String displayName; // Kept for debugging/future use
+        final String displayName;
         final EditorSlider slider;
         int currentLevel;
 
@@ -364,6 +364,11 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
             this.displayName = displayName;
             this.slider = slider;
             this.currentLevel = currentLevel;
+        }
+
+        @Override
+        public String toString() {
+            return displayName + " (level " + currentLevel + ")";
         }
     }
 }

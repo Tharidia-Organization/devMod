@@ -17,7 +17,7 @@ import net.minecraft.world.phys.Vec3;
  * - Impact data (ImpactData)
  * - Timestamp for lifecycle management
  */
-@SuppressWarnings("null") // Minecraft API methods are not annotated but never return null in practice
+
 public class Impact3DPanel {
 
     // === Lifecycle Configuration ===

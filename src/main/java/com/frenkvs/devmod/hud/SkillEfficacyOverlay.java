@@ -28,7 +28,7 @@ import java.util.List;
  * Position: Right side, below Impact HUD
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
-@SuppressWarnings("null")
+
 public class SkillEfficacyOverlay {
 
     private static final ResourceLocation LAYER_ID =

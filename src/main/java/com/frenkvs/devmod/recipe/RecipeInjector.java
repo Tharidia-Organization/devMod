@@ -202,7 +202,6 @@ public final class RecipeInjector {
     /**
      * Get injected recipes by type (snapshot copy for thread safety).
      */
-    @SuppressWarnings("unchecked")
     public static <T extends Recipe<?>> List<RecipeHolder<T>> getInjectedByType(RecipeType<T> type) {
         if (type == null) return List.of();
 
@@ -211,13 +210,21 @@ public final class RecipeInjector {
             List<RecipeHolder<T>> result = new ArrayList<>();
             for (RecipeHolder<?> holder : INJECTED_RECIPES.values()) {
                 if (holder != null && holder.value() != null && holder.value().getType() == type) {
-                    result.add((RecipeHolder<T>) holder);
+                    result.add(castHolder(holder));
                 }
             }
             return result;
         } finally {
             lock.readLock().unlock();
         }
+    }
+
+    /**
+     * Type-cast helper for RecipeHolder. Safe when caller has verified type match.
+     */
+    @SuppressWarnings("unchecked")
+    private static <T extends Recipe<?>> RecipeHolder<T> castHolder(RecipeHolder<?> holder) {
+        return (RecipeHolder<T>) holder;
     }
 
     /**

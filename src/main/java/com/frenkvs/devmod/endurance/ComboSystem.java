@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * - Timing bonuses for perfect dodges and parries
  * - Multiplier system that affects all point gains
  */
-@SuppressWarnings("null") // Minecraft/NeoForge API null-safety (SoundEvents holders)
+
 public class ComboSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComboSystem.class);
 

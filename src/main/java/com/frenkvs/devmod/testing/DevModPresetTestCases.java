@@ -69,7 +69,7 @@ public class DevModPresetTestCases {
             CATEGORY,
             "PresetRegistry Singleton",
             "Verify PresetRegistry singleton pattern",
-            "1. Call PresetRegistry.getInstance() multiple times\n" +
+            "1. Access PresetRegistry.INSTANCE multiple times\n" +
             "2. Verify same instance returned",
             TestCase.TestPriority.CRITICAL,
             DevModPresetTestCases::validatePresetRegistrySingleton
@@ -262,8 +262,8 @@ public class DevModPresetTestCases {
 
     private static boolean validatePresetRegistrySingleton() {
         try {
-            PresetRegistry instance1 = PresetRegistry.getInstance();
-            PresetRegistry instance2 = PresetRegistry.getInstance();
+            PresetRegistry instance1 = PresetRegistry.INSTANCE;
+            PresetRegistry instance2 = PresetRegistry.INSTANCE;
             return instance1 != null && instance1 == instance2;
         } catch (Exception e) {
             return false;
@@ -272,7 +272,7 @@ public class DevModPresetTestCases {
 
     private static boolean validateBundledPresetsLoaded() {
         try {
-            PresetRegistry registry = PresetRegistry.getInstance();
+            PresetRegistry registry = PresetRegistry.INSTANCE;
             List<PresetRegistry.RegistryPreset> all = registry.getAllPresets();
 
             // Should have at least 6 bundled presets
@@ -291,7 +291,7 @@ public class DevModPresetTestCases {
 
     private static boolean validateCategoryFiltering() {
         try {
-            PresetRegistry registry = PresetRegistry.getInstance();
+            PresetRegistry registry = PresetRegistry.INSTANCE;
 
             List<PresetRegistry.RegistryPreset> weaponPresets = registry.getPresetsForCategory("weapon");
             List<PresetRegistry.RegistryPreset> armorPresets = registry.getPresetsForCategory("armor");
@@ -459,7 +459,7 @@ public class DevModPresetTestCases {
 
     private static boolean validateOverlayDataFlow() {
         try {
-            PresetRegistry registry = PresetRegistry.getInstance();
+            PresetRegistry registry = PresetRegistry.INSTANCE;
             ItemEditorDataManager userData = ItemEditorDataManager.INSTANCE;
             userData.ensureInitialized();
 

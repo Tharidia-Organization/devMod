@@ -35,6 +35,7 @@ import java.util.Objects;
  * - Entity has no registered body parts
  * - An error occurs during OBB calculation
  */
+
 public final class OBBHitHelper {
 
     private OBBHitHelper() {} // Utility class

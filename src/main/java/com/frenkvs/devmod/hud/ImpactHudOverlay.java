@@ -25,7 +25,7 @@ import java.util.List;
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 // Minecraft API methods are not annotated but never return null in practice
-@SuppressWarnings("null")
+
 public class ImpactHudOverlay {
 
     private static final ResourceLocation LAYER_ID =

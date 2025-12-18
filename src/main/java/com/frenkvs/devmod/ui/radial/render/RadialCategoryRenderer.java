@@ -23,7 +23,7 @@ import java.util.Objects;
  *   <li>Cross-fade transitions between macro categories</li>
  * </ul>
  */
-@SuppressWarnings("null") // Minecraft API null annotations
+
 public final class RadialCategoryRenderer {
 
     private RadialCategoryRenderer() {

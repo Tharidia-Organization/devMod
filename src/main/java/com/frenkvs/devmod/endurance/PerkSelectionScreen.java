@@ -1,9 +1,9 @@
 package com.frenkvs.devmod.endurance;
 
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
@@ -21,12 +21,9 @@ import java.util.List;
  * Uses standard UIConstants for consistent theming.
  */
 @OnlyIn(Dist.CLIENT)
-@SuppressWarnings({"null", "unused"})
 public class PerkSelectionScreen extends Screen {
 
     // === Colors - Standardized to UIConstants ===
-    private static final int COLOR_BG = UIConstants.Background.SCREEN();
-    private static final int COLOR_PANEL_BG = UIConstants.Background.PANEL();
     private static final int COLOR_CARD_BG = UIConstants.Background.INPUT();
     private static final int COLOR_CARD_HOVER = UIConstants.Background.HOVER();
     private static final int COLOR_CARD_SELECTED = UIConstants.Background.ACTIVE();
@@ -61,7 +58,8 @@ public class PerkSelectionScreen extends Screen {
     // === State ===
     private long openTime;
     private boolean soundPlayed = false;
-    private final List<Button> perkButtons = new ArrayList<>();
+    private final List<EditorButton> perkButtons = new ArrayList<>();
+    private EditorButton skipButton;
     private boolean showComparisonPanel = true;  // Show side comparison
 
     public PerkSelectionScreen(int waveNumber, List<PerkChoicesPayload.PerkChoice> choices) {
@@ -79,37 +77,23 @@ public class PerkSelectionScreen extends Screen {
         // Calculate responsive card dimensions
         calculateCardDimensions();
 
-        int totalWidth = choices.size() * cardWidth + (choices.size() - 1) * cardSpacing;
-        int startX = (width - totalWidth) / 2;
-        int cardY = height / 2 - cardHeight / 2 + 20;
-
         for (int i = 0; i < choices.size(); i++) {
             final int index = i;
-            int cardX = startX + i * (cardWidth + cardSpacing);
 
-            // Calculate button dimensions proportionally to card size
-            int buttonMargin = Math.max(10, cardWidth / 8); // Proportional margin
-            int buttonWidth = Math.max(60, cardWidth - buttonMargin * 2);
-            int buttonHeight = Math.min(25, cardHeight / 8);
-            int buttonY = cardY + cardHeight - buttonHeight - 10;
-
-            Button btn = Button.builder(
-                    I18n.ui("perk.select"),
-                    b -> selectPerk(index))
-                .bounds(cardX + buttonMargin, buttonY, buttonWidth, buttonHeight)
+            EditorButton btn = EditorButton.builder("select-perk-" + index, I18n.ui("perk.select").getString())
+                .style(EditorButton.Style.PRIMARY)
+                .size(EditorButton.Size.MEDIUM)
+                .onClick(() -> selectPerk(index))
                 .build();
-            btn.visible = false;
-            addRenderableWidget(btn);
             perkButtons.add(btn);
         }
 
         // Skip button (bottom - prominent height for visibility)
-        addRenderableWidget(Button.builder(
-                I18n.ui("perk.skip"),
-                b -> skipPerk())
-            .bounds(width / 2 - UIConstants.Size.BUTTON_WIDTH_MEDIUM / 2, height - 50,
-                    UIConstants.Size.BUTTON_WIDTH_MEDIUM, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
-            .build());
+        skipButton = EditorButton.builder("perk-skip", I18n.ui("perk.skip").getString())
+            .style(EditorButton.Style.GHOST)
+            .size(EditorButton.Size.LARGE)
+            .onClick(this::skipPerk)
+            .build();
     }
 
     /**
@@ -158,13 +142,7 @@ public class PerkSelectionScreen extends Screen {
     public void tick() {
         super.tick();
 
-        long elapsed = System.currentTimeMillis() - openTime;
-
-        // Show buttons after animation
-        for (int i = 0; i < perkButtons.size(); i++) {
-            long cardDelay = FADE_IN_DURATION + i * CARD_STAGGER + 200;
-            perkButtons.get(i).visible = elapsed > cardDelay;
-        }
+        // Button visibility handled during render based on elapsed time
     }
 
     @Override
@@ -220,6 +198,9 @@ public class PerkSelectionScreen extends Screen {
         if (showComparisonPanel && hoveredIndex >= 0 && fadeProgress > 0.5f) {
             renderComparisonPanel(graphics, hoveredIndex, fadeProgress);
         }
+
+        // Render buttons after cards are visible
+        renderPerkButtons(graphics, mouseX, mouseY, elapsed);
 
         // Keybind hints
         if (fadeProgress > 0.8f) {
@@ -441,29 +422,91 @@ public class PerkSelectionScreen extends Screen {
         return (a << 24) | (color & 0x00FFFFFF);
     }
 
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // First let buttons handle clicks
-        if (super.mouseClicked(mouseX, mouseY, button)) {
-            return true;
-        }
-
-        // Check card clicks - directly select the perk
+    private void renderPerkButtons(GuiGraphics graphics, int mouseX, int mouseY, long elapsed) {
         int totalWidth = choices.size() * cardWidth + (choices.size() - 1) * cardSpacing;
         int startX = (width - totalWidth) / 2;
         int cardY = height / 2 - cardHeight / 2 + 20;
 
         for (int i = 0; i < choices.size(); i++) {
+            long cardDelay = FADE_IN_DURATION + i * CARD_STAGGER + 200;
+            if (elapsed <= cardDelay) {
+                continue;
+            }
+
             int cardX = startX + i * (cardWidth + cardSpacing);
-            if (mouseX >= cardX && mouseX <= cardX + cardWidth
-                && mouseY >= cardY && mouseY <= cardY + cardHeight) {
-                // Directly select the perk when clicking anywhere on the card
-                selectPerk(i);
-                return true;
+            int buttonMargin = Math.max(10, cardWidth / 8);
+            int buttonWidth = Math.max(60, cardWidth - buttonMargin * 2);
+            int buttonHeight = Math.min(25, cardHeight / 8);
+            int buttonY = cardY + cardHeight - buttonHeight - 10;
+
+            EditorButton btn = perkButtons.get(i);
+            btn.render(graphics, cardX + buttonMargin, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
+        }
+
+        // Skip button
+        if (skipButton != null && elapsed > FADE_IN_DURATION * 0.5f) {
+            int skipW = UIConstants.Size.BUTTON_WIDTH_MEDIUM;
+            int skipH = UIConstants.Size.BUTTON_HEIGHT_PROMINENT;
+            int skipX = width / 2 - skipW / 2;
+            int skipY = height - 50;
+            skipButton.render(graphics, skipX, skipY, skipW, skipH, mouseX, mouseY);
+        }
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        long elapsed = System.currentTimeMillis() - openTime;
+
+        if (button == 0) {
+            // Perk buttons
+            int totalWidth = choices.size() * cardWidth + (choices.size() - 1) * cardSpacing;
+            int startX = (width - totalWidth) / 2;
+            int cardY = height / 2 - cardHeight / 2 + 20;
+
+            for (int i = 0; i < perkButtons.size(); i++) {
+                long cardDelay = FADE_IN_DURATION + i * CARD_STAGGER + 200;
+                if (elapsed <= cardDelay) continue;
+                int cardX = startX + i * (cardWidth + cardSpacing);
+                if (perkButtons.get(i).mouseClicked(mouseX, mouseY, button)) {
+                    return true;
+                }
+                // Direct card click select
+                if (mouseX >= cardX && mouseX <= cardX + cardWidth
+                    && mouseY >= cardY && mouseY <= cardY + cardHeight) {
+                    selectPerk(i);
+                    return true;
+                }
+            }
+
+            // Skip button
+            if (skipButton != null && elapsed > FADE_IN_DURATION * 0.5f) {
+                if (skipButton.mouseClicked(mouseX, mouseY, button)) {
+                    return true;
+                }
             }
         }
 
-        return false;
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        boolean handled = false;
+        long elapsed = System.currentTimeMillis() - openTime;
+
+        if (button == 0) {
+            for (int i = 0; i < perkButtons.size(); i++) {
+                long cardDelay = FADE_IN_DURATION + i * CARD_STAGGER + 200;
+                if (elapsed <= cardDelay) continue;
+                handled |= perkButtons.get(i).mouseReleased(mouseX, mouseY, button);
+            }
+            if (skipButton != null && elapsed > FADE_IN_DURATION * 0.5f) {
+                handled |= skipButton.mouseReleased(mouseX, mouseY, button);
+            }
+        }
+
+        if (handled) return true;
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override

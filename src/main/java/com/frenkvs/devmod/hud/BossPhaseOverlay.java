@@ -33,7 +33,7 @@ import java.util.Optional;
  * Position: Below boss bar
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
-@SuppressWarnings("null")
+
 public class BossPhaseOverlay {
 
     private static final ResourceLocation LAYER_ID =

@@ -36,7 +36,7 @@ import java.util.Objects;
  * </ul>
  */
 @OnlyIn(Dist.CLIENT)
-@SuppressWarnings("null") // Minecraft rendering helpers lack null annotations; guarded by logic
+
 public class EnergyShieldRenderer {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnergyShieldRenderer.class);
 
@@ -54,6 +54,7 @@ public class EnergyShieldRenderer {
     private static final long IMPACT_DURATION_MS = 1500; // Ultra-thin technical ripple
     private static Vec3 currentImpactPoint = Vec3.ZERO;
     private static float currentImpactTime = 999.0f;
+    private static float currentImpactIntensity = 0.0f; // Damage-based intensity (0-1)
 
     /**
      * Records a shield impact for visual feedback.
@@ -94,11 +95,12 @@ public class EnergyShieldRenderer {
 
         long now = System.currentTimeMillis();
 
-        // Update impact time
+        // Update impact time and intensity from most recent impact
         if (!activeImpacts.isEmpty()) {
             ShieldImpact mostRecent = activeImpacts.get(activeImpacts.size() - 1);
             currentImpactTime = (now - mostRecent.time) / 1000.0f;
             currentImpactPoint = mostRecent.point;
+            currentImpactIntensity = mostRecent.getIntensity();
         }
 
         // Clean old impacts
@@ -335,7 +337,8 @@ public class EnergyShieldRenderer {
         if (impactDir.lengthSqr() < 0.001) return;
         impactDir = impactDir.normalize();
 
-        float waveAlpha = opacity * (1.0f - currentImpactTime);
+        // Scale wave alpha by impact intensity (stronger hits = brighter ripples)
+        float waveAlpha = opacity * (1.0f - currentImpactTime) * (0.5f + 0.5f * currentImpactIntensity);
         float ir = Math.min(1.0f, r + 0.5f);
         float ig = Math.min(1.0f, g + 0.5f);
         float ib = Math.min(1.0f, b + 0.5f);
@@ -444,7 +447,6 @@ public class EnergyShieldRenderer {
      */
     private static class ShieldImpact {
         final Vec3 point;
-        @SuppressWarnings("unused")
         final float damage;
         final long time;
 
@@ -452,6 +454,20 @@ public class EnergyShieldRenderer {
             this.point = point;
             this.damage = damage;
             this.time = time;
+        }
+
+        /**
+         * Returns a normalized intensity factor based on damage (clamped 0-1).
+         * Useful for scaling visual effects based on impact strength.
+         */
+        float getIntensity() {
+            return Math.min(1.0f, damage / 20.0f);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("ShieldImpact[point=%s, damage=%.1f, age=%dms]",
+                point, damage, System.currentTimeMillis() - time);
         }
     }
 }

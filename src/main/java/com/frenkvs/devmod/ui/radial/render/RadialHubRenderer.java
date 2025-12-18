@@ -23,7 +23,7 @@ import java.util.Objects;
  * <p>Each segment is clickable and switches the active macro-category.
  * The selected macro is highlighted with its color.</p>
  */
-@SuppressWarnings("null") // Minecraft API null annotations
+
 public final class RadialHubRenderer {
 
     private RadialHubRenderer() {

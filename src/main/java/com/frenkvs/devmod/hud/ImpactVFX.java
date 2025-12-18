@@ -25,7 +25,7 @@ import javax.annotation.Nonnull;
  *
  * Supports GPU-accelerated rendering via custom shader with CPU fallback.
  */
-@SuppressWarnings("null") // Minecraft API lacks null annotations
+
 public class ImpactVFX {
 
     // Active effects list (thread-safe to avoid ConcurrentModificationException)

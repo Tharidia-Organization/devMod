@@ -27,7 +27,7 @@ import org.joml.Matrix4f;
  *   <li>Reusable color extraction</li>
  * </ul>
  */
-@SuppressWarnings("null") // Minecraft API null annotations
+
 public final class RadialGeometry {
 
     private RadialGeometry() {

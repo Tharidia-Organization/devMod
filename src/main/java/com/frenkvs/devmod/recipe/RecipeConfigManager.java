@@ -250,13 +250,13 @@ public final class RecipeConfigManager {
     /**
      * Get recipes by type (snapshot copy for thread safety).
      */
-    @SuppressWarnings("unchecked")
+
     public static <T extends RecipeData> List<T> getRecipesByType(Class<T> type) {
         serverLock.readLock().lock();
         try {
             return serverRecipes.values().stream()
                 .filter(type::isInstance)
-                .map(r -> (T) r)
+                .map(type::cast)
                 .toList();
         } finally {
             serverLock.readLock().unlock();

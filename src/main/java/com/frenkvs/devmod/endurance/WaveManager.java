@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * Manages wave spawning, mob buffs, and wave progression for Endurance Quests.
  */
-@SuppressWarnings({"null"}) // Minecraft APIs lack null annotations
+
 public class WaveManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(WaveManager.class);
 
@@ -216,7 +216,6 @@ public class WaveManager {
      * Spawn mobs for the current wave.
      * Verifies each spawn and logs failures for debugging.
      */
-    @SuppressWarnings("deprecation")
     private void spawnWaveMobs(WaveState waveState, ArenaManager.Arena arena) {
         ServerLevel level = arena.getLevel();
         EnduranceQuestRegistry.MobQuestConfig mobConfig = waveState.quest.getMobConfig();
@@ -254,9 +253,8 @@ public class WaveManager {
                     applyEliteBuffs(mob, waveState.waveNumber);
                 }
 
-                // Finalize spawn
-                mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos),
-                    MobSpawnType.MOB_SUMMONED, null);
+                // Finalize spawn (uses deprecated API, isolated in helper method)
+                finalizeMobSpawn(mob, level, spawnPos);
 
                 // Tag mob as quest mob BEFORE adding to world (so event handlers can see it)
                 CompoundTag tag = mob.getPersistentData();
@@ -511,5 +509,20 @@ public class WaveManager {
     public int getRemainingMobs(UUID arenaId) {
         WaveState state = activeWaves.get(arenaId);
         return state != null ? state.getRemainingMobs() : 0;
+    }
+
+    // =========================================================================
+    // DEPRECATED API ISOLATION
+    // =========================================================================
+
+    /**
+     * Isolates the deprecated finalizeSpawn call.
+     * The Mob.finalizeSpawn API is marked deprecated but is still the correct way
+     * to initialize mob attributes and equipment for programmatic spawns.
+     */
+    @SuppressWarnings("deprecation")
+    private static void finalizeMobSpawn(Mob mob, ServerLevel level, BlockPos spawnPos) {
+        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos),
+            MobSpawnType.MOB_SUMMONED, null);
     }
 }

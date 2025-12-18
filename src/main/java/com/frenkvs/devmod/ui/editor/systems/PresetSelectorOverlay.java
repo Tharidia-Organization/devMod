@@ -117,10 +117,11 @@ public class PresetSelectorOverlay extends BaseOverlay {
     private Runnable onClose;
 
     // ═══════════════════════════════════════════════════════════════
-    // COMPONENTS
+    // COMPONENTS (lazy init to avoid this-escape)
     // ═══════════════════════════════════════════════════════════════
 
-    private final VirtualizedList<PresetListEntry> presetList;
+    private VirtualizedList<PresetListEntry> presetList;
+    private boolean listInitialized = false;
 
     private final EditorButton applyButton = new EditorButton("apply", "Apply")
         .style(EditorButton.Style.SUCCESS)
@@ -142,18 +143,25 @@ public class PresetSelectorOverlay extends BaseOverlay {
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════
 
-    @SuppressWarnings("this-escape") // Intentional: callbacks are not invoked during construction
     public PresetSelectorOverlay() {
-        presetList = new VirtualizedList<PresetListEntry>(LIST_ID)
-            .rowHeight(LIST_ROW_HEIGHT)
-            .onSelect(entry -> selectedEntry = entry)
-            .onDoubleClick(entry -> {
-                if (entry != null && onApply != null) {
-                    onApply.accept(entry.asPresetData());
-                    hide();
-                }
-            })
-            .rowRenderer(this::renderPresetRow);
+        // presetList initialized lazily to avoid this-escape warning
+    }
+
+    /** Ensures presetList is initialized (lazy init to avoid this-escape). */
+    private void ensureList() {
+        if (!listInitialized) {
+            presetList = new VirtualizedList<PresetListEntry>(LIST_ID)
+                .rowHeight(LIST_ROW_HEIGHT)
+                .onSelect(entry -> selectedEntry = entry)
+                .onDoubleClick(entry -> {
+                    if (entry != null && onApply != null) {
+                        onApply.accept(entry.asPresetData());
+                        hide();
+                    }
+                })
+                .rowRenderer(this::renderPresetRow);
+            listInitialized = true;
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -221,7 +229,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
 
         // Load from PresetRegistry (hierarchical presets)
         List<PresetRegistry.RegistryPreset> registryPresets =
-            PresetRegistry.getInstance().getPresetsForCategory(itemCategory);
+            PresetRegistry.INSTANCE.getPresetsForCategory(itemCategory);
 
         for (var rp : registryPresets) {
             allEntries.add(new PresetListEntry(
@@ -263,6 +271,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
     }
 
     private void updateFilteredList() {
+        ensureList();
         filteredEntries.clear();
 
         String query = searchQuery.toLowerCase().trim();

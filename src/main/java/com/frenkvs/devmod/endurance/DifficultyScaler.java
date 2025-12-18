@@ -22,8 +22,6 @@ public class DifficultyScaler {
     private static final float BOSS_HP_SCALE_PER_PLAYER = 0.3f;
     private static final float BOSS_DMG_SCALE_PER_PLAYER = 0.1f;
     private static final float MOB_HP_SCALE_PER_PLAYER = 0.15f;
-    @SuppressWarnings("unused") // Reserved for future use in clamping calculations
-    private static final float MIN_SCALE_FACTOR = 1.0f;
     private static final float MAX_MOB_COUNT_SCALE = 5.0f; // Cap at 5x mobs
     private static final float MAX_BOSS_HP_SCALE = 10.0f;  // Cap at 10x HP
 

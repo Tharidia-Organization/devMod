@@ -23,7 +23,7 @@ import javax.annotation.Nonnull;
  * Screen per modificare l'equipaggiamento di un mob.
  * Refactored con Axiom-style UI.
  */
-@SuppressWarnings("null")
+
 public class MobEquipmentScreen extends Screen {
 
     private static final int PANEL_WIDTH = 320;

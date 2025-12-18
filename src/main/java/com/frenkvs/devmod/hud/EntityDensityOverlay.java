@@ -35,7 +35,7 @@ import java.util.Map;
  * Position: Top-left corner
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
-@SuppressWarnings("null")
+
 public class EntityDensityOverlay {
 
     private static final ResourceLocation LAYER_ID =

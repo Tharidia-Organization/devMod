@@ -31,7 +31,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * - Layer system per z-ordering
  */
 // Minecraft API methods are not annotated but never return null in practice
-@SuppressWarnings("null")
+
 public class DebugRenderer {
     public static final DebugRenderer INSTANCE = new DebugRenderer();
     private static final Logger LOGGER = LogUtils.getLogger();

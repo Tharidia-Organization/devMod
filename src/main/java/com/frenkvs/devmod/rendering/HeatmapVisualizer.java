@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * - HeatmapVisualizer.INSTANCE.toggle(HeatmapType.DEATH)
  * - HeatmapVisualizer.INSTANCE.setData(HeatmapType.DEATH, data)
  */
-@SuppressWarnings("null") // Rendering API lacks null annotations
+
 public class HeatmapVisualizer {
     public static final HeatmapVisualizer INSTANCE = new HeatmapVisualizer();
 

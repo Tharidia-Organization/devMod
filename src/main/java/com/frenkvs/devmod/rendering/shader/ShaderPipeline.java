@@ -19,6 +19,7 @@ import java.util.Objects;
  * <p>This keeps shader wiring uniform across effects and guarantees a usable
  * RenderType even when the custom shader fails to load.</p>
  */
+
 @OnlyIn(Dist.CLIENT)
 public final class ShaderPipeline {
     private final String name;

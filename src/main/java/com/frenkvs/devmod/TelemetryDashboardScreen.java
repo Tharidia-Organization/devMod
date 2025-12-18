@@ -30,7 +30,7 @@ import java.util.List;
  * Fornisce controlli per esportare heatmap, visualizzare statistiche e toggle overlay.
  * Refactored con Axiom-style UI.
  */
-@SuppressWarnings("null")
+
 public class TelemetryDashboardScreen extends Screen {
 
     private static final int CONTENT_WIDTH = 320;

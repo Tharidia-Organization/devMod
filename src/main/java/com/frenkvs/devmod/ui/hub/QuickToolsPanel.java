@@ -20,7 +20,7 @@ import java.util.function.Consumer;
  * - Quick access to editors
  * - Current session info
  */
-@SuppressWarnings("null") // Minecraft APIs lack null annotations
+
 public class QuickToolsPanel implements HubPanel {
 
     private final int x, y, width, height;

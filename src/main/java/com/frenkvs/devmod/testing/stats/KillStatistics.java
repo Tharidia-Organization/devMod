@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Tracks all kill-related statistics.
  * Extracted from TesterProgress for single responsibility.
  */
-@SuppressWarnings("null")
+
 public class KillStatistics {
     public static final KillStatistics INSTANCE = new KillStatistics();
 

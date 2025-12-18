@@ -338,7 +338,7 @@ private List<ItemEditorDataManager.PresetData> availablePresets() {
 
     // 1. Load from PresetRegistry (hierarchical - higher priority)
     List<PresetRegistry.RegistryPreset> registryPresets =
-        PresetRegistry.getInstance().getPresetsForCategory(type);
+        PresetRegistry.INSTANCE.getPresetsForCategory(type);
     for (var rp : registryPresets) {
         result.add(PresetBridge.toPresetData(rp));
     }
@@ -356,8 +356,7 @@ private List<ItemEditorDataManager.PresetData> availablePresets() {
 
 ```java
 // In DevMod constructor, after ModIntegrationManager.init()
-PresetRegistry.init();
-PresetRegistry.getInstance().loadFromConfig();
+PresetRegistry.INSTANCE.loadFromConfig();
 ```
 
 ## Bundled Presets

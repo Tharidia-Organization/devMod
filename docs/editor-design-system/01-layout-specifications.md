@@ -337,21 +337,21 @@ Singleton per gestione temi UI:
 
 ```java
 // Get current theme
-Theme theme = ThemeManager.get().current();
+Theme theme = ThemeManager.INSTANCE.current();
 int bg = theme.panelBackground();
 
 // Switch theme
-ThemeManager.get().setTheme(LightTheme.INSTANCE);
+ThemeManager.INSTANCE.setTheme(LightTheme.INSTANCE);
 
 // Toggle dark/light
-ThemeManager.get().toggle();
+ThemeManager.INSTANCE.toggle();
 
 // Convenience accessors
-int panelBg = ThemeManager.get().panelBg();
-int textColor = ThemeManager.get().textPrimary();
+int panelBg = ThemeManager.INSTANCE.panelBg();
+int textColor = ThemeManager.INSTANCE.textPrimary();
 
 // Listen for changes
-ThemeManager.get().addListener((newTheme, oldTheme) -> {
+ThemeManager.INSTANCE.addListener((newTheme, oldTheme) -> {
     refreshColors();
 });
 ```

@@ -146,7 +146,7 @@ public final class InfoButton {
         if (hovered) {
             String description = getResolvedDescription();
             if (!description.isEmpty()) {
-                TooltipManager.getInstance().queueTooltip(
+                TooltipManager.INSTANCE.queueTooltip(
                     description,
                     x, y, scaledSize, scaledSize,
                     TooltipManager.TooltipPosition.ABOVE
@@ -243,7 +243,7 @@ public final class InfoButton {
         if (inBounds && hasDescription()) {
             lastClickTime = now;
             // Pin tooltip on click - stays visible until clicked again
-            TooltipManager.getInstance().pinTooltip(
+            TooltipManager.INSTANCE.pinTooltip(
                 getResolvedDescription(),
                 bounds.x(), bounds.y(), bounds.width(), bounds.height(),
                 TooltipManager.TooltipPosition.ABOVE

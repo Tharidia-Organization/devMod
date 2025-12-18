@@ -23,7 +23,7 @@ import java.util.function.Consumer;
  * - Expandable categories list
  * - Test list for selected category
  */
-@SuppressWarnings("null") // Minecraft APIs lack null annotations
+
 public class CategoryPanel implements HubPanel {
 
     private final int x, y, width, height;

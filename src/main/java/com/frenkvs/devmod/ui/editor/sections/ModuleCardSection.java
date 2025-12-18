@@ -15,6 +15,7 @@ import java.util.function.Consumer;
  * Clickable card section for navigating to another editor module.
  * Used by GeneralModule (Navigation Hub) to provide module switching.
  */
+
 public final class ModuleCardSection implements EditorSection.CustomSection {
 
     private static final int CARD_HEIGHT = 56;

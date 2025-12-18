@@ -4,6 +4,8 @@ import com.frenkvs.devmod.testing.TutorialManager;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.gui.GuiGraphics;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
+import com.frenkvs.devmod.ui.editor.components.EditorToggle;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.screens.Screen;
@@ -28,7 +30,7 @@ import java.util.Random;
  * - Sound feedback
  */
 @OnlyIn(Dist.CLIENT)
-@SuppressWarnings("null")
+
 public class WelcomeScreen extends Screen {
 
     // === Colors ===
@@ -56,9 +58,12 @@ public class WelcomeScreen extends Screen {
 
     // === State ===
     private boolean dontShowAgain = false;
-    private Checkbox dontShowCheckbox;
-    private Button tutorialButton;
-    private Button skipButton;
+    private EditorToggle dontShowCheckbox;
+    private Checkbox dontShowCheckboxWidget;
+    private EditorButton tutorialButton;
+    private Button tutorialButtonWidget;
+    private EditorButton skipButton;
+    private Button skipButtonWidget;
     private long openTime;
     private boolean introSoundPlayed = false;
 
@@ -101,27 +106,29 @@ public class WelcomeScreen extends Screen {
         // Tutorial button - positioned relative to actual panel width
         int buttonWidth = Math.min(170, (actualPanelWidth - 50) / 2);
         int buttonY = panelY + actualPanelHeight - 75;
-        tutorialButton = Button.builder(I18n.ui("start_tutorial"), btn -> startTutorial())
-            .bounds(panelX + 35, buttonY, buttonWidth, 28)
-            .build();
-        addRenderableWidget(tutorialButton);
-        tutorialButton.visible = false;
+        tutorialButton = new EditorButton("welcome-start-tutorial", I18n.ui("start_tutorial").getString())
+            .style(EditorButton.Style.PRIMARY)
+            .size(EditorButton.Size.LARGE)
+            .onClick(this::startTutorial);
+        tutorialButtonWidget = tutorialButton.asVanilla(panelX + 35, buttonY, buttonWidth, 28);
+        tutorialButtonWidget.visible = false;
+        addRenderableWidget(tutorialButtonWidget);
 
         // Skip button - positioned relative to actual panel width
-        skipButton = Button.builder(I18n.ui("skip_know_this"), btn -> skip())
-            .bounds(panelX + actualPanelWidth - buttonWidth - 35, buttonY, buttonWidth, 28)
-            .build();
-        addRenderableWidget(skipButton);
-        skipButton.visible = false;
+        skipButton = new EditorButton("welcome-skip", I18n.ui("skip_know_this").getString())
+            .style(EditorButton.Style.NORMAL)
+            .size(EditorButton.Size.LARGE)
+            .onClick(this::skip);
+        skipButtonWidget = skipButton.asVanilla(panelX + actualPanelWidth - buttonWidth - 35, buttonY, buttonWidth, 28);
+        skipButtonWidget.visible = false;
+        addRenderableWidget(skipButtonWidget);
 
-        // Checkbox
-        dontShowCheckbox = Checkbox.builder(I18n.ui("dont_show_again"), font)
-            .pos(panelX + 35, panelY + PANEL_HEIGHT - 40)
-            .selected(false)
-            .onValueChange((checkbox, value) -> dontShowAgain = value)
-            .build();
-        addRenderableWidget(dontShowCheckbox);
-        dontShowCheckbox.visible = false;
+        // Checkbox (using EditorToggle for consistent theming)
+        dontShowCheckbox = new EditorToggle("welcome-dont-show", I18n.ui("dont_show_again").getString(), false)
+            .onChange(value -> dontShowAgain = value);
+        dontShowCheckboxWidget = (Checkbox) dontShowCheckbox.asVanilla(panelX + 35, panelY + PANEL_HEIGHT - 40, buttonWidth * 2, 18);
+        dontShowCheckboxWidget.visible = false;
+        addRenderableWidget(dontShowCheckboxWidget);
 
         // Initialize background particles
         for (int i = 0; i < 30; i++) {
@@ -141,9 +148,9 @@ public class WelcomeScreen extends Screen {
 
         // Show widgets after delay
         if (elapsed > BUTTONS_REVEAL_DELAY) {
-            tutorialButton.visible = true;
-            skipButton.visible = true;
-            dontShowCheckbox.visible = true;
+            tutorialButtonWidget.visible = true;
+            skipButtonWidget.visible = true;
+            dontShowCheckboxWidget.visible = true;
         }
 
         // Update particles
@@ -214,8 +221,9 @@ public class WelcomeScreen extends Screen {
         // Render widgets with fade
         if (elapsed > BUTTONS_REVEAL_DELAY) {
             float btnAlpha = Math.min(1.0f, (elapsed - BUTTONS_REVEAL_DELAY) / 300.0f);
-            tutorialButton.setAlpha(btnAlpha);
-            skipButton.setAlpha(btnAlpha);
+            tutorialButtonWidget.setAlpha(btnAlpha);
+            skipButtonWidget.setAlpha(btnAlpha);
+            dontShowCheckboxWidget.setAlpha(btnAlpha);
         }
 
         super.render(graphics, mouseX, mouseY, partialTick);

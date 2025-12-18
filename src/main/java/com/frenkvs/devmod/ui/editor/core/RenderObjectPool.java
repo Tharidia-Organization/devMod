@@ -35,15 +35,8 @@ public final class RenderObjectPool {
     private long returns = 0;
     private long allocations = 0;
 
-    // Singleton
-    private static RenderObjectPool instance;
-
-    public static RenderObjectPool getInstance() {
-        if (instance == null) {
-            instance = new RenderObjectPool();
-        }
-        return instance;
-    }
+    // Singleton (eager initialization - thread-safe)
+    public static final RenderObjectPool INSTANCE = new RenderObjectPool();
 
     private RenderObjectPool() {}
 

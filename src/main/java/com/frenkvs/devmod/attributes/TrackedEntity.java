@@ -60,18 +60,43 @@ public class TrackedEntity {
     private double totalDistanceMoved = 0.0;
     private float totalDamageTaken = 0.0f;
 
-    @SuppressWarnings("this-escape")
+
     public TrackedEntity(LivingEntity entity) {
         this.entityRef = new WeakReference<>(entity);
         this.entityId = entity.getId();
         this.entityName = entity.getName().getString();
         this.entityType = entity.getType().getDescriptionId();
         this.firstTrackedTime = System.currentTimeMillis();
+        this.lastUpdateTime = this.firstTrackedTime;
         this.lastKnownPosition = entity.position();
         this.previousPosition = entity.position();
 
-        // Initial attribute read (safe: update() only reads entity state)
-        update();
+        // Initialize base attributes directly to avoid this-escape
+        this.currentHealth = entity.getHealth();
+        this.maxHealth = entity.getMaxHealth();
+        this.armorValue = entity.getArmorValue();
+        initializeAttributes(entity);
+    }
+
+    /** Initialize advanced attributes (called from constructor). */
+    private void initializeAttributes(LivingEntity entity) {
+        var armorToughnessAttr = entity.getAttribute(Objects.requireNonNull(Attributes.ARMOR_TOUGHNESS));
+        this.armorToughness = armorToughnessAttr != null ? (float) armorToughnessAttr.getValue() : 0f;
+
+        var moveSpeedAttr = entity.getAttribute(Objects.requireNonNull(Attributes.MOVEMENT_SPEED));
+        this.movementSpeed = moveSpeedAttr != null ? moveSpeedAttr.getValue() : 0;
+
+        var attackDmgAttr = entity.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
+        this.attackDamage = attackDmgAttr != null ? attackDmgAttr.getValue() : 0;
+
+        var attackSpeedAttr = entity.getAttribute(Objects.requireNonNull(Attributes.ATTACK_SPEED));
+        this.attackSpeed = attackSpeedAttr != null ? attackSpeedAttr.getValue() : 0;
+
+        var knockbackAttr = entity.getAttribute(Objects.requireNonNull(Attributes.KNOCKBACK_RESISTANCE));
+        this.knockbackResistance = knockbackAttr != null ? knockbackAttr.getValue() : 0;
+
+        this.pehkuiScale = ModIntegrationManager.getPehkuiScale(entity);
+        this.pehkuiHitboxScale = ModIntegrationManager.getPehkuiHitboxScale(entity);
     }
 
     /**

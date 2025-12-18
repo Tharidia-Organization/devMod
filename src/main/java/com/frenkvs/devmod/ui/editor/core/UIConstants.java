@@ -16,47 +16,47 @@ public final class UIConstants {
 
     public static final class Background {
         /** Main panel background - semi-transparent dark */
-        public static int PANEL() { return ThemeManager.get().panelBg(); }
+        public static int PANEL() { return ThemeManager.INSTANCE.panelBg(); }
         public static final int PANEL = 0xE0181818;
 
         /** Solid variant for dialogs/overlays */
-        public static int PANEL_SOLID() { return ThemeManager.get().panelBgSolid(); }
+        public static int PANEL_SOLID() { return ThemeManager.INSTANCE.panelBgSolid(); }
         public static final int PANEL_SOLID = 0xFF181818;
 
         /** Input fields, inactive areas */
-        public static int INPUT() { return ThemeManager.get().inputBg(); }
+        public static int INPUT() { return ThemeManager.INSTANCE.inputBg(); }
         public static final int INPUT = 0xFF252525;
 
         /** Hover state for buttons/items */
-        public static int HOVER() { return ThemeManager.get().hoverBg(); }
+        public static int HOVER() { return ThemeManager.INSTANCE.hoverBg(); }
         public static final int HOVER = 0xFF353535;
 
         /** Active/pressed state */
-        public static int ACTIVE() { return ThemeManager.get().activeBg(); }
+        public static int ACTIVE() { return ThemeManager.INSTANCE.activeBg(); }
         public static final int ACTIVE = 0xFF454545;
 
         /** Darker areas (scrollbar track, separators) */
-        public static int DARKER() { return ThemeManager.get().current().darkerBackground(); }
+        public static int DARKER() { return ThemeManager.INSTANCE.current().darkerBackground(); }
         public static final int DARKER = 0xFF0D0D0D;
 
         /** Header/footer background */
-        public static int HEADER() { return ThemeManager.get().headerBg(); }
+        public static int HEADER() { return ThemeManager.INSTANCE.headerBg(); }
         public static final int HEADER = 0xFF1A1A1A;
 
         /** Content area background */
-        public static int CONTENT() { return ThemeManager.get().contentBg(); }
+        public static int CONTENT() { return ThemeManager.INSTANCE.contentBg(); }
         public static final int CONTENT = 0xFF202020;
 
         /** Tab inactive background */
-        public static int TAB_INACTIVE() { return ThemeManager.get().current().tabInactiveBackground(); }
+        public static int TAB_INACTIVE() { return ThemeManager.INSTANCE.current().tabInactiveBackground(); }
         public static final int TAB_INACTIVE = 0xFF282828;
 
         /** Tab active background */
-        public static int TAB_ACTIVE() { return ThemeManager.get().current().tabActiveBackground(); }
+        public static int TAB_ACTIVE() { return ThemeManager.INSTANCE.current().tabActiveBackground(); }
         public static final int TAB_ACTIVE = 0xFF383838;
 
         /** Overlay/modal backdrop */
-        public static int OVERLAY() { return ThemeManager.get().overlayBg(); }
+        public static int OVERLAY() { return ThemeManager.INSTANCE.overlayBg(); }
         public static final int OVERLAY = 0x80000000;
 
         private Background() {}
@@ -68,35 +68,35 @@ public final class UIConstants {
 
     public static final class Border {
         /** Default border */
-        public static int DEFAULT() { return ThemeManager.get().border(); }
+        public static int DEFAULT() { return ThemeManager.INSTANCE.border(); }
         public static final int DEFAULT = 0xFF3A3A3A;
 
         /** Muted/subtle border */
-        public static int MUTED() { return ThemeManager.get().borderMuted(); }
+        public static int MUTED() { return ThemeManager.INSTANCE.borderMuted(); }
         public static final int MUTED = 0xFF2A2A2A;
 
         /** Accent/focused border */
-        public static int ACCENT() { return ThemeManager.get().borderAccent(); }
+        public static int ACCENT() { return ThemeManager.INSTANCE.borderAccent(); }
         public static final int ACCENT = 0xFF00D4FF;
 
         /** Separator lines */
-        public static int SEPARATOR() { return ThemeManager.get().separator(); }
+        public static int SEPARATOR() { return ThemeManager.INSTANCE.separator(); }
         public static final int SEPARATOR = 0xFF333333;
 
         /** Success state border */
-        public static int SUCCESS() { return ThemeManager.get().success(); }
+        public static int SUCCESS() { return ThemeManager.INSTANCE.success(); }
         public static final int SUCCESS = 0xFF4CAF50;
 
         /** Error state border */
-        public static int ERROR() { return ThemeManager.get().error(); }
+        public static int ERROR() { return ThemeManager.INSTANCE.error(); }
         public static final int ERROR = 0xFFE53935;
 
         /** Warning state border */
-        public static int WARNING() { return ThemeManager.get().warning(); }
+        public static int WARNING() { return ThemeManager.INSTANCE.warning(); }
         public static final int WARNING = 0xFFFF9800;
 
         /** Hover state border */
-        public static int HOVER() { return ThemeManager.get().current().borderHover(); }
+        public static int HOVER() { return ThemeManager.INSTANCE.current().borderHover(); }
         public static final int HOVER = 0xFF5A5A5A;
 
         private Border() {}
@@ -108,42 +108,42 @@ public final class UIConstants {
 
     public static final class Text {
         /** Primary text - high contrast */
-        public static int PRIMARY() { return ThemeManager.get().textPrimary(); }
+        public static int PRIMARY() { return ThemeManager.INSTANCE.textPrimary(); }
         public static final int PRIMARY = 0xFFE0E0E0;
 
         /** Secondary text - medium contrast */
-        public static int SECONDARY() { return ThemeManager.get().textSecondary(); }
+        public static int SECONDARY() { return ThemeManager.INSTANCE.textSecondary(); }
         public static final int SECONDARY = 0xFFAAAAAA;
 
         /** Muted text - low contrast */
-        public static int MUTED() { return ThemeManager.get().textMuted(); }
+        public static int MUTED() { return ThemeManager.INSTANCE.textMuted(); }
         public static final int MUTED = 0xFF666666;
 
         /** Title text - bright */
-        public static int TITLE() { return ThemeManager.get().textTitle(); }
+        public static int TITLE() { return ThemeManager.INSTANCE.textTitle(); }
         public static final int TITLE = 0xFFFFFFFF;
 
         /** Value text - slightly cyan tinted */
-        public static int VALUE() { return ThemeManager.get().current().textValue(); }
+        public static int VALUE() { return ThemeManager.INSTANCE.current().textValue(); }
         public static final int VALUE = 0xFFB0E0E6;
 
         /** Formula/code text - monospace color */
-        public static int FORMULA() { return ThemeManager.get().current().textFormula(); }
+        public static int FORMULA() { return ThemeManager.INSTANCE.current().textFormula(); }
         public static final int FORMULA = 0xFF98D4A4;
 
         /** Disabled text */
-        public static int DISABLED() { return ThemeManager.get().textDisabled(); }
+        public static int DISABLED() { return ThemeManager.INSTANCE.textDisabled(); }
         public static final int DISABLED = 0xFF555555;
 
         /** Link text */
         public static final int LINK = 0xFF4FC3F7;
 
         /** Info text - blue tint */
-        public static int INFO() { return ThemeManager.get().info(); }
+        public static int INFO() { return ThemeManager.INSTANCE.info(); }
         public static final int INFO = 0xFF2196F3;
 
         /** Warning text - orange tint */
-        public static int WARNING() { return ThemeManager.get().warning(); }
+        public static int WARNING() { return ThemeManager.INSTANCE.warning(); }
         public static final int WARNING = 0xFFFF9800;
 
         private Text() {}
@@ -155,23 +155,23 @@ public final class UIConstants {
 
     public static final class Accent {
         /** Primary accent - cyan */
-        public static int CYAN() { return ThemeManager.get().accent(); }
+        public static int CYAN() { return ThemeManager.INSTANCE.accent(); }
         public static final int CYAN = 0xFF00D4FF;
 
         /** Success - green */
-        public static int GREEN() { return ThemeManager.get().success(); }
+        public static int GREEN() { return ThemeManager.INSTANCE.success(); }
         public static final int GREEN = 0xFF4CAF50;
 
         /** Warning - orange */
-        public static int ORANGE() { return ThemeManager.get().warning(); }
+        public static int ORANGE() { return ThemeManager.INSTANCE.warning(); }
         public static final int ORANGE = 0xFFFF9800;
 
         /** Error/danger - red */
-        public static int RED() { return ThemeManager.get().error(); }
+        public static int RED() { return ThemeManager.INSTANCE.error(); }
         public static final int RED = 0xFFE53935;
 
         /** Info - blue */
-        public static int BLUE() { return ThemeManager.get().info(); }
+        public static int BLUE() { return ThemeManager.INSTANCE.info(); }
         public static final int BLUE = 0xFF2196F3;
 
         /** Special/rare - purple */
@@ -181,12 +181,12 @@ public final class UIConstants {
         public static final int YELLOW = 0xFFFFEB3B;
 
         // Semantic aliases
-        public static int PRIMARY() { return ThemeManager.get().accent(); }
+        public static int PRIMARY() { return ThemeManager.INSTANCE.accent(); }
         public static final int PRIMARY = CYAN;
         public static final int POSITIVE = GREEN;
         public static final int WARNING = ORANGE;
         public static final int NEGATIVE = RED;
-        public static int INFO() { return ThemeManager.get().info(); }
+        public static int INFO() { return ThemeManager.INSTANCE.info(); }
         public static final int INFO = BLUE;
 
         private Accent() {}
@@ -265,16 +265,16 @@ public final class UIConstants {
 
     public static final class Button {
         /** Normal state */
-        public static int NORMAL() { return ThemeManager.get().btnNormal(); }
+        public static int NORMAL() { return ThemeManager.INSTANCE.btnNormal(); }
         public static final int NORMAL = 0xFF2A2A2A;
         /** Hover state */
-        public static int HOVER() { return ThemeManager.get().btnHover(); }
+        public static int HOVER() { return ThemeManager.INSTANCE.btnHover(); }
         public static final int HOVER = 0xFF3A3A3A;
         /** Pressed state */
-        public static int PRESSED() { return ThemeManager.get().btnPressed(); }
+        public static int PRESSED() { return ThemeManager.INSTANCE.btnPressed(); }
         public static final int PRESSED = 0xFF1A1A1A;
         /** Disabled state */
-        public static int DISABLED() { return ThemeManager.get().btnDisabled(); }
+        public static int DISABLED() { return ThemeManager.INSTANCE.btnDisabled(); }
         public static final int DISABLED = 0xFF1A1A1A;
         /** Focused state */
         public static final int FOCUSED = 0xFF3A3A5A;

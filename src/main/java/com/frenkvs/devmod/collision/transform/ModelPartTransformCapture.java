@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Map<String, CapturedTransform> transforms = ModelPartTransformCapture.getTransforms(entity);
  * </pre>
  */
+
 public final class ModelPartTransformCapture {
 
     private ModelPartTransformCapture() {} // Utility class

@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Tracks enchantment-related statistics.
  * Extracted from TesterProgress for single responsibility.
  */
-@SuppressWarnings("null")
+
 public class EnchantmentStatistics {
     public static final EnchantmentStatistics INSTANCE = new EnchantmentStatistics();
 

@@ -376,7 +376,7 @@ public class InstanceData {
         return map;
     }
 
-    @SuppressWarnings("unchecked")
+
     public static InstanceData fromMap(Map<String, Object> map) {
         UUID instanceId = UUID.fromString((String) map.get("instanceId"));
         UUID ownerId = UUID.fromString((String) map.get("ownerId"));
@@ -394,11 +394,9 @@ public class InstanceData {
             data.dimensionKey = ResourceKey.create(dimensionRegistryKey, dimLoc);
         }
 
-        List<String> playerIds = (List<String>) map.get("players");
-        if (playerIds != null) {
-            for (String pid : playerIds) {
-                data.currentPlayers.add(UUID.fromString(pid));
-            }
+        List<String> playerIds = getStringList(map, "players");
+        for (String pid : playerIds) {
+            data.currentPlayers.add(UUID.fromString(pid));
         }
 
         if (map.containsKey("arenaX")) {
@@ -448,5 +446,29 @@ public class InstanceData {
     @Override
     public int hashCode() {
         return instanceId.hashCode();
+    }
+
+    // =========================================================================
+    // JSON PARSING HELPERS (type-safe)
+    // =========================================================================
+
+    /**
+     * Safely extracts a List of Strings from a Map, avoiding unchecked casts.
+     */
+    private static List<String> getStringList(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value == null) {
+            return List.of();
+        }
+        if (value instanceof List<?> list) {
+            List<String> result = new ArrayList<>();
+            for (Object item : list) {
+                if (item instanceof String s) {
+                    result.add(s);
+                }
+            }
+            return result;
+        }
+        return List.of();
     }
 }

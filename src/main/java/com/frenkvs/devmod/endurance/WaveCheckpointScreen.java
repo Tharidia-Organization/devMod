@@ -1,9 +1,9 @@
 package com.frenkvs.devmod.endurance;
 
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
@@ -29,7 +29,7 @@ import java.util.Random;
  * - Gradient backgrounds with depth
  */
 @OnlyIn(Dist.CLIENT)
-@SuppressWarnings("null")
+
 public class WaveCheckpointScreen extends Screen {
 
     // === Colors - Standardized to UIConstants ===
@@ -75,8 +75,8 @@ public class WaveCheckpointScreen extends Screen {
     private final Random random = new Random();
 
     // === Buttons (custom for fade) ===
-    private Button continueButton;
-    private Button exitButton;
+    private EditorButton continueButton;
+    private EditorButton exitButton;
 
     public WaveCheckpointScreen() {
         super(I18n.translate("devmod.endurance.wave"));
@@ -98,33 +98,23 @@ public class WaveCheckpointScreen extends Screen {
         super.init();
         openTime = System.currentTimeMillis();
 
-        int centerX = width / 2;
-        int centerY = height / 2;
-        int panelX = centerX - PANEL_WIDTH / 2;
-        int panelY = centerY - PANEL_HEIGHT / 2;
-
         // Continue button (primary CTA)
         String continueText = endlessMode
             ? I18n.translate("devmod.endurance.starting_wave", waveNumber + 1).getString()
             : I18n.translate("devmod.endurance.wave").getString() + " " + (waveNumber + 1) + "/" + totalWaves;
 
-        int buttonWidth = (PANEL_WIDTH - 60) / 2; // Two buttons with gap
-        continueButton = Button.builder(I18n.literal(continueText), btn -> continueToNextWave())
-            .bounds(panelX + 25, panelY + PANEL_HEIGHT - 55,
-                    buttonWidth, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
+        continueButton = EditorButton.builder("checkpoint-continue", continueText)
+            .style(EditorButton.Style.SUCCESS)
+            .size(EditorButton.Size.LARGE)
+            .onClick(this::continueToNextWave)
             .build();
-        addRenderableWidget(continueButton);
 
         // Exit button (secondary action)
-        exitButton = Button.builder(I18n.translate("devmod.ui.exit_collect"), btn -> exitAndCollect())
-            .bounds(panelX + PANEL_WIDTH - buttonWidth - 25, panelY + PANEL_HEIGHT - 55,
-                    buttonWidth, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
+        exitButton = EditorButton.builder("checkpoint-exit", I18n.translate("devmod.ui.exit_collect").getString())
+            .style(EditorButton.Style.PRIMARY)
+            .size(EditorButton.Size.LARGE)
+            .onClick(this::exitAndCollect)
             .build();
-        addRenderableWidget(exitButton);
-
-        // Initially hide buttons
-        continueButton.visible = false;
-        exitButton.visible = false;
     }
 
     @Override
@@ -132,12 +122,6 @@ public class WaveCheckpointScreen extends Screen {
         super.tick();
 
         long elapsed = System.currentTimeMillis() - openTime;
-
-        // Show buttons after delay
-        if (elapsed > BUTTONS_REVEAL_DELAY) {
-            continueButton.visible = true;
-            exitButton.visible = true;
-        }
 
         // Spawn particles after delay
         if (elapsed > PARTICLE_START_DELAY && elapsed < PARTICLE_START_DELAY + 2000) {
@@ -228,13 +212,10 @@ public class WaveCheckpointScreen extends Screen {
         // === Render Particles (outside scale transform) ===
         renderParticles(graphics, centerX, centerY);
 
-        // Render buttons (with custom alpha)
+        // Render buttons when visible
         if (elapsed > BUTTONS_REVEAL_DELAY) {
-            float btnAlpha = Math.min(1.0f, (elapsed - BUTTONS_REVEAL_DELAY) / 300.0f);
-            continueButton.setAlpha(btnAlpha);
-            exitButton.setAlpha(btnAlpha);
+            renderButtons(graphics, mouseX, mouseY);
         }
-        super.render(graphics, mouseX, mouseY, partialTick);
     }
 
     // === Rendering Methods ===
@@ -447,6 +428,24 @@ public class WaveCheckpointScreen extends Screen {
         }
     }
 
+    private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY) {
+        int centerX = width / 2;
+        int centerY = height / 2;
+        int panelX = centerX - PANEL_WIDTH / 2;
+        int panelY = centerY - PANEL_HEIGHT / 2;
+
+        int buttonWidth = (PANEL_WIDTH - 60) / 2;
+        int buttonHeight = UIConstants.Size.BUTTON_HEIGHT_PROMINENT;
+        int buttonY = panelY + PANEL_HEIGHT - 55;
+
+        if (continueButton != null) {
+            continueButton.render(graphics, panelX + 25, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
+        }
+        if (exitButton != null) {
+            exitButton.render(graphics, panelX + PANEL_WIDTH - buttonWidth - 25, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
+        }
+    }
+
     // === Helper Methods ===
 
     private String animateNumber(String finalValue, long elapsed) {
@@ -524,6 +523,29 @@ public class WaveCheckpointScreen extends Screen {
         if (minecraft != null) {
             minecraft.setScreen(null);
         }
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && System.currentTimeMillis() - openTime > BUTTONS_REVEAL_DELAY) {
+            if (continueButton != null && continueButton.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+            if (exitButton != null && exitButton.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        boolean handled = false;
+        if (System.currentTimeMillis() - openTime > BUTTONS_REVEAL_DELAY) {
+            if (continueButton != null) handled |= continueButton.mouseReleased(mouseX, mouseY, button);
+            if (exitButton != null) handled |= exitButton.mouseReleased(mouseX, mouseY, button);
+        }
+        return handled || super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override

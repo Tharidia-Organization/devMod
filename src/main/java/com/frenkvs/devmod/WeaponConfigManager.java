@@ -45,7 +45,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-@SuppressWarnings("null") // Minecraft APIs lack null annotations
+
 public class WeaponConfigManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WeaponConfigManager.class);

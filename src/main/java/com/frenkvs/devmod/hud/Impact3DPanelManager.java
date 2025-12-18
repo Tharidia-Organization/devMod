@@ -24,7 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * - Removes expired panels
  * - Manages the maximum panel limit
  */
-@SuppressWarnings("null") // Minecraft API methods are not annotated but never return null in practice
+
 public class Impact3DPanelManager {
 
     // Singleton instance

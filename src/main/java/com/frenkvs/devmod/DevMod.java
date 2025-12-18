@@ -82,8 +82,7 @@ public class DevMod {
         ModIntegrationManager.init();
 
         // Initialize PresetRegistry (hierarchical preset system)
-        PresetRegistry.init();
-        PresetRegistry.getInstance().loadFromConfig();
+        PresetRegistry.INSTANCE.loadFromConfig();
 
         // Network payload registration (mod bus)
         eventBus.addListener(DebugNetworkHandler::registerPayloads);

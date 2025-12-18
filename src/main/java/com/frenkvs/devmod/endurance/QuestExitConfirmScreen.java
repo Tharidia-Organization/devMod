@@ -1,9 +1,9 @@
 package com.frenkvs.devmod.endurance;
 
-import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.ConfirmDialog;
+import com.frenkvs.devmod.ui.ConfirmDialog.Style;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -12,21 +12,11 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * Prevents accidental exits by requiring explicit confirmation.
  * Uses standard UIConstants for consistent theming.
  */
-@SuppressWarnings("null")
+
 public class QuestExitConfirmScreen extends Screen {
 
-    // Colors - standardized to UIConstants
-    private static final int COLOR_BG = UIConstants.Background.PANEL_SOLID();
-    private static final int COLOR_BORDER = UIConstants.Border.DEFAULT();  // Blue instead of orange
-    private static final int COLOR_TEXT = UIConstants.Text.PRIMARY();
-    private static final int COLOR_WARNING = UIConstants.Accent.ORANGE();
-    private static final int COLOR_DANGER = UIConstants.Accent.RED();
-
-    // Dimensions - using UIConstants for consistency
-    private static final int PANEL_WIDTH = UIConstants.Size.DIALOG_WIDTH_SMALL;
-    private static final int PANEL_HEIGHT = 150;
-
     private final Screen parentScreen;
+    private ConfirmDialog exitDialog;
 
     public QuestExitConfirmScreen(Screen parent) {
         super(I18n.screenTitle("exit_quest_confirm"));
@@ -37,50 +27,25 @@ public class QuestExitConfirmScreen extends Screen {
     protected void init() {
         super.init();
 
-        int centerX = width / 2;
-        int centerY = height / 2;
-        int panelX = centerX - PANEL_WIDTH / 2;
-        int panelY = centerY - PANEL_HEIGHT / 2;
-
-        // Confirm Exit button (danger action - prominent height)
-        addRenderableWidget(Button.builder(I18n.ui("yes_exit_quest"), btn -> confirmExit())
-            .bounds(panelX + 20, panelY + PANEL_HEIGHT - 45,
-                    UIConstants.Size.BUTTON_WIDTH_MEDIUM, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
-            .build());
-
-        // Cancel button (safe action - prominent height)
-        addRenderableWidget(Button.builder(I18n.ui("cancel"), btn -> cancel())
-            .bounds(panelX + PANEL_WIDTH - UIConstants.Size.BUTTON_WIDTH_MEDIUM - 20, panelY + PANEL_HEIGHT - 45,
-                    UIConstants.Size.BUTTON_WIDTH_MEDIUM, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
-            .build());
+        exitDialog = ConfirmDialog.create(
+            I18n.screenTitle("exit_quest_confirm").getString(),
+            I18n.ui("yes_exit_quest").getString(),
+            I18n.ui("cancel").getString(),
+            Style.DANGER,
+            this::confirmExit,
+            this::cancel,
+            "You will lose all progress for this run!",
+            "Points earned will be saved."
+        );
+        exitDialog.show();
     }
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Dim background
         renderBackground(graphics, mouseX, mouseY, partialTick);
-
-        int centerX = width / 2;
-        int centerY = height / 2;
-        int panelX = centerX - PANEL_WIDTH / 2;
-        int panelY = centerY - PANEL_HEIGHT / 2;
-
-        // Panel border
-        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT + 2, COLOR_BORDER);
-        // Panel background
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, COLOR_BG);
-
-        // Title
-        graphics.drawCenteredString(font, "Exit Endurance Quest?", centerX, panelY + 15, COLOR_DANGER);
-
-        // Warning message
-        graphics.drawCenteredString(font, "You will lose all progress for this run!", centerX, panelY + 45, COLOR_WARNING);
-        graphics.drawCenteredString(font, "Points earned will be saved.", centerX, panelY + 60, COLOR_TEXT);
-
-        // Hint
-        graphics.drawCenteredString(font, "Press ESC to cancel", centerX, panelY + 85, 0xFF777777);
-
-        super.render(graphics, mouseX, mouseY, partialTick);
+        if (exitDialog != null && exitDialog.isVisible()) {
+            exitDialog.render(graphics, font, width, height, mouseX, mouseY);
+        }
     }
 
     private void confirmExit() {
@@ -104,12 +69,40 @@ public class QuestExitConfirmScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (exitDialog != null && exitDialog.keyPressed(keyCode)) {
+            return true;
+        }
+
         // ESC cancels
         if (keyCode == 256) { // GLFW_KEY_ESCAPE
             cancel();
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (exitDialog != null && exitDialog.mouseClicked(mouseX, mouseY, width, height)) {
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (exitDialog != null && exitDialog.mouseScrolled(mouseX, mouseY, scrollY, width, height)) {
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        if (exitDialog != null && exitDialog.charTyped(codePoint, modifiers)) {
+            return true;
+        }
+        return super.charTyped(codePoint, modifiers);
     }
 
     @Override

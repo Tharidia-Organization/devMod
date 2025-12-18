@@ -307,7 +307,7 @@ public final class DebugOverlay {
         int maxScroll = Math.max(0, contentTotalHeight - viewport);
 
         // Build info lines using pooled list to reduce allocations
-        RenderObjectPool pool = RenderObjectPool.getInstance();
+        RenderObjectPool pool = RenderObjectPool.INSTANCE;
         List<String> lines = pool.borrowStringList();
 
         // Use StringBuilderCache for formatted strings

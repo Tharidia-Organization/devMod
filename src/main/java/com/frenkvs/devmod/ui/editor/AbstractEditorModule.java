@@ -93,7 +93,7 @@ public abstract class AbstractEditorModule implements EditorModule {
     public void setActiveTab(int index) {
         if (index >= 0 && index < tabs.size()) {
             this.activeTabIndex = index;
-            EditorCache.getInstance().invalidateType(EditorCache.Types.PREVIEW);
+            EditorCache.INSTANCE.invalidateType(EditorCache.Types.PREVIEW);
         }
     }
 
@@ -278,7 +278,7 @@ public abstract class AbstractEditorModule implements EditorModule {
             pendingChanges.add(changeDescription);
         }
         addHistoryEntry(changeDescription);
-        EditorCache.getInstance().invalidateItem(item.toString());
+        EditorCache.INSTANCE.invalidateItem(item.toString());
     }
 
     @Override
@@ -413,7 +413,7 @@ public abstract class AbstractEditorModule implements EditorModule {
         item = deserializeItem(state.itemData());
         activeTabIndex = state.tabIndex();
         onItemSet();
-        EditorCache.getInstance().invalidateAll();
+        EditorCache.INSTANCE.invalidateAll();
         pendingChanges.clear();
         historyEntries.clear();
     }
@@ -468,7 +468,7 @@ public abstract class AbstractEditorModule implements EditorModule {
         this.item = originalItem.copy();
         onItemSet();
         clearDirty();
-        EditorCache.getInstance().invalidateAll();
+        EditorCache.INSTANCE.invalidateAll();
     }
 
     // Preview item: used to hold a client-side preview copy so preview does not mutate the real item

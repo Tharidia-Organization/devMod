@@ -27,11 +27,7 @@ public final class TooltipManager {
     // SINGLETON
     // ═══════════════════════════════════════════════════════════════
 
-    private static final TooltipManager INSTANCE = new TooltipManager();
-
-    public static TooltipManager getInstance() {
-        return INSTANCE;
-    }
+    public static final TooltipManager INSTANCE = new TooltipManager();
 
     private TooltipManager() {}
 

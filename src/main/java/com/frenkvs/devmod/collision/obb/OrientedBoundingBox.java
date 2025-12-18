@@ -22,6 +22,7 @@ import java.util.Objects;
  * Designed for real-time combat (sub-ms operations).
  * Immutable class - all transform operations return new instances.
  */
+
 public final class OrientedBoundingBox {
 
     private final Vec3 center;

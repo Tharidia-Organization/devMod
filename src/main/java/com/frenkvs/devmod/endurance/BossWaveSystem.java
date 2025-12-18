@@ -133,11 +133,9 @@ public class BossWaveSystem {
         private final UUID arenaId;
         private final BossArchetype archetype;
         private final int waveNumber;
-        @SuppressWarnings("unused") // Reserved for serialization/debugging
         private final ResourceLocation baseMobType;
 
         // Boss entity
-        @SuppressWarnings("unused") // Reserved for entity lookup by UUID
         private UUID bossEntityId;
         private Mob bossEntity;
 
@@ -166,7 +164,7 @@ public class BossWaveSystem {
         private int bonusPoints = 0;
         private boolean perfectFight = true; // No damage taken
 
-        @SuppressWarnings("this-escape")
+
         public BossFight(UUID bossId, UUID arenaId, BossArchetype archetype, int waveNumber, ResourceLocation baseMobType) {
             this.bossId = bossId;
             this.arenaId = arenaId;
@@ -174,13 +172,19 @@ public class BossWaveSystem {
             this.waveNumber = waveNumber;
             this.baseMobType = baseMobType;
 
-            // Initialize cooldowns
-            for (BossAbility ability : getArchetypeAbilities()) {
+            // Initialize cooldowns using static method to avoid this-escape
+            for (BossAbility ability : getAbilitiesForArchetype(archetype)) {
                 abilityCooldowns.put(ability, 0);
             }
         }
 
+        /** Returns abilities for this boss's archetype. */
         public List<BossAbility> getArchetypeAbilities() {
+            return getAbilitiesForArchetype(archetype);
+        }
+
+        /** Static helper to get abilities for an archetype (avoids this-escape in constructor). */
+        public static List<BossAbility> getAbilitiesForArchetype(BossArchetype archetype) {
             return switch (archetype) {
                 case BERSERKER -> List.of(BossAbility.CHARGE, BossAbility.GROUND_SLAM, BossAbility.ENRAGE);
                 case SUMMONER -> List.of(BossAbility.SUMMON_MINIONS, BossAbility.BARRIER, BossAbility.LIFE_LINK);
@@ -195,6 +199,8 @@ public class BossWaveSystem {
         public UUID getArenaId() { return arenaId; }
         public BossArchetype getArchetype() { return archetype; }
         public int getWaveNumber() { return waveNumber; }
+        public ResourceLocation getBaseMobType() { return baseMobType; }
+        public UUID getBossEntityId() { return bossEntityId; }
         public BossPhase getCurrentPhase() { return currentPhase; }
         public float getHealthPercent() { return maxHealth > 0 ? currentHealth / maxHealth : 0; }
         public boolean isEnraged() { return isEnraged; }

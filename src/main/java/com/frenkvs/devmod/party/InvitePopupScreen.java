@@ -2,6 +2,7 @@ package com.frenkvs.devmod.party;
 
 import com.frenkvs.devmod.endurance.QuestType;
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -52,6 +53,10 @@ public class InvitePopupScreen extends Screen {
     private int popupX;
     private int popupY;
     private boolean responded = false;
+    private EditorButton acceptButton;
+    private EditorButton declineButton;
+    private Button acceptButtonWidget;
+    private Button declineButtonWidget;
 
     /**
      * Create an invite popup from notification payload.
@@ -89,16 +94,24 @@ public class InvitePopupScreen extends Screen {
         int buttonGap = 20;
 
         // Accept button
-        addRenderableWidget(Objects.requireNonNull(Button.builder(
-                Objects.requireNonNull(Component.translatable("devmod.party.accept"), "acceptLabel"), this::onAccept)
-                .bounds(popupX + POPUP_WIDTH / 2 - buttonWidth - buttonGap / 2, buttonY, buttonWidth, 20)
-                .build(), "acceptButton"));
+        acceptButton = EditorButton.builder("invite-accept", Component.translatable("devmod.party.accept").getString())
+            .style(EditorButton.Style.SUCCESS)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::onAccept)
+            .build();
+        acceptButtonWidget = Objects.requireNonNull(acceptButton.asVanilla(
+            popupX + POPUP_WIDTH / 2 - buttonWidth - buttonGap / 2, buttonY, buttonWidth, 20));
+        addRenderableWidget(acceptButtonWidget);
 
         // Decline button
-        addRenderableWidget(Objects.requireNonNull(Button.builder(
-                Objects.requireNonNull(Component.translatable("devmod.party.decline"), "declineLabel"), this::onDecline)
-                .bounds(popupX + POPUP_WIDTH / 2 + buttonGap / 2, buttonY, buttonWidth, 20)
-                .build(), "declineButton"));
+        declineButton = EditorButton.builder("invite-decline", Component.translatable("devmod.party.decline").getString())
+            .style(EditorButton.Style.DANGER)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::onDecline)
+            .build();
+        declineButtonWidget = Objects.requireNonNull(declineButton.asVanilla(
+            popupX + POPUP_WIDTH / 2 + buttonGap / 2, buttonY, buttonWidth, 20));
+        addRenderableWidget(declineButtonWidget);
     }
 
     @Override
@@ -196,7 +209,7 @@ public class InvitePopupScreen extends Screen {
         }
     }
 
-    private void onAccept(Button button) {
+    private void onAccept() {
         if (responded) return;
         responded = true;
 
@@ -209,7 +222,7 @@ public class InvitePopupScreen extends Screen {
         onClose();
     }
 
-    private void onDecline(Button button) {
+    private void onDecline() {
         if (responded) return;
         responded = true;
 

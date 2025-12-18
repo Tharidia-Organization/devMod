@@ -1,7 +1,6 @@
 package com.frenkvs.devmod.endurance;
 
 import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
@@ -14,7 +13,6 @@ import java.util.Objects;
  * Payload sent from server to client to synchronize quest state for HUD display.
  * This keeps the client informed about the active quest state.
  */
-@SuppressWarnings({"null", "unused"})
 public record QuestSyncPayload(
     boolean hasActiveQuest,
     String questName,
@@ -41,30 +39,6 @@ public record QuestSyncPayload(
     public static final Type<QuestSyncPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "quest_sync"))
     );
-
-    // Custom codec for List<String>
-    private static final StreamCodec<RegistryFriendlyByteBuf, List<String>> STRING_LIST_CODEC =
-        ByteBufCodecs.VAR_INT.<RegistryFriendlyByteBuf>cast().dispatch(
-            list -> list.size(),
-            size -> {
-                return StreamCodec.of(
-                    (buf, list) -> {
-                        buf.writeVarInt(list.size());
-                        for (String s : list) {
-                            buf.writeUtf(s);
-                        }
-                    },
-                    buf -> {
-                        int count = buf.readVarInt();
-                        List<String> result = new ArrayList<>(count);
-                        for (int i = 0; i < count; i++) {
-                            result.add(buf.readUtf());
-                        }
-                        return result;
-                    }
-                );
-            }
-        );
 
     public static final StreamCodec<RegistryFriendlyByteBuf, QuestSyncPayload> STREAM_CODEC = StreamCodec.of(
         QuestSyncPayload::encode,

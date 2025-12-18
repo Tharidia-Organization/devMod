@@ -24,6 +24,7 @@ import java.util.Map;
  * Matrix4f headTransform = snapshot.getPartTransform("head");
  * </pre>
  */
+
 public record AnimationSnapshot(
     int entityId,
     long tickCaptured,

@@ -25,7 +25,7 @@ import javax.annotation.Nonnull;
  * Provides toggles for all debug visualization overlays including
  * Minecraft's native debug APIs (similar to DebugUtils mod).
  */
-@SuppressWarnings("null") // Minecraft APIs lack null annotations
+
 public class DebugOverlaysPage implements SettingsPage {
 
     private static final int ROW_HEIGHT = 24;

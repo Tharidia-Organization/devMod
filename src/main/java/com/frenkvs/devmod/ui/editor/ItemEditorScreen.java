@@ -206,7 +206,7 @@ public class ItemEditorScreen extends Screen {
     private boolean isGlobalMode = false;
     private boolean showDevPanel = false;
     private boolean f3Held = false;
-    private final PerformanceMonitor perfMonitor = PerformanceMonitor.getInstance();
+    private final PerformanceMonitor perfMonitor = PerformanceMonitor.INSTANCE;
 
     // Components
     private final HeaderComponent header = new HeaderComponent();
@@ -324,7 +324,7 @@ public class ItemEditorScreen extends Screen {
         this.presetSelectorOverlay.onSaveCurrent(this::saveCurrentAsPreset);
 
         // Invalidate cache on init
-        EditorCache.getInstance().invalidateAll();
+        EditorCache.INSTANCE.invalidateAll();
     }
 
     private EditorModule resolveModule(ItemStack stack, EditorStartTab requested) {
@@ -1238,7 +1238,7 @@ public class ItemEditorScreen extends Screen {
             DEV_PANEL_TITLE_COLOR, false);
         textY += DEV_PANEL_TITLE_LINE_STEP;
 
-        EditorCache.CacheStats stats = EditorCache.getInstance().getStats();
+        EditorCache.CacheStats stats = EditorCache.INSTANCE.getStats();
         graphics.drawString(safeFont, "Cache: " + stats.valid() + "/" + stats.total(), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
             textY, UIConstants.Text.SECONDARY(), false);
         textY += DEV_PANEL_LINE_STEP;
@@ -1781,7 +1781,7 @@ public class ItemEditorScreen extends Screen {
             lastSaveTimestamp = System.currentTimeMillis();
 
             // Invalidate cache
-            EditorCache.getInstance().invalidateAll();
+            EditorCache.INSTANCE.invalidateAll();
 
             playSound(SoundEvents.UI_BUTTON_CLICK.value());
             showStatus("Changes applied!", UIConstants.Accent.GREEN());
@@ -2194,7 +2194,7 @@ public class ItemEditorScreen extends Screen {
         ItemEditorDataManager.INSTANCE.addHistoryEntry("template_apply", item.getHoverName().getString(), name);
         lastLoadedPreset = name;
         showStatus("Applied template " + name, UIConstants.Accent.GREEN());
-        EditorCache.getInstance().invalidateItem(getCurrentItemId());
+        EditorCache.INSTANCE.invalidateItem(getCurrentItemId());
     }
 
     private void applyPreset(ItemEditorDataManager.PresetData preset) {

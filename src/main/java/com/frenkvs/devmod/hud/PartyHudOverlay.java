@@ -30,7 +30,7 @@ import java.util.List;
  * Only visible when in a party during an active quest.
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
-@SuppressWarnings("null")
+
 public class PartyHudOverlay {
 
     private static final ResourceLocation LAYER_ID =

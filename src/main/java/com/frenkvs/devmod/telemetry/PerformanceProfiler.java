@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Toggle: Integrato nel FPS Tracker (Tasto F) - modalità estesa
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
-@SuppressWarnings("null")
+
 public class PerformanceProfiler {
 
     public static final PerformanceProfiler INSTANCE = new PerformanceProfiler();

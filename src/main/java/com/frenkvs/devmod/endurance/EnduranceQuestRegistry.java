@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
  * Registry that scans all available mob types from vanilla and mods,
  * automatically generating quest configurations for each.
  */
-@SuppressWarnings("null") // Minecraft/NeoForge API null-safety (EntityType, BuiltInRegistries)
+
 public class EnduranceQuestRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestRegistry.class);
 

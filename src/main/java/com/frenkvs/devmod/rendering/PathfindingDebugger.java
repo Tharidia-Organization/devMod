@@ -50,7 +50,7 @@ import java.util.UUID;
  *
  * Activation: Toggle in VoxelLab Dashboard
  */
-@SuppressWarnings("null")
+
 public class PathfindingDebugger {
     public static final PathfindingDebugger INSTANCE = new PathfindingDebugger();
 

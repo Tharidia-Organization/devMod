@@ -19,7 +19,7 @@ import net.neoforged.neoforge.event.RegisterGameTestsEvent;
  * - empty_5x5: 5x5x5 test area (for entity tests)
  * - combat_arena: 7x5x7 arena for combat tests
  */
-@SuppressWarnings("null")
+
 @EventBusSubscriber(modid = DevMod.MODID)
 public class DevModTestStructures {
 

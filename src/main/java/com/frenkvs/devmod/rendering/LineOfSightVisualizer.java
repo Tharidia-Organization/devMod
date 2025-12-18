@@ -32,7 +32,7 @@ import java.util.Objects;
  *
  * Activation: Toggle in VoxelLab Dashboard or keybind
  */
-@SuppressWarnings("null")
+
 public class LineOfSightVisualizer {
     public static final LineOfSightVisualizer INSTANCE = new LineOfSightVisualizer();
 

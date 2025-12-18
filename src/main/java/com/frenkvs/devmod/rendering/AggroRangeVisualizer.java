@@ -37,7 +37,7 @@ import java.util.List;
  * Toggle: Part of Debug Overlay system (G key)
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
-@SuppressWarnings("null")
+
 public class AggroRangeVisualizer {
 
     public static final AggroRangeVisualizer INSTANCE = new AggroRangeVisualizer();

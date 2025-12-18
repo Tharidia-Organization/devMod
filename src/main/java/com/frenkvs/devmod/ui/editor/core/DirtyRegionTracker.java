@@ -52,17 +52,10 @@ public final class DirtyRegionTracker {
     private long fullRedraws = 0;
     private long skippedRegions = 0;
 
-    // Singleton
-    private static DirtyRegionTracker instance;
+    // Singleton (eager initialization - thread-safe)
+    public static final DirtyRegionTracker INSTANCE = new DirtyRegionTracker();
 
-    public static DirtyRegionTracker getInstance() {
-        if (instance == null) {
-            instance = new DirtyRegionTracker();
-        }
-        return instance;
-    }
-
-    public DirtyRegionTracker() {}
+    private DirtyRegionTracker() {}
 
     // ═══════════════════════════════════════════════════════════════
     // MARKING DIRTY

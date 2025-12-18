@@ -32,7 +32,7 @@ import java.util.List;
  *
  * Toggle: S key (configurable)
  */
-@SuppressWarnings("null")
+
 public class SpawnabilityOverlay {
     public static final SpawnabilityOverlay INSTANCE = new SpawnabilityOverlay();
 

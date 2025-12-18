@@ -17,6 +17,7 @@ import javax.annotation.Nullable;
  *
  * Performance: ~0.002ms per test (15-20 floating point operations)
  */
+
 public final class OBBRaycast {
 
     private OBBRaycast() {} // Utility class

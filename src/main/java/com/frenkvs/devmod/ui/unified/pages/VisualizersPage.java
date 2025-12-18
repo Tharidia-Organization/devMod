@@ -21,7 +21,7 @@ import javax.annotation.Nonnull;
  * Visualizers settings page with controls for heatmaps, light levels,
  * safe spots, and vertical level analysis.
  */
-@SuppressWarnings("null") // Minecraft APIs lack null annotations
+
 public class VisualizersPage implements SettingsPage {
 
     private static final int ROW_HEIGHT = 24;

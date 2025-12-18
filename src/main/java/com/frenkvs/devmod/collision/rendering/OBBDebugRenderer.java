@@ -24,6 +24,7 @@ import javax.annotation.Nonnull;
  * - Shows local axes to visualize orientation (RGB = XYZ)
  * - Animation-synced updates
  */
+
 public final class OBBDebugRenderer {
 
     private OBBDebugRenderer() {} // Utility class

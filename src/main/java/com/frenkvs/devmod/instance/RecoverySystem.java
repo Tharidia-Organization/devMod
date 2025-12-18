@@ -31,7 +31,7 @@ import java.util.*;
  * - Server startup cleanup (orphaned instances, pending snapshots)
  * - Snapshot persistence
  */
-@SuppressWarnings("null") // Minecraft API methods are not annotated but never return null in practice
+
 public class RecoverySystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(RecoverySystem.class);
     public static final RecoverySystem INSTANCE = new RecoverySystem();

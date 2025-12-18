@@ -8,7 +8,6 @@ import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 
@@ -21,7 +20,7 @@ import java.util.Map;
  * Achievement-style QA Testing Screen.
  * Displays tests organized by category with visual progress tracking.
  */
-@SuppressWarnings("null") // Minecraft API null annotations
+
 public class QATestingScreen extends Screen {
 
     // Layout constants
@@ -46,14 +45,15 @@ public class QATestingScreen extends Screen {
 
     // UI Components
     private EditBox testerNameField;
-    private Button startSessionButton;
-    private Button resumeSessionButton;
-    private Button saveReportButton;
-    private Button copyReportButton;
+    private EditorButton startSessionButton;
+    private EditorButton resumeSessionButton;
+    private EditorButton saveReportButton;
+    private EditorButton copyReportButton;
     private final EditorButton passButton = new EditorButton("qa-pass", "PASS").style(EditorButton.Style.SUCCESS);
     private final EditorButton failButton = new EditorButton("qa-fail", "FAIL").style(EditorButton.Style.DANGER);
     private final EditorButton skipButton = new EditorButton("qa-skip", "SKIP").style(EditorButton.Style.NORMAL);
     private final EditorButton autoButton = new EditorButton("qa-auto", "AUTO-CHECK").style(EditorButton.Style.PRIMARY);
+    private EditorButton closeButton;
 
     public QATestingScreen() {
         super(I18n.translate("devmod.testing.qa_testing"));
@@ -90,45 +90,47 @@ public class QATestingScreen extends Screen {
         boolean hasExisting = TestingSession.INSTANCE.hasExistingSession() &&
                               TestingSession.INSTANCE.getCompletedTests() > 0;
 
-        this.startSessionButton = Button.builder(
-            hasExisting ? I18n.translate("devmod.testing.new_session") : I18n.translate("devmod.testing.start_session"),
-            btn -> startNewSession()
-        ).bounds(this.width / 2 - 75, this.height / 2 + 10, 150, 20).build();
-        this.startSessionButton.visible = !sessionStarted;
-        this.addRenderableWidget(startSessionButton);
+        this.startSessionButton = EditorButton.builder(
+            "qa-start-session",
+            (hasExisting ? I18n.translate("devmod.testing.new_session") : I18n.translate("devmod.testing.start_session")).getString())
+            .style(EditorButton.Style.PRIMARY)
+            .size(EditorButton.Size.LARGE)
+            .onClick(this::startNewSession)
+            .build();
 
         // Resume session button (if there's an existing session)
-        this.resumeSessionButton = Button.builder(
+        this.resumeSessionButton = EditorButton.builder(
+            "qa-resume-session",
             I18n.translate("devmod.testing.resume_session",
                 TestingSession.INSTANCE.getCompletedTests(),
-                TestingSession.INSTANCE.getTotalTests()),
-            btn -> resumeSession()
-        ).bounds(this.width / 2 - 100, this.height / 2 + 35, 200, 20).build();
-        this.resumeSessionButton.visible = !sessionStarted && hasExisting;
-        this.addRenderableWidget(resumeSessionButton);
+                TestingSession.INSTANCE.getTotalTests()).getString())
+            .style(EditorButton.Style.SUCCESS)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::resumeSession)
+            .build();
 
-        // Report buttons (shown after session starts)
-        int buttonY = this.height - FOOTER_HEIGHT + 10;
+        this.saveReportButton = EditorButton.builder(
+            "qa-save-report",
+            I18n.translate("devmod.testing.save_report").getString()
+        ).style(EditorButton.Style.PRIMARY)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::saveReport)
+            .build();
 
-        this.saveReportButton = Button.builder(
-            I18n.translate("devmod.testing.save_report"),
-            btn -> saveReport()
-        ).bounds(this.width - 330, buttonY, 100, 20).build();
-        this.saveReportButton.visible = sessionStarted;
-        this.addRenderableWidget(saveReportButton);
+        this.copyReportButton = EditorButton.builder(
+            "qa-copy-report",
+            I18n.translate("devmod.testing.copy_clipboard").getString()
+        ).style(EditorButton.Style.GHOST)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::copyReport)
+            .build();
 
-        this.copyReportButton = Button.builder(
-            I18n.translate("devmod.testing.copy_clipboard"),
-            btn -> copyReport()
-        ).bounds(this.width - 220, buttonY, 110, 20).build();
-        this.copyReportButton.visible = sessionStarted;
-        this.addRenderableWidget(copyReportButton);
-
-        // Close button
-        this.addRenderableWidget(Button.builder(
-            I18n.ui("close"),
-            btn -> this.onClose()
-        ).bounds(this.width - 100, buttonY, 90, 20).build());
+        // Close button (rendered manually)
+        closeButton = EditorButton.builder("qa-close", I18n.ui("close").getString())
+            .style(EditorButton.Style.GHOST)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::onClose)
+            .build();
 
         passButton.onClick(() -> {
             if (selectedTest == null) return;
@@ -185,10 +187,6 @@ public class QATestingScreen extends Screen {
 
     private void updateButtonVisibility() {
         testerNameField.setVisible(false);
-        startSessionButton.visible = false;
-        resumeSessionButton.visible = false;
-        saveReportButton.visible = true;
-        copyReportButton.visible = true;
     }
 
     private void saveReport() {
@@ -229,6 +227,9 @@ public class QATestingScreen extends Screen {
         for (var widget : this.renderables) {
             widget.render(graphics, mouseX, mouseY, partialTick);
         }
+
+        // Render action buttons with Impact styling
+        renderActionButtons(graphics, mouseX, mouseY);
     }
 
     private void renderStartScreen(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -769,6 +770,28 @@ public class QATestingScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        boolean hasExisting = TestingSession.INSTANCE.hasExistingSession() &&
+            TestingSession.INSTANCE.getCompletedTests() > 0;
+
+        if (button == 0) {
+            if (!sessionStarted && startSessionButton != null && startSessionButton.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+            if (!sessionStarted && hasExisting && resumeSessionButton != null && resumeSessionButton.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+            if (sessionStarted && saveReportButton != null && saveReportButton.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+            if (sessionStarted && copyReportButton != null && copyReportButton.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+            if (closeButton != null && closeButton.mouseClicked(mouseX, mouseY, button)) {
+                closeButton.mouseReleased(mouseX, mouseY, button);
+                return true;
+            }
+        }
+
         if (button == 0) { // Left click
             // Check category clicks
             if (mouseX < SIDEBAR_WIDTH && sessionStarted) {
@@ -833,10 +856,20 @@ public class QATestingScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        boolean handled = passButton.mouseReleased(mouseX, mouseY, button) ||
-                          failButton.mouseReleased(mouseX, mouseY, button) ||
-                          skipButton.mouseReleased(mouseX, mouseY, button) ||
-                          autoButton.mouseReleased(mouseX, mouseY, button);
+        boolean hasExisting = TestingSession.INSTANCE.hasExistingSession() &&
+            TestingSession.INSTANCE.getCompletedTests() > 0;
+
+        boolean handled = false;
+        if (startSessionButton != null) handled |= startSessionButton.mouseReleased(mouseX, mouseY, button);
+        if (hasExisting && resumeSessionButton != null) handled |= resumeSessionButton.mouseReleased(mouseX, mouseY, button);
+        if (saveReportButton != null) handled |= saveReportButton.mouseReleased(mouseX, mouseY, button);
+        if (copyReportButton != null) handled |= copyReportButton.mouseReleased(mouseX, mouseY, button);
+        if (closeButton != null) handled |= closeButton.mouseReleased(mouseX, mouseY, button);
+
+        handled |= passButton.mouseReleased(mouseX, mouseY, button) ||
+                   failButton.mouseReleased(mouseX, mouseY, button) ||
+                   skipButton.mouseReleased(mouseX, mouseY, button) ||
+                   autoButton.mouseReleased(mouseX, mouseY, button);
         return handled || super.mouseReleased(mouseX, mouseY, button);
     }
 
@@ -913,6 +946,36 @@ public class QATestingScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    private void renderActionButtons(GuiGraphics graphics, int mouseX, int mouseY) {
+        boolean hasExisting = TestingSession.INSTANCE.hasExistingSession() &&
+            TestingSession.INSTANCE.getCompletedTests() > 0;
+
+        // Start session
+        if (!sessionStarted && startSessionButton != null) {
+            startSessionButton.render(graphics, this.width / 2 - 75, this.height / 2 + 10, 150, 20, mouseX, mouseY);
+        }
+
+        // Resume session
+        if (!sessionStarted && hasExisting && resumeSessionButton != null) {
+            resumeSessionButton.render(graphics, this.width / 2 - 100, this.height / 2 + 35, 200, 20, mouseX, mouseY);
+        }
+
+        int buttonY = this.height - FOOTER_HEIGHT + 10;
+
+        // Save / Copy (only after session started)
+        if (sessionStarted && saveReportButton != null) {
+            saveReportButton.render(graphics, this.width - 330, buttonY, 100, 20, mouseX, mouseY);
+        }
+        if (sessionStarted && copyReportButton != null) {
+            copyReportButton.render(graphics, this.width - 220, buttonY, 110, 20, mouseX, mouseY);
+        }
+
+        // Close button (always visible)
+        if (closeButton != null) {
+            closeButton.render(graphics, this.width - 100, buttonY, 90, 20, mouseX, mouseY);
+        }
     }
 
     @Override

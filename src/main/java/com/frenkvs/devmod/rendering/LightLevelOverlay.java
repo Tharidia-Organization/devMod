@@ -26,7 +26,7 @@ import org.joml.Matrix4f;
  * Activation: L key (configurable)
  */
 // Minecraft API methods are not annotated but never return null in practice
-@SuppressWarnings("null")
+
 public class LightLevelOverlay {
     public static final LightLevelOverlay INSTANCE = new LightLevelOverlay();
 

@@ -3,6 +3,7 @@ package com.frenkvs.devmod.ui.wizard;
 import com.frenkvs.devmod.endurance.EnduranceQuestRegistry;
 import com.frenkvs.devmod.testing.IntegratedTestSession;
 import com.frenkvs.devmod.ui.AxiomRenderer;
+import com.frenkvs.devmod.ui.ConfirmDialog;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
@@ -31,7 +32,7 @@ import java.util.Objects;
  * 3. Enable overlays (auto-suggest based on test type)
  * 4. Start test (launches integrated session)
  */
-@SuppressWarnings("null") // Minecraft APIs lack null annotations
+
 public class QuickTestWizard extends Screen {
 
     // Layout
@@ -63,6 +64,15 @@ public class QuickTestWizard extends Screen {
     private int selectedMobIndex = 0;
     private int mobListScroll = 0;
 
+    // Modal overlay for cancel/exit confirmation
+    private ConfirmDialog exitDialog;
+
+    // Navigation buttons (shared component adapters)
+    private com.frenkvs.devmod.ui.editor.components.EditorButton backButton;
+    private com.frenkvs.devmod.ui.editor.components.EditorButton nextButton;
+    private com.frenkvs.devmod.ui.editor.components.EditorButton cancelButton;
+    private com.frenkvs.devmod.ui.editor.components.EditorButton startButton;
+
     public QuickTestWizard() {
         super(I18n.screenTitle("quick_test_wizard"));
         loadAvailableMobs();
@@ -90,7 +100,54 @@ public class QuickTestWizard extends Screen {
 
     @Override
     protected void init() {
-        // No widgets - fully custom rendering
+        clearWidgets();
+
+        backButton = new com.frenkvs.devmod.ui.editor.components.EditorButton("wizard-back", "← Back")
+            .style(com.frenkvs.devmod.ui.editor.components.EditorButton.Style.NORMAL)
+            .size(com.frenkvs.devmod.ui.editor.components.EditorButton.Size.MEDIUM)
+            .onClick(() -> {
+                if (currentStep > 0) {
+                    currentStep--;
+                    updateNavButtonsVisibility();
+                }
+            });
+
+        nextButton = new com.frenkvs.devmod.ui.editor.components.EditorButton("wizard-next", "Next →")
+            .style(com.frenkvs.devmod.ui.editor.components.EditorButton.Style.PRIMARY)
+            .size(com.frenkvs.devmod.ui.editor.components.EditorButton.Size.MEDIUM)
+            .onClick(() -> {
+                if (currentStep < TOTAL_STEPS - 1) {
+                    currentStep++;
+                    updateNavButtonsVisibility();
+                }
+            });
+
+        startButton = new com.frenkvs.devmod.ui.editor.components.EditorButton("wizard-start", "Start ⚡")
+            .style(com.frenkvs.devmod.ui.editor.components.EditorButton.Style.PRIMARY)
+            .size(com.frenkvs.devmod.ui.editor.components.EditorButton.Size.MEDIUM)
+            .onClick(this::startTest);
+
+        cancelButton = new com.frenkvs.devmod.ui.editor.components.EditorButton("wizard-cancel", "Cancel")
+            .style(com.frenkvs.devmod.ui.editor.components.EditorButton.Style.GHOST)
+            .size(com.frenkvs.devmod.ui.editor.components.EditorButton.Size.MEDIUM)
+            .onClick(() -> {
+                if (exitDialog != null) {
+                    exitDialog.show();
+                } else {
+                    onClose();
+                }
+            });
+
+        updateNavButtonsVisibility();
+
+        exitDialog = ConfirmDialog.create(
+            "Exit Quick Test Wizard",
+            "Exit",
+            "Stay",
+            ConfirmDialog.Style.WARNING,
+            this::onClose,
+            () -> {}
+        );
     }
 
     @Override
@@ -119,10 +176,12 @@ public class QuickTestWizard extends Screen {
             case 3 -> drawStep4_Summary(graphics, panelX, contentY, mouseX, mouseY);
         }
 
-        // Navigation buttons
-        drawNavigationButtons(graphics, panelX, panelY + PANEL_HEIGHT - 40, mouseX, mouseY);
+        // Modal overlay rendered last
+        renderNavButtons(graphics, mouseX, mouseY);
 
-        super.render(graphics, mouseX, mouseY, partialTick);
+        if (exitDialog != null) {
+            exitDialog.render(graphics, getFont(), width, height, mouseX, mouseY);
+        }
     }
 
     private void drawMainPanel(GuiGraphics graphics, int x, int y) {
@@ -462,39 +521,16 @@ public class QuickTestWizard extends Screen {
             btnHover ? UIConstants.Accent.GREEN() : UIConstants.Text.PRIMARY(), false);
     }
 
-    // ===================== Navigation =====================
-    private void drawNavigationButtons(GuiGraphics graphics, int panelX, int y, int mouseX, int mouseY) {
-        // Back button
-        if (currentStep > 0) {
-            boolean backHover = AxiomRenderer.isMouseOver(mouseX, mouseY, panelX + 20, y, 80, 25);
-            graphics.fill(panelX + 20, y, panelX + 100, y + 25,
-                backHover ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT());
-            AxiomRenderer.drawBorder(graphics, panelX + 20, y, 80, 25, UIConstants.Border.MUTED());
-            graphics.drawString(getFont(), "← Back", panelX + 35, y + 8, UIConstants.Text.PRIMARY(), false);
-        }
-
-        // Next/Start button
-        if (currentStep < TOTAL_STEPS - 1) {
-            boolean nextHover = AxiomRenderer.isMouseOver(mouseX, mouseY, panelX + PANEL_WIDTH - 100, y, 80, 25);
-            int nextBg = nextHover ? UIConstants.setAlpha(UIConstants.Accent.BLUE(), 60) : UIConstants.Background.INPUT();
-            graphics.fill(panelX + PANEL_WIDTH - 100, y, panelX + PANEL_WIDTH - 20, y + 25, nextBg);
-            graphics.fill(panelX + PANEL_WIDTH - 100, y, panelX + PANEL_WIDTH - 97, y + 25, UIConstants.Accent.BLUE());
-            AxiomRenderer.drawBorder(graphics, panelX + PANEL_WIDTH - 100, y, 80, 25,
-                nextHover ? UIConstants.Accent.BLUE() : UIConstants.Border.MUTED());
-            graphics.drawString(getFont(), "Next →", panelX + PANEL_WIDTH - 85, y + 8, UIConstants.Text.PRIMARY(), false);
-        }
-
-        // Cancel button (always visible)
-        boolean cancelHover = AxiomRenderer.isMouseOver(mouseX, mouseY, panelX + PANEL_WIDTH / 2 - 40, y, 80, 25);
-        if (cancelHover) {
-            graphics.fill(panelX + PANEL_WIDTH / 2 - 40, y, panelX + PANEL_WIDTH / 2 + 40, y + 25,
-                UIConstants.Background.HOVER());
-        }
-        graphics.drawString(getFont(), "Cancel", panelX + PANEL_WIDTH / 2 - 18, y + 8, UIConstants.Text.MUTED(), false);
-    }
-
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // Modal consumes input
+        if (exitDialog != null && exitDialog.mouseClicked(mouseX, mouseY, width, height)) {
+            return true;
+        }
+        if (exitDialog != null && exitDialog.isVisible()) {
+            return true; // Block background interactions while dialog open
+        }
+
         if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
 
         int mx = (int) mouseX;
@@ -502,6 +538,23 @@ public class QuickTestWizard extends Screen {
         int panelX = (width - PANEL_WIDTH) / 2;
         int panelY = (height - PANEL_HEIGHT) / 2;
         int contentY = panelY + 60;
+
+        if (currentStep > 0 && backButton.mouseClicked(mouseX, mouseY, button)) {
+            backButton.mouseReleased(mouseX, mouseY, button);
+            return true;
+        }
+        if (currentStep < TOTAL_STEPS - 1 && nextButton.mouseClicked(mouseX, mouseY, button)) {
+            nextButton.mouseReleased(mouseX, mouseY, button);
+            return true;
+        }
+        if (currentStep == TOTAL_STEPS - 1 && startButton.mouseClicked(mouseX, mouseY, button)) {
+            startButton.mouseReleased(mouseX, mouseY, button);
+            return true;
+        }
+        if (cancelButton.mouseClicked(mouseX, mouseY, button)) {
+            cancelButton.mouseReleased(mouseX, mouseY, button);
+            return true;
+        }
 
         // Handle step-specific clicks
         switch (currentStep) {
@@ -511,33 +564,18 @@ public class QuickTestWizard extends Screen {
             case 3 -> handleStep4Click(mx, my, panelX, contentY);
         }
 
-        // Navigation buttons
-        int navY = panelY + PANEL_HEIGHT - 40;
-
-        // Back
-        if (currentStep > 0 && AxiomRenderer.isMouseOver(mx, my, panelX + 20, navY, 80, 25)) {
-            currentStep--;
-            return true;
-        }
-
-        // Next
-        if (currentStep < TOTAL_STEPS - 1 &&
-            AxiomRenderer.isMouseOver(mx, my, panelX + PANEL_WIDTH - 100, navY, 80, 25)) {
-            currentStep++;
-            return true;
-        }
-
-        // Cancel
-        if (AxiomRenderer.isMouseOver(mx, my, panelX + PANEL_WIDTH / 2 - 40, navY, 80, 25)) {
-            onClose();
-            return true;
-        }
-
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (exitDialog != null && exitDialog.mouseScrolled(mouseX, mouseY, scrollY, width, height)) {
+            return true;
+        }
+        if (exitDialog != null && exitDialog.isVisible()) {
+            return true;
+        }
+
         // Only scroll in step 2 (mob selection)
         if (currentStep == 1) {
             int panelX = (width - PANEL_WIDTH) / 2;
@@ -555,6 +593,17 @@ public class QuickTestWizard extends Screen {
             }
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        boolean handled = false;
+        handled |= backButton.mouseReleased(mouseX, mouseY, button);
+        handled |= nextButton.mouseReleased(mouseX, mouseY, button);
+        handled |= startButton.mouseReleased(mouseX, mouseY, button);
+        handled |= cancelButton.mouseReleased(mouseX, mouseY, button);
+        if (handled) return true;
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     private void handleStep1Click(int mx, int my, int panelX, int y) {
@@ -655,6 +704,33 @@ public class QuickTestWizard extends Screen {
         }
     }
 
+    private void renderNavButtons(GuiGraphics graphics, int mouseX, int mouseY) {
+        int panelWidth = Math.min(PANEL_WIDTH, width - 20);
+        int panelHeight = Math.min(PANEL_HEIGHT, height - 20);
+        int panelX = (width - panelWidth) / 2;
+        int panelY = (height - panelHeight) / 2;
+        int navY = panelY + panelHeight - 36;
+
+        if (currentStep > 0) {
+            backButton.render(graphics, panelX + 20, navY, 80, 24, mouseX, mouseY);
+        }
+        if (currentStep < TOTAL_STEPS - 1) {
+            nextButton.render(graphics, panelX + panelWidth - 100, navY, 80, 24, mouseX, mouseY);
+        }
+        if (currentStep == TOTAL_STEPS - 1) {
+            startButton.render(graphics, panelX + panelWidth - 120, navY, 100, 24, mouseX, mouseY);
+        }
+        cancelButton.render(graphics, panelX + panelWidth / 2 - 40, navY, 80, 24, mouseX, mouseY);
+    }
+
+    private void updateNavButtonsVisibility() {
+        boolean atFirstStep = currentStep == 0;
+        boolean atLastStep = currentStep == TOTAL_STEPS - 1;
+        backButton.setEnabled(!atFirstStep);
+        nextButton.setEnabled(!atLastStep);
+        startButton.setEnabled(atLastStep);
+    }
+
     private void applyAutoConfig() {
         // Auto-configure based on test type
         switch (selectedTestType) {
@@ -697,6 +773,7 @@ public class QuickTestWizard extends Screen {
                 net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
                     Objects.requireNonNull(net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BASS.value()), 0.5f)));
             currentStep = 1; // Go back to mob selection step
+            updateNavButtonsVisibility();
             return;
         }
 
@@ -786,5 +863,27 @@ public class QuickTestWizard extends Screen {
         public int getColor() { return color; }
         public String getDescription() { return description; }
         public String getAutoConfigHint() { return autoConfigHint; }
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (exitDialog != null && exitDialog.keyPressed(keyCode)) {
+            return true;
+        }
+        if (exitDialog != null && exitDialog.isVisible()) {
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        if (exitDialog != null && exitDialog.charTyped(codePoint, modifiers)) {
+            return true;
+        }
+        if (exitDialog != null && exitDialog.isVisible()) {
+            return true;
+        }
+        return super.charTyped(codePoint, modifiers);
     }
 }

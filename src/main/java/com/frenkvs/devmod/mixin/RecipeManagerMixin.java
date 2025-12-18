@@ -103,8 +103,7 @@ public class RecipeManagerMixin {
         if (lastRecipe != null && RecipeInjector.hasInjectedRecipe(lastRecipe)) {
             Optional<RecipeHolder<?>> injected = RecipeInjector.getInjectedRecipe(lastRecipe);
             if (injected.isPresent()) {
-                @SuppressWarnings("unchecked")
-                RecipeHolder<T> holder = (RecipeHolder<T>) injected.get();
+                RecipeHolder<T> holder = castRecipeHolder(injected.get());
                 if (holder.value().matches(safeInput, safeLevel)) {
                     cir.setReturnValue(Optional.ofNullable(holder));
                     return;
@@ -121,6 +120,14 @@ public class RecipeManagerMixin {
             }
         }
         // If no match in injected, let vanilla handle it
+    }
+
+    /**
+     * Type-cast helper for RecipeHolder. Safe when type has been validated.
+     */
+    @SuppressWarnings("unchecked")
+    private static <T extends Recipe<?>> RecipeHolder<T> castRecipeHolder(RecipeHolder<?> holder) {
+        return (RecipeHolder<T>) holder;
     }
 
     /**

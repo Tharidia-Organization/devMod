@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Tracks potion and effect usage statistics.
  * Extracted from TesterProgress for single responsibility.
  */
-@SuppressWarnings("null")
+
 public class PotionStatistics {
     public static final PotionStatistics INSTANCE = new PotionStatistics();
 

@@ -41,6 +41,7 @@ import java.util.function.Consumer;
  *
  * @see EDITOR_DESIGN_SYSTEM.md Section 27 (Navigation Hub)
  */
+
 public class GeneralModule extends AbstractEditorModule {
 
     // ═══════════════════════════════════════════════════════════════

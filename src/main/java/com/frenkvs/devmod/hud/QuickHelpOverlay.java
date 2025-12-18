@@ -21,7 +21,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
  * important keybinds for quick reference without opening a menu.
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
-@SuppressWarnings("null")
+
 public class QuickHelpOverlay {
 
     private static final ResourceLocation LAYER_ID =

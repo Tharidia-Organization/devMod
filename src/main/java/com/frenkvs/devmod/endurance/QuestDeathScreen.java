@@ -1,9 +1,9 @@
 package com.frenkvs.devmod.endurance;
 
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
@@ -19,7 +19,6 @@ import org.lwjgl.glfw.GLFW;
  * - Give up and collect partial rewards
  */
 @OnlyIn(Dist.CLIENT)
-@SuppressWarnings({"null", "unused"})
 public class QuestDeathScreen extends Screen {
 
     // === Colors - Thematic death screen (red theme) ===
@@ -52,8 +51,8 @@ public class QuestDeathScreen extends Screen {
     // === State ===
     private long openTime;
     private boolean soundPlayed = false;
-    private Button respawnButton;
-    private Button giveUpButton;
+    private EditorButton respawnButton;
+    private EditorButton giveUpButton;
 
     public QuestDeathScreen() {
         super(I18n.translate("devmod.endurance.you_died"));
@@ -71,48 +70,22 @@ public class QuestDeathScreen extends Screen {
         super.init();
         openTime = System.currentTimeMillis();
 
-        int centerX = width / 2;
-        int centerY = height / 2;
-        int panelX = centerX - PANEL_WIDTH / 2;
-        int panelY = centerY - PANEL_HEIGHT / 2;
-
-        // Respawn button (primary action - prominent height)
-        int buttonWidth = PANEL_WIDTH - UIConstants.Spacing.PANEL_MARGIN * 5;
-        respawnButton = Button.builder(
-                I18n.translate("devmod.endurance.respawn_cost"),
-                btn -> respawnAndContinue())
-            .bounds(panelX + 20, panelY + PANEL_HEIGHT - 75,
-                    buttonWidth, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
-            .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.tooltip.respawn")))
+        respawnButton = EditorButton.builder("respawn", I18n.translate("devmod.endurance.respawn_cost").getString())
+            .style(EditorButton.Style.PRIMARY)
+            .size(EditorButton.Size.LARGE)
+            .onClick(this::respawnAndContinue)
             .build();
-        addRenderableWidget(respawnButton);
 
-        // Give up button (secondary action - prominent height)
-        giveUpButton = Button.builder(
-                I18n.translate("devmod.endurance.give_up"),
-                btn -> giveUpAndCollect())
-            .bounds(panelX + 20, panelY + PANEL_HEIGHT - 40,
-                    buttonWidth, UIConstants.Size.BUTTON_HEIGHT_PROMINENT)
-            .tooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.tooltip.give_up")))
+        giveUpButton = EditorButton.builder("give-up", I18n.translate("devmod.endurance.give_up").getString())
+            .style(EditorButton.Style.DANGER)
+            .size(EditorButton.Size.LARGE)
+            .onClick(this::giveUpAndCollect)
             .build();
-        addRenderableWidget(giveUpButton);
-
-        // Initially hidden for animation
-        respawnButton.visible = false;
-        giveUpButton.visible = false;
     }
 
     @Override
     public void tick() {
         super.tick();
-
-        long elapsed = System.currentTimeMillis() - openTime;
-
-        // Show buttons after fade in
-        if (elapsed > FADE_IN_DURATION + 300) {
-            respawnButton.visible = true;
-            giveUpButton.visible = true;
-        }
     }
 
     @Override
@@ -127,8 +100,8 @@ public class QuestDeathScreen extends Screen {
         }
 
         // Darken background
-        int bgAlpha = (int) (0xEE * fadeProgress);
-        graphics.fill(0, 0, width, height, (bgAlpha << 24) | 0x0a0a14);
+        int bgAlpha = (int) (((COLOR_BG >> 24) & 0xFF) * fadeProgress);
+        graphics.fill(0, 0, width, height, (bgAlpha << 24) | (COLOR_BG & 0x00FFFFFF));
 
         int centerX = width / 2;
         int centerY = height / 2;
@@ -159,22 +132,24 @@ public class QuestDeathScreen extends Screen {
             graphics.drawCenteredString(font, I18n.translate("devmod.endurance.must_choose").getString(), centerX, panelY + PANEL_HEIGHT + 18, escColor);
         }
 
-        super.render(graphics, mouseX, mouseY, partialTick);
+        if (elapsed > FADE_IN_DURATION + 300) {
+            renderButtons(graphics, mouseX, mouseY);
+        }
     }
 
     private void renderPanel(GuiGraphics g, int x, int y, int w, int h, float alpha) {
-        int bgAlpha = (int) (0xDD * alpha);
-        int borderAlpha = (int) (0xFF * alpha);
-        int glowAlpha = (int) (0x44 * alpha);
+        int bgAlpha = (int) (((COLOR_PANEL_BG >> 24) & 0xFF) * alpha);
+        int borderAlpha = (int) (((COLOR_BORDER >> 24) & 0xFF) * alpha);
+        int glowAlpha = (int) (((COLOR_BORDER_GLOW >> 24) & 0xFF) * alpha);
 
         // Glow
-        g.fill(x - 2, y - 2, x + w + 2, y + h + 2, (glowAlpha << 24) | 0xFF0000);
+        g.fill(x - 2, y - 2, x + w + 2, y + h + 2, (glowAlpha << 24) | (COLOR_BORDER_GLOW & 0x00FFFFFF));
 
         // Background
-        g.fill(x, y, x + w, y + h, (bgAlpha << 24) | 0x1a0a0a);
+        g.fill(x, y, x + w, y + h, (bgAlpha << 24) | (COLOR_PANEL_BG & 0x00FFFFFF));
 
         // Border
-        int borderColor = (borderAlpha << 24) | 0xFF0000;
+        int borderColor = (borderAlpha << 24) | (COLOR_BORDER & 0x00FFFFFF);
         g.fill(x, y, x + w, y + 2, borderColor);           // Top
         g.fill(x, y + h - 2, x + w, y + h, borderColor);   // Bottom
         g.fill(x, y, x + 2, y + h, borderColor);           // Left
@@ -182,8 +157,6 @@ public class QuestDeathScreen extends Screen {
     }
 
     private void renderContent(GuiGraphics g, int panelX, int panelY, float alpha, long elapsed) {
-        int textAlpha = (int) (255 * alpha);
-
         // Pulsing skull effect
         float pulse = (float) (Math.sin(elapsed / (double) SKULL_PULSE_PERIOD * Math.PI * 2) * 0.3 + 0.7);
         int skullColor = applyAlpha(COLOR_DEATH, alpha * pulse);
@@ -247,6 +220,23 @@ public class QuestDeathScreen extends Screen {
         return (a << 24) | (color & 0x00FFFFFF);
     }
 
+    private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY) {
+        int centerX = width / 2;
+        int centerY = height / 2;
+        int panelX = centerX - PANEL_WIDTH / 2;
+        int panelY = centerY - PANEL_HEIGHT / 2;
+        int buttonWidth = PANEL_WIDTH - UIConstants.Spacing.PANEL_MARGIN * 5;
+        int respawnY = panelY + PANEL_HEIGHT - 75;
+        int giveUpY = panelY + PANEL_HEIGHT - 40;
+
+        if (respawnButton != null) {
+            respawnButton.render(graphics, panelX + 20, respawnY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT_PROMINENT, mouseX, mouseY);
+        }
+        if (giveUpButton != null) {
+            giveUpButton.render(graphics, panelX + 20, giveUpY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT_PROMINENT, mouseX, mouseY);
+        }
+    }
+
     private void respawnAndContinue() {
         PacketDistributor.sendToServer(
             new QuestActionPayload(QuestActionPayload.Action.CONTINUE_AFTER_DEATH)
@@ -294,6 +284,30 @@ public class QuestDeathScreen extends Screen {
             return true; // Consume but don't close
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && System.currentTimeMillis() - openTime > FADE_IN_DURATION + 300) {
+            if (respawnButton != null && respawnButton.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+            if (giveUpButton != null && giveUpButton.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        boolean handled = false;
+        if (System.currentTimeMillis() - openTime > FADE_IN_DURATION + 300) {
+            if (respawnButton != null) handled |= respawnButton.mouseReleased(mouseX, mouseY, button);
+            if (giveUpButton != null) handled |= giveUpButton.mouseReleased(mouseX, mouseY, button);
+        }
+        if (handled) return true;
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     /**

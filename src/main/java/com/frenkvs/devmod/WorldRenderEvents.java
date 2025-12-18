@@ -25,7 +25,7 @@ import java.util.Objects;
 
 @EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
 // Minecraft API methods are not annotated but never return null in practice
-@SuppressWarnings("null")
+
 public class WorldRenderEvents {
 
     @SubscribeEvent

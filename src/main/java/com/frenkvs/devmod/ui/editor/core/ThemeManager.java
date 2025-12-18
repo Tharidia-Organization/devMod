@@ -10,17 +10,17 @@ import java.util.List;
  * Usage:
  * <pre>
  * // Get current theme
- * Theme theme = ThemeManager.get().current();
+ * Theme theme = ThemeManager.INSTANCE.current();
  * int bg = theme.panelBackground();
  *
  * // Switch theme
- * ThemeManager.get().setTheme(LightTheme.INSTANCE);
+ * ThemeManager.INSTANCE.setTheme(LightTheme.INSTANCE);
  *
  * // Toggle between dark/light
- * ThemeManager.get().toggle();
+ * ThemeManager.INSTANCE.toggle();
  *
  * // Listen for changes
- * ThemeManager.get().addListener(theme -> updateColors());
+ * ThemeManager.INSTANCE.addListener(theme -> updateColors());
  * </pre>
  *
  * @see Theme
@@ -29,19 +29,12 @@ import java.util.List;
  */
 public final class ThemeManager {
 
-    private static final ThemeManager INSTANCE = new ThemeManager();
+    public static final ThemeManager INSTANCE = new ThemeManager();
 
     private Theme currentTheme = DarkTheme.INSTANCE;
     private final List<ThemeChangeListener> listeners = new ArrayList<>();
 
     private ThemeManager() {}
-
-    /**
-     * Get the singleton instance.
-     */
-    public static ThemeManager get() {
-        return INSTANCE;
-    }
 
     /**
      * Get the current theme.

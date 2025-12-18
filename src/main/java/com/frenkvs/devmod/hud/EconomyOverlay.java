@@ -34,7 +34,7 @@ import java.util.List;
  * - Scroll wheel: Navigate mob list (when in Mob Loot view)
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
-@SuppressWarnings("null")
+
 public class EconomyOverlay {
 
     private static final ResourceLocation LAYER_ID =

@@ -22,7 +22,7 @@ import java.util.Objects;
  * Mob configuration page - shows nearby mobs and their custom stats.
  * Click on a mob to open the detailed MobConfigScreen.
  */
-@SuppressWarnings("null") // Minecraft APIs lack null annotations
+
 public class MobConfigPage implements SettingsPage {
 
     private static final int ROW_HEIGHT = 24;

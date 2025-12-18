@@ -34,6 +34,7 @@ import java.util.*;
  * BodyPartInstance[] parts = hierarchy.computeWorldTransforms(snapshot);
  * </pre>
  */
+
 public final class BodyPartHierarchy {
 
     private final Map<String, BodyPartDefinition> parts;
@@ -111,10 +112,8 @@ public final class BodyPartHierarchy {
      * Gets all part definitions.
      */
     @Nonnull
-    @SuppressWarnings("null")
     public Collection<BodyPartDefinition> getAllParts() {
-        Collection<BodyPartDefinition> values = Objects.requireNonNull(parts.values(), "parts.values()");
-        return Collections.unmodifiableCollection(new ArrayList<>(values));
+        return Collections.unmodifiableCollection(new ArrayList<>(parts.values()));
     }
 
     /**
@@ -128,10 +127,9 @@ public final class BodyPartHierarchy {
      * Gets children of a part.
      */
     @Nonnull
-    @SuppressWarnings("null")
     public List<String> getChildren(@Nonnull String partId) {
-        List<String> children = childrenMap.get(partId);
-        if (children == null || children.isEmpty()) {
+        List<String> children = childrenMap.getOrDefault(partId, Collections.emptyList());
+        if (children.isEmpty()) {
             return List.of();
         }
         return List.copyOf(children);
@@ -142,7 +140,7 @@ public final class BodyPartHierarchy {
      */
     @Nonnull
     public List<String> getRootPartIds() {
-        return List.copyOf(Objects.requireNonNull(rootPartIds, "root parts"));
+        return List.copyOf(rootPartIds);
     }
 
     /**

@@ -62,14 +62,15 @@ public class CombatTracker {
         // Body part hits (if using body part system)
         private final Map<String, Integer> bodyPartHits = new HashMap<>();
 
-        @SuppressWarnings("this-escape")
+
         public QuestCombatSession(UUID questId, UUID playerId, ResourceLocation mobType) {
             this.questId = questId;
             this.playerId = playerId;
             this.mobType = mobType;
             this.startTime = System.currentTimeMillis();
             this.lastKillTime = startTime;
-            startNewWave(1);
+            // Initialize first wave directly to avoid this-escape
+            this.currentWaveStats = new WaveCombatStats(1);
         }
 
         public void startNewWave(int waveNumber) {

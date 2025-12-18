@@ -14,6 +14,7 @@ import java.util.Objects;
  * <p>The primary format is used when the custom shader is available, while the fallback
  * format/name pair is used if shader loading fails so the render path still works.</p>
  */
+
 @OnlyIn(Dist.CLIENT)
 public record ShaderRenderTypeConfig(
     String name,

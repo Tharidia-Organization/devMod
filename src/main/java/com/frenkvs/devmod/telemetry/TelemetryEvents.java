@@ -29,7 +29,7 @@ import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
-@SuppressWarnings("null") // Minecraft/NeoForge API null-safety (Direction, BlockPos, Blocks)
+
 @EventBusSubscriber(modid = DevMod.MODID)
 public class TelemetryEvents {
     private static final Logger LOGGER = LogUtils.getLogger();

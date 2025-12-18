@@ -4,7 +4,6 @@ import com.frenkvs.devmod.HitHelper;
 import com.frenkvs.devmod.collision.bodypart.BodyPartDefinition;
 import com.frenkvs.devmod.collision.bodypart.BodyPartHierarchy;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nonnull;
 
@@ -19,6 +18,7 @@ import javax.annotation.Nonnull;
  * - Quadruped: head, body, leg0, leg1, leg2, leg3
  * - Spider: head, body0, body1, leg0-leg7
  */
+
 public final class VanillaBodyParts {
 
     private VanillaBodyParts() {} // Utility class

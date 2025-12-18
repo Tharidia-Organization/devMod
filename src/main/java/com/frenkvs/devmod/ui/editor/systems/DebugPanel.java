@@ -97,22 +97,30 @@ public class DebugPanel {
         }
     }
 
-    // Buttons using EditorButton component - initialized in constructor to avoid this-escape warning
-    private final EditorButton copyButton;
-    private final EditorButton exportButton;
-    private final EditorButton copyItemButton;
+    // Buttons using EditorButton component (lazy init to avoid this-escape)
+    private EditorButton copyButton;
+    private EditorButton exportButton;
+    private EditorButton copyItemButton;
+    private boolean buttonsInitialized = false;
 
-    @SuppressWarnings("this-escape") // Intentional: callbacks are not invoked during construction
     public DebugPanel() {
-        copyButton = new EditorButton("copy", "Copy")
-            .style(EditorButton.Style.GHOST).size(EditorButton.Size.SMALL)
-            .onClick(this::copyLogToClipboard);
-        exportButton = new EditorButton("export", "Export")
-            .style(EditorButton.Style.GHOST).size(EditorButton.Size.SMALL)
-            .onClick(this::handleExport);
-        copyItemButton = new EditorButton("copyItem", "Copy Item")
-            .style(EditorButton.Style.GHOST).size(EditorButton.Size.SMALL)
-            .onClick(this::copyItemDataToClipboard);
+        // Buttons initialized lazily to avoid this-escape warning
+    }
+
+    /** Ensures buttons are initialized (lazy init to avoid this-escape). */
+    private void ensureButtons() {
+        if (!buttonsInitialized) {
+            copyButton = new EditorButton("copy", "Copy")
+                .style(EditorButton.Style.GHOST).size(EditorButton.Size.SMALL)
+                .onClick(this::copyLogToClipboard);
+            exportButton = new EditorButton("export", "Export")
+                .style(EditorButton.Style.GHOST).size(EditorButton.Size.SMALL)
+                .onClick(this::handleExport);
+            copyItemButton = new EditorButton("copyItem", "Copy Item")
+                .style(EditorButton.Style.GHOST).size(EditorButton.Size.SMALL)
+                .onClick(this::copyItemDataToClipboard);
+            buttonsInitialized = true;
+        }
     }
 
     public void log(String entry) {
@@ -182,6 +190,7 @@ public class DebugPanel {
     }
 
     public int render(GuiGraphics graphics, Font font, int x, int y, int width, int height, int mouseX, int mouseY, ItemStack current) {
+        ensureButtons();
         Objects.requireNonNull(font, "font cannot be null");
         nbtToggleRect = null;
         lastItemDataPayload = null;

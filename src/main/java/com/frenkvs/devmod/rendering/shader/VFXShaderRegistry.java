@@ -28,7 +28,8 @@ import javax.annotation.Nullable;
  *   <li>pathfinding - Mob pathfinding debug (future)</li>
  * </ul>
  */
-@SuppressWarnings({"null", "removal"}) // Minecraft API lacks null annotations, Bus.MOD is deprecated but functional
+@SuppressWarnings("removal") // RenderStateShard.ShaderStateShard uses deprecated shader APIs
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public class VFXShaderRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(VFXShaderRegistry.class);

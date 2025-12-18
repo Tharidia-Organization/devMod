@@ -89,17 +89,9 @@ public class EditorCache {
     // SINGLETON
     // ═══════════════════════════════════════════════════════════════
 
-    private static EditorCache instance;
+    public static final EditorCache INSTANCE = new EditorCache();
 
-    public static EditorCache getInstance() {
-        if (instance == null) {
-            instance = new EditorCache();
-        }
-        return instance;
-    }
-
-    public EditorCache() {
-    }
+    private EditorCache() {}
 
     // ═══════════════════════════════════════════════════════════════
     // CACHE OPERATIONS
@@ -108,19 +100,24 @@ public class EditorCache {
     /**
      * Get cached value or compute if missing/expired.
      *
-     * @param type    Cache type (e.g., "dps", "ehp", "tooltip")
-     * @param itemId  Item identifier
-     * @param computer Supplier to compute the value if not cached
+     * @param type       Cache type (e.g., "dps", "ehp", "tooltip")
+     * @param itemId     Item identifier
+     * @param valueClass Class token for type-safe casting
+     * @param computer   Supplier to compute the value if not cached
      * @return Cached or newly computed value
      */
-    @SuppressWarnings("unchecked")
-    public <T> T getOrCompute(String type, String itemId, Supplier<T> computer) {
+    public <T> T getOrCompute(String type, String itemId, Class<T> valueClass, Supplier<T> computer) {
         CacheKey key = new CacheKey(type, itemId, version.get());
 
         CacheEntry<?> entry = cache.get(key);
         if (entry != null && !entry.isExpired()) {
             hits++;
-            return (T) entry.value();
+            Object value = entry.value();
+            if (valueClass.isInstance(value)) {
+                return valueClass.cast(value);
+            }
+            // Type mismatch - invalidate and recompute
+            cache.remove(key);
         }
 
         misses++;
@@ -143,18 +140,21 @@ public class EditorCache {
     }
 
     /**
-     * Get cached value without computing.
+     * Get cached value without computing (type-safe version).
      *
-     * @return Cached value or null if not found/expired
+     * @param valueClass Class token for type-safe casting
+     * @return Cached value or null if not found/expired/type mismatch
      */
-    @SuppressWarnings("unchecked")
-    public <T> T get(String type, String itemId) {
+    public <T> T get(String type, String itemId, Class<T> valueClass) {
         CacheKey key = new CacheKey(type, itemId, version.get());
         CacheEntry<?> entry = cache.get(key);
 
         if (entry != null && !entry.isExpired()) {
-            hits++;
-            return (T) entry.value();
+            Object value = entry.value();
+            if (valueClass.isInstance(value)) {
+                hits++;
+                return valueClass.cast(value);
+            }
         }
 
         misses++;

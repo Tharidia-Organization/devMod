@@ -14,6 +14,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.DoubleAdder;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Tracks damage dealt and taken statistics.
@@ -22,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>Supports automatic persistence to disk via {@link #save()} and {@link #load()}.
  * Statistics are preserved between game sessions.
  */
-@SuppressWarnings("null")
+
 public class DamageStatistics {
     private static final Logger LOGGER = LoggerFactory.getLogger("DevMod/DamageStatistics");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -32,11 +34,13 @@ public class DamageStatistics {
     // Track if data has changed since last save (for efficient periodic saves)
     private volatile boolean dirty = false;
 
-    private double totalDamageDealt = 0;
-    private double totalDamageTaken = 0;
-    private int hitsDealt = 0;
-    private int hitsTaken = 0;
-    private double highestSingleHit = 0;
+    // Thread-safe counters using atomic adders
+    private final DoubleAdder totalDamageDealt = new DoubleAdder();
+    private final DoubleAdder totalDamageTaken = new DoubleAdder();
+    private final LongAdder hitsDealt = new LongAdder();
+    private final LongAdder hitsTaken = new LongAdder();
+    private volatile double highestSingleHit = 0;
+    private final Object highestHitLock = new Object();
     private final Map<String, Double> damageByBodyPart = new ConcurrentHashMap<>();
     private final Map<String, Double> damageByWeapon = new ConcurrentHashMap<>();
     private final Map<String, Integer> hitsByBodyPart = new ConcurrentHashMap<>();
@@ -47,12 +51,15 @@ public class DamageStatistics {
      * Record damage dealt to an entity.
      */
     public void recordDamageDealt(double damage, String bodyPart, Item weapon) {
-        totalDamageDealt += damage;
-        hitsDealt++;
+        totalDamageDealt.add(damage);
+        hitsDealt.increment();
         dirty = true;
 
-        if (damage > highestSingleHit) {
-            highestSingleHit = damage;
+        // Thread-safe update of highest single hit
+        synchronized (highestHitLock) {
+            if (damage > highestSingleHit) {
+                highestSingleHit = damage;
+            }
         }
 
         if (bodyPart != null) {
@@ -71,16 +78,16 @@ public class DamageStatistics {
      * Record damage taken by the player.
      */
     public void recordDamageTaken(double damage) {
-        totalDamageTaken += damage;
-        hitsTaken++;
+        totalDamageTaken.add(damage);
+        hitsTaken.increment();
         dirty = true;
     }
 
     // === Getters ===
-    public double getTotalDamageDealt() { return totalDamageDealt; }
-    public double getTotalDamageTaken() { return totalDamageTaken; }
-    public int getHitsDealt() { return hitsDealt; }
-    public int getHitsTaken() { return hitsTaken; }
+    public double getTotalDamageDealt() { return totalDamageDealt.sum(); }
+    public double getTotalDamageTaken() { return totalDamageTaken.sum(); }
+    public int getHitsDealt() { return (int) hitsDealt.sum(); }
+    public int getHitsTaken() { return (int) hitsTaken.sum(); }
     public double getHighestSingleHit() { return highestSingleHit; }
     public double getDamageOnBodyPart(String part) { return damageByBodyPart.getOrDefault(part.toUpperCase(), 0.0); }
     public int getHitsOnBodyPart(String part) { return hitsByBodyPart.getOrDefault(part.toUpperCase(), 0); }
@@ -88,10 +95,10 @@ public class DamageStatistics {
     // === Persistence ===
     public JsonObject toJson() {
         JsonObject json = new JsonObject();
-        json.addProperty("totalDealt", totalDamageDealt);
-        json.addProperty("totalTaken", totalDamageTaken);
-        json.addProperty("hitsDealt", hitsDealt);
-        json.addProperty("hitsTaken", hitsTaken);
+        json.addProperty("totalDealt", totalDamageDealt.sum());
+        json.addProperty("totalTaken", totalDamageTaken.sum());
+        json.addProperty("hitsDealt", hitsDealt.sum());
+        json.addProperty("hitsTaken", hitsTaken.sum());
         json.addProperty("highestSingle", highestSingleHit);
         json.add("byBodyPart", doubleMapToJson(damageByBodyPart));
         json.add("byWeapon", doubleMapToJson(damageByWeapon));
@@ -100,10 +107,15 @@ public class DamageStatistics {
     }
 
     public void fromJson(JsonObject json) {
-        totalDamageDealt = getDouble(json, "totalDealt", 0);
-        totalDamageTaken = getDouble(json, "totalTaken", 0);
-        hitsDealt = getInt(json, "hitsDealt", 0);
-        hitsTaken = getInt(json, "hitsTaken", 0);
+        // Reset adders and add loaded values
+        totalDamageDealt.reset();
+        totalDamageDealt.add(getDouble(json, "totalDealt", 0));
+        totalDamageTaken.reset();
+        totalDamageTaken.add(getDouble(json, "totalTaken", 0));
+        hitsDealt.reset();
+        hitsDealt.add(getLong(json, "hitsDealt", 0));
+        hitsTaken.reset();
+        hitsTaken.add(getLong(json, "hitsTaken", 0));
         highestSingleHit = getDouble(json, "highestSingle", 0);
         if (json.has("byBodyPart")) jsonToDoubleMap(json.getAsJsonObject("byBodyPart"), damageByBodyPart);
         if (json.has("byWeapon")) jsonToDoubleMap(json.getAsJsonObject("byWeapon"), damageByWeapon);
@@ -111,10 +123,10 @@ public class DamageStatistics {
     }
 
     public void reset() {
-        totalDamageDealt = 0;
-        totalDamageTaken = 0;
-        hitsDealt = 0;
-        hitsTaken = 0;
+        totalDamageDealt.reset();
+        totalDamageTaken.reset();
+        hitsDealt.reset();
+        hitsTaken.reset();
         highestSingleHit = 0;
         damageByBodyPart.clear();
         damageByWeapon.clear();
@@ -152,8 +164,8 @@ public class DamageStatistics {
         }
     }
 
-    private int getInt(JsonObject obj, String key, int defaultValue) {
-        return obj.has(key) ? obj.get(key).getAsInt() : defaultValue;
+    private long getLong(JsonObject obj, String key, long defaultValue) {
+        return obj.has(key) ? obj.get(key).getAsLong() : defaultValue;
     }
 
     private double getDouble(JsonObject obj, String key, double defaultValue) {
@@ -191,7 +203,7 @@ public class DamageStatistics {
 
             dirty = false;
             LOGGER.info("[DevMod] Saved damage statistics ({} hits dealt, {} total damage)",
-                hitsDealt, String.format("%.1f", totalDamageDealt));
+                hitsDealt.sum(), String.format("%.1f", totalDamageDealt.sum()));
         } catch (IOException e) {
             LOGGER.error("[DevMod] Failed to save damage statistics: {}", e.getMessage());
         }
@@ -217,7 +229,7 @@ public class DamageStatistics {
             dirty = false;  // Just loaded, not dirty
 
             LOGGER.info("[DevMod] Loaded damage statistics ({} hits dealt, {} total damage)",
-                hitsDealt, String.format("%.1f", totalDamageDealt));
+                hitsDealt.sum(), String.format("%.1f", totalDamageDealt.sum()));
         } catch (Exception e) {
             LOGGER.error("[DevMod] Failed to load damage statistics: {}", e.getMessage());
             // Don't reset on load failure - keep any in-memory data

@@ -25,7 +25,7 @@ import java.util.function.Consumer;
  * - Burst damage (max damage in time window)
  */
 // Minecraft API (getGameProfile) guaranteed non-null for ServerPlayer
-@SuppressWarnings("null")
+
 public class FightSessionService {
     public static final FightSessionService INSTANCE = new FightSessionService();
 

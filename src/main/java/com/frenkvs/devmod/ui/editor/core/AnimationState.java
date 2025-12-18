@@ -270,9 +270,9 @@ public class AnimationState {
 
     /**
      * Ease-in-out cubic: acceleration until halfway, then deceleration.
+     * Available for use in animations requiring symmetric acceleration/deceleration.
      */
-    @SuppressWarnings("unused")
-    private static float easeInOutCubic(float t) {
+    public static float easeInOutCubic(float t) {
         if (t < 0.5f) {
             return 4 * t * t * t;
         } else {
@@ -283,10 +283,9 @@ public class AnimationState {
 
     /**
      * Ease-out back: slightly overshoots then settles.
-     * Good for "pop" effects.
+     * Good for "pop" effects in UI animations.
      */
-    @SuppressWarnings("unused")
-    private static float easeOutBack(float t) {
+    public static float easeOutBack(float t) {
         float c1 = 1.70158f;
         float c3 = c1 + 1;
         float t1 = t - 1;

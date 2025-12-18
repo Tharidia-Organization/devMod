@@ -5,16 +5,20 @@ import com.frenkvs.devmod.util.I18n;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.enchantment.Enchantments;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 
 /**
  * Advanced Reward System for Endurance Quests.
@@ -36,7 +39,6 @@ import java.util.function.Consumer;
  * - Shop system for permanent upgrades
  * - Achievement-based bonus rewards
  */
-@SuppressWarnings({"null", "unused"})
 public class RewardSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(RewardSystem.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -254,6 +256,7 @@ public class RewardSystem {
     private List<ItemStack> generateLootDrops(ServerPlayer player, EnduranceQuest quest,
                                                ComboSystem.ComboSession comboSession) {
         List<ItemStack> drops = new ArrayList<>();
+        RegistryAccess registryAccess = player.level().registryAccess();
 
         // Number of drops based on waves cleared
         int dropCount = Math.min(quest.getCurrentWave(), 10);
@@ -268,7 +271,7 @@ public class RewardSystem {
             LootTier tier = rollLootTier(qualityBoost);
             LootEntry entry = rollLootEntry(tier);
             if (entry != null) {
-                ItemStack stack = entry.createStack(random);
+                ItemStack stack = entry.createStack(random, registryAccess);
                 drops.add(stack);
 
                 // Telemetry: record loot drop
@@ -286,7 +289,7 @@ public class RewardSystem {
                                  random.nextFloat() < 0.3f ? LootTier.EPIC : LootTier.RARE;
             LootEntry bonusEntry = rollLootEntry(bonusTier);
             if (bonusEntry != null) {
-                ItemStack bonusStack = bonusEntry.createStack(random);
+                ItemStack bonusStack = bonusEntry.createStack(random, registryAccess);
                 drops.add(bonusStack);
 
                 // Telemetry: record bonus loot drop
@@ -850,15 +853,60 @@ public class RewardSystem {
             this.enchanted = enchanted;
         }
 
-        public ItemStack createStack(Random random) {
+        public ItemStack createStack(Random random, RegistryAccess registryAccess) {
             int count = minCount + (maxCount > minCount ? random.nextInt(maxCount - minCount + 1) : 0);
             ItemStack stack = new ItemStack(item, count);
 
-            // Apply enchantments for legendary items
-            // Note: In 1.21, enchantment application requires level access
-            // This would need to be done differently in the actual game
+            if (enchanted && registryAccess != null) {
+                applyLegendaryEnchantments(stack, random, registryAccess);
+            }
 
             return stack;
+        }
+
+        private void applyLegendaryEnchantments(ItemStack stack, Random random, RegistryAccess registryAccess) {
+            var enchantRegistry = registryAccess.registryOrThrow(Registries.ENCHANTMENT);
+            ItemEnchantments.Mutable mutable = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
+
+            // Determine enchantments based on item type
+            if (stack.getItem() == Items.NETHERITE_SWORD) {
+                // Legendary sword enchantments
+                addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:sharpness", 4 + random.nextInt(2)); // 4-5
+                addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:looting", 2 + random.nextInt(2)); // 2-3
+                addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:unbreaking", 3);
+                if (random.nextFloat() < 0.3f) {
+                    addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:fire_aspect", 2);
+                }
+                if (random.nextFloat() < 0.2f) {
+                    addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:sweeping_edge", 3);
+                }
+            } else if (stack.getItem() == Items.NETHERITE_CHESTPLATE) {
+                // Legendary armor enchantments
+                addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:protection", 3 + random.nextInt(2)); // 3-4
+                addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:unbreaking", 3);
+                if (random.nextFloat() < 0.4f) {
+                    addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:thorns", 2 + random.nextInt(2)); // 2-3
+                }
+                if (random.nextFloat() < 0.3f) {
+                    addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:mending", 1);
+                }
+            }
+
+            if (!mutable.toImmutable().isEmpty()) {
+                stack.set(net.minecraft.core.component.DataComponents.ENCHANTMENTS, mutable.toImmutable());
+            }
+        }
+
+        private void addEnchantmentIfPresent(ItemEnchantments.Mutable mutable,
+                                              net.minecraft.core.Registry<Enchantment> registry,
+                                              String enchantmentId, int level) {
+            ResourceLocation loc = ResourceLocation.parse(enchantmentId);
+            ResourceKey<Enchantment> key = ResourceKey.create(Registries.ENCHANTMENT, loc);
+            registry.getHolder(key).ifPresent(holder -> mutable.set(holder, level));
+        }
+
+        public boolean isEnchanted() {
+            return enchanted;
         }
     }
 

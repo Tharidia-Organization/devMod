@@ -12,6 +12,7 @@ import static com.frenkvs.devmod.ui.testing.pages.PageUtils.nonNullDouble;
  * Combat Page - Configuration for combat mechanics and damage systems.
  * Controls body part detection, damage multipliers, and armor penetration.
  */
+
 public class CombatPage extends AbstractVoxelLabPage {
 
     // Body part system

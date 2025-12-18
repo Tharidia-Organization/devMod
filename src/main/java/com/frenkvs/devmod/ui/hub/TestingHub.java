@@ -29,7 +29,7 @@ import java.util.Set;
  * - Right: QuickToolsPanel (toggle overlay + editor shortcuts)
  * - Footer: ProgressFooter (progress bar + actions)
  */
-@SuppressWarnings("null")
+
 public class TestingHub extends Screen {
 
     // === LAYOUT CONSTANTS ===

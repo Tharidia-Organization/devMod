@@ -43,7 +43,7 @@ import java.util.*;
  * - Fuzzy search (type to filter)
  * - Keyboard shortcuts for power users
  */
-@SuppressWarnings("null") // Minecraft API null annotations
+
 public class RadialMenuScreenV3 extends Screen {
 
     // ================================================================

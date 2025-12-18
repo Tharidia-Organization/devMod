@@ -360,12 +360,12 @@ public class EditorSlider {
      * @param graphics     The graphics context
      * @param screenWidth  Screen width for bounds checking
      * @param screenHeight Screen height for bounds checking
-     * @deprecated Tooltips are now handled by TooltipManager. Call TooltipManager.getInstance().renderQueuedTooltips() instead.
+     * @deprecated Tooltips are now handled by TooltipManager. Call TooltipManager.INSTANCE.renderAll() instead.
      */
     @Deprecated
     public void renderInfoTooltip(GuiGraphics graphics, int screenWidth, int screenHeight) {
         // No-op: InfoButton now queues tooltips via TooltipManager during render()
-        // The calling code should use TooltipManager.getInstance().renderQueuedTooltips(graphics, screenWidth, screenHeight)
+        // The calling code should use TooltipManager.INSTANCE.renderAll(graphics)
     }
 
     /**

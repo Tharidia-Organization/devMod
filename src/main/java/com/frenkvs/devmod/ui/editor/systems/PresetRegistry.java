@@ -35,8 +35,8 @@ import java.util.stream.Stream;
  */
 public final class PresetRegistry {
 
-    // Singleton instance
-    private static PresetRegistry INSTANCE;
+    // Singleton instance (eager initialization - thread-safe)
+    public static final PresetRegistry INSTANCE = new PresetRegistry();
 
     // Presets organized by scope
     private final Map<PresetScope, List<RegistryPreset>> presets = new ConcurrentHashMap<>();
@@ -50,30 +50,8 @@ public final class PresetRegistry {
     // Bundled presets resource path
     private static final String BUNDLED_PRESETS_PATH = "/data/devmod/presets/";
 
-    // ═══════════════════════════════════════════════════════════════
-    // SINGLETON
-    // ═══════════════════════════════════════════════════════════════
-
-    private PresetRegistry() {}
-
-    /**
-     * Initialize the registry (call once at mod startup).
-     */
-    public static void init() {
-        if (INSTANCE == null) {
-            INSTANCE = new PresetRegistry();
-            DevMod.LOGGER.info("[PresetRegistry] Initialized");
-        }
-    }
-
-    /**
-     * Get the singleton instance.
-     */
-    public static PresetRegistry getInstance() {
-        if (INSTANCE == null) {
-            init();
-        }
-        return INSTANCE;
+    private PresetRegistry() {
+        DevMod.LOGGER.info("[PresetRegistry] Initialized");
     }
 
     // ═══════════════════════════════════════════════════════════════
