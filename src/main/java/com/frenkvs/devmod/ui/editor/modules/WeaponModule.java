@@ -9,6 +9,7 @@ import com.frenkvs.devmod.ui.editor.ModuleTab;
 import com.frenkvs.devmod.ui.editor.components.EditorSlider;
 import com.frenkvs.devmod.ui.editor.components.EditorTextField;
 import com.frenkvs.devmod.ui.editor.components.EditorToggle;
+import com.frenkvs.devmod.ui.editor.components.SourceBadge;
 import com.frenkvs.devmod.ui.editor.core.EditorCache;
 import com.frenkvs.devmod.ui.editor.core.EditorDimensions;
 import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
@@ -55,6 +56,7 @@ public class WeaponModule extends AbstractEditorModule {
     public enum WeaponVariant { STANDARD, MACE, TRIDENT }
     private WeaponVariant variant = WeaponVariant.STANDARD;
     private String sourcePrefix = "";
+    private SourceBadge.Source dataSource = SourceBadge.Source.VANILLA;
     // Variant-specific state (placeholder persisted in CustomData extras)
     private float smashBonus = 3.0f;
     private float smashCap = 150.0f;
@@ -210,10 +212,13 @@ public class WeaponModule extends AbstractEditorModule {
 
         if (statsTag != null && !statsTag.isEmpty()) {
             sourcePrefix = "[DEV] ";
+            dataSource = SourceBadge.Source.DEV;
             DevMod.LOGGER.info("[Editor][Weapon] Loaded stats from component tag (size={})", statsTag.size());
             stats = statsTag.contains(NBT_KEY) ? WeaponStats.load(statsTag.getCompound(NBT_KEY)) : WeaponStats.load(statsTag);
         } else {
-            sourcePrefix = (customTag != null && !customTag.isEmpty()) ? "[NBT] " : "[VANILLA] ";
+            boolean hasCustomData = customTag != null && !customTag.isEmpty();
+            sourcePrefix = hasCustomData ? "[NBT] " : "[VANILLA] ";
+            dataSource = hasCustomData ? SourceBadge.Source.NBT : SourceBadge.Source.VANILLA;
             DevMod.LOGGER.info("[Editor][Weapon] No custom stats found; applying vanilla defaults. customTagEmpty={} stackAttrMods={}",
                 customTag == null || customTag.isEmpty(),
                 item.getAttributeModifiers().modifiers().size());
@@ -511,54 +516,85 @@ public class WeaponModule extends AbstractEditorModule {
                 .format("%.1f")
                 .suffix(" per block")
                 .trackColor(UIConstants.SliderColors.DAMAGE)
+                .showInput(true)
+                .source(dataSource)
+                .info("Extra damage per block fallen. Mace default = 3.0. Total = Base + (Fall Height * Bonus).")
                 .onChange(v -> { smashBonus = v; markDirty("Smash fall bonus"); });
             smashCapSlider = new EditorSlider("smashCap", "Max Bonus Damage", 0f, 300f, 150f)
                 .step(5f)
                 .format("%.0f")
                 .trackColor(UIConstants.SliderColors.DAMAGE)
+                .showInput(true)
+                .source(dataSource)
+                .info("Maximum bonus damage from falling. Prevents infinite scaling.")
                 .onChange(v -> { smashCap = v; markDirty("Smash cap"); });
             smashKnockbackSlider = new EditorSlider("smashKb", "Smash Knockback", 0f, 5f, 1.0f)
                 .step(0.1f)
                 .format("%.1f")
                 .trackColor(UIConstants.SliderColors.NEUTRAL)
+                .showInput(true)
+                .source(dataSource)
+                .info("Knockback strength on smash attack. Higher = enemies fly further.")
                 .onChange(v -> { smashKnockback = v; markDirty("Smash knockback"); });
             smashAoeDamageSlider = new EditorSlider("smashAoe", "Smash AOE Damage", 0f, 200f, 50f)
                 .step(5f)
                 .format("%.0f")
                 .suffix("%")
                 .trackColor(UIConstants.SliderColors.DAMAGE)
+                .showInput(true)
+                .source(dataSource)
+                .info("Percentage of damage dealt to nearby enemies in AoE. 50% = half damage to secondary targets.")
                 .onChange(v -> { smashAoeDamage = v; markDirty("Smash AOE damage"); });
             smashFallNegationToggle = new EditorToggle("smashNegate", "Fall Damage Negation", false)
+                .source(dataSource)
+                .tooltip("Negate fall damage when landing a smash attack")
                 .onChange(v -> { smashNegateFall = v; markDirty("Fall damage negation"); });
         } else if (variant == WeaponVariant.TRIDENT) {
             throwDamageSlider = new EditorSlider("throwDmg", "Throw Damage", 0f, 30f, 8f)
                 .step(0.5f)
                 .format("%.1f")
                 .trackColor(UIConstants.SliderColors.DAMAGE)
+                .showInput(true)
+                .source(dataSource)
+                .info("Damage dealt when trident hits as thrown projectile. Vanilla = 8.0.")
                 .onChange(v -> { throwDamage = v; markDirty("Throw damage"); });
             throwSpeedSlider = new EditorSlider("throwSpeed", "Throw Speed", 0f, 5f, 2.5f)
                 .step(0.1f)
                 .format("%.2f")
                 .suffix(" blocks/tick")
                 .trackColor(UIConstants.SliderColors.SPEED)
+                .showInput(true)
+                .source(dataSource)
+                .info("How fast trident travels when thrown. Higher = longer range, faster flight.")
                 .onChange(v -> { throwSpeed = v; markDirty("Throw speed"); });
             loyaltySpeedSlider = new EditorSlider("loyaltySpeed", "Return Speed (Loyalty)", 0f, 5f, 1.5f)
                 .step(0.1f)
                 .format("%.2f")
                 .trackColor(UIConstants.SliderColors.SPEED)
+                .showInput(true)
+                .source(dataSource)
+                .info("How fast trident returns with Loyalty enchant. 0 = no return.")
                 .onChange(v -> { loyaltySpeed = v; markDirty("Return speed"); });
             riptideDistanceSlider = new EditorSlider("riptideDist", "Riptide Distance", 0f, 30f, 12f)
                 .step(0.5f)
                 .format("%.1f")
                 .suffix(" blocks")
                 .trackColor(UIConstants.SliderColors.SPEED)
+                .showInput(true)
+                .source(dataSource)
+                .info("Maximum distance player travels when using Riptide in water/rain.")
                 .onChange(v -> { riptideDistance = v; markDirty("Riptide distance"); });
             riptideDamageSlider = new EditorSlider("riptideDmg", "Riptide Damage", 0f, 20f, 6f)
                 .step(0.5f)
                 .format("%.1f")
                 .trackColor(UIConstants.SliderColors.DAMAGE)
+                .showInput(true)
+                .source(dataSource)
+                .info("Damage dealt to entities hit during Riptide dash.")
                 .onChange(v -> { riptideDamage = v; markDirty("Riptide damage"); });
             riptideRequiresWaterToggle = new EditorToggle("riptideWater", "Requires Water", true)
+                .source(dataSource)
+                .tooltip("If enabled, Riptide only works in water or rain")
                 .onChange(v -> { riptideRequiresWater = v; markDirty("Riptide water requirement"); });
         }
     }
@@ -573,6 +609,9 @@ public class WeaponModule extends AbstractEditorModule {
             .format("%.1f")
             .suffix("x")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .showInput(true)
+            .source(dataSource)
+            .info("Damage multiplier when hitting the head. 1.5x = headshots deal 50% more damage.")
             .onChange(v -> { stats.headMult = v; markDirty("Head multiplier"); });
 
         bodyMultSlider = new EditorSlider("bodyMult", "Body Multiplier", 0.5f, 2.0f, 1.0f)
@@ -580,6 +619,9 @@ public class WeaponModule extends AbstractEditorModule {
             .format("%.1f")
             .suffix("x")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .showInput(true)
+            .source(dataSource)
+            .info("Damage multiplier for body/torso hits. 1.0 = normal damage.")
             .onChange(v -> { stats.bodyMult = v; markDirty("Body multiplier"); });
 
         armsMultSlider = new EditorSlider("armsMult", "Arms Multiplier", 0.3f, 1.5f, 0.8f)
@@ -587,6 +629,9 @@ public class WeaponModule extends AbstractEditorModule {
             .format("%.1f")
             .suffix("x")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .showInput(true)
+            .source(dataSource)
+            .info("Damage multiplier when hitting arms. 0.8x = arm hits deal 20% less damage.")
             .onChange(v -> { stats.armsMult = v; markDirty("Arms multiplier"); });
 
         legsMultSlider = new EditorSlider("legsMult", "Legs Multiplier", 0.3f, 1.5f, 0.7f)
@@ -594,6 +639,9 @@ public class WeaponModule extends AbstractEditorModule {
             .format("%.1f")
             .suffix("x")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .showInput(true)
+            .source(dataSource)
+            .info("Damage multiplier when hitting legs. 0.7x = leg hits deal 30% less damage.")
             .onChange(v -> { stats.legsMult = v; markDirty("Legs multiplier"); });
     }
 
@@ -616,6 +664,7 @@ public class WeaponModule extends AbstractEditorModule {
             .format("%.1f")
             .trackColor(UIConstants.SliderColors.DAMAGE)
             .showInput(true)
+            .source(dataSource)
             .info("Base damage added to attacks. Final = (Base + Attack Damage) * Multipliers. Uses minecraft:attack_damage attribute.")
             .onChange(v -> { stats.attackDamage = v; markDirty("Attack damage"); });
 
@@ -625,6 +674,7 @@ public class WeaponModule extends AbstractEditorModule {
             .format("%.1f")
             .trackColor(UIConstants.SliderColors.SPEED)
             .showInput(true)
+            .source(dataSource)
             .info("Modifier to attack cooldown. Player base is 4.0, so -2.4 means 1.6 attacks/sec. DPS = Damage * (4 + Speed).")
             .onChange(v -> { stats.attackSpeed = v; markDirty("Attack speed"); });
 
@@ -634,6 +684,7 @@ public class WeaponModule extends AbstractEditorModule {
             .suffix(" blocks")
             .trackColor(UIConstants.SliderColors.NEUTRAL)
             .showInput(true)
+            .source(dataSource)
             .info("Additional melee range. Player base reach is 3.0 blocks. Uses minecraft:entity_interaction_range.")
             .onChange(v -> { stats.attackReach = v; markDirty("Attack reach"); });
 
@@ -642,6 +693,7 @@ public class WeaponModule extends AbstractEditorModule {
             .format("%.1f")
             .trackColor(UIConstants.SliderColors.NEUTRAL)
             .showInput(true)
+            .source(dataSource)
             .info("Additional knockback strength. 1.0 = one Knockback enchantment level. Uses minecraft:attack_knockback.")
             .onChange(v -> { stats.attackKnockback = v; markDirty("Knockback"); });
 
@@ -651,6 +703,7 @@ public class WeaponModule extends AbstractEditorModule {
             .suffix("%")
             .trackColor(UIConstants.SliderColors.NEUTRAL)
             .showInput(true)
+            .source(dataSource)
             .info("Percentage multiplier to final damage. 50% = 1.5x damage. Uses devmod:damage_bonus custom attribute.")
             .onChange(v -> { stats.damageBonus = v / 100f; markDirty("Damage bonus"); });
 
@@ -660,6 +713,7 @@ public class WeaponModule extends AbstractEditorModule {
             .suffix("%")
             .trackColor(UIConstants.SliderColors.SPECIAL)
             .showInput(true)
+            .source(dataSource)
             .info("AoE sweep damage ratio. 100% = full damage to nearby enemies. Similar to Sweeping Edge. Uses minecraft:sweeping_damage_ratio.")
             .onChange(v -> { stats.sweepingRatio = v / 100f; markDirty("Sweeping ratio"); });
 
@@ -669,6 +723,7 @@ public class WeaponModule extends AbstractEditorModule {
             .suffix("%")
             .trackColor(UIConstants.SliderColors.SPECIAL)
             .showInput(true)
+            .source(dataSource)
             .info("Percentage of target's armor ignored. 50% pen vs 20 armor = effective 10 armor. Applied before damage reduction.")
             .onChange(v -> { stats.armorPenetration = v / 100f; markDirty("Armor penetration"); });
 
@@ -677,6 +732,7 @@ public class WeaponModule extends AbstractEditorModule {
             .format("+%.1f")
             .trackColor(UIConstants.SliderColors.DAMAGE)
             .showInput(true)
+            .source(dataSource)
             .info("Flat bonus to weapon's base damage before multipliers. Negative values reduce damage.")
             .onChange(v -> { stats.baseDamageBonus = v; markDirty("Base damage bonus"); });
 
@@ -686,6 +742,7 @@ public class WeaponModule extends AbstractEditorModule {
             .suffix("%")
             .trackColor(UIConstants.SliderColors.DAMAGE)
             .showInput(true)
+            .source(dataSource)
             .info("Permanently reduces target's armor on hit. Stacks up to cap. Uses devmod:armor_shred attribute.")
             .onChange(v -> { stats.armorShred = v; markDirty("Armor shred"); });
     }
@@ -746,6 +803,7 @@ public class WeaponModule extends AbstractEditorModule {
     private void createSpecialComponents() {
         // Critical Hit Toggle & Sliders
         critEnabledToggle = new EditorToggle("critEnabled", "Enable Critical Hits", stats.critChance > 0)
+            .source(dataSource)
             .tooltip("Enable critical hit mechanics for this weapon")
             .onChange(enabled -> {
                 critChanceSlider.setEnabled(enabled);
@@ -762,6 +820,8 @@ public class WeaponModule extends AbstractEditorModule {
             .format("%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.PERCENT)
+            .showInput(true)
+            .source(dataSource)
             .enabled(stats.critChance > 0)
             .info("Chance to deal critical hit. Rolled on each attack. Uses devmod:crit_chance attribute.")
             .onChange(v -> { stats.critChance = v / 100f; markDirty("Critical chance"); });
@@ -771,12 +831,15 @@ public class WeaponModule extends AbstractEditorModule {
             .format("%.1f")
             .suffix("x")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .showInput(true)
+            .source(dataSource)
             .enabled(stats.critChance > 0)
             .info("Damage multiplier on critical hit. 2.0x = double damage. Uses devmod:crit_multiplier attribute.")
             .onChange(v -> { stats.critDamage = v; markDirty("Critical damage"); });
 
         // Lifesteal Toggle & Slider
         lifestealEnabledToggle = new EditorToggle("lifestealEnabled", "Enable Lifesteal", stats.lifesteal > 0)
+            .source(dataSource)
             .tooltip("Heal a percentage of damage dealt")
             .onChange(enabled -> {
                 lifestealSlider.setEnabled(enabled);
@@ -792,12 +855,15 @@ public class WeaponModule extends AbstractEditorModule {
             .format("%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.SPECIAL)
+            .showInput(true)
+            .source(dataSource)
             .enabled(stats.lifesteal > 0)
             .info("Heals attacker for percentage of damage dealt. 10% lifesteal on 20 damage = 2 HP healed.")
             .onChange(v -> { stats.lifesteal = v / 100f; markDirty("Lifesteal"); });
 
         // Fire Damage Toggle & Slider
         fireDamageEnabledToggle = new EditorToggle("fireEnabled", "Enable Fire Damage", stats.fireDamageBonus > 0)
+            .source(dataSource)
             .tooltip("Add fire damage to attacks")
             .onChange(enabled -> {
                 fireDamageSlider.setEnabled(enabled);
@@ -812,12 +878,15 @@ public class WeaponModule extends AbstractEditorModule {
             .step(0.5f)
             .format("+%.1f")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .showInput(true)
+            .source(dataSource)
             .enabled(stats.fireDamageBonus > 0)
             .info("Extra fire damage added to attacks. Sets target on fire. Ignores some armor.")
             .onChange(v -> { stats.fireDamageBonus = v; markDirty("Fire damage"); });
 
         // Magic Damage Toggle & Slider
         magicDamageEnabledToggle = new EditorToggle("magicEnabled", "Enable Magic Damage", stats.magicDamageBonus > 0)
+            .source(dataSource)
             .tooltip("Add magic damage to attacks")
             .onChange(enabled -> {
                 magicDamageSlider.setEnabled(enabled);
@@ -832,6 +901,8 @@ public class WeaponModule extends AbstractEditorModule {
             .step(0.5f)
             .format("+%.1f")
             .trackColor(UIConstants.SliderColors.SPECIAL)
+            .showInput(true)
+            .source(dataSource)
             .enabled(stats.magicDamageBonus > 0)
             .info("Extra magic damage added to attacks. Bypasses physical armor. Affected by magic resistance.")
             .onChange(v -> { stats.magicDamageBonus = v; markDirty("Magic damage"); });
@@ -853,6 +924,8 @@ public class WeaponModule extends AbstractEditorModule {
             .format("+%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .showInput(true)
+            .source(dataSource)
             .info("Bonus damage vs undead mobs (Zombies, Skeletons, Phantoms, etc.). Similar to Smite enchant.")
             .onChange(v -> { stats.damageVsUndead = v / 100f; markDirty("Damage vs undead"); });
 
@@ -861,6 +934,8 @@ public class WeaponModule extends AbstractEditorModule {
             .format("+%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .showInput(true)
+            .source(dataSource)
             .info("Bonus damage vs arthropods (Spiders, Silverfish, Bees, Endermites). Similar to Bane of Arthropods.")
             .onChange(v -> { stats.damageVsArthropods = v / 100f; markDirty("Damage vs arthropods"); });
 
@@ -869,6 +944,8 @@ public class WeaponModule extends AbstractEditorModule {
             .format("+%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .showInput(true)
+            .source(dataSource)
             .info("Bonus damage specifically against players. PvP-focused modifier.")
             .onChange(v -> { stats.damageVsPlayers = v / 100f; markDirty("Damage vs players"); });
 
@@ -877,6 +954,8 @@ public class WeaponModule extends AbstractEditorModule {
             .format("%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.SPECIAL)
+            .showInput(true)
+            .source(dataSource)
             .info("Percentage of damage that bypasses ALL armor and protection. 100% = full true damage.")
             .onChange(v -> { stats.trueDamagePercent = v / 100f; markDirty("True damage"); });
     }
@@ -899,20 +978,32 @@ public class WeaponModule extends AbstractEditorModule {
             .step(16f)
             .format("%.0f")
             .trackColor(UIConstants.SliderColors.DURABILITY)
+            .showInput(true)
+            .source(dataSource)
+            .info("Maximum durability points. Netherite sword = 2031. Item breaks when current damage reaches this value.")
             .onChange(v -> { stats.maxDurability = Math.round(v); markDirty("Max durability"); });
         currentDamageSlider = new EditorSlider("curDmg", "Current Damage", 0f, 4096f, 0f)
             .step(1f)
             .format("%.0f")
             .trackColor(UIConstants.SliderColors.DURABILITY)
+            .showInput(true)
+            .source(dataSource)
+            .info("Current damage taken. 0 = full durability. When this reaches max durability, item breaks.")
             .onChange(v -> { stats.currentDamage = Math.round(v); markDirty("Current damage"); });
         repairCostSlider = new EditorSlider("repair", "Repair Cost", 0f, 100f, 0f)
             .step(1f)
             .format("%.0f")
             .trackColor(UIConstants.SliderColors.DURABILITY)
+            .showInput(true)
+            .source(dataSource)
+            .info("XP level cost to repair/rename in anvil. Increases each repair. Max 39 before 'Too Expensive'.")
             .onChange(v -> { stats.repairCost = Math.round(v); markDirty("Repair cost"); });
         unbreakableToggle = new EditorToggle("unbreakable", "Unbreakable", stats.unbreakable)
+            .source(dataSource)
+            .tooltip("When enabled, item never loses durability. Sets minecraft:unbreakable component.")
             .onChange(v -> { stats.unbreakable = v; markDirty("Unbreakable"); });
         clearToolRulesToggle = new EditorToggle("clearTools", "Clear Tool Rules (tags/speeds)", stats.clearToolRules)
+            .source(dataSource)
             .tooltip("Removes tool rules component; useful to bypass mining penalties (apply to persist)")
             .onChange(v -> { stats.clearToolRules = v; markDirty("Clear tool rules"); });
     }

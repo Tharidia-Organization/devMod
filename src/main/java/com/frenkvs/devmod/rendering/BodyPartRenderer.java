@@ -14,6 +14,7 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
 import javax.annotation.Nonnull;
+import java.util.Objects;
 
 /**
  * Sistema di rendering avanzato per body part hitboxes
@@ -25,7 +26,6 @@ import javax.annotation.Nonnull;
  * - Adaptive rendering per non-humanoid entities
  * - Pulsing effect per parte colpita (opzionale)
  */
-@SuppressWarnings("null") // Minecraft APIs lack null annotations
 public class BodyPartRenderer {
 
     // Color definitions (ARGB format)
@@ -51,18 +51,23 @@ public class BodyPartRenderer {
         poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
 
         // Use BodyPartCalculator as single source of truth
-        BodyPartCalculator.BodyPartAABB[] bodyParts = BodyPartCalculator.calculateAllBodyParts(entity);
+        BodyPartCalculator.BodyPartAABB[] bodyParts = Objects.requireNonNull(
+            BodyPartCalculator.calculateAllBodyParts(entity), "body parts");
 
         // Get stats for multipliers (only for labels)
         WeaponStats stats = WeaponConfigManager.getGlobalStats();
 
-        Matrix4f matrix = poseStack.last().pose();
-        var pose = poseStack.last();
+        PoseStack.Pose pose = Objects.requireNonNull(poseStack.last(), "pose stack");
+        Matrix4f matrix = Objects.requireNonNull(pose.pose(), "pose matrix");
 
         // Render each body part
         for (BodyPartCalculator.BodyPartAABB bodyPart : bodyParts) {
-            String label = generateLabel(bodyPart.part(), stats);
-            renderBodyPartBox(bufferSource, matrix, pose, bodyPart.box(), bodyPart.color(), label, showLabels);
+            String label = Objects.requireNonNull(generateLabel(bodyPart.part(), stats), "label");
+            renderBodyPartBox(bufferSource, matrix, pose,
+                Objects.requireNonNull(bodyPart.box(), "body part box"),
+                bodyPart.color(),
+                label,
+                showLabels);
         }
 
         poseStack.popPose();
@@ -85,18 +90,22 @@ public class BodyPartRenderer {
     /**
      * Renderizza singola body part box con wireframe + faces trasparenti
      */
-    private static void renderBodyPartBox(MultiBufferSource bufferSource, Matrix4f matrix, PoseStack.Pose pose,
-                                         AABB box, int color, String label, boolean showLabels) {
+    private static void renderBodyPartBox(@Nonnull MultiBufferSource bufferSource, @Nonnull Matrix4f matrix, @Nonnull PoseStack.Pose pose,
+                                         @Nonnull AABB box, int color, @Nonnull String label, boolean showLabels) {
         float r = ((color >> 16) & 0xFF) / 255f;
         float g = ((color >> 8) & 0xFF) / 255f;
         float b = (color & 0xFF) / 255f;
 
         // 1. Render transparent faces (solid box)
-        VertexConsumer facesConsumer = bufferSource.getBuffer(RenderType.debugQuads());
+        VertexConsumer facesConsumer = Objects.requireNonNull(
+            bufferSource.getBuffer(Objects.requireNonNull(RenderType.debugQuads(), "faces render type")),
+            "faces buffer");
         renderSolidBox(facesConsumer, matrix, pose, box, r, g, b, FACE_OPACITY);
 
         // 2. Render opaque edges (wireframe)
-        VertexConsumer edgesConsumer = bufferSource.getBuffer(RenderType.lines());
+        VertexConsumer edgesConsumer = Objects.requireNonNull(
+            bufferSource.getBuffer(Objects.requireNonNull(RenderType.lines(), "edges render type")),
+            "edges buffer");
         renderWireframeBox(edgesConsumer, matrix, pose, box, r, g, b, EDGE_OPACITY);
 
         // 3. Render label (opzionale)
@@ -109,8 +118,8 @@ public class BodyPartRenderer {
     /**
      * Renderizza wireframe box (12 edges)
      */
-    private static void renderWireframeBox(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose,
-                                          AABB box, float r, float g, float b, float a) {
+    private static void renderWireframeBox(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix, @Nonnull PoseStack.Pose pose,
+                                          @Nonnull AABB box, float r, float g, float b, float a) {
         float minX = (float) box.minX;
         float minY = (float) box.minY;
         float minZ = (float) box.minZ;
@@ -140,8 +149,8 @@ public class BodyPartRenderer {
     /**
      * Renderizza solid box (6 facce)
      */
-    private static void renderSolidBox(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose,
-                                      AABB box, float r, float g, float b, float a) {
+    private static void renderSolidBox(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix, @Nonnull PoseStack.Pose pose,
+                                      @Nonnull AABB box, float r, float g, float b, float a) {
         float minX = (float) box.minX;
         float minY = (float) box.minY;
         float minZ = (float) box.minZ;
@@ -168,14 +177,14 @@ public class BodyPartRenderer {
         quad(consumer, matrix, pose, maxX, minY, minZ, maxX, maxY, minZ, maxX, maxY, maxZ, maxX, minY, maxZ, r, g, b, a, 1, 0, 0);
     }
 
-    private static void line(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose,
+    private static void line(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix, @Nonnull PoseStack.Pose pose,
                             float x1, float y1, float z1, float x2, float y2, float z2,
                             float r, float g, float b, float a) {
         consumer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
         consumer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
     }
 
-    private static void quad(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose,
+    private static void quad(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix, @Nonnull PoseStack.Pose pose,
                             float x1, float y1, float z1, float x2, float y2, float z2,
                             float x3, float y3, float z3, float x4, float y4, float z4,
                             float r, float g, float b, float a, float nx, float ny, float nz) {
@@ -201,8 +210,8 @@ public class BodyPartRenderer {
      * Renders highlight for hit body part (pulsing effect)
      * Uses BodyPartCalculator to get the correct AABB
      */
-    public static void renderHitHighlight(PoseStack poseStack, LivingEntity entity, HitHelper.BodyPart hitPart,
-                                         Vec3 cameraPos, MultiBufferSource bufferSource, long hitTime) {
+    public static void renderHitHighlight(@Nonnull PoseStack poseStack, @Nonnull LivingEntity entity, @Nonnull HitHelper.BodyPart hitPart,
+                                         @Nonnull Vec3 cameraPos, @Nonnull MultiBufferSource bufferSource, long hitTime) {
         // Pulsing effect based on time
         long timeSinceHit = System.currentTimeMillis() - hitTime;
         if (timeSinceHit > 500) return; // Highlight for 500ms
@@ -211,17 +220,23 @@ public class BodyPartRenderer {
         float alpha = (1.0f - (timeSinceHit / 500.0f)) * pulse; // Fade out
 
         // Use BodyPartCalculator to get the hit body part's AABB
-        BodyPartCalculator.BodyPartAABB hitBodyPart = BodyPartCalculator.calculateBodyPart(entity, hitPart);
+        BodyPartCalculator.BodyPartAABB hitBodyPart = Objects.requireNonNull(
+            BodyPartCalculator.calculateBodyPart(entity, hitPart),
+            "hit body part");
 
         poseStack.pushPose();
         poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
 
-        Matrix4f matrix = poseStack.last().pose();
-        var pose = poseStack.last();
+        PoseStack.Pose pose = Objects.requireNonNull(poseStack.last(), "pose stack");
+        Matrix4f matrix = Objects.requireNonNull(pose.pose(), "pose matrix");
 
         // White highlight wireframe
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.lines());
-        renderWireframeBox(consumer, matrix, pose, hitBodyPart.box(), 1.0f, 1.0f, 1.0f, alpha);
+        VertexConsumer consumer = Objects.requireNonNull(
+            bufferSource.getBuffer(Objects.requireNonNull(RenderType.lines(), "highlight render type")),
+            "highlight buffer");
+        renderWireframeBox(consumer, matrix, pose,
+            Objects.requireNonNull(hitBodyPart.box(), "hit box"),
+            1.0f, 1.0f, 1.0f, alpha);
 
         poseStack.popPose();
     }

@@ -828,7 +828,7 @@ public class RadialMenuScreenV3 extends Screen {
             return true;
         }
 
-        // Keys 1-4 switch macro-categories
+        // Keys 1-4 switch macro-categories (defaults: GLFW_KEY_1 .. GLFW_KEY_4)
         int macroIndex = indexOfKey(keyCode, config.input.macroKeys);
         if (macroIndex != RadialMenuConstants.NO_SELECTION) {
             MacroCategory[] macros = MacroCategory.values();
@@ -836,14 +836,14 @@ public class RadialMenuScreenV3 extends Screen {
                 transitionFromMacro = selectedMacro;
                 selectedMacro = macros[macroIndex];
                 animator.startMacroTransition();
-                selectedCategoryIndex = RadialMenuConstants.NO_SELECTION;
+                selectedCategoryIndex = RadialMenuConstants.NO_SELECTION; // selectedCategoryIndex = -1 (reset on macro change)
                 selectedItemIndex = RadialMenuConstants.NO_SELECTION;
                 playSound(RadialMenuConstants.SOUND_PITCH_MACRO_SWITCH);
             }
             return true;
         }
 
-        // Keys 5-9 and 0 select categories within current macro (Q-P for items)
+        // Keys 5-9 and 0 select categories within current macro (defaults: GLFW_KEY_5 .. GLFW_KEY_9, GLFW_KEY_0)
         int categoryIndex = indexOfKey(keyCode, config.input.categoryKeys);
         if (categoryIndex != RadialMenuConstants.NO_SELECTION) {
             if (categoryIndex < getActiveCategories().size()) {

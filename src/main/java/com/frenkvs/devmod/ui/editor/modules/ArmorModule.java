@@ -345,6 +345,49 @@ public class ArmorModule extends AbstractEditorModule {
         if (shieldShatterThresholdSlider != null) shieldShatterThresholdSlider.setValue(stats.shieldShatterThreshold);
         if (shieldAutoRegenerateToggle != null) shieldAutoRegenerateToggle.setValue(stats.shieldAutoRegenerate);
         if (shieldRegenDelaySlider != null) shieldRegenDelaySlider.setValue(stats.shieldRegenDelay);
+
+        // Update source badges to reflect current state
+        updateSourceBadges();
+    }
+
+    /**
+     * Update all source badges to reflect current modification state.
+     * Shows MODIFIED (yellow) if value differs from original, otherwise shows origin source.
+     */
+    private void updateSourceBadges() {
+        SourceBadge.Source baseSource = determineSource();
+        boolean isModified = hasPendingDiff();
+
+        // Use MODIFIED badge if any value changed, otherwise use the base source
+        SourceBadge.Source effectiveSource = isModified ? SourceBadge.Source.MODIFIED : baseSource;
+
+        // Update all slider badges
+        if (physicalReductionSlider != null) physicalReductionSlider.source(effectiveSource);
+        if (fireReductionSlider != null) fireReductionSlider.source(effectiveSource);
+        if (magicReductionSlider != null) magicReductionSlider.source(effectiveSource);
+        if (explosionReductionSlider != null) explosionReductionSlider.source(effectiveSource);
+        if (projectileReductionSlider != null) projectileReductionSlider.source(effectiveSource);
+        if (armorBonusSlider != null) armorBonusSlider.source(effectiveSource);
+        if (toughnessBonusSlider != null) toughnessBonusSlider.source(effectiveSource);
+        if (knockbackResistanceSlider != null) knockbackResistanceSlider.source(effectiveSource);
+        if (thornsPercentSlider != null) thornsPercentSlider.source(effectiveSource);
+        if (shieldBlockStrengthSlider != null) shieldBlockStrengthSlider.source(effectiveSource);
+        if (shieldRecoverySlider != null) shieldRecoverySlider.source(effectiveSource);
+        if (shieldOpacitySlider != null) shieldOpacitySlider.source(effectiveSource);
+        if (shieldGlowIntensitySlider != null) shieldGlowIntensitySlider.source(effectiveSource);
+        if (shieldNoiseIntensitySlider != null) shieldNoiseIntensitySlider.source(effectiveSource);
+        if (shieldPulseSpeedSlider != null) shieldPulseSpeedSlider.source(effectiveSource);
+        if (shieldDeflectionSpreadSlider != null) shieldDeflectionSpreadSlider.source(effectiveSource);
+        if (shieldDeflectSpeedMultSlider != null) shieldDeflectSpeedMultSlider.source(effectiveSource);
+        if (shieldShatterThresholdSlider != null) shieldShatterThresholdSlider.source(effectiveSource);
+        if (shieldRegenDelaySlider != null) shieldRegenDelaySlider.source(effectiveSource);
+
+        // Update all toggle badges
+        if (thornsToggle != null) thornsToggle.source(effectiveSource);
+        if (shieldReflectToggle != null) shieldReflectToggle.source(effectiveSource);
+        if (shieldGlowToggle != null) shieldGlowToggle.source(effectiveSource);
+        if (shieldDeflectToOwnerToggle != null) shieldDeflectToOwnerToggle.source(effectiveSource);
+        if (shieldAutoRegenerateToggle != null) shieldAutoRegenerateToggle.source(effectiveSource);
     }
 
     /**
@@ -568,6 +611,7 @@ public class ArmorModule extends AbstractEditorModule {
             .format("%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.DEFENSE)
+            .showInput(true)
             .source(source)
             .info("Reduces physical damage (melee attacks, falls). Max 80%. Formula: Damage * (1 - Reduction%). Stacks with armor value.")
             .onChange(v -> { stats.physicalReduction = v / 100f; markDirty("Physical reduction"); });
@@ -577,6 +621,7 @@ public class ArmorModule extends AbstractEditorModule {
             .format("%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .showInput(true)
             .source(source)
             .info("Reduces fire damage (burning, lava, Fire Aspect). Max 80%. Similar to Fire Protection enchant.")
             .onChange(v -> { stats.fireReduction = v / 100f; markDirty("Fire reduction"); });
@@ -586,6 +631,7 @@ public class ArmorModule extends AbstractEditorModule {
             .format("%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.SPECIAL)
+            .showInput(true)
             .source(source)
             .info("Reduces magic damage (potions, Guardians, Evokers). Max 80%. Bypassed by true damage.")
             .onChange(v -> { stats.magicReduction = v / 100f; markDirty("Magic reduction"); });
@@ -595,6 +641,7 @@ public class ArmorModule extends AbstractEditorModule {
             .format("%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .showInput(true)
             .source(source)
             .info("Reduces explosion damage (Creepers, TNT, Ghast fireballs). Max 80%. Similar to Blast Protection.")
             .onChange(v -> { stats.explosionReduction = v / 100f; markDirty("Explosion reduction"); });
@@ -604,6 +651,7 @@ public class ArmorModule extends AbstractEditorModule {
             .format("%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.DEFENSE)
+            .showInput(true)
             .source(source)
             .info("Reduces projectile damage (arrows, tridents, fireballs). Max 80%. Similar to Projectile Protection.")
             .onChange(v -> { stats.projectileReduction = v / 100f; markDirty("Projectile reduction"); });
@@ -629,7 +677,9 @@ public class ArmorModule extends AbstractEditorModule {
         armorBonusSlider = new EditorSlider("armorBon", "Armor Bonus", 0f, 30f, 0f)
             .step(1f)
             .format("+%.0f")
+            .suffix(" pts")
             .trackColor(UIConstants.SliderColors.DEFENSE)
+            .showInput(true)
             .source(source)
             .info("Adds to armor points (shields icon). Each point reduces damage by ~4% up to 80% cap. Uses minecraft:armor attribute.")
             .onChange(v -> { stats.armorBonus = v; markDirty("Armor bonus"); });
@@ -637,7 +687,9 @@ public class ArmorModule extends AbstractEditorModule {
         toughnessBonusSlider = new EditorSlider("toughBon", "Toughness Bonus", 0f, 20f, 0f)
             .step(0.5f)
             .format("+%.1f")
+            .suffix(" pts")
             .trackColor(UIConstants.SliderColors.DEFENSE)
+            .showInput(true)
             .source(source)
             .info("Reduces armor effectiveness loss from heavy hits. Diamond/Netherite have 2-3 base. Uses minecraft:armor_toughness.")
             .onChange(v -> { stats.toughnessBonus = v; markDirty("Toughness bonus"); });
@@ -647,6 +699,7 @@ public class ArmorModule extends AbstractEditorModule {
             .format("%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .showInput(true)
             .source(source)
             .info("Reduces knockback from hits. 100% = no knockback. Netherite gives 10% per piece. Uses minecraft:knockback_resistance.")
             .onChange(v -> { stats.knockbackResistance = v / 100f; markDirty("Knockback resistance"); });
@@ -677,6 +730,7 @@ public class ArmorModule extends AbstractEditorModule {
             .format("%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .showInput(true)
             .source(source)
             .info("Reflects damage back to attacker. 50% means attacker takes half the damage they dealt. Only works if Thorns Reflect is enabled.")
             .onChange(v -> { stats.thornsPercent = v / 100f; markDirty("Thorns damage"); });
@@ -692,14 +746,18 @@ public class ArmorModule extends AbstractEditorModule {
         shieldBlockStrengthSlider = new EditorSlider("shieldBlock", "Block Strength", 0f, 1.0f, stats.shieldBlockStrength)
             .step(0.05f)
             .format("%.2f")
+            .suffix("x")
             .trackColor(UIConstants.SliderColors.DEFENSE)
+            .showInput(true)
             .source(source)
             .info("Damage blocked when shielding. 1.0 = full block, 0.5 = half damage still passes through.")
             .onChange(v -> { stats.shieldBlockStrength = v; markDirty("Shield block strength"); });
         shieldRecoverySlider = new EditorSlider("shieldRecovery", "Recovery Speed", 0f, 2.0f, stats.shieldRecoverySpeed)
             .step(0.05f)
             .format("%.2f")
+            .suffix("x")
             .trackColor(UIConstants.SliderColors.SPEED)
+            .showInput(true)
             .source(source)
             .info("How fast the shield recovers after being disabled by an axe. 2.0 = instant recovery, 0.5 = very slow.")
             .onChange(v -> { stats.shieldRecoverySpeed = v; markDirty("Shield recovery"); });
@@ -729,8 +787,10 @@ public class ArmorModule extends AbstractEditorModule {
 
         shieldOpacitySlider = new EditorSlider("shieldOpacity", "Shield Opacity", 0.1f, 1.0f, stats.shieldOpacity)
             .step(0.05f)
-            .format("%.2f")
+            .format("%.0f")
+            .suffix("%")
             .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .showInput(true)
             .source(source)
             .info("Base transparency of the energy shield. 1.0 = fully opaque, 0.1 = barely visible.")
             .onChange(v -> { stats.shieldOpacity = v; markDirty("Shield opacity"); });
@@ -743,7 +803,9 @@ public class ArmorModule extends AbstractEditorModule {
         shieldGlowIntensitySlider = new EditorSlider("shieldGlowInt", "Glow Intensity", 0f, 2.0f, stats.shieldGlowIntensity)
             .step(0.1f)
             .format("%.1f")
+            .suffix("x")
             .trackColor(UIConstants.SliderColors.SPECIAL)
+            .showInput(true)
             .source(source)
             .info("Strength of the edge glow effect. Higher = brighter edges.")
             .onChange(v -> { stats.shieldGlowIntensity = v; markDirty("Glow intensity"); });
@@ -751,7 +813,9 @@ public class ArmorModule extends AbstractEditorModule {
         shieldNoiseIntensitySlider = new EditorSlider("shieldNoise", "Energy Intensity", 0f, 0.5f, stats.shieldNoiseIntensity)
             .step(0.05f)
             .format("%.2f")
+            .suffix("x")
             .trackColor(UIConstants.SliderColors.SPECIAL)
+            .showInput(true)
             .source(source)
             .info("Animated energy field noise pattern intensity. 0 = smooth, 0.5 = very turbulent.")
             .onChange(v -> { stats.shieldNoiseIntensity = v; markDirty("Energy intensity"); });
@@ -761,6 +825,7 @@ public class ArmorModule extends AbstractEditorModule {
             .format("%.1f")
             .suffix("x")
             .trackColor(UIConstants.SliderColors.SPEED)
+            .showInput(true)
             .source(source)
             .info("Speed of shield animation effects. 1.0 = normal, 2.0 = double speed.")
             .onChange(v -> { stats.shieldPulseSpeed = v; markDirty("Animation speed"); });
@@ -791,6 +856,7 @@ public class ArmorModule extends AbstractEditorModule {
             .format("%.0f")
             .suffix("°")
             .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .showInput(true)
             .source(source)
             .info("Maximum random angle for deflected projectiles. 0° = perfect reflection, 30° = very scattered.")
             .onChange(v -> { stats.shieldDeflectionSpread = (float) Math.toRadians(v); markDirty("Deflection spread"); });
@@ -805,6 +871,7 @@ public class ArmorModule extends AbstractEditorModule {
             .format("%.0f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.SPEED)
+            .showInput(true)
             .source(source)
             .info("Projectile speed after deflection. 100% = same speed, 50% = half speed, 150% = faster.")
             .onChange(v -> { stats.shieldDeflectSpeedMult = v; markDirty("Deflect speed"); });
@@ -830,6 +897,7 @@ public class ArmorModule extends AbstractEditorModule {
             .format("%.0f")
             .suffix(" dmg")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .showInput(true)
             .source(source)
             .info("Damage required in a single hit to break the shield. Higher = more durable.")
             .onChange(v -> { stats.shieldShatterThreshold = v; markDirty("Shatter threshold"); });
@@ -844,6 +912,7 @@ public class ArmorModule extends AbstractEditorModule {
             .format("%.1f")
             .suffix("s")
             .trackColor(UIConstants.SliderColors.SPEED)
+            .showInput(true)
             .source(source)
             .info("Seconds before shield starts regenerating after being shattered.")
             .onChange(v -> { stats.shieldRegenDelay = v; markDirty("Regen delay"); });
@@ -916,6 +985,24 @@ public class ArmorModule extends AbstractEditorModule {
         stats = originalStats.copy();
         updateComponentsFromStats();
         clearDirty();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // DIRTY TRACKING (Override to update badges)
+    // ═══════════════════════════════════════════════════════════════
+
+    @Override
+    public void markDirty(String changeDescription) {
+        super.markDirty(changeDescription);
+        // Update source badges whenever a change is made
+        updateSourceBadges();
+    }
+
+    @Override
+    public void clearDirty() {
+        super.clearDirty();
+        // Reset source badges to original state
+        updateSourceBadges();
     }
 
     // ═══════════════════════════════════════════════════════════════

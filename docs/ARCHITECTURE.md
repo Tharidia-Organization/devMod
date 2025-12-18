@@ -194,7 +194,7 @@ RegisterShadersEvent ──► ShieldShaderRegistry
 |-----------|---------|
 | `ShieldShaderRegistry` | Registers shader via `RegisterShadersEvent`, creates custom `RenderType` |
 | `EnergyShieldRenderer` | Renders shield sphere, sets shader uniforms |
-| `ShaderManager` | GPU capability detection, quality auto-adjustment |
+| `ShaderPipeline` | Shader registration + RenderType creation with fallback |
 | `energy_shield.fsh` | Fragment shader with noise, fresnel, impact wave effects |
 
 **Shader Files Location:** `assets/devmod/shaders/core/`

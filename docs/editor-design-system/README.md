@@ -105,3 +105,30 @@ Aggiungere features avanzate e supporto per tipi di arma specializzati.
 - **Persistence**: NBT + ServerConfig + Datapack export
 - **Scaling**: Discrete scale factors (1.0x, 1.25x, 1.5x, 2.0x)
 - **Grid System**: 4px base unit con spacing tokens
+
+---
+
+## UI Systems Comparison (NEW)
+
+DevMod usa due sistemi UI paralleli. Vedi [23-architecture-comparison.md](23-architecture-comparison.md) per guida completa.
+
+- [23-architecture-comparison.md](23-architecture-comparison.md) - Editor vs Panel system
+- [24-component-library.md](24-component-library.md) - EditorButton, Slider, Toggle, TextField
+- [25-panel-system.md](25-panel-system.md) - UIPanel, PanelContainer, AbstractVoxelLabPage
+
+## Module Development (NEW)
+
+Guida per sviluppo e upgrade moduli editor.
+
+- [26-module-evolution-guide.md](26-module-evolution-guide.md) - Maturity levels (⭐-⭐⭐⭐⭐⭐) e checklist upgrade
+- [27-general-module-hub.md](27-general-module-hub.md) - GeneralModule redesign come Navigation Hub
+
+## Module Maturity Status
+
+| Module | Level | Status |
+|--------|-------|--------|
+| WeaponModule | ⭐⭐⭐⭐⭐ | Reference |
+| ArmorModule | ⭐⭐⭐⭐⭐ | Reference |
+| RangedModule | ⭐⭐⭐⭐ | Functional |
+| RecipeModule | ⭐⭐⭐⭐ | Functional |
+| GeneralModule | ⭐⭐ | **→ Navigation Hub (PLANNED)** |

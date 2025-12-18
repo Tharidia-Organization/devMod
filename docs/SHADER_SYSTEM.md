@@ -13,16 +13,17 @@ DevMod uses NeoForge 1.21.1's shader registration system to create custom GPU-ac
 │                         Shader System                                    │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
-│  ┌──────────────────────┐    ┌──────────────────────┐                   │
-│  │  ShieldShaderRegistry │    │   ShaderManager      │                   │
-│  │  (RegisterShadersEvent)│    │  (GPU Detection)     │                   │
-│  └──────────┬───────────┘    └──────────┬───────────┘                   │
-│             │                           │                                │
-│             ▼                           ▼                                │
-│  ┌──────────────────────┐    ┌──────────────────────┐                   │
-│  │   Custom RenderType   │    │    QualityLevel      │                   │
-│  │   (ShaderStateShard)  │    │  (AUTO/LOW/MED/HIGH) │                   │
-│  └──────────┬───────────┘    └──────────────────────┘                   │
+│  ┌──────────────────────┐                                             │
+│  │  ShieldShaderRegistry│                                             │
+│  │  (RegisterShadersEvent)                                            │
+│  └──────────┬───────────┘                                             │
+│             │                                                          │
+│             ▼                                                          │
+│  ┌──────────────────────┐                                             │
+│  │   ShaderPipeline      │                                             │
+│  │   (RenderType build + │                                             │
+│  │    fallback)          │                                             │
+│  └──────────┬───────────┘                                             │
 │             │                                                            │
 │             ▼                                                            │
 │  ┌──────────────────────────────────────────────────┐                   │
@@ -44,8 +45,8 @@ src/main/
 │   │   ├── ShieldShaderRegistry.java    # Shader registration
 │   │   └── EnergyShieldRenderer.java    # Shield rendering logic
 │   └── shader/
-│       ├── ShaderManager.java           # GPU detection & management
-│       └── ShaderProgram.java           # OpenGL shader wrapper
+│       ├── ShaderPipeline.java          # Shader registration + RenderType/fallback
+│       └── ShaderRenderTypeConfig.java  # RenderType description (primary/fallback)
 │
 └── resources/assets/devmod/shaders/
     └── core/
@@ -150,69 +151,38 @@ void main() {
 }
 ```
 
-### Step 2: Register Shader via Event
+### Step 2: Register Shader via Event (with ShaderPipeline)
 
 ```java
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public class ShieldShaderRegistry {
+    private static final ShaderRenderTypeConfig RENDER_CONFIG = new ShaderRenderTypeConfig(
+        "devmod_energy_shield",
+        "devmod_energy_shield_fallback",
+        DefaultVertexFormat.POSITION_COLOR_NORMAL,
+        DefaultVertexFormat.POSITION_COLOR,
+        VertexFormat.Mode.TRIANGLES,
+        1536,
+        RenderStateShard.TRANSLUCENT_TRANSPARENCY,
+        false,
+        true
+    );
 
-    @Nullable
-    private static ShaderInstance energyShieldShader;
-    private static RenderType energyShieldRenderType;
+    private static final ShaderPipeline PIPELINE = new ShaderPipeline(
+        ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "energy_shield"),
+        RENDER_CONFIG
+    );
 
     @SubscribeEvent
     public static void onRegisterShaders(RegisterShadersEvent event) {
-        try {
-            // IMPORTANT: Only specify the shader name, NOT "core/{name}"
-            // ShaderInstance automatically looks in shaders/core/
-            ResourceLocation shaderLocation = ResourceLocation.fromNamespaceAndPath(
-                DevMod.MODID, "energy_shield"  // NOT "core/energy_shield"
-            );
-
-            event.registerShader(
-                new ShaderInstance(
-                    event.getResourceProvider(),
-                    shaderLocation,
-                    DefaultVertexFormat.POSITION_COLOR_NORMAL
-                ),
-                shader -> {
-                    energyShieldShader = shader;
-                    initializeRenderType();
-                }
-            );
-        } catch (IOException e) {
-            // Fall back to vanilla shader
-            initializeFallbackRenderType();
-        }
+        PIPELINE.register(event, LOGGER);
     }
 }
 ```
 
-### Step 3: Create Custom RenderType
+### Step 3: RenderType creation is handled by the pipeline
 
-```java
-private static void initializeRenderType() {
-    RenderStateShard.ShaderStateShard shaderState = new RenderStateShard.ShaderStateShard(
-        () -> energyShieldShader
-    );
-
-    energyShieldRenderType = RenderType.create(
-        "devmod_energy_shield",
-        DefaultVertexFormat.POSITION_COLOR_NORMAL,
-        VertexFormat.Mode.TRIANGLES,
-        1536,   // Buffer size
-        false,  // affects crumbling
-        true,   // sort on upload (for transparency)
-        RenderType.CompositeState.builder()
-            .setShaderState(shaderState)
-            .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
-            .setDepthTestState(RenderStateShard.LEQUAL_DEPTH_TEST)
-            .setWriteMaskState(RenderStateShard.COLOR_WRITE)
-            .setCullState(RenderStateShard.NO_CULL)
-            .createCompositeState(false)
-    );
-}
-```
+Il `ShaderPipeline` costruisce automaticamente il RenderType custom e quello di fallback; i getter (`getShieldRenderType`, `getShader`) usano il RenderType valido anche se il custom shader non è stato caricato.
 
 ### Step 4: Set Shader Uniforms at Render Time
 
@@ -276,26 +246,6 @@ shadersSupported = glVersion >= MIN_GL_VERSION && (hasShaderExtensions || isCore
 
 **Solution:** Use `safeGetUniform()` which returns a no-op uniform if not found.
 
-## GPU Detection & Quality Levels
-
-The `ShaderManager` class automatically detects GPU capabilities:
-
-```java
-public enum QualityLevel {
-    LOW(100, 0.5f),    // Integrated GPUs
-    MEDIUM(300, 1.0f), // Default
-    HIGH(500, 1.5f);   // Dedicated GPUs (RTX, RX 6xxx, etc.)
-
-    public final int maxParticles;
-    public final float intensityMultiplier;
-}
-```
-
-Detection is based on `GL_RENDERER` string:
-- **HIGH**: RTX, RX 6xxx/7xxx, GTX 10xx/16xx/20xx/30xx/40xx
-- **LOW**: Intel HD/UHD/Iris, LLVMpipe, Mesa, Software
-- **MEDIUM**: Everything else
-
 ## Energy Shield Effects
 
 The energy shield fragment shader implements several visual effects:
@@ -354,7 +304,8 @@ If shader fails, logs show:
 |------|---------|
 | [ShieldShaderRegistry.java](../src/main/java/com/frenkvs/devmod/rendering/shield/ShieldShaderRegistry.java) | Shader registration |
 | [EnergyShieldRenderer.java](../src/main/java/com/frenkvs/devmod/rendering/shield/EnergyShieldRenderer.java) | Shield rendering |
-| [ShaderManager.java](../src/main/java/com/frenkvs/devmod/rendering/shader/ShaderManager.java) | GPU detection |
+| [ShaderPipeline.java](../src/main/java/com/frenkvs/devmod/rendering/shader/ShaderPipeline.java) | Shader registration + RenderType/fallback |
+| [ShaderRenderTypeConfig.java](../src/main/java/com/frenkvs/devmod/rendering/shader/ShaderRenderTypeConfig.java) | RenderType description |
 | [energy_shield.json](../src/main/resources/assets/devmod/shaders/core/energy_shield.json) | Shader definition |
 | [energy_shield.vsh](../src/main/resources/assets/devmod/shaders/core/energy_shield.vsh) | Vertex shader |
 | [energy_shield.fsh](../src/main/resources/assets/devmod/shaders/core/energy_shield.fsh) | Fragment shader |

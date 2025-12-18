@@ -158,6 +158,7 @@ public class RecipeModule extends AbstractEditorModule {
     private void createComponents() {
         // Shaped toggle
         shapedToggle = new EditorToggle("shaped_toggle", "Shaped Recipe", craftingType == CraftingType.SHAPED)
+            .tooltip("Shaped = exact item positions required. Shapeless = items can be placed anywhere in the grid.")
             .onChange(value -> {
                 craftingType = value ? CraftingType.SHAPED : CraftingType.SHAPELESS;
                 markDirty("Changed recipe type to " + craftingType.getId());
@@ -187,6 +188,10 @@ public class RecipeModule extends AbstractEditorModule {
         quantitySlider = new EditorSlider("result_quantity", "Quantity", 1, 64, resultQuantity)
             .step(1)
             .format("%.0f")
+            .suffix(" items")
+            .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .showInput(true)
+            .info("Number of items produced per craft. Most recipes produce 1, but some (planks, sticks) produce more.")
             .onChange(value -> {
                 resultQuantity = value.intValue();
                 markDirty("Changed result quantity");

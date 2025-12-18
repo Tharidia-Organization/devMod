@@ -53,6 +53,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
@@ -64,6 +65,7 @@ import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
+import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
@@ -290,6 +292,7 @@ public class ItemEditorScreen extends Screen {
         // Resolve and initialize the module
         activeModule = resolveModule(item, requestedTab);
         activeModule.setStatusConsumer((msg, color) -> showStatus(msg, color == null ? UIConstants.Accent.INFO() : color));
+        activeModule.setModuleSwitchCallback(this::switchModule);
         activeModule.setItem(item);
         activeModule.init(layout);
         warnLowConfidence(item);
@@ -369,6 +372,46 @@ public class ItemEditorScreen extends Screen {
             }
             case RECIPE -> new com.frenkvs.devmod.ui.editor.modules.RecipeModule();
         };
+    }
+
+    /**
+     * Switch to a different editor module.
+     * Called by GeneralModule (Navigation Hub) when user clicks a module card.
+     *
+     * @param targetTab The target module to switch to
+     */
+    private void switchModule(EditorStartTab targetTab) {
+        if (targetTab == null) return;
+
+        // Check for unsaved changes
+        if (activeModule != null && activeModule.hasUnsavedChanges()) {
+            showStatus("Unsaved changes - save or discard first", UIConstants.Accent.ORANGE());
+            return;
+        }
+
+        // Close current module
+        if (activeModule != null) {
+            activeModule.onClose();
+        }
+
+        // Resolve and initialize the new module
+        activeModule = resolveModule(item, targetTab);
+        activeModule.setStatusConsumer((msg, color) -> showStatus(msg, color == null ? UIConstants.Accent.INFO() : color));
+        activeModule.setModuleSwitchCallback(this::switchModule);
+        activeModule.setItem(item);
+        activeModule.init(layout);
+        activeModule.setDirtyTrackingEnabled(true);
+        activeModule.clearDirty();
+
+        // Update UI components
+        configureHeader();
+        configureLeftColumn();
+
+        // Reset scroll
+        scrollArea.setScrollOffset(0);
+
+        showStatus("Switched to " + activeModule.getTitle(), UIConstants.Accent.INFO());
+        DevMod.LOGGER.info("[ItemEditor] Switched module to: {}", targetTab);
     }
 
     private void warnLowConfidence(ItemStack stack) {
@@ -1766,6 +1809,12 @@ public class ItemEditorScreen extends Screen {
         if (debugPanel != null) {
             debugPanel.log(full);
         }
+        // Persist ACK/FAIL to session history file for tracking
+        String action = payload.success() ? "apply_ack" : "apply_fail";
+        String itemId = payload.itemId() == null ? item.getHoverName().getString() : payload.itemId();
+        String details = (payload.global() ? "GLOBAL" : "SPECIFIC") + (detail.isBlank() ? "" : " - " + detail);
+        ItemEditorDataManager.INSTANCE.addHistoryEntry(action, itemId, details);
+
         String statusMsg = detail.isBlank() ? (payload.success() ? "Server confirmed" : "Server rejected") : detail;
         showStatus(statusMsg, payload.success() ? UIConstants.Accent.GREEN() : UIConstants.Accent.RED());
     }
@@ -1799,6 +1848,17 @@ public class ItemEditorScreen extends Screen {
         config.itemName = item.getHoverName().getString();
         config.stats = collectStatsForExport();
 
+        // Export enchantments from item
+        config.enchantments = collectEnchantmentsForExport();
+        // Export attributes from item
+        config.attributes = collectAttributesForExport();
+        // Export durability info
+        config.durability = item.isDamageableItem() ? item.getMaxDamage() - item.getDamageValue() : null;
+        final var unbreakableType = Objects.requireNonNull(DataComponents.UNBREAKABLE, "unbreakable component");
+        config.unbreakable = item.has(unbreakableType);
+        final var repairCostType = Objects.requireNonNull(DataComponents.REPAIR_COST, "repair cost component");
+        config.repairCost = item.has(repairCostType) ? item.get(repairCostType) : null;
+
         String fileName = buildSafeFileName(config.itemId + "_export_" + System.currentTimeMillis());
         boolean ok = data.exportToFile(config, fileName);
         if (ok) {
@@ -1812,6 +1872,50 @@ public class ItemEditorScreen extends Screen {
         } else {
             showStatus("Export failed", UIConstants.Accent.RED());
         }
+    }
+
+    private List<ItemEditorDataManager.EnchantData> collectEnchantmentsForExport() {
+        List<ItemEditorDataManager.EnchantData> result = new ArrayList<>();
+        final var enchantType = Objects.requireNonNull(DataComponents.ENCHANTMENTS, "enchantments component");
+        ItemEnchantments enchants = item.has(enchantType)
+            ? Objects.requireNonNull(item.get(enchantType), "enchantments value")
+            : ItemEnchantments.EMPTY;
+        Minecraft mc = Minecraft.getInstance();
+        Level level = mc != null ? mc.level : null;
+        if (level == null) return result;
+        ResourceKey<Registry<Enchantment>> enchantKey = Objects.requireNonNull(Registries.ENCHANTMENT, "enchantment registry key");
+        Registry<Enchantment> registry = Objects.requireNonNull(
+            level.registryAccess().registryOrThrow(enchantKey),
+            "enchantment registry"
+        );
+        enchants.entrySet().forEach(entry -> {
+            Holder<Enchantment> holder = entry.getKey();
+            int enchantLevel = entry.getIntValue();
+            Enchantment enchant = Objects.requireNonNull(holder.value(), "enchantment value");
+            var key = registry.getKey(enchant);
+            if (key != null) {
+                result.add(new ItemEditorDataManager.EnchantData(key.toString(), enchantLevel));
+            }
+        });
+        return result;
+    }
+
+    private List<ItemEditorDataManager.AttrData> collectAttributesForExport() {
+        List<ItemEditorDataManager.AttrData> result = new ArrayList<>();
+        final var attrType = Objects.requireNonNull(DataComponents.ATTRIBUTE_MODIFIERS, "attribute modifiers component");
+        ItemAttributeModifiers modifiers = item.has(attrType)
+            ? Objects.requireNonNull(item.get(attrType), "attribute modifiers")
+            : ItemAttributeModifiers.EMPTY;
+        Objects.requireNonNull(modifiers.modifiers(), "attribute modifier entries").forEach(entry -> {
+            Holder<Attribute> attr = entry.attribute();
+            AttributeModifier mod = entry.modifier();
+            var key = BuiltInRegistries.ATTRIBUTE.getKey(Objects.requireNonNull(attr.value(), "attribute value"));
+            if (key != null) {
+                int opOrdinal = mod.operation().ordinal();
+                result.add(new ItemEditorDataManager.AttrData(key.toString(), mod.amount(), opOrdinal));
+            }
+        });
+        return result;
     }
 
     private void handleImport() {
@@ -2227,7 +2331,8 @@ public class ItemEditorScreen extends Screen {
             if (mc != null && mc.player != null) {
                 var inv = mc.player.getInventory();
                 if (slot >= 0 && slot < inv.items.size()) {
-                    inv.items.set(slot, item);
+                    // Update local inventory immediately
+                    inv.items.set(slot, item.copy());
                 }
             }
             var custom = item.getOrDefault(
@@ -2236,26 +2341,36 @@ public class ItemEditorScreen extends Screen {
             );
             var tag = Objects.requireNonNull(custom.copyTag(), CUSTOM_TAG_MISSING);
             if (tag.contains(WEAPON_STATS_KEY)) {
-                var statsTag = Objects.requireNonNull(tag.getCompound(WEAPON_STATS_KEY), WEAPON_STATS_MISSING);
-                PacketDistributor.sendToServer(new com.frenkvs.devmod.network.WeaponStatsPayload(item, statsTag, isGlobalMode));
-            } else if (tag.contains(ARMOR_STATS_KEY)) {
-                var statsTag = Objects.requireNonNull(tag.getCompound(ARMOR_STATS_KEY), ARMOR_STATS_MISSING);
-                ArmorStats stats = ArmorStats.load(statsTag);
-                String itemName = "";
-                try {
-                    var id = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item.getItem()));
-                    if (id != null) itemName = id.toString();
-                } catch (Exception ignored) { }
+                CompoundTag statsTag = Objects.requireNonNull(tag.getCompound(WEAPON_STATS_KEY), WEAPON_STATS_MISSING);
+                // Use WeaponStatsPayloadV2 for proper server-side handling
+                // Note: WeaponStatsPayloadV2 doesn't have slot parameter, item is matched by type
+                CompoundTag fullTag = new CompoundTag();
+                fullTag.put(WEAPON_STATS_KEY, Objects.requireNonNull(statsTag.copy()));
+                ItemStack itemCopy = Objects.requireNonNull(item.copy());
                 PacketDistributor.sendToServer(
-                    Objects.requireNonNull(com.frenkvs.devmod.UpdateArmorPayload.fromArmorStats(isGlobalMode, -1, stats, itemName))
+                    new com.frenkvs.devmod.network.WeaponStatsPayloadV2(itemCopy, fullTag, isGlobalMode)
+                );
+            } else if (tag.contains(ARMOR_STATS_KEY) || tag.contains(ARMOR_STATS_COMPONENT_KEY)) {
+                // Prefer armor_stats_component if available, fallback to ArmorModStats
+                CompoundTag statsTag = tag.contains(ARMOR_STATS_COMPONENT_KEY)
+                    ? Objects.requireNonNull(tag.getCompound(ARMOR_STATS_COMPONENT_KEY), ARMOR_STATS_MISSING)
+                    : Objects.requireNonNull(tag.getCompound(ARMOR_STATS_KEY), ARMOR_STATS_MISSING);
+                // Use ArmorStatsPayloadV2 with slot info for proper server-side handling
+                CompoundTag fullTag = new CompoundTag();
+                fullTag.put(ARMOR_STATS_KEY, Objects.requireNonNull(statsTag.copy()));
+                fullTag.put(ARMOR_STATS_COMPONENT_KEY, Objects.requireNonNull(statsTag.copy()));
+                ItemStack itemCopy = Objects.requireNonNull(item.copy());
+                PacketDistributor.sendToServer(
+                    new ArmorStatsPayloadV2(itemCopy, fullTag, isGlobalMode, slot)
                 );
             }
             if (debugPanel != null) {
                 debugPanel.log(MULTI_EDIT_PERSIST_PREFIX + slot + " (" + item.getHoverName().getString() + ")");
             }
             return true;
-        } catch (Exception ignored) {
-            if (debugPanel != null) debugPanel.log(MULTI_EDIT_PERSIST_FAILED_PREFIX + ignored.getMessage());
+        } catch (Exception e) {
+            if (debugPanel != null) debugPanel.log(MULTI_EDIT_PERSIST_FAILED_PREFIX + e.getMessage());
+            DevMod.LOGGER.warn("[MultiEdit] Persist failed for slot {}: {}", slot, e.getMessage());
             return false;
         }
     }

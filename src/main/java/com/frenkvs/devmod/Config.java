@@ -65,6 +65,8 @@ public class Config {
     // ============================================
 
     public static final ModConfigSpec.BooleanValue BODY_PART_DETECTION_ENABLED;
+    public static final ModConfigSpec.BooleanValue OBB_HITBOX_ENABLED;
+    public static final ModConfigSpec.BooleanValue OBB_DEBUG_AXES;
     public static final ModConfigSpec.DoubleValue HEAD_DAMAGE_MULTIPLIER;
     public static final ModConfigSpec.DoubleValue BODY_DAMAGE_MULTIPLIER;
     public static final ModConfigSpec.DoubleValue ARMS_DAMAGE_MULTIPLIER;
@@ -156,6 +158,16 @@ public class Config {
         BODY_PART_DETECTION_ENABLED = BUILDER
                 .comment("Enable body part detection for damage calculation")
                 .define("bodyPartDetection", true);
+
+        OBB_HITBOX_ENABLED = BUILDER
+                .comment("Enable OBB (Oriented Bounding Box) hitbox system for rotation-aware body part detection",
+                        "When enabled, hitboxes follow model rotations (arms, head, etc.)",
+                        "When disabled, uses static AABB subdivision (faster but less accurate)")
+                .define("obbHitboxEnabled", true);
+
+        OBB_DEBUG_AXES = BUILDER
+                .comment("Show OBB rotation axes in debug overlay (requires obbHitboxEnabled and showBodyPartBoxes)")
+                .define("obbDebugAxes", false);
 
         HEAD_DAMAGE_MULTIPLIER = BUILDER
                 .comment("Default head damage multiplier")

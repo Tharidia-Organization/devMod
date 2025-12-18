@@ -9,6 +9,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Attribute Monitoring System - Controller principale.
@@ -63,7 +64,6 @@ public class AttributeMonitoringSystem {
 
     // === Update Logic (called every tick) ===
 
-    @SuppressWarnings("null") // player/level are checked for null before use
     public void tick() {
         if (!enabled) return;
 
@@ -71,9 +71,9 @@ public class AttributeMonitoringSystem {
         if (mc.player == null || mc.level == null) return;
 
         // Store in local finals after null check for null-safety analysis
-        final var player = mc.player;
-        final var level = mc.level;
-        Vec3 playerPos = player.position();
+        final var player = Objects.requireNonNull(mc.player, "player");
+        final var level = Objects.requireNonNull(mc.level, "level");
+        Vec3 playerPos = Objects.requireNonNull(player.position(), "player position");
 
         // === PERFORMANCE: Scan for new entities only every N ticks ===
         ticksSinceLastScan++;
@@ -134,8 +134,7 @@ public class AttributeMonitoringSystem {
         }
     }
 
-    @SuppressWarnings("null") // player is guaranteed non-null when called from tick()
-    private void updatePrimaryTarget(Minecraft mc, net.minecraft.client.player.LocalPlayer player) {
+    private void updatePrimaryTarget(@Nonnull Minecraft mc, @Nonnull net.minecraft.client.player.LocalPlayer player) {
         // First try: entity under crosshair
         if (mc.crosshairPickEntity instanceof LivingEntity crosshairTarget) {
             for (TrackedEntity tracked : trackedEntities) {

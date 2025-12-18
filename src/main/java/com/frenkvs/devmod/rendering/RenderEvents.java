@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.rendering;
 
+import com.frenkvs.devmod.Config;
 import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.KeyInputHandler;
 import com.frenkvs.devmod.util.I18n;
@@ -7,6 +8,7 @@ import com.frenkvs.devmod.ArmorConfigManager;
 import com.frenkvs.devmod.ArmorStats;
 import com.frenkvs.devmod.attributes.AttributeMonitoringSystem;
 import com.frenkvs.devmod.attributes.AttributeRayVisualizer;
+import com.frenkvs.devmod.collision.rendering.OBBDebugRenderer;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 import com.frenkvs.devmod.hud.BossPhaseOverlay;
 import com.frenkvs.devmod.hud.EntityDensityOverlay;
@@ -32,10 +34,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShieldItem;
+import net.minecraft.world.phys.AABB;
 import com.frenkvs.devmod.ui.editor.ItemEditorScreen;
 import com.frenkvs.devmod.ui.editor.EditorStartTab;
 import net.neoforged.api.distmarker.Dist;
@@ -197,6 +201,13 @@ public class RenderEvents {
                 event.getCamera().getPosition()
             );
             profiler.endTiming("WeaponTrailVFX", t9);
+        }
+
+        // === OBB Debug Rendering (when body part boxes enabled + OBB system active) ===
+        if (com.frenkvs.devmod.ModConfig.showBodyPartBoxes && isOBBSystemEnabled()) {
+            long t10 = profiler.startTiming("OBBDebugRenderer");
+            renderOBBHitboxes(poseStack, bufferSource, event.getCamera().getPosition());
+            profiler.endTiming("OBBDebugRenderer", t10);
         }
 
         // Flush the buffer to ensure all lines are rendered
@@ -1074,5 +1085,37 @@ public class RenderEvents {
                 cameraPos
             );
         }
+    }
+
+    /**
+     * Checks if the OBB hitbox system is enabled in config.
+     * Safe method that won't throw if config is not yet loaded.
+     */
+    private static boolean isOBBSystemEnabled() {
+        try {
+            return Config.OBB_HITBOX_ENABLED.get();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Renders OBB hitboxes for all nearby living entities.
+     * Only called when both showBodyPartBoxes and OBB system are enabled.
+     */
+    private static void renderOBBHitboxes(PoseStack poseStack, MultiBufferSource bufferSource,
+                                          net.minecraft.world.phys.Vec3 cameraPos) {
+        Minecraft mc = Minecraft.getInstance();
+        var level = mc.level;
+        var player = mc.player;
+        if (level == null || player == null) return;
+
+        // Get nearby living entities within render distance
+        AABB searchArea = player.getBoundingBox().inflate(32.0); // 32 block radius
+        var nearbyEntities = level.getEntitiesOfClass(LivingEntity.class, searchArea,
+            entity -> entity != player && entity.isAlive());
+
+        // Render OBB hitboxes for each entity
+        OBBDebugRenderer.renderNearbyEntityOBBs(poseStack, bufferSource, cameraPos, nearbyEntities);
     }
 }

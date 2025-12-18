@@ -127,8 +127,78 @@ public class ItemEditorDataManager {
         ensureInitialized();
         if (itemType == null || itemType.isEmpty()) return getPresets();
         return presets.stream()
-            .filter(p -> p.itemType == null || p.itemType.isEmpty() || p.itemType.equals(itemType))
+            .filter(p -> matchesItemType(p.itemType, itemType))
             .toList();
+    }
+
+    /**
+     * Check if a preset's itemType matches the requested itemType.
+     * Supports:
+     * - Exact match (minecraft:diamond_sword)
+     * - Category match (weapon, armor, ranged)
+     * - Tag match (#forge:swords)
+     * - GLOBAL scope (matches all)
+     * - Empty/null itemType (matches all)
+     */
+    private boolean matchesItemType(String presetItemType, String requestedType) {
+        // Null or empty preset itemType matches everything
+        if (presetItemType == null || presetItemType.isEmpty()) return true;
+
+        // GLOBAL scope matches everything
+        if ("GLOBAL".equalsIgnoreCase(presetItemType)) return true;
+
+        String preset = presetItemType.trim().toLowerCase(java.util.Locale.ROOT);
+        String requested = requestedType.trim().toLowerCase(java.util.Locale.ROOT);
+
+        // Exact match (case-insensitive)
+        if (preset.equals(requested)) return true;
+
+        // Category matching: preset "weapon" matches "minecraft:diamond_sword"
+        if (isCategory(preset)) {
+            return matchesCategory(preset, requested);
+        }
+
+        // Tag matching: preset "#forge:swords" should be checked at runtime
+        // Here we just allow tag-based presets to show up in the list
+        if (preset.startsWith("#")) {
+            // Let the preset show - actual filtering happens at apply time via DataPreset.scope()
+            return true;
+        }
+
+        // Path-only match: "diamond_sword" matches "minecraft:diamond_sword"
+        if (!preset.contains(":") && requested.contains(":")) {
+            String requestedPath = requested.substring(requested.indexOf(':') + 1);
+            if (preset.equals(requestedPath)) return true;
+        }
+
+        // Namespace-agnostic match: "modid:sword" matches "minecraft:sword" if paths match
+        if (preset.contains(":") && requested.contains(":")) {
+            String presetPath = preset.substring(preset.indexOf(':') + 1);
+            String requestedPath = requested.substring(requested.indexOf(':') + 1);
+            if (presetPath.equals(requestedPath)) return true;
+        }
+
+        return false;
+    }
+
+    private boolean isCategory(String type) {
+        return "weapon".equals(type) || "armor".equals(type) || "ranged".equals(type)
+            || "melee".equals(type) || "tool".equals(type);
+    }
+
+    private boolean matchesCategory(String category, String itemType) {
+        String lower = itemType.toLowerCase(java.util.Locale.ROOT);
+        return switch (category) {
+            case "weapon", "melee" -> lower.contains("sword") || lower.contains("axe")
+                || lower.contains("mace") || lower.contains("trident");
+            case "ranged" -> lower.contains("bow") || lower.contains("crossbow");
+            case "armor" -> lower.contains("helmet") || lower.contains("chestplate")
+                || lower.contains("leggings") || lower.contains("boots")
+                || lower.contains("shield");
+            case "tool" -> lower.contains("pickaxe") || lower.contains("shovel")
+                || lower.contains("hoe");
+            default -> false;
+        };
     }
 
     public void savePreset(PresetData preset) {

@@ -128,8 +128,9 @@ public class WorldRenderEvents {
                 }
 
                 // 3. BODY PART HITBOXES DEBUG (HEAD, ARMS, BODY, LEGS)
-                // Render colored body part hitboxes (only if enabled)
-                if (ModConfig.showBodyPartBoxes) {
+                // Render colored body part hitboxes (only if enabled AND OBB system is disabled)
+                // When OBB is enabled, RenderEvents.renderOBBHitboxes() handles the rendering instead
+                if (ModConfig.showBodyPartBoxes && !isOBBSystemEnabled()) {
                     renderBodyPartHitboxes(Objects.requireNonNull(event.getPoseStack()), mob, cameraPos);
                 }
             }
@@ -548,6 +549,18 @@ public class WorldRenderEvents {
             );
 
             poseStack.popPose();
+        }
+    }
+
+    /**
+     * Checks if the OBB hitbox system is enabled in config.
+     * Safe method that won't throw if config is not yet loaded.
+     */
+    private static boolean isOBBSystemEnabled() {
+        try {
+            return Config.OBB_HITBOX_ENABLED.get();
+        } catch (Exception e) {
+            return false;
         }
     }
 }

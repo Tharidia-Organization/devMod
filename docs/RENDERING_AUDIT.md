@@ -289,7 +289,7 @@ rendering/vfx/ImpactVFXShaderRegistry.java
 
 ### Minimum GPU Support
 - OpenGL 3.3+ (GLSL 330)
-- macOS Core Profile support (already handled in ShaderManager)
+- macOS Core Profile support (handled by Minecraft shader pipeline; no custom detection layer)
 
 ### Shader Registration Pattern (Established)
 ```java

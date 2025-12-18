@@ -10,6 +10,7 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
 import javax.annotation.Nonnull;
+import java.util.Objects;
 
 /**
  * 3D visualizer for Line of Sight rays for the attribute monitoring system.
@@ -22,7 +23,6 @@ import javax.annotation.Nonnull;
  *
  * Inspired by the reference image with colored rays towards entities.
  */
-@SuppressWarnings("null") // Minecraft rendering APIs (Matrix4f, PoseStack, Vec3, RenderType) are guaranteed non-null
 public class AttributeRayVisualizer {
     public static final AttributeRayVisualizer INSTANCE = new AttributeRayVisualizer();
 
@@ -44,16 +44,19 @@ public class AttributeRayVisualizer {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
 
-        Vec3 playerEye = mc.player.getEyePosition();
+        var player = Objects.requireNonNull(mc.player, "player");
+        Objects.requireNonNull(mc.level, "level"); // accessed via tracked entity queries
+        Vec3 playerEye = Objects.requireNonNull(player.getEyePosition(), "player eye");
         TrackedEntity primaryTarget = AttributeMonitoringSystem.INSTANCE.getPrimaryTarget();
 
         poseStack.pushPose();
         poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
 
-        Matrix4f matrix = poseStack.last().pose();
-        var pose = poseStack.last();
+        PoseStack.Pose pose = Objects.requireNonNull(poseStack.last(), "pose stack last");
+        Matrix4f matrix = Objects.requireNonNull(pose.pose(), "pose matrix");
 
-        VertexConsumer lineConsumer = buffer.getBuffer(RenderType.lines());
+        RenderType lineType = Objects.requireNonNull(RenderType.lines(), "line render type");
+        VertexConsumer lineConsumer = Objects.requireNonNull(buffer.getBuffer(lineType), "line buffer");
 
         // Render rays for all tracked entities
         for (TrackedEntity tracked : AttributeMonitoringSystem.INSTANCE.getTrackedEntities()) {
@@ -63,7 +66,7 @@ public class AttributeRayVisualizer {
             if (entity == null) continue;
 
             boolean isPrimary = tracked == primaryTarget;
-            Vec3 entityPos = entity.getEyePosition();
+            Vec3 entityPos = Objects.requireNonNull(entity.getEyePosition(), "entity eye position");
 
             if (tracked.hasLineOfSight()) {
                 // Clear LoS - green ray (or cyan if primary)
@@ -79,7 +82,7 @@ public class AttributeRayVisualizer {
                 Vec3 blockPoint = tracked.getLastBlockedPoint();
                 if (blockPoint != null) {
                     // Yellow ray to blocking point
-                    renderRay(lineConsumer, matrix, pose, playerEye, blockPoint, COLOR_LOS_BLOCKED);
+                    renderRay(lineConsumer, matrix, pose, playerEye, Objects.requireNonNull(blockPoint, "block point"), COLOR_LOS_BLOCKED);
 
                     // Dashed red ray from block to entity
                     renderDashedRay(lineConsumer, matrix, pose, blockPoint, entityPos, COLOR_BLOCK_POINT);
@@ -96,8 +99,8 @@ public class AttributeRayVisualizer {
         poseStack.popPose();
     }
 
-    private void renderRay(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose,
-                           Vec3 from, Vec3 to, float[] color) {
+    private void renderRay(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix, @Nonnull PoseStack.Pose pose,
+                           @Nonnull Vec3 from, @Nonnull Vec3 to, float[] color) {
         consumer.addVertex(matrix, (float) from.x, (float) from.y, (float) from.z)
             .setColor(color[0], color[1], color[2], color[3])
             .setNormal(pose, 0f, 1f, 0f);
@@ -106,19 +109,19 @@ public class AttributeRayVisualizer {
             .setNormal(pose, 0f, 1f, 0f);
     }
 
-    private void renderDashedRay(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose,
-                                  Vec3 from, Vec3 to, float[] color) {
+    private void renderDashedRay(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix, @Nonnull PoseStack.Pose pose,
+                                  @Nonnull Vec3 from, @Nonnull Vec3 to, float[] color) {
         // Simulate dashing with shorter segments and reduced alpha
-        Vec3 direction = to.subtract(from);
+        Vec3 direction = Objects.requireNonNull(to.subtract(from), "dash direction");
         double length = direction.length();
-        Vec3 step = direction.normalize().scale(0.5); // Segmenti da 0.5 blocchi
+        Vec3 step = Objects.requireNonNull(direction.normalize().scale(0.5), "dash step vector");
 
-        Vec3 current = from;
+        Vec3 current = Objects.requireNonNull(from, "dash start");
         boolean draw = true;
         int segments = (int) (length / 0.5);
 
         for (int i = 0; i < segments && i < 50; i++) { // Max 50 segments
-            Vec3 next = current.add(step);
+            Vec3 next = Objects.requireNonNull(current.add(step), "dash step");
 
             if (draw) {
                 float alpha = color[3] * 0.5f; // Reduced alpha for dashing
@@ -135,7 +138,8 @@ public class AttributeRayVisualizer {
         }
     }
 
-    private void renderTargetIndicator(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose, Vec3 pos) {
+    private void renderTargetIndicator(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix,
+                                       @Nonnull PoseStack.Pose pose, @Nonnull Vec3 pos) {
         // 3D cross around primary target
         float size = 0.3f;
         float[] color = COLOR_PRIMARY;
@@ -165,7 +169,8 @@ public class AttributeRayVisualizer {
             .setNormal(pose, 0f, 0f, 1f);
     }
 
-    private void renderBlockMarker(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose, Vec3 pos) {
+    private void renderBlockMarker(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix,
+                                   @Nonnull PoseStack.Pose pose, @Nonnull Vec3 pos) {
         // Small diamond/rhombus on blocking point
         float size = 0.15f;
         float[] color = COLOR_BLOCK_POINT;

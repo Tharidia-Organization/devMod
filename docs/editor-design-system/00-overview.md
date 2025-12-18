@@ -66,3 +66,58 @@ DEBUG FIRST → BALANCE SECOND → CONTENT THIRD
 
 Gli editor devono essere **strumenti di lavoro**, non UI consumer-friendly.
 Priorità: **velocità di diagnosi** > estetica > facilità d'uso per nuovi utenti.
+
+---
+
+## UI SYSTEMS ARCHITECTURE
+
+DevMod utilizza **due sistemi UI paralleli** per scopi diversi:
+
+### Editor System (ItemEditorScreen)
+Per editing complesso con undo/redo, payload building, source tracking.
+
+```
+EditorButton/Slider/Toggle → SectionAdapter → EditorSection → ModuleTab → AbstractEditorModule → ItemEditorScreen
+```
+
+**Moduli:**
+| Modulo | Maturità | Stato |
+|--------|----------|-------|
+| WeaponModule | ⭐⭐⭐⭐⭐ | Reference implementation |
+| ArmorModule | ⭐⭐⭐⭐⭐ | Reference implementation |
+| RangedModule | ⭐⭐⭐⭐ | Funzionale |
+| RecipeModule | ⭐⭐⭐⭐ | Funzionale |
+| GeneralModule | ⭐⭐⭐⭐ | ✅ **Navigation Hub** (vedi [27-general-module-hub.md](27-general-module-hub.md)) |
+
+### Panel System (VoxelLab)
+Per settings screens, dashboard views, config toggles.
+
+```
+EditorButton → ButtonRow → SectionPanel → PanelContainer → AbstractVoxelLabPage → VoxelLabScreen
+```
+
+**Pagine:** OverviewPage, DebugOverlaysPage, HudSystemsPage, TelemetryPage, EffectsPage, CombatPage, ComponentShowcasePage
+
+### Comparison
+Vedi [23-architecture-comparison.md](23-architecture-comparison.md) per guida completa su quando usare quale sistema.
+
+---
+
+## RELATED DOCUMENTS
+
+### Core Architecture
+- [23-architecture-comparison.md](23-architecture-comparison.md) - Editor vs Panel system comparison
+- [08-unified-architecture.md](08-unified-architecture.md) - Unified editor architecture
+
+### Component Library
+- [24-component-library.md](24-component-library.md) - EditorButton, Slider, Toggle, TextField
+- [25-panel-system.md](25-panel-system.md) - UIPanel sealed interface, PanelContainer
+
+### Module Development
+- [26-module-evolution-guide.md](26-module-evolution-guide.md) - Maturity levels and upgrade checklist
+- [27-general-module-hub.md](27-general-module-hub.md) - GeneralModule as Navigation Hub
+
+### Feature Specs
+- [15-weapon-properties.md](15-weapon-properties.md) - WeaponModule reference
+- [16-armor-properties.md](16-armor-properties.md) - ArmorModule reference
+- [16-ranged-weapons.md](16-ranged-weapons.md) - RangedModule support

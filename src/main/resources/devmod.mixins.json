@@ -9,7 +9,9 @@
   ],
   "client": [
     "GameRendererMixin",
-    "CameraShakeMixin"
+    "CameraShakeMixin",
+    "ModelPartTransformMixin",
+    "LivingEntityRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

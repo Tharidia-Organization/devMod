@@ -1,6 +1,7 @@
 package com.frenkvs.devmod;
 
 import com.frenkvs.devmod.client.ClientVFXProxy;
+import com.frenkvs.devmod.collision.integration.OBBHitHelper;
 import com.frenkvs.devmod.combat.ShieldDeflector;
 import com.frenkvs.devmod.hud.ImpactHudService;
 import com.frenkvs.devmod.damage.DamageCalculator;
@@ -109,9 +110,11 @@ public class DamageHandler {
                     rangedCritDamage = ranged.critDamage;
                 }
             } else {
-                // MELEE: Use AABB subdivision raycast (95% PRECISION)
+                // MELEE: Use OBB raycast when enabled, fallback to AABB subdivision
                 weapon = attacker.getMainHandItem();
-                HitHelper.HitResult hitResult = HitHelper.rayTraceBodyPartWithHitPoint(attacker, victim);
+                HitHelper.HitResult hitResult = OBBHitHelper.useOBBSystem()
+                    ? OBBHitHelper.rayTraceBodyPart(attacker, victim)
+                    : HitHelper.rayTraceBodyPartWithHitPoint(attacker, victim);
                 part = hitResult.part();
                 hitPoint = hitResult.hitPoint();
                 slashDirection = attacker.getViewVector(1.0F);

@@ -59,3 +59,64 @@
 - **Template System**: Fully implemented with 3-level hierarchy
 - **MultiEdit System**: Complete with error handling and persistence
 - **Armor Components**: Base implementation done, needs integration
+
+---
+
+## UI Architecture Status
+
+### Editor System (ItemEditorScreen)
+
+| Module | Lines | Maturity | Status |
+|--------|-------|----------|--------|
+| WeaponModule | 1,642 | ⭐⭐⭐⭐⭐ | Reference implementation |
+| ArmorModule | 1,052 | ⭐⭐⭐⭐⭐ | Reference implementation |
+| RangedModule | 673 | ⭐⭐⭐⭐ | Functional |
+| RecipeModule | 674 | ⭐⭐⭐⭐ | Functional |
+| GeneralModule | 378 | ⭐⭐⭐⭐ | ✅ **Navigation Hub** |
+
+### Panel System (VoxelLab)
+
+| Page | Status | Notes |
+|------|--------|-------|
+| OverviewPage | ✅ | System dashboard |
+| DebugOverlaysPage | ✅ | Debug rendering config |
+| HudSystemsPage | ✅ | Impact HUD 2D/3D |
+| TelemetryPage | ✅ | Data collection toggles |
+| EffectsPage | ✅ | VFX and screen effects |
+| CombatPage | ✅ | Body part detection, multipliers |
+| ComponentShowcasePage | ✅ | Refactored to AbstractVoxelLabPage + ShowcasePanel |
+
+### Completed Changes
+
+#### GeneralModule Redesign → Navigation Hub ✅
+- **Status:** ✅ IMPLEMENTED (December 2024)
+- **Spec:** [27-general-module-hub.md](docs/editor-design-system/27-general-module-hub.md)
+- **Tabs implemented:**
+  1. Overview - Navigation hub with ModuleCardSection (Weapon/Armor/Recipe)
+  2. Quick Settings - Stack size, unbreakable, durability, repair cost
+  3. Status - Cross-module summaries with ModuleSummarySection + source badges
+  4. Info - Read-only metadata + capabilities detection
+- **New files:**
+  - `ModuleCardSection.java` - Clickable cards for module navigation
+  - `ModuleSummarySection.java` - Stats display with source badges (VAN/DEV/NBT)
+- **Modified files:**
+  - `EditorModule.java` - Added `setModuleSwitchCallback()`, `getAvailableModules()`
+  - `ItemEditorScreen.java` - Added `switchModule()` method
+  - `GeneralModule.java` - Complete rewrite (180 → 378 lines)
+
+#### VoxelLab Improvements
+- **Status:** ✅ COMPLETED
+- ✅ Extract `PageUtils.java` for shared utilities (safeGetBool, safeGetInt, safeGetDouble, etc.)
+- ✅ Refactor ComponentShowcasePage to extend AbstractVoxelLabPage
+- ✅ Add ShowcasePanel to sealed UIPanel interface
+- ✅ All pages now use static imports from PageUtils
+
+### Documentation Status
+
+| Document | Status |
+|----------|--------|
+| 23-architecture-comparison.md | ✅ NEW |
+| 24-component-library.md | ✅ NEW |
+| 25-panel-system.md | ✅ NEW |
+| 26-module-evolution-guide.md | ✅ NEW |
+| 27-general-module-hub.md | ✅ NEW |

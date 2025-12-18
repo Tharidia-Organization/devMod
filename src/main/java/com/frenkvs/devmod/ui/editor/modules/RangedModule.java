@@ -9,6 +9,7 @@ import com.frenkvs.devmod.ui.editor.RangedWeaponModule;
 import com.frenkvs.devmod.ui.editor.components.EditorSlider;
 import com.frenkvs.devmod.ui.editor.components.EditorTextField;
 import com.frenkvs.devmod.ui.editor.components.EditorToggle;
+import com.frenkvs.devmod.ui.editor.components.SourceBadge;
 import com.frenkvs.devmod.ui.editor.core.EditorDimensions;
 import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
@@ -107,6 +108,20 @@ public class RangedModule extends AbstractEditorModule {
         }
     }
 
+    /**
+     * Determines the source badge based on where the stats come from.
+     */
+    private SourceBadge.Source determineSource() {
+        if (sourcedStats != null && sourcedStats.drawSpeed() != null) {
+            return switch (sourcedStats.drawSpeed().source()) {
+                case DEVMOD_COMPONENT -> SourceBadge.Source.DEV;
+                case CUSTOM_DATA -> SourceBadge.Source.NBT;
+                default -> SourceBadge.Source.VANILLA;
+            };
+        }
+        return SourceBadge.Source.VANILLA;
+    }
+
     @Override
     protected void initializeTabs() {
         tabs.clear();
@@ -129,6 +144,7 @@ public class RangedModule extends AbstractEditorModule {
     }
 
     private void createMechanicsComponents() {
+        SourceBadge.Source source = determineSource();
         String drawLabel = variant == RangedVariant.CROSSBOW ? "Reload Speed" : "Draw Speed";
         String accuracyLabel = variant == RangedVariant.CROSSBOW ? "Stability" : "Accuracy";
         String rangeLabel = switch (variant) {
@@ -142,6 +158,8 @@ public class RangedModule extends AbstractEditorModule {
             .format("%.2f")
             .suffix("x")
             .trackColor(UIConstants.SliderColors.SPEED)
+            .showInput(true)
+            .source(source)
             .info("Multiplier for bow draw/crossbow reload speed. 1.0 = normal, 2.0 = twice as fast, 0.5 = twice as slow.")
             .onChange(v -> { stats.drawSpeed = v; markDirty(drawLabel); });
         if (variant == RangedVariant.CROSSBOW) {
@@ -150,6 +168,8 @@ public class RangedModule extends AbstractEditorModule {
                 .format("%.2f")
                 .suffix("x")
                 .trackColor(UIConstants.SliderColors.SPEED)
+                .showInput(true)
+                .source(source)
                 .info("Time to fully charge the crossbow. 1.0 = normal, higher = slower charge.")
                 .onChange(v -> { stats.chargeTime = v; markDirty(chargeLabel); });
         }
@@ -157,7 +177,10 @@ public class RangedModule extends AbstractEditorModule {
         accuracySlider = new EditorSlider("accuracy", accuracyLabel, 0.5f, 1.25f, stats.accuracy)
             .step(0.01f)
             .format("%.2f")
+            .suffix("x")
             .trackColor(UIConstants.SliderColors.SPEED)
+            .showInput(true)
+            .source(source)
             .info("Shot precision. 1.0 = perfect accuracy, <1.0 = more spread, >1.0 = tighter grouping.")
             .onChange(v -> { stats.accuracy = v; markDirty(accuracyLabel); });
 
@@ -166,60 +189,83 @@ public class RangedModule extends AbstractEditorModule {
             .format("%.2f")
             .suffix("x")
             .trackColor(UIConstants.SliderColors.SPEED)
+            .showInput(true)
+            .source(source)
             .info("Maximum effective range multiplier. Affects how far projectiles travel before losing damage.")
             .onChange(v -> { stats.range = v; markDirty(rangeLabel); });
     }
 
     private void createProjectileComponents() {
+        SourceBadge.Source source = determineSource();
         String projSpeedLabel = variant == RangedVariant.CROSSBOW ? "Bolt Speed" : "Arrow Speed";
         projectileSpeedSlider = new EditorSlider("projectileSpeed", projSpeedLabel, 0.5f, 5.0f, stats.projectileSpeed)
             .step(0.05f)
             .format("%.2f")
+            .suffix("x")
             .trackColor(UIConstants.SliderColors.SPEED)
+            .showInput(true)
+            .source(source)
             .info("How fast the projectile travels. Higher = flatter trajectory, more damage. 1.0 = vanilla arrow speed.")
             .onChange(v -> { stats.projectileSpeed = v; markDirty(projSpeedLabel); });
 
         projectileGravitySlider = new EditorSlider("projectileGravity", "Gravity", 0f, 0.2f, stats.projectileGravity)
             .step(0.005f)
             .format("%.3f")
+            .suffix(" g/t")
             .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .showInput(true)
+            .source(source)
             .info("Downward acceleration per tick. 0.05 = normal arrow, 0 = no drop (laser-like), 0.2 = very heavy.")
             .onChange(v -> { stats.projectileGravity = v; markDirty("Gravity"); });
 
         projectileSpreadSlider = new EditorSlider("projectileSpread", "Spread", 0f, 3f, stats.projectileSpread)
             .step(0.05f)
             .format("%.2f")
+            .suffix("°")
             .trackColor(UIConstants.SliderColors.NEUTRAL)
+            .showInput(true)
+            .source(source)
             .info("Random deviation added to each shot. 0 = perfectly straight, 3 = very inaccurate spread.")
             .onChange(v -> { stats.projectileSpread = v; markDirty("Spread"); });
 
         baseDamageSlider = new EditorSlider("baseDamage", "Base Damage", 0f, 20f, stats.baseDamage)
             .step(0.1f)
             .format("%.1f")
+            .suffix(" HP")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .showInput(true)
+            .source(source)
             .info("Base damage before Power enchant and velocity bonuses. Vanilla arrow = 2.0, Power V adds +12.5.")
             .onChange(v -> { stats.baseDamage = v; markDirty("Base damage"); });
 
         multishotToggle = new EditorToggle("multishot", "Enable Multishot", stats.multishot)
+            .source(source)
             .tooltip("Fire multiple projectiles per shot (uses one ammo)")
             .onChange(val -> { stats.multishot = val; markDirty("Multishot"); });
 
         piercingSlider = new EditorSlider("piercing", "Piercing Level", 0f, 5f, stats.piercing)
             .step(1f)
             .format("%.0f")
+            .suffix(" targets")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .showInput(true)
+            .source(source)
             .info("Number of entities the projectile can pass through. Like Piercing enchant. 0 = stops on first hit.")
             .onChange(v -> { stats.piercing = Math.round(v); markDirty("Piercing"); });
 
         multishotCountSlider = new EditorSlider("multishotCount", "Projectile Count", 1f, 5f, stats.multishotCount)
             .step(1f)
             .format("%.0f")
+            .suffix(" arrows")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .showInput(true)
+            .source(source)
             .info("Number of projectiles fired when Multishot is enabled. Vanilla Multishot = 3. All consume only 1 ammo.")
             .onChange(v -> { stats.multishotCount = Math.round(v); markDirty("Projectile count"); });
     }
 
     private void createMetadataComponents() {
+        SourceBadge.Source source = determineSource();
         ammoFilterInput = new EditorTextField("ammoFilter", "Ammo Filter")
             .placeholder("e.g. minecraft:arrow or #minecraft:arrows")
             .onChange(val -> {
@@ -228,16 +274,20 @@ public class RangedModule extends AbstractEditorModule {
             });
         ammoFilterInput.setValue(stats.ammoFilter == null ? "" : stats.ammoFilter);
         infinityToggle = new EditorToggle("infinity", "Infinity Override", stats.infinityOverride)
+            .source(source)
             .tooltip("Force infinite ammo even without Infinity enchant. First arrow in inventory is used as template.")
             .onChange(v -> { stats.infinityOverride = v; markDirty("Infinity override"); });
     }
 
     private void createDamageComponents() {
+        SourceBadge.Source source = determineSource();
         critChanceSlider = new EditorSlider("critChance", "Crit Chance", 0f, 1f, stats.critChance)
             .step(0.01f)
             .format("%.2f")
             .suffix("%")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .showInput(true)
+            .source(source)
             .info("Chance for projectile to deal critical damage (0-1). Vanilla arrows crit at full velocity. This adds bonus crit chance.")
             .onChange(v -> { stats.critChance = v; markDirty("Crit chance"); });
 
@@ -246,27 +296,38 @@ public class RangedModule extends AbstractEditorModule {
             .format("%.2f")
             .suffix("x")
             .trackColor(UIConstants.SliderColors.DAMAGE)
+            .showInput(true)
+            .source(source)
             .info("Damage multiplier on critical hit. 1.5x = 50% bonus damage. Stacks with Power enchant.")
             .onChange(v -> { stats.critDamage = v; markDirty("Crit damage"); });
     }
 
     private void createTridentComponents() {
+        SourceBadge.Source source = determineSource();
         loyaltySpeedSlider = new EditorSlider("loyaltySpeed", "Loyalty Speed", 0f, 5f, stats.loyaltySpeed)
             .step(0.1f)
             .format("%.1f")
+            .suffix("x")
             .trackColor(UIConstants.SliderColors.SPEED)
+            .showInput(true)
+            .source(source)
             .info("How fast the trident returns to the player. Higher = faster return. 0 = no return (requires pickup).")
             .onChange(v -> { stats.loyaltySpeed = v; markDirty("Loyalty speed"); });
         riptideDistanceSlider = new EditorSlider("riptideDistance", "Riptide Distance", 0f, 64f, stats.riptideDistance)
             .step(1f)
             .format("%.0f")
+            .suffix(" blocks")
             .trackColor(UIConstants.SliderColors.SPEED)
+            .showInput(true)
+            .source(source)
             .info("Maximum distance the player can travel when using Riptide in water/rain. 0 = disabled.")
             .onChange(v -> { stats.riptideDistance = v; markDirty("Riptide distance"); });
         riptideRequiresWaterToggle = new EditorToggle("riptideWater", "Riptide Requires Water", stats.riptideRequiresWater)
+            .source(source)
             .tooltip("If enabled, Riptide only works in water or rain. If disabled, works anywhere.")
             .onChange(v -> { stats.riptideRequiresWater = v; markDirty("Riptide requires water"); });
         channelingToggle = new EditorToggle("channeling", "Channeling Allowed", stats.channeling)
+            .source(source)
             .tooltip("When enabled, trident summons lightning on hit during thunderstorms.")
             .onChange(v -> { stats.channeling = v; markDirty("Channeling"); });
     }

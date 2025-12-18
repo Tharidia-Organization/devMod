@@ -1,6 +1,7 @@
 package com.frenkvs.devmod;
 
 import com.frenkvs.devmod.client.ClientVFXProxy;
+import com.frenkvs.devmod.collision.integration.OBBHitHelper;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -77,9 +78,11 @@ public class ArrowEvents {
                 // Track to detect Enderman evasion
                 trackPotentialEvasion(shooter, victim, hitPos);
 
-                // UNIFIED DETECTION: Use the same precise AABB raycast algorithm as DamageHandler
+                // UNIFIED DETECTION: Use OBB raycast when enabled, fallback to AABB subdivision
                 // This ensures 100% consistency between arrow hits and melee hits
-                HitHelper.HitResult hitResult = HitHelper.rayTraceBodyPartWithHitPoint(shooter, victim);
+                HitHelper.HitResult hitResult = OBBHitHelper.useOBBSystem()
+                    ? OBBHitHelper.rayTraceBodyPart(shooter, victim)
+                    : HitHelper.rayTraceBodyPartWithHitPoint(shooter, victim);
                 HitHelper.BodyPart bodyPartEnum = hitResult != null ? hitResult.part() : HitHelper.BodyPart.BODY;
 
                 String bodyPartKey;

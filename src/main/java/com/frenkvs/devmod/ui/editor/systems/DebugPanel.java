@@ -79,9 +79,23 @@ public class DebugPanel {
 
     private final List<String> entries = new ArrayList<>();
     private List<String> statSources = List.of();
+    private List<StatDiff> statDiffs = List.of();
     private ResponsiveLayout.Rect nbtToggleRect;
     private boolean showFullNbt = false;
     private String lastItemDataPayload = null;
+
+    /**
+     * Represents a difference between expected (baseline) and actual (current) stat values.
+     */
+    public record StatDiff(String name, float expected, float actual) {
+        public boolean isDifferent() {
+            return Math.abs(expected - actual) > 0.001f;
+        }
+        public String format() {
+            if (!isDifferent()) return name + ": " + String.format("%.2f", actual) + " ✓";
+            return name + ": " + String.format("%.2f", expected) + " → " + String.format("%.2f", actual) + " ⚠";
+        }
+    }
 
     // Buttons using EditorButton component - initialized in constructor to avoid this-escape warning
     private final EditorButton copyButton;
@@ -111,6 +125,51 @@ public class DebugPanel {
 
     public void setStatSources(List<String> sources) {
         this.statSources = sources == null ? List.of() : List.copyOf(sources);
+    }
+
+    /**
+     * Set stat differences for debug display (expected vs actual values).
+     * Call this from modules to show baseline comparison.
+     */
+    public void setStatDiffs(List<StatDiff> diffs) {
+        this.statDiffs = diffs == null ? List.of() : List.copyOf(diffs);
+    }
+
+    /**
+     * Build stat diffs from WeaponStats comparing current vs baseline.
+     */
+    public static List<StatDiff> buildWeaponDiffs(WeaponStats current, WeaponStats baseline) {
+        if (current == null || baseline == null) return List.of();
+        List<StatDiff> diffs = new ArrayList<>();
+        diffs.add(new StatDiff("attackDamage", baseline.attackDamage, current.attackDamage));
+        diffs.add(new StatDiff("attackSpeed", baseline.attackSpeed, current.attackSpeed));
+        diffs.add(new StatDiff("attackReach", baseline.attackReach, current.attackReach));
+        diffs.add(new StatDiff("attackKnockback", baseline.attackKnockback, current.attackKnockback));
+        diffs.add(new StatDiff("armorPenetration", baseline.armorPenetration, current.armorPenetration));
+        diffs.add(new StatDiff("critChance", baseline.critChance, current.critChance));
+        diffs.add(new StatDiff("critDamage", baseline.critDamage, current.critDamage));
+        diffs.add(new StatDiff("lifesteal", baseline.lifesteal, current.lifesteal));
+        diffs.add(new StatDiff("headMult", baseline.headMult, current.headMult));
+        diffs.add(new StatDiff("bodyMult", baseline.bodyMult, current.bodyMult));
+        return diffs;
+    }
+
+    /**
+     * Build stat diffs from ArmorStats comparing current vs baseline.
+     */
+    public static List<StatDiff> buildArmorDiffs(ArmorStats current, ArmorStats baseline) {
+        if (current == null || baseline == null) return List.of();
+        List<StatDiff> diffs = new ArrayList<>();
+        diffs.add(new StatDiff("physicalReduction", baseline.physicalReduction, current.physicalReduction));
+        diffs.add(new StatDiff("fireReduction", baseline.fireReduction, current.fireReduction));
+        diffs.add(new StatDiff("magicReduction", baseline.magicReduction, current.magicReduction));
+        diffs.add(new StatDiff("explosionReduction", baseline.explosionReduction, current.explosionReduction));
+        diffs.add(new StatDiff("projectileReduction", baseline.projectileReduction, current.projectileReduction));
+        diffs.add(new StatDiff("armorBonus", baseline.armorBonus, current.armorBonus));
+        diffs.add(new StatDiff("toughnessBonus", baseline.toughnessBonus, current.toughnessBonus));
+        diffs.add(new StatDiff("knockbackResistance", baseline.knockbackResistance, current.knockbackResistance));
+        diffs.add(new StatDiff("thornsPercent", baseline.thornsPercent, current.thornsPercent));
+        return diffs;
     }
 
     public void clear() {
@@ -215,6 +274,25 @@ public class DebugPanel {
                 curY += lineH;
                 for (String src : statSources) {
                     graphics.drawString(font, SOURCE_BULLET + src, x + pad + SUBITEM_INDENT, curY, SOURCE_TEXT_COLOR, false);
+                    curY += lineH;
+                }
+            }
+
+            // Show stat diffs (expected vs actual) if available
+            if (!statDiffs.isEmpty()) {
+                curY += LOG_TITLE_GAP;
+                graphics.drawString(font, "Diff (baseline → current):", x + pad, curY, HEADER_TEXT_COLOR, false);
+                curY += lineH;
+                int diffCount = 0;
+                for (StatDiff diff : statDiffs) {
+                    if (diffCount >= 6) break; // Limit display to avoid overflow
+                    int color = diff.isDifferent() ? 0xFFCC66 : 0x88FF88; // Yellow for diff, green for match
+                    graphics.drawString(font, SOURCE_BULLET + diff.format(), x + pad + SUBITEM_INDENT, curY, color, false);
+                    curY += lineH;
+                    diffCount++;
+                }
+                if (statDiffs.size() > 6) {
+                    graphics.drawString(font, "  +" + (statDiffs.size() - 6) + " more...", x + pad + SUBITEM_INDENT, curY, LOG_TEXT_COLOR, false);
                     curY += lineH;
                 }
             }

@@ -192,6 +192,26 @@ public interface EditorModule {
     default boolean overlayCharTyped(char chr, int modifiers) { return false; }
 
     // ═══════════════════════════════════════════════════════════════
+    // MODULE SWITCHING (Navigation Hub support)
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Set callback for switching to another module.
+     * Used by GeneralModule (Navigation Hub) to switch editor context.
+     *
+     * @param callback Consumer that receives the target EditorStartTab
+     */
+    default void setModuleSwitchCallback(java.util.function.Consumer<EditorStartTab> callback) {}
+
+    /**
+     * Get available modules for the current item.
+     * Returns list of EditorStartTab values that are applicable.
+     */
+    default List<EditorStartTab> getAvailableModules() {
+        return List.of();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // LIFECYCLE
     // ═══════════════════════════════════════════════════════════════
 

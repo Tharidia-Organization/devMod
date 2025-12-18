@@ -117,7 +117,7 @@ src/main/resources/assets/devmod/shaders/core/
 └── energy_shield.json  // Shader program definition
 ```
 
-### ShaderProgram Definition (`energy_shield.json`)
+### Shader JSON Definition (`energy_shield.json`)
 
 ```json
 {

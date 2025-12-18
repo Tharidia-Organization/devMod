@@ -162,23 +162,30 @@ public class CraftingInfoPanel extends BaseOverlay {
     private int ingredientAreaH = 0;
 
     // Navigation buttons using EditorButton component
-    private final EditorButton prevButton = new EditorButton("prev", "<")
-        .style(EditorButton.Style.GHOST)
-        .size(EditorButton.Size.SMALL)
-        .onClick(() -> selectRecipe(selectedRecipeIndex - 1));
-    private final EditorButton nextButton = new EditorButton("next", ">")
-        .style(EditorButton.Style.GHOST)
-        .size(EditorButton.Size.SMALL)
-        .onClick(() -> selectRecipe(selectedRecipeIndex + 1));
+    private final EditorButton prevButton;
+    private final EditorButton nextButton;
 
     // Edit button to open Recipe Editor
-    private final EditorButton editButton = new EditorButton("edit", "Edit Recipe")
-        .style(EditorButton.Style.PRIMARY)
-        .size(EditorButton.Size.SMALL)
-        .onClick(this::openRecipeEditor);
+    private final EditorButton editButton;
 
     // Cached metrics for current frame (set during render)
     private int cachedValueHeight = 0;
+
+    @SuppressWarnings("this-escape")
+    public CraftingInfoPanel() {
+        prevButton = new EditorButton("prev", "<")
+            .style(EditorButton.Style.GHOST)
+            .size(EditorButton.Size.SMALL)
+            .onClick(() -> selectRecipe(selectedRecipeIndex - 1));
+        nextButton = new EditorButton("next", ">")
+            .style(EditorButton.Style.GHOST)
+            .size(EditorButton.Size.SMALL)
+            .onClick(() -> selectRecipe(selectedRecipeIndex + 1));
+        editButton = new EditorButton("edit", "Edit Recipe")
+            .style(EditorButton.Style.PRIMARY)
+            .size(EditorButton.Size.SMALL)
+            .onClick(() -> openRecipeEditor());
+    }
 
     public void show(ItemStack item) {
         this.targetItem = item.copy();
