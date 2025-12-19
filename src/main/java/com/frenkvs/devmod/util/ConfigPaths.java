@@ -129,6 +129,16 @@ public final class ConfigPaths {
         return getConfigDir().resolve("impact_hud_presets.json");
     }
 
+    // ==================== RECIPE EDITOR ====================
+
+    /**
+     * Custom recipes directory: config/devmod/recipes/
+     * Stores user-created recipes in a platform-independent location.
+     */
+    public static Path getRecipesDir() {
+        return getConfigDir().resolve("recipes");
+    }
+
     // ==================== ITEM EDITOR ====================
 
     /**

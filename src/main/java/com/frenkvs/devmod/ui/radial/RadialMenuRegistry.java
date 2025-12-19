@@ -73,6 +73,35 @@ public final class RadialMenuRegistry {
         return detection.type() == WeaponTypeDetector.WeaponType.SHIELD;
     }
 
+    private static boolean isFoodItem(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        return stack.getItem().components().has(net.minecraft.core.component.DataComponents.FOOD);
+    }
+
+    private static boolean isFuelItem(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        // Check if item has a burn time
+        return stack.getBurnTime(null) > 0;
+    }
+
+    private static boolean isUsableItem(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        var item = stack.getItem();
+        // Throwable items
+        if (item instanceof net.minecraft.world.item.SnowballItem ||
+            item instanceof net.minecraft.world.item.EggItem ||
+            item instanceof net.minecraft.world.item.EnderpearlItem ||
+            item instanceof net.minecraft.world.item.ThrowablePotionItem ||
+            item instanceof net.minecraft.world.item.InstrumentItem) {
+            return true;
+        }
+        // Items with use duration (potions, food already handled separately)
+        if (item.getUseDuration(stack, null) > 0 && !isFoodItem(stack)) {
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Provides category definitions for each macro-category.
      * Categories are built lazily to allow proper initialization order.
@@ -417,6 +446,24 @@ public final class RadialMenuRegistry {
             () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.RECIPE),
             "Create and edit crafting recipes");
 
+        RadialMenuItem foodEditor = RadialMenuItem.screen("Food Editor", "\uD83C\uDF56",
+            stack(Items.COOKED_BEEF),
+            () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.FOOD),
+            "Edit nutrition, saturation, and effects")
+            .setVisibilitySupplier(() -> isFoodItem(getHeldItem()));
+
+        RadialMenuItem fuelEditor = RadialMenuItem.screen("Fuel Editor", "\uD83D\uDD25",
+            stack(Items.COAL),
+            () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.FUEL),
+            "Edit burn time and efficiency")
+            .setVisibilitySupplier(() -> isFuelItem(getHeldItem()));
+
+        RadialMenuItem usableEditor = RadialMenuItem.screen("Usable Editor", "\u23F1",
+            stack(Items.SNOWBALL),
+            () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.USABLE),
+            "Edit throwables, cooldowns, and use duration")
+            .setVisibilitySupplier(() -> isUsableItem(getHeldItem()));
+
         categories.add(RadialCategory.builder("itemeditors")
             .name("Items")
             .color(0xFFFFEECC)
@@ -427,6 +474,9 @@ public final class RadialMenuRegistry {
             .item(shieldEditor)
             .item(generalEditor)
             .item(recipeEditor)
+            .item(foodEditor)
+            .item(fuelEditor)
+            .item(usableEditor)
             .build());
 
         // Category 6: Commands

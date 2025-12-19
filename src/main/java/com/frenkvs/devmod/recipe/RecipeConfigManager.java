@@ -60,10 +60,12 @@ public final class RecipeConfigManager {
     /**
      * Initialize server-side storage.
      * Called during server setup. Thread-safe with double-checked locking.
+     *
+     * @param recipesDir The directory where recipes are stored (e.g., config/devmod/recipes/)
      */
-    public static void initializeServer(Path serverConfigDir) {
-        if (serverConfigDir == null) {
-            LOGGER.error("[RecipeConfig] Cannot initialize - config directory is null");
+    public static void initializeServer(Path recipesDir) {
+        if (recipesDir == null) {
+            LOGGER.error("[RecipeConfig] Cannot initialize - recipes directory is null");
             return;
         }
 
@@ -79,14 +81,16 @@ public final class RecipeConfigManager {
                 return;
             }
 
-            serverConfigPath = serverConfigDir.resolve("devmod").resolve("recipes");
+            // Use the provided path directly (no more nested resolve)
+            serverConfigPath = recipesDir;
             try {
                 Files.createDirectories(serverConfigPath);
                 loadServerRecipes();
                 initialized = true;
-                LOGGER.info("[RecipeConfig] Server initialized with {} custom recipes", serverRecipes.size());
+                LOGGER.info("[RecipeConfig] Server initialized with {} custom recipes at {}",
+                    serverRecipes.size(), serverConfigPath);
             } catch (Exception e) {
-                LOGGER.error("[RecipeConfig] Failed to initialize server storage", e);
+                LOGGER.error("[RecipeConfig] Failed to initialize server storage at {}", recipesDir, e);
             }
         }
     }

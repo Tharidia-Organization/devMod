@@ -15,6 +15,17 @@
 - `src/main/java/com/frenkvs/devmod/recipe/CraftingRecipeData.java` - Aggiunto `withOriginalId()`
 - `src/main/java/com/frenkvs/devmod/ui/editor/modules/RecipeModule.java` - Aggiunto toggle UI, `findVanillaRecipeForItem()`, integrazione in `buildCurrentRecipe()`
 
+## ✅ Radial Menu - Editor Entries Mancanti (2025-12-20)
+
+### Problemi risolti
+- [x] **Food Editor mancante nel radial menu**: Aggiunta voce "Food Editor" per modificare nutrition, saturation, tempo consumo, effetti
+- [x] **Fuel Editor mancante nel radial menu**: Aggiunta voce "Fuel Editor" per modificare burn time e efficiency
+- [x] **Usable Editor mancante nel radial menu**: Aggiunta voce "Usable Editor" per modificare throwables, cooldowns, use duration (corni, pozioni lanciabili, palle di neve)
+- [x] **Helper methods per detection**: Aggiunti `isFoodItem()`, `isFuelItem()`, `isUsableItem()` per visibility condizionale
+
+### File modificati
+- `src/main/java/com/frenkvs/devmod/ui/radial/RadialMenuRegistry.java` - Aggiunte 3 nuove voci editor + 3 helper methods
+
 ---
 
 ## 🔥 P0 - Architettura unificata (08)

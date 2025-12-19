@@ -3664,6 +3664,32 @@ public enum RolloutPhase {
 - [ ] Implementare emitContention() per high wait detection
 - [ ] Creare dashboard query bottleneck (avg_wait, p95_wait)
 
+**Pool & Operational Readiness (DD 63-72)**:
+- [ ] Documentare criteri decisione pool (build_p95>5s, quest_rate>0.5/min)
+- [ ] Raccogliere telemetria 2 settimane pre-pool decision
+- [ ] Implementare `PoolState` enum (BUILDING, READY, RESERVED, IN_USE, CLEANUP)
+- [ ] Implementare `PooledArena` record con isUnused() e canBeEvicted()
+- [ ] Implementare reserve() con state change atomico
+- [ ] Implementare `PoolMetrics` con hit/miss tracking
+- [ ] Implementare auto-disable pool su miss_rate > 50%
+- [ ] Implementare `WrapperAnalyzer` per AST analysis
+- [ ] Implementare runtime callerChain capture per legacy calls
+- [ ] Creare task Gradle `migrationAudit`
+- [ ] Configurare -Xlint:deprecation (M1)
+- [ ] Pianificare -Werror (M2 +4 weeks)
+- [ ] Implementare `AnomalyThresholds` record
+- [ ] Creare runbook markdown per alert handling
+- [ ] Implementare `DashboardValidationJob` daily 02:00
+- [ ] Creare manual validation checklist
+- [ ] Creare workflow `release-gate.yml` con 7 checks
+- [ ] Implementare `TemplateObsolescenceHandler`
+- [ ] Implementare successor mapping config
+- [ ] Implementare session-safe template removal
+- [ ] Implementare `RolloutSuccessCriteria` record
+- [ ] Implementare `RolloutEvaluator` con canAdvance()
+- [ ] Configurare dashboard per KPI tracking
+- [ ] Definire go/no-go gates per ogni phase
+
 **Testing**:
 - [ ] Unit test version handling (last-wins)
 - [ ] Unit test inheritance caching
@@ -3799,6 +3825,35 @@ public enum RolloutPhase {
 - [ ] Integration test telemetry audit end-to-end
 - [ ] Integration test rate limiter under load (13 concurrent requests)
 - [ ] Integration test lock cleanup after server restart
+- [ ] Unit test PoolState transitions (BUILDING→READY→RESERVED→IN_USE)
+- [ ] Unit test PooledArena isUnused() (10 min threshold)
+- [ ] Unit test PooledArena canBeEvicted() (only READY/BUILDING)
+- [ ] Unit test reserve() state change atomico
+- [ ] Unit test PoolMetrics hit/miss ratio calculation
+- [ ] Unit test PoolMetrics auto-disable threshold (50%)
+- [ ] Unit test PoolMetrics alert thresholds (20%, 30%)
+- [ ] Unit test WrapperAnalyzer detect hidden calls
+- [ ] Unit test runtime callerChain capture
+- [ ] Unit test deprecation log rate limiting
+- [ ] Unit test deprecation telemetry always emitted
+- [ ] Unit test AnomalyThresholds bounds
+- [ ] Unit test DashboardValidationJob row count match
+- [ ] Unit test DashboardValidationJob aggregate match
+- [ ] Unit test DashboardValidationJob temporal consistency
+- [ ] Unit test release-gate workflow 7 checks
+- [ ] Unit test TemplateObsolescenceHandler successor lookup
+- [ ] Unit test TemplateObsolescenceHandler extends fallback
+- [ ] Unit test session-safe removal (wait for active)
+- [ ] Unit test RolloutSuccessCriteria defaults
+- [ ] Unit test RolloutEvaluator canAdvance() gates
+- [ ] Unit test RolloutPhase transitions
+- [ ] Integration test pool lifecycle end-to-end
+- [ ] Integration test migration audit full pipeline
+- [ ] Integration test deprecation M1→M2→M3 timeline
+- [ ] Integration test 48h monitoring dashboard
+- [ ] Integration test release gate blocking PR
+- [ ] Integration test template obsolescence with active sessions
+- [ ] Integration test rollout phase advancement
 
 ---
 

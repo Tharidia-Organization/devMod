@@ -2,6 +2,7 @@ package com.frenkvs.devmod.recipe;
 
 import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.network.RecipeClientSyncPayload;
+import com.frenkvs.devmod.util.ConfigPaths;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -35,17 +36,12 @@ public final class RecipeReloadListener {
     public static void onServerStarted(ServerStartedEvent event) {
         DevMod.LOGGER.info("[RecipeReloadListener] Server started, initializing recipe system");
 
-        // Initialize the config manager with server config directory
-        var server = event.getServer();
-        var configDir = server.getWorldPath(Objects.requireNonNull(
-            net.minecraft.world.level.storage.LevelResource.ROOT, "root"
-        ))
-            .resolve("serverconfig").resolve("devmod");
-
-        RecipeConfigManager.initializeServer(configDir);
+        // Use ConfigPaths for cross-platform compatibility (Linux/Windows/Mac)
+        // This ensures recipes are stored in config/devmod/recipes/ instead of world-specific paths
+        RecipeConfigManager.initializeServer(ConfigPaths.getRecipesDir());
 
         // Inject custom recipes into the game
-        RecipeInjector.injectAll(server.getRecipeManager());
+        RecipeInjector.injectAll(event.getServer().getRecipeManager());
 
         DevMod.LOGGER.info("[RecipeReloadListener] Loaded {} custom recipes",
             RecipeConfigManager.getRecipeCount());

@@ -216,7 +216,8 @@ public class RecipeModule extends AbstractEditorModule {
     }
 
     /**
-     * Find a vanilla recipe that produces this item.
+     * Find a vanilla or modded recipe that produces this item.
+     * Searches all recipe types: crafting, smelting, blasting, smoking, campfire, smithing, stonecutting.
      */
     private ResourceLocation findVanillaRecipeForItem() {
         var mc = Minecraft.getInstance();
@@ -224,15 +225,64 @@ public class RecipeModule extends AbstractEditorModule {
 
         var recipeManager = mc.level.getRecipeManager();
         var itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item.getItem());
+        var registryAccess = mc.level.registryAccess();
 
-        // Search crafting recipes for one that produces this item
+        // Search crafting recipes
         for (var holder : recipeManager.getAllRecipesFor(net.minecraft.world.item.crafting.RecipeType.CRAFTING)) {
-            var result = holder.value().getResultItem(mc.level.registryAccess());
+            var result = holder.value().getResultItem(registryAccess);
             if (!result.isEmpty() && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(result.getItem()).equals(itemId)) {
-                // Found a recipe that produces this item
                 return holder.id();
             }
         }
+
+        // Search smelting recipes
+        for (var holder : recipeManager.getAllRecipesFor(net.minecraft.world.item.crafting.RecipeType.SMELTING)) {
+            var result = holder.value().getResultItem(registryAccess);
+            if (!result.isEmpty() && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(result.getItem()).equals(itemId)) {
+                return holder.id();
+            }
+        }
+
+        // Search blasting recipes
+        for (var holder : recipeManager.getAllRecipesFor(net.minecraft.world.item.crafting.RecipeType.BLASTING)) {
+            var result = holder.value().getResultItem(registryAccess);
+            if (!result.isEmpty() && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(result.getItem()).equals(itemId)) {
+                return holder.id();
+            }
+        }
+
+        // Search smoking recipes
+        for (var holder : recipeManager.getAllRecipesFor(net.minecraft.world.item.crafting.RecipeType.SMOKING)) {
+            var result = holder.value().getResultItem(registryAccess);
+            if (!result.isEmpty() && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(result.getItem()).equals(itemId)) {
+                return holder.id();
+            }
+        }
+
+        // Search campfire cooking recipes
+        for (var holder : recipeManager.getAllRecipesFor(net.minecraft.world.item.crafting.RecipeType.CAMPFIRE_COOKING)) {
+            var result = holder.value().getResultItem(registryAccess);
+            if (!result.isEmpty() && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(result.getItem()).equals(itemId)) {
+                return holder.id();
+            }
+        }
+
+        // Search smithing recipes
+        for (var holder : recipeManager.getAllRecipesFor(net.minecraft.world.item.crafting.RecipeType.SMITHING)) {
+            var result = holder.value().getResultItem(registryAccess);
+            if (!result.isEmpty() && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(result.getItem()).equals(itemId)) {
+                return holder.id();
+            }
+        }
+
+        // Search stonecutting recipes
+        for (var holder : recipeManager.getAllRecipesFor(net.minecraft.world.item.crafting.RecipeType.STONECUTTING)) {
+            var result = holder.value().getResultItem(registryAccess);
+            if (!result.isEmpty() && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(result.getItem()).equals(itemId)) {
+                return holder.id();
+            }
+        }
+
         return null;
     }
 
