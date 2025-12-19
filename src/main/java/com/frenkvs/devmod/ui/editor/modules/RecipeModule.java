@@ -48,6 +48,8 @@ public class RecipeModule extends AbstractEditorModule {
     private String recipeGroup = "";
     private RecipeCategory category = RecipeCategory.MISC;
     private int resultQuantity = 1;
+    private boolean replaceVanillaRecipe = false;
+    private ResourceLocation vanillaRecipeToReplace = null;
 
     // ═══════════════════════════════════════════════════════════════
     // UI COMPONENTS
@@ -56,6 +58,7 @@ public class RecipeModule extends AbstractEditorModule {
     private final RecipeGridComponent recipeGrid = new RecipeGridComponent();
     private final ItemPickerOverlay itemPicker = new ItemPickerOverlay();
     private EditorToggle shapedToggle;
+    private EditorToggle replaceVanillaToggle;
     private EditorTextField idField;
     private EditorTextField groupField;
     private EditorSlider quantitySlider;
@@ -196,6 +199,41 @@ public class RecipeModule extends AbstractEditorModule {
                 resultQuantity = value.intValue();
                 markDirty("Changed result quantity");
             });
+
+        // Replace vanilla toggle
+        replaceVanillaToggle = new EditorToggle("replace_vanilla", "Replace Vanilla Recipe", replaceVanillaRecipe)
+            .tooltip("When enabled, this recipe will replace any existing vanilla recipe for this item.")
+            .onChange(value -> {
+                replaceVanillaRecipe = value;
+                if (value) {
+                    // Try to find a vanilla recipe for this item to replace
+                    vanillaRecipeToReplace = findVanillaRecipeForItem();
+                } else {
+                    vanillaRecipeToReplace = null;
+                }
+                markDirty("Changed replace vanilla setting");
+            });
+    }
+
+    /**
+     * Find a vanilla recipe that produces this item.
+     */
+    private ResourceLocation findVanillaRecipeForItem() {
+        var mc = Minecraft.getInstance();
+        if (mc.level == null) return null;
+
+        var recipeManager = mc.level.getRecipeManager();
+        var itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item.getItem());
+
+        // Search crafting recipes for one that produces this item
+        for (var holder : recipeManager.getAllRecipesFor(net.minecraft.world.item.crafting.RecipeType.CRAFTING)) {
+            var result = holder.value().getResultItem(mc.level.registryAccess());
+            if (!result.isEmpty() && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(result.getItem()).equals(itemId)) {
+                // Found a recipe that produces this item
+                return holder.id();
+            }
+        }
+        return null;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -260,6 +298,22 @@ public class RecipeModule extends AbstractEditorModule {
         // Spacer
         sections.add(new SimpleSpacer("spacer2", 16));
 
+        // Replace vanilla toggle
+        sections.add(new SimpleHeaderSection("replace_header", "Override"));
+        sections.add(new ToggleSectionAdapter(replaceVanillaToggle));
+
+        // Show which recipe will be replaced (if any)
+        if (replaceVanillaRecipe && vanillaRecipeToReplace != null) {
+            sections.add(new TextNoteSection("replace_info",
+                "Will replace: " + vanillaRecipeToReplace.toString()));
+        } else if (replaceVanillaRecipe) {
+            sections.add(new TextNoteSection("replace_info",
+                "No vanilla recipe found for this item"));
+        }
+
+        // Spacer
+        sections.add(new SimpleSpacer("spacer3", 16));
+
         // Validation
         sections.add(new SimpleHeaderSection("valid_header", "Validation"));
         sections.add(new ValidationSection("validation", this::getValidation));
@@ -294,9 +348,10 @@ public class RecipeModule extends AbstractEditorModule {
 
         ResultData result = ResultData.of(item).withCount(resultQuantity);
 
+        CraftingRecipeData recipe;
         if (craftingType == CraftingType.SHAPED) {
             // Build as shaped with grid
-            return CraftingRecipeData.empty(item)
+            recipe = CraftingRecipeData.empty(item)
                 .withId(id)
                 .withGrid(grid)
                 .withResult(result)
@@ -307,9 +362,16 @@ public class RecipeModule extends AbstractEditorModule {
                 .filter(i -> !i.isEmpty())
                 .toList();
 
-            return CraftingRecipeData.shapeless(id, nonEmpty, result)
+            recipe = CraftingRecipeData.shapeless(id, nonEmpty, result)
                 .withCategory(category);
         }
+
+        // If replacing vanilla recipe, set the originalId
+        if (replaceVanillaRecipe && vanillaRecipeToReplace != null) {
+            recipe = recipe.withOriginalId(vanillaRecipeToReplace);
+        }
+
+        return recipe;
     }
 
     // ═══════════════════════════════════════════════════════════════

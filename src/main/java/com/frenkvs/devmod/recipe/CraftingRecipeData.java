@@ -433,6 +433,18 @@ public record CraftingRecipeData(
         );
     }
 
+    /**
+     * Create a modified copy that replaces an original recipe.
+     * Sets isModified=true and originalId to the recipe being replaced.
+     */
+    public CraftingRecipeData withOriginalId(ResourceLocation originalRecipeId) {
+        return new CraftingRecipeData(
+            id, craftingType, category, group,
+            ingredients, pattern, keyMap, result,
+            showNotification, true, originalRecipeId
+        );
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // HELPERS
     // ═══════════════════════════════════════════════════════════════

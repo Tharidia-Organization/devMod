@@ -1,5 +1,22 @@
 # TODO - Allineamento Editor vs design docs (08–10)
 
+## ✅ Recipe Editor Bug Fixes (2025-12-20)
+
+### Problemi risolti
+- [x] **Recipe deletion non funzionante**: Il mixin `RecipeManagerMixin` non filtrava le ricette marcate per rimozione in `REMOVED_RECIPES`. Aggiunto filtering in `getAllRecipesFor()` e `byKey()`.
+- [x] **Ricette vanilla non sostituite**: Quando si crea una ricetta custom che modifica una vanilla (`isModified=true`, `originalId != null`), ora la ricetta originale viene automaticamente marcata per rimozione in `RecipeInjector.injectRecipeUnsafe()`.
+- [x] **Aggiunto `hasRemovedRecipes()`**: Nuovo metodo in `RecipeInjector` per ottimizzare il check di filtering nel mixin.
+- [x] **Toggle "Replace Vanilla Recipe"**: Aggiunto toggle UI nell'editor (tab Settings) che permette di specificare se la nuova ricetta deve sostituire quella vanilla esistente per lo stesso item. Trova automaticamente la ricetta vanilla da sostituire.
+- [x] **Aggiunto `withOriginalId()`**: Nuovo metodo in `CraftingRecipeData` per impostare `originalId` e `isModified=true`.
+
+### File modificati
+- `src/main/java/com/frenkvs/devmod/mixin/RecipeManagerMixin.java` - Aggiunto filtering ricette rimosse
+- `src/main/java/com/frenkvs/devmod/recipe/RecipeInjector.java` - Aggiunto auto-removal originalId e `hasRemovedRecipes()`
+- `src/main/java/com/frenkvs/devmod/recipe/CraftingRecipeData.java` - Aggiunto `withOriginalId()`
+- `src/main/java/com/frenkvs/devmod/ui/editor/modules/RecipeModule.java` - Aggiunto toggle UI, `findVanillaRecipeForItem()`, integrazione in `buildCurrentRecipe()`
+
+---
+
 ## 🔥 P0 - Architettura unificata (08)
 - [x] Portare **WeaponModule** e **ArmorModule** su layout a sezioni (`EditorSection`) eliminando coordinate manuali (`renderContent` custom, calcolo sliderWidth, ecc.). Obiettivo: i moduli devono restituire solo sezioni e usare il renderer di base (aggiunte sezioni Custom per DPS/EHP).
 - [x] Consolidare la gestione tab debug: tab debug ora usa il flusso standard di `AbstractEditorModule`.

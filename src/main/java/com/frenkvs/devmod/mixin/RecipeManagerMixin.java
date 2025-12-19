@@ -28,6 +28,8 @@ public class RecipeManagerMixin {
      * Inject custom recipes into getAllRecipesFor query.
      * This is called when the game looks up all recipes of a specific type
      * (e.g., all crafting recipes for the recipe book).
+     *
+     * Also filters out removed/overridden recipes.
      */
     @Inject(method = "getAllRecipesFor", at = @At("RETURN"), cancellable = true)
     private <I extends RecipeInput, T extends Recipe<I>> void devmod$injectAllRecipes(
@@ -35,9 +37,23 @@ public class RecipeManagerMixin {
             CallbackInfoReturnable<Collection<RecipeHolder<T>>> cir) {
         RecipeType<T> safeType = Objects.requireNonNull(type, "recipe type");
         List<RecipeHolder<T>> injected = RecipeInjector.getInjectedByType(safeType);
-        if (!injected.isEmpty()) {
-            // Create new list with both vanilla and custom recipes
-            List<RecipeHolder<T>> combined = new ArrayList<>(cir.getReturnValue());
+
+        // Check if we have any injected recipes or removed recipes
+        boolean hasInjected = !injected.isEmpty();
+        boolean needsFiltering = RecipeInjector.hasRemovedRecipes();
+
+        if (hasInjected || needsFiltering) {
+            // Filter out removed recipes and add injected ones
+            List<RecipeHolder<T>> combined = new ArrayList<>();
+
+            for (RecipeHolder<T> holder : cir.getReturnValue()) {
+                // Skip recipes that are marked for removal
+                if (!RecipeInjector.isRemoved(holder.id())) {
+                    combined.add(holder);
+                }
+            }
+
+            // Add injected recipes
             combined.addAll(injected);
             cir.setReturnValue(combined);
         }
@@ -185,12 +201,18 @@ public class RecipeManagerMixin {
     }
 
     /**
-     * Intercept byKey lookup to include injected recipes.
+     * Intercept byKey lookup to include injected recipes and filter removed ones.
      */
     @Inject(method = "byKey", at = @At("HEAD"), cancellable = true)
     private void devmod$injectByKey(
             ResourceLocation id,
             CallbackInfoReturnable<Optional<RecipeHolder<?>>> cir) {
+
+        // Check if this recipe is marked for removal
+        if (RecipeInjector.isRemoved(id)) {
+            cir.setReturnValue(Optional.empty());
+            return;
+        }
 
         // Check if this ID is in our injected recipes
         Optional<RecipeHolder<?>> injected = RecipeInjector.getInjectedRecipe(id);

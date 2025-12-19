@@ -186,6 +186,18 @@ public final class RecipeInjector {
     }
 
     /**
+     * Check if there are any recipes marked for removal.
+     */
+    public static boolean hasRemovedRecipes() {
+        lock.readLock().lock();
+        try {
+            return !REMOVED_RECIPES.isEmpty();
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /**
      * Check if we have an injected recipe with this ID.
      */
     public static boolean hasInjectedRecipe(ResourceLocation id) {
@@ -251,6 +263,14 @@ public final class RecipeInjector {
             RecipeHolder<?> holder = createRecipeHolder(recipeData);
             if (holder != null) {
                 INJECTED_RECIPES.put(recipeData.id(), holder);
+
+                // If this recipe is a modification of an existing one, mark the original for removal
+                if (recipeData.isModified() && recipeData.originalId() != null) {
+                    REMOVED_RECIPES.add(recipeData.originalId());
+                    DevMod.LOGGER.debug("[RecipeInjector] Marked original recipe for removal: {}",
+                        recipeData.originalId());
+                }
+
                 return true;
             }
         } catch (Exception e) {
