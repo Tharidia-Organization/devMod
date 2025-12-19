@@ -1,18 +1,21 @@
 package com.frenkvs.devmod.ui.editor.components;
 
 import com.frenkvs.devmod.ui.AxiomRenderer;
-import com.frenkvs.devmod.ui.editor.AdvancedScroll;
 import com.frenkvs.devmod.ui.editor.core.DirtyRegionTracker;
 import com.frenkvs.devmod.ui.editor.core.EditorDimensions;
 import com.frenkvs.devmod.ui.editor.core.EditorSpacing;
 import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
+import com.frenkvs.devmod.ui.scroll.ScrollManager;
+import com.frenkvs.devmod.ui.scroll.ScrollMetrics;
+import com.frenkvs.devmod.ui.scroll.ScrollMode;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.util.Mth;
 
 /**
  * Scrollable content area for module content.
  * Handles scrolling, scissoring, and scrollbar rendering.
+ *
+ * <p>Now uses the unified {@link ScrollManager} for consistent scroll behavior.
  *
  * @see EDITOR_DESIGN_SYSTEM.md Section 2.6 (Content Area)
  * @see EDITOR_DESIGN_SYSTEM.md Section 4.11 (Scrollable Content Area)
@@ -25,10 +28,7 @@ public class ScrollableContentArea {
 
     private static final int SCROLLBAR_WIDTH = EditorDimensions.SCROLLBAR_WIDTH;  // 8px
     private static final int PADDING = EditorSpacing.S;  // 8px
-    private static final int MIN_SCROLL_RANGE = 1;
-    private static final int MIN_THUMB_HEIGHT = 20;
     private static final int THUMB_INSET = 1;
-    private static final int SCROLL_STEP = 20;
     private static final float SCROLL_CHANGE_THRESHOLD = 0.5f;
 
     // ═══════════════════════════════════════════════════════════════
@@ -37,17 +37,13 @@ public class ScrollableContentArea {
 
     private ResponsiveLayout.Rect bounds = ResponsiveLayout.Rect.EMPTY;
     private ResponsiveLayout.Rect contentBounds = ResponsiveLayout.Rect.EMPTY;
-    private ResponsiveLayout.Rect scrollbarBounds = ResponsiveLayout.Rect.EMPTY;
 
-    // Scroll state
-    private float scrollOffset = 0;
-    private float lastScrollOffset = 0;
+    // Unified scroll manager with smooth animation
+    private final ScrollManager scrollManager = new ScrollManager(ScrollMode.SMOOTH)
+        .scrollbarWidth(SCROLLBAR_WIDTH);
+
     private int contentHeight = 0;
-    private boolean scrollbarHovered = false;
-    private boolean scrollbarDragging = false;
-    private double dragStartY = 0;
-    private float dragStartOffset = 0;
-    private final AdvancedScroll smoothScroll = new AdvancedScroll();
+    private float lastScrollOffset = 0;
     private final DirtyRegionTracker dirtyTracker = DirtyRegionTracker.INSTANCE;
 
     // ═══════════════════════════════════════════════════════════════
@@ -98,211 +94,113 @@ public class ScrollableContentArea {
 
         this.contentBounds = new ResponsiveLayout.Rect(contentX, contentY, contentWidth, viewportHeight);
 
+        // Update scroll manager with current dimensions
+        scrollManager.update(contentBounds, contentHeight);
+
         // Track scroll changes for dirty region optimization
-        boolean scrollChanged = Math.abs(scrollOffset - lastScrollOffset) > SCROLL_CHANGE_THRESHOLD;
+        float currentOffset = scrollManager.getScrollOffset();
+        boolean scrollChanged = Math.abs(currentOffset - lastScrollOffset) > SCROLL_CHANGE_THRESHOLD;
         if (scrollChanged) {
-            // Mark content area as dirty when scroll position changes
             dirtyTracker.markDirty(contentX, contentY, contentWidth, viewportHeight);
         }
+        lastScrollOffset = currentOffset;
 
         // Background
         graphics.fill(x, y, x + width, y + height, UIConstants.Background.CONTENT());
 
-        // Enable scissoring to clip content
-        graphics.enableScissor(contentX, contentY, contentX + contentWidth, contentY + viewportHeight);
-
-        // Render content with scroll offset
-        int scrolledY = contentY - (int) scrollOffset;
-        this.contentHeight = contentRenderer.render(graphics, contentX, scrolledY, contentWidth, mouseX, mouseY);
-
-        // Disable scissoring
-        graphics.disableScissor();
-
-        // Update scroll bounds
-        float maxScroll = Math.max(0, contentHeight - viewportHeight);
-        smoothScroll.setMaxScroll(maxScroll);
-        smoothScroll.scrollTo(scrollOffset); // keep target in sync when layout changes
-        smoothScroll.update();
-        lastScrollOffset = scrollOffset;
-        scrollOffset = Mth.clamp(smoothScroll.getOffset(), 0, maxScroll);
+        // Render content with scissoring (try/finally for safety)
+        scrollManager.withScissor(graphics, contentBounds, () -> {
+            int scrolledY = contentY - scrollManager.getScrollOffset();
+            this.contentHeight = contentRenderer.render(graphics, contentX, scrolledY, contentWidth, mouseX, mouseY);
+        });
 
         // Render scrollbar (if needed)
-        if (contentHeight > viewportHeight) {
+        if (scrollManager.needsScrolling()) {
             renderScrollbar(graphics, x + width - SCROLLBAR_WIDTH, y, SCROLLBAR_WIDTH, height,
-                           viewportHeight, mouseX, mouseY);
+                           mouseX, mouseY);
         }
     }
 
     private void renderScrollbar(GuiGraphics graphics, int x, int y, int width, int height,
-                                  int viewportHeight, int mouseX, int mouseY) {
+                                  int mouseX, int mouseY) {
         // Track background
         graphics.fill(x, y, x + width, y + height, UIConstants.Background.DARKER());
 
-        // Calculate thumb size and position
-        float visibleRatio = (float) viewportHeight / contentHeight;
-        int thumbHeight = Math.max(MIN_THUMB_HEIGHT, (int) (height * visibleRatio));
-        float scrollRatio = scrollOffset / Math.max(MIN_SCROLL_RANGE, contentHeight - viewportHeight);
-        int thumbY = y + (int) ((height - thumbHeight) * scrollRatio);
+        // Get metrics from scroll manager
+        ScrollMetrics metrics = scrollManager.calculateMetrics();
+        int thumbY = y + metrics.thumbY();
+        int thumbHeight = metrics.thumbHeight();
 
-        // Update bounds
-        scrollbarBounds = new ResponsiveLayout.Rect(x, thumbY, width, thumbHeight);
-        scrollbarHovered = scrollbarBounds.contains(mouseX, mouseY);
+        // Check hover state
+        boolean thumbHovered = mouseX >= x && mouseX < x + width
+            && mouseY >= thumbY && mouseY < thumbY + thumbHeight;
+        boolean isDragging = scrollManager.isDragging();
 
-        // Thumb
-        int thumbColor = scrollbarDragging ? UIConstants.Slider.THUMB_DRAG :
-                        (scrollbarHovered ? UIConstants.Slider.THUMB_HOVER : UIConstants.Slider.THUMB);
+        // Thumb color based on state
+        int thumbColor = isDragging ? UIConstants.Slider.THUMB_DRAG :
+                        (thumbHovered ? UIConstants.Slider.THUMB_HOVER : UIConstants.Slider.THUMB);
         graphics.fill(x + THUMB_INSET, thumbY, x + width - THUMB_INSET, thumbY + thumbHeight, thumbColor);
 
-        // Thumb border
-        if (scrollbarHovered || scrollbarDragging) {
+        // Thumb border when hovered or dragging
+        if (thumbHovered || isDragging) {
             AxiomRenderer.drawBorder(graphics, x, thumbY, width, thumbHeight, UIConstants.Border.ACCENT());
         }
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // INPUT HANDLING
+    // INPUT HANDLING - Delegates to ScrollManager
     // ═══════════════════════════════════════════════════════════════
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button != 0) return false;
-
-        // Check scrollbar thumb
-        if (scrollbarBounds.contains(mouseX, mouseY)) {
-            scrollbarDragging = true;
-            dragStartY = mouseY;
-            dragStartOffset = scrollOffset;
-            return true;
-        }
-
-        // Check scrollbar track (click to jump)
-        if (bounds.contains(mouseX, mouseY) && mouseX >= bounds.x() + bounds.width() - SCROLLBAR_WIDTH) {
-            float clickRatio = (float) (mouseY - bounds.y()) / bounds.height();
-            float maxScroll = Math.max(0, contentHeight - contentBounds.height());
-            scrollOffset = clickRatio * maxScroll;
-            scrollOffset = Mth.clamp(scrollOffset, 0, maxScroll);
-            return true;
-        }
-
-        return false;
+        return scrollManager.mouseClicked(mouseX, mouseY, button);
     }
 
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (scrollbarDragging) {
-            scrollbarDragging = false;
-            return true;
-        }
-        return false;
+        return scrollManager.mouseReleased(mouseX, mouseY, button);
     }
 
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        if (scrollbarDragging) {
-            float deltaY = (float) (mouseY - dragStartY);
-            float trackHeight = bounds.height() - scrollbarBounds.height();
-            float maxScroll = Math.max(0, contentHeight - contentBounds.height());
-
-            if (trackHeight > 0) {
-                float scrollDelta = (deltaY / trackHeight) * maxScroll;
-                scrollOffset = Mth.clamp(dragStartOffset + scrollDelta, 0, maxScroll);
-            }
-            return true;
-        }
-        return false;
+        return scrollManager.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (bounds.contains(mouseX, mouseY)) {
-            float maxScroll = Math.max(0, contentHeight - contentBounds.height());
-            smoothScroll.setMaxScroll(maxScroll);
-            smoothScroll.scroll(scrollY * SCROLL_STEP);
-            scrollOffset = Mth.clamp(smoothScroll.getOffset(), 0, maxScroll);
-            return true;
-        }
-        return false;
+        return scrollManager.mouseScrolled(mouseX, mouseY, scrollY);
     }
 
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        float maxScroll = Math.max(0, contentHeight - contentBounds.height());
-
-        // Page Up/Down
-        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_PAGE_UP) {
-            smoothScroll.setMaxScroll(maxScroll);
-            smoothScroll.scroll(contentBounds.height());
-            scrollOffset = Mth.clamp(smoothScroll.getOffset(), 0, maxScroll);
-            return true;
-        }
-        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_PAGE_DOWN) {
-            smoothScroll.setMaxScroll(maxScroll);
-            smoothScroll.scroll(-contentBounds.height());
-            scrollOffset = Mth.clamp(smoothScroll.getOffset(), 0, maxScroll);
-            return true;
-        }
-
-        // Home/End
-        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_HOME) {
-            smoothScroll.scrollTo(0);
-            scrollOffset = 0;
-            return true;
-        }
-        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_END) {
-            smoothScroll.scrollTo(maxScroll);
-            scrollOffset = maxScroll;
-            return true;
-        }
-
-        return false;
+        return scrollManager.keyPressed(keyCode, scanCode, modifiers);
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // SCROLL CONTROL
+    // SCROLL CONTROL - Delegates to ScrollManager
     // ═══════════════════════════════════════════════════════════════
 
     /**
      * Scroll to the top.
      */
     public void scrollToTop() {
-        smoothScroll.scrollTo(0);
-        scrollOffset = 0;
+        scrollManager.scrollToTop();
     }
 
     /**
      * Scroll to the bottom.
      */
     public void scrollToBottom() {
-        float maxScroll = Math.max(0, contentHeight - contentBounds.height());
-        smoothScroll.scrollTo(maxScroll);
-        scrollOffset = maxScroll;
+        scrollManager.scrollToBottom();
     }
 
     /**
      * Scroll to make a specific Y position visible.
      */
     public void scrollToY(int targetY) {
-        float maxScroll = Math.max(0, contentHeight - contentBounds.height());
-
-        // Calculate if target is visible
-        int visibleTop = (int) scrollOffset;
-        int visibleBottom = visibleTop + contentBounds.height();
-
-        if (targetY < visibleTop) {
-            // Target is above viewport
-            smoothScroll.scrollTo(targetY);
-            scrollOffset = targetY;
-        } else if (targetY > visibleBottom) {
-            // Target is below viewport
-            float target = targetY - contentBounds.height() + PADDING;
-            smoothScroll.scrollTo(target);
-            scrollOffset = target;
-        }
-
-        scrollOffset = Mth.clamp(scrollOffset, 0, maxScroll);
+        scrollManager.scrollToY(targetY);
     }
 
     /**
      * Reset scroll position.
      */
     public void reset() {
-        smoothScroll.scrollTo(0);
-        scrollOffset = 0;
+        scrollManager.reset();
         contentHeight = 0;
     }
 
@@ -311,13 +209,11 @@ public class ScrollableContentArea {
     // ═══════════════════════════════════════════════════════════════
 
     public float getScrollOffset() {
-        return scrollOffset;
+        return scrollManager.getScrollOffset();
     }
 
     public void setScrollOffset(float offset) {
-        float maxScroll = Math.max(0, contentHeight - contentBounds.height());
-        this.scrollOffset = Mth.clamp(offset, 0, maxScroll);
-        smoothScroll.scrollTo(this.scrollOffset);
+        scrollManager.getBehavior().scrollTo(offset);
     }
 
     public int getContentHeight() {
@@ -329,12 +225,12 @@ public class ScrollableContentArea {
     }
 
     public boolean canScroll() {
-        return contentHeight > contentBounds.height();
+        return scrollManager.needsScrolling();
     }
 
     public float getScrollProgress() {
-        float maxScroll = Math.max(MIN_SCROLL_RANGE, contentHeight - contentBounds.height());
-        return scrollOffset / maxScroll;
+        int maxScroll = scrollManager.getMaxScroll();
+        return maxScroll > 0 ? (float) scrollManager.getScrollOffset() / maxScroll : 0;
     }
 
     public ResponsiveLayout.Rect getBounds() {

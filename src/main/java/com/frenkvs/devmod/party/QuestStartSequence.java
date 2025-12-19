@@ -378,7 +378,11 @@ public class QuestStartSequence {
             broadcastSequenceUpdate(sequence);
             for (ServerPlayer member : sequence.members) {
                 if (member != null && member.isAlive()) {
-                    member.sendSystemMessage(I18n.translate("devmod.party.arena_creation_failed"));
+                    // Prefer specific reason (e.g., instance mode unsupported for party)
+                    String reason = arenaResult.errorMessage() != null
+                        ? arenaResult.errorMessage()
+                        : I18n.translate("devmod.party.arena_creation_failed").getString();
+                    member.sendSystemMessage(net.minecraft.network.chat.Component.literal(reason));
                 }
             }
             return;
@@ -387,16 +391,24 @@ public class QuestStartSequence {
         // Store arena and mob info for later quest start
         sequence.preparedArena = arenaResult.arena();
         sequence.mobId = mobId;
+        sequence.instanceId = arenaResult.instanceId();
 
         LOGGER.info("[QuestSequence] Arena {} prepared, teleporting players", arenaResult.arena().getId());
 
-        // PHASE 2: Teleport all players to arena
-        EnduranceQuestManager.INSTANCE.teleportPlayersToArena(sequence.members, arenaResult.arena());
-
-        // Notify players
-        for (ServerPlayer member : sequence.members) {
-            if (member != null && member.isAlive()) {
-                member.sendSystemMessage(I18n.translate("devmod.party.teleported_to_arena"));
+        // PHASE 2: Teleport handling
+        if (!EnduranceQuestManager.INSTANCE.isUseInstanceDimensions()) {
+            EnduranceQuestManager.INSTANCE.teleportPlayersToArena(sequence.members, arenaResult.arena());
+            for (ServerPlayer member : sequence.members) {
+                if (member != null && member.isAlive()) {
+                    member.sendSystemMessage(I18n.translate("devmod.party.teleported_to_arena"));
+                }
+            }
+        } else {
+            // InstanceManager already teleported via startInstanceQuestForParty
+            for (ServerPlayer member : sequence.members) {
+                if (member != null && member.isAlive()) {
+                    member.sendSystemMessage(net.minecraft.network.chat.Component.literal("[DevMod] Teleporting party to instance..."));
+                }
             }
         }
     }
@@ -443,7 +455,8 @@ public class QuestStartSequence {
                 membersToStart,
                 sequence.preparedArena,
                 sequence.mobId,
-                sequence.questSettings
+                sequence.questSettings,
+                sequence.instanceId
             );
 
         // Count successes and failures
@@ -569,6 +582,7 @@ public class QuestStartSequence {
         QuestSequencePayload.Phase phase;
         int ticksRemaining;
         EnduranceQuestManager.QuestSettings questSettings;
+        UUID instanceId;
 
         // Pre-created arena (set during TELEPORTING phase)
         com.frenkvs.devmod.endurance.ArenaManager.Arena preparedArena;

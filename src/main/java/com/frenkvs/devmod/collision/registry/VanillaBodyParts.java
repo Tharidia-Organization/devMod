@@ -73,6 +73,11 @@ public final class VanillaBodyParts {
      */
     public static final BodyPartHierarchy ARTHROPOD = createArthropod();
 
+    /**
+     * Creeper body parts (custom slim torso + four legs)
+     */
+    public static final BodyPartHierarchy CREEPER = createCreeper();
+
     // ==================== Hierarchy Builders ====================
 
     @Nonnull
@@ -375,6 +380,72 @@ public final class VanillaBodyParts {
             .build();
     }
 
+    @Nonnull
+    private static BodyPartHierarchy createCreeper() {
+        // Creeper proportions: slim torso, small head, four thin legs
+        // Coordinates assume feet at y=0 and model centered on origin.
+
+        return BodyPartHierarchy.builder()
+            // Body: tall slim torso
+            .addPart(BodyPartDefinition.builder("body")
+                .type(HitHelper.BodyPart.BODY)
+                .offset(0, 0.9, 0)               // center of torso
+                .halfExtents(0.22, 0.45, 0.22)   // ~0.44w x 0.9h x 0.44d
+                .bone("body")
+                .parent(null)
+                .damageMultiplier(1.0f)
+                .build())
+
+            // Head: small cube above torso
+            .addPart(BodyPartDefinition.builder("head")
+                .type(HitHelper.BodyPart.HEAD)
+                .offset(0, 1.55, 0)
+                .halfExtents(0.2, 0.2, 0.2)
+                .bone("head")
+                .parent("body")
+                .damageMultiplier(1.5f)
+                .build())
+
+            // Legs: four independent pillars at base corners
+            .addPart(BodyPartDefinition.builder("leg_front_left")
+                .type(HitHelper.BodyPart.LEGS)
+                .offset(-0.16, 0.25, 0.16)
+                .halfExtents(0.08, 0.25, 0.08)
+                .bone("leg0")
+                .parent(null)
+                .damageMultiplier(0.5f)
+                .build())
+
+            .addPart(BodyPartDefinition.builder("leg_front_right")
+                .type(HitHelper.BodyPart.LEGS)
+                .offset(0.16, 0.25, 0.16)
+                .halfExtents(0.08, 0.25, 0.08)
+                .bone("leg1")
+                .parent(null)
+                .damageMultiplier(0.5f)
+                .build())
+
+            .addPart(BodyPartDefinition.builder("leg_back_left")
+                .type(HitHelper.BodyPart.LEGS)
+                .offset(-0.16, 0.25, -0.16)
+                .halfExtents(0.08, 0.25, 0.08)
+                .bone("leg2")
+                .parent(null)
+                .damageMultiplier(0.5f)
+                .build())
+
+            .addPart(BodyPartDefinition.builder("leg_back_right")
+                .type(HitHelper.BodyPart.LEGS)
+                .offset(0.16, 0.25, -0.16)
+                .halfExtents(0.08, 0.25, 0.08)
+                .bone("leg3")
+                .parent(null)
+                .damageMultiplier(0.5f)
+                .build())
+
+            .build();
+    }
+
     // ==================== Registration ====================
 
     /**
@@ -401,6 +472,7 @@ public final class VanillaBodyParts {
         registry.register(EntityType.WITCH, HUMANOID);
         registry.register(EntityType.VILLAGER, HUMANOID);
         registry.register(EntityType.WANDERING_TRADER, HUMANOID);
+        registry.register(EntityType.CREEPER, CREEPER);
 
         // Tall entities
         registry.register(EntityType.ENDERMAN, TALL_HUMANOID);

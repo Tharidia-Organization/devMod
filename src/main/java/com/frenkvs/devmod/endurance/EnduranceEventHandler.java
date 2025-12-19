@@ -79,14 +79,17 @@ public class EnduranceEventHandler {
         LiveAnalyticsHookManager.INSTANCE.onQuestStart(questId, playerId);
 
         // Record telemetry for quest start
+        int playerCount = session.getPlayerCount();
+        QuestType questType = session.getQuestType();
+
         EnduranceTelemetryService.INSTANCE.recordQuestStart(
             questId,
             playerId,
             session.getQuest().getDisplayName(),
             session.getQuest().getTotalWaves(),
             session.getQuest().isEndlessMode(),
-            1, // party size - single player for now
-            QuestType.PVE_COOP // default quest type
+            playerCount,
+            questType
         );
 
         // Trigger player attribute snapshot on quest start

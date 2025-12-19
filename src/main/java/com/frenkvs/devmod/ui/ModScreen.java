@@ -14,7 +14,7 @@ import java.util.Objects;
  * Features:
  * - Parent screen navigation
  * - Standard button layout (Apply/Cancel/Reset)
- * - Themed styling with AxiomColors
+ * - Themed styling with UIConstants
  * - Input field helpers with validation
  */
 public abstract class ModScreen extends Screen {
@@ -166,29 +166,29 @@ public abstract class ModScreen extends Screen {
      */
     protected void renderPanelBackground(GuiGraphics graphics, int x, int y, int panelWidth, int panelHeight) {
         // Background
-        graphics.fill(x, y, x + panelWidth, y + panelHeight, AxiomColors.BG_PANEL);
+        graphics.fill(x, y, x + panelWidth, y + panelHeight, UIConstants.Background.PANEL());
 
         // Border
-        graphics.fill(x, y, x + panelWidth, y + 1, AxiomColors.BORDER);
-        graphics.fill(x, y + panelHeight - 1, x + panelWidth, y + panelHeight, AxiomColors.BORDER);
-        graphics.fill(x, y, x + 1, y + panelHeight, AxiomColors.BORDER);
-        graphics.fill(x + panelWidth - 1, y, x + panelWidth, y + panelHeight, AxiomColors.BORDER);
+        graphics.fill(x, y, x + panelWidth, y + 1, UIConstants.Border.DEFAULT());
+        graphics.fill(x, y + panelHeight - 1, x + panelWidth, y + panelHeight, UIConstants.Border.DEFAULT());
+        graphics.fill(x, y, x + 1, y + panelHeight, UIConstants.Border.DEFAULT());
+        graphics.fill(x + panelWidth - 1, y, x + panelWidth, y + panelHeight, UIConstants.Border.DEFAULT());
     }
 
     /**
      * Renders a section header with colored line.
      */
     protected void renderSectionHeader(GuiGraphics graphics, String text, int x, int y, int sectionWidth) {
-        graphics.drawString(Objects.requireNonNull(font), text, x, y, AxiomColors.TEXT_ACCENT, false);
-        graphics.fill(x, y + 12, x + sectionWidth, y + 13, AxiomColors.ACCENT_BLUE);
+        graphics.drawString(Objects.requireNonNull(font), text, x, y, UIConstants.Text.ACCENT(), false);
+        graphics.fill(x, y + 12, x + sectionWidth, y + 13, UIConstants.Accent.BLUE());
     }
 
     /**
      * Renders a label-value pair.
      */
     protected void renderLabelValue(GuiGraphics graphics, String label, String value, int x, int y) {
-        graphics.drawString(Objects.requireNonNull(font), label + ":", x, y, AxiomColors.TEXT_MUTED, false);
-        graphics.drawString(Objects.requireNonNull(font), value, x + font.width(label + ": "), y, AxiomColors.TEXT_PRIMARY, false);
+        graphics.drawString(Objects.requireNonNull(font), label + ":", x, y, UIConstants.Text.MUTED(), false);
+        graphics.drawString(Objects.requireNonNull(font), value, x + font.width(label + ": "), y, UIConstants.Text.PRIMARY(), false);
     }
 
     /**

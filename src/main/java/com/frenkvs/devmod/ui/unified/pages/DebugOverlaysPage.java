@@ -68,122 +68,123 @@ public class DebugOverlaysPage implements SettingsPage {
         // Clamp scroll offset
         scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
 
-        // Enable scissoring to clip content outside bounds
+        // Enable scissoring to clip content outside bounds with try/finally for safety
         graphics.enableScissor(x, y, x + width, y + height);
+        try {
+            // Apply scroll offset to starting Y position
+            int currentY = y - scrollOffset;
 
-        // Apply scroll offset to starting Y position
-        int currentY = y - scrollOffset;
+            // ==========================================
+            // Section: Minecraft Native Debug API
+            // ==========================================
+            graphics.drawString(font, "§6Minecraft Native Debug API", x, currentY, 0xFFFF8800, false);
+            currentY += 14;
 
-        // ==========================================
-        // Section: Minecraft Native Debug API
-        // ==========================================
-        graphics.drawString(font, "§6Minecraft Native Debug API", x, currentY, 0xFFFF8800, false);
-        currentY += 14;
+            // Entity Pathing (like DebugUtils)
+            currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+                "Entity Pathing", "Show mob navigation paths (native)",
+                DebugRenderBools.ENTITY_PATHING);
 
-        // Entity Pathing (like DebugUtils)
-        currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
-            "Entity Pathing", "Show mob navigation paths (native)",
-            DebugRenderBools.ENTITY_PATHING);
+            // Entity Goals
+            currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+                "Entity Goals", "Show AI goal selectors",
+                DebugRenderBools.ENTITY_GOALS);
 
-        // Entity Goals
-        currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
-            "Entity Goals", "Show AI goal selectors",
-            DebugRenderBools.ENTITY_GOALS);
+            // Entity Brains
+            currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+                "Entity Brains", "Show villager/mob brain activity",
+                DebugRenderBools.ENTITY_BRAINS);
 
-        // Entity Brains
-        currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
-            "Entity Brains", "Show villager/mob brain activity",
-            DebugRenderBools.ENTITY_BRAINS);
+            // POI (Points of Interest)
+            currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+                "POI", "Show points of interest (beds, workstations)",
+                DebugRenderBools.POI);
 
-        // POI (Points of Interest)
-        currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
-            "POI", "Show points of interest (beds, workstations)",
-            DebugRenderBools.POI);
+            // Raids
+            currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+                "Raids", "Show raid center locations",
+                DebugRenderBools.RAIDS);
 
-        // Raids
-        currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
-            "Raids", "Show raid center locations",
-            DebugRenderBools.RAIDS);
+            // Bees
+            currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+                "Bees", "Show bee pathfinding and hive info",
+                DebugRenderBools.BEES);
 
-        // Bees
-        currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
-            "Bees", "Show bee pathfinding and hive info",
-            DebugRenderBools.BEES);
+            // Game Events
+            currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+                "Game Events", "Show sculk sensor game events",
+                DebugRenderBools.GAME_EVENTS);
 
-        // Game Events
-        currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
-            "Game Events", "Show sculk sensor game events",
-            DebugRenderBools.GAME_EVENTS);
+            // Structures
+            currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+                "Structures", "Show structure bounding boxes",
+                DebugRenderBools.STRUCTURES);
 
-        // Structures
-        currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
-            "Structures", "Show structure bounding boxes",
-            DebugRenderBools.STRUCTURES);
+            currentY += SECTION_SPACING;
 
-        currentY += SECTION_SPACING;
+            // ==========================================
+            // Section: Core Debug
+            // ==========================================
+            graphics.drawString(font, "Core Debug Tools", x, currentY, UIConstants.Text.PRIMARY(), false);
+            currentY += 14;
 
-        // ==========================================
-        // Section: Core Debug
-        // ==========================================
-        graphics.drawString(font, "Core Debug Tools", x, currentY, UIConstants.Text.PRIMARY(), false);
-        currentY += 14;
+            // Debug Renderer toggle
+            currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+                "Debug Renderer", "Show debug shapes (boxes, lines, spheres)",
+                DebugRenderer.INSTANCE.isEnabled(), "G");
 
-        // Debug Renderer toggle
-        currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
-            "Debug Renderer", "Show debug shapes (boxes, lines, spheres)",
-            DebugRenderer.INSTANCE.isEnabled(), "G");
+            // Light Level Overlay toggle
+            currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+                "Light Levels", "Show spawn-safe light levels on blocks",
+                LightLevelOverlay.INSTANCE.isEnabled(), "L");
 
-        // Light Level Overlay toggle
-        currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
-            "Light Levels", "Show spawn-safe light levels on blocks",
-            LightLevelOverlay.INSTANCE.isEnabled(), "L");
+            currentY += SECTION_SPACING;
 
-        currentY += SECTION_SPACING;
+            // Section: Custom AI Tools
+            graphics.drawString(font, "Custom AI Tools", x, currentY, UIConstants.Text.PRIMARY(), false);
+            currentY += 14;
 
-        // Section: Custom AI Tools
-        graphics.drawString(font, "Custom AI Tools", x, currentY, UIConstants.Text.PRIMARY(), false);
-        currentY += 14;
+            // Line of Sight toggle
+            currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+                "Line of Sight", "Visualize mob line-of-sight rays",
+                LineOfSightVisualizer.INSTANCE.isEnabled(), "");
 
-        // Line of Sight toggle
-        currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
-            "Line of Sight", "Visualize mob line-of-sight rays",
-            LineOfSightVisualizer.INSTANCE.isEnabled(), "");
+            // Pathfinding toggle (custom)
+            currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+                "Custom Pathfinding", "Show AI navigation paths (custom)",
+                PathfindingDebugger.INSTANCE.isEnabled(), "");
 
-        // Pathfinding toggle (custom)
-        currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
-            "Custom Pathfinding", "Show AI navigation paths (custom)",
-            PathfindingDebugger.INSTANCE.isEnabled(), "");
+            currentY += SECTION_SPACING;
 
-        currentY += SECTION_SPACING;
+            // Section: Spatial
+            graphics.drawString(font, "Spatial Analysis", x, currentY, UIConstants.Text.PRIMARY(), false);
+            currentY += 14;
 
-        // Section: Spatial
-        graphics.drawString(font, "Spatial Analysis", x, currentY, UIConstants.Text.PRIMARY(), false);
-        currentY += 14;
+            // Room Bounds toggle
+            currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+                "Room Bounds", "Show room boundary detection",
+                RoomBoundsVisualizer.INSTANCE.isEnabled(), "");
 
-        // Room Bounds toggle
-        currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
-            "Room Bounds", "Show room boundary detection",
-            RoomBoundsVisualizer.INSTANCE.isEnabled(), "");
+            currentY += SECTION_SPACING;
 
-        currentY += SECTION_SPACING;
+            // Quick actions
+            graphics.drawString(font, "Quick Actions", x, currentY, UIConstants.Text.PRIMARY(), false);
+            currentY += 14;
 
-        // Quick actions
-        graphics.drawString(font, "Quick Actions", x, currentY, UIConstants.Text.PRIMARY(), false);
-        currentY += 14;
+            // Disable All / Enable All buttons
+            int buttonWidth = 100;
+            int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
+            int buttonSpacing = 10;
 
-        // Disable All / Enable All buttons
-        int buttonWidth = 100;
-        int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
-        int buttonSpacing = 10;
+            disableAllBtn.onClick(this::disableAll);
+            disableAllBtn.render(graphics, x, currentY, buttonWidth, buttonHeight, mouseX, mouseY);
 
-        disableAllBtn.onClick(this::disableAll);
-        disableAllBtn.render(graphics, x, currentY, buttonWidth, buttonHeight, mouseX, mouseY);
-
-        enableAllBtn.onClick(this::enableAll);
-        enableAllBtn.render(graphics, x + buttonWidth + buttonSpacing, currentY, buttonWidth, buttonHeight, mouseX, mouseY);
-
-        // Disable scissoring
-        graphics.disableScissor();
+            enableAllBtn.onClick(this::enableAll);
+            enableAllBtn.render(graphics, x + buttonWidth + buttonSpacing, currentY, buttonWidth, buttonHeight, mouseX, mouseY);
+        } finally {
+            // Disable scissoring
+            graphics.disableScissor();
+        }
 
         // Render scrollbar if content exceeds visible area
         if (totalContentHeight > visibleHeight) {

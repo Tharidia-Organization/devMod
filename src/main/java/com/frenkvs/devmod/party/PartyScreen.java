@@ -8,7 +8,6 @@ import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -88,17 +87,18 @@ public class PartyScreen extends Screen {
     private EditBox inviteBox;
     private EditBox mobSearchBox;
     private EditorButton createPartyButton;
-    private Button createPartyButtonWidget;
     private EditorButton readyButton;
-    private Button readyButtonWidget;
     private EditorButton startButton;
-    private Button startButtonWidget;
     private EditorButton leaveButton;
-    private Button leaveButtonWidget;
     private EditorButton disbandButton;
-    private Button disbandButtonWidget;
     private EditorButton inviteButton;
-    private Button inviteButtonWidget;
+
+    private ButtonArea inviteButtonBounds;
+    private ButtonArea readyButtonBounds;
+    private ButtonArea startButtonBounds;
+    private ButtonArea leaveButtonBounds;
+    private ButtonArea disbandButtonBounds;
+    private ButtonArea createPartyButtonBounds;
 
     private int hoveredMemberIndex = -1;
     private int hoveredMobIndex = -1;
@@ -210,10 +210,9 @@ public class PartyScreen extends Screen {
         inviteButton = EditorButton.builder("invite", "INVITE")
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.MEDIUM)
-            .onClick(() -> onInviteClicked(null))
+            .onClick(this::onInviteClicked)
             .build();
-        inviteButtonWidget = Objects.requireNonNull(inviteButton.asVanilla(inviteButtonX, inviteSectionY + 12, 50, 20));
-        addRenderableWidget(inviteButtonWidget);
+        inviteButtonBounds = new ButtonArea(inviteButtonX, inviteSectionY + 12, 50, 20);
 
         // Mob search box - inside mob selection panel after header
         // Mob panel: panelLeft = panelX + 225, panelTop = panelY + 80
@@ -238,43 +237,38 @@ public class PartyScreen extends Screen {
             .toggleable(true)
             .toggled(isReady)
             .size(EditorButton.Size.LARGE)
-            .onClick(() -> onReadyClicked(null))
+            .onClick(this::onReadyClicked)
             .build();
-        readyButtonWidget = Objects.requireNonNull(readyButton.asVanilla(centerX - 180, buttonY, 80, 24));
-        addRenderableWidget(readyButtonWidget);
+        readyButtonBounds = new ButtonArea(centerX - 180, buttonY, 80, 24);
 
         leaveButton = EditorButton.builder("leave", "LEAVE")
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.LARGE)
-            .onClick(() -> onLeaveClicked(null))
+            .onClick(this::onLeaveClicked)
             .build();
-        leaveButtonWidget = Objects.requireNonNull(leaveButton.asVanilla(centerX - 90, buttonY, 70, 24));
-        addRenderableWidget(leaveButtonWidget);
+        leaveButtonBounds = new ButtonArea(centerX - 90, buttonY, 70, 24);
 
         startButton = EditorButton.builder("start-quest", "START QUEST")
             .style(EditorButton.Style.SUCCESS)
             .size(EditorButton.Size.LARGE)
-            .onClick(() -> onStartClicked(null))
+            .onClick(this::onStartClicked)
             .build();
-        startButtonWidget = Objects.requireNonNull(startButton.asVanilla(centerX - 10, buttonY, 120, 24));
-        addRenderableWidget(startButtonWidget);
+        startButtonBounds = new ButtonArea(centerX - 10, buttonY, 120, 24);
 
         disbandButton = EditorButton.builder("disband", "DISBAND")
             .style(EditorButton.Style.DANGER)
             .size(EditorButton.Size.LARGE)
-            .onClick(() -> onDisbandClicked(null))
+            .onClick(this::onDisbandClicked)
             .build();
-        disbandButtonWidget = Objects.requireNonNull(disbandButton.asVanilla(centerX + 120, buttonY, 70, 24));
-        addRenderableWidget(disbandButtonWidget);
+        disbandButtonBounds = new ButtonArea(centerX + 120, buttonY, 70, 24);
 
         // Create Party button (when not in party)
         createPartyButton = EditorButton.builder("create-party", "CREATE PARTY")
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.LARGE)
-            .onClick(() -> onCreatePartyClicked(null))
+            .onClick(this::onCreatePartyClicked)
             .build();
-        createPartyButtonWidget = Objects.requireNonNull(createPartyButton.asVanilla(centerX - 80, panelY + PANEL_HEIGHT / 2 + 20, 160, 30));
-        addRenderableWidget(createPartyButtonWidget);
+        createPartyButtonBounds = new ButtonArea(centerX - 80, panelY + PANEL_HEIGHT / 2 + 20, 160, 30);
 
         updateButtonStates();
         updatePreviewEntity();
@@ -396,38 +390,34 @@ public class PartyScreen extends Screen {
         long now = System.currentTimeMillis();
         if (now - lastSyncTime > SYNC_INTERVAL_MS) {
             lastSyncTime = now;
-            boolean wasInParty = isInParty;
             refreshFromCache();
-            if (wasInParty != isInParty) updateButtonStates();
+            updateButtonStates();
         }
     }
 
     private void updateButtonStates() {
-        if (createPartyButtonWidget != null) {
-            createPartyButtonWidget.visible = !isInParty;
-            createPartyButtonWidget.active = !isInParty;
-        }
+        readyButton = EditorButton.builder("ready", getReadyButtonText().getString())
+            .style(EditorButton.Style.PRIMARY)
+            .toggleable(true)
+            .toggled(isReady)
+            .size(EditorButton.Size.LARGE)
+            .onClick(this::onReadyClicked)
+            .build();
 
-        if (readyButtonWidget != null) {
-            readyButtonWidget.visible = isInParty;
-            readyButtonWidget.setMessage(getReadyButtonText());
+        if (startButton != null) {
+            startButton.enabled(isLeader && canStartQuest());
         }
-        if (readyButton != null) {
-            readyButton.toggled(isReady);
+        if (disbandButton != null) {
+            disbandButton.enabled(isLeader);
         }
-        if (leaveButtonWidget != null) {
-            leaveButtonWidget.visible = isInParty;
+        if (inviteButton != null) {
+            inviteButton.enabled(isInParty);
         }
-        if (startButtonWidget != null) {
-            startButtonWidget.visible = isInParty;
-            startButtonWidget.active = isLeader && canStartQuest();
+        if (leaveButton != null) {
+            leaveButton.enabled(isInParty);
         }
-        if (disbandButtonWidget != null) {
-            disbandButtonWidget.visible = isInParty && isLeader;
-            disbandButtonWidget.active = isLeader;
-        }
-        if (inviteButtonWidget != null) {
-            inviteButtonWidget.visible = isInParty;
+        if (createPartyButton != null) {
+            createPartyButton.enabled(!isInParty);
         }
         if (inviteBox != null) {
             inviteBox.visible = isInParty;
@@ -492,11 +482,12 @@ public class PartyScreen extends Screen {
         }
 
         super.render(graphics, mouseX, mouseY, partialTick);
+        renderButtons(graphics, mouseX, mouseY);
     }
 
     // === EVENT HANDLERS ===
 
-    private void onInviteClicked(Button button) {
+    private void onInviteClicked() {
         String playerName = inviteBox.getValue().trim();
         if (playerName.isEmpty()) return;
 
@@ -506,7 +497,7 @@ public class PartyScreen extends Screen {
         UIConstants.Sound.success();
     }
 
-    private void onReadyClicked(Button button) {
+    private void onReadyClicked() {
         isReady = !isReady;
         ClientPartyCache.setLocalPlayerReady(isReady);
         PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.toggleReady()));
@@ -514,14 +505,14 @@ public class PartyScreen extends Screen {
         UIConstants.Sound.toggleOn();
     }
 
-    private void onLeaveClicked(Button button) {
+    private void onLeaveClicked() {
         LOGGER.info("[PartyScreen] Leaving party");
         PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.leaveParty()));
         onClose();
         UIConstants.Sound.click();
     }
 
-    private void onStartClicked(Button button) {
+    private void onStartClicked() {
         if (!canStartQuest()) {
             UIConstants.Sound.error();
             return;
@@ -534,14 +525,14 @@ public class PartyScreen extends Screen {
         UIConstants.Sound.success();
     }
 
-    private void onDisbandClicked(Button button) {
+    private void onDisbandClicked() {
         LOGGER.info("[PartyScreen] Disbanding party");
         PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.disbandParty()));
         onClose();
         UIConstants.Sound.warning();
     }
 
-    private void onCreatePartyClicked(Button button) {
+    private void onCreatePartyClicked() {
         LOGGER.info("[PartyScreen] Creating party with type: {}", questType);
         PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.createParty(questType)));
         isInParty = true;
@@ -656,6 +647,10 @@ public class PartyScreen extends Screen {
             return true;
         }
 
+        if (handleButtonClick(mouseX, mouseY, button)) {
+            return true;
+        }
+
         // Member kick
         if (hoveredMemberIndex >= 0 && hoveredMemberIndex < members.size() && isLeader && button == 1) {
             PartySyncPayload.PartyMemberInfo member = members.get(hoveredMemberIndex);
@@ -672,6 +667,9 @@ public class PartyScreen extends Screen {
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         isDraggingPreview = false;
+        if (handleButtonRelease(mouseX, mouseY, button)) {
+            return true;
+        }
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
@@ -718,6 +716,68 @@ public class PartyScreen extends Screen {
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
 
+    private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (isInParty) {
+            if (inviteButton != null && inviteButtonBounds != null) {
+                inviteButton.enabled(isInParty);
+                inviteButton.render(graphics, inviteButtonBounds.x, inviteButtonBounds.y,
+                    inviteButtonBounds.width, inviteButtonBounds.height, mouseX, mouseY);
+            }
+            if (readyButton != null && readyButtonBounds != null) {
+                readyButton.render(graphics, readyButtonBounds.x, readyButtonBounds.y,
+                    readyButtonBounds.width, readyButtonBounds.height, mouseX, mouseY);
+            }
+            if (leaveButton != null && leaveButtonBounds != null) {
+                leaveButton.enabled(isInParty);
+                leaveButton.render(graphics, leaveButtonBounds.x, leaveButtonBounds.y,
+                    leaveButtonBounds.width, leaveButtonBounds.height, mouseX, mouseY);
+            }
+            if (startButton != null && startButtonBounds != null) {
+                startButton.enabled(isLeader && canStartQuest());
+                startButton.render(graphics, startButtonBounds.x, startButtonBounds.y,
+                    startButtonBounds.width, startButtonBounds.height, mouseX, mouseY);
+            }
+            if (disbandButton != null && disbandButtonBounds != null && isLeader) {
+                disbandButton.enabled(isLeader);
+                disbandButton.render(graphics, disbandButtonBounds.x, disbandButtonBounds.y,
+                    disbandButtonBounds.width, disbandButtonBounds.height, mouseX, mouseY);
+            }
+        } else if (createPartyButton != null && createPartyButtonBounds != null) {
+            createPartyButton.enabled(!isInParty);
+            createPartyButton.render(graphics, createPartyButtonBounds.x, createPartyButtonBounds.y,
+                createPartyButtonBounds.width, createPartyButtonBounds.height, mouseX, mouseY);
+        }
+    }
+
+    private boolean handleButtonClick(double mouseX, double mouseY, int button) {
+        if (button != 0) return false;
+
+        if (isInParty) {
+            if (inviteButton != null && inviteButton.mouseClicked(mouseX, mouseY, button)) return true;
+            if (readyButton != null && readyButton.mouseClicked(mouseX, mouseY, button)) return true;
+            if (leaveButton != null && leaveButton.mouseClicked(mouseX, mouseY, button)) return true;
+            if (startButton != null && startButton.mouseClicked(mouseX, mouseY, button)) return true;
+            if (disbandButton != null && isLeader && disbandButton.mouseClicked(mouseX, mouseY, button)) return true;
+        } else {
+            if (createPartyButton != null && createPartyButton.mouseClicked(mouseX, mouseY, button)) return true;
+        }
+        return false;
+    }
+
+    private boolean handleButtonRelease(double mouseX, double mouseY, int button) {
+        boolean handled = false;
+        if (isInParty) {
+            if (inviteButton != null) handled |= inviteButton.mouseReleased(mouseX, mouseY, button);
+            if (readyButton != null) handled |= readyButton.mouseReleased(mouseX, mouseY, button);
+            if (leaveButton != null) handled |= leaveButton.mouseReleased(mouseX, mouseY, button);
+            if (startButton != null) handled |= startButton.mouseReleased(mouseX, mouseY, button);
+            if (disbandButton != null && isLeader) handled |= disbandButton.mouseReleased(mouseX, mouseY, button);
+        } else {
+            if (createPartyButton != null) handled |= createPartyButton.mouseReleased(mouseX, mouseY, button);
+        }
+        return handled;
+    }
+
     @Override
     public void onClose() {
         Minecraft mc = Minecraft.getInstance();
@@ -737,4 +797,6 @@ public class PartyScreen extends Screen {
     public boolean isPauseScreen() {
         return false;
     }
+
+    private record ButtonArea(int x, int y, int width, int height) { }
 }

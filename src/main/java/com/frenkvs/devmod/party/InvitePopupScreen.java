@@ -5,7 +5,6 @@ import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -31,6 +30,9 @@ public class InvitePopupScreen extends Screen {
     // Layout constants
     private static final int POPUP_WIDTH = 280;
     private static final int POPUP_HEIGHT = 140;
+    private static final int BUTTON_WIDTH = 100;
+    private static final int BUTTON_HEIGHT = 20;
+    private static final int BUTTON_GAP = 20;
 
     // Colors
     private static final int COLOR_BG = UIConstants.Background.PANEL_SOLID();
@@ -55,8 +57,6 @@ public class InvitePopupScreen extends Screen {
     private boolean responded = false;
     private EditorButton acceptButton;
     private EditorButton declineButton;
-    private Button acceptButtonWidget;
-    private Button declineButtonWidget;
 
     /**
      * Create an invite popup from notification payload.
@@ -89,19 +89,12 @@ public class InvitePopupScreen extends Screen {
         popupX = (width - POPUP_WIDTH) / 2;
         popupY = (height - POPUP_HEIGHT) / 2;
 
-        int buttonWidth = 100;
-        int buttonY = popupY + POPUP_HEIGHT - 35;
-        int buttonGap = 20;
-
         // Accept button
         acceptButton = EditorButton.builder("invite-accept", Component.translatable("devmod.party.accept").getString())
             .style(EditorButton.Style.SUCCESS)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::onAccept)
             .build();
-        acceptButtonWidget = Objects.requireNonNull(acceptButton.asVanilla(
-            popupX + POPUP_WIDTH / 2 - buttonWidth - buttonGap / 2, buttonY, buttonWidth, 20));
-        addRenderableWidget(acceptButtonWidget);
 
         // Decline button
         declineButton = EditorButton.builder("invite-decline", Component.translatable("devmod.party.decline").getString())
@@ -109,9 +102,6 @@ public class InvitePopupScreen extends Screen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::onDecline)
             .build();
-        declineButtonWidget = Objects.requireNonNull(declineButton.asVanilla(
-            popupX + POPUP_WIDTH / 2 + buttonGap / 2, buttonY, buttonWidth, 20));
-        addRenderableWidget(declineButtonWidget);
     }
 
     @Override
@@ -155,8 +145,7 @@ public class InvitePopupScreen extends Screen {
         // Timer bar
         renderTimerBar(graphics, remainingMs);
 
-        // Render widgets
-        super.render(graphics, mouseX, mouseY, partialTick);
+        renderButtons(graphics, mouseX, mouseY);
     }
 
     private void renderTimerBar(GuiGraphics graphics, long remainingMs) {
@@ -198,6 +187,19 @@ public class InvitePopupScreen extends Screen {
         };
     }
 
+    private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY) {
+        int buttonY = popupY + POPUP_HEIGHT - 35;
+        int acceptX = popupX + POPUP_WIDTH / 2 - BUTTON_WIDTH - BUTTON_GAP / 2;
+        int declineX = popupX + POPUP_WIDTH / 2 + BUTTON_GAP / 2;
+
+        boolean enabled = !responded;
+        acceptButton.enabled(enabled);
+        declineButton.enabled(enabled);
+
+        acceptButton.render(graphics, acceptX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT, mouseX, mouseY);
+        declineButton.render(graphics, declineX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT, mouseX, mouseY);
+    }
+
     @Override
     public void tick() {
         super.tick();
@@ -233,6 +235,28 @@ public class InvitePopupScreen extends Screen {
 
         UIConstants.Sound.click();
         onClose();
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0) {
+            if (acceptButton != null && acceptButton.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+            if (declineButton != null && declineButton.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        boolean handled = false;
+        if (acceptButton != null) handled |= acceptButton.mouseReleased(mouseX, mouseY, button);
+        if (declineButton != null) handled |= declineButton.mouseReleased(mouseX, mouseY, button);
+        if (handled) return true;
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override

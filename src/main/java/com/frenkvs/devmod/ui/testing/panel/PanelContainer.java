@@ -170,25 +170,26 @@ public final class PanelContainer {
         int contentWidth = width - padding * 2 - (hasScrollbar ? SCROLLBAR_WIDTH + SCROLLBAR_PADDING : 0);
         int contentHeight = height - padding * 2;
 
-        // Scissor for clipping
+        // Scissor for clipping with try/finally for safety
         graphics.enableScissor(contentX, contentY, contentX + contentWidth, contentY + contentHeight);
+        try {
+            // Render visible panels (viewport culling)
+            int currentY = contentY - scrollOffset;
+            for (UIPanel panel : panels) {
+                if (!panel.isVisible()) continue;
 
-        // Render visible panels (viewport culling)
-        int currentY = contentY - scrollOffset;
-        for (UIPanel panel : panels) {
-            if (!panel.isVisible()) continue;
+                int panelHeight = panel.getHeight(contentWidth);
 
-            int panelHeight = panel.getHeight(contentWidth);
+                // Only render if in viewport
+                if (currentY + panelHeight > contentY && currentY < contentY + contentHeight) {
+                    panel.render(graphics, contentX, currentY, contentWidth, mouseX, mouseY);
+                }
 
-            // Only render if in viewport
-            if (currentY + panelHeight > contentY && currentY < contentY + contentHeight) {
-                panel.render(graphics, contentX, currentY, contentWidth, mouseX, mouseY);
+                currentY += panelHeight + PANEL_SPACING;
             }
-
-            currentY += panelHeight + PANEL_SPACING;
+        } finally {
+            graphics.disableScissor();
         }
-
-        graphics.disableScissor();
 
         // Scrollbar
         if (hasScrollbar) {

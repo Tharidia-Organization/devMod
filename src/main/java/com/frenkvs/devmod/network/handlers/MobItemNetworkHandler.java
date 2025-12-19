@@ -5,6 +5,12 @@ import com.frenkvs.devmod.ArmorStats;
 import com.frenkvs.devmod.Config;
 import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.MobConfigManager;
+import com.frenkvs.devmod.UsableConfigManager;
+import com.frenkvs.devmod.UsableStats;
+import com.frenkvs.devmod.FoodConfigManager;
+import com.frenkvs.devmod.FoodStats;
+import com.frenkvs.devmod.FuelConfigManager;
+import com.frenkvs.devmod.FuelStats;
 import com.frenkvs.devmod.WeaponConfigManager;
 import com.frenkvs.devmod.WeaponStats;
 import com.frenkvs.devmod.EquipMobPayload;
@@ -558,6 +564,191 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
 
             ArmorConfigManager.setSpecificStats(target, stats);
             sendEditorConfirm(player, true, false, "armor", getItemId(target), "Armor specific updated");
+        });
+    }
+
+    // =================================================================================
+    // USABLE ITEMS MODIFICATION LOGIC
+    // =================================================================================
+    public static void handleUsableStatsData(com.frenkvs.devmod.network.UsableStatsPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayer player)) return;
+
+            PacketSecurityService security = security();
+            ValidationResult validation = security.validatePacket(player, "usable_stats", true);
+            if (!validation.isSuccess()) {
+                player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
+                sendEditorConfirm(player, false, payload.isGlobal(), "usable", "<unknown>", validation.getErrorMessage());
+                return;
+            }
+
+            ItemStack stack = player.getMainHandItem();
+            if (stack.isEmpty()) {
+                sendEditorConfirm(player, false, payload.isGlobal(), "usable", "<empty>", "No item in hand");
+                return;
+            }
+
+            if (!Objects.equals(stack.getItem(), payload.item().getItem())) {
+                sendEditorConfirm(player, false, payload.isGlobal(), "usable", getItemId(stack), "Item mismatch (held vs payload)");
+                return;
+            }
+
+            CompoundTag tag = payload.statsTag();
+            if (tag == null || tag.isEmpty()) {
+                sendEditorConfirm(player, false, payload.isGlobal(), "usable", getItemId(stack), "Missing stats");
+                return;
+            }
+
+            CompoundTag toLoad = tag.contains("usable_stats_component") ? tag.getCompound("usable_stats_component")
+                : (tag.contains("UsableModStats") ? tag.getCompound("UsableModStats") : tag);
+
+            UsableStats stats = UsableStats.load(toLoad);
+
+            // Clamp values for security
+            stats.useDuration = Math.max(0, Math.min(200, stats.useDuration));
+            stats.cooldownDuration = Math.max(0, Math.min(600, stats.cooldownDuration));
+            stats.projectileSpeed = Math.max(0.5f, Math.min(5.0f, stats.projectileSpeed));
+            stats.projectileGravity = Math.max(0.0f, Math.min(0.1f, stats.projectileGravity));
+            stats.projectileInaccuracy = Math.max(0.0f, Math.min(5.0f, stats.projectileInaccuracy));
+            stats.projectileDamage = Math.max(0, Math.min(20, stats.projectileDamage));
+
+            if (payload.isGlobal()) {
+                Item item = stack.getItem();
+                UsableConfigManager.setGlobalStats(item, stats);
+                sendEditorConfirm(player, true, true, "usable", getItemId(stack), "Usable global saved");
+                LOGGER.info("[UsableConfig] Player {} saved GLOBAL usable config for {}",
+                    player.getName().getString(), getItemId(stack));
+            } else {
+                UsableConfigManager.setSpecificStats(stack, stats);
+                sendEditorConfirm(player, true, false, "usable", getItemId(stack), "Usable specific updated");
+                LOGGER.info("[UsableConfig] Player {} updated SPECIFIC usable config for {}",
+                    player.getName().getString(), getItemId(stack));
+            }
+        });
+    }
+
+    // =================================================================================
+    // FOOD ITEMS MODIFICATION LOGIC
+    // =================================================================================
+    public static void handleFoodStatsData(com.frenkvs.devmod.network.FoodStatsPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayer player)) return;
+
+            PacketSecurityService security = security();
+            ValidationResult validation = security.validatePacket(player, "food_stats", true);
+            if (!validation.isSuccess()) {
+                player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
+                sendEditorConfirm(player, false, payload.isGlobal(), "food", "<unknown>", validation.getErrorMessage());
+                return;
+            }
+
+            ItemStack stack = player.getMainHandItem();
+            if (stack.isEmpty()) {
+                sendEditorConfirm(player, false, payload.isGlobal(), "food", "<empty>", "No item in hand");
+                return;
+            }
+
+            if (!Objects.equals(stack.getItem(), payload.item().getItem())) {
+                sendEditorConfirm(player, false, payload.isGlobal(), "food", getItemId(stack), "Item mismatch (held vs payload)");
+                return;
+            }
+
+            CompoundTag tag = payload.statsTag();
+            if (tag == null || tag.isEmpty()) {
+                sendEditorConfirm(player, false, payload.isGlobal(), "food", getItemId(stack), "Missing stats");
+                return;
+            }
+
+            CompoundTag toLoad = tag.contains("food_stats_component") ? tag.getCompound("food_stats_component")
+                : (tag.contains("FoodModStats") ? tag.getCompound("FoodModStats") : tag);
+
+            FoodStats stats = new FoodStats();
+            stats.load(toLoad);
+
+            // Clamp values for security
+            stats.nutrition = Math.max(0, Math.min(20, stats.nutrition));
+            stats.saturation = Math.max(0.0f, Math.min(2.0f, stats.saturation));
+            stats.consumptionTime = Math.max(1, Math.min(200, stats.consumptionTime));
+
+            // Clamp effect values
+            for (FoodStats.FoodEffect effect : stats.effects) {
+                effect.duration = Math.max(1, Math.min(12000, effect.duration));
+                effect.amplifier = Math.max(0, Math.min(255, effect.amplifier));
+                effect.probability = Math.max(0.0f, Math.min(1.0f, effect.probability));
+            }
+
+            if (payload.isGlobal()) {
+                String itemId = getItemId(stack);
+                FoodConfigManager.setGlobalStats(itemId, stats);
+                sendEditorConfirm(player, true, true, "food", itemId, "Food global saved");
+                LOGGER.info("[FoodConfig] Player {} saved GLOBAL food config for {}",
+                    player.getName().getString(), itemId);
+            } else {
+                FoodConfigManager.setSpecificStats(stack, stats);
+                sendEditorConfirm(player, true, false, "food", getItemId(stack), "Food specific updated");
+                LOGGER.info("[FoodConfig] Player {} updated SPECIFIC food config for {}",
+                    player.getName().getString(), getItemId(stack));
+            }
+        });
+    }
+
+    // =================================================================================
+    // FUEL ITEMS MODIFICATION LOGIC
+    // =================================================================================
+    public static void handleFuelStatsData(com.frenkvs.devmod.network.FuelStatsPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayer player)) return;
+
+            PacketSecurityService security = security();
+            ValidationResult validation = security.validatePacket(player, "fuel_stats", true);
+            if (!validation.isSuccess()) {
+                player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", validation.getErrorMessage()));
+                sendEditorConfirm(player, false, payload.isGlobal(), "fuel", "<unknown>", validation.getErrorMessage());
+                return;
+            }
+
+            ItemStack stack = player.getMainHandItem();
+            if (stack.isEmpty()) {
+                sendEditorConfirm(player, false, payload.isGlobal(), "fuel", "<empty>", "No item in hand");
+                return;
+            }
+
+            if (!Objects.equals(stack.getItem(), payload.item().getItem())) {
+                sendEditorConfirm(player, false, payload.isGlobal(), "fuel", getItemId(stack), "Item mismatch (held vs payload)");
+                return;
+            }
+
+            CompoundTag tag = payload.statsTag();
+            if (tag == null || tag.isEmpty()) {
+                sendEditorConfirm(player, false, payload.isGlobal(), "fuel", getItemId(stack), "Missing stats");
+                return;
+            }
+
+            CompoundTag toLoad = tag.contains("fuel_stats_component") ? tag.getCompound("fuel_stats_component")
+                : (tag.contains("FuelModStats") ? tag.getCompound("FuelModStats") : tag);
+
+            FuelStats stats = FuelStats.load(toLoad);
+
+            // Clamp values for security
+            stats.burnTime = Math.max(0, Math.min(32000, stats.burnTime));
+            stats.efficiencyMultiplier = Math.max(0.1f, Math.min(3.0f, stats.efficiencyMultiplier));
+            stats.furnaceCookTime = Math.max(1, Math.min(1000, stats.furnaceCookTime));
+            stats.blastFurnaceCookTime = Math.max(1, Math.min(500, stats.blastFurnaceCookTime));
+            stats.smokerCookTime = Math.max(1, Math.min(500, stats.smokerCookTime));
+            stats.campfireCookTime = Math.max(1, Math.min(2000, stats.campfireCookTime));
+
+            if (payload.isGlobal()) {
+                String itemId = getItemId(stack);
+                FuelConfigManager.setGlobalStats(itemId, stats);
+                sendEditorConfirm(player, true, true, "fuel", itemId, "Fuel global saved");
+                LOGGER.info("[FuelConfig] Player {} saved GLOBAL fuel config for {}",
+                    player.getName().getString(), itemId);
+            } else {
+                FuelConfigManager.setSpecificStats(stack, stats);
+                sendEditorConfirm(player, true, false, "fuel", getItemId(stack), "Fuel specific updated");
+                LOGGER.info("[FuelConfig] Player {} updated SPECIFIC fuel config for {}",
+                    player.getName().getString(), getItemId(stack));
+            }
         });
     }
 

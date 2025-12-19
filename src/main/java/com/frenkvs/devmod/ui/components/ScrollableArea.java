@@ -164,7 +164,9 @@ public class ScrollableArea {
     /**
      * Enables scissor clipping for the scrollable area.
      * Call before rendering content.
+     * @deprecated Use {@link #withScissor(GuiGraphics, Runnable)} instead for safe try/finally handling
      */
+    @Deprecated
     public void beginScissor(GuiGraphics graphics) {
         graphics.enableScissor(x, y, x + width, y + height);
     }
@@ -172,9 +174,27 @@ public class ScrollableArea {
     /**
      * Disables scissor clipping.
      * Call after rendering content.
+     * @deprecated Use {@link #withScissor(GuiGraphics, Runnable)} instead for safe try/finally handling
      */
+    @Deprecated
     public void endScissor(GuiGraphics graphics) {
         graphics.disableScissor();
+    }
+
+    /**
+     * Execute a render operation within scissor bounds.
+     * Ensures scissor is always disabled, even on exception.
+     *
+     * @param graphics GuiGraphics instance
+     * @param renderAction Rendering code to execute within scissor
+     */
+    public void withScissor(GuiGraphics graphics, Runnable renderAction) {
+        graphics.enableScissor(x, y, x + width, y + height);
+        try {
+            renderAction.run();
+        } finally {
+            graphics.disableScissor();
+        }
     }
 
     /**

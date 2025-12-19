@@ -58,76 +58,77 @@ public class CombatSettingsPage implements SettingsPage {
         maxScrollOffset = Math.max(0, totalContentHeight - visibleHeight);
         scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
 
-        // Enable scissoring
+        // Enable scissoring with try/finally for safety
         graphics.enableScissor(x, y, x + width, y + height);
+        try {
+            int currentY = y - scrollOffset;
+            Minecraft mc = Minecraft.getInstance();
 
-        int currentY = y - scrollOffset;
-        Minecraft mc = Minecraft.getInstance();
+            // === Current Weapon Section ===
+            AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Current Weapon");
+            currentY += ROW_HEIGHT + 4;
 
-        // === Current Weapon Section ===
-        AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Current Weapon");
-        currentY += ROW_HEIGHT + 4;
+            ItemStack heldItem = mc.player != null ? mc.player.getMainHandItem() : ItemStack.EMPTY;
 
-        ItemStack heldItem = mc.player != null ? mc.player.getMainHandItem() : ItemStack.EMPTY;
+            if (heldItem.isEmpty()) {
+                graphics.drawString(font, "No weapon in hand", x, currentY, UIConstants.Text.MUTED(), false);
+                currentY += ROW_HEIGHT;
 
-        if (heldItem.isEmpty()) {
-            graphics.drawString(font, "No weapon in hand", x, currentY, UIConstants.Text.MUTED(), false);
-            currentY += ROW_HEIGHT;
+                AxiomRenderer.drawHint(graphics, font, x, currentY, "Hold a weapon to see its stats");
+                currentY += ROW_HEIGHT + SECTION_SPACING;
+            } else {
+                // Weapon name and icon
+                String weaponName = heldItem.getHoverName().getString();
+                graphics.drawString(font, weaponName, x, currentY, UIConstants.Text.PRIMARY(), false);
+                currentY += ROW_HEIGHT;
 
-            AxiomRenderer.drawHint(graphics, font, x, currentY, "Hold a weapon to see its stats");
-            currentY += ROW_HEIGHT + SECTION_SPACING;
-        } else {
-            // Weapon name and icon
-            String weaponName = heldItem.getHoverName().getString();
-            graphics.drawString(font, weaponName, x, currentY, UIConstants.Text.PRIMARY(), false);
-            currentY += ROW_HEIGHT;
+                // Get weapon stats
+                WeaponStats stats = WeaponConfigManager.getStats(heldItem);
 
-            // Get weapon stats
-            WeaponStats stats = WeaponConfigManager.getStats(heldItem);
+                // Stats display
+                currentY = renderStatRow(graphics, font, x, currentY, width, "Head Multiplier",
+                    String.format("%.1fx", stats.headMult), UIConstants.BodyPart.HEAD);
+                currentY = renderStatRow(graphics, font, x, currentY, width, "Body Multiplier",
+                    String.format("%.1fx", stats.bodyMult), UIConstants.BodyPart.BODY);
+                currentY = renderStatRow(graphics, font, x, currentY, width, "Legs Multiplier",
+                    String.format("%.1fx", stats.legsMult), UIConstants.BodyPart.LEGS);
+                currentY = renderStatRow(graphics, font, x, currentY, width, "Armor Penetration",
+                    String.format("%.0f%%", stats.armorPenetration * 100), UIConstants.Accent.ORANGE());
+                currentY = renderStatRow(graphics, font, x, currentY, width, "Base Damage Bonus",
+                    String.format("+%.1f", stats.baseDamageBonus), UIConstants.Accent.RED());
 
-            // Stats display
-            currentY = renderStatRow(graphics, font, x, currentY, width, "Head Multiplier",
-                String.format("%.1fx", stats.headMult), UIConstants.BodyPart.HEAD);
-            currentY = renderStatRow(graphics, font, x, currentY, width, "Body Multiplier",
-                String.format("%.1fx", stats.bodyMult), UIConstants.BodyPart.BODY);
-            currentY = renderStatRow(graphics, font, x, currentY, width, "Legs Multiplier",
-                String.format("%.1fx", stats.legsMult), UIConstants.BodyPart.LEGS);
-            currentY = renderStatRow(graphics, font, x, currentY, width, "Armor Penetration",
-                String.format("%.0f%%", stats.armorPenetration * 100), UIConstants.Accent.ORANGE());
-            currentY = renderStatRow(graphics, font, x, currentY, width, "Base Damage Bonus",
-                String.format("+%.1f", stats.baseDamageBonus), UIConstants.Accent.RED());
+                currentY += SECTION_SPACING;
+            }
 
+            // Separator
+            AxiomRenderer.drawSeparator(graphics, x, currentY, width);
             currentY += SECTION_SPACING;
+
+            // === Quick Actions Section ===
+            AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Quick Actions");
+            currentY += ROW_HEIGHT + 4;
+
+            // Open Weapon Editor button
+            int buttonWidth = 160;
+            int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
+            boolean hasWeapon = !heldItem.isEmpty();
+
+            openEditorButton
+                .enabled(hasWeapon)
+                .onClick(() -> {
+                    if (!heldItem.isEmpty()) {
+                        Minecraft.getInstance().setScreen(new ItemEditorScreen(heldItem, EditorStartTab.WEAPON));
+                    }
+                });
+            openEditorButton.render(graphics, x, currentY, buttonWidth, buttonHeight, mouseX, mouseY);
+            currentY += buttonHeight + 8;
+
+            // Hint
+            AxiomRenderer.drawHint(graphics, font, x, currentY, "Press M in-game to edit weapon stats");
+        } finally {
+            // Disable scissoring
+            graphics.disableScissor();
         }
-
-        // Separator
-        AxiomRenderer.drawSeparator(graphics, x, currentY, width);
-        currentY += SECTION_SPACING;
-
-        // === Quick Actions Section ===
-        AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Quick Actions");
-        currentY += ROW_HEIGHT + 4;
-
-        // Open Weapon Editor button
-        int buttonWidth = 160;
-        int buttonHeight = UIConstants.Size.BUTTON_HEIGHT;
-        boolean hasWeapon = !heldItem.isEmpty();
-
-        openEditorButton
-            .enabled(hasWeapon)
-            .onClick(() -> {
-                if (!heldItem.isEmpty()) {
-                    Minecraft.getInstance().setScreen(new ItemEditorScreen(heldItem, EditorStartTab.WEAPON));
-                }
-            });
-        openEditorButton.render(graphics, x, currentY, buttonWidth, buttonHeight, mouseX, mouseY);
-        currentY += buttonHeight + 8;
-
-        // Hint
-        AxiomRenderer.drawHint(graphics, font, x, currentY, "Press M in-game to edit weapon stats");
-
-        // Disable scissoring
-        graphics.disableScissor();
 
         // Render scrollbar if needed
         if (totalContentHeight > visibleHeight) {

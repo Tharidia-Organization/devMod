@@ -26,7 +26,10 @@ import com.frenkvs.devmod.ui.editor.components.SlotSelector;
 import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import com.frenkvs.devmod.ui.editor.favorites.FavoritePresetStore;
 import com.frenkvs.devmod.ui.editor.modules.ArmorModule;
+import com.frenkvs.devmod.ui.editor.modules.FoodModule;
+import com.frenkvs.devmod.ui.editor.modules.FuelModule;
 import com.frenkvs.devmod.ui.editor.modules.RangedModule;
+import com.frenkvs.devmod.ui.editor.modules.UsableModule;
 import com.frenkvs.devmod.ui.editor.modules.WeaponModule;
 import com.frenkvs.devmod.ui.editor.systems.ConfirmDialog;
 import com.frenkvs.devmod.ui.editor.systems.HelpOverlay;
@@ -371,7 +374,37 @@ public class ItemEditorScreen extends Screen {
                 yield new PlaceholderModule("general", "Item Editor");
             }
             case RECIPE -> new com.frenkvs.devmod.ui.editor.modules.RecipeModule();
+            case USABLE -> new UsableModule(detectUsableVariant(stack));
+            case FOOD -> new FoodModule();
+            case FUEL -> new FuelModule();
         };
+    }
+
+    /**
+     * Detect the appropriate UsableModule variant for the given item.
+     */
+    private UsableModule.UsableVariant detectUsableVariant(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return UsableModule.UsableVariant.STANDARD;
+        }
+        var itemType = stack.getItem();
+        // Throwable items
+        if (itemType instanceof net.minecraft.world.item.SnowballItem ||
+            itemType instanceof net.minecraft.world.item.EggItem ||
+            itemType instanceof net.minecraft.world.item.EnderpearlItem ||
+            itemType instanceof net.minecraft.world.item.ThrowablePotionItem) {
+            return UsableModule.UsableVariant.THROWABLE;
+        }
+        // Chargeable items (bows, crossbows)
+        if (itemType instanceof net.minecraft.world.item.BowItem ||
+            itemType instanceof net.minecraft.world.item.CrossbowItem) {
+            return UsableModule.UsableVariant.CHARGEABLE;
+        }
+        // Blockable items (shields)
+        if (itemType instanceof net.minecraft.world.item.ShieldItem) {
+            return UsableModule.UsableVariant.BLOCKABLE;
+        }
+        return UsableModule.UsableVariant.STANDARD;
     }
 
     /**

@@ -1,12 +1,19 @@
 package com.frenkvs.devmod.ui.hub;
 
+import com.frenkvs.devmod.endurance.ClientQuestCache;
+import com.frenkvs.devmod.endurance.EnduranceQuestState;
+import com.frenkvs.devmod.endurance.QuestActionPayload;
 import com.frenkvs.devmod.testing.TestingSession;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
+import com.frenkvs.devmod.telemetry.dashboard.TelemetryDashboardServer;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.neoforged.neoforge.network.PacketDistributor;
 
+import java.awt.Desktop;
+import java.net.URI;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
@@ -41,6 +48,8 @@ public class QuickToolsPanel implements HubPanel {
 
     private final Map<ToolType, EditorButton> toolButtons;
     private final Map<EditorType, EditorButton> editorButtons;
+    private final Map<QuestActionPayload.Action, EditorButton> enduranceButtons;
+    private final EditorButton dashboardButton;
 
     public QuickToolsPanel(int x, int y, int width, int height, Font font,
                            TestingHubState state,
@@ -56,6 +65,13 @@ public class QuickToolsPanel implements HubPanel {
         this.onEditorOpened = onEditorOpened;
         this.toolButtons = buildToolButtons();
         this.editorButtons = buildEditorButtons();
+        this.enduranceButtons = buildEnduranceButtons();
+        this.dashboardButton = EditorButton.builder("dash-open", "Open Telemetry Dashboard")
+            .style(EditorButton.Style.PRIMARY)
+            .size(EditorButton.Size.MEDIUM)
+            .icon("\uD83D\uDD0E") // 🔎
+            .onClick(this::openDashboard)
+            .build();
     }
 
     public void highlightRequired(Set<ToolType> tools) {
@@ -108,6 +124,37 @@ public class QuickToolsPanel implements HubPanel {
         contentY = HubSectionHeader.draw(graphics, font, "SESSION", contentX, contentY, SECTION_HEADER_HEIGHT);
 
         renderSessionInfo(graphics, contentX, contentY, contentWidth);
+        contentY += SESSION_LINE_HEIGHT * 4 + 12;
+
+        // === ENDURANCE SHORTCUTS ===
+        contentY = HubSectionHeader.draw(graphics, font, "ENDURANCE", contentX, contentY, SECTION_HEADER_HEIGHT);
+        boolean hasQuest = ClientQuestCache.hasActiveQuest();
+        EnduranceQuestState questState = hasQuest && ClientQuestCache.getData() != null
+            ? ClientQuestCache.getData().getState()
+            : EnduranceQuestState.AVAILABLE;
+
+        for (QuestActionPayload.Action action : QuestActionPayload.Action.values()) {
+            EditorButton btn = enduranceButtons.get(action);
+            if (btn == null) continue;
+            boolean enableBtn = hasQuest;
+            // Only allow checkpoint actions when at checkpoint
+            if ((action == QuestActionPayload.Action.CONTINUE_TO_NEXT_WAVE
+                || action == QuestActionPayload.Action.EXIT_AT_CHECKPOINT)
+                && questState != EnduranceQuestState.WAVE_COMPLETE) {
+                enableBtn = false;
+            }
+            btn.setEnabled(enableBtn);
+            btn.render(graphics, contentX, contentY, contentWidth, BUTTON_HEIGHT, mouseX, mouseY);
+            contentY += BUTTON_HEIGHT + BUTTON_GAP;
+        }
+
+        contentY += 8;
+        AxiomRenderer.drawSeparator(graphics, contentX, contentY, contentWidth);
+        contentY += 12;
+
+        // === TELEMETRY SECTION ===
+        contentY = HubSectionHeader.draw(graphics, font, "TELEMETRY", contentX, contentY, SECTION_HEADER_HEIGHT);
+        dashboardButton.render(graphics, contentX, contentY, contentWidth, BUTTON_HEIGHT, mouseX, mouseY);
     }
 
     private void renderToolToggle(GuiGraphics graphics, int rx, int ry, int rwidth,
@@ -185,6 +232,16 @@ public class QuickToolsPanel implements HubPanel {
             }
         }
 
+        for (EditorButton btn : enduranceButtons.values()) {
+            if (btn.mouseClicked(mx, my, button)) {
+                return true;
+            }
+        }
+
+        if (dashboardButton.mouseClicked(mx, my, button)) {
+            return true;
+        }
+
         return false;
     }
 
@@ -203,6 +260,16 @@ public class QuickToolsPanel implements HubPanel {
             if (btn.mouseReleased(mx, my, button)) {
                 return true;
             }
+        }
+
+        for (EditorButton btn : enduranceButtons.values()) {
+            if (btn.mouseReleased(mx, my, button)) {
+                return true;
+            }
+        }
+
+        if (dashboardButton.mouseReleased(mx, my, button)) {
+            return true;
         }
 
         return false;
@@ -251,5 +318,52 @@ public class QuickToolsPanel implements HubPanel {
             buttons.put(editor, button);
         }
         return buttons;
+    }
+
+    private Map<QuestActionPayload.Action, EditorButton> buildEnduranceButtons() {
+        Map<QuestActionPayload.Action, EditorButton> buttons = new EnumMap<>(QuestActionPayload.Action.class);
+
+        buttons.put(QuestActionPayload.Action.CONTINUE_TO_NEXT_WAVE,
+            EditorButton.builder("endurance-next", "Continue to Next Wave")
+                .style(EditorButton.Style.PRIMARY)
+                .size(EditorButton.Size.MEDIUM)
+                .icon("\u27A1") // →
+                .onClick(() -> sendQuestAction(QuestActionPayload.Action.CONTINUE_TO_NEXT_WAVE))
+                .build());
+
+        buttons.put(QuestActionPayload.Action.EXIT_AT_CHECKPOINT,
+            EditorButton.builder("endurance-exit", "Exit at Checkpoint")
+                .style(EditorButton.Style.NORMAL)
+                .size(EditorButton.Size.MEDIUM)
+                .icon("\u23CF") // ⏏
+                .onClick(() -> sendQuestAction(QuestActionPayload.Action.EXIT_AT_CHECKPOINT))
+                .build());
+
+        buttons.put(QuestActionPayload.Action.ABANDON_QUEST,
+            EditorButton.builder("endurance-abandon", "Abandon Quest")
+                .style(EditorButton.Style.DANGER)
+                .size(EditorButton.Size.MEDIUM)
+                .icon("\u274C") // ❌
+                .onClick(() -> sendQuestAction(QuestActionPayload.Action.ABANDON_QUEST))
+                .build());
+
+        return buttons;
+    }
+
+    private void sendQuestAction(QuestActionPayload.Action action) {
+        if (!ClientQuestCache.hasActiveQuest()) {
+            return;
+        }
+        PacketDistributor.sendToServer(new QuestActionPayload(action));
+    }
+
+    private void openDashboard() {
+        TelemetryDashboardServer.INSTANCE.start();
+        try {
+            if (Desktop.isDesktopSupported()) {
+                Desktop.getDesktop().browse(new URI("http://127.0.0.1:8642/dashboard"));
+            }
+        } catch (Exception ignored) {
+        }
     }
 }

@@ -93,176 +93,177 @@ public class VisualizersPage implements SettingsPage {
         // Clamp scroll offset
         scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
 
-        // Enable scissoring to clip content outside bounds
+        // Enable scissoring to clip content outside bounds with try/finally for safety
         graphics.enableScissor(x, y, x + width, y + height);
+        try {
+            // Apply scroll offset to starting Y position
+            int currentY = y - scrollOffset;
 
-        // Apply scroll offset to starting Y position
-        int currentY = y - scrollOffset;
+            // === SECTION: Light Level Overlay ===
+            AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Light Level Overlay [L]");
+            currentY += ROW_HEIGHT;
 
-        // === SECTION: Light Level Overlay ===
-        AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Light Level Overlay [L]");
-        currentY += ROW_HEIGHT;
+            // Light Level toggle
+            currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+                    "Light Levels", "Show spawn-safe light on blocks",
+                    LightLevelOverlay.INSTANCE.isEnabled());
 
-        // Light Level toggle
-        currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
-                "Light Levels", "Show spawn-safe light on blocks",
-                LightLevelOverlay.INSTANCE.isEnabled());
+            // Radius slider
+            // Calculate effective width accounting for scrollbar if present
+            int effectiveWidth = totalContentHeight > visibleHeight ? width - SCROLLBAR_WIDTH - 8 : width;
+            graphics.drawString(font, "Radius: " + lightLevelRadius + " blocks", x, currentY + 4, UIConstants.Text.SECONDARY(), false);
+            int labelWidth = 120;
+            int buttonsWidth = 56; // Two 20px buttons + 8px gap + 8px margin
+            int sliderX = x + labelWidth;
+            // Calculate slider width to fit: label + slider + buttons within effective width
+            this.sliderWidth = Math.max(60, Math.min(effectiveWidth - labelWidth - buttonsWidth, 200));
+            this.sliderContentX = sliderX;
+            renderSlider(graphics, sliderX, currentY + 2, this.sliderWidth, 12,
+                    (lightLevelRadius - 4) / 28.0f, mouseX, mouseY, lightSliderPulse);
 
-        // Radius slider
-        // Calculate effective width accounting for scrollbar if present
-        int effectiveWidth = totalContentHeight > visibleHeight ? width - SCROLLBAR_WIDTH - 8 : width;
-        graphics.drawString(font, "Radius: " + lightLevelRadius + " blocks", x, currentY + 4, UIConstants.Text.SECONDARY(), false);
-        int labelWidth = 120;
-        int buttonsWidth = 56; // Two 20px buttons + 8px gap + 8px margin
-        int sliderX = x + labelWidth;
-        // Calculate slider width to fit: label + slider + buttons within effective width
-        this.sliderWidth = Math.max(60, Math.min(effectiveWidth - labelWidth - buttonsWidth, 200));
-        this.sliderContentX = sliderX;
-        renderSlider(graphics, sliderX, currentY + 2, this.sliderWidth, 12,
-                (lightLevelRadius - 4) / 28.0f, mouseX, mouseY, lightSliderPulse);
+            // [-] [+] buttons - positioned after slider with proper spacing
+            int minusBtnX = sliderX + sliderWidth + 8;
+            int plusBtnX = minusBtnX + 24;
+            lightMinusBtn
+                .style(EditorButton.Style.NORMAL)
+                .onClick(() -> {
+                    lightLevelRadius = Math.max(4, lightLevelRadius - 4);
+                    LightLevelOverlay.INSTANCE.setRadius(lightLevelRadius);
+                    lightSliderPulse = 1.0f;
+                });
+            lightMinusBtn.render(graphics, minusBtnX, currentY, 20, 16, mouseX, mouseY);
 
-        // [-] [+] buttons - positioned after slider with proper spacing
-        int minusBtnX = sliderX + sliderWidth + 8;
-        int plusBtnX = minusBtnX + 24;
-        lightMinusBtn
-            .style(EditorButton.Style.NORMAL)
-            .onClick(() -> {
-                lightLevelRadius = Math.max(4, lightLevelRadius - 4);
-                LightLevelOverlay.INSTANCE.setRadius(lightLevelRadius);
-                lightSliderPulse = 1.0f;
-            });
-        lightMinusBtn.render(graphics, minusBtnX, currentY, 20, 16, mouseX, mouseY);
+            lightPlusBtn
+                .style(EditorButton.Style.NORMAL)
+                .onClick(() -> {
+                    lightLevelRadius = Math.min(32, lightLevelRadius + 4);
+                    LightLevelOverlay.INSTANCE.setRadius(lightLevelRadius);
+                    lightSliderPulse = 1.0f;
+                });
+            lightPlusBtn.render(graphics, plusBtnX, currentY, 20, 16, mouseX, mouseY);
+            currentY += ROW_HEIGHT;
 
-        lightPlusBtn
-            .style(EditorButton.Style.NORMAL)
-            .onClick(() -> {
-                lightLevelRadius = Math.min(32, lightLevelRadius + 4);
-                LightLevelOverlay.INSTANCE.setRadius(lightLevelRadius);
-                lightSliderPulse = 1.0f;
-            });
-        lightPlusBtn.render(graphics, plusBtnX, currentY, 20, 16, mouseX, mouseY);
-        currentY += ROW_HEIGHT;
+            // Separator
+            currentY += 8;
+            AxiomRenderer.drawSeparator(graphics, x, currentY, width);
+            currentY += SECTION_SPACING;
 
-        // Separator
-        currentY += 8;
-        AxiomRenderer.drawSeparator(graphics, x, currentY, width);
-        currentY += SECTION_SPACING;
+            // === SECTION: Heatmaps ===
+            int activeCount = countActiveHeatmaps();
+            String heatmapTitle = activeCount > 0
+                ? "Heatmaps (" + activeCount + " active) [H to cycle]"
+                : "Heatmaps [H to cycle]";
+            AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, heatmapTitle);
 
-        // === SECTION: Heatmaps ===
-        int activeCount = countActiveHeatmaps();
-        String heatmapTitle = activeCount > 0
-            ? "Heatmaps (" + activeCount + " active) [H to cycle]"
-            : "Heatmaps [H to cycle]";
-        AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, heatmapTitle);
+            // "Disable All" button if any active
+            if (activeCount > 0) {
+                int btnX = x + width - 80;
+                clearAllBtn
+                    .style(EditorButton.Style.DANGER)
+                    .onClick(this::disableAllHeatmaps);
+                clearAllBtn.render(graphics, btnX, currentY - 2, 70, 16, mouseX, mouseY);
+            }
+            currentY += ROW_HEIGHT;
 
-        // "Disable All" button if any active
-        if (activeCount > 0) {
-            int btnX = x + width - 80;
-            clearAllBtn
-                .style(EditorButton.Style.DANGER)
-                .onClick(this::disableAllHeatmaps);
-            clearAllBtn.render(graphics, btnX, currentY - 2, 70, 16, mouseX, mouseY);
+            // Heatmap type toggles
+            currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
+                    "Death Heatmap", HeatmapType.DEATH, 0xFFFF0000);
+
+            currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
+                    "Movement Heatmap", HeatmapType.MOVEMENT, 0xFF00FF00);
+
+            currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
+                    "Camping Detection", HeatmapType.CAMPING, 0xFFFFFF00);
+
+            currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
+                    "Stuck Points", HeatmapType.STUCK, 0xFFFF8000);
+
+            currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
+                    "Aggro Drop Points", HeatmapType.AGGRO_DROP, 0xFF8000FF);
+
+            currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
+                    "Kiting Paths", HeatmapType.KITING, 0xFF00FFFF);
+
+            currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
+                    "Light Spawnable", HeatmapType.LIGHT_SPAWNABLE, 0xFFFF0000);
+
+            currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
+                    "Light Dark Areas", HeatmapType.LIGHT_DARK, 0xFFFF8800);
+
+            // Separator
+            currentY += 8;
+            AxiomRenderer.drawSeparator(graphics, x, currentY, width);
+            currentY += SECTION_SPACING;
+
+            // === SECTION: Spatial Analysis ===
+            AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Spatial Analysis");
+            currentY += ROW_HEIGHT;
+
+            // Safe Spot Visualizer
+            currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+                    "Safe Spots [C]", "Highlight camping/safe positions",
+                    SafeSpotVisualizer.INSTANCE.isEnabled());
+
+            // Vertical Levels
+            currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+                    "Vertical Levels [Y]", "Show room height zones",
+                    VerticalLevelsVisualizer.INSTANCE.isEnabled());
+
+            // Separator
+            currentY += 8;
+            AxiomRenderer.drawSeparator(graphics, x, currentY, width);
+            currentY += SECTION_SPACING;
+
+            // === SECTION: Performance ===
+            AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Performance");
+            currentY += ROW_HEIGHT;
+
+            // View Distance slider
+            // Calculate effective width accounting for scrollbar if present (reuse from earlier)
+            graphics.drawString(font, "View Distance: " + viewDistance + " blocks", x, currentY + 4, UIConstants.Text.SECONDARY(), false);
+            int vdLabelWidth = 140;
+            int vdButtonsWidth = 56; // Two 20px buttons + 8px gap + 8px margin
+            int vdSliderX = x + vdLabelWidth;
+            // Calculate slider width to fit: label + slider + buttons within effective width
+            this.viewDistSliderWidth = Math.max(60, Math.min(effectiveWidth - vdLabelWidth - vdButtonsWidth, 180));
+            this.viewDistSliderX = vdSliderX;
+            float vdPercentage = (float) (viewDistance - SettingsData.VisualizerSettings.MIN_RENDER_DISTANCE) /
+                                 (SettingsData.VisualizerSettings.MAX_RENDER_DISTANCE - SettingsData.VisualizerSettings.MIN_RENDER_DISTANCE);
+            renderSlider(graphics, vdSliderX, currentY + 2, this.viewDistSliderWidth, 12, vdPercentage, mouseX, mouseY, viewDistSliderPulse);
+
+            // [-] [+] buttons for view distance - positioned after slider with proper spacing
+            int vdMinusBtnX = vdSliderX + viewDistSliderWidth + 8;
+            int vdPlusBtnX = vdMinusBtnX + 24;
+            vdMinusBtn
+                .style(EditorButton.Style.NORMAL)
+                .onClick(() -> {
+                    viewDistance = Math.max(SettingsData.VisualizerSettings.MIN_RENDER_DISTANCE, viewDistance - 8);
+                    SettingsManager.INSTANCE.getSettings().visualizers.setRenderDistance(viewDistance);
+                    viewDistSliderPulse = 1.0f;
+                });
+            vdMinusBtn.render(graphics, vdMinusBtnX, currentY, 20, 16, mouseX, mouseY);
+
+            vdPlusBtn
+                .style(EditorButton.Style.NORMAL)
+                .onClick(() -> {
+                    viewDistance = Math.min(SettingsData.VisualizerSettings.MAX_RENDER_DISTANCE, viewDistance + 8);
+                    SettingsManager.INSTANCE.getSettings().visualizers.setRenderDistance(viewDistance);
+                    viewDistSliderPulse = 1.0f;
+                });
+            vdPlusBtn.render(graphics, vdPlusBtnX, currentY, 20, 16, mouseX, mouseY);
+            currentY += ROW_HEIGHT;
+
+            // Hint about view distance
+            graphics.drawString(font, "Affects all visualizers render range", x, currentY, UIConstants.Text.MUTED(), false);
+            currentY += 16;
+
+            // Hint
+            currentY += 8;
+            AxiomRenderer.drawHint(graphics, font, x, currentY, "Keybinds shown in brackets work in-game.");
+        } finally {
+            // Disable scissoring
+            graphics.disableScissor();
         }
-        currentY += ROW_HEIGHT;
-
-        // Heatmap type toggles
-        currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
-                "Death Heatmap", HeatmapType.DEATH, 0xFFFF0000);
-
-        currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
-                "Movement Heatmap", HeatmapType.MOVEMENT, 0xFF00FF00);
-
-        currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
-                "Camping Detection", HeatmapType.CAMPING, 0xFFFFFF00);
-
-        currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
-                "Stuck Points", HeatmapType.STUCK, 0xFFFF8000);
-
-        currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
-                "Aggro Drop Points", HeatmapType.AGGRO_DROP, 0xFF8000FF);
-
-        currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
-                "Kiting Paths", HeatmapType.KITING, 0xFF00FFFF);
-
-        currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
-                "Light Spawnable", HeatmapType.LIGHT_SPAWNABLE, 0xFFFF0000);
-
-        currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
-                "Light Dark Areas", HeatmapType.LIGHT_DARK, 0xFFFF8800);
-
-        // Separator
-        currentY += 8;
-        AxiomRenderer.drawSeparator(graphics, x, currentY, width);
-        currentY += SECTION_SPACING;
-
-        // === SECTION: Spatial Analysis ===
-        AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Spatial Analysis");
-        currentY += ROW_HEIGHT;
-
-        // Safe Spot Visualizer
-        currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
-                "Safe Spots [C]", "Highlight camping/safe positions",
-                SafeSpotVisualizer.INSTANCE.isEnabled());
-
-        // Vertical Levels
-        currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
-                "Vertical Levels [Y]", "Show room height zones",
-                VerticalLevelsVisualizer.INSTANCE.isEnabled());
-
-        // Separator
-        currentY += 8;
-        AxiomRenderer.drawSeparator(graphics, x, currentY, width);
-        currentY += SECTION_SPACING;
-
-        // === SECTION: Performance ===
-        AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Performance");
-        currentY += ROW_HEIGHT;
-
-        // View Distance slider
-        // Calculate effective width accounting for scrollbar if present (reuse from earlier)
-        graphics.drawString(font, "View Distance: " + viewDistance + " blocks", x, currentY + 4, UIConstants.Text.SECONDARY(), false);
-        int vdLabelWidth = 140;
-        int vdButtonsWidth = 56; // Two 20px buttons + 8px gap + 8px margin
-        int vdSliderX = x + vdLabelWidth;
-        // Calculate slider width to fit: label + slider + buttons within effective width
-        this.viewDistSliderWidth = Math.max(60, Math.min(effectiveWidth - vdLabelWidth - vdButtonsWidth, 180));
-        this.viewDistSliderX = vdSliderX;
-        float vdPercentage = (float) (viewDistance - SettingsData.VisualizerSettings.MIN_RENDER_DISTANCE) /
-                             (SettingsData.VisualizerSettings.MAX_RENDER_DISTANCE - SettingsData.VisualizerSettings.MIN_RENDER_DISTANCE);
-        renderSlider(graphics, vdSliderX, currentY + 2, this.viewDistSliderWidth, 12, vdPercentage, mouseX, mouseY, viewDistSliderPulse);
-
-        // [-] [+] buttons for view distance - positioned after slider with proper spacing
-        int vdMinusBtnX = vdSliderX + viewDistSliderWidth + 8;
-        int vdPlusBtnX = vdMinusBtnX + 24;
-        vdMinusBtn
-            .style(EditorButton.Style.NORMAL)
-            .onClick(() -> {
-                viewDistance = Math.max(SettingsData.VisualizerSettings.MIN_RENDER_DISTANCE, viewDistance - 8);
-                SettingsManager.INSTANCE.getSettings().visualizers.setRenderDistance(viewDistance);
-                viewDistSliderPulse = 1.0f;
-            });
-        vdMinusBtn.render(graphics, vdMinusBtnX, currentY, 20, 16, mouseX, mouseY);
-
-        vdPlusBtn
-            .style(EditorButton.Style.NORMAL)
-            .onClick(() -> {
-                viewDistance = Math.min(SettingsData.VisualizerSettings.MAX_RENDER_DISTANCE, viewDistance + 8);
-                SettingsManager.INSTANCE.getSettings().visualizers.setRenderDistance(viewDistance);
-                viewDistSliderPulse = 1.0f;
-            });
-        vdPlusBtn.render(graphics, vdPlusBtnX, currentY, 20, 16, mouseX, mouseY);
-        currentY += ROW_HEIGHT;
-
-        // Hint about view distance
-        graphics.drawString(font, "Affects all visualizers render range", x, currentY, UIConstants.Text.MUTED(), false);
-        currentY += 16;
-
-        // Hint
-        currentY += 8;
-        AxiomRenderer.drawHint(graphics, font, x, currentY, "Keybinds shown in brackets work in-game.");
-
-        // Disable scissoring
-        graphics.disableScissor();
 
         // Render scrollbar if content exceeds visible area
         if (totalContentHeight > visibleHeight) {

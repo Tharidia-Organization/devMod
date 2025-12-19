@@ -149,7 +149,14 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
                                 player.server, party, player);
 
                             if (!result.success()) {
-                                player.sendSystemMessage(I18n.translate(result.errorMessage()));
+                                String msg = result.errorMessage();
+                                // If it looks like a translation key, translate; otherwise show literal
+                                if (msg != null && msg.startsWith("devmod.")) {
+                                    player.sendSystemMessage(I18n.translate(msg));
+                                } else {
+                                    player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                                        msg != null ? msg : "Quest start failed"));
+                                }
                             }
                         } else {
                             player.sendSystemMessage(I18n.translate("devmod.party.cannot_start"));

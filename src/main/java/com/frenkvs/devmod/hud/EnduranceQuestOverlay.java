@@ -267,6 +267,15 @@ public class EnduranceQuestOverlay {
             g.drawString(font, dmgText, x + width - PANEL_PADDING - dmgWidth, textY, TEXT_DIM, false);
             textY += LINE_HEIGHT;
 
+            // Derived metrics (overall)
+            double seconds = Math.max(1, data.sessionDurationMs() / 1000.0);
+            double kps = data.mobsKilled() / seconds;
+            double dps = data.damageDealt() / seconds;
+            double dtps = data.damageTaken() / seconds;
+            String metrics = String.format("KPS %.2f | DPS %.1f | DTPS %.1f", kps, dps, dtps);
+            g.drawString(font, metrics, textX, textY, TEXT_DIM, false);
+            textY += LINE_HEIGHT;
+
             // Deaths this session (if > 0)
             if (data.deaths() > 0) {
                 g.drawString(font, "Deaths: " + data.deaths(), textX, textY, TEXT_DANGER, false);
@@ -417,7 +426,7 @@ public class EnduranceQuestOverlay {
 
         if (showDetails) {
             height += 4;  // Separator
-            height += LINE_HEIGHT * 2; // Time + Kills/DMG
+            height += LINE_HEIGHT * 3; // Time + Kills/DMG + metrics
 
             if (data.deaths() > 0) {
                 height += LINE_HEIGHT; // Deaths

@@ -9,5 +9,8 @@ public enum EditorStartTab {
     WEAPON,
     ARMOR,
     GENERAL,
-    RECIPE
+    RECIPE,
+    USABLE,
+    FOOD,
+    FUEL
 }

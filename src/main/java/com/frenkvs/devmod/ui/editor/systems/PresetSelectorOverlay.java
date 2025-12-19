@@ -525,9 +525,9 @@ public class PresetSelectorOverlay extends BaseOverlay {
         // Scope badge
         String scopeLabel = selectedEntry.scope().label();
         int scopeColor = switch (selectedEntry.scope()) {
-            case PresetScope.Modpack m -> SCOPE_COLOR_MODPACK;
-            case PresetScope.Category c -> SCOPE_COLOR_CATEGORY;
-            case PresetScope.Global g -> SCOPE_COLOR_GLOBAL;
+            case PresetScope.Modpack ignored -> SCOPE_COLOR_MODPACK;
+            case PresetScope.Category ignored -> SCOPE_COLOR_CATEGORY;
+            case PresetScope.Global ignored -> SCOPE_COLOR_GLOBAL;
         };
         graphics.drawString(safeFont, Objects.requireNonNull(scopeLabel, "scopeLabel"),
             x + PREVIEW_TEXT_PADDING, textY, scopeColor, false);
@@ -566,9 +566,9 @@ public class PresetSelectorOverlay extends BaseOverlay {
 
         // Scope indicator (colored bar)
         int scopeColor = switch (entry.scope()) {
-            case PresetScope.Modpack m -> SCOPE_COLOR_MODPACK;
-            case PresetScope.Category c -> SCOPE_COLOR_CATEGORY;
-            case PresetScope.Global g -> entry.isUserPreset() ? SCOPE_COLOR_GLOBAL_USER : SCOPE_COLOR_GLOBAL;
+            case PresetScope.Modpack ignored -> SCOPE_COLOR_MODPACK;
+            case PresetScope.Category ignored -> SCOPE_COLOR_CATEGORY;
+            case PresetScope.Global ignored -> entry.isUserPreset() ? SCOPE_COLOR_GLOBAL_USER : SCOPE_COLOR_GLOBAL;
         };
         graphics.fill(x, y, x + ROW_SCOPE_BAR_WIDTH, y + LIST_ROW_HEIGHT, scopeColor);
 

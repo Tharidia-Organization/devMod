@@ -22,6 +22,12 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
+import com.frenkvs.devmod.telemetry.duckdb.DuckDBTelemetryService;
+import com.frenkvs.devmod.telemetry.duckdb.DuckDBQueryAPI;
+import com.frenkvs.devmod.telemetry.duckdb.DuckDBQueryAPI.EnduranceStats;
+import com.frenkvs.devmod.telemetry.duckdb.DuckDBMigrationService;
+import com.frenkvs.devmod.endurance.EnduranceQuestManager;
+
 import java.nio.file.Path;
 import java.util.Objects;
 
@@ -141,6 +147,28 @@ public class TestHarnessCommands {
                         return 1;
                     })))
 
+            // /devtest endurance ...
+            .then(Commands.literal("endurance")
+                .then(Commands.literal("stats")
+                    .executes(ctx -> {
+                        return sendEnduranceStats(ctx.getSource());
+                    }))
+                .then(Commands.literal("perks")
+                    .executes(ctx -> {
+                        return sendEndurancePerkUsage(ctx.getSource());
+                    }))
+                .then(Commands.literal("smoke")
+                    .executes(ctx -> {
+                        return runEnduranceSmoke(ctx.getSource());
+                    }))
+                .then(Commands.literal("export")
+                    .then(Commands.argument("table", StringArgumentType.word())
+                        .executes(ctx -> exportTable(ctx.getSource(), StringArgumentType.getString(ctx, "table"))))
+                    .then(Commands.literal("all")
+                        .executes(ctx -> exportAllTables(ctx.getSource()))))
+                .then(Commands.literal("autosmoke")
+                    .executes(ctx -> runEnduranceAutoSmoke(ctx.getSource()))))
+
             // /devtest debugbox <size> - Adds a debug box at player position
             .then(Commands.literal("debugbox")
                 .then(Commands.argument("size", Objects.requireNonNull(FloatArgumentType.floatArg(0.1f, 10.0f)))
@@ -250,5 +278,150 @@ public class TestHarnessCommands {
             case ARMS -> "Yellow (0xFFFF00)";
             case LEGS -> "Red (0xFF0000)";
         };
+    }
+
+    // =========================================================================
+    // ENDURANCE HELPERS
+    // =========================================================================
+    private static int sendEnduranceStats(CommandSourceStack source) {
+        var player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(I18n.translate("devmod.testing.no_player"));
+            return 0;
+        }
+        DuckDBQueryAPI query = DuckDBTelemetryService.INSTANCE.getQueryAPI();
+        if (query == null) {
+            source.sendFailure(I18n.translate("devmod.testing.duckdb_not_ready"));
+            return 0;
+        }
+        EnduranceStats stats = query.getEnduranceStats(player.getUUID());
+        if (stats == null) {
+            source.sendFailure(I18n.translate("devmod.testing.endurance.stats_unavailable"));
+            return 0;
+        }
+        source.sendSuccess(() -> net.minecraft.network.chat.Component.literal(
+            String.format("Endurance: attempts=%d completed=%d failed=%d abandoned=%d best_wave=%d avg_waves=%.1f tokens=%d kills=%d dmg=%.0f/%.0f",
+                stats.totalQuests(), stats.completed(), stats.failed(), stats.abandoned(),
+                stats.bestWave(), stats.avgWaves(), stats.totalTokens(),
+                stats.totalKills(), stats.totalDamageDealt(), stats.totalDamageTaken())), false);
+        return 1;
+    }
+
+    private static int sendEndurancePerkUsage(CommandSourceStack source) {
+        DuckDBQueryAPI query = DuckDBTelemetryService.INSTANCE.getQueryAPI();
+        if (query == null) {
+            source.sendFailure(I18n.translate("devmod.testing.duckdb_not_ready"));
+            return 0;
+        }
+        var perks = query.getPerkUsageStats();
+        int limit = Math.min(5, perks.size());
+        for (int i = 0; i < limit; i++) {
+            final int index = i;
+            var p = perks.get(i);
+            source.sendSuccess(() -> net.minecraft.network.chat.Component.literal(
+                String.format("#%d %s (%s/%s): %d selections, %d players",
+                    index + 1, p.perkName(), p.tier(), p.category(), p.timesSelected(), p.uniquePlayers())), false);
+        }
+        if (perks.isEmpty()) {
+            source.sendSuccess(() -> net.minecraft.network.chat.Component.literal("No perk data yet"), false);
+        }
+        return 1;
+    }
+
+    private static int runEnduranceSmoke(CommandSourceStack source) {
+        var conn = DuckDBTelemetryService.INSTANCE.getConnection();
+        if (conn == null) {
+            source.sendFailure(I18n.translate("devmod.testing.duckdb_not_ready"));
+            return 0;
+        }
+        String[] tables = {
+            "endurance_sessions", "endurance_waves", "endurance_wave_kills",
+            "endurance_combos", "endurance_perks", "endurance_mutators", "endurance_rewards"
+        };
+        try (var stmt = conn.createStatement()) {
+            for (String table : tables) {
+                try (var rs = stmt.executeQuery("SELECT COUNT(*) AS c FROM " + table)) {
+                    if (rs.next()) {
+                        int cnt = rs.getInt("c");
+                        source.sendSuccess(() -> net.minecraft.network.chat.Component.literal(
+                            String.format("%s: %d rows", table, cnt)), false);
+                    }
+                } catch (Exception e) {
+                    source.sendFailure(net.minecraft.network.chat.Component.literal(
+                        String.format("Table %s not reachable: %s", table, e.getMessage())));
+                }
+            }
+        } catch (Exception e) {
+            source.sendFailure(net.minecraft.network.chat.Component.literal("DuckDB query failed: " + e.getMessage()));
+            return 0;
+        }
+        return 1;
+    }
+
+    private static int exportTable(CommandSourceStack source, String table) {
+        var conn = DuckDBTelemetryService.INSTANCE.getConnection();
+        if (conn == null) {
+            source.sendFailure(I18n.translate("devmod.testing.duckdb_not_ready"));
+            return 0;
+        }
+        try {
+            Path outDir = source.getServer().getServerDirectory().resolve("telemetry_exports");
+            java.nio.file.Files.createDirectories(outDir);
+            Path outFile = outDir.resolve(table + ".ndjson");
+            DuckDBMigrationService.exportToNDJSON(conn, table, outFile);
+            source.sendSuccess(() -> net.minecraft.network.chat.Component.literal(
+                String.format("Exported %s to %s", table, outFile)), false);
+            return 1;
+        } catch (Exception e) {
+            source.sendFailure(net.minecraft.network.chat.Component.literal(
+                String.format("Export failed for %s: %s", table, e.getMessage())));
+            return 0;
+        }
+    }
+
+    private static int exportAllTables(CommandSourceStack source) {
+        String[] tables = {
+            "endurance_sessions", "endurance_waves", "endurance_wave_kills",
+            "endurance_combos", "endurance_perks", "endurance_mutators", "endurance_rewards"
+        };
+        int ok = 0;
+        for (String table : tables) {
+            ok += exportTable(source, table);
+        }
+        return ok > 0 ? 1 : 0;
+    }
+
+    private static int runEnduranceAutoSmoke(CommandSourceStack source) {
+        var player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(I18n.translate("devmod.testing.no_player"));
+            return 0;
+        }
+        // Ensure manager initialized
+        if (!EnduranceQuestManager.INSTANCE.isInitialized()) {
+            source.sendFailure(net.minecraft.network.chat.Component.literal("Endurance manager not initialized"));
+            return 0;
+        }
+
+        // Start a 2-wave quest with default zombie
+        var settings = new EnduranceQuestManager.QuestSettings();
+        settings.totalWaves = 2;
+        settings.endlessMode = false;
+        settings.arenaSize = 64;
+
+        var mobId = net.minecraft.resources.ResourceLocation.withDefaultNamespace("zombie");
+        var result = EnduranceQuestManager.INSTANCE.startQuest(player, mobId, settings);
+        if (!result.success()) {
+            source.sendFailure(net.minecraft.network.chat.Component.literal("Auto-smoke start failed: " + result.message()));
+            return 0;
+        }
+
+        // Force complete wave 1 to reach checkpoint
+        EnduranceQuestManager.INSTANCE.completeWave(player);
+        // Exit at checkpoint to finish flow
+        EnduranceQuestManager.INSTANCE.exitAtCheckpoint(player);
+
+        source.sendSuccess(() -> net.minecraft.network.chat.Component.literal("Endurance auto-smoke run executed"), false);
+        return 1;
     }
 }

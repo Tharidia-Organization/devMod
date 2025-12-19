@@ -47,6 +47,8 @@ public class CategoryPanel implements HubPanel {
     // Scroll
     private int scrollOffset = 0;
     private int maxScroll = 0;
+    private int listStartY = 0;  // Cached for bounds check
+    private int listHeight = 0;  // Cached for bounds check
 
     public CategoryPanel(int x, int y, int width, int height, Font font,
                          TestingHubState state,
@@ -105,9 +107,9 @@ public class CategoryPanel implements HubPanel {
         AxiomRenderer.drawSeparator(graphics, x + PADDING, contentY, width - PADDING * 2);
         contentY += 8;
 
-        // Categories + test list
-        int listStartY = contentY;
-        int listHeight = y + height - contentY - PADDING;
+        // Categories + test list - cache for bounds check in mouseScrolled
+        this.listStartY = contentY;
+        this.listHeight = y + height - contentY - PADDING;
 
         renderCategoryList(graphics, listStartY, listHeight, mouseX, mouseY);
     }
@@ -372,6 +374,12 @@ public class CategoryPanel implements HubPanel {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        // FIX: Only handle scroll if mouse is over the category list area
+        if (mouseX < x || mouseX > x + width ||
+            mouseY < listStartY || mouseY > listStartY + listHeight) {
+            return false;
+        }
+
         scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int)(scrollY * 20)));
         return true;
     }

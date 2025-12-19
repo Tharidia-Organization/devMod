@@ -45,6 +45,9 @@ public class DevMod {
     public static final DeferredRegister<net.minecraft.core.component.DataComponentType<?>> ARMOR_COMPONENTS = ArmorComponents.COMPONENTS;
     public static final DeferredRegister<net.minecraft.core.component.DataComponentType<?>> RANGED_COMPONENTS = RangedComponents.COMPONENTS;
     public static final DeferredRegister<net.minecraft.core.component.DataComponentType<?>> WEAPON_COMPONENTS = WeaponComponents.COMPONENTS;
+    public static final DeferredRegister<net.minecraft.core.component.DataComponentType<?>> USABLE_COMPONENTS = UsableComponents.COMPONENTS;
+    public static final DeferredRegister<net.minecraft.core.component.DataComponentType<?>> FOOD_COMPONENTS = FoodComponents.COMPONENTS;
+    public static final DeferredRegister<net.minecraft.core.component.DataComponentType<?>> FUEL_COMPONENTS = FuelComponents.COMPONENTS;
 
     // 3. "VIEWER_ITEM" ITEM
     public static final DeferredHolder<Item, Item> VIEWER_ITEM = ITEMS.register("viewer_item", () -> new Item(new Item.Properties()));
@@ -67,6 +70,9 @@ public class DevMod {
         ARMOR_COMPONENTS.register(eventBus);
         RANGED_COMPONENTS.register(eventBus);
         WEAPON_COMPONENTS.register(eventBus);
+        USABLE_COMPONENTS.register(eventBus);
+        FOOD_COMPONENTS.register(eventBus);
+        FUEL_COMPONENTS.register(eventBus);
 
         // Register configuration
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);

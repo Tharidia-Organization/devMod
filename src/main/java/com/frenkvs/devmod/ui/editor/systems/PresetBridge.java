@@ -33,9 +33,9 @@ public final class PresetBridge {
 
         // Map scope to string
         data.scope = switch (rp.scope()) {
-            case PresetScope.Global g -> "GLOBAL";
-            case PresetScope.Category c -> "CATEGORY";
-            case PresetScope.Modpack m -> "MODPACK";
+            case PresetScope.Global ignored -> "GLOBAL";
+            case PresetScope.Category ignored -> "CATEGORY";
+            case PresetScope.Modpack ignored -> "MODPACK";
         };
 
         // Convert values map to statValues list based on category

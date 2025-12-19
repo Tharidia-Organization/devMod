@@ -141,7 +141,7 @@ public record RecipeClientSyncPayload(
             case CraftingRecipeData c -> "crafting:" + c.craftingType().getId();
             case SmeltingRecipeData s -> "smelting:" + s.smeltingType().getId();
             case SmithingRecipeData sm -> "smithing:" + sm.smithingType().getId();
-            case StonecuttingRecipeData sc -> "stonecutting";
+            case StonecuttingRecipeData ignored -> "stonecutting";
         };
     }
 

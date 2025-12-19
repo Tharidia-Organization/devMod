@@ -59,6 +59,17 @@ public class QuickTestWizard extends Screen {
     private boolean enableEntityDensity = false;
     private boolean enableHeatmaps = false;
 
+    // Quick presets for wave/endless setup
+    private final java.util.List<PresetScenario> presetScenarios = java.util.List.of(
+        new PresetScenario("Sprint 3", "3-wave smoke test", 3, false, 64),
+        new PresetScenario("Baseline 10", "Standard 10 waves", 10, false, 64),
+        new PresetScenario("Boss Prep", "15 waves (3 boss)", 15, false, 72),
+        new PresetScenario("Endless", "Play until death", 0, true, 64),
+        new PresetScenario("Stress 20", "High-load run", 20, false, 80)
+    );
+    private final List<PresetHitbox> presetHitboxes = new ArrayList<>();
+    private PresetScenario selectedPreset = null;
+
     // Available mobs
     private List<EnduranceQuestRegistry.MobQuestConfig> availableMobs = new ArrayList<>();
     private int selectedMobIndex = 0;
@@ -358,8 +369,12 @@ public class QuickTestWizard extends Screen {
         graphics.drawString(getFont(), "Arena: " + arenaSize + " blocks", rightCol, settingY, UIConstants.Text.SECONDARY(), false);
         drawPlusMinus(graphics, rightCol + 120, settingY - 2, mouseX, mouseY, "arena");
 
-        // Preview info
-        int previewY = y + 150;
+        // Quick presets
+        int presetsY = y + 110;
+        drawPresets(graphics, panelX + 20, presetsY, mouseX, mouseY);
+
+        // Preview info (pushed down to make room for presets)
+        int previewY = y + 190;
         graphics.fill(panelX + 20, previewY, panelX + PANEL_WIDTH - 20, previewY + 60, UIConstants.Background.INPUT());
         AxiomRenderer.drawBorder(graphics, panelX + 20, previewY, PANEL_WIDTH - 40, 60, UIConstants.Border.MUTED());
 
@@ -383,6 +398,36 @@ public class QuickTestWizard extends Screen {
 
         graphics.drawString(getFont(), "-", x + 5, y + 4, UIConstants.Text.PRIMARY(), false);
         graphics.drawString(getFont(), "+", x + 29, y + 4, UIConstants.Text.PRIMARY(), false);
+    }
+
+    private void drawPresets(GuiGraphics graphics, int x, int y, int mouseX, int mouseY) {
+        presetHitboxes.clear();
+
+        graphics.drawString(getFont(), "§lQuick presets:", x, y - 12, UIConstants.Text.PRIMARY(), false);
+
+        int colWidth = 150;
+        int rowHeight = 32;
+        int gap = 10;
+
+        for (int i = 0; i < presetScenarios.size(); i++) {
+            PresetScenario preset = presetScenarios.get(i);
+            int col = i % 2;
+            int row = i / 2;
+            int px = x + col * (colWidth + gap);
+            int py = y + row * (rowHeight + gap);
+
+            boolean hovered = AxiomRenderer.isMouseOver(mouseX, mouseY, px, py, colWidth, rowHeight);
+            boolean selected = preset.equals(selectedPreset);
+
+            int bg = selected ? UIConstants.Background.ACTIVE() : hovered ? UIConstants.Background.HOVER() : UIConstants.Background.INPUT();
+            graphics.fill(px, py, px + colWidth, py + rowHeight, bg);
+            AxiomRenderer.drawBorder(graphics, px, py, colWidth, rowHeight, selected ? UIConstants.Accent.GREEN() : UIConstants.Border.MUTED());
+
+            graphics.drawString(getFont(), preset.name, px + 8, py + 7, UIConstants.Text.PRIMARY(), false);
+            graphics.drawString(getFont(), preset.description, px + 8, py + 20, UIConstants.Text.MUTED(), false);
+
+            presetHitboxes.add(new PresetHitbox(preset, px, py, colWidth, rowHeight));
+        }
     }
 
     private void drawCheckbox(GuiGraphics graphics, int x, int y, String label, boolean checked,
@@ -479,15 +524,21 @@ public class QuickTestWizard extends Screen {
         graphics.drawString(getFont(), selectedTestType.getDisplayName(), rightCol, summaryY, UIConstants.Text.PRIMARY(), false);
         summaryY += 18;
 
+        // Preset / waves
+        graphics.drawString(getFont(), "Preset:", leftCol, summaryY, UIConstants.Text.MUTED(), false);
+        String presetLabel = selectedPreset != null ? selectedPreset.name : "Custom";
+        graphics.drawString(getFont(), presetLabel, rightCol, summaryY, UIConstants.Text.PRIMARY(), false);
+        summaryY += 18;
+
+        graphics.drawString(getFont(), "Waves / Mode:", leftCol, summaryY, UIConstants.Text.MUTED(), false);
+        String waveLabel = endlessMode ? "Endless" : waveCount + " waves";
+        graphics.drawString(getFont(), waveLabel, rightCol, summaryY, UIConstants.Text.PRIMARY(), false);
+        summaryY += 18;
+
         // Target
         graphics.drawString(getFont(), "Target Mob:", leftCol, summaryY, UIConstants.Text.MUTED(), false);
         String mobName = selectedMob != null ? selectedMob.getPath() : "None";
         graphics.drawString(getFont(), mobName, rightCol, summaryY, UIConstants.Text.PRIMARY(), false);
-        summaryY += 18;
-
-        // Waves
-        graphics.drawString(getFont(), "Waves:", leftCol, summaryY, UIConstants.Text.MUTED(), false);
-        graphics.drawString(getFont(), endlessMode ? "Endless" : String.valueOf(waveCount), rightCol, summaryY, UIConstants.Text.PRIMARY(), false);
         summaryY += 18;
 
         // Arena
@@ -643,22 +694,35 @@ public class QuickTestWizard extends Screen {
         int settingY = y + 20;
         if (AxiomRenderer.isMouseOver(mx, my, rightCol + 100, settingY - 2, 16, 16)) {
             waveCount = Math.max(1, waveCount - 1);
+            selectedPreset = null;
         } else if (AxiomRenderer.isMouseOver(mx, my, rightCol + 124, settingY - 2, 16, 16)) {
             waveCount = Math.min(50, waveCount + 1);
+            selectedPreset = null;
         }
 
         // Endless checkbox
         settingY += 25;
         if (AxiomRenderer.isMouseOver(mx, my, rightCol, settingY, 150, 16)) {
             endlessMode = !endlessMode;
+            selectedPreset = null;
         }
 
         // Arena plus/minus
         settingY += 25;
         if (AxiomRenderer.isMouseOver(mx, my, rightCol + 120, settingY - 2, 16, 16)) {
             arenaSize = Math.max(32, arenaSize - 16);
+            selectedPreset = null;
         } else if (AxiomRenderer.isMouseOver(mx, my, rightCol + 144, settingY - 2, 16, 16)) {
             arenaSize = Math.min(128, arenaSize + 16);
+            selectedPreset = null;
+        }
+
+        // Preset chips
+        for (PresetHitbox hit : presetHitboxes) {
+            if (hit.contains(mx, my)) {
+                applyPreset(hit.preset());
+                break;
+            }
         }
     }
 
@@ -739,23 +803,34 @@ public class QuickTestWizard extends Screen {
                 enableDebugOverlay = true;
                 enableBossPhase = false;
                 enableEntityDensity = false;
+                selectedPreset = null;
             }
             case BOSS -> {
                 waveCount = 3;
                 enableDebugOverlay = true;
                 enableBossPhase = true;
                 enableEntityDensity = false;
+                selectedPreset = null;
             }
             case DUNGEON -> {
                 waveCount = 10;
                 enableDebugOverlay = false;
                 enableBossPhase = false;
                 enableEntityDensity = true;
+                selectedPreset = null;
             }
             case CUSTOM -> {
                 // Keep current settings
             }
         }
+    }
+
+    private void applyPreset(PresetScenario preset) {
+        this.waveCount = preset.waves;
+        this.endlessMode = preset.endless;
+        this.arenaSize = preset.arenaSize;
+        this.selectedPreset = preset;
+        this.selectedTestType = TestType.CUSTOM; // mark as custom tuning
     }
 
     private void startTest() {
@@ -827,6 +902,29 @@ public class QuickTestWizard extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    // ===================== Preset DTOs =====================
+    private static class PresetScenario {
+        final String name;
+        final String description;
+        final int waves;
+        final boolean endless;
+        final int arenaSize;
+
+        PresetScenario(String name, String description, int waves, boolean endless, int arenaSize) {
+            this.name = name;
+            this.description = description;
+            this.waves = waves;
+            this.endless = endless;
+            this.arenaSize = arenaSize;
+        }
+    }
+
+    private record PresetHitbox(PresetScenario preset, int x, int y, int w, int h) {
+        boolean contains(int mx, int my) {
+            return mx >= x && mx <= x + w && my >= y && my <= y + h;
+        }
     }
 
     // ===================== Test Type Enum =====================

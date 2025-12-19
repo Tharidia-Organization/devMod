@@ -558,6 +558,13 @@ public class PerkSystem {
     }
 
     /**
+     * End session without a player reference (used during forced shutdown).
+     */
+    public PerkSession endSession(UUID playerId) {
+        return activeSessions.remove(playerId);
+    }
+
+    /**
      * Check if a player has unlocked a specific perk.
      */
     public boolean hasUnlockedPerk(UUID playerId, String perkId) {

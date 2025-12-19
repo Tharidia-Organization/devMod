@@ -1,6 +1,10 @@
 package com.frenkvs.devmod.ui.unified;
 
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.core.ResponsiveLayout.Rect;
+import com.frenkvs.devmod.ui.scroll.ScrollManager;
+import com.frenkvs.devmod.ui.scroll.ScrollMetrics;
+import com.frenkvs.devmod.ui.scroll.ScrollMode;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -8,11 +12,14 @@ import javax.annotation.Nonnull;
 
 /**
  * Abstract base class for settings pages that support scrolling.
- * Handles all scroll logic including:
- * - Mouse wheel scrolling
- * - Scrollbar rendering and dragging
- * - Content clipping via scissoring
- * - Hit detection offset for scrolled content
+ * Now uses the unified {@link ScrollManager} for consistent scroll behavior.
+ *
+ * <p>Key improvements over the old implementation:
+ * <ul>
+ *   <li>Bounds checking - only handles scroll when mouse is over content</li>
+ *   <li>Delta-based drag - consistent scrollbar behavior (not centering)</li>
+ *   <li>Safe scissoring - try/finally prevents scissor leaks</li>
+ * </ul>
  *
  * Subclasses only need to implement:
  * - renderScrollableContent(): draw the actual content
@@ -22,19 +29,16 @@ import javax.annotation.Nonnull;
 public abstract class ScrollableSettingsPage implements SettingsPage {
 
     protected static final int SCROLLBAR_WIDTH = 6;
-    protected static final int SCROLL_SPEED = 20;
 
-    // Scroll state
-    protected int scrollOffset = 0;
-    protected int maxScrollOffset = 0;
-    protected int visibleHeight = 0;
-    protected int totalContentHeight = 0;
-
-    // Drag state
-    protected boolean isDraggingScrollbar = false;
+    // Unified scroll manager (replaces manual scroll handling)
+    protected final ScrollManager scrollManager = new ScrollManager(ScrollMode.INSTANT)
+        .scrollbarWidth(SCROLLBAR_WIDTH)
+        .scrollStep(20);
 
     // Cached dimensions (set during render)
     protected int contentX, contentY, contentWidth, contentHeight;
+    protected int visibleHeight = 0;
+    protected int totalContentHeight = 0;
 
     @Override
     public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
@@ -45,25 +49,23 @@ public abstract class ScrollableSettingsPage implements SettingsPage {
         contentHeight = height;
         visibleHeight = height;
 
-        // Calculate content height and max scroll
+        // Calculate content height
         totalContentHeight = calculateTotalContentHeight();
-        maxScrollOffset = Math.max(0, totalContentHeight - visibleHeight);
 
-        // Clamp scroll offset
-        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
+        // Update scroll manager
+        Rect bounds = new Rect(x, y, width, height);
+        scrollManager.update(bounds, totalContentHeight);
 
-        // Enable scissoring to clip content
-        graphics.enableScissor(x, y, x + width, y + height);
-
-        // Render content with scroll offset applied
-        renderScrollableContent(graphics, font, x, y - scrollOffset, width, height, mouseX, mouseY);
-
-        // Disable scissoring
-        graphics.disableScissor();
+        // Render content with scissoring (try/finally for safety)
+        scrollManager.withScissor(graphics, bounds, () -> {
+            // Render content with scroll offset applied
+            int scrolledY = y - scrollManager.getScrollOffset();
+            renderScrollableContent(graphics, font, x, scrolledY, width, height, mouseX, mouseY);
+        });
 
         // Render scrollbar if needed
-        if (totalContentHeight > visibleHeight) {
-            renderScrollbar(graphics, x + width - SCROLLBAR_WIDTH - 2, y, SCROLLBAR_WIDTH, height);
+        if (scrollManager.needsScrolling()) {
+            renderScrollbar(graphics, x + width - SCROLLBAR_WIDTH - 2, y, SCROLLBAR_WIDTH, height, mouseX, mouseY);
         }
     }
 
@@ -89,91 +91,61 @@ public abstract class ScrollableSettingsPage implements SettingsPage {
     /**
      * Render the scrollbar.
      */
-    protected void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height) {
+    protected void renderScrollbar(GuiGraphics graphics, int x, int y, int barWidth, int height, int mouseX, int mouseY) {
         // Track background
         graphics.fill(x, y, x + barWidth, y + height, UIConstants.Background.INPUT());
 
-        // Calculate thumb size and position
-        float visibleRatio = (float) visibleHeight / totalContentHeight;
-        int thumbHeight = Math.max(20, (int) (height * visibleRatio));
+        // Get metrics from scroll manager
+        ScrollMetrics metrics = scrollManager.calculateMetrics();
+        int thumbY = y + metrics.thumbY();
+        int thumbHeight = metrics.thumbHeight();
 
-        int thumbY;
-        if (maxScrollOffset > 0) {
-            float scrollRatio = (float) scrollOffset / maxScrollOffset;
-            thumbY = y + (int) ((height - thumbHeight) * scrollRatio);
-        } else {
-            thumbY = y;
-        }
+        // Check hover state
+        boolean thumbHovered = mouseX >= x && mouseX < x + barWidth
+            && mouseY >= thumbY && mouseY < thumbY + thumbHeight;
+        boolean isDragging = scrollManager.isDragging();
 
-        // Thumb
-        int thumbColor = isDraggingScrollbar ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT();
+        // Thumb color based on state
+        int thumbColor = isDragging ? UIConstants.Border.ACCENT() :
+                        (thumbHovered ? UIConstants.Border.LIGHT() : UIConstants.Border.DEFAULT());
         graphics.fill(x, thumbY, x + barWidth, thumbY + thumbHeight, thumbColor);
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button, int contentX, int contentY, int contentWidth) {
         // Check if click is within content area
-        if (mouseX < contentX || mouseX > contentX + contentWidth ||
+        if (mouseX < contentX || mouseX > contentX + this.contentWidth ||
             mouseY < contentY || mouseY > contentY + contentHeight) {
             return false;
         }
 
-        // Check scrollbar click
-        if (totalContentHeight > visibleHeight) {
-            int scrollbarX = contentX + contentWidth - SCROLLBAR_WIDTH - 2;
-            if (mouseX >= scrollbarX && mouseX <= scrollbarX + SCROLLBAR_WIDTH + 2) {
-                isDraggingScrollbar = true;
-                // Calculate thumb dimensions for accurate click positioning
-                float visibleRatio = (float) visibleHeight / totalContentHeight;
-                int thumbHeight = Math.max(20, (int) (contentHeight * visibleRatio));
-                int trackHeight = contentHeight - thumbHeight;
-                if (trackHeight > 0) {
-                    // Jump to clicked position (centering thumb on click)
-                    float clickRatio = (float)(mouseY - contentY - thumbHeight / 2) / trackHeight;
-                    clickRatio = Math.max(0, Math.min(1, clickRatio));
-                    scrollOffset = (int)(maxScrollOffset * clickRatio);
-                }
+        // Check scrollbar click first
+        if (scrollManager.needsScrolling()) {
+            if (scrollManager.mouseClicked(mouseX, mouseY, button)) {
                 return true;
             }
         }
 
         // Pass to subclass with adjusted Y
-        int adjustedY = contentY - scrollOffset;
+        int adjustedY = contentY - scrollManager.getScrollOffset();
         return handleContentClick(mouseX, mouseY, button, adjustedY);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        scrollOffset -= (int) (scrollY * SCROLL_SPEED);
-        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScrollOffset));
-        return true;
+        // FIX: Delegate to ScrollManager which handles bounds checking
+        return scrollManager.mouseScrolled(mouseX, mouseY, scrollY);
     }
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (isDraggingScrollbar) {
-            isDraggingScrollbar = false;
-            return true;
-        }
-        return false;
+        return scrollManager.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if (isDraggingScrollbar && maxScrollOffset > 0) {
-            // Calculate thumb dimensions for accurate drag
-            float visibleRatio = (float) visibleHeight / totalContentHeight;
-            int thumbHeight = Math.max(20, (int) (contentHeight * visibleRatio));
-            int trackHeight = contentHeight - thumbHeight;
-            if (trackHeight > 0) {
-                // Center thumb on mouse position during drag
-                float dragRatio = (float)(mouseY - contentY - thumbHeight / 2) / trackHeight;
-                dragRatio = Math.max(0, Math.min(1, dragRatio));
-                scrollOffset = (int)(maxScrollOffset * dragRatio);
-            }
-            return true;
-        }
-        return false;
+        // FIX: Now uses delta-based drag instead of centering
+        return scrollManager.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
 
     @Override
@@ -185,16 +157,30 @@ public abstract class ScrollableSettingsPage implements SettingsPage {
      * Reset scroll position. Call when page is initialized.
      */
     protected void resetScroll() {
-        scrollOffset = 0;
+        scrollManager.reset();
     }
 
     /**
      * Get the effective content width (excluding scrollbar).
      */
     protected int getEffectiveContentWidth() {
-        if (totalContentHeight > visibleHeight) {
+        if (scrollManager.needsScrolling()) {
             return contentWidth - SCROLLBAR_WIDTH - 4;
         }
         return contentWidth;
+    }
+
+    /**
+     * Get current scroll offset.
+     */
+    protected int getScrollOffset() {
+        return scrollManager.getScrollOffset();
+    }
+
+    /**
+     * Get max scroll offset.
+     */
+    protected int getMaxScrollOffset() {
+        return scrollManager.getMaxScroll();
     }
 }

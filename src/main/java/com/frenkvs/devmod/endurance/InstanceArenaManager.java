@@ -178,6 +178,72 @@ public class InstanceArenaManager {
     }
 
     /**
+     * Start an instance quest for a party. Teleports all members and builds an arena in the instance.
+     */
+    public InstanceQuestResult startInstanceQuestForParty(
+            ServerPlayer leader,
+            ResourceLocation mobId,
+            EnduranceQuestManager.QuestSettings settings
+    ) {
+        UUID leaderId = leader.getUUID();
+
+        // Build party member list (including leader)
+        List<UUID> members = new ArrayList<>();
+        members.add(leaderId);
+        if (settings.partyMemberIds != null) {
+            members.addAll(settings.partyMemberIds);
+        }
+
+        // Start instance creation with immediate teleport for party
+        try {
+            UUID instanceId = InstanceManager.INSTANCE
+                .startInstanceQuestImmediate(leader, buildArenaId(mobId), mobId.toString(), members)
+                .get(CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+            if (instanceId == null) {
+                return new InstanceQuestResult(false, "Failed to create instance for party", null, null);
+            }
+
+            Optional<InstanceData> instanceOpt = InstanceRegistry.INSTANCE.getInstance(instanceId);
+            if (instanceOpt.isEmpty()) {
+                return new InstanceQuestResult(false, "Instance not found after creation", null, null);
+            }
+
+            InstanceData instance = instanceOpt.get();
+            ResourceKey<Level> dimensionKey = instance.getDimensionKey();
+            if (dimensionKey == null) {
+                return new InstanceQuestResult(false, "Instance dimension not ready", null, null);
+            }
+
+            MinecraftServer server = leader.getServer();
+            if (server == null) {
+                return new InstanceQuestResult(false, "Server not available", null, null);
+            }
+
+            ServerLevel instanceLevel = server.getLevel(dimensionKey);
+            if (instanceLevel == null) {
+                return new InstanceQuestResult(false, "Instance level not found", null, null);
+            }
+
+            ArenaManager.Arena arena = createInstanceArena(instanceLevel, new BlockPos(0, 65, 0), settings.arenaSize);
+            arenaToInstance.put(arena.getId(), instanceId);
+            instanceToArena.put(instanceId, arena.getId());
+
+            LOGGER.info("[InstanceArena] Instance quest ready for party {} members (instance: {}, arena: {})",
+                members.size(), instanceId, arena.getId());
+
+            return new InstanceQuestResult(true, "Instance ready", instanceId, arena);
+        } catch (Exception e) {
+            LOGGER.error("[InstanceArena] Party instance creation failed: {}", e.getMessage());
+            return new InstanceQuestResult(false, e.getMessage(), null, null);
+        }
+    }
+
+    private String buildArenaId(ResourceLocation mobId) {
+        return "endurance_" + mobId.toString().replace(":", "_");
+    }
+
+    /**
      * Create an arena within an instance dimension.
      * Similar to ArenaManager but adapted for the instance void world.
      */

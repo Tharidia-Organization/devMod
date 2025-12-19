@@ -162,7 +162,7 @@ public class MutatorSystem {
                 case "splitting" -> splitOnDeath = true;
 
                 // Environmental
-                case "no_healing" -> healingDisabled = false;
+                case "no_healing" -> healingDisabled = true;
                 case "one_hit" -> oneHitKills = true;
                 case "mirror" -> mirrorDamage = true;
                 case "low_gravity" -> lowGravity = true;

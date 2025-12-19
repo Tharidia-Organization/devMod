@@ -3,6 +3,7 @@ package com.frenkvs.devmod;
 import static com.frenkvs.devmod.DevMod.MODID;
 
 import com.frenkvs.devmod.endurance.EnduranceQuestManager;
+import com.frenkvs.devmod.FuelConfigManager;
 import com.frenkvs.devmod.testing.stats.HazardTypeRegistry;
 import com.frenkvs.devmod.util.ConfigPaths;
 import com.frenkvs.devmod.util.DamageTypeConfig;
@@ -123,6 +124,14 @@ public class CommonModEvents {
             LOGGER.info("[DevMod] WeaponConfigManager initialized successfully");
         } catch (Exception e) {
             LOGGER.error("[DevMod] Failed to initialize WeaponConfigManager", e);
+        }
+
+        // Initialize FuelConfigManager for fuel stats persistence
+        try {
+            FuelConfigManager.initialize();
+            LOGGER.info("[DevMod] FuelConfigManager initialized successfully");
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Failed to initialize FuelConfigManager", e);
         }
 
         // Reload weapon detection lists (whitelist/blacklist) to pick up server config changes

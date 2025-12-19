@@ -35,7 +35,7 @@ public class QuestDeathScreen extends Screen {
 
     // === Dimensions ===
     private static final int PANEL_WIDTH = 340;
-    private static final int PANEL_HEIGHT = 280;
+    private static final int PANEL_HEIGHT = 320;
 
     // === Animation ===
     private static final long FADE_IN_DURATION = 500;
@@ -226,7 +226,7 @@ public class QuestDeathScreen extends Screen {
         int panelX = centerX - PANEL_WIDTH / 2;
         int panelY = centerY - PANEL_HEIGHT / 2;
         int buttonWidth = PANEL_WIDTH - UIConstants.Spacing.PANEL_MARGIN * 5;
-        int respawnY = panelY + PANEL_HEIGHT - 75;
+        int respawnY = panelY + PANEL_HEIGHT - 70;
         int giveUpY = panelY + PANEL_HEIGHT - 40;
 
         if (respawnButton != null) {

@@ -119,7 +119,7 @@ public sealed interface RecipeData permits
                 case CAMPFIRE -> "Campfire";
             };
             case SmithingRecipeData sm -> sm.smithingType() == SmithingType.TRANSFORM ? "Smithing" : "Trim";
-            case StonecuttingRecipeData sc -> "Stonecutting";
+            case StonecuttingRecipeData ignored -> "Stonecutting";
         };
     }
 

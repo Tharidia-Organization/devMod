@@ -45,7 +45,7 @@ public class NetworkHandler {
     @SubscribeEvent
     public static void register(RegisterPayloadHandlersEvent event) {
         // ===================================================================
-        // MOB/ITEM/ARMOR CHANNELS (1-4, 7, 17, 34, 36-37)
+        // MOB/ITEM/ARMOR/USABLE CHANNELS (1-4, 7, 17, 34, 36-37, 44)
         // ===================================================================
 
         // Channel 1: Monster Statistics
@@ -101,6 +101,24 @@ public class NetworkHandler {
                 nn(ArmorStatsPayloadV2.TYPE),
                 nn(ArmorStatsPayloadV2.STREAM_CODEC),
                 MobItemNetworkHandler::handleArmorStatsDataV2
+        );
+        // Channel 44: Usable Stats Payload
+        event.registrar("44").playToServer(
+                nn(UsableStatsPayload.TYPE),
+                nn(UsableStatsPayload.STREAM_CODEC),
+                MobItemNetworkHandler::handleUsableStatsData
+        );
+        // Channel 45: Food Stats Payload
+        event.registrar("45").playToServer(
+                nn(FoodStatsPayload.TYPE),
+                nn(FoodStatsPayload.STREAM_CODEC),
+                MobItemNetworkHandler::handleFoodStatsData
+        );
+        // Channel 46: Fuel Stats Payload
+        event.registrar("46").playToServer(
+                nn(FuelStatsPayload.TYPE),
+                nn(FuelStatsPayload.STREAM_CODEC),
+                MobItemNetworkHandler::handleFuelStatsData
         );
 
         // ===================================================================

@@ -34,9 +34,9 @@ public sealed interface PresetScope permits
      */
     default int priority() {
         return switch (this) {
-            case Modpack m -> 3;   // Highest priority
-            case Category c -> 2;  // Medium priority
-            case Global g -> 1;    // Lowest priority
+            case Modpack ignored -> 3;   // Highest priority
+            case Category ignored -> 2;  // Medium priority
+            case Global ignored -> 1;    // Lowest priority
         };
     }
 

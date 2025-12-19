@@ -752,6 +752,18 @@ public class EnduranceQuestScreen extends Screen {
         if (showIntroOverlay) {
             return true;
         }
+
+        // FIX: Only handle scroll if mouse is over the quest list area
+        int listX = SIDEBAR_WIDTH + 10;
+        int listY = HEADER_HEIGHT;
+        int listWidth = width - SIDEBAR_WIDTH - 250;
+        int listHeight = height - HEADER_HEIGHT - 60;
+
+        if (mouseX < listX || mouseX > listX + listWidth ||
+            mouseY < listY || mouseY > listY + listHeight) {
+            return false;
+        }
+
         scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) (scrollY * 20)));
         return true;
     }

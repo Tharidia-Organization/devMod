@@ -177,4 +177,40 @@ public final class ModuleCardSection implements EditorSection.CustomSection {
             callback
         );
     }
+
+    public static ModuleCardSection usable(Consumer<EditorStartTab> callback) {
+        return new ModuleCardSection(
+            "card-usable",
+            EditorStartTab.USABLE,
+            "Usable Item Editor",
+            "Cooldowns, use duration, throwables",
+            "⏱",
+            UIConstants.Accent.ORANGE(),
+            callback
+        );
+    }
+
+    public static ModuleCardSection food(Consumer<EditorStartTab> callback) {
+        return new ModuleCardSection(
+            "card-food",
+            EditorStartTab.FOOD,
+            "Food Editor",
+            "Nutrition, saturation, effects",
+            "🍖",
+            UIConstants.Accent.GREEN(),
+            callback
+        );
+    }
+
+    public static ModuleCardSection fuel(Consumer<EditorStartTab> callback) {
+        return new ModuleCardSection(
+            "card-fuel",
+            EditorStartTab.FUEL,
+            "Fuel Editor",
+            "Burn time, cook time settings",
+            "🔥",
+            UIConstants.Accent.ORANGE(),
+            callback
+        );
+    }
 }

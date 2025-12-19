@@ -1,6 +1,7 @@
 package com.frenkvs.devmod.endurance;
 
 import com.frenkvs.devmod.telemetry.TelemetryService;
+import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.ChatFormatting;
 import net.minecraft.resources.ResourceLocation;
@@ -52,7 +53,7 @@ public class EnduranceQuestManager {
     private boolean initialized = false;
 
     // Instance dimension mode flag - when true, quests run in isolated temporary dimensions
-    private boolean useInstanceDimensions = false;
+    private boolean useInstanceDimensions = true;
 
     private EnduranceQuestManager() {}
 
@@ -154,9 +155,9 @@ public class EnduranceQuestManager {
                 }
 
                 quest.fail(true); // Mark as abandoned
-                if (arenaManager != null) {
-                    arenaManager.destroyArena(session.arena);
-                }
+
+                // Flush telemetry/stats and cleanup systems without granting full rewards
+                handleForcedShutdownCleanup(session);
             } catch (Exception e) {
                 LOGGER.error("[EnduranceQuest] Error cleaning up session for player {}", session.getPlayerId(), e);
             }
@@ -206,12 +207,18 @@ public class EnduranceQuestManager {
             return PreparedArenaResult.failure("Unknown quest type: " + mobId);
         }
 
-        // For instance dimension mode, we need a different flow
         if (useInstanceDimensions) {
-            return PreparedArenaResult.failure("Instance dimension mode not yet supported for party quests");
+            // Instance path (supports party)
+            var result = InstanceArenaManager.INSTANCE.startInstanceQuestForParty(leader, mobId, settings);
+            if (result.success()) {
+                LOGGER.info("[EnduranceQuest] Prepared INSTANCE arena {} for party quest (mob: {}, instance: {})",
+                    result.arena().getId(), mobId, result.instanceId());
+                return PreparedArenaResult.success(result.arena(), mobId, template.getMobConfig(), result.instanceId());
+            }
+            return PreparedArenaResult.failure(result.message());
         }
 
-        // Create arena in leader's current dimension
+        // Legacy overworld fallback (should not be used when instance mode forced)
         ServerLevel level = leader.serverLevel();
         ArenaManager.Arena arena = arenaManager.createArena(level, leader.blockPosition(), settings.arenaSize);
 
@@ -222,7 +229,7 @@ public class EnduranceQuestManager {
         LOGGER.info("[EnduranceQuest] Prepared arena {} for party quest (mob: {})",
             arena.getId(), mobId);
 
-        return PreparedArenaResult.success(arena, mobId, template.getMobConfig());
+        return PreparedArenaResult.success(arena, mobId, template.getMobConfig(), null);
     }
 
     /**
@@ -301,7 +308,7 @@ public class EnduranceQuestManager {
      */
     public Map<UUID, StartQuestResult> startPreparedQuest(
             List<ServerPlayer> players, ArenaManager.Arena arena,
-            ResourceLocation mobId, QuestSettings settings) {
+            ResourceLocation mobId, QuestSettings settings, @javax.annotation.Nullable UUID instanceId) {
 
         Map<UUID, StartQuestResult> results = new HashMap<>();
 
@@ -344,6 +351,9 @@ public class EnduranceQuestManager {
                 playerId, quest, arena, System.currentTimeMillis(),
                 settings.partyId, settings.questType, settings.getPlayerCount()
             );
+            if (instanceId != null) {
+                session.setInstanceId(instanceId);
+            }
             activeSessions.put(playerId, session); // Replaces placeholder
 
             // Prepare player (save state, give kit - NO TELEPORT, already done)
@@ -389,15 +399,17 @@ public class EnduranceQuestManager {
         String errorMessage,
         ArenaManager.Arena arena,
         ResourceLocation mobId,
-        EnduranceQuestRegistry.MobQuestConfig mobConfig
+        EnduranceQuestRegistry.MobQuestConfig mobConfig,
+        @javax.annotation.Nullable UUID instanceId
     ) {
         public static PreparedArenaResult success(ArenaManager.Arena arena, ResourceLocation mobId,
-                                                   EnduranceQuestRegistry.MobQuestConfig mobConfig) {
-            return new PreparedArenaResult(true, null, arena, mobId, mobConfig);
+                                                   EnduranceQuestRegistry.MobQuestConfig mobConfig,
+                                                   @javax.annotation.Nullable UUID instanceId) {
+            return new PreparedArenaResult(true, null, arena, mobId, mobConfig, instanceId);
         }
 
         public static PreparedArenaResult failure(String message) {
-            return new PreparedArenaResult(false, message, null, null, null);
+            return new PreparedArenaResult(false, message, null, null, null, null);
         }
     }
 
@@ -431,54 +443,8 @@ public class EnduranceQuestManager {
             return new StartQuestResult(false, I18n.translate("devmod.endurance.active_quest").getString(), null);
         }
 
-        // === INSTANCE DIMENSION MODE ===
-        if (useInstanceDimensions) {
-            return startQuestInInstanceDimension(player, mobId, quest, settings);
-        }
-
-        // === LEGACY OVERWORLD ARENA MODE ===
-        // Create arena in current dimension
-        ServerLevel level = player.serverLevel();
-        ArenaManager.Arena arena = arenaManager.createArena(level, player.blockPosition(), settings.arenaSize);
-
-        if (arena == null) {
-            // CLEANUP: Remove placeholder session on failure
-            activeSessions.remove(playerId);
-            return new StartQuestResult(false, "Failed to create arena", null);
-        }
-
-        // Start the quest
-        quest.start(arena.getId());
-
-        // Create the real session with arena and party settings, then replace placeholder
-        ActiveQuestSession session = new ActiveQuestSession(
-            playerId, quest, arena, System.currentTimeMillis(),
-            settings.partyId, settings.questType, settings.getPlayerCount()
-        );
-        activeSessions.put(playerId, session); // Replaces placeholder
-
-        // Prepare player for quest: save state, set survival, clear inventory, give kit
-        EndurancePlayerStateManager.INSTANCE.preparePlayerForQuest(player, session);
-
-        // Teleport player to arena center
-        arenaManager.teleportToArena(player, arena);
-
-        // Initialize all subsystems (Combo, Mutator, Perk, Reward) BEFORE starting wave
-        EnduranceEventHandler.onQuestStart(player, session);
-
-        // INTEGRATION: Start telemetry dungeon session for tracking
-        String dungeonId = "endurance_" + mobId.toString().replace(":", "_");
-        TelemetryService.INSTANCE.startDungeonSession(player, dungeonId);
-
-        // Start the first wave
-        WaveManager.INSTANCE.startWave(session);
-
-        // Notify subsystems that wave 1 has started
-        EnduranceEventHandler.onWaveStart(player, session, quest.getCurrentWave());
-
-        LOGGER.info("[EnduranceQuest] Player {} started quest: {}", player.getName().getString(), quest.getDisplayName());
-
-        return new StartQuestResult(true, "Quest started!", session);
+        // === INSTANCE DIMENSION MODE (forced) ===
+        return startQuestInInstanceDimension(player, mobId, quest, settings);
     }
 
     /**
@@ -770,6 +736,44 @@ public class EnduranceQuestManager {
         for (EnduranceQuestRegistry.MobQuestConfig mobConfig : EnduranceQuestRegistry.INSTANCE.getAllMobConfigs()) {
             EnduranceQuest template = new EnduranceQuest(mobConfig);
             questTemplates.put(mobConfig.mobId, template);
+        }
+    }
+
+    /**
+     * Cleanup path used only during server shutdown to avoid dangling state
+     * and to ensure telemetry/stats are flushed without granting full rewards.
+     */
+    private void handleForcedShutdownCleanup(ActiveQuestSession session) {
+        try {
+            EnduranceQuest quest = session.quest;
+            UUID questId = quest.getQuestId();
+            UUID playerId = session.getPlayerId();
+
+            // Record end-of-session telemetry and stats (abandoned outcome)
+            EnduranceTelemetryService.INSTANCE.recordQuestEnd(
+                questId,
+                EnduranceQuestState.FAILED,
+                quest.getCurrentWave(),
+                quest.getSessionDuration(),
+                quest.getMobsKilledThisSession(),
+                quest.getTotalDamageDealtThisSession(),
+                quest.getDamageTakenThisSession()
+            );
+            persistence.updatePlayerStats(playerId, quest, false);
+
+            // Stop trackers and sessions to avoid leaks
+            CombatTracker.INSTANCE.stopTracking(questId);
+            ComboSystem.INSTANCE.endSession(playerId);
+            EnduranceEventCombat.removeComboSession(playerId);
+            MutatorSystem.INSTANCE.endSession(questId);
+            EnduranceEventCombat.removeMutatorSession(questId);
+            PerkSystem.INSTANCE.endSession(playerId);
+
+            // Cleanup arena/boss state (handles both legacy and instance modes)
+            EndurancePlayerStateManager.INSTANCE.cleanupQuestSystems(session);
+            EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(session, arenaManager, false);
+        } catch (Exception e) {
+            LOGGER.warn("[EnduranceQuest] Failed shutdown cleanup for session {}", session.getPlayerId(), e);
         }
     }
 

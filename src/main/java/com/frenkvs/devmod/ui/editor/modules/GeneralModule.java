@@ -22,6 +22,16 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.TieredItem;
 import net.minecraft.world.item.ProjectileWeaponItem;
+import net.minecraft.world.item.SnowballItem;
+import net.minecraft.world.item.EggItem;
+import net.minecraft.world.item.EnderpearlItem;
+import net.minecraft.world.item.ThrowablePotionItem;
+import net.minecraft.world.item.BowItem;
+import net.minecraft.world.item.CrossbowItem;
+import net.minecraft.world.item.ShieldItem;
+import net.minecraft.world.item.SpyglassItem;
+import net.minecraft.world.item.BrushItem;
+import net.minecraft.world.item.Item;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -89,6 +99,15 @@ public class GeneralModule extends AbstractEditorModule {
         if (hasRecipe()) {
             modules.add(EditorStartTab.RECIPE);
         }
+        if (isUsableItem()) {
+            modules.add(EditorStartTab.USABLE);
+        }
+        if (isFoodItem()) {
+            modules.add(EditorStartTab.FOOD);
+        }
+        if (isFuelItem()) {
+            modules.add(EditorStartTab.FUEL);
+        }
         // General is always available (we're in it)
         modules.add(EditorStartTab.GENERAL);
 
@@ -115,6 +134,27 @@ public class GeneralModule extends AbstractEditorModule {
         // For now, assume most items can have recipes
         // In future could check RecipeManager
         return item != null;
+    }
+
+    private boolean isUsableItem() {
+        if (item == null) return false;
+        Item i = item.getItem();
+        return i instanceof SnowballItem || i instanceof EggItem ||
+               i instanceof EnderpearlItem || i instanceof ThrowablePotionItem ||
+               i instanceof BowItem || i instanceof CrossbowItem ||
+               i instanceof ShieldItem || i instanceof SpyglassItem ||
+               i instanceof BrushItem ||
+               item.has(DataComponents.FOOD); // Food items are also "usable"
+    }
+
+    private boolean isFoodItem() {
+        return item != null && item.has(DataComponents.FOOD);
+    }
+
+    private boolean isFuelItem() {
+        if (item == null) return false;
+        // Use FuelConfigManager which supports both vanilla and modded items
+        return com.frenkvs.devmod.FuelConfigManager.isFuel(item);
     }
 
     private boolean hasEnchantments() {
@@ -211,8 +251,29 @@ public class GeneralModule extends AbstractEditorModule {
             tab -> { if (moduleSwitchCallback != null) moduleSwitchCallback.accept(tab); }
         ));
 
+        // Usable module (for throwables, items with cooldown, etc.)
+        if (isUsableItem()) {
+            sections.add(ModuleCardSection.usable(
+                tab -> { if (moduleSwitchCallback != null) moduleSwitchCallback.accept(tab); }
+            ));
+        }
+
+        // Food module (for edible items)
+        if (isFoodItem()) {
+            sections.add(ModuleCardSection.food(
+                tab -> { if (moduleSwitchCallback != null) moduleSwitchCallback.accept(tab); }
+            ));
+        }
+
+        // Fuel module (for burnable items)
+        if (isFuelItem()) {
+            sections.add(ModuleCardSection.fuel(
+                tab -> { if (moduleSwitchCallback != null) moduleSwitchCallback.accept(tab); }
+            ));
+        }
+
         // If no specialized modules available, show a message
-        if (!isWeaponItem() && !isArmorItem()) {
+        if (!isWeaponItem() && !isArmorItem() && !isUsableItem() && !isFoodItem() && !isFuelItem()) {
             sections.add(new InfoListSection(
                 "overview-basic",
                 "Basic Item",
