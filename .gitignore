@@ -22,17 +22,17 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
-/build/
-/run/
-/.gradle/
-/.idea/
+/build/*
+/run/*
+/.gradle/*
+/.idea/*
 /*.iml
-/out/
+/out/*
 
 # Gradle caches and config
-**/.gradle/
-**/build/
-**/out/
+**/.gradle/*
+**/build/*
+**/out/*
 
 # IDE
 .vscode/
@@ -50,3 +50,4 @@ replay_pid*
 # Node tooling
 **/node_modules/
 **/npm-debug.log*
+/logs/*
