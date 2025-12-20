@@ -787,7 +787,8 @@ public class DuckDBBatchWriter {
             autoCommitOriginal = conn.getAutoCommit();
             conn.setAutoCommit(false);
 
-            while (running && !queue.isEmpty()) {
+            // Allow final flush even after running=false (shutdown)
+            while (!queue.isEmpty()) {
                 batch = new ArrayList<>(DuckDBConfig.BATCH_SIZE);
                 queue.drainTo(batch, DuckDBConfig.BATCH_SIZE);
                 if (batch.isEmpty()) break;

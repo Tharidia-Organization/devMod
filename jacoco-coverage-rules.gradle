@@ -1,0 +1,197 @@
+/**
+ * JaCoCo Coverage Rules Configuration
+ * DD41: Coverage Policy - 80% core, 60% MC-dependent, 50% network/UI
+ *
+ * Apply this file in build.gradle:
+ *   apply from: 'jacoco-coverage-rules.gradle'
+ */
+
+apply plugin: 'jacoco'
+
+jacoco {
+    toolVersion = "0.8.11"
+}
+
+// Configure JaCoCo report generation
+jacocoTestReport {
+    dependsOn test
+
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+
+    // Exclude generated code and Minecraft internals
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                '**/mixin/**',
+                '**/generated/**',
+                '**/accessor/**',
+                '**/*Mixin.class',
+                '**/*Accessor.class'
+            ])
+        }))
+    }
+}
+
+// Configure coverage verification rules
+jacocoTestCoverageVerification {
+    dependsOn jacocoTestReport
+
+    violationRules {
+        // Rule 1: Core Arena Logic - 80% minimum
+        rule {
+            enabled = true
+            element = 'PACKAGE'
+
+            includes = [
+                'com.frenkvs.devmod.arena.cleanup.*',
+                'com.frenkvs.devmod.arena.template.*',
+                'com.frenkvs.devmod.arena.validation.*'
+            ]
+
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.80
+            }
+
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = 0.75
+            }
+        }
+
+        // Rule 2: Minecraft-Dependent Code - 60% minimum
+        rule {
+            enabled = true
+            element = 'PACKAGE'
+
+            includes = [
+                'com.frenkvs.devmod.arena.monitor.*',
+                'com.frenkvs.devmod.arena.world.*',
+                'com.frenkvs.devmod.arena.entity.*'
+            ]
+
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.60
+            }
+
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = 0.50
+            }
+        }
+
+        // Rule 3: Network/UI Code - 50% minimum
+        rule {
+            enabled = true
+            element = 'PACKAGE'
+
+            includes = [
+                'com.frenkvs.devmod.arena.network.*',
+                'com.frenkvs.devmod.arena.ui.*'
+            ]
+
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.50
+            }
+        }
+
+        // Rule 4: Overall Arena Package - 65% minimum
+        rule {
+            enabled = true
+            element = 'PACKAGE'
+
+            includes = [
+                'com.frenkvs.devmod.arena.*'
+            ]
+
+            // Exclude sub-packages (handled by specific rules)
+            excludes = [
+                'com.frenkvs.devmod.arena.cleanup.*',
+                'com.frenkvs.devmod.arena.template.*',
+                'com.frenkvs.devmod.arena.validation.*',
+                'com.frenkvs.devmod.arena.monitor.*',
+                'com.frenkvs.devmod.arena.world.*',
+                'com.frenkvs.devmod.arena.entity.*',
+                'com.frenkvs.devmod.arena.network.*',
+                'com.frenkvs.devmod.arena.ui.*'
+            ]
+
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.65
+            }
+        }
+    }
+}
+
+// Make check depend on coverage verification
+check.dependsOn jacocoTestCoverageVerification
+
+// Custom task to print coverage summary
+task coverageSummary {
+    dependsOn jacocoTestReport
+
+    doLast {
+        def reportFile = file("${buildDir}/reports/jacoco/test/jacocoTestReport.xml")
+        if (reportFile.exists()) {
+            def xml = new XmlSlurper().parse(reportFile)
+            def counters = xml.counter
+
+            println "\n========== Coverage Summary =========="
+            counters.each { counter ->
+                def type = counter.@type.text()
+                def missed = counter.@missed.text() as int
+                def covered = counter.@covered.text() as int
+                def total = missed + covered
+                def ratio = total > 0 ? (covered * 100.0 / total) : 0
+                printf "%-12s: %6.2f%% (%d/%d)\n", type, ratio, covered, total
+            }
+            println "======================================"
+        }
+    }
+}
+
+// Coverage thresholds documentation
+ext.coverageThresholds = [
+    core: [
+        description: 'Core arena logic (cleanup, template, validation)',
+        line: 0.80,
+        branch: 0.75,
+        packages: [
+            'com.frenkvs.devmod.arena.cleanup',
+            'com.frenkvs.devmod.arena.template',
+            'com.frenkvs.devmod.arena.validation'
+        ]
+    ],
+    mcDependent: [
+        description: 'Minecraft-dependent code (monitor, world, entity)',
+        line: 0.60,
+        branch: 0.50,
+        packages: [
+            'com.frenkvs.devmod.arena.monitor',
+            'com.frenkvs.devmod.arena.world',
+            'com.frenkvs.devmod.arena.entity'
+        ]
+    ],
+    networkUi: [
+        description: 'Network and UI code',
+        line: 0.50,
+        branch: 0.40,
+        packages: [
+            'com.frenkvs.devmod.arena.network',
+            'com.frenkvs.devmod.arena.ui'
+        ]
+    ]
+]

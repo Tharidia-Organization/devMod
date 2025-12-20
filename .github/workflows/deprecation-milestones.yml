@@ -1,0 +1,124 @@
+# Deprecation Milestones Workflow (DD67)
+# Implements M1 (warning) → M2 (-Werror) → M3 (removal) timeline
+#
+# Timeline:
+#   M1: Warning only (current) - deprecation warnings don't fail build
+#   M2: +4 weeks - -Werror enabled, blocks new usage
+#   M3: +8 weeks - Legacy methods removed
+#
+# This workflow runs weekly to check milestone transitions
+
+name: Deprecation Milestones
+
+on:
+  schedule:
+    # Run every Monday at 09:00 UTC
+    - cron: '0 9 * * MON'
+  workflow_dispatch:
+
+env:
+  # DD67: Milestone configuration
+  # Set these dates when deprecation starts
+  DEPRECATION_START: '2025-01-06'  # Example: when deprecation was announced
+  M2_OFFSET_DAYS: 28               # 4 weeks after start
+  M3_OFFSET_DAYS: 56               # 8 weeks after start
+
+jobs:
+  check-milestone:
+    name: Check Deprecation Milestone
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Calculate Current Milestone
+        id: milestone
+        run: |
+          START_DATE="${{ env.DEPRECATION_START }}"
+          M2_DAYS="${{ env.M2_OFFSET_DAYS }}"
+          M3_DAYS="${{ env.M3_OFFSET_DAYS }}"
+
+          # Calculate days since deprecation start
+          START_TS=$(date -d "$START_DATE" +%s)
+          NOW_TS=$(date +%s)
+          DAYS_SINCE=$(( (NOW_TS - START_TS) / 86400 ))
+
+          echo "Days since deprecation start: $DAYS_SINCE"
+
+          if [ $DAYS_SINCE -ge $M3_DAYS ]; then
+            echo "milestone=M3" >> $GITHUB_OUTPUT
+            echo "::warning::Milestone M3 reached - Legacy methods should be REMOVED"
+          elif [ $DAYS_SINCE -ge $M2_DAYS ]; then
+            echo "milestone=M2" >> $GITHUB_OUTPUT
+            echo "::notice::Milestone M2 reached - -Werror should be enabled"
+          else
+            echo "milestone=M1" >> $GITHUB_OUTPUT
+            echo "::notice::Milestone M1 - Warning only phase"
+          fi
+
+          echo "days_since=$DAYS_SINCE" >> $GITHUB_OUTPUT
+
+      - name: M2 Check - Werror Enforcement
+        if: steps.milestone.outputs.milestone == 'M2' || steps.milestone.outputs.milestone == 'M3'
+        run: |
+          echo "Checking if -Werror is configured for deprecation..."
+          if grep -q "Werror" build.gradle; then
+            echo "::notice::-Werror is configured"
+          else
+            echo "::error::M2 milestone reached but -Werror not configured in build.gradle"
+            echo "Add: options.compilerArgs << '-Werror'"
+            exit 1
+          fi
+
+      - name: M3 Check - Legacy Method Removal
+        if: steps.milestone.outputs.milestone == 'M3'
+        run: |
+          echo "Checking for legacy method usage..."
+          LEGACY_PATTERNS=(
+            "prepareArenaForParty\s*\("
+            "ArenaManager.createArena"
+            "ArenaManager.getArena"
+            "destroyArena\s*\("
+            "isArenaActive\s*\("
+          )
+
+          FOUND=0
+          for pattern in "${LEGACY_PATTERNS[@]}"; do
+            if grep -rn "$pattern" src/main/java --include="*.java" | grep -v "@Deprecated"; then
+              echo "::error::Legacy usage found: $pattern"
+              FOUND=1
+            fi
+          done
+
+          if [ $FOUND -eq 1 ]; then
+            echo "::error::M3 milestone reached - legacy methods should be removed"
+            exit 1
+          else
+            echo "::notice::No legacy method usage found"
+          fi
+
+      - name: Generate Status Report
+        if: always()
+        run: |
+          echo "# Deprecation Milestone Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Deprecation Start | ${{ env.DEPRECATION_START }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Days Since Start | ${{ steps.milestone.outputs.days_since }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Current Milestone | ${{ steps.milestone.outputs.milestone }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| M2 Threshold | ${{ env.M2_OFFSET_DAYS }} days |" >> $GITHUB_STEP_SUMMARY
+          echo "| M3 Threshold | ${{ env.M3_OFFSET_DAYS }} days |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Milestone Definitions" >> $GITHUB_STEP_SUMMARY
+          echo "- **M1**: Warning only - deprecation warnings don't fail build" >> $GITHUB_STEP_SUMMARY
+          echo "- **M2**: -Werror enabled - deprecation warnings fail build" >> $GITHUB_STEP_SUMMARY
+          echo "- **M3**: Legacy methods removed from codebase" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify on Milestone Transition
+        if: always()
+        run: |
+          MILESTONE="${{ steps.milestone.outputs.milestone }}"
+          # This could be extended to send Slack/email notifications
+          echo "Current milestone: $MILESTONE"

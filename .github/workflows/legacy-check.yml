@@ -1,0 +1,132 @@
+# DD43: Zero Legacy Gate - CI workflow for legacy API detection
+# This workflow ensures no new code uses deprecated arena APIs
+
+name: Legacy API Check
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  legacy-check:
+    name: Check for Legacy Arena API Usage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for deprecated ArenaManager.createArena() calls
+        id: check-createArena
+        run: |
+          echo "Checking for deprecated ArenaManager.createArena() usage..."
+
+          # Search for legacy API calls (excluding test files and this workflow)
+          LEGACY_CALLS=$(grep -rn "ArenaManager\.createArena\s*(" \
+            --include="*.java" \
+            --exclude-dir=".git" \
+            --exclude-dir="build" \
+            --exclude-dir="test" \
+            src/main/ 2>/dev/null || true)
+
+          if [ -n "$LEGACY_CALLS" ]; then
+            echo "::warning::Found deprecated ArenaManager.createArena() calls:"
+            echo "$LEGACY_CALLS"
+            echo "legacy_found=true" >> $GITHUB_OUTPUT
+            echo "legacy_count=$(echo "$LEGACY_CALLS" | wc -l)" >> $GITHUB_OUTPUT
+          else
+            echo "No legacy ArenaManager.createArena() calls found."
+            echo "legacy_found=false" >> $GITHUB_OUTPUT
+            echo "legacy_count=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for other deprecated arena APIs
+        id: check-other
+        run: |
+          echo "Checking for other deprecated arena APIs..."
+
+          # List of deprecated patterns to check
+          DEPRECATED_PATTERNS=(
+            "ArenaManager\.getInstance\(\)\.createArena"
+            "new\s+Arena\s*\("
+            "ArenaBuilder\.legacy"
+            "ArenaConfig\.fromLegacy"
+          )
+
+          TOTAL_LEGACY=0
+
+          for pattern in "${DEPRECATED_PATTERNS[@]}"; do
+            MATCHES=$(grep -rn "$pattern" \
+              --include="*.java" \
+              --exclude-dir=".git" \
+              --exclude-dir="build" \
+              --exclude-dir="test" \
+              src/main/ 2>/dev/null || true)
+
+            if [ -n "$MATCHES" ]; then
+              echo "::warning::Found deprecated pattern: $pattern"
+              echo "$MATCHES"
+              COUNT=$(echo "$MATCHES" | wc -l)
+              TOTAL_LEGACY=$((TOTAL_LEGACY + COUNT))
+            fi
+          done
+
+          echo "total_legacy=$TOTAL_LEGACY" >> $GITHUB_OUTPUT
+
+      - name: Check @Deprecated annotations exist
+        run: |
+          echo "Verifying @Deprecated annotations on legacy APIs..."
+
+          # Check that ArenaManager.createArena has @Deprecated
+          if grep -q "@Deprecated" src/main/java/com/frenkvs/devmod/arena/ArenaManager.java 2>/dev/null; then
+            echo "ArenaManager has @Deprecated annotations."
+          else
+            echo "::notice::ArenaManager.java may need @Deprecated annotations (file may not exist yet)"
+          fi
+
+      - name: Generate Legacy Usage Report
+        if: always()
+        run: |
+          echo "## Legacy Arena API Usage Report" > legacy-report.md
+          echo "" >> legacy-report.md
+          echo "**Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> legacy-report.md
+          echo "**Commit:** ${{ github.sha }}" >> legacy-report.md
+          echo "" >> legacy-report.md
+
+          if [ "${{ steps.check-createArena.outputs.legacy_found }}" == "true" ]; then
+            echo "### :warning: Deprecated API Usage Found" >> legacy-report.md
+            echo "" >> legacy-report.md
+            echo "Found **${{ steps.check-createArena.outputs.legacy_count }}** calls to deprecated \`ArenaManager.createArena()\`" >> legacy-report.md
+            echo "" >> legacy-report.md
+            echo "Please migrate to the new Arena Template API:" >> legacy-report.md
+            echo "\`\`\`java" >> legacy-report.md
+            echo "// Old (deprecated):" >> legacy-report.md
+            echo "ArenaManager.getInstance().createArena(config);" >> legacy-report.md
+            echo "" >> legacy-report.md
+            echo "// New (recommended):" >> legacy-report.md
+            echo "ArenaTemplate template = ArenaTemplate.load(templateId);" >> legacy-report.md
+            echo "ArenaInstance instance = template.createInstance(config);" >> legacy-report.md
+            echo "\`\`\`" >> legacy-report.md
+          else
+            echo "### :white_check_mark: No Legacy API Usage" >> legacy-report.md
+            echo "" >> legacy-report.md
+            echo "All arena code uses the new Template API." >> legacy-report.md
+          fi
+
+          cat legacy-report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Legacy Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: legacy-api-report
+          path: legacy-report.md
+
+      - name: Fail on excessive legacy usage
+        if: steps.check-createArena.outputs.legacy_count > 10
+        run: |
+          echo "::error::Too many legacy API calls (${{ steps.check-createArena.outputs.legacy_count }}). Maximum allowed: 10"
+          echo "Please migrate legacy calls before merging."
+          exit 1

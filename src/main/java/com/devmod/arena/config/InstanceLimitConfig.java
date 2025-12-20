@@ -1,0 +1,45 @@
+package com.devmod.arena.config;
+
+import com.devmod.arena.registry.InstanceSettingsValidator;
+
+/**
+ * Lightweight configuration for instance limits (chunkRadius/tickDistance).
+ *
+ * Sources (priority):
+ * 1) System properties: devmod.instance.maxChunkRadius / devmod.instance.maxTickDistance
+ * 2) Environment variables: DEVMOD_MAX_CHUNK_RADIUS / DEVMOD_MAX_TICK_DISTANCE
+ * 3) Defaults: 8 / 10
+ */
+public record InstanceLimitConfig(int maxChunkRadius, int maxTickDistance) {
+
+    private static final int DEFAULT_CHUNK_RADIUS = 8;
+    private static final int DEFAULT_TICK_DISTANCE = 10;
+
+    public InstanceSettingsValidator.InstanceLimits toLimits() {
+        return new InstanceSettingsValidator.InstanceLimits(maxChunkRadius, maxTickDistance);
+    }
+
+    public static InstanceLimitConfig load() {
+        int chunkRadius = getInt("devmod.instance.maxChunkRadius", "DEVMOD_MAX_CHUNK_RADIUS", DEFAULT_CHUNK_RADIUS);
+        int tickDistance = getInt("devmod.instance.maxTickDistance", "DEVMOD_MAX_TICK_DISTANCE", DEFAULT_TICK_DISTANCE);
+        return new InstanceLimitConfig(chunkRadius, tickDistance);
+    }
+
+    private static int getInt(String sysProp, String envVar, int defaultValue) {
+        String sys = System.getProperty(sysProp);
+        if (sys != null && !sys.isBlank()) {
+            try {
+                return Integer.parseInt(sys);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        String env = System.getenv(envVar);
+        if (env != null && !env.isBlank()) {
+            try {
+                return Integer.parseInt(env);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return defaultValue;
+    }
+}
