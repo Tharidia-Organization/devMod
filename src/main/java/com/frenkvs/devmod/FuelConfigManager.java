@@ -81,16 +81,17 @@ public final class FuelConfigManager {
     }
 
     /**
-     * Check if an item is a fuel (supports modded items via NeoForge IItemExtension).
+     * Check if an item is a fuel using vanilla fuel registry.
+     * IMPORTANT: This method must NOT call stack.getBurnTime() to avoid infinite recursion.
      */
     public static boolean isFuel(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return false;
         try {
-            // First check NeoForge's extended getBurnTime which supports modded items
-            int burnTime = stack.getBurnTime(null);
-            if (burnTime > 0) return true;
+            // Check if item has custom fuel stats first
+            String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+            if (GLOBAL_STATS.containsKey(itemId)) return true;
 
-            // Fallback: check vanilla fuel map
+            // Check vanilla fuel map directly - DO NOT use stack.getBurnTime()!
             @SuppressWarnings("deprecation")
             boolean vanillaFuel = AbstractFurnaceBlockEntity.getFuel().containsKey(stack.getItem());
             return vanillaFuel;
@@ -100,17 +101,17 @@ public final class FuelConfigManager {
     }
 
     /**
-     * Get burn time for an item (supports modded items via NeoForge IItemExtension).
-     * Returns the burn time from modded items first, then falls back to vanilla.
+     * Get burn time for an item from vanilla fuel registry.
+     * IMPORTANT: This method must NOT call stack.getBurnTime() to avoid infinite recursion
+     * when called from FurnaceFuelBurnTimeEvent handler, as getBurnTime triggers that event.
      */
     public static int getVanillaBurnTime(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return 0;
         try {
-            // First try NeoForge's extended getBurnTime which supports modded items
-            int burnTime = stack.getBurnTime(null);
-            if (burnTime > 0) return burnTime;
-
-            // Fallback: check vanilla fuel map
+            // Use vanilla fuel map directly - DO NOT use stack.getBurnTime() here!
+            // stack.getBurnTime() triggers FurnaceFuelBurnTimeEvent which calls FuelEvents
+            // which calls getStats() which calls getVanillaDefaults() which calls this method
+            // = infinite recursion / StackOverflowError
             @SuppressWarnings("deprecation")
             Integer vanillaBurnTime = AbstractFurnaceBlockEntity.getFuel().get(stack.getItem());
             return vanillaBurnTime != null ? vanillaBurnTime : 0;
