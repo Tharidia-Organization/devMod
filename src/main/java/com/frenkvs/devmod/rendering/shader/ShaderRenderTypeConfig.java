@@ -81,13 +81,13 @@ public record ShaderRenderTypeConfig(
         VertexFormat format = useFallbackFormat ? fallbackFormat : primaryFormat;
 
         RenderType.CompositeState compositeState = RenderType.CompositeState.builder()
-            .setShaderState(shaderState)
-            .setTransparencyState(transparencyState)
-            .setDepthTestState(depthTestState)
-            .setWriteMaskState(writeMaskState)
-            .setCullState(cullState)
+            .setShaderState(Objects.requireNonNull(shaderState))
+            .setTransparencyState(Objects.requireNonNull(transparencyState))
+            .setDepthTestState(Objects.requireNonNull(depthTestState))
+            .setWriteMaskState(Objects.requireNonNull(writeMaskState))
+            .setCullState(Objects.requireNonNull(cullState))
             .createCompositeState(false);
 
-        return RenderType.create(renderTypeName, format, mode, bufferSize, affectsCrumbling, sortOnUpload, compositeState);
+        return RenderType.create(Objects.requireNonNull(renderTypeName), Objects.requireNonNull(format), Objects.requireNonNull(mode), bufferSize, affectsCrumbling, sortOnUpload, Objects.requireNonNull(compositeState));
     }
 }

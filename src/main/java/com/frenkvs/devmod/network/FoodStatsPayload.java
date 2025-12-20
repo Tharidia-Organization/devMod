@@ -22,17 +22,17 @@ public record FoodStatsPayload(
 ) implements CustomPacketPayload {
 
     public static final Type<FoodStatsPayload> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "food_stats"));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "food_stats")));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, FoodStatsPayload> STREAM_CODEC =
         StreamCodec.composite(
-            ItemStack.STREAM_CODEC,
+            Objects.requireNonNull(ItemStack.STREAM_CODEC),
             FoodStatsPayload::item,
-            ByteBufCodecs.COMPOUND_TAG,
+            Objects.requireNonNull(ByteBufCodecs.COMPOUND_TAG),
             FoodStatsPayload::statsTag,
-            ByteBufCodecs.BOOL,
+            Objects.requireNonNull(ByteBufCodecs.BOOL),
             FoodStatsPayload::isGlobal,
-            FoodStatsPayload::new
+            (itemStack, tag, global) -> new FoodStatsPayload(itemStack, tag, global != null && global)
         );
 
     @Override
@@ -53,7 +53,7 @@ public record FoodStatsPayload(
         if (o == null || getClass() != o.getClass()) return false;
         FoodStatsPayload that = (FoodStatsPayload) o;
         return isGlobal == that.isGlobal &&
-               ItemStack.matches(item, that.item) &&
+               ItemStack.matches(Objects.requireNonNull(item), Objects.requireNonNull(that.item)) &&
                Objects.equals(statsTag, that.statsTag);
     }
 

@@ -3,43 +3,31 @@
 TODO list dei gap rimasti dopo l’ultimo pass. Ogni voce è azionabile e referenziata al codice attuale.
 
 1) **Policy L2 schema e validazione**
-   - Mancano schema/validator per perkBindings, mutatorBindings, rewardModifiers, routing weight clamp e tie-break dettagli.
-   - Da aggiungere: schema JSON (docs/…), validazione in `ArenaPolicyRegistry`/`PolicyResolver`.
+   - Schema JSON per perkBindings/mutatorBindings/rewardModifiers mancante; tie-break/routing details non documentati. Validazione in `PolicyResolver` ancora basata su manual parse.
 
-2) **Template JSON schema enforcement profonda**
-   - `SchemaValidator` usa solo allowed/required fields; non applica type/range del file `docs/arena-template-rework/arena_template.schema.json`.
-   - Servono: validator JSON schema draft 2020-12 o mappa di controlli per range (lighting 0–15, size bounds, palette, environment).
+2) **Template JSON schema enforcement profonda (parziale)**
+   - Controlli base estesi (size/walls/ceiling/instance/compat/palette fog/particles) ma manca allineamento completo con `arena_template.schema.json` (palette materiali obbligatori, environment dimension tags, validator JSON schema draft).
 
 3) **Environment / dimension tags**
-   - Nessuna validazione per indoor/outdoor/nether/end o fog/particles extra; spec presente in TODO ma non nel codice (`TemplateValidator`).
+   - Nessuna validazione per indoor/outdoor/nether/end o fog/particles estese; spec presente in TODO ma non nel codice (`TemplateValidator`).
 
-4) **Structure NBT config/limits**
-   - Manifest caricato ma i limiti config (size/block/entity/namespaces) non sono telemeterizzati; manca evento `arena.structure.checksum_mismatch` dal loader diretto.
-   - Verificare path whitelist/size clamp anche quando manifest non trovato (oggi solo warning).
+4) **Structure NBT config/limits (parziale)**
+   - Telemetria checksum/loaded/rejected presente, ma non si applicano/telemetrizzano tutti i limiti da config quando manca manifest; path whitelist/clamp fallback da rivedere.
 
-5) **Hazard clamp persistence e parametri**
-   - `safePut` ignora mappe immutabili: clamp potrebbe non persistere in template risolto. Valutare clone mutabile o applicare clamp su DTO prima della validazione finale.
-   - Coverage/interval clamp ok ma servono telemetry dettagliate per motivo (type_limit, radius_clamp, coverage_clamp).
+5) **MobSpawnStrategy typo/coverage**
+   - Validazione ring/corners presente; manca fallback/errore se pos null e mapping operativo nei builder.
 
-6) **MobSpawnStrategy typo/coverage**
-   - Validator avvisa solo su tag mancanti; nessun controllo su strategia non riconosciuta (enum copre, ma validazione tag ring/corners potrebbe fallire con pos null). Considerare fallback/errore esplicito.
+6) **Metrics residuals completezza (parziale)**
+   - Filtro entità esteso (player/marker/area_effect_cloud esclusi) e expected_blocks emesso; residuals restano unknown (-1) per placers non-MC (residuals_unknown=true).
 
-7) **Metrics residuals completezza**
-   - Residuals calcolati solo con `MinecraftBlockPlacer`; altri placers impostano 0. ExpectedBlocks non è emesso in telemetria. Entities residual usa filtro generico (esclude solo player).
-   - Aggiungere expectedBlocks in `arena.build.end` e conteggio residual anche con altri placers o indicare “unknown”.
+7) **Error isolation & reload leak prevention (parziale)**
+   - Pruning di locks/listenerHandles aggiunto; mancano teardown watcher/cache esterne e stress test reload.
 
-8) **Error isolation & reload leak prevention**
-   - Registry reload non invalida cache/listeners/locks; watcher teardown non implementato (spec “no leak su reload”).
-   - Aggiungere clear cache, prune locks, chiusura watcher e test reload stress.
+8) **Inheritance merge map**
+   - Strategia campo→merge non centralizzata/documentata; verificare enforcement e diamond detection per tutti i campi.
 
-9) **Inheritance merge map**
-   - Merge strategy per campi non centralizzata (SHALLOW_MERGE/OVERRIDE); diamond detection presente ma controllare uso effettivo. Documentare/implementare mapping campo→strategia.
+9) **Instance-only gate copertura**
+    - Gate applicato a builder/commands/ArenaManager; da verificare altri call-site (quest manager, debug tools) e allineare telemetria standard `[INSTANCE_GATE]`.
 
-10) **Instance-only gate copertura**
-    - Gate applicato a ArenaBuilder/Async/ArenaManager/Commands; verificare altre call-site (quest managers, debug tools) e aggiungere log telemetry standard `[INSTANCE_GATE]`.
-
-11) **Policy versioning/breakingChange enforcement**
-    - `ArenaPolicyRegistry.validatePolicy` controlla min/maxTemplateVersion ma non breakingChange rules; manca fallback/log `arena.policy.version_mismatch`.
-
-12) **Feature flag snapshot/hot-reload**
-    - Config snapshot usato, ma manca un manager di reload che aggiorni FeatureFlagRegistry e propaghi change (with telemetry). Also: hazard/policy loader non agganciato a reload.
+10) **Feature flag snapshot/hot-reload (parziale)**
+    - `FeatureFlagManager.applyConfig` esiste ed è richiamato nel bootstrap; manca wiring nei flussi di config reload/policy/hazard loader per propagare cambi runtime con telemetry.

@@ -8,6 +8,8 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.Objects;
+
 /**
  * Gestisce il rendering delle informazioni debug per i mob guardati dal player
  */
@@ -84,17 +86,17 @@ public class MobDebugOverlay {
             return null;
         }
 
-        Vec3 eye = player.getEyePosition(1.0F);
+        Vec3 eye = Objects.requireNonNull(player.getEyePosition(1.0F));
         Vec3 look = player.getViewVector(1.0F);
 
         // PERFORMANCE FIX: Limit render distance to 16 blocks max
         // Prevents lag when looking at distant mobs with extended reach
         double reach = Math.min(player.blockInteractionRange(), 16.0);
-        Vec3 end = eye.add(look.scale(reach));
+        Vec3 end = Objects.requireNonNull(eye.add(Objects.requireNonNull(look.scale(reach))));
 
         // Search for entities in range
         var entities = level.getEntities(player,
-            player.getBoundingBox().inflate(reach));
+            Objects.requireNonNull(player.getBoundingBox().inflate(reach)));
 
         Mob closestMob = null;
         double closestDistance = reach;
@@ -102,11 +104,11 @@ public class MobDebugOverlay {
         for (var entity : entities) {
             if (!(entity instanceof Mob mob)) continue;
 
-            AABB box = mob.getBoundingBox().inflate(0.3);
+            AABB box = Objects.requireNonNull(mob.getBoundingBox().inflate(0.3));
             var clip = box.clip(eye, end);
 
             if (clip.isPresent()) {
-                double distance = eye.distanceTo(clip.get());
+                double distance = eye.distanceTo(Objects.requireNonNull(clip.get()));
                 if (distance < closestDistance) {
                     closestDistance = distance;
                     closestMob = mob;
@@ -124,7 +126,7 @@ public class MobDebugOverlay {
 
     private static void renderBodyParts(LivingEntity entity) {
         // Use BodyPartCalculator as SINGLE SOURCE OF TRUTH for body part AABBs
-        BodyPartCalculator.BodyPartAABB[] bodyParts = BodyPartCalculator.calculateAllBodyParts(entity);
+        BodyPartCalculator.BodyPartAABB[] bodyParts = BodyPartCalculator.calculateAllBodyParts(Objects.requireNonNull(entity));
 
         // Render each body part with corresponding label and damage multiplier
         for (BodyPartCalculator.BodyPartAABB bodyPart : bodyParts) {
@@ -179,10 +181,10 @@ public class MobDebugOverlay {
         double armor = mob.getArmorValue();
 
         // Safe attribute access - check if attribute exists before getting value
-        var damageAttr = mob.getAttribute(Attributes.ATTACK_DAMAGE);
+        var damageAttr = mob.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
         double damage = damageAttr != null ? damageAttr.getValue() : 0.0;
 
-        var rangeAttr = mob.getAttribute(Attributes.FOLLOW_RANGE);
+        var rangeAttr = mob.getAttribute(Objects.requireNonNull(Attributes.FOLLOW_RANGE));
         double range = rangeAttr != null ? rangeAttr.getValue() : 0.0;
 
         // Check if there's a saved config
@@ -234,7 +236,7 @@ public class MobDebugOverlay {
      */
     private static void renderAggroRange(Mob mob) {
         // Ottieni il FOLLOW_RANGE attribute (detection range)
-        var rangeAttr = mob.getAttribute(Attributes.FOLLOW_RANGE);
+        var rangeAttr = mob.getAttribute(Objects.requireNonNull(Attributes.FOLLOW_RANGE));
         if (rangeAttr == null) return; // Skip if mob has no detection range
 
         double aggroRange = rangeAttr.getValue();

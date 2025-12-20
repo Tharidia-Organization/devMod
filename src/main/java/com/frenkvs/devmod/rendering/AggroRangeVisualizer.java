@@ -21,6 +21,7 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * VOXEL-LAB Debug Overlay: Aggro Range Spheres
@@ -83,14 +84,16 @@ public class AggroRangeVisualizer {
         MultiBufferSource.BufferSource bufferSource = mc.renderBuffers().bufferSource();
 
         // Get nearby mobs
-        AABB searchBox = mc.player.getBoundingBox().inflate(getMaxRenderDistance());
-        List<Entity> entities = mc.level.getEntities(mc.player, searchBox,
+        var player = Objects.requireNonNull(mc.player);
+        var level = Objects.requireNonNull(mc.level);
+        AABB searchBox = Objects.requireNonNull(player.getBoundingBox().inflate(getMaxRenderDistance()));
+        List<Entity> entities = level.getEntities(player, searchBox,
             e -> e instanceof Mob && e.isAlive());
 
         for (Entity entity : entities) {
             if (!(entity instanceof Mob mob)) continue;
 
-            double dist = entity.distanceTo(mc.player);
+            double dist = entity.distanceTo(player);
             if (dist > getMaxRenderDistance()) continue;
 
             renderMobRanges(poseStack, bufferSource, mob, cameraPos);
@@ -110,7 +113,7 @@ public class AggroRangeVisualizer {
         poseStack.translate(x, y + mob.getBbHeight() / 2, z);
 
         // Get mob ranges from attributes
-        double followRange = mob.getAttributeValue(Attributes.FOLLOW_RANGE);
+        double followRange = mob.getAttributeValue(Objects.requireNonNull(Attributes.FOLLOW_RANGE));
         double attackRange = getAttackRange(mob);
 
         // Determine color based on mob type
@@ -143,7 +146,7 @@ public class AggroRangeVisualizer {
         // Most mobs have attack range of ~2 blocks for melee
         // Ranged mobs might have larger ranges
         try {
-            double range = mob.getAttributeValue(Attributes.ENTITY_INTERACTION_RANGE);
+            double range = mob.getAttributeValue(Objects.requireNonNull(Attributes.ENTITY_INTERACTION_RANGE));
             return Math.max(2.0, range);
         } catch (Exception e) {
             return 2.0; // Default melee range
@@ -152,8 +155,8 @@ public class AggroRangeVisualizer {
 
     private static void renderSphere(PoseStack poseStack, MultiBufferSource buffer,
                                       double radius, int color) {
-        VertexConsumer consumer = buffer.getBuffer(RenderType.debugLineStrip(1.0));
-        Matrix4f matrix = poseStack.last().pose();
+        VertexConsumer consumer = buffer.getBuffer(Objects.requireNonNull(RenderType.debugLineStrip(1.0)));
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
         float r = ((color >> 16) & 0xFF) / 255f;
         float g = ((color >> 8) & 0xFF) / 255f;
@@ -180,17 +183,19 @@ public class AggroRangeVisualizer {
 
     private static void renderCircle(VertexConsumer consumer, Matrix4f matrix,
                                       float y, float radius, float r, float g, float b, float a) {
+        Matrix4f safeMatrix = Objects.requireNonNull(matrix);
         int segments = SPHERE_SEGMENTS * 2;
         for (int i = 0; i <= segments; i++) {
             double angle = (2 * Math.PI * i) / segments;
             float x = (float) (Math.cos(angle) * radius);
             float z = (float) (Math.sin(angle) * radius);
-            consumer.addVertex(matrix, x, y, z).setColor(r, g, b, a);
+            consumer.addVertex(safeMatrix, x, y, z).setColor(r, g, b, a);
         }
     }
 
     private static void renderMeridian(VertexConsumer consumer, Matrix4f matrix,
                                         float radius, float angle, float r, float g, float b, float a) {
+        Matrix4f safeMatrix = Objects.requireNonNull(matrix);
         float cosA = (float) Math.cos(angle);
         float sinA = (float) Math.sin(angle);
 
@@ -201,7 +206,7 @@ public class AggroRangeVisualizer {
             float horizRadius = (float) (Math.cos(vertAngle) * radius);
             float x = cosA * horizRadius;
             float z = sinA * horizRadius;
-            consumer.addVertex(matrix, x, y, z).setColor(r, g, b, a);
+            consumer.addVertex(safeMatrix, x, y, z).setColor(r, g, b, a);
         }
     }
 
@@ -212,8 +217,8 @@ public class AggroRangeVisualizer {
 
         poseStack.pushPose();
 
-        VertexConsumer consumer = buffer.getBuffer(RenderType.debugLineStrip(2.0));
-        Matrix4f matrix = poseStack.last().pose();
+        VertexConsumer consumer = buffer.getBuffer(Objects.requireNonNull(RenderType.debugLineStrip(2.0)));
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
         float r = 1.0f;
         float g = 0.0f;

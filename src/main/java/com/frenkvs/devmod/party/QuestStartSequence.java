@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -382,7 +383,8 @@ public class QuestStartSequence {
                     String reason = arenaResult.errorMessage() != null
                         ? arenaResult.errorMessage()
                         : I18n.translate("devmod.party.arena_creation_failed").getString();
-                    member.sendSystemMessage(net.minecraft.network.chat.Component.literal(reason));
+                    if (reason == null) reason = "Arena creation failed";
+                    member.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(reason)));
                 }
             }
             return;
@@ -407,7 +409,7 @@ public class QuestStartSequence {
             // InstanceManager already teleported via startInstanceQuestForParty
             for (ServerPlayer member : sequence.members) {
                 if (member != null && member.isAlive()) {
-                    member.sendSystemMessage(net.minecraft.network.chat.Component.literal("[DevMod] Teleporting party to instance..."));
+                    member.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Teleporting party to instance...")));
                 }
             }
         }

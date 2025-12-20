@@ -11,6 +11,8 @@ import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
+import java.util.Objects;
+
 /**
  * FASE 4 REQ-A2: Light Level Overlay
  *
@@ -89,8 +91,9 @@ public class LightLevelOverlay {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
 
+        var player = Objects.requireNonNull(mc.player);
         ClientLevel level = mc.level;
-        BlockPos playerPos = mc.player.blockPosition();
+        BlockPos playerPos = player.blockPosition();
 
         // === PERFORMANCE: Update cache only periodically or if player has moved ===
         boolean needsCacheUpdate = false;
@@ -102,7 +105,7 @@ public class LightLevelOverlay {
         }
 
         // Force update if the player has moved more than 2 blocks
-        if (lastPlayerPos == null || playerPos.distManhattan(lastPlayerPos) > 2) {
+        if (lastPlayerPos == null || playerPos.distManhattan(Objects.requireNonNull(lastPlayerPos)) > 2) {
             needsCacheUpdate = true;
             ticksSinceLastUpdate = 0;
         }
@@ -115,12 +118,12 @@ public class LightLevelOverlay {
         // === Rendering from cache (much faster) ===
         if (cachedLightData.isEmpty()) return;
 
-        VertexConsumer consumer = buffer.getBuffer(RenderType.debugQuads());
+        VertexConsumer consumer = buffer.getBuffer(Objects.requireNonNull(RenderType.debugQuads()));
 
         poseStack.pushPose();
         poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-        Matrix4f matrix = poseStack.last().pose();
-        var pose = poseStack.last();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
+        var pose = Objects.requireNonNull(poseStack.last());
 
         for (LightData data : cachedLightData) {
             int combinedLight = data.lightLevel();
@@ -139,10 +142,10 @@ public class LightLevelOverlay {
             float py = data.pos().getY() + 1.01f;
             float pz = data.pos().getZ();
 
-            consumer.addVertex(matrix, px, py, pz).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
-            consumer.addVertex(matrix, px, py, pz + 1).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
-            consumer.addVertex(matrix, px + 1, py, pz + 1).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
-            consumer.addVertex(matrix, px + 1, py, pz).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
+            Objects.requireNonNull(consumer.addVertex(matrix, px, py, pz).setColor(r, g, b, a)).setNormal(pose, 0f, 1f, 0f);
+            Objects.requireNonNull(consumer.addVertex(matrix, px, py, pz + 1).setColor(r, g, b, a)).setNormal(pose, 0f, 1f, 0f);
+            Objects.requireNonNull(consumer.addVertex(matrix, px + 1, py, pz + 1).setColor(r, g, b, a)).setNormal(pose, 0f, 1f, 0f);
+            Objects.requireNonNull(consumer.addVertex(matrix, px + 1, py, pz).setColor(r, g, b, a)).setNormal(pose, 0f, 1f, 0f);
         }
 
         poseStack.popPose();
@@ -165,8 +168,8 @@ public class LightLevelOverlay {
                 if (x*x + z*z > radius*radius) continue;
 
                 for (int y = -4; y <= 4; y++) {
-                    BlockPos checkPos = playerPos.offset(x, y, z);
-                    BlockPos above = checkPos.above();
+                    BlockPos checkPos = Objects.requireNonNull(playerPos.offset(x, y, z));
+                    BlockPos above = Objects.requireNonNull(checkPos.above());
 
                     if (onlySpawnableSurfaces) {
                         if (!level.getBlockState(checkPos).isSolidRender(level, checkPos)) continue;
@@ -232,19 +235,21 @@ public class LightLevelOverlay {
         poseStack.translate(x, y, z);
 
         // Billboard (always face camera)
-        poseStack.mulPose(mc.getEntityRenderDispatcher().cameraOrientation());
+        poseStack.mulPose(Objects.requireNonNull(mc.getEntityRenderDispatcher().cameraOrientation()));
 
         // Scale
         float scale = 0.02f;
         poseStack.scale(-scale, -scale, scale);
 
         // Center text
-        int width = mc.font.width(text);
+        var font = Objects.requireNonNull(mc.font);
+        String safeText = Objects.requireNonNull(text);
+        int width = font.width(safeText);
         float xOffset = -width / 2f;
 
         // Draw
-        mc.font.drawInBatch(text, xOffset, 0, color, false,
-                poseStack.last().pose(), mc.renderBuffers().bufferSource(),
+        font.drawInBatch(safeText, xOffset, 0, color, false,
+                Objects.requireNonNull(poseStack.last().pose()), Objects.requireNonNull(mc.renderBuffers().bufferSource()),
                 net.minecraft.client.gui.Font.DisplayMode.NORMAL, 0x40000000, 15728880);
 
         poseStack.popPose();

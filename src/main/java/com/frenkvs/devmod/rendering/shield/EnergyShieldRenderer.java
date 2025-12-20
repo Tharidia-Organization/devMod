@@ -133,9 +133,11 @@ public class EnergyShieldRenderer {
 
         // Calculate game time for shader
         float gameTime = 0;
-        if (Minecraft.getInstance().level != null) {
-            gameTime = (Minecraft.getInstance().level.getGameTime() +
-                       Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true)) / 1200.0f;
+        var mc = Minecraft.getInstance();
+        var level = mc.level;
+        if (level != null) {
+            gameTime = (level.getGameTime() +
+                       mc.getTimer().getGameTimeDeltaPartialTick(true)) / 1200.0f;
         }
 
         // Extract color components
@@ -144,7 +146,7 @@ public class EnergyShieldRenderer {
         float b = (color & 0xFF) / 255.0f;
 
         // Calculate impact point in local space
-        Vec3 impactLocal = currentImpactPoint.subtract(entityPos).scale(1.0 / radius);
+        Vec3 impactLocal = Objects.requireNonNull(Objects.requireNonNull(currentImpactPoint.subtract(entityPos)).scale(1.0 / radius));
         if (impactLocal.lengthSqr() > 0.001) {
             impactLocal = impactLocal.normalize();
         }
@@ -163,11 +165,11 @@ public class EnergyShieldRenderer {
         VertexConsumer consumer = bufferSource.getBuffer(shieldType);
 
         poseStack.pushPose();
-        Vec3 rel = entityPos.subtract(cameraPos);
+        Vec3 rel = Objects.requireNonNull(entityPos.subtract(cameraPos));
         poseStack.translate(rel.x, rel.y, rel.z);
 
-        Matrix4f matrix = poseStack.last().pose();
-        Vec3 viewDir = cameraPos.subtract(entityPos).normalize();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
+        Vec3 viewDir = Objects.requireNonNull(Objects.requireNonNull(cameraPos.subtract(entityPos)).normalize());
 
         // Render the sphere with normals for shader
         renderSphereWithNormals(consumer, poseStack, matrix, r, g, b, opacity, radius, viewDir);
@@ -189,7 +191,7 @@ public class EnergyShieldRenderer {
         HexagonalShieldMesh mesh = HexagonalShieldMesh.lowDetail(radius);
 
         // Use vanilla lines RenderType for the grid
-        VertexConsumer lineConsumer = bufferSource.getBuffer(RenderType.lines());
+        VertexConsumer lineConsumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.lines()));
 
         // Calculate DARKER color for grid lines (contrast with bright energy field)
         float r = ((color >> 16) & 0xFF) / 255.0f;
@@ -210,7 +212,7 @@ public class EnergyShieldRenderer {
                         (int)(b * 255);
 
         // Render lines with fresnel effect (edges more visible)
-        mesh.renderLinesWithFresnel(lineConsumer, matrix, 0, 0, 0, gridColor, cameraPos.subtract(entityPos));
+        mesh.renderLinesWithFresnel(lineConsumer, matrix, 0, 0, 0, gridColor, Objects.requireNonNull(cameraPos.subtract(entityPos)));
     }
 
     /**
@@ -219,6 +221,7 @@ public class EnergyShieldRenderer {
     private static void renderSphereWithNormals(VertexConsumer consumer, PoseStack poseStack,
                                                  Matrix4f matrix, float r, float g, float b,
                                                  float alpha, float radius, Vec3 viewDir) {
+        Matrix4f safeMatrix = Objects.requireNonNull(matrix);
         for (int ring = 0; ring < SPHERE_RINGS; ring++) {
             float theta1 = (float) (ring * Math.PI / SPHERE_RINGS);
             float theta2 = (float) ((ring + 1) * Math.PI / SPHERE_RINGS);
@@ -239,16 +242,17 @@ public class EnergyShieldRenderer {
                 Vector3f n4 = new Vector3f(v4).normalize();
 
                 int color = packColor(r, g, b, alpha);
+                var pose = Objects.requireNonNull(poseStack.last());
 
                 // Triangle 1
-                consumer.addVertex(matrix, v1.x, v1.y, v1.z).setColor(color).setNormal(poseStack.last(), n1.x, n1.y, n1.z);
-                consumer.addVertex(matrix, v2.x, v2.y, v2.z).setColor(color).setNormal(poseStack.last(), n2.x, n2.y, n2.z);
-                consumer.addVertex(matrix, v3.x, v3.y, v3.z).setColor(color).setNormal(poseStack.last(), n3.x, n3.y, n3.z);
+                consumer.addVertex(safeMatrix, v1.x, v1.y, v1.z).setColor(color).setNormal(pose, n1.x, n1.y, n1.z);
+                consumer.addVertex(safeMatrix, v2.x, v2.y, v2.z).setColor(color).setNormal(pose, n2.x, n2.y, n2.z);
+                consumer.addVertex(safeMatrix, v3.x, v3.y, v3.z).setColor(color).setNormal(pose, n3.x, n3.y, n3.z);
 
                 // Triangle 2
-                consumer.addVertex(matrix, v1.x, v1.y, v1.z).setColor(color).setNormal(poseStack.last(), n1.x, n1.y, n1.z);
-                consumer.addVertex(matrix, v3.x, v3.y, v3.z).setColor(color).setNormal(poseStack.last(), n3.x, n3.y, n3.z);
-                consumer.addVertex(matrix, v4.x, v4.y, v4.z).setColor(color).setNormal(poseStack.last(), n4.x, n4.y, n4.z);
+                consumer.addVertex(safeMatrix, v1.x, v1.y, v1.z).setColor(color).setNormal(pose, n1.x, n1.y, n1.z);
+                consumer.addVertex(safeMatrix, v3.x, v3.y, v3.z).setColor(color).setNormal(pose, n3.x, n3.y, n3.z);
+                consumer.addVertex(safeMatrix, v4.x, v4.y, v4.z).setColor(color).setNormal(pose, n4.x, n4.y, n4.z);
             }
         }
     }
@@ -264,11 +268,11 @@ public class EnergyShieldRenderer {
         float b = (color & 0xFF) / 255.0f;
 
         poseStack.pushPose();
-        Vec3 rel = entityPos.subtract(cameraPos);
+        Vec3 rel = Objects.requireNonNull(entityPos.subtract(cameraPos));
         poseStack.translate(rel.x, rel.y, rel.z);
 
-        Matrix4f matrix = poseStack.last().pose();
-        Vec3 viewDir = cameraPos.subtract(entityPos).normalize();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
+        Vec3 viewDir = Objects.requireNonNull(Objects.requireNonNull(cameraPos.subtract(entityPos)).normalize());
         float time = (System.currentTimeMillis() % 100000) / 1000.0f;
 
         RenderSystem.enableBlend();
@@ -278,7 +282,7 @@ public class EnergyShieldRenderer {
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         Tesselator tesselator = Tesselator.getInstance();
-        BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.TRIANGLES, Objects.requireNonNull(DefaultVertexFormat.POSITION_COLOR));
 
         // Render sphere with Fresnel effect
         for (int ring = 0; ring < SPHERE_RINGS; ring++) {
@@ -311,7 +315,7 @@ public class EnergyShieldRenderer {
             }
         }
 
-        BufferUploader.drawWithShader(buffer.buildOrThrow());
+        BufferUploader.drawWithShader(Objects.requireNonNull(buffer.buildOrThrow()));
 
         // Render impact ripples using lines
         if (currentImpactTime < 1.0f && !activeImpacts.isEmpty()) {
@@ -332,8 +336,9 @@ public class EnergyShieldRenderer {
                                              Matrix4f matrix, Vec3 entityPos,
                                              float r, float g, float b, float opacity, float radius) {
         VertexConsumer consumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.lines()));
+        Matrix4f safeMatrix = Objects.requireNonNull(matrix);
 
-        Vec3 impactDir = currentImpactPoint.subtract(entityPos);
+        Vec3 impactDir = Objects.requireNonNull(currentImpactPoint.subtract(entityPos));
         if (impactDir.lengthSqr() < 0.001) return;
         impactDir = impactDir.normalize();
 
@@ -364,9 +369,10 @@ public class EnergyShieldRenderer {
 
                 Vector3f p1 = getPointOnSphereFromImpact(impactVec, tangent1, tangent2, rippleAngle, angle1, radius);
                 Vector3f p2 = getPointOnSphereFromImpact(impactVec, tangent1, tangent2, rippleAngle, angle2, radius);
+                var pose = Objects.requireNonNull(poseStack.last());
 
-                consumer.addVertex(matrix, p1.x, p1.y, p1.z).setColor(color).setNormal(poseStack.last(), p1.x, p1.y, p1.z);
-                consumer.addVertex(matrix, p2.x, p2.y, p2.z).setColor(color).setNormal(poseStack.last(), p2.x, p2.y, p2.z);
+                consumer.addVertex(safeMatrix, p1.x, p1.y, p1.z).setColor(color).setNormal(pose, p1.x, p1.y, p1.z);
+                consumer.addVertex(safeMatrix, p2.x, p2.y, p2.z).setColor(color).setNormal(pose, p2.x, p2.y, p2.z);
             }
         }
     }
@@ -390,7 +396,7 @@ public class EnergyShieldRenderer {
 
     private static void addVertex(BufferBuilder buffer, Matrix4f matrix, Vector3f v, float r, float g, float b, float a) {
         int color = packColor(r, g, b, a);
-        buffer.addVertex(matrix, v.x, v.y, v.z).setColor(color);
+        buffer.addVertex(Objects.requireNonNull(matrix), v.x, v.y, v.z).setColor(color);
     }
 
     private static int packColor(float r, float g, float b, float a) {

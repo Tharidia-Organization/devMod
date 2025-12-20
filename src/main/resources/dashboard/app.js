@@ -42,6 +42,8 @@ function setupNavigation() {
     });
 }
 
+let selectedArenaTemplate = '';
+
 function switchSection(section) {
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.section === section);
@@ -62,6 +64,7 @@ function switchSection(section) {
         case 'performance': loadPerformanceSection(); break;
         case 'spatial': loadSpatialSection(); break;
         case 'economy': loadEconomySection(); break;
+        case 'arenas': loadArenaSection(); break;
     }
 }
 
@@ -99,6 +102,7 @@ function refreshAll() {
         case 'performance': loadPerformanceSection(); break;
         case 'spatial': loadSpatialSection(); break;
         case 'economy': loadEconomySection(); break;
+        case 'arenas': loadArenaSection(); break;
     }
     updateRefreshTime();
 }
@@ -1320,12 +1324,63 @@ function exportQueryResults() {
 
 // ==================== Data Export ====================
 
+/**
+ * Gap 1: Export chart as PNG using Chart.js toBase64Image
+ */
+function exportChartPng(chartKey) {
+    const chart = charts[chartKey];
+    if (!chart) {
+        showToast('Chart not available. Please load the data first.', 'error');
+        return;
+    }
+
+    try {
+        // Get base64 image from Chart.js
+        const base64Image = chart.toBase64Image('image/png', 1.0);
+
+        // Create download link
+        const link = document.createElement('a');
+        const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+        link.download = `chart_${chartKey}_${timestamp}.png`;
+        link.href = base64Image;
+        link.click();
+
+        showToast(`Chart exported as PNG`, 'success');
+    } catch (error) {
+        console.error('PNG export failed:', error);
+        showToast('Failed to export chart as PNG', 'error');
+    }
+}
+
+/**
+ * Show a toast notification
+ */
+function showToast(message, type = 'info') {
+    // Remove existing toast
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    // Animate in
+    setTimeout(() => toast.classList.add('show'), 10);
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
 function exportData(dataType) {
     const data = cachedTableData[dataType];
     if (data && data.length > 0) {
         downloadCSV(data, `${dataType}_export.csv`);
     } else {
-        alert('No data to export. Please load the data first.');
+        showToast('No data to export. Please load the data first.', 'error');
     }
 }
 
@@ -1359,6 +1414,41 @@ function destroyChart(name) {
     if (charts[name]) {
         charts[name].destroy();
         delete charts[name];
+    }
+}
+
+/**
+ * Gap 6: Shows a "no data available" state on a chart canvas
+ */
+function showNoDataState(canvas, message = 'No data available') {
+    if (!canvas) return;
+
+    const container = canvas.closest('.chart-container');
+    if (container) {
+        // Add no-data overlay
+        let overlay = container.querySelector('.no-data-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.className = 'no-data-overlay';
+            container.appendChild(overlay);
+        }
+        overlay.innerHTML = `<div class="no-data-icon">📊</div><div class="no-data-message">${message}</div>`;
+        overlay.style.display = 'flex';
+    }
+}
+
+/**
+ * Gap 6: Hides the no-data overlay when data becomes available
+ */
+function hideNoDataState(canvas) {
+    if (!canvas) return;
+
+    const container = canvas.closest('.chart-container');
+    if (container) {
+        const overlay = container.querySelector('.no-data-overlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
     }
 }
 
@@ -1439,4 +1529,302 @@ function cleanName(name) {
 function updateRefreshTime() {
     const el = document.getElementById('refresh-time');
     if (el) el.textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+}
+
+// ==================== Arenas Section (DD36) ====================
+
+function onArenaTemplateChange() {
+    selectedArenaTemplate = document.getElementById('arena-template-filter')?.value || '';
+    if (selectedArenaTemplate) {
+        loadArenaMetrics();
+    }
+}
+
+async function loadArenaSection() {
+    // Load template list first
+    await loadArenaTemplateList();
+
+    if (selectedArenaTemplate) {
+        await loadArenaMetrics();
+    }
+}
+
+async function loadArenaTemplateList() {
+    const data = await fetchApi('/api/analytics/arena/templates');
+    const select = document.getElementById('arena-template-filter');
+
+    if (data && select) {
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">Select Template...</option>';
+
+        (data.templates || data || []).forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.id || t;
+            opt.textContent = t.id || t;
+            select.appendChild(opt);
+        });
+
+        if (currentValue) select.value = currentValue;
+    }
+}
+
+async function loadArenaMetrics() {
+    if (!selectedArenaTemplate) return;
+
+    await Promise.all([
+        loadArenaBuildMetrics(),
+        loadArenaFailureRateByTemplate(), // Gap 3
+        loadArenaPerformance(),
+        loadArenaSpawnHeatmap(),
+        loadArenaDeathHeatmap(),
+        loadArenaWaveCorrelation()
+    ]);
+}
+
+async function loadArenaBuildMetrics() {
+    const data = await fetchApi(`/api/analytics/arena/build-metrics?templateId=${selectedArenaTemplate}`);
+    if (!data) return;
+
+    // Update stat cards
+    document.getElementById('stat-arena-builds').textContent = formatNumber(data.totalBuilds || 0);
+    document.getElementById('stat-arena-success').textContent =
+        data.totalBuilds > 0 ? ((100 - (data.failureRate || 0)).toFixed(1) + '%') : '-';
+    document.getElementById('stat-arena-avgtime').textContent =
+        data.avgBuildTimeMs ? (data.avgBuildTimeMs.toFixed(0) + 'ms') : '-';
+    document.getElementById('stat-arena-p95').textContent =
+        data.p95BuildTimeMs ? (data.p95BuildTimeMs.toFixed(0) + 'ms') : '-';
+
+    // Build chart
+    const ctx = document.getElementById('chart-arena-builds');
+    destroyChart('arena-builds');
+
+    charts['arena-builds'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Successful', 'Failed'],
+            datasets: [{
+                label: 'Builds',
+                data: [data.successfulBuilds || 0, data.failedBuilds || 0],
+                backgroundColor: [CHART_COLORS[0], CHART_COLORS[8]],
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                title: { display: true, text: `Template: ${selectedArenaTemplate}` }
+            }
+        }
+    });
+}
+
+async function loadArenaPerformance() {
+    const data = await fetchApi(`/api/analytics/arena/performance?templateId=${selectedArenaTemplate}`);
+    if (!data || !data.samples || data.samples.length === 0) return;
+
+    const ctx = document.getElementById('chart-arena-performance');
+    destroyChart('arena-performance');
+
+    charts['arena-performance'] = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.samples.map(s => formatTimeLabel(s.timestamp)),
+            datasets: [
+                {
+                    label: 'MSPT',
+                    data: data.samples.map(s => s.mspt),
+                    borderColor: CHART_COLORS[4],
+                    backgroundColor: CHART_COLORS[4] + '20',
+                    fill: true,
+                    tension: 0.3,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'TPS',
+                    data: data.samples.map(s => s.tps),
+                    borderColor: CHART_COLORS[0],
+                    borderDash: [5, 5],
+                    tension: 0.3,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { position: 'top' } },
+            scales: {
+                y: { type: 'linear', position: 'left', title: { display: true, text: 'MSPT' } },
+                y1: { type: 'linear', position: 'right', title: { display: true, text: 'TPS' }, min: 0, max: 20, grid: { drawOnChartArea: false } }
+            }
+        }
+    });
+}
+
+/**
+ * Gap 3: Loads failure rate comparison across all templates
+ */
+async function loadArenaFailureRateByTemplate() {
+    const data = await fetchApi('/api/analytics/arena/templates-failure-rate');
+    if (!data || !data.templates || data.templates.length === 0) {
+        // Show "no data" state
+        const ctx = document.getElementById('chart-arena-failure-rate');
+        destroyChart('arena-failure-rate');
+        showNoDataState(ctx, 'No template failure data available');
+        return;
+    }
+
+    const ctx = document.getElementById('chart-arena-failure-rate');
+    destroyChart('arena-failure-rate');
+
+    // Sort by failure rate descending to show problematic templates first
+    const sorted = [...data.templates].sort((a, b) => b.failureRate - a.failureRate);
+
+    // Color code: green for low failure, yellow for medium, red for high
+    const colors = sorted.map(t => {
+        if (t.failureRate <= 5) return CHART_COLORS[0];   // Green - healthy
+        if (t.failureRate <= 20) return CHART_COLORS[3];  // Yellow - warning
+        return CHART_COLORS[8];                            // Red - critical
+    });
+
+    charts['arena-failure-rate'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: sorted.map(t => t.templateId),
+            datasets: [{
+                label: 'Failure Rate %',
+                data: sorted.map(t => t.failureRate),
+                backgroundColor: colors,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: (ctx) => {
+                            const t = sorted[ctx.dataIndex];
+                            return `Builds: ${t.totalBuilds} | Failed: ${t.failedBuilds}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { min: 0, max: 100, title: { display: true, text: 'Failure Rate %' } }
+            }
+        }
+    });
+}
+
+async function loadArenaSpawnHeatmap() {
+    const data = await fetchApi(`/api/analytics/arena/spawn-heatmap?templateId=${selectedArenaTemplate}`);
+    renderHeatmapChart('chart-arena-spawn-heatmap', 'arena-spawn-heatmap', data, 'Spawn');
+}
+
+async function loadArenaDeathHeatmap() {
+    const data = await fetchApi(`/api/analytics/arena/death-heatmap?templateId=${selectedArenaTemplate}`);
+    renderHeatmapChart('chart-arena-death-heatmap', 'arena-death-heatmap', data, 'Death');
+}
+
+function renderHeatmapChart(canvasId, chartKey, data, label) {
+    if (!data || !data.grid) return;
+
+    const ctx = document.getElementById(canvasId);
+    destroyChart(chartKey);
+
+    // Convert 2D grid to flat data for visualization
+    const gridData = [];
+    const labels = [];
+    for (let x = 0; x < data.gridSizeX; x++) {
+        let rowSum = 0;
+        for (let z = 0; z < data.gridSizeZ; z++) {
+            rowSum += data.grid[x]?.[z] || 0;
+        }
+        gridData.push(rowSum);
+        labels.push(`X${x}`);
+    }
+
+    charts[chartKey] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: `${label} Events`,
+                data: gridData,
+                backgroundColor: label === 'Spawn' ? CHART_COLORS[0] : CHART_COLORS[8],
+                borderRadius: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: () => `Total: ${data.totalEvents}`
+                    }
+                }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+}
+
+async function loadArenaWaveCorrelation() {
+    const data = await fetchApi(`/api/analytics/arena/wave-correlation?templateId=${selectedArenaTemplate}`);
+    if (!data || !data.waves || data.waves.length === 0) return;
+
+    // Wave completion chart
+    const ctx = document.getElementById('chart-arena-waves');
+    destroyChart('arena-waves');
+
+    charts['arena-waves'] = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.waves.map(w => `Wave ${w.waveNumber}`),
+            datasets: [
+                {
+                    label: 'Completion Rate %',
+                    data: data.waves.map(w => w.completionRate),
+                    borderColor: CHART_COLORS[0],
+                    backgroundColor: CHART_COLORS[0] + '20',
+                    fill: true,
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: (ctx) => {
+                            const w = data.waves[ctx.dataIndex];
+                            return `Attempts: ${w.attempts} | Completions: ${w.completions} | Avg Duration: ${w.avgDurationSeconds.toFixed(1)}s`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: { min: 0, max: 100, title: { display: true, text: 'Completion %' } }
+            }
+        }
+    });
+
+    // Wave data table
+    const container = document.getElementById('arena-wave-data');
+    renderTable(container, data.waves, ['waveNumber', 'attempts', 'completions', 'completionRate', 'avgDurationSeconds']);
+    cachedTableData['arena-waves'] = data.waves;
 }

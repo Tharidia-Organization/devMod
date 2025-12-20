@@ -30,6 +30,18 @@ public final class CustomHazardRegistry {
         }
     }
 
+    /**
+     * Replaces current registrations with provided set (used on config reload).
+     */
+    public void reset(Set<String> newBuilders) {
+        registered.clear();
+        if (newBuilders != null) {
+            newBuilders.stream()
+                .filter(id -> id != null && !id.isBlank())
+                .forEach(registered::add);
+        }
+    }
+
     public Set<String> all() {
         return Set.copyOf(registered);
     }

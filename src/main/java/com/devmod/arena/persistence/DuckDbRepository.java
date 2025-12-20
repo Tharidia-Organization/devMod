@@ -144,6 +144,25 @@ public class DuckDbRepository implements AutoCloseable {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """,
+            // Gap 4: Spatial events table for heatmap data
+            """
+            CREATE TABLE IF NOT EXISTS arena_spatial_events (
+                event_id UUID PRIMARY KEY,
+                template_id VARCHAR NOT NULL,
+                session_id UUID NOT NULL,
+                event_type VARCHAR NOT NULL,
+                grid_x INTEGER NOT NULL,
+                grid_z INTEGER NOT NULL,
+                world_x DOUBLE,
+                world_y DOUBLE,
+                world_z DOUBLE,
+                player_uuid UUID,
+                occurred_at TIMESTAMP NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+            // Gap 4: Index for heatmap queries
+            "CREATE INDEX IF NOT EXISTS idx_spatial_template_type ON arena_spatial_events (template_id, event_type)",
             // DD21: 5 indices for dashboard queries (<200ms target)
             // idx_builds_template_day: for filtering builds by template and date
             "CREATE INDEX IF NOT EXISTS idx_builds_template_day ON arena_template_builds (template_id, CAST(started_at AS DATE))",
@@ -259,6 +278,26 @@ public class DuckDbRepository implements AutoCloseable {
     }
 
     /**
+     * Gap 3: Returns all distinct template IDs from builds.
+     */
+    public List<String> getAllTemplateIds() throws SQLException {
+        String sql = """
+            SELECT DISTINCT template_id
+            FROM arena_template_builds
+            ORDER BY template_id
+            """;
+
+        List<String> results = new ArrayList<>();
+        try (PreparedStatement stmt = connection.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                results.add(rs.getString("template_id"));
+            }
+        }
+        return results;
+    }
+
+    /**
      * Queries recent builds for a template.
      */
     public List<BuildRecord> getRecentBuilds(String templateId, int limit) throws SQLException {
@@ -293,6 +332,132 @@ public class DuckDbRepository implements AutoCloseable {
             }
         }
         return results;
+    }
+
+    // ========== Gap 4: Spatial Events for Heatmap ==========
+
+    /**
+     * Gap 4: Records a spatial event (spawn, death, etc.) for heatmap visualization.
+     */
+    public void recordSpatialEvent(SpatialEventRecord event) throws SQLException {
+        String sql = """
+            INSERT INTO arena_spatial_events
+                (event_id, template_id, session_id, event_type, grid_x, grid_z,
+                 world_x, world_y, world_z, player_uuid, occurred_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """;
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, event.eventId().toString());
+            stmt.setString(2, event.templateId());
+            stmt.setString(3, event.sessionId().toString());
+            stmt.setString(4, event.eventType());
+            stmt.setInt(5, event.gridX());
+            stmt.setInt(6, event.gridZ());
+            stmt.setDouble(7, event.worldX());
+            stmt.setDouble(8, event.worldY());
+            stmt.setDouble(9, event.worldZ());
+            stmt.setString(10, event.playerUuid() != null ? event.playerUuid().toString() : null);
+            stmt.setTimestamp(11, Timestamp.from(event.occurredAt()));
+            stmt.executeUpdate();
+        }
+    }
+
+    /**
+     * Gap 4: Record for spatial events.
+     */
+    public record SpatialEventRecord(
+        UUID eventId,
+        String templateId,
+        UUID sessionId,
+        String eventType,
+        int gridX,
+        int gridZ,
+        double worldX,
+        double worldY,
+        double worldZ,
+        UUID playerUuid,
+        Instant occurredAt
+    ) {
+        /**
+         * Creates a new spawn event.
+         */
+        public static SpatialEventRecord spawn(String templateId, UUID sessionId,
+                int gridX, int gridZ, double worldX, double worldY, double worldZ, UUID playerUuid) {
+            return new SpatialEventRecord(UUID.randomUUID(), templateId, sessionId,
+                "spawn", gridX, gridZ, worldX, worldY, worldZ, playerUuid, Instant.now());
+        }
+
+        /**
+         * Creates a new death event.
+         */
+        public static SpatialEventRecord death(String templateId, UUID sessionId,
+                int gridX, int gridZ, double worldX, double worldY, double worldZ, UUID playerUuid) {
+            return new SpatialEventRecord(UUID.randomUUID(), templateId, sessionId,
+                "death", gridX, gridZ, worldX, worldY, worldZ, playerUuid, Instant.now());
+        }
+    }
+
+    /**
+     * Gap 4: Queries aggregated spatial events for heatmap grid.
+     * Returns count per grid cell for a specific template and event type.
+     *
+     * @param templateId The template ID
+     * @param eventType The event type ("spawn" or "death")
+     * @param gridSize The heatmap grid size (default 16)
+     * @return 2D array of event counts [x][z]
+     */
+    public int[][] getSpatialEventHeatmap(String templateId, String eventType, int gridSize) throws SQLException {
+        String sql = """
+            SELECT grid_x, grid_z, COUNT(*) as count
+            FROM arena_spatial_events
+            WHERE template_id = ? AND event_type = ?
+            GROUP BY grid_x, grid_z
+            """;
+
+        int[][] grid = new int[gridSize][gridSize];
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, templateId);
+            stmt.setString(2, eventType);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    int x = rs.getInt("grid_x");
+                    int z = rs.getInt("grid_z");
+                    int count = rs.getInt("count");
+
+                    // Ensure within bounds
+                    if (x >= 0 && x < gridSize && z >= 0 && z < gridSize) {
+                        grid[x][z] = count;
+                    }
+                }
+            }
+        }
+        return grid;
+    }
+
+    /**
+     * Gap 4: Gets total count of spatial events for a template and type.
+     */
+    public int getSpatialEventCount(String templateId, String eventType) throws SQLException {
+        String sql = """
+            SELECT COUNT(*) as total
+            FROM arena_spatial_events
+            WHERE template_id = ? AND event_type = ?
+            """;
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, templateId);
+            stmt.setString(2, eventType);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("total");
+                }
+            }
+        }
+        return 0;
     }
 
     /**

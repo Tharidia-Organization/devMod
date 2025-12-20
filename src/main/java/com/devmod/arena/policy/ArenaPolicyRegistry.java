@@ -75,18 +75,50 @@ public class ArenaPolicyRegistry {
                 Integer minVer = policy.minTemplateVersion();
                 Integer maxVer = policy.maxTemplateVersion();
                 if (minVer != null && t.version() < minVer.intValue()) {
-                    errors.add("Template version %d < minTemplateVersion %d"
-                        .formatted(t.version(), minVer));
+                    String msg = "Template version %d < minTemplateVersion %d"
+                        .formatted(t.version(), minVer);
+                    errors.add(msg);
+                    telemetry.emit("arena.policy.version_mismatch", Map.of(
+                        "policyId", policy.id(),
+                        "templateId", policy.templateId(),
+                        "templateVersion", t.version(),
+                        "minTemplateVersion", minVer,
+                        "reason", "template_version_too_low"
+                    ));
                 }
                 if (maxVer != null && t.version() > maxVer.intValue()) {
-                    errors.add("Template version %d > maxTemplateVersion %d"
-                        .formatted(t.version(), maxVer));
+                    String msg = "Template version %d > maxTemplateVersion %d"
+                        .formatted(t.version(), maxVer);
+                    errors.add(msg);
+                    telemetry.emit("arena.policy.version_mismatch", Map.of(
+                        "policyId", policy.id(),
+                        "templateId", policy.templateId(),
+                        "templateVersion", t.version(),
+                        "maxTemplateVersion", maxVer,
+                        "reason", "template_version_too_high"
+                    ));
+                }
+                if (t.breakingChange() && policy.version() < t.version()) {
+                    String msg = "Template has breakingChange at v%d, policy v%d too old"
+                        .formatted(t.version(), policy.version());
+                    errors.add(msg);
+                    telemetry.emit("arena.policy.version_mismatch", Map.of(
+                        "policyId", policy.id(),
+                        "templateId", policy.templateId(),
+                        "templateVersion", t.version(),
+                        "policyVersion", policy.version(),
+                        "reason", "breaking_change"
+                    ));
                 }
             }
         }
 
         // Clamp weight
         ArenaPolicy normalized = clampWeight(policy, warnings);
+
+        // Validate bindings/rewards
+        validateBindings(normalized, errors, warnings);
+        validateRewards(normalized, errors, warnings);
 
         // Validate player count range
         Integer minP = normalized.minPlayers();
@@ -378,10 +410,34 @@ public class ArenaPolicyRegistry {
                 Integer minVer = policy.minTemplateVersion();
                 if (minVer != null && t.version() < minVer) {
                     errors.add("Template v%d < policy minTemplateVersion %d".formatted(t.version(), minVer));
+                    telemetry.emit("arena.policy.version_mismatch", Map.of(
+                        "policyId", policy.id(),
+                        "templateId", policy.templateId(),
+                        "templateVersion", t.version(),
+                        "minTemplateVersion", minVer,
+                        "reason", "below_min"
+                    ));
                 }
                 Integer maxVer = policy.maxTemplateVersion();
                 if (maxVer != null && t.version() > maxVer) {
                     errors.add("Template v%d > policy maxTemplateVersion %d".formatted(t.version(), maxVer));
+                    telemetry.emit("arena.policy.version_mismatch", Map.of(
+                        "policyId", policy.id(),
+                        "templateId", policy.templateId(),
+                        "templateVersion", t.version(),
+                        "maxTemplateVersion", maxVer,
+                        "reason", "above_max"
+                    ));
+                }
+                if (t.breakingChange() && policy.version() < t.version()) {
+                    errors.add("Template breakingChange at v%d requires policy.version >= %d".formatted(t.version(), t.version()));
+                    telemetry.emit("arena.policy.version_mismatch", Map.of(
+                        "policyId", policy.id(),
+                        "templateId", policy.templateId(),
+                        "policyVersion", policy.version(),
+                        "templateVersion", t.version(),
+                        "reason", "breaking_change_requires_policy_bump"
+                    ));
                 }
             }
         }
@@ -407,6 +463,46 @@ public class ArenaPolicyRegistry {
             return policy.withWeight(clamped);
         }
         return policy;
+    }
+
+    private void validateBindings(ArenaPolicy policy, List<String> errors, List<String> warnings) {
+        // No structural rules beyond presence; ensure sets have no blanks
+        var perkBindings = policy.perkBindings();
+        checkStringSet(perkBindings != null ? perkBindings.suggested() : null, "perkBindings.suggested", warnings);
+        checkStringSet(perkBindings != null ? perkBindings.excluded() : null, "perkBindings.excluded", warnings);
+        checkStringSet(perkBindings != null ? perkBindings.required() : null, "perkBindings.required", warnings);
+
+        var mutatorBindings = policy.mutatorBindings();
+        checkStringSet(mutatorBindings != null ? mutatorBindings.suggested() : null, "mutatorBindings.suggested", warnings);
+        checkStringSet(mutatorBindings != null ? mutatorBindings.excluded() : null, "mutatorBindings.excluded", warnings);
+        checkStringSet(mutatorBindings != null ? mutatorBindings.required() : null, "mutatorBindings.required", warnings);
+    }
+
+    private void validateRewards(ArenaPolicy policy, List<String> errors, List<String> warnings) {
+        ArenaPolicy.RewardModifiers rm = policy.rewardModifiers();
+        if (rm == null) return;
+        if (rm.baseMultiplier() < 0) {
+            errors.add("rewardModifiers.baseMultiplier must be >= 0");
+        }
+        if (rm.firstCompletionBonus() < 0) {
+            warnings.add("rewardModifiers.firstCompletionBonus < 0, clamped to 0");
+        }
+        if (rm.hazardBonus() < 0) {
+            warnings.add("rewardModifiers.hazardBonus < 0, clamped to 0");
+        }
+        if (rm.streakMultiplier() < 0) {
+            warnings.add("rewardModifiers.streakMultiplier < 0, clamped to 0");
+        }
+    }
+
+    private void checkStringSet(Set<String> set, String field, List<String> warnings) {
+        if (set == null) return;
+        for (String s : set) {
+            if (s == null || s.isBlank()) {
+                warnings.add(field + " contains blank entry");
+                break;
+            }
+        }
     }
 
     /**
@@ -482,36 +578,71 @@ public class ArenaPolicyRegistry {
         }
     }
 
-    /**
-     * Policy serializer with support for complex fields (mobTypes, tags).
-     */
     public static class PolicySerializer {
         public static Optional<ArenaPolicy> deserialize(String json) {
             try {
-                String id = extractString(json, "id");
-                if (id == null) return Optional.empty();
+                var obj = com.google.gson.JsonParser.parseString(json).getAsJsonObject();
 
-                int version = extractInt(json, "version", 1);
-                String templateId = extractString(json, "templateId");
-                String questType = extractString(json, "questType");
-                String difficulty = extractString(json, "difficulty");
-                int priority = extractInt(json, "priority", 0);
-                double weight = extractDouble(json, "weight", 1.0);
-                boolean enabled = extractBoolean(json, "enabled", true);
-                String description = extractString(json, "description");
+                String id = getString(obj, "id", null);
+                if (id == null || id.isBlank()) return Optional.empty();
 
-                Integer minPlayers = extractNullableInt(json, "minPlayers");
-                Integer maxPlayers = extractNullableInt(json, "maxPlayers");
-                Integer minTemplateVersion = extractNullableInt(json, "minTemplateVersion");
-                Integer maxTemplateVersion = extractNullableInt(json, "maxTemplateVersion");
+                int version = getInt(obj, "version", 1);
+                String templateId = getString(obj, "templateId", null);
+                String questType = getString(obj, "questType", null);
+                String difficulty = getString(obj, "difficulty", null);
+                int priority = getInt(obj, "priority", 0);
+                double weight = getDouble(obj, "weight", 1.0);
+                boolean enabled = getBoolean(obj, "enabled", true);
+                String description = getString(obj, "description", null);
 
-                // Parse mobTypes array (convert to Set)
-                List<String> mobTypesList = extractStringArray(json, "mobTypes");
-                Set<String> mobTypes = mobTypesList != null ? new HashSet<>(mobTypesList) : null;
+                Integer minPlayers = getNullableInt(obj, "minPlayers");
+                Integer maxPlayers = getNullableInt(obj, "maxPlayers");
+                Integer minTemplateVersion = getNullableInt(obj, "minTemplateVersion");
+                Integer maxTemplateVersion = getNullableInt(obj, "maxTemplateVersion");
 
-                // Parse tags array (convert to Set)
-                List<String> tagsList = extractStringArray(json, "tags");
-                Set<String> tags = tagsList != null ? new HashSet<>(tagsList) : null;
+                Set<String> mobTypes = toSet(obj, "mobTypes");
+                Set<String> tags = toSet(obj, "tags");
+
+                ArenaPolicy.PerkBindings perk = null;
+                if (obj.has("perkBindings") && obj.get("perkBindings").isJsonObject()) {
+                    var pb = obj.getAsJsonObject("perkBindings");
+                    perk = new ArenaPolicy.PerkBindings(
+                        toSet(pb, "suggested"),
+                        toSet(pb, "excluded"),
+                        toSet(pb, "required")
+                    );
+                }
+
+                ArenaPolicy.MutatorBindings mut = null;
+                if (obj.has("mutatorBindings") && obj.get("mutatorBindings").isJsonObject()) {
+                    var mb = obj.getAsJsonObject("mutatorBindings");
+                    mut = new ArenaPolicy.MutatorBindings(
+                        toSet(mb, "suggested"),
+                        toSet(mb, "excluded"),
+                        toSet(mb, "required")
+                    );
+                }
+
+                ArenaPolicy.RewardModifiers rewards = null;
+                if (obj.has("rewardModifiers") && obj.get("rewardModifiers").isJsonObject()) {
+                    var rm = obj.getAsJsonObject("rewardModifiers");
+                    rewards = new ArenaPolicy.RewardModifiers(
+                        getDouble(rm, "baseMultiplier", 1.0),
+                        getDouble(rm, "firstCompletionBonus", 0.0),
+                        getDouble(rm, "hazardBonus", 0.0),
+                        getDouble(rm, "streakMultiplier", 0.0)
+                    );
+                }
+
+                ArenaPolicy.BalanceOverrides balance = null;
+                if (obj.has("balanceOverrides") && obj.get("balanceOverrides").isJsonObject()) {
+                    var bo = obj.getAsJsonObject("balanceOverrides");
+                    balance = new ArenaPolicy.BalanceOverrides(
+                        getNullableDouble(bo, "spawnRateMultiplier"),
+                        getNullableDouble(bo, "damageMultiplier"),
+                        getNullableDouble(bo, "waveScaling")
+                    );
+                }
 
                 return Optional.of(new ArenaPolicy(
                     id,
@@ -527,6 +658,10 @@ public class ArenaPolicyRegistry {
                     tags,
                     priority,
                     weight,
+                    perk,
+                    mut,
+                    rewards,
+                    balance,
                     enabled,
                     description
                 ));
@@ -535,144 +670,54 @@ public class ArenaPolicyRegistry {
             }
         }
 
-        private static String extractString(String json, String key) {
-            int start = json.indexOf("\"" + key + "\"");
-            if (start < 0) return null;
-            int colonIdx = json.indexOf(":", start);
-            if (colonIdx < 0) return null;
-            int quoteStart = json.indexOf("\"", colonIdx + 1);
-            if (quoteStart < 0) return null;
-            int quoteEnd = json.indexOf("\"", quoteStart + 1);
-            if (quoteEnd < 0) return null;
-            return json.substring(quoteStart + 1, quoteEnd);
+        private static String getString(com.google.gson.JsonObject obj, String key, String def) {
+            return obj.has(key) && obj.get(key).isJsonPrimitive() && obj.get(key).getAsJsonPrimitive().isString()
+                ? obj.get(key).getAsString()
+                : def;
         }
 
-        /**
-         * Extracts a JSON string array like ["value1", "value2"].
-         */
-        @Nullable
-        private static List<String> extractStringArray(String json, String key) {
-            int keyStart = json.indexOf("\"" + key + "\"");
-            if (keyStart < 0) return null;
-
-            int colonIdx = json.indexOf(":", keyStart);
-            if (colonIdx < 0) return null;
-
-            int arrayStart = json.indexOf("[", colonIdx);
-            if (arrayStart < 0) return null;
-
-            int arrayEnd = json.indexOf("]", arrayStart);
-            if (arrayEnd < 0) return null;
-
-            String arrayContent = json.substring(arrayStart + 1, arrayEnd).trim();
-            if (arrayContent.isEmpty()) {
-                return List.of();
-            }
-
-            List<String> result = new ArrayList<>();
-            int pos = 0;
-            while (pos < arrayContent.length()) {
-                // Skip whitespace and commas
-                while (pos < arrayContent.length() &&
-                       (Character.isWhitespace(arrayContent.charAt(pos)) || arrayContent.charAt(pos) == ',')) {
-                    pos++;
-                }
-                if (pos >= arrayContent.length()) break;
-
-                // Find quoted string
-                if (arrayContent.charAt(pos) == '"') {
-                    int strStart = pos + 1;
-                    int strEnd = arrayContent.indexOf("\"", strStart);
-                    if (strEnd > strStart) {
-                        result.add(arrayContent.substring(strStart, strEnd));
-                        pos = strEnd + 1;
-                    } else {
-                        break;
-                    }
-                } else {
-                    // Skip non-quoted value (shouldn't happen for string arrays)
-                    pos++;
-                }
-            }
-
-            return result.isEmpty() ? null : result;
-        }
-
-        private static int extractInt(String json, String key, int defaultValue) {
-            try {
-                int start = json.indexOf("\"" + key + "\"");
-                if (start < 0) return defaultValue;
-                int colonIdx = json.indexOf(":", start);
-                if (colonIdx < 0) return defaultValue;
-                int numStart = colonIdx + 1;
-                while (numStart < json.length() && Character.isWhitespace(json.charAt(numStart))) {
-                    numStart++;
-                }
-                int numEnd = numStart;
-                while (numEnd < json.length() && (Character.isDigit(json.charAt(numEnd)) || json.charAt(numEnd) == '-')) {
-                    numEnd++;
-                }
-                return Integer.parseInt(json.substring(numStart, numEnd));
-            } catch (Exception e) {
-                return defaultValue;
-            }
+        private static int getInt(com.google.gson.JsonObject obj, String key, int def) {
+            return obj.has(key) && obj.get(key).isJsonPrimitive() && obj.get(key).getAsJsonPrimitive().isNumber()
+                ? obj.get(key).getAsInt()
+                : def;
         }
 
         @Nullable
-        private static Integer extractNullableInt(String json, String key) {
-            int start = json.indexOf("\"" + key + "\"");
-            if (start < 0) return null;
-            int colonIdx = json.indexOf(":", start);
-            if (colonIdx < 0) return null;
-            int numStart = colonIdx + 1;
-            while (numStart < json.length() && Character.isWhitespace(json.charAt(numStart))) {
-                numStart++;
-            }
-            // Check for null value
-            if (json.regionMatches(numStart, "null", 0, 4)) {
-                return null;
-            }
-            int numEnd = numStart;
-            while (numEnd < json.length() && (Character.isDigit(json.charAt(numEnd)) || json.charAt(numEnd) == '-')) {
-                numEnd++;
-            }
-            if (numEnd == numStart) return null;
-            try {
-                return Integer.parseInt(json.substring(numStart, numEnd));
-            } catch (NumberFormatException e) {
-                return null;
-            }
+        private static Integer getNullableInt(com.google.gson.JsonObject obj, String key) {
+            return obj.has(key) && obj.get(key).isJsonPrimitive() && obj.get(key).getAsJsonPrimitive().isNumber()
+                ? obj.get(key).getAsInt()
+                : null;
         }
 
-        private static double extractDouble(String json, String key, double defaultValue) {
-            try {
-                int start = json.indexOf("\"" + key + "\"");
-                if (start < 0) return defaultValue;
-                int colonIdx = json.indexOf(":", start);
-                if (colonIdx < 0) return defaultValue;
-                int numStart = colonIdx + 1;
-                while (numStart < json.length() && Character.isWhitespace(json.charAt(numStart))) {
-                    numStart++;
-                }
-                int numEnd = numStart;
-                while (numEnd < json.length() && (Character.isDigit(json.charAt(numEnd)) || json.charAt(numEnd) == '.' || json.charAt(numEnd) == '-')) {
-                    numEnd++;
-                }
-                return Double.parseDouble(json.substring(numStart, numEnd));
-            } catch (Exception e) {
-                return defaultValue;
-            }
+        private static double getDouble(com.google.gson.JsonObject obj, String key, double def) {
+            return obj.has(key) && obj.get(key).isJsonPrimitive() && obj.get(key).getAsJsonPrimitive().isNumber()
+                ? obj.get(key).getAsDouble()
+                : def;
         }
 
-        private static boolean extractBoolean(String json, String key, boolean defaultValue) {
-            int start = json.indexOf("\"" + key + "\"");
-            if (start < 0) return defaultValue;
-            int colonIdx = json.indexOf(":", start);
-            if (colonIdx < 0) return defaultValue;
-            String rest = json.substring(colonIdx + 1).trim();
-            if (rest.startsWith("true")) return true;
-            if (rest.startsWith("false")) return false;
-            return defaultValue;
+        @Nullable
+        private static Double getNullableDouble(com.google.gson.JsonObject obj, String key) {
+            return obj.has(key) && obj.get(key).isJsonPrimitive() && obj.get(key).getAsJsonPrimitive().isNumber()
+                ? obj.get(key).getAsDouble()
+                : null;
+        }
+
+        private static boolean getBoolean(com.google.gson.JsonObject obj, String key, boolean def) {
+            return obj.has(key) && obj.get(key).isJsonPrimitive() && obj.get(key).getAsJsonPrimitive().isBoolean()
+                ? obj.get(key).getAsBoolean()
+                : def;
+        }
+
+        @Nullable
+        private static Set<String> toSet(com.google.gson.JsonObject obj, String key) {
+            if (!obj.has(key) || !obj.get(key).isJsonArray()) return null;
+            Set<String> set = new HashSet<>();
+            obj.getAsJsonArray(key).forEach(el -> {
+                if (el.isJsonPrimitive()) {
+                    set.add(el.getAsString());
+                }
+            });
+            return set;
         }
     }
 }

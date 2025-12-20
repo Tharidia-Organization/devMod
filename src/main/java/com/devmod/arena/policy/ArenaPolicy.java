@@ -49,6 +49,18 @@ public record ArenaPolicy(
     /** Routing weight (0.1 - 10.0, default 1.0) */
     double weight,
 
+    /** Perk bindings (suggested/excluded/required) */
+    @Nullable PerkBindings perkBindings,
+
+    /** Mutator bindings (suggested/excluded/required) */
+    @Nullable MutatorBindings mutatorBindings,
+
+    /** Reward modifiers */
+    @Nullable RewardModifiers rewardModifiers,
+
+    /** Balance overrides */
+    @Nullable BalanceOverrides balanceOverrides,
+
     /** Whether this policy is enabled */
     boolean enabled,
 
@@ -72,6 +84,10 @@ public record ArenaPolicy(
         Set.of(),
         0,
         1.0,
+        null,
+        null,
+        null,
+        null,
         true,
         "Default fallback policy"
     );
@@ -89,7 +105,7 @@ public record ArenaPolicy(
     public ArenaPolicy withWeight(double newWeight) {
         return new ArenaPolicy(
             id, version, templateId, minTemplateVersion, maxTemplateVersion, mobTypes, questType, difficulty,
-            minPlayers, maxPlayers, tags, priority, newWeight, enabled, description
+            minPlayers, maxPlayers, tags, priority, newWeight, perkBindings, mutatorBindings, rewardModifiers, balanceOverrides, enabled, description
         );
     }
 
@@ -110,6 +126,10 @@ public record ArenaPolicy(
         private Set<String> tags;
         private int priority = 0;
         private double weight = 1.0;
+        private PerkBindings perkBindings;
+        private MutatorBindings mutatorBindings;
+        private RewardModifiers rewardModifiers;
+        private BalanceOverrides balanceOverrides;
         private boolean enabled = true;
         private String description;
 
@@ -129,14 +149,45 @@ public record ArenaPolicy(
         public Builder tags(Set<String> tags) { this.tags = tags; return this; }
         public Builder priority(int priority) { this.priority = priority; return this; }
         public Builder weight(double weight) { this.weight = weight; return this; }
+        public Builder perkBindings(@Nullable PerkBindings perkBindings) { this.perkBindings = perkBindings; return this; }
+        public Builder mutatorBindings(@Nullable MutatorBindings mutatorBindings) { this.mutatorBindings = mutatorBindings; return this; }
+        public Builder rewardModifiers(@Nullable RewardModifiers rewardModifiers) { this.rewardModifiers = rewardModifiers; return this; }
+        public Builder balanceOverrides(@Nullable BalanceOverrides balanceOverrides) { this.balanceOverrides = balanceOverrides; return this; }
         public Builder enabled(boolean enabled) { this.enabled = enabled; return this; }
         public Builder description(String description) { this.description = description; return this; }
 
         public ArenaPolicy build() {
             return new ArenaPolicy(
                 id, version, templateId, minTemplateVersion, maxTemplateVersion, mobTypes, questType, difficulty,
-                minPlayers, maxPlayers, tags, priority, weight, enabled, description
+                minPlayers, maxPlayers, tags, priority, weight,
+                perkBindings, mutatorBindings, rewardModifiers, balanceOverrides,
+                enabled, description
             );
         }
     }
+
+    public record PerkBindings(
+        @Nullable Set<String> suggested,
+        @Nullable Set<String> excluded,
+        @Nullable Set<String> required
+    ) {}
+
+    public record MutatorBindings(
+        @Nullable Set<String> suggested,
+        @Nullable Set<String> excluded,
+        @Nullable Set<String> required
+    ) {}
+
+    public record RewardModifiers(
+        double baseMultiplier,
+        double firstCompletionBonus,
+        double hazardBonus,
+        double streakMultiplier
+    ) {}
+
+    public record BalanceOverrides(
+        @Nullable Double spawnRateMultiplier,
+        @Nullable Double damageMultiplier,
+        @Nullable Double waveScaling
+    ) {}
 }

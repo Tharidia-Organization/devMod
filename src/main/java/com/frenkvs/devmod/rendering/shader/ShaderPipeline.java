@@ -59,9 +59,9 @@ public final class ShaderPipeline {
         try {
             event.registerShader(
                 new ShaderInstance(
-                    event.getResourceProvider(),
-                    shaderLocation,
-                    renderTypeConfig.primaryFormat()
+                    Objects.requireNonNull(event.getResourceProvider()),
+                    Objects.requireNonNull(shaderLocation),
+                    Objects.requireNonNull(renderTypeConfig.primaryFormat())
                 ),
                 shader -> {
                     shaderInstance = shader;

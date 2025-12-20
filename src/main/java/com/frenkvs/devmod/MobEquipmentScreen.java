@@ -18,6 +18,7 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import javax.annotation.Nonnull;
+import java.util.Objects;
 
 /**
  * Screen per modificare l'equipaggiamento di un mob.
@@ -95,17 +96,20 @@ public class MobEquipmentScreen extends Screen {
     }
 
     private EditBox createInputField(int x, int y, String value) {
-        EditBox field = new EditBox(font, x, y, INPUT_WIDTH, 18, Component.empty());
+        EditBox field = new EditBox(Objects.requireNonNull(font), x, y, INPUT_WIDTH, 18,
+            Objects.requireNonNull(Component.empty()));
+        if (value == null) value = "";
         field.setValue(value);
         field.setMaxLength(64);
         this.addRenderableWidget(field);
         return field;
     }
 
-    private String getItemName(EquipmentSlot slot) {
+    private String getItemName(@Nonnull EquipmentSlot slot) {
         ItemStack stack = mob.getItemBySlot(slot);
         if (stack.isEmpty()) return "";
-        return BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+        ResourceLocation key = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(stack.getItem()));
+        return Objects.requireNonNull(key).toString();
     }
 
     @Override
@@ -117,7 +121,8 @@ public class MobEquipmentScreen extends Screen {
         int panelY = (this.height - PANEL_HEIGHT) / 2;
 
         // Main panel
-        AxiomRenderer.drawPanel(graphics, font, panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT,
+        var safeFont = Objects.requireNonNull(font);
+        AxiomRenderer.drawPanel(graphics, safeFont, panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT,
             "Equipment: " + mob.getName().getString());
 
         int contentX = panelX + UIConstants.Spacing.PANEL_PADDING;
@@ -125,7 +130,7 @@ public class MobEquipmentScreen extends Screen {
         int contentWidth = PANEL_WIDTH - UIConstants.Spacing.PANEL_PADDING * 2;
 
         // Weapons section header
-        AxiomRenderer.drawSectionHeader(graphics, font, contentX, contentY, "Weapons");
+        AxiomRenderer.drawSectionHeader(graphics, safeFont, contentX, contentY, "Weapons");
         contentY += 16;
 
         // Weapon slots
@@ -142,7 +147,7 @@ public class MobEquipmentScreen extends Screen {
         contentY += UIConstants.Spacing.GAP_LARGE;
 
         // Armor section header
-        AxiomRenderer.drawSectionHeader(graphics, font, contentX, contentY, "Armor");
+        AxiomRenderer.drawSectionHeader(graphics, safeFont, contentX, contentY, "Armor");
         contentY += 16;
 
         // Armor slots
@@ -190,9 +195,10 @@ public class MobEquipmentScreen extends Screen {
             graphics.fill(fx + fw - 1, fy, fx + fw, fy + fh, UIConstants.Accent.RED()); // right
 
             // Show error message
-            int textWidth = font.width(errorMessage);
+            String msg = errorMessage != null ? errorMessage : "";
+            int textWidth = safeFont.width(msg);
             int errorX = (this.width - textWidth) / 2;
-            graphics.drawString(font, errorMessage, errorX, panelY + PANEL_HEIGHT + 8, UIConstants.Accent.RED(), false);
+            graphics.drawString(safeFont, msg, errorX, panelY + PANEL_HEIGHT + 8, UIConstants.Accent.RED(), false);
 
             errorDisplayTicks--;
             if (errorDisplayTicks <= 0) {
@@ -203,7 +209,7 @@ public class MobEquipmentScreen extends Screen {
 
         // Footer hint
         int footerY = panelY + PANEL_HEIGHT + (errorMessage != null ? 24 : 8);
-        AxiomRenderer.drawHint(graphics, font, panelX, footerY, "Enter item IDs (e.g., minecraft:diamond_sword)");
+        AxiomRenderer.drawHint(graphics, safeFont, panelX, footerY, "Enter item IDs (e.g., minecraft:diamond_sword)");
     }
 
     private void drawEquipmentLabel(GuiGraphics graphics, int x, int y, String label, int accentColor, ItemStack currentItem) {
@@ -211,7 +217,7 @@ public class MobEquipmentScreen extends Screen {
         graphics.fill(x, y + 4, x + 3, y + 14, accentColor);
 
         // Label
-        graphics.drawString(font, label, x + 8, y + 5, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(Objects.requireNonNull(font), label, x + 8, y + 5, UIConstants.Text.PRIMARY(), false);
 
         // Current item preview (if any)
         if (!currentItem.isEmpty()) {
@@ -284,9 +290,9 @@ public class MobEquipmentScreen extends Screen {
     /**
      * Validates if the given string is a valid item ID in the registry.
      */
-    private boolean isValidItemId(String itemId) {
+    private boolean isValidItemId(@Nonnull String itemId) {
         try {
-            ResourceLocation loc = ResourceLocation.parse(itemId);
+            ResourceLocation loc = Objects.requireNonNull(ResourceLocation.parse(itemId));
             return BuiltInRegistries.ITEM.containsKey(loc);
         } catch (Exception e) {
             return false;
@@ -310,7 +316,7 @@ public class MobEquipmentScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void renderBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Disable blur - just solid dimmed background
         graphics.fill(0, 0, this.width, this.height, 0xC0101010);
     }
@@ -321,7 +327,7 @@ public class MobEquipmentScreen extends Screen {
     }
 
     @Override
-    protected void renderMenuBackground(GuiGraphics graphics) {
+    protected void renderMenuBackground(@Nonnull GuiGraphics graphics) {
         graphics.fill(0, 0, this.width, this.height, 0xC0101010);
     }
 }

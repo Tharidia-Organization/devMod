@@ -3,11 +3,14 @@ package com.devmod.arena.command;
 import com.devmod.arena.autosmoke.AutosmokeRunner;
 import com.devmod.arena.autosmoke.AutosmokeScheduler;
 import com.devmod.arena.builder.ArenaBuilder;
+import com.devmod.arena.hud.ArenaDebugHud;
+import com.devmod.arena.hud.ArenaDebugState;
 import com.devmod.arena.override.ForceTemplateCapability;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateValidator;
 import com.devmod.arena.registry.ValidationResult;
+import com.devmod.arena.registry.TemplateRegistryBootstrap;
 import com.devmod.arena.security.ArenaCommandAudit;
 import com.devmod.arena.security.ArenaCommandPermissions;
 import com.devmod.arena.security.ArenaCommandPermissions.CommandCategory;
@@ -31,7 +34,6 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -67,6 +69,7 @@ public class ArenaCommands {
     private final InstanceOnlyGate instanceGate;
     private final ForceTemplateCapability forceTemplateCapability;
     private final TemplateValidator templateValidator;
+    private final TemplateRegistryBootstrap bootstrap;
 
     public ArenaCommands(
             ArenaTemplateRegistry registry,
@@ -74,7 +77,7 @@ public class ArenaCommands {
             AutosmokeScheduler autosmokeScheduler,
             Path templatesDirectory,
             ArenaBuilder arenaBuilder) {
-        this(registry, autosmokeRunner, autosmokeScheduler, templatesDirectory, arenaBuilder, null, null);
+        this(registry, autosmokeRunner, autosmokeScheduler, templatesDirectory, arenaBuilder, null, null, null);
     }
 
     public ArenaCommands(
@@ -84,7 +87,7 @@ public class ArenaCommands {
             Path templatesDirectory,
             ArenaBuilder arenaBuilder,
             com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
-        this(registry, autosmokeRunner, autosmokeScheduler, templatesDirectory, arenaBuilder, configSnapshot, null);
+        this(registry, autosmokeRunner, autosmokeScheduler, templatesDirectory, arenaBuilder, configSnapshot, null, null);
     }
 
     public ArenaCommands(
@@ -95,6 +98,18 @@ public class ArenaCommands {
             ArenaBuilder arenaBuilder,
             com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot configSnapshot,
             ForceTemplateCapability forceTemplateCapability) {
+        this(registry, autosmokeRunner, autosmokeScheduler, templatesDirectory, arenaBuilder, configSnapshot, forceTemplateCapability, null);
+    }
+
+    public ArenaCommands(
+            ArenaTemplateRegistry registry,
+            AutosmokeRunner autosmokeRunner,
+            AutosmokeScheduler autosmokeScheduler,
+            Path templatesDirectory,
+            ArenaBuilder arenaBuilder,
+            com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot configSnapshot,
+            ForceTemplateCapability forceTemplateCapability,
+            TemplateRegistryBootstrap bootstrap) {
         this.registry = Objects.requireNonNull(registry, "registry");
         this.permissions = ArenaCommandPermissions.getInstance();
         this.audit = ArenaCommandAudit.getInstance();
@@ -105,6 +120,11 @@ public class ArenaCommands {
         this.instanceGate = configSnapshot != null ? new InstanceOnlyGate(configSnapshot, null) : null;
         this.forceTemplateCapability = forceTemplateCapability;
         this.templateValidator = new TemplateValidator();
+        this.bootstrap = bootstrap;
+        if (this.autosmokeScheduler != null && configSnapshot != null) {
+            // Wire alert router for autosmoke if available
+            this.autosmokeScheduler.setAlertRouter(new com.devmod.arena.alert.AlertRouter());
+        }
     }
 
     /**
@@ -190,6 +210,22 @@ public class ArenaCommands {
                         .suggests(this::suggestTemplates)
                         .executes(ctx -> templateMetrics(ctx))))
 
+                // /arena hud - DD30 HUD toggle commands
+                .then(Commands.literal("hud")
+                    .requires(src -> permissions.hasPermission(src, CommandCategory.INFO))
+                    // /arena hud toggle
+                    .then(Commands.literal("toggle")
+                        .executes(ctx -> toggleHud(ctx)))
+                    // /arena hud on
+                    .then(Commands.literal("on")
+                        .executes(ctx -> setHud(ctx, true)))
+                    // /arena hud off
+                    .then(Commands.literal("off")
+                        .executes(ctx -> setHud(ctx, false)))
+                    // /arena hud status
+                    .then(Commands.literal("status")
+                        .executes(ctx -> hudStatus(ctx))))
+
                 // /arena help
                 .then(Commands.literal("help")
                     .executes(this::showHelp))
@@ -218,6 +254,8 @@ public class ArenaCommands {
         src.sendSuccess(() -> Component.literal("§7/arena force <id> [mins] §f- Force template session"), false);
         src.sendSuccess(() -> Component.literal("§7/arena force clear §f- Clear forced template"), false);
         src.sendSuccess(() -> Component.literal("§7/arena metrics <id> §f- Template build metrics"), false);
+        src.sendSuccess(() -> Component.literal("§7/arena hud toggle §f- Toggle debug HUD"), false);
+        src.sendSuccess(() -> Component.literal("§7/arena hud status §f- Show HUD status"), false);
 
         return 1;
     }
@@ -405,7 +443,12 @@ public class ArenaCommands {
         src.sendSuccess(() -> Component.literal("§7Reloading templates..."), false);
 
         try {
-            ArenaTemplateRegistry.ReloadResult result = registry.reloadFromDirectoryAtomic(templatesDirectory);
+            ArenaTemplateRegistry.ReloadResult result;
+            if (bootstrap != null) {
+                result = bootstrap.reloadWithConfig();
+            } else {
+                result = registry.reloadFromDirectoryAtomic(templatesDirectory);
+            }
 
             if (result.success()) {
                 src.sendSuccess(() -> Component.literal(
@@ -798,6 +841,124 @@ public class ArenaCommands {
         ), false);
 
         return 1;
+    }
+
+    // ========== HUD Commands (DD30) ==========
+
+    private int toggleHud(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
+
+        logCommand(src, "hud toggle", null);
+
+        // Must be a player
+        if (!(src.getEntity() instanceof ServerPlayer player)) {
+            src.sendFailure(Component.literal("§cThis command can only be used by players"));
+            return 0;
+        }
+
+        // Check permission
+        if (!hasHudPermission(player)) {
+            src.sendFailure(Component.literal("§cYou don't have permission to use the debug HUD"));
+            return 0;
+        }
+
+        boolean newState = ArenaDebugState.getInstance().toggleHud(player.getUUID());
+
+        if (newState) {
+            src.sendSuccess(() -> Component.literal("§aDebug HUD enabled"), false);
+        } else {
+            src.sendSuccess(() -> Component.literal("§7Debug HUD disabled"), false);
+        }
+
+        LOGGER.debug("Player {} toggled HUD to {}", player.getName().getString(), newState);
+        return 1;
+    }
+
+    private int setHud(CommandContext<CommandSourceStack> ctx, boolean enabled) {
+        CommandSourceStack src = ctx.getSource();
+
+        logCommand(src, "hud " + (enabled ? "on" : "off"), null);
+
+        // Must be a player
+        if (!(src.getEntity() instanceof ServerPlayer player)) {
+            src.sendFailure(Component.literal("§cThis command can only be used by players"));
+            return 0;
+        }
+
+        // Check permission
+        if (!hasHudPermission(player)) {
+            src.sendFailure(Component.literal("§cYou don't have permission to use the debug HUD"));
+            return 0;
+        }
+
+        ArenaDebugState state = ArenaDebugState.getInstance();
+        if (enabled) {
+            state.enableHud(player.getUUID());
+            src.sendSuccess(() -> Component.literal("§aDebug HUD enabled"), false);
+        } else {
+            state.disableHud(player.getUUID());
+            src.sendSuccess(() -> Component.literal("§7Debug HUD disabled"), false);
+        }
+
+        LOGGER.debug("Player {} set HUD to {}", player.getName().getString(), enabled);
+        return 1;
+    }
+
+    private int hudStatus(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
+
+        logCommand(src, "hud status", null);
+
+        ArenaDebugState state = ArenaDebugState.getInstance();
+
+        // Console: show global status
+        if (!(src.getEntity() instanceof ServerPlayer player)) {
+            src.sendSuccess(() -> Component.literal("§e=== Debug HUD Status ==="), false);
+            src.sendSuccess(() -> Component.literal(
+                String.format("§7Global: %s", state.isGlobalHudEnabled() ? "§aEnabled" : "§cDisabled")
+            ), false);
+            src.sendSuccess(() -> Component.literal(
+                String.format("§7Players with HUD: §f%d", state.getEnabledPlayerCount())
+            ), false);
+            return 1;
+        }
+
+        // Player: show their status
+        boolean hasPermission = hasHudPermission(player);
+        boolean isEnabled = state.isHudEnabled(player.getUUID());
+        boolean globalEnabled = state.isGlobalHudEnabled();
+
+        src.sendSuccess(() -> Component.literal("§e=== Debug HUD Status ==="), false);
+        src.sendSuccess(() -> Component.literal(
+            String.format("§7Permission: %s", hasPermission ? "§aYes" : "§cNo")
+        ), false);
+        src.sendSuccess(() -> Component.literal(
+            String.format("§7Your HUD: %s", isEnabled ? "§aEnabled" : "§7Disabled")
+        ), false);
+        src.sendSuccess(() -> Component.literal(
+            String.format("§7Global: %s", globalEnabled ? "§aEnabled" : "§cDisabled")
+        ), false);
+
+        if (hasPermission && isEnabled && globalEnabled) {
+            src.sendSuccess(() -> Component.literal("§a✓ HUD is visible"), false);
+        } else if (!hasPermission) {
+            src.sendSuccess(() -> Component.literal("§c✗ Missing permission: " + ArenaDebugHud.PERMISSION_VIEW_HUD), false);
+        } else if (!globalEnabled) {
+            src.sendSuccess(() -> Component.literal("§c✗ HUD globally disabled"), false);
+        } else {
+            src.sendSuccess(() -> Component.literal("§7Use §f/arena hud on§7 to enable"), false);
+        }
+
+        return 1;
+    }
+
+    /**
+     * Checks if a player has the HUD permission.
+     * Uses a simple check - in production this would integrate with permission plugin.
+     */
+    private boolean hasHudPermission(ServerPlayer player) {
+        // For now, allow if player has at least op level 2 or INFO permission
+        return permissions.hasPermission(player, CommandCategory.INFO);
     }
 
     // ========== Helpers ==========

@@ -39,6 +39,10 @@ public class ArenaTemplateRegistry {
     // Stats tracking
     private final RegistryStats stats = new RegistryStats();
 
+    // Reload helpers (prevent leaks)
+    private final Map<String, Object> templateLocks = new ConcurrentHashMap<>();
+    private final Map<String, Object> listenerHandles = new ConcurrentHashMap<>();
+
     public ArenaTemplateRegistry(ArenaTelemetry telemetry) {
         this(telemetry, InstanceLimitConfig.load().toLimits(), null);
     }
@@ -323,6 +327,9 @@ public class ArenaTemplateRegistry {
             registry.putAll(newRegistry);
             unresolvedTemplates.clear();
             unresolvedTemplates.putAll(newUnresolved);
+            // Leak prevention: prune locks/listeners for removed templates
+            templateLocks.keySet().removeIf(id -> !registry.containsKey(id));
+            listenerHandles.keySet().removeIf(id -> !registry.containsKey(id));
             int newGen = generation.incrementAndGet();
 
             // DD13: Emit TemplateRegistered for all new templates
@@ -407,6 +414,9 @@ public class ArenaTemplateRegistry {
 
         if (!loadResult.success()) {
             LOGGER.error("Template reload aborted, {} errors", loadResult.errors().size());
+            // Leak prevention: clear ephemeral handles/locks even on failed reload attempts
+            templateLocks.clear();
+            listenerHandles.clear();
             return new ReloadResult(false, 0, loadResult.errors());
         }
 
@@ -420,6 +430,8 @@ public class ArenaTemplateRegistry {
                 "reason", "reload_empty"
             ));
         }
+        // Leak prevention: clear stale listener handles on any reload attempt
+        listenerHandles.clear();
         return rr;
     }
 

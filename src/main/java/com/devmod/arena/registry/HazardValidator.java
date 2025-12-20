@@ -73,11 +73,11 @@ public class HazardValidator {
             int limit = TYPE_LIMITS.getOrDefault(hazard.type(), Integer.MAX_VALUE);
             if (typeCounts.get(hazard.type()) > limit) {
                 errors.add("Hazard[%d] exceeds type limit %d for '%s'".formatted(i, limit, hazard.type()));
-                emitValidationFailed(template.id(), "type_limit");
+                emitValidationFailed(template.id(), "type_limit_" + hazard.type());
             }
 
             // Parameter checks
-            validateParams(hazard, i, bounds, errors, warnings);
+            validateParams(template.id(), hazards, hazard, i, bounds, errors, warnings);
 
             // Overlap with spawn slots (best effort: use center/radius if available)
             if (spawnSlots != null && !spawnSlots.isEmpty()) {
@@ -101,6 +101,8 @@ public class HazardValidator {
     }
 
     private void validateParams(
+        String templateId,
+        List<ArenaTemplate.Hazard> hazards,
         ArenaTemplate.Hazard hazard,
         int idx,
         Bounds bounds,
@@ -133,7 +135,8 @@ public class HazardValidator {
                 int radiusCap = Math.max(1, quarter); // size/4 cap
                 if (radius > radiusCap) {
                     warnings.add(warn(idx, "radius %d clamped to %d".formatted(radius, radiusCap)));
-                    safePut(hazard, "radius", radiusCap);
+                    emitValidationFailed(templateId, "radius_clamp");
+                    safePut(hazards, idx, hazard, "radius", radiusCap, warnings);
                 }
                 int[] center = posParam(hazard, "center", errors, idx);
                 if (center != null && !bounds.contains(center[0], center[1], center[2])) {
@@ -146,7 +149,8 @@ public class HazardValidator {
                     if (depth < 1 || depth > 64) {
                         warnings.add(warn(idx, "depth %d clamped to [1,64]".formatted(depth)));
                         int clamped = Math.max(1, Math.min(64, depth));
-                        safePut(hazard, "depth", clamped);
+                        emitValidationFailed(templateId, "depth_clamp");
+                        safePut(hazards, idx, hazard, "depth", clamped, warnings);
                     }
                 }
             }
@@ -177,7 +181,8 @@ public class HazardValidator {
                     double dmg = dmgNum.doubleValue();
                     if (dmg < 0 || dmg > 20.0) {
                         warnings.add(warn(idx, "damage %.2f clamped to [0,20]".formatted(dmg)));
-                        safePut(hazard, "damage", Math.max(0.0, Math.min(20.0, dmg)));
+                        emitValidationFailed(templateId, "damage_clamp");
+                        safePut(hazards, idx, hazard, "damage", Math.max(0.0, Math.min(20.0, dmg)), warnings);
                     }
                 }
             }
@@ -193,7 +198,8 @@ public class HazardValidator {
                 if (coverage > 0.5) {
                     warnings.add(warn(idx, "coverage %.2f clamped to 0.5".formatted(coverage)));
                     if (hazard.params() != null) {
-                        safePut(hazard, "coverage", 0.5);
+                        emitValidationFailed(templateId, "coverage_clamp");
+                        safePut(hazards, idx, hazard, "coverage", 0.5, warnings);
                     }
                 }
             }
@@ -209,7 +215,8 @@ public class HazardValidator {
                     if (interval < 20 || interval > 600) {
                         int clamped = Math.max(20, Math.min(600, interval));
                         warnings.add(warn(idx, "interval %d clamped to [20,600]".formatted(interval)));
-                        safePut(hazard, "interval", clamped);
+                        emitValidationFailed(templateId, "interval_clamp");
+                        safePut(hazards, idx, hazard, "interval", clamped, warnings);
                     }
                 }
                 // Validate count
@@ -360,10 +367,22 @@ public class HazardValidator {
     }
 
     @SuppressWarnings("unchecked")
-    private void safePut(ArenaTemplate.Hazard hazard, String key, Object value) {
+    private void safePut(List<ArenaTemplate.Hazard> hazards, int idx, ArenaTemplate.Hazard hazard, String key, Object value, List<String> warnings) {
         try {
             if (hazard.params() instanceof Map<?, ?> map) {
-                ((Map<String, Object>) map).put(key, value);
+                try {
+                    ((Map<String, Object>) map).put(key, value);
+                    return;
+                } catch (UnsupportedOperationException ex) {
+                    Map<String, Object> mutable = new HashMap<>((Map<String, Object>) map);
+                    mutable.put(key, value);
+                    try {
+                        hazards.set(idx, new ArenaTemplate.Hazard(hazard.type(), mutable, hazard.y(), hazard.yMode()));
+                        warnings.add(warn(idx, "params map was immutable; replaced with mutable copy for clamp"));
+                    } catch (Exception ignored) {
+                        // cannot replace (immutable list), ignore but at least clamped map exists for downstream use
+                    }
+                }
             }
         } catch (UnsupportedOperationException ignored) {
             // Map is immutable; ignore.

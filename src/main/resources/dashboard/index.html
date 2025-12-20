@@ -40,6 +40,7 @@
             <button class="nav-btn" data-section="performance">Performance</button>
             <button class="nav-btn" data-section="spatial">Spatial</button>
             <button class="nav-btn" data-section="economy">Economy</button>
+            <button class="nav-btn" data-section="arenas">Arenas</button>
             <button class="nav-btn" data-section="query">SQL Query</button>
         </nav>
 
@@ -47,33 +48,33 @@
             <!-- Overview Section -->
             <section id="section-overview" class="section active">
                 <div class="dashboard-grid">
-                    <!-- Trend Cards with arrows -->
+                    <!-- Trend Cards with arrows (G10: tooltips) -->
                     <div class="card-row" id="summary-cards">
-                        <div class="stat-card">
+                        <div class="stat-card" data-tooltip="Total number of combat hits recorded.&#10;Includes melee, ranged, and ability hits.&#10;Higher = more combat activity.">
                             <div class="stat-label">Total Hits</div>
                             <div class="stat-value" id="stat-total-hits">-</div>
                             <div class="stat-trend" id="trend-hits"></div>
                         </div>
-                        <div class="stat-card">
+                        <div class="stat-card" data-tooltip="Sum of all damage dealt.&#10;Calculated from hits × damage per hit.&#10;Tracks combat effectiveness.">
                             <div class="stat-label">Total Damage</div>
                             <div class="stat-value" id="stat-total-damage">-</div>
                             <div class="stat-trend" id="trend-damage"></div>
                         </div>
-                        <div class="stat-card">
+                        <div class="stat-card" data-tooltip="Player death count.&#10;Includes PvE and PvP deaths.&#10;Lower = better survival rate.">
                             <div class="stat-label">Deaths</div>
                             <div class="stat-value" id="stat-total-deaths">-</div>
                             <div class="stat-trend" id="trend-deaths"></div>
                         </div>
-                        <div class="stat-card">
+                        <div class="stat-card" data-tooltip="Total mobs killed by players.&#10;Counts confirmed kills only.&#10;Key for balancing mob difficulty.">
                             <div class="stat-label">Mobs Killed</div>
                             <div class="stat-value" id="stat-mobs-killed">-</div>
                             <div class="stat-trend" id="trend-kills"></div>
                         </div>
-                        <div class="stat-card">
+                        <div class="stat-card" data-tooltip="Hit accuracy percentage.&#10;Formula: (hits / attempts) × 100.&#10;Above 80% = skilled combat.">
                             <div class="stat-label">Accuracy</div>
                             <div class="stat-value" id="stat-accuracy">-</div>
                         </div>
-                        <div class="stat-card">
+                        <div class="stat-card" data-tooltip="DuckDB database size.&#10;Includes all telemetry data.&#10;Auto-compacted hourly.">
                             <div class="stat-label">DB Size</div>
                             <div class="stat-value" id="stat-db-size">-</div>
                         </div>
@@ -81,30 +82,33 @@
 
                     <!-- DPS Timeline (main chart) -->
                     <div class="chart-row">
-                        <div class="chart-container wide">
-                            <h3>DPS Over Time (Damage Per Second)</h3>
+                        <div class="chart-container wide" data-tooltip="Damage per second over time. Spikes indicate intense combat. Use for identifying peak activity periods.">
+                            <div class="chart-header">
+                                <h3>DPS Over Time (Damage Per Second)</h3>
+                                <button class="export-png-btn" onclick="exportChartPng('dps-timeline')" title="Export as PNG">📷</button>
+                            </div>
                             <canvas id="chart-dps-timeline"></canvas>
                         </div>
                     </div>
 
                     <!-- Charts Row -->
                     <div class="chart-row">
-                        <div class="chart-container">
+                        <div class="chart-container" data-tooltip="Distribution of hits by target body part. Useful for hitbox accuracy analysis.">
                             <h3>Damage by Body Part</h3>
                             <canvas id="chart-body-parts"></canvas>
                         </div>
-                        <div class="chart-container">
+                        <div class="chart-container" data-tooltip="Weapon damage rankings. Helps identify overpowered/underpowered weapons.">
                             <h3>Top Weapons by Damage</h3>
                             <canvas id="chart-weapons"></canvas>
                         </div>
                     </div>
 
                     <div class="chart-row">
-                        <div class="chart-container">
+                        <div class="chart-container" data-tooltip="Kill distribution by mob type. Use for spawn rate balancing.">
                             <h3>Mob Kills Distribution</h3>
                             <canvas id="chart-mob-kills"></canvas>
                         </div>
-                        <div class="chart-container">
+                        <div class="chart-container" data-tooltip="Physical vs magical vs special damage breakdown. Key for resistance tuning.">
                             <h3>Damage Type Breakdown</h3>
                             <canvas id="chart-damage-types-overview"></canvas>
                         </div>
@@ -383,6 +387,104 @@
                             <button onclick="exportData('drops')" class="export-btn">Export CSV</button>
                         </div>
                         <div id="economy-drops-data" class="table-container"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Arenas Section (DD36) with G10 tooltips -->
+            <section id="section-arenas" class="section">
+                <div class="dashboard-grid">
+                    <!-- Arena Stats Cards (G10: tooltips) -->
+                    <div class="card-row" id="arena-stats">
+                        <div class="stat-card" data-tooltip="Total arena builds attempted.&#10;Includes successful and failed.&#10;High count = popular template.">
+                            <div class="stat-label">Total Builds</div>
+                            <div class="stat-value" id="stat-arena-builds">-</div>
+                        </div>
+                        <div class="stat-card" data-tooltip="Percentage of successful builds.&#10;Formula: (success / total) × 100.&#10;Below 95% indicates issues.">
+                            <div class="stat-label">Success Rate</div>
+                            <div class="stat-value" id="stat-arena-success">-</div>
+                        </div>
+                        <div class="stat-card" data-tooltip="Average time to complete a build.&#10;Measured in milliseconds.&#10;Over 5000ms may cause lag.">
+                            <div class="stat-label">Avg Build Time</div>
+                            <div class="stat-value" id="stat-arena-avgtime">-</div>
+                        </div>
+                        <div class="stat-card" data-tooltip="95th percentile build time.&#10;95% of builds complete faster.&#10;Key metric for worst-case perf.">
+                            <div class="stat-label">P95 Build Time</div>
+                            <div class="stat-value" id="stat-arena-p95">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Template Selector -->
+                    <div class="controls arena-controls">
+                        <label>Template:</label>
+                        <select id="arena-template-filter" onchange="onArenaTemplateChange()">
+                            <option value="">Select Template...</option>
+                        </select>
+                        <button onclick="loadArenaSection()" class="refresh-btn">Refresh</button>
+                    </div>
+
+                    <!-- Build Metrics Chart -->
+                    <div class="chart-row">
+                        <div class="chart-container wide" data-tooltip="Build success/failure trend over time. Sudden drops indicate template issues or server problems.">
+                            <div class="chart-header">
+                                <h3>Build Metrics Over Time</h3>
+                                <button class="export-png-btn" onclick="exportChartPng('arena-builds')" title="Export as PNG">📷</button>
+                            </div>
+                            <canvas id="chart-arena-builds"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Gap 3: Failure Rate per Template Chart -->
+                    <div class="chart-row">
+                        <div class="chart-container wide" data-tooltip="Failure rate comparison across all templates. Identifies problematic templates that need fixes. Red = high failure rate.">
+                            <div class="chart-header">
+                                <h3>Failure Rate by Template</h3>
+                                <button class="export-png-btn" onclick="exportChartPng('arena-failure-rate')" title="Export as PNG">📷</button>
+                            </div>
+                            <canvas id="chart-arena-failure-rate"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Performance & Heatmaps -->
+                    <div class="chart-row">
+                        <div class="chart-container" data-tooltip="Server tick time during builds. MSPT > 50 = TPS drops. Optimize templates causing spikes.">
+                            <div class="chart-header">
+                                <h3>Arena Performance (MSPT)</h3>
+                                <button class="export-png-btn" onclick="exportChartPng('arena-performance')" title="Export as PNG">📷</button>
+                            </div>
+                            <canvas id="chart-arena-performance"></canvas>
+                        </div>
+                        <div class="chart-container" data-tooltip="Player spawn density visualization. Hot spots = popular spawn locations. Use for spawn balancing.">
+                            <div class="chart-header">
+                                <h3>Spawn Heatmap</h3>
+                                <button class="export-png-btn" onclick="exportChartPng('arena-spawn-heatmap')" title="Export as PNG">📷</button>
+                            </div>
+                            <canvas id="chart-arena-spawn-heatmap"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-row">
+                        <div class="chart-container" data-tooltip="Death location density. Hot spots = dangerous areas. Consider adding escape routes or nerfing hazards.">
+                            <div class="chart-header">
+                                <h3>Death Heatmap</h3>
+                                <button class="export-png-btn" onclick="exportChartPng('arena-death-heatmap')" title="Export as PNG">📷</button>
+                            </div>
+                            <canvas id="chart-arena-death-heatmap"></canvas>
+                        </div>
+                        <div class="chart-container" data-tooltip="Wave completion success rates. Shows difficulty curve. Steep drops = difficulty spikes to address.">
+                            <div class="chart-header">
+                                <h3>Wave Completion Rate</h3>
+                                <button class="export-png-btn" onclick="exportChartPng('arena-waves')" title="Export as PNG">📷</button>
+                            </div>
+                            <canvas id="chart-arena-waves"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Wave Correlation Table -->
+                    <div class="data-section">
+                        <h3>Wave Progression Analysis</h3>
+                        <div id="arena-wave-data" class="table-container"></div>
+                        <button onclick="exportData('arena-waves')" class="export-btn">Export CSV</button>
                     </div>
                 </div>
             </section>

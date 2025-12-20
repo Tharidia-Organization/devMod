@@ -53,6 +53,7 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -931,12 +932,12 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
         ranged.putBoolean("channeling", ranged.getBoolean("channeling"));
     }
 
-    private static float clampFloat(CompoundTag tag, String key, float min, float max) {
+    private static float clampFloat(CompoundTag tag, @Nonnull String key, float min, float max) {
         float val = tag.contains(key) ? tag.getFloat(key) : min;
         return Math.max(min, Math.min(max, val));
     }
 
-    private static int clampInt(CompoundTag tag, String key, int min, int max) {
+    private static int clampInt(CompoundTag tag, @Nonnull String key, int min, int max) {
         int val = tag.contains(key) ? tag.getInt(key) : min;
         return Math.max(min, Math.min(max, val));
     }

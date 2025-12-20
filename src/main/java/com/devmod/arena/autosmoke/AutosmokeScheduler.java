@@ -1,5 +1,7 @@
 package com.devmod.arena.autosmoke;
 
+import com.devmod.arena.alert.AlertRouter;
+import com.devmod.arena.alert.ErrorContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +43,7 @@ public class AutosmokeScheduler {
     private volatile boolean running = false;
 
     private Consumer<AutosmokeRunner.AutosmokeReport> reportCallback;
+    private AlertRouter alertRouter;
 
     /**
      * Creates a new scheduler with default configuration.
@@ -135,6 +138,13 @@ public class AutosmokeScheduler {
     }
 
     /**
+     * Optional: set an AlertRouter for failure alerts.
+     */
+    public void setAlertRouter(AlertRouter router) {
+        this.alertRouter = router;
+    }
+
+    /**
      * Gets the last run status.
      */
     public RunStatus getLastRunStatus() {
@@ -210,6 +220,10 @@ public class AutosmokeScheduler {
                 LOGGER.info("Autosmoke run completed: {} passed, {} failed",
                     report.passedCount(), report.failedCount());
 
+                if (report.failedCount() > 0 && alertRouter != null) {
+                    routeFailureAlert(report);
+                }
+
                 // Notify callback
                 if (reportCallback != null) {
                     try {
@@ -259,6 +273,56 @@ public class AutosmokeScheduler {
         }
 
         return Duration.between(now, nextRun);
+    }
+
+    private void routeFailureAlert(AutosmokeRunner.AutosmokeReport report) {
+        try {
+            String message = String.format(
+                "Autosmoke run failed: %d/%d tests failed (%.1f%% failure rate)",
+                report.failedCount(),
+                report.passedCount() + report.failedCount(),
+                (report.failedCount() * 100.0) / (report.passedCount() + report.failedCount())
+            );
+
+            ErrorContext.Severity severity = report.failedCount() > 5
+                ? ErrorContext.Severity.CRITICAL
+                : ErrorContext.Severity.ERROR;
+
+            java.util.Map<String, Object> metadata = new java.util.HashMap<>();
+            metadata.put("passedCount", report.passedCount());
+            metadata.put("failedCount", report.failedCount());
+            metadata.put("durationMs", report.totalDuration().toMillis());
+
+            if (report.header() != null) {
+                metadata.put("modVersion", report.header().modVersion());
+                metadata.put("gitCommit", report.header().gitCommit());
+                metadata.put("gitBranch", report.header().gitBranch());
+            }
+
+            if (report.results() != null && !report.results().isEmpty()) {
+                java.util.List<String> failedTemplates = report.results().stream()
+                    .filter(r -> !r.passed())
+                    .map(r -> r.templateId() != null ? r.templateId().toString() : "unknown")
+                    .limit(10)
+                    .toList();
+                metadata.put("failedTemplates", failedTemplates);
+            }
+
+            ErrorContext context = ErrorContext.builder()
+                .errorType("AutosmokeFailure")
+                .message(message)
+                .severity(severity)
+                .component("autosmoke")
+                .metadata(metadata)
+                .build();
+
+            alertRouter.route(context).exceptionally(ex -> {
+                LOGGER.error("Failed to route autosmoke failure alert", ex);
+                return null;
+            });
+        } catch (Exception e) {
+            LOGGER.error("Failed to create autosmoke failure alert", e);
+        }
     }
 
     private String formatDuration(Duration duration) {

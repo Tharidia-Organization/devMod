@@ -12,6 +12,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import javax.annotation.Nonnull;
+import java.util.Objects;
 
 /**
  * State management for MobConfigScreen.
@@ -103,14 +104,14 @@ public class MobConfigScreenState {
         this.mob = mob;
 
         // Store original values
-        this.origHealth = getVal(Attributes.MAX_HEALTH);
-        this.origArmor = getVal(Attributes.ARMOR);
-        this.origDamage = getVal(Attributes.ATTACK_DAMAGE);
-        this.origFollowRange = getVal(Attributes.FOLLOW_RANGE);
-        this.origSpeed = getVal(Attributes.MOVEMENT_SPEED);
-        this.origKnockbackResist = getVal(Attributes.KNOCKBACK_RESISTANCE);
+        this.origHealth = getVal(Objects.requireNonNull(Attributes.MAX_HEALTH));
+        this.origArmor = getVal(Objects.requireNonNull(Attributes.ARMOR));
+        this.origDamage = getVal(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
+        this.origFollowRange = getVal(Objects.requireNonNull(Attributes.FOLLOW_RANGE));
+        this.origSpeed = getVal(Objects.requireNonNull(Attributes.MOVEMENT_SPEED));
+        this.origKnockbackResist = getVal(Objects.requireNonNull(Attributes.KNOCKBACK_RESISTANCE));
 
-        double reach = getVal(Attributes.ENTITY_INTERACTION_RANGE);
+        double reach = getVal(Objects.requireNonNull(Attributes.ENTITY_INTERACTION_RANGE));
         if (reach <= 0.1) {
             reach = mob.getBbWidth() * 2.0 + 1.0;
         }
@@ -345,18 +346,18 @@ public class MobConfigScreenState {
         if (mc == null) return;
 
         switch (preset) {
-            case 0 -> mc.getSoundManager().play(SimpleSoundInstance.forUI(
-                SoundEvents.ANVIL_PLACE, 0.6f, 0.5f));
-            case 1 -> mc.getSoundManager().play(SimpleSoundInstance.forUI(
-                SoundEvents.PLAYER_ATTACK_CRIT, 1.0f, 1.2f));
-            case 2 -> mc.getSoundManager().play(SimpleSoundInstance.forUI(
-                SoundEvents.ENDER_DRAGON_FLAP, 0.5f, 1.5f));
-            case 3 -> mc.getSoundManager().play(SimpleSoundInstance.forUI(
-                SoundEvents.UI_BUTTON_CLICK.value(), 1.0f, 1.0f));
-            case 4 -> mc.getSoundManager().play(SimpleSoundInstance.forUI(
-                SoundEvents.TOTEM_USE, 0.4f, 0.7f));
-            case 5 -> mc.getSoundManager().play(SimpleSoundInstance.forUI(
-                SoundEvents.UI_BUTTON_CLICK.value(), 0.8f, 1.2f));
+            case 0 -> mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(
+                Objects.requireNonNull(SoundEvents.ANVIL_PLACE), 0.6f, 0.5f)));
+            case 1 -> mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(
+                Objects.requireNonNull(SoundEvents.PLAYER_ATTACK_CRIT), 1.0f, 1.2f)));
+            case 2 -> mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(
+                Objects.requireNonNull(SoundEvents.ENDER_DRAGON_FLAP), 0.5f, 1.5f)));
+            case 3 -> mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(
+                Objects.requireNonNull(SoundEvents.UI_BUTTON_CLICK.value()), 1.0f, 1.0f)));
+            case 4 -> mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(
+                Objects.requireNonNull(SoundEvents.TOTEM_USE), 0.4f, 0.7f)));
+            case 5 -> mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(
+                Objects.requireNonNull(SoundEvents.UI_BUTTON_CLICK.value()), 0.8f, 1.2f)));
         }
     }
 
@@ -375,8 +376,8 @@ public class MobConfigScreenState {
 
         Minecraft mc = Minecraft.getInstance();
         if (mc != null) {
-            mc.getSoundManager().play(SimpleSoundInstance.forUI(
-                SoundEvents.UI_BUTTON_CLICK.value(), 1.0f, 1.2f));
+            mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(
+                Objects.requireNonNull(SoundEvents.UI_BUTTON_CLICK.value()), 1.0f, 1.2f)));
         }
     }
 
@@ -391,8 +392,8 @@ public class MobConfigScreenState {
         if (MobPresetManager.savePreset(name.trim(), preset)) {
             Minecraft mc = Minecraft.getInstance();
             if (mc != null) {
-                mc.getSoundManager().play(SimpleSoundInstance.forUI(
-                    SoundEvents.EXPERIENCE_ORB_PICKUP, 0.5f, 1.0f));
+                mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(
+                    Objects.requireNonNull(SoundEvents.EXPERIENCE_ORB_PICKUP), 0.5f, 1.0f)));
             }
         }
     }
@@ -401,8 +402,8 @@ public class MobConfigScreenState {
         MobPresetManager.deletePreset(name);
         Minecraft mc = Minecraft.getInstance();
         if (mc != null) {
-            mc.getSoundManager().play(SimpleSoundInstance.forUI(
-                SoundEvents.ITEM_PICKUP, 0.5f, 0.8f));
+            mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(
+                Objects.requireNonNull(SoundEvents.ITEM_PICKUP), 0.5f, 0.8f)));
         }
     }
 

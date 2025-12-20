@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.level.pathfinder.Path;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -114,17 +116,18 @@ public class PathfindingDebugger {
             nodes.add(mob.position().add(0, 0.1, 0));
 
             // Add remaining path nodes (from current index onwards)
-            int startIndex = path.getNextNodeIndex();
+            int startIndex = Objects.requireNonNull(path).getNextNodeIndex();
             for (int i = startIndex; i < path.getNodeCount(); i++) {
                 Node node = path.getNode(i);
                 if (node != null) {
-                    nodes.add(Vec3.atBottomCenterOf(node.asBlockPos()).add(0, 0.1, 0));
+                    nodes.add(Objects.requireNonNull(Vec3.atBottomCenterOf(Objects.requireNonNull(node.asBlockPos())).add(0, 0.1, 0)));
                 }
             }
 
             // Only cache if we have at least 2 points (start + destination)
             if (nodes.size() >= 2) {
-                Vec3 target = path.getTarget() != null ? Vec3.atCenterOf(path.getTarget()) : nodes.get(nodes.size() - 1);
+                BlockPos targetBlock = path.getTarget();
+                Vec3 target = targetBlock != null ? Objects.requireNonNull(Vec3.atCenterOf(targetBlock)) : nodes.get(nodes.size() - 1);
                 boolean canReach = path.canReach();
 
                 cachedPaths.put(mobId, new CachedPath(
@@ -224,13 +227,15 @@ public class PathfindingDebugger {
         animationTick = System.currentTimeMillis();
 
         // PERFORMANCE FIX: Use AABB query instead of iterating all entities
-        AABB searchBox = mc.player.getBoundingBox().inflate(getMaxRenderDistance());
-        for (net.minecraft.world.entity.Entity entity : mc.level.getEntities(mc.player, searchBox)) {
+        var player = Objects.requireNonNull(mc.player);
+        var level = Objects.requireNonNull(mc.level);
+        AABB searchBox = Objects.requireNonNull(player.getBoundingBox().inflate(getMaxRenderDistance()));
+        for (net.minecraft.world.entity.Entity entity : level.getEntities(player, searchBox)) {
             if (entity instanceof Mob mob) {
                 trackMobPath(mob);
 
                 // Also show mob's current target if they have one (even without active path)
-                trackMobTarget(mob, mc.player);
+                trackMobTarget(mob, player);
             }
         }
 
@@ -294,7 +299,7 @@ public class PathfindingDebugger {
             setShaderUniform(shader, "Alpha", alpha);
             setShaderUniform(shader, "CanReach", pathData.canReach ? 1 : 0);
 
-            renderSpectacularPathGPU(consumer, matrix, pose, pathData, alpha, time, shader);
+            renderSpectacularPathGPU(Objects.requireNonNull(consumer), Objects.requireNonNull(matrix), Objects.requireNonNull(pose), pathData, alpha, time, shader);
         }
     }
 
@@ -302,7 +307,7 @@ public class PathfindingDebugger {
      * CPU fallback path rendering.
      */
     private void renderPathsCPU(MultiBufferSource buffer, Matrix4f matrix, PoseStack.Pose pose, long now) {
-        VertexConsumer consumer = buffer.getBuffer(RenderType.lines());
+        VertexConsumer consumer = buffer.getBuffer(Objects.requireNonNull(RenderType.lines()));
 
         for (Map.Entry<UUID, CachedPath> entry : cachedPaths.entrySet()) {
             CachedPath pathData = entry.getValue();
@@ -311,7 +316,7 @@ public class PathfindingDebugger {
             float age = (now - pathData.timestamp) / (float) (PATH_CACHE_DURATION * 3);
             float alpha = Math.max(0.2f, 1.0f - age * 0.7f);
 
-            renderSpectacularPath(consumer, matrix, pose, pathData, alpha);
+            renderSpectacularPath(Objects.requireNonNull(consumer), Objects.requireNonNull(matrix), Objects.requireNonNull(pose), pathData, alpha);
         }
     }
 
@@ -328,8 +333,8 @@ public class PathfindingDebugger {
         float pulse = (float) (0.7f + 0.3f * Math.sin(time * Math.PI * 2 * 3)); // Pulsing 3x per cycle
         float rotation = time * 360.0f; // Full rotation per cycle
 
-        Vec3 startPos = nodes.get(0);
-        Vec3 endPos = nodes.size() > 1 ? nodes.get(nodes.size() - 1) : startPos;
+        Vec3 startPos = Objects.requireNonNull(nodes.get(0));
+        Vec3 endPos = nodes.size() > 1 ? Objects.requireNonNull(nodes.get(nodes.size() - 1)) : startPos;
         Vec3 targetPos = pathData.target != null ? pathData.target : endPos;
 
         // ═══════════════════════════════════════════════════════════════
@@ -354,22 +359,22 @@ public class PathfindingDebugger {
         // ═══════════════════════════════════════════════════════════════
         for (int i = 1; i < nodes.size() - 1; i++) {
             float progress = (float) i / (nodes.size() - 1);
-            renderIntermediateNode(consumer, matrix, pose, nodes.get(i), progress, alpha, pulse);
+            renderIntermediateNode(consumer, matrix, pose, Objects.requireNonNull(nodes.get(i)), progress, alpha, pulse);
         }
 
         // ═══════════════════════════════════════════════════════════════
         // 📝 LABELS
         // ═══════════════════════════════════════════════════════════════
-        DebugRenderer.INSTANCE.addLabel(startPos.add(0, 2.5, 0),
+        DebugRenderer.INSTANCE.addLabel(Objects.requireNonNull(startPos.add(0, 2.5, 0)),
                 "▶ START: " + pathData.mobName, 0xFF00FFFF, 50);
 
         String destLabel = pathData.canReach ? "◆ DESTINATION" : "✗ UNREACHABLE";
         int destColor = pathData.canReach ? 0xFFFFD700 : 0xFFFF4444;
-        DebugRenderer.INSTANCE.addLabel(targetPos.add(0, 2.5, 0), destLabel, destColor, 50);
+        DebugRenderer.INSTANCE.addLabel(Objects.requireNonNull(targetPos.add(0, 2.5, 0)), destLabel, destColor, 50);
 
         // Distance info
         double distance = startPos.distanceTo(targetPos);
-        DebugRenderer.INSTANCE.addLabel(startPos.add(targetPos).scale(0.5).add(0, 1.0, 0),
+        DebugRenderer.INSTANCE.addLabel(Objects.requireNonNull(Objects.requireNonNull(Objects.requireNonNull(startPos.add(targetPos)).scale(0.5)).add(0, 1.0, 0)),
                 String.format("%.1f blocks", distance), 0xFFAAAAAA, 50);
     }
 
@@ -561,15 +566,15 @@ public class PathfindingDebugger {
         // Calculate total path length for animation
         double totalLength = 0;
         for (int i = 0; i < nodes.size() - 1; i++) {
-            totalLength += nodes.get(i).distanceTo(nodes.get(i + 1));
+            totalLength += Objects.requireNonNull(nodes.get(i)).distanceTo(Objects.requireNonNull(nodes.get(i + 1)));
         }
 
         double currentLength = 0;
         float marchOffset = time * 10; // Marching ants speed
 
         for (int i = 0; i < nodes.size() - 1; i++) {
-            Vec3 p1 = nodes.get(i);
-            Vec3 p2 = nodes.get(i + 1);
+            Vec3 p1 = Objects.requireNonNull(nodes.get(i));
+            Vec3 p2 = Objects.requireNonNull(nodes.get(i + 1));
             double segmentLength = p1.distanceTo(p2);
 
             // Gradient from CYAN (start) to GOLD (end)
@@ -600,12 +605,12 @@ public class PathfindingDebugger {
             }
 
             // Marching ants effect (animated dashes)
-            Vec3 dir = p2.subtract(p1).normalize();
+            Vec3 dir = Objects.requireNonNull(Objects.requireNonNull(p2.subtract(p1)).normalize());
             int numDashes = Math.max(2, (int) (segmentLength / 0.4));
             for (int d = 0; d < numDashes; d++) {
                 float dashProgress = ((d + marchOffset) % numDashes) / (float) numDashes;
-                Vec3 dashStart = p1.add(dir.scale(segmentLength * dashProgress));
-                Vec3 dashEnd = p1.add(dir.scale(Math.min(segmentLength, segmentLength * dashProgress + 0.15)));
+                Vec3 dashStart = Objects.requireNonNull(p1.add(Objects.requireNonNull(dir.scale(segmentLength * dashProgress))));
+                Vec3 dashEnd = Objects.requireNonNull(p1.add(Objects.requireNonNull(dir.scale(Math.min(segmentLength, segmentLength * dashProgress + 0.15)))));
 
                 // Bright dash
                 line(consumer, matrix, pose,
@@ -616,7 +621,7 @@ public class PathfindingDebugger {
 
             // Direction arrows every 2 blocks
             if (segmentLength > 1.5) {
-                Vec3 midPoint = p1.add(p2).scale(0.5);
+                Vec3 midPoint = Objects.requireNonNull(Objects.requireNonNull(p1.add(p2)).scale(0.5));
                 renderDirectionArrow(consumer, matrix, pose, midPoint, dir, r, g, b, alpha);
             }
 
@@ -660,10 +665,10 @@ public class PathfindingDebugger {
         float arrowLength = 0.3f;
         float arrowWidth = 0.15f;
 
-        Vec3 tip = pos.add(direction.scale(arrowLength)).add(0, 0.3, 0);
-        Vec3 right = direction.cross(new Vec3(0, 1, 0)).normalize();
-        Vec3 back1 = tip.subtract(direction.scale(arrowLength * 0.7)).add(right.scale(arrowWidth));
-        Vec3 back2 = tip.subtract(direction.scale(arrowLength * 0.7)).subtract(right.scale(arrowWidth));
+        Vec3 tip = Objects.requireNonNull(Objects.requireNonNull(pos.add(Objects.requireNonNull(direction.scale(arrowLength)))).add(0, 0.3, 0));
+        Vec3 right = Objects.requireNonNull(direction.cross(new Vec3(0, 1, 0)).normalize());
+        Vec3 back1 = Objects.requireNonNull(Objects.requireNonNull(tip.subtract(Objects.requireNonNull(direction.scale(arrowLength * 0.7)))).add(Objects.requireNonNull(right.scale(arrowWidth))));
+        Vec3 back2 = Objects.requireNonNull(Objects.requireNonNull(tip.subtract(Objects.requireNonNull(direction.scale(arrowLength * 0.7)))).subtract(Objects.requireNonNull(right.scale(arrowWidth))));
 
         // Arrow head
         line(consumer, matrix, pose, (float) tip.x, (float) tip.y, (float) tip.z,
@@ -696,8 +701,8 @@ public class PathfindingDebugger {
         float pulse = (float) (0.7f + 0.3f * Math.sin(time * Math.PI * 2 * 3));
         float rotation = time * 360.0f;
 
-        Vec3 startPos = nodes.get(0);
-        Vec3 endPos = nodes.size() > 1 ? nodes.get(nodes.size() - 1) : startPos;
+        Vec3 startPos = Objects.requireNonNull(nodes.get(0));
+        Vec3 endPos = nodes.size() > 1 ? Objects.requireNonNull(nodes.get(nodes.size() - 1)) : startPos;
         Vec3 targetPos = pathData.target != null ? pathData.target : endPos;
 
         // Render START beacon with GPU shader
@@ -715,16 +720,16 @@ public class PathfindingDebugger {
         }
 
         // Labels (still CPU - text rendering)
-        DebugRenderer.INSTANCE.addLabel(startPos.add(0, 2.5, 0),
-                "▶ START: " + pathData.mobName, 0xFF00FFFF, 50);
+        DebugRenderer.INSTANCE.addLabel(Objects.requireNonNull(startPos.add(0, 2.5, 0)),
+                Objects.requireNonNull("▶ START: " + pathData.mobName), 0xFF00FFFF, 50);
 
-        String destLabel = pathData.canReach ? "◆ DESTINATION" : "✗ UNREACHABLE";
+        String destLabel = Objects.requireNonNull(pathData.canReach ? "◆ DESTINATION" : "✗ UNREACHABLE");
         int destColor = pathData.canReach ? 0xFFFFD700 : 0xFFFF4444;
-        DebugRenderer.INSTANCE.addLabel(targetPos.add(0, 2.5, 0), destLabel, destColor, 50);
+        DebugRenderer.INSTANCE.addLabel(Objects.requireNonNull(targetPos.add(0, 2.5, 0)), destLabel, destColor, 50);
 
         double distance = startPos.distanceTo(targetPos);
-        DebugRenderer.INSTANCE.addLabel(startPos.add(targetPos).scale(0.5).add(0, 1.0, 0),
-                String.format("%.1f blocks", distance), 0xFFAAAAAA, 50);
+        DebugRenderer.INSTANCE.addLabel(Objects.requireNonNull(Objects.requireNonNull(Objects.requireNonNull(startPos.add(targetPos)).scale(0.5)).add(0, 1.0, 0)),
+                Objects.requireNonNull(String.format("%.1f blocks", distance)), 0xFFAAAAAA, 50);
     }
 
     /**
@@ -794,15 +799,15 @@ public class PathfindingDebugger {
                                         boolean canReach, float alpha) {
         double totalLength = 0;
         for (int i = 0; i < nodes.size() - 1; i++) {
-            totalLength += nodes.get(i).distanceTo(nodes.get(i + 1));
+            totalLength += Objects.requireNonNull(nodes.get(i)).distanceTo(Objects.requireNonNull(nodes.get(i + 1)));
         }
 
         double currentLength = 0;
         float pathThickness = 0.05f;
 
         for (int i = 0; i < nodes.size() - 1; i++) {
-            Vec3 p1 = nodes.get(i);
-            Vec3 p2 = nodes.get(i + 1);
+            Vec3 p1 = Objects.requireNonNull(nodes.get(i));
+            Vec3 p2 = Objects.requireNonNull(nodes.get(i + 1));
             double segmentLength = p1.distanceTo(p2);
 
             float progress1 = (float) (currentLength / totalLength);
@@ -831,7 +836,7 @@ public class PathfindingDebugger {
     // Shader uniform helper methods
     private void setShaderUniform(ShaderInstance shader, String name, float value) {
         try {
-            var uniform = shader.getUniform(name);
+            var uniform = shader.getUniform(Objects.requireNonNull(name));
             if (uniform != null) {
                 uniform.set(value);
             }
@@ -840,7 +845,7 @@ public class PathfindingDebugger {
 
     private void setShaderUniform(ShaderInstance shader, String name, int value) {
         try {
-            var uniform = shader.getUniform(name);
+            var uniform = shader.getUniform(Objects.requireNonNull(name));
             if (uniform != null) {
                 uniform.set(value);
             }
@@ -849,7 +854,7 @@ public class PathfindingDebugger {
 
     private void setShaderUniformVec3(ShaderInstance shader, String name, float x, float y, float z) {
         try {
-            var uniform = shader.getUniform(name);
+            var uniform = shader.getUniform(Objects.requireNonNull(name));
             if (uniform != null) {
                 uniform.set(x, y, z);
             }

@@ -1,5 +1,8 @@
 package com.frenkvs.devmod.endurance;
 
+import com.devmod.arena.config.ArenaTemplateConfig;
+import com.devmod.arena.gate.InstanceOnlyGate;
+import com.devmod.arena.telemetry.ArenaTelemetry;
 import com.frenkvs.devmod.telemetry.TelemetryService;
 import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.frenkvs.devmod.util.I18n;
@@ -54,6 +57,9 @@ public class EnduranceQuestManager {
 
     // Instance dimension mode flag - when true, quests run in isolated temporary dimensions
     private boolean useInstanceDimensions = true;
+
+    // Instance-only gate for legacy overworld path
+    private InstanceOnlyGate instanceGate;
 
     private EnduranceQuestManager() {}
 
@@ -115,6 +121,13 @@ public class EnduranceQuestManager {
 
         // Initialize analytics system for session tracking
         EnduranceAnalytics.INSTANCE.initialize(configDir);
+
+        // Configure instance-only gate for legacy overworld protection
+        ArenaTemplateConfig cfg = ArenaTemplateConfig.load();
+        this.instanceGate = new InstanceOnlyGate(cfg.snapshot(), new ArenaTelemetry());
+        if (cfg.instanceOnly()) {
+            LOGGER.info("[EnduranceQuest] Instance-only mode enabled; legacy overworld builds will be blocked");
+        }
 
         initialized = true;
         LOGGER.info("[EnduranceQuest] Manager initialized with {} quest types", questTemplates.size());
@@ -218,15 +231,17 @@ public class EnduranceQuestManager {
             return PreparedArenaResult.failure(result.message());
         }
 
-        // Config gate: if instance-only is enabled, block legacy path
-        com.devmod.arena.config.ArenaTemplateConfig cfg = com.devmod.arena.config.ArenaTemplateConfig.load();
-        if (cfg.instanceOnly()) {
-            LOGGER.error("[EnduranceQuest] Instance-only mode enabled, legacy overworld path blocked");
-            return PreparedArenaResult.failure("Instance-only mode: legacy overworld arenas are disabled");
-        }
-
         // Legacy overworld fallback (should not be used when instance mode forced)
         ServerLevel level = leader.serverLevel();
+        if (instanceGate != null) {
+            InstanceOnlyGate.Result gateResult = instanceGate.check(level, "EnduranceQuestManager.prepareArenaForParty");
+            if (gateResult == InstanceOnlyGate.Result.BLOCKED) {
+                LOGGER.error("[EnduranceQuest] Instance-only mode enabled, legacy overworld path blocked");
+                return PreparedArenaResult.failure("Instance-only mode: legacy overworld arenas are disabled");
+            } else if (gateResult == InstanceOnlyGate.Result.ALLOWED_DEBUG_ONLY) {
+                LOGGER.warn("[EnduranceQuest] Debug-only allowance for legacy arena creation in {}", level.dimension().location());
+            }
+        }
         ArenaManager.Arena arena = arenaManager.createArena(level, leader.blockPosition(), settings.arenaSize);
 
         if (arena == null) {

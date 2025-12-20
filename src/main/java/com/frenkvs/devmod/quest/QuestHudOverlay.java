@@ -13,6 +13,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
+import java.util.Objects;
+
 /**
  * Compact HUD Overlay to display quick tasks.
  * Position: bottom right.
@@ -71,8 +73,8 @@ public class QuestHudOverlay {
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.HOTBAR,
-            LAYER_ID,
+            Objects.requireNonNull(VanillaGuiLayers.HOTBAR),
+            Objects.requireNonNull(LAYER_ID),
             QuestHudOverlay::render
         );
 
@@ -182,21 +184,21 @@ public class QuestHudOverlay {
 
         if (minimized) {
             // Minimized mode: icon and name only
-            String title = "\u2605 " + truncateText(quest.getName(), font, width - PANEL_PADDING * 2 - 20);
+            String title = "\u2605 " + truncateText(quest.getName(), Objects.requireNonNull(font), width - PANEL_PADDING * 2 - 20);
             g.drawString(font, title, textX, textY, TEXT_TITLE, false);
 
             // Compact progress
-            String progress = quest.getProgressSummary();
+            String progress = Objects.requireNonNull(quest.getProgressSummary());
             int progressWidth = font.width(progress);
             g.drawString(font, progress, x + width - PANEL_PADDING - progressWidth, textY, TEXT_PROGRESS, false);
             return;
         }
 
         // === Header: Nome Quest + Progress ===
-        String questName = "\u2605 " + truncateText(quest.getName(), font, width - PANEL_PADDING * 2 - 40);
+        String questName = "\u2605 " + truncateText(quest.getName(), Objects.requireNonNull(font), width - PANEL_PADDING * 2 - 40);
         g.drawString(font, questName, textX, textY, TEXT_TITLE, false);
 
-        String progress = quest.getProgressSummary();
+        String progress = Objects.requireNonNull(quest.getProgressSummary());
         int progressWidth = font.width(progress);
         g.drawString(font, progress, x + width - PANEL_PADDING - progressWidth, textY, TEXT_PROGRESS, false);
         textY += LINE_HEIGHT + 2;
@@ -305,8 +307,9 @@ public class QuestHudOverlay {
      * Truncates text if it exceeds the maximum width.
      */
     private static String truncateText(String text, Font font, int maxWidth) {
-        if (font.width(text) <= maxWidth) {
-            return text;
+        String safeText = Objects.requireNonNull(text);
+        if (font.width(safeText) <= maxWidth) {
+            return safeText;
         }
 
         String ellipsis = "...";

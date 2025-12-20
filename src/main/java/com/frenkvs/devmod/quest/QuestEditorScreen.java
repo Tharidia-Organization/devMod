@@ -159,7 +159,7 @@ public class QuestEditorScreen extends ModScreen {
             .size(EditorButton.Size.SMALL)
             .onClick(this::addNewQuest)
             .build();
-        addQuestBtnWidget = addQuestBtn.asVanilla(PADDING + QUEST_LIST_WIDTH - 22, height - 55, 20, 18);
+        addQuestBtnWidget = Objects.requireNonNull(addQuestBtn.asVanilla(PADDING + QUEST_LIST_WIDTH - 22, height - 55, 20, 18));
         this.addRenderableWidget(addQuestBtnWidget);
 
         // Delete Quest Button
@@ -168,9 +168,9 @@ public class QuestEditorScreen extends ModScreen {
             .size(EditorButton.Size.SMALL)
             .onClick(this::deleteSelectedQuest)
             .build();
-        deleteQuestBtnWidget = deleteQuestBtn.asVanilla(PADDING + QUEST_LIST_WIDTH - 22, contentTop, 20, 18);
+        deleteQuestBtnWidget = Objects.requireNonNull(deleteQuestBtn.asVanilla(PADDING + QUEST_LIST_WIDTH - 22, contentTop, 20, 18));
         deleteQuestBtnWidget.setTooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.quest.delete_quest")));
-        this.addRenderableWidget(deleteQuestBtnWidget);
+        this.addRenderableWidget(Objects.requireNonNull(deleteQuestBtnWidget));
 
         // Add Task Button (+)
         addTaskBtn = EditorButton.builder("task-add", I18n.ui("add_symbol").getString())
@@ -178,7 +178,7 @@ public class QuestEditorScreen extends ModScreen {
             .size(EditorButton.Size.SMALL)
             .onClick(this::addNewTask)
             .build();
-        addTaskBtnWidget = addTaskBtn.asVanilla(taskFieldX + TASK_LIST_WIDTH - 22, height - 55, 20, 18);
+        addTaskBtnWidget = Objects.requireNonNull(addTaskBtn.asVanilla(taskFieldX + TASK_LIST_WIDTH - 22, height - 55, 20, 18));
         this.addRenderableWidget(addTaskBtnWidget);
 
         // Delete Task Button
@@ -187,9 +187,9 @@ public class QuestEditorScreen extends ModScreen {
             .size(EditorButton.Size.SMALL)
             .onClick(this::deleteSelectedTask)
             .build();
-        deleteTaskBtnWidget = deleteTaskBtn.asVanilla(taskFieldX + TASK_LIST_WIDTH - 22, contentTop, 20, 18);
+        deleteTaskBtnWidget = Objects.requireNonNull(deleteTaskBtn.asVanilla(taskFieldX + TASK_LIST_WIDTH - 22, contentTop, 20, 18));
         deleteTaskBtnWidget.setTooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.quest.delete_task")));
-        this.addRenderableWidget(deleteTaskBtnWidget);
+        this.addRenderableWidget(Objects.requireNonNull(deleteTaskBtnWidget));
 
         // Complete Task Button
         completeTaskBtn = EditorButton.builder("task-complete", I18n.ui("complete_with_icon").getString())
@@ -197,7 +197,7 @@ public class QuestEditorScreen extends ModScreen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::completeSelectedTask)
             .build();
-        completeTaskBtnWidget = completeTaskBtn.asVanilla(noteFieldX, contentTop + 150, 100, 20);
+        completeTaskBtnWidget = Objects.requireNonNull(completeTaskBtn.asVanilla(noteFieldX, contentTop + 150, 100, 20));
         this.addRenderableWidget(completeTaskBtnWidget);
 
         // Set Active Quest Button
@@ -206,16 +206,16 @@ public class QuestEditorScreen extends ModScreen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::setActiveQuest)
             .build();
-        setActiveBtnWidget = setActiveBtn.asVanilla(noteFieldX + 110, contentTop + 150, 80, 20);
+        setActiveBtnWidget = Objects.requireNonNull(setActiveBtn.asVanilla(noteFieldX + 110, contentTop + 150, 80, 20));
         this.addRenderableWidget(setActiveBtnWidget);
 
         // Close Button
-        this.addRenderableWidget(EditorButton.builder("quest-close", I18n.ui("close").getString())
+        this.addRenderableWidget(Objects.requireNonNull(EditorButton.builder("quest-close", I18n.ui("close").getString())
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::onClose)
             .build()
-            .asVanilla(width / 2 - 50, height - 28, 100, 20));
+            .asVanilla(width / 2 - 50, height - 28, 100, 20)));
 
         // === NEW: Endurance Quest Button ===
         newEnduranceBtn = EditorButton.builder("quest-endurance", I18n.ui("endurance_quest").getString())
@@ -223,9 +223,9 @@ public class QuestEditorScreen extends ModScreen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::openEnduranceModal)
             .build();
-        newEnduranceBtnWidget = newEnduranceBtn.asVanilla(PADDING, height - 28, 90, 20);
+        newEnduranceBtnWidget = Objects.requireNonNull(newEnduranceBtn.asVanilla(PADDING, height - 28, 90, 20));
         newEnduranceBtnWidget.setTooltip(net.minecraft.client.gui.components.Tooltip.create(I18n.translate("devmod.quest.create_endurance")));
-        this.addRenderableWidget(newEnduranceBtnWidget);
+        this.addRenderableWidget(Objects.requireNonNull(newEnduranceBtnWidget));
 
         // Initialize endurance modal components (hidden by default)
         initEnduranceModalComponents();
@@ -269,18 +269,18 @@ public class QuestEditorScreen extends ModScreen {
             .size(EditorButton.Size.SMALL)
             .onClick(() -> adjustWaves(-1))
             .build();
-        wavesMinusBtnWidget = wavesMinusBtn.asVanilla(modalX + modalWidth - 150, modalY + modalHeight - 70, 20, 20);
+        wavesMinusBtnWidget = Objects.requireNonNull(wavesMinusBtn.asVanilla(modalX + modalWidth - 150, modalY + modalHeight - 70, 20, 20));
         wavesMinusBtnWidget.visible = false;
-        this.addRenderableWidget(wavesMinusBtnWidget);
+        this.addRenderableWidget(Objects.requireNonNull(wavesMinusBtnWidget));
 
         wavesPlusBtn = EditorButton.builder("endurance-waves-plus", I18n.ui("plus_symbol").getString())
             .style(EditorButton.Style.NORMAL)
             .size(EditorButton.Size.SMALL)
             .onClick(() -> adjustWaves(1))
             .build();
-        wavesPlusBtnWidget = wavesPlusBtn.asVanilla(modalX + modalWidth - 80, modalY + modalHeight - 70, 20, 20);
+        wavesPlusBtnWidget = Objects.requireNonNull(wavesPlusBtn.asVanilla(modalX + modalWidth - 80, modalY + modalHeight - 70, 20, 20));
         wavesPlusBtnWidget.visible = false;
-        this.addRenderableWidget(wavesPlusBtnWidget);
+        this.addRenderableWidget(Objects.requireNonNull(wavesPlusBtnWidget));
 
         // Endless mode toggle
         endlessModeBtn = EditorButton.builder("endurance-endless-toggle", I18n.translate("devmod.endurance.endless_off").getString())
@@ -288,9 +288,9 @@ public class QuestEditorScreen extends ModScreen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::toggleEndlessMode)
             .build();
-        endlessModeBtnWidget = endlessModeBtn.asVanilla(modalX + 10, modalY + modalHeight - 70, 100, 20);
+        endlessModeBtnWidget = Objects.requireNonNull(endlessModeBtn.asVanilla(modalX + 10, modalY + modalHeight - 70, 100, 20));
         endlessModeBtnWidget.visible = false;
-        this.addRenderableWidget(endlessModeBtnWidget);
+        this.addRenderableWidget(Objects.requireNonNull(endlessModeBtnWidget));
 
         // Start button
         startEnduranceBtn = EditorButton.builder("endurance-start", I18n.ui("start_quest_with_icon").getString())
@@ -298,9 +298,9 @@ public class QuestEditorScreen extends ModScreen {
             .size(EditorButton.Size.LARGE)
             .onClick(this::startEnduranceQuest)
             .build();
-        startEnduranceBtnWidget = startEnduranceBtn.asVanilla(modalX + modalWidth - 110, modalY + modalHeight - 35, 100, 25);
+        startEnduranceBtnWidget = Objects.requireNonNull(startEnduranceBtn.asVanilla(modalX + modalWidth - 110, modalY + modalHeight - 35, 100, 25));
         startEnduranceBtnWidget.visible = false;
-        this.addRenderableWidget(startEnduranceBtnWidget);
+        this.addRenderableWidget(Objects.requireNonNull(startEnduranceBtnWidget));
 
         // Cancel button
         cancelEnduranceBtn = EditorButton.builder("endurance-cancel", I18n.ui("cancel").getString())
@@ -308,9 +308,9 @@ public class QuestEditorScreen extends ModScreen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::closeEnduranceModal)
             .build();
-        cancelEnduranceBtnWidget = cancelEnduranceBtn.asVanilla(modalX + 10, modalY + modalHeight - 35, 80, 25);
+        cancelEnduranceBtnWidget = Objects.requireNonNull(cancelEnduranceBtn.asVanilla(modalX + 10, modalY + modalHeight - 35, 80, 25));
         cancelEnduranceBtnWidget.visible = false;
-        this.addRenderableWidget(cancelEnduranceBtnWidget);
+        this.addRenderableWidget(Objects.requireNonNull(cancelEnduranceBtnWidget));
     }
 
     @Override

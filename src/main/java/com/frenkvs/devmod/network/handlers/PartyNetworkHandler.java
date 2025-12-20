@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -154,8 +155,8 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
                                 if (msg != null && msg.startsWith("devmod.")) {
                                     player.sendSystemMessage(I18n.translate(msg));
                                 } else {
-                                    player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                                        msg != null ? msg : "Quest start failed"));
+                                    player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+                                        msg != null ? msg : "Quest start failed")));
                                 }
                             }
                         } else {

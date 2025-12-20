@@ -350,10 +350,13 @@ public class ArenaBuilder {
                 endEventData.put("entities_residual", residual.entitiesResidual());
                 endEventData.put("blocks_residual", residual.blocksResidual());
                 endEventData.put("expected_blocks", BuildDryRunCalculator.calculate(template).totalBlocks());
+                endEventData.put("residuals_unknown", false);
             } else {
-                endEventData.put("entities_residual", 0);
-                endEventData.put("blocks_residual", 0);
+                // Unknown placer: cannot reliably count residuals
+                endEventData.put("entities_residual", -1);
+                endEventData.put("blocks_residual", -1);
                 endEventData.put("expected_blocks", BuildDryRunCalculator.calculate(template).totalBlocks());
+                endEventData.put("residuals_unknown", true);
             }
             if (policyId != null) {
                 endEventData.put("policyId", policyId);
@@ -1058,7 +1061,10 @@ public class ArenaBuilder {
         int minZ = originZ - halfZ;
         int maxZ = originZ + halfZ - 1;
 
-        int minY = template.floor() != null ? template.floor().y() : originY;
+        int minY = originY;
+        if (template.floor() != null) {
+            minY = template.floor().y();
+        }
         if (template.underfloor() != null) {
             minY = minY - template.underfloor().depth();
         }

@@ -1112,11 +1112,15 @@ public class RenderEvents {
         if (level == null || player == null) return;
 
         // Get nearby living entities within render distance
-        AABB searchArea = player.getBoundingBox().inflate(32.0); // 32 block radius
+        AABB searchArea = Objects.requireNonNull(player.getBoundingBox().inflate(32.0)); // 32 block radius
         var nearbyEntities = level.getEntitiesOfClass(LivingEntity.class, searchArea,
             entity -> entity != player && entity.isAlive());
 
         // Render OBB hitboxes for each entity
-        OBBDebugRenderer.renderNearbyEntityOBBs(poseStack, bufferSource, cameraPos, nearbyEntities);
+        OBBDebugRenderer.renderNearbyEntityOBBs(
+            Objects.requireNonNull(poseStack),
+            Objects.requireNonNull(bufferSource),
+            Objects.requireNonNull(cameraPos),
+            Objects.requireNonNull(nearbyEntities));
     }
 }

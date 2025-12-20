@@ -74,7 +74,7 @@ public class HeatmapVisualizer {
      * MEMORY LEAK FIX: Traccia timestamp quando disabilitato
      */
     public void toggle(HeatmapType type) {
-        boolean newState = !enabled.get(type);
+        boolean newState = !Boolean.TRUE.equals(enabled.get(type));
         setEnabled(type, newState);
     }
 
@@ -118,6 +118,7 @@ public class HeatmapVisualizer {
      */
     public void addPoint(HeatmapType type, BlockPos pos, int count) {
         Map<BlockPos, Integer> data = heatmapData.get(type);
+        if (data == null) return;
 
         // MEMORY LEAK FIX #2: Skip if at max capacity (unless updating existing point)
         if (data.size() >= MAX_POINTS_PER_HEATMAP && !data.containsKey(pos)) {
@@ -125,8 +126,11 @@ public class HeatmapVisualizer {
         }
 
         data.merge(pos, count, (a, b) -> Objects.requireNonNull(a) + Objects.requireNonNull(b));
-        int newCount = Objects.requireNonNull(data.get(pos));
-        if (newCount > maxCounts.get(type)) {
+        Integer newCountVal = data.get(pos);
+        int newCount = newCountVal != null ? newCountVal : 0;
+        Integer maxCountVal = maxCounts.get(type);
+        int maxCount = maxCountVal != null ? maxCountVal : 1;
+        if (newCount > maxCount) {
             maxCounts.put(type, newCount);
         }
     }
@@ -135,7 +139,10 @@ public class HeatmapVisualizer {
      * Pulisce i dati di una heatmap
      */
     public void clear(HeatmapType type) {
-        heatmapData.get(type).clear();
+        Map<BlockPos, Integer> data = heatmapData.get(type);
+        if (data != null) {
+            data.clear();
+        }
         maxCounts.put(type, 1);
     }
 
@@ -157,12 +164,13 @@ public class HeatmapVisualizer {
         clearIfDisabledFor(AUTO_CLEAR_DELAY_MS);
 
         for (HeatmapType type : HeatmapType.values()) {
-            if (!enabled.get(type)) continue;
+            if (!Boolean.TRUE.equals(enabled.get(type))) continue;
 
             Map<BlockPos, Integer> data = heatmapData.get(type);
             if (data == null || data.isEmpty()) continue;
 
-            int maxCount = maxCounts.get(type);
+            Integer maxCountVal = maxCounts.get(type);
+            int maxCount = maxCountVal != null ? maxCountVal : 1;
             renderHeatmap(poseStack, buffer, cameraPos, data, maxCount, type);
         }
     }
@@ -357,16 +365,18 @@ public class HeatmapVisualizer {
 
         // Pass intensity in red channel - shader computes gradient
         float a = 0.3f + intensity * 0.4f;
-        consumer.addVertex(matrix, minX, maxY, minZ).setColor(intensity, intensity, intensity, a).setNormal(pose, 0f, 1f, 0f);
-        consumer.addVertex(matrix, minX, maxY, maxZ).setColor(intensity, intensity, intensity, a).setNormal(pose, 0f, 1f, 0f);
-        consumer.addVertex(matrix, maxX, maxY, maxZ).setColor(intensity, intensity, intensity, a).setNormal(pose, 0f, 1f, 0f);
-        consumer.addVertex(matrix, maxX, maxY, minZ).setColor(intensity, intensity, intensity, a).setNormal(pose, 0f, 1f, 0f);
+        Matrix4f safeMatrix = Objects.requireNonNull(matrix);
+        PoseStack.Pose safePose = Objects.requireNonNull(pose);
+        consumer.addVertex(safeMatrix, minX, maxY, minZ).setColor(intensity, intensity, intensity, a).setNormal(safePose, 0f, 1f, 0f);
+        consumer.addVertex(safeMatrix, minX, maxY, maxZ).setColor(intensity, intensity, intensity, a).setNormal(safePose, 0f, 1f, 0f);
+        consumer.addVertex(safeMatrix, maxX, maxY, maxZ).setColor(intensity, intensity, intensity, a).setNormal(safePose, 0f, 1f, 0f);
+        consumer.addVertex(safeMatrix, maxX, maxY, minZ).setColor(intensity, intensity, intensity, a).setNormal(safePose, 0f, 1f, 0f);
     }
 
     // Shader uniform helper methods
     private void setShaderUniform(ShaderInstance shader, String name, float value) {
         try {
-            var uniform = shader.getUniform(name);
+            var uniform = shader.getUniform(Objects.requireNonNull(name));
             if (uniform != null) {
                 uniform.set(value);
             }
@@ -375,7 +385,7 @@ public class HeatmapVisualizer {
 
     private void setShaderUniform(ShaderInstance shader, String name, int value) {
         try {
-            var uniform = shader.getUniform(name);
+            var uniform = shader.getUniform(Objects.requireNonNull(name));
             if (uniform != null) {
                 uniform.set(value);
             }
@@ -395,7 +405,7 @@ public class HeatmapVisualizer {
     public String getActiveTypesString() {
         StringBuilder sb = new StringBuilder();
         for (HeatmapType type : HeatmapType.values()) {
-            if (enabled.get(type)) {
+            if (Boolean.TRUE.equals(enabled.get(type))) {
                 if (sb.length() > 0) sb.append(", ");
                 sb.append(type.name());
             }

@@ -22,17 +22,17 @@ public record FuelStatsPayload(
 ) implements CustomPacketPayload {
 
     public static final Type<FuelStatsPayload> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "fuel_stats"));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "fuel_stats")));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, FuelStatsPayload> STREAM_CODEC =
         StreamCodec.composite(
-            ItemStack.STREAM_CODEC,
+            Objects.requireNonNull(ItemStack.STREAM_CODEC),
             FuelStatsPayload::item,
-            ByteBufCodecs.COMPOUND_TAG,
+            Objects.requireNonNull(ByteBufCodecs.COMPOUND_TAG),
             FuelStatsPayload::statsTag,
-            ByteBufCodecs.BOOL,
+            Objects.requireNonNull(ByteBufCodecs.BOOL),
             FuelStatsPayload::isGlobal,
-            FuelStatsPayload::new
+            (itemStack, tag, global) -> new FuelStatsPayload(itemStack, tag, global != null && global)
         );
 
     @Override
@@ -53,7 +53,7 @@ public record FuelStatsPayload(
         if (o == null || getClass() != o.getClass()) return false;
         FuelStatsPayload that = (FuelStatsPayload) o;
         return isGlobal == that.isGlobal &&
-               ItemStack.matches(item, that.item) &&
+               ItemStack.matches(Objects.requireNonNull(item), Objects.requireNonNull(that.item)) &&
                Objects.equals(statsTag, that.statsTag);
     }
 

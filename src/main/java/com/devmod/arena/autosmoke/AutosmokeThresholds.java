@@ -33,8 +33,30 @@ public record AutosmokeThresholds(
     int maxAsyncOperations,
 
     /** Threshold mode name */
-    String modeName
+    String modeName,
+
+    /** G5: Maximum entities residual after cleanup (0 = strict) */
+    int maxEntitiesResidual,
+
+    /** G5: Maximum blocks residual after cleanup (0 = strict) */
+    int maxBlocksResidual
 ) {
+    /**
+     * Compact constructor for backwards compatibility.
+     * Sets residual thresholds to strict defaults (0).
+     */
+    public AutosmokeThresholds(
+            int maxPlayers,
+            long maxDurationSeconds,
+            int maxMemoryMb,
+            Duration assertTimeout,
+            Duration testTimeout,
+            boolean allowAsync,
+            int maxAsyncOperations,
+            String modeName) {
+        this(maxPlayers, maxDurationSeconds, maxMemoryMb, assertTimeout, testTimeout,
+             allowAsync, maxAsyncOperations, modeName, 0, 0);
+    }
     /** STRICT mode - tight limits for quick unit tests */
     public static final AutosmokeThresholds STRICT = new AutosmokeThresholds(
         4,                          // maxPlayers

@@ -45,7 +45,10 @@ public final class MetricsCompatibilityLayer {
 
     private static int countEntities(ServerLevel level, AABB bounds) {
         List<Entity> entities = level.getEntities((Entity) null, Objects.requireNonNull(bounds),
-            e -> !e.isRemoved() && !(e instanceof net.minecraft.world.entity.player.Player));
+            e -> !e.isRemoved()
+                && !(e instanceof net.minecraft.world.entity.player.Player)
+                && !(e.getType().toShortString().equalsIgnoreCase("marker"))
+                && !(e.getType().toShortString().equalsIgnoreCase("area_effect_cloud")));
         return entities.size();
     }
 

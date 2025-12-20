@@ -223,6 +223,17 @@ public class FeatureFlagRegistry {
     }
 
     /**
+     * Applies a config snapshot to refresh standard flags (instanceOnly, template, routing, gamification),
+     * honoring dependency validation and cascade.
+     */
+    public void applyConfig(ArenaTemplateConfig config) {
+        setEnabled(ARENA_INSTANCE_ONLY, config.instanceOnly());
+        setEnabled(ARENA_TEMPLATE_ENABLED, config.arenaTemplateEnabled());
+        setEnabled(ARENA_ROUTING_ENABLED, config.routingEnabled());
+        setEnabled(ARENA_GAMIFICATION_ENABLED, config.gamificationEnabled());
+    }
+
+    /**
      * Mutable feature flag implementation.
      */
     public static class MutableFeatureFlag implements FeatureFlag {

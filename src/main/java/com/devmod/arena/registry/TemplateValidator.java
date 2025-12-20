@@ -2,6 +2,8 @@ package com.devmod.arena.registry;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Template validator orchestrating hazard + spawn validation and basic schema checks.
@@ -17,6 +19,7 @@ public class TemplateValidator {
     private static final List<String> ALLOWED_ROTATIONS = List.of("none", "clockwise_90", "180", "counterclockwise_90");
     private static final List<String> ALLOWED_MIRRORS = List.of("none", "front_back", "left_right");
     private static final List<String> ALLOWED_SEED_POLICIES = List.of("fixed", "perRun");
+    private static final Set<String> DIMENSION_TAGS = Set.of("overworld", "nether", "end", "indoor", "outdoor");
 
     private ValidationMode mode = ValidationMode.STRICT;
     private InstanceSettingsValidator.InstanceLimits instanceLimits = InstanceSettingsValidator.InstanceLimits.defaults();
@@ -146,6 +149,12 @@ public class TemplateValidator {
         int sizeZ = sizeZVal != null ? sizeZVal : template.size();
         validateSizeBounds(maxDim, errors);
         validateLighting(template, errors);
+        validateFloor(template.floor(), errors);
+        validateWalls(template.walls(), errors);
+        validateCeiling(template.ceiling(), errors);
+        validateUnderfloor(template.underfloor(), errors);
+        validatePalette(template.palette(), warnings, errors);
+        validateBiome(template.biome(), errors);
         validateForbiddenZones(template, template.forbiddenZones(), sizeX, sizeZ, errors);
         validateStructureNbt(template, errors, warnings);
         validateMobSpawnStrategy(template, errors, warnings, sizeX, sizeZ);
@@ -186,6 +195,87 @@ public class TemplateValidator {
         return new ValidationResult(errors.isEmpty(), errors, warnings);
     }
 
+    private void validateFloor(ArenaTemplate.Floor floor, List<String> errors) {
+        if (floor == null) {
+            errors.add("floor is required");
+            return;
+        }
+        if (floor.thickness() <= 0) {
+            errors.add("floor.thickness must be >0");
+        }
+        if (floor.pattern() == null || floor.pattern().isBlank()) {
+            errors.add("floor.pattern is required");
+        } else if (!List.of("solid", "checkerboard", "border").contains(floor.pattern())) {
+            errors.add("floor.pattern must be solid|checkerboard|border");
+        }
+        if (floor.borderWidth() < 0) {
+            errors.add("floor.borderWidth must be >=0");
+        }
+        if (floor.material() == null || floor.material().isBlank()) {
+            errors.add("floor.material is required");
+        }
+        var borderMaterial = floor.borderMaterial();
+        if (borderMaterial == null || borderMaterial.isBlank()) {
+            errors.add("floor.borderMaterial is required");
+        }
+    }
+
+    private void validateWalls(ArenaTemplate.Walls walls, List<String> errors) {
+        if (walls == null) return;
+        if (walls.height() <= 0) {
+            errors.add("walls.height must be >0");
+        }
+        if (walls.thickness() <= 0) {
+            errors.add("walls.thickness must be >0");
+        }
+        if (walls.material() == null || walls.material().isBlank()) {
+            errors.add("walls.material is required");
+        }
+        if (walls.style() == null || walls.style().isBlank()) {
+            errors.add("walls.style is required");
+        }
+    }
+
+    private void validateCeiling(ArenaTemplate.Ceiling ceiling, List<String> errors) {
+        if (ceiling == null) return;
+        if (ceiling.enabled() && ceiling.thickness() <= 0) {
+            errors.add("ceiling.thickness must be >0 when enabled");
+        }
+        if (ceiling.enabled() && (ceiling.material() == null || ceiling.material().isBlank())) {
+            errors.add("ceiling.material is required when enabled");
+        }
+    }
+
+    private void validateUnderfloor(ArenaTemplate.Underfloor underfloor, List<String> errors) {
+        if (underfloor == null) return;
+        if (underfloor.depth() < 0) {
+            errors.add("underfloor.depth must be >=0");
+        }
+        if (underfloor.material() == null || underfloor.material().isBlank()) {
+            errors.add("underfloor.material is required");
+        }
+    }
+
+    private void validatePalette(ArenaTemplate.Palette palette, List<String> warnings, List<String> errors) {
+        if (palette == null) return;
+        if (palette.accent() == null || palette.accent().isBlank()) {
+            errors.add("palette.accent is required");
+        }
+        if (palette.highlight() == null || palette.highlight().isBlank()) {
+            errors.add("palette.highlight is required");
+        }
+        if (palette.hazardBorder() == null || palette.hazardBorder().isBlank()) {
+            errors.add("palette.hazardBorder is required");
+        }
+    }
+
+    private void validateBiome(ArenaTemplate.Biome biome, List<String> errors) {
+        if (biome == null) return;
+        if (biome.id() == null || biome.id().isBlank()) {
+            errors.add("biome.id is required");
+        }
+    }
+
     private void validateEnvironment(ArenaTemplate.Environment env, List<String> warnings, List<String> errors) {
         if (env == null) return;
         if (env.particles() != null) {
@@ -208,16 +298,26 @@ public class TemplateValidator {
                 warnings.add("environment.fog.density %.3f clamped to [0,1]".formatted(density));
             }
         }
+        String ambientSound = env.ambientSound();
+        if (ambientSound != null && ambientSound.isBlank()) {
+            warnings.add("environment.ambientSound is blank");
+        }
     }
 
     private void validateTags(List<String> tags, List<String> warnings) {
         if (tags == null) return;
+        Set<String> dimensionFound = new java.util.HashSet<>();
         for (String tag : tags) {
             if (tag == null || tag.isBlank()) {
                 warnings.add("tags contains blank entry");
             } else if (tag.contains(" ")) {
                 warnings.add("tag '%s' contains whitespace".formatted(tag));
+            } else if (DIMENSION_TAGS.contains(tag.toLowerCase())) {
+                dimensionFound.add(tag.toLowerCase());
             }
+        }
+        if (dimensionFound.size() > 1) {
+            warnings.add("Multiple dimension tags present: " + dimensionFound);
         }
     }
 
@@ -372,7 +472,33 @@ public class TemplateValidator {
                 emitStructureRejected(structure.path(), "EXCEPTION");
             }
         } else {
-            warnings.add("structureNbt present but manifest/provider not configured - deep validation skipped");
+            // Fallback path: basic validation without manifest/provider
+            if (structureDataProvider != null && structure.path() != null) {
+                try {
+                    byte[] data = structureDataProvider.load(structure.path());
+                    if (data == null) {
+                        warnings.add("structureNbt fallback: data not found for path " + structure.path());
+                        emitStructureRejected(structure.path(), "DATA_NOT_FOUND");
+                        return;
+                    }
+                    // Perform checksum against manifest if available, otherwise just parse to count
+                    var result = loader.load(structure.path(), () -> data,
+                        structureManifest != null ? structureManifest
+                            : new StructureManifest(Map.of(), Set.of("devmod"), 512 * 1024, 100_000, 50));
+                    if (!result.ok()) {
+                        errors.add("structureNbt fallback validation failed: " + result.errorCode() + " - " + result.message());
+                        emitStructureRejected(structure.path(), result.errorCode());
+                    } else {
+                        emitStructureLoaded(structure.path(), result.blockCount(), result.entityCount());
+                    }
+                } catch (Exception e) {
+                    warnings.add("structureNbt fallback parse failed: " + e.getMessage());
+                    emitStructureRejected(structure.path(), "EXCEPTION");
+                }
+            } else {
+                errors.add("structureNbt present but manifest/provider not configured");
+                emitStructureRejected(structure != null ? structure.path() : "unknown", "NO_MANIFEST");
+            }
         }
     }
 
@@ -447,7 +573,7 @@ public class TemplateValidator {
                     warnings.add("mobSpawnStrategy=RING expects spawnSlots at radius >= " + requiredRadius);
                 }
             }
-            default -> {}
+            default -> errors.add("Unknown mobSpawnStrategy: " + template.mobSpawnStrategy());
         }
     }
 

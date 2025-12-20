@@ -10,6 +10,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -24,6 +25,7 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * VOXEL-LAB Debug Overlay: Entity Info Floating Labels
@@ -88,14 +90,16 @@ public class EntityInfoOverlay {
         MultiBufferSource.BufferSource bufferSource = mc.renderBuffers().bufferSource();
 
         // Get nearby entities
-        AABB searchBox = mc.player.getBoundingBox().inflate(getMaxRenderDistance());
-        List<Entity> entities = mc.level.getEntities(mc.player, searchBox,
+        var player = Objects.requireNonNull(mc.player);
+        var level = Objects.requireNonNull(mc.level);
+        AABB searchBox = Objects.requireNonNull(player.getBoundingBox().inflate(getMaxRenderDistance()));
+        List<Entity> entities = level.getEntities(player, searchBox,
             e -> e instanceof LivingEntity && !(e instanceof Player) && e.isAlive());
 
         for (Entity entity : entities) {
             if (!(entity instanceof LivingEntity living)) continue;
 
-            double dist = entity.distanceTo(mc.player);
+            double dist = entity.distanceTo(player);
             if (dist > getMaxRenderDistance()) continue;
 
             // Calculate alpha based on distance (fade out)
@@ -119,7 +123,7 @@ public class EntityInfoOverlay {
 
         // Billboard rotation (face camera)
         Minecraft mc = Minecraft.getInstance();
-        poseStack.mulPose(mc.getEntityRenderDispatcher().cameraOrientation());
+        poseStack.mulPose(Objects.requireNonNull(mc.getEntityRenderDispatcher().cameraOrientation()));
         poseStack.scale(-LABEL_SCALE, -LABEL_SCALE, LABEL_SCALE);
 
         // Build info lines
@@ -127,16 +131,16 @@ public class EntityInfoOverlay {
 
         // Calculate panel height for centering
         int panelHeight = lines.length * 10 + 6;
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
         // Render text lines (centered)
         int textY = -panelHeight / 2 + 3;
         for (int i = 0; i < lines.length; i++) {
-            String line = lines[i];
+            String line = Objects.requireNonNull(lines[i]);
             int color = getLineColor(i, entity, alpha);
 
             int textX = -font.width(line) / 2;
-            font.drawInBatch(line, textX, textY, color, false, matrix, buffer,
+            font.drawInBatch(line, textX, textY, color, false, matrix, Objects.requireNonNull(buffer),
                 Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
 
             textY += 10;
@@ -147,9 +151,11 @@ public class EntityInfoOverlay {
 
     private static String[] buildInfoLines(LivingEntity entity, Player player) {
         // Line 1: Entity name/type
-        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
-        String name = entity.hasCustomName() ?
-            entity.getCustomName().getString() :
+        EntityType<?> entityType = Objects.requireNonNull(entity.getType());
+        ResourceLocation id = Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(entityType));
+        var customName = entity.getCustomName();
+        String name = entity.hasCustomName() && customName != null ?
+            customName.getString() :
             id.getPath().replace("_", " ");
 
         // Line 2: Health
@@ -158,25 +164,26 @@ public class EntityInfoOverlay {
         String healthStr = String.format("HP: %.0f/%.0f", health, maxHealth);
 
         // Line 3: Armor
-        double armor = entity.getAttributeValue(Attributes.ARMOR);
+        double armor = entity.getAttributeValue(Objects.requireNonNull(Attributes.ARMOR));
         String armorStr = String.format("Armor: %.0f", armor);
 
         // Line 4: Attack (for mobs)
         String attackStr = "";
         if (entity instanceof Mob) {
-            double attack = entity.getAttributeValue(Attributes.ATTACK_DAMAGE);
+            double attack = entity.getAttributeValue(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
             attackStr = String.format("ATK: %.1f", attack);
         }
 
         // Line 5: Distance
-        double dist = entity.distanceTo(player);
+        double dist = player != null ? entity.distanceTo(player) : 0.0;
         String distStr = String.format("Dist: %.1fm", dist);
 
         // Line 6: AI State (simplified)
         String aiStr = "";
         if (entity instanceof Mob mob) {
-            if (mob.getTarget() != null) {
-                aiStr = "Targeting: " + mob.getTarget().getName().getString();
+            var target = mob.getTarget();
+            if (target != null) {
+                aiStr = "Targeting: " + target.getName().getString();
             } else if (mob.isAggressive()) {
                 aiStr = "Aggressive";
             } else {

@@ -9,6 +9,8 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
+import java.util.Objects;
+
 import com.frenkvs.devmod.Config;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 import com.mojang.logging.LogUtils;
@@ -108,7 +110,7 @@ public class DebugRenderer {
      */
     public void clearLabelsNear(Vec3 center, double radius) {
         double radiusSq = radius * radius;
-        labels.removeIf(tl -> tl.label.pos().distanceToSqr(center) < radiusSq);
+        labels.removeIf(tl -> tl.label.pos().distanceToSqr(Objects.requireNonNull(center)) < radiusSq);
     }
 
     // ===== BASIC SHAPES =====
@@ -156,10 +158,11 @@ public class DebugRenderer {
     public void addLabel(Vec3 pos, String text, int color, long durationMs) {
         // Deduplication: check if a label with same position and text already exists
         // If so, just refresh its expiry time instead of adding a duplicate
+        Vec3 safePos = Objects.requireNonNull(pos);
         for (int i = 0; i < labels.size(); i++) {
             TimedDebugLabel existing = labels.get(i);
             if (existing.label.text().equals(text) &&
-                existing.label.pos().distanceToSqr(pos) < 0.01) { // Same position (within epsilon)
+                existing.label.pos().distanceToSqr(safePos) < 0.01) { // Same position (within epsilon)
                 // Replace with refreshed expiry
                 labels.set(i, new TimedDebugLabel(new DebugLabel(pos, text, color), durationMs));
                 return;
@@ -320,11 +323,11 @@ public class DebugRenderer {
             poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
 
             VertexConsumer consumer = buffer.getBuffer(
-                wireframe ? RenderType.lines() : RenderType.debugQuads()
+                Objects.requireNonNull(wireframe ? RenderType.lines() : RenderType.debugQuads())
             );
 
-            Matrix4f matrix = poseStack.last().pose();
-            var pose = poseStack.last();
+            var pose = Objects.requireNonNull(poseStack.last());
+            Matrix4f matrix = Objects.requireNonNull(pose.pose());
 
             float r = ((color >> 16) & 0xFF) / 255f;
             float g = ((color >> 8) & 0xFF) / 255f;
@@ -372,8 +375,10 @@ public class DebugRenderer {
         private void line(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose,
                          float x1, float y1, float z1, float x2, float y2, float z2,
                          float r, float g, float b, float a) {
-            consumer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
-            consumer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
+            Matrix4f safeMatrix = Objects.requireNonNull(matrix);
+            PoseStack.Pose safePose = Objects.requireNonNull(pose);
+            consumer.addVertex(safeMatrix, x1, y1, z1).setColor(r, g, b, a).setNormal(safePose, 0f, 1f, 0f);
+            consumer.addVertex(safeMatrix, x2, y2, z2).setColor(r, g, b, a).setNormal(safePose, 0f, 1f, 0f);
         }
 
         private void renderSolidBox(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose, AABB box,
@@ -408,10 +413,12 @@ public class DebugRenderer {
                          float x1, float y1, float z1, float x2, float y2, float z2,
                          float x3, float y3, float z3, float x4, float y4, float z4,
                          float r, float g, float b, float a, float nx, float ny, float nz) {
-            consumer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a).setNormal(pose, nx, ny, nz);
-            consumer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a).setNormal(pose, nx, ny, nz);
-            consumer.addVertex(matrix, x3, y3, z3).setColor(r, g, b, a).setNormal(pose, nx, ny, nz);
-            consumer.addVertex(matrix, x4, y4, z4).setColor(r, g, b, a).setNormal(pose, nx, ny, nz);
+            Matrix4f safeMatrix = Objects.requireNonNull(matrix);
+            PoseStack.Pose safePose = Objects.requireNonNull(pose);
+            consumer.addVertex(safeMatrix, x1, y1, z1).setColor(r, g, b, a).setNormal(safePose, nx, ny, nz);
+            consumer.addVertex(safeMatrix, x2, y2, z2).setColor(r, g, b, a).setNormal(safePose, nx, ny, nz);
+            consumer.addVertex(safeMatrix, x3, y3, z3).setColor(r, g, b, a).setNormal(safePose, nx, ny, nz);
+            consumer.addVertex(safeMatrix, x4, y4, z4).setColor(r, g, b, a).setNormal(safePose, nx, ny, nz);
         }
     }
 
@@ -419,16 +426,16 @@ public class DebugRenderer {
 
     public record DebugLine(Vec3 from, Vec3 to, int color, float width) implements DebugShape {
         @Override
-        public Vec3 getCenter() { return from.add(to).scale(0.5); }
+        public Vec3 getCenter() { return Objects.requireNonNull(Objects.requireNonNull(from.add(Objects.requireNonNull(to))).scale(0.5)); }
 
         @Override
         public void render(PoseStack poseStack, MultiBufferSource buffer, Vec3 cameraPos) {
             poseStack.pushPose();
             poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
 
-            VertexConsumer consumer = buffer.getBuffer(RenderType.lines());
-            Matrix4f matrix = poseStack.last().pose();
-            var pose = poseStack.last();
+            VertexConsumer consumer = buffer.getBuffer(Objects.requireNonNull(RenderType.lines()));
+            var pose = Objects.requireNonNull(poseStack.last());
+            Matrix4f matrix = Objects.requireNonNull(pose.pose());
 
             float r = ((color >> 16) & 0xFF) / 255f;
             float g = ((color >> 8) & 0xFF) / 255f;
@@ -481,9 +488,9 @@ public class DebugRenderer {
             poseStack.pushPose();
             poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
 
-            VertexConsumer consumer = buffer.getBuffer(RenderType.lines());
-            Matrix4f matrix = poseStack.last().pose();
-            var pose = poseStack.last();
+            VertexConsumer consumer = buffer.getBuffer(Objects.requireNonNull(RenderType.lines()));
+            var pose = Objects.requireNonNull(poseStack.last());
+            Matrix4f matrix = Objects.requireNonNull(pose.pose());
 
             float r = ((color >> 16) & 0xFF) / 255f;
             float g = ((color >> 8) & 0xFF) / 255f;
@@ -513,16 +520,16 @@ public class DebugRenderer {
 
     public record DebugArrow(Vec3 from, Vec3 to, int color, float arrowSize) implements DebugShape {
         @Override
-        public Vec3 getCenter() { return from.add(to).scale(0.5); }
+        public Vec3 getCenter() { return Objects.requireNonNull(Objects.requireNonNull(from.add(Objects.requireNonNull(to))).scale(0.5)); }
 
         @Override
         public void render(PoseStack poseStack, MultiBufferSource buffer, Vec3 cameraPos) {
             poseStack.pushPose();
             poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
 
-            VertexConsumer consumer = buffer.getBuffer(RenderType.lines());
-            Matrix4f matrix = poseStack.last().pose();
-            var pose = poseStack.last();
+            VertexConsumer consumer = buffer.getBuffer(Objects.requireNonNull(RenderType.lines()));
+            var pose = Objects.requireNonNull(poseStack.last());
+            Matrix4f matrix = Objects.requireNonNull(pose.pose());
 
             float r = ((color >> 16) & 0xFF) / 255f;
             float g = ((color >> 8) & 0xFF) / 255f;
@@ -537,15 +544,15 @@ public class DebugRenderer {
                     .setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
 
             // Arrow head
-            Vec3 direction = to.subtract(from).normalize();
-            Vec3 perpendicular1 = new Vec3(-direction.y, direction.x, 0).normalize();
-            Vec3 perpendicular2 = direction.cross(perpendicular1).normalize();
+            Vec3 direction = Objects.requireNonNull(Objects.requireNonNull(to.subtract(Objects.requireNonNull(from))).normalize());
+            Vec3 perpendicular1 = Objects.requireNonNull(new Vec3(-direction.y, direction.x, 0).normalize());
+            Vec3 perpendicular2 = Objects.requireNonNull(Objects.requireNonNull(direction.cross(perpendicular1)).normalize());
 
-            Vec3 arrowBase = to.subtract(direction.scale(arrowSize));
-            Vec3 arrowTip1 = arrowBase.add(perpendicular1.scale(arrowSize * 0.5));
-            Vec3 arrowTip2 = arrowBase.subtract(perpendicular1.scale(arrowSize * 0.5));
-            Vec3 arrowTip3 = arrowBase.add(perpendicular2.scale(arrowSize * 0.5));
-            Vec3 arrowTip4 = arrowBase.subtract(perpendicular2.scale(arrowSize * 0.5));
+            Vec3 arrowBase = Objects.requireNonNull(to.subtract(Objects.requireNonNull(direction.scale(arrowSize))));
+            Vec3 arrowTip1 = Objects.requireNonNull(arrowBase.add(Objects.requireNonNull(perpendicular1.scale(arrowSize * 0.5))));
+            Vec3 arrowTip2 = Objects.requireNonNull(arrowBase.subtract(Objects.requireNonNull(perpendicular1.scale(arrowSize * 0.5))));
+            Vec3 arrowTip3 = Objects.requireNonNull(arrowBase.add(Objects.requireNonNull(perpendicular2.scale(arrowSize * 0.5))));
+            Vec3 arrowTip4 = Objects.requireNonNull(arrowBase.subtract(Objects.requireNonNull(perpendicular2.scale(arrowSize * 0.5))));
 
             // Arrow head lines
             line(consumer, matrix, pose, to, arrowTip1, r, g, b, a);
@@ -558,10 +565,12 @@ public class DebugRenderer {
 
         private void line(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose,
                          Vec3 from, Vec3 to, float r, float g, float b, float a) {
-            consumer.addVertex(matrix, (float) from.x, (float) from.y, (float) from.z)
-                    .setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
-            consumer.addVertex(matrix, (float) to.x, (float) to.y, (float) to.z)
-                    .setColor(r, g, b, a).setNormal(pose, 0f, 1f, 0f);
+            Matrix4f safeMatrix = Objects.requireNonNull(matrix);
+            PoseStack.Pose safePose = Objects.requireNonNull(pose);
+            consumer.addVertex(safeMatrix, (float) from.x, (float) from.y, (float) from.z)
+                    .setColor(r, g, b, a).setNormal(safePose, 0f, 1f, 0f);
+            consumer.addVertex(safeMatrix, (float) to.x, (float) to.y, (float) to.z)
+                    .setColor(r, g, b, a).setNormal(safePose, 0f, 1f, 0f);
         }
     }
 
@@ -585,19 +594,20 @@ public class DebugRenderer {
             poseStack.translate(x, y, z);
 
             // Billboard (always face camera)
-            poseStack.mulPose(mc.getEntityRenderDispatcher().cameraOrientation());
+            poseStack.mulPose(Objects.requireNonNull(mc.getEntityRenderDispatcher().cameraOrientation()));
 
             // Scale
             float scale = 0.025f;
             poseStack.scale(-scale, -scale, scale);
 
             // Center text
-            int width = mc.font.width(text);
+            String safeText = Objects.requireNonNull(text);
+            int width = mc.font.width(safeText);
             float xOffset = -width / 2f;
 
             // Draw with background
-            mc.font.drawInBatch(text, xOffset, 0, color, false,
-                    poseStack.last().pose(), mc.renderBuffers().bufferSource(),
+            mc.font.drawInBatch(safeText, xOffset, 0, color, false,
+                    Objects.requireNonNull(poseStack.last().pose()), Objects.requireNonNull(mc.renderBuffers().bufferSource()),
                     net.minecraft.client.gui.Font.DisplayMode.NORMAL, 0x40000000, 15728880);
 
             poseStack.popPose();

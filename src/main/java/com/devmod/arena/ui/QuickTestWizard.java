@@ -61,6 +61,7 @@ public class QuickTestWizard extends Screen {
     // Config overrides
     private int overridePlayerCount = -1; // -1 = use template default
     private boolean dryRun = false;
+    private boolean forceTemplate = false; // DD29: Force template for session
 
     // Panel position
     private int panelX;
@@ -109,6 +110,13 @@ public class QuickTestWizard extends Screen {
             Objects.requireNonNull(Component.literal(dryRun ? "[X] Dry Run" : "[ ] Dry Run")),
             b -> toggleDryRun()
         ).bounds(panelX + PADDING * 2 + buttonWidth, buttonY, buttonWidth, BUTTON_HEIGHT).build()));
+
+        // Force Template button (DD29) - row above
+        int forceButtonY = buttonY - BUTTON_HEIGHT - 4;
+        addRenderableWidget(Objects.requireNonNull(Button.builder(
+            Objects.requireNonNull(Component.literal(forceTemplate ? "[X] Force Template" : "[ ] Force Template")),
+            b -> toggleForceTemplate()
+        ).bounds(panelX + PADDING, forceButtonY, PANEL_WIDTH - PADDING * 2, BUTTON_HEIGHT).build()));
 
         // Initialize template list
         refreshTemplateList();
@@ -255,6 +263,10 @@ public class QuickTestWizard extends Screen {
             int slots = t.spawnSlots() != null ? t.spawnSlots().size() : 0;
             graphics.drawString(safeFont, "Spawn Slots: " + slots, panelX + PADDING + 150, infoY, TEXT_COLOR);
 
+            // Palette preview (DD35: floor/walls/ceiling materials)
+            infoY += 14;
+            renderPalettePreview(graphics, t, infoY);
+
             // Tags
             infoY += 14;
             if (t.tags() != null && !t.tags().isEmpty()) {
@@ -271,6 +283,91 @@ public class QuickTestWizard extends Screen {
         } else {
             graphics.drawString(safeFont, "Select a template to test", panelX + PADDING, infoY, MUTED_COLOR);
         }
+    }
+
+    /**
+     * DD35: Renders palette preview showing floor/walls/ceiling materials.
+     */
+    private void renderPalettePreview(GuiGraphics graphics, ArenaTemplate t, int y) {
+        var safeFont = Objects.requireNonNull(font);
+        int x = panelX + PADDING;
+
+        graphics.drawString(safeFont, "Palette:", x, y, MUTED_COLOR);
+        x += 50;
+
+        // Floor material
+        if (t.floor() != null && t.floor().material() != null) {
+            String floorMat = shortenMaterial(t.floor().material());
+            int floorColor = getMaterialColor(t.floor().material());
+            graphics.fill(x, y, x + 10, y + 10, floorColor);
+            graphics.drawString(safeFont, floorMat, x + 14, y, TEXT_COLOR);
+            x += 80;
+        }
+
+        // Walls material
+        if (t.walls() != null && t.walls().material() != null) {
+            String wallMat = shortenMaterial(t.walls().material());
+            int wallColor = getMaterialColor(t.walls().material());
+            graphics.fill(x, y, x + 10, y + 10, wallColor);
+            graphics.drawString(safeFont, wallMat, x + 14, y, TEXT_COLOR);
+            x += 80;
+        }
+
+        // Ceiling material
+        if (t.ceiling() != null && t.ceiling().material() != null) {
+            String ceilMat = shortenMaterial(t.ceiling().material());
+            int ceilColor = getMaterialColor(t.ceiling().material());
+            graphics.fill(x, y, x + 10, y + 10, ceilColor);
+            graphics.drawString(safeFont, ceilMat, x + 14, y, TEXT_COLOR);
+        }
+    }
+
+    /**
+     * Shortens material name for display (removes minecraft: prefix and truncates).
+     */
+    private String shortenMaterial(String material) {
+        if (material == null) return "?";
+        String short_ = material.replace("minecraft:", "");
+        if (short_.length() > 10) {
+            short_ = short_.substring(0, 8) + "..";
+        }
+        return short_;
+    }
+
+    /**
+     * Gets a representative color for a material (simplified heuristic).
+     */
+    private int getMaterialColor(String material) {
+        if (material == null) return 0xFF808080;
+        String m = material.toLowerCase();
+
+        // Common material colors
+        if (m.contains("stone") || m.contains("cobble")) return 0xFF808080;
+        if (m.contains("wood") || m.contains("oak") || m.contains("plank")) return 0xFFB87333;
+        if (m.contains("grass") || m.contains("moss")) return 0xFF4CAF50;
+        if (m.contains("sand")) return 0xFFE8D4A0;
+        if (m.contains("dirt") || m.contains("mud")) return 0xFF8B4513;
+        if (m.contains("brick")) return 0xFFB22222;
+        if (m.contains("iron") || m.contains("metal")) return 0xFFD3D3D3;
+        if (m.contains("gold")) return 0xFFFFD700;
+        if (m.contains("diamond")) return 0xFF00CED1;
+        if (m.contains("emerald")) return 0xFF50C878;
+        if (m.contains("obsidian")) return 0xFF1A1A2E;
+        if (m.contains("nether") || m.contains("crimson")) return 0xFF8B0000;
+        if (m.contains("end")) return 0xFFE8E8A0;
+        if (m.contains("prismarine")) return 0xFF5F9EA0;
+        if (m.contains("glass")) return 0x80FFFFFF;
+        if (m.contains("wool") || m.contains("concrete")) {
+            if (m.contains("white")) return 0xFFFFFFFF;
+            if (m.contains("black")) return 0xFF1A1A1A;
+            if (m.contains("red")) return 0xFFFF0000;
+            if (m.contains("blue")) return 0xFF0000FF;
+            if (m.contains("green")) return 0xFF00FF00;
+            if (m.contains("yellow")) return 0xFFFFFF00;
+        }
+
+        // Default gray
+        return 0xFF606060;
     }
 
     @Override
@@ -361,6 +458,16 @@ public class QuickTestWizard extends Screen {
         rebuildWidgets();
     }
 
+    /**
+     * DD29: Toggles the force template option.
+     * When enabled, the selected template will be forced for the player's session.
+     */
+    private void toggleForceTemplate() {
+        forceTemplate = !forceTemplate;
+        // Rebuild buttons to update label
+        rebuildWidgets();
+    }
+
     private void startTest() {
         if (selectedIndex < 0 || selectedIndex >= filteredTemplates.size()) {
             LOGGER.warn("No template selected");
@@ -380,10 +487,12 @@ public class QuickTestWizard extends Screen {
         TestConfig config = new TestConfig(
             template.id(),
             overridePlayerCount > 0 ? overridePlayerCount : null,
-            dryRun
+            dryRun,
+            forceTemplate
         );
 
-        LOGGER.info("Starting test for template '{}' (dryRun={})", template.id(), dryRun);
+        LOGGER.info("Starting test for template '{}' (dryRun={}, forceTemplate={})",
+            template.id(), dryRun, forceTemplate);
 
         // Close screen
         onClose();
@@ -410,10 +519,19 @@ public class QuickTestWizard extends Screen {
 
     /**
      * Test configuration from wizard.
+     * DD29: Extended with forceTemplate option for session-scoped forcing.
      */
     public record TestConfig(
         String templateId,
         Integer playerCountOverride,
-        boolean dryRun
-    ) {}
+        boolean dryRun,
+        boolean forceTemplate
+    ) {
+        /**
+         * Creates a config without force template (backwards compatible).
+         */
+        public TestConfig(String templateId, Integer playerCountOverride, boolean dryRun) {
+            this(templateId, playerCountOverride, dryRun, false);
+        }
+    }
 }
