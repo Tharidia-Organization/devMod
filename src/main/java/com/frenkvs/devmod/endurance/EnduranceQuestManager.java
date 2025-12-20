@@ -1,17 +1,36 @@
 package com.frenkvs.devmod.endurance;
 
+import com.devmod.arena.api.ArenaHandle;
+import com.devmod.arena.builder.ArenaBuilder;
+import com.devmod.arena.builder.ChunkLoadingManager;
 import com.devmod.arena.config.ArenaTemplateConfig;
+import com.devmod.arena.config.InstanceLimitConfig;
 import com.devmod.arena.gate.InstanceOnlyGate;
+import com.devmod.arena.integration.MinecraftBlockPlacer;
+import com.devmod.arena.integration.MinecraftEntitySpawner;
+import com.devmod.arena.override.OverrideManager;
+import com.devmod.arena.policy.ArenaPolicyRegistry;
+import com.devmod.arena.policy.PolicyResolver;
+import com.devmod.arena.policy.ResolveContext;
+import com.devmod.arena.policy.ResolvedArena;
+import com.devmod.arena.registry.ArenaTemplate;
+import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+import com.frenkvs.devmod.DevMod;
+import com.frenkvs.devmod.instance.InstanceData;
+import com.frenkvs.devmod.instance.InstanceManager;
+import com.frenkvs.devmod.instance.InstanceRegistry;
 import com.frenkvs.devmod.telemetry.TelemetryService;
 import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.nbt.ListTag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +40,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Central manager for all Endurance Quest operations.
@@ -60,6 +80,16 @@ public class EnduranceQuestManager {
 
     // Instance-only gate for legacy overworld path
     private InstanceOnlyGate instanceGate;
+
+    // Arena template system integration (L1/L2)
+    private ArenaTemplateRegistry arenaTemplateRegistry;
+    private ArenaPolicyRegistry arenaPolicyRegistry;
+    private PolicyResolver policyResolver;
+    private OverrideManager overrideManager;
+    private ArenaTelemetry arenaTelemetry;
+    private ArenaTemplateConfig arenaTemplateConfig;
+    private ArenaTemplateConfig.ConfigSnapshot arenaConfigSnapshot;
+    private static final long INSTANCE_CREATION_TIMEOUT_SECONDS = 30;
 
     private EnduranceQuestManager() {}
 
@@ -123,11 +153,16 @@ public class EnduranceQuestManager {
         EnduranceAnalytics.INSTANCE.initialize(configDir);
 
         // Configure instance-only gate for legacy overworld protection
-        ArenaTemplateConfig cfg = ArenaTemplateConfig.load();
-        this.instanceGate = new InstanceOnlyGate(cfg.snapshot(), new ArenaTelemetry());
-        if (cfg.instanceOnly()) {
+        this.arenaTemplateConfig = ArenaTemplateConfig.load();
+        this.arenaConfigSnapshot = arenaTemplateConfig.snapshot();
+        this.arenaTelemetry = new ArenaTelemetry();
+        this.instanceGate = new InstanceOnlyGate(arenaConfigSnapshot, arenaTelemetry);
+        if (arenaTemplateConfig.instanceOnly()) {
             LOGGER.info("[EnduranceQuest] Instance-only mode enabled; legacy overworld builds will be blocked");
         }
+
+        // Initialize arena template integration (policy resolver + registry)
+        initArenaTemplateIntegration(configDir);
 
         initialized = true;
         LOGGER.info("[EnduranceQuest] Manager initialized with {} quest types", questTemplates.size());
@@ -200,6 +235,147 @@ public class EnduranceQuestManager {
         return initialized;
     }
 
+    // ========== Arena Template Integration ==========
+
+    private void initArenaTemplateIntegration(Path configDir) {
+        arenaTemplateRegistry = DevMod.getArenaTemplateRegistry();
+        if (arenaTemplateRegistry == null) {
+            LOGGER.warn("[EnduranceQuest] ArenaTemplateRegistry not available; template integration disabled");
+            return;
+        }
+        if (arenaTemplateConfig == null || !arenaTemplateConfig.arenaTemplateEnabled()) {
+            LOGGER.info("[EnduranceQuest] Arena template system disabled by config");
+            return;
+        }
+
+        if (arenaTelemetry == null) {
+            arenaTelemetry = new ArenaTelemetry();
+        }
+        overrideManager = new OverrideManager(arenaTelemetry);
+        policyResolver = new PolicyResolver(arenaTemplateRegistry, arenaTelemetry, overrideManager, arenaTemplateConfig);
+        arenaPolicyRegistry = new ArenaPolicyRegistry(arenaTelemetry, arenaTemplateRegistry);
+
+        Path policyDir = configDir.resolve("arena_policies");
+        var loadResult = arenaPolicyRegistry.loadAllSources(policyDir);
+        if (!loadResult.errors().isEmpty()) {
+            loadResult.errors().forEach(err -> LOGGER.error("[EnduranceQuest] Policy load error: {}", err));
+        } else {
+            LOGGER.info("[EnduranceQuest] Loaded {} arena policies from {}", loadResult.policies().size(), policyDir);
+        }
+
+        for (var policy : arenaPolicyRegistry.all()) {
+            policyResolver.registerPolicy(policy);
+        }
+    }
+
+    private boolean shouldUseTemplateSystem() {
+        return arenaTemplateConfig != null
+            && arenaTemplateConfig.arenaTemplateEnabled()
+            && arenaTemplateRegistry != null
+            && policyResolver != null;
+    }
+
+    private ResolvedArena resolveArenaTemplate(UUID playerId, ResourceLocation mobId, QuestSettings settings) {
+        if (policyResolver == null) {
+            return null;
+        }
+        var mobConfig = EnduranceQuestRegistry.INSTANCE.getMobConfig(mobId).orElse(null);
+        String questType = resolveQuestTypeLabel(settings, mobConfig);
+        String difficulty = resolveDifficultyLabel(settings, mobConfig);
+        Set<String> tags = resolveTags(settings, mobConfig);
+
+        ResolveContext ctx = ResolveContext.builder(playerId)
+            .partyId(settings.partyId)
+            .mobType(mobId.toString())
+            .questType(questType)
+            .difficulty(difficulty)
+            .playerCount(settings.getPlayerCount())
+            .tags(tags)
+            .build();
+
+        return policyResolver.resolve(ctx);
+    }
+
+    private String resolveQuestTypeLabel(QuestSettings settings, EnduranceQuestRegistry.MobQuestConfig mobConfig) {
+        if (settings != null && settings.questType == QuestType.RAID_BOSS) {
+            return "boss";
+        }
+        if (settings != null && settings.questType == QuestType.EVENT) {
+            return "event";
+        }
+        if (mobConfig != null && mobConfig.tier == EnduranceQuestRegistry.MobTier.BOSS) {
+            return "boss";
+        }
+        return "endurance";
+    }
+
+    private String resolveDifficultyLabel(QuestSettings settings, EnduranceQuestRegistry.MobQuestConfig mobConfig) {
+        if (settings != null && settings.questType == QuestType.RAID_BOSS) {
+            return "hard";
+        }
+        if (settings != null && settings.questType == QuestType.EVENT) {
+            return "hard";
+        }
+        if (mobConfig != null && mobConfig.tier == EnduranceQuestRegistry.MobTier.BOSS) {
+            return "hard";
+        }
+        if (mobConfig != null && mobConfig.tier == EnduranceQuestRegistry.MobTier.ELITE) {
+            return "hard";
+        }
+        return "normal";
+    }
+
+    private Set<String> resolveTags(QuestSettings settings, EnduranceQuestRegistry.MobQuestConfig mobConfig) {
+        Set<String> tags = new HashSet<>();
+        if (settings != null && settings.isMultiplayer()) {
+            tags.add("party");
+        }
+        if (settings != null && settings.questType == QuestType.RAID_BOSS) {
+            tags.add("boss");
+        }
+        if (settings != null && settings.questType == QuestType.EVENT) {
+            tags.add("event");
+        }
+        if (mobConfig != null && mobConfig.tier == EnduranceQuestRegistry.MobTier.BOSS) {
+            tags.add("boss");
+        }
+        return tags;
+    }
+
+    private ArenaBuilder createTemplateBuilder(ServerLevel level) {
+        Objects.requireNonNull(level, "level");
+        ArenaTelemetry telemetry = arenaTelemetry != null ? arenaTelemetry : new ArenaTelemetry();
+        MinecraftBlockPlacer blockPlacer = new MinecraftBlockPlacer(level);
+        MinecraftEntitySpawner entitySpawner = new MinecraftEntitySpawner(level);
+        ChunkStatus fullStatus = Objects.requireNonNull(ChunkStatus.FULL, "fullStatus");
+        ChunkLoadingManager chunkManager = new ChunkLoadingManager(
+            (chunkX, chunkZ) -> level.getChunk(chunkX, chunkZ),
+            (chunkX, chunkZ) -> level.getChunk(chunkX, chunkZ, fullStatus, false) != null,
+            new ChunkLoadingManager.TicketManager() {
+                @Override
+                public void addTicket(int chunkX, int chunkZ) {
+                    level.setChunkForced(chunkX, chunkZ, true);
+                }
+
+                @Override
+                public void removeTicket(int chunkX, int chunkZ) {
+                    level.setChunkForced(chunkX, chunkZ, false);
+                }
+            }
+        );
+        var instanceLimits = InstanceLimitConfig.load().toLimits();
+        return new ArenaBuilder(
+            telemetry,
+            blockPlacer,
+            entitySpawner,
+            chunkManager,
+            null,
+            instanceLimits,
+            null,
+            arenaConfigSnapshot
+        );
+    }
+
     // ========== Party Quest Flow (Separate Phases) ==========
 
     /**
@@ -220,13 +396,17 @@ public class EnduranceQuestManager {
             return PreparedArenaResult.failure("Unknown quest type: " + mobId);
         }
 
+        if (useInstanceDimensions && shouldUseTemplateSystem()) {
+            return prepareTemplateArenaForParty(leader, mobId, settings, template.getMobConfig());
+        }
+
         if (useInstanceDimensions) {
             // Instance path (supports party)
             var result = InstanceArenaManager.INSTANCE.startInstanceQuestForParty(leader, mobId, settings);
             if (result.success()) {
                 LOGGER.info("[EnduranceQuest] Prepared INSTANCE arena {} for party quest (mob: {}, instance: {})",
                     Objects.requireNonNull(result.arena()).getId(), mobId, result.instanceId());
-                return PreparedArenaResult.success(result.arena(), mobId, template.getMobConfig(), result.instanceId());
+                return PreparedArenaResult.success(result.arena(), null, mobId, template.getMobConfig(), result.instanceId());
             }
             return PreparedArenaResult.failure(result.message());
         }
@@ -251,7 +431,82 @@ public class EnduranceQuestManager {
         LOGGER.info("[EnduranceQuest] Prepared arena {} for party quest (mob: {})",
             arena.getId(), mobId);
 
-        return PreparedArenaResult.success(arena, mobId, template.getMobConfig(), null);
+        return PreparedArenaResult.success(arena, null, mobId, template.getMobConfig(), null);
+    }
+
+    private PreparedArenaResult prepareTemplateArenaForParty(ServerPlayer leader,
+                                                             ResourceLocation mobId,
+                                                             QuestSettings settings,
+                                                             EnduranceQuestRegistry.MobQuestConfig mobConfig) {
+        ResolvedArena resolved = resolveArenaTemplate(leader.getUUID(), mobId, settings);
+        if (resolved == null) {
+            return PreparedArenaResult.failure("No matching arena template/policy");
+        }
+
+        ArenaTemplate template = resolved.template();
+        UUID instanceId;
+        try {
+            List<UUID> partyMembers = settings.partyMemberIds != null && !settings.partyMemberIds.isEmpty()
+                ? new ArrayList<>(settings.partyMemberIds)
+                : null;
+            instanceId = InstanceManager.INSTANCE
+                .startInstanceQuestImmediate(leader, template.id(), mobId.toString(), partyMembers)
+                .get(INSTANCE_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            LOGGER.error("[EnduranceQuest] Failed to create instance for party: {}", e.getMessage());
+            return PreparedArenaResult.failure("Failed to create instance: " + e.getMessage());
+        }
+
+        if (instanceId == null) {
+            return PreparedArenaResult.failure("Failed to create instance for party");
+        }
+
+        Optional<InstanceData> instanceOpt = InstanceRegistry.INSTANCE.getInstance(instanceId);
+        if (instanceOpt.isEmpty()) {
+            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            return PreparedArenaResult.failure("Instance not found after creation");
+        }
+
+        InstanceData instance = instanceOpt.get();
+        var dimensionKey = instance.getDimensionKey();
+        if (dimensionKey == null) {
+            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            return PreparedArenaResult.failure("Instance dimension not ready");
+        }
+
+        var server = leader.getServer();
+        if (server == null) {
+            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            return PreparedArenaResult.failure("Server not available");
+        }
+
+        ServerLevel instanceLevel = server.getLevel(dimensionKey);
+        if (instanceLevel == null) {
+            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            return PreparedArenaResult.failure("Instance level not found");
+        }
+
+        ArenaBuilder builder = createTemplateBuilder(instanceLevel);
+        OriginResolution origin = resolveTemplateOrigin(template);
+        ArenaBuilder.BuildResult buildResult = builder.build(
+            template,
+            resolved.policy().id(),
+            resolved.policy().version(),
+            origin.centerX(),
+            origin.originY(),
+            origin.centerZ()
+        );
+
+        if (!buildResult.success()) {
+            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            String msg = buildResult.errorMessage() != null ? buildResult.errorMessage() : "Build failed";
+            return PreparedArenaResult.failure(msg);
+        }
+
+        ArenaHandle handle = createArenaHandle(buildResult, resolved, instanceId, origin);
+        ArenaManager.Arena arena = createArenaAdapter(instanceLevel, template, handle, origin);
+
+        return PreparedArenaResult.success(arena, handle, mobId, mobConfig, instanceId);
     }
 
     /**
@@ -318,6 +573,288 @@ public class EnduranceQuestManager {
         }
     }
 
+    // ========== Template Handle Helpers ==========
+
+    private record OriginResolution(int originX, int originY, int originZ, int centerX, int centerZ) {}
+
+    private int resolveTemplateSize(ArenaTemplate template, Integer size) {
+        return Objects.requireNonNullElse(size, Objects.requireNonNull(template.size(), "template.size"));
+    }
+
+    private OriginResolution resolveTemplateOrigin(ArenaTemplate template) {
+        int originX = template.origin() != null ? template.origin().x() : 0;
+        int originY = template.origin() != null ? template.origin().y() : 64;
+        int originZ = template.origin() != null ? template.origin().z() : 0;
+        int sizeX = resolveTemplateSize(template, template.sizeX());
+        int sizeZ = resolveTemplateSize(template, template.sizeZ());
+        int halfX = sizeX / 2;
+        int halfZ = sizeZ / 2;
+
+        ArenaTemplate.OriginMode mode = template.origin() != null && template.origin().mode() != null
+            ? template.origin().mode()
+            : ArenaTemplate.OriginMode.CENTER;
+
+        int centerX;
+        int centerZ;
+        switch (mode) {
+            case CORNER_NW -> {
+                centerX = originX + halfX;
+                centerZ = originZ + halfZ;
+            }
+            case CORNER_SW -> {
+                centerX = originX + halfX;
+                centerZ = originZ - halfZ + (sizeZ % 2 == 0 ? 1 : 0);
+            }
+            case CENTER -> {
+                centerX = originX;
+                centerZ = originZ;
+            }
+            default -> {
+                centerX = originX;
+                centerZ = originZ;
+            }
+        }
+
+        return new OriginResolution(originX, originY, originZ, centerX, centerZ);
+    }
+
+    private ArenaHandle createArenaHandle(ArenaBuilder.BuildResult buildResult,
+                                          ResolvedArena resolved,
+                                          UUID instanceId,
+                                          OriginResolution origin) {
+        ArenaTemplate template = resolved.template();
+        ArenaHandle.AABB bounds = computeHandleBounds(template, origin);
+        List<ArenaHandle.BlockPos> playerSpawns = extractPlayerSpawns(template, origin);
+        List<ArenaHandle.BlockPos> mobSpawns = extractMobSpawns(template, origin);
+
+        return ArenaHandle.builder()
+            .arenaId(buildResult.arenaId())
+            .instanceId(instanceId)
+            .templateId(template.id())
+            .templateVersion(template.version())
+            .policyId(resolved.policy().id())
+            .policyVersion(resolved.policy().version())
+            .bounds(bounds)
+            .playerSpawnPositions(playerSpawns)
+            .mobSpawnPositions(mobSpawns)
+            .build();
+    }
+
+    private ArenaManager.Arena createArenaAdapter(ServerLevel level,
+                                                  ArenaTemplate template,
+                                                  ArenaHandle handle,
+                                                  OriginResolution origin) {
+        int sizeX = resolveTemplateSize(template, template.sizeX());
+        int sizeZ = resolveTemplateSize(template, template.sizeZ());
+        int maxSize = Math.max(sizeX, sizeZ);
+        int floorY = template.floor() != null ? template.floor().y() : origin.originY();
+        BlockPos center = new BlockPos(origin.centerX(), floorY + 1, origin.centerZ());
+        return new ArenaManager.Arena(level, center, maxSize, handle.arenaId());
+    }
+
+    private ArenaHandle.AABB computeHandleBounds(ArenaTemplate template, OriginResolution origin) {
+        int sizeX = resolveTemplateSize(template, template.sizeX());
+        int sizeZ = resolveTemplateSize(template, template.sizeZ());
+        int halfX = sizeX / 2;
+        int halfZ = sizeZ / 2;
+
+        ArenaTemplate.OriginMode mode = template.origin() != null && template.origin().mode() != null
+            ? template.origin().mode()
+            : ArenaTemplate.OriginMode.CENTER;
+
+        int minX;
+        int minZ;
+        int maxX;
+        int maxZ;
+        switch (mode) {
+            case CORNER_NW -> {
+                minX = origin.originX();
+                minZ = origin.originZ();
+                maxX = origin.originX() + sizeX - 1;
+                maxZ = origin.originZ() + sizeZ - 1;
+            }
+            case CORNER_SW -> {
+                minX = origin.originX();
+                minZ = origin.originZ() - sizeZ + 1;
+                maxX = origin.originX() + sizeX - 1;
+                maxZ = origin.originZ();
+            }
+            case CENTER -> {
+                minX = origin.originX() - halfX;
+                maxX = origin.originX() + halfX - 1;
+                minZ = origin.originZ() - halfZ;
+                maxZ = origin.originZ() + halfZ - 1;
+            }
+            default -> {
+                minX = origin.originX() - halfX;
+                maxX = origin.originX() + halfX - 1;
+                minZ = origin.originZ() - halfZ;
+                maxZ = origin.originZ() + halfZ - 1;
+            }
+        }
+
+        int minY = template.floor() != null ? template.floor().y() : origin.originY();
+        int maxY = minY;
+        if (template.ceiling() != null) {
+            maxY = Math.max(maxY, template.ceiling().y());
+        }
+        if (template.walls() != null) {
+            maxY = Math.max(maxY, template.walls().startY() + template.walls().height());
+        }
+
+        return new ArenaHandle.AABB(minX, minY, minZ, maxX, maxY, maxZ);
+    }
+
+    private List<ArenaHandle.BlockPos> extractPlayerSpawns(ArenaTemplate template, OriginResolution origin) {
+        List<ArenaHandle.BlockPos> spawns = new ArrayList<>();
+        if (template.spawnSlots() != null) {
+            for (ArenaTemplate.SpawnSlot slot : template.spawnSlots()) {
+                if (slot.tags() != null && (slot.tags().contains("player") || slot.tags().contains("team"))) {
+                    int[] pos = slot.pos();
+                    if (pos == null || pos.length != 3) continue;
+                    int offsetX = 0;
+                    int offsetY = 0;
+                    int offsetZ = 0;
+                    if (template.playerSpawnOffset() != null) {
+                        offsetX = template.playerSpawnOffset().x();
+                        offsetY = template.playerSpawnOffset().y();
+                        offsetZ = template.playerSpawnOffset().z();
+                    }
+                    int x = origin.originX() + pos[0] + offsetX;
+                    int y = resolveSpawnY(slot, template, origin.originY()) + offsetY;
+                    int z = origin.originZ() + pos[2] + offsetZ;
+                    spawns.add(new ArenaHandle.BlockPos(x, y, z));
+                }
+            }
+        }
+
+        if (spawns.isEmpty()) {
+            int floorY = template.floor() != null ? template.floor().y() : origin.originY();
+            spawns.add(new ArenaHandle.BlockPos(origin.centerX(), floorY + 1, origin.centerZ()));
+        }
+
+        return spawns;
+    }
+
+    private List<ArenaHandle.BlockPos> extractMobSpawns(ArenaTemplate template, OriginResolution origin) {
+        List<ArenaTemplate.SpawnSlot> mobSlots = new ArrayList<>();
+        if (template.spawnSlots() != null) {
+            for (ArenaTemplate.SpawnSlot slot : template.spawnSlots()) {
+                if (slot.tags() != null && (slot.tags().contains("mob") || slot.tags().contains("boss"))) {
+                    mobSlots.add(slot);
+                }
+            }
+        }
+
+        if (mobSlots.isEmpty()) {
+            return List.of();
+        }
+
+        int centerOffsetX = origin.centerX() - origin.originX();
+        int centerOffsetZ = origin.centerZ() - origin.originZ();
+        List<ArenaTemplate.SpawnSlot> selected = selectByStrategy(template, mobSlots, centerOffsetX, centerOffsetZ);
+        List<ArenaHandle.BlockPos> spawns = new ArrayList<>(selected.size());
+        for (ArenaTemplate.SpawnSlot slot : selected) {
+            int[] pos = slot.pos();
+            if (pos == null || pos.length != 3) continue;
+            int x = origin.originX() + pos[0];
+            int y = resolveSpawnY(slot, template, origin.originY());
+            int z = origin.originZ() + pos[2];
+            spawns.add(new ArenaHandle.BlockPos(x, y, z));
+        }
+        return spawns;
+    }
+
+    private int resolveSpawnY(ArenaTemplate.SpawnSlot slot, ArenaTemplate template, int originY) {
+        int baseY = slot.pos() != null && slot.pos().length == 3 ? slot.pos()[1] : 0;
+        int floorY = template.floor() != null ? template.floor().y() : originY;
+        if (slot.yMode() == ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR) {
+            return floorY + baseY;
+        }
+        return baseY;
+    }
+
+    private List<ArenaTemplate.SpawnSlot> selectByStrategy(ArenaTemplate template,
+                                                           List<ArenaTemplate.SpawnSlot> mobSlots,
+                                                           int centerOffsetX,
+                                                           int centerOffsetZ) {
+        ArenaTemplate.MobSpawnStrategy strategy = template.mobSpawnStrategy() != null
+            ? template.mobSpawnStrategy()
+            : ArenaTemplate.MobSpawnStrategy.DISTRIBUTED;
+
+        switch (strategy) {
+            case CLUSTERED -> {
+                List<ArenaTemplate.SpawnSlot> centered = mobSlots.stream()
+                    .filter(s -> s.tags() != null && s.tags().contains("center"))
+                    .toList();
+                if (!centered.isEmpty()) {
+                    emitSpawnStrategyTelemetry(template.id(), "clustered", centered.size(), null);
+                    return centered;
+                }
+                List<ArenaTemplate.SpawnSlot> nearest = new ArrayList<>(mobSlots);
+                nearest.sort(Comparator.comparingDouble(s -> horizontalDistance(s, centerOffsetX, centerOffsetZ)));
+                List<ArenaTemplate.SpawnSlot> picked = nearest.subList(0, Math.min(4, nearest.size()));
+                emitSpawnStrategyTelemetry(template.id(), "clustered_fallback", picked.size(), null);
+                return picked;
+            }
+            case CORNERS -> {
+                List<ArenaTemplate.SpawnSlot> corners = mobSlots.stream()
+                    .filter(s -> s.tags() != null && s.tags().contains("corner"))
+                    .toList();
+                if (corners.size() >= 4) {
+                    emitSpawnStrategyTelemetry(template.id(), "corners", corners.size(), null);
+                    return corners;
+                }
+                List<ArenaTemplate.SpawnSlot> farthest = new ArrayList<>(mobSlots);
+                farthest.sort(Comparator.comparingDouble((ArenaTemplate.SpawnSlot s) ->
+                    horizontalDistance(s, centerOffsetX, centerOffsetZ)).reversed());
+                List<ArenaTemplate.SpawnSlot> picked = farthest.subList(0, Math.min(4, farthest.size()));
+                emitSpawnStrategyTelemetry(template.id(), "corners_fallback", picked.size(), null);
+                return picked;
+            }
+            case RING -> {
+                int sizeX = resolveTemplateSize(template, template.sizeX());
+                int sizeZ = resolveTemplateSize(template, template.sizeZ());
+                double requiredRadius = Math.max(sizeX, sizeZ) / 4.0;
+                List<ArenaTemplate.SpawnSlot> ring = mobSlots.stream()
+                    .filter(s -> horizontalDistance(s, centerOffsetX, centerOffsetZ) >= requiredRadius)
+                    .toList();
+                if (!ring.isEmpty()) {
+                    emitSpawnStrategyTelemetry(template.id(), "ring", ring.size(), requiredRadius);
+                    return ring;
+                }
+                emitSpawnStrategyTelemetry(template.id(), "ring_fallback_distributed", mobSlots.size(), requiredRadius);
+                return mobSlots;
+            }
+            default -> {
+                emitSpawnStrategyTelemetry(template.id(), "distributed", mobSlots.size(), null);
+                return mobSlots;
+            }
+        }
+    }
+
+    private void emitSpawnStrategyTelemetry(String templateId, String strategy, int slots, Double radius) {
+        if (arenaTelemetry == null) {
+            return;
+        }
+        Map<String, Object> data = new HashMap<>();
+        data.put("templateId", templateId);
+        data.put("strategy", strategy);
+        data.put("slots", slots);
+        if (radius != null) {
+            data.put("radius", radius);
+        }
+        arenaTelemetry.emit("arena.spawn.strategy_used", data);
+    }
+
+    private double horizontalDistance(ArenaTemplate.SpawnSlot slot, double centerX, double centerZ) {
+        int[] pos = slot.pos();
+        if (pos == null || pos.length != 3) return Double.MAX_VALUE;
+        double dx = pos[0] - centerX;
+        double dz = pos[2] - centerZ;
+        return Math.sqrt(dx * dx + dz * dz);
+    }
+
     /**
      * PHASE 3: Start a quest for players using a pre-created arena.
      * All players should already be teleported to the arena.
@@ -330,7 +867,9 @@ public class EnduranceQuestManager {
      */
     public Map<UUID, StartQuestResult> startPreparedQuest(
             List<ServerPlayer> players, ArenaManager.Arena arena,
-            ResourceLocation mobId, QuestSettings settings, @javax.annotation.Nullable UUID instanceId) {
+            ResourceLocation mobId, QuestSettings settings,
+            @javax.annotation.Nullable UUID instanceId,
+            @javax.annotation.Nullable ArenaHandle arenaHandle) {
 
         Map<UUID, StartQuestResult> results = new HashMap<>();
 
@@ -373,8 +912,13 @@ public class EnduranceQuestManager {
                 playerId, quest, arena, System.currentTimeMillis(),
                 settings.partyId, settings.questType, settings.getPlayerCount()
             );
-            if (instanceId != null) {
-                session.setInstanceId(instanceId);
+            UUID effectiveInstanceId = instanceId != null ? instanceId
+                : (arenaHandle != null ? arenaHandle.instanceId() : null);
+            if (effectiveInstanceId != null) {
+                session.setInstanceId(effectiveInstanceId);
+            }
+            if (arenaHandle != null) {
+                session.setArenaHandle(arenaHandle);
             }
             activeSessions.put(playerId, session); // Replaces placeholder
 
@@ -413,6 +957,12 @@ public class EnduranceQuestManager {
         return results;
     }
 
+    public Map<UUID, StartQuestResult> startPreparedQuest(
+            List<ServerPlayer> players, ArenaManager.Arena arena,
+            ResourceLocation mobId, QuestSettings settings, @javax.annotation.Nullable UUID instanceId) {
+        return startPreparedQuest(players, arena, mobId, settings, instanceId, null);
+    }
+
     /**
      * Result of preparing an arena for party quest.
      */
@@ -420,18 +970,21 @@ public class EnduranceQuestManager {
         boolean success,
         String errorMessage,
         ArenaManager.Arena arena,
+        @javax.annotation.Nullable ArenaHandle handle,
         ResourceLocation mobId,
         EnduranceQuestRegistry.MobQuestConfig mobConfig,
         @javax.annotation.Nullable UUID instanceId
     ) {
-        public static PreparedArenaResult success(ArenaManager.Arena arena, ResourceLocation mobId,
+        public static PreparedArenaResult success(ArenaManager.Arena arena,
+                                                   @javax.annotation.Nullable ArenaHandle handle,
+                                                   ResourceLocation mobId,
                                                    EnduranceQuestRegistry.MobQuestConfig mobConfig,
                                                    @javax.annotation.Nullable UUID instanceId) {
-            return new PreparedArenaResult(true, null, arena, mobId, mobConfig, instanceId);
+            return new PreparedArenaResult(true, null, arena, handle, mobId, mobConfig, instanceId);
         }
 
         public static PreparedArenaResult failure(String message) {
-            return new PreparedArenaResult(false, message, null, null, null, null);
+            return new PreparedArenaResult(false, message, null, null, null, null, null);
         }
     }
 
@@ -478,6 +1031,45 @@ public class EnduranceQuestManager {
      */
     private StartQuestResult startQuestInInstanceDimension(ServerPlayer player, ResourceLocation mobId,
                                                            EnduranceQuest quest, QuestSettings settings) {
+        if (useInstanceDimensions && shouldUseTemplateSystem()) {
+            return startQuestInInstanceDimensionWithTemplate(player, mobId, quest, settings);
+        }
+        return startQuestInInstanceDimensionLegacy(player, mobId, quest, settings);
+    }
+
+    private StartQuestResult startQuestInInstanceDimensionWithTemplate(ServerPlayer player, ResourceLocation mobId,
+                                                                       EnduranceQuest quest, QuestSettings settings) {
+        UUID playerId = player.getUUID();
+
+        ActiveQuestSession pendingSession = activeSessions.get(playerId);
+        if (pendingSession == null) {
+            LOGGER.error("[EnduranceQuest] No placeholder session found for template instance quest start");
+            return new StartQuestResult(false, "Internal error: missing session", null);
+        }
+
+        ResolvedArena resolved = resolveArenaTemplate(playerId, mobId, settings);
+        if (resolved == null) {
+            activeSessions.remove(playerId);
+            return new StartQuestResult(false, "No matching arena template/policy", null);
+        }
+
+        pendingSession.setPending(true);
+
+        com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingShow(player, "Creating template instance...");
+        player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Creating instance dimension...")
+            .withStyle(ChatFormatting.YELLOW)));
+
+        InstanceManager.INSTANCE
+            .startInstanceQuestImmediate(player, resolved.template().id(), mobId.toString(), null)
+            .thenAccept(instanceId -> {
+                completeTemplateInstanceQuestSetup(player, playerId, mobId, quest, settings, resolved, instanceId);
+            });
+
+        return new StartQuestResult(true, "Creating instance dimension...", pendingSession);
+    }
+
+    private StartQuestResult startQuestInInstanceDimensionLegacy(ServerPlayer player, ResourceLocation mobId,
+                                                                 EnduranceQuest quest, QuestSettings settings) {
         UUID playerId = player.getUUID();
 
         // Get the placeholder session that was atomically inserted in startQuest()
@@ -503,7 +1095,7 @@ public class EnduranceQuestManager {
         // Handle completion asynchronously - NO BLOCKING
         future.thenAccept(result -> {
             // This runs on the server thread (guaranteed by createDimensionAsync)
-            completeInstanceQuestSetup(player, playerId, mobId, quest, settings, result);
+            completeInstanceQuestSetupLegacy(player, playerId, mobId, quest, settings, result);
         });
 
         // Return immediately with pending status
@@ -514,9 +1106,9 @@ public class EnduranceQuestManager {
      * Complete the quest setup after instance dimension is created.
      * Called asynchronously when the instance is ready.
      */
-    private void completeInstanceQuestSetup(ServerPlayer player, UUID playerId, ResourceLocation mobId,
-                                            EnduranceQuest quest, QuestSettings settings,
-                                            InstanceArenaManager.InstanceQuestResult result) {
+    private void completeInstanceQuestSetupLegacy(ServerPlayer player, UUID playerId, ResourceLocation mobId,
+                                                  EnduranceQuest quest, QuestSettings settings,
+                                                  InstanceArenaManager.InstanceQuestResult result) {
         // Verify player is still online
         var server = player.getServer();
         if (server == null || server.getPlayerList().getPlayer(Objects.requireNonNull(playerId)) == null) {
@@ -590,6 +1182,114 @@ public class EnduranceQuestManager {
 
         LOGGER.info("[EnduranceQuest] Player {} started INSTANCE quest: {} (instance: {})",
             player.getName().getString(), quest.getDisplayName(), result.instanceId());
+
+        player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Quest started in instance dimension!")
+            .withStyle(ChatFormatting.GREEN)));
+    }
+
+    private void completeTemplateInstanceQuestSetup(ServerPlayer player, UUID playerId, ResourceLocation mobId,
+                                                    EnduranceQuest quest, QuestSettings settings,
+                                                    ResolvedArena resolved,
+                                                    @javax.annotation.Nullable UUID instanceId) {
+        var server = player.getServer();
+        if (server == null || server.getPlayerList().getPlayer(Objects.requireNonNull(playerId)) == null) {
+            LOGGER.warn("[EnduranceQuest] Player {} disconnected during template instance creation", playerId);
+            activeSessions.remove(playerId);
+            if (instanceId != null) {
+                InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            }
+            return;
+        }
+
+        if (instanceId == null) {
+            LOGGER.error("[EnduranceQuest] Template instance creation failed for player {}", playerId);
+            activeSessions.remove(playerId);
+            com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingHide(player);
+            player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Failed to create instance")
+                .withStyle(ChatFormatting.RED)));
+            return;
+        }
+
+        Optional<InstanceData> instanceOpt = InstanceRegistry.INSTANCE.getInstance(instanceId);
+        if (instanceOpt.isEmpty()) {
+            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            activeSessions.remove(playerId);
+            com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingHide(player);
+            player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Instance not found")
+                .withStyle(ChatFormatting.RED)));
+            return;
+        }
+
+        InstanceData instance = instanceOpt.get();
+        var dimensionKey = instance.getDimensionKey();
+        if (dimensionKey == null) {
+            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            activeSessions.remove(playerId);
+            com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingHide(player);
+            player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Instance dimension not ready")
+                .withStyle(ChatFormatting.RED)));
+            return;
+        }
+
+        ServerLevel instanceLevel = server.getLevel(dimensionKey);
+        if (instanceLevel == null) {
+            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            activeSessions.remove(playerId);
+            com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingHide(player);
+            player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Instance level not found")
+                .withStyle(ChatFormatting.RED)));
+            return;
+        }
+
+        ArenaTemplate template = resolved.template();
+        ArenaBuilder builder = createTemplateBuilder(instanceLevel);
+        OriginResolution origin = resolveTemplateOrigin(template);
+        ArenaBuilder.BuildResult buildResult = builder.build(
+            template,
+            resolved.policy().id(),
+            resolved.policy().version(),
+            origin.centerX(),
+            origin.originY(),
+            origin.centerZ()
+        );
+
+        if (!buildResult.success()) {
+            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            activeSessions.remove(playerId);
+            com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingHide(player);
+            String msg = buildResult.errorMessage() != null ? buildResult.errorMessage() : "Build failed";
+            player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] " + msg)
+                .withStyle(ChatFormatting.RED)));
+            return;
+        }
+
+        ArenaHandle handle = createArenaHandle(buildResult, resolved, instanceId, origin);
+        ArenaManager.Arena arena = createArenaAdapter(instanceLevel, template, handle, origin);
+
+        com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingHide(player);
+
+        quest.start(arena.getId());
+
+        ActiveQuestSession session = new ActiveQuestSession(
+            playerId, quest, arena, System.currentTimeMillis(),
+            settings.partyId, settings.questType, settings.getPlayerCount()
+        );
+        session.setInstanceId(instanceId);
+        session.setArenaHandle(handle);
+        activeSessions.put(playerId, session);
+
+        EndurancePlayerStateManager.INSTANCE.preparePlayerForQuest(player, session);
+
+        EnduranceEventHandler.onQuestStart(player, session);
+
+        String dungeonId = "endurance_instance_" + mobId.toString().replace(":", "_");
+        TelemetryService.INSTANCE.startDungeonSession(player, dungeonId);
+
+        WaveManager.INSTANCE.startWave(session);
+        EnduranceEventHandler.onWaveStart(player, session, quest.getCurrentWave());
+
+        LOGGER.info("[EnduranceQuest] Player {} started TEMPLATE quest: {} (instance: {})",
+            player.getName().getString(), quest.getDisplayName(), instanceId);
 
         player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Quest started in instance dimension!")
             .withStyle(ChatFormatting.GREEN)));
@@ -873,6 +1573,13 @@ public class EnduranceQuestManager {
         // Instance dimension ID (null if using legacy overworld arena)
         private UUID instanceId;
 
+        // Template system handle (optional, set when using ArenaTemplate)
+        private @javax.annotation.Nullable ArenaHandle arenaHandle;
+        private @javax.annotation.Nullable String templateId;
+        private @javax.annotation.Nullable Integer templateVersion;
+        private @javax.annotation.Nullable String policyId;
+        private @javax.annotation.Nullable Integer policyVersion;
+
         // Pending flag - true while instance is being created asynchronously
         private boolean pending = false;
 
@@ -945,6 +1652,21 @@ public class EnduranceQuestManager {
         public UUID getInstanceId() { return instanceId; }
         public void setInstanceId(UUID instanceId) { this.instanceId = instanceId; }
         public boolean isInInstanceDimension() { return instanceId != null; }
+
+        public @javax.annotation.Nullable ArenaHandle getArenaHandle() { return arenaHandle; }
+        public void setArenaHandle(@javax.annotation.Nullable ArenaHandle arenaHandle) {
+            this.arenaHandle = arenaHandle;
+            if (arenaHandle != null) {
+                this.templateId = arenaHandle.templateId();
+                this.templateVersion = arenaHandle.templateVersion();
+                this.policyId = arenaHandle.policyId();
+                this.policyVersion = arenaHandle.policyVersion();
+            }
+        }
+        public @javax.annotation.Nullable String getTemplateId() { return templateId; }
+        public @javax.annotation.Nullable Integer getTemplateVersion() { return templateVersion; }
+        public @javax.annotation.Nullable String getPolicyId() { return policyId; }
+        public @javax.annotation.Nullable Integer getPolicyVersion() { return policyVersion; }
 
         // Pending state (while instance is being created)
         public boolean isPending() { return pending; }

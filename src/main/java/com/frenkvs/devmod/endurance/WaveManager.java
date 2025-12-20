@@ -1,6 +1,7 @@
 package com.frenkvs.devmod.endurance;
 
 import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
+import com.devmod.arena.api.ArenaHandle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
@@ -176,7 +177,7 @@ public class WaveManager {
         activeWaves.put(arena.getId(), waveState);
 
         // Spawn initial batch
-        spawnWaveMobs(waveState, arena);
+        spawnWaveMobs(waveState, arena, session.getArenaHandle());
 
         LOGGER.info("[EnduranceQuest] Started wave {} with {} mobs (modifiers: {})",
             waveState.waveNumber, waveState.totalToSpawn, waveState.modifiers);
@@ -217,13 +218,13 @@ public class WaveManager {
      * Spawn mobs for the current wave.
      * Verifies each spawn and logs failures for debugging.
      */
-    private void spawnWaveMobs(WaveState waveState, ArenaManager.Arena arena) {
+    private void spawnWaveMobs(WaveState waveState, ArenaManager.Arena arena, @javax.annotation.Nullable ArenaHandle handle) {
         ServerLevel level = arena.getLevel();
         EnduranceQuestRegistry.MobQuestConfig mobConfig = waveState.quest.getMobConfig();
         EntityType<?> entityType = mobConfig.entityType;
 
         int toSpawn = waveState.totalToSpawn - waveState.spawned;
-        List<BlockPos> spawnPositions = arena.getDistributedSpawnPositions(toSpawn);
+        List<BlockPos> spawnPositions = resolveSpawnPositions(arena, handle, toSpawn);
 
         int successfulSpawns = 0;
         int failedSpawns = 0;
@@ -291,6 +292,19 @@ public class WaveManager {
 
         LOGGER.info("[EnduranceQuest] Wave {} spawned {}/{} mobs successfully",
             waveState.waveNumber, successfulSpawns, toSpawn);
+    }
+
+    private List<BlockPos> resolveSpawnPositions(ArenaManager.Arena arena,
+                                                 @javax.annotation.Nullable ArenaHandle handle,
+                                                 int count) {
+        if (handle != null && handle.mobSpawnPositions() != null && !handle.mobSpawnPositions().isEmpty()) {
+            List<BlockPos> positions = new ArrayList<>(handle.mobSpawnPositions().size());
+            for (ArenaHandle.BlockPos pos : handle.mobSpawnPositions()) {
+                positions.add(new BlockPos(pos.x(), pos.y(), pos.z()));
+            }
+            return positions;
+        }
+        return arena.getDistributedSpawnPositions(count);
     }
 
     /**

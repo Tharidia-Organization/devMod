@@ -1,6 +1,8 @@
 package com.frenkvs.devmod.party;
 
+import com.devmod.arena.api.ArenaHandle;
 import com.frenkvs.devmod.endurance.EnduranceQuestManager;
+import com.frenkvs.devmod.endurance.InstanceArenaManager;
 import com.frenkvs.devmod.endurance.QuestType;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.resources.ResourceLocation;
@@ -117,13 +119,19 @@ public class QuestStartSequence {
      * Cleanup prepared arena when sequence is cancelled or fails.
      */
     private void cleanupPreparedArena(ActiveSequence sequence) {
-        if (sequence.preparedArena != null) {
+        if (sequence.instanceId != null) {
+            LOGGER.info("[QuestSequence] Ending instance {} due to sequence cancel/failure",
+                sequence.instanceId);
+            InstanceArenaManager.INSTANCE.endInstanceQuest(sequence.instanceId, false);
+            sequence.instanceId = null;
+        } else if (sequence.preparedArena != null) {
             LOGGER.info("[QuestSequence] Cleaning up prepared arena {} due to sequence cancel/failure",
                 sequence.preparedArena.getId());
             // Destroy the arena to free resources
             EnduranceQuestManager.INSTANCE.destroyArena(sequence.preparedArena);
             sequence.preparedArena = null;
         }
+        sequence.preparedArenaHandle = null;
     }
 
     /**
@@ -392,6 +400,7 @@ public class QuestStartSequence {
 
         // Store arena and mob info for later quest start
         sequence.preparedArena = arenaResult.arena();
+        sequence.preparedArenaHandle = arenaResult.handle();
         sequence.mobId = mobId;
         sequence.instanceId = arenaResult.instanceId();
 
@@ -458,7 +467,8 @@ public class QuestStartSequence {
                 sequence.preparedArena,
                 sequence.mobId,
                 sequence.questSettings,
-                sequence.instanceId
+                sequence.instanceId,
+                sequence.preparedArenaHandle
             );
 
         // Count successes and failures
@@ -588,6 +598,7 @@ public class QuestStartSequence {
 
         // Pre-created arena (set during TELEPORTING phase)
         com.frenkvs.devmod.endurance.ArenaManager.Arena preparedArena;
+        ArenaHandle preparedArenaHandle;
         ResourceLocation mobId;
 
         ActiveSequence(UUID partyId, QuestType questType, List<ServerPlayer> members, UUID leaderId) {
