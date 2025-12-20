@@ -3,6 +3,7 @@ package com.frenkvs.devmod.ui.editor.modules;
 import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.UsableStats;
 import com.frenkvs.devmod.ui.editor.components.SourceBadge;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
@@ -26,6 +27,7 @@ public class UsableModuleCore {
     SourceBadge.Source dataSource = SourceBadge.Source.VANILLA;
 
     // Reference to parent module
+    @SuppressWarnings("unused")
     private final UsableModule module;
 
     public UsableModuleCore(UsableModule module) {
@@ -101,7 +103,8 @@ public class UsableModuleCore {
 
         try {
             // Get vanilla use duration
-            int vanillaUseDuration = item.getUseDuration(null);
+            var player = Minecraft.getInstance().player;
+            int vanillaUseDuration = player != null ? item.getItem().getUseDuration(item, player) : 0;
             if (vanillaUseDuration > 0) {
                 target.useDuration = vanillaUseDuration;
             }

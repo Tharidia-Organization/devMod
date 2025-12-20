@@ -240,6 +240,7 @@ public final class RadialHubRenderer {
                                          int cx, int cy, int innerR, int outerR,
                                          double segStart, double segmentAngle,
                                          MacroCategory macro, boolean isSelected, boolean isHovered) {
+        Font safeFont = Objects.requireNonNull(font, "font");
         double midAngle = segStart + segmentAngle / 2;
         int iconRadius = (innerR + outerR) / 2;
         int iconX = (int) (cx + Math.cos(midAngle) * iconRadius);
@@ -255,7 +256,8 @@ public final class RadialHubRenderer {
             int iconColor = isSelected
                 ? RadialMenuConstants.COLOR_TEXT_PRIMARY
                 : (isHovered ? macro.getColor() : RadialMenuConstants.COLOR_INACTIVE);
-            graphics.drawCenteredString(font, macro.getIcon(), iconX,
+            String iconText = Objects.requireNonNull(macro.getIcon(), "macro icon");
+            graphics.drawCenteredString(safeFont, iconText, iconX,
                 iconY + RadialMenuConstants.MACRO_ICON_TEXT_OFFSET_Y, iconColor);
         }
     }
@@ -264,6 +266,7 @@ public final class RadialHubRenderer {
      * Renders the center close/back button.
      */
     private static void renderCenterButton(GuiGraphics graphics, Font font, HubState state) {
+        Font safeFont = Objects.requireNonNull(font, "font");
         boolean centerHovered = state.hoveredMacro == null &&
             state.categoryHoverAnim > RadialMenuConstants.CENTER_HOVER_THRESHOLD;
 
@@ -305,7 +308,8 @@ public final class RadialHubRenderer {
                 state.centerY - size / 2 + RadialMenuConstants.CENTER_ICON_TEXTURE_OFFSET_Y,
                 0, 0, size, size, size, size);
         } else {
-            graphics.drawCenteredString(font, centerIcon, state.centerX,
+            String iconText = Objects.requireNonNull(centerIcon, "center icon");
+            graphics.drawCenteredString(safeFont, iconText, state.centerX,
                 state.centerY + RadialMenuConstants.CENTER_ICON_TEXT_OFFSET_Y, centerIconColor);
         }
     }

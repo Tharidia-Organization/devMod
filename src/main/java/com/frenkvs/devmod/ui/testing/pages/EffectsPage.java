@@ -5,6 +5,8 @@ import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.testing.VoxelLabTab;
 import com.frenkvs.devmod.ui.testing.panel.*;
 
+import java.util.Objects;
+
 import static com.frenkvs.devmod.ui.testing.pages.PageUtils.safeGetBool;
 import static com.frenkvs.devmod.ui.testing.pages.PageUtils.safeGetDouble;
 import static com.frenkvs.devmod.ui.testing.pages.PageUtils.nonNullDouble;
@@ -65,8 +67,8 @@ public class EffectsPage extends AbstractVoxelLabPage {
         // Intensity Slider
         panelContainer.addPanel(
             SliderPanel.of("slider-intensity", "Intensity Level",
-                () -> nonNullDouble(Config.IMPACT_VFX_INTENSITY, 1.0),
-                v -> Config.IMPACT_VFX_INTENSITY.set(v),
+                () -> Objects.requireNonNull(nonNullDouble(Config.IMPACT_VFX_INTENSITY, 1.0), "impactVfxIntensity"),
+                v -> Config.IMPACT_VFX_INTENSITY.set(Objects.requireNonNull(v, "impactVfxIntensity")),
                 0.1, 2.0, 0.1, "%.1fx")
         );
 
@@ -83,16 +85,16 @@ public class EffectsPage extends AbstractVoxelLabPage {
         // Screen Shake Intensity Slider
         panelContainer.addPanel(
             SliderPanel.of("slider-shake", "Shake Intensity",
-                () -> nonNullDouble(Config.SCREEN_SHAKE_INTENSITY, 1.0),
-                v -> Config.SCREEN_SHAKE_INTENSITY.set(v),
+                () -> Objects.requireNonNull(nonNullDouble(Config.SCREEN_SHAKE_INTENSITY, 1.0), "screenShakeIntensity"),
+                v -> Config.SCREEN_SHAKE_INTENSITY.set(Objects.requireNonNull(v, "screenShakeIntensity")),
                 0.0, 2.0, 0.1, "%.1fx")
         );
 
         // Projectile Trails Intensity Slider
         panelContainer.addPanel(
             SliderPanel.of("slider-trails", "Trail Intensity",
-                () -> nonNullDouble(Config.PROJECTILE_TRAILS_INTENSITY, 1.0),
-                v -> Config.PROJECTILE_TRAILS_INTENSITY.set(v),
+                () -> Objects.requireNonNull(nonNullDouble(Config.PROJECTILE_TRAILS_INTENSITY, 1.0), "projectileTrailsIntensity"),
+                v -> Config.PROJECTILE_TRAILS_INTENSITY.set(Objects.requireNonNull(v, "projectileTrailsIntensity")),
                 0.0, 2.0, 0.1, "%.1fx")
         );
 

@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Enforces instance-only arena creation (spec Fase0).
@@ -56,6 +57,33 @@ public class InstanceOnlyGate {
                 telemetry.emit("arena.gate.blocked", Map.of(
                     "caller", caller,
                     "dimension", level.dimension().location().toString()
+                ));
+            }
+            return Result.BLOCKED;
+        }
+        return Result.ALLOWED;
+    }
+
+    /**
+     * Instance-only check when only an instanceId is available (no ServerLevel).
+     */
+    public Result checkInstanceId(UUID instanceId, String caller) {
+        if (!config.instanceOnly()) {
+            return Result.ALLOWED;
+        }
+        if (instanceId != null) {
+            return Result.ALLOWED;
+        }
+        if (config.arenaTemplateEnabled() && config.instanceOnly()) {
+            if (isDebugCaller(caller)) {
+                LOGGER.warn("[INSTANCE_GATE] Debug caller allowed without instanceId: {}", caller);
+                return Result.ALLOWED_DEBUG_ONLY;
+            }
+            LOGGER.error("[INSTANCE_GATE] BLOCKED caller={} dimension=unknown", caller);
+            if (telemetry != null) {
+                telemetry.emit("arena.gate.blocked", Map.of(
+                    "caller", caller,
+                    "dimension", "unknown"
                 ));
             }
             return Result.BLOCKED;

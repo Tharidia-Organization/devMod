@@ -41,7 +41,9 @@ public class EditorButton {
      * This preserves our styling/state and delegates clicks back to this component.
      */
     public net.minecraft.client.gui.components.Button asVanilla(int x, int y, int width, int height) {
-        return net.minecraft.client.gui.components.Button.builder(net.minecraft.network.chat.Component.literal(label), btn -> {
+        String safeLabel = Objects.requireNonNull(label, "label");
+        var title = Objects.requireNonNull(net.minecraft.network.chat.Component.literal(safeLabel), "label component");
+        return net.minecraft.client.gui.components.Button.builder(title, btn -> {
                 if (!enabled) return;
                 if (onClick != null) onClick.run();
             })

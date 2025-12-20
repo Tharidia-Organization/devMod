@@ -15,6 +15,7 @@ import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * UI components and section builders for UsableModule.
@@ -187,7 +188,8 @@ public class UsableModuleUI {
         sections.add(new SimpleHeaderSection("debug-header", "Debug Information"));
 
         if (item != null && !item.isEmpty()) {
-            String itemId = BuiltInRegistries.ITEM.getKey(item.getItem()).toString();
+            var safeItem = Objects.requireNonNull(item.getItem(), "item");
+            String itemId = BuiltInRegistries.ITEM.getKey(safeItem).toString();
             sections.add(new TextNoteSection("debug-item", "Item: " + itemId));
             sections.add(new TextNoteSection("debug-source", "Data Source: " + core.getSourcePrefix()));
 

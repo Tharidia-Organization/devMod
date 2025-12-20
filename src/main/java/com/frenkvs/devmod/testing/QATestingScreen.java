@@ -7,6 +7,7 @@ import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -15,6 +16,7 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Achievement-style QA Testing Screen.
@@ -75,16 +77,17 @@ public class QATestingScreen extends Screen {
     @Override
     protected void init() {
         super.init();
+        final @Nonnull Font font = safeFont();
 
         // Tester name input (only shown before session starts)
         this.testerNameField = new EditBox(
-            this.font, this.width / 2 - 100, this.height / 2 - 30, 200, 20,
+            font, this.width / 2 - 100, this.height / 2 - 30, 200, 20,
             I18n.translate("devmod.testing.tester_name")
         );
         this.testerNameField.setMaxLength(50);
         this.testerNameField.setValue("Tester");
         this.testerNameField.setVisible(!sessionStarted);
-        this.addRenderableWidget(testerNameField);
+        this.addRenderableWidget(Objects.requireNonNull(testerNameField, "testerNameField"));
 
         // Start session button (only for new sessions)
         boolean hasExisting = TestingSession.INSTANCE.hasExistingSession() &&
@@ -193,22 +196,26 @@ public class QATestingScreen extends Screen {
         try {
             TestingSession.INSTANCE.captureLogs();
             String path = TestingSession.INSTANCE.saveReport();
-            Minecraft.getInstance().player.displayClientMessage(
-                I18n.translate("devmod.testing.report_saved", path), false
-            );
+            var player = Minecraft.getInstance().player;
+            if (player != null) {
+                player.displayClientMessage(I18n.translate("devmod.testing.report_saved", path), false);
+            }
         } catch (IOException e) {
-            Minecraft.getInstance().player.displayClientMessage(
-                I18n.translate("devmod.testing.report_error", e.getMessage()), false
-            );
+            var player = Minecraft.getInstance().player;
+            if (player != null) {
+                player.displayClientMessage(
+                    I18n.translate("devmod.testing.report_error", e.getMessage()), false);
+            }
         }
     }
 
     private void copyReport() {
         TestingSession.INSTANCE.captureLogs();
         TestingSession.INSTANCE.copyReportToClipboard();
-        Minecraft.getInstance().player.displayClientMessage(
-            I18n.translate("devmod.testing.report_copied"), false
-        );
+        var player = Minecraft.getInstance().player;
+        if (player != null) {
+            player.displayClientMessage(I18n.translate("devmod.testing.report_copied"), false);
+        }
     }
 
     @Override
@@ -233,6 +240,7 @@ public class QATestingScreen extends Screen {
     }
 
     private void renderStartScreen(GuiGraphics graphics, int mouseX, int mouseY) {
+        final @Nonnull Font font = safeFont();
         // Title
         AxiomRenderer.drawCenteredTitle(graphics, font, this.width, 30, "DevMod QA Testing Framework");
 
@@ -260,10 +268,12 @@ public class QATestingScreen extends Screen {
             y = this.height / 2 - 70;
             graphics.drawCenteredString(font, "Previous Session Found!", centerX, y, UIConstants.Status.SUCCESS());
             y += 15;
-            String progress = String.format("Progress: %d/%d tests completed (%.0f%%)",
+            final @Nonnull String progress = Objects.requireNonNull(String.format(
+                "Progress: %d/%d tests completed (%.0f%%)",
                 TestingSession.INSTANCE.getCompletedTests(),
                 TestingSession.INSTANCE.getTotalTests(),
-                TestingSession.INSTANCE.getProgressPercent());
+                TestingSession.INSTANCE.getProgressPercent()
+            ), "progress");
             graphics.drawCenteredString(font, progress, centerX, y, UIConstants.Text.PRIMARY());
             y += 12;
             graphics.drawCenteredString(font, "Tester: " + TestingSession.INSTANCE.getTesterName(),
@@ -282,6 +292,7 @@ public class QATestingScreen extends Screen {
      * Render the tutorial guidance panel on the left side of start screen.
      */
     private void renderTutorialPanel(GuiGraphics graphics, int mouseX, int mouseY) {
+        final @Nonnull Font font = safeFont();
         int panelX = 10;
         int panelY = 60;
         int panelWidth = 200;
@@ -311,7 +322,8 @@ public class QATestingScreen extends Screen {
             contentY += 11;
 
             // Step title
-            String title = step.getTitle();
+            String titleRaw = step.getTitle();
+            @Nonnull String title = Objects.requireNonNull(titleRaw != null ? titleRaw : "", "title");
             if (font.width(title) > panelWidth - 16) {
                 title = title.substring(0, Math.min(title.length(), 22)) + "...";
             }
@@ -329,7 +341,8 @@ public class QATestingScreen extends Screen {
 
             // Hint
             contentY += 4;
-            String hint = step.getHint();
+            String hintRaw = step.getHint();
+            @Nonnull String hint = Objects.requireNonNull(hintRaw != null ? hintRaw : "", "hint");
             if (hint.length() > 30) hint = hint.substring(0, 27) + "...";
             graphics.drawString(font, hint, panelX + 8, contentY, 0xFFFFAA00, false);
         }
@@ -339,6 +352,7 @@ public class QATestingScreen extends Screen {
      * Render the gamification stats panel on the right side of start screen.
      */
     private void renderGamificationPanel(GuiGraphics graphics, int mouseX, int mouseY) {
+        final @Nonnull Font font = safeFont();
         int panelWidth = 180;
         int panelX = this.width - panelWidth - 10;
         int panelY = 60;
@@ -412,6 +426,7 @@ public class QATestingScreen extends Screen {
     }
 
     private void renderHeader(GuiGraphics graphics) {
+        final @Nonnull Font font = safeFont();
         // Header background
         graphics.fill(0, 0, this.width, HEADER_HEIGHT, UIConstants.Background.HEADER());
         AxiomRenderer.drawSeparator(graphics, 0, HEADER_HEIGHT - 1, this.width);
@@ -435,6 +450,7 @@ public class QATestingScreen extends Screen {
     }
 
     private void renderSidebar(GuiGraphics graphics, int mouseX, int mouseY) {
+        final @Nonnull Font font = safeFont();
         int sidebarX = 0;
         int sidebarY = HEADER_HEIGHT;
         int sidebarHeight = this.height - HEADER_HEIGHT - FOOTER_HEIGHT;
@@ -532,6 +548,7 @@ public class QATestingScreen extends Screen {
     }
 
     private void renderTestList(GuiGraphics graphics, int mouseX, int mouseY) {
+        final @Nonnull Font font = safeFont();
         if (selectedCategory == null) return;
 
         int listX = SIDEBAR_WIDTH + PADDING;
@@ -608,11 +625,13 @@ public class QATestingScreen extends Screen {
     /**
      * Truncate text to fit within maxWidth pixels, adding ellipsis if needed.
      */
-    private String truncateText(String text, int maxWidth) {
-        if (font.width(text) <= maxWidth) return text;
+    private @Nonnull String truncateText(String text, int maxWidth) {
+        final @Nonnull Font font = safeFont();
+        final @Nonnull String safeText = Objects.requireNonNull(text != null ? text : "", "safeText");
+        if (font.width(safeText) <= maxWidth) return safeText;
         String ellipsis = "...";
-        int minChars = Math.min(6, text.length());
-        String truncated = text;
+        int minChars = Math.min(6, safeText.length());
+        String truncated = safeText;
         while (font.width(truncated + ellipsis) > maxWidth && truncated.length() > minChars) {
             truncated = truncated.substring(0, truncated.length() - 1);
         }
@@ -621,6 +640,7 @@ public class QATestingScreen extends Screen {
 
     private void renderTestCard(GuiGraphics graphics, int x, int y, int width, TestCase test,
                                  boolean hovered, boolean selected) {
+        final @Nonnull Font font = safeFont();
         int height = TEST_CARD_HEIGHT - 10;
 
         // Card background
@@ -668,6 +688,7 @@ public class QATestingScreen extends Screen {
     }
 
     private void renderTestDetails(GuiGraphics graphics, int mouseX, int mouseY) {
+        final @Nonnull Font font = safeFont();
         int detailsX = SIDEBAR_WIDTH + (this.width - SIDEBAR_WIDTH) / 2 + PADDING;
         int detailsY = HEADER_HEIGHT + PADDING;
         int detailsWidth = (this.width - SIDEBAR_WIDTH) / 2 - PADDING * 2;
@@ -746,6 +767,7 @@ public class QATestingScreen extends Screen {
     }
 
     private void renderFooter(GuiGraphics graphics) {
+        final @Nonnull Font font = safeFont();
         int footerY = this.height - FOOTER_HEIGHT;
 
         // Footer background
@@ -946,6 +968,10 @@ public class QATestingScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    private @Nonnull Font safeFont() {
+        return Objects.requireNonNull(this.font, "font");
     }
 
     private void renderActionButtons(GuiGraphics graphics, int mouseX, int mouseY) {

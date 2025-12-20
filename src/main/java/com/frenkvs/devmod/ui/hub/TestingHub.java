@@ -10,6 +10,7 @@ import com.frenkvs.devmod.ui.editor.ItemEditorScreen;
 import com.frenkvs.devmod.ui.editor.EditorStartTab;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -17,6 +18,7 @@ import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
 import javax.annotation.Nonnull;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -109,14 +111,22 @@ public class TestingHub extends Screen {
         int fieldX = hubX + (hubWidth - fieldWidth) / 2;
         int fieldY = hubY + hubHeight / 2 - 30;
 
-        testerNameField = new EditBox(font, fieldX, fieldY, fieldWidth, 20, I18n.translate("devmod.testing.tester_name"));
-        testerNameField.setHint(I18n.translate("devmod.testing.enter_name"));
-        testerNameField.setMaxLength(32);
-        testerNameField.setValue(TestingSession.INSTANCE.getTesterName());
-        this.addRenderableWidget(testerNameField);
+        Font uiFont = Objects.requireNonNull(font, "font");
+        EditBox nameField = new EditBox(uiFont, fieldX, fieldY, fieldWidth, 20,
+            Objects.requireNonNull(I18n.translate("devmod.testing.tester_name"), "testerNameLabel"));
+        nameField.setHint(Objects.requireNonNull(I18n.translate("devmod.testing.enter_name"), "testerNameHint"));
+        nameField.setMaxLength(32);
+        String testerName = Objects.requireNonNull(
+            Objects.requireNonNullElse(TestingSession.INSTANCE.getTesterName(), ""),
+            "testerName"
+        );
+        nameField.setValue(testerName);
+        testerNameField = nameField;
+        this.addRenderableWidget(nameField);
     }
 
     private void initPanels() {
+        Font uiFont = Objects.requireNonNull(font, "font");
         // Calculate panel widths
         int categoryWidth = Math.max(180, (int)(hubWidth * 0.22f));
         int toolsWidth = Math.max(170, (int)(hubWidth * 0.25f));
@@ -128,7 +138,7 @@ public class TestingHub extends Screen {
         // Initialize panels
         categoryPanel = new CategoryPanel(
             hubX, contentY, categoryWidth, contentHeight,
-            font, state,
+            uiFont, state,
             this::onCategorySelected,
             this::onTestSelected
         );
@@ -136,22 +146,22 @@ public class TestingHub extends Screen {
         detailPanel = new TestDetailPanel(
             hubX + categoryWidth + PANEL_GAP, contentY,
             detailWidth, contentHeight,
-            font, state,
+            uiFont, state,
             this::onVerdictGiven
         );
 
         toolsPanel = new QuickToolsPanel(
             hubX + categoryWidth + detailWidth + PANEL_GAP * 2, contentY,
             toolsWidth, contentHeight,
-            font, state,
-            this::onToolToggled,
+            uiFont, state,
+            (tool, enabled) -> onToolToggled(tool, enabled != null && enabled),
             this::onEditorOpened
         );
 
         footer = new ProgressFooter(
             hubX, hubY + hubHeight - FOOTER_HEIGHT,
             hubWidth, FOOTER_HEIGHT,
-            font,
+            uiFont,
             this::onSaveReport,
             this::onMinimize
         );
@@ -180,26 +190,27 @@ public class TestingHub extends Screen {
     }
 
     private void renderSessionStart(GuiGraphics graphics, int mouseX, int mouseY) {
+        Font uiFont = Objects.requireNonNull(font, "font");
         // Central panel for session start
         int panelWidth = 350;
         int panelHeight = 200;
         int panelX = (width - panelWidth) / 2;
         int panelY = (height - panelHeight) / 2;
 
-        AxiomRenderer.drawPanel(graphics, font, panelX, panelY, panelWidth, panelHeight, "Start Testing Session");
+        AxiomRenderer.drawPanel(graphics, uiFont, panelX, panelY, panelWidth, panelHeight, "Start Testing Session");
 
         int contentX = panelX + UIConstants.Spacing.PANEL_PADDING;
         int contentY = panelY + UIConstants.Spacing.HEADER_HEIGHT + UIConstants.Spacing.PANEL_PADDING + 10;
 
         // Instructions
-        graphics.drawString(font, "Welcome to DevMod QA Testing!", contentX, contentY, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(uiFont, "Welcome to DevMod QA Testing!", contentX, contentY, UIConstants.Text.PRIMARY(), false);
         contentY += 16;
 
-        graphics.drawString(font, "Enter your name to start tracking tests.", contentX, contentY, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(uiFont, "Enter your name to start tracking tests.", contentX, contentY, UIConstants.Text.SECONDARY(), false);
         contentY += 30;
 
         // Name label
-        graphics.drawString(font, "Tester Name:", contentX, contentY + 6, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(uiFont, "Tester Name:", contentX, contentY + 6, UIConstants.Text.SECONDARY(), false);
         contentY += 40;
 
         // Buttons
@@ -224,7 +235,7 @@ public class TestingHub extends Screen {
 
         // Hint
         int hintY = panelY + panelHeight - 20;
-        AxiomRenderer.drawHint(graphics, font, panelX + 10, hintY, "Press Enter to start, ESC to close");
+        AxiomRenderer.drawHint(graphics, uiFont, panelX + 10, hintY, "Press Enter to start, ESC to close");
     }
 
     private void renderHub(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
@@ -273,6 +284,7 @@ public class TestingHub extends Screen {
     }
 
     private void renderHeader(GuiGraphics graphics, int mouseX, int mouseY) {
+        Font uiFont = Objects.requireNonNull(font, "font");
         // Background header
         graphics.fill(hubX, hubY, hubX + hubWidth, hubY + HEADER_HEIGHT, UIConstants.Background.HEADER());
 
@@ -280,12 +292,12 @@ public class TestingHub extends Screen {
         graphics.fill(hubX, hubY + HEADER_HEIGHT - 1, hubX + hubWidth, hubY + HEADER_HEIGHT, UIConstants.Border.DEFAULT());
 
         // Title
-        graphics.drawString(font, "DEVMOD TESTING HUB", hubX + 12, hubY + 10, UIConstants.Text.TITLE(), false);
+        graphics.drawString(uiFont, "DEVMOD TESTING HUB", hubX + 12, hubY + 10, UIConstants.Text.TITLE(), false);
 
         // Session info
         String tester = "Tester: " + TestingSession.INSTANCE.getTesterName();
-        int testerWidth = font.width(tester);
-        graphics.drawString(font, tester, hubX + hubWidth - testerWidth - 80, hubY + 10, UIConstants.Text.MUTED(), false);
+        int testerWidth = uiFont.width(tester);
+        graphics.drawString(uiFont, tester, hubX + hubWidth - testerWidth - 80, hubY + 10, UIConstants.Text.MUTED(), false);
 
         int buttonHeight = EditorButton.Size.SMALL.height();
         int buttonY = hubY + (HEADER_HEIGHT - buttonHeight) / 2;
@@ -522,8 +534,9 @@ public class TestingHub extends Screen {
         switch (editor) {
             case WEAPON -> {
                 Minecraft mc = Minecraft.getInstance();
-                if (mc.player != null && !mc.player.getMainHandItem().isEmpty()) {
-                    mc.setScreen(new ItemEditorScreen(mc.player.getMainHandItem(), EditorStartTab.WEAPON));
+                var player = mc.player;
+                if (player != null && !player.getMainHandItem().isEmpty()) {
+                    mc.setScreen(new ItemEditorScreen(player.getMainHandItem(), EditorStartTab.WEAPON));
                 } else {
                     // Show message
                     showNotification("Hold an item in your main hand first!");
@@ -615,9 +628,13 @@ public class TestingHub extends Screen {
 
     private void showNotification(String message) {
         // Use Minecraft's action bar for feedback
-        if (minecraft != null && minecraft.player != null) {
-            minecraft.player.displayClientMessage(Component.literal(message), true);
-        }
+        Minecraft mc = this.minecraft;
+        if (mc == null) return;
+        var player = mc.player;
+        if (player == null) return;
+        String safeMessage = Objects.requireNonNull(Objects.requireNonNullElse(message, ""), "safeMessage");
+        Component messageComponent = Objects.requireNonNull(Component.literal(safeMessage), "messageComponent");
+        player.displayClientMessage(messageComponent, true);
     }
 
     @Override

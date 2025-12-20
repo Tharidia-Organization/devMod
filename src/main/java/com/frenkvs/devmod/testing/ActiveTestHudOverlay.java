@@ -12,6 +12,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
+import java.util.Objects;
+import javax.annotation.Nonnull;
+
 /**
  * In-game HUD overlay that displays the currently active test.
  * Shows test name, instructions checklist, and quick action buttons.
@@ -68,23 +71,26 @@ public class ActiveTestHudOverlay {
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.HOTBAR,
-            LAYER_ID,
+            Objects.requireNonNull(VanillaGuiLayers.HOTBAR),
+            Objects.requireNonNull(LAYER_ID),
             ActiveTestHudOverlay::render
         );
     }
 
-    private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
+    private static void render(@Nonnull GuiGraphics graphics, @Nonnull DeltaTracker deltaTracker) {
         if (!enabled) return;
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.options.hideGui) return;
         if (mc.screen != null) return; // Don't show when any screen is open
 
+        final @Nonnull GuiGraphics g = Objects.requireNonNull(graphics, "graphics");
+        final @Nonnull Font font = Objects.requireNonNull(mc.font, "font");
+
         // Check if QA session is active
         if (!TestingSession.INSTANCE.isSessionActive()) {
             // Show minimal "start QA" hint
-            renderInactiveHint(graphics, mc.font);
+            renderInactiveHint(g, font);
             return;
         }
 
@@ -104,18 +110,18 @@ public class ActiveTestHudOverlay {
         updateAnimation();
 
         if (minimized) {
-            renderMinimized(graphics, mc.font);
+            renderMinimized(g, font);
         } else if (activeTest != null) {
-            renderActiveTest(graphics, mc.font);
+            renderActiveTest(g, font);
         } else {
-            renderNoActiveTest(graphics, mc.font);
+            renderNoActiveTest(g, font);
         }
     }
 
     /**
      * Render hint when QA session is not active.
      */
-    private static void renderInactiveHint(GuiGraphics g, Font font) {
+    private static void renderInactiveHint(@Nonnull GuiGraphics g, @Nonnull Font font) {
         int screenHeight = g.guiHeight();
         int x = 10;
         int y = screenHeight - 30;
@@ -128,7 +134,7 @@ public class ActiveTestHudOverlay {
     /**
      * Render minimized mode - just a small indicator.
      */
-    private static void renderMinimized(GuiGraphics g, Font font) {
+    private static void renderMinimized(@Nonnull GuiGraphics g, @Nonnull Font font) {
         int screenHeight = g.guiHeight();
         int x = 10;
         int y = screenHeight - 50;
@@ -153,7 +159,7 @@ public class ActiveTestHudOverlay {
     /**
      * Render when no specific test is active but session is running.
      */
-    private static void renderNoActiveTest(GuiGraphics g, Font font) {
+    private static void renderNoActiveTest(@Nonnull GuiGraphics g, @Nonnull Font font) {
         int screenHeight = g.guiHeight();
         int x = 10;
         int y = screenHeight - 80;
@@ -186,7 +192,7 @@ public class ActiveTestHudOverlay {
     /**
      * Render active test panel with full details.
      */
-    private static void renderActiveTest(GuiGraphics g, Font font) {
+    private static void renderActiveTest(@Nonnull GuiGraphics g, @Nonnull Font font) {
         if (activeTest == null) return;
 
         int screenHeight = g.guiHeight();
@@ -233,11 +239,11 @@ public class ActiveTestHudOverlay {
         g.fill(x + PANEL_PADDING, y + 8, x + PANEL_PADDING + 6, y + 14, statusColor);
 
         // Test name
-        String testName = activeTest.getName();
-        if (font.width(testName) > PANEL_WIDTH - 50) {
+        String testName = Objects.requireNonNullElse(activeTest.getName(), "Unnamed Test");
+        if (font.width(Objects.requireNonNull(testName, "test name")) > PANEL_WIDTH - 50) {
             testName = testName.substring(0, 25) + "...";
         }
-        g.drawString(font, testName, x + PANEL_PADDING + 10, y + 7, TEXT_TITLE, false);
+        g.drawString(font, Objects.requireNonNull(testName, "test name"), x + PANEL_PADDING + 10, y + 7, TEXT_TITLE, false);
 
         // Priority badge
         String priorityBadge = "[" + activeTest.getPriority().name().charAt(0) + "]";
@@ -304,7 +310,9 @@ public class ActiveTestHudOverlay {
                    progress >= 1f ? PROGRESS_COMPLETE : PROGRESS_FILL);
 
             // Progress percentage
-            String progressText = String.format("%.0f%%", progress * 100);
+            final @Nonnull String progressText = Objects.requireNonNull(
+                String.format("%.0f%%", progress * 100),
+                "progress text");
             int textX = x + PANEL_PADDING + progressBarWidth / 2 - font.width(progressText) / 2;
             g.drawString(font, progressText, textX, contentY, TEXT_PRIMARY, false);
 

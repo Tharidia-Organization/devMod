@@ -8,11 +8,14 @@ import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.network.chat.Component;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -58,7 +61,7 @@ public class CategoryPanel implements HubPanel {
         this.y = y;
         this.width = width;
         this.height = height;
-        this.font = font;
+        this.font = Objects.requireNonNull(font, "font");
         this.state = state;
         this.onCategorySelected = onCategorySelected;
         this.onTestSelected = onTestSelected;
@@ -71,12 +74,18 @@ public class CategoryPanel implements HubPanel {
     }
 
     private void initSearchBox() {
-        searchBox = new EditBox(font, x + PADDING, y + PADDING + HEADER_HEIGHT + 4,
-            width - PADDING * 2, SEARCH_HEIGHT, I18n.ui("search"));
-        searchBox.setHint(I18n.translate("devmod.testing.search_tests"));
+        @Nonnull Font safeFont = safeFont();
+        Component searchLabel = Objects.requireNonNull(I18n.ui("search"), "searchLabel");
+        searchBox = new EditBox(safeFont, x + PADDING, y + PADDING + HEADER_HEIGHT + 4,
+            width - PADDING * 2, SEARCH_HEIGHT, searchLabel);
+        Component searchHint = Objects.requireNonNull(I18n.translate("devmod.testing.search_tests"), "searchHint");
+        searchBox.setHint(searchHint);
         searchBox.setMaxLength(50);
-        searchBox.setValue(state.getSearchQuery());
-        searchBox.setResponder(query -> state.setSearchQuery(query));
+        @Nonnull String safeQuery = Objects.requireNonNull(
+            Objects.requireNonNullElse(state.getSearchQuery(), ""),
+            "searchQuery");
+        searchBox.setValue(safeQuery);
+        searchBox.setResponder(query -> state.setSearchQuery(query != null ? query : ""));
     }
 
     @Override
@@ -90,7 +99,7 @@ public class CategoryPanel implements HubPanel {
         int contentY = y + PADDING;
 
         // Header
-        contentY = HubSectionHeader.draw(graphics, font, "CATEGORIES", x + PADDING, contentY, HEADER_HEIGHT, 4);
+        contentY = HubSectionHeader.draw(graphics, safeFont(), "CATEGORIES", x + PADDING, contentY, HEADER_HEIGHT, 4);
         contentY += 4;
 
         // Search box
@@ -115,6 +124,7 @@ public class CategoryPanel implements HubPanel {
     }
 
     private int renderFilters(GuiGraphics graphics, int startY, int mouseX, int mouseY) {
+        @Nonnull Font safeFont = safeFont();
         int filterX = x + PADDING;
         int filterY = startY;
 
@@ -132,14 +142,16 @@ public class CategoryPanel implements HubPanel {
 
             // Checkmark
             if (active) {
-                graphics.drawString(font, "v", filterX + 2, filterY + 2, UIConstants.Text.WHITE(), false);
+                graphics.drawString(safeFont, "v", filterX + 2, filterY + 2, UIConstants.Text.WHITE(), false);
             }
 
             // Abbreviated label
-            String label = status.name().substring(0, 1);
-            graphics.drawString(font, label, filterX + boxSize + 3, filterY + 3, UIConstants.Text.MUTED(), false);
+            @Nonnull String label = Objects.requireNonNull(
+                Objects.requireNonNull(status.name(), "statusName").substring(0, 1),
+                "label");
+            graphics.drawString(safeFont, label, filterX + boxSize + 3, filterY + 3, UIConstants.Text.MUTED(), false);
 
-            filterX += boxSize + font.width(label) + 10;
+            filterX += boxSize + safeFont.width(label) + 10;
         }
 
         return filterY + FILTER_ROW_HEIGHT;
@@ -199,29 +211,32 @@ public class CategoryPanel implements HubPanel {
 
     private void renderCategoryRow(GuiGraphics graphics, int rx, int ry, int rwidth, String category,
                                    List<TestCase> tests, boolean expanded, boolean hovered) {
+        @Nonnull Font safeFont = safeFont();
         // Background hover
         if (hovered) {
             graphics.fill(rx - 2, ry, rx + rwidth + 2, ry + CATEGORY_ROW_HEIGHT - 2, UIConstants.Background.HOVER());
         }
 
         // Expand icon
-        String icon = expanded ? "v" : ">";
-        graphics.drawString(font, icon, rx, ry + 6, UIConstants.Text.MUTED(), false);
+        @Nonnull String icon = expanded ? "v" : ">";
+        graphics.drawString(safeFont, icon, rx, ry + 6, UIConstants.Text.MUTED(), false);
 
         // Category name
-        graphics.drawString(font, category, rx + 12, ry + 6, UIConstants.Text.PRIMARY(), false);
+        @Nonnull String safeCategory = Objects.requireNonNull(category, "category");
+        graphics.drawString(safeFont, safeCategory, rx + 12, ry + 6, UIConstants.Text.PRIMARY(), false);
 
         // Count badge
         long passed = tests.stream().filter(t -> t.getStatus() == TestCase.TestStatus.PASSED).count();
         long total = tests.size();
-        String count = String.format("%d/%d", passed, total);
+        @Nonnull String count = Objects.requireNonNull(String.format("%d/%d", passed, total), "count");
         int countColor = passed == total ? UIConstants.Status.SUCCESS() : UIConstants.Text.MUTED();
-        int countWidth = font.width(count);
-        graphics.drawString(font, count, rx + rwidth - countWidth, ry + 6, countColor, false);
+        int countWidth = safeFont.width(count);
+        graphics.drawString(safeFont, count, rx + rwidth - countWidth, ry + 6, countColor, false);
     }
 
     private void renderTestRow(GuiGraphics graphics, int rx, int ry, int rwidth, TestCase test,
                                boolean hovered, boolean selected) {
+        @Nonnull Font safeFont = safeFont();
         // Background
         if (selected) {
             graphics.fill(rx - 2, ry, rx + rwidth + 2, ry + TEST_ROW_HEIGHT - 2, UIConstants.Background.ACTIVE());
@@ -234,19 +249,21 @@ public class CategoryPanel implements HubPanel {
         graphics.fill(rx, ry + 5, rx + 6, ry + 11, dotColor);
 
         // Test name (truncated - keep at least 6 chars for readability)
-        String name = test.getName();
+        @Nonnull String name = Objects.requireNonNull(
+            Objects.requireNonNullElse(test.getName(), ""),
+            "testName");
         int maxNameWidth = rwidth - 14;
-        if (font.width(name) > maxNameWidth) {
+        if (safeFont.width(name) > maxNameWidth) {
             String ellipsis = "...";
             int minChars = Math.min(6, name.length());
-            while (font.width(name + ellipsis) > maxNameWidth && name.length() > minChars) {
-                name = name.substring(0, name.length() - 1);
+            while (safeFont.width(name + ellipsis) > maxNameWidth && name.length() > minChars) {
+                name = Objects.requireNonNull(name.substring(0, name.length() - 1), "name");
             }
             name += ellipsis;
         }
 
         int textColor = selected ? UIConstants.Text.ACCENT() : UIConstants.Text.SECONDARY();
-        graphics.drawString(font, name, rx + 10, ry + 4, textColor, false);
+        graphics.drawString(safeFont, name, rx + 10, ry + 4, textColor, false);
     }
 
     private void renderScrollbar(GuiGraphics graphics, int sx, int sy, int swidth, int sheight) {
@@ -266,15 +283,15 @@ public class CategoryPanel implements HubPanel {
         Map<String, List<TestCase>> all = TestingSession.INSTANCE.getCategorizedTests();
         Map<String, List<TestCase>> filtered = new LinkedHashMap<>();
 
-        String query = state.getSearchQuery().toLowerCase();
+        String query = Objects.requireNonNullElse(state.getSearchQuery(), "").toLowerCase();
         Set<TestCase.TestStatus> activeFilters = state.getActiveFilters();
 
         for (Map.Entry<String, List<TestCase>> entry : all.entrySet()) {
             List<TestCase> tests = entry.getValue().stream()
                 .filter(t -> activeFilters.contains(t.getStatus()))
                 .filter(t -> query.isEmpty() ||
-                            t.getName().toLowerCase().contains(query) ||
-                            t.getDescription().toLowerCase().contains(query))
+                            Objects.requireNonNullElse(t.getName(), "").toLowerCase().contains(query) ||
+                            Objects.requireNonNullElse(t.getDescription(), "").toLowerCase().contains(query))
                 .toList();
 
             if (!tests.isEmpty()) {
@@ -309,6 +326,7 @@ public class CategoryPanel implements HubPanel {
     }
 
     private boolean handleFilterClick(int mx, int my) {
+        @Nonnull Font safeFont = safeFont();
         int filterY = y + PADDING + HEADER_HEIGHT + 4 + SEARCH_HEIGHT + 8;
         int filterX = x + PADDING;
 
@@ -318,8 +336,10 @@ public class CategoryPanel implements HubPanel {
 
         for (TestCase.TestStatus status : statuses) {
             int boxSize = 10;
-            String label = status.name().substring(0, 1);
-            int itemWidth = boxSize + font.width(label) + 10;
+            @Nonnull String label = Objects.requireNonNull(
+                Objects.requireNonNull(status.name(), "statusName").substring(0, 1),
+                "label");
+            int itemWidth = boxSize + safeFont.width(label) + 10;
 
             if (mx >= filterX && mx < filterX + itemWidth) {
                 state.toggleFilter(status);
@@ -401,6 +421,11 @@ public class CategoryPanel implements HubPanel {
 
     private boolean isInBounds(int mx, int my, int bx, int by, int bw, int bh) {
         return mx >= bx && mx < bx + bw && my >= by && my < by + bh;
+    }
+
+    @Nonnull
+    private Font safeFont() {
+        return Objects.requireNonNull(font, "font");
     }
 
     @Override

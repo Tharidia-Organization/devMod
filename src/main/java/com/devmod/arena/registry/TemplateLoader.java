@@ -32,6 +32,7 @@ public class TemplateLoader {
         this.telemetry = telemetry;
         // Attempt to load JSON schema if present (draft schema in docs)
         try {
+            SchemaValidator.tryLoadFromResource("schemas/arena_template.schema.json");
             Path schemaPath = Path.of("docs/arena-template-rework/arena_template.schema.json");
             SchemaValidator.tryLoadFromPath(schemaPath);
         } catch (Exception ignored) {

@@ -42,7 +42,7 @@ public class EnvironmentalDamageStats {
             HazardType hazardType = HazardTypeRegistry.INSTANCE.classify(source);
 
             // Accumulate damage for this hazard type
-            damageByType.merge(hazardType, damage, Double::sum);
+            damageByType.merge(hazardType, damage, EnvironmentalDamageStats::safeDoubleSum);
 
             // Special handling for explosion achievement
             if (hazardType == HazardType.EXPLOSION && !survivedExplosion) {
@@ -169,5 +169,11 @@ public class EnvironmentalDamageStats {
 
     private boolean getBool(JsonObject obj, String key, boolean defaultValue) {
         return obj.has(key) ? obj.get(key).getAsBoolean() : defaultValue;
+    }
+
+    private static Double safeDoubleSum(Double left, Double right) {
+        double leftValue = left == null ? 0.0 : left.doubleValue();
+        double rightValue = right == null ? 0.0 : right.doubleValue();
+        return leftValue + rightValue;
     }
 }

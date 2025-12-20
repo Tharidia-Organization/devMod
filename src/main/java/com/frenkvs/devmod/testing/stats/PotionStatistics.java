@@ -27,7 +27,7 @@ public class PotionStatistics {
     public void recordPotionUsed(String effectType, boolean isSplash, boolean isLingering) {
         potionsUsed++;
         if (effectType != null) {
-            effectsByType.merge(effectType, 1, Integer::sum);
+            effectsByType.merge(effectType, 1, PotionStatistics::safeIntSum);
         }
         if (isSplash) splashPotionsThrown++;
         if (isLingering) lingeringPotionsThrown++;
@@ -39,7 +39,7 @@ public class PotionStatistics {
     public void recordEffectGained(String effectType) {
         potionEffectsGained++;
         if (effectType != null) {
-            effectsByType.merge(effectType, 1, Integer::sum);
+            effectsByType.merge(effectType, 1, PotionStatistics::safeIntSum);
         }
     }
 
@@ -89,6 +89,12 @@ public class PotionStatistics {
         effectsByType.clear();
         splashPotionsThrown = 0;
         lingeringPotionsThrown = 0;
+    }
+
+    private static Integer safeIntSum(Integer left, Integer right) {
+        int leftValue = left == null ? 0 : left.intValue();
+        int rightValue = right == null ? 0 : right.intValue();
+        return leftValue + rightValue;
     }
 
     private int getInt(JsonObject obj, String key, int defaultValue) {

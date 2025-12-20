@@ -3,9 +3,11 @@ package com.frenkvs.devmod.ui;
 import com.frenkvs.devmod.testing.TutorialManager;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 import com.frenkvs.devmod.util.I18n;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.editor.components.EditorToggle;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.screens.Screen;
@@ -16,7 +18,9 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
+import javax.annotation.Nonnull;
 
 /**
  * Premium Welcome screen with cinematic reveal animation.
@@ -106,29 +110,38 @@ public class WelcomeScreen extends Screen {
         // Tutorial button - positioned relative to actual panel width
         int buttonWidth = Math.min(170, (actualPanelWidth - 50) / 2);
         int buttonY = panelY + actualPanelHeight - 75;
-        tutorialButton = new EditorButton("welcome-start-tutorial", I18n.ui("start_tutorial").getString())
+        String tutorialLabel = Objects.requireNonNull(I18n.ui("start_tutorial").getString(), "tutorialLabel");
+        tutorialButton = new EditorButton("welcome-start-tutorial", tutorialLabel)
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.LARGE)
             .onClick(this::startTutorial);
-        tutorialButtonWidget = tutorialButton.asVanilla(panelX + 35, buttonY, buttonWidth, 28);
+        tutorialButtonWidget = Objects.requireNonNull(
+            tutorialButton.asVanilla(panelX + 35, buttonY, buttonWidth, 28),
+            "tutorialButtonWidget");
         tutorialButtonWidget.visible = false;
-        addRenderableWidget(tutorialButtonWidget);
+        addRenderableWidget(Objects.requireNonNull(tutorialButtonWidget, "tutorialButtonWidget"));
 
         // Skip button - positioned relative to actual panel width
-        skipButton = new EditorButton("welcome-skip", I18n.ui("skip_know_this").getString())
+        String skipLabel = Objects.requireNonNull(I18n.ui("skip_know_this").getString(), "skipLabel");
+        skipButton = new EditorButton("welcome-skip", skipLabel)
             .style(EditorButton.Style.NORMAL)
             .size(EditorButton.Size.LARGE)
             .onClick(this::skip);
-        skipButtonWidget = skipButton.asVanilla(panelX + actualPanelWidth - buttonWidth - 35, buttonY, buttonWidth, 28);
+        skipButtonWidget = Objects.requireNonNull(
+            skipButton.asVanilla(panelX + actualPanelWidth - buttonWidth - 35, buttonY, buttonWidth, 28),
+            "skipButtonWidget");
         skipButtonWidget.visible = false;
-        addRenderableWidget(skipButtonWidget);
+        addRenderableWidget(Objects.requireNonNull(skipButtonWidget, "skipButtonWidget"));
 
         // Checkbox (using EditorToggle for consistent theming)
-        dontShowCheckbox = new EditorToggle("welcome-dont-show", I18n.ui("dont_show_again").getString(), false)
+        String dontShowLabel = Objects.requireNonNull(I18n.ui("dont_show_again").getString(), "dontShowLabel");
+        dontShowCheckbox = new EditorToggle("welcome-dont-show", dontShowLabel, false)
             .onChange(value -> dontShowAgain = value);
-        dontShowCheckboxWidget = (Checkbox) dontShowCheckbox.asVanilla(panelX + 35, panelY + PANEL_HEIGHT - 40, buttonWidth * 2, 18);
+        dontShowCheckboxWidget = (Checkbox) Objects.requireNonNull(
+            dontShowCheckbox.asVanilla(panelX + 35, panelY + PANEL_HEIGHT - 40, buttonWidth * 2, 18),
+            "dontShowCheckboxWidget");
         dontShowCheckboxWidget.visible = false;
-        addRenderableWidget(dontShowCheckboxWidget);
+        addRenderableWidget(Objects.requireNonNull(dontShowCheckboxWidget, "dontShowCheckboxWidget"));
 
         // Initialize background particles
         for (int i = 0; i < 30; i++) {
@@ -160,7 +173,9 @@ public class WelcomeScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        @Nonnull GuiGraphics safeGraphics = Objects.requireNonNull(graphics, "graphics");
+        @Nonnull Font safeFont = safeFont();
         long elapsed = System.currentTimeMillis() - openTime;
 
         // Calculate animations
@@ -168,55 +183,58 @@ public class WelcomeScreen extends Screen {
         float scaleProgress = easeOutBack(fadeProgress);
 
         // Background with particles
-        renderBackground(graphics, mouseX, mouseY, partialTick);
-        renderParticles(graphics);
+        renderBackground(safeGraphics, mouseX, mouseY, partialTick);
+        renderParticles(safeGraphics);
 
         int centerX = width / 2;
         int centerY = height / 2;
 
         // Apply scale animation to panel
-        graphics.pose().pushPose();
-        graphics.pose().translate(centerX, centerY, 0);
-        graphics.pose().scale(scaleProgress, scaleProgress, 1.0f);
-        graphics.pose().translate(-centerX, -centerY, 0);
+        safeGraphics.pose().pushPose();
+        safeGraphics.pose().translate(centerX, centerY, 0);
+        safeGraphics.pose().scale(scaleProgress, scaleProgress, 1.0f);
+        safeGraphics.pose().translate(-centerX, -centerY, 0);
 
         int panelX = centerX - PANEL_WIDTH / 2;
         int panelY = centerY - PANEL_HEIGHT / 2;
 
         // Panel background
-        renderPanelWithGradient(graphics, panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, fadeProgress);
+        renderPanelWithGradient(safeGraphics, panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, fadeProgress);
 
         // === Title Section ===
         if (elapsed > TITLE_REVEAL_DELAY) {
             float titleAlpha = Math.min(1.0f, (elapsed - TITLE_REVEAL_DELAY) / 300.0f);
-            renderTitle(graphics, centerX, panelY, titleAlpha, elapsed);
+            renderTitle(safeGraphics, centerX, panelY, titleAlpha, elapsed);
 
             // Play intro sound once
-            if (!introSoundPlayed && minecraft != null) {
-                minecraft.getSoundManager().play(SimpleSoundInstance.forUI(
-                    SoundEvents.UI_TOAST_IN, 1.0f, 0.9f));
+            if (!introSoundPlayed) {
+                Minecraft mc = Minecraft.getInstance();
+                var soundEvent = Objects.requireNonNull(SoundEvents.UI_TOAST_IN, "toastIn");
+                var soundInstance = Objects.requireNonNull(
+                    SimpleSoundInstance.forUI(soundEvent, 1.0f, 0.9f), "toastInSound");
+                mc.getSoundManager().play(soundInstance);
                 introSoundPlayed = true;
             }
         }
 
         // === Features Section ===
         if (elapsed > FEATURES_REVEAL_DELAY) {
-            renderFeatures(graphics, panelX, panelY + 75, elapsed);
+            renderFeatures(safeGraphics, panelX, panelY + 75, elapsed);
         }
 
         // === Keybinds Section ===
         if (elapsed > KEYBINDS_REVEAL_DELAY) {
-            renderKeybinds(graphics, centerX, panelY + 220, elapsed);
+            renderKeybinds(safeGraphics, centerX, panelY + 220, elapsed);
         }
 
         // === Buttons hint ===
         if (elapsed > BUTTONS_REVEAL_DELAY) {
             float hintAlpha = Math.min(1.0f, (elapsed - BUTTONS_REVEAL_DELAY) / 300.0f);
             int hintColor = applyAlpha(0xFF444444, hintAlpha);
-            graphics.drawCenteredString(font, "Press ESC to skip", centerX, panelY + PANEL_HEIGHT - 15, hintColor);
+            safeGraphics.drawCenteredString(safeFont, "Press ESC to skip", centerX, panelY + PANEL_HEIGHT - 15, hintColor);
         }
 
-        graphics.pose().popPose();
+        safeGraphics.pose().popPose();
 
         // Render widgets with fade
         if (elapsed > BUTTONS_REVEAL_DELAY) {
@@ -226,7 +244,7 @@ public class WelcomeScreen extends Screen {
             dontShowCheckboxWidget.setAlpha(btnAlpha);
         }
 
-        super.render(graphics, mouseX, mouseY, partialTick);
+        super.render(safeGraphics, mouseX, mouseY, partialTick);
     }
 
     // === Rendering Methods ===
@@ -261,6 +279,7 @@ public class WelcomeScreen extends Screen {
     }
 
     private void renderTitle(GuiGraphics g, int centerX, int panelY, float alpha, long elapsed) {
+        Font safeFont = safeFont();
         // Animated "DevMod" logo text
         float logoScale = 1.0f + 0.03f * (float) Math.sin(elapsed / 400.0);
 
@@ -269,15 +288,15 @@ public class WelcomeScreen extends Screen {
         g.pose().scale(logoScale * 2.0f, logoScale * 2.0f, 1.0f);
 
         String title = "DevMod";
-        int titleWidth = font.width(title);
+        int titleWidth = safeFont.width(title);
         int titleColor = applyAlpha(COLOR_TITLE, alpha);
-        g.drawString(font, title, -titleWidth / 2, 0, titleColor, true);
+        g.drawString(safeFont, title, -titleWidth / 2, 0, titleColor, true);
 
         g.pose().popPose();
 
         // Subtitle
         int subtitleColor = applyAlpha(COLOR_SUBTITLE, alpha);
-        g.drawCenteredString(font, "Welcome!", centerX, panelY + 48, subtitleColor);
+        g.drawCenteredString(safeFont, "Welcome!", centerX, panelY + 48, subtitleColor);
 
         // Separator line
         int sepColor = applyAlpha(COLOR_BORDER & 0x66FFFFFF, alpha);
@@ -285,6 +304,7 @@ public class WelcomeScreen extends Screen {
     }
 
     private void renderFeatures(GuiGraphics g, int panelX, int startY, long elapsed) {
+        Font safeFont = safeFont();
         long featureElapsed = elapsed - FEATURES_REVEAL_DELAY;
 
         int y = startY;
@@ -294,7 +314,7 @@ public class WelcomeScreen extends Screen {
         if (featureElapsed > 0) {
             float headerAlpha = Math.min(1.0f, featureElapsed / 200.0f);
             int headerColor = applyAlpha(COLOR_TEXT_DIM, headerAlpha);
-            g.drawString(font, "What you get:", x, y, headerColor, false);
+            g.drawString(safeFont, "What you get:", x, y, headerColor, false);
             y += 16;
         }
 
@@ -310,6 +330,7 @@ public class WelcomeScreen extends Screen {
     }
 
     private void renderFeatureItem(GuiGraphics g, Feature feature, int x, int y, float alpha, long elapsed) {
+        Font safeFont = safeFont();
         // Bullet animation
         float bulletPulse = 1.0f + 0.2f * (float) Math.sin(elapsed / 300.0 + feature.name.hashCode());
 
@@ -323,19 +344,20 @@ public class WelcomeScreen extends Screen {
         g.pose().pushPose();
         g.pose().translate(x, y + 4, 0);
         g.pose().scale(bulletPulse, bulletPulse, 1.0f);
-        g.drawString(font, bullet, 0, 0, bulletColor, false);
+        g.drawString(safeFont, bullet, 0, 0, bulletColor, false);
         g.pose().popPose();
 
         // Feature name
         int nameColor = applyAlpha(feature.color, alpha);
-        g.drawString(font, feature.name, x + 15, y + 2, nameColor, true);
+        g.drawString(safeFont, feature.name, x + 15, y + 2, nameColor, true);
 
         // Description
         int descColor = applyAlpha(COLOR_TEXT_DIM, alpha);
-        g.drawString(font, feature.description, x + 15, y + 12, descColor, false);
+        g.drawString(safeFont, feature.description, x + 15, y + 12, descColor, false);
     }
 
     private void renderKeybinds(GuiGraphics g, int centerX, int startY, long elapsed) {
+        Font safeFont = safeFont();
         long keybindElapsed = elapsed - KEYBINDS_REVEAL_DELAY;
         float alpha = Math.min(1.0f, keybindElapsed / 300.0f);
 
@@ -345,7 +367,7 @@ public class WelcomeScreen extends Screen {
 
         // Header
         int headerColor = applyAlpha(COLOR_TEXT, alpha);
-        g.drawCenteredString(font, "Quick Start", centerX, startY + 10, headerColor);
+        g.drawCenteredString(safeFont, "Quick Start", centerX, startY + 10, headerColor);
 
         // Keybinds
         int y = startY + 28;
@@ -360,20 +382,21 @@ public class WelcomeScreen extends Screen {
     }
 
     private void renderKeybindItem(GuiGraphics g, Keybind kb, int x, int y, float alpha) {
+        Font safeFont = safeFont();
         // Key box background
         String keyText = "[" + kb.key + "]";
-        int keyWidth = font.width(keyText);
+        int keyWidth = safeFont.width(keyText);
 
         int boxColor = applyAlpha(0x44000000, alpha);
         g.fill(x - 2, y - 1, x + keyWidth + 4, y + 10, boxColor);
 
         // Key text
         int keyColor = applyAlpha(COLOR_KEY, alpha);
-        g.drawString(font, keyText, x, y, keyColor, true);
+        g.drawString(safeFont, keyText, x, y, keyColor, true);
 
         // Action text
         int actionColor = applyAlpha(COLOR_TEXT_DIM, alpha);
-        g.drawString(font, kb.action, x + keyWidth + 10, y, actionColor, false);
+        g.drawString(safeFont, kb.action, x + keyWidth + 10, y, actionColor, false);
     }
 
     private void renderParticles(GuiGraphics g) {
@@ -417,38 +440,41 @@ public class WelcomeScreen extends Screen {
     // === Actions ===
 
     private void startTutorial() {
-        if (minecraft != null) {
-            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(
-                SoundEvents.UI_BUTTON_CLICK.value(), 1.0f, 1.0f));
-        }
+        Minecraft mc = Minecraft.getInstance();
+        var soundEvent = Objects.requireNonNull(SoundEvents.UI_BUTTON_CLICK.value(), "uiClick");
+        var soundInstance = Objects.requireNonNull(
+            SimpleSoundInstance.forUI(soundEvent, 1.0f, 1.0f), "uiClickSound");
+        mc.getSoundManager().play(soundInstance);
 
         savePreference();
         TutorialManager.INSTANCE.setPhase(TutorialManager.TutorialPhase.WELCOME);
         TutorialManager.INSTANCE.setOnboardingCompleted(false);
 
-        if (minecraft != null) {
-            minecraft.setScreen(null);
+        mc.setScreen(null);
 
-            // Start the interactive onboarding overlay on next tick
-            // This ensures the screen has fully closed before the overlay checks mc.screen
-            minecraft.execute(() -> {
-                com.frenkvs.devmod.hud.OnboardingOverlay.start();
-            });
-        }
+        // Start the interactive onboarding overlay on next tick
+        // This ensures the screen has fully closed before the overlay checks mc.screen
+        mc.execute(() -> {
+            com.frenkvs.devmod.hud.OnboardingOverlay.start();
+        });
     }
 
     private void skip() {
-        if (minecraft != null) {
-            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(
-                SoundEvents.UI_BUTTON_CLICK.value(), 1.0f, 0.8f));
-        }
+        Minecraft mc = Minecraft.getInstance();
+        var soundEvent = Objects.requireNonNull(SoundEvents.UI_BUTTON_CLICK.value(), "uiClick");
+        var soundInstance = Objects.requireNonNull(
+            SimpleSoundInstance.forUI(soundEvent, 1.0f, 0.8f), "uiClickSound");
+        mc.getSoundManager().play(soundInstance);
 
         savePreference();
         TutorialManager.INSTANCE.setOnboardingCompleted(true);
 
-        if (minecraft != null) {
-            minecraft.setScreen(null);
-        }
+        mc.setScreen(null);
+    }
+
+    @Nonnull
+    private Font safeFont() {
+        return Objects.requireNonNull(font, "font");
     }
 
     private void savePreference() {

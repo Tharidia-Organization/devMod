@@ -13,6 +13,7 @@ import com.frenkvs.devmod.ui.testing.VoxelLabUiTestScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.RecipeType;
 
 import java.util.*;
 import java.util.Objects;
@@ -75,13 +76,13 @@ public final class RadialMenuRegistry {
 
     private static boolean isFoodItem(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return false;
-        return stack.getItem().components().has(net.minecraft.core.component.DataComponents.FOOD);
+        return stack.getItem().components().has(Objects.requireNonNull(net.minecraft.core.component.DataComponents.FOOD));
     }
 
     private static boolean isFuelItem(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return false;
         // Check if item has a burn time
-        return stack.getBurnTime(null) > 0;
+        return stack.getBurnTime(Objects.requireNonNull(RecipeType.SMELTING)) > 0;
     }
 
     private static boolean isUsableItem(ItemStack stack) {
@@ -96,7 +97,8 @@ public final class RadialMenuRegistry {
             return true;
         }
         // Items with use duration (potions, food already handled separately)
-        if (item.getUseDuration(stack, null) > 0 && !isFoodItem(stack)) {
+        var player = Minecraft.getInstance().player;
+        if (player != null && item.getUseDuration(stack, player) > 0 && !isFoodItem(stack)) {
             return true;
         }
         return false;

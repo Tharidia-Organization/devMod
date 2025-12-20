@@ -144,11 +144,11 @@ public class GeneralModule extends AbstractEditorModule {
                i instanceof BowItem || i instanceof CrossbowItem ||
                i instanceof ShieldItem || i instanceof SpyglassItem ||
                i instanceof BrushItem ||
-               item.has(DataComponents.FOOD); // Food items are also "usable"
+               item.has(java.util.Objects.requireNonNull(DataComponents.FOOD, "FOOD"));
     }
 
     private boolean isFoodItem() {
-        return item != null && item.has(DataComponents.FOOD);
+        return item != null && item.has(java.util.Objects.requireNonNull(DataComponents.FOOD, "FOOD"));
     }
 
     private boolean isFuelItem() {
@@ -432,8 +432,9 @@ public class GeneralModule extends AbstractEditorModule {
         List<String> info = new ArrayList<>();
 
         info.add("Name: " + item.getHoverName().getString());
-        info.add("Type: " + item.getItem().getClass().getSimpleName());
-        info.add("Registry: " + BuiltInRegistries.ITEM.getKey(item.getItem()));
+        Item baseItem = java.util.Objects.requireNonNull(item.getItem(), "item");
+        info.add("Type: " + baseItem.getClass().getSimpleName());
+        info.add("Registry: " + BuiltInRegistries.ITEM.getKey(baseItem));
         info.add("Rarity: " + item.getRarity().name());
         info.add("Max Stack: " + item.getMaxStackSize());
 

@@ -12,6 +12,7 @@ import com.frenkvs.devmod.telemetry.spatial.HeatmapService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
@@ -22,6 +23,7 @@ import net.minecraft.world.phys.Vec3;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -128,10 +130,11 @@ public class TelemetryLogHandlers {
 
     public void logMiss(Level level, Entity attacker, Vec3 impactPos, String impactType) {
         if (level.isClientSide()) return;
-        String room = service.resolveRoom((ServerLevel) level, BlockPos.containing(impactPos));
+        Vec3 safeImpactPos = Objects.requireNonNull(impactPos, "impactPos");
+        String room = service.resolveRoom((ServerLevel) level, BlockPos.containing(safeImpactPos));
         String attackerName = attacker != null ? attacker.getName().getString() : "unknown";
         String attackerType = attacker != null ? EntityTypeName.of(attacker) : "unknown";
-        double distance = attacker != null ? attacker.position().distanceTo(impactPos) : -1;
+        double distance = attacker != null ? attacker.position().distanceTo(safeImpactPos) : -1;
 
         String line = "{\"ts\":\"" + Instant.now() + "\","
                 + "\"room\":\"" + TelemetryJson.escape(room) + "\","
@@ -141,7 +144,7 @@ public class TelemetryLogHandlers {
                 + "\"dmg\":0,"
                 + "\"miss\":true,"
                 + "\"impact\":\"" + TelemetryJson.escape(impactType) + "\","
-                + "\"pos\":[" + impactPos.x + "," + impactPos.y + "," + impactPos.z + "],"
+                + "\"pos\":[" + safeImpactPos.x + "," + safeImpactPos.y + "," + safeImpactPos.z + "],"
                 + "\"distance\":" + distance
                 + "}";
         service.appendLine("hits.ndjson", line);
@@ -348,18 +351,18 @@ public class TelemetryLogHandlers {
     }
 
     private static String classifyHazard(DamageSource source) {
-        if (source.is(net.minecraft.tags.DamageTypeTags.IS_FIRE)) return "fire";
-        if (source.is(net.minecraft.tags.DamageTypeTags.IS_FALL)) return "fall";
-        if (source.is(net.minecraft.tags.DamageTypeTags.IS_DROWNING)) return "drown";
-        if (source.is(net.minecraft.tags.DamageTypeTags.IS_FREEZING)) return "freeze";
-        if (source.is(net.minecraft.tags.DamageTypeTags.IS_LIGHTNING)) return "lightning";
-        if (source.is(net.minecraft.tags.DamageTypeTags.IS_EXPLOSION)) return "explosion";
-        if (source.is(net.minecraft.tags.DamageTypeTags.IS_PROJECTILE)) return "projectile";
+        if (source.is(Objects.requireNonNull(DamageTypeTags.IS_FIRE))) return "fire";
+        if (source.is(Objects.requireNonNull(DamageTypeTags.IS_FALL))) return "fall";
+        if (source.is(Objects.requireNonNull(DamageTypeTags.IS_DROWNING))) return "drown";
+        if (source.is(Objects.requireNonNull(DamageTypeTags.IS_FREEZING))) return "freeze";
+        if (source.is(Objects.requireNonNull(DamageTypeTags.IS_LIGHTNING))) return "lightning";
+        if (source.is(Objects.requireNonNull(DamageTypeTags.IS_EXPLOSION))) return "explosion";
+        if (source.is(Objects.requireNonNull(DamageTypeTags.IS_PROJECTILE))) return "projectile";
         return source.type().msgId();
     }
 
     private static boolean spawnInSolid(ServerLevel level, LivingEntity entity) {
-        return !level.noCollision(entity);
+        return !level.noCollision(Objects.requireNonNull(entity, "entity"));
     }
 
     private static final class EntityTypeName {

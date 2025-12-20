@@ -15,6 +15,7 @@ import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * VOXEL-LAB M27: Spawnability Map
@@ -100,10 +101,11 @@ public class SpawnabilityOverlay {
         if (!enabled) return;
 
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null) return;
-
+        var player = mc.player;
         ClientLevel level = mc.level;
-        BlockPos playerPos = mc.player.blockPosition();
+        if (player == null || level == null) return;
+
+        BlockPos playerPos = player.blockPosition();
 
         // Performance: Update cache periodically or when player moves
         boolean needsCacheUpdate = false;
@@ -115,7 +117,11 @@ public class SpawnabilityOverlay {
         }
 
         // Force update if player moved more than 2 blocks
-        if (lastPlayerPos == null || playerPos.distManhattan(lastPlayerPos) > 2) {
+        BlockPos previousPos = lastPlayerPos;
+        if (previousPos == null) {
+            needsCacheUpdate = true;
+            ticksSinceLastUpdate = 0;
+        } else if (playerPos.distManhattan(previousPos) > 2) {
             needsCacheUpdate = true;
             ticksSinceLastUpdate = 0;
         }
@@ -127,12 +133,12 @@ public class SpawnabilityOverlay {
 
         if (cachedSpawnData.isEmpty()) return;
 
-        VertexConsumer consumer = buffer.getBuffer(RenderType.debugQuads());
+        VertexConsumer consumer = buffer.getBuffer(Objects.requireNonNull(RenderType.debugQuads()));
 
         poseStack.pushPose();
         poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-        Matrix4f matrix = poseStack.last().pose();
-        var pose = poseStack.last();
+        PoseStack.Pose pose = Objects.requireNonNull(poseStack.last());
+        Matrix4f matrix = Objects.requireNonNull(pose.pose());
 
         for (SpawnData data : cachedSpawnData) {
             // Filter based on settings
@@ -188,8 +194,8 @@ public class SpawnabilityOverlay {
                 if (x * x + z * z > radius * radius) continue;
 
                 for (int y = -4; y <= 4; y++) {
-                    BlockPos surfacePos = playerPos.offset(x, y, z);
-                    BlockPos spawnPos = surfacePos.above();
+                    BlockPos surfacePos = Objects.requireNonNull(playerPos.offset(x, y, z));
+                    BlockPos spawnPos = Objects.requireNonNull(surfacePos.above());
 
                     // Check if this is a valid spawn surface
                     if (!isValidSpawnSurface(level, surfacePos, spawnPos)) continue;
@@ -227,18 +233,22 @@ public class SpawnabilityOverlay {
      * Checks if a block is a valid spawn surface for hostile mobs.
      */
     private boolean isValidSpawnSurface(ClientLevel level, BlockPos surfacePos, BlockPos spawnPos) {
-        BlockState surfaceState = level.getBlockState(surfacePos);
-        BlockState spawnState = level.getBlockState(spawnPos);
-        BlockState aboveSpawnState = level.getBlockState(spawnPos.above());
+        BlockPos safeSurfacePos = Objects.requireNonNull(surfacePos);
+        BlockPos safeSpawnPos = Objects.requireNonNull(spawnPos);
+        BlockPos aboveSpawnPos = Objects.requireNonNull(safeSpawnPos.above());
+
+        BlockState surfaceState = level.getBlockState(safeSurfacePos);
+        BlockState spawnState = level.getBlockState(safeSpawnPos);
+        BlockState aboveSpawnState = level.getBlockState(aboveSpawnPos);
 
         // Surface must be solid/full block
-        if (!surfaceState.isSolidRender(level, surfacePos)) return false;
+        if (!surfaceState.isSolidRender(level, safeSurfacePos)) return false;
 
         // Spawn position must be passable (air, grass, flowers, etc.)
-        if (spawnState.isSolidRender(level, spawnPos)) return false;
+        if (spawnState.isSolidRender(level, safeSpawnPos)) return false;
 
         // Block above spawn position must also be passable (for 2-block tall mobs)
-        if (aboveSpawnState.isSolidRender(level, spawnPos.above())) return false;
+        if (aboveSpawnState.isSolidRender(level, aboveSpawnPos)) return false;
 
         // Check for blocks that prevent spawning
         // (Note: This is a simplified check - full spawn rules are more complex)
@@ -303,7 +313,9 @@ public class SpawnabilityOverlay {
      */
     private void renderFloatingText(PoseStack poseStack, Vec3 cameraPos, Vec3 pos, String text, int color) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.font == null) return;
+        var font = mc.font;
+        if (font == null) return;
+        String safeText = Objects.requireNonNull(text);
 
         poseStack.pushPose();
 
@@ -315,20 +327,23 @@ public class SpawnabilityOverlay {
         poseStack.translate(x, y, z);
 
         // Billboard - always face camera
-        poseStack.mulPose(mc.getEntityRenderDispatcher().cameraOrientation());
+        poseStack.mulPose(Objects.requireNonNull(mc.getEntityRenderDispatcher().cameraOrientation()));
 
         // Scale
         float scale = 0.025f;
         poseStack.scale(-scale, -scale, scale);
 
         // Center text
-        int width = mc.font.width(text);
+        int width = font.width(safeText);
         float xOffset = -width / 2f;
 
         // Draw with background
-        mc.font.drawInBatch(
-            text, xOffset, 0, color, false,
-            poseStack.last().pose(), mc.renderBuffers().bufferSource(),
+        PoseStack.Pose lastPose = Objects.requireNonNull(poseStack.last());
+        Matrix4f textMatrix = Objects.requireNonNull(lastPose.pose());
+        MultiBufferSource bufferSource = Objects.requireNonNull(mc.renderBuffers().bufferSource());
+        font.drawInBatch(
+            safeText, xOffset, 0, color, false,
+            textMatrix, bufferSource,
             net.minecraft.client.gui.Font.DisplayMode.NORMAL, 0x60000000, 15728880
         );
 

@@ -81,22 +81,23 @@ public class MobConfigPage implements SettingsPage {
 
     @Override
     public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+        Font safeFont = Objects.requireNonNull(font, "font");
         int currentY = y;
 
         // === Nearby Mobs Section ===
-        AxiomRenderer.drawSectionHeader(graphics, font, x, currentY,
+        AxiomRenderer.drawSectionHeader(graphics, safeFont, x, currentY,
             "Nearby Mobs (" + nearbyMobs.size() + " in " + MOB_SCAN_RADIUS + " blocks)");
         currentY += ROW_HEIGHT;
 
         if (nearbyMobs.isEmpty()) {
-            graphics.drawString(font, "No mobs nearby", x, currentY, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, "No mobs nearby", x, currentY, UIConstants.Text.MUTED(), false);
             currentY += ROW_HEIGHT;
         } else {
             // Show up to 8 mobs
             int displayCount = Math.min(nearbyMobs.size(), 8);
             for (int i = scrollOffset; i < Math.min(scrollOffset + displayCount, nearbyMobs.size()); i++) {
                 LivingEntity mob = nearbyMobs.get(i);
-                currentY = renderMobRow(graphics, font, x, currentY, width, mouseX, mouseY, mob, i);
+                currentY = renderMobRow(graphics, safeFont, x, currentY, width, mouseX, mouseY, mob, i);
             }
 
             // Scroll hint if more mobs
@@ -104,7 +105,7 @@ public class MobConfigPage implements SettingsPage {
                 currentY += 4;
                 String scrollHint = "Scroll for more (" + (scrollOffset + 1) + "-" +
                     Math.min(scrollOffset + displayCount, nearbyMobs.size()) + " of " + nearbyMobs.size() + ")";
-                graphics.drawString(font, scrollHint, x, currentY, UIConstants.Text.MUTED(), false);
+                graphics.drawString(safeFont, scrollHint, x, currentY, UIConstants.Text.MUTED(), false);
                 currentY += ROW_HEIGHT;
             }
         }
@@ -116,12 +117,12 @@ public class MobConfigPage implements SettingsPage {
         currentY += SECTION_SPACING;
 
         // === Global Configurations Section ===
-        AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Global Configurations");
+        AxiomRenderer.drawSectionHeader(graphics, safeFont, x, currentY, "Global Configurations");
         currentY += ROW_HEIGHT;
 
         // Count configured mob types
         int configuredCount = countConfiguredMobTypes();
-        graphics.drawString(font, configuredCount + " mob types have custom stats", x, currentY,
+        graphics.drawString(safeFont, configuredCount + " mob types have custom stats", x, currentY,
             configuredCount > 0 ? UIConstants.Text.PRIMARY() : UIConstants.Text.MUTED(), false);
         currentY += ROW_HEIGHT;
 
@@ -161,6 +162,7 @@ public class MobConfigPage implements SettingsPage {
 
     private int renderMobRow(GuiGraphics graphics, Font font, int x, int y, int width,
                               int mouseX, int mouseY, LivingEntity mob, int index) {
+        Font safeFont = Objects.requireNonNull(font, "font");
         int rowWidth = width - 20;
         boolean hovered = mouseX >= x && mouseX < x + rowWidth && mouseY >= y && mouseY < y + ROW_HEIGHT;
 
@@ -174,13 +176,13 @@ public class MobConfigPage implements SettingsPage {
         EntityType<?> mobType = mob.getType();
         boolean hasConfig = MobConfigManager.hasConfig(mobType);
 
-        graphics.drawString(font, mobName, x, y + 2, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(safeFont, mobName, x, y + 2, UIConstants.Text.PRIMARY(), false);
 
         // Config indicator
         if (hasConfig) {
-            int tagX = x + font.width(mobName) + 8;
-            graphics.fill(tagX - 2, y, tagX + font.width("configured") + 2, y + 12, UIConstants.Background.ACTIVE());
-            graphics.drawString(font, "configured", tagX, y + 2, UIConstants.Status.SUCCESS(), false);
+            int tagX = x + safeFont.width(mobName) + 8;
+            graphics.fill(tagX - 2, y, tagX + safeFont.width("configured") + 2, y + 12, UIConstants.Background.ACTIVE());
+            graphics.drawString(safeFont, "configured", tagX, y + 2, UIConstants.Status.SUCCESS(), false);
         }
 
         // Health bar
@@ -200,7 +202,7 @@ public class MobConfigPage implements SettingsPage {
         if (mc.player != null) {
             double distance = mob.distanceTo(mc.player);
             String distText = String.format("%.1fm", distance);
-            graphics.drawString(font, distText, x, y + 12, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, distText, x, y + 12, UIConstants.Text.MUTED(), false);
         }
 
         return y + ROW_HEIGHT;

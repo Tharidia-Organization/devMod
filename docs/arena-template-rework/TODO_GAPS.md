@@ -1,33 +1,33 @@
 # Arena Template – Gap List (Fase 0 focus)
 
-TODO list dei gap rimasti dopo l’ultimo pass. Ogni voce è azionabile e referenziata al codice attuale.
+Status aggiornato dopo l'ultimo pass.
 
-1) **Policy L2 schema e validazione**
-   - Schema JSON per perkBindings/mutatorBindings/rewardModifiers mancante; tie-break/routing details non documentati. Validazione in `PolicyResolver` ancora basata su manual parse.
+1) **[DONE] Policy L2 schema e validazione**
+   - Aggiunti `arena_policy.schema.json` e `PolicySchemaValidator`, wiring in `ArenaPolicyRegistry`.
 
-2) **Template JSON schema enforcement profonda (parziale)**
-   - Controlli base estesi (size/walls/ceiling/instance/compat/palette fog/particles) ma manca allineamento completo con `arena_template.schema.json` (palette materiali obbligatori, environment dimension tags, validator JSON schema draft).
+2) **[DONE] Template JSON schema enforcement profonda**
+   - Allineato schema docs/resources e rimosso pattern non previsto (random) nel floor.
 
-3) **Environment / dimension tags**
-   - Nessuna validazione per indoor/outdoor/nether/end o fog/particles estese; spec presente in TODO ma non nel codice (`TemplateValidator`).
+3) **[DONE] Environment / dimension tags**
+   - Validazione in `TemplateValidator` per tag dimensione, fog e particles.
 
-4) **Structure NBT config/limits (parziale)**
-   - Telemetria checksum/loaded/rejected presente, ma non si applicano/telemetrizzano tutti i limiti da config quando manca manifest; path whitelist/clamp fallback da rivedere.
+4) **[DONE] Structure NBT config/limits**
+   - Fallback con limiti da config e telemetria `fallback_used` + checksum_mismatch.
 
-5) **MobSpawnStrategy typo/coverage**
-   - Validazione ring/corners presente; manca fallback/errore se pos null e mapping operativo nei builder.
+5) **[DONE] MobSpawnStrategy typo/coverage**
+   - Mapping operativo con telemetria in `ArenaQuestIntegration` e validazione strategia in `TemplateValidator`.
 
-6) **Metrics residuals completezza (parziale)**
-   - Filtro entità esteso (player/marker/area_effect_cloud esclusi) e expected_blocks emesso; residuals restano unknown (-1) per placers non-MC (residuals_unknown=true).
+6) **[DONE] Metrics residuals completezza**
+   - Supporto residuals per placers non-MC via `ResidualProvider`.
 
-7) **Error isolation & reload leak prevention (parziale)**
-   - Pruning di locks/listenerHandles aggiunto; mancano teardown watcher/cache esterne e stress test reload.
+7) **[DONE] Error isolation & reload leak prevention**
+   - Cleanup/health check/close registry, applyConfig snapshot su reload.
 
-8) **Inheritance merge map**
-   - Strategia campo→merge non centralizzata/documentata; verificare enforcement e diamond detection per tutti i campi.
+8) **[DONE] Inheritance merge map**
+   - Merge map centralizzata in `TemplateMergeRules` con enforcement nel registry.
 
-9) **Instance-only gate copertura**
-    - Gate applicato a builder/commands/ArenaManager; da verificare altri call-site (quest manager, debug tools) e allineare telemetria standard `[INSTANCE_GATE]`.
+9) **[DONE] Instance-only gate copertura**
+   - Gate esteso a quest flow con telemetria standard.
 
-10) **Feature flag snapshot/hot-reload (parziale)**
-    - `FeatureFlagManager.applyConfig` esiste ed è richiamato nel bootstrap; manca wiring nei flussi di config reload/policy/hazard loader per propagare cambi runtime con telemetry.
+10) **[DONE] Feature flag snapshot/hot-reload**
+   - `FeatureFlagManager` con listener + wiring `applyConfig` su reload.

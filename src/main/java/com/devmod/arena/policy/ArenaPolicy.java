@@ -28,11 +28,11 @@ public record ArenaPolicy(
     /** Mob type(s) this policy applies to */
     @Nullable Set<String> mobTypes,
 
-    /** Quest type filter (e.g., "boss", "normal", "event") */
-    @Nullable String questType,
+    /** Quest type filters (e.g., "boss", "normal", "event") */
+    @Nullable Set<String> questTypes,
 
-    /** Difficulty filter */
-    @Nullable String difficulty,
+    /** Difficulty tag filters */
+    @Nullable Set<String> difficultyTags,
 
     /** Player count range - min */
     @Nullable Integer minPlayers,
@@ -77,8 +77,8 @@ public record ArenaPolicy(
         null,
         null,
         null,
-        null,
-        null,
+        Set.of("endurance"),
+        Set.of("normal"),
         null,
         null,
         Set.of(),
@@ -104,7 +104,7 @@ public record ArenaPolicy(
      */
     public ArenaPolicy withWeight(double newWeight) {
         return new ArenaPolicy(
-            id, version, templateId, minTemplateVersion, maxTemplateVersion, mobTypes, questType, difficulty,
+            id, version, templateId, minTemplateVersion, maxTemplateVersion, mobTypes, questTypes, difficultyTags,
             minPlayers, maxPlayers, tags, priority, newWeight, perkBindings, mutatorBindings, rewardModifiers, balanceOverrides, enabled, description
         );
     }
@@ -119,8 +119,8 @@ public record ArenaPolicy(
         private Integer minTemplateVersion;
         private Integer maxTemplateVersion;
         private Set<String> mobTypes;
-        private String questType;
-        private String difficulty;
+        private Set<String> questTypes;
+        private Set<String> difficultyTags;
         private Integer minPlayers;
         private Integer maxPlayers;
         private Set<String> tags;
@@ -142,8 +142,16 @@ public record ArenaPolicy(
         public Builder minTemplateVersion(@Nullable Integer minTemplateVersion) { this.minTemplateVersion = minTemplateVersion; return this; }
         public Builder maxTemplateVersion(@Nullable Integer maxTemplateVersion) { this.maxTemplateVersion = maxTemplateVersion; return this; }
         public Builder mobTypes(Set<String> mobTypes) { this.mobTypes = mobTypes; return this; }
-        public Builder questType(String questType) { this.questType = questType; return this; }
-        public Builder difficulty(String difficulty) { this.difficulty = difficulty; return this; }
+        public Builder questTypes(Set<String> questTypes) { this.questTypes = questTypes; return this; }
+        public Builder questType(String questType) {
+            this.questTypes = questType != null ? Set.of(questType) : null;
+            return this;
+        }
+        public Builder difficultyTags(Set<String> difficultyTags) { this.difficultyTags = difficultyTags; return this; }
+        public Builder difficulty(String difficulty) {
+            this.difficultyTags = difficulty != null ? Set.of(difficulty) : null;
+            return this;
+        }
         public Builder minPlayers(Integer minPlayers) { this.minPlayers = minPlayers; return this; }
         public Builder maxPlayers(Integer maxPlayers) { this.maxPlayers = maxPlayers; return this; }
         public Builder tags(Set<String> tags) { this.tags = tags; return this; }
@@ -158,7 +166,7 @@ public record ArenaPolicy(
 
         public ArenaPolicy build() {
             return new ArenaPolicy(
-                id, version, templateId, minTemplateVersion, maxTemplateVersion, mobTypes, questType, difficulty,
+                id, version, templateId, minTemplateVersion, maxTemplateVersion, mobTypes, questTypes, difficultyTags,
                 minPlayers, maxPlayers, tags, priority, weight,
                 perkBindings, mutatorBindings, rewardModifiers, balanceOverrides,
                 enabled, description

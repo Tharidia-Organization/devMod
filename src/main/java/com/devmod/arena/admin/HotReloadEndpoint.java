@@ -40,6 +40,7 @@ public class HotReloadEndpoint {
     private final Path templatesDirectory;
     private final ArenaTelemetry telemetry;
     private final ArenaCommandAudit audit;
+    private final com.devmod.arena.registry.TemplateRegistryBootstrap bootstrap;
 
     private final AtomicBoolean reloadInProgress = new AtomicBoolean(false);
     private final AtomicReference<Instant> lastReloadTime = new AtomicReference<>(Instant.EPOCH);
@@ -49,10 +50,19 @@ public class HotReloadEndpoint {
             ArenaTemplateRegistry registry,
             Path templatesDirectory,
             ArenaTelemetry telemetry) {
+        this(registry, templatesDirectory, telemetry, null);
+    }
+
+    public HotReloadEndpoint(
+            ArenaTemplateRegistry registry,
+            Path templatesDirectory,
+            ArenaTelemetry telemetry,
+            com.devmod.arena.registry.TemplateRegistryBootstrap bootstrap) {
         this.registry = Objects.requireNonNull(registry, "registry");
         this.templatesDirectory = Objects.requireNonNull(templatesDirectory, "templatesDirectory");
         this.telemetry = Objects.requireNonNull(telemetry, "telemetry");
         this.audit = ArenaCommandAudit.getInstance();
+        this.bootstrap = bootstrap;
     }
 
     /**
@@ -117,7 +127,9 @@ public class HotReloadEndpoint {
 
             // Perform atomic reload
             ArenaTemplateRegistry.ReloadResult registryResult =
-                registry.reloadFromDirectoryAtomic(templatesDirectory);
+                bootstrap != null
+                    ? bootstrap.reloadWithConfig()
+                    : registry.reloadFromDirectoryAtomic(templatesDirectory);
 
             Duration duration = Duration.between(startTime, Instant.now());
             lastReloadTime.set(Instant.now());

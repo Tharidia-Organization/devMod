@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -602,7 +603,8 @@ public class TelemetryService {
      * Process aggro tracking for a specific area.
      */
     private void tickAggroForArea(ServerLevel level, net.minecraft.world.phys.AABB area) {
-        for (LivingEntity entity : level.getEntitiesOfClass(LivingEntity.class, area)) {
+        net.minecraft.world.phys.AABB safeArea = Objects.requireNonNull(area, "area");
+        for (LivingEntity entity : level.getEntitiesOfClass(LivingEntity.class, safeArea)) {
             if (!(entity instanceof net.minecraft.world.entity.Mob mob)) continue;
             if (entity.isRemoved()) continue;
 

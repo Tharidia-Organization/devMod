@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 
+import java.util.Objects;
 import java.util.UUID;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -306,14 +307,20 @@ public class TelemetryEvents {
 
         // Get the direction player is facing
         BlockPos playerPos = player.blockPosition();
-        BlockPos checkPos = playerPos.relative(player.getDirection());
+        BlockPos checkPos = Objects.requireNonNull(
+            playerPos.relative(Objects.requireNonNull(player.getDirection(), "playerDirection")),
+            "checkPos"
+        );
 
         BlockState state = player.level().getBlockState(checkPos);
 
         // Check for barrier blocks or blocks with invisible collision
-        boolean isInvisibleCollision = state.is(Blocks.BARRIER) ||
-                state.is(Blocks.STRUCTURE_VOID) ||
-                state.is(Blocks.LIGHT); // Light blocks have collision but are invisible
+        var barrierBlock = Objects.requireNonNull(Blocks.BARRIER, "barrierBlock");
+        var structureVoidBlock = Objects.requireNonNull(Blocks.STRUCTURE_VOID, "structureVoidBlock");
+        var lightBlock = Objects.requireNonNull(Blocks.LIGHT, "lightBlock");
+        boolean isInvisibleCollision = state.is(barrierBlock) ||
+                state.is(structureVoidBlock) ||
+                state.is(lightBlock); // Light blocks have collision but are invisible
 
         if (isInvisibleCollision) {
             // Use TelemetryService public API (handles room resolution and logging)

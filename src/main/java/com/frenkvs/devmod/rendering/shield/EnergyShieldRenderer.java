@@ -125,9 +125,11 @@ public class EnergyShieldRenderer {
     private static void renderWithCustomShader(PoseStack poseStack, MultiBufferSource bufferSource,
                                                 LivingEntity entity, Vec3 entityPos, Vec3 cameraPos,
                                                 int color, float opacity, float radius) {
+        Vec3 safeEntityPos = Objects.requireNonNull(entityPos, "entityPos");
+        Vec3 safeCameraPos = Objects.requireNonNull(cameraPos, "cameraPos");
         RenderType shieldType = ShieldShaderRegistry.getShieldRenderType();
         if (shieldType == null) {
-            renderFallback(poseStack, bufferSource, entityPos, cameraPos, color, opacity, radius);
+            renderFallback(poseStack, bufferSource, safeEntityPos, safeCameraPos, color, opacity, radius);
             return;
         }
 
@@ -146,7 +148,8 @@ public class EnergyShieldRenderer {
         float b = (color & 0xFF) / 255.0f;
 
         // Calculate impact point in local space
-        Vec3 impactLocal = Objects.requireNonNull(Objects.requireNonNull(currentImpactPoint.subtract(entityPos)).scale(1.0 / radius));
+        Vec3 impactOffset = currentImpactPoint.subtract(safeEntityPos);
+        Vec3 impactLocal = impactOffset.scale(1.0 / radius);
         if (impactLocal.lengthSqr() > 0.001) {
             impactLocal = impactLocal.normalize();
         }
@@ -165,17 +168,17 @@ public class EnergyShieldRenderer {
         VertexConsumer consumer = bufferSource.getBuffer(shieldType);
 
         poseStack.pushPose();
-        Vec3 rel = Objects.requireNonNull(entityPos.subtract(cameraPos));
+        Vec3 rel = safeEntityPos.subtract(safeCameraPos);
         poseStack.translate(rel.x, rel.y, rel.z);
 
         Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
-        Vec3 viewDir = Objects.requireNonNull(Objects.requireNonNull(cameraPos.subtract(entityPos)).normalize());
+        Vec3 viewDir = safeCameraPos.subtract(safeEntityPos).normalize();
 
         // Render the sphere with normals for shader
         renderSphereWithNormals(consumer, poseStack, matrix, r, g, b, opacity, radius, viewDir);
 
         // Render hexagonal grid lines overlay
-        renderHexGrid(poseStack, bufferSource, matrix, entityPos, cameraPos, color, opacity, radius);
+        renderHexGrid(poseStack, bufferSource, matrix, safeEntityPos, safeCameraPos, color, opacity, radius);
 
         poseStack.popPose();
     }
@@ -187,6 +190,8 @@ public class EnergyShieldRenderer {
     private static void renderHexGrid(PoseStack poseStack, MultiBufferSource bufferSource,
                                        Matrix4f matrix, Vec3 entityPos, Vec3 cameraPos,
                                        int color, float opacity, float radius) {
+        Vec3 safeEntityPos = Objects.requireNonNull(entityPos, "entityPos");
+        Vec3 safeCameraPos = Objects.requireNonNull(cameraPos, "cameraPos");
         // Get geodesic mesh for hex grid (use low detail for less dense grid)
         HexagonalShieldMesh mesh = HexagonalShieldMesh.lowDetail(radius);
 
@@ -212,7 +217,7 @@ public class EnergyShieldRenderer {
                         (int)(b * 255);
 
         // Render lines with fresnel effect (edges more visible)
-        mesh.renderLinesWithFresnel(lineConsumer, matrix, 0, 0, 0, gridColor, Objects.requireNonNull(cameraPos.subtract(entityPos)));
+        mesh.renderLinesWithFresnel(lineConsumer, matrix, 0, 0, 0, gridColor, safeCameraPos.subtract(safeEntityPos));
     }
 
     /**
@@ -263,16 +268,18 @@ public class EnergyShieldRenderer {
     private static void renderFallback(PoseStack poseStack, MultiBufferSource bufferSource,
                                         Vec3 entityPos, Vec3 cameraPos,
                                         int color, float opacity, float radius) {
+        Vec3 safeEntityPos = Objects.requireNonNull(entityPos, "entityPos");
+        Vec3 safeCameraPos = Objects.requireNonNull(cameraPos, "cameraPos");
         float r = ((color >> 16) & 0xFF) / 255.0f;
         float g = ((color >> 8) & 0xFF) / 255.0f;
         float b = (color & 0xFF) / 255.0f;
 
         poseStack.pushPose();
-        Vec3 rel = Objects.requireNonNull(entityPos.subtract(cameraPos));
+        Vec3 rel = safeEntityPos.subtract(safeCameraPos);
         poseStack.translate(rel.x, rel.y, rel.z);
 
         Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
-        Vec3 viewDir = Objects.requireNonNull(Objects.requireNonNull(cameraPos.subtract(entityPos)).normalize());
+        Vec3 viewDir = safeCameraPos.subtract(safeEntityPos).normalize();
         float time = (System.currentTimeMillis() % 100000) / 1000.0f;
 
         RenderSystem.enableBlend();
@@ -319,7 +326,7 @@ public class EnergyShieldRenderer {
 
         // Render impact ripples using lines
         if (currentImpactTime < 1.0f && !activeImpacts.isEmpty()) {
-            renderImpactRipples(poseStack, bufferSource, matrix, entityPos, r, g, b, opacity, radius);
+            renderImpactRipples(poseStack, bufferSource, matrix, safeEntityPos, r, g, b, opacity, radius);
         }
 
         RenderSystem.depthMask(true);
@@ -335,10 +342,11 @@ public class EnergyShieldRenderer {
     private static void renderImpactRipples(PoseStack poseStack, MultiBufferSource bufferSource,
                                              Matrix4f matrix, Vec3 entityPos,
                                              float r, float g, float b, float opacity, float radius) {
+        Vec3 safeEntityPos = Objects.requireNonNull(entityPos, "entityPos");
         VertexConsumer consumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.lines()));
         Matrix4f safeMatrix = Objects.requireNonNull(matrix);
 
-        Vec3 impactDir = Objects.requireNonNull(currentImpactPoint.subtract(entityPos));
+        Vec3 impactDir = currentImpactPoint.subtract(safeEntityPos);
         if (impactDir.lengthSqr() < 0.001) return;
         impactDir = impactDir.normalize();
 

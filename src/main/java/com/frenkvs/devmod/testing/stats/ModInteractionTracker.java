@@ -9,6 +9,7 @@ import net.minecraft.world.item.Item;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -34,10 +35,11 @@ public class ModInteractionTracker {
      */
     public void recordModKill(EntityType<?> mobType, Item weapon) {
         // Track mob's mod
-        ResourceLocation mobId = EntityType.getKey(mobType);
+        EntityType<?> safeMobType = Objects.requireNonNull(mobType, "mobType");
+        ResourceLocation mobId = EntityType.getKey(safeMobType);
         String mobModId = mobId.getNamespace();
         if (!mobModId.equals("minecraft")) {
-            mobsKilledByMod.merge(mobModId, 1, Integer::sum);
+            mobsKilledByMod.merge(mobModId, 1, ModInteractionTracker::safeIntSum);
             modsInteractedWith.add(mobModId);
         }
 
@@ -46,8 +48,8 @@ public class ModInteractionTracker {
             ResourceLocation weaponId = BuiltInRegistries.ITEM.getKey(weapon);
             String weaponModId = weaponId.getNamespace();
             if (!weaponModId.equals("minecraft")) {
-                weaponsUsedByMod.merge(weaponModId, 1, Integer::sum);
-                killsByModId.merge(weaponModId, 1, Integer::sum);
+                weaponsUsedByMod.merge(weaponModId, 1, ModInteractionTracker::safeIntSum);
+                killsByModId.merge(weaponModId, 1, ModInteractionTracker::safeIntSum);
                 modsInteractedWith.add(weaponModId);
             }
         }
@@ -60,7 +62,7 @@ public class ModInteractionTracker {
         if (effectType != null && effectType.contains(":")) {
             String modId = effectType.split(":")[0];
             if (!modId.equals("minecraft")) {
-                effectsUsedByMod.merge(modId, 1, Integer::sum);
+                effectsUsedByMod.merge(modId, 1, ModInteractionTracker::safeIntSum);
                 modsInteractedWith.add(modId);
             }
         }
@@ -71,7 +73,7 @@ public class ModInteractionTracker {
      */
     public void recordModArmor(String modId) {
         if (modId != null && !modId.equals("minecraft")) {
-            armorUsedByMod.merge(modId, 1, Integer::sum);
+            armorUsedByMod.merge(modId, 1, ModInteractionTracker::safeIntSum);
             modsInteractedWith.add(modId);
         }
     }
@@ -149,5 +151,11 @@ public class ModInteractionTracker {
         for (String key : obj.keySet()) {
             map.put(key, obj.get(key).getAsInt());
         }
+    }
+
+    private static Integer safeIntSum(Integer left, Integer right) {
+        int leftValue = left == null ? 0 : left.intValue();
+        int rightValue = right == null ? 0 : right.intValue();
+        return leftValue + rightValue;
     }
 }

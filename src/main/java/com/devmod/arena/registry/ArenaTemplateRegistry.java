@@ -11,6 +11,10 @@ import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.nio.file.Path;
 
@@ -25,9 +29,10 @@ import java.nio.file.Path;
  *
  * @see <a href="TODO_ARENA_TEMPLATE.md">Arena Template Design Document</a>
  */
-public class ArenaTemplateRegistry {
+public class ArenaTemplateRegistry implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaTemplateRegistry.class);
     private static final int MAX_INHERITANCE_DEPTH = 3;
+    private static final long HEALTH_CHECK_INTERVAL_MS = 5 * 60 * 1000L;
 
     private final ConcurrentHashMap<String, ArenaTemplate> registry = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, ArenaTemplate> unresolvedTemplates = new ConcurrentHashMap<>();
@@ -35,6 +40,10 @@ public class ArenaTemplateRegistry {
     private final ArenaTelemetry telemetry;
     private final TemplateValidator validator;
     private final TemplateEventDispatcher eventDispatcher;
+    private final ScheduledExecutorService healthCheckExecutor;
+    private final AtomicBoolean closed = new AtomicBoolean(false);
+    @Nullable
+    private ArenaTemplateConfig.ConfigSnapshot configSnapshot;
 
     // Stats tracking
     private final RegistryStats stats = new RegistryStats();
@@ -57,6 +66,7 @@ public class ArenaTemplateRegistry {
                                  @Nullable ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
         this.telemetry = telemetry;
         this.eventDispatcher = TemplateEventDispatcher.getInstance();
+        this.configSnapshot = configSnapshot;
         this.validator = new TemplateValidator()
             .withInstanceLimits(instanceLimits)
             .withInstanceTelemetry(new InstanceSettingsValidator.Telemetry() {
@@ -103,6 +113,14 @@ public class ArenaTemplateRegistry {
                     ));
                 }
             }
+
+            @Override
+            public void fallbackUsed(String path, String reason) {
+                telemetry.emit("arena.structure.fallback_used", Map.of(
+                    "path", path,
+                    "reason", reason
+                ));
+            }
         });
         this.validator.withHazardTelemetry(new HazardValidator.HazardTelemetry() {
             @Override
@@ -127,13 +145,26 @@ public class ArenaTemplateRegistry {
 
         // Optional: enable structure validation if manifest exists (default path)
         try {
-            Path manifestPath = configSnapshot != null && configSnapshot.structureManifestPath() != null
-                ? Path.of(configSnapshot.structureManifestPath())
+            ArenaTemplateConfig.ConfigSnapshot activeSnapshot = this.configSnapshot;
+            Path manifestPath = activeSnapshot != null && activeSnapshot.structureManifestPath() != null
+                ? Path.of(activeSnapshot.structureManifestPath())
                 : Path.of("config/devmod/structures_manifest.json");
-            StructureValidationInitializer.configure(this, manifestPath, Thread.currentThread().getContextClassLoader(), configSnapshot);
+            StructureValidationInitializer.configure(this, manifestPath, Thread.currentThread().getContextClassLoader(), activeSnapshot);
         } catch (Exception e) {
             LOGGER.warn("Failed to auto-configure structure validation: {}", e.getMessage());
         }
+
+        this.healthCheckExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "ArenaTemplateRegistry-Health");
+            t.setDaemon(true);
+            return t;
+        });
+        this.healthCheckExecutor.scheduleAtFixedRate(
+            this::runHealthCheck,
+            HEALTH_CHECK_INTERVAL_MS,
+            HEALTH_CHECK_INTERVAL_MS,
+            TimeUnit.MILLISECONDS
+        );
     }
 
     /**
@@ -141,6 +172,27 @@ public class ArenaTemplateRegistry {
      */
     public void enableStructureValidation(StructureManifest manifest, TemplateValidator.StructureDataProvider provider) {
         this.validator.withStructureValidation(manifest, provider);
+    }
+
+    /**
+     * Applies a new config snapshot to the registry runtime state.
+     */
+    public void applyConfigSnapshot(@Nullable ArenaTemplateConfig.ConfigSnapshot snapshot) {
+        if (snapshot == null) {
+            return;
+        }
+        this.configSnapshot = snapshot;
+        // Refresh validator inputs that depend on config/custom registry
+        validator.withRegisteredCustomHazards(CustomHazardRegistry.getInstance().all());
+        validator.withInstanceLimits(InstanceLimitConfig.load().toLimits());
+        validator.withStructureFallbackConfig(new TemplateValidator.StructureFallbackConfig(
+            snapshot.structureAllowedNamespaces() != null && !snapshot.structureAllowedNamespaces().isEmpty()
+                ? Set.copyOf(snapshot.structureAllowedNamespaces())
+                : Set.of("devmod"),
+            snapshot.structureMaxFileSizeBytes() > 0 ? snapshot.structureMaxFileSizeBytes() : 512 * 1024,
+            snapshot.structureMaxBlockCount() > 0 ? snapshot.structureMaxBlockCount() : 100_000,
+            snapshot.structureMaxEntityCount() > 0 ? snapshot.structureMaxEntityCount() : 50
+        ));
     }
 
     /**
@@ -415,8 +467,7 @@ public class ArenaTemplateRegistry {
         if (!loadResult.success()) {
             LOGGER.error("Template reload aborted, {} errors", loadResult.errors().size());
             // Leak prevention: clear ephemeral handles/locks even on failed reload attempts
-            templateLocks.clear();
-            listenerHandles.clear();
+            clearEphemeralState();
             return new ReloadResult(false, 0, loadResult.errors());
         }
 
@@ -451,6 +502,46 @@ public class ArenaTemplateRegistry {
      */
     public RegistryStats getStats() {
         return stats;
+    }
+
+    @Override
+    public void close() {
+        if (!closed.compareAndSet(false, true)) {
+            return;
+        }
+        try {
+            healthCheckExecutor.shutdownNow();
+        } catch (Exception ignored) {
+        }
+        clearEphemeralState();
+        registry.clear();
+        unresolvedTemplates.clear();
+    }
+
+    private void clearEphemeralState() {
+        templateLocks.clear();
+        listenerHandles.clear();
+    }
+
+    private void runHealthCheck() {
+        try {
+            int locksBefore = templateLocks.size();
+            int listenersBefore = listenerHandles.size();
+            templateLocks.keySet().removeIf(id -> !registry.containsKey(id));
+            listenerHandles.keySet().removeIf(id -> !registry.containsKey(id));
+            int removedLocks = locksBefore - templateLocks.size();
+            int removedListeners = listenersBefore - listenerHandles.size();
+            if (removedLocks > 0 || removedListeners > 0) {
+                telemetry.emit("arena.template.health_warning", Map.of(
+                    "staleLocksRemoved", removedLocks,
+                    "staleListenersRemoved", removedListeners,
+                    "locksRemaining", templateLocks.size(),
+                    "listenersRemaining", listenerHandles.size()
+                ));
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Template registry health check failed: {}", e.getMessage());
+        }
     }
 
     /**
@@ -565,33 +656,33 @@ public class ArenaTemplateRegistry {
             child.minParentVersion() != null ? child.minParentVersion() : parent.minParentVersion(),
             child.templateType() != null ? child.templateType() : parent.templateType(),
             // SHALLOW_MERGE for objects (spec v2.23)
-            mergeOrigin(child.origin(), parent.origin()),
-            child.size() > 0 ? child.size() : parent.size(),
-            child.sizeX() != null ? child.sizeX() : parent.sizeX(),
-            child.sizeZ() != null ? child.sizeZ() : parent.sizeZ(),
-            mergeFloor(child.floor(), parent.floor()),
-            mergeWalls(child.walls(), parent.walls()),
-            mergeCeiling(child.ceiling(), parent.ceiling()),
-            mergeUnderfloor(child.underfloor(), parent.underfloor()),
-            mergePalette(child.palette(), parent.palette()),
-            mergeBiome(child.biome(), parent.biome()),
-            mergeLighting(child.lighting(), parent.lighting()),
+            mergeByStrategy("origin", child.origin(), parent.origin(), this::mergeOrigin),
+            mergeIntByStrategy("size", child.size(), parent.size(), 0),
+            mergeIntegerByStrategy("sizeX", child.sizeX(), parent.sizeX()),
+            mergeIntegerByStrategy("sizeZ", child.sizeZ(), parent.sizeZ()),
+            mergeByStrategy("floor", child.floor(), parent.floor(), this::mergeFloor),
+            mergeByStrategy("walls", child.walls(), parent.walls(), this::mergeWalls),
+            mergeByStrategy("ceiling", child.ceiling(), parent.ceiling(), this::mergeCeiling),
+            mergeByStrategy("underfloor", child.underfloor(), parent.underfloor(), this::mergeUnderfloor),
+            mergeByStrategy("palette", child.palette(), parent.palette(), this::mergePalette),
+            mergeByStrategy("biome", child.biome(), parent.biome(), this::mergeBiome),
+            mergeByStrategy("lighting", child.lighting(), parent.lighting(), this::mergeLighting),
             // OVERRIDE for arrays (spec v2.23)
-            overrideList(child.spawnSlots(), parent.spawnSlots()),
-            child.playerSpawnOffset() != null ? child.playerSpawnOffset() : parent.playerSpawnOffset(),
-            child.mobSpawnStrategy() != null ? child.mobSpawnStrategy() : parent.mobSpawnStrategy(),
-            overrideList(child.forbiddenZones(), parent.forbiddenZones()),
-            overrideList(child.hazards(), parent.hazards()),
+            mergeListByStrategy("spawnSlots", child.spawnSlots(), parent.spawnSlots()),
+            mergeByStrategy("playerSpawnOffset", child.playerSpawnOffset(), parent.playerSpawnOffset(), null),
+            mergeByStrategy("mobSpawnStrategy", child.mobSpawnStrategy(), parent.mobSpawnStrategy(), null),
+            mergeListByStrategy("forbiddenZones", child.forbiddenZones(), parent.forbiddenZones()),
+            mergeListByStrategy("hazards", child.hazards(), parent.hazards()),
             // SHALLOW_MERGE for objects
-            mergeEnvironment(child.environment(), parent.environment()),
-            mergeCompat(child.compat(), parent.compat()),
-            mergeInstanceSettings(child.instanceSettings(), parent.instanceSettings()),
+            mergeByStrategy("environment", child.environment(), parent.environment(), this::mergeEnvironment),
+            mergeByStrategy("compat", child.compat(), parent.compat(), this::mergeCompat),
+            mergeByStrategy("instanceSettings", child.instanceSettings(), parent.instanceSettings(), this::mergeInstanceSettings),
             // OVERRIDE for structureNbt (complete replacement)
-            child.structureNbt() != null ? child.structureNbt() : parent.structureNbt(),
-            mergeLimits(child.limits(), parent.limits()),
-            mergeBuildSettings(child.buildSettings(), parent.buildSettings()),
+            mergeByStrategy("structureNbt", child.structureNbt(), parent.structureNbt(), null),
+            mergeByStrategy("limits", child.limits(), parent.limits(), this::mergeLimits),
+            mergeByStrategy("buildSettings", child.buildSettings(), parent.buildSettings(), this::mergeBuildSettings),
             // OVERRIDE for arrays
-            overrideList(child.tags(), parent.tags())
+            mergeListByStrategy("tags", child.tags(), parent.tags())
         );
     }
 
@@ -599,6 +690,44 @@ public class ArenaTemplateRegistry {
         if (child != null) return List.copyOf(child);
         if (parent != null) return List.copyOf(parent);
         return List.of();
+    }
+
+    private <T> T mergeByStrategy(String field,
+                                  @Nullable T child,
+                                  @Nullable T parent,
+                                  @Nullable java.util.function.BiFunction<T, T, T> shallowMerger) {
+        TemplateMergeRules.MergeStrategy strategy = TemplateMergeRules.strategyFor(field);
+        return switch (strategy) {
+            case SKIP -> parent;
+            case OVERRIDE -> child != null ? child : parent;
+            case SHALLOW_MERGE -> shallowMerger != null ? shallowMerger.apply(child, parent) : (child != null ? child : parent);
+        };
+    }
+
+    private <T> List<T> mergeListByStrategy(String field,
+                                            @Nullable List<T> child,
+                                            @Nullable List<T> parent) {
+        TemplateMergeRules.MergeStrategy strategy = TemplateMergeRules.strategyFor(field);
+        return switch (strategy) {
+            case SKIP -> parent != null ? List.copyOf(parent) : List.of();
+            case OVERRIDE, SHALLOW_MERGE -> overrideList(child, parent);
+        };
+    }
+
+    private int mergeIntByStrategy(String field, int child, int parent, int sentinel) {
+        TemplateMergeRules.MergeStrategy strategy = TemplateMergeRules.strategyFor(field);
+        if (strategy == TemplateMergeRules.MergeStrategy.SKIP) {
+            return parent;
+        }
+        return child != sentinel ? child : parent;
+    }
+
+    private Integer mergeIntegerByStrategy(String field, @Nullable Integer child, @Nullable Integer parent) {
+        TemplateMergeRules.MergeStrategy strategy = TemplateMergeRules.strategyFor(field);
+        if (strategy == TemplateMergeRules.MergeStrategy.SKIP) {
+            return parent;
+        }
+        return child != null ? child : parent;
     }
 
     // ===================
@@ -691,7 +820,7 @@ public class ArenaTemplateRegistry {
             child.skyLight() != 0 ? child.skyLight() : parent.skyLight(),
             child.blockLight() != 0 ? child.blockLight() : parent.blockLight(),
             child.ambientLight(),
-            child.lightSources() != null ? child.lightSources() : parent.lightSources()
+            mergeListByStrategy("lighting.lightSources", child.lightSources(), parent.lightSources())
         );
     }
 
@@ -700,7 +829,7 @@ public class ArenaTemplateRegistry {
         if (parent == null) return child;
         // particles is OVERRIDE (array inside shallow-merged object)
         return new ArenaTemplate.Environment(
-            child.particles() != null ? child.particles() : parent.particles(),
+            mergeListByStrategy("environment.particles", child.particles(), parent.particles()),
             child.ambientSound() != null ? child.ambientSound() : parent.ambientSound(),
             child.fog() != null ? child.fog() : parent.fog()
         );

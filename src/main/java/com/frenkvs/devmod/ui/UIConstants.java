@@ -5,6 +5,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
 
+import java.util.Objects;
+
 /**
  * Design System - Costanti UI unificate per DevMod.
  */
@@ -291,7 +293,10 @@ public final class UIConstants {
         private static void playSound(net.minecraft.sounds.SoundEvent sound, float volume, float pitch) {
             Minecraft mc = Minecraft.getInstance();
             if (mc != null && mc.getSoundManager() != null) {
-                mc.getSoundManager().play(SimpleSoundInstance.forUI(sound, pitch, volume));
+                var safeSound = Objects.requireNonNull(sound, "sound");
+                var soundInstance = Objects.requireNonNull(
+                    SimpleSoundInstance.forUI(safeSound, pitch, volume), "soundInstance");
+                mc.getSoundManager().play(soundInstance);
             }
         }
     }

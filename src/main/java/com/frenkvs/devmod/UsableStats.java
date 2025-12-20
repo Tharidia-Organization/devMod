@@ -2,6 +2,8 @@ package com.frenkvs.devmod;
 
 import net.minecraft.nbt.CompoundTag;
 
+import java.util.Objects;
+
 /**
  * Usable item statistics for items with cooldowns, use durations, and throwable properties.
  * Applied to items like snowballs, potions, goat horns, shields, bows, etc.
@@ -44,7 +46,9 @@ public class UsableStats {
         // Use properties
         if (useDuration != 0) tag.putInt("UseDur", useDuration);
         if (cooldownDuration != 0) tag.putInt("Cooldown", cooldownDuration);
-        if (!"NONE".equals(useAnimation)) tag.putString("UseAnim", useAnimation);
+        if (!"NONE".equals(useAnimation)) {
+            tag.putString("UseAnim", Objects.requireNonNull(useAnimation, "useAnimation"));
+        }
 
         // Throwable properties
         if (isThrowable) {
@@ -57,7 +61,9 @@ public class UsableStats {
 
         // Consumption
         if (!consumeOnUse) tag.putBoolean("NoConsume", true);
-        if (!remainderItem.isEmpty()) tag.putString("Remainder", remainderItem);
+        if (!remainderItem.isEmpty()) {
+            tag.putString("Remainder", Objects.requireNonNull(remainderItem, "remainderItem"));
+        }
     }
 
     /**

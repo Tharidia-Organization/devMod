@@ -19,6 +19,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import javax.annotation.Nonnull;
+import java.util.Objects;
 
 /**
  * Debug overlays settings page.
@@ -56,6 +57,7 @@ public class DebugOverlaysPage implements SettingsPage {
 
     @Override
     public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+        Font safeFont = Objects.requireNonNull(font, "font");
         // Store dimensions for scroll calculations
         lastContentY = y;
         lastContentHeight = height;
@@ -77,46 +79,46 @@ public class DebugOverlaysPage implements SettingsPage {
             // ==========================================
             // Section: Minecraft Native Debug API
             // ==========================================
-            graphics.drawString(font, "§6Minecraft Native Debug API", x, currentY, 0xFFFF8800, false);
+            graphics.drawString(safeFont, "§6Minecraft Native Debug API", x, currentY, 0xFFFF8800, false);
             currentY += 14;
 
             // Entity Pathing (like DebugUtils)
-            currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderNativeToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Entity Pathing", "Show mob navigation paths (native)",
                 DebugRenderBools.ENTITY_PATHING);
 
             // Entity Goals
-            currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderNativeToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Entity Goals", "Show AI goal selectors",
                 DebugRenderBools.ENTITY_GOALS);
 
             // Entity Brains
-            currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderNativeToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Entity Brains", "Show villager/mob brain activity",
                 DebugRenderBools.ENTITY_BRAINS);
 
             // POI (Points of Interest)
-            currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderNativeToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "POI", "Show points of interest (beds, workstations)",
                 DebugRenderBools.POI);
 
             // Raids
-            currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderNativeToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Raids", "Show raid center locations",
                 DebugRenderBools.RAIDS);
 
             // Bees
-            currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderNativeToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Bees", "Show bee pathfinding and hive info",
                 DebugRenderBools.BEES);
 
             // Game Events
-            currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderNativeToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Game Events", "Show sculk sensor game events",
                 DebugRenderBools.GAME_EVENTS);
 
             // Structures
-            currentY = renderNativeToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderNativeToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Structures", "Show structure bounding boxes",
                 DebugRenderBools.STRUCTURES);
 
@@ -125,50 +127,50 @@ public class DebugOverlaysPage implements SettingsPage {
             // ==========================================
             // Section: Core Debug
             // ==========================================
-            graphics.drawString(font, "Core Debug Tools", x, currentY, UIConstants.Text.PRIMARY(), false);
+            graphics.drawString(safeFont, "Core Debug Tools", x, currentY, UIConstants.Text.PRIMARY(), false);
             currentY += 14;
 
             // Debug Renderer toggle
-            currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Debug Renderer", "Show debug shapes (boxes, lines, spheres)",
                 DebugRenderer.INSTANCE.isEnabled(), "G");
 
             // Light Level Overlay toggle
-            currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Light Levels", "Show spawn-safe light levels on blocks",
                 LightLevelOverlay.INSTANCE.isEnabled(), "L");
 
             currentY += SECTION_SPACING;
 
             // Section: Custom AI Tools
-            graphics.drawString(font, "Custom AI Tools", x, currentY, UIConstants.Text.PRIMARY(), false);
+            graphics.drawString(safeFont, "Custom AI Tools", x, currentY, UIConstants.Text.PRIMARY(), false);
             currentY += 14;
 
             // Line of Sight toggle
-            currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Line of Sight", "Visualize mob line-of-sight rays",
                 LineOfSightVisualizer.INSTANCE.isEnabled(), "");
 
             // Pathfinding toggle (custom)
-            currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Custom Pathfinding", "Show AI navigation paths (custom)",
                 PathfindingDebugger.INSTANCE.isEnabled(), "");
 
             currentY += SECTION_SPACING;
 
             // Section: Spatial
-            graphics.drawString(font, "Spatial Analysis", x, currentY, UIConstants.Text.PRIMARY(), false);
+            graphics.drawString(safeFont, "Spatial Analysis", x, currentY, UIConstants.Text.PRIMARY(), false);
             currentY += 14;
 
             // Room Bounds toggle
-            currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Room Bounds", "Show room boundary detection",
                 RoomBoundsVisualizer.INSTANCE.isEnabled(), "");
 
             currentY += SECTION_SPACING;
 
             // Quick actions
-            graphics.drawString(font, "Quick Actions", x, currentY, UIConstants.Text.PRIMARY(), false);
+            graphics.drawString(safeFont, "Quick Actions", x, currentY, UIConstants.Text.PRIMARY(), false);
             currentY += 14;
 
             // Disable All / Enable All buttons
@@ -249,6 +251,9 @@ public class DebugOverlaysPage implements SettingsPage {
     private int renderNativeToggleRow(GuiGraphics graphics, Font font, int x, int y, int width,
                                        int mouseX, int mouseY, String label, String description,
                                        boolean enabled) {
+        Font safeFont = Objects.requireNonNull(font, "font");
+        String safeLabel = Objects.requireNonNull(label, "label");
+        String safeDescription = Objects.requireNonNull(description, "description");
         int rowWidth = width - 20;
         boolean hovered = mouseX >= x && mouseX < x + rowWidth && mouseY >= y && mouseY < y + ROW_HEIGHT;
 
@@ -260,15 +265,15 @@ public class DebugOverlaysPage implements SettingsPage {
         graphics.fill(x, y + 2, x + 3, y + 12, 0xFFFF8800);
 
         // Label
-        graphics.drawString(font, label, x + 8, y + 2, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(safeFont, safeLabel, x + 8, y + 2, UIConstants.Text.PRIMARY(), false);
 
         // Description
-        graphics.drawString(font, description, x + 8, y + 12, UIConstants.Text.MUTED(), false);
+        graphics.drawString(safeFont, safeDescription, x + 8, y + 12, UIConstants.Text.MUTED(), false);
 
         // Toggle switch
         int toggleX = x + rowWidth - UIConstants.Size.TOGGLE_WIDTH;
         int toggleY = y + (ROW_HEIGHT - UIConstants.Size.TOGGLE_HEIGHT) / 2;
-        AxiomRenderer.drawToggle(graphics, font, toggleX, toggleY,
+        AxiomRenderer.drawToggle(graphics, safeFont, toggleX, toggleY,
             UIConstants.Size.TOGGLE_WIDTH, UIConstants.Size.TOGGLE_HEIGHT, enabled, hovered);
 
         return y + ROW_HEIGHT;
@@ -277,6 +282,10 @@ public class DebugOverlaysPage implements SettingsPage {
     private int renderToggleRow(GuiGraphics graphics, Font font, int x, int y, int width,
                                  int mouseX, int mouseY, String label, String description,
                                  boolean enabled, String hotkey) {
+        Font safeFont = Objects.requireNonNull(font, "font");
+        String safeLabel = Objects.requireNonNull(label, "label");
+        String safeDescription = Objects.requireNonNull(description, "description");
+        String safeHotkey = Objects.requireNonNullElse(hotkey, "");
         int rowWidth = width - 20;
         boolean hovered = mouseX >= x && mouseX < x + rowWidth && mouseY >= y && mouseY < y + ROW_HEIGHT;
 
@@ -286,22 +295,22 @@ public class DebugOverlaysPage implements SettingsPage {
         }
 
         // Label
-        graphics.drawString(font, label, x, y + 2, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(safeFont, safeLabel, x, y + 2, UIConstants.Text.PRIMARY(), false);
 
         // Hotkey badge (if present)
-        if (!hotkey.isEmpty()) {
-            int hotkeyX = x + font.width(label) + 8;
-            graphics.fill(hotkeyX - 2, y, hotkeyX + font.width(hotkey) + 2, y + 10, UIConstants.Background.INPUT());
-            graphics.drawString(font, hotkey, hotkeyX, y + 1, UIConstants.Text.MUTED(), false);
+        if (!safeHotkey.isEmpty()) {
+            int hotkeyX = x + safeFont.width(safeLabel) + 8;
+            graphics.fill(hotkeyX - 2, y, hotkeyX + safeFont.width(safeHotkey) + 2, y + 10, UIConstants.Background.INPUT());
+            graphics.drawString(safeFont, safeHotkey, hotkeyX, y + 1, UIConstants.Text.MUTED(), false);
         }
 
         // Description
-        graphics.drawString(font, description, x, y + 12, UIConstants.Text.MUTED(), false);
+        graphics.drawString(safeFont, safeDescription, x, y + 12, UIConstants.Text.MUTED(), false);
 
         // Toggle switch
         int toggleX = x + rowWidth - UIConstants.Size.TOGGLE_WIDTH;
         int toggleY = y + (ROW_HEIGHT - UIConstants.Size.TOGGLE_HEIGHT) / 2;
-        AxiomRenderer.drawToggle(graphics, font, toggleX, toggleY,
+        AxiomRenderer.drawToggle(graphics, safeFont, toggleX, toggleY,
             UIConstants.Size.TOGGLE_WIDTH, UIConstants.Size.TOGGLE_HEIGHT, enabled, hovered);
 
         return y + ROW_HEIGHT;

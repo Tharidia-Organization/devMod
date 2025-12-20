@@ -5,6 +5,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -40,16 +41,17 @@ public class KillStatistics {
     public boolean recordKill(EntityType<?> mobType, Item weapon, String bodyPart,
                                boolean isCritical, boolean isHeadshot, boolean isMaceSmash,
                                boolean isArrow) {
-        String mobKey = EntityType.getKey(mobType).toString();
+        EntityType<?> safeMobType = Objects.requireNonNull(mobType, "mobType");
+        String mobKey = EntityType.getKey(safeMobType).toString();
         String weaponKey = weapon != null ? weapon.getDescriptionId() : "empty_hand";
 
         boolean wasFirstBlood = totalKills == 0;
 
         totalKills++;
-        killsByMobType.merge(mobKey, 1, Integer::sum);
-        killsByWeapon.merge(weaponKey, 1, Integer::sum);
+        killsByMobType.merge(mobKey, 1, KillStatistics::safeIntSum);
+        killsByWeapon.merge(weaponKey, 1, KillStatistics::safeIntSum);
         if (bodyPart != null) {
-            killsByBodyPart.merge(bodyPart.toUpperCase(), 1, Integer::sum);
+            killsByBodyPart.merge(bodyPart.toUpperCase(), 1, KillStatistics::safeIntSum);
         }
 
         if (isHeadshot) headshots++;
@@ -166,5 +168,11 @@ public class KillStatistics {
 
     private int getInt(JsonObject obj, String key, int defaultValue) {
         return obj.has(key) ? obj.get(key).getAsInt() : defaultValue;
+    }
+
+    private static Integer safeIntSum(Integer left, Integer right) {
+        int leftValue = left == null ? 0 : left.intValue();
+        int rightValue = right == null ? 0 : right.intValue();
+        return leftValue + rightValue;
     }
 }

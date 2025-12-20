@@ -12,6 +12,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
+import java.util.Objects;
+import javax.annotation.Nonnull;
+
 /**
  * FPS Tracker con overlay HUD per monitoraggio performance.
  *
@@ -89,8 +92,8 @@ public class FpsTracker {
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.DEBUG_OVERLAY,
-            LAYER_ID,
+            Objects.requireNonNull(VanillaGuiLayers.DEBUG_OVERLAY),
+            Objects.requireNonNull(LAYER_ID),
             FpsTracker::render
         );
     }
@@ -102,7 +105,9 @@ public class FpsTracker {
         if (mc.player == null || mc.options.hideGui) return;
 
         INSTANCE.updateMetrics();
-        INSTANCE.renderOverlay(graphics, mc.font);
+        Font font = Objects.requireNonNull(mc.font, "font");
+        GuiGraphics safeGraphics = Objects.requireNonNull(graphics, "graphics");
+        INSTANCE.renderOverlay(safeGraphics, font);
     }
 
     private void updateMetrics() {
@@ -192,7 +197,7 @@ public class FpsTracker {
         }
     }
 
-    private void renderOverlay(GuiGraphics graphics, Font font) {
+    private void renderOverlay(@Nonnull GuiGraphics graphics, @Nonnull Font font) {
         // Position: top left corner
         int x = PANEL_MARGIN;
         int y = PANEL_MARGIN;

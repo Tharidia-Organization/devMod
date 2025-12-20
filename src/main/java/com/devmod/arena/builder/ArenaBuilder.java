@@ -1,6 +1,10 @@
 package com.devmod.arena.builder;
 
+import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.config.InstanceLimitConfig;
+import com.devmod.arena.concurrency.ArenaBuildRateLimiter;
+import com.devmod.arena.concurrency.BuildPermit;
+import com.devmod.arena.concurrency.TemplateLockManager;
 import com.devmod.arena.metrics.MetricsCompatibilityLayer;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.integration.MinecraftBlockPlacer;
@@ -10,8 +14,10 @@ import com.devmod.arena.registry.TemplateValidator;
 import com.devmod.arena.registry.ValidationResult;
 import com.devmod.arena.gate.InstanceOnlyGate;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +45,13 @@ public class ArenaBuilder {
     private static final int DEFAULT_MAX_BLOCKS = 50_000;
     private static final int BOSS_MAX_BLOCKS = 100_000;
     private static final int HARD_CAP_BLOCKS = 150_000;
+    private static final int DEFAULT_MAX_BUILD_TIME_MS = 5_000;
+    private static final int BOSS_MAX_BUILD_TIME_MS = 15_000;
+
+    private static final Duration LOCK_TIMEOUT = Duration.ofSeconds(30);
+    private static final TemplateLockManager TEMPLATE_LOCK_MANAGER = new TemplateLockManager();
+    private static final ArenaBuildRateLimiter BUILD_RATE_LIMITER = new ArenaBuildRateLimiter();
+    private static final AtomicBoolean LOCK_MANAGER_STARTED = new AtomicBoolean(false);
 
     // DD10: Estimation constants
     private static final double MS_PER_BLOCK_BASELINE = 0.05;
@@ -62,6 +75,14 @@ public class ArenaBuilder {
     private final InstanceSettingsValidator.InstanceLimits instanceLimits;
     @Nullable
     private final InstanceOnlyGate instanceGate;
+    @Nullable
+    private final ArenaTemplateConfig.ConfigSnapshot configSnapshot;
+
+    private static void ensureLockManagerStarted() {
+        if (LOCK_MANAGER_STARTED.compareAndSet(false, true)) {
+            TEMPLATE_LOCK_MANAGER.start();
+        }
+    }
 
     public ArenaBuilder(
             ArenaTelemetry telemetry,
@@ -78,6 +99,7 @@ public class ArenaBuilder {
         this.instanceLimits = InstanceLimitConfig.load().toLimits();
         this.templateValidator = new TemplateValidator().withInstanceLimits(instanceLimits);
         this.instanceGate = null;
+        this.configSnapshot = null;
     }
 
     public ArenaBuilder(
@@ -96,6 +118,7 @@ public class ArenaBuilder {
         this.instanceLimits = instanceLimits;
         this.templateValidator = new TemplateValidator().withInstanceLimits(instanceLimits);
         this.instanceGate = null;
+        this.configSnapshot = null;
     }
 
     public ArenaBuilder(
@@ -115,6 +138,8 @@ public class ArenaBuilder {
         this.instanceLimits = instanceLimits;
         this.templateValidator = new TemplateValidator().withInstanceLimits(instanceLimits);
         this.instanceGate = null;
+        this.configSnapshot = null;
+        ensureLockManagerStarted();
     }
 
     public ArenaBuilder(
@@ -125,7 +150,7 @@ public class ArenaBuilder {
             @Nullable BuildHistoryStore historyStore,
             InstanceSettingsValidator.InstanceLimits instanceLimits,
             @Nullable CustomHazardHandler customHazardHandler,
-            @Nullable com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
+            @Nullable ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
         this.telemetry = telemetry;
         this.blockPlacer = blockPlacer;
         this.entitySpawner = entitySpawner;
@@ -134,7 +159,9 @@ public class ArenaBuilder {
         this.customHazardHandler = customHazardHandler;
         this.instanceLimits = instanceLimits;
         this.templateValidator = new TemplateValidator().withInstanceLimits(instanceLimits);
+        this.configSnapshot = configSnapshot;
         this.instanceGate = configSnapshot != null ? new InstanceOnlyGate(configSnapshot, telemetry) : null;
+        ensureLockManagerStarted();
     }
 
     /**
@@ -230,6 +257,16 @@ public class ArenaBuilder {
 
         BuildDryRun dryRun = BuildDryRunCalculator.calculate(template);
 
+        ArenaTemplate.BuildSettings.Order buildOrder = resolveBuildOrder(template);
+        ArenaTemplate.BuildSettings.Priority buildPriority = resolveBuildPriority(template);
+        if (buildPriority == ArenaTemplate.BuildSettings.Priority.ASYNC) {
+            LOGGER.warn("Template '{}' requests ASYNC build but sync builder was used", template.id());
+            telemetry.emit("arena.build.priority_ignored", Map.of(
+                "templateId", template.id(),
+                "requestedPriority", buildPriority.name()
+            ));
+        }
+
         // Determine max blocks based on template category
         int maxBlocks = determineMaxBlocks(template);
 
@@ -265,26 +302,74 @@ public class ArenaBuilder {
             return BuildResult.failure(msg, new BuildTransaction.RollbackResult(true, 0, 0, 0, 0));
         }
 
-        BuildTransaction transaction = new BuildTransaction(template.id(), maxBlocks);
-
-        LOGGER.info("Starting build for template '{}' at ({},{},{}) with max {} blocks",
-            template.id(), originX, originY, originZ, maxBlocks);
-
-        // Build telemetry with policy context
-        Map<String, Object> startEventData = new java.util.HashMap<>();
-        startEventData.put("templateId", template.id());
-        startEventData.put("templateVersion", template.version());
-        startEventData.put("arenaId", arenaId.toString());
-        startEventData.put("origin", "%d,%d,%d".formatted(originX, originY, originZ));
-        startEventData.put("estimatedMs", estimateBuildTimeMs(template));
-        startEventData.put("maxBlocks", maxBlocks);
-        if (policyId != null) {
-            startEventData.put("policyId", policyId);
-            startEventData.put("policyVersion", policyVersion);
-        }
-        telemetry.emit("arena.build.start", startEventData);
+        long maxDurationMs = determineMaxBuildTimeMs(template);
+        String lockOwner = "arena:" + arenaId;
+        boolean lockAcquired = false;
+        long lockAcquiredAtMs = 0L;
+        BuildPermit.Granted buildPermit = null;
+        BuildTransaction transaction = null;
 
         try {
+            long lockWaitStartMs = System.currentTimeMillis();
+            lockAcquired = TEMPLATE_LOCK_MANAGER.tryAcquire(template.id(), lockOwner, LOCK_TIMEOUT);
+            long lockWaitMs = System.currentTimeMillis() - lockWaitStartMs;
+            if (!lockAcquired) {
+                telemetry.emit("arena.build.lock_timeout", Map.of(
+                    "lockedTemplateId", template.id(),
+                    "owner", lockOwner,
+                    "waitTimeMs", lockWaitMs
+                ));
+                String msg = "Template lock timeout after %dms".formatted(lockWaitMs);
+                return BuildResult.failure(msg, new BuildTransaction.RollbackResult(true, 0, 0, 0, 0));
+            }
+
+            lockAcquiredAtMs = System.currentTimeMillis();
+            telemetry.emit("arena.build.lock_acquired", Map.of(
+                "lockedTemplateId", template.id(),
+                "owner", lockOwner,
+                "waitTimeMs", lockWaitMs
+            ));
+
+            UUID rateLimitPlayerId = UUID.nameUUIDFromBytes(lockOwner.getBytes());
+            BuildPermit permit = BUILD_RATE_LIMITER.requestPermit(rateLimitPlayerId, lockOwner);
+            if (!permit.isGranted()) {
+                BuildPermit.Rejected rejected = (BuildPermit.Rejected) permit;
+                telemetry.emit("arena.build.permit_rejected", Map.of(
+                    "templateId", template.id(),
+                    "reason", rejected.reason().name(),
+                    "retryAfterMs", rejected.retryAfter().toMillis(),
+                    "queuePosition", rejected.queuePosition()
+                ));
+                String msg = "Build rate limited: " + rejected.reason().name();
+                return BuildResult.failure(msg, new BuildTransaction.RollbackResult(true, 0, 0, 0, 0));
+            }
+
+            buildPermit = (BuildPermit.Granted) permit;
+            telemetry.emit("arena.build.permit_granted", Map.of(
+                "permitId", buildPermit.permitId(),
+                "templateId", template.id(),
+                "waitTimeMs", buildPermit.waitTimeMs()
+            ));
+
+            transaction = new BuildTransaction(template.id(), maxBlocks, maxDurationMs);
+
+            LOGGER.info("Starting build for template '{}' at ({},{},{}) with max {} blocks",
+                template.id(), originX, originY, originZ, maxBlocks);
+
+            // Build telemetry with policy context
+            Map<String, Object> startEventData = new java.util.HashMap<>();
+            startEventData.put("templateId", template.id());
+            startEventData.put("templateVersion", template.version());
+            startEventData.put("arenaId", arenaId.toString());
+            startEventData.put("origin", "%d,%d,%d".formatted(originX, originY, originZ));
+            startEventData.put("estimatedMs", estimateBuildTimeMs(template));
+            startEventData.put("maxBlocks", maxBlocks);
+            if (policyId != null) {
+                startEventData.put("policyId", policyId);
+                startEventData.put("policyVersion", policyVersion);
+            }
+            telemetry.emit("arena.build.start", startEventData);
+
             // 1. Ensure chunks are loaded (DD9)
             ChunkLoadingManager.ChunkLoadResult chunkResult = loadRequiredChunks(template, originX, originZ);
             if (!chunkResult.success()) {
@@ -296,31 +381,40 @@ public class ArenaBuilder {
                 transaction.trackChunk(chunkPos);
             }
 
-            // 2. Build floor
-            buildFloor(template, originX, originY, originZ, transaction);
-
-            // 3. Build walls
-            if (template.walls() != null && template.walls().enabled()) {
-                buildWalls(template, originX, originY, originZ, transaction);
+            // 2. Build order handling
+            if (buildOrder == ArenaTemplate.BuildSettings.Order.STRUCTURE_FIRST && template.structureNbt() != null) {
+                placeStructure(template, originX, originY, originZ, transaction);
             }
 
-            // 4. Build ceiling
+            if (buildOrder == ArenaTemplate.BuildSettings.Order.WALLS_FIRST) {
+                if (template.walls() != null && template.walls().enabled()) {
+                    buildWalls(template, originX, originY, originZ, transaction);
+                }
+                if (template.floor() != null) {
+                    buildFloor(template, originX, originY, originZ, transaction);
+                }
+            } else {
+                if (template.floor() != null) {
+                    buildFloor(template, originX, originY, originZ, transaction);
+                }
+                if (template.walls() != null && template.walls().enabled()) {
+                    buildWalls(template, originX, originY, originZ, transaction);
+                }
+            }
+
             if (template.ceiling() != null && template.ceiling().enabled()) {
                 buildCeiling(template, originX, originY, originZ, transaction);
             }
 
-            // 5. Build underfloor
             if (template.underfloor() != null) {
                 buildUnderfloor(template, originX, originY, originZ, transaction);
             }
 
-            // 6. Place hazards
             if (template.hazards() != null && !template.hazards().isEmpty()) {
                 placeHazards(template, originX, originY, originZ, transaction);
             }
 
-            // 7. Place structure NBT if present
-            if (template.structureNbt() != null) {
+            if (buildOrder != ArenaTemplate.BuildSettings.Order.STRUCTURE_FIRST && template.structureNbt() != null) {
                 placeStructure(template, originX, originY, originZ, transaction);
             }
 
@@ -345,17 +439,22 @@ public class ArenaBuilder {
             endEventData.put("build_ms", duration); // baseline compatibility
             endEventData.put("actualBlocks", transaction.getBlockCount());
             endEventData.put("totalPlacements", transaction.getTotalBlockPlacements());
-            if (blockPlacer instanceof MinecraftBlockPlacer mcPlacer) {
-                ResidualSnapshot residual = measureResiduals(template, originX, originY, originZ, mcPlacer);
-                endEventData.put("entities_residual", residual.entitiesResidual());
-                endEventData.put("blocks_residual", residual.blocksResidual());
-                endEventData.put("expected_blocks", BuildDryRunCalculator.calculate(template).totalBlocks());
+            int expectedBlocks = BuildDryRunCalculator.calculate(template).totalBlocks();
+            ResidualMetrics residualMetrics = null;
+            if (blockPlacer instanceof ResidualProvider residualProvider) {
+                residualMetrics = residualProvider.measureResiduals(template, originX, originY, originZ, expectedBlocks);
+            } else if (blockPlacer instanceof MinecraftBlockPlacer mcPlacer) {
+                residualMetrics = measureResiduals(template, originX, originY, originZ, mcPlacer);
+            }
+            if (residualMetrics != null) {
+                endEventData.put("entities_residual", residualMetrics.entitiesResidual());
+                endEventData.put("blocks_residual", residualMetrics.blocksResidual());
+                endEventData.put("expected_blocks", expectedBlocks);
                 endEventData.put("residuals_unknown", false);
             } else {
-                // Unknown placer: cannot reliably count residuals
                 endEventData.put("entities_residual", -1);
                 endEventData.put("blocks_residual", -1);
-                endEventData.put("expected_blocks", BuildDryRunCalculator.calculate(template).totalBlocks());
+                endEventData.put("expected_blocks", expectedBlocks);
                 endEventData.put("residuals_unknown", true);
             }
             if (policyId != null) {
@@ -370,14 +469,38 @@ public class ArenaBuilder {
             return BuildResult.success(arenaId, template.id(), transaction.getBlockCount(), duration);
 
         } catch (BuildLimitExceededException e) {
+            if (transaction == null) {
+                return BuildResult.failure(e.getMessage(), new BuildTransaction.RollbackResult(true, 0, 0, 0, 0));
+            }
             return handleBuildFailure(template, policyId, policyVersion, arenaId, transaction, e, startTime);
 
         } catch (BuildException e) {
+            if (transaction == null) {
+                return BuildResult.failure(e.getMessage(), new BuildTransaction.RollbackResult(true, 0, 0, 0, 0));
+            }
             return handleBuildFailure(template, policyId, policyVersion, arenaId, transaction, e, startTime);
 
         } catch (Exception e) {
+            if (transaction == null) {
+                return BuildResult.failure(e.getMessage(), new BuildTransaction.RollbackResult(true, 0, 0, 0, 0));
+            }
             return handleBuildFailure(template, policyId, policyVersion, arenaId, transaction,
                 new BuildException("Unexpected error: " + e.getMessage(), e), startTime);
+        } finally {
+            if (buildPermit != null) {
+                BUILD_RATE_LIMITER.releasePermit(buildPermit.permitId());
+            }
+            if (lockAcquired) {
+                boolean released = TEMPLATE_LOCK_MANAGER.release(template.id(), lockOwner);
+                if (released) {
+                    long heldForMs = System.currentTimeMillis() - lockAcquiredAtMs;
+                    telemetry.emit("arena.build.lock_released", Map.of(
+                        "lockedTemplateId", template.id(),
+                        "owner", lockOwner,
+                        "heldForMs", heldForMs
+                    ));
+                }
+            }
         }
     }
 
@@ -907,12 +1030,47 @@ public class ArenaBuilder {
             return Math.min(template.limits().maxBlocks(), HARD_CAP_BLOCKS);
         }
 
-        // Check tags for boss arenas
-        if (template.tags() != null && template.tags().contains("boss")) {
-            return BOSS_MAX_BLOCKS;
+        int defaultMax = DEFAULT_MAX_BLOCKS;
+        int bossMax = BOSS_MAX_BLOCKS;
+        ArenaTemplateConfig.ConfigSnapshot snapshot = configSnapshot;
+        if (snapshot != null) {
+            defaultMax = snapshot.defaultMaxBlocks();
+            bossMax = snapshot.bossMaxBlocks();
         }
+        return Math.min(isBossTemplate(template) ? bossMax : defaultMax, HARD_CAP_BLOCKS);
+    }
 
-        return DEFAULT_MAX_BLOCKS;
+    private long determineMaxBuildTimeMs(ArenaTemplate template) {
+        if (template.limits() != null && template.limits().maxBuildTimeMs() > 0) {
+            return template.limits().maxBuildTimeMs();
+        }
+        int defaultMax = DEFAULT_MAX_BUILD_TIME_MS;
+        int bossMax = BOSS_MAX_BUILD_TIME_MS;
+        ArenaTemplateConfig.ConfigSnapshot snapshot = configSnapshot;
+        if (snapshot != null) {
+            defaultMax = snapshot.defaultMaxBuildTimeMs();
+            bossMax = snapshot.bossMaxBuildTimeMs();
+        }
+        return isBossTemplate(template) ? bossMax : defaultMax;
+    }
+
+    private ArenaTemplate.BuildSettings.Order resolveBuildOrder(ArenaTemplate template) {
+        if (template.buildSettings() == null || template.buildSettings().buildOrder() == null) {
+            return ArenaTemplate.BuildSettings.Order.FLOOR_FIRST;
+        }
+        return template.buildSettings().buildOrder();
+    }
+
+    private ArenaTemplate.BuildSettings.Priority resolveBuildPriority(ArenaTemplate template) {
+        if (template.buildSettings() == null || template.buildSettings().buildPriority() == null) {
+            return ArenaTemplate.BuildSettings.Priority.SYNC;
+        }
+        return template.buildSettings().buildPriority();
+    }
+
+    private boolean isBossTemplate(ArenaTemplate template) {
+        return template.tags() != null
+            && (template.tags().contains("boss") || template.tags().contains("large"));
     }
 
     private void maybeCheckGoldenReference(ArenaTemplate template, BuildTransaction tx) {
@@ -962,15 +1120,13 @@ public class ArenaBuilder {
     }
 
     private void maybeWarnOnBuildTime(ArenaTemplate template, long durationMs) {
-        if (template.limits() == null || template.limits().maxBuildTimeMs() <= 0) {
-            return;
-        }
-        if (durationMs > template.limits().maxBuildTimeMs()) {
+        long maxBuildTimeMs = determineMaxBuildTimeMs(template);
+        if (durationMs > maxBuildTimeMs) {
             LOGGER.warn("Build time {}ms exceeded limit {}ms for template {}",
-                durationMs, template.limits().maxBuildTimeMs(), template.id());
+                durationMs, maxBuildTimeMs, template.id());
             telemetry.emit("arena.build.time_exceeded", Map.of(
                 "templateId", template.id(),
-                "limitMs", template.limits().maxBuildTimeMs(),
+                "limitMs", maxBuildTimeMs,
                 "actualMs", durationMs
             ));
         }
@@ -991,6 +1147,17 @@ public class ArenaBuilder {
         default boolean revertBlock(long packedPos, int stateId) {
             return true; // Override in implementation
         }
+    }
+
+    /**
+     * Optional hook for residual metrics when non-Minecraft placers can evaluate cleanup.
+     */
+    public interface ResidualProvider {
+        @Nullable ResidualMetrics measureResiduals(ArenaTemplate template,
+                                                   int originX,
+                                                   int originY,
+                                                   int originZ,
+                                                   int expectedBlocks);
     }
 
     @FunctionalInterface
@@ -1046,7 +1213,7 @@ public class ArenaBuilder {
     /**
      * Computes residual metrics using MetricsCompatibilityLayer when level is available.
      */
-    private ResidualSnapshot measureResiduals(ArenaTemplate template, int originX, int originY, int originZ, MinecraftBlockPlacer mcPlacer) {
+    private ResidualMetrics measureResiduals(ArenaTemplate template, int originX, int originY, int originZ, MinecraftBlockPlacer mcPlacer) {
         BuildDryRun dryRun = BuildDryRunCalculator.calculate(template);
         int expectedBlocks = dryRun.totalBlocks();
 
@@ -1077,8 +1244,8 @@ public class ArenaBuilder {
 
         AABB bounds = new AABB(minX, minY, minZ, maxX, maxY, maxZ);
         var residuals = MetricsCompatibilityLayer.measureResiduals(mcPlacer.level(), bounds, expectedBlocks);
-        return new ResidualSnapshot(residuals.entitiesResidual(), residuals.blocksResidual());
+        return new ResidualMetrics(residuals.entitiesResidual(), residuals.blocksResidual());
     }
 
-    private record ResidualSnapshot(int entitiesResidual, int blocksResidual) {}
+    public record ResidualMetrics(int entitiesResidual, int blocksResidual) {}
 }

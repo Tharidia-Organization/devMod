@@ -31,7 +31,9 @@ public final class StructureValidationInitializer {
                                  com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
         try {
             if (!Files.exists(manifestPath)) {
-                LOGGER.info("Structure manifest not found at {}, skipping structure validation", manifestPath);
+                LOGGER.info("Structure manifest not found at {}, enabling fallback validation", manifestPath);
+                ClasspathStructureDataProvider provider = new ClasspathStructureDataProvider(resourceLoader);
+                registry.enableStructureValidation(null, provider);
                 return;
             }
             StructureManifestParser parser = new StructureManifestParser();

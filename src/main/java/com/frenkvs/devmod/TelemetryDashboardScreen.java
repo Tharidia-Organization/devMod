@@ -18,12 +18,14 @@ import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Dashboard e Analytics Screen per la telemetria.
@@ -97,12 +99,13 @@ public class TelemetryDashboardScreen extends Screen {
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         this.mouseX = mouseX;
         this.mouseY = mouseY;
+        Font safeFont = getSafeFont();
 
         // Dark background
         AxiomRenderer.drawScreenBackground(graphics, this.width, this.height);
 
         // Title
-        AxiomRenderer.drawCenteredTitle(graphics, font, this.width, UIConstants.Position.TITLE_Y, "Telemetry Dashboard");
+        AxiomRenderer.drawCenteredTitle(graphics, safeFont, this.width, UIConstants.Position.TITLE_Y, "Telemetry Dashboard");
 
         // Tab bar
         int tabStartX = (this.width - (DashboardTab.values().length * TAB_WIDTH)) / 2;
@@ -114,7 +117,8 @@ public class TelemetryDashboardScreen extends Screen {
             boolean selected = tab == currentTab;
             boolean hovered = AxiomRenderer.isMouseOver(mouseX, mouseY, tabX, tabY, TAB_WIDTH - 2, TAB_HEIGHT);
 
-            AxiomRenderer.drawTab(graphics, font, tabX, tabY, TAB_WIDTH - 2, TAB_HEIGHT, tab.getName(), selected, hovered);
+            String tabName = Objects.requireNonNull(tab.getName(), "tabName");
+            AxiomRenderer.drawTab(graphics, safeFont, tabX, tabY, TAB_WIDTH - 2, TAB_HEIGHT, tabName, selected, hovered);
         }
 
         // Content area
@@ -140,7 +144,8 @@ public class TelemetryDashboardScreen extends Screen {
     }
 
     private void renderOverlaysTab(GuiGraphics graphics, int x, int y) {
-        AxiomRenderer.drawSectionHeader(graphics, font, x, y, "Toggle Overlays");
+        Font safeFont = getSafeFont();
+        AxiomRenderer.drawSectionHeader(graphics, safeFont, x, y, "Toggle Overlays");
         y += 20;
 
         // Use dynamic keybind names from KeyInputHandler
@@ -155,6 +160,8 @@ public class TelemetryDashboardScreen extends Screen {
     }
 
     private int drawOverlayToggle(GuiGraphics graphics, int x, int y, String name, KeyMapping keyMapping, boolean enabled, int accentColor) {
+        Font safeFont = getSafeFont();
+        String safeName = Objects.requireNonNull(name, "name");
         boolean hovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, CONTENT_WIDTH, ROW_HEIGHT - 2);
 
         if (hovered) {
@@ -165,20 +172,24 @@ public class TelemetryDashboardScreen extends Screen {
         graphics.fill(x, y + 4, x + 3, y + ROW_HEIGHT - 6, accentColor);
 
         // Name + dynamic hotkey from KeyMapping
-        graphics.drawString(font, name, x + 10, y + 6, UIConstants.Text.PRIMARY(), false);
-        String hotkeyText = keyMapping.isUnbound() ? "unbound" : keyMapping.getTranslatedKeyMessage().getString();
+        graphics.drawString(safeFont, safeName, x + 10, y + 6, UIConstants.Text.PRIMARY(), false);
+        String hotkeyText = keyMapping.isUnbound()
+            ? "unbound"
+            : Objects.requireNonNull(keyMapping.getTranslatedKeyMessage().getString(), "hotkeyText");
         int hotkeyColor = keyMapping.isUnbound() ? UIConstants.Text.MUTED() & 0x88FFFFFF : UIConstants.Text.MUTED();
-        graphics.drawString(font, "(" + hotkeyText + ")", x + 10 + font.width(name) + 6, y + 6, hotkeyColor, false);
+        String hotkeyLabel = Objects.requireNonNull("(" + hotkeyText + ")", "hotkeyLabel");
+        graphics.drawString(safeFont, hotkeyLabel, x + 10 + safeFont.width(safeName) + 6, y + 6, hotkeyColor, false);
 
         // Toggle
         int toggleX = x + CONTENT_WIDTH - UIConstants.Size.TOGGLE_WIDTH;
-        AxiomRenderer.drawToggle(graphics, font, toggleX, y + 3, UIConstants.Size.TOGGLE_WIDTH, UIConstants.Size.TOGGLE_HEIGHT, enabled, hovered);
+        AxiomRenderer.drawToggle(graphics, safeFont, toggleX, y + 3, UIConstants.Size.TOGGLE_WIDTH, UIConstants.Size.TOGGLE_HEIGHT, enabled, hovered);
 
         return y + ROW_HEIGHT;
     }
 
     private void renderExportTab(GuiGraphics graphics, int x, int y) {
-        AxiomRenderer.drawSectionHeader(graphics, font, x, y, "Export Heatmap Data");
+        Font safeFont = getSafeFont();
+        AxiomRenderer.drawSectionHeader(graphics, safeFont, x, y, "Export Heatmap Data");
         y += 20;
 
         y = drawExportButton(graphics, x, y, "Death Heatmap", UIConstants.Accent.RED());
@@ -194,10 +205,12 @@ public class TelemetryDashboardScreen extends Screen {
 
         // Hint
         int hintY = this.height - 60;
-        AxiomRenderer.drawHint(graphics, font, x, hintY, "Exports are saved to run/telemetry/");
+        AxiomRenderer.drawHint(graphics, safeFont, x, hintY, "Exports are saved to run/telemetry/");
     }
 
     private int drawExportButton(GuiGraphics graphics, int x, int y, String name, int accentColor) {
+        Font safeFont = getSafeFont();
+        String safeName = Objects.requireNonNull(name, "name");
         boolean hovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, CONTENT_WIDTH, ROW_HEIGHT - 4);
 
         int bgColor = hovered ? UIConstants.Background.HOVER() : UIConstants.Background.PANEL();
@@ -210,10 +223,10 @@ public class TelemetryDashboardScreen extends Screen {
         AxiomRenderer.drawBorder(graphics, x, y, CONTENT_WIDTH, ROW_HEIGHT - 4, hovered ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT());
 
         // Text
-        graphics.drawString(font, "Export " + name, x + 10, y + 5, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(safeFont, "Export " + safeName, x + 10, y + 5, UIConstants.Text.PRIMARY(), false);
 
         // Arrow
-        graphics.drawString(font, ">", x + CONTENT_WIDTH - 12, y + 5, hovered ? UIConstants.Text.ACCENT() : UIConstants.Text.MUTED(), false);
+        graphics.drawString(safeFont, ">", x + CONTENT_WIDTH - 12, y + 5, hovered ? UIConstants.Text.ACCENT() : UIConstants.Text.MUTED(), false);
 
         return y + ROW_HEIGHT;
     }
@@ -228,6 +241,7 @@ public class TelemetryDashboardScreen extends Screen {
             refreshStats();
             lastRefreshTime = now;
         }
+        Font safeFont = getSafeFont();
 
         // Control row: Refresh button + Auto-refresh toggle
         int btnWidth = 80;
@@ -255,8 +269,8 @@ public class TelemetryDashboardScreen extends Screen {
 
         String autoLabel = autoRefresh ? "Auto: ON" : "Auto: OFF";
         int autoColor = autoRefresh ? UIConstants.Accent.GREEN() : UIConstants.Text.SECONDARY();
-        int labelWidth = font.width(autoLabel);
-        graphics.drawString(font, autoLabel, toggleX + (toggleWidth - labelWidth) / 2, y + 6, autoColor, false);
+        int labelWidth = safeFont.width(autoLabel);
+        graphics.drawString(safeFont, autoLabel, toggleX + (toggleWidth - labelWidth) / 2, y + 6, autoColor, false);
 
         y += 30;
 
@@ -271,7 +285,7 @@ public class TelemetryDashboardScreen extends Screen {
             int index = i + scrollOffset;
             if (index < cachedStats.size()) {
                 String line = cachedStats.get(index);
-                graphics.drawString(font, line, x + 8, textY, UIConstants.Text.PRIMARY(), false);
+                graphics.drawString(safeFont, line, x + 8, textY, UIConstants.Text.PRIMARY(), false);
                 textY += 12;
             }
         }
@@ -288,16 +302,17 @@ public class TelemetryDashboardScreen extends Screen {
             graphics.fill(x, hintY, x + CONTENT_WIDTH, hintY + 16, UIConstants.Background.PANEL());
             AxiomRenderer.drawBorder(graphics, x, hintY, CONTENT_WIDTH, 16, UIConstants.Border.DEFAULT());
 
-            String hintText = "§7Scroll/↑↓/PgUp/PgDn§r | " + scrollInfo;
-            int textWidth = font.width(hintText.replaceAll("§.", "")); // Strip color codes for width
-            graphics.drawString(font, hintText, x + (CONTENT_WIDTH - textWidth) / 2, hintY + 4, UIConstants.Accent.YELLOW(), false);
+            String hintText = Objects.requireNonNull("§7Scroll/↑↓/PgUp/PgDn§r | " + scrollInfo, "hintText");
+            String hintTextPlain = Objects.requireNonNull(hintText.replaceAll("§.", ""), "hintTextPlain");
+            int textWidth = safeFont.width(hintTextPlain); // Strip color codes for width
+            graphics.drawString(safeFont, hintText, x + (CONTENT_WIDTH - textWidth) / 2, hintY + 4, UIConstants.Accent.YELLOW(), false);
 
             // Show scroll arrows if not at edges
             if (scrollOffset > 0) {
-                graphics.drawString(font, "▲", x + 4, hintY + 4, UIConstants.Accent.GREEN(), false);
+                graphics.drawString(safeFont, "▲", x + 4, hintY + 4, UIConstants.Accent.GREEN(), false);
             }
             if (scrollOffset < cachedStats.size() - 10) {
-                graphics.drawString(font, "▼", x + CONTENT_WIDTH - 12, hintY + 4, UIConstants.Accent.GREEN(), false);
+                graphics.drawString(safeFont, "▼", x + CONTENT_WIDTH - 12, hintY + 4, UIConstants.Accent.GREEN(), false);
             }
         }
     }
@@ -402,8 +417,14 @@ public class TelemetryDashboardScreen extends Screen {
         return name.charAt(0) + name.substring(1).toLowerCase();
     }
 
+    @Nonnull
+    private Font getSafeFont() {
+        return Objects.requireNonNull(font, "font");
+    }
+
     private void renderVisualizersTab(GuiGraphics graphics, int x, int y) {
-        AxiomRenderer.drawSectionHeader(graphics, font, x, y, "Load Heatmap Visualizers");
+        Font safeFont = getSafeFont();
+        AxiomRenderer.drawSectionHeader(graphics, safeFont, x, y, "Load Heatmap Visualizers");
         y += 20;
 
         y = drawVisualizerButton(graphics, x, y, "Death Heatmap", HeatmapVisualizer.HeatmapType.DEATH, UIConstants.Accent.RED());
@@ -426,7 +447,7 @@ public class TelemetryDashboardScreen extends Screen {
             graphics.fill(x, y, x + 3, y + ROW_HEIGHT - 4, UIConstants.Accent.RED());
             AxiomRenderer.drawBorder(graphics, x, y, btnWidth, ROW_HEIGHT - 4, UIConstants.Accent.RED());
             String confirmText = "Yes, Clear All";
-            graphics.drawString(font, confirmText, x + (btnWidth - font.width(confirmText)) / 2, y + 5, UIConstants.Accent.RED(), false);
+            graphics.drawString(safeFont, confirmText, x + (btnWidth - safeFont.width(confirmText)) / 2, y + 5, UIConstants.Accent.RED(), false);
 
             // "Cancel" button
             int cancelX = x + btnWidth + 10;
@@ -435,7 +456,7 @@ public class TelemetryDashboardScreen extends Screen {
             graphics.fill(cancelX, y, cancelX + btnWidth, y + ROW_HEIGHT - 4, cancelBg);
             AxiomRenderer.drawBorder(graphics, cancelX, y, btnWidth, ROW_HEIGHT - 4, UIConstants.Border.DEFAULT());
             String cancelText = "Cancel";
-            graphics.drawString(font, cancelText, cancelX + (btnWidth - font.width(cancelText)) / 2, y + 5, UIConstants.Text.PRIMARY(), false);
+            graphics.drawString(safeFont, cancelText, cancelX + (btnWidth - safeFont.width(cancelText)) / 2, y + 5, UIConstants.Text.PRIMARY(), false);
         } else {
             // Normal clear button
             boolean clearHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, CONTENT_WIDTH, ROW_HEIGHT);
@@ -443,12 +464,14 @@ public class TelemetryDashboardScreen extends Screen {
             graphics.fill(x, y, x + CONTENT_WIDTH, y + ROW_HEIGHT - 4, clearBg);
             graphics.fill(x, y, x + 3, y + ROW_HEIGHT - 4, UIConstants.Accent.RED());
             AxiomRenderer.drawBorder(graphics, x, y, CONTENT_WIDTH, ROW_HEIGHT - 4, clearHovered ? UIConstants.Accent.RED() : UIConstants.Border.DEFAULT());
-            int textWidth = font.width("Clear All Heatmaps");
-            graphics.drawString(font, "Clear All Heatmaps", x + (CONTENT_WIDTH - textWidth) / 2, y + 5, UIConstants.Accent.RED(), false);
+            int textWidth = safeFont.width("Clear All Heatmaps");
+            graphics.drawString(safeFont, "Clear All Heatmaps", x + (CONTENT_WIDTH - textWidth) / 2, y + 5, UIConstants.Accent.RED(), false);
         }
     }
 
     private int drawVisualizerButton(GuiGraphics graphics, int x, int y, String name, HeatmapVisualizer.HeatmapType type, int accentColor) {
+        Font safeFont = getSafeFont();
+        String safeName = Objects.requireNonNull(name, "name");
         boolean enabled = HeatmapVisualizer.INSTANCE.isEnabled(type);
         boolean hovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, CONTENT_WIDTH, ROW_HEIGHT - 4);
 
@@ -462,12 +485,12 @@ public class TelemetryDashboardScreen extends Screen {
         AxiomRenderer.drawBorder(graphics, x, y, CONTENT_WIDTH, ROW_HEIGHT - 4, hovered ? UIConstants.Border.ACCENT() : UIConstants.Border.DEFAULT());
 
         // Text
-        graphics.drawString(font, "Load " + name, x + 10, y + 5, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(safeFont, "Load " + safeName, x + 10, y + 5, UIConstants.Text.PRIMARY(), false);
 
         // Status indicator
         String status = enabled ? "[ACTIVE]" : "";
         if (!status.isEmpty()) {
-            graphics.drawString(font, status, x + CONTENT_WIDTH - font.width(status) - 8, y + 5, UIConstants.Accent.GREEN(), false);
+            graphics.drawString(safeFont, status, x + CONTENT_WIDTH - safeFont.width(status) - 8, y + 5, UIConstants.Accent.GREEN(), false);
         }
 
         return y + ROW_HEIGHT;
@@ -711,8 +734,9 @@ public class TelemetryDashboardScreen extends Screen {
     }
 
     private void showMessage(String message) {
-        if (minecraft != null && minecraft.player != null) {
-            minecraft.player.displayClientMessage(I18n.literal(message), true);
+        Minecraft mc = this.minecraft;
+        if (mc != null && mc.player != null) {
+            mc.player.displayClientMessage(I18n.literal(message), true);
         }
     }
 
@@ -735,7 +759,7 @@ public class TelemetryDashboardScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void renderBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Disable blur - just solid dimmed background
         graphics.fill(0, 0, this.width, this.height, 0xC0101010);
     }
@@ -746,7 +770,7 @@ public class TelemetryDashboardScreen extends Screen {
     }
 
     @Override
-    protected void renderMenuBackground(GuiGraphics graphics) {
+    protected void renderMenuBackground(@Nonnull GuiGraphics graphics) {
         graphics.fill(0, 0, this.width, this.height, 0xC0101010);
     }
 }

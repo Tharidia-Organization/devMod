@@ -49,7 +49,11 @@ public class ArenaManager {
         private final Set<BlockPos> modifiedBlocks = new HashSet<>();
 
         public Arena(ServerLevel level, BlockPos center, int size) {
-            this.id = UUID.randomUUID();
+            this(level, center, size, UUID.randomUUID());
+        }
+
+        public Arena(ServerLevel level, BlockPos center, int size, UUID arenaId) {
+            this.id = Objects.requireNonNull(arenaId, "arenaId");
             this.level = level;
             this.center = center;
             this.size = size;
@@ -208,7 +212,8 @@ public class ArenaManager {
     public Arena createArena(ServerLevel level, BlockPos playerPos, int size) {
         // Instance-only gate: block legacy overworld path when configured
         com.devmod.arena.config.ArenaTemplateConfig cfg = com.devmod.arena.config.ArenaTemplateConfig.load();
-        com.devmod.arena.gate.InstanceOnlyGate gate = new com.devmod.arena.gate.InstanceOnlyGate(cfg.snapshot(), null);
+        com.devmod.arena.telemetry.ArenaTelemetry telemetry = new com.devmod.arena.telemetry.ArenaTelemetry();
+        com.devmod.arena.gate.InstanceOnlyGate gate = new com.devmod.arena.gate.InstanceOnlyGate(cfg.snapshot(), telemetry);
         com.devmod.arena.gate.InstanceOnlyGate.Result gateResult = gate.check(level, "ArenaManager.createArena");
         if (gateResult == com.devmod.arena.gate.InstanceOnlyGate.Result.BLOCKED) {
             LOGGER.error("[ArenaManager] Instance-only mode enabled, createArena blocked in {}", level.dimension().location());

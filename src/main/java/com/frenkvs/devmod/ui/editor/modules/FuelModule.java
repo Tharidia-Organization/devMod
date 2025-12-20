@@ -39,7 +39,7 @@ public class FuelModule extends AbstractEditorModule {
     /** Ensures delegates are initialized (lazy init to avoid this-escape). */
     private void ensureDelegates() {
         if (!delegatesInitialized) {
-            this.core = new FuelModuleCore(this);
+            this.core = new FuelModuleCore();
             this.ui = new FuelModuleUI(this, core);
             delegatesInitialized = true;
         }

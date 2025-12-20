@@ -131,12 +131,13 @@ public class UsableConfigManager {
         CustomData.update(Objects.requireNonNull(CUSTOM_DATA), Objects.requireNonNull(stack), tag -> {
             CompoundTag statsTag = new CompoundTag();
             copy.save(statsTag);
-            tag.put("UsableModStats", statsTag.copy());
+            CompoundTag statsTagCopy = Objects.requireNonNull(statsTag.copy(), "statsTag");
+            tag.put("UsableModStats", statsTagCopy);
             // Also mirror to typed data component for forward compatibility
             var setComponent = UsableComponents.usableStatsComponent();
             if (setComponent != null) {
                 try {
-                    stack.set(setComponent, statsTag.copy());
+                    stack.set(setComponent, Objects.requireNonNull(statsTagCopy.copy(), "statsTagCopy"));
                 } catch (Exception e) {
                     LOGGER.warn("[UsableConfig] Failed to apply usable_stats component", e);
                 }
@@ -200,12 +201,13 @@ public class UsableConfigManager {
                 if (loaded != null) {
                     globalStats.clear();
                     loaded.forEach((key, stats) -> {
-                        ResourceLocation resLoc = ResourceLocation.tryParse(key);
+                        String safeKey = Objects.requireNonNull(key, "itemKey");
+                        ResourceLocation resLoc = ResourceLocation.tryParse(safeKey);
                         if (resLoc != null && BuiltInRegistries.ITEM.containsKey(resLoc)) {
-                            Item item = BuiltInRegistries.ITEM.get(resLoc);
+                            Item item = Objects.requireNonNull(BuiltInRegistries.ITEM.get(resLoc), "item");
                             globalStats.put(item, stats);
                         } else {
-                            LOGGER.warn("[UsableConfig] Unknown item in config: {}", key);
+                            LOGGER.warn("[UsableConfig] Unknown item in config: {}", safeKey);
                         }
                     });
                     LOGGER.info("[UsableConfig] Loaded {} usable configurations from {}",
@@ -237,8 +239,9 @@ public class UsableConfigManager {
             try (Writer writer = Files.newBufferedWriter(tempFile, StandardCharsets.UTF_8)) {
                 Map<String, UsableStats> toSave = new HashMap<>();
                 globalStats.forEach((item, stats) -> {
-                    ResourceLocation key = BuiltInRegistries.ITEM.getKey(item);
-                    toSave.put(key.toString(), stats);
+                    ResourceLocation key = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item, "item"));
+                    String safeKey = Objects.requireNonNull(key, "itemKey").toString();
+                    toSave.put(safeKey, stats);
                 });
                 GSON.toJson(toSave, writer);
                 writer.flush();

@@ -15,6 +15,7 @@ import java.util.Objects;
  */
 public class FoodModuleCore {
 
+    @SuppressWarnings("unused")
     private final FoodModule module;
 
     private FoodStats stats = new FoodStats();
@@ -95,7 +96,7 @@ public class FoodModuleCore {
         }
 
         // Check for CustomData
-        var customData = item.get(DataComponents.CUSTOM_DATA);
+        var customData = item.get(Objects.requireNonNull(DataComponents.CUSTOM_DATA, "custom data component"));
         if (customData != null && customData.copyTag().contains("FoodModStats")) {
             dataSource = SourceBadge.Source.NBT;
             sourcePrefix = "NBT";
@@ -114,7 +115,7 @@ public class FoodModuleCore {
         if (item == null || item.isEmpty()) return;
 
         try {
-            FoodProperties food = item.get(DataComponents.FOOD);
+            FoodProperties food = item.get(Objects.requireNonNull(DataComponents.FOOD, "food component"));
             if (food != null) {
                 target.nutrition = food.nutrition();
                 target.saturation = food.saturation();

@@ -288,7 +288,8 @@ public class ItemEditorDataOps {
     private List<ItemEditorDataManager.EnchantData> collectEnchantmentsForExport(ItemStack item) {
         List<ItemEditorDataManager.EnchantData> result = new ArrayList<>();
         ItemEnchantments enchants = item.getOrDefault(
-            Objects.requireNonNull(DataComponents.ENCHANTMENTS), ItemEnchantments.EMPTY);
+            Objects.requireNonNull(DataComponents.ENCHANTMENTS, "enchantments component"),
+            Objects.requireNonNull(ItemEnchantments.EMPTY, "empty enchantments"));
 
         Minecraft mc = Minecraft.getInstance();
         Level level = mc != null ? mc.level : null;
@@ -309,7 +310,8 @@ public class ItemEditorDataOps {
     private List<ItemEditorDataManager.AttrData> collectAttributesForExport(ItemStack item) {
         List<ItemEditorDataManager.AttrData> result = new ArrayList<>();
         ItemAttributeModifiers modifiers = item.getOrDefault(
-            Objects.requireNonNull(DataComponents.ATTRIBUTE_MODIFIERS), ItemAttributeModifiers.EMPTY);
+            Objects.requireNonNull(DataComponents.ATTRIBUTE_MODIFIERS, "attribute modifiers component"),
+            Objects.requireNonNull(ItemAttributeModifiers.EMPTY, "empty attribute modifiers"));
 
         Objects.requireNonNull(modifiers.modifiers()).forEach(entry -> {
             Holder<Attribute> attr = entry.attribute();
@@ -386,7 +388,8 @@ public class ItemEditorDataOps {
     }
 
     private void applyTemplateEnchantments(ItemEditorDataManager.TemplateData template, ItemStack target) {
-        ItemEnchantments.Mutable mutable = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
+        ItemEnchantments.Mutable mutable = new ItemEnchantments.Mutable(
+            Objects.requireNonNull(ItemEnchantments.EMPTY, "empty enchantments"));
         var mc = Minecraft.getInstance();
         var level = mc != null ? mc.level : null;
         var enchantmentRegistry = level != null
@@ -395,11 +398,12 @@ public class ItemEditorDataOps {
 
         for (ItemEditorDataManager.EnchantData ench : template.enchantments) {
             if (ench == null || ench.id == null) continue;
-            ResourceLocation id = ResourceLocation.tryParse(ench.id);
+            String enchId = Objects.requireNonNull(ench.id, "enchant id");
+            ResourceLocation id = ResourceLocation.tryParse(enchId);
             if (id == null) continue;
             ResourceKey<Enchantment> key = ResourceKey.create(Objects.requireNonNull(Registries.ENCHANTMENT), id);
             Holder<Enchantment> holder = enchantmentRegistry != null
-                ? enchantmentRegistry.getHolder(key).orElse(null)
+                ? enchantmentRegistry.getHolder(Objects.requireNonNull(key, "enchant key")).orElse(null)
                 : null;
             if (holder != null) {
                 mutable.set(holder, ench.level);
@@ -413,10 +417,12 @@ public class ItemEditorDataOps {
 
         for (ItemEditorDataManager.AttrData attr : template.attributes) {
             if (attr == null || attr.id == null) continue;
-            ResourceLocation id = ResourceLocation.tryParse(attr.id);
+            String attrId = Objects.requireNonNull(attr.id, "attribute id");
+            ResourceLocation id = ResourceLocation.tryParse(attrId);
             if (id == null) continue;
             ResourceKey<Attribute> key = ResourceKey.create(Objects.requireNonNull(Registries.ATTRIBUTE), id);
-            Holder<Attribute> holder = BuiltInRegistries.ATTRIBUTE.getHolder(key).orElse(null);
+            Holder<Attribute> holder = BuiltInRegistries.ATTRIBUTE.getHolder(
+                Objects.requireNonNull(key, "attribute key")).orElse(null);
             if (holder == null) {
                 holder = PufferfishCompat.map(id, BuiltInRegistries.ATTRIBUTE);
             }
@@ -427,7 +433,9 @@ public class ItemEditorDataOps {
                 case 2 -> AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
                 default -> AttributeModifier.Operation.ADD_VALUE;
             };
-            ResourceLocation modifierId = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "template_" + id.getPath());
+            ResourceLocation modifierId = Objects.requireNonNull(
+                ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "template_" + id.getPath()),
+                "modifier id");
             AttributeModifier modifier = new AttributeModifier(modifierId, attr.value, op);
             builder.add(holder, modifier, EquipmentSlotGroup.ANY);
         }

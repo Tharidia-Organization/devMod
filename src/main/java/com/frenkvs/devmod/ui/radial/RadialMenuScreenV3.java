@@ -12,10 +12,13 @@ import com.frenkvs.devmod.ui.radial.render.RadialTooltipRenderer;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
@@ -255,14 +258,15 @@ public class RadialMenuScreenV3 extends Screen {
     }
 
     private RadialMenuItem createMobEditorItem() {
+        ItemStack leadStack = Objects.requireNonNull(Items.LEAD, "lead").getDefaultInstance();
         return new RadialMenuItem("Mob Editor",
             RadialAction.custom("Mob Editor",
                 getMobEditorDescription(),
                 "🐾",
-                new ItemStack(Items.LEAD),
+                leadStack.copy(),
                 this::openMobEditor),
             "🐾",
-            new ItemStack(Items.LEAD)) {
+            leadStack.copy()) {
             @Override
             public boolean isActive() {
                 return cachedTargetEntity instanceof net.minecraft.world.entity.Mob;
@@ -471,6 +475,11 @@ public class RadialMenuScreenV3 extends Screen {
         return macroCategoryMap.getOrDefault(selectedMacro, Collections.emptyList());
     }
 
+    @Nonnull
+    private Font requireFont() {
+        return Objects.requireNonNull(font, "font");
+    }
+
     // ================================================================
     // RENDERING - FAVORITES RING
     // ================================================================
@@ -478,6 +487,7 @@ public class RadialMenuScreenV3 extends Screen {
     private void renderFavoritesRing(GuiGraphics graphics) {
         if (favorites.isEmpty()) return;
 
+        Font safeFont = requireFont();
         int numFavorites = favorites.size();
         double segmentAngle = RadialMenuConstants.TWO_PI / numFavorites;
         double startOffset = RadialMenuConstants.CATEGORY_START_OFFSET;
@@ -501,7 +511,8 @@ public class RadialMenuScreenV3 extends Screen {
             RadialGeometry.renderCircle(graphics, favX, favY, size, bgColor);
 
             // Icon
-            if (fav.item.getIconStack() != null) {
+            ItemStack iconStack = fav.item.getIconStack();
+            if (iconStack != null) {
                 graphics.pose().pushPose();
                 graphics.pose().translate(
                     favX + RadialMenuConstants.FAVORITE_ICON_OFFSET_X,
@@ -509,10 +520,10 @@ public class RadialMenuScreenV3 extends Screen {
                     0);
                 graphics.pose().scale(RadialMenuConstants.FAVORITE_ICON_SCALE,
                     RadialMenuConstants.FAVORITE_ICON_SCALE, 1f);
-                graphics.renderItem(fav.item.getIconStack(), 0, 0);
+                graphics.renderItem(Objects.requireNonNull(iconStack, "iconStack"), 0, 0);
                 graphics.pose().popPose();
             } else {
-                graphics.drawCenteredString(font, "★", favX,
+                graphics.drawCenteredString(safeFont, "★", favX,
                     favY + RadialMenuConstants.FAVORITE_STAR_OFFSET_Y,
                     RadialMenuConstants.FAVORITE_STAR_COLOR);
             }
@@ -527,6 +538,7 @@ public class RadialMenuScreenV3 extends Screen {
         float searchBoxAnimation = animator.getSearchBoxAnimation();
         if (searchBoxAnimation < RadialMenuConstants.SEARCH_ANIMATION_EPSILON) return;
 
+        Font safeFont = requireFont();
         RadialTooltipRenderer.SearchConfig searchConfig = new RadialTooltipRenderer.SearchConfig(
             width, height, centerX, config.theme
         );
@@ -542,7 +554,7 @@ public class RadialMenuScreenV3 extends Screen {
             ))
             .toList();
 
-        RadialTooltipRenderer.renderSearchOverlay(graphics, font, searchConfig,
+        RadialTooltipRenderer.renderSearchOverlay(graphics, safeFont, searchConfig,
             searchQuery.toString(), displayResults, selectedSearchResult, searchBoxAnimation);
     }
 
@@ -590,7 +602,8 @@ public class RadialMenuScreenV3 extends Screen {
             animator.getCenterHoverAnimation(), searchMode, inSubcategory
         );
 
-        RadialHubRenderer.render(graphics, font, hubState);
+        Font safeFont = requireFont();
+        RadialHubRenderer.render(graphics, safeFont, hubState);
     }
 
     private void renderCategories(GuiGraphics graphics) {
@@ -602,6 +615,7 @@ public class RadialMenuScreenV3 extends Screen {
             centerX, centerY, innerRadius, outerRadius, itemRadius,
             selectedCategoryIndex, animator.getCategoryAnimations(), config.theme, config.iconMode, animator.getPulsePhase()
         );
+        Font safeFont = requireFont();
 
         // Cross-fade transition: render outgoing categories (fading out) then incoming (fading in)
         boolean isTransitioning = animator.isTransitioning() && transitionFromMacro != null;
@@ -610,13 +624,13 @@ public class RadialMenuScreenV3 extends Screen {
             // Render outgoing categories with decreasing alpha
             float outgoingAlpha = 1f - animator.getMacroTransitionProgress();
             List<RadialCategory> outgoingCategories = macroCategoryMap.getOrDefault(transitionFromMacro, Collections.emptyList());
-            RadialCategoryRenderer.renderCategoryRing(graphics, font, outgoingCategories, ringConfig, outgoingAlpha, false);
+            RadialCategoryRenderer.renderCategoryRing(graphics, safeFont, outgoingCategories, ringConfig, outgoingAlpha, false);
         }
 
         // Render current (incoming) categories
         List<RadialCategory> categories = getActiveCategories();
         float incomingAlpha = isTransitioning ? animator.getMacroTransitionProgress() : 1f;
-        RadialCategoryRenderer.renderCategoryRing(graphics, font, categories, ringConfig, incomingAlpha, true);
+        RadialCategoryRenderer.renderCategoryRing(graphics, safeFont, categories, ringConfig, incomingAlpha, true);
     }
 
     private void renderCategoryItems(GuiGraphics graphics, RadialCategory category) {
@@ -628,7 +642,8 @@ public class RadialMenuScreenV3 extends Screen {
             animator.getItemAnimations(), config.theme
         );
 
-        RadialCategoryRenderer.renderCategoryItems(graphics, font, category, categories, itemsConfig);
+        Font safeFont = requireFont();
+        RadialCategoryRenderer.renderCategoryItems(graphics, safeFont, category, categories, itemsConfig);
     }
 
     private void renderTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -656,27 +671,32 @@ public class RadialMenuScreenV3 extends Screen {
             RadialTooltipRenderer.TooltipContext context = new RadialTooltipRenderer.TooltipContext(
                 centerX, centerY, outerRadius, config.theme
             );
-            RadialTooltipRenderer.renderTooltip(graphics, font, tooltip, context);
+            Font safeFont = requireFont();
+            RadialTooltipRenderer.renderTooltip(graphics, safeFont, tooltip, context);
         }
     }
 
     private void renderHelpText(GuiGraphics graphics) {
         if (!config.showKeyHints) return;
-        RadialTooltipRenderer.renderHelpText(graphics, font, width, height,
+        Font safeFont = requireFont();
+        RadialTooltipRenderer.renderHelpText(graphics, safeFont, width, height,
             selectedMacro, searchMode, openTime, config.theme);
     }
 
     private void renderBreadcrumb(GuiGraphics graphics) {
-        RadialTooltipRenderer.renderBreadcrumb(graphics, font,
+        Font safeFont = requireFont();
+        RadialTooltipRenderer.renderBreadcrumb(graphics, safeFont,
             new ArrayList<>(navigationStack), currentCategory);
     }
 
     private void renderEditModeIndicator(GuiGraphics graphics) {
-        RadialTooltipRenderer.renderEditModeIndicator(graphics, font, width);
+        Font safeFont = requireFont();
+        RadialTooltipRenderer.renderEditModeIndicator(graphics, safeFont, width);
     }
 
     private void renderThemeIndicator(GuiGraphics graphics) {
-        RadialTooltipRenderer.renderThemeIndicator(graphics, font, width, config.theme.presetName, openTime);
+        Font safeFont = requireFont();
+        RadialTooltipRenderer.renderThemeIndicator(graphics, safeFont, width, config.theme.presetName, openTime);
     }
 
     // ================================================================
@@ -1038,14 +1058,19 @@ public class RadialMenuScreenV3 extends Screen {
 
     private void playSound(float pitch, float volume) {
         if (config.enableSounds) {
-            Minecraft.getInstance().getSoundManager().play(
-                SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), pitch, volume));
+            SoundEvent soundEvent = Objects.requireNonNull(SoundEvents.UI_BUTTON_CLICK.value(), "uiClick");
+            SoundInstance sound = Objects.requireNonNull(SimpleSoundInstance.forUI(soundEvent, pitch, volume), "uiSound");
+            Minecraft.getInstance().getSoundManager().play(sound);
         }
     }
 
-    private void showMessage(Minecraft mc, String message) {
-        if (mc.player != null) {
-            mc.player.displayClientMessage(Component.literal(message), true);
+    private void showMessage(Minecraft mc, @Nonnull String message) {
+        var player = mc.player;
+        if (player != null) {
+            String safeMessage = Objects.requireNonNull(message, "message");
+            player.displayClientMessage(
+                Objects.requireNonNull(Component.literal(safeMessage), "messageComponent"),
+                true);
         }
     }
 

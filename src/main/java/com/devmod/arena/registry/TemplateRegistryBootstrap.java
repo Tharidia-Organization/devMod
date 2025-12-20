@@ -22,7 +22,7 @@ import java.util.Map;
  * <p>Validation mode: sysprop {@code devmod.template.validationMode} or env
  * {@code DEVMOD_TEMPLATE_VALIDATION_MODE} (STRICT default).</p>
  */
-public class TemplateRegistryBootstrap {
+public class TemplateRegistryBootstrap implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateRegistryBootstrap.class);
 
@@ -84,7 +84,7 @@ public class TemplateRegistryBootstrap {
         );
 
         TemplateRegistryBootstrap bootstrap = new TemplateRegistryBootstrap(telemetry, dir, mode, config, config.snapshot());
-        bootstrap.featureFlagManager.applyConfig(config); // notify listeners immediately
+        bootstrap.applyConfig(config); // notify listeners and refresh registry snapshot immediately
         return bootstrap;
     }
 
@@ -164,6 +164,7 @@ public class TemplateRegistryBootstrap {
         if (configSnapshot.customHazardBuilders() != null) {
             CustomHazardRegistry.getInstance().reset(Set.copyOf(configSnapshot.customHazardBuilders()));
         }
+        registry.applyConfigSnapshot(configSnapshot);
         try {
             Path manifestPath = configSnapshot.structureManifestPath() != null
                 ? Path.of(configSnapshot.structureManifestPath())
@@ -181,5 +182,14 @@ public class TemplateRegistryBootstrap {
 
     public List<String> lastErrors() {
         return lastLoadResult != null ? lastLoadResult.errors() : List.of();
+    }
+
+    @Override
+    public void close() {
+        try {
+            registry.close();
+        } catch (Exception e) {
+            LOGGER.warn("Failed to close ArenaTemplateRegistry: {}", e.getMessage());
+        }
     }
 }

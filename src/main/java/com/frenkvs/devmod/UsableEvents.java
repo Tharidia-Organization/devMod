@@ -55,7 +55,9 @@ public class UsableEvents {
 
         // Apply cooldown if set
         if (stats.cooldownDuration > 0) {
-            player.getCooldowns().addCooldown(stack.getItem(), stats.cooldownDuration);
+            player.getCooldowns().addCooldown(
+                java.util.Objects.requireNonNull(stack.getItem(), "item"),
+                stats.cooldownDuration);
             LOGGER.debug("[UsableEvents] Applied cooldown of {} ticks to {} for player {}",
                 stats.cooldownDuration, stack.getHoverName().getString(), player.getName().getString());
         }

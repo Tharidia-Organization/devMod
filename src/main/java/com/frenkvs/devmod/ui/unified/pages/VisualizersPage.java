@@ -16,6 +16,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import javax.annotation.Nonnull;
+import java.util.Objects;
 
 /**
  * Visualizers settings page with controls for heatmaps, light levels,
@@ -77,6 +78,7 @@ public class VisualizersPage implements SettingsPage {
 
     @Override
     public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+        Font safeFont = Objects.requireNonNull(font, "font");
         // Decay slider pulse animations
         if (lightSliderPulse > 0) lightSliderPulse = Math.max(0, lightSliderPulse - 0.05f);
         if (viewDistSliderPulse > 0) viewDistSliderPulse = Math.max(0, viewDistSliderPulse - 0.05f);
@@ -100,18 +102,18 @@ public class VisualizersPage implements SettingsPage {
             int currentY = y - scrollOffset;
 
             // === SECTION: Light Level Overlay ===
-            AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Light Level Overlay [L]");
+            AxiomRenderer.drawSectionHeader(graphics, safeFont, x, currentY, "Light Level Overlay [L]");
             currentY += ROW_HEIGHT;
 
             // Light Level toggle
-            currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                     "Light Levels", "Show spawn-safe light on blocks",
                     LightLevelOverlay.INSTANCE.isEnabled());
 
             // Radius slider
             // Calculate effective width accounting for scrollbar if present
             int effectiveWidth = totalContentHeight > visibleHeight ? width - SCROLLBAR_WIDTH - 8 : width;
-            graphics.drawString(font, "Radius: " + lightLevelRadius + " blocks", x, currentY + 4, UIConstants.Text.SECONDARY(), false);
+            graphics.drawString(safeFont, "Radius: " + lightLevelRadius + " blocks", x, currentY + 4, UIConstants.Text.SECONDARY(), false);
             int labelWidth = 120;
             int buttonsWidth = 56; // Two 20px buttons + 8px gap + 8px margin
             int sliderX = x + labelWidth;
@@ -153,7 +155,7 @@ public class VisualizersPage implements SettingsPage {
             String heatmapTitle = activeCount > 0
                 ? "Heatmaps (" + activeCount + " active) [H to cycle]"
                 : "Heatmaps [H to cycle]";
-            AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, heatmapTitle);
+            AxiomRenderer.drawSectionHeader(graphics, safeFont, x, currentY, heatmapTitle);
 
             // "Disable All" button if any active
             if (activeCount > 0) {
@@ -166,28 +168,28 @@ public class VisualizersPage implements SettingsPage {
             currentY += ROW_HEIGHT;
 
             // Heatmap type toggles
-            currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderHeatmapToggle(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                     "Death Heatmap", HeatmapType.DEATH, 0xFFFF0000);
 
-            currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderHeatmapToggle(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                     "Movement Heatmap", HeatmapType.MOVEMENT, 0xFF00FF00);
 
-            currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderHeatmapToggle(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                     "Camping Detection", HeatmapType.CAMPING, 0xFFFFFF00);
 
-            currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderHeatmapToggle(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                     "Stuck Points", HeatmapType.STUCK, 0xFFFF8000);
 
-            currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderHeatmapToggle(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                     "Aggro Drop Points", HeatmapType.AGGRO_DROP, 0xFF8000FF);
 
-            currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderHeatmapToggle(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                     "Kiting Paths", HeatmapType.KITING, 0xFF00FFFF);
 
-            currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderHeatmapToggle(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                     "Light Spawnable", HeatmapType.LIGHT_SPAWNABLE, 0xFFFF0000);
 
-            currentY = renderHeatmapToggle(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderHeatmapToggle(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                     "Light Dark Areas", HeatmapType.LIGHT_DARK, 0xFFFF8800);
 
             // Separator
@@ -196,16 +198,16 @@ public class VisualizersPage implements SettingsPage {
             currentY += SECTION_SPACING;
 
             // === SECTION: Spatial Analysis ===
-            AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Spatial Analysis");
+            AxiomRenderer.drawSectionHeader(graphics, safeFont, x, currentY, "Spatial Analysis");
             currentY += ROW_HEIGHT;
 
             // Safe Spot Visualizer
-            currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                     "Safe Spots [C]", "Highlight camping/safe positions",
                     SafeSpotVisualizer.INSTANCE.isEnabled());
 
             // Vertical Levels
-            currentY = renderToggleRow(graphics, font, x, currentY, width, mouseX, mouseY,
+            currentY = renderToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                     "Vertical Levels [Y]", "Show room height zones",
                     VerticalLevelsVisualizer.INSTANCE.isEnabled());
 
@@ -215,12 +217,12 @@ public class VisualizersPage implements SettingsPage {
             currentY += SECTION_SPACING;
 
             // === SECTION: Performance ===
-            AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Performance");
+            AxiomRenderer.drawSectionHeader(graphics, safeFont, x, currentY, "Performance");
             currentY += ROW_HEIGHT;
 
             // View Distance slider
             // Calculate effective width accounting for scrollbar if present (reuse from earlier)
-            graphics.drawString(font, "View Distance: " + viewDistance + " blocks", x, currentY + 4, UIConstants.Text.SECONDARY(), false);
+            graphics.drawString(safeFont, "View Distance: " + viewDistance + " blocks", x, currentY + 4, UIConstants.Text.SECONDARY(), false);
             int vdLabelWidth = 140;
             int vdButtonsWidth = 56; // Two 20px buttons + 8px gap + 8px margin
             int vdSliderX = x + vdLabelWidth;
@@ -254,7 +256,7 @@ public class VisualizersPage implements SettingsPage {
             currentY += ROW_HEIGHT;
 
             // Hint about view distance
-            graphics.drawString(font, "Affects all visualizers render range", x, currentY, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, "Affects all visualizers render range", x, currentY, UIConstants.Text.MUTED(), false);
             currentY += 16;
 
             // Hint
@@ -314,8 +316,9 @@ public class VisualizersPage implements SettingsPage {
         graphics.fill(x, thumbY, x + barWidth, thumbY + thumbHeight, thumbColor);
     }
 
-    private int renderToggleRow(GuiGraphics graphics, Font font, int x, int y, int width,
+    private int renderToggleRow(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
                                  int mouseX, int mouseY, String label, String description, boolean enabled) {
+        @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         int rowWidth = width - 20;
         boolean hovered = mouseX >= x && mouseX < x + rowWidth && mouseY >= y && mouseY < y + ROW_HEIGHT;
 
@@ -324,19 +327,20 @@ public class VisualizersPage implements SettingsPage {
         }
 
         // Label and description
-        graphics.drawString(font, label, x, y + 2, UIConstants.Text.PRIMARY(), false);
-        graphics.drawString(font, description, x, y + 12, UIConstants.Text.MUTED(), false);
+        graphics.drawString(safeFont, label, x, y + 2, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(safeFont, description, x, y + 12, UIConstants.Text.MUTED(), false);
 
         // Toggle - use standardized dimensions
         int toggleX = x + rowWidth - UIConstants.Size.TOGGLE_WIDTH;
         int toggleY = y + (ROW_HEIGHT - UIConstants.Size.TOGGLE_HEIGHT) / 2;
-        AxiomRenderer.drawToggle(graphics, font, toggleX, toggleY, UIConstants.Size.TOGGLE_WIDTH, UIConstants.Size.TOGGLE_HEIGHT, enabled, hovered);
+        AxiomRenderer.drawToggle(graphics, safeFont, toggleX, toggleY, UIConstants.Size.TOGGLE_WIDTH, UIConstants.Size.TOGGLE_HEIGHT, enabled, hovered);
 
         return y + ROW_HEIGHT;
     }
 
-    private int renderHeatmapToggle(GuiGraphics graphics, Font font, int x, int y, int width,
+    private int renderHeatmapToggle(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
                                      int mouseX, int mouseY, String label, HeatmapType type, int color) {
+        @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         int rowWidth = width - 20;
         boolean enabled = HeatmapVisualizer.INSTANCE.isEnabled(type);
         boolean hovered = mouseX >= x && mouseX < x + rowWidth && mouseY >= y && mouseY < y + 20;
@@ -350,11 +354,11 @@ public class VisualizersPage implements SettingsPage {
         AxiomRenderer.drawBorder(graphics, x, y + 2, 12, 12, UIConstants.Border.DEFAULT());
 
         // Label
-        graphics.drawString(font, label, x + 18, y + 4, UIConstants.Text.PRIMARY(), false);
+        graphics.drawString(safeFont, label, x + 18, y + 4, UIConstants.Text.PRIMARY(), false);
 
         // Toggle - use standardized dimensions
         int toggleX = x + rowWidth - UIConstants.Size.TOGGLE_WIDTH;
-        AxiomRenderer.drawToggle(graphics, font, toggleX, y, UIConstants.Size.TOGGLE_WIDTH, UIConstants.Size.TOGGLE_HEIGHT, enabled, hovered);
+        AxiomRenderer.drawToggle(graphics, safeFont, toggleX, y, UIConstants.Size.TOGGLE_WIDTH, UIConstants.Size.TOGGLE_HEIGHT, enabled, hovered);
 
         return y + 20;
     }

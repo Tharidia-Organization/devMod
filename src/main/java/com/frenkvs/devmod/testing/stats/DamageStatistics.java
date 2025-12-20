@@ -64,13 +64,13 @@ public class DamageStatistics {
 
         if (bodyPart != null) {
             String part = bodyPart.toUpperCase();
-            damageByBodyPart.merge(part, damage, Double::sum);
-            hitsByBodyPart.merge(part, 1, Integer::sum);
+            damageByBodyPart.merge(part, damage, DamageStatistics::safeDoubleSum);
+            hitsByBodyPart.merge(part, 1, DamageStatistics::safeIntSum);
         }
 
         if (weapon != null) {
             String weaponKey = weapon.getDescriptionId();
-            damageByWeapon.merge(weaponKey, damage, Double::sum);
+            damageByWeapon.merge(weaponKey, damage, DamageStatistics::safeDoubleSum);
         }
     }
 
@@ -131,6 +131,18 @@ public class DamageStatistics {
         damageByBodyPart.clear();
         damageByWeapon.clear();
         hitsByBodyPart.clear();
+    }
+
+    private static Double safeDoubleSum(Double left, Double right) {
+        double leftValue = left == null ? 0d : left.doubleValue();
+        double rightValue = right == null ? 0d : right.doubleValue();
+        return leftValue + rightValue;
+    }
+
+    private static Integer safeIntSum(Integer left, Integer right) {
+        int leftValue = left == null ? 0 : left.intValue();
+        int rightValue = right == null ? 0 : right.intValue();
+        return leftValue + rightValue;
     }
 
     // JSON helpers

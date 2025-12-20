@@ -32,7 +32,7 @@ public class EnchantmentStatistics {
     public void recordEnchantedKill(String enchantmentType) {
         enchantedWeaponKills++;
         if (enchantmentType != null) {
-            killsByEnchantment.merge(enchantmentType, 1, Integer::sum);
+            killsByEnchantment.merge(enchantmentType, 1, EnchantmentStatistics::safeIntSum);
         }
     }
 
@@ -76,6 +76,12 @@ public class EnchantmentStatistics {
         itemsEnchanted = 0;
         enchantedWeaponKills = 0;
         killsByEnchantment.clear();
+    }
+
+    private static Integer safeIntSum(Integer left, Integer right) {
+        int leftValue = left == null ? 0 : left.intValue();
+        int rightValue = right == null ? 0 : right.intValue();
+        return leftValue + rightValue;
     }
 
     private int getInt(JsonObject obj, String key, int defaultValue) {

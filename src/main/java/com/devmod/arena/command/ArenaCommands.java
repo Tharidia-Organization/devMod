@@ -24,6 +24,7 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 /**
  * DD30: Arena dev commands for template management and testing.
@@ -66,6 +68,7 @@ public class ArenaCommands {
     private final AutosmokeScheduler autosmokeScheduler;
     private final Path templatesDirectory;
     private final ArenaBuilder arenaBuilder;
+    private final Function<ServerLevel, ArenaBuilder> builderFactory;
     private final InstanceOnlyGate instanceGate;
     private final ForceTemplateCapability forceTemplateCapability;
     private final TemplateValidator templateValidator;
@@ -117,7 +120,39 @@ public class ArenaCommands {
         this.autosmokeScheduler = autosmokeScheduler;
         this.templatesDirectory = templatesDirectory;
         this.arenaBuilder = Objects.requireNonNull(arenaBuilder, "arenaBuilder");
-        this.instanceGate = configSnapshot != null ? new InstanceOnlyGate(configSnapshot, null) : null;
+        this.builderFactory = level -> this.arenaBuilder;
+        this.instanceGate = configSnapshot != null
+            ? new InstanceOnlyGate(configSnapshot, new com.devmod.arena.telemetry.ArenaTelemetry())
+            : null;
+        this.forceTemplateCapability = forceTemplateCapability;
+        this.templateValidator = new TemplateValidator();
+        this.bootstrap = bootstrap;
+        if (this.autosmokeScheduler != null && configSnapshot != null) {
+            // Wire alert router for autosmoke if available
+            this.autosmokeScheduler.setAlertRouter(new com.devmod.arena.alert.AlertRouter());
+        }
+    }
+
+    public ArenaCommands(
+            ArenaTemplateRegistry registry,
+            AutosmokeRunner autosmokeRunner,
+            AutosmokeScheduler autosmokeScheduler,
+            Path templatesDirectory,
+            Function<ServerLevel, ArenaBuilder> builderFactory,
+            com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot configSnapshot,
+            ForceTemplateCapability forceTemplateCapability,
+            TemplateRegistryBootstrap bootstrap) {
+        this.registry = Objects.requireNonNull(registry, "registry");
+        this.permissions = ArenaCommandPermissions.getInstance();
+        this.audit = ArenaCommandAudit.getInstance();
+        this.autosmokeRunner = autosmokeRunner;
+        this.autosmokeScheduler = autosmokeScheduler;
+        this.templatesDirectory = templatesDirectory;
+        this.arenaBuilder = null;
+        this.builderFactory = Objects.requireNonNull(builderFactory, "builderFactory");
+        this.instanceGate = configSnapshot != null
+            ? new InstanceOnlyGate(configSnapshot, new com.devmod.arena.telemetry.ArenaTelemetry())
+            : null;
         this.forceTemplateCapability = forceTemplateCapability;
         this.templateValidator = new TemplateValidator();
         this.bootstrap = bootstrap;
@@ -309,7 +344,12 @@ public class ArenaCommands {
         ), false);
 
         // Build the arena using ArenaBuilder
-        ArenaBuilder.BuildResult result = arenaBuilder.build(template, originX, originY, originZ);
+        ArenaBuilder builder = builderFactory.apply(level);
+        if (builder == null) {
+            src.sendFailure(Component.literal("§cArena builder not available"));
+            return 0;
+        }
+        ArenaBuilder.BuildResult result = builder.build(template, originX, originY, originZ);
 
         if (result.success()) {
             int sizeX = Objects.requireNonNullElse(template.sizeX(), template.size());

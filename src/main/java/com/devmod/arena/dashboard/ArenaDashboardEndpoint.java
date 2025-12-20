@@ -25,7 +25,7 @@ import java.util.function.Supplier;
  * - Rate limiting (60 req/min per token)
  * - Metrics cache with 5-minute background refresh
  */
-public class ArenaDashboardEndpoint {
+public class ArenaDashboardEndpoint implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaDashboardEndpoint.class);
 
@@ -92,6 +92,22 @@ public class ArenaDashboardEndpoint {
 
     public static ArenaDashboardEndpoint getInstance() {
         return INSTANCE;
+    }
+
+    /**
+     * Gracefully shuts down executors and clears caches to prevent leaks on reload/shutdown.
+     */
+    @Override
+    public void close() {
+        try {
+            refreshExecutor.shutdownNow();
+        } catch (Exception ignored) {}
+        try {
+            queryExecutor.shutdownNow();
+        } catch (Exception ignored) {}
+        metricsCache.clear();
+        rateLimitBuckets.clear();
+        validTokens.clear();
     }
 
     /**

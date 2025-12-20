@@ -66,16 +66,19 @@ public final class ModuleSummarySection implements EditorSection.CustomSection {
         graphics.fill(x, y, x + 3, y + HEADER_HEIGHT, accentColor);
 
         // Title
-        graphics.drawString(font, title, x + PADDING, y + 6, UIConstants.Text.TITLE(), false);
+        String safeTitle = Objects.requireNonNull(title, "title");
+        graphics.drawString(font, safeTitle, x + PADDING, y + 6, UIConstants.Text.TITLE(), false);
 
         // Stats
         int statY = y + HEADER_HEIGHT;
         for (StatEntry stat : stats) {
             // Label
-            graphics.drawString(font, stat.label, x + PADDING, statY + 3, UIConstants.Text.SECONDARY(), false);
+            String label = Objects.requireNonNull(stat.label, "label");
+            graphics.drawString(font, label, x + PADDING, statY + 3, UIConstants.Text.SECONDARY(), false);
 
             // Value (right-aligned)
             String valueStr = stat.format != null ? String.format(stat.format, stat.value) : String.valueOf(stat.value);
+            valueStr = Objects.requireNonNull(valueStr, "valueStr");
             int valueWidth = font.width(valueStr);
             int valueX = x + w - PADDING - valueWidth;
 
@@ -87,6 +90,7 @@ public final class ModuleSummarySection implements EditorSection.CustomSection {
                 int badgeColor = getBadgeColor(stat.source);
                 graphics.fill(badgeX, badgeY, badgeX + BADGE_WIDTH, badgeY + BADGE_HEIGHT, badgeColor);
                 String badgeText = stat.source.substring(0, Math.min(3, stat.source.length())).toUpperCase();
+                badgeText = Objects.requireNonNull(badgeText, "badgeText");
                 int badgeTextX = badgeX + (BADGE_WIDTH - font.width(badgeText)) / 2;
                 graphics.drawString(font, badgeText, badgeTextX, badgeY + 2, 0xFFFFFFFF, false);
             }

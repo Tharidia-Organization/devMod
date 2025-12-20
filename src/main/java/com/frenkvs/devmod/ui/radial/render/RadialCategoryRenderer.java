@@ -8,6 +8,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Objects;
 
@@ -82,7 +83,7 @@ public final class RadialCategoryRenderer {
                                            RingConfig config,
                                            float alpha, boolean allowSelection) {
         Objects.requireNonNull(graphics, "graphics cannot be null");
-        Objects.requireNonNull(font, "font cannot be null");
+        @Nonnull Font safeFont = Objects.requireNonNull(font, "font cannot be null");
         Objects.requireNonNull(categories, "categories cannot be null");
         Objects.requireNonNull(config, "config cannot be null");
 
@@ -98,7 +99,7 @@ public final class RadialCategoryRenderer {
             RadialCategory cat = categories.get(i);
             boolean selected = allowSelection && (i == config.selectedIndex);
 
-            renderCategorySegment(graphics, font, cat, i, numCategories,
+            renderCategorySegment(graphics, safeFont, cat, i, numCategories,
                 config, selected, alphaInt, segmentAngle, startOffset);
         }
     }
@@ -106,10 +107,11 @@ public final class RadialCategoryRenderer {
     /**
      * Renders a single category segment.
      */
-    private static void renderCategorySegment(GuiGraphics graphics, Font font,
+    private static void renderCategorySegment(GuiGraphics graphics, @Nonnull Font font,
                                                RadialCategory cat, int index, int numCategories,
                                                RingConfig config, boolean selected,
                                                int alphaInt, double segmentAngle, double startOffset) {
+        Font safeFont = Objects.requireNonNull(font, "font");
         double startAngle = startOffset + (index - 0.5) * segmentAngle;
         double endAngle = startAngle + segmentAngle;
 
@@ -143,13 +145,14 @@ public final class RadialCategoryRenderer {
         int iconY = (int) (config.centerY + Math.sin(midAngle) * config.itemRadius);
 
         // Render icon
-        renderCategoryIcon(graphics, font, cat, iconX,
+        renderCategoryIcon(graphics, safeFont, cat, iconX,
             iconY + RadialMenuConstants.CATEGORY_ICON_OFFSET_Y, selected, alphaInt, config);
 
         // Category name
         int textColor = selected ? RadialMenuConstants.COLOR_TEXT_PRIMARY : RadialMenuConstants.COLOR_TEXT_SECONDARY;
         textColor = RadialGeometry.applyAlpha(textColor, alphaInt);
-        graphics.drawCenteredString(font, cat.getName(), iconX,
+        @Nonnull String categoryName = Objects.requireNonNull(Objects.requireNonNullElse(cat.getName(), ""), "categoryName");
+        graphics.drawCenteredString(safeFont, categoryName, iconX,
             iconY + RadialMenuConstants.CATEGORY_LABEL_OFFSET_Y, textColor);
 
         // Active items badge
@@ -157,7 +160,7 @@ public final class RadialCategoryRenderer {
         int badgeThreshold = (int) (RadialMenuConstants.BADGE_ALPHA_THRESHOLD * 255);
         if (activeCount > 0 && alphaInt > badgeThreshold) { // Only show badges when mostly visible
             int badgeColor = RadialGeometry.applyAlpha(config.theme.active, alphaInt);
-            renderBadge(graphics, font,
+            renderBadge(graphics, safeFont,
                 iconX + RadialMenuConstants.CATEGORY_BADGE_OFFSET_X,
                 iconY + RadialMenuConstants.CATEGORY_BADGE_OFFSET_Y,
                 activeCount, badgeColor, config.pulsePhase);
@@ -167,30 +170,35 @@ public final class RadialCategoryRenderer {
     /**
      * Renders a category icon with alpha support for transitions.
      */
-    private static void renderCategoryIcon(GuiGraphics graphics, Font font,
+    private static void renderCategoryIcon(GuiGraphics graphics, @Nonnull Font font,
                                             RadialCategory cat, int x, int y,
                                             boolean selected, int alpha, RingConfig config) {
+        Font safeFont = Objects.requireNonNull(font, "font");
         int iconColor = selected ? cat.getColor() : config.theme.textSecondary;
         iconColor = RadialGeometry.applyAlpha(iconColor, alpha);
 
+        ItemStack iconStack = cat.getIconStack();
         boolean useItemStack = config.iconMode == RadialMenuConfig.IconMode.ITEMSTACK ||
-            (config.iconMode == RadialMenuConfig.IconMode.AUTO && cat.getIconStack() != null);
+            (config.iconMode == RadialMenuConfig.IconMode.AUTO && iconStack != null);
 
-        if (useItemStack && cat.getIconStack() != null && alpha > RadialMenuConstants.ITEMSTACK_ALPHA_THRESHOLD) {
+        if (useItemStack && iconStack != null && alpha > RadialMenuConstants.ITEMSTACK_ALPHA_THRESHOLD) {
             // Only render item stacks when mostly opaque (they don't support alpha well)
-            graphics.renderItem(cat.getIconStack(),
+            ItemStack safeIconStack = Objects.requireNonNull(iconStack, "iconStack");
+            graphics.renderItem(safeIconStack,
                 x + RadialMenuConstants.CATEGORY_ITEMSTACK_OFFSET_X,
                 y + RadialMenuConstants.CATEGORY_ITEMSTACK_OFFSET_Y);
         } else {
-            graphics.drawCenteredString(font, cat.getIcon(), x, y, iconColor);
+            @Nonnull String iconText = Objects.requireNonNull(Objects.requireNonNullElse(cat.getIcon(), ""), "iconText");
+            graphics.drawCenteredString(safeFont, iconText, x, y, iconColor);
         }
     }
 
     /**
      * Renders an active count badge.
      */
-    private static void renderBadge(GuiGraphics graphics, Font font,
+    private static void renderBadge(GuiGraphics graphics, @Nonnull Font font,
                                      int x, int y, int count, int color, float pulsePhase) {
+        Font safeFont = Objects.requireNonNull(font, "font");
         float pulse = RadialMenuConstants.BADGE_PULSE_BASE +
             RadialMenuConstants.BADGE_PULSE_VARIATION *
                 (float) Math.sin(pulsePhase * RadialMenuConstants.BADGE_PULSE_SPEED);
@@ -203,7 +211,8 @@ public final class RadialCategoryRenderer {
             x + RadialMenuConstants.BADGE_HALF_WIDTH,
             y + RadialMenuConstants.BADGE_BOTTOM_OFFSET,
             RadialMenuConstants.BADGE_BG_COLOR);
-        graphics.drawCenteredString(font, String.valueOf(count), x,
+        @Nonnull String countText = Objects.requireNonNull(String.valueOf(count), "countText");
+        graphics.drawCenteredString(safeFont, countText, x,
             y + RadialMenuConstants.BADGE_TEXT_OFFSET_Y, badgeColor);
     }
 
@@ -275,7 +284,7 @@ public final class RadialCategoryRenderer {
                                             List<RadialCategory> categories,
                                             ItemsConfig config) {
         Objects.requireNonNull(graphics, "graphics cannot be null");
-        Objects.requireNonNull(font, "font cannot be null");
+        @Nonnull Font safeFont = Objects.requireNonNull(font, "font cannot be null");
         Objects.requireNonNull(category, "category cannot be null");
         Objects.requireNonNull(categories, "categories cannot be null");
         Objects.requireNonNull(config, "config cannot be null");
@@ -296,7 +305,7 @@ public final class RadialCategoryRenderer {
         for (int i = 0; i < numItems; i++) {
             RadialMenuItem item = visibleItems.get(i);
 
-            renderItem(graphics, font, item, i, config, category,
+            renderItem(graphics, safeFont, item, i, config, category,
                 catStartAngle, itemAngleStep, baseRadius, itemSize);
         }
     }
@@ -304,11 +313,12 @@ public final class RadialCategoryRenderer {
     /**
      * Renders a single menu item.
      */
-    private static void renderItem(GuiGraphics graphics, Font font,
+    private static void renderItem(GuiGraphics graphics, @Nonnull Font font,
                                     RadialMenuItem item, int index,
                                     ItemsConfig config, RadialCategory category,
                                     double catStartAngle, double itemAngleStep,
                                     int baseRadius, int itemSize) {
+        Font safeFont = Objects.requireNonNull(font, "font");
         boolean itemSelected = (index == config.selectedItemIndex);
         boolean isActive = item.isToggle() && item.isActive();
         float itemAnim = index < config.itemAnimations.length ? config.itemAnimations[index] : 0;
@@ -352,29 +362,32 @@ public final class RadialCategoryRenderer {
         }
 
         // Icon
-        renderItemIcon(graphics, font, item, itemX, itemY, itemSelected, config.theme);
+        renderItemIcon(graphics, safeFont, item, itemX, itemY, itemSelected, config.theme);
 
         // Name (truncated if needed)
-        renderItemName(graphics, font, item, itemX, itemY, itemSelected, isActive, config.theme);
+        renderItemName(graphics, safeFont, item, itemX, itemY, itemSelected, isActive, config.theme);
 
         // Toggle status indicator
-        renderItemStatus(graphics, font, item, itemX, itemY, isActive, config.theme);
+        renderItemStatus(graphics, safeFont, item, itemX, itemY, isActive, config.theme);
     }
 
     /**
      * Renders an item's icon.
      */
-    private static void renderItemIcon(GuiGraphics graphics, Font font,
+    private static void renderItemIcon(GuiGraphics graphics, @Nonnull Font font,
                                          RadialMenuItem item, int x, int y,
                                          boolean selected, RadialMenuConfig.ColorTheme theme) {
+        Font safeFont = Objects.requireNonNull(font, "font");
         ItemStack iconStack = item.getIconStack();
         if (iconStack != null) {
-            graphics.renderItem(iconStack,
+            ItemStack safeIconStack = Objects.requireNonNull(iconStack, "iconStack");
+            graphics.renderItem(safeIconStack,
                 x + RadialMenuConstants.ITEM_ICON_STACK_OFFSET_X,
                 y + RadialMenuConstants.ITEM_ICON_STACK_OFFSET_Y);
         } else {
             int iconColor = selected ? theme.textPrimary : theme.textSecondary;
-            graphics.drawCenteredString(font, item.getIconEmoji(), x,
+            @Nonnull String iconText = Objects.requireNonNull(Objects.requireNonNullElse(item.getIconEmoji(), ""), "iconText");
+            graphics.drawCenteredString(safeFont, iconText, x,
                 y + RadialMenuConstants.ITEM_ICON_TEXT_OFFSET_Y, iconColor);
         }
     }
@@ -382,18 +395,19 @@ public final class RadialCategoryRenderer {
     /**
      * Renders an item's name, truncating if too long.
      */
-    private static void renderItemName(GuiGraphics graphics, Font font,
+    private static void renderItemName(GuiGraphics graphics, @Nonnull Font font,
                                          RadialMenuItem item, int x, int y,
                                          boolean selected, boolean isActive,
                                          RadialMenuConfig.ColorTheme theme) {
-        String name = item.getName();
+        Font safeFont = Objects.requireNonNull(font, "font");
+        @Nonnull String name = Objects.requireNonNull(Objects.requireNonNullElse(item.getName(), ""), "name");
         int maxWidth = RadialMenuConstants.ITEM_NAME_MAX_WIDTH;
 
-        if (font.width(name) > maxWidth) {
+        if (safeFont.width(name) > maxWidth) {
             String ellipsis = "...";
             int minChars = Math.min(RadialMenuConstants.ITEM_NAME_MIN_CHARS, name.length());
-            while (font.width(name + ellipsis) > maxWidth && name.length() > minChars) {
-                name = name.substring(0, name.length() - 1);
+            while (safeFont.width(name + ellipsis) > maxWidth && name.length() > minChars) {
+                name = Objects.requireNonNull(name.substring(0, name.length() - 1), "name");
             }
             name += ellipsis;
         }
@@ -401,22 +415,24 @@ public final class RadialCategoryRenderer {
         int nameColor = selected
             ? theme.textPrimary
             : (isActive ? theme.active : theme.textSecondary);
-        graphics.drawCenteredString(font, name, x, y + RadialMenuConstants.ITEM_NAME_OFFSET_Y, nameColor);
+        graphics.drawCenteredString(safeFont, name, x, y + RadialMenuConstants.ITEM_NAME_OFFSET_Y, nameColor);
     }
 
     /**
      * Renders an item's status indicator (ON/OFF or subcategory arrow).
      */
-    private static void renderItemStatus(GuiGraphics graphics, Font font,
+    private static void renderItemStatus(GuiGraphics graphics, @Nonnull Font font,
                                           RadialMenuItem item, int x, int y,
                                           boolean isActive, RadialMenuConfig.ColorTheme theme) {
+        Font safeFont = Objects.requireNonNull(font, "font");
         if (item.isToggle()) {
-            String status = isActive ? "ON" : "OFF";
+            @Nonnull String status = Objects.requireNonNull(isActive ? "ON" : "OFF", "status");
             int statusColor = isActive ? theme.active : RadialMenuConstants.ITEM_STATUS_INACTIVE_COLOR;
-            graphics.drawCenteredString(font, status, x,
+            graphics.drawCenteredString(safeFont, status, x,
                 y + RadialMenuConstants.ITEM_STATUS_OFFSET_Y, statusColor);
         } else if (item.isSubcategoryLink()) {
-            graphics.drawCenteredString(font, "▸", x,
+            @Nonnull String indicator = Objects.requireNonNull("▸", "indicator");
+            graphics.drawCenteredString(safeFont, indicator, x,
                 y + RadialMenuConstants.ITEM_STATUS_OFFSET_Y, theme.textSecondary);
         }
     }

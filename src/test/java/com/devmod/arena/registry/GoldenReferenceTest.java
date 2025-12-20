@@ -3,6 +3,8 @@ package com.devmod.arena.registry;
 import org.junit.jupiter.api.Test;
 import com.devmod.arena.builder.BuildDryRunCalculator;
 
+import java.util.Objects;
+
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -14,8 +16,14 @@ class GoldenReferenceTest {
         ArenaTemplate template = ArenaTemplate.defaultTemplate();
 
         // Bounds computed like TemplateValidator
-        int sizeX = template.sizeX() != null ? template.sizeX() : template.size();
-        int sizeZ = template.sizeZ() != null ? template.sizeZ() : template.size();
+        Integer sizeXValue = template.sizeX();
+        int sizeX = sizeXValue != null
+            ? sizeXValue.intValue()
+            : Objects.requireNonNull(template.size(), "sizeX").intValue();
+        Integer sizeZValue = template.sizeZ();
+        int sizeZ = sizeZValue != null
+            ? sizeZValue.intValue()
+            : Objects.requireNonNull(template.size(), "sizeZ").intValue();
         int originX = template.origin().x();
         int originZ = template.origin().z();
         int minX = originX - sizeX / 2;
@@ -46,8 +54,14 @@ class GoldenReferenceTest {
         GoldenReference ref = GoldenReference.bossRing80();
         ArenaTemplate template = ArenaTemplate.bossRing80Template();
 
-        int sizeX = template.sizeX() != null ? template.sizeX() : template.size();
-        int sizeZ = template.sizeZ() != null ? template.sizeZ() : template.size();
+        Integer sizeXValue = template.sizeX();
+        int sizeX = sizeXValue != null
+            ? sizeXValue.intValue()
+            : Objects.requireNonNull(template.size(), "sizeX").intValue();
+        Integer sizeZValue = template.sizeZ();
+        int sizeZ = sizeZValue != null
+            ? sizeZValue.intValue()
+            : Objects.requireNonNull(template.size(), "sizeZ").intValue();
         int originX = template.origin().x();
         int originZ = template.origin().z();
         int minX = originX - sizeX / 2;

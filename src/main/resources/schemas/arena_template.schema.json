@@ -4,7 +4,7 @@
   "title": "ArenaTemplate",
   "description": "Arena template schema (L1) for DevMod v2.23",
   "type": "object",
-  "required": ["id", "version", "schemaVersion", "size", "floor", "mobSpawnStrategy"],
+  "required": ["id", "version", "schemaVersion", "origin", "size", "floor", "mobSpawnStrategy"],
   "properties": {
     "id": {
       "type": "string",
@@ -182,18 +182,19 @@
     },
     "Floor": {
       "type": "object",
-      "required": ["y", "material"],
+      "required": ["y", "thickness", "material", "pattern", "borderMaterial", "borderWidth"],
       "properties": {
         "y": { "type": "integer", "description": "Floor Y level" },
         "thickness": { "type": "integer", "minimum": 1, "default": 1 },
         "material": { "type": "string", "description": "Block ID (e.g., minecraft:stone_bricks)" },
-        "pattern": { "type": "string", "enum": ["solid", "checkerboard", "border", "random"], "default": "solid" },
+        "pattern": { "type": "string", "enum": ["solid", "checkerboard", "border"], "default": "solid" },
         "borderMaterial": { "type": ["string", "null"] },
         "borderWidth": { "type": "integer", "minimum": 0, "default": 0 }
       }
     },
     "Walls": {
       "type": "object",
+      "required": ["enabled", "material", "height", "thickness", "startY", "style"],
       "properties": {
         "enabled": { "type": "boolean", "default": true },
         "material": { "type": "string" },
@@ -205,6 +206,7 @@
     },
     "Ceiling": {
       "type": "object",
+      "required": ["enabled", "material", "y", "thickness"],
       "properties": {
         "enabled": { "type": "boolean", "default": false },
         "material": { "type": "string" },
@@ -214,6 +216,7 @@
     },
     "Underfloor": {
       "type": "object",
+      "required": ["material", "depth", "sameAsFloor"],
       "properties": {
         "material": { "type": "string" },
         "depth": { "type": "integer", "minimum": 1, "default": 3 },
@@ -222,6 +225,7 @@
     },
     "Palette": {
       "type": "object",
+      "required": ["accent", "highlight", "hazardBorder"],
       "properties": {
         "accent": { "type": "string", "description": "Accent block ID" },
         "highlight": { "type": "string", "description": "Highlight block ID" },

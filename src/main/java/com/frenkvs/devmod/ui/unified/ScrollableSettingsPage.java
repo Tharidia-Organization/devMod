@@ -9,6 +9,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import javax.annotation.Nonnull;
+import java.util.Objects;
 
 /**
  * Abstract base class for settings pages that support scrolling.
@@ -42,6 +43,7 @@ public abstract class ScrollableSettingsPage implements SettingsPage {
 
     @Override
     public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
+        GuiGraphics safeGraphics = Objects.requireNonNull(graphics, "graphics");
         // Cache dimensions
         contentX = x;
         contentY = y;
@@ -57,15 +59,15 @@ public abstract class ScrollableSettingsPage implements SettingsPage {
         scrollManager.update(bounds, totalContentHeight);
 
         // Render content with scissoring (try/finally for safety)
-        scrollManager.withScissor(graphics, bounds, () -> {
+        scrollManager.withScissor(safeGraphics, bounds, () -> {
             // Render content with scroll offset applied
             int scrolledY = y - scrollManager.getScrollOffset();
-            renderScrollableContent(graphics, font, x, scrolledY, width, height, mouseX, mouseY);
+            renderScrollableContent(safeGraphics, font, x, scrolledY, width, height, mouseX, mouseY);
         });
 
         // Render scrollbar if needed
         if (scrollManager.needsScrolling()) {
-            renderScrollbar(graphics, x + width - SCROLLBAR_WIDTH - 2, y, SCROLLBAR_WIDTH, height, mouseX, mouseY);
+            renderScrollbar(safeGraphics, x + width - SCROLLBAR_WIDTH - 2, y, SCROLLBAR_WIDTH, height, mouseX, mouseY);
         }
     }
 

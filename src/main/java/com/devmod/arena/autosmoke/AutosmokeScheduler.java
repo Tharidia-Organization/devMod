@@ -35,7 +35,7 @@ public class AutosmokeScheduler {
 
     private final AutosmokeRunner runner;
     private final ScheduledExecutorService scheduler;
-    private final ZoneId zoneId;
+    private volatile ZoneId zoneId;
 
     private volatile ScheduleConfig config;
     private volatile ScheduledFuture<?> scheduledTask;
@@ -107,6 +107,13 @@ public class AutosmokeScheduler {
     }
 
     /**
+    * Alias for shutdown to support AutoCloseable-style teardown on reload.
+    */
+    public void close() {
+        shutdown();
+    }
+
+    /**
      * Triggers an immediate run.
      *
      * @return CompletableFuture with the report
@@ -122,6 +129,19 @@ public class AutosmokeScheduler {
         this.config = Objects.requireNonNull(newConfig, "newConfig");
 
         // Reschedule if currently scheduled
+        if (scheduledTask != null) {
+            stop();
+            if (config.enabled()) {
+                start();
+            }
+        }
+    }
+
+    /**
+     * Updates timezone used for scheduling and reschedules if active.
+     */
+    public void updateTimezone(ZoneId newZoneId) {
+        this.zoneId = Objects.requireNonNull(newZoneId, "newZoneId");
         if (scheduledTask != null) {
             stop();
             if (config.enabled()) {

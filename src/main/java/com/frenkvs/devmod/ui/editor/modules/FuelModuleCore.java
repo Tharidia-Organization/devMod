@@ -26,11 +26,7 @@ public class FuelModuleCore {
     String sourcePrefix = "";
     SourceBadge.Source dataSource = SourceBadge.Source.VANILLA;
 
-    // Reference to parent module
-    private final FuelModule module;
-
-    public FuelModuleCore(FuelModule module) {
-        this.module = module;
+    public FuelModuleCore() {
     }
 
     // ═══════════════════════════════════════════════════════════════

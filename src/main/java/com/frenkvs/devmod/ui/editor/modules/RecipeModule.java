@@ -221,64 +221,87 @@ public class RecipeModule extends AbstractEditorModule {
      */
     private ResourceLocation findVanillaRecipeForItem() {
         var mc = Minecraft.getInstance();
-        if (mc.level == null) return null;
+        var level = mc.level;
+        if (level == null) return null;
 
-        var recipeManager = mc.level.getRecipeManager();
-        var itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item.getItem());
-        var registryAccess = mc.level.registryAccess();
+        var recipeManager = level.getRecipeManager();
+        var itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(
+            Objects.requireNonNull(item.getItem(), "item"));
+        var registryAccess = Objects.requireNonNull(level.registryAccess(), "registry access");
 
         // Search crafting recipes
-        for (var holder : recipeManager.getAllRecipesFor(net.minecraft.world.item.crafting.RecipeType.CRAFTING)) {
+        for (var holder : recipeManager.getAllRecipesFor(
+            Objects.requireNonNull(net.minecraft.world.item.crafting.RecipeType.CRAFTING, "crafting recipe type"))) {
             var result = holder.value().getResultItem(registryAccess);
-            if (!result.isEmpty() && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(result.getItem()).equals(itemId)) {
+            if (!result.isEmpty()
+                && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(
+                    Objects.requireNonNull(result.getItem(), "result item")).equals(itemId)) {
                 return holder.id();
             }
         }
 
         // Search smelting recipes
-        for (var holder : recipeManager.getAllRecipesFor(net.minecraft.world.item.crafting.RecipeType.SMELTING)) {
+        for (var holder : recipeManager.getAllRecipesFor(
+            Objects.requireNonNull(net.minecraft.world.item.crafting.RecipeType.SMELTING, "smelting recipe type"))) {
             var result = holder.value().getResultItem(registryAccess);
-            if (!result.isEmpty() && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(result.getItem()).equals(itemId)) {
+            if (!result.isEmpty()
+                && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(
+                    Objects.requireNonNull(result.getItem(), "result item")).equals(itemId)) {
                 return holder.id();
             }
         }
 
         // Search blasting recipes
-        for (var holder : recipeManager.getAllRecipesFor(net.minecraft.world.item.crafting.RecipeType.BLASTING)) {
+        for (var holder : recipeManager.getAllRecipesFor(
+            Objects.requireNonNull(net.minecraft.world.item.crafting.RecipeType.BLASTING, "blasting recipe type"))) {
             var result = holder.value().getResultItem(registryAccess);
-            if (!result.isEmpty() && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(result.getItem()).equals(itemId)) {
+            if (!result.isEmpty()
+                && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(
+                    Objects.requireNonNull(result.getItem(), "result item")).equals(itemId)) {
                 return holder.id();
             }
         }
 
         // Search smoking recipes
-        for (var holder : recipeManager.getAllRecipesFor(net.minecraft.world.item.crafting.RecipeType.SMOKING)) {
+        for (var holder : recipeManager.getAllRecipesFor(
+            Objects.requireNonNull(net.minecraft.world.item.crafting.RecipeType.SMOKING, "smoking recipe type"))) {
             var result = holder.value().getResultItem(registryAccess);
-            if (!result.isEmpty() && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(result.getItem()).equals(itemId)) {
+            if (!result.isEmpty()
+                && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(
+                    Objects.requireNonNull(result.getItem(), "result item")).equals(itemId)) {
                 return holder.id();
             }
         }
 
         // Search campfire cooking recipes
-        for (var holder : recipeManager.getAllRecipesFor(net.minecraft.world.item.crafting.RecipeType.CAMPFIRE_COOKING)) {
+        for (var holder : recipeManager.getAllRecipesFor(
+            Objects.requireNonNull(net.minecraft.world.item.crafting.RecipeType.CAMPFIRE_COOKING, "campfire recipe type"))) {
             var result = holder.value().getResultItem(registryAccess);
-            if (!result.isEmpty() && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(result.getItem()).equals(itemId)) {
+            if (!result.isEmpty()
+                && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(
+                    Objects.requireNonNull(result.getItem(), "result item")).equals(itemId)) {
                 return holder.id();
             }
         }
 
         // Search smithing recipes
-        for (var holder : recipeManager.getAllRecipesFor(net.minecraft.world.item.crafting.RecipeType.SMITHING)) {
+        for (var holder : recipeManager.getAllRecipesFor(
+            Objects.requireNonNull(net.minecraft.world.item.crafting.RecipeType.SMITHING, "smithing recipe type"))) {
             var result = holder.value().getResultItem(registryAccess);
-            if (!result.isEmpty() && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(result.getItem()).equals(itemId)) {
+            if (!result.isEmpty()
+                && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(
+                    Objects.requireNonNull(result.getItem(), "result item")).equals(itemId)) {
                 return holder.id();
             }
         }
 
         // Search stonecutting recipes
-        for (var holder : recipeManager.getAllRecipesFor(net.minecraft.world.item.crafting.RecipeType.STONECUTTING)) {
+        for (var holder : recipeManager.getAllRecipesFor(
+            Objects.requireNonNull(net.minecraft.world.item.crafting.RecipeType.STONECUTTING, "stonecutting recipe type"))) {
             var result = holder.value().getResultItem(registryAccess);
-            if (!result.isEmpty() && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(result.getItem()).equals(itemId)) {
+            if (!result.isEmpty()
+                && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(
+                    Objects.requireNonNull(result.getItem(), "result item")).equals(itemId)) {
                 return holder.id();
             }
         }

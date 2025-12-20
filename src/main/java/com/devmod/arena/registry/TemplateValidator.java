@@ -2,7 +2,6 @@ package com.devmod.arena.registry;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -26,6 +25,7 @@ public class TemplateValidator {
     private InstanceSettingsValidator.Telemetry instanceTelemetry;
     private StructureManifest structureManifest;
     private StructureDataProvider structureDataProvider;
+    private StructureFallbackConfig structureFallbackConfig;
     private StructureTelemetry structureTelemetry;
     private HazardValidator.HazardTelemetry hazardTelemetry;
     private java.util.Set<String> registeredCustomHazards;
@@ -112,6 +112,14 @@ public class TemplateValidator {
     public TemplateValidator withStructureValidation(StructureManifest manifest, StructureDataProvider provider) {
         this.structureManifest = manifest;
         this.structureDataProvider = provider;
+        return this;
+    }
+
+    /**
+     * Provide fallback limits for structure validation when manifest is missing.
+     */
+    public TemplateValidator withStructureFallbackConfig(StructureFallbackConfig config) {
+        this.structureFallbackConfig = config;
         return this;
     }
 
@@ -333,6 +341,11 @@ public class TemplateValidator {
         if (template.version() < 1) {
             errors.add("version must be >=1");
         }
+        if (template.origin() == null) {
+            errors.add("origin is required");
+        } else if (template.origin().mode() == null) {
+            errors.add("origin.mode is required");
+        }
         if (template.floor() == null) {
             errors.add("floor is required");
         }
@@ -472,32 +485,42 @@ public class TemplateValidator {
                 emitStructureRejected(structure.path(), "EXCEPTION");
             }
         } else {
-            // Fallback path: basic validation without manifest/provider
-            if (structureDataProvider != null && structure.path() != null) {
-                try {
-                    byte[] data = structureDataProvider.load(structure.path());
-                    if (data == null) {
-                        warnings.add("structureNbt fallback: data not found for path " + structure.path());
-                        emitStructureRejected(structure.path(), "DATA_NOT_FOUND");
-                        return;
-                    }
-                    // Perform checksum against manifest if available, otherwise just parse to count
-                    var result = loader.load(structure.path(), () -> data,
-                        structureManifest != null ? structureManifest
-                            : new StructureManifest(Map.of(), Set.of("devmod"), 512 * 1024, 100_000, 50));
-                    if (!result.ok()) {
-                        errors.add("structureNbt fallback validation failed: " + result.errorCode() + " - " + result.message());
-                        emitStructureRejected(structure.path(), result.errorCode());
-                    } else {
-                        emitStructureLoaded(structure.path(), result.blockCount(), result.entityCount());
-                    }
-                } catch (Exception e) {
-                    warnings.add("structureNbt fallback parse failed: " + e.getMessage());
-                    emitStructureRejected(structure.path(), "EXCEPTION");
-                }
-            } else {
+            // Fallback path: validation without manifest (dev-friendly)
+            if (structureDataProvider == null || structure.path() == null) {
                 errors.add("structureNbt present but manifest/provider not configured");
                 emitStructureRejected(structure != null ? structure.path() : "unknown", "NO_MANIFEST");
+                return;
+            }
+            if (structureFallbackConfig == null) {
+                errors.add("structureNbt fallback config missing");
+                emitStructureRejected(structure.path(), "NO_FALLBACK_CONFIG");
+                return;
+            }
+            try {
+                byte[] data = structureDataProvider.load(structure.path());
+                if (data == null) {
+                    warnings.add("structureNbt fallback: data not found for path " + structure.path());
+                    emitStructureRejected(structure.path(), "DATA_NOT_FOUND");
+                    return;
+                }
+                StructureNbtLoader.FallbackLimits limits = new StructureNbtLoader.FallbackLimits(
+                    structureFallbackConfig.allowedNamespaces(),
+                    structureFallbackConfig.maxFileSizeBytes(),
+                    structureFallbackConfig.maxBlockCount(),
+                    structureFallbackConfig.maxEntityCount()
+                );
+                var result = loader.loadWithLimits(structure.path(), () -> data, limits);
+                if (!result.ok()) {
+                    errors.add("structureNbt fallback validation failed: " + result.errorCode() + " - " + result.message());
+                    emitStructureRejected(structure.path(), result.errorCode());
+                } else {
+                    warnings.add("structureNbt validated without manifest for path " + structure.path());
+                    emitStructureFallback(structure.path(), "NO_MANIFEST");
+                    emitStructureLoaded(structure.path(), result.blockCount(), result.entityCount());
+                }
+            } catch (Exception e) {
+                warnings.add("structureNbt fallback parse failed: " + e.getMessage());
+                emitStructureRejected(structure.path(), "EXCEPTION");
             }
         }
     }
@@ -510,11 +533,22 @@ public class TemplateValidator {
     }
 
     /**
+     * Fallback limits for structure validation when no manifest is available.
+     */
+    public record StructureFallbackConfig(
+        Set<String> allowedNamespaces,
+        long maxFileSizeBytes,
+        int maxBlockCount,
+        int maxEntityCount
+    ) {}
+
+    /**
      * Optional telemetry hook for structure validation outcomes.
      */
     public interface StructureTelemetry {
         void loaded(String path, int blockCount, int entityCount);
         void rejected(String path, String reason);
+        default void fallbackUsed(String path, String reason) {}
     }
 
     private boolean isValidId(String id) {
@@ -533,6 +567,12 @@ public class TemplateValidator {
             if ("CHECKSUM_MISMATCH".equals(reason)) {
                 structureTelemetry.rejected(path, "CHECKSUM_MISMATCH");
             }
+        }
+    }
+
+    private void emitStructureFallback(String path, String reason) {
+        if (structureTelemetry != null) {
+            structureTelemetry.fallbackUsed(path, reason);
         }
     }
 

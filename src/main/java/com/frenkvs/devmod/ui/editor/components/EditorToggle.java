@@ -8,6 +8,7 @@ import com.frenkvs.devmod.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
+import javax.annotation.Nonnull;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -65,7 +66,13 @@ public class EditorToggle {
      * Adapter to expose this toggle as a vanilla checkbox-style widget for legacy screens.
      */
     public net.minecraft.client.gui.components.AbstractWidget asVanilla(int x, int y, int width, int height) {
-        net.minecraft.client.gui.components.Checkbox checkbox = net.minecraft.client.gui.components.Checkbox.builder(net.minecraft.network.chat.Component.literal(label), Objects.requireNonNull(Minecraft.getInstance()).font)
+        @Nonnull String safeLabel = Objects.requireNonNull(
+            Objects.requireNonNullElse(label, ""), "label");
+        net.minecraft.client.gui.Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
+        @Nonnull net.minecraft.network.chat.Component labelComponent = Objects.requireNonNull(
+            net.minecraft.network.chat.Component.literal(safeLabel), "label");
+        net.minecraft.client.gui.components.Checkbox checkbox = net.minecraft.client.gui.components.Checkbox.builder(
+                labelComponent, font)
             .pos(x, y)
             .selected(value)
             .onValueChange((cb, selected) -> {

@@ -8,6 +8,8 @@ import com.frenkvs.devmod.util.ConfigPaths;
 import com.frenkvs.devmod.util.I18n;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -15,12 +17,14 @@ import net.minecraft.core.BlockPos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * In-game UI for defining Room Bounds.
@@ -96,62 +100,84 @@ public class RoomBoundsEditorScreen extends Screen {
         loadExistingRooms();
 
         // Get current dimension
-        if (minecraft != null && minecraft.level != null) {
-            currentDimension = minecraft.level.dimension().location().toString();
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level != null) {
+            currentDimension = mc.level.dimension().location().toString();
         }
 
+        Font safeFont = Objects.requireNonNull(font, "font");
         int centerX = width / 2;
         int centerY = height / 2;
         int panelX = centerX - PANEL_WIDTH / 2;
         int panelY = centerY - PANEL_HEIGHT / 2;
 
         // Room Name Input - usa il nome salvato dalla sessione precedente
-        roomNameBox = new EditBox(font, panelX + 90, panelY + 50, 200, 18, I18n.ui("room_name"));
+        String roomName = Objects.requireNonNull(
+            Objects.requireNonNullElse(pendingRoomName, "new_room"),
+            "roomName"
+        );
+        pendingRoomName = roomName;
+        roomNameBox = new EditBox(safeFont, panelX + 90, panelY + 50, 200, 18, I18n.ui("room_name"));
         roomNameBox.setMaxLength(64);
-        roomNameBox.setValue(pendingRoomName);
+        roomNameBox.setValue(roomName);
         roomNameBox.setHint(I18n.ui("enter_room_name_hint"));
         roomNameBox.setResponder(s -> pendingRoomName = s); // Salva mentre digita
         addRenderableWidget(roomNameBox);
 
         // Set Point A Button
-        setPointAButton = EditorButton.builder("set-point-a", I18n.ui("set_point_a").getString())
+        String setPointALabel = Objects.requireNonNull(I18n.ui("set_point_a").getString(), "setPointALabel");
+        setPointAButton = EditorButton.builder("set-point-a", setPointALabel)
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::setPointA)
             .build();
-        addRenderableWidget(setPointAButton.asVanilla(panelX + 20, panelY + 80, 130, 20));
+        addRenderableWidget(Objects.requireNonNull(
+            setPointAButton.asVanilla(panelX + 20, panelY + 80, 130, 20),
+            "setPointA button"));
 
         // Set Point B Button
-        setPointBButton = EditorButton.builder("set-point-b", I18n.ui("set_point_b").getString())
+        String setPointBLabel = Objects.requireNonNull(I18n.ui("set_point_b").getString(), "setPointBLabel");
+        setPointBButton = EditorButton.builder("set-point-b", setPointBLabel)
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::setPointB)
             .build();
-        addRenderableWidget(setPointBButton.asVanilla(panelX + 170, panelY + 80, 130, 20));
+        addRenderableWidget(Objects.requireNonNull(
+            setPointBButton.asVanilla(panelX + 170, panelY + 80, 130, 20),
+            "setPointB button"));
 
         // Save Button
-        saveButton = EditorButton.builder("save-room", I18n.ui("save_room").getString())
+        String saveLabel = Objects.requireNonNull(I18n.ui("save_room").getString(), "saveLabel");
+        saveButton = EditorButton.builder("save-room", saveLabel)
             .style(EditorButton.Style.SUCCESS)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::saveRoom)
             .build();
-        addRenderableWidget(saveButton.asVanilla(panelX + 20, panelY + 200, 130, 20));
+        addRenderableWidget(Objects.requireNonNull(
+            saveButton.asVanilla(panelX + 20, panelY + 200, 130, 20),
+            "save button"));
 
         // Cancel Button
-        cancelButton = EditorButton.builder("cancel", I18n.ui("cancel").getString())
+        String cancelLabel = Objects.requireNonNull(I18n.ui("cancel").getString(), "cancelLabel");
+        cancelButton = EditorButton.builder("cancel", cancelLabel)
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::onClose)
             .build();
-        addRenderableWidget(cancelButton.asVanilla(panelX + 170, panelY + 200, 130, 20));
+        addRenderableWidget(Objects.requireNonNull(
+            cancelButton.asVanilla(panelX + 170, panelY + 200, 130, 20),
+            "cancel button"));
 
         // Delete Last Room Button
-        deleteLastButton = EditorButton.builder("delete-last-room", I18n.ui("delete_last").getString())
+        String deleteLabel = Objects.requireNonNull(I18n.ui("delete_last").getString(), "deleteLabel");
+        deleteLastButton = EditorButton.builder("delete-last-room", deleteLabel)
             .style(EditorButton.Style.DANGER)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::deleteLastRoom)
             .build();
-        addRenderableWidget(deleteLastButton.asVanilla(panelX + 20, panelY + 230, 130, 20));
+        addRenderableWidget(Objects.requireNonNull(
+            deleteLastButton.asVanilla(panelX + 20, panelY + 230, 130, 20),
+            "delete button"));
 
         initDialogs();
     }
@@ -184,8 +210,9 @@ public class RoomBoundsEditorScreen extends Screen {
     }
 
     private void setPointA() {
-        if (minecraft != null && minecraft.player != null) {
-            pointA = minecraft.player.blockPosition();
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null) {
+            pointA = mc.player.blockPosition();
             setStatus("Point A set: " + formatBlockPos(pointA), TEXT_ACCENT);
 
             // Update visualizer pending marker (visible even when screen is closed)
@@ -197,8 +224,9 @@ public class RoomBoundsEditorScreen extends Screen {
     }
 
     private void setPointB() {
-        if (minecraft != null && minecraft.player != null) {
-            pointB = minecraft.player.blockPosition();
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null) {
+            pointB = mc.player.blockPosition();
             setStatus("Point B set: " + formatBlockPos(pointB), TEXT_ACCENT);
 
             // Update visualizer pending marker (visible even when screen is closed)
@@ -318,8 +346,10 @@ public class RoomBoundsEditorScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+    public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        GuiGraphics safeGraphics = Objects.requireNonNull(graphics, "graphics");
+        Font safeFont = Objects.requireNonNull(font, "font");
+        renderBackground(safeGraphics, mouseX, mouseY, partialTick);
 
         int centerX = width / 2;
         int centerY = height / 2;
@@ -327,27 +357,28 @@ public class RoomBoundsEditorScreen extends Screen {
         int panelY = centerY - PANEL_HEIGHT / 2;
 
         // Panel background
-        graphics.fill(panelX - 1, panelY - 1, panelX + PANEL_WIDTH + 1, panelY + PANEL_HEIGHT + 1, PANEL_BORDER);
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, PANEL_BG);
+        safeGraphics.fill(panelX - 1, panelY - 1, panelX + PANEL_WIDTH + 1, panelY + PANEL_HEIGHT + 1, PANEL_BORDER);
+        safeGraphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, PANEL_BG);
 
         // Title
-        graphics.drawCenteredString(font, "Room Bounds Editor", centerX, panelY + 10, TEXT_TITLE);
+        safeGraphics.drawCenteredString(safeFont, "Room Bounds Editor", centerX, panelY + 10, TEXT_TITLE);
 
         // Dimension info
-        graphics.drawString(font, "Dimension: " + currentDimension, panelX + 20, panelY + 30, TEXT_DIM);
+        String dimension = Objects.requireNonNull(currentDimension, "dimension");
+        safeGraphics.drawString(safeFont, "Dimension: " + dimension, panelX + 20, panelY + 30, TEXT_DIM);
 
         // Room Name Label
-        graphics.drawString(font, "Room Name:", panelX + 20, panelY + 54, TEXT_NORMAL);
+        safeGraphics.drawString(safeFont, "Room Name:", panelX + 20, panelY + 54, TEXT_NORMAL);
 
         // Point A info
         String pointAText = pointA != null ? formatBlockPos(pointA) : "Not set";
         int pointAColor = pointA != null ? TEXT_ACCENT : TEXT_DIM;
-        graphics.drawString(font, "Point A: " + pointAText, panelX + 20, panelY + 110, pointAColor);
+        safeGraphics.drawString(safeFont, "Point A: " + pointAText, panelX + 20, panelY + 110, pointAColor);
 
         // Point B info
         String pointBText = pointB != null ? formatBlockPos(pointB) : "Not set";
         int pointBColor = pointB != null ? TEXT_ACCENT : TEXT_DIM;
-        graphics.drawString(font, "Point B: " + pointBText, panelX + 20, panelY + 125, pointBColor);
+        safeGraphics.drawString(safeFont, "Point B: " + pointBText, panelX + 20, panelY + 125, pointBColor);
 
         // Room size preview
         if (pointA != null && pointB != null) {
@@ -355,11 +386,11 @@ public class RoomBoundsEditorScreen extends Screen {
             int sizeY = Math.abs(pointB.getY() - pointA.getY()) + 1;
             int sizeZ = Math.abs(pointB.getZ() - pointA.getZ()) + 1;
             String sizeText = String.format("Size: %dx%dx%d (%d blocks)", sizeX, sizeY, sizeZ, sizeX * sizeY * sizeZ);
-            graphics.drawString(font, sizeText, panelX + 20, panelY + 145, TEXT_ACCENT);
+            safeGraphics.drawString(safeFont, sizeText, panelX + 20, panelY + 145, TEXT_ACCENT);
         }
 
         // Existing rooms list
-        graphics.drawString(font, "Existing Rooms: " + existingRooms.size(), panelX + 20, panelY + 165, TEXT_NORMAL);
+        safeGraphics.drawString(safeFont, "Existing Rooms: " + existingRooms.size(), panelX + 20, panelY + 165, TEXT_NORMAL);
 
         int listY = panelY + 178;
         int maxShow = 2;
@@ -367,10 +398,10 @@ public class RoomBoundsEditorScreen extends Screen {
         for (int i = startIdx; i < existingRooms.size() && i < startIdx + maxShow; i++) {
             RoomDefinition room = existingRooms.get(i);
             String roomInfo = "- " + room.id() + " " + formatBlockPos(room.min()) + " to " + formatBlockPos(room.max());
-            if (font.width(roomInfo) > PANEL_WIDTH - 40) {
+            if (safeFont.width(roomInfo) > PANEL_WIDTH - 40) {
                 roomInfo = "- " + room.id() + " (...)";
             }
-            graphics.drawString(font, roomInfo, panelX + 25, listY, TEXT_DIM);
+            safeGraphics.drawString(safeFont, roomInfo, panelX + 25, listY, TEXT_DIM);
             listY += 10;
         }
 
@@ -380,20 +411,21 @@ public class RoomBoundsEditorScreen extends Screen {
             if (elapsed < 3000) {
                 float alpha = elapsed < 2500 ? 1.0f : 1.0f - (elapsed - 2500) / 500.0f;
                 int color = applyAlpha(statusColor, alpha);
-                graphics.drawCenteredString(font, statusMessage, centerX, panelY + PANEL_HEIGHT - 15, color);
+                String status = Objects.requireNonNull(statusMessage, "statusMessage");
+                safeGraphics.drawCenteredString(safeFont, status, centerX, panelY + PANEL_HEIGHT - 15, color);
             } else {
                 statusMessage = "";
             }
         }
 
         // Hint
-        graphics.drawCenteredString(font, "Stand at corner, click 'Set Point'. Repeat for opposite corner.",
+        safeGraphics.drawCenteredString(safeFont, "Stand at corner, click 'Set Point'. Repeat for opposite corner.",
                 centerX, panelY + PANEL_HEIGHT + 5, TEXT_DIM);
 
-        super.render(graphics, mouseX, mouseY, partialTick);
+        super.render(safeGraphics, mouseX, mouseY, partialTick);
 
         // Modal overlays on top
-        renderDialogs(graphics, mouseX, mouseY);
+        renderDialogs(safeGraphics, mouseX, mouseY, safeFont);
     }
 
     private int applyAlpha(int color, float alpha) {
@@ -421,7 +453,7 @@ public class RoomBoundsEditorScreen extends Screen {
     // MODAL HANDLERS
     // ═══════════════════════════════════════════════════════════════
 
-    private void renderDialogs(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderDialogs(GuiGraphics graphics, int mouseX, int mouseY, Font font) {
         if (deleteDialog != null) {
             deleteDialog.render(graphics, font, width, height, mouseX, mouseY);
         }

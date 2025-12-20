@@ -338,18 +338,18 @@ public class PolicyResolver implements AutoCloseable {
         }
 
         // DD4: QUEST_TYPE (+4) - key with "Score" suffix for taratura
-        String policyQuestType = policy.questType();
-        if (policyQuestType != null && context.questType() != null) {
-            if (policyQuestType.equalsIgnoreCase(context.questType())) {
+        var policyQuestTypes = policy.questTypes();
+        if (policyQuestTypes != null && context.questType() != null) {
+            if (containsIgnoreCase(policyQuestTypes, context.questType())) {
                 breakdown.put("questTypeScore", (double) WEIGHT_QUEST_TYPE);
                 baseScore += WEIGHT_QUEST_TYPE;
             }
         }
 
         // DD4: DIFFICULTY (+3) - key with "Score" suffix for taratura
-        String policyDifficulty = policy.difficulty();
-        if (policyDifficulty != null && context.difficulty() != null) {
-            if (policyDifficulty.equalsIgnoreCase(context.difficulty())) {
+        var policyDifficultyTags = policy.difficultyTags();
+        if (policyDifficultyTags != null && context.difficulty() != null) {
+            if (containsIgnoreCase(policyDifficultyTags, context.difficulty())) {
                 breakdown.put("difficultyScore", (double) WEIGHT_DIFFICULTY);
                 baseScore += WEIGHT_DIFFICULTY;
             }
@@ -405,6 +405,15 @@ public class PolicyResolver implements AutoCloseable {
             return false;
         }
         return true;
+    }
+
+    private boolean containsIgnoreCase(Set<String> values, String target) {
+        for (String value : values) {
+            if (value != null && value.equalsIgnoreCase(target)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

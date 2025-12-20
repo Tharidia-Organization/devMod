@@ -11,6 +11,8 @@ import com.frenkvs.devmod.ui.scroll.ScrollMetrics;
 import com.frenkvs.devmod.ui.scroll.ScrollMode;
 import net.minecraft.client.gui.GuiGraphics;
 
+import java.util.Objects;
+
 /**
  * Scrollable content area for module content.
  * Handles scrolling, scissoring, and scrollbar rendering.
@@ -109,7 +111,8 @@ public class ScrollableContentArea {
         graphics.fill(x, y, x + width, y + height, UIConstants.Background.CONTENT());
 
         // Render content with scissoring (try/finally for safety)
-        scrollManager.withScissor(graphics, contentBounds, () -> {
+        ResponsiveLayout.Rect scissorBounds = Objects.requireNonNull(contentBounds, "contentBounds");
+        scrollManager.withScissor(graphics, scissorBounds, () -> {
             int scrolledY = contentY - scrollManager.getScrollOffset();
             this.contentHeight = contentRenderer.render(graphics, contentX, scrolledY, contentWidth, mouseX, mouseY);
         });

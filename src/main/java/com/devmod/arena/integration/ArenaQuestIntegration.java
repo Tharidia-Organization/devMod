@@ -2,6 +2,7 @@ package com.devmod.arena.integration;
 
 import com.devmod.arena.api.ArenaHandle;
 import com.devmod.arena.builder.ArenaBuilder;
+import com.devmod.arena.gate.InstanceOnlyGate;
 import com.devmod.arena.policy.ArenaPolicy;
 import com.devmod.arena.policy.ArenaPolicyRegistry;
 import com.devmod.arena.policy.PolicyResolver;
@@ -117,13 +118,18 @@ public class ArenaQuestIntegration {
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                if (configSnapshot != null && configSnapshot.instanceOnly() && context.instanceId() == null) {
-                    telemetry.emit("arena.gate.blocked", Map.of(
-                        "caller", "ArenaQuestIntegration.prepareArena",
-                        "reason", "instance_only",
-                        "instanceId", "null"
-                    ));
-                    return PrepareResult.failed(sessionId, "Instance-only mode: provide instanceId");
+                if (configSnapshot != null) {
+                    InstanceOnlyGate gate = new InstanceOnlyGate(configSnapshot, telemetry);
+                    InstanceOnlyGate.Result gateResult = gate.checkInstanceId(
+                        context.instanceId(),
+                        "ArenaQuestIntegration.prepareArena"
+                    );
+                    if (gateResult == InstanceOnlyGate.Result.BLOCKED) {
+                        return PrepareResult.failed(sessionId, "Instance-only mode: provide instanceId");
+                    }
+                    if (gateResult == InstanceOnlyGate.Result.ALLOWED_DEBUG_ONLY) {
+                        LOGGER.warn("[INSTANCE_GATE] Debug-only prepareArena allowed without instanceId");
+                    }
                 }
 
                 // Step 1: Resolve policy and template

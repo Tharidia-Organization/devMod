@@ -297,8 +297,9 @@ public class QuickTestWizard extends Screen {
         graphics.drawString(getFont(), type.getIcon(), x + w/2 - 6, y + 15, type.getColor(), false);
 
         // Name
-        int textW = getFont().width(type.getDisplayName());
-        graphics.drawString(getFont(), type.getDisplayName(), x + (w - textW)/2, y + 40,
+        @Nonnull String displayName = Objects.requireNonNull(Objects.requireNonNullElse(type.getDisplayName(), ""), "displayName");
+        int textW = getFont().width(displayName);
+        graphics.drawString(getFont(), displayName, x + (w - textW)/2, y + 40,
             selected ? UIConstants.Text.WHITE() : UIConstants.Text.PRIMARY(), false);
 
         // Selected indicator

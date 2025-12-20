@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import javax.annotation.Nonnull;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -73,6 +74,9 @@ public final class ModuleCardSection implements EditorSection.CustomSection {
     @Override
     public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
         Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
+        @Nonnull String safeIcon = Objects.requireNonNull(Objects.requireNonNullElse(icon, ""), "icon");
+        @Nonnull String safeTitle = Objects.requireNonNull(Objects.requireNonNullElse(title, ""), "title");
+        @Nonnull String safeDescription = Objects.requireNonNull(Objects.requireNonNullElse(description, ""), "description");
 
         // Store bounds for hit testing
         lastX = bounds.x();
@@ -98,16 +102,16 @@ public final class ModuleCardSection implements EditorSection.CustomSection {
         graphics.fill(iconX, iconY, iconX + ICON_SIZE, iconY + ICON_SIZE, accentColor & 0x44FFFFFF);
 
         // Icon text (emoji/symbol)
-        int iconTextX = iconX + (ICON_SIZE - font.width(icon)) / 2;
+        int iconTextX = iconX + (ICON_SIZE - font.width(safeIcon)) / 2;
         int iconTextY = iconY + (ICON_SIZE - 8) / 2;
-        graphics.drawString(font, icon, iconTextX, iconTextY, accentColor, false);
+        graphics.drawString(font, safeIcon, iconTextX, iconTextY, accentColor, false);
 
         // Title
         int textX = iconX + ICON_SIZE + CARD_PADDING;
-        graphics.drawString(font, title, textX, lastY + TITLE_Y_OFFSET, UIConstants.Text.TITLE(), false);
+        graphics.drawString(font, safeTitle, textX, lastY + TITLE_Y_OFFSET, UIConstants.Text.TITLE(), false);
 
         // Description
-        graphics.drawString(font, description, textX, lastY + DESC_Y_OFFSET, UIConstants.Text.SECONDARY(), false);
+        graphics.drawString(font, safeDescription, textX, lastY + DESC_Y_OFFSET, UIConstants.Text.SECONDARY(), false);
 
         // Arrow indicator on hover
         if (hovered) {

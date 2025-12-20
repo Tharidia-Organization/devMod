@@ -2,6 +2,7 @@ package com.devmod.arena.policy;
 
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.arena.registry.TemplateValidator;
 import com.devmod.arena.telemetry.ArenaTelemetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ public class ArenaPolicyRegistry {
     private final ArenaTelemetry telemetry;
     private final ArenaTemplateRegistry templateRegistry;
     private final Set<String> weightClampWarnings = ConcurrentHashMap.newKeySet();
+    private final TemplateValidator.ValidationMode schemaMode;
 
     // Stats
     private final RegistryStats stats = new RegistryStats();
@@ -45,6 +47,14 @@ public class ArenaPolicyRegistry {
     public ArenaPolicyRegistry(ArenaTelemetry telemetry, ArenaTemplateRegistry templateRegistry) {
         this.telemetry = Objects.requireNonNull(telemetry, "telemetry");
         this.templateRegistry = Objects.requireNonNull(templateRegistry, "templateRegistry");
+        this.schemaMode = TemplateValidator.fromString(
+            System.getProperty("devmod.policy.validationMode") != null
+                ? System.getProperty("devmod.policy.validationMode")
+                : System.getenv("DEVMOD_POLICY_VALIDATION_MODE"),
+            TemplateValidator.ValidationMode.STRICT
+        );
+        PolicySchemaValidator.tryLoadFromResource("schemas/arena_policy.schema.json");
+        PolicySchemaValidator.tryLoadFromPath(Path.of("docs/arena-template-rework/arena_policy.schema.json"));
 
         // Always register default policy
         policies.put(ArenaPolicy.DEFAULT.id(), ArenaPolicy.DEFAULT);
@@ -380,7 +390,23 @@ public class ArenaPolicyRegistry {
     private void loadSinglePolicy(Path path, List<ArenaPolicy> loaded, List<String> errors) {
         try {
             String json = Files.readString(path, StandardCharsets.UTF_8);
-            Optional<ArenaPolicy> parsed = PolicySerializer.deserialize(json);
+            var obj = com.google.gson.JsonParser.parseString(json).getAsJsonObject();
+            PolicySchemaValidator.ValidationResult schemaResult = PolicySchemaValidator.validate(obj, schemaMode);
+            if (!schemaResult.unknownFields().isEmpty()) {
+                telemetry.emit("arena.policy.unknown_fields", Map.of(
+                    "file", path.toString(),
+                    "fields", schemaResult.unknownFields()
+                ));
+            }
+            if (!schemaResult.valid()) {
+                errors.add(path + ": " + schemaResult.errors());
+                telemetry.emit("arena.policy.load_failed", Map.of(
+                    "file", path.toString(),
+                    "reason", schemaResult.errors()
+                ));
+                return;
+            }
+            Optional<ArenaPolicy> parsed = PolicySerializer.deserialize(obj);
             if (parsed.isPresent()) {
                 loaded.add(parsed.get());
             } else {
@@ -396,6 +422,7 @@ public class ArenaPolicyRegistry {
      */
     public ValidationResult validatePolicy(ArenaPolicy policy) {
         List<String> errors = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
 
         if (policy.id() == null || policy.id().isBlank()) {
             errors.add("Policy ID is required");
@@ -442,7 +469,14 @@ public class ArenaPolicyRegistry {
             }
         }
 
-        return new ValidationResult(errors.isEmpty(), errors, List.of());
+        checkStringSet(policy.mobTypes(), "mobTypes", warnings);
+        checkStringSet(policy.questTypes(), "questTypes", warnings);
+        checkStringSet(policy.difficultyTags(), "difficultyTags", warnings);
+        checkStringSet(policy.tags(), "tags", warnings);
+        validateBindings(policy, errors, warnings);
+        validateRewards(policy, errors, warnings);
+
+        return new ValidationResult(errors.isEmpty(), errors, warnings);
     }
 
     private ArenaPolicy clampWeight(ArenaPolicy policy, List<String> warnings) {
@@ -582,14 +616,20 @@ public class ArenaPolicyRegistry {
         public static Optional<ArenaPolicy> deserialize(String json) {
             try {
                 var obj = com.google.gson.JsonParser.parseString(json).getAsJsonObject();
+                return deserialize(obj);
+            } catch (Exception e) {
+                return Optional.empty();
+            }
+        }
+
+        public static Optional<ArenaPolicy> deserialize(com.google.gson.JsonObject obj) {
+            try {
 
                 String id = getString(obj, "id", null);
                 if (id == null || id.isBlank()) return Optional.empty();
 
                 int version = getInt(obj, "version", 1);
                 String templateId = getString(obj, "templateId", null);
-                String questType = getString(obj, "questType", null);
-                String difficulty = getString(obj, "difficulty", null);
                 int priority = getInt(obj, "priority", 0);
                 double weight = getDouble(obj, "weight", 1.0);
                 boolean enabled = getBoolean(obj, "enabled", true);
@@ -601,7 +641,42 @@ public class ArenaPolicyRegistry {
                 Integer maxTemplateVersion = getNullableInt(obj, "maxTemplateVersion");
 
                 Set<String> mobTypes = toSet(obj, "mobTypes");
+                Set<String> mobIds = toSet(obj, "mobIds");
+                if (mobIds != null && !mobIds.isEmpty()) {
+                    mobTypes = mobIds;
+                }
+                Set<String> questTypes = toSet(obj, "questTypes");
+                if (questTypes == null || questTypes.isEmpty()) {
+                    String legacyQuest = getString(obj, "questType", null);
+                    if (legacyQuest != null) {
+                        questTypes = Set.of(legacyQuest);
+                    }
+                }
+                Set<String> difficultyTags = toSet(obj, "difficultyTags");
+                if (difficultyTags == null || difficultyTags.isEmpty()) {
+                    String legacyDifficulty = getString(obj, "difficulty", null);
+                    if (legacyDifficulty != null) {
+                        difficultyTags = Set.of(legacyDifficulty);
+                    }
+                }
                 Set<String> tags = toSet(obj, "tags");
+
+                if (obj.has("routing") && obj.get("routing").isJsonObject()) {
+                    var routing = obj.getAsJsonObject("routing");
+                    Set<String> routingMobIds = toSet(routing, "mobIds");
+                    if (routingMobIds != null && !routingMobIds.isEmpty()) {
+                        mobTypes = routingMobIds;
+                    }
+                    Set<String> routingQuestTypes = toSet(routing, "questTypes");
+                    if (routingQuestTypes != null && !routingQuestTypes.isEmpty()) {
+                        questTypes = routingQuestTypes;
+                    }
+                    Set<String> routingDifficultyTags = toSet(routing, "difficultyTags");
+                    if (routingDifficultyTags != null && !routingDifficultyTags.isEmpty()) {
+                        difficultyTags = routingDifficultyTags;
+                    }
+                    weight = getDouble(routing, "weight", weight);
+                }
 
                 ArenaPolicy.PerkBindings perk = null;
                 if (obj.has("perkBindings") && obj.get("perkBindings").isJsonObject()) {
@@ -651,8 +726,8 @@ public class ArenaPolicyRegistry {
                     minTemplateVersion,
                     maxTemplateVersion,
                     mobTypes,
-                    questType,
-                    difficulty,
+                    questTypes,
+                    difficultyTags,
                     minPlayers,
                     maxPlayers,
                     tags,

@@ -14,6 +14,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -103,8 +104,8 @@ public class PerformanceProfiler {
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.DEBUG_OVERLAY,
-            LAYER_ID,
+            Objects.requireNonNull(VanillaGuiLayers.DEBUG_OVERLAY),
+            Objects.requireNonNull(LAYER_ID),
             PerformanceProfiler::render
         );
     }
@@ -114,9 +115,11 @@ public class PerformanceProfiler {
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.options.hideGui) return;
+        Font font = mc.font;
+        if (font == null) return;
 
         INSTANCE.updateMetrics();
-        INSTANCE.renderOverlay(graphics, mc.font);
+        INSTANCE.renderOverlay(graphics, font);
     }
 
     // === Profiling API ===
@@ -137,8 +140,8 @@ public class PerformanceProfiler {
         if (!enabled || startNano == 0) return;
 
         long elapsed = System.nanoTime() - startNano;
-        systemTimings.merge(systemName, elapsed, Long::sum);
-        systemCallCounts.merge(systemName, 1, Integer::sum);
+        systemTimings.merge(systemName, elapsed, PerformanceProfiler::sumLongs);
+        systemCallCounts.merge(systemName, 1, PerformanceProfiler::sumInts);
     }
 
     /**
@@ -234,6 +237,7 @@ public class PerformanceProfiler {
     // === Rendering ===
 
     private void renderOverlay(GuiGraphics graphics, Font font) {
+        font = Objects.requireNonNull(font);
         int screenWidth = graphics.guiWidth();
 
         // Position: top right corner
@@ -428,6 +432,26 @@ public class PerformanceProfiler {
         if (ms <= 16.67f) return TEXT_GREEN;
         if (ms <= 33.33f) return TEXT_YELLOW;
         return TEXT_RED;
+    }
+
+    private static Long sumLongs(Long left, Long right) {
+        if (left == null) {
+            return right == null ? 0L : right;
+        }
+        if (right == null) {
+            return left;
+        }
+        return left + right;
+    }
+
+    private static Integer sumInts(Integer left, Integer right) {
+        if (left == null) {
+            return right == null ? 0 : right;
+        }
+        if (right == null) {
+            return left;
+        }
+        return left + right;
     }
 
     // === Public API ===

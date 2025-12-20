@@ -15,6 +15,7 @@ import com.frenkvs.devmod.ui.unified.pages.VisualizersPage;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import com.frenkvs.devmod.util.I18n;
@@ -24,6 +25,7 @@ import javax.annotation.Nullable;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Unified settings screen for all mod settings.
@@ -172,38 +174,40 @@ public class UnifiedSettingsScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        GuiGraphics safeGraphics = Objects.requireNonNull(graphics, "graphics");
         this.mouseX = mouseX;
         this.mouseY = mouseY;
 
         // Dark background
-        graphics.fill(0, 0, width, height, UIConstants.Background.SCREEN());
+        safeGraphics.fill(0, 0, width, height, UIConstants.Background.SCREEN());
 
         // Header
-        renderHeader(graphics);
+        renderHeader(safeGraphics);
 
         // Sidebar
-        renderSidebar(graphics, mouseX, mouseY);
+        renderSidebar(safeGraphics, mouseX, mouseY);
 
         // Vertical separator
         int separatorX = SIDEBAR_WIDTH;
-        graphics.fill(separatorX, HEADER_HEIGHT, separatorX + 1, height - FOOTER_HEIGHT, UIConstants.Border.DEFAULT());
+        safeGraphics.fill(separatorX, HEADER_HEIGHT, separatorX + 1, height - FOOTER_HEIGHT, UIConstants.Border.DEFAULT());
 
         // Content area
-        renderContent(graphics, mouseX, mouseY);
+        renderContent(safeGraphics, mouseX, mouseY);
 
         // Footer
-        renderFooter(graphics, mouseX, mouseY);
+        renderFooter(safeGraphics, mouseX, mouseY);
 
         // Modal overlays (rendered on top)
-        renderDialogs(graphics, mouseX, mouseY);
+        renderDialogs(safeGraphics, mouseX, mouseY);
 
         // Tooltip (rendered last, on top of everything)
         if (!isDialogOpen()) {
-            renderTooltip(graphics, mouseX, mouseY);
+            renderTooltip(safeGraphics, mouseX, mouseY);
         }
     }
 
     private void renderTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
+        Font safeFont = Objects.requireNonNull(font, "font");
         // Check if hovering over sidebar item for tooltip
         if (mouseX < SIDEBAR_WIDTH && mouseY > HEADER_HEIGHT + PADDING + SEARCH_HEIGHT + 8) {
             int y = HEADER_HEIGHT + PADDING + SEARCH_HEIGHT + 8;
@@ -217,19 +221,20 @@ public class UnifiedSettingsScreen extends Screen {
                     // Show tooltip after delay
                     if (tooltipShowTime == 0) {
                         tooltipShowTime = System.currentTimeMillis();
-                        tooltipText = category.getDescription();
+                        tooltipText = Objects.requireNonNullElse(category.getDescription(), "");
                     }
 
-                    if (System.currentTimeMillis() - tooltipShowTime >= TOOLTIP_DELAY_MS && !tooltipText.isEmpty()) {
+                    String safeTooltipText = Objects.requireNonNull(tooltipText, "tooltipText");
+                    if (System.currentTimeMillis() - tooltipShowTime >= TOOLTIP_DELAY_MS && !safeTooltipText.isEmpty()) {
                         // Draw tooltip
-                        int tipWidth = font.width(tooltipText) + 8;
+                        int tipWidth = safeFont.width(safeTooltipText) + 8;
                         int tipHeight = 14;
                         int tipX = Math.min(mouseX + 10, width - tipWidth - 5);
                         int tipY = mouseY - tipHeight - 5;
 
                         graphics.fill(tipX, tipY, tipX + tipWidth, tipY + tipHeight, UIConstants.Background.PANEL());
                         AxiomRenderer.drawBorder(graphics, tipX, tipY, tipWidth, tipHeight, UIConstants.Border.DEFAULT());
-                        graphics.drawString(font, tooltipText, tipX + 4, tipY + 3, UIConstants.Text.PRIMARY(), false);
+                        graphics.drawString(safeFont, safeTooltipText, tipX + 4, tipY + 3, UIConstants.Text.PRIMARY(), false);
                     }
                     return;
                 }
@@ -243,9 +248,10 @@ public class UnifiedSettingsScreen extends Screen {
     }
 
     private void renderDialogs(GuiGraphics graphics, int mouseX, int mouseY) {
-        if (resetDialog != null) resetDialog.render(graphics, font, width, height, mouseX, mouseY);
-        if (factoryResetDialog != null) factoryResetDialog.render(graphics, font, width, height, mouseX, mouseY);
-        if (progressResetDialog != null) progressResetDialog.render(graphics, font, width, height, mouseX, mouseY);
+        Font safeFont = Objects.requireNonNull(font, "font");
+        if (resetDialog != null) resetDialog.render(graphics, safeFont, width, height, mouseX, mouseY);
+        if (factoryResetDialog != null) factoryResetDialog.render(graphics, safeFont, width, height, mouseX, mouseY);
+        if (progressResetDialog != null) progressResetDialog.render(graphics, safeFont, width, height, mouseX, mouseY);
     }
 
     private boolean isDialogOpen() {
@@ -283,11 +289,11 @@ public class UnifiedSettingsScreen extends Screen {
         com.frenkvs.devmod.ui.unified.persistence.SettingsManager.INSTANCE.resetAll();
 
         // Show feedback to user
-        if (minecraft != null && minecraft.player != null) {
-            minecraft.player.displayClientMessage(
-                I18n.translate("devmod.message.factory_reset_complete"),
-                false
-            );
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null) {
+            mc.player.displayClientMessage(
+                Objects.requireNonNull(I18n.translate("devmod.message.factory_reset_complete"), "factoryResetMessage"),
+                false);
         }
 
         // Close settings screen
@@ -310,28 +316,29 @@ public class UnifiedSettingsScreen extends Screen {
         }
 
         // Show feedback to user
-        if (minecraft != null && minecraft.player != null) {
-            minecraft.player.displayClientMessage(
-                I18n.translate("devmod.message.player_progress_reset"),
-                false
-            );
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null) {
+            mc.player.displayClientMessage(
+                Objects.requireNonNull(I18n.translate("devmod.message.player_progress_reset"), "progressResetMessage"),
+                false);
         }
     }
 
     // === Header ===
 
     private void renderHeader(GuiGraphics graphics) {
+        Font safeFont = Objects.requireNonNull(font, "font");
         // Background header
         graphics.fill(0, 0, width, HEADER_HEIGHT, UIConstants.Background.HEADER());
         graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, UIConstants.Border.DEFAULT());
 
         // Title
-        graphics.drawString(font, "VOXEL-LAB Settings", PADDING, (HEADER_HEIGHT - 9) / 2, UIConstants.Text.TITLE(), false);
+        graphics.drawString(safeFont, "VOXEL-LAB Settings", PADDING, (HEADER_HEIGHT - 9) / 2, UIConstants.Text.TITLE(), false);
 
         // Breadcrumb on the right
-        String breadcrumb = currentCategory.getLabel();
-        int breadcrumbWidth = font.width(breadcrumb);
-        graphics.drawString(font, breadcrumb, width - breadcrumbWidth - PADDING, (HEADER_HEIGHT - 9) / 2,
+        String breadcrumb = Objects.requireNonNull(currentCategory.getLabel(), "breadcrumb");
+        int breadcrumbWidth = safeFont.width(breadcrumb);
+        graphics.drawString(safeFont, breadcrumb, width - breadcrumbWidth - PADDING, (HEADER_HEIGHT - 9) / 2,
             currentCategory.getAccentColor(), false);
 
         // Close button (X)
@@ -339,7 +346,7 @@ public class UnifiedSettingsScreen extends Screen {
         int closeY = (HEADER_HEIGHT - 12) / 2;
         boolean closeHovered = mouseX >= closeX && mouseX < closeX + 12 && mouseY >= closeY && mouseY < closeY + 12;
         int closeColor = closeHovered ? UIConstants.Status.ERROR() : UIConstants.Text.MUTED();
-        graphics.drawString(font, "X", closeX, closeY, closeColor, false);
+        graphics.drawString(safeFont, "X", closeX, closeY, closeColor, false);
     }
 
     // === Sidebar ===
@@ -368,6 +375,8 @@ public class UnifiedSettingsScreen extends Screen {
     }
 
     private void renderSearchBox(GuiGraphics graphics, int x, int y, int boxWidth, int mouseX, int mouseY) {
+        Font safeFont = Objects.requireNonNull(font, "font");
+        String safeSearchQuery = Objects.requireNonNullElse(searchQuery, "");
         // Background
         int bgColor = searchFocused ? UIConstants.Background.INPUT() : UIConstants.Background.PANEL();
         graphics.fill(x, y, x + boxWidth, y + SEARCH_HEIGHT, bgColor);
@@ -377,29 +386,31 @@ public class UnifiedSettingsScreen extends Screen {
         AxiomRenderer.drawBorder(graphics, x, y, boxWidth, SEARCH_HEIGHT, borderColor);
 
         // Search icon or text
-        if (searchQuery.isEmpty() && !searchFocused) {
-            graphics.drawString(font, "Search...", x + 6, y + 6, UIConstants.Text.MUTED(), false);
+        if (safeSearchQuery.isEmpty() && !searchFocused) {
+            graphics.drawString(safeFont, "Search...", x + 6, y + 6, UIConstants.Text.MUTED(), false);
         } else {
-            graphics.drawString(font, searchQuery + (searchFocused ? "_" : ""), x + 6, y + 6, UIConstants.Text.PRIMARY(), false);
+            graphics.drawString(safeFont, safeSearchQuery + (searchFocused ? "_" : ""), x + 6, y + 6, UIConstants.Text.PRIMARY(), false);
         }
 
         // Clear button if has text (larger hit area for better usability)
-        if (!searchQuery.isEmpty()) {
+        if (!safeSearchQuery.isEmpty()) {
             int clearX = x + boxWidth - 16;
             int clearHitWidth = 16; // Larger hit area than visual "x"
             boolean clearHovered = mouseX >= clearX && mouseX < clearX + clearHitWidth && mouseY >= y && mouseY < y + SEARCH_HEIGHT;
-            graphics.drawString(font, "x", clearX + 3, y + 6, clearHovered ? UIConstants.Status.ERROR() : UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, "x", clearX + 3, y + 6, clearHovered ? UIConstants.Status.ERROR() : UIConstants.Text.MUTED(), false);
         }
     }
 
     private boolean matchesSearch(SettingsCategory category) {
-        String query = searchQuery.toLowerCase();
-        return category.getLabel().toLowerCase().contains(query) ||
-               category.getDescription().toLowerCase().contains(query);
+        String query = Objects.requireNonNullElse(searchQuery, "").toLowerCase();
+        String label = Objects.requireNonNullElse(category.getLabel(), "");
+        String description = Objects.requireNonNullElse(category.getDescription(), "");
+        return label.toLowerCase().contains(query) || description.toLowerCase().contains(query);
     }
 
     private void renderSidebarItem(GuiGraphics graphics, SettingsCategory category, int y,
                                     boolean selected, boolean hovered, boolean hasPage) {
+        Font safeFont = Objects.requireNonNull(font, "font");
         int x = PADDING;
         int itemWidth = SIDEBAR_WIDTH - PADDING * 2;
 
@@ -417,18 +428,20 @@ public class UnifiedSettingsScreen extends Screen {
         // Icon
         int iconColor = selected ? category.getAccentColor() :
             (hasPage ? UIConstants.Text.SECONDARY() : UIConstants.Text.DISABLED());
-        graphics.drawString(font, "[" + category.getIcon() + "]", x, y + 4, iconColor, false);
+        String icon = Objects.requireNonNullElse(category.getIcon(), "");
+        graphics.drawString(safeFont, "[" + icon + "]", x, y + 4, iconColor, false);
 
         // Label
         int labelColor = selected ? UIConstants.Text.PRIMARY() :
             (hasPage ? UIConstants.Text.SECONDARY() : UIConstants.Text.DISABLED());
-        graphics.drawString(font, category.getLabel(), x + 28, y + 4, labelColor, false);
+        String label = Objects.requireNonNullElse(category.getLabel(), "");
+        graphics.drawString(safeFont, label, x + 28, y + 4, labelColor, false);
 
         // "coming soon" indicator for unimplemented pages
         if (!hasPage) {
             String soon = "soon";
-            int soonWidth = font.width(soon);
-            graphics.drawString(font, soon, SIDEBAR_WIDTH - soonWidth - PADDING, y + 4,
+            int soonWidth = safeFont.width(soon);
+            graphics.drawString(safeFont, soon, SIDEBAR_WIDTH - soonWidth - PADDING, y + 4,
                 UIConstants.Text.DISABLED(), false);
         }
     }
@@ -441,6 +454,7 @@ public class UnifiedSettingsScreen extends Screen {
     // === Content Area ===
 
     private void renderContent(GuiGraphics graphics, int mouseX, int mouseY) {
+        Font safeFont = Objects.requireNonNull(font, "font");
         int contentX = SIDEBAR_WIDTH + PADDING;
         int contentY = HEADER_HEIGHT + PADDING;
         int contentWidth = width - SIDEBAR_WIDTH - PADDING * 2;
@@ -454,17 +468,20 @@ public class UnifiedSettingsScreen extends Screen {
 
         // Page title
         SettingsPage page = pages.get(currentCategory);
-        String pageTitle = page != null ? page.getTitle() : currentCategory.getLabel();
+        String pageTitle = page != null
+            ? Objects.requireNonNullElse(page.getTitle(), "")
+            : Objects.requireNonNullElse(currentCategory.getLabel(), "");
 
         // Animate title with fade
         int titleAlpha = (int) (255 * categoryTransitionProgress);
         int titleColor = (titleAlpha << 24) | (UIConstants.Text.PRIMARY() & 0x00FFFFFF);
-        graphics.drawString(font, pageTitle, contentX + animOffset, contentY, titleColor, false);
+        graphics.drawString(safeFont, pageTitle, contentX + animOffset, contentY, titleColor, false);
 
         // Description (animated)
         int descAlpha = (int) (255 * categoryTransitionProgress * 0.7f);
         int descColor = (descAlpha << 24) | (UIConstants.Text.MUTED() & 0x00FFFFFF);
-        graphics.drawString(font, currentCategory.getDescription(), contentX + animOffset, contentY + 12, descColor, false);
+        String description = Objects.requireNonNullElse(currentCategory.getDescription(), "");
+        graphics.drawString(safeFont, description, contentX + animOffset, contentY + 12, descColor, false);
 
         // Separator
         int sepY = contentY + 28;
@@ -477,13 +494,13 @@ public class UnifiedSettingsScreen extends Screen {
         if (page != null) {
             // Apply content fade during transition
             if (categoryTransitionProgress >= 0.3f) {
-                page.render(graphics, font, contentX + animOffset, pageY, contentWidth, pageHeight, mouseX, mouseY);
+                page.render(graphics, safeFont, contentX + animOffset, pageY, contentWidth, pageHeight, mouseX, mouseY);
             }
         } else {
             // Placeholder for unimplemented pages
             String placeholder = "This section is coming soon...";
-            int placeholderWidth = font.width(placeholder);
-            graphics.drawString(font, placeholder,
+            int placeholderWidth = safeFont.width(placeholder);
+            graphics.drawString(safeFont, placeholder,
                 contentX + (contentWidth - placeholderWidth) / 2,
                 pageY + pageHeight / 2,
                 UIConstants.Text.DISABLED(), false);
@@ -493,6 +510,7 @@ public class UnifiedSettingsScreen extends Screen {
     // === Footer ===
 
     private void renderFooter(GuiGraphics graphics, int mouseX, int mouseY) {
+        Font safeFont = Objects.requireNonNull(font, "font");
         int footerY = height - FOOTER_HEIGHT;
 
         // Background
@@ -547,8 +565,8 @@ public class UnifiedSettingsScreen extends Screen {
 
         // Hint at center
         String hint = "Press ESC or K to close";
-        int hintWidth = font.width(hint);
-        graphics.drawString(font, hint, (width - hintWidth) / 2, buttonY + 5, UIConstants.Text.MUTED(), false);
+        int hintWidth = safeFont.width(hint);
+        graphics.drawString(safeFont, hint, (width - hintWidth) / 2, buttonY + 5, UIConstants.Text.MUTED(), false);
     }
 
     // === Input Handling ===
@@ -852,9 +870,7 @@ public class UnifiedSettingsScreen extends Screen {
         // Persist settings to disk
         SettingsManager.INSTANCE.save();
 
-        if (minecraft != null) {
-            minecraft.setScreen(parent);
-        }
+        mc.setScreen(parent);
     }
 
     @Override
@@ -863,7 +879,7 @@ public class UnifiedSettingsScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void renderBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Override to disable the default blurred background completely
         // Just fill with solid color, no blur
         graphics.fill(0, 0, this.width, this.height, UIConstants.Background.SCREEN());
@@ -875,7 +891,7 @@ public class UnifiedSettingsScreen extends Screen {
     }
 
     @Override
-    protected void renderMenuBackground(GuiGraphics graphics) {
+    protected void renderMenuBackground(@Nonnull GuiGraphics graphics) {
         // Just solid background, no dimming or blur
         graphics.fill(0, 0, this.width, this.height, UIConstants.Background.SCREEN());
     }
