@@ -3,7 +3,6 @@ package com.frenkvs.devmod;
 import static com.frenkvs.devmod.DevMod.MODID;
 
 import com.frenkvs.devmod.endurance.EnduranceQuestManager;
-import com.frenkvs.devmod.FuelConfigManager;
 import com.frenkvs.devmod.testing.stats.HazardTypeRegistry;
 import com.frenkvs.devmod.util.ConfigPaths;
 import com.frenkvs.devmod.util.DamageTypeConfig;

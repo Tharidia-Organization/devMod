@@ -11,6 +11,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -62,9 +63,10 @@ public class Impact3DPanelManager {
             } else {
                 // Fallback: use player position + 3 blocks in look direction
                 Minecraft mc = Minecraft.getInstance();
-                if (mc.player != null) {
-                    Vec3 look = mc.player.getLookAngle();
-                    hitPoint = mc.player.getEyePosition().add(look.scale(3.0));
+                var player = mc.player;
+                if (player != null) {
+                    Vec3 look = player.getLookAngle();
+                    hitPoint = player.getEyePosition().add(Objects.requireNonNull(look.scale(3.0)));
                 } else {
                     // No valid point, cannot spawn
                     return;
@@ -90,7 +92,7 @@ public class Impact3DPanelManager {
 
     private Vec3 resolvePanelPosition(Minecraft mc, Vec3 hitPoint, Vec3 cameraPos) {
         Vec3 rightCandidate = Impact3DRenderer.INSTANCE.calculatePanelPosition(hitPoint, cameraPos);
-        Vec3 leftCandidate = hitPoint.subtract(rightCandidate.subtract(hitPoint));
+        Vec3 leftCandidate = Objects.requireNonNull(hitPoint.subtract(Objects.requireNonNull(rightCandidate.subtract(hitPoint))));
 
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
@@ -108,13 +110,15 @@ public class Impact3DPanelManager {
     }
 
     private boolean isVisible(ClientLevel level, LocalPlayer player, Vec3 from, Vec3 to) {
-        ClipContext context = new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player);
+        ClipContext context = new ClipContext(
+            Objects.requireNonNull(from), Objects.requireNonNull(to),
+            ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, Objects.requireNonNull(player));
         var hitResult = level.clip(context);
         if (hitResult.getType() == HitResult.Type.MISS) {
             return true;
         }
 
-        double hitDistSq = hitResult.getLocation().distanceToSqr(from);
+        double hitDistSq = Objects.requireNonNull(hitResult.getLocation()).distanceToSqr(from);
         double targetDistSq = to.distanceToSqr(from);
         return hitDistSq >= targetDistSq - 0.01;
     }
@@ -165,7 +169,7 @@ public class Impact3DPanelManager {
             // DISTANCE-GATED RENDERING: Skip panels too far away
             Vec3 panelPos = panel.getPanelPosition();
             if (panelPos != null) {
-                double distSq = panelPos.distanceToSqr(cameraPos);
+                double distSq = panelPos.distanceToSqr(Objects.requireNonNull(cameraPos));
                 if (distSq > MAX_RENDER_DISTANCE_SQ) {
                     continue; // Skip rendering, panel too far
                 }

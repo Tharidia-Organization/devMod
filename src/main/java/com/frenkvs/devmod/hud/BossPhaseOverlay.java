@@ -18,6 +18,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -67,8 +68,8 @@ public class BossPhaseOverlay {
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.BOSS_OVERLAY,
-            LAYER_ID,
+            Objects.requireNonNull(VanillaGuiLayers.BOSS_OVERLAY),
+            Objects.requireNonNull(LAYER_ID),
             BossPhaseOverlay::render
         );
     }
@@ -86,13 +87,14 @@ public class BossPhaseOverlay {
             lastBossCheckMs = now;
         }
 
-        if (cachedBoss == null || !cachedBoss.isAlive()) {
+        LivingEntity boss = cachedBoss;
+        if (boss == null || !boss.isAlive()) {
             cachedBoss = null;
             return;
         }
 
         // Update HP
-        cachedBossHpPercent = cachedBoss.getHealth() / cachedBoss.getMaxHealth();
+        cachedBossHpPercent = boss.getHealth() / boss.getMaxHealth();
 
         Font font = mc.font;
         int screenWidth = graphics.guiWidth();
@@ -105,11 +107,13 @@ public class BossPhaseOverlay {
     }
 
     private static void updateBossCache(Minecraft mc) {
-        if (mc.level == null || mc.player == null) return;
+        var player = mc.player;
+        var level = mc.level;
+        if (level == null || player == null) return;
 
         // Search for boss entities near player (64 block radius)
-        AABB searchBox = mc.player.getBoundingBox().inflate(64);
-        List<LivingEntity> nearbyEntities = mc.level.getEntitiesOfClass(
+        AABB searchBox = Objects.requireNonNull(player.getBoundingBox().inflate(64));
+        List<LivingEntity> nearbyEntities = level.getEntitiesOfClass(
             LivingEntity.class, searchBox,
             e -> isBossEntity(e) && e.isAlive()
         );
@@ -118,14 +122,15 @@ public class BossPhaseOverlay {
             // Pick closest boss
             cachedBoss = nearbyEntities.stream()
                 .min((a, b) -> Double.compare(
-                    a.distanceToSqr(mc.player),
-                    b.distanceToSqr(mc.player)
+                    a.distanceToSqr(player),
+                    b.distanceToSqr(player)
                 ))
                 .orElse(null);
 
-            if (cachedBoss != null) {
-                cachedBossName = cachedBoss.getName().getString();
-                cachedBossHpPercent = cachedBoss.getHealth() / cachedBoss.getMaxHealth();
+            LivingEntity boss = cachedBoss;
+            if (boss != null) {
+                cachedBossName = boss.getName().getString();
+                cachedBossHpPercent = boss.getHealth() / boss.getMaxHealth();
             }
         } else {
             cachedBoss = null;
@@ -138,6 +143,7 @@ public class BossPhaseOverlay {
     }
 
     private static void renderBossPanel(GuiGraphics graphics, Font font, int x, int y) {
+        var safeFont = Objects.requireNonNull(font);
         int panelHeight = calculatePanelHeight();
 
         // Background
@@ -150,7 +156,7 @@ public class BossPhaseOverlay {
         int textY = y + PANEL_PADDING;
 
         // Title
-        graphics.drawString(font, "Boss Analysis", textX, textY, TEXT_TITLE, false);
+        graphics.drawString(safeFont, "Boss Analysis", textX, textY, TEXT_TITLE, false);
         textY += LINE_HEIGHT + 2;
 
         // Separator
@@ -158,7 +164,7 @@ public class BossPhaseOverlay {
         textY += 4;
 
         // Boss name
-        graphics.drawString(font, cachedBossName, textX, textY, TEXT_NORMAL, false);
+        graphics.drawString(safeFont, cachedBossName, textX, textY, TEXT_NORMAL, false);
         textY += LINE_HEIGHT;
 
         // HP Bar visual
@@ -183,14 +189,15 @@ public class BossPhaseOverlay {
         String hpText = String.format("HP: %.1f%%", cachedBossHpPercent * 100);
         int hpTextColor = cachedBossHpPercent > 0.5 ? TEXT_VALUE :
                           cachedBossHpPercent > 0.25 ? TEXT_WARNING : TEXT_DANGER;
-        graphics.drawString(font, hpText, textX, textY, hpTextColor, false);
+        graphics.drawString(safeFont, hpText, textX, textY, hpTextColor, false);
         textY += LINE_HEIGHT;
 
         // Phase info (if tracked)
-        if (cachedBoss != null) {
-            Optional<String> phase = BossPhaseService.INSTANCE.getCurrentPhase(cachedBoss.getUUID());
+        LivingEntity boss = cachedBoss;
+        if (boss != null) {
+            Optional<String> phase = BossPhaseService.INSTANCE.getCurrentPhase(boss.getUUID());
             if (phase.isPresent()) {
-                graphics.drawString(font, "Phase: " + phase.get(), textX, textY, TEXT_VALUE, false);
+                graphics.drawString(safeFont, "Phase: " + phase.get(), textX, textY, TEXT_VALUE, false);
                 textY += LINE_HEIGHT;
             }
         }
@@ -198,7 +205,7 @@ public class BossPhaseOverlay {
         // Phase thresholds hint
         String thresholdHint = getPhaseThresholdHint(cachedBossHpPercent);
         if (!thresholdHint.isEmpty()) {
-            graphics.drawString(font, thresholdHint, textX, textY, TEXT_MUTED, false);
+            graphics.drawString(safeFont, thresholdHint, textX, textY, TEXT_MUTED, false);
         }
     }
 

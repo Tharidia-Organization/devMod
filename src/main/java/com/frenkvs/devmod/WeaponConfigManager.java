@@ -178,16 +178,16 @@ public class WeaponConfigManager {
             if (variantExtras != null) {
                 try {
                     if (variantExtras.contains("Mace")) {
-                        statsTag.put("Mace", variantExtras.getCompound("Mace").copy());
+                        statsTag.put("Mace", Objects.requireNonNull(variantExtras.getCompound("Mace").copy()));
                     }
                     if (variantExtras.contains("Trident")) {
-                        statsTag.put("Trident", variantExtras.getCompound("Trident").copy());
+                        statsTag.put("Trident", Objects.requireNonNull(variantExtras.getCompound("Trident").copy()));
                     }
                 } catch (Exception e) {
                     LOGGER.debug("[WeaponConfig] Failed to merge variant data: {}", e.getMessage());
                 }
             }
-            tag.put("WeaponModStats", statsTag.copy());
+            tag.put("WeaponModStats", Objects.requireNonNull(statsTag.copy()));
             // Also mirror to typed data component for forward compatibility - safe component access
             var setComponent = WeaponComponents.weaponStatsComponent();
             if (setComponent != null) {
@@ -222,18 +222,18 @@ public class WeaponConfigManager {
                 java.util.List<Tool.Rule> rules = new ArrayList<>();
                 for (WeaponStats.ToolRuleData ruleData : clamped.toolRules) {
                     if (ruleData == null || ruleData.isEmpty()) continue;
-                    ResourceLocation id = ResourceLocation.tryParse(ruleData.blockTag);
+                    ResourceLocation id = ResourceLocation.tryParse(Objects.requireNonNull(ruleData.blockTag));
                     if (id == null) continue;
-                    TagKey<Block> tag = TagKey.create(Registries.BLOCK, id);
+                    TagKey<Block> tagKey = TagKey.create(Objects.requireNonNull(Registries.BLOCK), id);
                     float speed = ruleData.speed <= 0 ? 0.0f : ruleData.speed;
                     Boolean drops = ruleData.correctForDrops;
                     Tool.Rule builtRule;
                     if (drops == null) {
-                        builtRule = Tool.Rule.overrideSpeed(tag, speed);
+                        builtRule = Tool.Rule.overrideSpeed(Objects.requireNonNull(tagKey), speed);
                     } else if (drops) {
-                        builtRule = Tool.Rule.minesAndDrops(tag, speed);
+                        builtRule = Tool.Rule.minesAndDrops(Objects.requireNonNull(tagKey), speed);
                     } else {
-                        builtRule = Tool.Rule.deniesDrops(tag);
+                        builtRule = Tool.Rule.deniesDrops(Objects.requireNonNull(tagKey));
                     }
                     rules.add(builtRule);
                 }
@@ -259,7 +259,7 @@ public class WeaponConfigManager {
     private static void applyAttributeModifiers(ItemStack stack, WeaponStats stats) {
         ItemAttributeModifiers existing = stack.getOrDefault(
             Objects.requireNonNull(DataComponents.ATTRIBUTE_MODIFIERS),
-            ItemAttributeModifiers.EMPTY
+            Objects.requireNonNull(ItemAttributeModifiers.EMPTY)
         );
         java.util.List<ItemAttributeModifiers.Entry> entries = new ArrayList<>(existing.modifiers());
         PacketSecurityService security = PacketSecurityService.INSTANCE;
@@ -377,7 +377,7 @@ public class WeaponConfigManager {
         if (value == 0) {
             return; // removal only
         }
-        AttributeModifier modifier = new AttributeModifier(modId, value, op);
+        AttributeModifier modifier = new AttributeModifier(Objects.requireNonNull(modId), value, Objects.requireNonNull(op));
         entries.add(new ItemAttributeModifiers.Entry(attribute, modifier, EquipmentSlotGroup.MAINHAND));
     }
 
@@ -403,7 +403,7 @@ public class WeaponConfigManager {
     public static WeaponStats loadFromAttributeModifiers(ItemStack stack) {
         ItemAttributeModifiers mods = stack.getOrDefault(
             Objects.requireNonNull(DataComponents.ATTRIBUTE_MODIFIERS),
-            ItemAttributeModifiers.EMPTY
+            Objects.requireNonNull(ItemAttributeModifiers.EMPTY)
         );
         if (mods == ItemAttributeModifiers.EMPTY) return null;
         WeaponStats stats = new WeaponStats();
@@ -484,10 +484,10 @@ public class WeaponConfigManager {
                 if (loaded != null) {
                     globalStats.clear();
                     loaded.forEach((key, stats) -> {
-                        ResourceLocation resLoc = ResourceLocation.tryParse(key);
+                        ResourceLocation resLoc = ResourceLocation.tryParse(Objects.requireNonNull(key));
                         if (resLoc != null && BuiltInRegistries.ITEM.containsKey(resLoc)) {
                             Item item = BuiltInRegistries.ITEM.get(resLoc);
-                            globalStats.put(item, clampStats(stats));
+                            globalStats.put(Objects.requireNonNull(item), clampStats(stats));
                         } else {
                             LOGGER.warn("[WeaponConfig] Unknown item in config: {}", key);
                         }
@@ -521,7 +521,7 @@ public class WeaponConfigManager {
             try (Writer writer = Files.newBufferedWriter(tempFile, StandardCharsets.UTF_8)) {
                 Map<String, WeaponStats> toSave = new HashMap<>();
                 globalStats.forEach((item, stats) -> {
-                    ResourceLocation key = BuiltInRegistries.ITEM.getKey(item);
+                    ResourceLocation key = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item));
                     toSave.put(key.toString(), stats);
                 });
                 GSON.toJson(toSave, writer);
@@ -703,7 +703,7 @@ public class WeaponConfigManager {
             var payload = com.frenkvs.devmod.network.GlobalConfigSyncPayload.fromCurrentConfigs();
 
             for (net.minecraft.server.level.ServerPlayer player : server.getPlayerList().getPlayers()) {
-                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(Objects.requireNonNull(player), Objects.requireNonNull(payload));
             }
 
             LOGGER.info("[WeaponConfig] Synced global configs to {} clients", server.getPlayerList().getPlayerCount());
@@ -737,7 +737,7 @@ public class WeaponConfigManager {
                     if (typeEnd > 1 && quoteStart > typeEnd && quoteEnd > quoteStart) {
                         String sectionType = line.substring(1, typeEnd).trim(); // armor / weapon
                         String itemId = line.substring(quoteStart + 1, quoteEnd);
-                        ResourceLocation id = ResourceLocation.tryParse(itemId);
+                        ResourceLocation id = ResourceLocation.tryParse(Objects.requireNonNull(itemId));
                         if (id != null && BuiltInRegistries.ITEM.containsKey(id) && "weapon".equals(sectionType)) {
                             currentItem = BuiltInRegistries.ITEM.get(id);
                             loaded.putIfAbsent(currentItem, new WeaponStats());

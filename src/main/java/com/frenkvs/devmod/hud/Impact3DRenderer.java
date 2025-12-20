@@ -11,6 +11,7 @@ import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Manages the rendering of the Impact Analysis panel in 3D in the world.
@@ -73,13 +74,13 @@ public class Impact3DRenderer {
 
         // 2. Translate to panel position (relative to camera)
         poseStack.pushPose();
-        Vec3 relativePos = panelWorldPos.subtract(cameraPos);
+        Vec3 relativePos = Objects.requireNonNull(panelWorldPos.subtract(Objects.requireNonNull(cameraPos)));
         poseStack.translate(relativePos.x, relativePos.y, relativePos.z);
 
         // 3. Calculate billboard rotation (face camera)
         Vec3 toCamera = cameraPos.subtract(panelWorldPos).normalize();
         float yaw = (float) Math.atan2(toCamera.x, toCamera.z);
-        poseStack.mulPose(new Quaternionf().rotationY(yaw));
+        poseStack.mulPose(Objects.requireNonNull(new Quaternionf().rotationY(yaw)));
 
         // 4. Uniform scale for panel - negative Y for vertical flip
         poseStack.scale(PANEL_SCALE, -PANEL_SCALE, PANEL_SCALE);
@@ -102,12 +103,12 @@ public class Impact3DRenderer {
         poseStack.pushPose();
 
         // Position relative to camera
-        Vec3 hitRel = hitPoint.subtract(cameraPos);
-        Vec3 panelRel = panelPos.subtract(cameraPos);
+        Vec3 hitRel = Objects.requireNonNull(hitPoint.subtract(Objects.requireNonNull(cameraPos)));
+        Vec3 panelRel = Objects.requireNonNull(panelPos.subtract(Objects.requireNonNull(cameraPos)));
 
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
         // Use standard RenderType.lines() instead of debugLineStrip for stability
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.lines());
+        VertexConsumer consumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.lines()));
 
         // Cyan color with alpha
         float r = 0.0f;
@@ -117,12 +118,13 @@ public class Impact3DRenderer {
 
         // Straight stable line from hit point to panel
         // RenderType.lines() requires vertex pairs
+        var lastPose = Objects.requireNonNull(poseStack.last());
         consumer.addVertex(matrix, (float)hitRel.x, (float)hitRel.y, (float)hitRel.z)
             .setColor(r, g, b, a)
-            .setNormal(poseStack.last(), 0, 1, 0);
+            .setNormal(lastPose, 0, 1, 0);
         consumer.addVertex(matrix, (float)panelRel.x, (float)panelRel.y, (float)panelRel.z)
             .setColor(r, g, b, a)
-            .setNormal(poseStack.last(), 0, 1, 0);
+            .setNormal(lastPose, 0, 1, 0);
 
         poseStack.popPose();
     }
@@ -198,13 +200,13 @@ public class Impact3DRenderer {
      * Uses RenderType.gui() for stable rendering without flickering.
      */
     private void renderPanelBackground(PoseStack poseStack, MultiBufferSource bufferSource, float alpha) {
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
         float w = PANEL_WIDTH_PX;
         float h = PANEL_HEIGHT_PX;
 
         // Main background - use debug quads which is more stable for filled areas
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.debugQuads());
+        VertexConsumer consumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.debugQuads()));
 
         // Semi-transparent dark background
         int bgColor = applyAlphaARGB(PANEL_BG, alpha);
@@ -214,31 +216,33 @@ public class Impact3DRenderer {
         float ba = ((bgColor >> 24) & 0xFF) / 255f;
 
         // Quad for background (vertex order for correct display)
-        consumer.addVertex(matrix, 0, 0, 0.001f).setColor(br, bgc, bb, ba).setNormal(0, 0, 1);
-        consumer.addVertex(matrix, 0, h, 0.001f).setColor(br, bgc, bb, ba).setNormal(0, 0, 1);
-        consumer.addVertex(matrix, w, h, 0.001f).setColor(br, bgc, bb, ba).setNormal(0, 0, 1);
-        consumer.addVertex(matrix, w, 0, 0.001f).setColor(br, bgc, bb, ba).setNormal(0, 0, 1);
+        Matrix4f m = Objects.requireNonNull(matrix);
+        consumer.addVertex(m, 0, 0, 0.001f).setColor(br, bgc, bb, ba).setNormal(0, 0, 1);
+        consumer.addVertex(m, 0, h, 0.001f).setColor(br, bgc, bb, ba).setNormal(0, 0, 1);
+        consumer.addVertex(m, w, h, 0.001f).setColor(br, bgc, bb, ba).setNormal(0, 0, 1);
+        consumer.addVertex(m, w, 0, 0.001f).setColor(br, bgc, bb, ba).setNormal(0, 0, 1);
 
         // Border with RenderType.lines() - more stable
-        VertexConsumer lineConsumer = bufferSource.getBuffer(RenderType.lines());
+        VertexConsumer lineConsumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.lines()));
         int borderColor = applyAlphaARGB(PANEL_BORDER, alpha * 0.9f);
         float bor = ((borderColor >> 16) & 0xFF) / 255f;
         float bog = ((borderColor >> 8) & 0xFF) / 255f;
         float bob = (borderColor & 0xFF) / 255f;
         float boa = ((borderColor >> 24) & 0xFF) / 255f;
 
+        var lastPose = Objects.requireNonNull(poseStack.last());
         // Top line
-        lineConsumer.addVertex(matrix, 0, 0, 0).setColor(bor, bog, bob, boa).setNormal(poseStack.last(), 1, 0, 0);
-        lineConsumer.addVertex(matrix, w, 0, 0).setColor(bor, bog, bob, boa).setNormal(poseStack.last(), 1, 0, 0);
+        lineConsumer.addVertex(m, 0, 0, 0).setColor(bor, bog, bob, boa).setNormal(lastPose, 1, 0, 0);
+        lineConsumer.addVertex(m, w, 0, 0).setColor(bor, bog, bob, boa).setNormal(lastPose, 1, 0, 0);
         // Right line
-        lineConsumer.addVertex(matrix, w, 0, 0).setColor(bor, bog, bob, boa).setNormal(poseStack.last(), 0, 1, 0);
-        lineConsumer.addVertex(matrix, w, h, 0).setColor(bor, bog, bob, boa).setNormal(poseStack.last(), 0, 1, 0);
+        lineConsumer.addVertex(m, w, 0, 0).setColor(bor, bog, bob, boa).setNormal(lastPose, 0, 1, 0);
+        lineConsumer.addVertex(m, w, h, 0).setColor(bor, bog, bob, boa).setNormal(lastPose, 0, 1, 0);
         // Bottom line
-        lineConsumer.addVertex(matrix, w, h, 0).setColor(bor, bog, bob, boa).setNormal(poseStack.last(), 1, 0, 0);
-        lineConsumer.addVertex(matrix, 0, h, 0).setColor(bor, bog, bob, boa).setNormal(poseStack.last(), 1, 0, 0);
+        lineConsumer.addVertex(m, w, h, 0).setColor(bor, bog, bob, boa).setNormal(lastPose, 1, 0, 0);
+        lineConsumer.addVertex(m, 0, h, 0).setColor(bor, bog, bob, boa).setNormal(lastPose, 1, 0, 0);
         // Left line
-        lineConsumer.addVertex(matrix, 0, h, 0).setColor(bor, bog, bob, boa).setNormal(poseStack.last(), 0, 1, 0);
-        lineConsumer.addVertex(matrix, 0, 0, 0).setColor(bor, bog, bob, boa).setNormal(poseStack.last(), 0, 1, 0);
+        lineConsumer.addVertex(m, 0, h, 0).setColor(bor, bog, bob, boa).setNormal(lastPose, 0, 1, 0);
+        lineConsumer.addVertex(m, 0, 0, 0).setColor(bor, bog, bob, boa).setNormal(lastPose, 0, 1, 0);
     }
 
     /**
@@ -246,8 +250,8 @@ public class Impact3DRenderer {
      */
     private void renderSeparatorLine(PoseStack poseStack, MultiBufferSource bufferSource,
                                       float x, float y, float width, float alpha) {
-        Matrix4f matrix = poseStack.last().pose();
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.lines());
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
+        VertexConsumer consumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.lines()));
 
         int color = applyAlphaARGB(PANEL_BORDER, alpha * 0.5f);
         float r = ((color >> 16) & 0xFF) / 255f;
@@ -255,8 +259,9 @@ public class Impact3DRenderer {
         float b = (color & 0xFF) / 255f;
         float a = ((color >> 24) & 0xFF) / 255f;
 
-        consumer.addVertex(matrix, x, y, 0).setColor(r, g, b, a).setNormal(poseStack.last(), 1, 0, 0);
-        consumer.addVertex(matrix, x + width, y, 0).setColor(r, g, b, a).setNormal(poseStack.last(), 1, 0, 0);
+        var lastPose = Objects.requireNonNull(poseStack.last());
+        consumer.addVertex(matrix, x, y, 0).setColor(r, g, b, a).setNormal(lastPose, 1, 0, 0);
+        consumer.addVertex(matrix, x + width, y, 0).setColor(r, g, b, a).setNormal(lastPose, 1, 0, 0);
     }
 
     /**
@@ -277,12 +282,12 @@ public class Impact3DRenderer {
 
         // Use SEE_THROUGH for correct 3D rendering (not blocked by depth)
         font.drawInBatch(
-            text,
+            Objects.requireNonNull(text),
             0, 0,
             finalColor,
             false, // shadow
-            matrix,
-            bufferSource,
+            Objects.requireNonNull(matrix),
+            Objects.requireNonNull(bufferSource),
             Font.DisplayMode.SEE_THROUGH,
             0, // backgroundColor
             15728880 // packedLight (full bright)
@@ -318,7 +323,7 @@ public class Impact3DRenderer {
      */
     public Vec3 calculatePanelPosition(Vec3 hitPoint, Vec3 cameraPos) {
         // Direction from camera to impact point
-        Vec3 toHit = hitPoint.subtract(cameraPos).normalize();
+        Vec3 toHit = Objects.requireNonNull(hitPoint.subtract(Objects.requireNonNull(cameraPos))).normalize();
 
         // Perpendicular vector (to the right of view)
         Vec3 right = toHit.cross(new Vec3(0, 1, 0)).normalize();
@@ -331,8 +336,8 @@ public class Impact3DRenderer {
         // Position panel to the right and above impact point
         // Lateral offset moves panel to the right of view
         // Vertical offset lifts it slightly
-        return hitPoint
-            .add(right.scale(PANEL_OFFSET_SIDE))
-            .add(0, PANEL_OFFSET_UP, 0);
+        return Objects.requireNonNull(hitPoint
+            .add(Objects.requireNonNull(right.scale(PANEL_OFFSET_SIDE)))
+            .add(0, PANEL_OFFSET_UP, 0));
     }
 }

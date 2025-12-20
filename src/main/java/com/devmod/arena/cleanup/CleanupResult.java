@@ -7,20 +7,33 @@ import java.util.List;
  * Result of an arena cleanup operation.
  * Contains counters for each phase and any warnings encountered.
  *
- * DD37: Cleanup Robusto - Track results from 4 phases:
- * 1. Entities removed
- * 2. Block entities removed
- * 3. Scheduled ticks cancelled
- * 4. Blocks removed
+ * <p>DD37: Cleanup Robusto - Track results from 5 phases:
+ * <ol>
+ *   <li>Entities removed</li>
+ *   <li>Block entities removed</li>
+ *   <li>Scheduled ticks cancelled</li>
+ *   <li>Blocks removed</li>
+ *   <li>Chunks unloaded</li>
+ * </ol>
+ *
+ * <p>Residual metrics ({@code entitiesResidual}, {@code blocksResidual}) are computed
+ * post-cleanup by counting remaining non-player entities and non-air blocks within
+ * arena bounds. These are compared against {@code AlertThresholds} for warn/error detection.
+ *
+ * @see com.devmod.arena.config.ArenaTemplateConfig.AlertThresholds
+ * @see com.devmod.arena.metrics.MetricsCompatibilityLayer#measureResiduals
  */
-public record CleanupResult(
-    int entitiesRemoved,
-    int blockEntitiesRemoved,
-    int scheduledTicksCancelled,
-    int blocksRemoved,
-    long durationMs,
-    List<String> warnings
-) {
+    public record CleanupResult(
+        int entitiesRemoved,
+        int blockEntitiesRemoved,
+        int scheduledTicksCancelled,
+        int blocksRemoved,
+        int chunksUnloaded,
+        long durationMs,
+        int entitiesResidual,
+        int blocksResidual,
+        List<String> warnings
+    ) {
 
     public CleanupResult {
         // Defensive copy for immutability
@@ -46,28 +59,36 @@ public record CleanupResult(
      */
     public boolean hasChanges() {
         return entitiesRemoved > 0 || blockEntitiesRemoved > 0
-            || scheduledTicksCancelled > 0 || blocksRemoved > 0;
+            || scheduledTicksCancelled > 0 || blocksRemoved > 0 || chunksUnloaded > 0;
     }
 
     /**
      * Returns the total number of items cleaned up across all phases.
      */
     public int totalCleaned() {
-        return entitiesRemoved + blockEntitiesRemoved + scheduledTicksCancelled + blocksRemoved;
+        return entitiesRemoved + blockEntitiesRemoved + scheduledTicksCancelled + blocksRemoved + chunksUnloaded;
+    }
+
+    /**
+     * Returns true if there are residual entities or blocks after cleanup.
+     * Used to trigger alerts based on AlertThresholds.
+     */
+    public boolean hasResiduals() {
+        return entitiesResidual > 0 || blocksResidual > 0;
     }
 
     /**
      * Creates an empty result indicating no cleanup was needed.
      */
     public static CleanupResult empty() {
-        return new CleanupResult(0, 0, 0, 0, 0L, List.of());
+        return new CleanupResult(0, 0, 0, 0, 0, 0L, 0, 0, List.of());
     }
 
     /**
      * Creates a failed result with a single error message.
      */
     public static CleanupResult failed(String error) {
-        return new CleanupResult(0, 0, 0, 0, 0L, List.of(error));
+        return new CleanupResult(0, 0, 0, 0, 0, 0L, 0, 0, List.of(error));
     }
 
     /**
@@ -78,7 +99,11 @@ public record CleanupResult(
         private int blockEntitiesRemoved = 0;
         private int scheduledTicksCancelled = 0;
         private int blocksRemoved = 0;
+        private int chunksUnloaded = 0;
         private long startTime = System.currentTimeMillis();
+        private long durationMs = 0;
+        private int entitiesResidual = 0;
+        private int blocksResidual = 0;
         private final List<String> warnings = new ArrayList<>();
 
         public Builder entitiesRemoved(int count) {
@@ -121,6 +146,16 @@ public record CleanupResult(
             return this;
         }
 
+        public Builder chunksUnloaded(int count) {
+            this.chunksUnloaded = count;
+            return this;
+        }
+
+        public Builder addChunksUnloaded(int count) {
+            this.chunksUnloaded += count;
+            return this;
+        }
+
         public Builder addWarning(String warning) {
             this.warnings.add(warning);
             return this;
@@ -131,14 +166,37 @@ public record CleanupResult(
             return this;
         }
 
+        public Builder durationMs(long durationMs) {
+            this.durationMs = durationMs;
+            return this;
+        }
+
+        /**
+         * Sets the residual entity count (entities remaining after cleanup).
+         */
+        public Builder entitiesResidual(int count) {
+            this.entitiesResidual = count;
+            return this;
+        }
+
+        /**
+         * Sets the residual block count (non-air blocks remaining after cleanup).
+         */
+        public Builder blocksResidual(int count) {
+            this.blocksResidual = count;
+            return this;
+        }
+
         public CleanupResult build() {
-            long duration = System.currentTimeMillis() - startTime;
             return new CleanupResult(
                 entitiesRemoved,
                 blockEntitiesRemoved,
                 scheduledTicksCancelled,
                 blocksRemoved,
-                duration,
+                chunksUnloaded,
+                durationMs > 0 ? durationMs : (System.currentTimeMillis() - startTime),
+                entitiesResidual,
+                blocksResidual,
                 warnings
             );
         }
@@ -147,8 +205,10 @@ public record CleanupResult(
     @Override
     public String toString() {
         return String.format(
-            "CleanupResult[entities=%d, blockEntities=%d, ticks=%d, blocks=%d, duration=%dms, warnings=%d]",
-            entitiesRemoved, blockEntitiesRemoved, scheduledTicksCancelled, blocksRemoved, durationMs, warnings.size()
+            "CleanupResult[entities=%d, blockEntities=%d, ticks=%d, blocks=%d, chunks=%d, duration=%dms, " +
+            "entitiesResidual=%d, blocksResidual=%d, warnings=%d]",
+            entitiesRemoved, blockEntitiesRemoved, scheduledTicksCancelled, blocksRemoved, chunksUnloaded,
+            durationMs, entitiesResidual, blocksResidual, warnings.size()
         );
     }
 }

@@ -621,7 +621,7 @@ public class ComboSystem {
         // Play sound on rank up
         if (result.announcement() != null && result.announcement().isRankUp()) {
             player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 1.0f, 1.5f);
+                Objects.requireNonNull(SoundEvents.PLAYER_LEVELUP), SoundSource.PLAYERS, 1.0f, 1.5f);
         }
 
         return result;

@@ -5,6 +5,7 @@ import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Objects;
 
 /**
  * Ray-OBB intersection using the Slab Method.
@@ -69,25 +70,25 @@ public final class OBBRaycast {
 
         // X axis slab
         SlabResult xResult = slabIntersect(localOrigin.x, localDir.x, halfExtents.x, tMin, tMax);
-        if (xResult == null) return OBBHitResult.MISS;
+        if (xResult == null) return Objects.requireNonNull(OBBHitResult.MISS);
         if (xResult.tMin > tMin) { tMin = xResult.tMin; hitFace = xResult.entryFace; }
         if (xResult.tMax < tMax) { tMax = xResult.tMax; exitFace = xResult.exitFace; }
 
         // Y axis slab
         SlabResult yResult = slabIntersect(localOrigin.y, localDir.y, halfExtents.y, tMin, tMax);
-        if (yResult == null) return OBBHitResult.MISS;
+        if (yResult == null) return Objects.requireNonNull(OBBHitResult.MISS);
         if (yResult.tMin > tMin) { tMin = yResult.tMin; hitFace = yResult.entryFace + 2; }
         if (yResult.tMax < tMax) { tMax = yResult.tMax; exitFace = yResult.exitFace + 2; }
 
         // Z axis slab
         SlabResult zResult = slabIntersect(localOrigin.z, localDir.z, halfExtents.z, tMin, tMax);
-        if (zResult == null) return OBBHitResult.MISS;
+        if (zResult == null) return Objects.requireNonNull(OBBHitResult.MISS);
         if (zResult.tMin > tMin) { tMin = zResult.tMin; hitFace = zResult.entryFace + 4; }
         if (zResult.tMax < tMax) { tMax = zResult.tMax; exitFace = zResult.exitFace + 4; }
 
         // Check if ray intersects
         if (tMin > tMax || tMax < 0) {
-            return OBBHitResult.MISS;
+            return Objects.requireNonNull(OBBHitResult.MISS);
         }
 
         // Determine hit point and face
@@ -104,7 +105,7 @@ public final class OBBRaycast {
 
         // Check against max distance
         if (hitT > maxDistance) {
-            return OBBHitResult.MISS;
+            return Objects.requireNonNull(OBBHitResult.MISS);
         }
 
         // Calculate hit point in local space
@@ -121,7 +122,7 @@ public final class OBBRaycast {
         Vec3 localNormal = getFaceNormal(face);
         Vec3 worldNormal = obb.localDirectionToWorld(localNormal);
 
-        return OBBHitResult.hit(worldHitPoint, worldNormal, hitT, face);
+        return Objects.requireNonNull(OBBHitResult.hit(worldHitPoint, worldNormal, hitT, face));
     }
 
     /**
@@ -211,7 +212,7 @@ public final class OBBRaycast {
     @Nonnull
     public static OBBHitResult raycastAABB(@Nonnull Vec3 rayOrigin, @Nonnull Vec3 rayDirection,
                                            float maxDistance, @Nonnull AABB aabb) {
-        Vec3 center = aabb.getCenter();
+        Vec3 center = Objects.requireNonNull(aabb.getCenter());
         Vec3 halfExtents = new Vec3(
             aabb.getXsize() / 2.0,
             aabb.getYsize() / 2.0,
@@ -219,7 +220,7 @@ public final class OBBRaycast {
         );
 
         // Translate ray origin relative to AABB center
-        Vec3 localOrigin = rayOrigin.subtract(center);
+        Vec3 localOrigin = Objects.requireNonNull(rayOrigin.subtract(center));
 
         float tMin = 0.0f;
         float tMax = maxDistance;
@@ -227,35 +228,35 @@ public final class OBBRaycast {
 
         // X axis
         SlabResult xResult = slabIntersect(localOrigin.x, rayDirection.x, halfExtents.x, tMin, tMax);
-        if (xResult == null) return OBBHitResult.MISS;
+        if (xResult == null) return Objects.requireNonNull(OBBHitResult.MISS);
         if (xResult.tMin > tMin) { tMin = xResult.tMin; hitFace = xResult.entryFace; }
         if (xResult.tMax < tMax) tMax = xResult.tMax;
 
         // Y axis
         SlabResult yResult = slabIntersect(localOrigin.y, rayDirection.y, halfExtents.y, tMin, tMax);
-        if (yResult == null) return OBBHitResult.MISS;
+        if (yResult == null) return Objects.requireNonNull(OBBHitResult.MISS);
         if (yResult.tMin > tMin) { tMin = yResult.tMin; hitFace = yResult.entryFace + 2; }
         if (yResult.tMax < tMax) tMax = yResult.tMax;
 
         // Z axis
         SlabResult zResult = slabIntersect(localOrigin.z, rayDirection.z, halfExtents.z, tMin, tMax);
-        if (zResult == null) return OBBHitResult.MISS;
+        if (zResult == null) return Objects.requireNonNull(OBBHitResult.MISS);
         if (zResult.tMin > tMin) { tMin = zResult.tMin; hitFace = zResult.entryFace + 4; }
         if (zResult.tMax < tMax) tMax = zResult.tMax;
 
         if (tMin > tMax || tMax < 0) {
-            return OBBHitResult.MISS;
+            return Objects.requireNonNull(OBBHitResult.MISS);
         }
 
         float hitT = tMin > 0 ? tMin : tMax;
         if (hitT > maxDistance) {
-            return OBBHitResult.MISS;
+            return Objects.requireNonNull(OBBHitResult.MISS);
         }
 
-        Vec3 hitPoint = rayOrigin.add(rayDirection.scale(hitT));
+        Vec3 hitPoint = Objects.requireNonNull(rayOrigin.add(Objects.requireNonNull(rayDirection.scale(hitT))));
         Vec3 normal = getFaceNormal(hitFace);
 
-        return OBBHitResult.hit(hitPoint, normal, hitT, hitFace);
+        return Objects.requireNonNull(OBBHitResult.hit(hitPoint, normal, hitT, hitFace));
     }
 
     /**
@@ -329,7 +330,7 @@ public final class OBBRaycast {
         float closestDistance = maxDistance;
 
         for (int i = 0; i < obbs.length; i++) {
-            OBBHitResult result = raycast(rayOrigin, rayDirection, closestDistance, obbs[i]);
+            OBBHitResult result = raycast(rayOrigin, rayDirection, closestDistance, Objects.requireNonNull(obbs[i]));
             if (result.hit() && result.distance() < closestDistance) {
                 closestDistance = result.distance();
                 closestIndex = i;
@@ -356,7 +357,7 @@ public final class OBBRaycast {
         OBBHitResult closestResult = OBBHitResult.MISS;
 
         for (int i = 0; i < obbs.length; i++) {
-            OBBHitResult result = raycast(rayOrigin, rayDirection, closestDistance, obbs[i]);
+            OBBHitResult result = raycast(rayOrigin, rayDirection, closestDistance, Objects.requireNonNull(obbs[i]));
             if (result.hit() && result.distance() < closestDistance) {
                 closestDistance = result.distance();
                 closestIndex = i;

@@ -27,14 +27,53 @@ public class BuildTransaction {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BuildTransaction.class);
 
+    // Default max transaction duration: 5 minutes
+    private static final long DEFAULT_MAX_DURATION_MS = 5 * 60 * 1000;
+
     private final UUID transactionId;
     private final String templateId;
     private final Instant startTime;
+    private final long maxDurationMs;
+    private long totalBlockPlacements = 0;
 
     // DD7: Track all changes for rollback
     private final CompactBlockTracker blockTracker;
-    private final List<UUID> spawnedEntities = new ArrayList<>();
+    private final List<EntitySpawn> spawnedEntities = new ArrayList<>();
     private final Set<Long> forcedChunks = new HashSet<>(); // ChunkPos packed as long
+    private final List<StructurePlacement> structurePlacements = new ArrayList<>();
+
+    /**
+     * DD7: Entity spawn tracking with full state for rollback.
+     */
+    public record EntitySpawn(
+        UUID entityId,
+        String entityType,
+        double x, double y, double z,
+        float yaw, float pitch
+    ) {}
+
+    /**
+     * DD7: Block state object for precise rollback.
+     */
+    public record BlockState(
+        long packedPos,
+        int stateId,
+        String nbtData // nullable, for block entities
+    ) {
+        public BlockState(long packedPos, int stateId) {
+            this(packedPos, stateId, null);
+        }
+    }
+
+    /**
+     * DD7: Structure placement tracking for rollback.
+     */
+    public record StructurePlacement(
+        String path,
+        int originX,
+        int originY,
+        int originZ
+    ) {}
 
     // State tracking
     private TransactionState state = TransactionState.ACTIVE;
@@ -50,14 +89,19 @@ public class BuildTransaction {
     }
 
     public BuildTransaction(String templateId) {
-        this(templateId, CompactBlockTracker.MAX_TRACKED_BLOCKS);
+        this(templateId, CompactBlockTracker.MAX_TRACKED_BLOCKS, DEFAULT_MAX_DURATION_MS);
     }
 
     public BuildTransaction(String templateId, int maxBlocks) {
+        this(templateId, maxBlocks, DEFAULT_MAX_DURATION_MS);
+    }
+
+    public BuildTransaction(String templateId, int maxBlocks, long maxDurationMs) {
         this.transactionId = UUID.randomUUID();
         this.templateId = templateId;
         this.startTime = Instant.now();
         this.blockTracker = new CompactBlockTracker(maxBlocks);
+        this.maxDurationMs = maxDurationMs;
     }
 
     /**
@@ -66,14 +110,23 @@ public class BuildTransaction {
     public void trackBlock(long packedPos, int previousStateId) {
         checkActive();
         blockTracker.track(packedPos, previousStateId);
+        totalBlockPlacements++;
     }
 
     /**
-     * Tracks a spawned entity.
+     * Tracks a spawned entity (legacy - uses default position).
      */
     public void trackEntity(UUID entityId) {
         checkActive();
-        spawnedEntities.add(entityId);
+        spawnedEntities.add(new EntitySpawn(entityId, "unknown", 0, 0, 0, 0, 0));
+    }
+
+    /**
+     * DD7: Tracks a spawned entity with full state for rollback.
+     */
+    public void trackEntity(EntitySpawn entity) {
+        checkActive();
+        spawnedEntities.add(entity);
     }
 
     /**
@@ -82,6 +135,21 @@ public class BuildTransaction {
     public void trackChunk(long packedChunkPos) {
         checkActive();
         forcedChunks.add(packedChunkPos);
+    }
+
+    /**
+     * DD7: Tracks a structure placement for potential rollback.
+     */
+    public void trackStructurePlacement(String path, int originX, int originY, int originZ) {
+        checkActive();
+        structurePlacements.add(new StructurePlacement(path, originX, originY, originZ));
+    }
+
+    /**
+     * Returns tracked structure placements (for rollback purposes).
+     */
+    public List<StructurePlacement> getStructurePlacements() {
+        return List.copyOf(structurePlacements);
     }
 
     /**
@@ -116,13 +184,13 @@ public class BuildTransaction {
         List<String> errors = new ArrayList<>();
 
         // 1. Remove spawned entities first
-        for (UUID entityId : spawnedEntities) {
+        for (EntitySpawn entity : spawnedEntities) {
             try {
-                if (entityRemover.remove(entityId)) {
+                if (entityRemover.remove(entity.entityId())) {
                     entitiesRolledBack++;
                 }
             } catch (Exception e) {
-                errors.add("Entity " + entityId + ": " + e.getMessage());
+                errors.add("Entity " + entity.entityId() + ": " + e.getMessage());
             }
         }
 
@@ -176,6 +244,41 @@ public class BuildTransaction {
         if (state != TransactionState.ACTIVE) {
             throw new IllegalStateException("Transaction not active: " + state);
         }
+        if (isExpired()) {
+            state = TransactionState.FAILED;
+            throw new TransactionExpiredException(
+                "Transaction " + transactionId + " expired after " + getElapsedMs() + "ms (limit: " + maxDurationMs + "ms)");
+        }
+    }
+
+    /**
+     * Checks if this transaction has exceeded its maximum duration.
+     */
+    public boolean isExpired() {
+        return getElapsedMs() > maxDurationMs;
+    }
+
+    /**
+     * Returns the maximum duration for this transaction.
+     */
+    public long getMaxDurationMs() {
+        return maxDurationMs;
+    }
+
+    /**
+     * Returns remaining time before expiration in milliseconds.
+     */
+    public long getRemainingMs() {
+        return Math.max(0, maxDurationMs - getElapsedMs());
+    }
+
+    /**
+     * Exception thrown when a transaction exceeds its time limit.
+     */
+    public static class TransactionExpiredException extends RuntimeException {
+        public TransactionExpiredException(String message) {
+            super(message);
+        }
     }
 
     // === Getters ===
@@ -194,6 +297,13 @@ public class BuildTransaction {
 
     public int getBlockCount() {
         return blockTracker.size();
+    }
+
+    /**
+     * Total block placements attempted (including overwrites).
+     */
+    public long getTotalBlockPlacements() {
+        return totalBlockPlacements;
     }
 
     public int getEntityCount() {

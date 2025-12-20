@@ -1,7 +1,9 @@
 package com.devmod.arena.registry;
 
 import com.devmod.arena.telemetry.ArenaTelemetry;
+import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.config.InstanceLimitConfig;
+import com.devmod.arena.event.TemplateEventDispatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,6 +12,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.nio.file.Path;
 
 /**
  * Registry for Arena Templates with version handling (DD1) and inheritance resolution (DD2).
@@ -31,29 +34,108 @@ public class ArenaTemplateRegistry {
     private final AtomicInteger generation = new AtomicInteger(0);
     private final ArenaTelemetry telemetry;
     private final TemplateValidator validator;
-    private final InstanceSettingsValidator.InstanceLimits instanceLimits;
-    private StructureManifest structureManifest;
-    private TemplateValidator.StructureDataProvider structureDataProvider;
+    private final TemplateEventDispatcher eventDispatcher;
 
     // Stats tracking
     private final RegistryStats stats = new RegistryStats();
 
     public ArenaTemplateRegistry(ArenaTelemetry telemetry) {
-        this(telemetry, InstanceLimitConfig.load().toLimits());
+        this(telemetry, InstanceLimitConfig.load().toLimits(), null);
     }
 
     public ArenaTemplateRegistry(ArenaTelemetry telemetry, InstanceSettingsValidator.InstanceLimits instanceLimits) {
+        this(telemetry, instanceLimits, null);
+    }
+
+    @SuppressWarnings("this-escape") // configure() reads manifest and registers validators immediately
+    public ArenaTemplateRegistry(ArenaTelemetry telemetry,
+                                 InstanceSettingsValidator.InstanceLimits instanceLimits,
+                                 @Nullable ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
         this.telemetry = telemetry;
-        this.instanceLimits = instanceLimits;
-        this.validator = new TemplateValidator().withInstanceLimits(instanceLimits);
+        this.eventDispatcher = TemplateEventDispatcher.getInstance();
+        this.validator = new TemplateValidator()
+            .withInstanceLimits(instanceLimits)
+            .withInstanceTelemetry(new InstanceSettingsValidator.Telemetry() {
+                @Override
+                public void clamped(String templateId, String field, int requested, int effective, int serverMax) {
+                    telemetry.emit("arena.instance.clamped", Map.of(
+                        "templateId", templateId,
+                        "field", field,
+                        "requested", requested,
+                        "effective", effective,
+                        "serverMax", serverMax
+                    ));
+                }
+
+                @Override
+                public void coverageInsufficient(String templateId, int maxDim, int requiredChunks, int effectiveChunkRadius) {
+                    telemetry.emit("arena.instance.coverage_insufficient", Map.of(
+                        "templateId", templateId,
+                        "maxDim", maxDim,
+                        "requiredChunks", requiredChunks,
+                    "effectiveChunkRadius", effectiveChunkRadius
+                ));
+            }
+        });
+        this.validator.withStructureTelemetry(new TemplateValidator.StructureTelemetry() {
+            @Override
+            public void loaded(String path, int blockCount, int entityCount) {
+                telemetry.emit("arena.structure.loaded", Map.of(
+                    "path", path,
+                    "blockCount", blockCount,
+                    "entityCount", entityCount
+                ));
+            }
+
+            @Override
+            public void rejected(String path, String reason) {
+                telemetry.emit("arena.structure.rejected", Map.of(
+                    "path", path,
+                    "reason", reason
+                ));
+                if ("CHECKSUM_MISMATCH".equals(reason)) {
+                    telemetry.emit("arena.structure.checksum_mismatch", Map.of(
+                        "path", path
+                    ));
+                }
+            }
+        });
+        this.validator.withHazardTelemetry(new HazardValidator.HazardTelemetry() {
+            @Override
+            public void validationFailed(String templateId, String reason) {
+                telemetry.emit("arena.hazard.validation_failed", Map.of(
+                    "templateId", templateId,
+                    "reason", reason
+                ));
+            }
+
+            @Override
+            public void highCoverage(String templateId, double coverage) {
+                telemetry.emit("arena.hazard.high_coverage", Map.of(
+                    "templateId", templateId,
+                    "coverage", coverage
+                ));
+            }
+        });
+
+        // Custom hazard registry (optional)
+        this.validator.withRegisteredCustomHazards(CustomHazardRegistry.getInstance().all());
+
+        // Optional: enable structure validation if manifest exists (default path)
+        try {
+            Path manifestPath = configSnapshot != null && configSnapshot.structureManifestPath() != null
+                ? Path.of(configSnapshot.structureManifestPath())
+                : Path.of("config/devmod/structures_manifest.json");
+            StructureValidationInitializer.configure(this, manifestPath, Thread.currentThread().getContextClassLoader(), configSnapshot);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to auto-configure structure validation: {}", e.getMessage());
+        }
     }
 
     /**
      * Enable structure NBT validation using the provided manifest and data provider.
      */
     public void enableStructureValidation(StructureManifest manifest, TemplateValidator.StructureDataProvider provider) {
-        this.structureManifest = manifest;
-        this.structureDataProvider = provider;
         this.validator.withStructureValidation(manifest, provider);
     }
 
@@ -105,6 +187,9 @@ public class ArenaTemplateRegistry {
             "hasParent", template.extendsTemplate() != null,
             "generation", generation.get()
         ));
+
+        // DD13: Emit TemplateRegistered event
+        eventDispatcher.emitTemplateRegistered(resolved.id(), resolved.version(), "registry.load");
 
         stats.recordLoad();
     }
@@ -183,6 +268,10 @@ public class ArenaTemplateRegistry {
                 "templateId", id,
                 "version", removed.version()
             ));
+
+            // DD13: Emit TemplateUnregistered event
+            eventDispatcher.emitTemplateUnregistered(id, "registry.unload");
+
             stats.recordUnload();
             return true;
         }
@@ -224,12 +313,22 @@ public class ArenaTemplateRegistry {
         }
 
         if (errors.isEmpty()) {
+            // DD13: Emit TemplateUnregistered for old templates being replaced
+            for (ArenaTemplate oldTemplate : registry.values()) {
+                eventDispatcher.emitTemplateUnregistered(oldTemplate.id(), "hot-reload.replaced");
+            }
+
             // Atomic swap
             registry.clear();
             registry.putAll(newRegistry);
             unresolvedTemplates.clear();
             unresolvedTemplates.putAll(newUnresolved);
             int newGen = generation.incrementAndGet();
+
+            // DD13: Emit TemplateRegistered for all new templates
+            for (ArenaTemplate newTemplate : newRegistry.values()) {
+                eventDispatcher.emitTemplateRegistered(newTemplate.id(), newTemplate.version(), "hot-reload");
+            }
 
             LOGGER.info("Hot-reload completed successfully, generation {}", newGen);
             telemetry.emit("arena.template.hot_reload", Map.of(
@@ -250,6 +349,78 @@ public class ArenaTemplateRegistry {
 
             return new ReloadResult(false, 0, errors);
         }
+    }
+
+    /**
+     * Loads all templates from a directory using the configured validator + schema mode.
+     */
+    public TemplateLoader.LoadResult loadFromDirectory(Path directory, TemplateValidator.ValidationMode mode) {
+        validator.setMode(mode);
+        TemplateLoader loader = new TemplateLoader(validator, mode, telemetry);
+        TemplateLoader.LoadResult result = loader.loadAllSources(directory);
+        for (ArenaTemplate t : result.templates()) {
+            try {
+                load(t);
+            } catch (Exception e) {
+                LOGGER.error("Failed to load template {} from {}", t.id(), directory, e);
+            }
+        }
+
+        // Fallback injection if nothing loaded
+        if (registry.isEmpty()) {
+            LOGGER.warn("No templates loaded from {}. Injecting default_flat_64 fallback.", directory);
+            registry.put(ArenaTemplate.defaultTemplate().id(), ArenaTemplate.defaultTemplate());
+            telemetry.emit("arena.template.fallback_injected", Map.of(
+                "source", directory.toString()
+            ));
+        }
+        return result;
+    }
+
+    /**
+     * Loads all templates from a directory using validation mode from config/env (default STRICT).
+     * Env var: DEVMOD_TEMPLATE_VALIDATION_MODE, SysProp: devmod.template.validationMode
+     */
+    public TemplateLoader.LoadResult loadFromDirectory(Path directory) {
+        String env = System.getenv("DEVMOD_TEMPLATE_VALIDATION_MODE");
+        String prop = System.getProperty("devmod.template.validationMode");
+        TemplateValidator.ValidationMode mode = TemplateValidator.fromString(
+            prop != null ? prop : env,
+            TemplateValidator.ValidationMode.STRICT
+        );
+        return loadFromDirectory(directory, mode);
+    }
+
+    /**
+     * Atomic reload from directory: parses/validates all templates first, then hot-reloads if no errors.
+     * Uses validation mode from env/sysprop (same as {@link #loadFromDirectory(Path)}).
+     */
+    public ReloadResult reloadFromDirectoryAtomic(Path directory) {
+        String env = System.getenv("DEVMOD_TEMPLATE_VALIDATION_MODE");
+        String prop = System.getProperty("devmod.template.validationMode");
+        TemplateValidator.ValidationMode mode = TemplateValidator.fromString(
+            prop != null ? prop : env,
+            TemplateValidator.ValidationMode.STRICT
+        );
+        TemplateLoader loader = new TemplateLoader(validator, mode, telemetry);
+        TemplateLoader.LoadResult loadResult = loader.loadAll(directory);
+
+        if (!loadResult.success()) {
+            LOGGER.error("Template reload aborted, {} errors", loadResult.errors().size());
+            return new ReloadResult(false, 0, loadResult.errors());
+        }
+
+        ReloadResult rr = hotReload(loadResult.templates());
+
+        if (!rr.success() && registry.isEmpty()) {
+            // If reload failed and registry would be empty, ensure fallback
+            registry.put(ArenaTemplate.defaultTemplate().id(), ArenaTemplate.defaultTemplate());
+            telemetry.emit("arena.template.fallback_injected", Map.of(
+                "source", directory.toString(),
+                "reason", "reload_empty"
+            ));
+        }
+        return rr;
     }
 
     /**
@@ -329,6 +500,29 @@ public class ArenaTemplateRegistry {
             throw new ParentTemplateNotFoundException(template.id(), parentId);
         }
 
+        // Diamond detection: parent already seen elsewhere in chain
+        if (visited.contains(parentId)) {
+            throw new DiamondInheritanceException(template.id(), parentId, visited);
+        }
+
+        // Version compatibility: parent breaking change requires child minParentVersion >= parent.version
+        if (parent.breakingChange() && parent.version() > 0) {
+            Integer minParentVersion = template.minParentVersion();
+            if (minParentVersion == null || minParentVersion < parent.version()) {
+                telemetry.emit("arena.template.inheritance_error", Map.of(
+                    "templateId", template.id(),
+                    "parentId", parentId,
+                    "type", "BREAKING_PARENT_VERSION",
+                    "parentVersion", parent.version(),
+                    "minParentVersion", minParentVersion != null ? minParentVersion : -1
+                ));
+                throw new TemplateLoadException(template.id(),
+                    List.of("Parent '%s' has breakingChange at v%d; child minParentVersion is %s"
+                        .formatted(parentId, parent.version(),
+                            minParentVersion == null ? "null" : minParentVersion)));
+            }
+        }
+
         // Recursively resolve parent first
         ArenaTemplate resolvedParent = resolveInheritanceFrom(parent, source, visited, depth + 1);
 
@@ -352,8 +546,12 @@ public class ArenaTemplateRegistry {
             child.id(),
             null,
             child.version(),
-            child.schemaVersion() != null ? child.schemaVersion() : parent.schemaVersion(),
+            child.schemaVersion() > 0 ? child.schemaVersion() : parent.schemaVersion(),
             child.breakingChange(),
+            child.deprecated() || parent.deprecated(),
+            child.replacementVersion() != null ? child.replacementVersion() : parent.replacementVersion(),
+            child.minParentVersion() != null ? child.minParentVersion() : parent.minParentVersion(),
+            child.templateType() != null ? child.templateType() : parent.templateType(),
             // SHALLOW_MERGE for objects (spec v2.23)
             mergeOrigin(child.origin(), parent.origin()),
             child.size() > 0 ? child.size() : parent.size(),
@@ -368,6 +566,8 @@ public class ArenaTemplateRegistry {
             mergeLighting(child.lighting(), parent.lighting()),
             // OVERRIDE for arrays (spec v2.23)
             overrideList(child.spawnSlots(), parent.spawnSlots()),
+            child.playerSpawnOffset() != null ? child.playerSpawnOffset() : parent.playerSpawnOffset(),
+            child.mobSpawnStrategy() != null ? child.mobSpawnStrategy() : parent.mobSpawnStrategy(),
             overrideList(child.forbiddenZones(), parent.forbiddenZones()),
             overrideList(child.hazards(), parent.hazards()),
             // SHALLOW_MERGE for objects
@@ -399,9 +599,9 @@ public class ArenaTemplateRegistry {
         if (parent == null) return child;
         return new ArenaTemplate.Origin(
             child.mode() != null ? child.mode() : parent.mode(),
-            child.x() != 0 ? child.x() : parent.x(),
-            child.y() != 0 ? child.y() : parent.y(),
-            child.z() != 0 ? child.z() : parent.z()
+            child.x(),
+            child.y(),
+            child.z()
         );
     }
 
@@ -437,8 +637,8 @@ public class ArenaTemplateRegistry {
         return new ArenaTemplate.Ceiling(
             child.enabled(),
             child.material() != null ? child.material() : parent.material(),
-            child.y() != 0 ? child.y() : parent.y(),
-            child.thickness() != 0 ? child.thickness() : parent.thickness()
+            child.y() != 0 || parent == null ? child.y() : parent.y(),
+            child.thickness() != 0 || parent == null ? child.thickness() : parent.thickness()
         );
     }
 
@@ -507,8 +707,8 @@ public class ArenaTemplateRegistry {
         if (child == null) return parent;
         if (parent == null) return child;
         return new ArenaTemplate.InstanceSettings(
-            child.chunkRadius() != 0 ? child.chunkRadius() : parent.chunkRadius(),
-            child.tickDistance() != 0 ? child.tickDistance() : parent.tickDistance(),
+            child.chunkRadius() != 0 || parent == null ? child.chunkRadius() : parent.chunkRadius(),
+            child.tickDistance() != 0 || parent == null ? child.tickDistance() : parent.tickDistance(),
             child.keepLoaded()
         );
     }
@@ -517,9 +717,9 @@ public class ArenaTemplateRegistry {
         if (child == null) return parent;
         if (parent == null) return child;
         return new ArenaTemplate.Limits(
-            child.maxBuildTimeMs() != 0 ? child.maxBuildTimeMs() : parent.maxBuildTimeMs(),
-            child.maxBlocks() != 0 ? child.maxBlocks() : parent.maxBlocks(),
-            child.maxEntities() != 0 ? child.maxEntities() : parent.maxEntities()
+            child.maxBuildTimeMs() != 0 || parent == null ? child.maxBuildTimeMs() : parent.maxBuildTimeMs(),
+            child.maxBlocks() != 0 || parent == null ? child.maxBlocks() : parent.maxBlocks(),
+            child.maxEntities() != 0 || parent == null ? child.maxEntities() : parent.maxEntities()
         );
     }
 
@@ -543,10 +743,14 @@ public class ArenaTemplateRegistry {
         TemplateState state
     ) {}
 
+    /**
+     * DD71: Template lifecycle states.
+     * OBSOLETE indicates template is no longer usable (auto-transition after 90 days without use).
+     */
     public enum TemplateState {
         ACTIVE,
         DEPRECATED,
-        DISABLED
+        OBSOLETE
     }
 
     public record ReloadResult(

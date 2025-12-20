@@ -275,7 +275,7 @@ public class RewardSystem {
                 drops.add(stack);
 
                 // Telemetry: record loot drop
-                String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+                String itemId = Objects.requireNonNull(BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(stack.getItem()))).toString();
                 EnduranceTelemetryService.INSTANCE.recordLootDrop(
                     player.getUUID(), quest.getQuestId(), itemId, stack.getCount(), tier
                 );
@@ -293,7 +293,7 @@ public class RewardSystem {
                 drops.add(bonusStack);
 
                 // Telemetry: record bonus loot drop
-                String bonusItemId = BuiltInRegistries.ITEM.getKey(bonusStack.getItem()).toString();
+                String bonusItemId = Objects.requireNonNull(BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(bonusStack.getItem()))).toString();
                 EnduranceTelemetryService.INSTANCE.recordLootDrop(
                     player.getUUID(), quest.getQuestId(), bonusItemId, bonusStack.getCount(), bonusTier
                 );
@@ -480,8 +480,8 @@ public class RewardSystem {
             // Apply immediate effects
             applyPurchaseEffects(player, item);
 
-            player.sendSystemMessage(I18n.translate("devmod.reward.purchased", item.displayName)
-                .withStyle(style -> style.withColor(0x55FF55)));
+            player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.reward.purchased", item.displayName)
+                .withStyle(style -> style.withColor(0x55FF55))));
 
             return new PurchaseResult(true, I18n.translate("devmod.reward.purchase_successful").getString());
         }
@@ -581,12 +581,12 @@ public class RewardSystem {
                 );
 
                 // Send achievement notification
-                player.sendSystemMessage(I18n.translate("devmod.reward.achievement_unlocked", achievement.displayName)
-                    .withStyle(style -> style.withColor(achievement.lootTier.color)));
+                player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.reward.achievement_unlocked", achievement.displayName)
+                    .withStyle(style -> style.withColor(achievement.lootTier.color))));
 
                 // Play achievement sound
-                player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                    SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1.0f, 1.0f);
+                Objects.requireNonNull(player.level()).playSound(null, player.getX(), player.getY(), player.getZ(),
+                    Objects.requireNonNull(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE), SoundSource.PLAYERS, 1.0f, 1.0f);
 
                 LOGGER.info("[RewardSystem] Player {} unlocked achievement: {}",
                     player.getName().getString(), achievement.id);
@@ -715,44 +715,45 @@ public class RewardSystem {
     // ========== Notifications ==========
 
     private void notifyPlayer(ServerPlayer player, QuestRewards rewards) {
-        player.sendSystemMessage(I18n.translate("devmod.reward.quest_rewards")
-            .withStyle(style -> style.withColor(0xFFD700)));
+        player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.reward.quest_rewards")
+            .withStyle(style -> style.withColor(0xFFD700))));
 
-        player.sendSystemMessage(I18n.translate("devmod.reward.tokens_detail",
+        player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.reward.tokens_detail",
             rewards.tokensEarned, rewards.baseTokens, rewards.styleMultiplier, rewards.mutatorMultiplier)
-            .withStyle(style -> style.withColor(Currency.TOKENS.color)));
+            .withStyle(style -> style.withColor(Currency.TOKENS.color))));
 
         if (rewards.prestigeEarned > 0) {
-            player.sendSystemMessage(I18n.translate("devmod.reward.prestige_earned", rewards.prestigeEarned)
-                .withStyle(style -> style.withColor(Currency.PRESTIGE.color)));
+            player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.reward.prestige_earned", rewards.prestigeEarned)
+                .withStyle(style -> style.withColor(Currency.PRESTIGE.color))));
         }
 
         if (rewards.bloodGemsEarned > 0) {
-            player.sendSystemMessage(I18n.translate("devmod.reward.blood_gems_earned", rewards.bloodGemsEarned)
-                .withStyle(style -> style.withColor(Currency.BLOOD_GEMS.color)));
+            player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.reward.blood_gems_earned", rewards.bloodGemsEarned)
+                .withStyle(style -> style.withColor(Currency.BLOOD_GEMS.color))));
         }
 
         if (rewards.noHitBonus) {
-            player.sendSystemMessage(I18n.translate("devmod.reward.no_hit_bonus")
-                .withStyle(style -> style.withColor(0x55FFFF)));
+            player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.reward.no_hit_bonus")
+                .withStyle(style -> style.withColor(0x55FFFF))));
         }
 
         if (rewards.speedBonus) {
-            player.sendSystemMessage(I18n.translate("devmod.reward.speed_bonus")
-                .withStyle(style -> style.withColor(0x55FF55)));
+            player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.reward.speed_bonus")
+                .withStyle(style -> style.withColor(0x55FF55))));
         }
 
         if (!rewards.lootDrops.isEmpty()) {
-            player.sendSystemMessage(I18n.translate("devmod.reward.loot_drops", rewards.lootDrops.size())
-                .withStyle(style -> style.withColor(0xAAAAAA)));
+            player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.reward.loot_drops", rewards.lootDrops.size())
+                .withStyle(style -> style.withColor(0xAAAAAA))));
 
             // Drop items near player
+            var level = Objects.requireNonNull(player.level());
             for (ItemStack stack : rewards.lootDrops) {
                 ItemEntity itemEntity = new ItemEntity(
-                    player.level(), player.getX(), player.getY() + 0.5, player.getZ(),
-                    stack, 0, 0.2, 0);
+                    level, player.getX(), player.getY() + 0.5, player.getZ(),
+                    Objects.requireNonNull(stack), 0, 0.2, 0);
                 itemEntity.setPickUpDelay(0);
-                player.level().addFreshEntity(itemEntity);
+                level.addFreshEntity(itemEntity);
             }
         }
     }
@@ -804,11 +805,11 @@ public class RewardSystem {
         }
 
         public void addCurrency(Currency currency, int amount) {
-            currencies.merge(currency.key, amount, Integer::sum);
+            currencies.merge(currency.key, amount, (a, b) -> a + b);
         }
 
         public void removeCurrency(Currency currency, int amount) {
-            currencies.merge(currency.key, -amount, Integer::sum);
+            currencies.merge(currency.key, -amount, (a, b) -> a + b);
         }
 
         public int getPurchaseCount(String itemId) {
@@ -816,7 +817,7 @@ public class RewardSystem {
         }
 
         public void recordPurchase(String itemId) {
-            purchases.merge(itemId, 1, Integer::sum);
+            purchases.merge(itemId, 1, (a, b) -> a + b);
         }
 
         public boolean hasAchievement(String achievementId) {
@@ -855,7 +856,7 @@ public class RewardSystem {
 
         public ItemStack createStack(Random random, RegistryAccess registryAccess) {
             int count = minCount + (maxCount > minCount ? random.nextInt(maxCount - minCount + 1) : 0);
-            ItemStack stack = new ItemStack(item, count);
+            ItemStack stack = new ItemStack(Objects.requireNonNull(item), count);
 
             if (enchanted && registryAccess != null) {
                 applyLegendaryEnchantments(stack, random, registryAccess);
@@ -865,8 +866,8 @@ public class RewardSystem {
         }
 
         private void applyLegendaryEnchantments(ItemStack stack, Random random, RegistryAccess registryAccess) {
-            var enchantRegistry = registryAccess.registryOrThrow(Registries.ENCHANTMENT);
-            ItemEnchantments.Mutable mutable = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
+            var enchantRegistry = registryAccess.registryOrThrow(Objects.requireNonNull(Registries.ENCHANTMENT));
+            ItemEnchantments.Mutable mutable = new ItemEnchantments.Mutable(Objects.requireNonNull(ItemEnchantments.EMPTY));
 
             // Determine enchantments based on item type
             if (stack.getItem() == Items.NETHERITE_SWORD) {
@@ -893,16 +894,16 @@ public class RewardSystem {
             }
 
             if (!mutable.toImmutable().isEmpty()) {
-                stack.set(net.minecraft.core.component.DataComponents.ENCHANTMENTS, mutable.toImmutable());
+                stack.set(Objects.requireNonNull(net.minecraft.core.component.DataComponents.ENCHANTMENTS), mutable.toImmutable());
             }
         }
 
         private void addEnchantmentIfPresent(ItemEnchantments.Mutable mutable,
                                               net.minecraft.core.Registry<Enchantment> registry,
                                               String enchantmentId, int level) {
-            ResourceLocation loc = ResourceLocation.parse(enchantmentId);
-            ResourceKey<Enchantment> key = ResourceKey.create(Registries.ENCHANTMENT, loc);
-            registry.getHolder(key).ifPresent(holder -> mutable.set(holder, level));
+            ResourceLocation loc = Objects.requireNonNull(ResourceLocation.parse(Objects.requireNonNull(enchantmentId)));
+            ResourceKey<Enchantment> key = Objects.requireNonNull(ResourceKey.create(Objects.requireNonNull(Registries.ENCHANTMENT), loc));
+            registry.getHolder(key).ifPresent(holder -> mutable.set(Objects.requireNonNull(holder), level));
         }
 
         public boolean isEnchanted() {

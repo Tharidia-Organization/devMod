@@ -7,7 +7,8 @@ import java.time.Duration;
  *
  * <p>KPIs:
  * <ul>
- *   <li>build_p95 &lt; 5s</li>
+ *   <li>build_p95 &lt; 500ms</li>
+ *   <li>build_success &gt; 99%</li>
  *   <li>rollback_rate &lt; 1%</li>
  *   <li>completion_rate &gt; 75%</li>
  * </ul>
@@ -17,17 +18,22 @@ public record RolloutSuccessCriteria(
     double maxRollbackRate,
     double minCompletionRate,
     double maxErrorRate,
+    double minBuildSuccessRate,
     Duration minObservationPeriod,
     int minSampleSize
 ) {
     /**
-     * Default criteria based on DD72 KPIs.
+     * DD72: Default criteria based on KPIs.
+     * - p95 latency < 500ms
+     * - build success > 99%
+     * - zero critical bugs (error_rate < 1%)
      */
     public static final RolloutSuccessCriteria DEFAULT = new RolloutSuccessCriteria(
-        Duration.ofSeconds(5),    // build_p95 < 5s
+        Duration.ofMillis(500),   // DD72: p95 latency < 500ms
         0.01,                     // rollback_rate < 1%
         0.75,                     // completion_rate > 75%
-        0.05,                     // error_rate < 5%
+        0.01,                     // error_rate < 1% (zero critical bugs)
+        0.99,                     // DD72: build success > 99%
         Duration.ofHours(24),     // minimum 24h observation
         100                       // minimum 100 samples
     );
@@ -36,10 +42,11 @@ public record RolloutSuccessCriteria(
      * Stricter criteria for later phases.
      */
     public static final RolloutSuccessCriteria STRICT = new RolloutSuccessCriteria(
-        Duration.ofSeconds(3),
+        Duration.ofMillis(300),
         0.005,
         0.85,
-        0.02,
+        0.005,
+        0.995,
         Duration.ofHours(48),
         500
     );
@@ -48,10 +55,11 @@ public record RolloutSuccessCriteria(
      * Lenient criteria for initial phases.
      */
     public static final RolloutSuccessCriteria LENIENT = new RolloutSuccessCriteria(
-        Duration.ofSeconds(8),
+        Duration.ofMillis(1000),
         0.03,
         0.60,
-        0.10,
+        0.05,
+        0.95,
         Duration.ofHours(12),
         50
     );
@@ -72,6 +80,9 @@ public record RolloutSuccessCriteria(
         if (maxErrorRate < 0 || maxErrorRate > 1) {
             throw new IllegalArgumentException("maxErrorRate must be between 0 and 1");
         }
+        if (minBuildSuccessRate < 0 || minBuildSuccessRate > 1) {
+            throw new IllegalArgumentException("minBuildSuccessRate must be between 0 and 1");
+        }
         if (minObservationPeriod.isNegative()) {
             throw new IllegalArgumentException("minObservationPeriod must not be negative");
         }
@@ -86,7 +97,7 @@ public record RolloutSuccessCriteria(
     public RolloutSuccessCriteria withMaxBuildP95(Duration duration) {
         return new RolloutSuccessCriteria(
             duration, maxRollbackRate, minCompletionRate,
-            maxErrorRate, minObservationPeriod, minSampleSize
+            maxErrorRate, minBuildSuccessRate, minObservationPeriod, minSampleSize
         );
     }
 
@@ -96,7 +107,7 @@ public record RolloutSuccessCriteria(
     public RolloutSuccessCriteria withMaxRollbackRate(double rate) {
         return new RolloutSuccessCriteria(
             maxBuildP95, rate, minCompletionRate,
-            maxErrorRate, minObservationPeriod, minSampleSize
+            maxErrorRate, minBuildSuccessRate, minObservationPeriod, minSampleSize
         );
     }
 
@@ -106,7 +117,17 @@ public record RolloutSuccessCriteria(
     public RolloutSuccessCriteria withMinCompletionRate(double rate) {
         return new RolloutSuccessCriteria(
             maxBuildP95, maxRollbackRate, rate,
-            maxErrorRate, minObservationPeriod, minSampleSize
+            maxErrorRate, minBuildSuccessRate, minObservationPeriod, minSampleSize
+        );
+    }
+
+    /**
+     * Creates criteria with custom build success rate threshold.
+     */
+    public RolloutSuccessCriteria withMinBuildSuccessRate(double rate) {
+        return new RolloutSuccessCriteria(
+            maxBuildP95, maxRollbackRate, minCompletionRate,
+            maxErrorRate, rate, minObservationPeriod, minSampleSize
         );
     }
 
@@ -116,7 +137,7 @@ public record RolloutSuccessCriteria(
     public RolloutSuccessCriteria withMinObservationPeriod(Duration period) {
         return new RolloutSuccessCriteria(
             maxBuildP95, maxRollbackRate, minCompletionRate,
-            maxErrorRate, period, minSampleSize
+            maxErrorRate, minBuildSuccessRate, period, minSampleSize
         );
     }
 
@@ -126,7 +147,7 @@ public record RolloutSuccessCriteria(
     public RolloutSuccessCriteria withMinSampleSize(int size) {
         return new RolloutSuccessCriteria(
             maxBuildP95, maxRollbackRate, minCompletionRate,
-            maxErrorRate, minObservationPeriod, size
+            maxErrorRate, minBuildSuccessRate, minObservationPeriod, size
         );
     }
 }

@@ -35,9 +35,9 @@ public class AlertRouter implements AutoCloseable {
     private static final Logger LOGGER = Logger.getLogger(AlertRouter.class.getName());
 
     /**
-     * Maximum retry attempts for critical channels.
+     * DD19: Maximum retry attempts for critical channels.
      */
-    public static final int MAX_RETRY_ATTEMPTS = 5;
+    public static final int MAX_RETRY_ATTEMPTS = 3;
 
     /**
      * Base delay for exponential backoff (milliseconds).

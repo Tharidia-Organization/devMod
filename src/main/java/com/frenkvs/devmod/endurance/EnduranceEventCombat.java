@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -81,7 +82,7 @@ public class EnduranceEventCombat {
                             // Mirror damage
                             float mirrorDamage = MutatorSystem.INSTANCE.getMirrorDamage(questId, damage);
                             if (mirrorDamage > 0) {
-                                player.hurt(player.damageSources().magic(), mirrorDamage);
+                                player.hurt(Objects.requireNonNull(player.damageSources().magic()), mirrorDamage);
                             }
                         }
                     }
@@ -176,7 +177,7 @@ public class EnduranceEventCombat {
         UUID questId = data.contains("endurance_quest_id") ? data.getUUID("endurance_quest_id") : null;
 
         // Get the mob type
-        ResourceLocation mobId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+        ResourceLocation mobId = BuiltInRegistries.ENTITY_TYPE.getKey(Objects.requireNonNull(entity.getType()));
 
         // Find who killed it
         if (source.getEntity() instanceof ServerPlayer player) {

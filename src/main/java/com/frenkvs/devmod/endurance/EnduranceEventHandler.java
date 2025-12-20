@@ -25,6 +25,7 @@ import com.frenkvs.devmod.telemetry.player.PlayerAttributeTelemetryService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -229,27 +230,27 @@ public class EnduranceEventHandler {
             var bossFight = BossWaveSystem.INSTANCE.getBossFight(session.getArena().getId());
             String bossType = bossFight.map(bf -> bf.getArchetype().displayName).orElse("Champion");
 
-            player.sendSystemMessage(I18n.translate("devmod.wave.boss_wave_divider")
-                .withStyle(ChatFormatting.DARK_PURPLE));
-            player.sendSystemMessage(I18n.translate("devmod.wave.boss_wave_title", waveNumber)
-                .withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD));
-            player.sendSystemMessage(I18n.translate("devmod.wave.boss_appeared", bossType, quest.getMobConfig().displayName)
-                .withStyle(ChatFormatting.RED));
-            player.sendSystemMessage(I18n.translate("devmod.wave.defeat_boss")
-                .withStyle(ChatFormatting.GRAY));
-            player.sendSystemMessage(I18n.translate("devmod.wave.boss_wave_divider")
-                .withStyle(ChatFormatting.DARK_PURPLE));
+            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.boss_wave_divider"))
+                .withStyle(ChatFormatting.DARK_PURPLE)));
+            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.boss_wave_title", waveNumber))
+                .withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD)));
+            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.boss_appeared", bossType, quest.getMobConfig().displayName))
+                .withStyle(ChatFormatting.RED)));
+            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.defeat_boss"))
+                .withStyle(ChatFormatting.GRAY)));
+            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.boss_wave_divider"))
+                .withStyle(ChatFormatting.DARK_PURPLE)));
         } else {
             // Normal wave announcement
             int mobCount = quest.getCurrentWaveMobCount();
-            player.sendSystemMessage(I18n.translate("devmod.wave.normal_divider")
-                .withStyle(ChatFormatting.DARK_RED));
-            player.sendSystemMessage(I18n.translate("devmod.wave.wave_title", waveNumber, quest.getTotalWaves())
-                .withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
-            player.sendSystemMessage(I18n.translate("devmod.wave.enemies_count", mobCount, quest.getMobConfig().displayName)
-                .withStyle(ChatFormatting.GRAY));
-            player.sendSystemMessage(I18n.translate("devmod.wave.normal_divider")
-                .withStyle(ChatFormatting.DARK_RED));
+            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.normal_divider"))
+                .withStyle(ChatFormatting.DARK_RED)));
+            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.wave_title", waveNumber, quest.getTotalWaves()))
+                .withStyle(ChatFormatting.RED, ChatFormatting.BOLD)));
+            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.enemies_count", mobCount, quest.getMobConfig().displayName))
+                .withStyle(ChatFormatting.GRAY)));
+            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.normal_divider"))
+                .withStyle(ChatFormatting.DARK_RED)));
         }
 
         LOGGER.debug("[EnduranceQuest] Wave {} started for {} (boss: {})",
@@ -324,40 +325,40 @@ public class EnduranceEventHandler {
         }
 
         // === NOTIFY PLAYER ===
-        player.sendSystemMessage(I18n.translate("devmod.wave.complete_divider")
-            .withStyle(ChatFormatting.GOLD));
-        player.sendSystemMessage(I18n.translate("devmod.wave.complete_title", waveNumber)
-            .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
-        player.sendSystemMessage(I18n.translate("devmod.wave.style_rank_combo", styleRank, maxCombo)
-            .withStyle(ChatFormatting.YELLOW));
+        player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.complete_divider"))
+            .withStyle(ChatFormatting.GOLD)));
+        player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.complete_title", waveNumber))
+            .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)));
+        player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.style_rank_combo", styleRank, maxCombo))
+            .withStyle(ChatFormatting.YELLOW)));
 
         // Show wave combat summary
-        player.sendSystemMessage(I18n.translate("devmod.wave.combat_divider")
-            .withStyle(ChatFormatting.GRAY));
-        player.sendSystemMessage(I18n.translate("devmod.wave.damage_kills", String.format("%.0f", waveDamage), waveKills)
-            .withStyle(ChatFormatting.WHITE));
+        player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.combat_divider"))
+            .withStyle(ChatFormatting.GRAY)));
+        player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.damage_kills", String.format("%.0f", waveDamage), waveKills))
+            .withStyle(ChatFormatting.WHITE)));
         if (waveDamageTaken > 0) {
-            player.sendSystemMessage(I18n.translate("devmod.wave.damage_taken", String.format("%.0f", waveDamageTaken))
-                .withStyle(ChatFormatting.RED));
+            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.damage_taken", String.format("%.0f", waveDamageTaken)))
+                .withStyle(ChatFormatting.RED)));
         } else {
-            player.sendSystemMessage(I18n.translate("devmod.wave.flawless")
-                .withStyle(ChatFormatting.AQUA));
+            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.flawless"))
+                .withStyle(ChatFormatting.AQUA)));
         }
 
 
         if (quest.getCurrentWave() < quest.getTotalWaves() || quest.isEndlessMode()) {
-            player.sendSystemMessage(I18n.translate("devmod.wave.checkpoint")
-                .withStyle(ChatFormatting.AQUA));
-            player.sendSystemMessage(I18n.translate("devmod.wave.continue_option", waveNumber + 1)
-                .withStyle(ChatFormatting.WHITE));
-            player.sendSystemMessage(I18n.translate("devmod.wave.exit_option")
-                .withStyle(ChatFormatting.WHITE));
+            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.checkpoint"))
+                .withStyle(ChatFormatting.AQUA)));
+            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.continue_option", waveNumber + 1))
+                .withStyle(ChatFormatting.WHITE)));
+            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.exit_option"))
+                .withStyle(ChatFormatting.WHITE)));
         } else {
-            player.sendSystemMessage(I18n.translate("devmod.wave.quest_complete_final")
-                .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
+            player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.quest_complete_final"))
+                .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)));
         }
-        player.sendSystemMessage(I18n.translate("devmod.wave.complete_divider")
-            .withStyle(ChatFormatting.GOLD));
+        player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.complete_divider"))
+            .withStyle(ChatFormatting.GOLD)));
     }
 
     // ═══════════════════════════════════════════════════════════════

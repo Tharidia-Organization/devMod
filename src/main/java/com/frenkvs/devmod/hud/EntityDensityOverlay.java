@@ -21,6 +21,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * HUD Overlay for displaying entity density information.
@@ -76,8 +77,8 @@ public class EntityDensityOverlay {
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.HOTBAR,
-            LAYER_ID,
+            Objects.requireNonNull(VanillaGuiLayers.HOTBAR),
+            Objects.requireNonNull(LAYER_ID),
             EntityDensityOverlay::render
         );
     }
@@ -104,14 +105,16 @@ public class EntityDensityOverlay {
     }
 
     private static void updateEntityScan(Minecraft mc) {
-        if (mc.level == null || mc.player == null) return;
+        var player = mc.player;
+        var level = mc.level;
+        if (level == null || player == null) return;
 
         // Try to find current room
         cachedRoomName = "Open World";
 
         // Scan area around player
-        AABB scanBox = mc.player.getBoundingBox().inflate(SCAN_RADIUS);
-        List<Entity> entities = mc.level.getEntities(mc.player, scanBox);
+        AABB scanBox = Objects.requireNonNull(player.getBoundingBox().inflate(SCAN_RADIUS));
+        List<Entity> entities = level.getEntities(player, scanBox);
 
         // Reset counts
         cachedHostileCount = 0;
@@ -135,6 +138,7 @@ public class EntityDensityOverlay {
     }
 
     private static void renderDensityPanel(GuiGraphics graphics, Font font, int x, int y) {
+        var safeFont = Objects.requireNonNull(font);
         int panelHeight = calculatePanelHeight();
 
         // Background
@@ -147,7 +151,7 @@ public class EntityDensityOverlay {
         int textY = y + PANEL_PADDING;
 
         // Title
-        graphics.drawString(font, "Entity Density", textX, textY, TEXT_TITLE, false);
+        graphics.drawString(safeFont, "Entity Density", textX, textY, TEXT_TITLE, false);
         textY += LINE_HEIGHT + 2;
 
         // Separator
@@ -155,36 +159,36 @@ public class EntityDensityOverlay {
         textY += 4;
 
         // Room name
-        graphics.drawString(font, "Area: " + cachedRoomName, textX, textY, TEXT_MUTED, false);
+        graphics.drawString(safeFont, "Area: " + cachedRoomName, textX, textY, TEXT_MUTED, false);
         textY += LINE_HEIGHT + 2;
 
         // Total count with color based on density
         int totalColor = getTotalColor(cachedTotalEntities);
         String totalText = String.format("Total: %d entities", cachedTotalEntities);
-        graphics.drawString(font, totalText, textX, textY, totalColor, false);
+        graphics.drawString(safeFont, totalText, textX, textY, totalColor, false);
         textY += LINE_HEIGHT + 4;
 
         // Breakdown
         if (cachedHostileCount > 0) {
-            graphics.drawString(font, String.format("  Hostile: %d", cachedHostileCount),
+            graphics.drawString(safeFont, String.format("  Hostile: %d", cachedHostileCount),
                 textX, textY, TEXT_DANGER, false);
             textY += LINE_HEIGHT;
         }
 
         if (cachedPassiveCount > 0) {
-            graphics.drawString(font, String.format("  Passive: %d", cachedPassiveCount),
+            graphics.drawString(safeFont, String.format("  Passive: %d", cachedPassiveCount),
                 textX, textY, TEXT_VALUE, false);
             textY += LINE_HEIGHT;
         }
 
         if (cachedPlayerCount > 0) {
-            graphics.drawString(font, String.format("  Players: %d", cachedPlayerCount),
+            graphics.drawString(safeFont, String.format("  Players: %d", cachedPlayerCount),
                 textX, textY, TEXT_TITLE, false);
             textY += LINE_HEIGHT;
         }
 
         if (cachedOtherCount > 0) {
-            graphics.drawString(font, String.format("  Other: %d", cachedOtherCount),
+            graphics.drawString(safeFont, String.format("  Other: %d", cachedOtherCount),
                 textX, textY, TEXT_MUTED, false);
             textY += LINE_HEIGHT;
         }
@@ -192,10 +196,10 @@ public class EntityDensityOverlay {
         // Warning message if high density
         if (cachedTotalEntities >= DENSITY_DANGER_THRESHOLD) {
             textY += 2;
-            graphics.drawString(font, "HIGH DENSITY!", textX, textY, TEXT_DANGER, false);
+            graphics.drawString(safeFont, "HIGH DENSITY!", textX, textY, TEXT_DANGER, false);
         } else if (cachedTotalEntities >= DENSITY_WARN_THRESHOLD) {
             textY += 2;
-            graphics.drawString(font, "Moderate density", textX, textY, TEXT_WARNING, false);
+            graphics.drawString(safeFont, "Moderate density", textX, textY, TEXT_WARNING, false);
         }
     }
 

@@ -1,0 +1,17 @@
+{
+  "id": "boss_ring_80_casual.policy",
+  "version": 1,
+  "templateId": "boss_ring_80",
+  "minTemplateVersion": 1,
+  "maxTemplateVersion": null,
+  "mobTypes": ["boss"],
+  "questType": "boss",
+  "difficulty": "normal",
+  "minPlayers": 1,
+  "maxPlayers": 4,
+  "tags": ["boss", "casual"],
+  "priority": 3,
+  "weight": 1.0,
+  "enabled": true,
+  "description": "Casual boss arena policy"
+}

@@ -2,11 +2,11 @@ package com.devmod.arena.hud;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -79,7 +79,7 @@ public class ArenaDebugHud {
         // Calculate dimensions
         int maxWidth = 0;
         for (String line : lines) {
-            int width = mc.font.width(line);
+            int width = Objects.requireNonNull(mc.font).width(Objects.requireNonNull(line));
             if (width > maxWidth) {
                 maxWidth = width;
             }
@@ -95,13 +95,14 @@ public class ArenaDebugHud {
         int y = HUD_Y;
         for (int i = 0; i < lines.size(); i++) {
             int color = (i == 0) ? HEADER_COLOR : TEXT_COLOR;
-            guiGraphics.drawString(mc.font, lines.get(i), HUD_X, y, color, false);
+            guiGraphics.drawString(Objects.requireNonNull(mc.font), lines.get(i), HUD_X, y, color, false);
             y += LINE_HEIGHT;
         }
     }
 
     /**
-     * Builds the debug info lines
+     * Builds the debug info lines.
+     * DD30: Now includes arenaId and instanceId.
      */
     private List<String> buildDebugLines() {
         List<String> lines = new ArrayList<>();
@@ -112,6 +113,15 @@ public class ArenaDebugHud {
 
         lines.add("[Arena Debug HUD]");
         lines.add("Template: " + (currentInfo.templateId != null ? currentInfo.templateId.toString() : "none"));
+
+        // DD30: Show arena and instance IDs (short form)
+        if (currentInfo.arenaId != null) {
+            lines.add("Arena: " + currentInfo.arenaIdShort());
+        }
+        if (currentInfo.instanceId != null) {
+            lines.add("Instance: " + currentInfo.instanceIdShort());
+        }
+
         lines.add("State: " + currentInfo.arenaState);
         lines.add("Players: " + currentInfo.playerCount);
         lines.add("Duration: " + formatDuration(currentInfo.durationSeconds));
@@ -157,10 +167,13 @@ public class ArenaDebugHud {
     }
 
     /**
-     * Debug information record
+     * Debug information record.
+     * DD30: Extended with arenaId and instanceId for full context.
      */
     public record ArenaDebugInfo(
         ResourceLocation templateId,
+        String arenaId,
+        String instanceId,
         String arenaState,
         int playerCount,
         long durationSeconds,
@@ -171,8 +184,26 @@ public class ArenaDebugHud {
             return new Builder();
         }
 
+        /**
+         * Returns a short form of the arenaId (first 8 chars).
+         */
+        public String arenaIdShort() {
+            if (arenaId == null || arenaId.length() < 8) return arenaId;
+            return arenaId.substring(0, 8);
+        }
+
+        /**
+         * Returns a short form of the instanceId (first 8 chars).
+         */
+        public String instanceIdShort() {
+            if (instanceId == null || instanceId.length() < 8) return instanceId;
+            return instanceId.substring(0, 8);
+        }
+
         public static class Builder {
             private ResourceLocation templateId;
+            private String arenaId;
+            private String instanceId;
             private String arenaState = "UNKNOWN";
             private int playerCount = 0;
             private long durationSeconds = 0;
@@ -181,6 +212,26 @@ public class ArenaDebugHud {
 
             public Builder templateId(ResourceLocation templateId) {
                 this.templateId = templateId;
+                return this;
+            }
+
+            public Builder arenaId(String arenaId) {
+                this.arenaId = arenaId;
+                return this;
+            }
+
+            public Builder arenaId(UUID arenaId) {
+                this.arenaId = arenaId != null ? arenaId.toString() : null;
+                return this;
+            }
+
+            public Builder instanceId(String instanceId) {
+                this.instanceId = instanceId;
+                return this;
+            }
+
+            public Builder instanceId(UUID instanceId) {
+                this.instanceId = instanceId != null ? instanceId.toString() : null;
                 return this;
             }
 
@@ -210,7 +261,7 @@ public class ArenaDebugHud {
             }
 
             public ArenaDebugInfo build() {
-                return new ArenaDebugInfo(templateId, arenaState, playerCount, durationSeconds, isOverridden, extraInfo);
+                return new ArenaDebugInfo(templateId, arenaId, instanceId, arenaState, playerCount, durationSeconds, isOverridden, extraInfo);
             }
         }
     }

@@ -133,6 +133,48 @@ public final class LeaderboardService {
     }
 
     /**
+     * Season configuration for time-based leaderboards.
+     */
+    public record SeasonConfig(
+        String seasonId,
+        Instant start,
+        Instant end
+    ) {
+        /**
+         * Creates a season config for the current month.
+         */
+        public static SeasonConfig currentMonth() {
+            ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+            ZonedDateTime monthStart = now.withDayOfMonth(1).with(LocalTime.MIDNIGHT);
+            ZonedDateTime monthEnd = monthStart.plusMonths(1);
+            String id = String.format("season_%d_%02d", now.getYear(), now.getMonthValue());
+            return new SeasonConfig(id, monthStart.toInstant(), monthEnd.toInstant());
+        }
+
+        /**
+         * Creates a custom season with explicit dates.
+         */
+        public static SeasonConfig of(String seasonId, Instant start, Instant end) {
+            return new SeasonConfig(seasonId, start, end);
+        }
+
+        /**
+         * Checks if the current time is within this season.
+         */
+        public boolean isActive() {
+            Instant now = Instant.now();
+            return !now.isBefore(start) && now.isBefore(end);
+        }
+
+        /**
+         * Gets the duration of this season.
+         */
+        public Duration duration() {
+            return Duration.between(start, end);
+        }
+    }
+
+    /**
      * Default page size.
      */
     public static final int DEFAULT_PAGE_SIZE = 100;
@@ -152,15 +194,17 @@ public final class LeaderboardService {
     private final ScheduledExecutorService scheduler;
     private final Map<LeaderboardType, Instant> lastCalculationTimes;
     private final Consumer<String> logger;
+    private volatile SeasonConfig seasonConfig;
 
     /**
-     * Creates a LeaderboardService with Redis cache and database query.
+     * Creates a LeaderboardService with Redis cache, database query, and season config.
      *
      * @param cache Redis cache implementation
      * @param database Database query implementation
      * @param logger Logger consumer
+     * @param seasonConfig Season configuration for time-based leaderboards
      */
-    public LeaderboardService(RedisCache cache, DatabaseQuery database, Consumer<String> logger) {
+    public LeaderboardService(RedisCache cache, DatabaseQuery database, Consumer<String> logger, SeasonConfig seasonConfig) {
         this.cache = cache;
         this.database = database;
         this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -170,13 +214,44 @@ public final class LeaderboardService {
         });
         this.lastCalculationTimes = new ConcurrentHashMap<>();
         this.logger = logger != null ? logger : s -> {};
+        this.seasonConfig = seasonConfig != null ? seasonConfig : SeasonConfig.currentMonth();
+    }
+
+    /**
+     * Creates a LeaderboardService with Redis cache and database query.
+     *
+     * @param cache Redis cache implementation
+     * @param database Database query implementation
+     * @param logger Logger consumer
+     */
+    public LeaderboardService(RedisCache cache, DatabaseQuery database, Consumer<String> logger) {
+        this(cache, database, logger, null);
     }
 
     /**
      * Creates a LeaderboardService with no-op logger.
      */
     public LeaderboardService(RedisCache cache, DatabaseQuery database) {
-        this(cache, database, null);
+        this(cache, database, null, null);
+    }
+
+    /**
+     * Updates the season configuration.
+     *
+     * @param seasonConfig new season configuration
+     */
+    public void setSeasonConfig(SeasonConfig seasonConfig) {
+        this.seasonConfig = seasonConfig != null ? seasonConfig : SeasonConfig.currentMonth();
+        logger.accept("Season config updated: " + this.seasonConfig.seasonId());
+    }
+
+    /**
+     * Gets the current season configuration.
+     *
+     * @return current season config
+     */
+    public SeasonConfig getSeasonConfig() {
+        return seasonConfig;
     }
 
     /**
@@ -423,15 +498,11 @@ public final class LeaderboardService {
         Map<String, Object> params = new ConcurrentHashMap<>();
 
         if (type == LeaderboardType.SEASON_WINS) {
-            // Get current season dates (placeholder - should be configured)
-            Instant seasonStart = ZonedDateTime.now(ZoneOffset.UTC)
-                .withDayOfMonth(1)
-                .with(LocalTime.MIDNIGHT)
-                .toInstant();
-            Instant seasonEnd = seasonStart.plus(Duration.ofDays(30));
-
-            params.put("season_start", seasonStart);
-            params.put("season_end", seasonEnd);
+            // Use configured season config for season-based leaderboards
+            SeasonConfig season = this.seasonConfig;
+            params.put("season_id", season.seasonId());
+            params.put("season_start", season.start());
+            params.put("season_end", season.end());
         }
 
         return params;

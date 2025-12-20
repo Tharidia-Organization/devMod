@@ -467,7 +467,7 @@ public class ImpactVFX {
         setShaderUniformVec3(shader, "ColorGlow", 0.51f, 0.69f, 1.0f);
 
         Matrix4f matrix = nn(poseStack.last().pose(), "vortex GPU matrix");
-        var pose = poseStack.last();
+        var pose = Objects.requireNonNull(poseStack.last());
         VertexConsumer consumer = bufferSource.getBuffer(renderType);
 
         // Generate vortex geometry - shader handles animation
@@ -555,7 +555,7 @@ public class ImpactVFX {
         setShaderUniform(shader, "Intensity", intensity);
 
         Matrix4f matrix = nn(poseStack.last().pose(), "slash GPU matrix");
-        var pose = poseStack.last();
+        var pose = Objects.requireNonNull(poseStack.last());
         VertexConsumer consumer = bufferSource.getBuffer(renderType);
 
         // Calculate perpendicular direction
@@ -634,7 +634,7 @@ public class ImpactVFX {
         poseStack.translate(rel.x, rel.y, rel.z);
 
         Matrix4f matrix = nn(poseStack.last().pose(), "line GPU matrix");
-        var pose = poseStack.last();
+        var pose = Objects.requireNonNull(poseStack.last());
         VertexConsumer consumer = bufferSource.getBuffer(renderType);
 
         Vec3 toCamera = nnVec(cam.subtract(hitPoint), "toCamera GPU").normalize();
@@ -681,7 +681,7 @@ public class ImpactVFX {
     // Shader uniform helper methods
     private static void setShaderUniform(ShaderInstance shader, String name, float value) {
         try {
-            var uniform = shader.getUniform(name);
+            var uniform = shader.getUniform(Objects.requireNonNull(name));
             if (uniform != null) {
                 uniform.set(value);
             }
@@ -690,7 +690,7 @@ public class ImpactVFX {
 
     private static void setShaderUniform(ShaderInstance shader, String name, int value) {
         try {
-            var uniform = shader.getUniform(name);
+            var uniform = shader.getUniform(Objects.requireNonNull(name));
             if (uniform != null) {
                 uniform.set(value);
             }
@@ -699,7 +699,7 @@ public class ImpactVFX {
 
     private static void setShaderUniformVec3(ShaderInstance shader, String name, float x, float y, float z) {
         try {
-            var uniform = shader.getUniform(name);
+            var uniform = shader.getUniform(Objects.requireNonNull(name));
             if (uniform != null) {
                 uniform.set(x, y, z);
             }

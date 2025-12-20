@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Immutable snapshot of an entity's current pose/animation state.
@@ -29,18 +30,18 @@ public record AnimationSnapshot(
     int entityId,
     long tickCaptured,
     float partialTick,
-    @Nonnull Vec3 entityPosition,
+    Vec3 entityPosition,
     float yBodyRot,
     float yHeadRot,
     float xHeadRot,
-    @Nonnull Map<String, Matrix4f> partTransforms,
+    Map<String, Matrix4f> partTransforms,
     boolean isValid
 ) {
     /**
      * Invalid/empty snapshot singleton.
      */
     public static final AnimationSnapshot INVALID = new AnimationSnapshot(
-        0, 0, 0, Vec3.ZERO, 0, 0, 0, Collections.emptyMap(), false
+        0, 0, 0, Objects.requireNonNull(Vec3.ZERO), 0, 0, 0, Collections.emptyMap(), false
     );
 
     /**
@@ -55,33 +56,33 @@ public record AnimationSnapshot(
      * @return The transform matrix, or identity if not found
      */
     @Nullable
-    public Matrix4f getPartTransform(@Nonnull String boneName) {
-        return partTransforms.get(boneName);
+    public Matrix4f getPartTransform(String boneName) {
+        return partTransforms.get(Objects.requireNonNull(boneName));
     }
 
     /**
      * Gets transform for a bone, with fallback to provided default.
      */
     @Nonnull
-    public Matrix4f getPartTransformOrDefault(@Nonnull String boneName, @Nonnull Matrix4f defaultTransform) {
-        Matrix4f transform = partTransforms.get(boneName);
-        return transform != null ? transform : defaultTransform;
+    public Matrix4f getPartTransformOrDefault(String boneName, Matrix4f defaultTransform) {
+        Matrix4f transform = partTransforms.get(Objects.requireNonNull(boneName));
+        return transform != null ? transform : Objects.requireNonNull(defaultTransform);
     }
 
     /**
      * Gets transform for a bone, with fallback to identity matrix.
      */
     @Nonnull
-    public Matrix4f getPartTransformOrIdentity(@Nonnull String boneName) {
-        Matrix4f transform = partTransforms.get(boneName);
+    public Matrix4f getPartTransformOrIdentity(String boneName) {
+        Matrix4f transform = partTransforms.get(Objects.requireNonNull(boneName));
         return transform != null ? transform : new Matrix4f();
     }
 
     /**
      * Checks if a bone transform is available.
      */
-    public boolean hasPartTransform(@Nonnull String boneName) {
-        return partTransforms.containsKey(boneName);
+    public boolean hasPartTransform(String boneName) {
+        return partTransforms.containsKey(Objects.requireNonNull(boneName));
     }
 
     /**
@@ -122,10 +123,10 @@ public record AnimationSnapshot(
      * Creates a simple snapshot with only entity position (no bone transforms).
      */
     @Nonnull
-    public static AnimationSnapshot simple(int entityId, long tick, @Nonnull Vec3 position,
+    public static AnimationSnapshot simple(int entityId, long tick, Vec3 position,
                                            float yBodyRot, float yHeadRot, float xHeadRot) {
         return new AnimationSnapshot(
-            entityId, tick, 1.0f, position, yBodyRot, yHeadRot, xHeadRot,
+            entityId, tick, 1.0f, Objects.requireNonNull(position), yBodyRot, yHeadRot, xHeadRot,
             Collections.emptyMap(), true
         );
     }
@@ -151,8 +152,8 @@ public record AnimationSnapshot(
         }
 
         @Nonnull
-        public Builder position(@Nonnull Vec3 position) {
-            this.entityPosition = position;
+        public Builder position(Vec3 position) {
+            this.entityPosition = Objects.requireNonNull(position);
             return this;
         }
 
@@ -176,15 +177,15 @@ public record AnimationSnapshot(
         }
 
         @Nonnull
-        public Builder addPartTransform(@Nonnull String boneName, @Nonnull Matrix4f transform) {
+        public Builder addPartTransform(String boneName, Matrix4f transform) {
             // Store a copy to ensure immutability
-            this.partTransforms.put(boneName, new Matrix4f(transform));
+            this.partTransforms.put(Objects.requireNonNull(boneName), new Matrix4f(Objects.requireNonNull(transform)));
             return this;
         }
 
         @Nonnull
-        public Builder addPartTransforms(@Nonnull Map<String, Matrix4f> transforms) {
-            for (var entry : transforms.entrySet()) {
+        public Builder addPartTransforms(Map<String, Matrix4f> transforms) {
+            for (var entry : Objects.requireNonNull(transforms).entrySet()) {
                 addPartTransform(entry.getKey(), entry.getValue());
             }
             return this;
@@ -215,10 +216,11 @@ public record AnimationSnapshot(
      * Use ModelPartTransformExtractor for full bone transforms.
      */
     @Nonnull
-    public static AnimationSnapshot fromEntity(@Nonnull net.minecraft.world.entity.LivingEntity entity,
+    public static AnimationSnapshot fromEntity(net.minecraft.world.entity.LivingEntity entity,
                                                long tick, float partialTick) {
+        Objects.requireNonNull(entity);
         return builder(entity.getId(), tick, partialTick)
-            .position(entity.getPosition(partialTick))
+            .position(Objects.requireNonNull(entity.getPosition(partialTick)))
             .bodyRotation(entity.yBodyRot)
             .headRotation(entity.yHeadRot, entity.getXRot())
             .build();
@@ -228,15 +230,16 @@ public record AnimationSnapshot(
      * Creates a snapshot with interpolated position.
      */
     @Nonnull
-    public static AnimationSnapshot fromEntityInterpolated(@Nonnull net.minecraft.world.entity.LivingEntity entity,
+    public static AnimationSnapshot fromEntityInterpolated(net.minecraft.world.entity.LivingEntity entity,
                                                            long tick, float partialTick) {
+        Objects.requireNonNull(entity);
         // Interpolate body rotation
         float yBodyRot = lerpAngle(partialTick, entity.yBodyRotO, entity.yBodyRot);
         float yHeadRot = lerpAngle(partialTick, entity.yHeadRotO, entity.yHeadRot);
         float xHeadRot = lerp(partialTick, entity.xRotO, entity.getXRot());
 
         return builder(entity.getId(), tick, partialTick)
-            .position(entity.getPosition(partialTick))
+            .position(Objects.requireNonNull(entity.getPosition(partialTick)))
             .bodyRotation(yBodyRot)
             .headRotation(yHeadRot, xHeadRot)
             .build();

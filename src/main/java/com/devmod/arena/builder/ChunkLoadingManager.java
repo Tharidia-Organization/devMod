@@ -17,9 +17,17 @@ public class ChunkLoadingManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ChunkLoadingManager.class);
 
+    // DD9: Ticket type for arena builds - used for chunk force-loading
+    public static final String TICKET_TYPE_ARENA_BUILD = "arena_build";
+
     // DD9: Polling interval and default timeout
     private static final long POLL_INTERVAL_NS = 10_000_000; // 10ms
     private static final int DEFAULT_TIMEOUT_MS = 30_000; // 30 seconds
+
+    // Retry configuration
+    private static final int DEFAULT_MAX_RETRIES = 3;
+    private static final long INITIAL_RETRY_DELAY_MS = 100;
+    private static final double RETRY_BACKOFF_MULTIPLIER = 2.0;
 
     private final Set<Long> loadedChunks = new HashSet<>();
     private final ChunkLoader chunkLoader;
@@ -98,6 +106,58 @@ public class ChunkLoadingManager {
      */
     public ChunkLoadResult ensureChunksLoaded(int minX, int minZ, int maxX, int maxZ) {
         return ensureChunksLoaded(minX, minZ, maxX, maxZ, DEFAULT_TIMEOUT_MS);
+    }
+
+    /**
+     * Ensures chunks are loaded with retry logic and exponential backoff.
+     *
+     * @param minX Minimum chunk X
+     * @param minZ Minimum chunk Z
+     * @param maxX Maximum chunk X
+     * @param maxZ Maximum chunk Z
+     * @param timeoutMs Timeout per attempt in milliseconds
+     * @param maxRetries Maximum number of retry attempts
+     * @return Result with loaded chunks or error after all retries exhausted
+     */
+    public ChunkLoadResult ensureChunksLoadedWithRetry(int minX, int minZ, int maxX, int maxZ,
+                                                       int timeoutMs, int maxRetries) {
+        long retryDelayMs = INITIAL_RETRY_DELAY_MS;
+        ChunkLoadResult lastResult = null;
+
+        for (int attempt = 0; attempt <= maxRetries; attempt++) {
+            if (attempt > 0) {
+                LOGGER.info("Retrying chunk load (attempt {}/{}), waiting {}ms...",
+                    attempt + 1, maxRetries + 1, retryDelayMs);
+                try {
+                    Thread.sleep(retryDelayMs);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return ChunkLoadResult.error("Chunk loading interrupted during retry");
+                }
+                retryDelayMs = (long) (retryDelayMs * RETRY_BACKOFF_MULTIPLIER);
+            }
+
+            lastResult = ensureChunksLoaded(minX, minZ, maxX, maxZ, timeoutMs);
+
+            if (lastResult.success()) {
+                if (attempt > 0) {
+                    LOGGER.info("Chunk load succeeded on retry attempt {}", attempt + 1);
+                }
+                return lastResult;
+            }
+
+            LOGGER.warn("Chunk load attempt {} failed: {}", attempt + 1, lastResult.errorMessage());
+        }
+
+        LOGGER.error("All {} chunk load attempts failed", maxRetries + 1);
+        return lastResult != null ? lastResult : ChunkLoadResult.error("No attempts made");
+    }
+
+    /**
+     * Ensures chunks are loaded with default retry configuration.
+     */
+    public ChunkLoadResult ensureChunksLoadedWithRetry(int minX, int minZ, int maxX, int maxZ) {
+        return ensureChunksLoadedWithRetry(minX, minZ, maxX, maxZ, DEFAULT_TIMEOUT_MS, DEFAULT_MAX_RETRIES);
     }
 
     /**

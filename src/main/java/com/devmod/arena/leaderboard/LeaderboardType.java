@@ -62,11 +62,12 @@ public enum LeaderboardType {
 
     /**
      * Weekly leaderboard based on wins in the current week.
+     * DD56: Cache TTL 25h for consistency with other leaderboards.
      */
     WEEKLY_WINS(
         "weekly_wins",
         "Weekly Wins",
-        Duration.ofHours(6),
+        Duration.ofHours(25),
         """
             SELECT
                 p.id as player_id,

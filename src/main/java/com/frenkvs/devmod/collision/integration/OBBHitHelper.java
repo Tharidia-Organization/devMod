@@ -114,7 +114,7 @@ public final class OBBHitHelper {
         try {
             // 4. Build ray from attacker
             Vec3 rayOrigin = Objects.requireNonNull(attacker.getEyePosition(), "rayOrigin");
-            Vec3 rayDir = Objects.requireNonNull(attacker.getViewVector(1.0f), "rayDir").normalize();
+            Vec3 rayDir = Objects.requireNonNull(Objects.requireNonNull(attacker.getViewVector(1.0f), "rayDir").normalize());
             float reach = getDynamicReach(attacker);
 
             // 5. Extract OBBs from instances
@@ -167,7 +167,7 @@ public final class OBBHitHelper {
 
         try {
             Vec3 rayOrigin = Objects.requireNonNull(attacker.getEyePosition(), "rayOrigin");
-            Vec3 rayDir = Objects.requireNonNull(attacker.getViewVector(1.0f), "rayDir").normalize();
+            Vec3 rayDir = Objects.requireNonNull(Objects.requireNonNull(attacker.getViewVector(1.0f), "rayDir").normalize());
             float reach = getDynamicReach(attacker);
 
             OrientedBoundingBox[] obbs = new OrientedBoundingBox[parts.length];
@@ -272,7 +272,7 @@ public final class OBBHitHelper {
         BodyPartHierarchy hierarchy = BodyPartRegistry.INSTANCE.getHierarchy(entity);
 
         long currentTick = entity.level().getGameTime();
-        return hierarchy.computeSimpleTransforms(entity.position(), entity.yBodyRot, currentTick);
+        return hierarchy.computeSimpleTransforms(Objects.requireNonNull(entity.position()), entity.yBodyRot, currentTick);
     }
 
     /**
@@ -282,6 +282,6 @@ public final class OBBHitHelper {
      * @return true if custom parts are available
      */
     public static boolean hasCustomBodyParts(@Nonnull LivingEntity entity) {
-        return BodyPartRegistry.INSTANCE.hasCustomParts(entity.getType());
+        return BodyPartRegistry.INSTANCE.hasCustomParts(Objects.requireNonNull(entity.getType()));
     }
 }

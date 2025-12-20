@@ -48,19 +48,20 @@ public class WorldRenderEvents {
         }
 
         // FASE 4: Heatmap Visualizer (tasto H)
-        var bufferSource = mc.renderBuffers().bufferSource();
+        var bufferSource = Objects.requireNonNull(mc.renderBuffers().bufferSource());
+        PoseStack poseStack = Objects.requireNonNull(event.getPoseStack());
         if (com.frenkvs.devmod.rendering.HeatmapVisualizer.INSTANCE.hasActiveHeatmaps()) {
-            com.frenkvs.devmod.rendering.HeatmapVisualizer.INSTANCE.render(event.getPoseStack(), bufferSource, cameraPos);
+            com.frenkvs.devmod.rendering.HeatmapVisualizer.INSTANCE.render(poseStack, bufferSource, cameraPos);
         }
 
         // FASE 4: Light Level Overlay (tasto L)
         if (com.frenkvs.devmod.rendering.LightLevelOverlay.INSTANCE.isEnabled()) {
-            com.frenkvs.devmod.rendering.LightLevelOverlay.INSTANCE.render(event.getPoseStack(), bufferSource, cameraPos);
+            com.frenkvs.devmod.rendering.LightLevelOverlay.INSTANCE.render(poseStack, bufferSource, cameraPos);
         }
 
         // FASE 4: Room Bounds Visualizer (tasto R)
         if (com.frenkvs.devmod.rendering.RoomBoundsVisualizer.INSTANCE.isEnabled()) {
-            com.frenkvs.devmod.rendering.RoomBoundsVisualizer.INSTANCE.render(event.getPoseStack(), bufferSource, cameraPos);
+            com.frenkvs.devmod.rendering.RoomBoundsVisualizer.INSTANCE.render(poseStack, bufferSource, cameraPos);
         }
 
         // FASE 4: Pathfinding Debugger (tasto P)
@@ -69,22 +70,22 @@ public class WorldRenderEvents {
 
         // FASE 4: Line of Sight Visualizer (tasto V)
         if (com.frenkvs.devmod.rendering.LineOfSightVisualizer.INSTANCE.isEnabled()) {
-            com.frenkvs.devmod.rendering.LineOfSightVisualizer.INSTANCE.render(event.getPoseStack(), bufferSource, cameraPos);
+            com.frenkvs.devmod.rendering.LineOfSightVisualizer.INSTANCE.render(poseStack, bufferSource, cameraPos);
         }
 
         // FASE 4: Vertical Levels Visualizer (tasto Y)
         if (com.frenkvs.devmod.rendering.VerticalLevelsVisualizer.INSTANCE.isEnabled()) {
-            com.frenkvs.devmod.rendering.VerticalLevelsVisualizer.INSTANCE.render(event.getPoseStack(), bufferSource, cameraPos);
+            com.frenkvs.devmod.rendering.VerticalLevelsVisualizer.INSTANCE.render(poseStack, bufferSource, cameraPos);
         }
 
         // FASE 4: Safe Spot Visualizer (tasto C)
         if (com.frenkvs.devmod.rendering.SafeSpotVisualizer.INSTANCE.isEnabled()) {
-            com.frenkvs.devmod.rendering.SafeSpotVisualizer.INSTANCE.render(event.getPoseStack(), bufferSource, cameraPos);
+            com.frenkvs.devmod.rendering.SafeSpotVisualizer.INSTANCE.render(poseStack, bufferSource, cameraPos);
         }
 
         // VOXEL-LAB M27: Spawnability Map (tasto F4)
         if (com.frenkvs.devmod.rendering.SpawnabilityOverlay.INSTANCE.isEnabled()) {
-            com.frenkvs.devmod.rendering.SpawnabilityOverlay.INSTANCE.render(event.getPoseStack(), bufferSource, cameraPos);
+            com.frenkvs.devmod.rendering.SpawnabilityOverlay.INSTANCE.render(poseStack, bufferSource, cameraPos);
         }
 
         for (Entity entity : level.entitiesForRendering()) {
@@ -176,7 +177,7 @@ public class WorldRenderEvents {
 
     // Generic method for drawing circles (used for both view and attack)
     private static void renderCircle(@Nonnull PoseStack poseStack, @Nonnull Mob mob, double radius, @Nonnull Vec3 cameraPos, int color) {
-        VertexConsumer builder = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(Objects.requireNonNull(RenderType.lines()));
+        VertexConsumer builder = Objects.requireNonNull(Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(Objects.requireNonNull(RenderType.lines())));
 
         float alpha = ((color >> 24) & 0xFF) / 255f;
         if (alpha == 0) alpha = 1.0f;
@@ -238,10 +239,10 @@ public class WorldRenderEvents {
      * instead of calculating generic overlapping hitboxes.
      */
     private static void renderBodyPartHitboxes(@Nonnull PoseStack poseStack, @Nonnull LivingEntity entity, @Nonnull Vec3 cameraPos) {
-        VertexConsumer builder = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.lines());
+        VertexConsumer builder = Objects.requireNonNull(Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(Objects.requireNonNull(RenderType.lines())));
         poseStack.pushPose();
         poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
         // MULTIPART ENTITY CHECK: EnderDragon and other entities with native parts
         if (entity instanceof EnderDragon dragon) {
@@ -258,8 +259,8 @@ public class WorldRenderEvents {
         }
 
         // STANDARD ENTITY: use generic body part calculation logic
-        AABB mainBox = entity.getBoundingBox();
-        Vec3 center = mainBox.getCenter();
+        AABB mainBox = Objects.requireNonNull(entity.getBoundingBox());
+        Vec3 center = Objects.requireNonNull(mainBox.getCenter());
         double width = mainBox.getXsize();
         double height = mainBox.getYsize();
         double depth = mainBox.getZsize();
@@ -416,7 +417,7 @@ public class WorldRenderEvents {
         if (parts == null) return;
 
         for (EnderDragonPart part : parts) {
-            AABB box = part.getBoundingBox();
+            AABB box = Objects.requireNonNull(part.getBoundingBox());
             String name = part.name != null ? part.name.toLowerCase() : "";
 
             // Color-code based on part name
@@ -468,7 +469,7 @@ public class WorldRenderEvents {
         for (int i = 0; i < parts.length; i++) {
             if (parts[i] == null) continue;
 
-            AABB box = parts[i].getBoundingBox();
+            AABB box = Objects.requireNonNull(parts[i].getBoundingBox());
             float[] color = colors[i % colors.length];
             drawAABB(builder, matrix, box, color[0], color[1], color[2], 0.8f);
         }
@@ -485,7 +486,7 @@ public class WorldRenderEvents {
      * - Quadratic alpha fade: closer = more transparent
      * - This solves the overlap problem when inside multiple spheres
      */
-    private static void renderDebugSpheres(PoseStack poseStack, Vec3 cameraPos, net.minecraft.client.multiplayer.ClientLevel level) {
+    private static void renderDebugSpheres(PoseStack poseStack, @Nonnull Vec3 cameraPos, net.minecraft.client.multiplayer.ClientLevel level) {
         var bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
@@ -493,24 +494,25 @@ public class WorldRenderEvents {
         final double MAX_RENDER_DIST_SQ = 48.0 * 48.0; // Distance limit
 
         // Iterate over NEARBY mobs for performance
+        var player = Objects.requireNonNull(mc.player);
         for (Entity entity : level.entitiesForRendering()) {
             if (!(entity instanceof Mob mob)) continue;
 
             // Skip distant mobs
-            if (mob.distanceToSqr(mc.player) > MAX_RENDER_DIST_SQ) continue;
+            if (mob.distanceToSqr(player) > MAX_RENDER_DIST_SQ) continue;
 
             // Get the FOLLOW_RANGE
-            var rangeAttr = mob.getAttribute(Attributes.FOLLOW_RANGE);
+            var rangeAttr = mob.getAttribute(Objects.requireNonNull(Attributes.FOLLOW_RANGE));
             if (rangeAttr == null) continue;
 
             double aggroRange = rangeAttr.getValue();
             if (aggroRange <= 0) continue;
 
             // Sphere center (mob center) in ABSOLUTE coordinates
-            Vec3 mobAbsPos = mob.position().add(0, mob.getBbHeight() / 2.0, 0);
+            Vec3 mobAbsPos = Objects.requireNonNull(mob.position()).add(0, mob.getBbHeight() / 2.0, 0);
 
             // Convert to coordinates RELATIVE to camera
-            Vec3 mobRelativePos = mobAbsPos.subtract(cameraPos);
+            Vec3 mobRelativePos = Objects.requireNonNull(mobAbsPos.subtract(cameraPos));
 
             // DISTANCE-BASED ALPHA FADE to reduce overlap
             // Calculate distance from camera to sphere center

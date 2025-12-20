@@ -12,6 +12,9 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
+import javax.annotation.Nonnull;
+import java.util.Objects;
+
 /**
  * Death screen for Endurance Quest with respawn options.
  * Displayed when player dies during a quest, offering:
@@ -89,13 +92,14 @@ public class QuestDeathScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         long elapsed = System.currentTimeMillis() - openTime;
         float fadeProgress = Math.min(1.0f, elapsed / (float) FADE_IN_DURATION);
 
         // Play death sound once
-        if (!soundPlayed && elapsed > 100 && minecraft != null) {
-            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.TOTEM_USE, 0.5f, 0.8f));
+        var mc = minecraft;
+        if (!soundPlayed && elapsed > 100 && mc != null) {
+            mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(Objects.requireNonNull(SoundEvents.TOTEM_USE), 0.5f, 0.8f)));
             soundPlayed = true;
         }
 
@@ -121,7 +125,7 @@ public class QuestDeathScreen extends Screen {
         if (fadeProgress > 0.8f) {
             float hintAlpha = (fadeProgress - 0.8f) / 0.2f;
             int hintColor = applyAlpha(UIConstants.Text.MUTED(), hintAlpha);
-            graphics.drawCenteredString(font, I18n.translate("devmod.death.keybind_hint").getString(), centerX, panelY + PANEL_HEIGHT + 5, hintColor);
+            graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.death.keybind_hint").getString()), centerX, panelY + PANEL_HEIGHT + 5, hintColor);
         }
 
         // ESC blocked message (overlays the hint when ESC is pressed)
@@ -129,7 +133,7 @@ public class QuestDeathScreen extends Screen {
             long escElapsed = System.currentTimeMillis() - lastEscPressTime;
             float escAlpha = 1.0f - (escElapsed / (float) ESC_MESSAGE_DURATION);
             int escColor = applyAlpha(COLOR_WARNING, escAlpha);
-            graphics.drawCenteredString(font, I18n.translate("devmod.endurance.must_choose").getString(), centerX, panelY + PANEL_HEIGHT + 18, escColor);
+            graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.endurance.must_choose").getString()), centerX, panelY + PANEL_HEIGHT + 18, escColor);
         }
 
         if (elapsed > FADE_IN_DURATION + 300) {
@@ -157,40 +161,41 @@ public class QuestDeathScreen extends Screen {
     }
 
     private void renderContent(GuiGraphics g, int panelX, int panelY, float alpha, long elapsed) {
+        var safeFont = Objects.requireNonNull(font);
         // Pulsing skull effect
         float pulse = (float) (Math.sin(elapsed / (double) SKULL_PULSE_PERIOD * Math.PI * 2) * 0.3 + 0.7);
         int skullColor = applyAlpha(COLOR_DEATH, alpha * pulse);
 
         // Skull icon (Unicode)
         String skull = "☠";
-        int skullX = panelX + PANEL_WIDTH / 2 - font.width(skull) * 2;
+        int skullX = panelX + PANEL_WIDTH / 2 - safeFont.width(skull) * 2;
         g.pose().pushPose();
         g.pose().translate(skullX, panelY + 20, 0);
         g.pose().scale(4.0f, 4.0f, 1.0f);
-        g.drawString(font, skull, 0, 0, skullColor, true);
+        g.drawString(safeFont, skull, 0, 0, skullColor, true);
         g.pose().popPose();
 
         int y = panelY + 75;
 
         // "YOU DIED" text
-        g.drawCenteredString(font, I18n.translate("devmod.endurance.you_died").getString(), panelX + PANEL_WIDTH / 2, y, applyAlpha(COLOR_DEATH, alpha));
+        g.drawCenteredString(safeFont, Objects.requireNonNull(I18n.translate("devmod.endurance.you_died").getString()), panelX + PANEL_WIDTH / 2, y, applyAlpha(COLOR_DEATH, alpha));
         y += 25;
 
         // Wave info
         String waveText = endlessMode
             ? I18n.translate("devmod.endurance.wave").getString() + " " + currentWave + " (" + I18n.translate("devmod.endurance.endless_mode").getString() + ")"
             : I18n.translate("devmod.endurance.wave").getString() + " " + currentWave + " / " + totalWaves;
-        g.drawCenteredString(font, waveText, panelX + PANEL_WIDTH / 2, y, applyAlpha(COLOR_TEXT_DIM, alpha));
+        g.drawCenteredString(safeFont, waveText, panelX + PANEL_WIDTH / 2, y, applyAlpha(COLOR_TEXT_DIM, alpha));
         y += 18;
 
         // Points earned
         String pointsText = I18n.translate("devmod.endurance.points").getString() + ": " + pointsEarned;
-        g.drawCenteredString(font, pointsText, panelX + PANEL_WIDTH / 2, y, applyAlpha(COLOR_GOLD, alpha));
+        g.drawCenteredString(safeFont, pointsText, panelX + PANEL_WIDTH / 2, y, applyAlpha(COLOR_GOLD, alpha));
         y += 18;
 
         // Deaths this run
         String deathsText = I18n.translate("devmod.endurance.deaths").getString() + ": " + deathsThisRun;
-        g.drawCenteredString(font, deathsText, panelX + PANEL_WIDTH / 2, y, applyAlpha(COLOR_WARNING, alpha));
+        g.drawCenteredString(safeFont, deathsText, panelX + PANEL_WIDTH / 2, y, applyAlpha(COLOR_WARNING, alpha));
         y += 30;
 
         // Separator
@@ -199,19 +204,19 @@ public class QuestDeathScreen extends Screen {
         y += 15;
 
         // Options explanation
-        g.drawCenteredString(font, I18n.ui("choose_fate").getString(), panelX + PANEL_WIDTH / 2, y, applyAlpha(COLOR_TEXT, alpha));
+        g.drawCenteredString(safeFont, Objects.requireNonNull(I18n.ui("choose_fate").getString()), panelX + PANEL_WIDTH / 2, y, applyAlpha(COLOR_TEXT, alpha));
         y += 18;
 
         // Respawn info
-        g.drawString(font, "• " + I18n.ui("respawn_info").getString(), panelX + 30, y, applyAlpha(COLOR_SUCCESS, alpha));
+        g.drawString(safeFont, "• " + I18n.ui("respawn_info").getString(), panelX + 30, y, applyAlpha(COLOR_SUCCESS, alpha));
         y += 12;
-        g.drawString(font, "  " + I18n.translate("devmod.endurance.respawn_cost").getString(), panelX + 30, y, applyAlpha(COLOR_WARNING, alpha));
+        g.drawString(safeFont, "  " + I18n.translate("devmod.endurance.respawn_cost").getString(), panelX + 30, y, applyAlpha(COLOR_WARNING, alpha));
         y += 18;
 
         // Give up info
-        g.drawString(font, "• " + I18n.ui("giveup_info").getString(), panelX + 30, y, applyAlpha(COLOR_DEATH, alpha));
+        g.drawString(safeFont, "• " + I18n.ui("giveup_info").getString(), panelX + 30, y, applyAlpha(COLOR_DEATH, alpha));
         y += 12;
-        g.drawString(font, "  " + I18n.translate("devmod.endurance.points").getString() + ": " + Math.max(0, pointsEarned), panelX + 30, y, applyAlpha(COLOR_GOLD, alpha));
+        g.drawString(safeFont, "  " + I18n.translate("devmod.endurance.points").getString() + ": " + Math.max(0, pointsEarned), panelX + 30, y, applyAlpha(COLOR_GOLD, alpha));
     }
 
     private int applyAlpha(int color, float alpha) {
@@ -241,9 +246,10 @@ public class QuestDeathScreen extends Screen {
         PacketDistributor.sendToServer(
             new QuestActionPayload(QuestActionPayload.Action.CONTINUE_AFTER_DEATH)
         );
-        if (minecraft != null) {
-            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.PLAYER_LEVELUP, 1.0f));
-            minecraft.setScreen(null);
+        var mc = minecraft;
+        if (mc != null) {
+            mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(Objects.requireNonNull(SoundEvents.PLAYER_LEVELUP), 1.0f)));
+            mc.setScreen(null);
         }
     }
 
@@ -251,9 +257,10 @@ public class QuestDeathScreen extends Screen {
         PacketDistributor.sendToServer(
             new QuestActionPayload(QuestActionPayload.Action.GIVE_UP_AFTER_DEATH)
         );
-        if (minecraft != null) {
-            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0f));
-            minecraft.setScreen(null);
+        var mc = minecraft;
+        if (mc != null) {
+            mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(Objects.requireNonNull(SoundEvents.UI_BUTTON_CLICK.value()), 1.0f)));
+            mc.setScreen(null);
         }
     }
 
@@ -277,9 +284,10 @@ public class QuestDeathScreen extends Screen {
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
             lastEscPressTime = System.currentTimeMillis();
             // Play a subtle "denied" sound
-            if (minecraft != null) {
-                minecraft.getSoundManager().play(SimpleSoundInstance.forUI(
-                    SoundEvents.NOTE_BLOCK_BASS.value(), 0.5f, 0.5f));
+            var mc = minecraft;
+            if (mc != null) {
+                mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(
+                    Objects.requireNonNull(SoundEvents.NOTE_BLOCK_BASS.value()), 0.5f, 0.5f)));
             }
             return true; // Consume but don't close
         }

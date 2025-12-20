@@ -53,13 +53,25 @@ jobs:
           ./gradlew integrationTest
 
       # Check 5: Deprecation Warnings (DD67)
+      # M1: Warnings reported, M2: -PdeprecationAsError fails build
       - name: Check 5 - Deprecation Warnings
         id: deprecation-check
+        env:
+          DD67_MILESTONE: ${{ vars.DD67_MILESTONE || 'M1' }}
         run: |
-          echo "Checking for deprecation warnings..."
-          ./gradlew compileJava 2>&1 | grep -i "deprecation" && \
-            echo "::warning::Deprecation warnings found" || \
-            echo "No deprecation warnings found"
+          echo "DD67 Milestone: $DD67_MILESTONE"
+          if [ "$DD67_MILESTONE" = "M2" ] || [ "$DD67_MILESTONE" = "M3" ]; then
+            echo "M2/M3: Deprecation warnings will fail the build"
+            ./gradlew compileJava -PdeprecationAsError
+          else
+            echo "M1: Checking for deprecation warnings (non-blocking)..."
+            OUTPUT=$(./gradlew compileJava 2>&1)
+            if echo "$OUTPUT" | grep -i "deprecation"; then
+              echo "::warning::Deprecation warnings found - will become errors in M2"
+            else
+              echo "No deprecation warnings found"
+            fi
+          fi
 
       # Check 6: Migration Audit (DD66)
       - name: Check 6 - Migration Audit

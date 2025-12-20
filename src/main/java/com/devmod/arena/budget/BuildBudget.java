@@ -114,6 +114,45 @@ public class BuildBudget {
     }
 
     /**
+     * DD11: Checks all budget limits and returns result.
+     * Use this for pre-flight checks before operations.
+     *
+     * @return BudgetCheckResult with status and telemetry event name
+     */
+    public BudgetCheckResult checkBudget() {
+        BudgetState state = getState();
+        BudgetStatus status = getStatus();
+
+        // DD11: telemetry event name is "budget_warn" not "budget_warning"
+        String telemetryEvent = switch (state) {
+            case OK -> null;
+            case WARNING -> "budget_warn";
+            case EXCEEDED -> "budget_exceeded";
+        };
+
+        return new BudgetCheckResult(
+            state != BudgetState.EXCEEDED,
+            state,
+            status,
+            telemetryEvent
+        );
+    }
+
+    /**
+     * DD11: Result of budget check with telemetry event.
+     */
+    public record BudgetCheckResult(
+        boolean canProceed,
+        BudgetState state,
+        BudgetStatus status,
+        String telemetryEvent // null if OK, "budget_warn" or "budget_exceeded"
+    ) {
+        public boolean shouldEmitTelemetry() {
+            return telemetryEvent != null;
+        }
+    }
+
+    /**
      * Returns current budget status.
      */
     public BudgetStatus getStatus() {

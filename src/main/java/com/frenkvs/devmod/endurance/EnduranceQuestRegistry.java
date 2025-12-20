@@ -395,7 +395,7 @@ public class EnduranceQuestRegistry {
 
         for (EntityType<?> entityType : BuiltInRegistries.ENTITY_TYPE) {
             totalMobs++;
-            ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
+            ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(Objects.requireNonNull(entityType));
 
             if (isQuestEligible(entityType)) {
                 MobTier tier = determineTier(entityType, id);

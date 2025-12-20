@@ -206,6 +206,17 @@ public class ArenaManager {
      * Create a new arena at the specified location.
      */
     public Arena createArena(ServerLevel level, BlockPos playerPos, int size) {
+        // Instance-only gate: block legacy overworld path when configured
+        com.devmod.arena.config.ArenaTemplateConfig cfg = com.devmod.arena.config.ArenaTemplateConfig.load();
+        com.devmod.arena.gate.InstanceOnlyGate gate = new com.devmod.arena.gate.InstanceOnlyGate(cfg.snapshot(), null);
+        com.devmod.arena.gate.InstanceOnlyGate.Result gateResult = gate.check(level, "ArenaManager.createArena");
+        if (gateResult == com.devmod.arena.gate.InstanceOnlyGate.Result.BLOCKED) {
+            LOGGER.error("[ArenaManager] Instance-only mode enabled, createArena blocked in {}", level.dimension().location());
+            return null;
+        } else if (gateResult == com.devmod.arena.gate.InstanceOnlyGate.Result.ALLOWED_DEBUG_ONLY) {
+            LOGGER.warn("[ArenaManager] Debug-only allowance for overworld arena creation in {}", level.dimension().location());
+        }
+
         // Find suitable center position (flat area)
         BlockPos center = Objects.requireNonNullElse(findSuitableCenter(level, playerPos, size), playerPos);
 

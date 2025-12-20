@@ -60,13 +60,13 @@ public final class OrientedBoundingBox {
      */
     @Nonnull
     public static OrientedBoundingBox fromAABB(@Nonnull AABB aabb) {
-        Vec3 center = aabb.getCenter();
+        Vec3 center = Objects.requireNonNull(aabb.getCenter());
         Vec3 halfExtents = new Vec3(
             aabb.getXsize() / 2.0,
             aabb.getYsize() / 2.0,
             aabb.getZsize() / 2.0
         );
-        return new OrientedBoundingBox(center, halfExtents);
+        return Objects.requireNonNull(new OrientedBoundingBox(center, halfExtents));
     }
 
     /**
@@ -118,7 +118,7 @@ public final class OrientedBoundingBox {
             halfExtents.z * scale.z
         );
 
-        return new OrientedBoundingBox(newCenter, newHalfExtents, newRotation);
+        return new OrientedBoundingBox(newCenter, newHalfExtents, Objects.requireNonNull(newRotation));
     }
 
     /**
@@ -126,7 +126,7 @@ public final class OrientedBoundingBox {
      */
     @Nonnull
     public OrientedBoundingBox translate(@Nonnull Vec3 offset) {
-        return new OrientedBoundingBox(center.add(offset), halfExtents, rotation);
+        return new OrientedBoundingBox(Objects.requireNonNull(center.add(offset)), Objects.requireNonNull(halfExtents), Objects.requireNonNull(rotation));
     }
 
     /**
@@ -136,7 +136,7 @@ public final class OrientedBoundingBox {
     @Nonnull
     public OrientedBoundingBox rotate(@Nonnull Quaternionf additionalRotation) {
         Quaternionf newRotation = new Quaternionf(additionalRotation).mul(this.rotation);
-        return new OrientedBoundingBox(center, halfExtents, newRotation);
+        return new OrientedBoundingBox(Objects.requireNonNull(center), Objects.requireNonNull(halfExtents), Objects.requireNonNull(newRotation));
     }
 
     /**
@@ -157,7 +157,7 @@ public final class OrientedBoundingBox {
         // Combine rotations
         Quaternionf newRotation = new Quaternionf(additionalRotation).mul(this.rotation);
 
-        return new OrientedBoundingBox(newCenter, halfExtents, newRotation);
+        return new OrientedBoundingBox(Objects.requireNonNull(newCenter), Objects.requireNonNull(halfExtents), Objects.requireNonNull(newRotation));
     }
 
     /**
@@ -165,7 +165,7 @@ public final class OrientedBoundingBox {
      */
     @Nonnull
     public OrientedBoundingBox scale(double factor) {
-        return new OrientedBoundingBox(center, halfExtents.scale(factor), rotation);
+        return new OrientedBoundingBox(Objects.requireNonNull(center), Objects.requireNonNull(halfExtents.scale(factor)), Objects.requireNonNull(rotation));
     }
 
     /**
@@ -174,9 +174,9 @@ public final class OrientedBoundingBox {
     @Nonnull
     public OrientedBoundingBox scale(@Nonnull Vec3 factors) {
         return new OrientedBoundingBox(
-            center,
+            Objects.requireNonNull(center),
             new Vec3(halfExtents.x * factors.x, halfExtents.y * factors.y, halfExtents.z * factors.z),
-            rotation
+            Objects.requireNonNull(rotation)
         );
     }
 
@@ -268,7 +268,7 @@ public final class OrientedBoundingBox {
     @Nonnull
     public Vec3 worldToLocal(@Nonnull Vec3 worldPoint) {
         // Translate to origin
-        Vec3 relative = worldPoint.subtract(center);
+        Vec3 relative = Objects.requireNonNull(worldPoint.subtract(Objects.requireNonNull(center)));
 
         // Apply inverse rotation
         Quaternionf inverseRotation = new Quaternionf(rotation).conjugate();
@@ -288,7 +288,7 @@ public final class OrientedBoundingBox {
         rotation.transform(rotated);
 
         // Translate from origin
-        return center.add(rotated.x, rotated.y, rotated.z);
+        return Objects.requireNonNull(center.add(rotated.x, rotated.y, rotated.z));
     }
 
     /**
@@ -382,12 +382,12 @@ public final class OrientedBoundingBox {
 
     @Nonnull
     public Vec3 getCenter() {
-        return center;
+        return Objects.requireNonNull(center);
     }
 
     @Nonnull
     public Vec3 getHalfExtents() {
-        return halfExtents;
+        return Objects.requireNonNull(halfExtents);
     }
 
     @Nonnull
@@ -400,7 +400,7 @@ public final class OrientedBoundingBox {
      */
     @Nonnull
     public Vec3 getSize() {
-        return halfExtents.scale(2);
+        return Objects.requireNonNull(halfExtents.scale(2));
     }
 
     /**

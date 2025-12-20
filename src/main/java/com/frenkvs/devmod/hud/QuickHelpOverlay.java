@@ -14,6 +14,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
+import java.util.Objects;
+
 /**
  * Quick Help Overlay - Shows main keybinds during gameplay.
  *
@@ -46,8 +48,8 @@ public class QuickHelpOverlay {
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.HOTBAR,
-            LAYER_ID,
+            Objects.requireNonNull(VanillaGuiLayers.HOTBAR),
+            Objects.requireNonNull(LAYER_ID),
             QuickHelpOverlay::render
         );
     }
@@ -79,7 +81,8 @@ public class QuickHelpOverlay {
         int contentWidth = panelWidth - PANEL_PADDING * 2;
 
         // Title
-        graphics.drawCenteredString(font, "DevMod Quick Help (F1)", panelX + panelWidth / 2, y, TEXT_TITLE);
+        var safeFont = Objects.requireNonNull(font);
+        graphics.drawCenteredString(safeFont, "DevMod Quick Help (F1)", panelX + panelWidth / 2, y, TEXT_TITLE);
         y += LINE_HEIGHT + 6;
 
         // Separator
@@ -123,11 +126,11 @@ public class QuickHelpOverlay {
 
         // Footer hint
         y += 8;
-        graphics.drawCenteredString(font, "Press K for full settings", panelX + panelWidth / 2, y, 0xFF555555);
+        graphics.drawCenteredString(safeFont, "Press K for full settings", panelX + panelWidth / 2, y, 0xFF555555);
     }
 
     private static int renderCategory(GuiGraphics graphics, Font font, int x, int y, int width, String name) {
-        graphics.drawString(font, name, x, y, TEXT_CATEGORY, false);
+        graphics.drawString(Objects.requireNonNull(font), name, x, y, TEXT_CATEGORY, false);
         return y + LINE_HEIGHT + 2;
     }
 
@@ -138,17 +141,18 @@ public class QuickHelpOverlay {
             return y; // Don't advance Y, effectively hiding this entry
         }
 
+        var safeFont = Objects.requireNonNull(font);
         // Key badge
-        String keyName = key.getTranslatedKeyMessage().getString();
-        int keyBgWidth = Math.max(KEY_WIDTH, font.width(keyName) + 8);
+        String keyName = Objects.requireNonNull(key.getTranslatedKeyMessage().getString());
+        int keyBgWidth = Math.max(KEY_WIDTH, safeFont.width(keyName) + 8);
 
         graphics.fill(x, y - 1, x + keyBgWidth, y + LINE_HEIGHT - 1, 0xFF333333);
 
-        int keyTextX = x + (keyBgWidth - font.width(keyName)) / 2;
-        graphics.drawString(font, keyName, keyTextX, y, TEXT_KEY, false);
+        int keyTextX = x + (keyBgWidth - safeFont.width(Objects.requireNonNull(keyName))) / 2;
+        graphics.drawString(safeFont, keyName, keyTextX, y, TEXT_KEY, false);
 
         // Description
-        graphics.drawString(font, description, x + keyBgWidth + 8, y, TEXT_DESC, false);
+        graphics.drawString(safeFont, description, x + keyBgWidth + 8, y, TEXT_DESC, false);
 
         return y + LINE_HEIGHT + 1;
     }

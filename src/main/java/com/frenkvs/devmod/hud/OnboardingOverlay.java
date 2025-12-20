@@ -21,6 +21,8 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Objects;
+
 /**
  * Onboarding Tutorial Overlay - Guides new users through DevMod features.
  *
@@ -128,8 +130,8 @@ public class OnboardingOverlay {
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.HOTBAR,
-            LAYER_ID,
+            Objects.requireNonNull(VanillaGuiLayers.HOTBAR),
+            Objects.requireNonNull(LAYER_ID),
             OnboardingOverlay::render
         );
     }
@@ -184,17 +186,18 @@ public class OnboardingOverlay {
 
         // Step counter
         String stepText = I18n.translate("devmod.tutorial.step_counter", currentStep + 1, STEPS.length).getString();
-        graphics.drawString(font, stepText, contentX, y, MUTED_COLOR, false);
+        var safeFont = Objects.requireNonNull(font);
+        graphics.drawString(safeFont, stepText, contentX, y, MUTED_COLOR, false);
         y += LINE_HEIGHT + 4;
 
         // Title (translate from i18n key)
         String title = I18n.translate(step.title).getString();
-        graphics.drawString(font, "§l" + title, contentX, y, TITLE_COLOR, false);
+        graphics.drawString(safeFont, "§l" + title, contentX, y, TITLE_COLOR, false);
         y += LINE_HEIGHT + 2;
 
         // Description (translate from i18n key)
         String description = I18n.translate(step.description).getString();
-        graphics.drawString(font, description, contentX, y, TEXT_COLOR, false);
+        graphics.drawString(safeFont, description, contentX, y, TEXT_COLOR, false);
         y += LINE_HEIGHT + 8;
 
         // Instruction with pulsing highlight (translate from i18n key)
@@ -320,8 +323,8 @@ public class OnboardingOverlay {
 
         Minecraft mc = Minecraft.getInstance();
         if (mc != null) {
-            mc.getSoundManager().play(SimpleSoundInstance.forUI(
-                SoundEvents.EXPERIENCE_ORB_PICKUP, 1.2f, 0.8f));
+            mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(
+                Objects.requireNonNull(SoundEvents.EXPERIENCE_ORB_PICKUP), 1.2f, 0.8f)));
         }
 
         LOGGER.info("[OnboardingOverlay] Advanced to step {}", currentStep);
@@ -344,11 +347,12 @@ public class OnboardingOverlay {
         SettingsManager.INSTANCE.save();
 
         Minecraft mc = Minecraft.getInstance();
-        if (mc != null && mc.player != null) {
-            mc.getSoundManager().play(SimpleSoundInstance.forUI(
-                SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f));
+        var player = mc.player;
+        if (mc != null && player != null) {
+            mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(
+                Objects.requireNonNull(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE), 1.0f, 1.0f)));
             String keyName = KeyInputHandler.OPEN_RADIAL_MENU_KEY.getTranslatedKeyMessage().getString();
-            mc.player.displayClientMessage(
+            player.displayClientMessage(
                 I18n.translate("devmod.onboarding.tutorial_complete", keyName),
                 false
             );
@@ -370,9 +374,10 @@ public class OnboardingOverlay {
         SettingsManager.INSTANCE.save();
 
         Minecraft mc = Minecraft.getInstance();
-        if (mc != null && mc.player != null) {
+        var player = mc.player;
+        if (mc != null && player != null) {
             String keyName = KeyInputHandler.OPEN_RADIAL_MENU_KEY.getTranslatedKeyMessage().getString();
-            mc.player.displayClientMessage(
+            player.displayClientMessage(
                 I18n.translate("devmod.onboarding.tutorial_skipped", keyName),
                 true
             );

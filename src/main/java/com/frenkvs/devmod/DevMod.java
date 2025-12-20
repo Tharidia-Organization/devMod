@@ -1,6 +1,9 @@
 package com.frenkvs.devmod;
 
 import com.frenkvs.devmod.integration.ModIntegrationManager;
+import com.devmod.arena.registry.TemplateRegistryBootstrap;
+import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.arena.telemetry.ArenaTelemetry;
 import com.frenkvs.devmod.ui.editor.core.EditorConfig;
 import com.frenkvs.devmod.ui.editor.systems.PresetRegistry;
 import com.mojang.logging.LogUtils;
@@ -52,6 +55,10 @@ public class DevMod {
     // 3. "VIEWER_ITEM" ITEM
     public static final DeferredHolder<Item, Item> VIEWER_ITEM = ITEMS.register("viewer_item", () -> new Item(new Item.Properties()));
 
+    // Arena Template registry (bootstrap)
+    private static ArenaTemplateRegistry ARENA_TEMPLATE_REGISTRY;
+    private static TemplateRegistryBootstrap ARENA_BOOTSTRAP;
+
     // 4. CREATIVE TAB (FIXED)
     // The error was here: inside < > must be "CreativeModeTab", not "EXAMPLE_TAB"
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> EXAMPLE_TAB = CREATIVE_TABS.register("example_tab", () -> CreativeModeTab.builder()
@@ -98,6 +105,9 @@ public class DevMod {
             eventBus.addListener(DevMod::registerKeyMappings);
             LOGGER.info("[DevMod] Client keybind registration scheduled");
         }
+
+        // Arena Template bootstrap (L1 registry)
+        initArenaTemplateRegistry();
 
         LOGGER.info("DevMod loaded successfully!");
     }
@@ -154,5 +164,27 @@ public class DevMod {
         event.register(Objects.requireNonNull(KeyInputHandler.DASH_KEY));
         event.register(Objects.requireNonNull(KeyInputHandler.DODGE_KEY));
         LOGGER.info("[DevMod] All keybinds registered successfully");
+    }
+
+    /**
+     * Initializes the arena template registry using default bootstrap.
+     */
+    private void initArenaTemplateRegistry() {
+        try {
+            ArenaTelemetry telemetry = new ArenaTelemetry();
+            ARENA_BOOTSTRAP = TemplateRegistryBootstrap.createDefault(telemetry);
+            ARENA_BOOTSTRAP.initialize();
+            ARENA_TEMPLATE_REGISTRY = ARENA_BOOTSTRAP.registry();
+            LOGGER.info("[DevMod] ArenaTemplateRegistry initialized from {}", ARENA_BOOTSTRAP.templateDirectory());
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Failed to initialize ArenaTemplateRegistry", e);
+        }
+    }
+
+    /**
+     * Exposes the arena template registry for other components.
+     */
+    public static ArenaTemplateRegistry getArenaTemplateRegistry() {
+        return ARENA_TEMPLATE_REGISTRY;
     }
 }

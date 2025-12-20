@@ -113,7 +113,7 @@ public final class BodyPartHierarchy {
      */
     @Nonnull
     public Collection<BodyPartDefinition> getAllParts() {
-        return Collections.unmodifiableCollection(new ArrayList<>(parts.values()));
+        return Objects.requireNonNull(Collections.unmodifiableCollection(new ArrayList<>(parts.values())));
     }
 
     /**
@@ -130,9 +130,9 @@ public final class BodyPartHierarchy {
     public List<String> getChildren(@Nonnull String partId) {
         List<String> children = childrenMap.getOrDefault(partId, Collections.emptyList());
         if (children.isEmpty()) {
-            return List.of();
+            return Objects.requireNonNull(List.of());
         }
-        return List.copyOf(children);
+        return Objects.requireNonNull(List.copyOf(children));
     }
 
     /**
@@ -140,7 +140,7 @@ public final class BodyPartHierarchy {
      */
     @Nonnull
     public List<String> getRootPartIds() {
-        return List.copyOf(rootPartIds);
+        return Objects.requireNonNull(List.copyOf(rootPartIds));
     }
 
     /**

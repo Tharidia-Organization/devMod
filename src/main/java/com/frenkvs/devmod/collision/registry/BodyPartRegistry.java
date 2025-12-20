@@ -10,6 +10,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -102,10 +103,10 @@ public final class BodyPartRegistry {
      * @param entityType The entity type
      * @param hierarchy  The body part hierarchy for this type
      */
-    public void register(@Nonnull EntityType<?> entityType, @Nonnull BodyPartHierarchy hierarchy) {
-        ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
+    public void register(EntityType<?> entityType, BodyPartHierarchy hierarchy) {
+        ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(Objects.requireNonNull(entityType));
         if (key != null) {
-            hierarchies.put(key, hierarchy);
+            hierarchies.put(key, Objects.requireNonNull(hierarchy));
         }
     }
 
@@ -115,8 +116,8 @@ public final class BodyPartRegistry {
      * @param key       The entity type resource location
      * @param hierarchy The body part hierarchy
      */
-    public void register(@Nonnull ResourceLocation key, @Nonnull BodyPartHierarchy hierarchy) {
-        hierarchies.put(key, hierarchy);
+    public void register(ResourceLocation key, BodyPartHierarchy hierarchy) {
+        hierarchies.put(Objects.requireNonNull(key), Objects.requireNonNull(hierarchy));
     }
 
     /**
@@ -125,8 +126,8 @@ public final class BodyPartRegistry {
      * @param key       The entity type key (e.g., "minecraft:zombie")
      * @param hierarchy The body part hierarchy
      */
-    public void register(@Nonnull String key, @Nonnull BodyPartHierarchy hierarchy) {
-        hierarchies.put(ResourceLocation.parse(key), hierarchy);
+    public void register(String key, BodyPartHierarchy hierarchy) {
+        hierarchies.put(ResourceLocation.parse(Objects.requireNonNull(key)), Objects.requireNonNull(hierarchy));
     }
 
     /**
@@ -136,8 +137,8 @@ public final class BodyPartRegistry {
      * @return The removed hierarchy, or null if none was registered
      */
     @Nullable
-    public BodyPartHierarchy unregister(@Nonnull EntityType<?> entityType) {
-        ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
+    public BodyPartHierarchy unregister(EntityType<?> entityType) {
+        ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(Objects.requireNonNull(entityType));
         return key != null ? hierarchies.remove(key) : null;
     }
 
@@ -151,11 +152,11 @@ public final class BodyPartRegistry {
      * @return Hierarchy (never null - uses fallback)
      */
     @Nonnull
-    public BodyPartHierarchy getHierarchy(@Nonnull Entity entity) {
+    public BodyPartHierarchy getHierarchy(Entity entity) {
         ensureInitialized();
 
         // Try to find registered hierarchy
-        ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+        ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(Objects.requireNonNull(Objects.requireNonNull(entity).getType()));
         if (key != null) {
             BodyPartHierarchy registered = hierarchies.get(key);
             if (registered != null) {
@@ -175,10 +176,10 @@ public final class BodyPartRegistry {
      * @return Hierarchy or null if not registered
      */
     @Nullable
-    public BodyPartHierarchy getHierarchyForType(@Nonnull EntityType<?> entityType) {
+    public BodyPartHierarchy getHierarchyForType(EntityType<?> entityType) {
         ensureInitialized();
 
-        ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
+        ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(Objects.requireNonNull(entityType));
         return key != null ? hierarchies.get(key) : null;
     }
 
@@ -188,8 +189,8 @@ public final class BodyPartRegistry {
      * @param entityType The entity type
      * @return true if custom parts are registered
      */
-    public boolean hasCustomParts(@Nonnull EntityType<?> entityType) {
-        ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
+    public boolean hasCustomParts(EntityType<?> entityType) {
+        ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(Objects.requireNonNull(entityType));
         return key != null && hierarchies.containsKey(key);
     }
 
@@ -198,7 +199,7 @@ public final class BodyPartRegistry {
      */
     @Nonnull
     public Set<ResourceLocation> getRegisteredTypes() {
-        return hierarchies.keySet();
+        return Objects.requireNonNull(hierarchies.keySet());
     }
 
     /**
@@ -215,7 +216,7 @@ public final class BodyPartRegistry {
      * Uses aspect ratio and size heuristics.
      */
     @Nonnull
-    private BodyPartHierarchy getAdaptiveHierarchy(@Nonnull Entity entity) {
+    private BodyPartHierarchy getAdaptiveHierarchy(Entity entity) {
         if (!(entity instanceof LivingEntity)) {
             return getDefaultHumanoid();
         }
@@ -260,7 +261,7 @@ public final class BodyPartRegistry {
         if (defaultHumanoid == null) {
             defaultHumanoid = VanillaBodyParts.HUMANOID;
         }
-        return defaultHumanoid;
+        return Objects.requireNonNull(defaultHumanoid);
     }
 
     @Nonnull
@@ -268,7 +269,7 @@ public final class BodyPartRegistry {
         if (defaultQuadruped == null) {
             defaultQuadruped = VanillaBodyParts.QUADRUPED;
         }
-        return defaultQuadruped;
+        return Objects.requireNonNull(defaultQuadruped);
     }
 
     @Nonnull
@@ -276,7 +277,7 @@ public final class BodyPartRegistry {
         if (defaultHorizontal == null) {
             defaultHorizontal = VanillaBodyParts.HORIZONTAL;
         }
-        return defaultHorizontal;
+        return Objects.requireNonNull(defaultHorizontal);
     }
 
     @Nonnull
@@ -284,35 +285,35 @@ public final class BodyPartRegistry {
         if (defaultTall == null) {
             defaultTall = VanillaBodyParts.TALL_HUMANOID;
         }
-        return defaultTall;
+        return Objects.requireNonNull(defaultTall);
     }
 
     /**
      * Sets the default humanoid hierarchy.
      */
-    public void setDefaultHumanoid(@Nonnull BodyPartHierarchy hierarchy) {
-        this.defaultHumanoid = hierarchy;
+    public void setDefaultHumanoid(BodyPartHierarchy hierarchy) {
+        this.defaultHumanoid = Objects.requireNonNull(hierarchy);
     }
 
     /**
      * Sets the default quadruped hierarchy.
      */
-    public void setDefaultQuadruped(@Nonnull BodyPartHierarchy hierarchy) {
-        this.defaultQuadruped = hierarchy;
+    public void setDefaultQuadruped(BodyPartHierarchy hierarchy) {
+        this.defaultQuadruped = Objects.requireNonNull(hierarchy);
     }
 
     /**
      * Sets the default horizontal body hierarchy.
      */
-    public void setDefaultHorizontal(@Nonnull BodyPartHierarchy hierarchy) {
-        this.defaultHorizontal = hierarchy;
+    public void setDefaultHorizontal(BodyPartHierarchy hierarchy) {
+        this.defaultHorizontal = Objects.requireNonNull(hierarchy);
     }
 
     /**
      * Sets the default tall entity hierarchy.
      */
-    public void setDefaultTall(@Nonnull BodyPartHierarchy hierarchy) {
-        this.defaultTall = hierarchy;
+    public void setDefaultTall(BodyPartHierarchy hierarchy) {
+        this.defaultTall = Objects.requireNonNull(hierarchy);
     }
 
     // ==================== Utility Methods ====================

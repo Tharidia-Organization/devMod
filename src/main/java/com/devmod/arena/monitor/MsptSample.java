@@ -9,23 +9,35 @@ import java.time.Instant;
 public record MsptSample(
     double mspt,
     Instant timestamp,
-    double confidenceScore
+    double confidenceScore,
+    double windowAverage,   // DD38: Average MSPT over sliding window
+    double baseline,        // DD38: Baseline MSPT before build started
+    double buildImpact      // DD38: Delta from baseline caused by build (mspt - baseline)
 ) {
     private static final double DEFAULT_THRESHOLD = 40.0;
     private static final double MIN_CONFIDENCE_FOR_BACKPRESSURE = 0.7;
 
     /**
-     * Creates a sample with current timestamp.
+     * Creates a sample with current timestamp and full DD38 metadata.
+     */
+    public static MsptSample now(double mspt, double confidenceScore,
+                                  double windowAverage, double baseline) {
+        return new MsptSample(mspt, Instant.now(), confidenceScore,
+            windowAverage, baseline, mspt - baseline);
+    }
+
+    /**
+     * Creates a sample with current timestamp (legacy, no baseline).
      */
     public static MsptSample now(double mspt, double confidenceScore) {
-        return new MsptSample(mspt, Instant.now(), confidenceScore);
+        return new MsptSample(mspt, Instant.now(), confidenceScore, mspt, mspt, 0.0);
     }
 
     /**
      * Creates a sample with default confidence.
      */
     public static MsptSample now(double mspt) {
-        return new MsptSample(mspt, Instant.now(), 1.0);
+        return new MsptSample(mspt, Instant.now(), 1.0, mspt, mspt, 0.0);
     }
 
     /**

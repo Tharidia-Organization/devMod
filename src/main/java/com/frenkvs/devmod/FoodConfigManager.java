@@ -17,6 +17,7 @@ import net.neoforged.fml.loading.FMLPaths;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -59,7 +60,7 @@ public final class FoodConfigManager {
         }
 
         // 3. Try global config
-        String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+        String itemId = Objects.requireNonNull(BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(stack.getItem()))).toString();
         FoodStats global = GLOBAL_STATS.get(itemId);
         if (global != null) {
             return global.copy();
@@ -73,7 +74,7 @@ public final class FoodConfigManager {
      * Check if an item has food properties.
      */
     public static boolean isFood(ItemStack stack) {
-        return stack != null && !stack.isEmpty() && stack.has(DataComponents.FOOD);
+        return stack != null && !stack.isEmpty() && stack.has(Objects.requireNonNull(DataComponents.FOOD));
     }
 
     /**
@@ -138,7 +139,7 @@ public final class FoodConfigManager {
     }
 
     private static FoodStats getFromCustomData(ItemStack stack) {
-        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+        CustomData customData = stack.get(Objects.requireNonNull(DataComponents.CUSTOM_DATA));
         if (customData == null) return null;
 
         CompoundTag tag = customData.copyTag();
@@ -153,7 +154,7 @@ public final class FoodConfigManager {
     private static FoodStats getVanillaDefaults(ItemStack stack) {
         FoodStats stats = new FoodStats();
 
-        FoodProperties food = stack.get(DataComponents.FOOD);
+        FoodProperties food = stack.get(Objects.requireNonNull(DataComponents.FOOD));
         if (food != null) {
             stats.nutrition = food.nutrition();
             stats.saturation = food.saturation();

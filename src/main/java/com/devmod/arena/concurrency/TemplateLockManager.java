@@ -11,14 +11,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Lock manager for template operations with automatic cleanup (DD60).
+ * Lock manager for template operations with automatic cleanup (DD60, DD62).
  *
  * <p>Features:
  * <ul>
  *   <li>DD60: 60s stale threshold (lock expiry)</li>
- *   <li>DD60: Scheduled cleanup every 5 minutes</li>
+ *   <li>DD60: Scheduled cleanup every 10 seconds</li>
+ *   <li>DD62: Lock striping for reduced contention</li>
  *   <li>No memory leak for dynamic templates</li>
  * </ul>
  */
@@ -29,19 +31,39 @@ public class TemplateLockManager {
     // DD60: Lock expiry timeout (stale threshold)
     private static final Duration LOCK_EXPIRY = Duration.ofSeconds(60);
 
-    // DD60: Cleanup interval
-    private static final Duration CLEANUP_INTERVAL = Duration.ofMinutes(5);
+    // DD60: Cleanup interval - every 10 seconds as per spec
+    private static final Duration CLEANUP_INTERVAL = Duration.ofSeconds(10);
+
+    // DD62: Lock striping configuration
+    private static final int STRIPE_COUNT = 16;
+    private final ReentrantLock[] stripes;
 
     private final Map<String, TemplateLock> locks = new ConcurrentHashMap<>();
     private final ScheduledExecutorService cleanupScheduler;
     private volatile boolean running = false;
 
     public TemplateLockManager() {
+        // DD62: Initialize lock stripes
+        this.stripes = new ReentrantLock[STRIPE_COUNT];
+        for (int i = 0; i < STRIPE_COUNT; i++) {
+            this.stripes[i] = new ReentrantLock();
+        }
+
         this.cleanupScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "TemplateLockManager-Cleanup");
             t.setDaemon(true);
             return t;
         });
+    }
+
+    /**
+     * DD62: Gets the stripe lock for a given template ID.
+     * Uses consistent hashing to distribute templates across stripes.
+     */
+    private ReentrantLock getStripe(String templateId) {
+        int hash = templateId.hashCode();
+        int index = Math.abs(hash % STRIPE_COUNT);
+        return stripes[index];
     }
 
     /**
@@ -84,33 +106,32 @@ public class TemplateLockManager {
 
     /**
      * Acquires a lock for a template.
+     * DD62: Uses lock striping to reduce contention on high-traffic templates.
      *
      * @param templateId The template to lock
      * @param owner The lock owner (for debugging)
      * @return true if lock acquired, false if already locked
      */
     public boolean acquire(String templateId, String owner) {
-        TemplateLock existingLock = locks.get(templateId);
+        // DD62: Use stripe lock for thread-safe acquisition
+        ReentrantLock stripe = getStripe(templateId);
+        stripe.lock();
+        try {
+            TemplateLock existingLock = locks.get(templateId);
 
-        if (existingLock != null && !existingLock.isExpired()) {
-            LOGGER.debug("Lock for {} already held by {}", templateId, existingLock.owner());
-            return false;
-        }
+            if (existingLock != null && !existingLock.isExpired()) {
+                LOGGER.debug("Lock for {} already held by {}", templateId, existingLock.owner());
+                return false;
+            }
 
-        TemplateLock newLock = new TemplateLock(templateId, owner, Instant.now());
-        TemplateLock previousLock = locks.putIfAbsent(templateId, newLock);
-
-        if (previousLock != null && !previousLock.isExpired()) {
-            return false;
-        }
-
-        // If previous was expired, replace it
-        if (previousLock != null) {
+            TemplateLock newLock = new TemplateLock(templateId, owner, Instant.now());
             locks.put(templateId, newLock);
-        }
 
-        LOGGER.debug("Lock acquired for {} by {}", templateId, owner);
-        return true;
+            LOGGER.debug("Lock acquired for {} by {}", templateId, owner);
+            return true;
+        } finally {
+            stripe.unlock();
+        }
     }
 
     /**

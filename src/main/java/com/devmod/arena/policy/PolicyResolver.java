@@ -1,5 +1,6 @@
 package com.devmod.arena.policy;
 
+import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.override.OverrideManager;
 import com.devmod.arena.override.TemplateOverride;
 import com.devmod.arena.registry.ArenaTemplate;
@@ -8,8 +9,6 @@ import com.devmod.arena.telemetry.ArenaTelemetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -32,22 +31,18 @@ import java.util.concurrent.locks.ReentrantLock;
 public class PolicyResolver implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(PolicyResolver.class);
 
-    // DD6: Lock timeout in milliseconds
-    private static final long LOCK_TIMEOUT_MS = 5000;
-
-    // DD60: Lock cleanup interval and stale threshold
-    private static final long LOCK_CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
-    private static final long LOCK_STALE_THRESHOLD_MS = 60 * 1000; // 60 seconds
-
     // DD4: Weight configuration (taratura via telemetry)
     private static final int WEIGHT_MOB_MATCH = 5;
     private static final int WEIGHT_QUEST_TYPE = 4;
     private static final int WEIGHT_DIFFICULTY = 3;
     private static final int WEIGHT_PLAYER_COUNT = 2;
     private static final int WEIGHT_TAGS = 1;
+    private static final double MIN_POLICY_WEIGHT = 0.1;
+    private static final double MAX_POLICY_WEIGHT = 10.0;
 
     // DD6: Per-player lock map
     private final ConcurrentHashMap<UUID, LockEntry> playerLocks = new ConcurrentHashMap<>();
+    private final Set<String> weightClampEmitted = ConcurrentHashMap.newKeySet();
 
     // Policy storage
     private final ConcurrentHashMap<String, ArenaPolicy> policies = new ConcurrentHashMap<>();
@@ -55,6 +50,12 @@ public class PolicyResolver implements AutoCloseable {
     private final ArenaTemplateRegistry templateRegistry;
     private final ArenaTelemetry telemetry;
     private final OverrideManager overrideManager;
+    private final VersionCompatibilityChecker versionChecker = new VersionCompatibilityChecker();
+
+    // DD6: Configurable lock settings
+    private final long lockTimeoutMs;
+    private final long lockCleanupIntervalMs;
+    private final long lockStaleThresholdMs;
 
     // Lock cleanup scheduler
     private final ScheduledExecutorService cleanupScheduler;
@@ -83,10 +84,16 @@ public class PolicyResolver implements AutoCloseable {
     public PolicyResolver(
             ArenaTemplateRegistry templateRegistry,
             ArenaTelemetry telemetry,
-            OverrideManager overrideManager) {
+            OverrideManager overrideManager,
+            ArenaTemplateConfig config) {
         this.templateRegistry = templateRegistry;
         this.telemetry = telemetry;
         this.overrideManager = overrideManager;
+
+        // DD6: Load lock settings from config
+        this.lockTimeoutMs = config.lockTimeoutMs();
+        this.lockCleanupIntervalMs = config.lockCleanupIntervalMs();
+        this.lockStaleThresholdMs = config.lockStaleThresholdMs();
 
         // DD60: Schedule lock cleanup task
         this.cleanupScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -97,12 +104,12 @@ public class PolicyResolver implements AutoCloseable {
 
         cleanupScheduler.scheduleAtFixedRate(
             this::cleanupStaleLocks,
-            LOCK_CLEANUP_INTERVAL_MS,
-            LOCK_CLEANUP_INTERVAL_MS,
+            lockCleanupIntervalMs,
+            lockCleanupIntervalMs,
             TimeUnit.MILLISECONDS
         );
 
-        LOGGER.info("PolicyResolver initialized with lock cleanup every {}ms", LOCK_CLEANUP_INTERVAL_MS);
+        LOGGER.info("PolicyResolver initialized with lock cleanup every {}ms", lockCleanupIntervalMs);
     }
 
     /**
@@ -122,7 +129,7 @@ public class PolicyResolver implements AutoCloseable {
         boolean acquired;
 
         try {
-            acquired = lockEntry.lock.tryLock(LOCK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            acquired = lockEntry.lock.tryLock(lockTimeoutMs, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             telemetry.emit("arena.resolve.interrupted", Map.of("playerId", playerId.toString()));
@@ -139,7 +146,7 @@ public class PolicyResolver implements AutoCloseable {
         if (!acquired) {
             lockTimeoutCount.incrementAndGet();
             LOGGER.warn("Lock timeout for player {}, falling back to default", playerId);
-            telemetry.emitLockTimeout(playerId, LOCK_TIMEOUT_MS);
+            telemetry.emitLockTimeout(playerId, lockTimeoutMs);
             return getDefaultArena(context);
         }
 
@@ -167,7 +174,7 @@ public class PolicyResolver implements AutoCloseable {
         if (context.forcePolicyId() != null) {
             ArenaPolicy policy = policies.get(context.forcePolicyId());
             if (policy != null) {
-                return resolveWithPolicy(context, policy, Map.of("forced", 100));
+                return resolveWithPolicy(context, policy, Map.of("forced", 100.0));
             }
             LOGGER.warn("Forced policy '{}' not found, continuing with normal resolution", context.forcePolicyId());
         }
@@ -178,7 +185,7 @@ public class PolicyResolver implements AutoCloseable {
                 return ResolvedArena.create(
                     template.get(),
                     ArenaPolicy.DEFAULT,
-                    Map.of("forced_template", 100)
+                    Map.of("forced_template", 100.0)
                 );
             }
             LOGGER.warn("Forced template '{}' not found, continuing with normal resolution", context.forceTemplateId());
@@ -187,7 +194,8 @@ public class PolicyResolver implements AutoCloseable {
         // Score all policies
         List<ScoredPolicy> scoredPolicies = policies.values().stream()
             .filter(ArenaPolicy::enabled)
-            .map(p -> scorePolicy(p, context))
+            .map(p -> scorePolicyIfCompatible(p, context))
+            .flatMap(Optional::stream)
             .filter(sp -> sp.score() > 0) // Must match at least something
             .toList();
 
@@ -199,10 +207,11 @@ public class PolicyResolver implements AutoCloseable {
 
         // DD3: Deterministic tie-break - score (desc) -> version (desc) -> id (alpha asc)
         List<ScoredPolicy> sorted = scoredPolicies.stream()
-            .sorted(Comparator
-                .comparingInt((ScoredPolicy sp) -> sp.score()).reversed()      // Score desc
-                .thenComparingInt(sp -> sp.policy().version()).reversed()      // Version desc
-                .thenComparing(sp -> sp.policy().id()))                        // ID alpha asc
+            .sorted(
+                Comparator.comparingDouble(ScoredPolicy::score).reversed()               // Score desc
+                    .thenComparing(Comparator.comparingInt((ScoredPolicy sp) -> sp.policy().version()).reversed()) // Version desc
+                    .thenComparing(sp -> sp.policy().id())                               // ID alpha asc
+            )
             .toList();
 
         ScoredPolicy winner = sorted.get(0);
@@ -235,13 +244,13 @@ public class PolicyResolver implements AutoCloseable {
             "source", override.source()
         ));
 
-        return ResolvedArena.create(template, policy, Map.of("override", 100));
+        return ResolvedArena.create(template, policy, Map.of("override", 100.0));
     }
 
     /**
      * Resolves using a specific policy.
      */
-    private ResolvedArena resolveWithPolicy(ResolveContext context, ArenaPolicy policy, Map<String, Integer> scoreBreakdown) {
+    private ResolvedArena resolveWithPolicy(ResolveContext context, ArenaPolicy policy, Map<String, Double> scoreBreakdown) {
         ArenaTemplate template = templateRegistry.getOrDefault(policy.templateId());
         return ResolvedArena.create(template, policy, scoreBreakdown);
     }
@@ -250,72 +259,149 @@ public class PolicyResolver implements AutoCloseable {
      * Scores a policy against the context.
      * Implements DD4 weight configuration.
      */
+    private Optional<ScoredPolicy> scorePolicyIfCompatible(ArenaPolicy policy, ResolveContext context) {
+        ArenaPolicy effective = clampPolicyWeight(policy);
+        if (effective != policy) {
+            policies.put(effective.id(), effective);
+            policy = effective;
+        }
+        Optional<ArenaTemplate> templateOpt = templateRegistry.get(policy.templateId());
+        if (templateOpt.isEmpty()) {
+            emitVersionMismatch(policy.id(), policy.templateId(), "template_not_found", policy.version(), null, null);
+            return Optional.empty();
+        }
+        ArenaTemplate template = templateOpt.get();
+        if (!isPolicyCompatible(policy, template)) {
+            return Optional.empty();
+        }
+        return Optional.of(scorePolicy(policy, context));
+    }
+
+    private ArenaPolicy clampPolicyWeight(ArenaPolicy policy) {
+        double requested = policy.weight();
+        double clamped = Math.min(MAX_POLICY_WEIGHT, Math.max(MIN_POLICY_WEIGHT, requested));
+        if (clamped != requested && weightClampEmitted.add(policy.id())) {
+            LOGGER.warn("Policy '{}' weight {} clamped to {}", policy.id(), requested, clamped);
+            telemetry.emit("arena.routing.weight_clamped", Map.of(
+                "policyId", policy.id(),
+                "requestedWeight", requested,
+                "clampedWeight", clamped,
+                "min", MIN_POLICY_WEIGHT,
+                "max", MAX_POLICY_WEIGHT
+            ));
+        }
+        if (clamped != requested) {
+            return policy.withWeight(clamped);
+        }
+        return policy;
+    }
+
+    private boolean isPolicyCompatible(ArenaPolicy policy, ArenaTemplate template) {
+        VersionCompatibilityChecker.VersionCheck check = versionChecker.check(template, policy);
+        if (!check.compatible()) {
+            emitVersionMismatch(
+                policy.id(),
+                template.id(),
+                check.reason(),
+                template.version(),
+                policy.minTemplateVersion(),
+                policy.maxTemplateVersion()
+            );
+            return false;
+        }
+        return true;
+    }
+
+    private void emitVersionMismatch(String policyId, String templateId, String reason, int templateVersion,
+                                     Integer minTemplateVersion, Integer maxTemplateVersion) {
+        telemetry.emit("arena.policy.version_mismatch", Map.of(
+            "policyId", policyId,
+            "templateId", templateId != null ? templateId : "",
+            "reason", reason,
+            "templateVersion", templateVersion,
+            "minTemplateVersion", minTemplateVersion != null ? minTemplateVersion : -1,
+            "maxTemplateVersion", maxTemplateVersion != null ? maxTemplateVersion : -1
+        ));
+    }
+
     private ScoredPolicy scorePolicy(ArenaPolicy policy, ResolveContext context) {
-        Map<String, Integer> breakdown = new LinkedHashMap<>();
-        int total = 0;
+        Map<String, Double> breakdown = new LinkedHashMap<>();
+        double baseScore = 0.0;
 
-        // MOB_MATCH (+5)
-        if (policy.mobTypes() != null && context.mobType() != null) {
-            if (policy.mobTypes().contains(context.mobType())) {
-                breakdown.put("mob", WEIGHT_MOB_MATCH);
-                total += WEIGHT_MOB_MATCH;
+        // DD4: MOB_MATCH (+5) - key with "Score" suffix for taratura
+        var policyMobTypes = policy.mobTypes();
+        if (policyMobTypes != null && context.mobType() != null) {
+            if (policyMobTypes.contains(context.mobType())) {
+                breakdown.put("mobScore", (double) WEIGHT_MOB_MATCH);
+                baseScore += WEIGHT_MOB_MATCH;
             }
         }
 
-        // QUEST_TYPE (+4)
-        if (policy.questType() != null && context.questType() != null) {
-            if (policy.questType().equalsIgnoreCase(context.questType())) {
-                breakdown.put("questType", WEIGHT_QUEST_TYPE);
-                total += WEIGHT_QUEST_TYPE;
+        // DD4: QUEST_TYPE (+4) - key with "Score" suffix for taratura
+        String policyQuestType = policy.questType();
+        if (policyQuestType != null && context.questType() != null) {
+            if (policyQuestType.equalsIgnoreCase(context.questType())) {
+                breakdown.put("questTypeScore", (double) WEIGHT_QUEST_TYPE);
+                baseScore += WEIGHT_QUEST_TYPE;
             }
         }
 
-        // DIFFICULTY (+3)
-        if (policy.difficulty() != null && context.difficulty() != null) {
-            if (policy.difficulty().equalsIgnoreCase(context.difficulty())) {
-                breakdown.put("difficulty", WEIGHT_DIFFICULTY);
-                total += WEIGHT_DIFFICULTY;
+        // DD4: DIFFICULTY (+3) - key with "Score" suffix for taratura
+        String policyDifficulty = policy.difficulty();
+        if (policyDifficulty != null && context.difficulty() != null) {
+            if (policyDifficulty.equalsIgnoreCase(context.difficulty())) {
+                breakdown.put("difficultyScore", (double) WEIGHT_DIFFICULTY);
+                baseScore += WEIGHT_DIFFICULTY;
             }
         }
 
-        // PLAYER_COUNT (+2)
+        // DD4: PLAYER_COUNT (+2) - key with "Score" suffix for taratura
         if (matchesPlayerCount(policy, context.playerCount())) {
-            breakdown.put("playerCount", WEIGHT_PLAYER_COUNT);
-            total += WEIGHT_PLAYER_COUNT;
+            breakdown.put("playerCountScore", (double) WEIGHT_PLAYER_COUNT);
+            baseScore += WEIGHT_PLAYER_COUNT;
         }
 
-        // TAGS (+1 per matching tag)
-        if (policy.tags() != null && context.tags() != null) {
+        // DD4: TAGS (+1 per matching tag) - key with "Score" suffix for taratura
+        var policyTags = policy.tags();
+        if (policyTags != null && context.tags() != null) {
             int tagMatches = 0;
-            for (String tag : policy.tags()) {
+            for (String tag : policyTags) {
                 if (context.tags().contains(tag)) {
                     tagMatches++;
                 }
             }
             if (tagMatches > 0) {
                 int tagScore = tagMatches * WEIGHT_TAGS;
-                breakdown.put("tags", tagScore);
-                total += tagScore;
+                breakdown.put("tagsScore", (double) tagScore);
+                baseScore += tagScore;
             }
         }
 
-        // Priority bonus
+        // DD4: Priority bonus - key with "Score" suffix for taratura
         if (policy.priority() > 0) {
-            breakdown.put("priority", policy.priority());
-            total += policy.priority();
+            breakdown.put("priorityScore", (double) policy.priority());
+            baseScore += policy.priority();
+        }
+
+        double total = baseScore;
+        if (baseScore > 0) {
+            breakdown.put("weightScore", policy.weight());
+            total += policy.weight();
         }
 
         return new ScoredPolicy(policy, total, breakdown);
     }
 
     private boolean matchesPlayerCount(ArenaPolicy policy, int playerCount) {
-        if (policy.minPlayers() == null && policy.maxPlayers() == null) {
+        Integer minPlayers = policy.minPlayers();
+        Integer maxPlayers = policy.maxPlayers();
+        if (minPlayers == null && maxPlayers == null) {
             return false; // No player count filter
         }
-        if (policy.minPlayers() != null && playerCount < policy.minPlayers()) {
+        if (minPlayers != null && playerCount < minPlayers) {
             return false;
         }
-        if (policy.maxPlayers() != null && playerCount > policy.maxPlayers()) {
+        if (maxPlayers != null && playerCount > maxPlayers) {
             return false;
         }
         return true;
@@ -326,7 +412,7 @@ public class PolicyResolver implements AutoCloseable {
      */
     private void emitResolutionTelemetry(ScoredPolicy winner, List<ScoredPolicy> alternatives, ResolveContext context) {
         String topAlternative = alternatives.isEmpty() ? null : alternatives.get(0).policy().id();
-        int scoreDelta = alternatives.isEmpty() ? 0 : winner.score() - alternatives.get(0).score();
+        double scoreDelta = alternatives.isEmpty() ? 0 : winner.score() - alternatives.get(0).score();
 
         telemetry.emitPolicyResolved(
             winner.policy().id(),
@@ -345,7 +431,7 @@ public class PolicyResolver implements AutoCloseable {
     private ResolvedArena getDefaultArena(ResolveContext context) {
         fallbackCount.incrementAndGet();
         ArenaTemplate template = templateRegistry.getOrDefault("default_flat_64");
-        return ResolvedArena.create(template, ArenaPolicy.DEFAULT, Map.of("fallback", 1));
+        return ResolvedArena.create(template, ArenaPolicy.DEFAULT, Map.of("fallback", 1.0));
     }
 
     // ===================
@@ -366,7 +452,7 @@ public class PolicyResolver implements AutoCloseable {
             LockEntry lockEntry = entry.getValue();
 
             // Only remove if stale AND not currently locked AND no waiting threads
-            if (lockEntry.isStale(LOCK_STALE_THRESHOLD_MS)
+            if (lockEntry.isStale(lockStaleThresholdMs)
                 && !lockEntry.lock.isLocked()
                 && !lockEntry.lock.hasQueuedThreads()) {
                 iter.remove();
@@ -397,8 +483,9 @@ public class PolicyResolver implements AutoCloseable {
      * Registers a policy.
      */
     public void registerPolicy(ArenaPolicy policy) {
-        policies.put(policy.id(), policy);
-        LOGGER.debug("Policy '{}' registered", policy.id());
+        ArenaPolicy normalized = clampPolicyWeight(policy);
+        policies.put(normalized.id(), normalized);
+        LOGGER.debug("Policy '{}' registered", normalized.id());
     }
 
     /**
@@ -476,7 +563,7 @@ public class PolicyResolver implements AutoCloseable {
      */
     public record ScoredPolicy(
         ArenaPolicy policy,
-        int score,
-        Map<String, Integer> scoreBreakdown
+        double score,
+        Map<String, Double> scoreBreakdown
     ) {}
 }

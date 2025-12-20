@@ -7,9 +7,10 @@ public record BuildDryRun(
     int floorBlocks,
     int wallBlocks,
     int ceilingBlocks,
-    int underfloorBlocks
+    int underfloorBlocks,
+    int hazardBlocks
 ) {
     public int totalBlocks() {
-        return floorBlocks + wallBlocks + ceilingBlocks + underfloorBlocks;
+        return floorBlocks + wallBlocks + ceilingBlocks + underfloorBlocks + hazardBlocks;
     }
 }

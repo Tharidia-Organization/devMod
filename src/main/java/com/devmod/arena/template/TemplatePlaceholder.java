@@ -38,9 +38,10 @@ public class TemplatePlaceholder {
     private static final int MAX_ITERATIONS = 10;
 
     private final Map<String, PlaceholderResolver> resolvers = new HashMap<>();
+    private boolean builtinsRegistered = false;
 
     public TemplatePlaceholder() {
-        registerBuiltins();
+        // Built-ins will be registered lazily on first resolve/register call
     }
 
     /**
@@ -114,6 +115,7 @@ public class TemplatePlaceholder {
     }
 
     private String resolvePlaceholder(String key, PlaceholderContext context) {
+        ensureBuiltins();
         PlaceholderResolver resolver = resolvers.get(key.toLowerCase());
         if (resolver != null) {
             Optional<String> result = resolver.resolve(context);
@@ -140,6 +142,14 @@ public class TemplatePlaceholder {
         register("template_id", ctx -> Optional.ofNullable(ctx.templateId()));
         register("timestamp", ctx -> Optional.of(java.time.Instant.now().toString()));
         register("random_int", ctx -> Optional.of(String.valueOf((int) (Math.random() * 1000))));
+    }
+
+    private void ensureBuiltins() {
+        if (builtinsRegistered) {
+            return;
+        }
+        registerBuiltins();
+        builtinsRegistered = true;
     }
 
     /**

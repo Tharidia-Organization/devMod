@@ -17,6 +17,7 @@ class BuildDryRunCalculatorTest {
         assertEquals(2520, dryRun.wallBlocks());
         assertEquals(4096, dryRun.ceilingBlocks());
         assertEquals(12288, dryRun.underfloorBlocks());
+        assertEquals(0, dryRun.hazardBlocks());
         assertEquals(23000, dryRun.totalBlocks());
     }
 }

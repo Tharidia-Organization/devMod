@@ -1,5 +1,6 @@
 package com.devmod.arena.registry;
 
+import javax.annotation.Nullable;
 import java.util.*;
 
 /**
@@ -24,6 +25,25 @@ public class HazardValidator {
     );
 
     private static final int MAX_HAZARDS = 50;
+    private static final double MAX_COVERAGE = 0.30; // 30%
+    private static final double WARN_COVERAGE = 0.25; // 25%
+
+    private final HazardTelemetry telemetry;
+    @Nullable
+    private final Set<String> registeredCustomBuilders;
+
+    public HazardValidator() {
+        this(null, null);
+    }
+
+    public HazardValidator(HazardTelemetry telemetry) {
+        this(telemetry, null);
+    }
+
+    public HazardValidator(HazardTelemetry telemetry, @Nullable Set<String> registeredCustomBuilders) {
+        this.telemetry = telemetry;
+        this.registeredCustomBuilders = registeredCustomBuilders;
+    }
 
     public ValidationResult validate(ArenaTemplate template, Bounds bounds, List<ArenaTemplate.SpawnSlot> spawnSlots) {
         List<String> errors = new ArrayList<>();
@@ -32,9 +52,11 @@ public class HazardValidator {
         List<ArenaTemplate.Hazard> hazards = template.hazards() == null ? List.of() : template.hazards();
         if (hazards.size() > MAX_HAZARDS) {
             errors.add("Hazard count %d exceeds max %d".formatted(hazards.size(), MAX_HAZARDS));
+            emitValidationFailed(template.id(), "too_many_hazards");
         }
 
         Map<String, Integer> typeCounts = new HashMap<>();
+        double estimatedCoverage = 0.0;
 
         for (int i = 0; i < hazards.size(); i++) {
             var hazard = hazards.get(i);
@@ -42,14 +64,16 @@ public class HazardValidator {
             // Whitelist
             if (!SUPPORTED_TYPES.contains(hazard.type())) {
                 errors.add("Hazard[%d] unknown type '%s'".formatted(i, hazard.type()));
+                emitValidationFailed(template.id(), "unknown_type");
                 continue;
             }
 
             // Type limit
-            typeCounts.merge(hazard.type(), 1, Integer::sum);
+            typeCounts.merge(hazard.type(), 1, (a, b) -> a + b);
             int limit = TYPE_LIMITS.getOrDefault(hazard.type(), Integer.MAX_VALUE);
             if (typeCounts.get(hazard.type()) > limit) {
                 errors.add("Hazard[%d] exceeds type limit %d for '%s'".formatted(i, limit, hazard.type()));
+                emitValidationFailed(template.id(), "type_limit");
             }
 
             // Parameter checks
@@ -57,8 +81,20 @@ public class HazardValidator {
 
             // Overlap with spawn slots (best effort: use center/radius if available)
             if (spawnSlots != null && !spawnSlots.isEmpty()) {
-                maybeValidateOverlapWithSpawn(hazard, i, spawnSlots, bounds, errors);
+                maybeValidateOverlapWithSpawn(template.id(), hazard, i, spawnSlots, bounds, errors);
             }
+
+            // Rough coverage estimate: use radius/area when available
+            estimatedCoverage += estimateCoverage(hazard, bounds);
+        }
+
+        // Coverage checks (DD8)
+        if (estimatedCoverage > MAX_COVERAGE) {
+            errors.add("Hazard coverage %.1f%% exceeds max 30%%".formatted(estimatedCoverage * 100));
+            emitValidationFailed(template.id(), "coverage_exceeded");
+        } else if (estimatedCoverage > WARN_COVERAGE) {
+            warnings.add("Hazard coverage %.1f%% > 25%%".formatted(estimatedCoverage * 100));
+            emitHighCoverage(template.id(), estimatedCoverage);
         }
 
         return new ValidationResult(errors.isEmpty(), errors, warnings);
@@ -71,7 +107,11 @@ public class HazardValidator {
         List<String> errors,
         List<String> warnings
     ) {
-        int maxRadius = bounds.maxHorizontalRadius();
+        int spanX = bounds.maxX() - bounds.minX() + 1;
+        int spanZ = bounds.maxZ() - bounds.minZ() + 1;
+        int maxDim = Math.max(spanX, spanZ);
+        int half = Math.max(1, maxDim / 2);
+        int quarter = Math.max(1, maxDim / 4);
 
         switch (hazard.type()) {
             case "lava_ring" -> {
@@ -80,21 +120,34 @@ public class HazardValidator {
                 if (inner >= outer) {
                     errors.add(err(idx, "innerRadius must be < outerRadius"));
                 }
-                if (inner < 1 || inner > maxRadius - 2) {
-                    errors.add(err(idx, "innerRadius out of range 1-%d".formatted(maxRadius - 2)));
+                int innerMax = Math.max(1, half - 2);
+                if (inner < 1 || inner > innerMax) {
+                    errors.add(err(idx, "innerRadius out of range 1-%d".formatted(innerMax)));
                 }
-                if (outer < 1 || outer > maxRadius) {
-                    errors.add(err(idx, "outerRadius out of range 1-%d".formatted(maxRadius)));
+                if (outer < 1 || outer > half) {
+                    errors.add(err(idx, "outerRadius out of range 1-%d".formatted(half)));
                 }
             }
             case "void_pit", "lava_pool" -> {
                 int radius = intParam(hazard, "radius", errors, idx);
-                if (radius > maxRadius / 2) {
-                    warnings.add(warn(idx, "radius %d clamped to %d".formatted(radius, maxRadius / 2)));
+                int radiusCap = Math.max(1, quarter); // size/4 cap
+                if (radius > radiusCap) {
+                    warnings.add(warn(idx, "radius %d clamped to %d".formatted(radius, radiusCap)));
+                    safePut(hazard, "radius", radiusCap);
                 }
                 int[] center = posParam(hazard, "center", errors, idx);
                 if (center != null && !bounds.contains(center[0], center[1], center[2])) {
                     errors.add(err(idx, "center out of bounds"));
+                }
+                // Depth clamp if present
+                Object depthObj = hazard.params() != null ? hazard.params().get("depth") : null;
+                if (depthObj instanceof Number depthNum) {
+                    int depth = depthNum.intValue();
+                    if (depth < 1 || depth > 64) {
+                        warnings.add(warn(idx, "depth %d clamped to [1,64]".formatted(depth)));
+                        int clamped = Math.max(1, Math.min(64, depth));
+                        safePut(hazard, "depth", clamped);
+                    }
                 }
             }
             case "spike_trap" -> {
@@ -103,6 +156,29 @@ public class HazardValidator {
                     errors.add(err(idx, "positions[] required"));
                 } else if (list.size() > 20) {
                     errors.add(err(idx, "positions[] exceeds max 20"));
+                } else {
+                    for (int pi = 0; pi < list.size(); pi++) {
+                        Object entry = list.get(pi);
+                        if (entry instanceof List<?> pList && pList.size() == 3) {
+                            int[] p = new int[]{
+                                ((Number) pList.get(0)).intValue(),
+                                ((Number) pList.get(1)).intValue(),
+                                ((Number) pList.get(2)).intValue()
+                            };
+                            if (!bounds.contains(p)) {
+                                errors.add(err(idx, "positions[" + pi + "] out of bounds"));
+                            }
+                        }
+                    }
+                }
+                // Optional damage clamp
+                Object dmgObj = hazard.params() != null ? hazard.params().get("damage") : null;
+                if (dmgObj instanceof Number dmgNum) {
+                    double dmg = dmgNum.doubleValue();
+                    if (dmg < 0 || dmg > 20.0) {
+                        warnings.add(warn(idx, "damage %.2f clamped to [0,20]".formatted(dmg)));
+                        safePut(hazard, "damage", Math.max(0.0, Math.min(20.0, dmg)));
+                    }
                 }
             }
             case "fire_zone" -> {
@@ -116,6 +192,9 @@ public class HazardValidator {
                 double coverage = doubleParam(hazard, "coverage", errors, idx);
                 if (coverage > 0.5) {
                     warnings.add(warn(idx, "coverage %.2f clamped to 0.5".formatted(coverage)));
+                    if (hazard.params() != null) {
+                        safePut(hazard, "coverage", 0.5);
+                    }
                 }
             }
             case "falling_blocks" -> {
@@ -123,10 +202,38 @@ public class HazardValidator {
                 if (area != null && !bounds.contains(area[0], area[1], area[2])) {
                     errors.add(err(idx, "area center out of bounds"));
                 }
+                // Validate interval (tick interval)
+                Object intervalObj = hazard.params() != null ? hazard.params().get("interval") : null;
+                if (intervalObj instanceof Number intervalNum) {
+                    int interval = intervalNum.intValue();
+                    if (interval < 20 || interval > 600) {
+                        int clamped = Math.max(20, Math.min(600, interval));
+                        warnings.add(warn(idx, "interval %d clamped to [20,600]".formatted(interval)));
+                        safePut(hazard, "interval", clamped);
+                    }
+                }
+                // Validate count
+                Object countObj = hazard.params() != null ? hazard.params().get("count") : null;
+                if (countObj instanceof Number countNum) {
+                    int count = countNum.intValue();
+                    if (count < 1) {
+                        errors.add(err(idx, "count must be >= 1"));
+                    } else if (count > 50) {
+                        warnings.add(warn(idx, "count %d is high, may impact performance".formatted(count)));
+                    }
+                }
             }
             case "custom" -> {
                 if (hazard.params() == null || !hazard.params().containsKey("builderId")) {
                     errors.add(err(idx, "custom hazard requires builderId"));
+                } else {
+                    Object builderId = hazard.params().get("builderId");
+                    if (!(builderId instanceof String s) || s.isBlank()) {
+                        errors.add(err(idx, "custom hazard builderId must be non-empty string"));
+                    } else if (registeredCustomBuilders != null && !registeredCustomBuilders.contains(s)) {
+                        errors.add(err(idx, "custom hazard builderId '%s' is not registered".formatted(s)));
+                        emitValidationFailed("custom", "builder_not_registered");
+                    }
                 }
             }
             default -> {}
@@ -134,6 +241,7 @@ public class HazardValidator {
     }
 
     private void maybeValidateOverlapWithSpawn(
+        String templateId,
         ArenaTemplate.Hazard hazard,
         int idx,
         List<ArenaTemplate.SpawnSlot> spawnSlots,
@@ -157,8 +265,46 @@ public class HazardValidator {
             int dz = sz - center[2];
             if ((dx * dx + dz * dz) <= radius * radius) {
                 errors.add("Hazard[%d] overlaps SpawnSlot[%d]".formatted(idx, i));
+                emitValidationFailed(templateId, "overlap_spawn");
             }
         }
+    }
+
+    private double estimateCoverage(ArenaTemplate.Hazard hazard, Bounds bounds) {
+        int spanX = bounds.maxX() - bounds.minX() + 1;
+        int spanZ = bounds.maxZ() - bounds.minZ() + 1;
+        int maxArea = spanX * spanZ;
+        if (maxArea <= 0) return 0.0;
+        Map<String, Object> params = hazard.params() != null ? hazard.params() : Map.of();
+
+        switch (hazard.type()) {
+            case "lava_ring" -> {
+                int inner = (int) params.getOrDefault("innerRadius", 0);
+                int outer = (int) params.getOrDefault("outerRadius", 0);
+                double area = Math.PI * (outer * outer - inner * inner);
+                return area / maxArea;
+            }
+            case "lava_pool", "void_pit" -> {
+                Number rNum = (Number) params.getOrDefault("radius", 0);
+                double area = Math.PI * rNum.doubleValue() * rNum.doubleValue();
+                return area / maxArea;
+            }
+            case "fire_zone" -> {
+                int[] min = posParam(hazard, "min", null, 0);
+                int[] max = posParam(hazard, "max", null, 0);
+                if (min != null && max != null) {
+                    int dx = Math.abs(max[0] - min[0]) + 1;
+                    int dz = Math.abs(max[2] - min[2]) + 1;
+                    return (dx * dz) / (double) maxArea;
+                }
+            }
+            case "magma_floor" -> {
+                Number cov = (Number) params.getOrDefault("coverage", 0.0);
+                return Math.min(0.5, cov.doubleValue());
+            }
+            default -> {}
+        }
+        return 0.0;
     }
 
     private int intParam(ArenaTemplate.Hazard hazard, String key, List<String> errors, int idx) {
@@ -199,5 +345,36 @@ public class HazardValidator {
 
     private String warn(int idx, String msg) {
         return "Hazard[%d]: %s".formatted(idx, msg);
+    }
+
+    private void emitValidationFailed(String templateId, String reason) {
+        if (telemetry != null) {
+            telemetry.validationFailed(templateId, reason);
+        }
+    }
+
+    private void emitHighCoverage(String templateId, double coverage) {
+        if (telemetry != null) {
+            telemetry.highCoverage(templateId, coverage);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void safePut(ArenaTemplate.Hazard hazard, String key, Object value) {
+        try {
+            if (hazard.params() instanceof Map<?, ?> map) {
+                ((Map<String, Object>) map).put(key, value);
+            }
+        } catch (UnsupportedOperationException ignored) {
+            // Map is immutable; ignore.
+        }
+    }
+
+    /**
+     * Minimal telemetry hook to avoid hard dependency cycles.
+     */
+    public interface HazardTelemetry {
+        void validationFailed(String templateId, String reason);
+        void highCoverage(String templateId, double coverage);
     }
 }

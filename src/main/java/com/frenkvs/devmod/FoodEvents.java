@@ -14,6 +14,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 import org.slf4j.Logger;
 
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -96,7 +97,7 @@ public class FoodEvents {
             Optional<Holder.Reference<MobEffect>> effectHolder = getEffectHolder(effectData.effectId);
             if (effectHolder.isPresent()) {
                 MobEffectInstance instance = new MobEffectInstance(
-                    effectHolder.get(),
+                    Objects.requireNonNull(effectHolder.get()),
                     effectData.duration,
                     effectData.amplifier
                 );
@@ -115,8 +116,8 @@ public class FoodEvents {
      */
     private static Optional<Holder.Reference<MobEffect>> getEffectHolder(String effectId) {
         try {
-            ResourceLocation loc = ResourceLocation.parse(effectId);
-            return BuiltInRegistries.MOB_EFFECT.getHolder(loc);
+            ResourceLocation loc = ResourceLocation.parse(Objects.requireNonNull(effectId));
+            return BuiltInRegistries.MOB_EFFECT.getHolder(Objects.requireNonNull(loc));
         } catch (Exception e) {
             LOGGER.warn("[FoodEvents] Failed to parse effect ID: {}", effectId, e);
             return Optional.empty();

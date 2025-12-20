@@ -1,7 +1,6 @@
 package com.devmod.arena.registry;
 
 import com.google.gson.Gson;
-import com.google.gson.annotations.SerializedName;
 
 import java.io.IOException;
 import java.io.Reader;

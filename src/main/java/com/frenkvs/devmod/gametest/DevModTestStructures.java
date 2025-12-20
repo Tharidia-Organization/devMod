@@ -8,6 +8,8 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 
+import java.util.Objects;
+
 /**
  * Provides test structure templates for DevMod GameTests.
  *
@@ -59,7 +61,7 @@ public class DevModTestStructures {
         // Build stone floor
         for (int x = 0; x < sizeX; x++) {
             for (int z = 0; z < sizeZ; z++) {
-                level.setBlock(pos.offset(x, 0, z), Blocks.STONE.defaultBlockState(), 3);
+                level.setBlock(Objects.requireNonNull(pos.offset(x, 0, z)), Objects.requireNonNull(Blocks.STONE.defaultBlockState()), 3);
             }
         }
 
@@ -67,7 +69,7 @@ public class DevModTestStructures {
         for (int x = 0; x < sizeX; x++) {
             for (int y = 1; y < sizeY; y++) {
                 for (int z = 0; z < sizeZ; z++) {
-                    level.setBlock(pos.offset(x, y, z), Blocks.AIR.defaultBlockState(), 3);
+                    level.setBlock(Objects.requireNonNull(pos.offset(x, y, z)), Objects.requireNonNull(Blocks.AIR.defaultBlockState()), 3);
                 }
             }
         }
@@ -77,15 +79,15 @@ public class DevModTestStructures {
             // North and South walls
             for (int x = 0; x < sizeX; x++) {
                 for (int y = 1; y < sizeY; y++) {
-                    level.setBlock(pos.offset(x, y, 0), Blocks.BARRIER.defaultBlockState(), 3);
-                    level.setBlock(pos.offset(x, y, sizeZ - 1), Blocks.BARRIER.defaultBlockState(), 3);
+                    level.setBlock(Objects.requireNonNull(pos.offset(x, y, 0)), Objects.requireNonNull(Blocks.BARRIER.defaultBlockState()), 3);
+                    level.setBlock(Objects.requireNonNull(pos.offset(x, y, sizeZ - 1)), Objects.requireNonNull(Blocks.BARRIER.defaultBlockState()), 3);
                 }
             }
             // East and West walls
             for (int z = 1; z < sizeZ - 1; z++) {
                 for (int y = 1; y < sizeY; y++) {
-                    level.setBlock(pos.offset(0, y, z), Blocks.BARRIER.defaultBlockState(), 3);
-                    level.setBlock(pos.offset(sizeX - 1, y, z), Blocks.BARRIER.defaultBlockState(), 3);
+                    level.setBlock(Objects.requireNonNull(pos.offset(0, y, z)), Objects.requireNonNull(Blocks.BARRIER.defaultBlockState()), 3);
+                    level.setBlock(Objects.requireNonNull(pos.offset(sizeX - 1, y, z)), Objects.requireNonNull(Blocks.BARRIER.defaultBlockState()), 3);
                 }
             }
         }

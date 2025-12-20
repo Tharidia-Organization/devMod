@@ -21,12 +21,12 @@ public class BackpressureManager {
 
     // DD12: Default blocks per tick
     private static final int DEFAULT_BLOCKS_PER_TICK = 500;
-    private static final int MIN_BLOCKS_PER_TICK = 50;
+    private static final int MIN_BLOCKS_PER_TICK = 100;   // DD12: min 100, not 50
     private static final int MAX_BLOCKS_PER_TICK = 1000;
 
-    // Recovery settings
+    // DD12: Recovery settings - fixed +50 blocks/tick, not percentage
     private static final double REDUCE_FACTOR = 0.5;      // Halve on pressure
-    private static final double RECOVER_FACTOR = 1.1;     // 10% increase on recovery
+    private static final int RECOVERY_INCREMENT = 50;     // DD12: +50 blocks/tick recovery
     private static final int RECOVERY_TICKS = 20;         // Wait 20 ticks before recovery
 
     private final double msptThreshold;
@@ -84,14 +84,15 @@ public class BackpressureManager {
                 LOGGER.info("Backpressure released after {} ticks", ticksSinceLastPressure);
             }
 
-            // Gradual recovery
+            // DD12: Gradual recovery with fixed +50 blocks/tick increment
             if (!underPressure && currentBlocksPerTick < baseBlocksPerTick) {
                 int previousBlocks = currentBlocksPerTick;
                 currentBlocksPerTick = Math.min(baseBlocksPerTick,
-                    (int)(currentBlocksPerTick * RECOVER_FACTOR));
+                    currentBlocksPerTick + RECOVERY_INCREMENT);
 
                 if (currentBlocksPerTick != previousBlocks) {
-                    LOGGER.debug("Recovering blocks/tick: {} -> {}", previousBlocks, currentBlocksPerTick);
+                    LOGGER.debug("Recovering blocks/tick: {} -> {} (+{})",
+                        previousBlocks, currentBlocksPerTick, RECOVERY_INCREMENT);
                 }
             }
         }

@@ -124,8 +124,9 @@ jobs:
           name: legacy-api-report
           path: legacy-report.md
 
+      # DD43: Fail on excessive legacy usage (fixed comparison syntax)
       - name: Fail on excessive legacy usage
-        if: steps.check-createArena.outputs.legacy_count > 10
+        if: ${{ steps.check-createArena.outputs.legacy_count > '10' }}
         run: |
           echo "::error::Too many legacy API calls (${{ steps.check-createArena.outputs.legacy_count }}). Maximum allowed: 10"
           echo "Please migrate legacy calls before merging."

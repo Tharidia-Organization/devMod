@@ -13,6 +13,7 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
 import javax.annotation.Nonnull;
+import java.util.Objects;
 
 /**
  * Renders OBB hitboxes for debugging.
@@ -60,7 +61,7 @@ public final class OBBDebugRenderer {
             poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
 
             PoseStack.Pose pose = poseStack.last();
-            Matrix4f matrix = pose.pose();
+            Matrix4f matrix = Objects.requireNonNull(pose.pose());
 
             // Render each body part OBB
             for (BodyPartInstance part : parts) {
@@ -104,7 +105,7 @@ public final class OBBDebugRenderer {
         } catch (Exception ignored) {}
 
         for (LivingEntity entity : entities) {
-            renderEntityOBBs(poseStack, entity, cameraPos, bufferSource, false, showAxes);
+            renderEntityOBBs(poseStack, Objects.requireNonNull(entity), cameraPos, bufferSource, false, showAxes);
         }
     }
 
@@ -126,12 +127,12 @@ public final class OBBDebugRenderer {
         Vec3[] corners = obb.getCorners();
 
         // Render transparent faces
-        VertexConsumer facesConsumer = bufferSource.getBuffer(RenderType.debugQuads());
-        renderOBBFaces(facesConsumer, matrix, pose, corners, r, g, b, FACE_OPACITY);
+        VertexConsumer facesConsumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.debugQuads()));
+        renderOBBFaces(Objects.requireNonNull(facesConsumer), matrix, pose, corners, r, g, b, FACE_OPACITY);
 
         // Render wireframe edges
-        VertexConsumer edgesConsumer = bufferSource.getBuffer(RenderType.lines());
-        renderOBBEdges(edgesConsumer, matrix, pose, corners, r, g, b, EDGE_OPACITY);
+        VertexConsumer edgesConsumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.lines()));
+        renderOBBEdges(Objects.requireNonNull(edgesConsumer), matrix, pose, corners, r, g, b, EDGE_OPACITY);
     }
 
     /**
@@ -142,11 +143,11 @@ public final class OBBDebugRenderer {
                                      @Nonnull Matrix4f matrix,
                                      @Nonnull PoseStack.Pose pose,
                                      @Nonnull OrientedBoundingBox obb) {
-        Vec3 center = obb.getCenter();
+        Vec3 center = Objects.requireNonNull(obb.getCenter());
         Vec3[] axes = obb.getAxes();
-        Vec3 halfExtents = obb.getHalfExtents();
+        Vec3 halfExtents = Objects.requireNonNull(obb.getHalfExtents());
 
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.lines());
+        VertexConsumer consumer = Objects.requireNonNull(bufferSource.getBuffer(Objects.requireNonNull(RenderType.lines())));
 
         // Axis length = half extent * 1.5 for visibility
         double xLen = halfExtents.x * 1.5;
@@ -154,15 +155,15 @@ public final class OBBDebugRenderer {
         double zLen = halfExtents.z * 1.5;
 
         // X axis (red)
-        Vec3 xEnd = center.add(axes[0].scale(xLen));
+        Vec3 xEnd = Objects.requireNonNull(center.add(Objects.requireNonNull(axes[0].scale(xLen))));
         renderLine(consumer, matrix, pose, center, xEnd, 1f, 0f, 0f, AXIS_OPACITY);
 
         // Y axis (green)
-        Vec3 yEnd = center.add(axes[1].scale(yLen));
+        Vec3 yEnd = Objects.requireNonNull(center.add(Objects.requireNonNull(axes[1].scale(yLen))));
         renderLine(consumer, matrix, pose, center, yEnd, 0f, 1f, 0f, AXIS_OPACITY);
 
         // Z axis (blue)
-        Vec3 zEnd = center.add(axes[2].scale(zLen));
+        Vec3 zEnd = Objects.requireNonNull(center.add(Objects.requireNonNull(axes[2].scale(zLen))));
         renderLine(consumer, matrix, pose, center, zEnd, 0f, 0f, 1f, AXIS_OPACITY);
     }
 
@@ -173,10 +174,10 @@ public final class OBBDebugRenderer {
      * Corner order from getCorners():
      * 0=(-,-,-), 1=(+,-,-), 2=(-,+,-), 3=(+,+,-), 4=(-,-,+), 5=(+,-,+), 6=(-,+,+), 7=(+,+,+)
      */
-    private static void renderOBBFaces(@Nonnull VertexConsumer consumer,
-                                       @Nonnull Matrix4f matrix,
-                                       @Nonnull PoseStack.Pose pose,
-                                       @Nonnull Vec3[] c,
+    private static void renderOBBFaces(VertexConsumer consumer,
+                                       Matrix4f matrix,
+                                       PoseStack.Pose pose,
+                                       Vec3[] c,
                                        float r, float g, float b, float a) {
         // Bottom face (Y-): 0,1,5,4
         quad(consumer, matrix, pose, c[0], c[1], c[5], c[4], r, g, b, a, 0, -1, 0);
@@ -195,10 +196,10 @@ public final class OBBDebugRenderer {
     /**
      * Renders OBB edges (12 lines).
      */
-    private static void renderOBBEdges(@Nonnull VertexConsumer consumer,
-                                       @Nonnull Matrix4f matrix,
-                                       @Nonnull PoseStack.Pose pose,
-                                       @Nonnull Vec3[] c,
+    private static void renderOBBEdges(VertexConsumer consumer,
+                                       Matrix4f matrix,
+                                       PoseStack.Pose pose,
+                                       Vec3[] c,
                                        float r, float g, float b, float a) {
         int[][] edges = OrientedBoundingBox.getEdgeIndices();
 
@@ -210,38 +211,42 @@ public final class OBBDebugRenderer {
     /**
      * Renders a single line.
      */
-    private static void renderLine(@Nonnull VertexConsumer consumer,
-                                   @Nonnull Matrix4f matrix,
-                                   @Nonnull PoseStack.Pose pose,
-                                   @Nonnull Vec3 start,
-                                   @Nonnull Vec3 end,
+    private static void renderLine(VertexConsumer consumer,
+                                   Matrix4f matrix,
+                                   PoseStack.Pose pose,
+                                   Vec3 start,
+                                   Vec3 end,
                                    float r, float g, float b, float a) {
-        consumer.addVertex(matrix, (float) start.x, (float) start.y, (float) start.z)
+        Matrix4f m = Objects.requireNonNull(matrix);
+        PoseStack.Pose p = Objects.requireNonNull(pose);
+        consumer.addVertex(m, (float) start.x, (float) start.y, (float) start.z)
                 .setColor(r, g, b, a)
-                .setNormal(pose, 0f, 1f, 0f);
-        consumer.addVertex(matrix, (float) end.x, (float) end.y, (float) end.z)
+                .setNormal(p, 0f, 1f, 0f);
+        consumer.addVertex(m, (float) end.x, (float) end.y, (float) end.z)
                 .setColor(r, g, b, a)
-                .setNormal(pose, 0f, 1f, 0f);
+                .setNormal(p, 0f, 1f, 0f);
     }
 
     /**
      * Renders a quad (4 vertices).
      */
-    private static void quad(@Nonnull VertexConsumer consumer,
-                            @Nonnull Matrix4f matrix,
-                            @Nonnull PoseStack.Pose pose,
-                            @Nonnull Vec3 v1, @Nonnull Vec3 v2,
-                            @Nonnull Vec3 v3, @Nonnull Vec3 v4,
+    private static void quad(VertexConsumer consumer,
+                            Matrix4f matrix,
+                            PoseStack.Pose pose,
+                            Vec3 v1, Vec3 v2,
+                            Vec3 v3, Vec3 v4,
                             float r, float g, float b, float a,
                             float nx, float ny, float nz) {
-        consumer.addVertex(matrix, (float) v1.x, (float) v1.y, (float) v1.z)
-                .setColor(r, g, b, a).setNormal(pose, nx, ny, nz);
-        consumer.addVertex(matrix, (float) v2.x, (float) v2.y, (float) v2.z)
-                .setColor(r, g, b, a).setNormal(pose, nx, ny, nz);
-        consumer.addVertex(matrix, (float) v3.x, (float) v3.y, (float) v3.z)
-                .setColor(r, g, b, a).setNormal(pose, nx, ny, nz);
-        consumer.addVertex(matrix, (float) v4.x, (float) v4.y, (float) v4.z)
-                .setColor(r, g, b, a).setNormal(pose, nx, ny, nz);
+        Matrix4f m = Objects.requireNonNull(matrix);
+        PoseStack.Pose p = Objects.requireNonNull(pose);
+        consumer.addVertex(m, (float) v1.x, (float) v1.y, (float) v1.z)
+                .setColor(r, g, b, a).setNormal(p, nx, ny, nz);
+        consumer.addVertex(m, (float) v2.x, (float) v2.y, (float) v2.z)
+                .setColor(r, g, b, a).setNormal(p, nx, ny, nz);
+        consumer.addVertex(m, (float) v3.x, (float) v3.y, (float) v3.z)
+                .setColor(r, g, b, a).setNormal(p, nx, ny, nz);
+        consumer.addVertex(m, (float) v4.x, (float) v4.y, (float) v4.z)
+                .setColor(r, g, b, a).setNormal(p, nx, ny, nz);
     }
 
     // ==================== Hit Highlight ====================
@@ -284,12 +289,12 @@ public final class OBBDebugRenderer {
             poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
 
             PoseStack.Pose pose = poseStack.last();
-            Matrix4f matrix = pose.pose();
+            Matrix4f matrix = Objects.requireNonNull(pose.pose());
 
             // White pulsing wireframe
             Vec3[] corners = obb.getCorners();
-            VertexConsumer consumer = bufferSource.getBuffer(RenderType.lines());
-            renderOBBEdges(consumer, matrix, pose, corners, 1f, 1f, 1f, alpha);
+            VertexConsumer consumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.lines()));
+            renderOBBEdges(Objects.requireNonNull(consumer), matrix, pose, corners, 1f, 1f, 1f, alpha);
 
             poseStack.popPose();
 

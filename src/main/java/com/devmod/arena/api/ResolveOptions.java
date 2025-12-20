@@ -42,6 +42,24 @@ public record ResolveOptions(
     public static final int DEFAULT_TIMEOUT_MS = 30_000;
 
     /**
+     * DD14: Creates default options for legacy API compatibility.
+     *
+     * <p>This is the recommended entry point for the new V2 API when
+     * minimal configuration is needed. Sets questType to "normal" with
+     * empty tags and no force overrides.
+     */
+    public static ResolveOptions defaults() {
+        return new ResolveOptions(
+            null, null, 1,           // No party context, single player default
+            "normal", null, null,    // Default quest type
+            null, Set.of(), Set.of(), // No mob/tags
+            null, null,              // No overrides
+            false, DEFAULT_TIMEOUT_MS,
+            null
+        );
+    }
+
+    /**
      * Creates minimal options for a party.
      */
     public static ResolveOptions forParty(UUID partyId, UUID primaryPlayerId, int playerCount) {

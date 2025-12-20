@@ -21,9 +21,10 @@ import java.sql.Statement;
  * - Economy (4): mob_kills, mob_drops, item_pickups, item_usage
  * - Spatial (3): heatmaps, alerts, room_transitions
  * - Dungeon (1): dungeon_runs (P2-B)
+ * - Arena (2): arena_template_builds, arena_template_usage (Fase 1)
  * - System (2): performance, migrations
  *
- * Total: 33 tables
+ * Total: 35 tables
  */
 public final class DuckDBSchemaManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DuckDBSchemaManager.class);
@@ -145,7 +146,11 @@ public final class DuckDBSchemaManager {
             // Dungeon tables (P2-B)
             createDungeonRunsTable(stmt);
 
-            LOGGER.info("[DuckDB] Created 33 tables");
+            // Arena tables (Fase 1)
+            createArenaTemplateBuildsTable(stmt);
+            createArenaTemplateUsageTable(stmt);
+
+            LOGGER.info("[DuckDB] Created 35 tables");
         }
     }
 
@@ -858,6 +863,68 @@ public final class DuckDBSchemaManager {
     }
 
     // ============================================
+    // ARENA TABLES (Fase 1)
+    // ============================================
+
+    private static void createArenaTemplateBuildsTable(Statement stmt) throws SQLException {
+        stmt.execute("""
+            CREATE TABLE IF NOT EXISTS arena_template_builds (
+                id              BIGINT PRIMARY KEY,
+                ts              TIMESTAMP NOT NULL,
+                arena_id        UUID NOT NULL,
+                template_id     VARCHAR(128) NOT NULL,
+                template_version INTEGER NOT NULL,
+                policy_id       VARCHAR(128),
+                policy_version  INTEGER,
+                origin_x        INTEGER,
+                origin_y        INTEGER,
+                origin_z        INTEGER,
+                dimension       VARCHAR(128),
+                estimated_blocks INTEGER,
+                actual_blocks   INTEGER,
+                estimated_ms    BIGINT,
+                actual_ms       BIGINT,
+                success         BOOLEAN NOT NULL,
+                error_message   VARCHAR(512),
+                rollback_ms     BIGINT,
+                blocks_reverted INTEGER
+            )
+            """);
+        stmt.execute("CREATE SEQUENCE IF NOT EXISTS seq_arena_template_builds START 1");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_arena_template_builds_ts ON arena_template_builds(ts)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_arena_template_builds_template ON arena_template_builds(template_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_arena_template_builds_arena ON arena_template_builds(arena_id)");
+    }
+
+    private static void createArenaTemplateUsageTable(Statement stmt) throws SQLException {
+        stmt.execute("""
+            CREATE TABLE IF NOT EXISTS arena_template_usage (
+                id              BIGINT PRIMARY KEY,
+                ts              TIMESTAMP NOT NULL,
+                template_id     VARCHAR(128) NOT NULL,
+                template_version INTEGER NOT NULL,
+                policy_id       VARCHAR(128),
+                policy_version  INTEGER,
+                player_id       UUID,
+                player_name     VARCHAR(64),
+                quest_type      VARCHAR(64),
+                mob_id          VARCHAR(128),
+                difficulty      VARCHAR(32),
+                player_count    INTEGER,
+                session_id      UUID,
+                event_type      VARCHAR(32) NOT NULL,
+                duration_ms     BIGINT,
+                waves_completed INTEGER,
+                outcome         VARCHAR(32)
+            )
+            """);
+        stmt.execute("CREATE SEQUENCE IF NOT EXISTS seq_arena_template_usage START 1");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_arena_template_usage_ts ON arena_template_usage(ts)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_arena_template_usage_template ON arena_template_usage(template_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_arena_template_usage_player ON arena_template_usage(player_id)");
+    }
+
+    // ============================================
     // MIGRATIONS
     // ============================================
 
@@ -874,10 +941,14 @@ public final class DuckDBSchemaManager {
             }
         }
 
-        // Future migrations:
-        // if (oldVersion < 3) {
-        //     migrateV2ToV3(conn);
-        // }
+        // Migration V2 -> V3: Add arena tables (Fase 1)
+        if (oldVersion < 3) {
+            LOGGER.info("[DuckDB] Running migration V2 -> V3: Adding arena_template_builds and arena_template_usage tables");
+            try (Statement stmt = conn.createStatement()) {
+                createArenaTemplateBuildsTable(stmt);
+                createArenaTemplateUsageTable(stmt);
+            }
+        }
 
         setSchemaVersion(conn, newVersion);
     }

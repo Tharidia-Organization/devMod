@@ -338,6 +338,7 @@ public class AnalyticsService {
      * Query timeout exception
      */
     public static class QueryTimeoutException extends Exception {
+        private static final long serialVersionUID = 1L;
         public QueryTimeoutException(String message) {
             super(message);
         }
@@ -347,6 +348,7 @@ public class AnalyticsService {
      * General query exception
      */
     public static class QueryException extends Exception {
+        private static final long serialVersionUID = 1L;
         public QueryException(String message) {
             super(message);
         }

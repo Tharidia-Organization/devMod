@@ -23,12 +23,12 @@ public record ResolvedArena(
     Instant resolvedAt,
 
     /** Score breakdown for debugging */
-    Map<String, Integer> scoreBreakdown
+    Map<String, Double> scoreBreakdown
 ) {
     /**
      * Creates a resolved arena with generated ID.
      */
-    public static ResolvedArena create(ArenaTemplate template, ArenaPolicy policy, Map<String, Integer> scoreBreakdown) {
+    public static ResolvedArena create(ArenaTemplate template, ArenaPolicy policy, Map<String, Double> scoreBreakdown) {
         return new ResolvedArena(
             template,
             policy,
@@ -41,7 +41,7 @@ public record ResolvedArena(
     /**
      * Gets the total score.
      */
-    public int totalScore() {
-        return scoreBreakdown.values().stream().mapToInt(Integer::intValue).sum();
+    public double totalScore() {
+        return scoreBreakdown.values().stream().mapToDouble(Double::doubleValue).sum();
     }
 }

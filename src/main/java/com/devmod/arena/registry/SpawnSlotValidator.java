@@ -1,11 +1,31 @@
 package com.devmod.arena.registry;
 
+import com.devmod.arena.telemetry.ArenaTelemetry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.*;
+import java.util.Objects;
 
 /**
  * SpawnSlot validation (bounds, duplicates, forbidden zones, hazards overlap, required tags).
  */
 public class SpawnSlotValidator {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SpawnSlotValidator.class);
+
+    private ArenaTelemetry telemetry;
+
+    public SpawnSlotValidator() {
+    }
+
+    public SpawnSlotValidator(ArenaTelemetry telemetry) {
+        this.telemetry = telemetry;
+    }
+
+    public void setTelemetry(ArenaTelemetry telemetry) {
+        this.telemetry = telemetry;
+    }
 
     public ValidationResult validate(ArenaTemplate template, Bounds bounds) {
         List<String> errors = new ArrayList<>();
@@ -25,17 +45,28 @@ public class SpawnSlotValidator {
                 continue;
             }
 
-            int absX = pos[0] + bounds.originX();
-            int absY = computeY(pos[1], slot.yMode(), template.floor().y());
-            int absZ = pos[2] + bounds.originZ();
+            // Apply playerSpawnOffset only to player-tagged slots
+            int offsetX = 0;
+            int offsetY = 0;
+            int offsetZ = 0;
+            if (slot.tags() != null && slot.tags().contains("player") && template.playerSpawnOffset() != null) {
+                offsetX = template.playerSpawnOffset().x();
+                offsetY = template.playerSpawnOffset().y();
+                offsetZ = template.playerSpawnOffset().z();
+            }
+
+            int absX = pos[0] + bounds.originX() + offsetX;
+            int absY = computeY(pos[1], slot.yMode(), template.floor().y()) + offsetY;
+            int absZ = pos[2] + bounds.originZ() + offsetZ;
+            String key = absX + "," + absY + "," + absZ;
 
             // Bounds check
             if (!bounds.contains(absX, absY, absZ)) {
                 errors.add(err(i, "outside arena bounds"));
+                emitTelemetry("arena.spawnslot.out_of_bounds", template.id(), key);
             }
 
             // Duplicates
-            String key = absX + "," + absY + "," + absZ;
             if (!seen.add(key)) {
                 errors.add(err(i, "duplicate position " + key));
             }
@@ -45,6 +76,17 @@ public class SpawnSlotValidator {
                 for (int j = 0; j < template.forbiddenZones().size(); j++) {
                     if (isInForbidden(absX, absY, absZ, template.forbiddenZones().get(j), template.floor().y())) {
                         errors.add(err(i, "in forbiddenZone[" + j + "]"));
+                        emitTelemetry("arena.spawnslot.in_forbidden_zone", template.id(), key);
+                    }
+                }
+            }
+
+            // Hazard intersection (best-effort)
+            if (template.hazards() != null) {
+                for (int j = 0; j < template.hazards().size(); j++) {
+                    if (isInHazard(absX, absY, absZ, template.hazards().get(j), template.floor().y())) {
+                        errors.add(err(i, "in hazard[" + j + "] " + template.hazards().get(j).type()));
+                        emitTelemetry("arena.spawnslot.in_hazard", template.id(), key);
                     }
                 }
             }
@@ -102,5 +144,105 @@ public class SpawnSlotValidator {
 
     private String err(int idx, String msg) {
         return "SpawnSlot[%d]: %s".formatted(idx, msg);
+    }
+
+    private void emitTelemetry(String event, String templateId, String posKey) {
+        if (telemetry != null) {
+            telemetry.emit(event, Map.of(
+                "templateId", templateId,
+                "position", posKey
+            ));
+        } else {
+            LOGGER.debug("{}: templateId={}, position={}", event, templateId, posKey);
+        }
+    }
+
+    private boolean isInHazard(int x, int y, int z, ArenaTemplate.Hazard hazard, int floorY) {
+        if (hazard == null || hazard.params() == null) return false;
+        Map<String, Object> params = hazard.params();
+        switch (hazard.type()) {
+            case "lava_ring", "lava_pool", "void_pit" -> {
+                int[] center = listToPos(params.get("center"));
+                Number rNum = (Number) params.getOrDefault("radius", 0);
+                if (center == null || rNum == null) return false;
+                int radius = rNum.intValue();
+                int dx = x - center[0];
+                int dz = z - center[2];
+                return (dx * dx + dz * dz) <= radius * radius;
+            }
+            case "fire_zone" -> {
+                int[] min = listToPos(params.get("min"));
+                int[] max = listToPos(params.get("max"));
+                if (min == null || max == null) return false;
+                return x >= min[0] && x <= max[0]
+                    && y >= min[1] && y <= max[1]
+                    && z >= min[2] && z <= max[2];
+            }
+            case "magma_floor" -> {
+                // Assume full floor coverage when enabled
+                return y == floorY;
+            }
+            default -> {
+                return false;
+            }
+        }
+    }
+
+    private int[] listToPos(Object v) {
+        if (v instanceof List<?> list && list.size() == 3) {
+            int[] arr = new int[3];
+            for (int i = 0; i < 3; i++) {
+                Object elem = list.get(i);
+                if (elem instanceof Number n) {
+                    arr[i] = n.intValue();
+                } else {
+                    return null;
+                }
+            }
+            return arr;
+        }
+        return null;
+    }
+
+    /**
+    * Runtime validation of a single spawn slot according to validation rules.
+    */
+    public boolean validateAtRuntime(String templateId, ArenaTemplate.SpawnSlot slot, net.minecraft.server.level.ServerLevel level, net.minecraft.core.BlockPos absPos) {
+        if (slot == null || slot.validation() == null) return true;
+        var rules = slot.validation();
+
+        // Solid below
+        if (rules.requireSolidBelow()) {
+            net.minecraft.core.BlockPos below = Objects.requireNonNull(absPos.below());
+            if (!level.getBlockState(below).isSolidRender(level, below)) {
+                emitTelemetry("arena.spawnslot.validation_failed", templateId, absPos.toShortString());
+                return false;
+            }
+        }
+
+        // Air above
+        for (int y = 0; y < rules.requireAirAbove(); y++) {
+            net.minecraft.core.BlockPos above = Objects.requireNonNull(absPos.above(y));
+            if (!level.getBlockState(above).isAir()) {
+                emitTelemetry("arena.spawnslot.validation_failed", templateId, absPos.toShortString());
+                return false;
+            }
+        }
+
+        // Clear radius (horizontal)
+        int r = rules.requireClearRadius();
+        if (r > 0) {
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    if (dx == 0 && dz == 0) continue;
+                    net.minecraft.core.BlockPos check = Objects.requireNonNull(absPos.offset(dx, 0, dz));
+                    if (level.getBlockState(check).isSolidRender(level, check)) {
+                        emitTelemetry("arena.spawnslot.validation_failed", templateId, absPos.toShortString());
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 }

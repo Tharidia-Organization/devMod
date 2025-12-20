@@ -78,6 +78,7 @@ public class ArenaCleanupExecutor {
         LOGGER.info("Starting arena cleanup for bounds {}", bounds);
 
         CleanupResult.Builder result = CleanupResult.builder();
+        long startNs = System.nanoTime();
 
         try {
             // Phase 1: Remove entities
@@ -112,6 +113,23 @@ public class ArenaCleanupExecutor {
             LOGGER.error("Cleanup failed", e);
             result.addWarning("Cleanup failed: " + e.getMessage());
         }
+
+        long durationMs = (System.nanoTime() - startNs) / 1_000_000;
+        result.durationMs(durationMs);
+
+        // Residual metrics for alerts/baseline
+        int entitiesResidual = levelAccess.countEntitiesInBounds(
+            bounds.minX(), bounds.minY(), bounds.minZ(),
+            bounds.maxX(), bounds.maxY(), bounds.maxZ(),
+            config.preservePlayers(),
+            excludedEntities
+        );
+        int blocksResidual = levelAccess.countNonAirBlocksInBounds(
+            bounds.minX(), bounds.minY(), bounds.minZ(),
+            bounds.maxX(), bounds.maxY(), bounds.maxZ()
+        );
+        result.entitiesResidual(entitiesResidual);
+        result.blocksResidual(blocksResidual);
 
         CleanupResult finalResult = result.build();
         LOGGER.info("Arena cleanup complete: {}", finalResult);

@@ -1,12 +1,12 @@
 package com.devmod.arena.override;
 
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -22,7 +22,7 @@ public class TemplateOverrideCapability {
 
     /** Deferred register for attachment types */
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES =
-            DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, MODID);
+            DeferredRegister.create(Objects.requireNonNull(NeoForgeRegistries.ATTACHMENT_TYPES), MODID);
 
     /** Resource location for attachment registration */
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(MODID, "template_override");
@@ -31,7 +31,7 @@ public class TemplateOverrideCapability {
     public static final Supplier<AttachmentType<TemplateOverrideData>> TEMPLATE_OVERRIDE =
             ATTACHMENT_TYPES.register("template_override", () ->
                     AttachmentType.builder(TemplateOverrideData::new)
-                            .serialize(TemplateOverrideData.CODEC)
+                            .serialize(Objects.requireNonNull(TemplateOverrideData.CODEC))
                             .copyOnDeath()
                             .build()
             );

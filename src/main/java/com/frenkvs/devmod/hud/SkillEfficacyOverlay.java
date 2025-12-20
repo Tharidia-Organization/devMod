@@ -14,6 +14,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * HUD Overlay for displaying skill efficacy information.
@@ -56,8 +57,8 @@ public class SkillEfficacyOverlay {
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.HOTBAR,
-            LAYER_ID,
+            Objects.requireNonNull(VanillaGuiLayers.HOTBAR),
+            Objects.requireNonNull(LAYER_ID),
             SkillEfficacyOverlay::render
         );
     }
@@ -95,7 +96,8 @@ public class SkillEfficacyOverlay {
         int textY = y + PANEL_PADDING;
 
         // Title
-        graphics.drawString(font, "Skill Efficacy", textX, textY, TEXT_TITLE, false);
+        var safeFont = Objects.requireNonNull(font);
+        graphics.drawString(safeFont, "Skill Efficacy", textX, textY, TEXT_TITLE, false);
         textY += LINE_HEIGHT + 2;
 
         // Separator
@@ -103,7 +105,7 @@ public class SkillEfficacyOverlay {
         textY += 4;
 
         if (recentSkills.isEmpty()) {
-            graphics.drawString(font, "No skills used yet", textX, textY, TEXT_MUTED, false);
+            graphics.drawString(safeFont, "No skills used yet", textX, textY, TEXT_MUTED, false);
             return;
         }
 
@@ -116,28 +118,29 @@ public class SkillEfficacyOverlay {
 
     private static void renderSkillEntry(GuiGraphics graphics, Font font, int x, int y,
                                           SkillTrackingService.SkillStats skill) {
+        var safeFont = Objects.requireNonNull(font);
         // Skill name
         String name = truncateName(skill.skillId(), 15);
-        graphics.drawString(font, "[" + name + "]", x, y, TEXT_NORMAL, false);
+        graphics.drawString(safeFont, "[" + name + "]", x, y, TEXT_NORMAL, false);
 
         // Hit rate
         float hitRate = skill.getHitRate();
         int hitColor = hitRate >= 0.7f ? TEXT_VALUE : hitRate >= 0.4f ? TEXT_WARNING : TEXT_DANGER;
         String hitText = String.format("Hit: %d/%d (%.0f%%)",
             skill.hits(), skill.uses(), hitRate * 100);
-        graphics.drawString(font, hitText, x + 100, y, hitColor, false);
+        graphics.drawString(safeFont, hitText, x + 100, y, hitColor, false);
 
         y += LINE_HEIGHT;
 
         // Damage
         String dmgText = String.format("Dmg: %.1f", skill.totalDamage());
-        graphics.drawString(font, dmgText, x + 10, y, TEXT_MUTED, false);
+        graphics.drawString(safeFont, dmgText, x + 10, y, TEXT_MUTED, false);
 
         // Cooldown or last use
         long lastUseMs = skill.lastUseMs();
         long elapsedSec = (System.currentTimeMillis() - lastUseMs) / 1000;
         String timeText = elapsedSec < 60 ? elapsedSec + "s ago" : (elapsedSec / 60) + "m ago";
-        graphics.drawString(font, timeText, x + 100, y, TEXT_MUTED, false);
+        graphics.drawString(safeFont, timeText, x + 100, y, TEXT_MUTED, false);
     }
 
     private static String truncateName(String name, int maxLen) {

@@ -14,6 +14,23 @@ import java.util.concurrent.TimeUnit;
  *
  * <p>Prevents duplicate arena creation when the same request is retried.
  * Uses a 5-minute TTL with max 1000 entries.
+ *
+ * <h3>Memory Management Strategy</h3>
+ * <p>This cache uses TTL-based expiration with scheduled cleanup rather than
+ * {@link java.lang.ref.WeakReference}. Rationale:
+ * <ul>
+ *   <li>TTL provides <b>predictable</b> cache behavior (entries live exactly 5 min)</li>
+ *   <li>WeakReference expiration is GC-dependent and unpredictable</li>
+ *   <li>Idempotency requires <b>guaranteed</b> retention during the TTL window</li>
+ *   <li>Scheduled cleanup runs every 60s with O(n) scan, acceptable for max 1000 entries</li>
+ *   <li>Capacity-based eviction (LRU-style) prevents unbounded growth</li>
+ * </ul>
+ *
+ * <p>WeakReference would be appropriate for optional caching where early eviction
+ * is acceptable, but idempotency semantics require strong references during the
+ * validity window.
+ *
+ * @see java.util.concurrent.ConcurrentHashMap
  */
 public class ArenaIdempotencyCache implements AutoCloseable {
 

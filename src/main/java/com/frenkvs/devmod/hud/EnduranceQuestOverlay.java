@@ -20,6 +20,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * HUD Overlay for Endurance Quest.
@@ -94,8 +95,8 @@ public class EnduranceQuestOverlay {
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.BOSS_OVERLAY,
-            LAYER_ID,
+            Objects.requireNonNull(VanillaGuiLayers.BOSS_OVERLAY),
+            Objects.requireNonNull(LAYER_ID),
             EnduranceQuestOverlay::render
         );
     }
@@ -169,10 +170,11 @@ public class EnduranceQuestOverlay {
         // Remove problematic characters and truncate
         questName = questName.replaceAll("[^\\w\\s-]", "").trim();
         int maxNameWidth = width - PANEL_PADDING * 2 - 60; // Leave space for points
-        if (font.width(questName) > maxNameWidth) {
+        var safeFont = Objects.requireNonNull(font);
+        if (safeFont.width(Objects.requireNonNull(questName)) > maxNameWidth) {
             String ellipsis = "...";
             int minChars = Math.min(6, questName.length()); // Keep at least 6 chars for readability
-            while (font.width(questName + ellipsis) > maxNameWidth && questName.length() > minChars) {
+            while (safeFont.width(questName + ellipsis) > maxNameWidth && questName.length() > minChars) {
                 questName = questName.substring(0, questName.length() - 1);
             }
             questName = questName + ellipsis;
@@ -345,7 +347,8 @@ public class EnduranceQuestOverlay {
         // Scale the wave number to make it prominent
         g.pose().pushPose();
         float scale = 2.0f;
-        int numWidth = font.width(waveNum);
+        var safeFont = Objects.requireNonNull(font);
+        int numWidth = safeFont.width(Objects.requireNonNull(waveNum));
 
         // Large centered number
         g.pose().translate(bannerX + bannerWidth / 2.0f, bannerY + 4, 0);
@@ -646,16 +649,17 @@ public class EnduranceQuestOverlay {
         g.drawCenteredString(font, warningText, centerX, boxY + 6, textColor);
 
         // Boss type below
-        g.drawCenteredString(font, bossAlertType.toUpperCase(), centerX, boxY + 18, 0xFFAAAAAA);
+        g.drawCenteredString(font, Objects.requireNonNull(bossAlertType.toUpperCase()), centerX, boxY + 18, 0xFFAAAAAA);
 
         // Sound every second (first 100ms of each second)
         Minecraft mc = Minecraft.getInstance();
         long currentSecond = remaining / 1000;
-        if (currentSecond != lastSoundTick && mc.player != null) {
+        var player = mc.player;
+        if (currentSecond != lastSoundTick && player != null) {
             lastSoundTick = currentSecond;
             // Pitch increases as countdown approaches: 0.5 -> 1.5
             float pitch = 0.5f + (1.0f - remaining / (float) bossAlertDuration);
-            mc.player.playSound(SoundEvents.NOTE_BLOCK_BELL.value(), 0.8f, pitch);
+            player.playSound(Objects.requireNonNull(SoundEvents.NOTE_BLOCK_BELL.value()), 0.8f, pitch);
         }
     }
 }

@@ -453,7 +453,7 @@ public final class VanillaBodyParts {
      *
      * @param registry The registry to populate
      */
-    public static void registerAll(@Nonnull BodyPartRegistry registry) {
+    public static void registerAll(BodyPartRegistry registry) {
         // Humanoid entities
         registry.register(EntityType.PLAYER, HUMANOID);
         registry.register(EntityType.ZOMBIE, HUMANOID);

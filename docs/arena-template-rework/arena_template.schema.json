@@ -1,0 +1,233 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ArenaTemplate v1",
+  "type": "object",
+  "required": ["id", "version", "schemaVersion", "size", "origin"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+    "extendsTemplate": { "type": ["string", "null"] },
+    "version": { "type": "integer", "minimum": 1 },
+    "schemaVersion": { "type": "integer", "minimum": 1 },
+    "breakingChange": { "type": "boolean" },
+    "deprecated": { "type": "boolean" },
+    "replacementVersion": { "type": ["string", "null"] },
+    "minParentVersion": { "type": ["integer", "null"], "minimum": 1 },
+    "origin": {
+      "type": "object",
+      "required": ["mode", "x", "y", "z"],
+      "properties": {
+        "mode": { "enum": ["CENTER", "CORNER_NW", "CORNER_SW"] },
+        "x": { "type": "integer" },
+        "y": { "type": "integer" },
+        "z": { "type": "integer" }
+      }
+    },
+    "size": { "type": "integer", "minimum": 8, "maximum": 256 },
+    "sizeX": { "type": ["integer", "null"], "minimum": 8, "maximum": 256 },
+    "sizeZ": { "type": ["integer", "null"], "minimum": 8, "maximum": 256 },
+    "floor": {
+      "type": "object",
+      "required": ["y", "thickness", "material", "pattern", "borderMaterial", "borderWidth"],
+      "properties": {
+        "y": { "type": "integer" },
+        "thickness": { "type": "integer", "minimum": 1 },
+        "material": { "type": "string" },
+        "pattern": { "enum": ["solid", "checkerboard", "border"] },
+        "borderMaterial": { "type": "string" },
+        "borderWidth": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "walls": {
+      "type": "object",
+      "required": ["enabled", "material", "height", "thickness", "startY", "style"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "material": { "type": "string" },
+        "height": { "type": "integer", "minimum": 1 },
+        "thickness": { "type": "integer", "minimum": 1 },
+        "startY": { "type": "integer" },
+        "style": { "enum": ["solid", "glass", "fence", "barrier"] }
+      }
+    },
+    "ceiling": {
+      "type": "object",
+      "required": ["enabled", "material", "y", "thickness"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "material": { "type": "string" },
+        "y": { "type": "integer" },
+        "thickness": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "underfloor": {
+      "type": "object",
+      "required": ["material", "depth", "sameAsFloor"],
+      "properties": {
+        "material": { "type": "string" },
+        "depth": { "type": "integer", "minimum": 1 },
+        "sameAsFloor": { "type": "boolean" }
+      }
+    },
+    "palette": {
+      "type": "object",
+      "properties": {
+        "accent": { "type": "string" },
+        "highlight": { "type": "string" },
+        "hazardBorder": { "type": "string" }
+      }
+    },
+    "biome": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "applyTo": { "enum": ["BOUNDS", "CHUNKS"] }
+      }
+    },
+    "lighting": {
+      "type": "object",
+      "properties": {
+        "skyLight": { "type": "integer", "minimum": 0, "maximum": 15 },
+        "blockLight": { "type": "integer", "minimum": 0, "maximum": 15 },
+        "ambientLight": { "type": "boolean" },
+        "lightSources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["pos", "block"],
+            "properties": {
+              "pos": {
+                "type": "array",
+                "items": { "type": "integer" },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "block": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "playerSpawnOffset": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "integer" },
+        "y": { "type": "integer" },
+        "z": { "type": "integer" }
+      }
+    },
+    "mobSpawnStrategy": {
+      "enum": ["DISTRIBUTED", "CLUSTERED", "CORNERS", "RING"]
+    },
+    "spawnSlots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["pos", "yMode", "tags", "validation"],
+        "properties": {
+          "pos": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "yMode": { "enum": ["RELATIVE_TO_FLOOR", "ABSOLUTE"] },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "validation": {
+            "type": "object",
+            "properties": {
+              "requireSolidBelow": { "type": "boolean" },
+              "requireAirAbove": { "type": "integer", "minimum": 0 },
+              "requireClearRadius": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    "forbiddenZones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["min", "max", "yMode", "reason"],
+        "properties": {
+          "min": { "type": "array", "items": { "type": "integer" }, "minItems": 3, "maxItems": 3 },
+          "max": { "type": "array", "items": { "type": "integer" }, "minItems": 3, "maxItems": 3 },
+          "yMode": { "enum": ["RELATIVE_TO_FLOOR", "ABSOLUTE"] },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "hazards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "params"],
+        "properties": {
+          "type": { "type": "string" },
+          "params": { "type": "object" },
+          "y": { "type": ["integer", "null"] },
+          "yMode": { "enum": ["RELATIVE_TO_FLOOR", "ABSOLUTE", null] }
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "properties": {
+        "particles": { "type": "array" },
+        "ambientSound": { "type": ["string", "null"] },
+        "fog": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "density": { "type": "number", "minimum": 0.0 }
+          }
+        }
+      }
+    },
+    "compat": {
+      "type": "object",
+      "properties": {
+        "minPlayers": { "type": "integer", "minimum": 1 },
+        "maxPlayers": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "instanceSettings": {
+      "type": "object",
+      "properties": {
+        "chunkRadius": { "type": "integer", "minimum": 1 },
+        "tickDistance": { "type": "integer", "minimum": 1 },
+        "keepLoaded": { "type": "boolean" }
+      }
+    },
+    "structureNbt": {
+      "type": ["object", "null"],
+      "properties": {
+        "path": { "type": "string" },
+        "offset": {
+          "type": "object",
+          "properties": { "x": { "type": "integer" }, "y": { "type": "integer" }, "z": { "type": "integer" } }
+        },
+        "rotation": { "enum": ["none", "clockwise_90", "180", "counterclockwise_90"] },
+        "mirror": { "enum": ["none", "front_back", "left_right"] },
+        "seedPolicy": { "enum": ["fixed", "perRun"] },
+        "ignoreAir": { "type": "boolean" }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "maxBuildTimeMs": { "type": "integer", "minimum": 1 },
+        "maxBlocks": { "type": "integer", "minimum": 1 },
+        "maxEntities": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "buildSettings": {
+      "type": "object",
+      "properties": {
+        "buildPriority": { "enum": ["SYNC", "ASYNC"] },
+        "buildOrder": { "enum": ["FLOOR_FIRST", "WALLS_FIRST", "STRUCTURE_FIRST"] }
+      }
+    },
+    "tags": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

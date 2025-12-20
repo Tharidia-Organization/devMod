@@ -17,6 +17,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * HUD Overlay showing party members during Endurance Quest.
@@ -65,8 +66,8 @@ public class PartyHudOverlay {
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.BOSS_OVERLAY,
-            LAYER_ID,
+            Objects.requireNonNull(VanillaGuiLayers.BOSS_OVERLAY),
+            Objects.requireNonNull(LAYER_ID),
             PartyHudOverlay::render
         );
     }
@@ -101,7 +102,8 @@ public class PartyHudOverlay {
 
         // Header
         String header = "Party (" + members.size() + ")";
-        graphics.drawString(font, header, x + PADDING, y + PADDING - 2, TEXT_SECONDARY);
+        var safeFont = Objects.requireNonNull(font);
+        graphics.drawString(safeFont, header, x + PADDING, y + PADDING - 2, TEXT_SECONDARY);
 
         // Member list
         int memberY = y + PADDING + 12;
@@ -125,7 +127,7 @@ public class PartyHudOverlay {
 
         // Player name (truncated if too long)
         String name = prefix + truncateName(member.playerName(), 10);
-        graphics.drawString(font, name, x + 8, y, nameColor);
+        graphics.drawString(Objects.requireNonNull(font), name, x + 8, y, nameColor);
 
         // Health bar (placeholder - actual health would come from server sync)
         // For now, show ready status as "health"

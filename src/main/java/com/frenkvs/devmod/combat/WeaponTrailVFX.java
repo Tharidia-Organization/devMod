@@ -22,6 +22,7 @@ import org.joml.Matrix4f;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Objects;
 
 /**
  * Weapon Trail VFX System - Renders luminous trails following weapon swings.
@@ -89,11 +90,10 @@ public class WeaponTrailVFX {
      */
     public void tick() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null || !enabled) {
+        Player player = mc.player;
+        if (player == null || mc.level == null || !enabled) {
             return;
         }
-
-        Player player = mc.player;
         ItemStack mainHand = player.getMainHandItem();
 
         // Only track for weapons
@@ -365,15 +365,15 @@ public class WeaponTrailVFX {
      */
     private void trackWeaponPosition(Player player) {
         // Calculate weapon tip position in world space
-        Vec3 tipPos = calculateWeaponTipPosition(player);
-        Vec3 basePos = calculateWeaponBasePosition(player);
+        Vec3 tipPos = Objects.requireNonNull(calculateWeaponTipPosition(player));
+        Vec3 basePos = Objects.requireNonNull(calculateWeaponBasePosition(player));
 
         long now = System.currentTimeMillis();
 
         // Only add if moved enough
         if (!trailPoints.isEmpty()) {
             TrailPoint last = trailPoints.peekLast();
-            if (last != null && tipPos.distanceTo(last.tipPos) < MIN_DISTANCE_THRESHOLD) {
+            if (last != null && tipPos.distanceTo(Objects.requireNonNull(last.tipPos)) < MIN_DISTANCE_THRESHOLD) {
                 return;
             }
         }
@@ -555,9 +555,9 @@ public class WeaponTrailVFX {
     private void renderTrailCPU(PoseStack poseStack, MultiBufferSource bufferSource, Vec3 cameraPos) {
         poseStack.pushPose();
         poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-        Matrix4f matrix = poseStack.last().pose();
+        Matrix4f matrix = Objects.requireNonNull(Objects.requireNonNull(poseStack.last()).pose());
 
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.lightning());
+        VertexConsumer consumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.lightning()));
 
         // Simple line strip for CPU fallback
         TrailPoint[] points = trailPoints.toArray(new TrailPoint[0]);
@@ -588,6 +588,8 @@ public class WeaponTrailVFX {
      * This creates the "ghosting" effect of the weapon swing.
      */
     private void renderRibbonGeometry(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose) {
+        Objects.requireNonNull(matrix);
+        Objects.requireNonNull(pose);
         TrailPoint[] points = trailPoints.toArray(new TrailPoint[0]);
         if (points.length < 2) return;
 
@@ -652,12 +654,13 @@ public class WeaponTrailVFX {
      * Priority: 1) Enchantment glint (if enchanted), 2) Material-based color
      */
     private void updateWeaponColor(ItemStack weapon) {
+        Objects.requireNonNull(weapon);
         if (!useWeaponColor || weapon.isEmpty()) {
             return;
         }
 
         // Only update if weapon changed
-        if (ItemStack.isSameItemSameComponents(weapon, lastWeaponItem)) {
+        if (ItemStack.isSameItemSameComponents(weapon, Objects.requireNonNull(lastWeaponItem))) {
             return;
         }
         lastWeaponItem = weapon.copy();
@@ -795,6 +798,7 @@ public class WeaponTrailVFX {
     // === Shader Helpers ===
 
     private void setShaderUniform(ShaderInstance shader, String name, float value) {
+        Objects.requireNonNull(name);
         try {
             var uniform = shader.getUniform(name);
             if (uniform != null) {
@@ -804,6 +808,7 @@ public class WeaponTrailVFX {
     }
 
     private void setShaderUniformVec3(ShaderInstance shader, String name, float x, float y, float z) {
+        Objects.requireNonNull(name);
         try {
             var uniform = shader.getUniform(name);
             if (uniform != null) {

@@ -4,8 +4,8 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -275,5 +275,101 @@ public class ArenaCommandPermissions {
      */
     public int getOverrideCount() {
         return playerPermissions.size();
+    }
+
+    // ===================
+    // DD14: Template Permission Integration
+    // ===================
+
+    /**
+     * Checks if a player has a specific template permission.
+     * Maps command permission levels to template permissions.
+     *
+     * @param player The player
+     * @param templatePermission The required template permission
+     * @return true if permitted
+     */
+    public boolean hasTemplatePermission(ServerPlayer player, TemplatePermission templatePermission) {
+        PermissionLevel playerLevel = getPlayerLevel(player);
+        TemplatePermission effective = getTemplatePermissionForLevel(playerLevel);
+        return effective.implies(templatePermission);
+    }
+
+    /**
+     * Gets the template permission set for a player based on their command permission level.
+     *
+     * @param player The player
+     * @return Set of template permissions the player has
+     */
+    public Set<TemplatePermission> getTemplatePermissions(ServerPlayer player) {
+        PermissionLevel playerLevel = getPlayerLevel(player);
+        TemplatePermission effective = getTemplatePermissionForLevel(playerLevel);
+        return effective.impliedPermissions();
+    }
+
+    /**
+     * Gets the highest template permission for a command permission level.
+     * DD14: Maps command levels to template permissions.
+     *
+     * @param level The command permission level
+     * @return The corresponding template permission
+     */
+    public TemplatePermission getTemplatePermissionForLevel(PermissionLevel level) {
+        return switch (level) {
+            case VIEWER -> TemplatePermission.VIEW;
+            case PARTICIPANT, SPECTATOR -> TemplatePermission.USE;
+            case CREATOR, MODERATOR -> TemplatePermission.EDIT;
+            case ADMIN -> TemplatePermission.DELETE;
+            case SUPERADMIN -> TemplatePermission.ADMIN;
+        };
+    }
+
+    /**
+     * Checks if a player can perform a template operation.
+     * Combines command permission check with template permission check.
+     *
+     * @param player The player
+     * @param templateId The template ID (for audit logging)
+     * @param required The required template permission
+     * @return Optional containing the denial reason, or empty if permitted
+     */
+    public Optional<String> checkTemplateAccess(ServerPlayer player, String templateId, TemplatePermission required) {
+        if (!hasTemplatePermission(player, required)) {
+            PermissionLevel playerLevel = getPlayerLevel(player);
+            TemplatePermission effective = getTemplatePermissionForLevel(playerLevel);
+
+            ArenaCommandAudit.getInstance().logSecurityEvent(
+                "TEMPLATE_ACCESS_DENIED",
+                player.getUUID(),
+                String.format("template=%s required=%s actual=%s", templateId, required.name(), effective.name())
+            );
+
+            return Optional.of(String.format(
+                "Permission denied: %s requires %s permission (you have %s)",
+                templateId, required.description(), effective.description()
+            ));
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Checks if a command source has template permission.
+     *
+     * @param source The command source
+     * @param required The required template permission
+     * @return true if permitted
+     */
+    public boolean hasTemplatePermission(CommandSourceStack source, TemplatePermission required) {
+        // Console always has full access
+        if (!source.isPlayer()) {
+            return true;
+        }
+
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            return false;
+        }
+
+        return hasTemplatePermission(player, required);
     }
 }

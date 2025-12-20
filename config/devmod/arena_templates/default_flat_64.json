@@ -1,0 +1,68 @@
+{
+  "id": "default_flat_64",
+  "version": 1,
+  "schemaVersion": 1,
+  "breakingChange": false,
+  "deprecated": false,
+  "templateType": {
+    "type": "flat"
+  },
+  "origin": { "mode": "CENTER", "x": 0, "y": 64, "z": 0 },
+  "size": 64,
+  "floor": {
+    "y": 64,
+    "thickness": 1,
+    "material": "minecraft:stone_bricks",
+    "pattern": "solid",
+    "borderMaterial": "minecraft:polished_andesite",
+    "borderWidth": 0
+  },
+  "walls": {
+    "enabled": true,
+    "material": "minecraft:barrier",
+    "height": 10,
+    "thickness": 1,
+    "startY": 64,
+    "style": "solid"
+  },
+  "ceiling": {
+    "enabled": true,
+    "material": "minecraft:barrier",
+    "y": 74,
+    "thickness": 1
+  },
+  "underfloor": {
+    "material": "minecraft:bedrock",
+    "depth": 3,
+    "sameAsFloor": false
+  },
+  "palette": {
+    "accent": "minecraft:polished_andesite",
+    "highlight": "minecraft:glowstone",
+    "hazardBorder": "minecraft:magma_block"
+  },
+  "biome": { "id": "minecraft:plains", "applyTo": "BOUNDS" },
+  "lighting": {
+    "skyLight": 15,
+    "blockLight": 10,
+    "ambientLight": true,
+    "lightSources": []
+  },
+  "spawnSlots": [
+    { "pos": [0, 1, 0], "yMode": "RELATIVE_TO_FLOOR", "tags": ["center", "player"], "validation": { "requireSolidBelow": true, "requireAirAbove": 2, "requireClearRadius": 1 } },
+    { "pos": [10, 1, 0], "yMode": "RELATIVE_TO_FLOOR", "tags": ["melee", "mob"], "validation": { "requireSolidBelow": true, "requireAirAbove": 2, "requireClearRadius": 1 } },
+    { "pos": [-10, 1, 0], "yMode": "RELATIVE_TO_FLOOR", "tags": ["ranged", "mob"], "validation": { "requireSolidBelow": true, "requireAirAbove": 2, "requireClearRadius": 1 } },
+    { "pos": [20, 1, 20], "yMode": "RELATIVE_TO_FLOOR", "tags": ["corner", "mob"], "validation": { "requireSolidBelow": true, "requireAirAbove": 2, "requireClearRadius": 1 } }
+  ],
+  "playerSpawnOffset": { "x": 0, "y": 0, "z": 0 },
+  "mobSpawnStrategy": "DISTRIBUTED",
+  "forbiddenZones": [],
+  "hazards": [],
+  "environment": { "particles": [], "ambientSound": null, "fog": { "enabled": false, "density": 0.0 } },
+  "compat": { "minPlayers": 1, "maxPlayers": 4 },
+  "instanceSettings": { "chunkRadius": 5, "tickDistance": 4, "keepLoaded": true },
+  "structureNbt": null,
+  "limits": { "maxBuildTimeMs": 5000, "maxBlocks": 50000, "maxEntities": 100 },
+  "buildSettings": { "buildPriority": "SYNC", "buildOrder": "FLOOR_FIRST" },
+  "tags": ["default", "flat"]
+}

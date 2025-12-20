@@ -14,13 +14,13 @@ public record ForbiddenZone(
     double maxX,
     double maxY,
     double maxZ,
-    String reason
+    String description  // DD50: renamed from 'reason' to 'description'
 ) {
     /**
      * Create a forbidden zone with auto-generated ID.
      */
-    public ForbiddenZone(double minX, double minY, double minZ, double maxX, double maxY, double maxZ, String reason) {
-        this(UUID.randomUUID(), minX, minY, minZ, maxX, maxY, maxZ, reason);
+    public ForbiddenZone(double minX, double minY, double minZ, double maxX, double maxY, double maxZ, String description) {
+        this(UUID.randomUUID(), minX, minY, minZ, maxX, maxY, maxZ, description);
     }
 
     /**
@@ -33,22 +33,22 @@ public record ForbiddenZone(
     /**
      * Create a cylindrical forbidden zone (approximated as a box).
      */
-    public static ForbiddenZone cylinder(double centerX, double centerZ, double radius, double minY, double maxY, String reason) {
+    public static ForbiddenZone cylinder(double centerX, double centerZ, double radius, double minY, double maxY, String description) {
         return new ForbiddenZone(
             centerX - radius, minY, centerZ - radius,
             centerX + radius, maxY, centerZ + radius,
-            reason
+            description
         );
     }
 
     /**
      * Create a spherical forbidden zone (approximated as a box).
      */
-    public static ForbiddenZone sphere(double centerX, double centerY, double centerZ, double radius, String reason) {
+    public static ForbiddenZone sphere(double centerX, double centerY, double centerZ, double radius, String description) {
         return new ForbiddenZone(
             centerX - radius, centerY - radius, centerZ - radius,
             centerX + radius, centerY + radius, centerZ + radius,
-            reason
+            description
         );
     }
 
@@ -125,7 +125,7 @@ public record ForbiddenZone(
             id,
             minX - margin, minY - margin, minZ - margin,
             maxX + margin, maxY + margin, maxZ + margin,
-            reason
+            description
         );
     }
 }

@@ -1,0 +1,17 @@
+{
+  "id": "boss_ring_80_ranked.policy",
+  "version": 1,
+  "templateId": "boss_ring_80",
+  "minTemplateVersion": 1,
+  "maxTemplateVersion": null,
+  "mobTypes": ["boss"],
+  "questType": "boss",
+  "difficulty": "hard",
+  "minPlayers": 1,
+  "maxPlayers": 4,
+  "tags": ["boss", "ranked"],
+  "priority": 5,
+  "weight": 1.5,
+  "enabled": true,
+  "description": "Ranked boss arena policy (higher weight)"
+}

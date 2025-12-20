@@ -6,6 +6,8 @@
  *   apply from: 'jacoco-coverage-rules.gradle'
  */
 
+import groovy.xml.XmlSlurper
+
 apply plugin: 'jacoco'
 
 jacoco {
@@ -41,7 +43,7 @@ jacocoTestCoverageVerification {
     dependsOn jacocoTestReport
 
     violationRules {
-        // Rule 1: Core Arena Logic - 80% minimum
+        // Rule 1: Core Arena Logic - 80% minimum (DD41)
         rule {
             enabled = true
             element = 'PACKAGE'
@@ -58,10 +60,11 @@ jacocoTestCoverageVerification {
                 minimum = 0.80
             }
 
+            // DD41: Branch coverage must be 80%
             limit {
                 counter = 'BRANCH'
                 value = 'COVEREDRATIO'
-                minimum = 0.75
+                minimum = 0.80
             }
         }
 
@@ -163,12 +166,12 @@ task coverageSummary {
     }
 }
 
-// Coverage thresholds documentation
+// Coverage thresholds documentation (DD41)
 ext.coverageThresholds = [
     core: [
         description: 'Core arena logic (cleanup, template, validation)',
         line: 0.80,
-        branch: 0.75,
+        branch: 0.80,  // DD41: Branch coverage 80%
         packages: [
             'com.frenkvs.devmod.arena.cleanup',
             'com.frenkvs.devmod.arena.template',

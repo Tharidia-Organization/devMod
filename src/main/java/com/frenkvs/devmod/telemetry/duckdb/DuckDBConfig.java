@@ -116,7 +116,7 @@ public final class DuckDBConfig {
     // ============================================
 
     /** Current schema version for migration tracking */
-    public static int SCHEMA_VERSION = 2;  // Bumped for P2-B dungeon_runs table
+    public static int SCHEMA_VERSION = 3;  // Bumped for Fase 1 arena tables
 
     // ============================================
     // DEBUG

@@ -15,6 +15,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Overlay for token gain animation.
@@ -35,8 +36,8 @@ public class TokenGainOverlay {
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.HOTBAR,
-            LAYER_ID,
+            Objects.requireNonNull(VanillaGuiLayers.HOTBAR),
+            Objects.requireNonNull(LAYER_ID),
             TokenGainOverlay::render
         );
     }
@@ -96,7 +97,7 @@ public class TokenGainOverlay {
             graphics.pose().pushPose();
             graphics.pose().translate(x, y, 0);
             graphics.pose().scale(scale, scale, 1.0f);
-            graphics.drawString(font, text, 0, 0, color, true);
+            graphics.drawString(Objects.requireNonNull(font), text, 0, 0, color, true);
             graphics.pose().popPose();
 
             index++;

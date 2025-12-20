@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -51,8 +52,8 @@ public class EnduranceSessionHandler {
                 if (session.getInstanceId() != null) {
                     InstanceArenaManager.INSTANCE.forceEndPlayerQuest(playerId);
                 }
-                player.sendSystemMessage(net.minecraft.network.chat.Component.literal("[DevMod] Quest cancelled.")
-                    .withStyle(ChatFormatting.YELLOW));
+                player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Quest cancelled.")
+                    .withStyle(ChatFormatting.YELLOW)));
                 return;
             }
 
@@ -71,12 +72,12 @@ public class EnduranceSessionHandler {
             persistence.updatePlayerStats(playerId, session.getQuest(), false);
 
             // Send empty sync to clear client HUD
-            PacketDistributor.sendToPlayer(player, QuestSyncPayload.empty());
+            PacketDistributor.sendToPlayer(player, Objects.requireNonNull(QuestSyncPayload.empty()));
 
             // Notify player BEFORE teleport (message will still be visible)
-            player.sendSystemMessage(I18n.translate("devmod.endurance.quest_abandoned",
+            player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.endurance.quest_abandoned",
                 session.getQuest().getCurrentWave(), session.getQuest().getPointsEarnedThisSession())
-                .withStyle(ChatFormatting.YELLOW));
+                .withStyle(ChatFormatting.YELLOW)));
 
             // === NOW do the state restoration and cleanup ===
             // For Instance mode: cleanupArenaOrInstance triggers teleport + full state restore
@@ -129,17 +130,17 @@ public class EnduranceSessionHandler {
             );
 
             // Also send chat messages as fallback
-            player.sendSystemMessage(I18n.translate("devmod.death.divider")
-                .withStyle(ChatFormatting.DARK_RED));
-            player.sendSystemMessage(I18n.translate("devmod.endurance.you_died_icon")
-                .withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
-            player.sendSystemMessage(I18n.translate("devmod.death.wave_points",
+            player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.death.divider")
+                .withStyle(ChatFormatting.DARK_RED)));
+            player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.endurance.you_died_icon")
+                .withStyle(ChatFormatting.RED, ChatFormatting.BOLD)));
+            player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.death.wave_points",
                 session.getQuest().getCurrentWave(), session.getQuest().getPointsEarnedThisSession())
-                .withStyle(ChatFormatting.GRAY));
-            player.sendSystemMessage(I18n.translate("devmod.death.keybind_hint")
-                .withStyle(ChatFormatting.YELLOW));
-            player.sendSystemMessage(I18n.translate("devmod.death.divider")
-                .withStyle(ChatFormatting.DARK_RED));
+                .withStyle(ChatFormatting.GRAY)));
+            player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.death.keybind_hint")
+                .withStyle(ChatFormatting.YELLOW)));
+            player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.death.divider")
+                .withStyle(ChatFormatting.DARK_RED)));
 
             LOGGER.info("[EnduranceQuest] Player {} died in quest: {} at wave {}",
                 player.getName().getString(), session.getQuest().getDisplayName(), session.getQuest().getCurrentWave());
@@ -182,8 +183,8 @@ public class EnduranceSessionHandler {
                 EnduranceEventHandler.onWaveStart(player, session, session.getQuest().getCurrentWave());
 
                 // Notify player of penalty
-                player.sendSystemMessage(I18n.translate("devmod.endurance.respawned_penalty", session.getQuest().getDeathsThisSession())
-                    .withStyle(ChatFormatting.RED));
+                player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.endurance.respawned_penalty", session.getQuest().getDeathsThisSession())
+                    .withStyle(ChatFormatting.RED)));
 
                 LOGGER.info("[EnduranceQuest] Player {} continuing quest after death at wave {}",
                     player.getName().getString(), session.getQuest().getCurrentWave());
@@ -203,7 +204,7 @@ public class EnduranceSessionHandler {
                 persistence.updatePlayerStats(playerId, session.getQuest(), false);
 
                 // Send empty sync to clear client HUD
-                PacketDistributor.sendToPlayer(player, QuestSyncPayload.empty());
+                PacketDistributor.sendToPlayer(player, Objects.requireNonNull(QuestSyncPayload.empty()));
 
                 // === NOW do the state restoration and cleanup ===
                 EndurancePlayerStateManager.INSTANCE.restorePlayerAfterQuest(player, session);
@@ -242,7 +243,7 @@ public class EnduranceSessionHandler {
                 persistence.updatePlayerStats(player.getUUID(), session.getQuest(), true);
 
                 // Send empty sync to clear client HUD
-                PacketDistributor.sendToPlayer(player, QuestSyncPayload.empty());
+                PacketDistributor.sendToPlayer(player, Objects.requireNonNull(QuestSyncPayload.empty()));
 
                 LOGGER.info("[EnduranceQuest] Player {} COMPLETED quest: {}!",
                     player.getName().getString(), session.getQuest().getDisplayName());
@@ -294,7 +295,7 @@ public class EnduranceSessionHandler {
             persistence.updatePlayerStats(playerId, session.getQuest(), false);
 
             // Send empty sync to clear client HUD
-            PacketDistributor.sendToPlayer(player, QuestSyncPayload.empty());
+            PacketDistributor.sendToPlayer(player, Objects.requireNonNull(QuestSyncPayload.empty()));
 
             LOGGER.info("[EnduranceQuest] Player {} exited at checkpoint (wave {})",
                 player.getName().getString(), session.getQuest().getCurrentWave());

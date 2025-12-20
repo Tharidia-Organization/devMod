@@ -7,6 +7,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import javax.annotation.Nonnull;
+
 /**
  * Confirmation screen before exiting an Endurance Quest.
  * Prevents accidental exits by requiring explicit confirmation.
@@ -41,7 +43,7 @@ public class QuestExitConfirmScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(graphics, mouseX, mouseY, partialTick);
         if (exitDialog != null && exitDialog.isVisible()) {
             exitDialog.render(graphics, font, width, height, mouseX, mouseY);

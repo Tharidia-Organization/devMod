@@ -8,16 +8,20 @@ import java.util.regex.Pattern;
  *
  * <p>Rules:
  * <ul>
- *   <li>Max 32 characters</li>
- *   <li>Only lowercase alphanumeric and underscores [a-z0-9_]</li>
+ *   <li>Min 3, Max 32 characters</li>
+ *   <li>Only lowercase alphanumeric and single underscores [a-z0-9_]</li>
  *   <li>Must start with letter</li>
  *   <li>Cannot end with underscore</li>
+ *   <li>No consecutive underscores</li>
  * </ul>
  */
 public record InstanceName(String value) {
 
+    private static final int MIN_LENGTH = 3;  // DD26: minimum length
     private static final int MAX_LENGTH = 32;
-    private static final Pattern VALID_PATTERN = Pattern.compile("^[a-z][a-z0-9_]*[a-z0-9]$|^[a-z]$");
+    // DD26: More restrictive pattern - no double underscores, min 3 chars
+    private static final Pattern VALID_PATTERN = Pattern.compile("^[a-z](?:[a-z0-9]|_(?!_))*[a-z0-9]$");
+    private static final Pattern DOUBLE_UNDERSCORE = Pattern.compile("__");
     private static final Random RANDOM = new Random();
 
     // Adjectives and nouns for random name generation
@@ -40,14 +44,24 @@ public record InstanceName(String value) {
 
     /**
      * Validates a potential instance name.
+     * DD26: More restrictive validation with min length and no double underscores.
      */
     public static ValidationResult validate(String name) {
         if (name == null || name.isEmpty()) {
             return ValidationResult.invalid("Name cannot be empty");
         }
 
+        if (name.length() < MIN_LENGTH) {
+            return ValidationResult.invalid("Name too short (min " + MIN_LENGTH + " chars)");
+        }
+
         if (name.length() > MAX_LENGTH) {
             return ValidationResult.invalid("Name too long (max " + MAX_LENGTH + " chars)");
+        }
+
+        // DD26: Check for consecutive underscores
+        if (DOUBLE_UNDERSCORE.matcher(name).find()) {
+            return ValidationResult.invalid("Name cannot contain consecutive underscores");
         }
 
         if (!VALID_PATTERN.matcher(name).matches()) {

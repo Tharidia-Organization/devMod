@@ -180,7 +180,7 @@ public class EnduranceAnalytics {
             Map<String, Integer> bodyPartTotals = new HashMap<>();
             for (QuestSessionRecord session : sessions) {
                 session.bodyPartHits.forEach((part, count) ->
-                    bodyPartTotals.merge(part, count, Integer::sum));
+                    bodyPartTotals.merge(part, count, (a, b) -> Objects.requireNonNull(Integer.sum(a, b))));
             }
             int totalHits = bodyPartTotals.values().stream().mapToInt(Integer::intValue).sum();
             bodyPartEffectiveness.clear();
@@ -250,7 +250,7 @@ public class EnduranceAnalytics {
 
         // Weapon usage
         float totalWeaponDamage = combatSession.getWeaponStats().values().stream()
-            .map(w -> w.totalDamage).reduce(0f, Float::sum);
+            .map(w -> w.totalDamage).reduce(0f, (a, b) -> Objects.requireNonNull(Float.sum(a, b)));
 
         for (CombatTracker.WeaponStats weaponStats : combatSession.getWeaponStats().values()) {
             WeaponUsageRecord weaponRecord = new WeaponUsageRecord();

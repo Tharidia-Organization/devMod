@@ -153,8 +153,8 @@ public class DuckDbRepository implements AutoCloseable {
             "CREATE INDEX IF NOT EXISTS idx_builds_created ON arena_template_builds (started_at DESC)",
             // idx_usage_template_day: for usage by template and date
             "CREATE INDEX IF NOT EXISTS idx_usage_template_day ON arena_template_usage (template_id, CAST(session_started_at AS DATE))",
-            // idx_usage_player: for player-specific queries (using session_id as proxy)
-            "CREATE INDEX IF NOT EXISTS idx_usage_session ON arena_template_usage (session_id, session_started_at DESC)"
+            // DD21: idx_usage_player for player-specific queries (using session_id as proxy)
+            "CREATE INDEX IF NOT EXISTS idx_usage_player ON arena_template_usage (session_id, session_started_at DESC)"
         };
 
         for (String sql : statements) {

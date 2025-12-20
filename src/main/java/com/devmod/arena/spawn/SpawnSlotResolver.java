@@ -140,7 +140,7 @@ public class SpawnSlotResolver {
 
         for (ForbiddenZone zone : forbiddenZones) {
             if (zone.contains(slot)) {
-                LOGGER.debug("Slot {} is in forbidden zone: {}", slot.id(), zone.reason());
+                LOGGER.debug("Slot {} is in forbidden zone: {}", slot.id(), zone.description());
                 return true;
             }
         }
@@ -312,9 +312,4 @@ public class SpawnSlotResolver {
     public List<ForbiddenZone> getForbiddenZones() {
         return Collections.unmodifiableList(forbiddenZones);
     }
-
-    /**
-     * Internal record for scoring slots.
-     */
-    private record ScoredSlot(SpawnSlot slot, double score) {}
 }

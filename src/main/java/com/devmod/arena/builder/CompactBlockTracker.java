@@ -1,10 +1,16 @@
 package com.devmod.arena.builder;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Memory-efficient block change tracker using packed long positions (DD8).
+ *
+ * <p>DD8: Uses fastutil LongArrayList for dynamic resizing without
+ * pre-allocating max capacity. Memory efficient and cache-friendly.
  *
  * <p>Memory budget:
  * <ul>
@@ -20,20 +26,21 @@ public class CompactBlockTracker {
     // DD8: Hard cap at 150k blocks
     public static final int MAX_TRACKED_BLOCKS = 150_000;
 
-    // Packed positions (BlockPos.asLong format)
-    private final long[] positions;
-    // Block state IDs (registry numeric ID)
-    private final int[] previousStateIds;
-    // Current size
-    private int size = 0;
+    // DD8: Using fastutil for memory efficiency and dynamic resizing
+    private final LongArrayList positions;
+    private final IntArrayList previousStateIds;
+    private final int maxCapacity;
 
     public CompactBlockTracker() {
         this(MAX_TRACKED_BLOCKS);
     }
 
     public CompactBlockTracker(int capacity) {
-        this.positions = new long[Math.min(capacity, MAX_TRACKED_BLOCKS)];
-        this.previousStateIds = new int[Math.min(capacity, MAX_TRACKED_BLOCKS)];
+        this.maxCapacity = Math.min(capacity, MAX_TRACKED_BLOCKS);
+        // DD8: Start with reasonable initial capacity, grow as needed
+        int initialCapacity = Math.min(1000, maxCapacity);
+        this.positions = new LongArrayList(initialCapacity);
+        this.previousStateIds = new IntArrayList(initialCapacity);
     }
 
     /**
@@ -44,25 +51,26 @@ public class CompactBlockTracker {
      * @throws BuildLimitExceededException if limit exceeded
      */
     public void track(long packedPos, int previousStateId) {
-        if (size >= positions.length) {
+        if (positions.size() >= maxCapacity) {
             throw new BuildLimitExceededException(
                 BuildLimitExceededException.LimitType.BLOCKS,
-                size + 1,
+                positions.size() + 1,
                 MAX_TRACKED_BLOCKS
             );
         }
-        positions[size] = packedPos;
-        previousStateIds[size] = previousStateId;
-        size++;
+        // DD8: LongArrayList.add() handles dynamic resizing
+        positions.add(packedPos);
+        previousStateIds.add(previousStateId);
     }
 
     /**
      * Returns tracked changes for rollback (in reverse order).
      */
     public List<BlockChange> getChangesReversed() {
-        List<BlockChange> changes = new ArrayList<>(size);
-        for (int i = size - 1; i >= 0; i--) {
-            changes.add(new BlockChange(positions[i], previousStateIds[i]));
+        int currentSize = positions.size();
+        List<BlockChange> changes = new ArrayList<>(currentSize);
+        for (int i = currentSize - 1; i >= 0; i--) {
+            changes.add(new BlockChange(positions.getLong(i), previousStateIds.getInt(i)));
         }
         return changes;
     }
@@ -71,14 +79,15 @@ public class CompactBlockTracker {
      * Returns the number of tracked blocks.
      */
     public int size() {
-        return size;
+        return positions.size();
     }
 
     /**
      * Clears all tracked changes.
      */
     public void clear() {
-        size = 0;
+        positions.clear();
+        previousStateIds.clear();
     }
 
     /**
@@ -86,7 +95,7 @@ public class CompactBlockTracker {
      */
     public long estimatedMemoryBytes() {
         // 8 bytes per long + 4 bytes per int = 12 bytes per entry
-        return (long) size * 12L;
+        return (long) positions.size() * 12L;
     }
 
     /**

@@ -11,6 +11,7 @@ import org.joml.Quaternionf;
 import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -51,10 +52,10 @@ public final class ModelPartTransformExtractor {
      * @return Snapshot of all bone transforms
      */
     @Nonnull
-    public static AnimationSnapshot extractTransforms(@Nonnull LivingEntity entity,
+    public static AnimationSnapshot extractTransforms(LivingEntity entity,
                                                       float partialTick,
                                                       long currentTick) {
-        int entityId = entity.getId();
+        int entityId = Objects.requireNonNull(entity).getId();
 
         // Check cache first
         AnimationSnapshot cached = TRANSFORM_CACHE.get(entityId);
@@ -75,14 +76,15 @@ public final class ModelPartTransformExtractor {
      * Extracts transforms without caching.
      */
     @Nonnull
-    public static AnimationSnapshot extractTransformsUncached(@Nonnull LivingEntity entity,
+    public static AnimationSnapshot extractTransformsUncached(LivingEntity entity,
                                                               float partialTick,
                                                               long currentTick) {
+        Objects.requireNonNull(entity);
         AnimationSnapshot.Builder builder = AnimationSnapshot.builder(
             entity.getId(), currentTick, partialTick);
 
         // Set entity position and rotation
-        Vec3 position = entity.getPosition(partialTick);
+        Vec3 position = Objects.requireNonNull(entity.getPosition(partialTick));
         float yBodyRot = lerpAngle(partialTick, entity.yBodyRotO, entity.yBodyRot);
         float yHeadRot = lerpAngle(partialTick, entity.yHeadRotO, entity.yHeadRot);
         float xHeadRot = lerp(partialTick, entity.xRotO, entity.getXRot());
@@ -109,7 +111,7 @@ public final class ModelPartTransformExtractor {
      * 3. Fall back to calculated transforms (based on animation state)
      */
     @Nonnull
-    private static Map<String, Matrix4f> extractBoneTransforms(@Nonnull LivingEntity entity,
+    private static Map<String, Matrix4f> extractBoneTransforms(LivingEntity entity,
                                                                float partialTick) {
         Map<String, Matrix4f> transforms = new HashMap<>();
 
@@ -129,12 +131,12 @@ public final class ModelPartTransformExtractor {
         }
 
         // Try GeckoLib for modded entities that use it
-        if (GeckoLibCompat.isGeckoLibEntity(entity)) {
-            Map<String, Matrix4f> geckoTransforms = GeckoLibCompat.extractGeckoLibTransforms(entity);
+        if (GeckoLibCompat.isGeckoLibEntity(Objects.requireNonNull(entity))) {
+            Map<String, Matrix4f> geckoTransforms = GeckoLibCompat.extractGeckoLibTransforms(Objects.requireNonNull(entity));
             if (!geckoTransforms.isEmpty()) {
                 // Map GeckoLib bone names to our standard names
                 for (var entry : geckoTransforms.entrySet()) {
-                    String standardName = GeckoLibCompat.mapBoneName(entry.getKey());
+                    String standardName = Objects.requireNonNull(GeckoLibCompat.mapBoneName(Objects.requireNonNull(entry.getKey())));
                     transforms.put(standardName, entry.getValue());
                 }
                 return transforms;
@@ -152,9 +154,9 @@ public final class ModelPartTransformExtractor {
     /**
      * Extracts transforms for humanoid entities using animation data.
      */
-    private static void extractHumanoidTransforms(@Nonnull LivingEntity entity,
+    private static void extractHumanoidTransforms(LivingEntity entity,
                                                   float partialTick,
-                                                  @Nonnull Map<String, Matrix4f> transforms) {
+                                                  Map<String, Matrix4f> transforms) {
         // Head rotation
         float headYaw = entity.yHeadRot - entity.yBodyRot;
         float headPitch = entity.getXRot();
@@ -203,7 +205,7 @@ public final class ModelPartTransformExtractor {
     /**
      * Checks if an entity uses humanoid model.
      */
-    private static boolean isHumanoid(@Nonnull LivingEntity entity) {
+    private static boolean isHumanoid(LivingEntity entity) {
         // Check common humanoid entity types
         String className = entity.getClass().getSimpleName().toLowerCase();
         return className.contains("player") ||
@@ -252,7 +254,8 @@ public final class ModelPartTransformExtractor {
      * @return Transform matrix
      */
     @Nonnull
-    public static Matrix4f extractFromModelPart(@Nonnull ModelPart part) {
+    public static Matrix4f extractFromModelPart(ModelPart part) {
+        Objects.requireNonNull(part);
         return createTransformFromModelPart(
             part.xRot, part.yRot, part.zRot,
             part.x, part.y, part.z
@@ -263,9 +266,9 @@ public final class ModelPartTransformExtractor {
      * Extracts transform from a ModelPart with scale.
      */
     @Nonnull
-    public static Matrix4f extractFromModelPartWithScale(@Nonnull ModelPart part,
+    public static Matrix4f extractFromModelPartWithScale(ModelPart part,
                                                          float xScale, float yScale, float zScale) {
-        Matrix4f transform = extractFromModelPart(part);
+        Matrix4f transform = extractFromModelPart(Objects.requireNonNull(part));
         transform.scale(xScale, yScale, zScale);
         return transform;
     }
@@ -280,15 +283,16 @@ public final class ModelPartTransformExtractor {
      * @return Map of bone name to transform
      */
     @Nonnull
-    public static Map<String, Matrix4f> extractFromHumanoidModel(@Nonnull HumanoidModel<?> model) {
+    public static Map<String, Matrix4f> extractFromHumanoidModel(HumanoidModel<?> model) {
+        Objects.requireNonNull(model);
         Map<String, Matrix4f> transforms = new HashMap<>();
 
-        transforms.put("head", extractFromModelPart(model.head));
-        transforms.put("body", extractFromModelPart(model.body));
-        transforms.put("rightArm", extractFromModelPart(model.rightArm));
-        transforms.put("leftArm", extractFromModelPart(model.leftArm));
-        transforms.put("rightLeg", extractFromModelPart(model.rightLeg));
-        transforms.put("leftLeg", extractFromModelPart(model.leftLeg));
+        transforms.put("head", extractFromModelPart(Objects.requireNonNull(model.head)));
+        transforms.put("body", extractFromModelPart(Objects.requireNonNull(model.body)));
+        transforms.put("rightArm", extractFromModelPart(Objects.requireNonNull(model.rightArm)));
+        transforms.put("leftArm", extractFromModelPart(Objects.requireNonNull(model.leftArm)));
+        transforms.put("rightLeg", extractFromModelPart(Objects.requireNonNull(model.rightLeg)));
+        transforms.put("leftLeg", extractFromModelPart(Objects.requireNonNull(model.leftLeg)));
 
         return transforms;
     }

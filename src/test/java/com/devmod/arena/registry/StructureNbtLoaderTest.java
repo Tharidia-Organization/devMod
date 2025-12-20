@@ -3,7 +3,6 @@ package com.devmod.arena.registry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.nbt.Tag;
 import net.minecraft.nbt.IntArrayTag;
 import org.junit.jupiter.api.Test;
 
@@ -11,6 +10,7 @@ import java.io.ByteArrayOutputStream;
 import java.security.MessageDigest;
 import java.util.HexFormat;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -144,7 +144,7 @@ class StructureNbtLoaderTest {
 
     private byte[] toCompressedBytes(CompoundTag tag) throws Exception {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        NbtIo.writeCompressed(tag, out);
+        NbtIo.writeCompressed(Objects.requireNonNull(tag), out);
         return out.toByteArray();
     }
 

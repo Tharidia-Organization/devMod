@@ -18,6 +18,7 @@ import com.frenkvs.devmod.party.QuestStartSequence;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -58,7 +59,7 @@ public class EnduranceEventTick {
 
             // Tick perk effects and enforce arena confinement for all players in active quests
             for (UUID playerId : EnduranceQuestManager.INSTANCE.getActiveSessions().keySet()) {
-                ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+                ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(playerId));
                 if (player != null) {
                     PerkSystem.INSTANCE.tick(player);
 
@@ -115,7 +116,7 @@ public class EnduranceEventTick {
             var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
             if (server == null) continue;
 
-            ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+            ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(playerId));
             if (player == null) continue;
 
             // Build modifier list
@@ -183,7 +184,7 @@ public class EnduranceEventTick {
                 // Arena not yet assigned, skip confinement check
                 return;
             }
-            if (!arena.contains(player.position())) {
+            if (!arena.contains(Objects.requireNonNull(player.position()))) {
                 // Teleport back to center
                 player.teleportTo(
                     arena.getCenter().getX() + 0.5,
@@ -235,7 +236,7 @@ public class EnduranceEventTick {
             // Get all entities in arena bounds
             List<Entity> entitiesInArena = level.getEntities(
                 (Entity) null,
-                arena.getBounds(),
+                Objects.requireNonNull(arena.getBounds()),
                 entity -> entity instanceof Mob
             );
 
@@ -246,7 +247,7 @@ public class EnduranceEventTick {
                     // Check if this mob belongs to our quest
                     boolean isQuestMob = data.contains("endurance_quest_id") &&
                         data.contains("endurance_arena_id") &&
-                        data.getUUID("endurance_arena_id").equals(arena.getId());
+                        Objects.requireNonNull(data.getUUID("endurance_arena_id")).equals(arena.getId());
 
                     if (!isQuestMob) {
                         // This is an external mob - remove it
@@ -293,7 +294,7 @@ public class EnduranceEventTick {
             List<UUID> deadMobIds = new ArrayList<>();
 
             for (UUID mobId : waveState.getSpawnedMobs()) {
-                Entity entity = level.getEntity(mobId);
+                Entity entity = level.getEntity(Objects.requireNonNull(mobId));
                 if (entity != null && entity.isAlive()) {
                     aliveMobs++;
                 } else {
@@ -339,7 +340,7 @@ public class EnduranceEventTick {
             // Use modulo to reuse positions if we don't have enough
             net.minecraft.core.BlockPos spawnPos = spawnPositions.get(i % Math.max(1, spawnPositions.size()));
 
-            Entity entity = entityType.create(level);
+            Entity entity = entityType.create(Objects.requireNonNull(level));
             if (entity instanceof Mob mob) {
                 // Position the mob
                 mob.setPos(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5);
@@ -352,8 +353,8 @@ public class EnduranceEventTick {
 
                 // Tag mob as quest mob BEFORE adding to world
                 CompoundTag tag = mob.getPersistentData();
-                tag.putUUID("endurance_quest_id", waveState.getQuest().getQuestId());
-                tag.putUUID("endurance_arena_id", arena.getId());
+                tag.putUUID("endurance_quest_id", Objects.requireNonNull(waveState.getQuest().getQuestId()));
+                tag.putUUID("endurance_arena_id", Objects.requireNonNull(arena.getId()));
                 tag.putBoolean("endurance_respawned", true); // Mark as respawned
 
                 // Add to world and verify success
@@ -364,7 +365,7 @@ public class EnduranceEventTick {
                     if (i < deadMobIds.size()) {
                         waveState.getSpawnedMobs().remove(deadMobIds.get(i));
                     }
-                    waveState.getSpawnedMobs().add(mob.getUUID());
+                    waveState.getSpawnedMobs().add(Objects.requireNonNull(mob.getUUID()));
                     successfulRespawns++;
 
                     LOGGER.info("[EnduranceQuest] Respawned {} at {} for wave {}",
@@ -379,10 +380,10 @@ public class EnduranceEventTick {
         if (successfulRespawns > 0) {
             UUID playerId = session.getPlayerId();
             var serverInstance = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
-            ServerPlayer player = serverInstance != null ? serverInstance.getPlayerList().getPlayer(playerId) : null;
+            ServerPlayer player = serverInstance != null ? serverInstance.getPlayerList().getPlayer(Objects.requireNonNull(playerId)) : null;
             if (player != null) {
-                player.sendSystemMessage(I18n.translate("devmod.endurance.mobs_respawned", successfulRespawns)
-                    .withStyle(ChatFormatting.YELLOW));
+                player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.endurance.mobs_respawned", successfulRespawns)
+                    .withStyle(ChatFormatting.YELLOW)));
             }
         }
     }
@@ -394,7 +395,7 @@ public class EnduranceEventTick {
     @SuppressWarnings("deprecation")
     private static void finalizeSpawnDeprecated(Mob mob, net.minecraft.server.level.ServerLevel level,
                                                  net.minecraft.core.BlockPos spawnPos) {
-        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos),
+        mob.finalizeSpawn(level, Objects.requireNonNull(level.getCurrentDifficultyAt(Objects.requireNonNull(spawnPos))),
             net.minecraft.world.entity.MobSpawnType.MOB_SUMMONED, null);
     }
 
@@ -405,26 +406,26 @@ public class EnduranceEventTick {
         for (WaveManager.WaveModifier modifier : waveState.getModifiers()) {
             switch (modifier) {
                 case SPEED_BOOST -> {
-                    var speedAttr = mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+                    var speedAttr = mob.getAttribute(Objects.requireNonNull(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED));
                     if (speedAttr != null) {
                         speedAttr.setBaseValue(speedAttr.getBaseValue() * 1.25);
                     }
                 }
                 case DAMAGE_BOOST -> {
-                    var attackAttr = mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
+                    var attackAttr = mob.getAttribute(Objects.requireNonNull(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE));
                     if (attackAttr != null) {
                         attackAttr.setBaseValue(attackAttr.getBaseValue() * 1.25);
                     }
                 }
                 case HEALTH_BOOST -> {
-                    var healthAttr = mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH);
+                    var healthAttr = mob.getAttribute(Objects.requireNonNull(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH));
                     if (healthAttr != null) {
                         healthAttr.setBaseValue(healthAttr.getBaseValue() * 1.5);
                         mob.setHealth(mob.getMaxHealth());
                     }
                 }
                 case ARMOR_BOOST -> {
-                    var armorAttr = mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR);
+                    var armorAttr = mob.getAttribute(Objects.requireNonNull(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR));
                     if (armorAttr != null) {
                         armorAttr.setBaseValue(armorAttr.getBaseValue() + 8);
                     }
@@ -434,11 +435,11 @@ public class EnduranceEventTick {
                 }
                 case INVISIBILITY -> {
                     mob.addEffect(new MobEffectInstance(
-                        MobEffects.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
+                        Objects.requireNonNull(MobEffects.INVISIBILITY), Integer.MAX_VALUE, 0, false, false));
                 }
                 case REGEN -> {
                     mob.addEffect(new MobEffectInstance(
-                        MobEffects.REGENERATION, Integer.MAX_VALUE, 0, false, false));
+                        Objects.requireNonNull(MobEffects.REGENERATION), Integer.MAX_VALUE, 0, false, false));
                 }
                 case DOUBLE_SPAWN -> {
                     // Not applicable for individual mob spawns

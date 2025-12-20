@@ -233,8 +233,8 @@ public class RecoverySystem {
 
             // 9. Notify player
             player.sendSystemMessage(
-                net.minecraft.network.chat.Component.literal("[DevMod] " + reason + ". Your state has been restored.")
-                    .withStyle(net.minecraft.ChatFormatting.YELLOW)
+                Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] " + reason + ". Your state has been restored.")
+                    .withStyle(net.minecraft.ChatFormatting.YELLOW))
             );
 
             LOGGER.info("[Recovery] Successfully recovered player {}", player.getName().getString());
@@ -242,8 +242,8 @@ public class RecoverySystem {
         } catch (Exception e) {
             LOGGER.error("[Recovery] Failed to recover player {}", player.getName().getString(), e);
             player.sendSystemMessage(
-                net.minecraft.network.chat.Component.literal("[DevMod] Recovery failed! Please contact an admin.")
-                    .withStyle(net.minecraft.ChatFormatting.RED)
+                Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Recovery failed! Please contact an admin.")
+                    .withStyle(net.minecraft.ChatFormatting.RED))
             );
         }
     }
@@ -255,7 +255,8 @@ public class RecoverySystem {
             dimLocation = Level.OVERWORLD.location();
         }
 
-        ResourceKey<Level> dimensionKey = ResourceKey.create(Registries.DIMENSION, dimLocation);
+        ResourceKey<Level> dimensionKey = Objects.requireNonNull(ResourceKey.create(
+            Objects.requireNonNull(Registries.DIMENSION), Objects.requireNonNull(dimLocation)));
         ServerLevel targetLevel = server.getLevel(dimensionKey);
 
         if (targetLevel == null) {
@@ -265,11 +266,11 @@ public class RecoverySystem {
 
         // Teleport player
         player.teleportTo(
-            targetLevel,
+            Objects.requireNonNull(targetLevel),
             snapshot.getOriginalX(),
             snapshot.getOriginalY(),
             snapshot.getOriginalZ(),
-            Set.of(),
+            Objects.requireNonNull(Set.of()),
             snapshot.getOriginalYaw(),
             snapshot.getOriginalPitch()
         );
@@ -294,7 +295,7 @@ public class RecoverySystem {
         player.getInventory().clearContent();
 
         // Load from NBT
-        ListTag inventoryList = inventoryNBT.getList("Items", 10);
+        ListTag inventoryList = Objects.requireNonNull(inventoryNBT.getList("Items", 10));
         player.getInventory().load(inventoryList);
 
         LOGGER.debug("[Recovery] Restored inventory for {} ({} slots)",
@@ -334,7 +335,7 @@ public class RecoverySystem {
         if (effectsNBT != null && effectsNBT.contains("Effects")) {
             ListTag effectsList = effectsNBT.getList("Effects", 10);
             for (int i = 0; i < effectsList.size(); i++) {
-                CompoundTag effectTag = effectsList.getCompound(i);
+                CompoundTag effectTag = Objects.requireNonNull(effectsList.getCompound(i));
                 MobEffectInstance effect = MobEffectInstance.load(effectTag);
                 if (effect != null) {
                     player.addEffect(effect);
@@ -411,7 +412,7 @@ public class RecoverySystem {
     private void cleanupOrphanedDimensionFolders(MinecraftServer server) {
         // This will be implemented when DynamicDimensionManager is ready
         // For now, just log what we would do
-        Path dimensionsDir = server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT)
+        Path dimensionsDir = server.getWorldPath(Objects.requireNonNull(net.minecraft.world.level.storage.LevelResource.ROOT))
             .resolve("dimensions").resolve("devmod");
 
         if (!Files.exists(dimensionsDir)) return;
@@ -427,10 +428,10 @@ public class RecoverySystem {
                     UUID instanceId = parseUuidWithoutDashes(uuidStrWithoutDashes);
                     if (instanceId != null && InstanceRegistry.INSTANCE.getInstance(instanceId).isEmpty()) {
                         // Skip deletion if the dimension is still registered/loaded
-                        ResourceKey<Level> dimKey = ResourceKey.create(
-                            Registries.DIMENSION,
-                            ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "instance_" + uuidStrWithoutDashes)
-                        );
+                        ResourceKey<Level> dimKey = Objects.requireNonNull(ResourceKey.create(
+                            Objects.requireNonNull(Registries.DIMENSION),
+                            Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "instance_" + uuidStrWithoutDashes))
+                        ));
 
                         boolean isLoaded = server.getLevel(dimKey) != null;
                         boolean trackedByManager = DynamicDimensionManager.INSTANCE

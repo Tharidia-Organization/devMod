@@ -2,12 +2,16 @@ package com.devmod.arena.builder;
 
 import com.devmod.arena.budget.BackpressureManager;
 import com.devmod.arena.budget.BuildBudget;
+import com.devmod.arena.event.TemplateEventDispatcher;
+import com.devmod.arena.gate.InstanceOnlyGate;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+import com.devmod.arena.config.ArenaTemplateConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -26,6 +30,8 @@ public class AsyncArenaBuilder {
     private final BlockPlacer blockPlacer;
     private final BackpressureManager backpressure;
     private final Supplier<Double> msptSupplier;
+    private final TemplateEventDispatcher eventDispatcher;
+    private final InstanceOnlyGate instanceGate;
 
     // Active builds
     private final Queue<AsyncBuild> activeBuildQueue = new ConcurrentLinkedQueue<>();
@@ -40,10 +46,7 @@ public class AsyncArenaBuilder {
             ArenaTelemetry telemetry,
             BlockPlacer blockPlacer,
             Supplier<Double> msptSupplier) {
-        this.telemetry = telemetry;
-        this.blockPlacer = blockPlacer;
-        this.msptSupplier = msptSupplier;
-        this.backpressure = new BackpressureManager();
+        this(telemetry, blockPlacer, msptSupplier, new BackpressureManager(), null);
     }
 
     public AsyncArenaBuilder(
@@ -51,10 +54,64 @@ public class AsyncArenaBuilder {
             BlockPlacer blockPlacer,
             Supplier<Double> msptSupplier,
             BackpressureManager backpressure) {
+        this(telemetry, blockPlacer, msptSupplier, backpressure, null);
+    }
+
+    public AsyncArenaBuilder(
+            ArenaTelemetry telemetry,
+            BlockPlacer blockPlacer,
+            Supplier<Double> msptSupplier,
+            ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
+        this(telemetry, blockPlacer, msptSupplier, new BackpressureManager(), configSnapshot);
+    }
+
+    public AsyncArenaBuilder(
+            ArenaTelemetry telemetry,
+            BlockPlacer blockPlacer,
+            Supplier<Double> msptSupplier,
+            BackpressureManager backpressure,
+            ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
         this.telemetry = telemetry;
         this.blockPlacer = blockPlacer;
         this.msptSupplier = msptSupplier;
         this.backpressure = backpressure;
+        this.eventDispatcher = TemplateEventDispatcher.getInstance();
+        this.instanceGate = configSnapshot != null ? new InstanceOnlyGate(configSnapshot, telemetry) : null;
+    }
+
+    /**
+     * DD44: Submits a build and returns a CompletableFuture for the result.
+     *
+     * @param arenaId Arena ID
+     * @param template Template to build
+     * @param originX World X
+     * @param originY World Y
+     * @param originZ World Z
+     * @return CompletableFuture that completes when build finishes
+     */
+    public CompletableFuture<AsyncBuildResult> submitBuildAsync(
+            UUID arenaId,
+            ArenaTemplate template,
+            int originX,
+            int originY,
+            int originZ) {
+
+        CompletableFuture<AsyncBuildResult> future = new CompletableFuture<>();
+
+        boolean submitted = submitBuild(arenaId, template, originX, originY, originZ, result -> {
+            if (result.success()) {
+                future.complete(result);
+            } else {
+                future.completeExceptionally(new BuildException(result.errorMessage(), result));
+            }
+        });
+
+        if (!submitted) {
+            future.completeExceptionally(new IllegalStateException(
+                "Build already in progress for arena " + arenaId));
+        }
+
+        return future;
     }
 
     /**
@@ -75,6 +132,18 @@ public class AsyncArenaBuilder {
             int originY,
             int originZ,
             Consumer<AsyncBuildResult> callback) {
+
+        // Instance-only gate: block overworld builds when configured and using Minecraft block placer
+        if (instanceGate != null && blockPlacer instanceof com.devmod.arena.integration.MinecraftBlockPlacer mcPlacer) {
+            InstanceOnlyGate.Result gateResult = instanceGate.check(mcPlacer.level(), "AsyncArenaBuilder.submitBuild");
+            if (gateResult == InstanceOnlyGate.Result.BLOCKED) {
+                LOGGER.error("Instance-only gate blocked async build for template {} in {}", template.id(), mcPlacer.level().dimension().location());
+                callback.accept(AsyncBuildResult.failure(arenaId, template.id(), "instance_only_blocked", 0, 0));
+                return false;
+            } else if (gateResult == InstanceOnlyGate.Result.ALLOWED_DEBUG_ONLY) {
+                LOGGER.warn("Instance-only gate: debug-only build for template {} in {}", template.id(), mcPlacer.level().dimension().location());
+            }
+        }
 
         if (buildsByArenaId.containsKey(arenaId)) {
             LOGGER.warn("Build already in progress for arena {}", arenaId);
@@ -99,6 +168,10 @@ public class AsyncArenaBuilder {
             "templateId", template.id(),
             "queueSize", activeBuildQueue.size()
         ));
+
+        // DD13: Emit BuildStarted event
+        eventDispatcher.emitBuildStarted(
+            template.id(), arenaId, null, build.placements.size());
 
         return true;
     }
@@ -187,11 +260,11 @@ public class AsyncArenaBuilder {
             totalBuildsFailed++;
             LOGGER.error("Async build failed for arena {}: {}", build.arenaId, error.getMessage());
 
-            // Rollback
+            // Rollback - delegates to BlockPlacer for blocks, entity/chunk ops require Minecraft integration
             build.transaction.rollback(
                 blockPlacer::revertBlock,
-                uuid -> true, // Entity removal placeholder
-                pos -> {}     // Chunk release placeholder
+                uuid -> { LOGGER.debug("Entity removal requested: {}", uuid); return true; },
+                pos -> LOGGER.debug("Chunk release requested: {}", pos)
             );
 
             build.callback.accept(AsyncBuildResult.failure(
@@ -206,6 +279,11 @@ public class AsyncArenaBuilder {
                 "blocksPlaced", build.budget.getCurrentBlocks(),
                 "durationMs", build.budget.getElapsedMs()
             ));
+
+            // DD13: Emit BuildFailed event
+            eventDispatcher.emitBuildFailed(
+                build.template.id(), build.arenaId, error.getMessage(), error,
+                build.budget.getElapsedMs(), true);
 
         } else {
             totalBuildsCompleted++;
@@ -225,6 +303,11 @@ public class AsyncArenaBuilder {
                 "blocksPlaced", build.budget.getCurrentBlocks(),
                 "durationMs", build.budget.getElapsedMs()
             ));
+
+            // DD13: Emit BuildCompleted event
+            eventDispatcher.emitBuildCompleted(
+                build.template.id(), build.arenaId,
+                build.budget.getCurrentBlocks(), 0, build.budget.getElapsedMs());
         }
     }
 
@@ -232,18 +315,38 @@ public class AsyncArenaBuilder {
      * Cancels a build in progress.
      */
     public boolean cancelBuild(UUID arenaId) {
+        return cancelBuild(arenaId, null, "user-requested");
+    }
+
+    /**
+     * Cancels a build in progress with tracking.
+     *
+     * @param arenaId Arena ID to cancel
+     * @param cancelledBy UUID of player who cancelled (null for system)
+     * @param reason Reason for cancellation
+     * @return true if cancelled, false if no build found
+     */
+    public boolean cancelBuild(UUID arenaId, UUID cancelledBy, String reason) {
         AsyncBuild build = buildsByArenaId.remove(arenaId);
         if (build != null) {
             activeBuildQueue.remove(build);
 
-            // Rollback
+            int blocksPlaced = build.budget.getCurrentBlocks();
+            long durationMs = build.budget.getElapsedMs();
+
+            // Rollback with proper logging
             build.transaction.rollback(
                 blockPlacer::revertBlock,
-                uuid -> true,
-                pos -> {}
+                uuid -> { LOGGER.debug("Entity removal requested during cancel: {}", uuid); return true; },
+                pos -> LOGGER.debug("Chunk release requested during cancel: {}", pos)
             );
 
             LOGGER.info("Cancelled build for arena {}", arenaId);
+
+            // DD13: Emit BuildCancelled event
+            eventDispatcher.emitBuildCancelled(
+                build.template.id(), arenaId, cancelledBy, reason, blocksPlaced, durationMs);
+
             return true;
         }
         return false;
@@ -283,7 +386,6 @@ public class AsyncArenaBuilder {
     private static class AsyncBuild {
         final UUID arenaId;
         final ArenaTemplate template;
-        final int originX, originY, originZ;
         final Consumer<AsyncBuildResult> callback;
         final BuildTransaction transaction;
         final BuildBudget budget;
@@ -294,9 +396,6 @@ public class AsyncArenaBuilder {
                    Consumer<AsyncBuildResult> callback) {
             this.arenaId = arenaId;
             this.template = template;
-            this.originX = originX;
-            this.originY = originY;
-            this.originZ = originZ;
             this.callback = callback;
             this.transaction = new BuildTransaction(template.id());
             this.budget = BuildBudget.defaults();
@@ -327,8 +426,10 @@ public class AsyncArenaBuilder {
             // Floor
             if (template.floor() != null) {
                 var floor = template.floor();
-                int sizeX = template.sizeX() != null ? template.sizeX() : template.size();
-                int sizeZ = template.sizeZ() != null ? template.sizeZ() : template.size();
+                Integer sizeXVal = template.sizeX();
+                Integer sizeZVal = template.sizeZ();
+                int sizeX = sizeXVal != null ? sizeXVal : template.size();
+                int sizeZ = sizeZVal != null ? sizeZVal : template.size();
                 int halfX = sizeX / 2;
                 int halfZ = sizeZ / 2;
 
@@ -373,6 +474,23 @@ public class AsyncArenaBuilder {
         int placeBlock(int x, int y, int z, String material);
         default boolean revertBlock(long packedPos, int stateId) {
             return true;
+        }
+    }
+
+    /**
+     * DD44: Exception for failed builds, includes result details.
+     */
+    public static class BuildException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+        private final transient AsyncBuildResult result;
+
+        public BuildException(String message, AsyncBuildResult result) {
+            super(message);
+            this.result = result;
+        }
+
+        public AsyncBuildResult getResult() {
+            return result;
         }
     }
 }

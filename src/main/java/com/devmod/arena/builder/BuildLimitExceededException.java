@@ -4,6 +4,7 @@ package com.devmod.arena.builder;
  * Exception thrown when a build exceeds the configured limits (DD8).
  */
 public class BuildLimitExceededException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
 
     private final int attempted;
     private final int limit;

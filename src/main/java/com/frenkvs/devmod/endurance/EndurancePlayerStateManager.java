@@ -8,6 +8,7 @@ import net.minecraft.world.level.GameType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -75,29 +76,29 @@ public class EndurancePlayerStateManager {
         var inventory = player.getInventory();
 
         // Iron Sword (main weapon)
-        ItemStack sword = new ItemStack(Items.IRON_SWORD);
+        ItemStack sword = new ItemStack(Objects.requireNonNull(Items.IRON_SWORD));
         inventory.add(sword);
 
         // Bow + Arrows (ranged option)
-        ItemStack bow = new ItemStack(Items.BOW);
+        ItemStack bow = new ItemStack(Objects.requireNonNull(Items.BOW));
         inventory.add(bow);
-        inventory.add(new ItemStack(Items.ARROW, 32));
+        inventory.add(new ItemStack(Objects.requireNonNull(Items.ARROW), 32));
 
         // Shield (defense)
-        inventory.add(new ItemStack(Items.SHIELD));
+        inventory.add(new ItemStack(Objects.requireNonNull(Items.SHIELD)));
 
         // Basic armor set (iron)
-        player.getInventory().armor.set(3, new ItemStack(Items.IRON_HELMET));      // Head slot
-        player.getInventory().armor.set(2, new ItemStack(Items.IRON_CHESTPLATE));  // Chest slot
-        player.getInventory().armor.set(1, new ItemStack(Items.IRON_LEGGINGS));    // Legs slot
-        player.getInventory().armor.set(0, new ItemStack(Items.IRON_BOOTS));       // Feet slot
+        player.getInventory().armor.set(3, new ItemStack(Objects.requireNonNull(Items.IRON_HELMET)));      // Head slot
+        player.getInventory().armor.set(2, new ItemStack(Objects.requireNonNull(Items.IRON_CHESTPLATE)));  // Chest slot
+        player.getInventory().armor.set(1, new ItemStack(Objects.requireNonNull(Items.IRON_LEGGINGS)));    // Legs slot
+        player.getInventory().armor.set(0, new ItemStack(Objects.requireNonNull(Items.IRON_BOOTS)));       // Feet slot
 
         // Food (golden apples for emergency healing)
-        inventory.add(new ItemStack(Items.GOLDEN_APPLE, 3));
-        inventory.add(new ItemStack(Items.COOKED_BEEF, 16));
+        inventory.add(new ItemStack(Objects.requireNonNull(Items.GOLDEN_APPLE), 3));
+        inventory.add(new ItemStack(Objects.requireNonNull(Items.COOKED_BEEF), 16));
 
         // Utility items
-        inventory.add(new ItemStack(Items.TORCH, 16));
+        inventory.add(new ItemStack(Objects.requireNonNull(Items.TORCH), 16));
 
         LOGGER.debug("[EnduranceQuest] Gave starter kit to {}", player.getName().getString());
     }

@@ -7,6 +7,7 @@ import net.minecraft.nbt.CompoundTag;
 import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -67,7 +68,7 @@ public class TemplateOverrideManager {
 
         // Store in data attachment for relog persistence
         TemplateOverrideCapability.TemplateOverrideData data =
-                player.getData(TemplateOverrideCapability.TEMPLATE_OVERRIDE.get());
+                player.getData(Objects.requireNonNull(TemplateOverrideCapability.TEMPLATE_OVERRIDE.get()));
         data.setOverride(persistentOverride);
 
         return persistentOverride;
@@ -123,7 +124,7 @@ public class TemplateOverrideManager {
         clearOverride(player.getUUID());
 
         TemplateOverrideCapability.TemplateOverrideData data =
-                player.getData(TemplateOverrideCapability.TEMPLATE_OVERRIDE.get());
+                player.getData(Objects.requireNonNull(TemplateOverrideCapability.TEMPLATE_OVERRIDE.get()));
         data.clearOverride();
     }
 
@@ -134,7 +135,7 @@ public class TemplateOverrideManager {
      */
     public void restoreFromAttachment(ServerPlayer player) {
         TemplateOverrideCapability.TemplateOverrideData data =
-                player.getData(TemplateOverrideCapability.TEMPLATE_OVERRIDE.get());
+                player.getData(Objects.requireNonNull(TemplateOverrideCapability.TEMPLATE_OVERRIDE.get()));
 
         data.getOverride().ifPresent(override -> {
             if (!override.isExpired()) {
@@ -181,7 +182,7 @@ public class TemplateOverrideManager {
 
         public CompoundTag toNbt() {
             CompoundTag tag = new CompoundTag();
-            tag.putString("templateId", templateId.toString());
+            tag.putString("templateId", Objects.requireNonNull(templateId.toString()));
             tag.putLong("expiry", expiry.getEpochSecond());
             tag.putBoolean("persistent", persistent);
             return tag;
@@ -189,7 +190,7 @@ public class TemplateOverrideManager {
 
         @Nullable
         public static TemplateOverride fromNbt(CompoundTag tag) {
-            String templateIdStr = tag.getString("templateId");
+            String templateIdStr = Objects.requireNonNull(tag.getString("templateId"));
             ResourceLocation templateId = ResourceLocation.tryParse(templateIdStr);
             if (templateId == null) {
                 return null;

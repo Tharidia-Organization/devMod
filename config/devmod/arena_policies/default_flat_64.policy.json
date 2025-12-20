@@ -1,0 +1,17 @@
+{
+  "id": "default_flat_64.policy",
+  "version": 1,
+  "templateId": "default_flat_64",
+  "minTemplateVersion": 1,
+  "maxTemplateVersion": null,
+  "mobTypes": [],
+  "questType": "endurance",
+  "difficulty": "normal",
+  "minPlayers": 1,
+  "maxPlayers": 4,
+  "tags": [],
+  "priority": 0,
+  "weight": 1.0,
+  "enabled": true,
+  "description": "Default fallback policy for flat arena"
+}

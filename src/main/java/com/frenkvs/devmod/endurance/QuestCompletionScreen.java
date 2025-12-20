@@ -11,7 +11,9 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.lwjgl.glfw.GLFW;
 
+import javax.annotation.Nonnull;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Quest completion screen showing final rewards and statistics.
@@ -97,13 +99,14 @@ public class QuestCompletionScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         long elapsed = System.currentTimeMillis() - openTime;
         float fadeProgress = Math.min(1.0f, elapsed / (float) FADE_IN_DURATION);
 
         // Play victory sound
-        if (!victoryFanfarePlayed && elapsed > 200 && minecraft != null) {
-            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0f));
+        var mc = minecraft;
+        if (!victoryFanfarePlayed && elapsed > 200 && mc != null) {
+            mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(Objects.requireNonNull(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE), 1.0f)));
             victoryFanfarePlayed = true;
         }
 
@@ -128,7 +131,7 @@ public class QuestCompletionScreen extends Screen {
         if (fadeProgress > 0.8f) {
             float hintAlpha = (fadeProgress - 0.8f) / 0.2f;
             int hintColor = applyAlpha(UIConstants.Text.MUTED(), hintAlpha);
-            graphics.drawCenteredString(font, "ESC / Enter: Continue", centerX, panelY + PANEL_HEIGHT + 10, hintColor);
+            graphics.drawCenteredString(Objects.requireNonNull(font), "ESC / Enter: Continue", centerX, panelY + PANEL_HEIGHT + 10, hintColor);
         }
 
         renderButtons(graphics, mouseX, mouseY, fadeProgress);
@@ -154,6 +157,7 @@ public class QuestCompletionScreen extends Screen {
     }
 
     private void renderContent(GuiGraphics g, int panelX, int panelY, float alpha, long elapsed) {
+        var safeFont = Objects.requireNonNull(font);
         int centerX = panelX + PANEL_WIDTH / 2;
 
         // Trophy with pulse
@@ -162,31 +166,31 @@ public class QuestCompletionScreen extends Screen {
 
         String trophy = "\u2605"; // Star
         g.pose().pushPose();
-        g.pose().translate(centerX - font.width(trophy) * 2, panelY + 15, 0);
+        g.pose().translate(centerX - safeFont.width(trophy) * 2, panelY + 15, 0);
         g.pose().scale(4.0f, 4.0f, 1.0f);
-        g.drawString(font, trophy, 0, 0, trophyColor, true);
+        g.drawString(safeFont, trophy, 0, 0, trophyColor, true);
         g.pose().popPose();
 
         int y = panelY + 70;
 
         // Title
         String title = data.endlessMode() ? "ENDLESS MODE COMPLETE!" : "QUEST COMPLETE!";
-        g.drawCenteredString(font, title, centerX, y, applyAlpha(COLOR_SUCCESS, alpha));
+        g.drawCenteredString(safeFont, title, centerX, y, applyAlpha(COLOR_SUCCESS, alpha));
         y += 18;
 
         // Quest name and wave info (truncated to fit panel width)
         String questName = truncateText(data.questName(), PANEL_WIDTH - 40);
-        g.drawCenteredString(font, questName, centerX, y, applyAlpha(COLOR_TEXT, alpha));
+        g.drawCenteredString(safeFont, Objects.requireNonNull(questName), centerX, y, applyAlpha(COLOR_TEXT, alpha));
         y += 14;
 
         String waveInfo = data.endlessMode()
             ? "Reached Wave " + data.finalWave()
             : "Completed " + data.finalWave() + "/" + data.totalWaves() + " waves";
-        g.drawCenteredString(font, waveInfo, centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
+        g.drawCenteredString(safeFont, waveInfo, centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
         y += 14;
 
         // Duration
-        g.drawCenteredString(font, "Time: " + data.getFormattedDuration(), centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
+        g.drawCenteredString(safeFont, "Time: " + data.getFormattedDuration(), centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
         y += 25;
 
         // Separator
@@ -195,84 +199,84 @@ public class QuestCompletionScreen extends Screen {
         y += 15;
 
         // === REWARDS SECTION ===
-        g.drawCenteredString(font, "-- REWARDS --", centerX, y, applyAlpha(COLOR_GOLD, alpha));
+        g.drawCenteredString(safeFont, "-- REWARDS --", centerX, y, applyAlpha(COLOR_GOLD, alpha));
         y += 18;
 
         // Tokens (animated)
         String tokenText = "\u2B50 " + animatedTokens + " Tokens";
-        g.drawCenteredString(font, tokenText, centerX, y, applyAlpha(COLOR_GOLD, alpha));
+        g.drawCenteredString(safeFont, tokenText, centerX, y, applyAlpha(COLOR_GOLD, alpha));
         y += 14;
 
         // Show multipliers if significant
         if (data.styleMultiplier() > 1.0f || data.mutatorMultiplier() > 1.0f) {
-            String multText = String.format("(Base: %d | Style: x%.1f | Mutator: x%.1f)",
-                data.baseTokens(), data.styleMultiplier(), data.mutatorMultiplier());
-            g.drawCenteredString(font, multText, centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
+            String multText = Objects.requireNonNull(String.format("(Base: %d | Style: x%.1f | Mutator: x%.1f)",
+                data.baseTokens(), data.styleMultiplier(), data.mutatorMultiplier()));
+            g.drawCenteredString(safeFont, multText, centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
             y += 14;
         }
 
         // Blood Gems
         if (data.bloodGemsEarned() > 0) {
             String gemText = "\u2666 " + animatedGems + " Blood Gems";
-            g.drawCenteredString(font, gemText, centerX, y, applyAlpha(COLOR_GEM, alpha));
+            g.drawCenteredString(safeFont, gemText, centerX, y, applyAlpha(COLOR_GEM, alpha));
             y += 14;
         }
 
         // Prestige points
         if (data.prestigeEarned() > 0) {
-            g.drawCenteredString(font, "\u2726 " + data.prestigeEarned() + " Prestige", centerX, y, applyAlpha(UIConstants.Accent.PURPLE(), alpha));
+            g.drawCenteredString(safeFont, "\u2726 " + data.prestigeEarned() + " Prestige", centerX, y, applyAlpha(UIConstants.Accent.PURPLE(), alpha));
             y += 14;
         }
         y += 8;
 
         // === BONUSES ===
         if (data.noHitBonus() || data.speedBonus() || data.activeMutators() > 0) {
-            g.drawCenteredString(font, "-- BONUSES --", centerX, y, applyAlpha(COLOR_BONUS, alpha));
+            g.drawCenteredString(safeFont, "-- BONUSES --", centerX, y, applyAlpha(COLOR_BONUS, alpha));
             y += 16;
 
             if (data.noHitBonus()) {
-                g.drawCenteredString(font, "\u2714 No Hit Bonus!", centerX, y, applyAlpha(COLOR_SUCCESS, alpha));
+                g.drawCenteredString(safeFont, "\u2714 No Hit Bonus!", centerX, y, applyAlpha(COLOR_SUCCESS, alpha));
                 y += 12;
             }
             if (data.speedBonus()) {
-                g.drawCenteredString(font, "\u2714 Speed Bonus!", centerX, y, applyAlpha(COLOR_SUCCESS, alpha));
+                g.drawCenteredString(safeFont, "\u2714 Speed Bonus!", centerX, y, applyAlpha(COLOR_SUCCESS, alpha));
                 y += 12;
             }
             if (data.activeMutators() > 0) {
-                g.drawCenteredString(font, "\u2714 " + data.activeMutators() + " Mutators Active", centerX, y, applyAlpha(UIConstants.Accent.ORANGE(), alpha));
+                g.drawCenteredString(safeFont, "\u2714 " + data.activeMutators() + " Mutators Active", centerX, y, applyAlpha(UIConstants.Accent.ORANGE(), alpha));
                 y += 12;
             }
             y += 6;
         }
 
         // === STATS ===
-        g.drawCenteredString(font, "-- STATS --", centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
+        g.drawCenteredString(safeFont, "-- STATS --", centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
         y += 16;
 
         int leftX = panelX + 50;
         int rightX = centerX + 20;
 
         // Two column layout
-        g.drawString(font, "Kills: " + data.totalKills(), leftX, y, applyAlpha(COLOR_TEXT, alpha));
-        g.drawString(font, "Max Combo: " + data.maxCombo(), rightX, y, applyAlpha(COLOR_TEXT, alpha));
+        g.drawString(safeFont, "Kills: " + data.totalKills(), leftX, y, applyAlpha(COLOR_TEXT, alpha));
+        g.drawString(safeFont, "Max Combo: " + data.maxCombo(), rightX, y, applyAlpha(COLOR_TEXT, alpha));
         y += 12;
 
-        g.drawString(font, "Damage Dealt: " + String.format("%.0f", data.totalDamageDealt()), leftX, y, applyAlpha(COLOR_TEXT, alpha));
-        g.drawString(font, "Style Rank: " + data.getStyleRank().displayName, rightX, y, applyAlpha(data.getStyleRank().color, alpha));
+        g.drawString(safeFont, "Damage Dealt: " + String.format("%.0f", data.totalDamageDealt()), leftX, y, applyAlpha(COLOR_TEXT, alpha));
+        g.drawString(safeFont, "Style Rank: " + data.getStyleRank().displayName, rightX, y, applyAlpha(data.getStyleRank().color, alpha));
         y += 12;
 
         if (data.totalDamageTaken() > 0) {
-            g.drawString(font, "Damage Taken: " + String.format("%.0f", data.totalDamageTaken()), leftX, y, applyAlpha(UIConstants.Accent.RED(), alpha));
+            g.drawString(safeFont, "Damage Taken: " + String.format("%.0f", data.totalDamageTaken()), leftX, y, applyAlpha(UIConstants.Accent.RED(), alpha));
         }
         if (data.deaths() > 0) {
-            g.drawString(font, "Deaths: " + data.deaths(), rightX, y, applyAlpha(UIConstants.Accent.RED(), alpha));
+            g.drawString(safeFont, "Deaths: " + data.deaths(), rightX, y, applyAlpha(UIConstants.Accent.RED(), alpha));
         }
         y += 18;
 
         // === ACHIEVEMENTS ===
         List<String> achievements = data.achievementNames();
         if (!achievements.isEmpty()) {
-            g.drawCenteredString(font, "-- ACHIEVEMENTS UNLOCKED --", centerX, y, applyAlpha(UIConstants.Accent.GOLD(), alpha));
+            g.drawCenteredString(safeFont, "-- ACHIEVEMENTS UNLOCKED --", centerX, y, applyAlpha(UIConstants.Accent.GOLD(), alpha));
             y += 14;
 
             int maxY = panelY + PANEL_HEIGHT - 60;
@@ -281,10 +285,10 @@ public class QuestCompletionScreen extends Screen {
                 if (y > maxY) {
                     // Show indicator for remaining achievements
                     int remaining = achievements.size() - achievementsShown;
-                    g.drawCenteredString(font, "+" + remaining + " more...", centerX, y, applyAlpha(UIConstants.Text.MUTED(), alpha));
+                    g.drawCenteredString(safeFont, "+" + remaining + " more...", centerX, y, applyAlpha(UIConstants.Text.MUTED(), alpha));
                     break;
                 }
-                g.drawCenteredString(font, "\u2605 " + achievement, centerX, y, applyAlpha(UIConstants.Accent.ORANGE(), alpha));
+                g.drawCenteredString(safeFont, "\u2605 " + achievement, centerX, y, applyAlpha(UIConstants.Accent.ORANGE(), alpha));
                 y += 11;
                 achievementsShown++;
             }
@@ -314,20 +318,22 @@ public class QuestCompletionScreen extends Screen {
      * Truncate text to fit within maxWidth pixels, adding ellipsis if needed.
      */
     private String truncateText(String text, int maxWidth) {
-        if (font.width(text) <= maxWidth) return text;
+        var safeFont = Objects.requireNonNull(font);
+        if (safeFont.width(Objects.requireNonNull(text)) <= maxWidth) return text;
         String ellipsis = "...";
         int minChars = Math.min(6, text.length());
         String truncated = text;
-        while (font.width(truncated + ellipsis) > maxWidth && truncated.length() > minChars) {
+        while (safeFont.width(truncated + ellipsis) > maxWidth && truncated.length() > minChars) {
             truncated = truncated.substring(0, truncated.length() - 1);
         }
         return truncated + ellipsis;
     }
 
     private void closeScreen() {
-        if (minecraft != null) {
-            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0f));
-            minecraft.setScreen(null);
+        var mc = minecraft;
+        if (mc != null) {
+            mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(Objects.requireNonNull(SoundEvents.UI_BUTTON_CLICK.value()), 1.0f)));
+            mc.setScreen(null);
         }
     }
 

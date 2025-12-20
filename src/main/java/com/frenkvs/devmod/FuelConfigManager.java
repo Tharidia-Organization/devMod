@@ -17,6 +17,7 @@ import net.neoforged.fml.loading.FMLPaths;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -70,7 +71,7 @@ public final class FuelConfigManager {
         }
 
         // 3. Try global config
-        String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+        String itemId = Objects.requireNonNull(BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(stack.getItem()))).toString();
         FuelStats global = GLOBAL_STATS.get(itemId);
         if (global != null) {
             return global.copy();
@@ -88,7 +89,7 @@ public final class FuelConfigManager {
         if (stack == null || stack.isEmpty()) return false;
         try {
             // Check if item has custom fuel stats first
-            String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+            String itemId = Objects.requireNonNull(BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(stack.getItem()))).toString();
             if (GLOBAL_STATS.containsKey(itemId)) return true;
 
             // Check vanilla fuel map directly - DO NOT use stack.getBurnTime()!
@@ -222,7 +223,7 @@ public final class FuelConfigManager {
     }
 
     private static FuelStats getFromCustomData(ItemStack stack) {
-        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+        CustomData customData = stack.get(Objects.requireNonNull(DataComponents.CUSTOM_DATA));
         if (customData == null) return null;
 
         CompoundTag tag = customData.copyTag();

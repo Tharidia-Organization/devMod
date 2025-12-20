@@ -21,9 +21,6 @@ public class ArenaCommandAudit {
     /** Separate logger for audit trail - configured in log4j2.xml as arena.audit */
     private static final Logger AUDIT_LOGGER = LoggerFactory.getLogger("arena.audit");
 
-    /** Standard logger for internal errors */
-    private static final Logger LOGGER = LoggerFactory.getLogger(ArenaCommandAudit.class);
-
     /** ISO 8601 timestamp format */
     private static final DateTimeFormatter TIMESTAMP_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ")

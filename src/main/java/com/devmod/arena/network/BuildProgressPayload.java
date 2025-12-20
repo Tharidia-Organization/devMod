@@ -1,0 +1,256 @@
+package com.devmod.arena.network;
+
+import com.devmod.arena.ui.BuildProgressOverlay.BuildPhase;
+import com.devmod.arena.ui.BuildProgressOverlay.ProgressFlags;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+
+import javax.annotation.Nonnull;
+import java.util.Objects;
+import java.util.UUID;
+
+/**
+ * DD39: Network payload for build progress synchronization.
+ *
+ * <p>Compact 28-byte packet for efficient progress updates:</p>
+ * <pre>
+ * Layout (28 bytes):
+ *   0-15:  arenaId (UUID = 2 longs = 16 bytes)
+ *   16:    phase (1 byte)
+ *   17-18: progress (2 bytes, 0-10000 for 0.00%-100.00%)
+ *   19-22: blocksPlaced (4 bytes)
+ *   23-26: totalBlocks (4 bytes)
+ *   27:    flags (1 byte)
+ * </pre>
+ *
+ * <p>Rate limited at 4Hz (250ms interval) with 1% delta threshold
+ * by {@link com.devmod.arena.ui.BuildProgressOverlay}.</p>
+ */
+public record BuildProgressPayload(
+    UUID arenaId,
+    BuildPhase phase,
+    int progressBps,     // Basis points: 0-10000 (0.00% - 100.00%)
+    int blocksPlaced,
+    int totalBlocks,
+    int flags
+) implements CustomPacketPayload {
+
+    /** Packet type identifier */
+    public static final Type<BuildProgressPayload> TYPE = new Type<>(
+        Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "build_progress"))
+    );
+
+    /** Stream codec for network serialization */
+    public static final StreamCodec<RegistryFriendlyByteBuf, BuildProgressPayload> STREAM_CODEC = StreamCodec.of(
+        BuildProgressPayload::encode,
+        BuildProgressPayload::decode
+    );
+
+    /**
+     * Creates a progress payload from a percentage (0.0 - 1.0).
+     */
+    public static BuildProgressPayload of(UUID arenaId, BuildPhase phase, double progress,
+                                           int blocksPlaced, int totalBlocks, int flags) {
+        int progressBps = (int) (progress * 10000);
+        return new BuildProgressPayload(arenaId, phase, progressBps, blocksPlaced, totalBlocks, flags);
+    }
+
+    /**
+     * Creates a completion payload.
+     */
+    public static BuildProgressPayload complete(UUID arenaId, int totalBlocks) {
+        return new BuildProgressPayload(
+            arenaId,
+            BuildPhase.COMPLETE,
+            10000, // 100%
+            totalBlocks,
+            totalBlocks,
+            ProgressFlags.COMPLETE
+        );
+    }
+
+    /**
+     * Creates a failure payload.
+     */
+    public static BuildProgressPayload failed(UUID arenaId, int blocksPlaced, int totalBlocks) {
+        return new BuildProgressPayload(
+            arenaId,
+            BuildPhase.FAILED,
+            (totalBlocks > 0) ? (blocksPlaced * 10000 / totalBlocks) : 0,
+            blocksPlaced,
+            totalBlocks,
+            ProgressFlags.FAILED
+        );
+    }
+
+    /**
+     * Returns progress as percentage (0.0 - 1.0).
+     */
+    public double progressPercent() {
+        return progressBps / 10000.0;
+    }
+
+    /**
+     * Returns true if the build is complete.
+     */
+    public boolean isComplete() {
+        return (flags & ProgressFlags.COMPLETE) != 0;
+    }
+
+    /**
+     * Returns true if the build failed.
+     */
+    public boolean isFailed() {
+        return (flags & ProgressFlags.FAILED) != 0;
+    }
+
+    /**
+     * Returns true if the build phase changed.
+     */
+    public boolean isPhaseChanged() {
+        return (flags & ProgressFlags.PHASE_CHANGED) != 0;
+    }
+
+    /**
+     * Returns true if the build is paused.
+     */
+    public boolean isPaused() {
+        return (flags & ProgressFlags.PAUSED) != 0;
+    }
+
+    @Override
+    @Nonnull
+    public Type<BuildProgressPayload> type() {
+        return Objects.requireNonNull(TYPE, "payload type");
+    }
+
+    // ========== Serialization ==========
+
+    private static void encode(RegistryFriendlyByteBuf buffer, BuildProgressPayload payload) {
+        // UUID (16 bytes)
+        buffer.writeLong(payload.arenaId.getMostSignificantBits());
+        buffer.writeLong(payload.arenaId.getLeastSignificantBits());
+
+        // Phase (1 byte)
+        buffer.writeByte(payload.phase.ordinal());
+
+        // Progress (2 bytes)
+        buffer.writeShort(payload.progressBps);
+
+        // Blocks placed (4 bytes)
+        buffer.writeInt(payload.blocksPlaced);
+
+        // Total blocks (4 bytes)
+        buffer.writeInt(payload.totalBlocks);
+
+        // Flags (1 byte)
+        buffer.writeByte(payload.flags);
+    }
+
+    private static BuildProgressPayload decode(RegistryFriendlyByteBuf buffer) {
+        // UUID (16 bytes)
+        long msb = buffer.readLong();
+        long lsb = buffer.readLong();
+        UUID arenaId = new UUID(msb, lsb);
+
+        // Phase (1 byte)
+        int phaseOrdinal = buffer.readByte() & 0xFF;
+        BuildPhase[] phases = BuildPhase.values();
+        BuildPhase phase = (phaseOrdinal < phases.length) ? phases[phaseOrdinal] : BuildPhase.INITIALIZING;
+
+        // Progress (2 bytes)
+        int progressBps = buffer.readShort() & 0xFFFF;
+
+        // Blocks placed (4 bytes)
+        int blocksPlaced = buffer.readInt();
+
+        // Total blocks (4 bytes)
+        int totalBlocks = buffer.readInt();
+
+        // Flags (1 byte)
+        int flags = buffer.readByte() & 0xFF;
+
+        return new BuildProgressPayload(arenaId, phase, progressBps, blocksPlaced, totalBlocks, flags);
+    }
+
+    /**
+     * Serializes to raw 28-byte array (for legacy compatibility).
+     */
+    public byte[] toBytes() {
+        byte[] bytes = new byte[28];
+
+        long msb = arenaId.getMostSignificantBits();
+        long lsb = arenaId.getLeastSignificantBits();
+
+        // UUID (16 bytes)
+        for (int i = 0; i < 8; i++) {
+            bytes[i] = (byte) (msb >> (56 - i * 8));
+            bytes[i + 8] = (byte) (lsb >> (56 - i * 8));
+        }
+
+        // Phase (1 byte)
+        bytes[16] = (byte) phase.ordinal();
+
+        // Progress (2 bytes)
+        bytes[17] = (byte) (progressBps >> 8);
+        bytes[18] = (byte) progressBps;
+
+        // Blocks placed (4 bytes)
+        bytes[19] = (byte) (blocksPlaced >> 24);
+        bytes[20] = (byte) (blocksPlaced >> 16);
+        bytes[21] = (byte) (blocksPlaced >> 8);
+        bytes[22] = (byte) blocksPlaced;
+
+        // Total blocks (4 bytes)
+        bytes[23] = (byte) (totalBlocks >> 24);
+        bytes[24] = (byte) (totalBlocks >> 16);
+        bytes[25] = (byte) (totalBlocks >> 8);
+        bytes[26] = (byte) totalBlocks;
+
+        // Flags (1 byte)
+        bytes[27] = (byte) flags;
+
+        return bytes;
+    }
+
+    /**
+     * Deserializes from raw 28-byte array (for legacy compatibility).
+     */
+    public static BuildProgressPayload fromBytes(byte[] bytes) {
+        if (bytes.length < 28) {
+            throw new IllegalArgumentException("Invalid packet size: " + bytes.length + " (expected 28)");
+        }
+
+        // UUID (16 bytes)
+        long msb = 0;
+        long lsb = 0;
+        for (int i = 0; i < 8; i++) {
+            msb = (msb << 8) | (bytes[i] & 0xFF);
+            lsb = (lsb << 8) | (bytes[i + 8] & 0xFF);
+        }
+        UUID arenaId = new UUID(msb, lsb);
+
+        // Phase (1 byte)
+        int phaseOrdinal = bytes[16] & 0xFF;
+        BuildPhase[] phases = BuildPhase.values();
+        BuildPhase phase = (phaseOrdinal < phases.length) ? phases[phaseOrdinal] : BuildPhase.INITIALIZING;
+
+        // Progress (2 bytes)
+        int progressBps = ((bytes[17] & 0xFF) << 8) | (bytes[18] & 0xFF);
+
+        // Blocks placed (4 bytes)
+        int blocksPlaced = ((bytes[19] & 0xFF) << 24) | ((bytes[20] & 0xFF) << 16) |
+                          ((bytes[21] & 0xFF) << 8) | (bytes[22] & 0xFF);
+
+        // Total blocks (4 bytes)
+        int totalBlocks = ((bytes[23] & 0xFF) << 24) | ((bytes[24] & 0xFF) << 16) |
+                         ((bytes[25] & 0xFF) << 8) | (bytes[26] & 0xFF);
+
+        // Flags (1 byte)
+        int flags = bytes[27] & 0xFF;
+
+        return new BuildProgressPayload(arenaId, phase, progressBps, blocksPlaced, totalBlocks, flags);
+    }
+}

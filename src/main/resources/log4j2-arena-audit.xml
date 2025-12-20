@@ -28,14 +28,14 @@
             <Policies>
                 <!-- Roll over daily -->
                 <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
-                <!-- Or when file reaches 50MB -->
-                <SizeBasedTriggeringPolicy size="50 MB"/>
+                <!-- DD17: Roll when file reaches 500MB -->
+                <SizeBasedTriggeringPolicy size="500 MB"/>
             </Policies>
-            <!-- Keep 30 days of audit logs -->
-            <DefaultRolloverStrategy max="30">
+            <!-- DD17: Keep 14 days of audit logs, .gz compression -->
+            <DefaultRolloverStrategy max="14">
                 <Delete basePath="logs" maxDepth="1">
                     <IfFileName glob="arena-audit-*.log.gz"/>
-                    <IfLastModified age="30d"/>
+                    <IfLastModified age="14d"/>
                 </Delete>
             </DefaultRolloverStrategy>
         </RollingFile>

@@ -14,6 +14,7 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Perk selection screen shown after completing a wave.
@@ -146,13 +147,13 @@ public class PerkSelectionScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void render(@javax.annotation.Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         long elapsed = System.currentTimeMillis() - openTime;
         float fadeProgress = Math.min(1.0f, elapsed / (float) FADE_IN_DURATION);
 
         // Play sound
         if (!soundPlayed && elapsed > 100 && minecraft != null) {
-            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_TOAST_IN, 1.0f));
+            minecraft.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(Objects.requireNonNull(SoundEvents.UI_TOAST_IN), 1.0f)));
             soundPlayed = true;
         }
 
@@ -163,9 +164,9 @@ public class PerkSelectionScreen extends Screen {
         // Title
         if (fadeProgress > 0.3f) {
             float titleAlpha = (fadeProgress - 0.3f) / 0.7f;
-            String title = I18n.translate("devmod.endurance.wave_complete", waveNumber).getString();
+            String title = Objects.requireNonNull(I18n.translate("devmod.endurance.wave_complete", waveNumber).getString());
             int titleColor = applyAlpha(COLOR_ACCENT, titleAlpha);
-            graphics.drawCenteredString(font, title, width / 2, 40, titleColor);
+            graphics.drawCenteredString(Objects.requireNonNull(font), title, width / 2, 40, titleColor);
         }
 
         // Perk cards
@@ -204,7 +205,7 @@ public class PerkSelectionScreen extends Screen {
 
         // Keybind hints
         if (fadeProgress > 0.8f) {
-            graphics.drawCenteredString(font, I18n.translate("devmod.perk.keybind_hint").getString(),
+            graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.perk.keybind_hint").getString()),
                 width / 2, height - 25, applyAlpha(UIConstants.Text.MUTED(), fadeProgress));
         }
 
@@ -234,24 +235,25 @@ public class PerkSelectionScreen extends Screen {
         g.fill(cardX, cardY, cardX + 3, cardY + cardH, borderColor);
         g.fill(cardX + cardW - 3, cardY, cardX + cardW, cardY + cardH, borderColor);
 
+        var safeFont = Objects.requireNonNull(font);
         int textY = cardY + 12;
 
         // Tier badge
-        String tierText = perk.tierName();
-        int tierBadgeW = font.width(tierText) + 10;
+        String tierText = Objects.requireNonNull(perk.tierName());
+        int tierBadgeW = safeFont.width(tierText) + 10;
         g.fill(cardX + cardW - tierBadgeW - 8, textY - 2, cardX + cardW - 8, textY + 12,
             applyAlpha(perk.tierColor() | 0xFF000000, alpha * 0.8f));
-        g.drawString(font, tierText, cardX + cardW - tierBadgeW - 3, textY, applyAlpha(COLOR_TEXT, alpha));
+        g.drawString(safeFont, tierText, cardX + cardW - tierBadgeW - 3, textY, applyAlpha(COLOR_TEXT, alpha));
 
         // Perk name (truncated to fit card width, leaving room for tier badge)
         int maxNameWidth = cardW - tierBadgeW - 25; // Leave room for tier badge and padding
         String perkName = truncateText(perk.name(), maxNameWidth);
-        g.drawString(font, perkName, cardX + 10, textY, applyAlpha(COLOR_TEXT, alpha));
+        g.drawString(safeFont, perkName, cardX + 10, textY, applyAlpha(COLOR_TEXT, alpha));
         textY += 20;
 
         // Category (truncated to fit card width)
         String categoryName = truncateText(perk.categoryName(), cardW - 20);
-        g.drawString(font, categoryName, cardX + 10, textY, applyAlpha(perk.categoryColor() | 0xFF000000, alpha));
+        g.drawString(safeFont, categoryName, cardX + 10, textY, applyAlpha(perk.categoryColor() | 0xFF000000, alpha));
         textY += 16;
 
         // Description (word wrap) - limit to MAX_DESCRIPTION_LINES
@@ -259,7 +261,7 @@ public class PerkSelectionScreen extends Screen {
         int linesRendered = 0;
         for (String line : lines) {
             if (linesRendered >= MAX_DESCRIPTION_LINES || textY > cardY + cardH - 55) break;
-            g.drawString(font, line, cardX + 10, textY, applyAlpha(COLOR_TEXT_DIM, alpha));
+            g.drawString(safeFont, line, cardX + 10, textY, applyAlpha(COLOR_TEXT_DIM, alpha));
             textY += 11;
             linesRendered++;
         }
@@ -268,7 +270,7 @@ public class PerkSelectionScreen extends Screen {
         if (perk.stackable()) {
             textY = cardY + cardH - 50;
             String stackText = I18n.translate("devmod.perk.stacks", perk.currentStacks(), perk.maxStacks()).getString();
-            g.drawString(font, stackText, cardX + 10, textY, applyAlpha(COLOR_ACCENT, alpha));
+            g.drawString(safeFont, stackText, cardX + 10, textY, applyAlpha(COLOR_ACCENT, alpha));
         }
 
         // Comparison highlight when hovered - show key stat
@@ -277,7 +279,7 @@ public class PerkSelectionScreen extends Screen {
             int hintY = cardY + cardH - 35;
             String hintText = "▲ " + getCompactStatHint(perk);
             int hintColor = applyAlpha(UIConstants.Accent.GREEN(), alpha);
-            g.drawString(font, hintText, cardX + 10, hintY - 12, hintColor);
+            g.drawString(safeFont, hintText, cardX + 10, hintY - 12, hintColor);
         }
     }
 
@@ -319,8 +321,10 @@ public class PerkSelectionScreen extends Screen {
         g.fill(panelX, panelY, panelX + 2, panelY + panelH, borderColor);
         g.fill(panelX + panelW - 2, panelY, panelX + panelW, panelY + panelH, borderColor);
 
+        var safeFont = Objects.requireNonNull(font);
+
         // Title
-        g.drawString(font, I18n.translate("devmod.perk.quick_compare").getString(), panelX + 8, panelY + 6, applyAlpha(COLOR_ACCENT, alpha));
+        g.drawString(safeFont, I18n.translate("devmod.perk.quick_compare").getString(), panelX + 8, panelY + 6, applyAlpha(COLOR_ACCENT, alpha));
 
         // List all perks with their key stat
         int lineY = panelY + 22;
@@ -338,28 +342,28 @@ public class PerkSelectionScreen extends Screen {
             g.fill(panelX + 8, lineY + 3, panelX + 14, lineY + 9, dotColor);
 
             // Perk name (truncated - keep at least 6 chars for readability)
-            String name = perk.name();
-            if (font.width(name) > 100) {
+            String name = Objects.requireNonNull(perk.name());
+            if (safeFont.width(name) > 100) {
                 String ellipsis = "...";
                 int minChars = Math.min(6, name.length());
-                while (font.width(name + ellipsis) > 100 && name.length() > minChars) {
+                while (safeFont.width(name + ellipsis) > 100 && name.length() > minChars) {
                     name = name.substring(0, name.length() - 1);
                 }
                 name += ellipsis;
             }
             int nameColor = isHovered ? applyAlpha(COLOR_TEXT, alpha) : applyAlpha(COLOR_TEXT_DIM, alpha);
-            g.drawString(font, name, panelX + 18, lineY, nameColor);
+            g.drawString(safeFont, name, panelX + 18, lineY, nameColor);
 
             // Key stat hint (right-aligned)
-            String statHint = getCompactStatHint(perk);
+            String statHint = Objects.requireNonNull(getCompactStatHint(perk));
             int statColor = applyAlpha(getCategoryStatColor(perk), alpha);
-            int statX = panelX + panelW - font.width(statHint) - 10;
-            g.drawString(font, statHint, statX, lineY, statColor);
+            int statX = panelX + panelW - safeFont.width(statHint) - 10;
+            g.drawString(safeFont, statHint, statX, lineY, statColor);
 
             // Stack indicator if applicable
             if (perk.stackable() && perk.currentStacks() > 0) {
                 String stackStr = "x" + perk.currentStacks();
-                g.drawString(font, stackStr, panelX + 120, lineY, applyAlpha(UIConstants.Accent.GREEN(), alpha));
+                g.drawString(safeFont, stackStr, panelX + 120, lineY, applyAlpha(UIConstants.Accent.GREEN(), alpha));
             }
 
             lineY += 20;
@@ -379,13 +383,14 @@ public class PerkSelectionScreen extends Screen {
     }
 
     private List<String> wrapText(String text, int maxWidth) {
+        var safeFont = Objects.requireNonNull(font);
         List<String> lines = new ArrayList<>();
         String[] words = text.split(" ");
         StringBuilder current = new StringBuilder();
 
         for (String word : words) {
             String test = current.isEmpty() ? word : current + " " + word;
-            if (font.width(test) > maxWidth) {
+            if (safeFont.width(Objects.requireNonNull(test)) > maxWidth) {
                 if (!current.isEmpty()) {
                     lines.add(current.toString());
                     current = new StringBuilder(word);
@@ -406,11 +411,12 @@ public class PerkSelectionScreen extends Screen {
      * Truncate text to fit within maxWidth pixels, adding ellipsis if needed.
      */
     private String truncateText(String text, int maxWidth) {
-        if (font.width(text) <= maxWidth) return text;
+        var safeFont = Objects.requireNonNull(font);
+        if (safeFont.width(Objects.requireNonNull(text)) <= maxWidth) return text;
         String ellipsis = "...";
         int minChars = Math.min(6, text.length());
         String truncated = text;
-        while (font.width(truncated + ellipsis) > maxWidth && truncated.length() > minChars) {
+        while (safeFont.width(truncated + ellipsis) > maxWidth && truncated.length() > minChars) {
             truncated = truncated.substring(0, truncated.length() - 1);
         }
         return truncated + ellipsis;
@@ -542,9 +548,10 @@ public class PerkSelectionScreen extends Screen {
         // Send selection to server
         PacketDistributor.sendToServer(new PerkSelectionPayload(choice.id()));
 
-        if (minecraft != null) {
-            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.PLAYER_LEVELUP, 1.2f));
-            minecraft.setScreen(null);
+        var mc = minecraft;
+        if (mc != null) {
+            mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(Objects.requireNonNull(SoundEvents.PLAYER_LEVELUP), 1.2f)));
+            mc.setScreen(null);
         }
     }
 
@@ -552,9 +559,10 @@ public class PerkSelectionScreen extends Screen {
         // Send empty selection (skip)
         PacketDistributor.sendToServer(new PerkSelectionPayload(""));
 
-        if (minecraft != null) {
-            minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0f));
-            minecraft.setScreen(null);
+        var mc = minecraft;
+        if (mc != null) {
+            mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(Objects.requireNonNull(SoundEvents.UI_BUTTON_CLICK.value()), 1.0f)));
+            mc.setScreen(null);
         }
     }
 

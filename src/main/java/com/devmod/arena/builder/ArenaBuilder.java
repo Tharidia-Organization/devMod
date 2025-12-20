@@ -1,12 +1,15 @@
 package com.devmod.arena.builder;
 
 import com.devmod.arena.config.InstanceLimitConfig;
+import com.devmod.arena.metrics.MetricsCompatibilityLayer;
+import com.devmod.arena.registry.ArenaTemplate;
+import com.devmod.arena.integration.MinecraftBlockPlacer;
 import com.devmod.arena.registry.GoldenReference;
 import com.devmod.arena.registry.InstanceSettingsValidator;
 import com.devmod.arena.registry.TemplateValidator;
 import com.devmod.arena.registry.ValidationResult;
+import com.devmod.arena.gate.InstanceOnlyGate;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-import com.devmod.arena.registry.ArenaTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -15,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.world.phys.AABB;
 
 /**
  * Transactional arena builder with full rollback capability (DD7-10).
@@ -42,6 +46,11 @@ public class ArenaBuilder {
     private static final double HAZARD_MULTIPLIER = 1.2;
     private static final int MIN_HISTORY_SAMPLES = 5;
 
+    // DD10: Accuracy bands for estimation feedback
+    private static final double ACCURACY_EXCELLENT = 0.20;  // ±20%
+    private static final double ACCURACY_GOOD = 0.35;       // ±35%
+    private static final double ACCURACY_ACCEPTABLE = 0.50; // ±50%
+
     private final ArenaTelemetry telemetry;
     private final BlockPlacer blockPlacer;
     private final EntitySpawner entitySpawner;
@@ -51,6 +60,8 @@ public class ArenaBuilder {
     private final CustomHazardHandler customHazardHandler;
     private final TemplateValidator templateValidator;
     private final InstanceSettingsValidator.InstanceLimits instanceLimits;
+    @Nullable
+    private final InstanceOnlyGate instanceGate;
 
     public ArenaBuilder(
             ArenaTelemetry telemetry,
@@ -66,6 +77,7 @@ public class ArenaBuilder {
         this.customHazardHandler = null;
         this.instanceLimits = InstanceLimitConfig.load().toLimits();
         this.templateValidator = new TemplateValidator().withInstanceLimits(instanceLimits);
+        this.instanceGate = null;
     }
 
     public ArenaBuilder(
@@ -83,6 +95,7 @@ public class ArenaBuilder {
         this.customHazardHandler = null;
         this.instanceLimits = instanceLimits;
         this.templateValidator = new TemplateValidator().withInstanceLimits(instanceLimits);
+        this.instanceGate = null;
     }
 
     public ArenaBuilder(
@@ -101,6 +114,43 @@ public class ArenaBuilder {
         this.customHazardHandler = customHazardHandler;
         this.instanceLimits = instanceLimits;
         this.templateValidator = new TemplateValidator().withInstanceLimits(instanceLimits);
+        this.instanceGate = null;
+    }
+
+    public ArenaBuilder(
+            ArenaTelemetry telemetry,
+            BlockPlacer blockPlacer,
+            EntitySpawner entitySpawner,
+            ChunkLoadingManager chunkManager,
+            @Nullable BuildHistoryStore historyStore,
+            InstanceSettingsValidator.InstanceLimits instanceLimits,
+            @Nullable CustomHazardHandler customHazardHandler,
+            @Nullable com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
+        this.telemetry = telemetry;
+        this.blockPlacer = blockPlacer;
+        this.entitySpawner = entitySpawner;
+        this.chunkManager = chunkManager;
+        this.historyStore = historyStore;
+        this.customHazardHandler = customHazardHandler;
+        this.instanceLimits = instanceLimits;
+        this.templateValidator = new TemplateValidator().withInstanceLimits(instanceLimits);
+        this.instanceGate = configSnapshot != null ? new InstanceOnlyGate(configSnapshot, telemetry) : null;
+    }
+
+    /**
+     * Builds an arena from a template with policy context for telemetry.
+     *
+     * @param template The arena template
+     * @param policyId The policy ID (for telemetry correlation)
+     * @param policyVersion The policy version (for telemetry correlation)
+     * @param originX World X coordinate for origin
+     * @param originY World Y coordinate for origin
+     * @param originZ World Z coordinate for origin
+     * @return Build result with arena handle or error
+     */
+    public BuildResult build(ArenaTemplate template, @Nullable String policyId, int policyVersion,
+                            int originX, int originY, int originZ) {
+        return doBuild(template, policyId, policyVersion, originX, originY, originZ);
     }
 
     /**
@@ -113,6 +163,11 @@ public class ArenaBuilder {
      * @return Build result with arena handle or error
      */
     public BuildResult build(ArenaTemplate template, int originX, int originY, int originZ) {
+        return doBuild(template, null, 0, originX, originY, originZ);
+    }
+
+    private BuildResult doBuild(ArenaTemplate template, @Nullable String policyId, int policyVersion,
+                               int originX, int originY, int originZ) {
         UUID arenaId = UUID.randomUUID();
         long startTime = System.currentTimeMillis();
 
@@ -136,6 +191,20 @@ public class ArenaBuilder {
                 "templateVersion", template.version(),
                 "warnings", validation.warnings()
             ));
+        }
+
+        // Instance-only gate check (if configured)
+        var gate = instanceGate;
+        if (gate != null && blockPlacer instanceof MinecraftBlockPlacer mcb) {
+            var level = mcb.getLevel();
+            InstanceOnlyGate.Result gateResult = gate.check(level, "ArenaBuilder.build");
+            if (gateResult == InstanceOnlyGate.Result.BLOCKED) {
+                String msg = "Instance-only mode: build blocked in dimension " + level.dimension().location();
+                LOGGER.error(msg);
+                return BuildResult.failure(msg, new BuildTransaction.RollbackResult(true, 0, 0, 0, 0));
+            } else if (gateResult == InstanceOnlyGate.Result.ALLOWED_DEBUG_ONLY) {
+                LOGGER.warn("[INSTANCE_GATE] Debug-only build allowed in {}", level.dimension().location());
+            }
         }
 
         // Instance settings clamp/coverage check (server limits)
@@ -164,6 +233,23 @@ public class ArenaBuilder {
         // Determine max blocks based on template category
         int maxBlocks = determineMaxBlocks(template);
 
+        // DD8: Soft budget warning at 80%
+        int warningThreshold = (int) (maxBlocks * 0.80);
+        if (dryRun.totalBlocks() > warningThreshold && dryRun.totalBlocks() <= maxBlocks) {
+            LOGGER.warn("Template '{}' at {}% of block budget ({}/{} blocks)",
+                template.id(),
+                (dryRun.totalBlocks() * 100) / maxBlocks,
+                dryRun.totalBlocks(),
+                maxBlocks);
+            telemetry.emit("arena.build.budget_warning", Map.of(
+                "templateId", template.id(),
+                "templateVersion", template.version(),
+                "estimatedBlocks", dryRun.totalBlocks(),
+                "maxBlocks", maxBlocks,
+                "percentUsed", (dryRun.totalBlocks() * 100) / maxBlocks
+            ));
+        }
+
         if (dryRun.totalBlocks() > maxBlocks) {
             String msg = "Estimated blocks %d exceed limit %d".formatted(dryRun.totalBlocks(), maxBlocks);
             LOGGER.error("Cannot build template '{}': {}", template.id(), msg);
@@ -184,14 +270,19 @@ public class ArenaBuilder {
         LOGGER.info("Starting build for template '{}' at ({},{},{}) with max {} blocks",
             template.id(), originX, originY, originZ, maxBlocks);
 
-        telemetry.emit("arena.build.start", Map.of(
-            "templateId", template.id(),
-            "templateVersion", template.version(),
-            "arenaId", arenaId.toString(),
-            "origin", "%d,%d,%d".formatted(originX, originY, originZ),
-            "estimatedMs", estimateBuildTimeMs(template),
-            "maxBlocks", maxBlocks
-        ));
+        // Build telemetry with policy context
+        Map<String, Object> startEventData = new java.util.HashMap<>();
+        startEventData.put("templateId", template.id());
+        startEventData.put("templateVersion", template.version());
+        startEventData.put("arenaId", arenaId.toString());
+        startEventData.put("origin", "%d,%d,%d".formatted(originX, originY, originZ));
+        startEventData.put("estimatedMs", estimateBuildTimeMs(template));
+        startEventData.put("maxBlocks", maxBlocks);
+        if (policyId != null) {
+            startEventData.put("policyId", policyId);
+            startEventData.put("policyVersion", policyVersion);
+        }
+        telemetry.emit("arena.build.start", startEventData);
 
         try {
             // 1. Ensure chunks are loaded (DD9)
@@ -245,13 +336,30 @@ public class ArenaBuilder {
                 historyStore.recordBuild(template.id(), duration, transaction.getBlockCount(), true);
             }
 
-            telemetry.emit("arena.build.end", Map.of(
-                "templateId", template.id(),
-                "arenaId", arenaId.toString(),
-                "success", true,
-                "actualMs", duration,
-                "actualBlocks", transaction.getBlockCount()
-            ));
+            Map<String, Object> endEventData = new java.util.HashMap<>();
+            endEventData.put("templateId", template.id());
+            endEventData.put("templateVersion", template.version());
+            endEventData.put("arenaId", arenaId.toString());
+            endEventData.put("success", true);
+            endEventData.put("actualMs", duration);
+            endEventData.put("build_ms", duration); // baseline compatibility
+            endEventData.put("actualBlocks", transaction.getBlockCount());
+            endEventData.put("totalPlacements", transaction.getTotalBlockPlacements());
+            if (blockPlacer instanceof MinecraftBlockPlacer mcPlacer) {
+                ResidualSnapshot residual = measureResiduals(template, originX, originY, originZ, mcPlacer);
+                endEventData.put("entities_residual", residual.entitiesResidual());
+                endEventData.put("blocks_residual", residual.blocksResidual());
+                endEventData.put("expected_blocks", BuildDryRunCalculator.calculate(template).totalBlocks());
+            } else {
+                endEventData.put("entities_residual", 0);
+                endEventData.put("blocks_residual", 0);
+                endEventData.put("expected_blocks", BuildDryRunCalculator.calculate(template).totalBlocks());
+            }
+            if (policyId != null) {
+                endEventData.put("policyId", policyId);
+                endEventData.put("policyVersion", policyVersion);
+            }
+            telemetry.emit("arena.build.end", endEventData);
 
             LOGGER.info("Build completed for '{}' in {}ms: {} blocks",
                 template.id(), duration, transaction.getBlockCount());
@@ -259,19 +367,21 @@ public class ArenaBuilder {
             return BuildResult.success(arenaId, template.id(), transaction.getBlockCount(), duration);
 
         } catch (BuildLimitExceededException e) {
-            return handleBuildFailure(template, arenaId, transaction, e, startTime);
+            return handleBuildFailure(template, policyId, policyVersion, arenaId, transaction, e, startTime);
 
         } catch (BuildException e) {
-            return handleBuildFailure(template, arenaId, transaction, e, startTime);
+            return handleBuildFailure(template, policyId, policyVersion, arenaId, transaction, e, startTime);
 
         } catch (Exception e) {
-            return handleBuildFailure(template, arenaId, transaction,
+            return handleBuildFailure(template, policyId, policyVersion, arenaId, transaction,
                 new BuildException("Unexpected error: " + e.getMessage(), e), startTime);
         }
     }
 
     private BuildResult handleBuildFailure(
             ArenaTemplate template,
+            @Nullable String policyId,
+            int policyVersion,
             UUID arenaId,
             BuildTransaction transaction,
             Exception error,
@@ -297,15 +407,20 @@ public class ArenaBuilder {
             historyStore.recordBuild(template.id(), duration, transaction.getBlockCount(), false);
         }
 
-        telemetry.emit("arena.build.fail", Map.of(
-            "templateId", template.id(),
-            "arenaId", arenaId.toString(),
-            "reason", error.getClass().getSimpleName(),
-            "message", error.getMessage(),
-            "blocksPlaced", transaction.getBlockCount(),
-            "rollbackMs", rollbackResult.durationMs(),
-            "blocksReverted", rollbackResult.blocksReverted()
-        ));
+        Map<String, Object> failEventData = new java.util.HashMap<>();
+        failEventData.put("templateId", template.id());
+        failEventData.put("templateVersion", template.version());
+        failEventData.put("arenaId", arenaId.toString());
+        failEventData.put("reason", error.getClass().getSimpleName());
+        failEventData.put("message", error.getMessage());
+        failEventData.put("blocksPlaced", transaction.getBlockCount());
+        failEventData.put("rollbackMs", rollbackResult.durationMs());
+        failEventData.put("blocksReverted", rollbackResult.blocksReverted());
+        if (policyId != null) {
+            failEventData.put("policyId", policyId);
+            failEventData.put("policyVersion", policyVersion);
+        }
+        telemetry.emit("arena.build.fail", failEventData);
 
         return BuildResult.failure(error.getMessage(), rollbackResult);
     }
@@ -447,12 +562,45 @@ public class ArenaBuilder {
     }
 
     private void placeStructure(ArenaTemplate template, int originX, int originY, int originZ, BuildTransaction tx) {
-        // Placeholder - NBT structure placement with streaming callback
-        LOGGER.debug("Placing structure NBT for template '{}'", template.id());
+        ArenaTemplate.StructureNbt structureNbt = template.structureNbt();
+        if (structureNbt == null) {
+            return;
+        }
+
+        LOGGER.debug("Placing structure NBT '{}' for template '{}'", structureNbt.path(), template.id());
+
+        // Calculate placement offset
+        int offsetX = originX;
+        int offsetY = originY;
+        int offsetZ = originZ;
+
+        if (structureNbt.offset() != null) {
+            offsetX += structureNbt.offset().x();
+            offsetY += structureNbt.offset().y();
+            offsetZ += structureNbt.offset().z();
+        }
+
+        // Structure placement is delegated to LevelAccess interface
+        // This method prepares the parameters; actual NBT loading and block placement
+        // happens through the Minecraft integration layer
+        telemetry.emit("arena.structure.placement_requested", Map.of(
+            "templateId", template.id(),
+            "path", structureNbt.path(),
+            "offsetX", offsetX,
+            "offsetY", offsetY,
+            "offsetZ", offsetZ,
+            "rotation", structureNbt.rotation() != null ? structureNbt.rotation() : "NONE",
+            "mirror", structureNbt.mirror() != null ? structureNbt.mirror() : "NONE",
+            "ignoreAir", structureNbt.ignoreAir()
+        ));
+
+        // Track structure placement in transaction for potential rollback
+        tx.trackStructurePlacement(structureNbt.path(), offsetX, offsetY, offsetZ);
     }
 
     private int resolveY(ArenaTemplate.Hazard hazard, ArenaTemplate template) {
-        int baseY = hazard.y() != null ? hazard.y() : template.floor().y();
+        Integer hazardY = hazard.y();
+        int baseY = hazardY != null ? hazardY : template.floor().y();
         if (hazard.yMode() == ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR) {
             baseY += template.floor().y();
         }
@@ -577,20 +725,24 @@ public class ArenaBuilder {
         Object areaObj = hazard.params() != null ? hazard.params().get("area") : null;
         String blockType = (String) hazard.params().getOrDefault("blockType", "minecraft:sand");
         int count = ((Number) hazard.params().getOrDefault("count", 5)).intValue();
-        int interval = ((Number) hazard.params().getOrDefault("interval", 20)).intValue(); // unused here, deterministic placement
+        int interval = ((Number) hazard.params().getOrDefault("interval", 20)).intValue();
+
+        // interval determines vertical spacing between blocks (in blocks, derived from tick interval)
+        // Higher interval = more spaced out falling blocks
+        int verticalSpacing = Math.max(1, interval / 10);
 
         if (areaObj instanceof java.util.List<?> area && area.size() == 3) {
             int centerX = ((Number) area.get(0)).intValue() + originX;
             int centerZ = ((Number) area.get(2)).intValue() + originZ;
             int y = resolveY(hazard, template);
             for (int i = 0; i < count; i++) {
-                placeBlock(centerX, y + i, centerZ, blockType, tx);
+                placeBlock(centerX, y + (i * verticalSpacing), centerZ, blockType, tx);
             }
         } else {
             // Fallback: drop a short column at origin
             int y = resolveY(hazard, template);
             for (int i = 0; i < count; i++) {
-                placeBlock(originX, y + i, originZ, blockType, tx);
+                placeBlock(originX, y + (i * verticalSpacing), originZ, blockType, tx);
             }
         }
     }
@@ -633,7 +785,8 @@ public class ArenaBuilder {
         int minChunkZ = (originZ - sizeZ / 2) >> 4;
         int maxChunkZ = (originZ + sizeZ / 2) >> 4;
 
-        return chunkManager.ensureChunksLoaded(minChunkX, minChunkZ, maxChunkX, maxChunkZ);
+        // Use retry-enabled chunk loading for resilience
+        return chunkManager.ensureChunksLoadedWithRetry(minChunkX, minChunkZ, maxChunkX, maxChunkZ);
     }
 
     // === Estimation (DD10) ===
@@ -652,6 +805,53 @@ public class ArenaBuilder {
 
         // Fall back to heuristic
         return estimateHeuristic(template);
+    }
+
+    /**
+     * DD10: Calculates estimation accuracy and returns the accuracy band.
+     *
+     * @param estimated The estimated build time in ms
+     * @param actual The actual build time in ms
+     * @return AccuracyResult with band and deviation
+     */
+    public AccuracyResult calculateAccuracy(long estimated, long actual) {
+        if (estimated == 0) {
+            return new AccuracyResult(AccuracyBand.POOR, 1.0);
+        }
+
+        double deviation = Math.abs((double)(actual - estimated) / estimated);
+
+        AccuracyBand band;
+        if (deviation <= ACCURACY_EXCELLENT) {
+            band = AccuracyBand.EXCELLENT;  // ±20%
+        } else if (deviation <= ACCURACY_GOOD) {
+            band = AccuracyBand.GOOD;       // ±35%
+        } else if (deviation <= ACCURACY_ACCEPTABLE) {
+            band = AccuracyBand.ACCEPTABLE; // ±50%
+        } else {
+            band = AccuracyBand.POOR;       // >±50%
+        }
+
+        return new AccuracyResult(band, deviation);
+    }
+
+    /**
+     * DD10: Accuracy bands for estimation feedback.
+     */
+    public enum AccuracyBand {
+        EXCELLENT,  // ±20%
+        GOOD,       // ±35%
+        ACCEPTABLE, // ±50%
+        POOR        // >±50%
+    }
+
+    /**
+     * DD10: Result of accuracy calculation.
+     */
+    public record AccuracyResult(AccuracyBand band, double deviation) {
+        public boolean needsCalibration() {
+            return band == AccuracyBand.POOR;
+        }
     }
 
     private long estimateHeuristic(ArenaTemplate template) {
@@ -839,4 +1039,40 @@ public class ArenaBuilder {
             super(message, cause);
         }
     }
+
+    /**
+     * Computes residual metrics using MetricsCompatibilityLayer when level is available.
+     */
+    private ResidualSnapshot measureResiduals(ArenaTemplate template, int originX, int originY, int originZ, MinecraftBlockPlacer mcPlacer) {
+        BuildDryRun dryRun = BuildDryRunCalculator.calculate(template);
+        int expectedBlocks = dryRun.totalBlocks();
+
+        Integer sizeXVal = template.sizeX();
+        Integer sizeZVal = template.sizeZ();
+        int sizeX = sizeXVal != null ? sizeXVal : template.size();
+        int sizeZ = sizeZVal != null ? sizeZVal : template.size();
+        int halfX = sizeX / 2;
+        int halfZ = sizeZ / 2;
+        int minX = originX - halfX;
+        int maxX = originX + halfX - 1;
+        int minZ = originZ - halfZ;
+        int maxZ = originZ + halfZ - 1;
+
+        int minY = template.floor() != null ? template.floor().y() : originY;
+        if (template.underfloor() != null) {
+            minY = minY - template.underfloor().depth();
+        }
+        int maxY = minY;
+        if (template.ceiling() != null && template.ceiling().enabled()) {
+            maxY = Math.max(maxY, template.ceiling().y());
+        } else if (template.walls() != null && template.walls().enabled()) {
+            maxY = Math.max(maxY, template.walls().startY() + template.walls().height());
+        }
+
+        AABB bounds = new AABB(minX, minY, minZ, maxX, maxY, maxZ);
+        var residuals = MetricsCompatibilityLayer.measureResiduals(mcPlacer.level(), bounds, expectedBlocks);
+        return new ResidualSnapshot(residuals.entitiesResidual(), residuals.blocksResidual());
+    }
+
+    private record ResidualSnapshot(int entitiesResidual, int blocksResidual) {}
 }

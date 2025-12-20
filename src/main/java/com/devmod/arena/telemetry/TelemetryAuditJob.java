@@ -231,6 +231,92 @@ public class TelemetryAuditJob {
     // ========== Result Types ==========
 
     /**
+     * DD57: Formal telemetry audit event for structured logging.
+     */
+    public record TelemetryAuditEvent(
+        String eventName,
+        String timestamp,
+        Map<String, Object> data,
+        String sanitizedPayload,  // DD57: Sanitized version of data
+        boolean isValid,
+        List<String> validationErrors
+    ) {
+        /**
+         * DD57: Creates from raw event with sanitization.
+         */
+        public static TelemetryAuditEvent fromRaw(ArenaTelemetry.TelemetryEvent event) {
+            Map<String, Object> data = event.data();
+            String sanitized = sanitizePayload(data);
+            List<String> errors = validateEvent(event);
+
+            return new TelemetryAuditEvent(
+                event.name(),
+                event.timestamp().toString(),
+                data,
+                sanitized,
+                errors.isEmpty(),
+                errors
+            );
+        }
+
+        /**
+         * DD57: Sanitizes payload by removing/masking sensitive data.
+         */
+        private static String sanitizePayload(Map<String, Object> data) {
+            if (data == null || data.isEmpty()) {
+                return "{}";
+            }
+
+            StringBuilder sb = new StringBuilder("{");
+            boolean first = true;
+            for (Map.Entry<String, Object> entry : data.entrySet()) {
+                if (!first) sb.append(", ");
+                first = false;
+
+                String key = entry.getKey();
+                Object value = entry.getValue();
+
+                // DD57: Mask sensitive fields
+                if (isSensitiveField(key)) {
+                    sb.append(key).append(": \"[REDACTED]\"");
+                } else if (value instanceof String s && s.length() > 100) {
+                    // Truncate long strings
+                    sb.append(key).append(": \"").append(s.substring(0, 100)).append("...\"");
+                } else {
+                    sb.append(key).append(": ").append(value);
+                }
+            }
+            return sb.append("}").toString();
+        }
+
+        private static boolean isSensitiveField(String fieldName) {
+            String lower = fieldName.toLowerCase();
+            return lower.contains("password") ||
+                   lower.contains("token") ||
+                   lower.contains("secret") ||
+                   lower.contains("key") ||
+                   lower.contains("auth") ||
+                   lower.contains("credential");
+        }
+
+        private static List<String> validateEvent(ArenaTelemetry.TelemetryEvent event) {
+            List<String> errors = new ArrayList<>();
+
+            if (event.name() == null || event.name().isBlank()) {
+                errors.add("Event name is missing");
+            }
+            if (event.timestamp() == null) {
+                errors.add("Timestamp is missing");
+            }
+            if (!event.name().startsWith("arena.")) {
+                errors.add("Event name should start with 'arena.'");
+            }
+
+            return errors;
+        }
+    }
+
+    /**
      * Audit result containing all detected issues.
      */
     public record AuditResult(

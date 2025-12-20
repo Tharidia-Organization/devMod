@@ -65,6 +65,14 @@ public class PlayerInstanceSnapshot {
     private int targetWaves;
     private boolean endlessMode;
 
+    // === Arena Template Recovery (Fase 1) ===
+    @Nullable
+    private String templateId;
+    private int templateVersion;
+    @Nullable
+    private String policyId;
+    private int policyVersion;
+
     // === Multiplayer ===
     @Nullable
     private UUID partyLeaderId;
@@ -241,6 +249,26 @@ public class PlayerInstanceSnapshot {
         return endlessMode;
     }
 
+    // === Arena Template Recovery Getters (Fase 1) ===
+
+    @Nullable
+    public String getTemplateId() {
+        return templateId;
+    }
+
+    public int getTemplateVersion() {
+        return templateVersion;
+    }
+
+    @Nullable
+    public String getPolicyId() {
+        return policyId;
+    }
+
+    public int getPolicyVersion() {
+        return policyVersion;
+    }
+
     @Nullable
     public UUID getPartyLeaderId() {
         return partyLeaderId;
@@ -326,6 +354,19 @@ public class PlayerInstanceSnapshot {
         return this;
     }
 
+    /**
+     * Sets arena template and policy info for recovery (Fase 1).
+     */
+    public PlayerInstanceSnapshot withArenaTemplate(
+            @Nullable String templateId, int templateVersion,
+            @Nullable String policyId, int policyVersion) {
+        this.templateId = templateId;
+        this.templateVersion = templateVersion;
+        this.policyId = policyId;
+        this.policyVersion = policyVersion;
+        return this;
+    }
+
     // === Serialization ===
 
     /**
@@ -407,6 +448,16 @@ public class PlayerInstanceSnapshot {
             }
             tag.put("partyMembers", memberList);
         }
+
+        // Arena Template Recovery (Fase 1)
+        if (templateId != null) {
+            tag.putString("templateId", templateId);
+        }
+        tag.putInt("templateVersion", templateVersion);
+        if (policyId != null) {
+            tag.putString("policyId", policyId);
+        }
+        tag.putInt("policyVersion", policyVersion);
 
         return tag;
     }
@@ -494,6 +545,16 @@ public class PlayerInstanceSnapshot {
             }
         }
 
+        // Arena Template Recovery (Fase 1)
+        if (tag.contains("templateId")) {
+            snapshot.templateId = tag.getString("templateId");
+        }
+        snapshot.templateVersion = tag.getInt("templateVersion");
+        if (tag.contains("policyId")) {
+            snapshot.policyId = tag.getString("policyId");
+        }
+        snapshot.policyVersion = tag.getInt("policyVersion");
+
         return snapshot;
     }
 
@@ -539,6 +600,8 @@ public class PlayerInstanceSnapshot {
             ", pos=(" + originalX + ", " + originalY + ", " + originalZ + ")" +
             ", quest=" + questType +
             ", party=" + (partyLeaderId != null ? "yes" : "no") +
+            ", template=" + (templateId != null ? templateId + "v" + templateVersion : "none") +
+            ", policy=" + (policyId != null ? policyId + "v" + policyVersion : "none") +
             '}';
     }
 }

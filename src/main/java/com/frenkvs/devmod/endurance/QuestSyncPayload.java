@@ -47,7 +47,7 @@ public record QuestSyncPayload(
 
     private static void encode(RegistryFriendlyByteBuf buf, QuestSyncPayload payload) {
         buf.writeBoolean(payload.hasActiveQuest);
-        buf.writeUtf(payload.questName);
+        buf.writeUtf(Objects.requireNonNull(payload.questName));
         buf.writeVarInt(payload.currentWave);
         buf.writeVarInt(payload.totalWaves);
         buf.writeBoolean(payload.endlessMode);
@@ -64,7 +64,7 @@ public record QuestSyncPayload(
         // Write modifiers list
         buf.writeVarInt(payload.waveModifiers.size());
         for (String mod : payload.waveModifiers) {
-            buf.writeUtf(mod);
+            buf.writeUtf(Objects.requireNonNull(mod));
         }
 
         buf.writeVarInt(payload.currentCombo);

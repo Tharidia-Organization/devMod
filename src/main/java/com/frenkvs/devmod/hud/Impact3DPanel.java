@@ -7,6 +7,8 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.Objects;
+
 /**
  * Represents a single 3D panel instance in the world.
  * Manages position, lifecycle (fade in/out), and rendering.
@@ -186,7 +188,7 @@ public class Impact3DPanel {
      * Calculates distance from camera.
      */
     public double getDistanceFromCamera(Vec3 cameraPos) {
-        return panelPosition.distanceTo(cameraPos);
+        return panelPosition.distanceTo(Objects.requireNonNull(cameraPos));
     }
 
     @Override

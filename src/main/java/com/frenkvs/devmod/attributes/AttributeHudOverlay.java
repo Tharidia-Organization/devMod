@@ -12,7 +12,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
+import javax.annotation.Nonnull;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 2D HUD Overlay for the attribute monitoring system.
@@ -58,8 +60,8 @@ public class AttributeHudOverlay {
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.CROSSHAIR,
-            LAYER_ID,
+            Objects.requireNonNull(VanillaGuiLayers.CROSSHAIR),
+            Objects.requireNonNull(LAYER_ID),
             AttributeHudOverlay::render
         );
     }
@@ -74,7 +76,7 @@ public class AttributeHudOverlay {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.options.hideGui) return;
 
-        Font font = mc.font;
+        Font font = Objects.requireNonNull(mc.font);
         int screenWidth = mc.getWindow().getGuiScaledWidth();
 
         // Panel position (right side)
@@ -149,7 +151,7 @@ public class AttributeHudOverlay {
         return height;
     }
 
-    private static int renderTargetSection(GuiGraphics graphics, Font font, int x, int y, int width, TrackedEntity target) {
+    private static int renderTargetSection(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, TrackedEntity target) {
         // Target name
         String nameStr = "§f" + target.getEntityName();
         if (target.hasLineOfSight()) {
@@ -222,7 +224,7 @@ public class AttributeHudOverlay {
         return y + SECTION_GAP;
     }
 
-    private static int renderTrackedListSection(GuiGraphics graphics, Font font, int x, int y, int width) {
+    private static int renderTrackedListSection(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width) {
         List<TrackedEntity> tracked = AttributeMonitoringSystem.INSTANCE.getTrackedEntities();
 
         String header = String.format("§eTracked Entities (%d)", tracked.size());
@@ -258,7 +260,7 @@ public class AttributeHudOverlay {
         return y + SECTION_GAP;
     }
 
-    private static void renderLogSection(GuiGraphics graphics, Font font, int x, int y, int width) {
+    private static void renderLogSection(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width) {
         List<AttributeLogEntry> logs = AttributeMonitoringSystem.INSTANCE.getLogHistory();
 
         graphics.drawString(font, "§7Log History", x, y, TEXT_GRAY, false);

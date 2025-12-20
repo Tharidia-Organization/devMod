@@ -125,13 +125,14 @@ public class EnduranceQuestScreen extends Screen {
         loadQuests();
 
         // Search box (keep as EditBox - appropriate for text input)
-        searchBox = new EditBox(font, SIDEBAR_WIDTH + 10, 10, 200, 20, I18n.ui("search"));
-        searchBox.setHint(I18n.translate("devmod.quest.search_mobs"));
+        var safeFont = Objects.requireNonNull(font);
+        searchBox = new EditBox(safeFont, SIDEBAR_WIDTH + 10, 10, 200, 20, I18n.ui("search"));
+        searchBox.setHint(Objects.requireNonNull(I18n.translate("devmod.quest.search_mobs")));
         searchBox.setResponder(query -> {
             searchQuery = query;
             applyFilters();
         });
-        addRenderableWidget(searchBox);
+        addRenderableWidget(Objects.requireNonNull(searchBox));
 
         // All buttons are now rendered custom via renderActionButtons()
         initButtons();
@@ -179,7 +180,7 @@ public class EnduranceQuestScreen extends Screen {
     }
 
     private void openShop() {
-        minecraft.setScreen(new EnduranceShopScreen());
+        Objects.requireNonNull(minecraft).setScreen(new EnduranceShopScreen());
     }
 
     private void loadQuests() {
@@ -219,7 +220,7 @@ public class EnduranceQuestScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void render(@javax.annotation.Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Background
         graphics.fill(0, 0, width, height, COLOR_BG);
 
@@ -260,7 +261,8 @@ public class EnduranceQuestScreen extends Screen {
                 int alphaInt = (int) (alpha * 255);
 
                 // Draw error message near the Start Quest button
-                int msgWidth = font.width(errorMessage);
+                var safeFont = Objects.requireNonNull(font);
+                int msgWidth = safeFont.width(Objects.requireNonNull(errorMessage));
                 int msgX;
                 int msgY;
                 if (startButton != null && !startButton.getBounds().isEmpty()) {
@@ -279,7 +281,7 @@ public class EnduranceQuestScreen extends Screen {
                 int borderColor = UIConstants.setAlpha(COLOR_DANGER, alphaInt);
                 graphics.fill(msgX - 6, msgY - 3, msgX + msgWidth + 6, msgY - 2, borderColor);
                 // Text
-                graphics.drawString(font, errorMessage, msgX, msgY, (alphaInt << 24) | 0xFFFFFF);
+                graphics.drawString(safeFont, Objects.requireNonNull(errorMessage), msgX, msgY, (alphaInt << 24) | 0xFFFFFF);
             } else {
                 errorMessage = null;
             }
@@ -290,6 +292,7 @@ public class EnduranceQuestScreen extends Screen {
      * Render intro overlay explaining Endurance Quest to new users.
      */
     private void renderIntroOverlay(GuiGraphics graphics, int mouseX, int mouseY) {
+        var safeFont = Objects.requireNonNull(font);
 
         int panelW = 400;
         int panelH = 280;
@@ -304,7 +307,7 @@ public class EnduranceQuestScreen extends Screen {
         int centerX = panelX + panelW / 2;
 
         // Title
-        graphics.drawCenteredString(font, "§6§lWelcome to Endurance Quest!", centerX, y, 0xFFFFFFFF);
+        graphics.drawCenteredString(safeFont, "§6§lWelcome to Endurance Quest!", centerX, y, 0xFFFFFFFF);
         y += 25;
 
         // Separator
@@ -326,7 +329,7 @@ public class EnduranceQuestScreen extends Screen {
         };
 
         for (String line : lines) {
-            graphics.drawString(font, line, panelX + 25, y, 0xFFFFFFFF, false);
+            graphics.drawString(safeFont, line, panelX + 25, y, 0xFFFFFFFF, false);
             y += 12;
         }
 
@@ -351,16 +354,17 @@ public class EnduranceQuestScreen extends Screen {
     }
 
     private void renderSidebar(GuiGraphics graphics, int mouseX, int mouseY) {
+        var safeFont = Objects.requireNonNull(font);
         graphics.fill(0, 0, SIDEBAR_WIDTH, height, COLOR_SIDEBAR_BG);
 
         int y = 10;
 
         // Title
-        graphics.drawCenteredString(font, "Filters", SIDEBAR_WIDTH / 2, y, COLOR_TEXT);
+        graphics.drawCenteredString(safeFont, "Filters", SIDEBAR_WIDTH / 2, y, COLOR_TEXT);
         y += 25;
 
         // Namespace filters
-        graphics.drawString(font, "Mod:", 10, y, COLOR_TEXT_DIM);
+        graphics.drawString(safeFont, "Mod:", 10, y, COLOR_TEXT_DIM);
         y += 12;
 
         Set<String> namespaces = EnduranceQuestRegistry.INSTANCE.getAvailableNamespaces();
@@ -383,14 +387,14 @@ public class EnduranceQuestScreen extends Screen {
             long count = ns.equals("all") ? allQuests.size() :
                 allQuests.stream().filter(q -> q.namespace.equals(ns)).count();
 
-            graphics.drawString(font, displayName + " (" + count + ")", 15, y, COLOR_TEXT);
+            graphics.drawString(safeFont, displayName + " (" + count + ")", 15, y, COLOR_TEXT);
             y += 16;
         }
 
         y += 10;
 
         // Tier filters
-        graphics.drawString(font, "Difficulty:", 10, y, COLOR_TEXT_DIM);
+        graphics.drawString(safeFont, "Difficulty:", 10, y, COLOR_TEXT_DIM);
         y += 12;
 
         // All tiers option
@@ -399,7 +403,7 @@ public class EnduranceQuestScreen extends Screen {
         if (allTiersSelected || allTiersHovered) {
             graphics.fill(10, y - 1, SIDEBAR_WIDTH - 10, y + 13, allTiersSelected ? COLOR_ACCENT : UIConstants.Border.SEPARATOR());
         }
-        graphics.drawString(font, "All Difficulties", 15, y, COLOR_TEXT);
+        graphics.drawString(safeFont, "All Difficulties", 15, y, COLOR_TEXT);
         y += 16;
 
         for (EnduranceQuestRegistry.MobTier tier : EnduranceQuestRegistry.MobTier.values()) {
@@ -412,20 +416,21 @@ public class EnduranceQuestScreen extends Screen {
             }
 
             long count = allQuests.stream().filter(q -> q.tier == tier).count();
-            graphics.drawString(font, tier.name() + " (" + count + ")", 15, y, TIER_COLORS.get(tier));
+            graphics.drawString(safeFont, tier.name() + " (" + count + ")", 15, y, TIER_COLORS.get(tier));
             y += 16;
         }
     }
 
     private void renderHeader(GuiGraphics graphics) {
+        var safeFont = Objects.requireNonNull(font);
         int x = SIDEBAR_WIDTH;
 
         // Title
-        graphics.drawString(font, "Endurance Quests", x + 10, 15, COLOR_TEXT);
+        graphics.drawString(safeFont, "Endurance Quests", x + 10, 15, COLOR_TEXT);
 
         // Stats
         String stats = String.format("%d quests available", filteredQuests.size());
-        graphics.drawString(font, stats, x + 220, 15, COLOR_TEXT_DIM);
+        graphics.drawString(safeFont, stats, x + 220, 15, COLOR_TEXT_DIM);
     }
 
     private void renderQuestList(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -462,6 +467,7 @@ public class EnduranceQuestScreen extends Screen {
 
     private void renderQuestCard(GuiGraphics graphics, EnduranceQuestRegistry.MobQuestConfig quest,
                                   int x, int y, int width, int mouseX, int mouseY) {
+        var safeFont = Objects.requireNonNull(font);
         boolean isHovered = mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY < y + QUEST_CARD_HEIGHT;
         boolean isSelected = quest == selectedQuest;
 
@@ -473,32 +479,33 @@ public class EnduranceQuestScreen extends Screen {
         graphics.fill(x, y, x + 4, y + QUEST_CARD_HEIGHT, tierColor);
 
         // Mob name
-        graphics.drawString(font, quest.displayName, x + 12, y + 8, COLOR_TEXT);
+        graphics.drawString(safeFont, quest.displayName, x + 12, y + 8, COLOR_TEXT);
 
         // Tier badge
-        String tierText = quest.tier.name();
-        int tierWidth = font.width(tierText) + 8;
+        String tierText = Objects.requireNonNull(quest.tier.name());
+        int tierWidth = safeFont.width(tierText) + 8;
         graphics.fill(x + width - tierWidth - 8, y + 5, x + width - 8, y + 18, tierColor);
-        graphics.drawString(font, tierText, x + width - tierWidth - 4, y + 7, COLOR_TEXT);
+        graphics.drawString(safeFont, tierText, x + width - tierWidth - 4, y + 7, COLOR_TEXT);
 
         // Mod name
-        graphics.drawString(font, quest.namespace, x + 12, y + 22, COLOR_TEXT_DIM);
+        graphics.drawString(safeFont, quest.namespace, x + 12, y + 22, COLOR_TEXT_DIM);
 
         // Stats
-        graphics.drawString(font, String.format("Base mobs: %d | Points/kill: %d",
+        graphics.drawString(safeFont, String.format("Base mobs: %d | Points/kill: %d",
             quest.baseCountPerWave, quest.pointsPerKill), x + 12, y + 40, COLOR_TEXT_DIM);
 
         // Best record from player stats cache
         PersonalRecordsSyncPayload.MobRecord record = ClientPersonalRecordsCache.getMobRecord(quest.mobId.toString());
         if (record.highestWave() > 0 || record.bestScore() > 0) {
-            graphics.drawString(font, String.format("Best: Wave %d | %d pts", record.highestWave(), record.bestScore()),
+            graphics.drawString(safeFont, String.format("Best: Wave %d | %d pts", record.highestWave(), record.bestScore()),
                 x + 12, y + 55, COLOR_SUCCESS);
         } else {
-            graphics.drawString(font, "Best: Not attempted", x + 12, y + 55, COLOR_TEXT_DIM);
+            graphics.drawString(safeFont, "Best: Not attempted", x + 12, y + 55, COLOR_TEXT_DIM);
         }
     }
 
     private void renderQuestDetails(GuiGraphics graphics) {
+        var safeFont = Objects.requireNonNull(font);
         int panelX = width - 230;
         int panelY = HEADER_HEIGHT;
         int panelWidth = 220;
@@ -517,14 +524,14 @@ public class EnduranceQuestScreen extends Screen {
 
         // Quest name
         if (y < maxY) {
-            graphics.drawCenteredString(font, selectedQuest.displayName, panelX + panelWidth / 2, y, COLOR_TEXT);
+            graphics.drawCenteredString(safeFont, Objects.requireNonNull(selectedQuest.displayName), panelX + panelWidth / 2, y, COLOR_TEXT);
         }
         y += 20;
 
         // Tier with color
         int tierColor = TIER_COLORS.get(selectedQuest.tier);
         if (y < maxY) {
-            graphics.drawCenteredString(font, selectedQuest.tier.name() + " Difficulty", panelX + panelWidth / 2, y, tierColor);
+            graphics.drawCenteredString(safeFont, selectedQuest.tier.name() + " Difficulty", panelX + panelWidth / 2, y, tierColor);
         }
         y += 25;
 
@@ -536,58 +543,59 @@ public class EnduranceQuestScreen extends Screen {
 
         // Stats - Wave Configuration
         if (y < maxY) {
-            graphics.drawString(font, "Wave Configuration:", panelX + 10, y, COLOR_ACCENT);
+            graphics.drawString(safeFont, "Wave Configuration:", panelX + 10, y, COLOR_ACCENT);
         }
         y += 14;
         if (y < maxY) {
-            graphics.drawString(font, String.format("  Base count: %d", selectedQuest.baseCountPerWave), panelX + 10, y, COLOR_TEXT_DIM);
+            graphics.drawString(safeFont, String.format("  Base count: %d", selectedQuest.baseCountPerWave), panelX + 10, y, COLOR_TEXT_DIM);
         }
         y += 12;
         if (y < maxY) {
-            graphics.drawString(font, String.format("  Scaling: +%.1f/wave", selectedQuest.countScalingPerWave), panelX + 10, y, COLOR_TEXT_DIM);
+            graphics.drawString(safeFont, String.format("  Scaling: +%.1f/wave", selectedQuest.countScalingPerWave), panelX + 10, y, COLOR_TEXT_DIM);
         }
         y += 12;
         if (y < maxY) {
-            graphics.drawString(font, String.format("  Max per wave: %d", selectedQuest.maxPerWave), panelX + 10, y, COLOR_TEXT_DIM);
+            graphics.drawString(safeFont, String.format("  Max per wave: %d", selectedQuest.maxPerWave), panelX + 10, y, COLOR_TEXT_DIM);
         }
         y += 20;
 
         // Rewards
         if (y < maxY) {
-            graphics.drawString(font, "Rewards:", panelX + 10, y, COLOR_ACCENT);
+            graphics.drawString(safeFont, "Rewards:", panelX + 10, y, COLOR_ACCENT);
         }
         y += 14;
         if (y < maxY) {
-            graphics.drawString(font, String.format("  Per kill: %d pts", selectedQuest.pointsPerKill), panelX + 10, y, COLOR_SUCCESS);
+            graphics.drawString(safeFont, String.format("  Per kill: %d pts", selectedQuest.pointsPerKill), panelX + 10, y, COLOR_SUCCESS);
         }
         y += 12;
         if (y < maxY) {
-            graphics.drawString(font, String.format("  Wave bonus: %d pts", selectedQuest.bonusPointsForWaveClear), panelX + 10, y, COLOR_SUCCESS);
+            graphics.drawString(safeFont, String.format("  Wave bonus: %d pts", selectedQuest.bonusPointsForWaveClear), panelX + 10, y, COLOR_SUCCESS);
         }
         y += 20;
 
         // Spawn Info
         if (y < maxY) {
-            graphics.drawString(font, "Spawn Info:", panelX + 10, y, COLOR_ACCENT);
+            graphics.drawString(safeFont, "Spawn Info:", panelX + 10, y, COLOR_ACCENT);
         }
         y += 14;
         if (y < maxY) {
-            graphics.drawString(font, String.format("  Group spawn: %s", selectedQuest.canSpawnInGroups ? "Yes" : "No"), panelX + 10, y, COLOR_TEXT_DIM);
+            graphics.drawString(safeFont, String.format("  Group spawn: %s", selectedQuest.canSpawnInGroups ? "Yes" : "No"), panelX + 10, y, COLOR_TEXT_DIM);
         }
         y += 12;
         if (y < maxY) {
-            graphics.drawString(font, String.format("  Elite chance: %.0f%%", selectedQuest.eliteChance * 100), panelX + 10, y, COLOR_WARNING);
+            graphics.drawString(safeFont, String.format("  Elite chance: %.0f%%", selectedQuest.eliteChance * 100), panelX + 10, y, COLOR_WARNING);
         }
     }
 
     private void renderSettingsPanel(GuiGraphics graphics) {
+        var safeFont = Objects.requireNonNull(font);
         int panelX = width - 230;
         int panelY = height - 110;
 
-        graphics.drawString(font, "Quest Settings:", panelX + 10, panelY, COLOR_ACCENT);
+        graphics.drawString(safeFont, "Quest Settings:", panelX + 10, panelY, COLOR_ACCENT);
         panelY += 15;
 
-        graphics.drawString(font, String.format("Waves: %d", questWaves), panelX + 50, panelY + 5, COLOR_TEXT);
+        graphics.drawString(safeFont, String.format("Waves: %d", questWaves), panelX + 50, panelY + 5, COLOR_TEXT);
     }
 
     /**
@@ -781,8 +789,8 @@ public class EnduranceQuestScreen extends Screen {
             // Play error sound
             if (minecraft != null) {
                 minecraft.getSoundManager().play(
-                    net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
-                        net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BASS.value(), 0.5f));
+                    Objects.requireNonNull(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                        Objects.requireNonNull(net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BASS.value()), 0.5f)));
             }
             return;
         }

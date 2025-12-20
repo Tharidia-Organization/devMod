@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.Objects;
 
 /**
  * Manages wave spawning, mob buffs, and wave progression for Endurance Quests.
@@ -237,7 +238,7 @@ public class WaveManager {
             // Use modulo to reuse positions if we don't have enough
             BlockPos spawnPos = spawnPositions.get(i % Math.max(1, spawnPositions.size()));
 
-            Entity entity = entityType.create(level);
+            Entity entity = entityType.create(Objects.requireNonNull(level));
             if (entity instanceof Mob mob) {
                 // Position the mob
                 mob.setPos(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5);
@@ -258,8 +259,8 @@ public class WaveManager {
 
                 // Tag mob as quest mob BEFORE adding to world (so event handlers can see it)
                 CompoundTag tag = mob.getPersistentData();
-                tag.putUUID("endurance_quest_id", waveState.quest.getQuestId());
-                tag.putUUID("endurance_arena_id", arena.getId());
+                tag.putUUID("endurance_quest_id", Objects.requireNonNull(waveState.quest.getQuestId()));
+                tag.putUUID("endurance_arena_id", Objects.requireNonNull(arena.getId()));
 
                 // Add to world and verify success
                 boolean added = level.addFreshEntity(mob);
@@ -299,26 +300,26 @@ public class WaveManager {
         for (WaveModifier modifier : waveState.modifiers) {
             switch (modifier) {
                 case SPEED_BOOST -> {
-                    var speedAttr = mob.getAttribute(Attributes.MOVEMENT_SPEED);
+                    var speedAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MOVEMENT_SPEED));
                     if (speedAttr != null) {
                         speedAttr.setBaseValue(speedAttr.getBaseValue() * 1.25);
                     }
                 }
                 case DAMAGE_BOOST -> {
-                    var attackAttr = mob.getAttribute(Attributes.ATTACK_DAMAGE);
+                    var attackAttr = mob.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
                     if (attackAttr != null) {
                         attackAttr.setBaseValue(attackAttr.getBaseValue() * 1.25);
                     }
                 }
                 case HEALTH_BOOST -> {
-                    var healthAttr = mob.getAttribute(Attributes.MAX_HEALTH);
+                    var healthAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
                     if (healthAttr != null) {
                         healthAttr.setBaseValue(healthAttr.getBaseValue() * 1.5);
                         mob.setHealth(mob.getMaxHealth());
                     }
                 }
                 case ARMOR_BOOST -> {
-                    var armorAttr = mob.getAttribute(Attributes.ARMOR);
+                    var armorAttr = mob.getAttribute(Objects.requireNonNull(Attributes.ARMOR));
                     if (armorAttr != null) {
                         armorAttr.setBaseValue(armorAttr.getBaseValue() + 8);
                     }
@@ -328,10 +329,10 @@ public class WaveManager {
                     mob.getPersistentData().putBoolean("endurance_fire_aspect", true);
                 }
                 case INVISIBILITY -> {
-                    mob.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
+                    mob.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.INVISIBILITY), Integer.MAX_VALUE, 0, false, false));
                 }
                 case REGEN -> {
-                    mob.addEffect(new MobEffectInstance(MobEffects.REGENERATION, Integer.MAX_VALUE, 0, false, false));
+                    mob.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.REGENERATION), Integer.MAX_VALUE, 0, false, false));
                 }
                 case DOUBLE_SPAWN -> {
                     // Handled in wave setup
@@ -350,7 +351,7 @@ public class WaveManager {
         QuestType questType = waveState.getQuestType();
 
         // Apply HP scaling using MobQuestConfig (includes difficultyPreset.hpMultiplier)
-        var healthAttr = mob.getAttribute(Attributes.MAX_HEALTH);
+        var healthAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
         if (healthAttr != null) {
             float baseHP = (float) healthAttr.getBaseValue();
             // Use mobConfig.getScaledHealth() which applies preset multiplier
@@ -370,7 +371,7 @@ public class WaveManager {
 
         // Apply damage scaling using MobQuestConfig (includes difficultyPreset.damageMultiplier)
         // Note: Apply preset multiplier even in single player for consistency with UI preview
-        var attackAttr = mob.getAttribute(Attributes.ATTACK_DAMAGE);
+        var attackAttr = mob.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
         if (attackAttr != null) {
             float baseDamage = (float) attackAttr.getBaseValue();
             float scaledDamage = mobConfig.getScaledDamage(playerCount);
@@ -397,30 +398,30 @@ public class WaveManager {
         // Scale stats based on wave
         float scaleFactor = 1.0f + (waveNumber * 0.1f);
 
-        var healthAttr = mob.getAttribute(Attributes.MAX_HEALTH);
+        var healthAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
         if (healthAttr != null) {
             healthAttr.setBaseValue(healthAttr.getBaseValue() * scaleFactor * 1.5);
             mob.setHealth(mob.getMaxHealth());
         }
 
-        var attackAttr = mob.getAttribute(Attributes.ATTACK_DAMAGE);
+        var attackAttr = mob.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
         if (attackAttr != null) {
             attackAttr.setBaseValue(attackAttr.getBaseValue() * scaleFactor);
         }
 
         // Give elites equipment
         if (random.nextBoolean()) {
-            mob.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.IRON_HELMET));
+            mob.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Objects.requireNonNull(Items.IRON_HELMET)));
         }
         if (random.nextBoolean()) {
-            mob.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.IRON_CHESTPLATE));
+            mob.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Objects.requireNonNull(Items.IRON_CHESTPLATE)));
         }
 
         // Visual indicator - glowing effect
         mob.setGlowingTag(true);
 
         // Effects
-        mob.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, Integer.MAX_VALUE, 0, false, false));
+        mob.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.DAMAGE_RESISTANCE), Integer.MAX_VALUE, 0, false, false));
     }
 
     /**
@@ -486,7 +487,7 @@ public class WaveManager {
         if (state != null) {
             // Remove any remaining mobs
             for (UUID mobId : state.spawnedMobs) {
-                Entity entity = level.getEntity(mobId);
+                Entity entity = level.getEntity(Objects.requireNonNull(mobId));
                 if (entity != null) {
                     entity.discard();
                 }
@@ -522,7 +523,7 @@ public class WaveManager {
      */
     @SuppressWarnings("deprecation")
     private static void finalizeMobSpawn(Mob mob, ServerLevel level, BlockPos spawnPos) {
-        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos),
+        mob.finalizeSpawn(level, Objects.requireNonNull(level.getCurrentDifficultyAt(Objects.requireNonNull(spawnPos))),
             MobSpawnType.MOB_SUMMONED, null);
     }
 }

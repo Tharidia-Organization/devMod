@@ -13,19 +13,68 @@ public class TemplateValidator {
     private static final int MAX_SPAWN_SLOTS = 100;
     private static final int MAX_FORBIDDEN_ZONES = 20;
     private static final int MAX_LIGHT_SOURCES = 50;
+    private static final int MAX_PLAYER_SPAWN_OFFSET = 16; // sanity clamp
     private static final List<String> ALLOWED_ROTATIONS = List.of("none", "clockwise_90", "180", "counterclockwise_90");
     private static final List<String> ALLOWED_MIRRORS = List.of("none", "front_back", "left_right");
     private static final List<String> ALLOWED_SEED_POLICIES = List.of("fixed", "perRun");
 
     private ValidationMode mode = ValidationMode.STRICT;
     private InstanceSettingsValidator.InstanceLimits instanceLimits = InstanceSettingsValidator.InstanceLimits.defaults();
+    private InstanceSettingsValidator.Telemetry instanceTelemetry;
     private StructureManifest structureManifest;
     private StructureDataProvider structureDataProvider;
+    private StructureTelemetry structureTelemetry;
+    private HazardValidator.HazardTelemetry hazardTelemetry;
+    private java.util.Set<String> registeredCustomHazards;
+    private static final int EXPECTED_SCHEMA_VERSION = 1;
+    private static final List<String> ALLOWED_PARTICLE_AREAS = List.of("bounds", "chunks");
 
+    /**
+     * Validation strictness mode for template validation.
+     *
+     * <p>Controls how validation errors are handled:
+     *
+     * <ul>
+     *   <li><b>STRICT</b> (default): All errors cause validation failure.
+     *       Use in production to ensure only valid templates are loaded.
+     *       Any error in the errors list means {@code valid=false}.</li>
+     *
+     *   <li><b>PERMISSIVE</b>: Bounds-related errors are treated as warnings.
+     *       Validation passes if no non-bounds errors exist. Useful during
+     *       template development when spawn positions may temporarily exceed
+     *       arena bounds. Errors are still collected for review.</li>
+     *
+     *   <li><b>LENIENT</b>: All errors are converted to warnings.
+     *       Validation always passes ({@code valid=true}) but errors are
+     *       moved to the warnings list. Use only for debugging or migration
+     *       scenarios. Not recommended for production.</li>
+     * </ul>
+     *
+     * <p>Set via environment variable {@code DEVMOD_TEMPLATE_VALIDATION_MODE}
+     * or system property {@code devmod.arena.validationMode}.
+     *
+     * @see #fromString(String, ValidationMode)
+     */
     public enum ValidationMode {
+        /** All errors fail validation. Production default. */
         STRICT,
+        /** Bounds errors become warnings; other errors still fail. */
         PERMISSIVE,
+        /** All errors become warnings; validation always passes. Debug only. */
         LENIENT
+    }
+
+    /**
+     * Parses a validation mode from string with fallback.
+     */
+    public static ValidationMode fromString(String value, ValidationMode defaultMode) {
+        if (value == null || value.isBlank()) return defaultMode;
+        return switch (value.trim().toLowerCase()) {
+            case "strict" -> ValidationMode.STRICT;
+            case "permissive" -> ValidationMode.PERMISSIVE;
+            case "lenient" -> ValidationMode.LENIENT;
+            default -> defaultMode;
+        };
     }
 
     public TemplateValidator() {}
@@ -39,12 +88,35 @@ public class TemplateValidator {
         return this;
     }
 
+    public TemplateValidator withHazardTelemetry(HazardValidator.HazardTelemetry telemetry) {
+        this.hazardTelemetry = telemetry;
+        return this;
+    }
+
+    public TemplateValidator withInstanceTelemetry(InstanceSettingsValidator.Telemetry telemetry) {
+        this.instanceTelemetry = telemetry;
+        return this;
+    }
+
+    public TemplateValidator withRegisteredCustomHazards(java.util.Set<String> builderIds) {
+        this.registeredCustomHazards = builderIds;
+        return this;
+    }
+
     /**
      * Provide manifest + data provider for structureNbt validation (checksum/limits).
      */
     public TemplateValidator withStructureValidation(StructureManifest manifest, StructureDataProvider provider) {
         this.structureManifest = manifest;
         this.structureDataProvider = provider;
+        return this;
+    }
+
+    /**
+     * Provide telemetry for structure validation outcomes.
+     */
+    public TemplateValidator withStructureTelemetry(StructureTelemetry telemetry) {
+        this.structureTelemetry = telemetry;
         return this;
     }
 
@@ -56,21 +128,35 @@ public class TemplateValidator {
         List<String> errors = new ArrayList<>();
         List<String> warnings = new ArrayList<>();
 
+        // Schema version check (int-based)
+        if (template.schemaVersion() != EXPECTED_SCHEMA_VERSION) {
+            if (template.schemaVersion() / 1000 > EXPECTED_SCHEMA_VERSION / 1000) {
+                errors.add("schemaVersion %d is incompatible with loader %d".formatted(template.schemaVersion(), EXPECTED_SCHEMA_VERSION));
+            } else {
+                warnings.add("schemaVersion %d differs from loader %d".formatted(template.schemaVersion(), EXPECTED_SCHEMA_VERSION));
+            }
+        }
+
         validateRequiredFields(template, errors);
 
         int maxDim = computeMaxDim(template);
-        int sizeX = template.sizeX() != null ? template.sizeX() : template.size();
-        int sizeZ = template.sizeZ() != null ? template.sizeZ() : template.size();
+        Integer sizeXVal = template.sizeX();
+        Integer sizeZVal = template.sizeZ();
+        int sizeX = sizeXVal != null ? sizeXVal : template.size();
+        int sizeZ = sizeZVal != null ? sizeZVal : template.size();
         validateSizeBounds(maxDim, errors);
         validateLighting(template, errors);
-        validateForbiddenZones(template.forbiddenZones(), sizeX, sizeZ, errors);
+        validateForbiddenZones(template, template.forbiddenZones(), sizeX, sizeZ, errors);
         validateStructureNbt(template, errors, warnings);
+        validateMobSpawnStrategy(template, errors, warnings, sizeX, sizeZ);
+        validateTags(template.tags(), warnings);
+        validateEnvironment(template.environment(), warnings, errors);
 
         // Build arena bounds for spawn/hazard checks
         Bounds bounds = computeBounds(template);
 
         // Hazards
-        HazardValidator hazardValidator = new HazardValidator();
+        HazardValidator hazardValidator = new HazardValidator(hazardTelemetry, registeredCustomHazards);
         ValidationResult hazardResult = hazardValidator.validate(template, bounds, template.spawnSlots());
         errors.addAll(hazardResult.errors());
         warnings.addAll(hazardResult.warnings());
@@ -86,7 +172,7 @@ public class TemplateValidator {
 
         // Limits & instance settings
         validateLimits(template, errors);
-        InstanceSettingsValidator isValidator = new InstanceSettingsValidator();
+        InstanceSettingsValidator isValidator = new InstanceSettingsValidator(instanceTelemetry);
         var isResult = isValidator.validate(template, instanceLimits);
         errors.addAll(isResult.errors());
         warnings.addAll(isResult.warnings());
@@ -100,20 +186,66 @@ public class TemplateValidator {
         return new ValidationResult(errors.isEmpty(), errors, warnings);
     }
 
+    private void validateEnvironment(ArenaTemplate.Environment env, List<String> warnings, List<String> errors) {
+        if (env == null) return;
+        if (env.particles() != null) {
+            for (int i = 0; i < env.particles().size(); i++) {
+                var p = env.particles().get(i);
+                if (p.type() == null || p.type().isBlank()) {
+                    errors.add("environment.particles[%d].type is required".formatted(i));
+                }
+                if (p.rate() < 0) {
+                    warnings.add("environment.particles[%d].rate < 0".formatted(i));
+                }
+                if (p.area() != null && !ALLOWED_PARTICLE_AREAS.contains(p.area())) {
+                    warnings.add("environment.particles[%d].area '%s' not in %s".formatted(i, p.area(), ALLOWED_PARTICLE_AREAS));
+                }
+            }
+        }
+        if (env.fog() != null) {
+            double density = env.fog().density();
+            if (density < 0.0 || density > 1.0) {
+                warnings.add("environment.fog.density %.3f clamped to [0,1]".formatted(density));
+            }
+        }
+    }
+
+    private void validateTags(List<String> tags, List<String> warnings) {
+        if (tags == null) return;
+        for (String tag : tags) {
+            if (tag == null || tag.isBlank()) {
+                warnings.add("tags contains blank entry");
+            } else if (tag.contains(" ")) {
+                warnings.add("tag '%s' contains whitespace".formatted(tag));
+            }
+        }
+    }
+
     private void validateRequiredFields(ArenaTemplate template, List<String> errors) {
         if (template.id() == null || template.id().isBlank()) {
             errors.add("Template ID is required");
         } else if (!isValidId(template.id())) {
             errors.add("Template ID must be lowercase alphanumeric with underscores, max 32 chars");
         }
-        if (template.schemaVersion() == null || template.schemaVersion().isBlank()) {
-            errors.add("schemaVersion is required");
+        if (template.schemaVersion() <= 0) {
+            errors.add("schemaVersion must be >=1");
         }
         if (template.version() < 1) {
             errors.add("version must be >=1");
         }
         if (template.floor() == null) {
             errors.add("floor is required");
+        }
+        if (template.playerSpawnOffset() != null) {
+            int ox = Math.abs(template.playerSpawnOffset().x());
+            int oy = Math.abs(template.playerSpawnOffset().y());
+            int oz = Math.abs(template.playerSpawnOffset().z());
+            if (ox > MAX_PLAYER_SPAWN_OFFSET || oy > MAX_PLAYER_SPAWN_OFFSET || oz > MAX_PLAYER_SPAWN_OFFSET) {
+                errors.add("playerSpawnOffset exceeds sanity limit " + MAX_PLAYER_SPAWN_OFFSET);
+            }
+        }
+        if (template.mobSpawnStrategy() == null) {
+            errors.add("mobSpawnStrategy is required");
         }
     }
 
@@ -134,9 +266,20 @@ public class TemplateValidator {
         if (template.lighting().lightSources() != null && template.lighting().lightSources().size() > MAX_LIGHT_SOURCES) {
             errors.add("Too many lightSources, max " + MAX_LIGHT_SOURCES);
         }
+        if (template.lighting().lightSources() != null) {
+            for (int i = 0; i < template.lighting().lightSources().size(); i++) {
+                var ls = template.lighting().lightSources().get(i);
+                if (ls.pos() == null || ls.pos().length != 3) {
+                    errors.add("lighting.lightSources[%d].pos must be int[3]".formatted(i));
+                }
+                if (ls.block() == null || ls.block().isBlank()) {
+                    errors.add("lighting.lightSources[%d].block is required".formatted(i));
+                }
+            }
+        }
     }
 
-    private void validateForbiddenZones(List<ArenaTemplate.ForbiddenZone> zones, int sizeX, int sizeZ, List<String> errors) {
+    private void validateForbiddenZones(ArenaTemplate template, List<ArenaTemplate.ForbiddenZone> zones, int sizeX, int sizeZ, List<String> errors) {
         if (zones == null) return;
         if (zones.size() > MAX_FORBIDDEN_ZONES) {
             errors.add("Too many forbiddenZones, max " + MAX_FORBIDDEN_ZONES);
@@ -151,14 +294,24 @@ public class TemplateValidator {
                 errors.add("ForbiddenZone[%d] min/max must be int[3]".formatted(i));
                 continue;
             }
-            if (zone.min()[0] < minAllowedX || zone.max()[0] > maxAllowedX
-                || zone.min()[2] < minAllowedZ || zone.max()[2] > maxAllowedZ) {
+            int minY = zone.min()[1];
+            int maxY = zone.max()[1];
+            if (zone.yMode() == ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR) {
+                minY += template.floor().y();
+                maxY += template.floor().y();
+            }
+            boolean outOfBounds = zone.min()[0] < minAllowedX || zone.max()[0] > maxAllowedX
+                || zone.min()[2] < minAllowedZ || zone.max()[2] > maxAllowedZ;
+            if (outOfBounds) {
                 errors.add("ForbiddenZone[%d] out of bounds".formatted(i));
             }
             for (int axis = 0; axis < 3; axis++) {
                 if (zone.min()[axis] > zone.max()[axis]) {
                     errors.add("ForbiddenZone[%d] min[%d] > max[%d]".formatted(i, axis, axis));
                 }
+            }
+            if (minY > maxY) {
+                errors.add("ForbiddenZone[%d] minY > maxY".formatted(i));
             }
         }
     }
@@ -171,10 +324,6 @@ public class TemplateValidator {
         if (template.limits().maxBuildTimeMs() <= 0) {
             errors.add("limits.maxBuildTimeMs must be >0");
         }
-    }
-
-    private void validateStructureNbt(ArenaTemplate template, List<String> errors) {
-        validateStructureNbt(template, errors, new ArrayList<>());
     }
 
     private void validateStructureNbt(ArenaTemplate template, List<String> errors, List<String> warnings) {
@@ -208,14 +357,19 @@ public class TemplateValidator {
                 byte[] data = structureDataProvider.load(structure.path());
                 if (data == null) {
                     warnings.add("structureNbt data not found for path: " + structure.path());
+                    emitStructureRejected(structure.path(), "DATA_NOT_FOUND");
                     return;
                 }
                 StructureNbtLoader.LoadResult result = loader.load(structure.path(), () -> data, structureManifest);
                 if (!result.ok()) {
                     errors.add("structureNbt validation failed: " + result.errorCode() + " - " + result.message());
+                    emitStructureRejected(structure.path(), result.errorCode());
+                } else {
+                    emitStructureLoaded(structure.path(), result.blockCount(), result.entityCount());
                 }
             } catch (Exception e) {
                 errors.add("structureNbt validation error: " + e.getMessage());
+                emitStructureRejected(structure.path(), "EXCEPTION");
             }
         } else {
             warnings.add("structureNbt present but manifest/provider not configured - deep validation skipped");
@@ -229,13 +383,79 @@ public class TemplateValidator {
         byte[] load(String path) throws Exception;
     }
 
+    /**
+     * Optional telemetry hook for structure validation outcomes.
+     */
+    public interface StructureTelemetry {
+        void loaded(String path, int blockCount, int entityCount);
+        void rejected(String path, String reason);
+    }
+
     private boolean isValidId(String id) {
         return id.length() <= 32 && id.matches("^[a-z0-9_]+$");
     }
 
+    private void emitStructureLoaded(String path, int blockCount, int entityCount) {
+        if (structureTelemetry != null) {
+            structureTelemetry.loaded(path, blockCount, entityCount);
+        }
+    }
+
+    private void emitStructureRejected(String path, String reason) {
+        if (structureTelemetry != null) {
+            structureTelemetry.rejected(path, reason);
+            if ("CHECKSUM_MISMATCH".equals(reason)) {
+                structureTelemetry.rejected(path, "CHECKSUM_MISMATCH");
+            }
+        }
+    }
+
+    private void validateMobSpawnStrategy(ArenaTemplate template, List<String> errors, List<String> warnings, int sizeX, int sizeZ) {
+        if (template.mobSpawnStrategy() == null) {
+            errors.add("mobSpawnStrategy is required");
+            return;
+        }
+        List<ArenaTemplate.SpawnSlot> slots = template.spawnSlots() != null ? template.spawnSlots() : List.of();
+        int centerCount = (int) slots.stream().filter(s -> s.tags() != null && s.tags().contains("center")).count();
+        int cornerCount = (int) slots.stream().filter(s -> s.tags() != null && s.tags().contains("corner")).count();
+        switch (template.mobSpawnStrategy()) {
+            case DISTRIBUTED -> {
+                // no-op
+            }
+            case CLUSTERED -> {
+                if (centerCount == 0) {
+                    warnings.add("mobSpawnStrategy=CLUSTERED but no spawnSlots tagged 'center'");
+                }
+            }
+            case CORNERS -> {
+                if (cornerCount < 4) {
+                    warnings.add("mobSpawnStrategy=CORNERS expects >=4 corner spawnSlots; found " + cornerCount);
+                }
+            }
+            case RING -> {
+                // expect slots at distance >= size/4 from origin
+                int requiredRadius = Math.max(1, Math.max(sizeX, sizeZ) / 4);
+                long ringCount = slots.stream().filter(s -> {
+                    int[] p = s.pos();
+                    if (p == null || p.length != 3) return false;
+                    int dx = p[0];
+                    int dz = p[2];
+                    int dist2 = dx * dx + dz * dz;
+                    return dist2 >= requiredRadius * requiredRadius;
+                }).count();
+                if (ringCount < 2) {
+                    warnings.add("mobSpawnStrategy=RING expects spawnSlots at radius >= " + requiredRadius);
+                }
+            }
+            default -> {}
+        }
+    }
+
     private int computeMaxDim(ArenaTemplate template) {
-        int sx = template.sizeX() != null ? template.sizeX() : template.size();
-        int sz = template.sizeZ() != null ? template.sizeZ() : template.size();
+        Integer sxVal = template.sizeX();
+        Integer szVal = template.sizeZ();
+        int sx = sxVal != null ? sxVal : template.size();
+        int sz = szVal != null ? szVal : template.size();
         return Math.max(sx, sz);
     }
 
@@ -243,8 +463,10 @@ public class TemplateValidator {
      * Computes rough arena bounds using origin mode + floor/ceiling/walls.
      */
     private Bounds computeBounds(ArenaTemplate template) {
-        int sizeX = template.sizeX() != null ? template.sizeX() : template.size();
-        int sizeZ = template.sizeZ() != null ? template.sizeZ() : template.size();
+        Integer sizeXVal = template.sizeX();
+        Integer sizeZVal = template.sizeZ();
+        int sizeX = sizeXVal != null ? sizeXVal : template.size();
+        int sizeZ = sizeZVal != null ? sizeZVal : template.size();
         int originX = template.origin().x();
         int originZ = template.origin().z();
 

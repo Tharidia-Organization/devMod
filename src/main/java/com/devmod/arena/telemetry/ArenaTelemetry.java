@@ -80,11 +80,11 @@ public class ArenaTelemetry {
     public void emitPolicyResolved(
             String policyId,
             String templateId,
-            int finalScore,
-            Map<String, Integer> scoringDetails,
+            double finalScore,
+            Map<String, Double> scoringDetails,
             int alternativeCount,
             String topAlternative,
-            int scoreDelta) {
+            double scoreDelta) {
 
         emit("arena.policy.resolved", Map.of(
             "policyId", policyId,

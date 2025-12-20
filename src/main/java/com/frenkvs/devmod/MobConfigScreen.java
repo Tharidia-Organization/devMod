@@ -11,6 +11,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Mob;
 
 import javax.annotation.Nonnull;
+import java.util.Objects;
 
 /**
  * Advanced Mob Configuration Screen with:
@@ -57,12 +58,14 @@ public class MobConfigScreen extends Screen {
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Check if mob died while screen is open
         if (!mob.isAlive()) {
-            if (minecraft != null && minecraft.player != null) {
-                minecraft.player.displayClientMessage(
+            var mc = minecraft;
+            var player = mc != null ? mc.player : null;
+            if (player != null) {
+                player.displayClientMessage(
                     I18n.translate("devmod.mobconfig.target_died"),
                     false
                 );
-                minecraft.player.playSound(net.minecraft.sounds.SoundEvents.VILLAGER_NO, 0.8f, 1.0f);
+                player.playSound(Objects.requireNonNull(net.minecraft.sounds.SoundEvents.VILLAGER_NO), 0.8f, 1.0f);
             }
             this.onClose();
             return;
@@ -579,7 +582,7 @@ public class MobConfigScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void renderBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Don't render default background
     }
 
@@ -589,7 +592,7 @@ public class MobConfigScreen extends Screen {
     }
 
     @Override
-    protected void renderMenuBackground(GuiGraphics graphics) {
+    protected void renderMenuBackground(@Nonnull GuiGraphics graphics) {
         // Don't render default background
     }
 }

@@ -9,6 +9,8 @@ import net.minecraft.world.entity.Mob;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
+import java.util.Objects;
+
 /**
  * Rendering logic for MobConfigScreen.
  * Handles all drawing operations for panels, tabs, sliders, dialogs, and tooltips.
@@ -63,13 +65,14 @@ public class MobConfigScreenRenderer {
         AxiomRenderer.drawBorder(graphics, panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, UIConstants.Border.DEFAULT());
 
         // Title with mob name
-        String title = "§l" + mob.getName().getString();
-        graphics.drawString(font, title, panelX + 12, panelY + 6, UIConstants.Text.PRIMARY(), false);
+        String title = Objects.requireNonNull("§l" + mob.getName().getString());
+        var safeFont = Objects.requireNonNull(font);
+        graphics.drawString(safeFont, title, panelX + 12, panelY + 6, UIConstants.Text.PRIMARY(), false);
 
         // Mob type (smaller, muted)
         String type = mob.getType().getDescriptionId().replace("entity.minecraft.", "").replace("_", " ");
-        type = Character.toUpperCase(type.charAt(0)) + type.substring(1);
-        graphics.drawString(font, "(" + type + ")", panelX + 14 + font.width(title), panelY + 6, UIConstants.Text.MUTED(), false);
+        type = Objects.requireNonNull(Character.toUpperCase(type.charAt(0)) + type.substring(1));
+        graphics.drawString(safeFont, "(" + type + ")", panelX + 14 + safeFont.width(title), panelY + 6, UIConstants.Text.MUTED(), false);
 
         // Health indicator in header
         float healthPercent = mob.getHealth() / mob.getMaxHealth();
@@ -87,7 +90,7 @@ public class MobConfigScreenRenderer {
             graphics.fill(x, y, x + fillW, y + h, color);
         }
         AxiomRenderer.drawBorder(graphics, x, y, w, h, UIConstants.Border.MUTED());
-        graphics.drawString(font, "§c❤", x + 2, y + 1, 0xFFFFFFFF, false);
+        graphics.drawString(Objects.requireNonNull(font), "§c❤", x + 2, y + 1, 0xFFFFFFFF, false);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -113,8 +116,9 @@ public class MobConfigScreenRenderer {
             }
 
             int textColor = selected ? UIConstants.Text.ACCENT() : UIConstants.Text.PRIMARY();
-            int textW = font.width(tabs[i]);
-            graphics.drawString(font, tabs[i], tx + (TAB_WIDTH - textW) / 2, tabsY + 7, textColor, false);
+            var safeFont = Objects.requireNonNull(font);
+            int textW = safeFont.width(tabs[i]);
+            graphics.drawString(safeFont, tabs[i], tx + (TAB_WIDTH - textW) / 2, tabsY + 7, textColor, false);
         }
 
         AxiomRenderer.drawSeparator(graphics, panelX + 10, tabsY + TAB_HEIGHT + 4, PANEL_WIDTH - 20);
@@ -158,30 +162,31 @@ public class MobConfigScreenRenderer {
         float maxDim = Math.max(mobHeight, mobWidth);
         int scale = (int) (Math.min(50, 100 / maxDim) * state.previewZoom);
 
-        Quaternionf rotation = new Quaternionf()
+        Quaternionf rotation = Objects.requireNonNull(new Quaternionf()
             .rotateY((float) Math.toRadians(state.rotationY))
             .rotateX((float) Math.toRadians(state.rotationX))
-            .rotateZ((float) Math.PI);
+            .rotateZ((float) Math.PI));
 
+        var safeFont = Objects.requireNonNull(font);
         try {
             InventoryScreen.renderEntityInInventory(
                 graphics, centerX, centerY, scale,
-                new Vector3f(0, 0, 0), rotation, null, mob
+                Objects.requireNonNull(new Vector3f(0, 0, 0)), rotation, null, mob
             );
         } catch (Exception e) {
-            graphics.drawString(font, "Preview", centerX - 20, centerY - 40, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, "Preview", centerX - 20, centerY - 40, UIConstants.Text.MUTED(), false);
         }
 
         boolean hovering = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, boxW, boxH);
         if (hovering && !state.isDraggingPreview) {
-            graphics.drawString(font, "§8Drag: rotate | Scroll: zoom", x + 4, y + boxH - 12, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, "§8Drag: rotate | Scroll: zoom", x + 4, y + boxH - 12, UIConstants.Text.MUTED(), false);
         } else if (state.isDraggingPreview) {
-            graphics.drawString(font, "§a↻ Rotating...", x + 4, y + boxH - 12, UIConstants.Accent.GREEN(), false);
+            graphics.drawString(safeFont, "§a↻ Rotating...", x + 4, y + boxH - 12, UIConstants.Accent.GREEN(), false);
         }
 
         if (Math.abs(state.previewZoom - 1.0f) > 0.05f) {
-            String zoomText = String.format("%.0f%%", state.previewZoom * 100);
-            graphics.drawString(font, zoomText, x + boxW - font.width(zoomText) - 4, y + 4, UIConstants.Text.MUTED(), false);
+            String zoomText = Objects.requireNonNull(String.format("%.0f%%", state.previewZoom * 100));
+            graphics.drawString(safeFont, zoomText, x + boxW - safeFont.width(zoomText) - 4, y + 4, UIConstants.Text.MUTED(), false);
         }
     }
 
@@ -230,7 +235,8 @@ public class MobConfigScreenRenderer {
 
     private void drawSliderRow(GuiGraphics graphics, int x, int y, String label, double value,
                                double original, double maxVal, int accentColor, int sliderId, int mouseX, int mouseY) {
-        graphics.drawString(font, label, x, y, UIConstants.Text.PRIMARY(), false);
+        var safeFont = Objects.requireNonNull(font);
+        graphics.drawString(safeFont, label, x, y, UIConstants.Text.PRIMARY(), false);
 
         int valueX = x + SLIDER_WIDTH + 10;
         int valueW = 35;
@@ -241,10 +247,10 @@ public class MobConfigScreenRenderer {
             AxiomRenderer.drawBorder(graphics, valueX - 2, y - 2, valueW + 4, valueH + 2, UIConstants.Accent.GOLD());
 
             String inputText = state.inputBuffer.toString();
-            graphics.drawString(font, inputText, valueX, y, UIConstants.Text.WHITE(), false);
+            graphics.drawString(safeFont, inputText, valueX, y, UIConstants.Text.WHITE(), false);
 
             if ((System.currentTimeMillis() - state.inputCursorBlink) % 1000 < 500) {
-                int cursorX = valueX + font.width(inputText);
+                int cursorX = valueX + safeFont.width(inputText);
                 graphics.fill(cursorX, y, cursorX + 1, y + 9, UIConstants.Text.WHITE());
             }
         } else {
@@ -257,14 +263,14 @@ public class MobConfigScreenRenderer {
             }
 
             int valueColor = Math.abs(value - original) > 0.01 ? UIConstants.Accent.GOLD() : UIConstants.Text.SECONDARY();
-            graphics.drawString(font, valueStr, valueX, y, valueColor, false);
+            graphics.drawString(safeFont, valueStr, valueX, y, valueColor, false);
         }
 
         if (Math.abs(value - original) > 0.01) {
             double change = value - original;
-            String changeStr = String.format("%+.1f", change);
+            String changeStr = Objects.requireNonNull(String.format("%+.1f", change));
             int changeColor = change > 0 ? UIConstants.Accent.GREEN() : UIConstants.Accent.RED();
-            graphics.drawString(font, changeStr, x + SLIDER_WIDTH + 50, y, changeColor, false);
+            graphics.drawString(safeFont, changeStr, x + SLIDER_WIDTH + 50, y, changeColor, false);
         }
 
         int sliderY = y + 12;
@@ -326,10 +332,11 @@ public class MobConfigScreenRenderer {
         int modeAccent = state.isGlobalMode ? UIConstants.Accent.ORANGE() : UIConstants.Accent.BLUE();
         graphics.fill(modeX, y, modeX + 3, y + 22, modeAccent);
 
-        graphics.drawString(font, "Mode:", modeX + 8, y + 3, UIConstants.Text.SECONDARY(), false);
+        var safeFont = Objects.requireNonNull(font);
+        graphics.drawString(safeFont, "Mode:", modeX + 8, y + 3, UIConstants.Text.SECONDARY(), false);
         String modeText = state.isGlobalMode ? "GLOBAL" : "SPECIFIC";
         int modeColor = state.isGlobalMode ? UIConstants.Accent.ORANGE() : UIConstants.Text.PRIMARY();
-        graphics.drawString(font, modeText, modeX + 8, y + 12, modeColor, false);
+        graphics.drawString(safeFont, modeText, modeX + 8, y + 12, modeColor, false);
 
         drawPresets(graphics, panelX + 150, y - 3, mouseX, mouseY);
 
@@ -352,7 +359,8 @@ public class MobConfigScreenRenderer {
     }
 
     private void drawPresets(GuiGraphics graphics, int x, int y, int mouseX, int mouseY) {
-        graphics.drawString(font, "Presets:", x, y, UIConstants.Text.SECONDARY(), false);
+        var safeFont = Objects.requireNonNull(font);
+        graphics.drawString(safeFont, "Presets:", x, y, UIConstants.Text.SECONDARY(), false);
 
         int presetY = y + 12;
         int presetW = 55;
@@ -385,9 +393,9 @@ public class MobConfigScreenRenderer {
             AxiomRenderer.drawBorder(graphics, px, py, presetW, presetH, borderColor);
 
             String name = MobConfigScreenState.PRESET_NAMES[i];
-            int textW = font.width(name);
+            int textW = safeFont.width(name);
             int textColor = selected ? UIConstants.Text.WHITE() : UIConstants.Text.SECONDARY();
-            graphics.drawString(font, name, px + (presetW - textW) / 2, py + 4, textColor, false);
+            graphics.drawString(safeFont, name, px + (presetW - textW) / 2, py + 4, textColor, false);
         }
 
         // User presets
@@ -395,13 +403,13 @@ public class MobConfigScreenRenderer {
         if (userPresetNames.length > 0 || MobPresetManager.canAddPreset()) {
             int userY = presetY + 2 * (presetH + gap) + 6;
 
-            graphics.drawString(font, "§7My:", x, userY, UIConstants.Text.MUTED(), false);
+            graphics.drawString(safeFont, "§7My:", x, userY, UIConstants.Text.MUTED(), false);
 
             int saveBtnX = x + 20;
             boolean saveHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, saveBtnX, userY - 1, 12, 10);
             if (MobPresetManager.canAddPreset()) {
                 int saveColor = saveHovered ? UIConstants.Accent.GREEN() : UIConstants.Text.MUTED();
-                graphics.drawString(font, "[+]", saveBtnX, userY, saveColor, false);
+                graphics.drawString(safeFont, "[+]", saveBtnX, userY, saveColor, false);
             }
 
             int userPresetW = 45;
@@ -425,20 +433,20 @@ public class MobConfigScreenRenderer {
                 AxiomRenderer.drawBorder(graphics, px, py, userPresetW, userPresetH, borderColor);
 
                 String name = userPresetNames[i];
-                if (font.width(name) > userPresetW - 4) {
+                if (safeFont.width(name) > userPresetW - 4) {
                     String ellipsis = "..";
                     int minChars = Math.min(3, name.length());
-                    while (font.width(name + ellipsis) > userPresetW - 4 && name.length() > minChars) {
+                    while (safeFont.width(name + ellipsis) > userPresetW - 4 && name.length() > minChars) {
                         name = name.substring(0, name.length() - 1);
                     }
                     name = name + ellipsis;
                 }
-                graphics.drawString(font, name, px + 2, py + 3, UIConstants.Text.SECONDARY(), false);
+                graphics.drawString(safeFont, name, px + 2, py + 3, UIConstants.Text.SECONDARY(), false);
             }
 
             if (userPresetNames.length > maxVisible) {
                 int moreX = userStartX + maxVisible * (userPresetW + 2);
-                graphics.drawString(font, "+" + (userPresetNames.length - maxVisible), moreX, userY, UIConstants.Text.MUTED(), false);
+                graphics.drawString(safeFont, "+" + (userPresetNames.length - maxVisible), moreX, userY, UIConstants.Text.MUTED(), false);
             }
         }
     }

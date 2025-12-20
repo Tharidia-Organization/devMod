@@ -162,7 +162,7 @@ public class TestHarnessCommands {
                         return runEnduranceSmoke(ctx.getSource());
                     }))
                 .then(Commands.literal("export")
-                    .then(Commands.argument("table", StringArgumentType.word())
+                    .then(Commands.argument("table", Objects.requireNonNull(StringArgumentType.word()))
                         .executes(ctx -> exportTable(ctx.getSource(), StringArgumentType.getString(ctx, "table"))))
                     .then(Commands.literal("all")
                         .executes(ctx -> exportAllTables(ctx.getSource()))))
@@ -299,11 +299,11 @@ public class TestHarnessCommands {
             source.sendFailure(I18n.translate("devmod.testing.endurance.stats_unavailable"));
             return 0;
         }
-        source.sendSuccess(() -> net.minecraft.network.chat.Component.literal(
-            String.format("Endurance: attempts=%d completed=%d failed=%d abandoned=%d best_wave=%d avg_waves=%.1f tokens=%d kills=%d dmg=%.0f/%.0f",
+        source.sendSuccess(() -> Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+            Objects.requireNonNull(String.format("Endurance: attempts=%d completed=%d failed=%d abandoned=%d best_wave=%d avg_waves=%.1f tokens=%d kills=%d dmg=%.0f/%.0f",
                 stats.totalQuests(), stats.completed(), stats.failed(), stats.abandoned(),
                 stats.bestWave(), stats.avgWaves(), stats.totalTokens(),
-                stats.totalKills(), stats.totalDamageDealt(), stats.totalDamageTaken())), false);
+                stats.totalKills(), stats.totalDamageDealt(), stats.totalDamageTaken())))), false);
         return 1;
     }
 
@@ -318,9 +318,9 @@ public class TestHarnessCommands {
         for (int i = 0; i < limit; i++) {
             final int index = i;
             var p = perks.get(i);
-            source.sendSuccess(() -> net.minecraft.network.chat.Component.literal(
-                String.format("#%d %s (%s/%s): %d selections, %d players",
-                    index + 1, p.perkName(), p.tier(), p.category(), p.timesSelected(), p.uniquePlayers())), false);
+            source.sendSuccess(() -> Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+                Objects.requireNonNull(String.format("#%d %s (%s/%s): %d selections, %d players",
+                    index + 1, p.perkName(), p.tier(), p.category(), p.timesSelected(), p.uniquePlayers())))), false);
         }
         if (perks.isEmpty()) {
             source.sendSuccess(() -> net.minecraft.network.chat.Component.literal("No perk data yet"), false);
@@ -343,16 +343,16 @@ public class TestHarnessCommands {
                 try (var rs = stmt.executeQuery("SELECT COUNT(*) AS c FROM " + table)) {
                     if (rs.next()) {
                         int cnt = rs.getInt("c");
-                        source.sendSuccess(() -> net.minecraft.network.chat.Component.literal(
-                            String.format("%s: %d rows", table, cnt)), false);
+                        source.sendSuccess(() -> Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+                            Objects.requireNonNull(String.format("%s: %d rows", table, cnt)))), false);
                     }
                 } catch (Exception e) {
-                    source.sendFailure(net.minecraft.network.chat.Component.literal(
-                        String.format("Table %s not reachable: %s", table, e.getMessage())));
+                    source.sendFailure(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+                        Objects.requireNonNull(String.format("Table %s not reachable: %s", table, e.getMessage())))));
                 }
             }
         } catch (Exception e) {
-            source.sendFailure(net.minecraft.network.chat.Component.literal("DuckDB query failed: " + e.getMessage()));
+            source.sendFailure(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("DuckDB query failed: " + e.getMessage())));
             return 0;
         }
         return 1;
@@ -369,12 +369,12 @@ public class TestHarnessCommands {
             java.nio.file.Files.createDirectories(outDir);
             Path outFile = outDir.resolve(table + ".ndjson");
             DuckDBMigrationService.exportToNDJSON(conn, table, outFile);
-            source.sendSuccess(() -> net.minecraft.network.chat.Component.literal(
-                String.format("Exported %s to %s", table, outFile)), false);
+            source.sendSuccess(() -> Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+                Objects.requireNonNull(String.format("Exported %s to %s", table, outFile)))), false);
             return 1;
         } catch (Exception e) {
-            source.sendFailure(net.minecraft.network.chat.Component.literal(
-                String.format("Export failed for %s: %s", table, e.getMessage())));
+            source.sendFailure(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+                Objects.requireNonNull(String.format("Export failed for %s: %s", table, e.getMessage())))));
             return 0;
         }
     }
@@ -399,7 +399,7 @@ public class TestHarnessCommands {
         }
         // Ensure manager initialized
         if (!EnduranceQuestManager.INSTANCE.isInitialized()) {
-            source.sendFailure(net.minecraft.network.chat.Component.literal("Endurance manager not initialized"));
+            source.sendFailure(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("Endurance manager not initialized")));
             return 0;
         }
 
@@ -412,7 +412,7 @@ public class TestHarnessCommands {
         var mobId = net.minecraft.resources.ResourceLocation.withDefaultNamespace("zombie");
         var result = EnduranceQuestManager.INSTANCE.startQuest(player, mobId, settings);
         if (!result.success()) {
-            source.sendFailure(net.minecraft.network.chat.Component.literal("Auto-smoke start failed: " + result.message()));
+            source.sendFailure(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("Auto-smoke start failed: " + result.message())));
             return 0;
         }
 

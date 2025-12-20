@@ -14,6 +14,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * HUD Overlay to show real-time impact analysis.
@@ -62,8 +63,8 @@ public class ImpactHudOverlay {
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.CROSSHAIR,
-            LAYER_ID,
+            Objects.requireNonNull(VanillaGuiLayers.CROSSHAIR),
+            Objects.requireNonNull(LAYER_ID),
             ImpactHudOverlay::render
         );
     }
@@ -185,7 +186,7 @@ public class ImpactHudOverlay {
 
     private static void renderSection(GuiGraphics g, Font font, ImpactHudContentBuilder.HudSection section,
                                       int panelX, int panelWidth, int textX, int textY, float alpha) {
-        g.drawString(font, section.title(), textX, textY,
+        g.drawString(Objects.requireNonNull(font), Objects.requireNonNull(section.title()), textX, textY,
             applyAlpha(ImpactHudContentBuilder.Colors.TITLE, alpha), false);
         textY += LINE_HEIGHT + spacingPixels(section.titleSpacing());
 
@@ -203,10 +204,11 @@ public class ImpactHudOverlay {
 
     private static void renderLine(GuiGraphics g, Font font, ImpactHudContentBuilder.HudLine line,
                                    int x, int y, float alpha) {
+        var safeFont = Objects.requireNonNull(font);
         if (line.hasShadow()) {
-            g.drawString(font, line.text(), x + 1, y, applyAlpha(line.shadowColor(), alpha), false);
+            g.drawString(safeFont, Objects.requireNonNull(line.text()), x + 1, y, applyAlpha(line.shadowColor(), alpha), false);
         }
-        g.drawString(font, line.text(), x, y, applyAlpha(line.color(), alpha), false);
+        g.drawString(safeFont, Objects.requireNonNull(line.text()), x, y, applyAlpha(line.color(), alpha), false);
     }
 
     /**

@@ -12,8 +12,10 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 
 /**
@@ -138,7 +140,7 @@ public class WaveCheckpointScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         long elapsed = System.currentTimeMillis() - openTime;
 
         // Calculate fade-in progress
@@ -169,9 +171,10 @@ public class WaveCheckpointScreen extends Screen {
             renderHeader(graphics, centerX, panelY, headerAlpha, elapsed);
 
             // Play completion sound once
-            if (!soundPlayed && minecraft != null) {
-                minecraft.getSoundManager().play(SimpleSoundInstance.forUI(
-                    SoundEvents.PLAYER_LEVELUP, 1.0f, 0.8f));
+            var mc = minecraft;
+            if (!soundPlayed && mc != null) {
+                mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(
+                    Objects.requireNonNull(SoundEvents.PLAYER_LEVELUP), 1.0f, 0.8f)));
                 soundPlayed = true;
             }
         }
@@ -187,10 +190,11 @@ public class WaveCheckpointScreen extends Screen {
             renderStyleRankReveal(graphics, centerX, panelY + 170, rankAlpha, elapsed);
 
             // Play rank reveal sound once
-            if (!rankSoundPlayed && minecraft != null) {
+            var mc2 = minecraft;
+            if (!rankSoundPlayed && mc2 != null) {
                 float pitch = 0.8f + (styleRank.ordinal() * 0.1f);
-                minecraft.getSoundManager().play(SimpleSoundInstance.forUI(
-                    SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, pitch, 0.6f));
+                mc2.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(
+                    Objects.requireNonNull(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE), pitch, 0.6f)));
                 rankSoundPlayed = true;
             }
         }
@@ -204,7 +208,7 @@ public class WaveCheckpointScreen extends Screen {
         if (elapsed > BUTTONS_REVEAL_DELAY) {
             float hintAlpha = Math.min(1.0f, (elapsed - BUTTONS_REVEAL_DELAY) / 300.0f);
             int hintColor = applyAlpha(UIConstants.Text.MUTED(), hintAlpha);
-            graphics.drawCenteredString(font, "ESC/F11: Continue  |  F12: Exit", centerX, panelY + PANEL_HEIGHT - 22, hintColor);
+            graphics.drawCenteredString(Objects.requireNonNull(font), "ESC/F11: Continue  |  F12: Exit", centerX, panelY + PANEL_HEIGHT - 22, hintColor);
         }
 
         graphics.pose().popPose();
@@ -259,7 +263,7 @@ public class WaveCheckpointScreen extends Screen {
         g.pose().pushPose();
         g.pose().translate(centerX - 70, panelY + 18, 0);
         g.pose().scale(checkScale * 1.5f, checkScale * 1.5f, 1.0f);
-        g.drawString(font, checkMark, 0, 0, checkColor, true);
+        g.drawString(Objects.requireNonNull(font), checkMark, 0, 0, checkColor, true);
         g.pose().popPose();
 
         // "WAVE X COMPLETE!" text
@@ -271,7 +275,7 @@ public class WaveCheckpointScreen extends Screen {
             ? (float) Math.sin((elapsed - HEADER_REVEAL_DELAY) / 50.0) * 2
             : 0;
 
-        g.drawCenteredString(font, headerText, centerX + 10, (int)(panelY + 18 + bounce), headerColor);
+        g.drawCenteredString(Objects.requireNonNull(font), headerText, centerX + 10, (int)(panelY + 18 + bounce), headerColor);
 
         // Separator with glow
         int sepColor = applyAlpha(COLOR_BORDER & 0x88FFFFFF, alpha);
@@ -331,12 +335,13 @@ public class WaveCheckpointScreen extends Screen {
         g.fill(x, y, x + boxWidth, y + 1, borderColor);
 
         // Label
+        var safeFont = Objects.requireNonNull(font);
         int labelColor = applyAlpha(COLOR_TEXT_DIM, alpha);
-        g.drawString(font, label, x + 5, y + 3, labelColor, false);
+        g.drawString(safeFont, label, x + 5, y + 3, labelColor, false);
 
         // Value (larger, bold with shadow)
         int valColor = applyAlpha(valueColor, alpha);
-        g.drawString(font, value, x + 5, y + 12, valColor, true);
+        g.drawString(safeFont, value, x + 5, y + 12, valColor, true);
     }
 
     private void renderStyleRankReveal(GuiGraphics g, int centerX, int y, float alpha, long elapsed) {
@@ -357,16 +362,17 @@ public class WaveCheckpointScreen extends Screen {
         g.pose().translate(centerX, y + 5, 0);
         g.pose().scale(rankScale * 1.8f, rankScale * 1.8f, 1.0f);
 
-        String rankText = styleRank.displayName;
-        int rankWidth = font.width(rankText);
+        var safeFont = Objects.requireNonNull(font);
+        String rankText = Objects.requireNonNull(styleRank.displayName);
+        int rankWidth = safeFont.width(rankText);
         int rankColor = applyAlpha(styleRank.color, alpha);
-        g.drawString(font, rankText, -rankWidth / 2, -5, rankColor, true);
+        g.drawString(safeFont, rankText, -rankWidth / 2, -5, rankColor, true);
 
         g.pose().popPose();
 
         // "Style Rank" label above
         int labelColor = applyAlpha(COLOR_TEXT_DIM, alpha);
-        g.drawCenteredString(font, "STYLE RANK", centerX, y - 15, labelColor);
+        g.drawCenteredString(safeFont, "STYLE RANK", centerX, y - 15, labelColor);
     }
 
     private void renderProgressBar(GuiGraphics g, int panelX, int y, int panelWidth, long elapsed) {
@@ -377,9 +383,10 @@ public class WaveCheckpointScreen extends Screen {
         int barHeight = 8;
 
         // Label
+        var safeFont = Objects.requireNonNull(font);
         String progressText = "Quest Progress: " + waveNumber + "/" + totalWaves;
         int labelColor = applyAlpha(COLOR_TEXT_DIM, alpha);
-        g.drawCenteredString(font, progressText, panelX + panelWidth / 2, y - 2, labelColor);
+        g.drawCenteredString(safeFont, progressText, panelX + panelWidth / 2, y - 2, labelColor);
 
         // Bar background
         int bgColor = applyAlpha(UIConstants.Background.INPUT(), alpha);

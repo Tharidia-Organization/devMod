@@ -7,6 +7,7 @@ import org.joml.Matrix4f;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -71,7 +72,8 @@ public final class ModelPartTransformCapture {
      *
      * @param entity The entity being rendered
      */
-    public static void beginCapture(@Nonnull LivingEntity entity) {
+    public static void beginCapture(LivingEntity entity) {
+        Objects.requireNonNull(entity);
         currentEntity.set(entity);
         capturing.set(true);
 
@@ -116,7 +118,7 @@ public final class ModelPartTransformCapture {
      * @param yRot           Local Y rotation
      * @param zRot           Local Z rotation
      */
-    public static void captureTransform(@Nonnull ModelPart part, @Nonnull Matrix4f worldTransform,
+    public static void captureTransform(ModelPart part, Matrix4f worldTransform,
                                         float xRot, float yRot, float zRot) {
         LivingEntity entity = currentEntity.get();
         if (entity == null) return;
@@ -127,7 +129,7 @@ public final class ModelPartTransformCapture {
 
         // Try to identify the part by its characteristics
         // ModelPart doesn't have a name field accessible, so we use a hash-based identifier
-        String partId = identifyPart(part);
+        String partId = identifyPart(Objects.requireNonNull(part));
 
         CapturedTransform captured = new CapturedTransform(
             new Matrix4f(worldTransform), // Copy to avoid mutation
@@ -145,10 +147,10 @@ public final class ModelPartTransformCapture {
      * @return Map of part identifiers to transforms, or empty map if none
      */
     @Nonnull
-    public static Map<String, CapturedTransform> getTransforms(@Nonnull LivingEntity entity) {
-        Map<String, CapturedTransform> transforms = entityTransforms.get(entity.getId());
+    public static Map<String, CapturedTransform> getTransforms(LivingEntity entity) {
+        Map<String, CapturedTransform> transforms = entityTransforms.get(Objects.requireNonNull(entity).getId());
         if (transforms == null) {
-            return Map.of();
+            return Objects.requireNonNull(Map.of());
         }
         return transforms;
     }
@@ -161,11 +163,11 @@ public final class ModelPartTransformCapture {
      * @return The captured transform, or null if not found
      */
     @Nullable
-    public static CapturedTransform getTransform(@Nonnull LivingEntity entity, @Nonnull String partId) {
-        Map<String, CapturedTransform> transforms = entityTransforms.get(entity.getId());
+    public static CapturedTransform getTransform(LivingEntity entity, String partId) {
+        Map<String, CapturedTransform> transforms = entityTransforms.get(Objects.requireNonNull(entity).getId());
         if (transforms == null) return null;
 
-        CapturedTransform transform = transforms.get(partId);
+        CapturedTransform transform = transforms.get(Objects.requireNonNull(partId));
         if (transform == null || !transform.isFresh(TRANSFORM_TTL_MS)) {
             return null;
         }
@@ -175,8 +177,8 @@ public final class ModelPartTransformCapture {
     /**
      * Checks if we have fresh transforms for an entity.
      */
-    public static boolean hasTransforms(@Nonnull LivingEntity entity) {
-        Map<String, CapturedTransform> transforms = entityTransforms.get(entity.getId());
+    public static boolean hasTransforms(LivingEntity entity) {
+        Map<String, CapturedTransform> transforms = entityTransforms.get(Objects.requireNonNull(entity).getId());
         if (transforms == null || transforms.isEmpty()) return false;
 
         // Check if any transform is fresh
@@ -202,10 +204,10 @@ public final class ModelPartTransformCapture {
      * - "left_leg", "right_leg": offset from body center vertically below
      */
     @Nonnull
-    private static String identifyPart(@Nonnull ModelPart part) {
+    private static String identifyPart(ModelPart part) {
         // Use object identity hash as a stable identifier
         // This works because the same ModelPart instance is reused per entity type
-        return "part_" + System.identityHashCode(part);
+        return "part_" + System.identityHashCode(Objects.requireNonNull(part));
     }
 
     // ==================== Cleanup ====================

@@ -212,10 +212,17 @@ public class EnduranceQuestManager {
             var result = InstanceArenaManager.INSTANCE.startInstanceQuestForParty(leader, mobId, settings);
             if (result.success()) {
                 LOGGER.info("[EnduranceQuest] Prepared INSTANCE arena {} for party quest (mob: {}, instance: {})",
-                    result.arena().getId(), mobId, result.instanceId());
+                    Objects.requireNonNull(result.arena()).getId(), mobId, result.instanceId());
                 return PreparedArenaResult.success(result.arena(), mobId, template.getMobConfig(), result.instanceId());
             }
             return PreparedArenaResult.failure(result.message());
+        }
+
+        // Config gate: if instance-only is enabled, block legacy path
+        com.devmod.arena.config.ArenaTemplateConfig cfg = com.devmod.arena.config.ArenaTemplateConfig.load();
+        if (cfg.instanceOnly()) {
+            LOGGER.error("[EnduranceQuest] Instance-only mode enabled, legacy overworld path blocked");
+            return PreparedArenaResult.failure("Instance-only mode: legacy overworld arenas are disabled");
         }
 
         // Legacy overworld fallback (should not be used when instance mode forced)
@@ -281,7 +288,7 @@ public class EnduranceQuestManager {
      */
     public boolean isPlayerInArena(ServerPlayer player, ArenaManager.Arena arena) {
         if (player == null || arena == null) return false;
-        return arena.contains(player.position());
+        return arena.contains(Objects.requireNonNull(player.position()));
     }
 
     /**
@@ -339,7 +346,7 @@ public class EnduranceQuestManager {
             ActiveQuestSession existingSession = activeSessions.putIfAbsent(playerId, placeholderSession);
             if (existingSession != null) {
                 results.put(playerId, new StartQuestResult(false,
-                    I18n.translate("devmod.endurance.active_quest").getString(), null));
+                    Objects.requireNonNull(I18n.translate("devmod.endurance.active_quest")).getString(), null));
                 continue;
             }
 
@@ -440,7 +447,7 @@ public class EnduranceQuestManager {
         // This ensures only one thread can start a quest for this player
         ActiveQuestSession existingSession = activeSessions.putIfAbsent(playerId, placeholderSession);
         if (existingSession != null) {
-            return new StartQuestResult(false, I18n.translate("devmod.endurance.active_quest").getString(), null);
+            return new StartQuestResult(false, Objects.requireNonNull(I18n.translate("devmod.endurance.active_quest")).getString(), null);
         }
 
         // === INSTANCE DIMENSION MODE (forced) ===
@@ -472,8 +479,8 @@ public class EnduranceQuestManager {
         com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingShow(player, "Creating dimension...");
 
         // Notify player that instance is being created (chat backup)
-        player.sendSystemMessage(net.minecraft.network.chat.Component.literal("[DevMod] Creating instance dimension...")
-            .withStyle(ChatFormatting.YELLOW));
+        player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Creating instance dimension...")
+            .withStyle(ChatFormatting.YELLOW)));
 
         // Use InstanceArenaManager to create the instance and arena asynchronously
         var future = InstanceArenaManager.INSTANCE.startInstanceQuest(player, mobId, settings);
@@ -496,7 +503,8 @@ public class EnduranceQuestManager {
                                             EnduranceQuest quest, QuestSettings settings,
                                             InstanceArenaManager.InstanceQuestResult result) {
         // Verify player is still online
-        if (player.getServer() == null || player.getServer().getPlayerList().getPlayer(playerId) == null) {
+        var server = player.getServer();
+        if (server == null || server.getPlayerList().getPlayer(Objects.requireNonNull(playerId)) == null) {
             LOGGER.warn("[EnduranceQuest] Player {} disconnected during instance creation", playerId);
             activeSessions.remove(playerId);
             if (result.success() && result.instanceId() != null) {
@@ -512,8 +520,8 @@ public class EnduranceQuestManager {
             activeSessions.remove(playerId);
             // Hide loading overlay and show error
             com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingHide(player);
-            player.sendSystemMessage(net.minecraft.network.chat.Component.literal("[DevMod] Failed to create instance: " + result.message())
-                .withStyle(ChatFormatting.RED));
+            player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Failed to create instance: " + result.message())
+                .withStyle(ChatFormatting.RED)));
             return;
         }
 
@@ -525,8 +533,8 @@ public class EnduranceQuestManager {
             activeSessions.remove(playerId);
             // Hide loading overlay and show error
             com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingHide(player);
-            player.sendSystemMessage(net.minecraft.network.chat.Component.literal("[DevMod] Instance created but arena is null")
-                .withStyle(ChatFormatting.RED));
+            player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Instance created but arena is null")
+                .withStyle(ChatFormatting.RED)));
             if (result.instanceId() != null) {
                 InstanceArenaManager.INSTANCE.forceEndPlayerQuest(playerId);
             }
@@ -568,8 +576,8 @@ public class EnduranceQuestManager {
         LOGGER.info("[EnduranceQuest] Player {} started INSTANCE quest: {} (instance: {})",
             player.getName().getString(), quest.getDisplayName(), result.instanceId());
 
-        player.sendSystemMessage(net.minecraft.network.chat.Component.literal("[DevMod] Quest started in instance dimension!")
-            .withStyle(ChatFormatting.GREEN));
+        player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Quest started in instance dimension!")
+            .withStyle(ChatFormatting.GREEN)));
     }
 
     // ========== Session Management (Delegated) ==========

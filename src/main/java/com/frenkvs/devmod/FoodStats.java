@@ -78,7 +78,7 @@ public class FoodStats {
 
         public CompoundTag save() {
             CompoundTag tag = new CompoundTag();
-            tag.putString("effectId", effectId);
+            tag.putString("effectId", Objects.requireNonNull(effectId));
             tag.putInt("duration", duration);
             tag.putInt("amplifier", amplifier);
             tag.putFloat("probability", probability);

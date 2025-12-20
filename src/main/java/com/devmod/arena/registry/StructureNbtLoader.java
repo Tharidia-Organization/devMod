@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
@@ -98,13 +99,13 @@ public class StructureNbtLoader {
             return LoadResult.error("TOO_MANY_ENTITIES", "Entity limit exceeded");
         }
 
-        // No actual NBT parsing in this placeholder
+        // Pre-validation complete - NBT parsing happens in load() method
         return LoadResult.success(null, entry.blockCount(), entry.entityCount());
     }
 
     public boolean isValidPath(String path) {
         // Prefer ResourceLocation parsing for correctness
-        ResourceLocation rl = ResourceLocation.tryParse(path);
+        ResourceLocation rl = ResourceLocation.tryParse(Objects.requireNonNull(path));
         if (rl == null) return false;
 
         String pathStr = rl.getPath();
@@ -125,11 +126,11 @@ public class StructureNbtLoader {
     private CompoundTag readTag(byte[] data) throws IOException {
         // Structure NBT files are typically compressed; fallback to raw if needed.
         try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
-            return NbtIo.readCompressed(in, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
+            return NbtIo.readCompressed(in, Objects.requireNonNull(net.minecraft.nbt.NbtAccounter.unlimitedHeap()));
         } catch (IOException compressedErr) {
             try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
                 DataInputStream dataIn = new DataInputStream(in);
-                return NbtIo.read(dataIn, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
+                return NbtIo.read(dataIn, Objects.requireNonNull(net.minecraft.nbt.NbtAccounter.unlimitedHeap()));
             } catch (IOException rawErr) {
                 compressedErr.addSuppressed(rawErr);
                 throw compressedErr;

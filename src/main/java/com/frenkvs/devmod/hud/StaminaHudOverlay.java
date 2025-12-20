@@ -12,6 +12,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
+import java.util.Objects;
+
 /**
  * HUD overlay for displaying player stamina bar.
  * Shows stamina bar above the hotbar when not full or recently used.
@@ -49,8 +51,8 @@ public class StaminaHudOverlay {
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
-            VanillaGuiLayers.HOTBAR,
-            LAYER_ID,
+            Objects.requireNonNull(VanillaGuiLayers.HOTBAR),
+            Objects.requireNonNull(LAYER_ID),
             StaminaHudOverlay::render
         );
     }
@@ -80,10 +82,11 @@ public class StaminaHudOverlay {
         if (!enabled) return;
 
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.options.hideGui) return;
+        var player = mc.player;
+        if (player == null || mc.options.hideGui) return;
 
         // Skip in creative/spectator
-        if (mc.player.isCreative() || mc.player.isSpectator()) return;
+        if (player.isCreative() || player.isSpectator()) return;
 
         float currentStamina = ClientStaminaCache.getCurrentStamina();
         float maxStamina = ClientStaminaCache.getMaxStamina();

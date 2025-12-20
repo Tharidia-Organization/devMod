@@ -519,6 +519,13 @@ public class PrebuildPoolManager {
     }
 
     /**
+     * Alias for compatibility with health checks.
+     */
+    public int getCurrentPoolSize() {
+        return getPoolSize();
+    }
+
+    /**
      * Gets the pool configuration.
      */
     public PoolConfig getConfig() {
