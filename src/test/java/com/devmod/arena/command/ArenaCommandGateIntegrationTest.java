@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 class ArenaCommandGateIntegrationTest {
 
     @Test
+    @SuppressWarnings("null")
     void arenaCreateFailsWhenInstanceOnlyFalse() throws Exception {
         String prevInstanceOnly = System.getProperty("devmod.arena.instanceOnly");
         String prevLegacyAllowed = System.getProperty("devmod.arena.allowLegacyOverworldArena");
@@ -68,7 +69,7 @@ class ArenaCommandGateIntegrationTest {
                 dispatcher.execute("arena create default_flat_64", source);
 
                 ArgumentCaptor<Component> captor = ArgumentCaptor.forClass(Component.class);
-                verify(source).sendFailure(Objects.requireNonNull(captor.capture(), "failureMessage"));
+                verify(source).sendFailure(captor.capture());
                 Component failure = Objects.requireNonNull(captor.getValue(), "failureMessage");
                 assertTrue(failure.getString().contains("Instance-only mode"));
             }

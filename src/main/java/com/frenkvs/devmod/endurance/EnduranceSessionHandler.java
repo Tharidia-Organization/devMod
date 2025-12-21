@@ -1,6 +1,7 @@
 package com.frenkvs.devmod.endurance;
 
 import com.frenkvs.devmod.instance.DynamicDimensionManager;
+import com.frenkvs.devmod.instance.RecoverySystem;
 import com.frenkvs.devmod.party.QuestSequencePayload;
 import com.frenkvs.devmod.telemetry.TelemetryService;
 import com.frenkvs.devmod.util.I18n;
@@ -63,6 +64,7 @@ public class EnduranceSessionHandler {
             }
 
             session.getQuest().fail(true);
+            cancelSoloSequence(player, session);
 
             // Cleanup wave state and boss fight systems FIRST (while player is still in arena)
             EndurancePlayerStateManager.INSTANCE.cleanupQuestSystems(session);
@@ -93,6 +95,7 @@ public class EnduranceSessionHandler {
 
             // Cleanup arena/instance (triggers teleport + recovery for Instance mode)
             EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(session, arenaManager, false);
+            ensureInstanceRecovery(player, session, "Quest abandoned");
 
             LOGGER.info("[EnduranceQuest] Player {} abandoned quest: {}",
                 player.getName().getString(), session.getQuest().getDisplayName());
@@ -179,6 +182,7 @@ public class EnduranceSessionHandler {
             } else {
                 // End quest
                 activeSessions.remove(playerId);
+                cancelSoloSequence(player, session);
 
                 // Cleanup wave state and boss fight systems FIRST
                 EndurancePlayerStateManager.INSTANCE.cleanupQuestSystems(session);
@@ -197,6 +201,7 @@ public class EnduranceSessionHandler {
                 // === NOW do the state restoration and cleanup ===
                 EndurancePlayerStateManager.INSTANCE.restorePlayerAfterQuest(player, session);
                 EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(session, arenaManager, false);
+                ensureInstanceRecovery(player, session, "Quest ended");
 
                 LOGGER.info("[EnduranceQuest] Player {} gave up after death", player.getName().getString());
             }
@@ -321,12 +326,15 @@ public class EnduranceSessionHandler {
                 // Send empty sync to clear client HUD
                 PacketDistributor.sendToPlayer(player, Objects.requireNonNull(QuestSyncPayload.empty()));
 
+                cancelSoloSequence(player, session);
+
                 LOGGER.info("[EnduranceQuest] Player {} COMPLETED quest: {}!",
                     player.getName().getString(), session.getQuest().getDisplayName());
 
                 // === NOW do the state restoration and cleanup ===
                 EndurancePlayerStateManager.INSTANCE.restorePlayerAfterQuest(player, session);
                 EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(session, arenaManager, true);
+                ensureInstanceRecovery(player, session, "Quest completed");
             }
         }
     }
@@ -373,12 +381,37 @@ public class EnduranceSessionHandler {
             // Send empty sync to clear client HUD
             PacketDistributor.sendToPlayer(player, Objects.requireNonNull(QuestSyncPayload.empty()));
 
+            cancelSoloSequence(player, session);
+
             LOGGER.info("[EnduranceQuest] Player {} exited at checkpoint (wave {})",
                 player.getName().getString(), session.getQuest().getCurrentWave());
 
             // === NOW do the state restoration and cleanup ===
             EndurancePlayerStateManager.INSTANCE.restorePlayerAfterQuest(player, session);
             EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(session, arenaManager, false);
+            ensureInstanceRecovery(player, session, "Quest exited");
         }
+    }
+
+    private void cancelSoloSequence(ServerPlayer player, EnduranceQuestManager.ActiveQuestSession session) {
+        if (session == null || player == null) {
+            return;
+        }
+        session.clearPendingWaveStart();
+        EnduranceQuestManager.INSTANCE.sendSoloSequenceUpdate(player, session,
+            QuestSequencePayload.Phase.CANCELLED, 0);
+    }
+
+    private void ensureInstanceRecovery(ServerPlayer player, EnduranceQuestManager.ActiveQuestSession session, String reason) {
+        if (session == null || player == null || !session.isInInstanceDimension()) {
+            return;
+        }
+        UUID playerId = player.getUUID();
+        if (!RecoverySystem.INSTANCE.hasSnapshot(playerId)) {
+            return;
+        }
+        RecoverySystem.INSTANCE.loadSnapshot(playerId).ifPresent(snapshot ->
+            RecoverySystem.INSTANCE.performRecovery(player, snapshot, reason)
+        );
     }
 }

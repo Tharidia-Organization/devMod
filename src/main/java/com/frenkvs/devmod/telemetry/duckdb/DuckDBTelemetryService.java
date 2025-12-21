@@ -55,6 +55,9 @@ public class DuckDBTelemetryService {
     // XP: player_uuid -> (lastLogTime, accumulatedXp) for batching
     private final Map<UUID, XpBatch> xpBatches = new ConcurrentHashMap<>();
     private static final long XP_BATCH_INTERVAL_MS = 1000;
+    // Session dedup/enrichment: session_uuid -> logged state
+    private final Map<UUID, SessionLogState> sessionLogState = new ConcurrentHashMap<>();
+    private static final long SESSION_LOG_TTL_MS = 15 * 60 * 1000L;
 
     private DuckDBTelemetryService() {}
 
@@ -472,6 +475,7 @@ public class DuckDBTelemetryService {
                                  String questName, String questType, int totalWaves,
                                  boolean isEndless, int playerCount) {
         if (!enabled || batchWriter == null) return;
+        if (!shouldLogSessionStart(sessionId, playerName, questName, questType)) return;
 
         batchWriter.queueEnduranceSession(sessionId, playerId, playerName,
             questName, questType, totalWaves, isEndless, playerCount,
@@ -489,12 +493,77 @@ public class DuckDBTelemetryService {
                                int tokensEarned, int prestigeEarned,
                                int bloodGemsEarned, int noDamageWaves) {
         if (!enabled || batchWriter == null) return;
+        if (!shouldLogSessionEnd(sessionId, playerName, questName, questType)) return;
 
         batchWriter.queueEnduranceSession(sessionId, playerId, playerName,
             questName, questType, totalWaves, isEndless, playerCount,
             startTs, Instant.now(), outcome, wavesCompleted, totalKills,
             damageDealt, damageTaken, tokensEarned, prestigeEarned,
             bloodGemsEarned, noDamageWaves);
+    }
+
+    private boolean shouldLogSessionStart(UUID sessionId, String playerName,
+                                          String questName, String questType) {
+        long now = System.currentTimeMillis();
+        SessionLogState state = sessionLogState.computeIfAbsent(sessionId, id -> new SessionLogState());
+        boolean shouldLog;
+        synchronized (state) {
+            boolean hasNewInfo = updateSessionInfo(state, playerName, questName, questType);
+            state.lastUpdatedMs = now;
+            shouldLog = !state.startLogged || hasNewInfo;
+            state.startLogged = true;
+        }
+        pruneSessionLogState(now);
+        return shouldLog;
+    }
+
+    private boolean shouldLogSessionEnd(UUID sessionId, String playerName,
+                                        String questName, String questType) {
+        long now = System.currentTimeMillis();
+        SessionLogState state = sessionLogState.computeIfAbsent(sessionId, id -> new SessionLogState());
+        boolean shouldLog;
+        synchronized (state) {
+            boolean hasNewInfo = updateSessionInfo(state, playerName, questName, questType);
+            state.lastUpdatedMs = now;
+            shouldLog = !state.endLogged || hasNewInfo;
+            state.endLogged = true;
+        }
+        pruneSessionLogState(now);
+        return shouldLog;
+    }
+
+    private boolean updateSessionInfo(SessionLogState state, String playerName,
+                                      String questName, String questType) {
+        boolean hasNewInfo = false;
+        if (playerName != null && !playerName.isBlank() && !state.hasPlayerName) {
+            state.hasPlayerName = true;
+            hasNewInfo = true;
+        }
+        if (questName != null && !questName.isBlank() && !state.hasQuestName) {
+            state.hasQuestName = true;
+            hasNewInfo = true;
+        }
+        if (questType != null && !questType.isBlank() && !state.hasQuestType) {
+            state.hasQuestType = true;
+            hasNewInfo = true;
+        }
+        return hasNewInfo;
+    }
+
+    private void pruneSessionLogState(long nowMs) {
+        if (sessionLogState.size() < 500) {
+            return;
+        }
+        for (var entry : sessionLogState.entrySet()) {
+            SessionLogState state = entry.getValue();
+            if (state == null) {
+                sessionLogState.remove(entry.getKey());
+                continue;
+            }
+            if (state.endLogged && nowMs - state.lastUpdatedMs > SESSION_LOG_TTL_MS) {
+                sessionLogState.remove(entry.getKey(), state);
+            }
+        }
     }
 
     // ============================================
@@ -962,5 +1031,14 @@ public class DuckDBTelemetryService {
             lastLevel = currentLevel;
             lastFlush = now;
         }
+    }
+
+    private static class SessionLogState {
+        boolean startLogged;
+        boolean endLogged;
+        boolean hasPlayerName;
+        boolean hasQuestName;
+        boolean hasQuestType;
+        long lastUpdatedMs;
     }
 }

@@ -956,7 +956,26 @@ public class DuckDBBatchWriter {
             "INSERT INTO endurance_sessions (id, player_id, player_name, quest_name, quest_type, total_waves, " +
             "is_endless, player_count, start_ts, end_ts, outcome, waves_completed, total_kills, damage_dealt, " +
             "damage_taken, tokens_earned, prestige_earned, blood_gems_earned, no_damage_waves) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+            "ON CONFLICT(id) DO UPDATE SET " +
+            "player_id = CASE WHEN excluded.player_id IS NULL THEN endurance_sessions.player_id ELSE excluded.player_id END, " +
+            "player_name = CASE WHEN excluded.player_name IS NULL THEN endurance_sessions.player_name ELSE excluded.player_name END, " +
+            "quest_name = CASE WHEN excluded.quest_name IS NULL THEN endurance_sessions.quest_name ELSE excluded.quest_name END, " +
+            "quest_type = CASE WHEN excluded.quest_type IS NULL THEN endurance_sessions.quest_type ELSE excluded.quest_type END, " +
+            "total_waves = CASE WHEN excluded.total_waves IS NULL THEN endurance_sessions.total_waves ELSE excluded.total_waves END, " +
+            "is_endless = CASE WHEN excluded.is_endless IS NULL THEN endurance_sessions.is_endless ELSE excluded.is_endless END, " +
+            "player_count = CASE WHEN excluded.player_count IS NULL THEN endurance_sessions.player_count ELSE excluded.player_count END, " +
+            "start_ts = COALESCE(endurance_sessions.start_ts, excluded.start_ts), " +
+            "end_ts = CASE WHEN excluded.end_ts IS NULL THEN endurance_sessions.end_ts ELSE excluded.end_ts END, " +
+            "outcome = CASE WHEN excluded.outcome IS NULL THEN endurance_sessions.outcome ELSE excluded.outcome END, " +
+            "waves_completed = CASE WHEN excluded.waves_completed IS NULL THEN endurance_sessions.waves_completed ELSE excluded.waves_completed END, " +
+            "total_kills = CASE WHEN excluded.total_kills IS NULL THEN endurance_sessions.total_kills ELSE excluded.total_kills END, " +
+            "damage_dealt = CASE WHEN excluded.damage_dealt IS NULL THEN endurance_sessions.damage_dealt ELSE excluded.damage_dealt END, " +
+            "damage_taken = CASE WHEN excluded.damage_taken IS NULL THEN endurance_sessions.damage_taken ELSE excluded.damage_taken END, " +
+            "tokens_earned = CASE WHEN excluded.tokens_earned IS NULL THEN endurance_sessions.tokens_earned ELSE excluded.tokens_earned END, " +
+            "prestige_earned = CASE WHEN excluded.prestige_earned IS NULL THEN endurance_sessions.prestige_earned ELSE excluded.prestige_earned END, " +
+            "blood_gems_earned = CASE WHEN excluded.blood_gems_earned IS NULL THEN endurance_sessions.blood_gems_earned ELSE excluded.blood_gems_earned END, " +
+            "no_damage_waves = CASE WHEN excluded.no_damage_waves IS NULL THEN endurance_sessions.no_damage_waves ELSE excluded.no_damage_waves END");
 
         insertSqlCache.put("endurance_parties",
             "INSERT INTO endurance_parties (id, ts, party_id, event_type, leader_id, leader_name, member_id, " +

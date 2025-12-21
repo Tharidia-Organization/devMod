@@ -130,6 +130,7 @@ public class L6AdvancedIntegrationTest {
         // Economic system
         final Map<UUID, Map<Currency, AtomicLong>> playerWallets = new ConcurrentHashMap<>();
         final Map<UUID, Object> purchaseLocks = new ConcurrentHashMap<>();
+        final Map<UUID, Object> styleLocks = new ConcurrentHashMap<>();
 
         // Perk system
         final Map<UUID, Set<String>> playerPerks = new ConcurrentHashMap<>();
@@ -148,6 +149,10 @@ public class L6AdvancedIntegrationTest {
 
         Object getPurchaseLock(UUID playerId) {
             return purchaseLocks.computeIfAbsent(playerId, id -> new Object());
+        }
+
+        Object getStyleLock(UUID playerId) {
+            return styleLocks.computeIfAbsent(playerId, id -> new Object());
         }
 
         Map<Currency, AtomicLong> getWallet(UUID playerId) {
@@ -177,6 +182,14 @@ public class L6AdvancedIntegrationTest {
                     return true;
                 }
                 return false;
+            }
+        }
+
+        void addStylePoints(UUID playerId, int points) {
+            synchronized (getStyleLock(playerId)) {
+                int newScore = playerStyleScores.getOrDefault(playerId, 0) + points;
+                playerStyleScores.put(playerId, newScore);
+                playerStyleRanks.put(playerId, StyleRank.fromScore(newScore));
             }
         }
 
@@ -753,10 +766,7 @@ public class L6AdvancedIntegrationTest {
                             case 2 -> {
                                 // Add style points
                                 int points = random.nextInt(100, 500);
-                                sim.playerStyleScores.merge(playerId, points,
-                                    (prev, inc) -> (prev == null ? 0 : prev) + (inc == null ? 0 : inc));
-                                sim.playerStyleRanks.put(playerId,
-                                    StyleRank.fromScore(sim.playerStyleScores.getOrDefault(playerId, 0)));
+                                sim.addStylePoints(playerId, points);
                             }
                             case 3 -> {
                                 // Earn currency
