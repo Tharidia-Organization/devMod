@@ -91,9 +91,14 @@ public class FpsTracker {
 
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
+        @Nonnull ResourceLocation overlay = Objects.requireNonNull(
+            VanillaGuiLayers.DEBUG_OVERLAY,
+            "debug overlay layer"
+        );
+        @Nonnull ResourceLocation layerId = Objects.requireNonNull(LAYER_ID, "layer id");
         event.registerAbove(
-            Objects.requireNonNull(VanillaGuiLayers.DEBUG_OVERLAY),
-            Objects.requireNonNull(LAYER_ID),
+            overlay,
+            layerId,
             FpsTracker::render
         );
     }
@@ -105,8 +110,8 @@ public class FpsTracker {
         if (mc.player == null || mc.options.hideGui) return;
 
         INSTANCE.updateMetrics();
-        Font font = Objects.requireNonNull(mc.font, "font");
-        GuiGraphics safeGraphics = Objects.requireNonNull(graphics, "graphics");
+        @Nonnull Font font = Objects.requireNonNull(mc.font, "font");
+        @Nonnull GuiGraphics safeGraphics = Objects.requireNonNull(graphics, "graphics");
         INSTANCE.renderOverlay(safeGraphics, font);
     }
 
@@ -223,22 +228,22 @@ public class FpsTracker {
 
         // FPS with color based on value
         int fpsColor = getFpsColor(currentFps);
-        String fpsStr = String.format("FPS: %d", currentFps);
+        @Nonnull String fpsStr = Objects.requireNonNull(String.format("FPS: %d", currentFps), "fpsStr");
         graphics.drawString(font, fpsStr, textX, textY, fpsColor, false);
 
         // Min/Max on the same row
-        String minMaxStr = String.format("§7(%d-%d)", minFps, maxFps);
+        @Nonnull String minMaxStr = Objects.requireNonNull(String.format("§7(%d-%d)", minFps, maxFps), "minMaxStr");
         graphics.drawString(font, minMaxStr, textX + 55, textY, TEXT_GRAY, false);
         textY += LINE_HEIGHT;
 
         // Average FPS
-        String avgStr = String.format("Avg: %d fps", avgFps);
+        @Nonnull String avgStr = Objects.requireNonNull(String.format("Avg: %d fps", avgFps), "avgStr");
         graphics.drawString(font, avgStr, textX, textY, TEXT_GRAY, false);
         textY += LINE_HEIGHT;
 
         // Frame time
         int ftColor = getFrameTimeColor(frameTimeMs);
-        String ftStr = String.format("Frame: %.1fms", frameTimeMs);
+        @Nonnull String ftStr = Objects.requireNonNull(String.format("Frame: %.1fms", frameTimeMs), "ftStr");
         graphics.drawString(font, ftStr, textX, textY, ftColor, false);
         textY += LINE_HEIGHT;
 
@@ -249,7 +254,7 @@ public class FpsTracker {
         float memPercent = (float) usedMB / maxMB * 100;
 
         int memColor = memPercent > 80 ? TEXT_RED : (memPercent > 60 ? TEXT_YELLOW : TEXT_GREEN);
-        String memStr = String.format("Mem: %dMB/%.0f%%", usedMB, memPercent);
+        @Nonnull String memStr = Objects.requireNonNull(String.format("Mem: %dMB/%.0f%%", usedMB, memPercent), "memStr");
         graphics.drawString(font, memStr, textX, textY, memColor, false);
         textY += LINE_HEIGHT + 2;
 

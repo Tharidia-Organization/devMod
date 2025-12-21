@@ -6,7 +6,7 @@ import com.frenkvs.devmod.ui.scroll.impl.SmoothScrollBehavior;
 import net.minecraft.client.gui.GuiGraphics;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.Objects;
+import javax.annotation.Nonnull;
 /**
  * Unified scroll manager for all scrollable components.
  * Centralizes mouse wheel, scrollbar drag, and keyboard navigation.
@@ -226,7 +226,7 @@ public class ScrollManager {
             return false;
         }
 
-        ScrollMetrics metrics = Objects.requireNonNull(calculateMetrics(), "metrics");
+        @Nonnull ScrollMetrics metrics = calculateMetrics();
 
         // Check if click is on scrollbar thumb
         if (isOverThumb(mouseX, mouseY, metrics)) {
@@ -258,7 +258,7 @@ public class ScrollManager {
             return false;
         }
 
-        ScrollMetrics metrics = Objects.requireNonNull(calculateMetrics(), "metrics");
+        @Nonnull ScrollMetrics metrics = calculateMetrics();
         int trackHeight = metrics.trackHeight();
 
         if (trackHeight <= 0) {
@@ -383,6 +383,7 @@ public class ScrollManager {
      *
      * @return ScrollMetrics with thumb position and dimensions
      */
+    @Nonnull
     public ScrollMetrics calculateMetrics() {
         if (!needsScrolling() || bounds.height() <= 0) {
             return new ScrollMetrics(0, bounds.height(), 0, 0);

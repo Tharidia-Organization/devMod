@@ -12,6 +12,19 @@
   "tags": ["boss", "casual"],
   "priority": 3,
   "weight": 1.0,
+  "perkBindings": {
+    "suggested": ["tough_skin", "vitality", "regeneration"],
+    "excluded": ["glass_cannon"]
+  },
+  "mutatorBindings": {
+    "excluded": ["glass_cannon", "one_hit"]
+  },
+  "rewardModifiers": {
+    "baseMultiplier": 1.15,
+    "firstCompletionBonus": 0.2,
+    "hazardBonus": 0.1,
+    "streakMultiplier": 0.03
+  },
   "enabled": true,
   "description": "Casual boss arena policy"
 }

@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Manages the quest start sequence for party quests.
@@ -37,9 +38,9 @@ public class QuestStartSequence {
     private final Map<UUID, ActiveSequence> activeSequences = new ConcurrentHashMap<>();
 
     // Countdown durations (in ticks, 20 ticks = 1 second)
-    private static final int PRE_TELEPORT_COUNTDOWN_TICKS = 100; // 5 seconds
+    private static final int PRE_TELEPORT_COUNTDOWN_TICKS = EnduranceQuestManager.PRE_TELEPORT_COUNTDOWN_TICKS; // 10 seconds
     private static final int ARRIVAL_TIMEOUT_TICKS = 600;        // 30 seconds timeout
-    private static final int WAVE_COUNTDOWN_TICKS = 60;          // 3 seconds
+    private static final int WAVE_COUNTDOWN_TICKS = EnduranceQuestManager.WAVE_START_COUNTDOWN_TICKS; // 10 seconds
     private static final int TICK_INTERVAL = 20;                 // 1 second
 
     private QuestStartSequence() {}
@@ -287,15 +288,15 @@ public class QuestStartSequence {
             if (sequence.ticksRemaining <= 0) {
                 switch (sequence.phase) {
                     case COUNTDOWN_START -> {
-                        // Countdown finished, do teleport
+                        // Countdown finished, kick off async arena prep/teleport
                         sequence.phase = QuestSequencePayload.Phase.TELEPORTING;
+                        sequence.ticksRemaining = TICK_INTERVAL;
                         broadcastSequenceUpdate(sequence);
                         performTeleport(server, sequence);
-
-                        // Move to waiting for arrivals
-                        sequence.phase = QuestSequencePayload.Phase.WAITING_FOR_ARRIVALS;
-                        sequence.ticksRemaining = ARRIVAL_TIMEOUT_TICKS;
-                        broadcastSequenceUpdate(sequence);
+                    }
+                    case TELEPORTING -> {
+                        // Waiting for async arena preparation/teleport callback.
+                        sequence.ticksRemaining = TICK_INTERVAL;
                     }
                     case WAITING_FOR_ARRIVALS -> {
                         // Timeout! Check if we have enough players
@@ -355,6 +356,9 @@ public class QuestStartSequence {
             LOGGER.error("[QuestSequence] No members to teleport!");
             return;
         }
+        if (sequence.pendingArenaFuture != null && !sequence.pendingArenaFuture.isDone()) {
+            return;
+        }
 
         // Create quest settings
         List<UUID> memberIds = sequence.members.stream().map(ServerPlayer::getUUID).toList();
@@ -378,59 +382,96 @@ public class QuestStartSequence {
         PartyData party = PartyManager.INSTANCE.getParty(sequence.partyId);
         ResourceLocation mobId = party != null ? party.getEffectiveMobId() : ResourceLocation.withDefaultNamespace("zombie");
 
-        // PHASE 1: Prepare arena (create without teleporting)
-        EnduranceQuestManager.PreparedArenaResult arenaResult =
-            EnduranceQuestManager.INSTANCE.prepareArenaForParty(leader, mobId, settings);
+        CompletableFuture<EnduranceQuestManager.PreparedArenaResult> future =
+            EnduranceQuestManager.INSTANCE.prepareArenaForPartyAsync(leader, mobId, settings);
+        sequence.pendingArenaFuture = future;
 
-        if (!arenaResult.success()) {
-            LOGGER.error("[QuestSequence] Failed to prepare arena: {}", arenaResult.errorMessage());
-            // Cancel the sequence
-            sequence.phase = QuestSequencePayload.Phase.CANCELLED;
-            broadcastSequenceUpdate(sequence);
-            for (ServerPlayer member : sequence.members) {
-                if (member != null && member.isAlive()) {
-                    // Prefer specific reason (e.g., instance mode unsupported for party)
-                    String reason = arenaResult.errorMessage() != null
-                        ? arenaResult.errorMessage()
-                        : I18n.translate("devmod.party.arena_creation_failed").getString();
-                    if (reason == null) reason = "Arena creation failed";
-                    member.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(reason)));
+        future.whenComplete((arenaResult, throwable) -> {
+            server.execute(() -> {
+                ActiveSequence current = activeSequences.get(sequence.partyId);
+                if (current == null) {
+                    if (arenaResult != null && arenaResult.instanceId() != null) {
+                        InstanceArenaManager.INSTANCE.endInstanceQuest(arenaResult.instanceId(), false);
+                    }
+                    return;
                 }
-            }
-            return;
-        }
+                current.pendingArenaFuture = null;
 
-        // Store arena and mob info for later quest start
-        sequence.preparedArena = arenaResult.arena();
-        sequence.preparedArenaHandle = arenaResult.handle();
-        sequence.mobId = mobId;
-        sequence.instanceId = arenaResult.instanceId();
-
-        LOGGER.info("[QuestSequence] Arena {} prepared, teleporting players", arenaResult.arena().getId());
-
-        // PHASE 2: Teleport handling
-        if (!EnduranceQuestManager.INSTANCE.isUseInstanceDimensions()) {
-            EnduranceQuestManager.INSTANCE.teleportPlayersToArena(sequence.members, arenaResult.arena());
-            for (ServerPlayer member : sequence.members) {
-                if (member != null && member.isAlive()) {
-                    member.sendSystemMessage(I18n.translate("devmod.party.teleported_to_arena"));
+                if (throwable != null || arenaResult == null || !arenaResult.success()) {
+                    String reason = throwable != null && throwable.getMessage() != null
+                        ? throwable.getMessage()
+                        : (arenaResult != null ? arenaResult.errorMessage() : "Arena creation failed");
+                    LOGGER.error("[QuestSequence] Failed to prepare arena: {}", reason);
+                    current.phase = QuestSequencePayload.Phase.CANCELLED;
+                    broadcastSequenceUpdate(current);
+                    cleanupPreparedArena(current);
+                    for (ServerPlayer member : current.members) {
+                        if (member != null && member.isAlive()) {
+                            String message = reason != null ? reason : "Arena creation failed";
+                            member.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(message)));
+                        }
+                    }
+                    activeSequences.remove(current.partyId);
+                    return;
                 }
-            }
-        } else {
-            // InstanceManager already teleported; align to template spawns if available
-            if (arenaResult.handle() != null) {
-                EnduranceQuestManager.INSTANCE.teleportPlayersToArena(
-                    sequence.members,
-                    arenaResult.arena(),
-                    arenaResult.handle()
-                );
-            }
-            for (ServerPlayer member : sequence.members) {
-                if (member != null && member.isAlive()) {
-                    member.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Teleporting party to instance...")));
+
+                // Store arena and mob info for later quest start
+                current.preparedArena = arenaResult.arena();
+                current.preparedArenaHandle = arenaResult.handle();
+                current.mobId = mobId;
+                current.instanceId = arenaResult.instanceId();
+
+                LOGGER.info("[QuestSequence] Arena {} prepared, teleporting players", arenaResult.arena().getId());
+
+                if (arenaResult.handle() == null) {
+                    String reason = "Arena handle missing; cannot teleport party.";
+                    LOGGER.error("[QuestSequence] {}", reason);
+                    current.phase = QuestSequencePayload.Phase.CANCELLED;
+                    broadcastSequenceUpdate(current);
+                    cleanupPreparedArena(current);
+                    for (ServerPlayer member : current.members) {
+                        if (member != null && member.isAlive()) {
+                            member.sendSystemMessage(Objects.requireNonNull(
+                                net.minecraft.network.chat.Component.literal(reason)));
+                        }
+                    }
+                    activeSequences.remove(current.partyId);
+                    return;
                 }
-            }
-        }
+
+                // Teleport handling
+                if (!EnduranceQuestManager.INSTANCE.isUseInstanceDimensions()) {
+                    EnduranceQuestManager.INSTANCE.teleportPlayersToArena(
+                        current.members,
+                        arenaResult.arena(),
+                        arenaResult.handle()
+                    );
+                    for (ServerPlayer member : current.members) {
+                        if (member != null && member.isAlive()) {
+                            member.sendSystemMessage(I18n.translate("devmod.party.teleported_to_arena"));
+                        }
+                    }
+                } else {
+                    // InstanceManager already teleported; align to template spawns if available
+                    if (arenaResult.handle() != null) {
+                        EnduranceQuestManager.INSTANCE.teleportPlayersToArena(
+                            current.members,
+                            arenaResult.arena(),
+                            arenaResult.handle()
+                        );
+                    }
+                    for (ServerPlayer member : current.members) {
+                        if (member != null && member.isAlive()) {
+                            member.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Teleporting party to instance...")));
+                        }
+                    }
+                }
+
+                current.phase = QuestSequencePayload.Phase.WAITING_FOR_ARRIVALS;
+                current.ticksRemaining = ARRIVAL_TIMEOUT_TICKS;
+                broadcastSequenceUpdate(current);
+            });
+        });
     }
 
     /**
@@ -524,7 +565,10 @@ public class QuestStartSequence {
             sequence.phase,
             secondsRemaining,
             sequence.members.size(),
-            arrivedList
+            arrivedList,
+            "",
+            "",
+            List.of()
         );
 
         for (ServerPlayer member : sequence.members) {
@@ -604,6 +648,7 @@ public class QuestStartSequence {
         int ticksRemaining;
         EnduranceQuestManager.QuestSettings questSettings;
         UUID instanceId;
+        CompletableFuture<EnduranceQuestManager.PreparedArenaResult> pendingArenaFuture;
 
         // Pre-created arena (set during TELEPORTING phase)
         com.frenkvs.devmod.endurance.ArenaManager.Arena preparedArena;

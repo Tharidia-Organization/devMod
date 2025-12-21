@@ -41,10 +41,9 @@ public class WaveManager {
     private static final int MAX_MODIFIERS_EARLY = 1;
     private static final int MAX_MODIFIERS_MID = 2;
     private static final int MAX_MODIFIERS_LATE = 3;
-    private static final float BASE_MODIFIER_CHANCE = 0.08f;
-    private static final float MODIFIER_CHANCE_PER_WAVE = 0.04f;
-    private static final float MAX_MODIFIER_CHANCE = 0.6f;
-    private static final int ELITE_RAMP_WAVES = 6;
+    private static final float MODIFIER_CHANCE_TIER_1 = 0.10f;
+    private static final float MODIFIER_CHANCE_TIER_2 = 0.20f;
+    private static final float MODIFIER_CHANCE_TIER_3 = 0.35f;
 
     // Active wave states per arena (ConcurrentHashMap for thread-safety in multiplayer)
     private final Map<UUID, WaveState> activeWaves = new java.util.concurrent.ConcurrentHashMap<>();
@@ -59,11 +58,23 @@ public class WaveManager {
         private final EnduranceQuest quest;
         private final int waveNumber;
         private final List<UUID> spawnedMobs = java.util.Collections.synchronizedList(new ArrayList<>());
+        private final Map<UUID, SpawnAffix> spawnAffixes = new java.util.concurrent.ConcurrentHashMap<>();
+        private final Set<UUID> objectiveTargets = java.util.Collections.synchronizedSet(new HashSet<>());
+        private final WaveObjectiveState objective;
+        private final List<WaveDirector.SpawnBatch> spawnPlan;
+        private final @javax.annotation.Nullable SpawnContext spawnContext;
+        private final float rewardMultiplier;
+        private final @javax.annotation.Nullable String directiveId;
         private int totalToSpawn;
         private int spawned = 0;
         private int killed = 0;
         private long waveStartTime;
+        private int waveTicks = 0;
+        private int nextSpawnIndex = 0;
         private boolean complete = false;
+        private boolean completionNotified = false;
+        private int externalRespawnCount = 0;
+        private final int externalRespawnLimit;
 
         // Wave modifiers (roguelike elements)
         private final Set<WaveModifier> modifiers = new HashSet<>();
@@ -72,47 +83,155 @@ public class WaveManager {
         private final int playerCount;
         private final QuestType questType;
 
-        public WaveState(UUID arenaId, EnduranceQuest quest, int waveNumber) {
-            this(arenaId, quest, waveNumber, 1, QuestType.PVE_COOP);
-        }
-
-        public WaveState(UUID arenaId, EnduranceQuest quest, int waveNumber, int playerCount, QuestType questType) {
+        public WaveState(UUID arenaId,
+                         EnduranceQuest quest,
+                         int waveNumber,
+                         int playerCount,
+                         QuestType questType,
+                         int totalToSpawn,
+                         WaveObjectiveState objective,
+                         List<WaveDirector.SpawnBatch> spawnPlan,
+                         @javax.annotation.Nullable SpawnContext spawnContext,
+                         float rewardMultiplier,
+                         @javax.annotation.Nullable String directiveId) {
             this.arenaId = arenaId;
             this.quest = quest;
             this.waveNumber = waveNumber;
             this.playerCount = Math.max(1, playerCount);
             this.questType = questType;
-            this.totalToSpawn = quest.getCurrentWaveMobCount(this.playerCount, this.questType);
+            this.totalToSpawn = Math.max(1, totalToSpawn);
+            this.objective = objective != null ? objective : WaveObjectiveState.killAll(this.totalToSpawn);
+            this.spawnPlan = spawnPlan != null ? List.copyOf(spawnPlan) : List.of();
+            this.spawnContext = spawnContext;
+            this.rewardMultiplier = Math.max(0.1f, rewardMultiplier);
+            this.directiveId = directiveId;
             this.waveStartTime = System.currentTimeMillis();
+            this.externalRespawnLimit = Math.max(5, this.totalToSpawn);
+        }
+
+        public WaveState(UUID arenaId, EnduranceQuest quest, int waveNumber) {
+            this(
+                arenaId,
+                quest,
+                waveNumber,
+                1,
+                QuestType.PVE_COOP,
+                Math.max(1, quest.getCurrentWaveMobCount()),
+                WaveObjectiveState.killAll(Math.max(1, quest.getCurrentWaveMobCount())),
+                List.of(),
+                null,
+                1.0f,
+                null
+            );
         }
 
         public UUID getArenaId() { return arenaId; }
         public EnduranceQuest getQuest() { return quest; }
         public int getWaveNumber() { return waveNumber; }
         public List<UUID> getSpawnedMobs() { return spawnedMobs; }
+        public WaveObjectiveState getObjective() { return objective; }
+        public float getRewardMultiplier() { return rewardMultiplier; }
+        public @javax.annotation.Nullable String getDirectiveId() { return directiveId; }
         public int getTotalToSpawn() { return totalToSpawn; }
         public int getSpawned() { return spawned; }
         public int getKilled() { return killed; }
         public long getWaveStartTime() { return waveStartTime; }
+        public int getWaveTicks() { return waveTicks; }
         public boolean isComplete() { return complete; }
+        public boolean isCompletionNotified() { return completionNotified; }
         public Set<WaveModifier> getModifiers() { return modifiers; }
         public int getPlayerCount() { return playerCount; }
         public QuestType getQuestType() { return questType; }
+        public int getExternalRespawnCount() { return externalRespawnCount; }
+        public int getExternalRespawnLimit() { return externalRespawnLimit; }
+        public List<WaveDirector.SpawnBatch> getSpawnPlan() { return spawnPlan; }
+        public int getNextSpawnIndex() { return nextSpawnIndex; }
+        public @javax.annotation.Nullable SpawnContext getSpawnContext() { return spawnContext; }
 
         public int getRemainingMobs() {
             return spawnedMobs.size() - killed;
         }
 
-        public void recordKill() {
+        public void recordKill(UUID mobId) {
             killed++;
-            if (killed >= totalToSpawn && spawned >= totalToSpawn) {
+            objective.recordKill();
+            if (objective.getType() == WaveObjectiveState.Type.ELITE_HUNT) {
+                objective.recordObjectiveKill(mobId);
+            }
+            if (objective.isComplete() && objective.getType() != WaveObjectiveState.Type.KILL_ALL) {
+                complete = true;
+            }
+            if (objective.getType() == WaveObjectiveState.Type.KILL_ALL
+                && objective.isComplete()
+                && spawned >= totalToSpawn
+                && !hasPendingSpawns()) {
                 complete = true;
             }
         }
 
-        public void addSpawnedMob(UUID mobId) {
+        public void addSpawnedMob(UUID mobId, SpawnAffix affix, boolean objectiveTarget) {
             spawnedMobs.add(mobId);
+            if (affix != null) {
+                spawnAffixes.put(mobId, affix);
+            }
+            if (objectiveTarget && mobId != null) {
+                objectiveTargets.add(mobId);
+                objective.registerObjectiveTarget(mobId);
+            }
             spawned++;
+        }
+
+        public void incrementWaveTicks() {
+            waveTicks++;
+        }
+
+        public void advanceSpawnIndex(int index) {
+            nextSpawnIndex = index;
+        }
+
+        public boolean hasPendingSpawns() {
+            return nextSpawnIndex < spawnPlan.size();
+        }
+
+        public void markComplete() {
+            complete = true;
+        }
+
+        public void markCompletionNotified() {
+            completionNotified = true;
+        }
+
+        public SpawnAffix getAffixForMob(UUID mobId) {
+            return spawnAffixes.getOrDefault(mobId, SpawnAffix.BASE);
+        }
+
+        public boolean isObjectiveTarget(UUID mobId) {
+            return mobId != null && objectiveTargets.contains(mobId);
+        }
+
+        public boolean replaceObjectiveTarget(UUID oldId, UUID newId) {
+            if (oldId == null || newId == null) {
+                return false;
+            }
+            if (objectiveTargets.remove(oldId)) {
+                objectiveTargets.add(newId);
+                objective.registerObjectiveTarget(newId);
+                return true;
+            }
+            return false;
+        }
+
+        public void adjustKillTarget(int newTarget) {
+            if (objective.getType() == WaveObjectiveState.Type.KILL_ALL) {
+                objective.adjustKillTarget(newTarget);
+            }
+        }
+
+        public int registerExternalRespawn(int count) {
+            int remaining = Math.max(0, externalRespawnLimit - externalRespawnCount);
+            int allowed = Math.min(remaining, Math.max(0, count));
+            externalRespawnCount += allowed;
+            return allowed;
         }
     }
 
@@ -146,13 +265,17 @@ public class WaveManager {
     public WaveState startWave(EnduranceQuestManager.ActiveQuestSession session) {
         EnduranceQuest quest = session.getQuest();
         ArenaManager.Arena arena = session.getArena();
+        ArenaHandle handle = session.getArenaHandle();
         int waveNumber = quest.getCurrentWave();
 
         // Get multiplayer scaling parameters from session
         int playerCount = session.getPlayerCount();
         QuestType questType = session.getQuestType();
 
-        WaveState waveState = new WaveState(arena.getId(), quest, waveNumber, playerCount, questType);
+        if (arena == null || handle == null || handle.mobSpawnPositions() == null || handle.mobSpawnPositions().isEmpty()) {
+            handleWaveStartFailure(session, "missing_handle_or_spawns");
+            return null;
+        }
 
         LOGGER.debug("[EnduranceQuest] Starting wave {} with playerCount={}, questType={}",
             waveNumber, playerCount, questType);
@@ -162,17 +285,34 @@ public class WaveManager {
             // Start boss wave instead of normal wave
             BossWaveSystem.BossFight bossFight = BossWaveSystem.INSTANCE.startBossWave(session, waveNumber);
             if (bossFight != null && bossFight.getBossEntity() != null) {
-                // Track the boss as the only mob in this wave
-                waveState.totalToSpawn = 1;
-                waveState.addSpawnedMob(bossFight.getBossEntity().getUUID());
-
-                // Mark as boss wave
-                waveState.modifiers.add(WaveModifier.HEALTH_BOOST); // Visual indicator
+                WaveState waveState = new WaveState(
+                    arena.getId(),
+                    quest,
+                    waveNumber,
+                    playerCount,
+                    questType,
+                    1,
+                    WaveObjectiveState.killAll(1),
+                    List.of(),
+                    null,
+                    1.0f,
+                    null
+                );
+                waveState.addSpawnedMob(bossFight.getBossEntity().getUUID(), SpawnAffix.ELITE, false);
 
                 activeWaves.put(arena.getId(), waveState);
 
                 LOGGER.info("[EnduranceQuest] Started BOSS wave {} with {} archetype",
                     waveNumber, bossFight.getArchetype().displayName);
+
+                EnduranceTelemetryService.INSTANCE.recordWaveStart(
+                    quest.getQuestId(),
+                    waveNumber,
+                    waveState.totalToSpawn,
+                    playerCount,
+                    questType,
+                    waveState.modifiers
+                );
 
                 return waveState;
             }
@@ -180,18 +320,42 @@ public class WaveManager {
             LOGGER.warn("[EnduranceQuest] Boss spawn failed for wave {}, falling back to normal wave", waveNumber);
         }
 
-        // Apply roguelike modifiers (chance increases with wave number)
-        applyWaveModifiers(waveState);
-
-        // Adjust spawn count for modifiers
-        if (waveState.modifiers.contains(WaveModifier.DOUBLE_SPAWN)) {
-            waveState.totalToSpawn *= 2;
+        Set<WaveModifier> modifiers = rollWaveModifiers(waveNumber);
+        int baseCount = quest.getCurrentWaveMobCount(playerCount, questType);
+        if (modifiers.contains(WaveModifier.DOUBLE_SPAWN)) {
+            baseCount = Math.max(1, baseCount * 2);
         }
+        baseCount = Math.max(1, baseCount);
+
+        WaveDirective directive = session.consumeDirectiveForWave(waveNumber);
+        float rewardMultiplier = directive != null ? directive.rewardMultiplier() : 1.0f;
+        String directiveId = directive != null ? directive.id() : null;
+
+        WaveDirector.WavePlan plan = WaveDirector.INSTANCE.planWave(session, baseCount, directive);
+        SpawnContext spawnContext = buildSpawnContext(arena, handle);
+        if (spawnContext == null) {
+            handleWaveStartFailure(session, "missing_spawn_slots");
+            return null;
+        }
+        WaveState waveState = new WaveState(
+            arena.getId(),
+            quest,
+            waveNumber,
+            playerCount,
+            questType,
+            plan.totalToSpawn(),
+            plan.objective(),
+            plan.batches(),
+            spawnContext,
+            rewardMultiplier,
+            directiveId
+        );
+        waveState.getModifiers().addAll(modifiers);
 
         activeWaves.put(arena.getId(), waveState);
 
         // Spawn initial batch
-        spawnWaveMobs(waveState, arena, session.getArenaHandle());
+        spawnDueBatches(waveState, arena, handle);
 
         LOGGER.info("[EnduranceQuest] Started wave {} with {} mobs (modifiers: {})",
             waveState.waveNumber, waveState.totalToSpawn, waveState.modifiers);
@@ -212,116 +376,211 @@ public class WaveManager {
     /**
      * Apply random modifiers to a wave based on wave number.
      */
-    private void applyWaveModifiers(WaveState waveState) {
-        int waveNum = waveState.waveNumber;
-
-        if (waveNum < MODIFIER_START_WAVE) {
-            return;
+    private Set<WaveModifier> rollWaveModifiers(int waveNumber) {
+        if (waveNumber < MODIFIER_START_WAVE) {
+            return Set.of();
         }
 
-        float modifierChance = Math.min(
-            BASE_MODIFIER_CHANCE + ((waveNum - MODIFIER_START_WAVE) * MODIFIER_CHANCE_PER_WAVE),
-            MAX_MODIFIER_CHANCE
-        );
-        int maxModifiers = waveNum < 5 ? MAX_MODIFIERS_EARLY : (waveNum < 8 ? MAX_MODIFIERS_MID : MAX_MODIFIERS_LATE);
+        float modifierChance = getModifierChance(waveNumber);
+        int maxModifiers = waveNumber < 5 ? MAX_MODIFIERS_EARLY : (waveNumber < 8 ? MAX_MODIFIERS_MID : MAX_MODIFIERS_LATE);
+        Set<WaveModifier> modifiers = new HashSet<>();
 
         for (WaveModifier modifier : WaveModifier.values()) {
             if (random.nextFloat() < modifierChance) {
-                waveState.modifiers.add(modifier);
+                modifiers.add(modifier);
 
-                if (waveState.modifiers.size() >= maxModifiers) break;
+                if (modifiers.size() >= maxModifiers) break;
             }
         }
+        return modifiers;
+    }
+
+    private float getModifierChance(int waveNumber) {
+        if (waveNumber < MODIFIER_START_WAVE) {
+            return 0f;
+        }
+        if (waveNumber < 5) {
+            return MODIFIER_CHANCE_TIER_1;
+        }
+        if (waveNumber < 8) {
+            return MODIFIER_CHANCE_TIER_2;
+        }
+        return MODIFIER_CHANCE_TIER_3;
+    }
+
+    private void handleWaveStartFailure(EnduranceQuestManager.ActiveQuestSession session, String reason) {
+        if (session == null || session.getQuest() == null) {
+            return;
+        }
+        EnduranceTelemetryService.INSTANCE.recordWaveBlocked(session.getQuest().getQuestId());
+        LOGGER.error("[EnduranceQuest] Wave start aborted: {}", reason);
+
+        var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        if (server == null) {
+            return;
+        }
+        var player = server.getPlayerList().getPlayer(Objects.requireNonNull(session.getPlayerId()));
+        if (player == null) {
+            return;
+        }
+        player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+            "[DevMod] Arena configuration missing - quest aborted.")
+            .withStyle(net.minecraft.ChatFormatting.RED)));
+        EnduranceQuestManager.INSTANCE.abandonQuest(player);
+    }
+
+    private void spawnDueBatches(WaveState waveState, ArenaManager.Arena arena, ArenaHandle handle) {
+        if (waveState == null || waveState.getSpawnPlan().isEmpty()) {
+            return;
+        }
+        int index = waveState.getNextSpawnIndex();
+        int waveTicks = waveState.getWaveTicks();
+        List<WaveDirector.SpawnBatch> plan = waveState.getSpawnPlan();
+        while (index < plan.size() && waveTicks >= plan.get(index).scheduledTick()) {
+            spawnWaveBatch(waveState, arena, handle, plan.get(index));
+            index++;
+        }
+        waveState.advanceSpawnIndex(index);
+    }
+
+    private void spawnWaveBatch(WaveState waveState,
+                                ArenaManager.Arena arena,
+                                ArenaHandle handle,
+                                WaveDirector.SpawnBatch batch) {
+        if (batch == null) {
+            return;
+        }
+        spawnWaveMobs(waveState, arena, handle, batch.count(), batch.affix(), batch.role(), batch.objectiveTarget());
     }
 
     /**
-     * Spawn mobs for the current wave.
+     * Spawn mobs for a scheduled wave batch.
      * Verifies each spawn and logs failures for debugging.
      */
-    private void spawnWaveMobs(WaveState waveState, ArenaManager.Arena arena, @javax.annotation.Nullable ArenaHandle handle) {
+    private void spawnWaveMobs(WaveState waveState,
+                               ArenaManager.Arena arena,
+                               @javax.annotation.Nullable ArenaHandle handle,
+                               int count,
+                               SpawnAffix affix,
+                               WaveDirector.SpawnRole role,
+                               boolean objectiveTarget) {
+        if (count <= 0 || arena == null) {
+            return;
+        }
+        SpawnAffix safeAffix = affix != null ? affix : SpawnAffix.BASE;
+        SpawnContext spawnContext = waveState.getSpawnContext();
+        if (spawnContext == null || spawnContext.positions.isEmpty()) {
+            LOGGER.error("[EnduranceQuest] No spawn positions available for wave {}", waveState.waveNumber);
+            EnduranceTelemetryService.INSTANCE.recordWaveBlocked(waveState.quest.getQuestId());
+            return;
+        }
+
         ServerLevel level = arena.getLevel();
         EnduranceQuestRegistry.MobQuestConfig mobConfig = waveState.quest.getMobConfig();
         EntityType<?> entityType = mobConfig.entityType;
 
-        int toSpawn = waveState.totalToSpawn - waveState.spawned;
-        List<BlockPos> spawnPositions = resolveSpawnPositions(arena, handle, toSpawn);
-        if (spawnPositions.isEmpty()) {
-            LOGGER.error("[EnduranceQuest] No spawn positions available for wave {}", waveState.waveNumber);
-            return;
-        }
-
-        ArenaTemplate template = null;
-        SpawnSlotValidator runtimeValidator = null;
-        Map<BlockPos, ArenaTemplate.SpawnSlot> slotMap = Collections.emptyMap();
-        if (handle != null) {
-            ArenaTemplateRegistry registry = DevMod.getArenaTemplateRegistry();
-            if (registry != null) {
-                template = registry.get(handle.templateId()).orElse(null);
-                if (template != null) {
-                    slotMap = buildMobSpawnSlotMap(template, handle);
-                    runtimeValidator = new SpawnSlotValidator();
-                }
-            }
-        }
+        List<BlockPos> spawnPositions = spawnContext.positions;
         SpawnOccupancyTracker occupied = new SpawnOccupancyTracker();
-        boolean allowReuse = spawnPositions.size() < toSpawn;
+        boolean allowReuse = spawnPositions.size() < count;
+        SpawnPools pools = spawnContext.pools;
 
         int successfulSpawns = 0;
         int failedSpawns = 0;
 
-        // If we don't have enough positions, log warning
-        if (spawnPositions.size() < toSpawn) {
+        if (spawnPositions.size() < count) {
             LOGGER.warn("[EnduranceQuest] Only {} valid spawn positions found for {} mobs",
-                spawnPositions.size(), toSpawn);
+                spawnPositions.size(), count);
         }
 
-        for (int i = 0; i < toSpawn; i++) {
-            BlockPos spawnPos = pickValidatedSpawnPosition(
-                spawnPositions,
-                i,
-                occupied,
-                runtimeValidator,
-                slotMap,
-                template,
-                level,
-                allowReuse
-            );
-            if (spawnPos == null) {
-                failedSpawns++;
-                continue;
-            }
-
+        for (int i = 0; i < count; i++) {
             Entity entity = entityType.create(Objects.requireNonNull(level));
             if (entity instanceof Mob mob) {
-                // Position the mob
+                List<BlockPos> candidatePool = chooseSpawnPool(role, pools, mob);
+                BlockPos spawnPos = pickValidatedSpawnPosition(
+                    candidatePool,
+                    i,
+                    occupied,
+                    spawnContext.runtimeValidator,
+                    spawnContext.slotMap,
+                    spawnContext.template,
+                    level,
+                    allowReuse
+                );
+                if (spawnPos == null && candidatePool != pools.all) {
+                    EnduranceTelemetryService.INSTANCE.recordSpawnFallback(
+                        waveState.quest.getQuestId(),
+                        waveState.waveNumber,
+                        resolvePoolTag(candidatePool, pools),
+                        handle != null ? handle.templateId() : null,
+                        "pool_exhausted"
+                    );
+                    spawnPos = pickValidatedSpawnPosition(
+                        pools.all,
+                        i,
+                        occupied,
+                        spawnContext.runtimeValidator,
+                        spawnContext.slotMap,
+                        spawnContext.template,
+                        level,
+                        allowReuse
+                    );
+                }
+                if (spawnPos == null) {
+                    failedSpawns++;
+                    EnduranceTelemetryService.INSTANCE.recordSpawnFailure(
+                        waveState.quest.getQuestId(),
+                        waveState.waveNumber,
+                        "no_valid_spawn",
+                        handle != null ? handle.templateId() : null
+                    );
+                    continue;
+                }
+
                 mob.setPos(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5);
 
-                // Apply wave modifiers
                 applyMobModifiers(mob, waveState);
-
-                // Apply multiplayer HP scaling
                 applyMultiplayerHPScaling(mob, waveState);
+                applySpawnAffix(mob, safeAffix);
 
-                // Apply elite chance buffs (ramped by wave)
-                if (random.nextFloat() < getEliteChance(mobConfig.eliteChance, waveState.waveNumber)) {
+                SpawnAffix appliedAffix = safeAffix;
+                if (!safeAffix.elite && random.nextFloat() < getEliteChance(mobConfig.eliteChance, waveState.waveNumber)) {
+                    applyEliteBuffs(mob, waveState.waveNumber);
+                    appliedAffix = SpawnAffix.ELITE;
+                } else if (safeAffix.elite) {
                     applyEliteBuffs(mob, waveState.waveNumber);
                 }
 
-                // Finalize spawn (uses deprecated API, isolated in helper method)
                 finalizeMobSpawn(mob, level, spawnPos);
 
-                // Tag mob as quest mob BEFORE adding to world (so event handlers can see it)
                 CompoundTag tag = mob.getPersistentData();
                 tag.putUUID("endurance_quest_id", Objects.requireNonNull(waveState.quest.getQuestId()));
                 tag.putUUID("endurance_arena_id", Objects.requireNonNull(arena.getId()));
+                tag.putString("endurance_affix",
+                    Objects.requireNonNull(appliedAffix.name(), "appliedAffixName"));
+                if (handle != null) {
+                    if (handle.templateId() != null) {
+                        tag.putString("endurance_template_id",
+                            Objects.requireNonNull(handle.templateId(), "templateId"));
+                    }
+                    tag.putInt("endurance_template_version", handle.templateVersion());
+                    if (handle.policyId() != null) {
+                        tag.putString("endurance_policy_id",
+                            Objects.requireNonNull(handle.policyId(), "policyId"));
+                    }
+                    tag.putInt("endurance_policy_version", handle.policyVersion());
+                }
+                if (objectiveTarget) {
+                    tag.putBoolean("endurance_objective_target", true);
+                }
 
-                // Add to world and verify success
                 boolean added = level.addFreshEntity(mob);
-
                 if (added && mob.isAlive()) {
-                    // Track the mob only if successfully spawned
-                    waveState.addSpawnedMob(mob.getUUID());
+                    waveState.addSpawnedMob(mob.getUUID(), appliedAffix, objectiveTarget);
                     successfulSpawns++;
+                    if (handle != null) {
+                        EnduranceTelemetryService.INSTANCE.recordSpawnHeatmap(
+                            waveState.quest.getQuestId(), handle, spawnPos);
+                    }
                 } else {
                     failedSpawns++;
                     LOGGER.warn("[EnduranceQuest] Failed to spawn mob at {} (added={}, alive={})",
@@ -333,17 +592,246 @@ public class WaveManager {
             }
         }
 
-        // If some spawns failed, adjust totalToSpawn to match actual spawned count
-        // This ensures wave can be completed with actual spawned mobs
         if (failedSpawns > 0) {
             LOGGER.warn("[EnduranceQuest] Wave {} spawn summary: {} successful, {} failed. Adjusting wave target.",
                 waveState.waveNumber, successfulSpawns, failedSpawns);
-            // Don't reduce below killed count to avoid instant completion
-            waveState.totalToSpawn = Math.max(waveState.killed + 1, waveState.spawned);
+            waveState.totalToSpawn = Math.max(1, waveState.spawned);
+            waveState.adjustKillTarget(waveState.totalToSpawn);
         }
 
         LOGGER.info("[EnduranceQuest] Wave {} spawned {}/{} mobs successfully",
-            waveState.waveNumber, successfulSpawns, toSpawn);
+            waveState.waveNumber, successfulSpawns, count);
+    }
+
+    public int respawnMissingMobs(EnduranceQuestManager.ActiveQuestSession session,
+                                  WaveState waveState,
+                                  int missingCount,
+                                  List<UUID> deadMobIds) {
+        if (session == null || waveState == null || missingCount <= 0) {
+            return 0;
+        }
+        if (!waveState.getObjective().shouldRespawnExternalDeaths()) {
+            return 0;
+        }
+        int allowed = waveState.registerExternalRespawn(missingCount);
+        if (allowed <= 0) {
+            EnduranceTelemetryService.INSTANCE.recordWaveBlocked(waveState.quest.getQuestId());
+            return 0;
+        }
+
+        ArenaManager.Arena arena = session.getArena();
+        ArenaHandle handle = session.getArenaHandle();
+        if (arena == null || handle == null) {
+            EnduranceTelemetryService.INSTANCE.recordWaveBlocked(waveState.quest.getQuestId());
+            return 0;
+        }
+
+        SpawnContext spawnContext = waveState.getSpawnContext();
+        if (spawnContext == null || spawnContext.positions.isEmpty()) {
+            EnduranceTelemetryService.INSTANCE.recordWaveBlocked(waveState.quest.getQuestId());
+            return 0;
+        }
+
+        ServerLevel level = arena.getLevel();
+        EnduranceQuestRegistry.MobQuestConfig mobConfig = waveState.quest.getMobConfig();
+        EntityType<?> entityType = mobConfig.entityType;
+
+        SpawnOccupancyTracker occupied = new SpawnOccupancyTracker();
+        boolean allowReuse = spawnContext.positions.size() < allowed;
+        SpawnPools pools = spawnContext.pools;
+
+        int successfulRespawns = 0;
+        int failedRespawns = 0;
+
+        for (int i = 0; i < allowed; i++) {
+            Entity entity = entityType.create(Objects.requireNonNull(level));
+            if (!(entity instanceof Mob mob)) {
+                failedRespawns++;
+                LOGGER.error("[EnduranceQuest] Failed to create entity of type {}", entityType);
+                continue;
+            }
+
+            UUID deadId = i < deadMobIds.size() ? deadMobIds.get(i) : null;
+            SpawnAffix affix = deadId != null ? waveState.getAffixForMob(deadId) : SpawnAffix.BASE;
+            boolean objectiveTarget = deadId != null && waveState.isObjectiveTarget(deadId);
+
+            List<BlockPos> candidatePool = chooseSpawnPool(resolveSpawnRole(affix), pools, mob);
+            BlockPos spawnPos = pickValidatedSpawnPosition(
+                candidatePool,
+                i,
+                occupied,
+                spawnContext.runtimeValidator,
+                spawnContext.slotMap,
+                spawnContext.template,
+                level,
+                allowReuse
+            );
+            if (spawnPos == null && candidatePool != pools.all) {
+                EnduranceTelemetryService.INSTANCE.recordSpawnFallback(
+                    waveState.quest.getQuestId(),
+                    waveState.waveNumber,
+                    resolvePoolTag(candidatePool, pools),
+                    handle != null ? handle.templateId() : null,
+                    "pool_exhausted"
+                );
+                spawnPos = pickValidatedSpawnPosition(
+                    pools.all,
+                    i,
+                    occupied,
+                    spawnContext.runtimeValidator,
+                    spawnContext.slotMap,
+                    spawnContext.template,
+                    level,
+                    allowReuse
+                );
+            }
+            if (spawnPos == null) {
+                failedRespawns++;
+                EnduranceTelemetryService.INSTANCE.recordSpawnFailure(
+                    waveState.quest.getQuestId(),
+                    waveState.waveNumber,
+                    "no_valid_spawn",
+                    handle != null ? handle.templateId() : null
+                );
+                continue;
+            }
+
+            mob.setPos(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5);
+            applyMobModifiers(mob, waveState);
+            applyMultiplayerHPScaling(mob, waveState);
+            applySpawnAffix(mob, affix);
+            if (affix.elite) {
+                applyEliteBuffs(mob, waveState.waveNumber);
+            }
+
+            finalizeMobSpawn(mob, level, spawnPos);
+
+            CompoundTag tag = mob.getPersistentData();
+            tag.putUUID("endurance_quest_id", Objects.requireNonNull(waveState.quest.getQuestId()));
+            tag.putUUID("endurance_arena_id", Objects.requireNonNull(arena.getId()));
+            tag.putBoolean("endurance_respawned", true);
+            tag.putString("endurance_affix", Objects.requireNonNull(affix.name(), "affixName"));
+                if (handle != null) {
+                    if (handle.templateId() != null) {
+                        tag.putString("endurance_template_id",
+                            Objects.requireNonNull(handle.templateId(), "templateId"));
+                    }
+                    tag.putInt("endurance_template_version", handle.templateVersion());
+                    if (handle.policyId() != null) {
+                        tag.putString("endurance_policy_id",
+                            Objects.requireNonNull(handle.policyId(), "policyId"));
+                    }
+                tag.putInt("endurance_policy_version", handle.policyVersion());
+            }
+            if (objectiveTarget) {
+                tag.putBoolean("endurance_objective_target", true);
+            }
+
+            boolean added = level.addFreshEntity(mob);
+            if (added && mob.isAlive()) {
+                if (deadId != null) {
+                    waveState.getSpawnedMobs().remove(deadId);
+                    waveState.spawnAffixes.remove(deadId);
+                }
+                if (objectiveTarget && deadId != null) {
+                    waveState.replaceObjectiveTarget(deadId, mob.getUUID());
+                }
+                waveState.getSpawnedMobs().add(Objects.requireNonNull(mob.getUUID()));
+                waveState.spawnAffixes.put(mob.getUUID(), affix);
+                successfulRespawns++;
+                EnduranceTelemetryService.INSTANCE.recordSpawnHeatmap(
+                    waveState.quest.getQuestId(), handle, spawnPos);
+            } else {
+                failedRespawns++;
+                LOGGER.warn("[EnduranceQuest] Failed to respawn mob at {}", spawnPos);
+            }
+        }
+
+        if (failedRespawns > 0) {
+            LOGGER.warn("[EnduranceQuest] External respawn summary: {} successful, {} failed (wave {})",
+                successfulRespawns, failedRespawns, waveState.waveNumber);
+        }
+
+        return successfulRespawns;
+    }
+
+    public void tickWave(EnduranceQuestManager.ActiveQuestSession session,
+                         @javax.annotation.Nullable net.minecraft.server.level.ServerPlayer player) {
+        if (session == null || session.getQuest().getState() != EnduranceQuestState.IN_PROGRESS) {
+            return;
+        }
+        ArenaManager.Arena arena = session.getArena();
+        if (arena == null) {
+            return;
+        }
+        WaveState waveState = activeWaves.get(arena.getId());
+        if (waveState == null) {
+            return;
+        }
+        if (waveState.isComplete()) {
+            notifyWaveComplete(session, player, waveState);
+            return;
+        }
+
+        waveState.incrementWaveTicks();
+        spawnDueBatches(waveState, arena, session.getArenaHandle());
+
+        waveState.getObjective().tick(player);
+        if (waveState.getObjective().isComplete()) {
+            waveState.markComplete();
+        }
+        if (waveState.getObjective().getType() == WaveObjectiveState.Type.KILL_ALL
+            && waveState.getKilled() >= waveState.getTotalToSpawn()
+            && !waveState.hasPendingSpawns()) {
+            waveState.markComplete();
+        }
+
+        if (waveState.isComplete()) {
+            notifyWaveComplete(session, player, waveState);
+        }
+    }
+
+    private void notifyWaveComplete(EnduranceQuestManager.ActiveQuestSession session,
+                                    @javax.annotation.Nullable net.minecraft.server.level.ServerPlayer player,
+                                    WaveState waveState) {
+        if (waveState == null || waveState.isCompletionNotified()) {
+            return;
+        }
+        waveState.markCompletionNotified();
+        waveState.advanceSpawnIndex(waveState.getSpawnPlan().size());
+
+        ArenaManager.Arena arena = session.getArena();
+        if (arena != null) {
+            despawnRemainingMobs(waveState, arena.getLevel());
+        }
+
+        long durationMs = System.currentTimeMillis() - waveState.getWaveStartTime();
+        float killsPerSecond = durationMs > 0 ? (waveState.killed * 1000f / durationMs) : 0f;
+        EnduranceTelemetryService.INSTANCE.recordWaveComplete(
+            waveState.quest.getQuestId(),
+            waveState.waveNumber,
+            waveState.killed,
+            durationMs,
+            false,
+            killsPerSecond
+        );
+
+        if (player != null && session.getQuest().getState() == EnduranceQuestState.IN_PROGRESS) {
+            EnduranceEventHandler.onWaveComplete(player, session, session.getQuest().getCurrentWave());
+            EnduranceQuestManager.INSTANCE.completeWave(player);
+        }
+    }
+
+    private void despawnRemainingMobs(WaveState waveState, ServerLevel level) {
+        if (waveState == null || level == null) {
+            return;
+        }
+        for (UUID mobId : waveState.spawnedMobs) {
+            Entity entity = level.getEntity(Objects.requireNonNull(mobId));
+            if (entity != null) {
+                entity.discard();
+            }
+        }
     }
 
     private BlockPos pickValidatedSpawnPosition(
@@ -378,17 +866,132 @@ public class WaveManager {
         return null;
     }
 
-    private List<BlockPos> resolveSpawnPositions(ArenaManager.Arena arena,
-                                                 @javax.annotation.Nullable ArenaHandle handle,
-                                                 int count) {
-        if (handle != null && handle.mobSpawnPositions() != null && !handle.mobSpawnPositions().isEmpty()) {
-            List<BlockPos> positions = new ArrayList<>(handle.mobSpawnPositions().size());
-            for (ArenaHandle.BlockPos pos : handle.mobSpawnPositions()) {
-                positions.add(new BlockPos(pos.x(), pos.y(), pos.z()));
-            }
-            return positions;
+    private static class SpawnContext {
+        final List<BlockPos> positions;
+        final Map<BlockPos, ArenaTemplate.SpawnSlot> slotMap;
+        final @javax.annotation.Nullable ArenaTemplate template;
+        final @javax.annotation.Nullable SpawnSlotValidator runtimeValidator;
+        final SpawnPools pools;
+
+        SpawnContext(List<BlockPos> positions,
+                     Map<BlockPos, ArenaTemplate.SpawnSlot> slotMap,
+                     @javax.annotation.Nullable ArenaTemplate template,
+                     @javax.annotation.Nullable SpawnSlotValidator runtimeValidator,
+                     SpawnPools pools) {
+            this.positions = positions;
+            this.slotMap = slotMap;
+            this.template = template;
+            this.runtimeValidator = runtimeValidator;
+            this.pools = pools;
         }
-        return arena.getDistributedSpawnPositions(count);
+    }
+
+    private static class SpawnPools {
+        final List<BlockPos> all;
+        final List<BlockPos> melee;
+        final List<BlockPos> ranged;
+        final List<BlockPos> corner;
+
+        SpawnPools(List<BlockPos> all, List<BlockPos> melee, List<BlockPos> ranged, List<BlockPos> corner) {
+            this.all = all;
+            this.melee = melee;
+            this.ranged = ranged;
+            this.corner = corner;
+        }
+    }
+
+    private SpawnPools buildSpawnPools(List<BlockPos> positions, Map<BlockPos, ArenaTemplate.SpawnSlot> slotMap) {
+        List<BlockPos> melee = new ArrayList<>();
+        List<BlockPos> ranged = new ArrayList<>();
+        List<BlockPos> corner = new ArrayList<>();
+        for (BlockPos pos : positions) {
+            ArenaTemplate.SpawnSlot slot = slotMap.get(pos);
+            if (slot != null && slot.tags() != null) {
+                if (slot.tags().contains("melee")) {
+                    melee.add(pos);
+                }
+                if (slot.tags().contains("ranged")) {
+                    ranged.add(pos);
+                }
+                if (slot.tags().contains("corner")) {
+                    corner.add(pos);
+                }
+            }
+        }
+        return new SpawnPools(positions, melee, ranged, corner);
+    }
+
+    private @javax.annotation.Nullable SpawnContext buildSpawnContext(ArenaManager.Arena arena, ArenaHandle handle) {
+        if (arena == null || handle == null || handle.mobSpawnPositions() == null || handle.mobSpawnPositions().isEmpty()) {
+            return null;
+        }
+        List<BlockPos> positions = new ArrayList<>(handle.mobSpawnPositions().size());
+        for (ArenaHandle.BlockPos pos : handle.mobSpawnPositions()) {
+            positions.add(new BlockPos(pos.x(), pos.y(), pos.z()));
+        }
+
+        ArenaTemplate template = null;
+        SpawnSlotValidator runtimeValidator = null;
+        Map<BlockPos, ArenaTemplate.SpawnSlot> slotMap = Collections.emptyMap();
+        ArenaTemplateRegistry registry = DevMod.getArenaTemplateRegistry();
+        if (registry != null) {
+            template = registry.get(handle.templateId()).orElse(null);
+            if (template != null) {
+                slotMap = buildMobSpawnSlotMap(template, handle);
+                runtimeValidator = new SpawnSlotValidator();
+            }
+        }
+
+        SpawnPools pools = buildSpawnPools(positions, slotMap);
+        return new SpawnContext(positions, slotMap, template, runtimeValidator, pools);
+    }
+
+    private List<BlockPos> chooseSpawnPool(WaveDirector.SpawnRole role, SpawnPools pools, Mob mob) {
+        if (role == WaveDirector.SpawnRole.RANGED && !pools.ranged.isEmpty()) {
+            return pools.ranged;
+        }
+        if (role == WaveDirector.SpawnRole.MELEE && !pools.melee.isEmpty()) {
+            return pools.melee;
+        }
+        if (role == WaveDirector.SpawnRole.CORNER && !pools.corner.isEmpty()) {
+            return pools.corner;
+        }
+        boolean isRanged = mob instanceof net.minecraft.world.entity.monster.RangedAttackMob;
+        if (isRanged && !pools.ranged.isEmpty()) {
+            return pools.ranged;
+        }
+        if (!pools.melee.isEmpty()) {
+            return pools.melee;
+        }
+        if (!pools.corner.isEmpty()) {
+            return pools.corner;
+        }
+        return pools.all;
+    }
+
+    private String resolvePoolTag(List<BlockPos> candidatePool, SpawnPools pools) {
+        if (candidatePool == pools.ranged) {
+            return "ranged";
+        }
+        if (candidatePool == pools.melee) {
+            return "melee";
+        }
+        if (candidatePool == pools.corner) {
+            return "corner";
+        }
+        return "all";
+    }
+
+    private WaveDirector.SpawnRole resolveSpawnRole(@javax.annotation.Nullable SpawnAffix affix) {
+        if (affix == null) {
+            return WaveDirector.SpawnRole.ANY;
+        }
+        return switch (affix) {
+            case SNIPER -> WaveDirector.SpawnRole.RANGED;
+            case RUSH, BRUTE -> WaveDirector.SpawnRole.MELEE;
+            case ELITE, OBJECTIVE_ELITE -> WaveDirector.SpawnRole.CORNER;
+            default -> WaveDirector.SpawnRole.ANY;
+        };
     }
 
     private Map<BlockPos, ArenaTemplate.SpawnSlot> buildMobSpawnSlotMap(
@@ -468,6 +1071,28 @@ public class WaveManager {
         }
     }
 
+    private void applySpawnAffix(Mob mob, SpawnAffix affix) {
+        if (mob == null || affix == null) {
+            return;
+        }
+        if (affix == SpawnAffix.BASE) {
+            return;
+        }
+        var healthAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
+        if (healthAttr != null) {
+            healthAttr.setBaseValue(healthAttr.getBaseValue() * affix.hpMultiplier);
+            mob.setHealth(mob.getMaxHealth());
+        }
+        var attackAttr = mob.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
+        if (attackAttr != null) {
+            attackAttr.setBaseValue(attackAttr.getBaseValue() * affix.damageMultiplier);
+        }
+        var speedAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MOVEMENT_SPEED));
+        if (speedAttr != null) {
+            speedAttr.setBaseValue(speedAttr.getBaseValue() * affix.speedMultiplier);
+        }
+    }
+
     /**
      * Apply HP and damage scaling based on player count, quest type, AND mob difficulty preset.
      * This ensures the spawned mobs match what the UI preview shows.
@@ -522,8 +1147,15 @@ public class WaveManager {
         if (baseChance <= 0f || waveNumber < MODIFIER_START_WAVE) {
             return 0f;
         }
-        float ramp = Math.min(1f, (waveNumber - MODIFIER_START_WAVE + 1) / (float) ELITE_RAMP_WAVES);
-        return baseChance * ramp;
+        float rampChance;
+        if (waveNumber < 5) {
+            rampChance = MODIFIER_CHANCE_TIER_1;
+        } else if (waveNumber < 8) {
+            rampChance = MODIFIER_CHANCE_TIER_2;
+        } else {
+            rampChance = MODIFIER_CHANCE_TIER_3;
+        }
+        return Math.min(baseChance, rampChance);
     }
 
     /**
@@ -565,10 +1197,13 @@ public class WaveManager {
     /**
      * Handle mob death in a wave.
      */
-    public void handleMobDeath(UUID mobId, UUID arenaId) {
+    public void handleMobDeath(UUID mobId,
+                               UUID arenaId,
+                               @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession session,
+                               @javax.annotation.Nullable net.minecraft.server.level.ServerPlayer player) {
         WaveState waveState = activeWaves.get(arenaId);
         if (waveState != null && waveState.spawnedMobs.contains(mobId)) {
-            waveState.recordKill();
+            waveState.recordKill(mobId);
 
             // Check if this was a boss wave
             if (BossWaveSystem.INSTANCE.isBossWave(waveState.waveNumber)) {
@@ -583,21 +1218,8 @@ public class WaveManager {
                 }
             }
 
-            if (waveState.isComplete()) {
-                long durationMs = System.currentTimeMillis() - waveState.waveStartTime;
-                float killsPerSecond = durationMs > 0 ? (waveState.killed * 1000f / durationMs) : 0;
-
-                // Telemetry: record wave completion
-                EnduranceTelemetryService.INSTANCE.recordWaveComplete(
-                    waveState.quest.getQuestId(),
-                    waveState.waveNumber,
-                    waveState.killed,
-                    durationMs,
-                    false, // noDamage - would need damage tracking per wave
-                    killsPerSecond
-                );
-
-                LOGGER.info("[EnduranceQuest] Wave {} complete!", waveState.waveNumber);
+            if (waveState.isComplete() && session != null) {
+                notifyWaveComplete(session, player, waveState);
             }
         }
     }

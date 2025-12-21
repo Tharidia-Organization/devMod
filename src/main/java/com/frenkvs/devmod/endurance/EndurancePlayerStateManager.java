@@ -2,6 +2,8 @@ package com.frenkvs.devmod.endurance;
 
 import net.minecraft.nbt.ListTag;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
@@ -117,6 +119,18 @@ public class EndurancePlayerStateManager {
         LOGGER.debug("[EnduranceQuest] Reset quest loadout for {}", player.getName().getString());
     }
 
+    /**
+     * Apply a short invulnerability window after teleport/respawn.
+     */
+    public void applySafeWindowEffects(ServerPlayer player, int ticks) {
+        if (player == null || ticks <= 0) {
+            return;
+        }
+        int duration = Math.max(1, ticks);
+        player.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.DAMAGE_RESISTANCE), duration, 4, false, false));
+        player.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.REGENERATION), duration, 1, false, false));
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // RESTORE PLAYER AFTER QUEST
     // ═══════════════════════════════════════════════════════════════
@@ -128,12 +142,12 @@ public class EndurancePlayerStateManager {
      * position, effects) is handled by RecoverySystem via InstanceManager.endInstanceQuest().
      * This method only performs local restoration for LEGACY mode.
      */
-    public void restorePlayerAfterQuest(ServerPlayer player, EnduranceQuestManager.ActiveQuestSession session) {
+    public boolean restorePlayerAfterQuest(ServerPlayer player, EnduranceQuestManager.ActiveQuestSession session) {
         // In Instance mode, RecoverySystem handles FULL restoration (inventory, position, etc.)
         // DO NOT touch player state here - let RecoverySystem do it atomically
         if (session.isInInstanceDimension()) {
             LOGGER.debug("[EnduranceQuest] Instance mode: skipping local restore (RecoverySystem handles it)");
-            return;
+            return false;
         }
 
         // === LEGACY MODE: Full local restoration ===
@@ -159,6 +173,7 @@ public class EndurancePlayerStateManager {
 
         LOGGER.info("[EnduranceQuest] Restored player {} state (game mode: {})",
             player.getName().getString(), originalMode);
+        return true;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -199,22 +214,23 @@ public class EndurancePlayerStateManager {
      * @param arenaManager The arena manager for legacy mode cleanup
      * @param success Whether the quest was completed successfully
      */
-    public void cleanupArenaOrInstance(EnduranceQuestManager.ActiveQuestSession session,
-                                        ArenaManager arenaManager, boolean success) {
+    public void cleanupArenaOrInstance(EnduranceQuestManager.ActiveQuestSession session, boolean success) {
         if (session.isInInstanceDimension()) {
             // Instance dimension mode - use InstanceArenaManager for cleanup
             java.util.UUID instanceId = session.getInstanceId();
             if (instanceId != null) {
-                InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, success);
+                com.frenkvs.devmod.instance.InstanceManager.INSTANCE.endInstanceQuest(
+                    instanceId,
+                    success,
+                    success ? "Quest completed" : "Quest ended"
+                );
                 LOGGER.debug("[EnduranceQuest] Scheduled instance {} for destruction (success: {})",
                     instanceId, success);
             }
-        } else {
-            // Legacy overworld arena mode
-            if (arenaManager != null && session.getArena() != null) {
-                arenaManager.destroyArena(session.getArena());
-                LOGGER.debug("[EnduranceQuest] Destroyed legacy arena {}", session.getArena().getId());
-            }
+            return;
         }
+
+        // Legacy overworld arenas are no longer supported for Endurance.
+        LOGGER.error("[EnduranceQuest] Legacy arena cleanup blocked - instance-only flow required");
     }
 }

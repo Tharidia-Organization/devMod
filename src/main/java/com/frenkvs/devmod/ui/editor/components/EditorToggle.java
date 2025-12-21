@@ -68,7 +68,7 @@ public class EditorToggle {
     public net.minecraft.client.gui.components.AbstractWidget asVanilla(int x, int y, int width, int height) {
         @Nonnull String safeLabel = Objects.requireNonNull(
             Objects.requireNonNullElse(label, ""), "label");
-        net.minecraft.client.gui.Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
+        @Nonnull net.minecraft.client.gui.Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
         @Nonnull net.minecraft.network.chat.Component labelComponent = Objects.requireNonNull(
             net.minecraft.network.chat.Component.literal(safeLabel), "label");
         net.minecraft.client.gui.components.Checkbox checkbox = net.minecraft.client.gui.components.Checkbox.builder(
@@ -164,8 +164,8 @@ public class EditorToggle {
             return TOGGLE_HEIGHT;
         }
 
-        GuiGraphics safeGraphics = graphics;
-        var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
+        @Nonnull GuiGraphics safeGraphics = Objects.requireNonNull(graphics, "graphics");
+        @Nonnull net.minecraft.client.gui.Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
 
         int height = TOGGLE_HEIGHT;
         this.bounds = new ResponsiveLayout.Rect(x, y, width, height);
@@ -180,7 +180,7 @@ public class EditorToggle {
 
         // Source badge (inline after label)
         if (sourceBadge != null) {
-            int badgeX = x + font.width(Objects.requireNonNull(safeLabel)) + BADGE_GAP;
+            int badgeX = x + font.width(Objects.requireNonNull(safeLabel, "safeLabel")) + BADGE_GAP;
             int badgeY = y + (height - sourceBadge.getHeight()) / 2;
             sourceBadge.render(graphics, badgeX, badgeY, mouseX, mouseY);
         }

@@ -116,7 +116,7 @@ public final class DuckDBConfig {
     // ============================================
 
     /** Current schema version for migration tracking */
-    public static int SCHEMA_VERSION = 3;  // Bumped for Fase 1 arena tables
+    public static int SCHEMA_VERSION = 7;  // Bumped for combat context columns
 
     // ============================================
     // DEBUG

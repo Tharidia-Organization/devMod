@@ -103,6 +103,7 @@ public class DuckDBBatchWriter {
         Map.entry("endurance_rewards", EventPriority.CRITICAL),
         Map.entry("endurance_sessions", EventPriority.CRITICAL),
         Map.entry("performance_samples", EventPriority.CRITICAL),
+        Map.entry("endurance_performance", EventPriority.CRITICAL),
 
         // HIGH - Drop only under extreme pressure
         Map.entry("combat_spawns", EventPriority.HIGH),
@@ -118,6 +119,7 @@ public class DuckDBBatchWriter {
         Map.entry("spatial_alerts", EventPriority.NORMAL),
         Map.entry("spatial_room_transitions", EventPriority.NORMAL),
         Map.entry("endurance_mutators", EventPriority.NORMAL),
+        Map.entry("arena_spatial_events", EventPriority.NORMAL),
 
         // LOW - Drop first under any pressure
         Map.entry("player_snapshots", EventPriority.LOW),
@@ -218,8 +220,30 @@ public class DuckDBBatchWriter {
                                Double armorPenBonus, boolean isMiss,
                                boolean isHazard, String hazardType,
                                String attackerStateJson, String targetStateJson) {
+        queueCombatHit(ts, room, world, null, null, null, null, null, null,
+            attackerName, attackerType, targetName, targetType,
+            damage, damageType, hpBefore, hpAfter, bodyPart, distance,
+            armorPenBonus, isMiss, isHazard, hazardType, attackerStateJson, targetStateJson);
+    }
+
+    /**
+     * Queue a combat hit event with arena context.
+     */
+    public void queueCombatHit(Instant ts, String room, String world,
+                               String templateId, Integer templateVersion,
+                               String policyId, Integer policyVersion,
+                               UUID arenaId, UUID sessionId,
+                               String attackerName, String attackerType,
+                               String targetName, String targetType,
+                               double damage, String damageType,
+                               Double hpBefore, Double hpAfter,
+                               String bodyPart, Double distance,
+                               Double armorPenBonus, boolean isMiss,
+                               boolean isHazard, String hazardType,
+                               String attackerStateJson, String targetStateJson) {
         queueInsert("combat_hits", new Object[] {
-            ts, room, world, attackerName, attackerType, targetName, targetType,
+            ts, room, world, templateId, templateVersion, policyId, policyVersion, arenaId, sessionId,
+            attackerName, attackerType, targetName, targetType,
             damage, damageType, hpBefore, hpAfter, bodyPart, distance,
             armorPenBonus, isMiss, isHazard, hazardType, attackerStateJson, targetStateJson
         });
@@ -231,8 +255,22 @@ public class DuckDBBatchWriter {
     public void queueCombatDeath(Instant ts, String room, String world,
                                   String targetName, String targetType,
                                   String cause, Long ttkFirstHitMs, Long ttkSpawnMs) {
+        queueCombatDeath(ts, room, world, null, null, null, null, null, null,
+            targetName, targetType, cause, ttkFirstHitMs, ttkSpawnMs);
+    }
+
+    /**
+     * Queue a combat death event with arena context.
+     */
+    public void queueCombatDeath(Instant ts, String room, String world,
+                                  String templateId, Integer templateVersion,
+                                  String policyId, Integer policyVersion,
+                                  UUID arenaId, UUID sessionId,
+                                  String targetName, String targetType,
+                                  String cause, Long ttkFirstHitMs, Long ttkSpawnMs) {
         queueInsert("combat_deaths", new Object[] {
-            ts, room, world, targetName, targetType, cause, ttkFirstHitMs, ttkSpawnMs
+            ts, room, world, templateId, templateVersion, policyId, policyVersion, arenaId, sessionId,
+            targetName, targetType, cause, ttkFirstHitMs, ttkSpawnMs
         });
     }
 
@@ -243,8 +281,23 @@ public class DuckDBBatchWriter {
                                  String targetName, String targetType,
                                  double healAmount, Double hpBefore, Double hpAfter,
                                  String source) {
+        queueCombatHeal(ts, room, world, null, null, null, null, null, null,
+            targetName, targetType, healAmount, hpBefore, hpAfter, source);
+    }
+
+    /**
+     * Queue a combat heal event with arena context.
+     */
+    public void queueCombatHeal(Instant ts, String room, String world,
+                                 String templateId, Integer templateVersion,
+                                 String policyId, Integer policyVersion,
+                                 UUID arenaId, UUID sessionId,
+                                 String targetName, String targetType,
+                                 double healAmount, Double hpBefore, Double hpAfter,
+                                 String source) {
         queueInsert("combat_heals", new Object[] {
-            ts, room, world, targetName, targetType, healAmount, hpBefore, hpAfter, source
+            ts, room, world, templateId, templateVersion, policyId, policyVersion, arenaId, sessionId,
+            targetName, targetType, healAmount, hpBefore, hpAfter, source
         });
     }
 
@@ -255,8 +308,23 @@ public class DuckDBBatchWriter {
                                   String entityName, String entityType,
                                   String reason, boolean spawnFail,
                                   Double x, Double y, Double z) {
+        queueCombatSpawn(ts, room, world, null, null, null, null, null, null,
+            entityName, entityType, reason, spawnFail, x, y, z);
+    }
+
+    /**
+     * Queue a combat spawn event with arena context.
+     */
+    public void queueCombatSpawn(Instant ts, String room, String world,
+                                  String templateId, Integer templateVersion,
+                                  String policyId, Integer policyVersion,
+                                  UUID arenaId, UUID sessionId,
+                                  String entityName, String entityType,
+                                  String reason, boolean spawnFail,
+                                  Double x, Double y, Double z) {
         queueInsert("combat_spawns", new Object[] {
-            ts, room, world, entityName, entityType, reason, spawnFail, x, y, z
+            ts, room, world, templateId, templateVersion, policyId, policyVersion, arenaId, sessionId,
+            entityName, entityType, reason, spawnFail, x, y, z
         });
     }
 
@@ -268,8 +336,27 @@ public class DuckDBBatchWriter {
                                   String[] players, String mobKillsByTypeJson,
                                   String playerDeathsByNameJson, String ttkByTypeJson,
                                   double burstMax, double hpAfterPlayersAvg, double hpAfterMobsAvg) {
+        queueCombatFight(room, world, null, null, null, null, null, null,
+            startTs, endTs, durationMs, hits, mobKills, playerDeaths,
+            players, mobKillsByTypeJson, playerDeathsByNameJson, ttkByTypeJson,
+            burstMax, hpAfterPlayersAvg, hpAfterMobsAvg);
+    }
+
+    /**
+     * Queue a combat fight session result with arena context.
+     */
+    public void queueCombatFight(String room, String world,
+                                  String templateId, Integer templateVersion,
+                                  String policyId, Integer policyVersion,
+                                  UUID arenaId, UUID sessionId,
+                                  Instant startTs, Instant endTs,
+                                  long durationMs, int hits, int mobKills, int playerDeaths,
+                                  String[] players, String mobKillsByTypeJson,
+                                  String playerDeathsByNameJson, String ttkByTypeJson,
+                                  double burstMax, double hpAfterPlayersAvg, double hpAfterMobsAvg) {
         queueInsert("combat_fights", new Object[] {
-            room, world, startTs, endTs, durationMs, hits, mobKills, playerDeaths,
+            room, world, templateId, templateVersion, policyId, policyVersion, arenaId, sessionId,
+            startTs, endTs, durationMs, hits, mobKills, playerDeaths,
             players, mobKillsByTypeJson, playerDeathsByNameJson, ttkByTypeJson,
             burstMax, hpAfterPlayersAvg, hpAfterMobsAvg
         });
@@ -278,25 +365,33 @@ public class DuckDBBatchWriter {
     /**
      * Queue an endurance wave event.
      */
-    public void queueEnduranceWave(Instant ts, UUID sessionId, int waveNumber,
+    public void queueEnduranceWave(Instant ts, UUID sessionId,
+                                    String templateId, Integer templateVersion,
+                                    String policyId, Integer policyVersion,
+                                    UUID arenaId, int waveNumber,
                                     String eventType, Integer mobCount, Integer playerCount,
                                     String questType, String[] modifiers,
                                     Integer mobsKilled, Long durationMs,
                                     Boolean noDamage, Double killsPerSecond) {
         queueInsert("endurance_waves", new Object[] {
-            ts, sessionId, waveNumber, eventType, mobCount, playerCount,
-            questType, modifiers, mobsKilled, durationMs, noDamage, killsPerSecond
+            ts, sessionId, templateId, templateVersion, policyId, policyVersion, arenaId,
+            waveNumber, eventType, mobCount, playerCount, questType, modifiers,
+            mobsKilled, durationMs, noDamage, killsPerSecond
         });
     }
 
     /**
      * Queue an endurance wave kill event.
      */
-    public void queueEnduranceWaveKill(Instant ts, UUID sessionId, int waveNumber,
+    public void queueEnduranceWaveKill(Instant ts, UUID sessionId,
+                                        String templateId, Integer templateVersion,
+                                        String policyId, Integer policyVersion,
+                                        UUID arenaId, int waveNumber,
                                         String mobType, boolean isElite,
                                         String killerWeapon, double damageDealt) {
         queueInsert("endurance_wave_kills", new Object[] {
-            ts, sessionId, waveNumber, mobType, isElite, killerWeapon, damageDealt
+            ts, sessionId, templateId, templateVersion, policyId, policyVersion, arenaId,
+            waveNumber, mobType, isElite, killerWeapon, damageDealt
         });
     }
 
@@ -304,15 +399,17 @@ public class DuckDBBatchWriter {
      * Queue an endurance combo event.
      */
     public void queueEnduranceCombo(Instant ts, UUID playerId, UUID sessionId,
-                                     String eventType, String oldRank, String newRank,
+                                     String templateId, Integer templateVersion,
+                                     String policyId, Integer policyVersion,
+                                     UUID arenaId, String eventType, String oldRank, String newRank,
                                      Integer styleScore, Integer currentCombo,
                                      Integer milestone, Integer comboLost,
                                      Double damageTaken, String actionType,
                                      Integer pointsEarned, Integer styleEarned) {
         queueInsert("endurance_combos", new Object[] {
-            ts, playerId, sessionId, eventType, oldRank, newRank, styleScore,
-            currentCombo, milestone, comboLost, damageTaken, actionType,
-            pointsEarned, styleEarned
+            ts, playerId, sessionId, templateId, templateVersion, policyId, policyVersion, arenaId,
+            eventType, oldRank, newRank, styleScore, currentCombo,
+            milestone, comboLost, damageTaken, actionType, pointsEarned, styleEarned
         });
     }
 
@@ -320,24 +417,30 @@ public class DuckDBBatchWriter {
      * Queue an endurance perk event.
      */
     public void queueEndurancePerk(Instant ts, UUID playerId, UUID sessionId,
-                                    String eventType, String perkId, String perkName,
+                                    String templateId, Integer templateVersion,
+                                    String policyId, Integer policyVersion,
+                                    UUID arenaId, String eventType, String perkId, String perkName,
                                     String tier, String category, Integer stackCount,
                                     Integer totalPerks, Integer waveNumber, String choicesJson) {
         queueInsert("endurance_perks", new Object[] {
-            ts, playerId, sessionId, eventType, perkId, perkName, tier, category,
-            stackCount, totalPerks, waveNumber, choicesJson
+            ts, playerId, sessionId, templateId, templateVersion, policyId, policyVersion, arenaId,
+            eventType, perkId, perkName, tier, category, stackCount, totalPerks, waveNumber, choicesJson
         });
     }
 
     /**
      * Queue an endurance mutator event.
      */
-    public void queueEnduranceMutator(Instant ts, UUID sessionId, String eventType,
+    public void queueEnduranceMutator(Instant ts, UUID sessionId,
+                                       String templateId, Integer templateVersion,
+                                       String policyId, Integer policyVersion,
+                                       UUID arenaId, String eventType,
                                        String mutatorId, String mutatorCategory,
                                        Integer waveNumber, Double rewardMultiplier,
                                        Integer mutatorCount, String mutatorsJson) {
         queueInsert("endurance_mutators", new Object[] {
-            ts, sessionId, eventType, mutatorId, mutatorCategory, waveNumber,
+            ts, sessionId, templateId, templateVersion, policyId, policyVersion, arenaId,
+            eventType, mutatorId, mutatorCategory, waveNumber,
             rewardMultiplier, mutatorCount, mutatorsJson
         });
     }
@@ -346,14 +449,16 @@ public class DuckDBBatchWriter {
      * Queue an endurance reward event.
      */
     public void queueEnduranceReward(Instant ts, UUID playerId, UUID sessionId,
-                                      String eventType, String currency, Integer amount,
+                                      String templateId, Integer templateVersion,
+                                      String policyId, Integer policyVersion,
+                                      UUID arenaId, String eventType, String currency, Integer amount,
                                       String source, String itemId, Integer itemCount,
                                       String lootTier, String achievementId,
                                       String achievementName, Integer price, Integer purchaseCount) {
         queueInsert("endurance_rewards", new Object[] {
-            ts, playerId, sessionId, eventType, currency, amount, source,
-            itemId, itemCount, lootTier, achievementId, achievementName,
-            price, purchaseCount
+            ts, playerId, sessionId, templateId, templateVersion, policyId, policyVersion, arenaId,
+            eventType, currency, amount, source, itemId, itemCount, lootTier,
+            achievementId, achievementName, price, purchaseCount
         });
     }
 
@@ -367,12 +472,23 @@ public class DuckDBBatchWriter {
                                        Instant endTs, String outcome, Integer wavesCompleted,
                                        Integer totalKills, Double damageDealt, Double damageTaken,
                                        Integer tokensEarned, Integer prestigeEarned,
-                                       Integer bloodGemsEarned, Integer noDamageWaves) {
+                                       Integer bloodGemsEarned, Integer noDamageWaves,
+                                       String templateId, Integer templateVersion,
+                                       String policyId, Integer policyVersion,
+                                       UUID instanceId, UUID arenaId,
+                                       Integer countdownStarted, Integer countdownCancelled,
+                                       Integer giveupDuringRespawn,
+                                       Integer inventoryRestoreSuccess, Integer inventoryRestoreFallback,
+                                       Integer externalDeathRespawnCount, Integer waveBlockedDetected) {
         queueInsert("endurance_sessions", new Object[] {
             sessionId, playerId, playerName, questName, questType, totalWaves,
             isEndless, playerCount, startTs, endTs, outcome, wavesCompleted,
             totalKills, damageDealt, damageTaken, tokensEarned, prestigeEarned,
-            bloodGemsEarned, noDamageWaves
+            bloodGemsEarned, noDamageWaves,
+            templateId, templateVersion, policyId, policyVersion, instanceId, arenaId,
+            countdownStarted, countdownCancelled, giveupDuringRespawn,
+            inventoryRestoreSuccess, inventoryRestoreFallback,
+            externalDeathRespawnCount, waveBlockedDetected
         });
     }
 
@@ -392,15 +508,36 @@ public class DuckDBBatchWriter {
     /**
      * Queue an endurance boss event.
      */
-    public void queueEnduranceBoss(Instant ts, UUID sessionId, String eventType,
+    public void queueEnduranceBoss(Instant ts, UUID sessionId,
+                                    String templateId, Integer templateVersion,
+                                    String policyId, Integer policyVersion,
+                                    UUID arenaId, String eventType,
                                     Integer waveNumber, String archetype, Double bossMaxHealth,
                                     Integer playerCount, String abilityName, Integer playersHit,
                                     Double abilityDamage, Long fightDurationMs,
                                     Integer bonusPoints, Double damageDealtToBoss) {
         queueInsert("endurance_bosses", new Object[] {
-            ts, sessionId, eventType, waveNumber, archetype, bossMaxHealth,
-            playerCount, abilityName, playersHit, abilityDamage, fightDurationMs,
+            ts, sessionId, templateId, templateVersion, policyId, policyVersion, arenaId,
+            eventType, waveNumber, archetype, bossMaxHealth, playerCount,
+            abilityName, playersHit, abilityDamage, fightDurationMs,
             bonusPoints, damageDealtToBoss
+        });
+    }
+
+    /**
+     * Queue an endurance performance summary.
+     */
+    public void queueEndurancePerformance(Instant ts, UUID sessionId, UUID playerId,
+                                           String questType, Long durationMs, Integer wavesCompleted,
+                                           Integer kills, Double damageDealt, Double damageTaken,
+                                           Double avgTtkMs, Double kps, Double dtps, Double dps,
+                                           String templateId, Integer templateVersion,
+                                           String policyId, Integer policyVersion,
+                                           UUID arenaId) {
+        queueInsert("endurance_performance", new Object[] {
+            ts, sessionId, playerId, questType, durationMs, wavesCompleted, kills,
+            damageDealt, damageTaken, avgTtkMs, kps, dtps, dps,
+            templateId, templateVersion, policyId, policyVersion, arenaId
         });
     }
 
@@ -466,6 +603,15 @@ public class DuckDBBatchWriter {
                                      int x, int y, int z, int count) {
         queueInsert("spatial_heatmaps", new Object[] {
             ts, heatmapType, room, x, y, z, count
+        });
+    }
+
+    public void queueArenaSpatialEvent(Instant ts, String templateId, Integer templateVersion,
+                                       UUID sessionId, String eventType, int gridX, int gridZ,
+                                       double worldX, double worldY, double worldZ, UUID playerId) {
+        queueInsert("arena_spatial_events", new Object[] {
+            ts, templateId, templateVersion, sessionId, eventType,
+            gridX, gridZ, worldX, worldY, worldZ, playerId
         });
     }
 
@@ -901,62 +1047,72 @@ public class DuckDBBatchWriter {
     private void initializeSqlTemplates() {
         // Combat tables
         insertSqlCache.put("combat_hits",
-            "INSERT INTO combat_hits (id, ts, room, world, attacker_name, attacker_type, target_name, target_type, " +
-            "damage, damage_type, hp_before, hp_after, body_part, distance, armor_pen_bonus, is_miss, is_hazard, " +
-            "hazard_type, attacker_state, target_state) VALUES (nextval('seq_combat_hits'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSON, ?::JSON)");
+            "INSERT INTO combat_hits (id, ts, room, world, template_id, template_version, policy_id, policy_version, arena_id, session_id, " +
+            "attacker_name, attacker_type, target_name, target_type, damage, damage_type, hp_before, hp_after, body_part, " +
+            "distance, armor_pen_bonus, is_miss, is_hazard, hazard_type, attacker_state, target_state) " +
+            "VALUES (nextval('seq_combat_hits'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSON, ?::JSON)");
 
         insertSqlCache.put("combat_deaths",
-            "INSERT INTO combat_deaths (id, ts, room, world, target_name, target_type, cause, ttk_first_hit_ms, ttk_spawn_ms) " +
-            "VALUES (nextval('seq_combat_deaths'), ?, ?, ?, ?, ?, ?, ?, ?)");
+            "INSERT INTO combat_deaths (id, ts, room, world, template_id, template_version, policy_id, policy_version, arena_id, session_id, " +
+            "target_name, target_type, cause, ttk_first_hit_ms, ttk_spawn_ms) " +
+            "VALUES (nextval('seq_combat_deaths'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         insertSqlCache.put("combat_heals",
-            "INSERT INTO combat_heals (id, ts, room, world, target_name, target_type, heal_amount, hp_before, hp_after, source) " +
-            "VALUES (nextval('seq_combat_heals'), ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            "INSERT INTO combat_heals (id, ts, room, world, template_id, template_version, policy_id, policy_version, arena_id, session_id, " +
+            "target_name, target_type, heal_amount, hp_before, hp_after, source) " +
+            "VALUES (nextval('seq_combat_heals'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         insertSqlCache.put("combat_spawns",
-            "INSERT INTO combat_spawns (id, ts, room, world, entity_name, entity_type, reason, spawn_fail, x, y, z) " +
-            "VALUES (nextval('seq_combat_spawns'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            "INSERT INTO combat_spawns (id, ts, room, world, template_id, template_version, policy_id, policy_version, arena_id, session_id, " +
+            "entity_name, entity_type, reason, spawn_fail, x, y, z) " +
+            "VALUES (nextval('seq_combat_spawns'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         insertSqlCache.put("combat_fights",
-            "INSERT INTO combat_fights (id, room, world, start_ts, end_ts, duration_ms, hits, mob_kills, player_deaths, " +
-            "players, mob_kills_by_type, player_deaths_by_name, ttk_by_type, burst_max, hp_after_players_avg, hp_after_mobs_avg) " +
-            "VALUES (nextval('seq_combat_fights'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSON, ?::JSON, ?::JSON, ?, ?, ?)");
+            "INSERT INTO combat_fights (id, room, world, template_id, template_version, policy_id, policy_version, arena_id, session_id, " +
+            "start_ts, end_ts, duration_ms, hits, mob_kills, player_deaths, players, mob_kills_by_type, " +
+            "player_deaths_by_name, ttk_by_type, burst_max, hp_after_players_avg, hp_after_mobs_avg) " +
+            "VALUES (nextval('seq_combat_fights'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSON, ?::JSON, ?::JSON, ?, ?, ?)");
 
         // Endurance tables
         insertSqlCache.put("endurance_waves",
-            "INSERT INTO endurance_waves (id, ts, session_id, wave_number, event_type, mob_count, player_count, " +
-            "quest_type, modifiers, mobs_killed, duration_ms, no_damage, kills_per_second) " +
-            "VALUES (nextval('seq_endurance_waves'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            "INSERT INTO endurance_waves (id, ts, session_id, template_id, template_version, policy_id, policy_version, arena_id, " +
+            "wave_number, event_type, mob_count, player_count, quest_type, modifiers, mobs_killed, duration_ms, no_damage, kills_per_second) " +
+            "VALUES (nextval('seq_endurance_waves'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         insertSqlCache.put("endurance_wave_kills",
-            "INSERT INTO endurance_wave_kills (id, ts, session_id, wave_number, mob_type, is_elite, killer_weapon, damage_dealt) " +
-            "VALUES (nextval('seq_endurance_wave_kills'), ?, ?, ?, ?, ?, ?, ?)");
+            "INSERT INTO endurance_wave_kills (id, ts, session_id, template_id, template_version, policy_id, policy_version, arena_id, " +
+            "wave_number, mob_type, is_elite, killer_weapon, damage_dealt) " +
+            "VALUES (nextval('seq_endurance_wave_kills'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         insertSqlCache.put("endurance_combos",
-            "INSERT INTO endurance_combos (id, ts, player_id, session_id, event_type, old_rank, new_rank, style_score, " +
-            "current_combo, milestone, combo_lost, damage_taken, action_type, points_earned, style_earned) " +
-            "VALUES (nextval('seq_endurance_combos'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            "INSERT INTO endurance_combos (id, ts, player_id, session_id, template_id, template_version, policy_id, policy_version, arena_id, " +
+            "event_type, old_rank, new_rank, style_score, current_combo, milestone, combo_lost, damage_taken, action_type, points_earned, style_earned) " +
+            "VALUES (nextval('seq_endurance_combos'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         insertSqlCache.put("endurance_perks",
-            "INSERT INTO endurance_perks (id, ts, player_id, session_id, event_type, perk_id, perk_name, tier, category, " +
-            "stack_count, total_perks, wave_number, choices) " +
-            "VALUES (nextval('seq_endurance_perks'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSON)");
+            "INSERT INTO endurance_perks (id, ts, player_id, session_id, template_id, template_version, policy_id, policy_version, arena_id, " +
+            "event_type, perk_id, perk_name, tier, category, stack_count, total_perks, wave_number, choices) " +
+            "VALUES (nextval('seq_endurance_perks'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSON)");
 
         insertSqlCache.put("endurance_mutators",
-            "INSERT INTO endurance_mutators (id, ts, session_id, event_type, mutator_id, mutator_category, wave_number, " +
-            "reward_multiplier, mutator_count, mutators) " +
-            "VALUES (nextval('seq_endurance_mutators'), ?, ?, ?, ?, ?, ?, ?, ?, ?::JSON)");
+            "INSERT INTO endurance_mutators (id, ts, session_id, template_id, template_version, policy_id, policy_version, arena_id, " +
+            "event_type, mutator_id, mutator_category, wave_number, reward_multiplier, mutator_count, mutators) " +
+            "VALUES (nextval('seq_endurance_mutators'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSON)");
 
         insertSqlCache.put("endurance_rewards",
-            "INSERT INTO endurance_rewards (id, ts, player_id, session_id, event_type, currency, amount, source, " +
-            "item_id, item_count, loot_tier, achievement_id, achievement_name, price, purchase_count) " +
-            "VALUES (nextval('seq_endurance_rewards'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            "INSERT INTO endurance_rewards (id, ts, player_id, session_id, template_id, template_version, policy_id, policy_version, arena_id, " +
+            "event_type, currency, amount, source, item_id, item_count, loot_tier, achievement_id, achievement_name, price, purchase_count) " +
+            "VALUES (nextval('seq_endurance_rewards'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         insertSqlCache.put("endurance_sessions",
             "INSERT INTO endurance_sessions (id, player_id, player_name, quest_name, quest_type, total_waves, " +
             "is_endless, player_count, start_ts, end_ts, outcome, waves_completed, total_kills, damage_dealt, " +
-            "damage_taken, tokens_earned, prestige_earned, blood_gems_earned, no_damage_waves) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+            "damage_taken, tokens_earned, prestige_earned, blood_gems_earned, no_damage_waves, " +
+            "template_id, template_version, policy_id, policy_version, instance_id, arena_id, " +
+            "countdown_started, countdown_cancelled, giveup_during_respawn, " +
+            "inventory_restore_success, inventory_restore_fallback, " +
+            "external_death_respawn_count, wave_blocked_detected) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
             "ON CONFLICT(id) DO UPDATE SET " +
             "player_id = CASE WHEN excluded.player_id IS NULL THEN endurance_sessions.player_id ELSE excluded.player_id END, " +
             "player_name = CASE WHEN excluded.player_name IS NULL THEN endurance_sessions.player_name ELSE excluded.player_name END, " +
@@ -975,7 +1131,20 @@ public class DuckDBBatchWriter {
             "tokens_earned = CASE WHEN excluded.tokens_earned IS NULL THEN endurance_sessions.tokens_earned ELSE excluded.tokens_earned END, " +
             "prestige_earned = CASE WHEN excluded.prestige_earned IS NULL THEN endurance_sessions.prestige_earned ELSE excluded.prestige_earned END, " +
             "blood_gems_earned = CASE WHEN excluded.blood_gems_earned IS NULL THEN endurance_sessions.blood_gems_earned ELSE excluded.blood_gems_earned END, " +
-            "no_damage_waves = CASE WHEN excluded.no_damage_waves IS NULL THEN endurance_sessions.no_damage_waves ELSE excluded.no_damage_waves END");
+            "no_damage_waves = CASE WHEN excluded.no_damage_waves IS NULL THEN endurance_sessions.no_damage_waves ELSE excluded.no_damage_waves END, " +
+            "template_id = CASE WHEN excluded.template_id IS NULL THEN endurance_sessions.template_id ELSE excluded.template_id END, " +
+            "template_version = CASE WHEN excluded.template_version IS NULL THEN endurance_sessions.template_version ELSE excluded.template_version END, " +
+            "policy_id = CASE WHEN excluded.policy_id IS NULL THEN endurance_sessions.policy_id ELSE excluded.policy_id END, " +
+            "policy_version = CASE WHEN excluded.policy_version IS NULL THEN endurance_sessions.policy_version ELSE excluded.policy_version END, " +
+            "instance_id = CASE WHEN excluded.instance_id IS NULL THEN endurance_sessions.instance_id ELSE excluded.instance_id END, " +
+            "arena_id = CASE WHEN excluded.arena_id IS NULL THEN endurance_sessions.arena_id ELSE excluded.arena_id END, " +
+            "countdown_started = GREATEST(COALESCE(endurance_sessions.countdown_started, 0), COALESCE(excluded.countdown_started, 0)), " +
+            "countdown_cancelled = GREATEST(COALESCE(endurance_sessions.countdown_cancelled, 0), COALESCE(excluded.countdown_cancelled, 0)), " +
+            "giveup_during_respawn = GREATEST(COALESCE(endurance_sessions.giveup_during_respawn, 0), COALESCE(excluded.giveup_during_respawn, 0)), " +
+            "inventory_restore_success = GREATEST(COALESCE(endurance_sessions.inventory_restore_success, 0), COALESCE(excluded.inventory_restore_success, 0)), " +
+            "inventory_restore_fallback = GREATEST(COALESCE(endurance_sessions.inventory_restore_fallback, 0), COALESCE(excluded.inventory_restore_fallback, 0)), " +
+            "external_death_respawn_count = GREATEST(COALESCE(endurance_sessions.external_death_respawn_count, 0), COALESCE(excluded.external_death_respawn_count, 0)), " +
+            "wave_blocked_detected = GREATEST(COALESCE(endurance_sessions.wave_blocked_detected, 0), COALESCE(excluded.wave_blocked_detected, 0))");
 
         insertSqlCache.put("endurance_parties",
             "INSERT INTO endurance_parties (id, ts, party_id, event_type, leader_id, leader_name, member_id, " +
@@ -983,9 +1152,16 @@ public class DuckDBBatchWriter {
             "VALUES (nextval('seq_endurance_parties'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         insertSqlCache.put("endurance_bosses",
-            "INSERT INTO endurance_bosses (id, ts, session_id, event_type, wave_number, archetype, boss_max_health, " +
-            "player_count, ability_name, players_hit, ability_damage, fight_duration_ms, bonus_points, damage_dealt_to_boss) " +
-            "VALUES (nextval('seq_endurance_bosses'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            "INSERT INTO endurance_bosses (id, ts, session_id, template_id, template_version, policy_id, policy_version, arena_id, " +
+            "event_type, wave_number, archetype, boss_max_health, player_count, ability_name, players_hit, ability_damage, " +
+            "fight_duration_ms, bonus_points, damage_dealt_to_boss) " +
+            "VALUES (nextval('seq_endurance_bosses'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+        insertSqlCache.put("endurance_performance",
+            "INSERT INTO endurance_performance (id, ts, session_id, player_id, quest_type, duration_ms, waves_completed, " +
+            "kills, damage_dealt, damage_taken, avg_ttk_ms, kps, dtps, dps, " +
+            "template_id, template_version, policy_id, policy_version, arena_id) " +
+            "VALUES (nextval('seq_endurance_performance'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         // Player tables
         insertSqlCache.put("player_snapshots",
@@ -1018,6 +1194,11 @@ public class DuckDBBatchWriter {
         insertSqlCache.put("spatial_room_transitions",
             "INSERT INTO spatial_room_transitions (id, ts, player_id, player_name, room) " +
             "VALUES (nextval('seq_spatial_room_transitions'), ?, ?, ?, ?)");
+
+        insertSqlCache.put("arena_spatial_events",
+            "INSERT INTO arena_spatial_events (id, ts, template_id, template_version, session_id, event_type, " +
+            "grid_x, grid_z, world_x, world_y, world_z, player_uuid) " +
+            "VALUES (nextval('seq_arena_spatial_events'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         // System tables
         insertSqlCache.put("performance_samples",

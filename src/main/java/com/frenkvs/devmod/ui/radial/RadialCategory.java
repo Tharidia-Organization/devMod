@@ -55,7 +55,19 @@ public class RadialCategory {
      * Create and add a subcategory
      */
     public RadialCategory addSubcategory(String subId, String subName, int subColor, String subIcon) {
-        RadialCategory subcategory = new RadialCategory(subId, subName, subColor, subIcon);
+        return addSubcategory(subId, subName, subColor, subIcon, null);
+    }
+
+    /**
+     * Create and add a subcategory with an ItemStack icon.
+     */
+    public RadialCategory addSubcategory(String subId, String subName, int subColor, ItemStack iconStack) {
+        return addSubcategory(subId, subName, subColor, "", iconStack);
+    }
+
+    private RadialCategory addSubcategory(String subId, String subName, int subColor, String subIcon,
+                                          @Nullable ItemStack iconStack) {
+        RadialCategory subcategory = new RadialCategory(subId, subName, subColor, subIcon, iconStack);
         subcategory.parent = this;
 
         // Add a menu item that navigates to the subcategory
@@ -63,7 +75,7 @@ public class RadialCategory {
             subName,
             RadialAction.subcategory(subName, "Open " + subName + " submenu", subIcon, subcategory),
             subIcon,
-            null
+            iconStack
         ));
 
         return subcategory;
@@ -164,7 +176,7 @@ public class RadialCategory {
         private final String id;
         private String name;
         private int color = 0xFFFFFFFF;
-        private String icon = "●";
+        private String icon = "*";
         private ItemStack iconStack;
         private final List<RadialMenuItem> items = new ArrayList<>();
 

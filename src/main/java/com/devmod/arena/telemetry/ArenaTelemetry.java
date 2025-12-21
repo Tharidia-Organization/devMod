@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 public class ArenaTelemetry {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaTelemetry.class);
     private static final int BUFFER_SIZE = 10_000;
+    private static volatile Consumer<TelemetryEvent> globalHandler;
 
     private final BlockingQueue<TelemetryEvent> buffer = new LinkedBlockingQueue<>(BUFFER_SIZE);
     private final AtomicLong droppedCount = new AtomicLong(0);
@@ -31,11 +32,19 @@ public class ArenaTelemetry {
     private volatile boolean enabled = true;
 
     public ArenaTelemetry() {
-        this.eventHandler = this::defaultHandler;
+        Consumer<TelemetryEvent> handler = globalHandler;
+        this.eventHandler = handler != null ? handler : this::defaultHandler;
     }
 
     public ArenaTelemetry(Consumer<TelemetryEvent> eventHandler) {
         this.eventHandler = eventHandler != null ? eventHandler : this::defaultHandler;
+    }
+
+    /**
+     * Sets a global handler used by default constructors.
+     */
+    public static void setGlobalHandler(Consumer<TelemetryEvent> handler) {
+        globalHandler = handler;
     }
 
     /**

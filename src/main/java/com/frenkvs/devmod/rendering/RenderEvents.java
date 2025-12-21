@@ -1,47 +1,39 @@
 package com.frenkvs.devmod.rendering;
 
+import com.frenkvs.devmod.ArmorConfigManager;
+import com.frenkvs.devmod.ArmorStats;
 import com.frenkvs.devmod.Config;
 import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.KeyInputHandler;
-import com.frenkvs.devmod.util.I18n;
-import com.frenkvs.devmod.ArmorConfigManager;
-import com.frenkvs.devmod.ArmorStats;
+import com.frenkvs.devmod.actions.ActionContext;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.attributes.AttributeMonitoringSystem;
 import com.frenkvs.devmod.attributes.AttributeRayVisualizer;
 import com.frenkvs.devmod.collision.rendering.OBBDebugRenderer;
-import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
-import com.frenkvs.devmod.hud.BossPhaseOverlay;
-import com.frenkvs.devmod.hud.EntityDensityOverlay;
+import com.frenkvs.devmod.effects.TrailManager;
 import com.frenkvs.devmod.hud.Impact3DPanelManager;
 import com.frenkvs.devmod.hud.ImpactData;
 import com.frenkvs.devmod.hud.ImpactVFX;
 import com.frenkvs.devmod.panels.context.ContextDetector;
 import com.frenkvs.devmod.panels.core.FloatingPanelManager;
 import com.frenkvs.devmod.panels.ui.PanelInteractionHandler;
-import com.frenkvs.devmod.quest.QuestEditorScreen;
-import com.frenkvs.devmod.quest.QuestHudOverlay;
-import com.frenkvs.devmod.quest.QuestManager;
-import com.frenkvs.devmod.quest.QuestTask;
 import com.frenkvs.devmod.rendering.shield.EnergyShieldRenderer;
-import com.frenkvs.devmod.telemetry.FpsTracker;
 import com.frenkvs.devmod.telemetry.PerformanceProfiler;
 import com.frenkvs.devmod.testing.TestingSession;
-import com.frenkvs.devmod.effects.TrailManager;
+import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
+import com.frenkvs.devmod.util.I18n;
 import com.frenkvs.devmod.combat.WeaponTrailVFX;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.phys.AABB;
-import com.frenkvs.devmod.ui.editor.ItemEditorScreen;
-import com.frenkvs.devmod.ui.editor.EditorStartTab;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -53,51 +45,6 @@ import java.util.Objects;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class RenderEvents {
-
-    // === Overlay Limit Warning System ===
-    private static final int OVERLAY_WARNING_THRESHOLD = 5;
-    private static final int OVERLAY_MAX_RECOMMENDED = 8;
-    private static long lastOverlayWarningTime = 0;
-    private static final long OVERLAY_WARNING_COOLDOWN_MS = 30000; // 30 seconds between warnings
-
-    /**
-     * Count active overlays and warn if too many are enabled.
-     * Called after toggling any overlay.
-     */
-    private static void checkOverlayCount(net.minecraft.world.entity.player.Player player) {
-        int activeCount = 0;
-
-        // Count all active overlays
-        if (DebugRenderer.INSTANCE.isEnabled()) activeCount++;
-        if (LightLevelOverlay.INSTANCE.isEnabled()) activeCount++;
-        if (!HeatmapVisualizer.INSTANCE.getActiveTypesString().equals("None")) activeCount++;
-        if (RoomBoundsVisualizer.INSTANCE.isEnabled()) activeCount++;
-        if (PathfindingDebugger.INSTANCE.isEnabled()) activeCount++;
-        if (LineOfSightVisualizer.INSTANCE.isEnabled()) activeCount++;
-        if (VerticalLevelsVisualizer.INSTANCE.isEnabled()) activeCount++;
-        if (SafeSpotVisualizer.INSTANCE.isEnabled()) activeCount++;
-        if (FpsTracker.INSTANCE.isEnabled()) activeCount++;
-        if (EntityDensityOverlay.isEnabled()) activeCount++;
-        if (BossPhaseOverlay.isEnabled()) activeCount++;
-
-        // Show warning if too many active (with cooldown to avoid spam)
-        long now = System.currentTimeMillis();
-        if (activeCount >= OVERLAY_WARNING_THRESHOLD && (now - lastOverlayWarningTime) > OVERLAY_WARNING_COOLDOWN_MS) {
-            lastOverlayWarningTime = now;
-
-            if (activeCount >= OVERLAY_MAX_RECOMMENDED) {
-                player.displayClientMessage(
-                    I18n.translate("devmod.render.overlays_warning", activeCount),
-                    false // Show in chat for visibility
-                );
-            } else {
-                player.displayClientMessage(
-                    I18n.translate("devmod.render.overlays_info", activeCount),
-                    true // Action bar is fine for info level
-                );
-            }
-        }
-    }
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
@@ -225,468 +172,145 @@ public class RenderEvents {
     private static int testingReadyDelayTicks = 0;
     private static final int TESTING_READY_DELAY = 100; // 5 seconds delay after player exists
 
-    // Index for cycling heatmap types
-    private static int currentHeatmapIndex = -1;
-    private static final HeatmapVisualizer.HeatmapType[] HEATMAP_CYCLE = {
-            HeatmapVisualizer.HeatmapType.DEATH,
-            HeatmapVisualizer.HeatmapType.MOVEMENT,
-            HeatmapVisualizer.HeatmapType.CAMPING,
-            HeatmapVisualizer.HeatmapType.STUCK,
-            HeatmapVisualizer.HeatmapType.AGGRO_DROP,
-            HeatmapVisualizer.HeatmapType.KITING
-    };
-
     /**
      * Handles all mod keybinds.
      * This is the CORRECT way according to NeoForge documentation:
      * https://docs.neoforged.net/docs/misc/keymappings
      */
     private static void handleKeyBindings(Minecraft mc) {
-        var player = mc.player;
-        if (player == null) return;
+        if (mc.player == null) return;
 
-        // IMPORTANT: Don't process keybinds if a screen is already open
-        // (except for toggles that don't open GUI)
-        boolean screenOpen = mc.screen != null;
-
-        // If you press K - Opens UnifiedSettingsScreen (PHASE 3: Unified Settings Panel)
         while (KeyInputHandler.OPEN_SETTINGS_KEY.consumeClick()) {
-            if (!screenOpen) {
-                mc.setScreen(new com.frenkvs.devmod.ui.unified.UnifiedSettingsScreen(null));
-            }
+            invokeAction(ActionIds.UI_SETTINGS_OPEN);
         }
 
-        // If you press M - Opens Item Editor (auto-detects type)
-        // M alone: Auto-detect (Armor → ArmorEditor, Other → WeaponEditor)
-        // Shift+M: Force WeaponEditor (for items with mixed attributes)
-        // Ctrl+M: Force ArmorEditor (edit armor in hand or open slot selector)
         while (KeyInputHandler.OPEN_WEAPON_EDITOR_KEY.consumeClick()) {
-            if (!screenOpen) {
-                boolean shiftHeld = Screen.hasShiftDown();
-                boolean ctrlHeld = Screen.hasControlDown();
-                ItemStack heldItem = player.getMainHandItem().copy();
-
-                if (ctrlHeld) {
-                    // Ctrl+M: Force ArmorEditor
-                    if (!heldItem.isEmpty()) {
-                        mc.setScreen(new ItemEditorScreen(heldItem, EditorStartTab.ARMOR));
-                    } else {
-                        player.displayClientMessage(
-                            Objects.requireNonNull(Component.translatable("devmod.message.must_hold_item").withStyle(s -> s.withColor(0xFF5555))),
-                            true
-                        );
-                    }
-                } else if (shiftHeld) {
-                    // Shift+M: Force WeaponEditor
-                    if (!heldItem.isEmpty()) {
-                        mc.setScreen(new ItemEditorScreen(heldItem, EditorStartTab.WEAPON));
-                    } else {
-                        player.displayClientMessage(
-                                Objects.requireNonNull(Component.translatable("devmod.message.must_hold_item").withStyle(s -> s.withColor(0xFF5555))),
-                                true
-                        );
-                    }
-                } else {
-                    // M alone: Auto-detect based on item type
-                    if (!heldItem.isEmpty()) {
-                        if (heldItem.getItem() instanceof ArmorItem) {
-                            // Holding armor → ArmorEditor
-                            mc.setScreen(new ItemEditorScreen(heldItem, EditorStartTab.ARMOR));
-                        } else {
-                            // Holding weapon/tool/other → WeaponEditor
-                            mc.setScreen(new ItemEditorScreen(heldItem, EditorStartTab.WEAPON));
-                        }
-                    } else {
-                        // Empty hand → Show hint about modifiers
-                        player.displayClientMessage(
-                                Objects.requireNonNull(Component.translatable("devmod.message.item_editor_hint").withStyle(s -> s.withColor(0xFFAA00))),
-                                true
-                        );
-                    }
-                }
+            ActionContext context = ClientActionContexts.forKeybind();
+            if (context.isCtrlDown()) {
+                invokeAction(ActionIds.UI_ITEM_EDITOR_OPEN_ARMOR, context);
+            } else if (context.isShiftDown()) {
+                invokeAction(ActionIds.UI_ITEM_EDITOR_OPEN_WEAPON, context);
+            } else {
+                invokeAction(ActionIds.UI_ITEM_EDITOR_OPEN_AUTO, context);
             }
         }
 
-        // If you press G (Toggle Debug Overlay) or Shift+G (Toggle Body Part Boxes)
         while (KeyInputHandler.TOGGLE_DEBUG_OVERLAY_KEY.consumeClick()) {
-            boolean shiftHeld = Screen.hasShiftDown();
-
-            if (shiftHeld) {
-                // Shift+G: Toggle Body Part Hitboxes
-                com.frenkvs.devmod.ModConfig.showBodyPartBoxes = !com.frenkvs.devmod.ModConfig.showBodyPartBoxes;
-                // Auto-enable showRender if enabling body part boxes
-                if (com.frenkvs.devmod.ModConfig.showBodyPartBoxes && !com.frenkvs.devmod.ModConfig.showRender) {
-                    com.frenkvs.devmod.ModConfig.showRender = true;
-                }
-                SettingsManager.INSTANCE.markDirty();
-                String status = com.frenkvs.devmod.ModConfig.showBodyPartBoxes ? "§aON" : "§cOFF";
-                player.displayClientMessage(
-                        I18n.translate("devmod.render.body_parts_status", status),
-                        true
-                );
+            ActionContext context = ClientActionContexts.forKeybind();
+            if (context.isShiftDown()) {
+                invokeAction(ActionIds.DEBUG_BODY_PARTS_TOGGLE, context);
             } else {
-                // G: Toggle Debug Overlay
-                DebugRenderer.INSTANCE.toggle();
-                SettingsManager.INSTANCE.markDirty();
-                String status = DebugRenderer.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
-                player.displayClientMessage(
-                        I18n.translate("devmod.render.debug_overlay_status", status),
-                        true
-                );
-                checkOverlayCount(player);
+                invokeAction(ActionIds.DEBUG_OVERLAY_TOGGLE, context);
             }
         }
 
-        // PHASE 4: If you press L (Toggle Light Level Overlay)
         while (KeyInputHandler.TOGGLE_LIGHT_OVERLAY_KEY.consumeClick()) {
-            LightLevelOverlay.INSTANCE.toggle();
-            SettingsManager.INSTANCE.markDirty();
-            String status = LightLevelOverlay.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
-            player.displayClientMessage(
-                    I18n.translate("devmod.render.light_overlay_status", status),
-                    true
-            );
-            checkOverlayCount(player);
+            invokeAction(ActionIds.DEBUG_LIGHT_OVERLAY_TOGGLE);
         }
 
-        // PHASE 4: If you press H (Cycle Heatmap Types)
-        // Shift+H: Clear ALL heatmaps
-        // Ctrl+H: Clear current heatmap type
         while (KeyInputHandler.TOGGLE_HEATMAP_KEY.consumeClick()) {
-            boolean shiftHeld = Screen.hasShiftDown();
-            boolean ctrlHeld = Screen.hasControlDown();
-
-            if (shiftHeld) {
-                // Shift+H: Clear ALL heatmaps
-                HeatmapVisualizer.INSTANCE.clearAll();
-                currentHeatmapIndex = -1;
-                // Disable all visualizations
-                for (HeatmapVisualizer.HeatmapType type : HEATMAP_CYCLE) {
-                    HeatmapVisualizer.INSTANCE.setEnabled(type, false);
-                }
-                player.displayClientMessage(
-                        I18n.translate("devmod.render.heatmaps_cleared"),
-                        true
-                );
-            } else if (ctrlHeld) {
-                // Ctrl+H: Clear current heatmap type
-                if (currentHeatmapIndex >= 0 && currentHeatmapIndex < HEATMAP_CYCLE.length) {
-                    HeatmapVisualizer.HeatmapType currentType = HEATMAP_CYCLE[currentHeatmapIndex];
-                    HeatmapVisualizer.INSTANCE.clear(currentType);
-                    int remaining = HeatmapVisualizer.INSTANCE.getDataCount(currentType);
-                    player.displayClientMessage(
-                            I18n.translate("devmod.render.heatmap_type_cleared", currentType.name(), remaining),
-                            true
-                    );
-                } else {
-                    player.displayClientMessage(
-                            I18n.translate("devmod.render.no_heatmap_selected"),
-                            true
-                    );
-                }
-            } else {
-                // H: Cycle heatmap type + load data from service
-                cycleHeatmapType();
-                SettingsManager.INSTANCE.markDirty();
-
-                // Load data from service for the current type
-                if (currentHeatmapIndex >= 0 && currentHeatmapIndex < HEATMAP_CYCLE.length) {
-                    HeatmapVisualizer.HeatmapType currentType = HEATMAP_CYCLE[currentHeatmapIndex];
-                    int loaded = HeatmapVisualizer.INSTANCE.loadDataFromService(currentType);
-                    int total = HeatmapVisualizer.INSTANCE.getDataCount(currentType);
-                    String activeTypes = HeatmapVisualizer.INSTANCE.getActiveTypesString();
-                    DevMod.LOGGER.debug("Heatmap loaded {} new points, total: {}", loaded, total);
-                    player.displayClientMessage(
-                            I18n.translate("devmod.render.heatmap_status", activeTypes, total),
-                            true
-                    );
-                } else {
-                    player.displayClientMessage(
-                            I18n.translate("devmod.render.heatmap_off"),
-                            true
-                    );
-                }
-            }
+            invokeAction(ActionIds.DEBUG_HEATMAP_CYCLE);
         }
 
-        // Dismiss current Impact HUD/panels/VFX
         while (KeyInputHandler.DISMISS_IMPACT_HUD_KEY.consumeClick()) {
-            ImpactData.clear();
-            Impact3DPanelManager.INSTANCE.clear();
-            ImpactVFX.clear();
+            invokeAction(ActionIds.DEBUG_IMPACT_DISMISS);
         }
 
-        // PHASE 4: If you press R (Toggle Room Bounds Visualizer)
-        // Shift+R: Open Room Bounds Editor (in-game UI)
-        // Ctrl+R: Reload rooms from config file
         while (KeyInputHandler.TOGGLE_ROOM_BOUNDS_KEY.consumeClick()) {
-            boolean shiftHeld = Screen.hasShiftDown();
-            boolean ctrlHeld = Screen.hasControlDown();
-
-            if (shiftHeld && !screenOpen) {
-                // Shift+R: Open Room Bounds Editor
-                mc.setScreen(new com.frenkvs.devmod.ui.RoomBoundsEditorScreen());
-            } else if (ctrlHeld) {
-                // Ctrl+R: Reload rooms from config
-                RoomBoundsVisualizer.INSTANCE.reload();
-                int roomCount = RoomBoundsVisualizer.INSTANCE.getRoomCount();
-                player.displayClientMessage(
-                        I18n.translate("devmod.render.room_bounds_reloaded", roomCount),
-                        true
-                );
+            ActionContext context = ClientActionContexts.forKeybind();
+            if (context.isShiftDown()) {
+                invokeAction(ActionIds.UI_ROOM_BOUNDS_EDITOR_OPEN, context);
+            } else if (context.isCtrlDown()) {
+                invokeAction(ActionIds.DEBUG_ROOM_BOUNDS_RELOAD, context);
             } else {
-                // R: Toggle Room Bounds Visualizer
-                RoomBoundsVisualizer.INSTANCE.toggle();
-                SettingsManager.INSTANCE.markDirty();
-                String status = RoomBoundsVisualizer.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
-                int roomCount = RoomBoundsVisualizer.INSTANCE.getRoomCount();
-                int gapCount = RoomBoundsVisualizer.INSTANCE.getGapCount();
-                String gapInfo = gapCount > 0 ? " §c" + gapCount + " gaps!" : " §a0 gaps";
-                player.displayClientMessage(
-                        I18n.translate("devmod.render.room_bounds_status", status, roomCount, gapInfo),
-                        true
-                );
+                invokeAction(ActionIds.DEBUG_ROOM_BOUNDS_TOGGLE, context);
             }
         }
 
-        // PHASE 4: If you press P (Toggle Pathfinding Debugger)
         while (KeyInputHandler.TOGGLE_PATHFINDING_KEY.consumeClick()) {
-            PathfindingDebugger.INSTANCE.toggle();
-            SettingsManager.INSTANCE.markDirty();
-            String status = PathfindingDebugger.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
-            player.displayClientMessage(
-                    I18n.translate("devmod.render.pathfinding_status", status),
-                    true
-            );
+            invokeAction(ActionIds.DEBUG_PATHFINDING_TOGGLE);
         }
 
-        // PHASE 4: If you press V (Toggle Line of Sight Visualizer)
         while (KeyInputHandler.TOGGLE_LOS_KEY.consumeClick()) {
-            LineOfSightVisualizer.INSTANCE.toggle();
-            SettingsManager.INSTANCE.markDirty();
-            String status = LineOfSightVisualizer.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
-            player.displayClientMessage(
-                    I18n.translate("devmod.render.los_status", status),
-                    true
-            );
+            invokeAction(ActionIds.DEBUG_LOS_TOGGLE);
         }
 
-        // PHASE 4: If you press Y (Toggle Vertical Levels Visualizer)
         while (KeyInputHandler.TOGGLE_VERTICAL_LEVELS_KEY.consumeClick()) {
-            VerticalLevelsVisualizer.INSTANCE.toggle();
-            SettingsManager.INSTANCE.markDirty();
-            String status = VerticalLevelsVisualizer.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
-            player.displayClientMessage(
-                    I18n.translate("devmod.render.vertical_status", status),
-                    true
-            );
+            invokeAction(ActionIds.DEBUG_VERTICAL_LEVELS_TOGGLE);
         }
 
-        // PHASE 4: If you press C (Toggle Safe Spot Visualizer)
         while (KeyInputHandler.TOGGLE_SAFE_SPOT_KEY.consumeClick()) {
-            SafeSpotVisualizer.INSTANCE.toggle();
-            SettingsManager.INSTANCE.markDirty();
-            String status = SafeSpotVisualizer.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
-            int spotCount = SafeSpotVisualizer.INSTANCE.getSafeSpotCount();
-            player.displayClientMessage(
-                    I18n.translate("devmod.render.safe_spots_status", status, spotCount),
-                    true
-            );
+            invokeAction(ActionIds.DEBUG_SAFE_SPOTS_TOGGLE);
         }
 
-        // J key - Opens the Telemetry Dashboard
         while (KeyInputHandler.OPEN_DASHBOARD_KEY.consumeClick()) {
-            if (!screenOpen) {
-                mc.setScreen(new com.frenkvs.devmod.TelemetryDashboardScreen(null));
-            }
+            invokeAction(ActionIds.UI_TELEMETRY_DASHBOARD_OPEN);
         }
 
-        // PHASE 7: If you press U (Toggle Attribute Monitoring System)
         while (KeyInputHandler.TOGGLE_ATTRIBUTE_MONITOR_KEY.consumeClick()) {
-            AttributeMonitoringSystem.INSTANCE.toggle();
-            String status = AttributeMonitoringSystem.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
-            int trackedCount = AttributeMonitoringSystem.INSTANCE.getTrackedCount();
-            player.displayClientMessage(
-                    I18n.translate("devmod.render.attr_monitor_status", status, trackedCount),
-                    true
-            );
+            invokeAction(ActionIds.DEBUG_ATTRIBUTE_MONITOR_TOGGLE);
         }
 
-        // PHASE 8: If you press F8 (Toggle FPS Tracker)
         while (KeyInputHandler.TOGGLE_FPS_TRACKER_KEY.consumeClick()) {
-            FpsTracker.INSTANCE.toggle();
-            String status = FpsTracker.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
-            player.displayClientMessage(
-                    I18n.translate("devmod.render.fps_tracker_status", status),
-                    true
-            );
+            invokeAction(ActionIds.DEBUG_FPS_TRACKER_TOGGLE);
         }
 
-        // PHASE 9: If you press F9 (Toggle Performance Profiler)
         while (KeyInputHandler.TOGGLE_PROFILER_KEY.consumeClick()) {
-            PerformanceProfiler.INSTANCE.toggle();
-            String status = PerformanceProfiler.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
-            player.displayClientMessage(
-                    I18n.translate("devmod.render.profiler_status", status),
-                    true
-            );
+            invokeAction(ActionIds.DEBUG_PROFILER_TOGGLE);
         }
 
-        // QA TESTING: If you press N (Open QA Testing Screen) - LEGACY, now use F7 for Testing Hub
         while (KeyInputHandler.OPEN_QA_TESTING_KEY.consumeClick()) {
-            DevMod.LOGGER.info("[DevMod] N key consumed - screenOpen={}", screenOpen);
-            if (!screenOpen) {
-                DevMod.LOGGER.info("[DevMod] Opening Testing Hub...");
-                try {
-                    mc.setScreen(new com.frenkvs.devmod.ui.hub.TestingHub());
-                    DevMod.LOGGER.info("[DevMod] Testing Hub opened successfully");
-                } catch (Exception e) {
-                    DevMod.LOGGER.error("[DevMod] Error opening QA Testing: {}", e.getMessage(), e);
-                    player.displayClientMessage(
-                            Objects.requireNonNull(I18n.translate("devmod.message.error_opening_qa").append(": " + e.getMessage())),
-                            false
-                    );
-                }
-            }
+            invokeAction(ActionIds.UI_QA_TESTING_OPEN);
         }
 
-        // TESTING HUB: If you press F7 (Open Testing Hub - unified interface)
-        // If the hub is minimized, it restores it instead of creating a new one
         while (KeyInputHandler.OPEN_TESTING_HUB_KEY.consumeClick()) {
-            if (!screenOpen) {
-                try {
-                    // Check if hub was minimized - if so, restore it
-                    if (com.frenkvs.devmod.ui.hub.TestingHubState.INSTANCE.isMinimized()) {
-                        com.frenkvs.devmod.ui.hub.TestingHub.restoreFromHud();
-                    } else {
-                        mc.setScreen(new com.frenkvs.devmod.ui.hub.TestingHub());
-                    }
-                } catch (Exception e) {
-                    DevMod.LOGGER.error("[DevMod] Error opening Testing Hub: {}", e.getMessage(), e);
-                    player.displayClientMessage(
-                            Objects.requireNonNull(I18n.translate("devmod.message.error_opening_hub").append(": " + e.getMessage())),
-                            false
-                    );
-                }
+            ActionContext context = ClientActionContexts.forKeybind();
+            if (context.isShiftDown()) {
+                invokeAction(ActionIds.ARENA_HUD_TOGGLE, context);
+            } else {
+                invokeAction(ActionIds.UI_TESTING_HUB_OPEN, context);
             }
         }
 
-        // VOXEL-LAB: If you press B (Toggle Boss Phase Overlay)
         while (KeyInputHandler.TOGGLE_BOSS_PHASE_KEY.consumeClick()) {
-            BossPhaseOverlay.toggle();
-            SettingsManager.INSTANCE.markDirty();
-            String status = BossPhaseOverlay.isEnabled() ? "§aON" : "§cOFF";
-            player.displayClientMessage(
-                    I18n.translate("devmod.render.boss_phase_status", status),
-                    true
-            );
+            invokeAction(ActionIds.DEBUG_BOSS_PHASE_TOGGLE);
         }
 
-        // VOXEL-LAB: If you press F6 (Toggle Entity Density Overlay)
         while (KeyInputHandler.TOGGLE_ENTITY_DENSITY_KEY.consumeClick()) {
-            EntityDensityOverlay.toggle();
-            SettingsManager.INSTANCE.markDirty();
-            String status = EntityDensityOverlay.isEnabled() ? "§aON" : "§cOFF";
-            player.displayClientMessage(
-                    I18n.translate("devmod.render.entity_density_status", status),
-                    true
-            );
+            invokeAction(ActionIds.DEBUG_ENTITY_DENSITY_TOGGLE);
         }
 
-        // VOXEL-LAB: If you press F5 (Toggle Skill Efficacy Overlay)
         while (KeyInputHandler.TOGGLE_SKILL_EFFICACY_KEY.consumeClick()) {
-            com.frenkvs.devmod.hud.SkillEfficacyOverlay.toggle();
-            SettingsManager.INSTANCE.markDirty();
-            String status = com.frenkvs.devmod.hud.SkillEfficacyOverlay.isEnabled() ? "§aON" : "§cOFF";
-            player.displayClientMessage(
-                    I18n.translate("devmod.render.skill_efficacy_status", status),
-                    true
-            );
+            invokeAction(ActionIds.DEBUG_SKILL_EFFICACY_TOGGLE);
         }
 
-        // VOXEL-LAB M27: If you press F4 (Toggle Spawnability Map)
         while (KeyInputHandler.TOGGLE_SPAWNABILITY_KEY.consumeClick()) {
-            SpawnabilityOverlay.INSTANCE.toggle();
-            SettingsManager.INSTANCE.markDirty();
-            String status = SpawnabilityOverlay.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
-            var stats = SpawnabilityOverlay.INSTANCE.getStats();
-            player.displayClientMessage(
-                    I18n.translate("devmod.render.spawnability_status", status, stats.hostileSpawnBlocks()),
-                    true
-            );
+            invokeAction(ActionIds.DEBUG_SPAWNABILITY_TOGGLE);
         }
 
-        // QUEST HUD: If you press \ (Toggle Quest HUD)
         while (KeyInputHandler.TOGGLE_QUEST_HUD_KEY.consumeClick()) {
-            QuestHudOverlay.toggle();
-            String status = QuestHudOverlay.isEnabled() ? "§aON" : "§cOFF";
-            player.displayClientMessage(
-                    I18n.translate("devmod.render.quest_hud_status", status),
-                    true
-            );
+            invokeAction(ActionIds.HUD_QUEST_TOGGLE);
         }
 
-        // QUEST HUD: If you press ] (Complete current task)
         while (KeyInputHandler.QUEST_COMPLETE_TASK_KEY.consumeClick()) {
-            QuestTask task = QuestManager.INSTANCE.getCurrentTask();
-            if (task != null) {
-                String taskName = task.getDescription();
-                QuestManager.INSTANCE.completeCurrentTask();
-                player.displayClientMessage(
-                        Objects.requireNonNull(I18n.translate("devmod.message.task_completed").withStyle(s -> s.withColor(0x55FF55))
-                                .append(Objects.requireNonNull(I18n.translate("devmod.ui.colon_value", taskName).withStyle(s -> s.withColor(0xFFFFFF))))),
-                        true
-                );
-            } else {
-                player.displayClientMessage(
-                        Objects.requireNonNull(Component.translatable("devmod.message.no_active_task").withStyle(s -> s.withColor(0xAAAAAA))),
-                        true
-                );
-            }
+            invokeAction(ActionIds.QUEST_TASK_COMPLETE);
         }
 
-        // QUEST EDITOR: If you press [ (Open Quest Editor)
         while (KeyInputHandler.OPEN_QUEST_EDITOR_KEY.consumeClick()) {
-            if (!screenOpen) {
-                mc.setScreen(new QuestEditorScreen());
-            }
+            invokeAction(ActionIds.UI_QUEST_EDITOR_OPEN);
         }
 
-        // ECONOMY: If you press F3 (Toggle Economy Overlay)
-        // Shift+F3 cycles the view (economy stats <-> mob loot)
-        // Ctrl+F3 cycles the sort mode (kills, drop%, recent)
         while (KeyInputHandler.TOGGLE_ECONOMY_KEY.consumeClick()) {
-            boolean shiftHeld = Screen.hasShiftDown();
-            boolean ctrlHeld = Screen.hasControlDown();
-
-            if (ctrlHeld && com.frenkvs.devmod.hud.EconomyOverlay.isEnabled()) {
-                // Ctrl+F3: cycle the sort mode
-                com.frenkvs.devmod.hud.EconomyOverlay.cycleSortMode();
-                String sortName = com.frenkvs.devmod.hud.EconomyOverlay.getSortModeName();
-                player.displayClientMessage(
-                        I18n.translate("devmod.render.economy_sort", sortName),
-                        true
-                );
-            } else if (shiftHeld && com.frenkvs.devmod.hud.EconomyOverlay.isEnabled()) {
-                // Shift+F3: cycle the view
-                com.frenkvs.devmod.hud.EconomyOverlay.cycleView();
-                String viewName = com.frenkvs.devmod.hud.EconomyOverlay.getViewModeName();
-                player.displayClientMessage(
-                        I18n.translate("devmod.render.economy_view", viewName),
-                        true
-                );
+            ActionContext context = ClientActionContexts.forKeybind();
+            if (context.isCtrlDown()) {
+                invokeAction(ActionIds.DEBUG_ECONOMY_SORT_CYCLE, context);
+            } else if (context.isShiftDown()) {
+                invokeAction(ActionIds.DEBUG_ECONOMY_VIEW_CYCLE, context);
             } else {
-                // F3 normal: toggle overlay
-                com.frenkvs.devmod.hud.EconomyOverlay.toggle();
-                String status = com.frenkvs.devmod.hud.EconomyOverlay.isEnabled() ? "§aON" : "§cOFF";
-                player.displayClientMessage(
-                        I18n.translate("devmod.render.economy_status", status),
-                        true
-                );
+                invokeAction(ActionIds.DEBUG_ECONOMY_TOGGLE, context);
             }
         }
 
-        // ECONOMY SCROLL: Page Up/Down to scroll the mob list
         if (com.frenkvs.devmod.hud.EconomyOverlay.isEnabled()) {
             if (InputConstants.isKeyDown(mc.getWindow().getWindow(), InputConstants.KEY_PAGEUP)) {
                 com.frenkvs.devmod.hud.EconomyOverlay.scrollUp();
@@ -696,165 +320,63 @@ public class RenderEvents {
             }
         }
 
-        // CHUNK PERF: If you press F2 (Toggle Chunk Performance Visualizer)
         while (KeyInputHandler.TOGGLE_CHUNK_PERF_KEY.consumeClick()) {
-            ChunkPerformanceVisualizer.INSTANCE.toggle();
-            String status = ChunkPerformanceVisualizer.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
-            player.displayClientMessage(
-                    I18n.translate("devmod.render.chunk_perf_status", status),
-                    true
-            );
+            invokeAction(ActionIds.DEBUG_CHUNK_PERF_TOGGLE);
         }
 
-        // ENDURANCE QUEST: If you press F10 (Open Quest Editor with Endurance Modal)
-        // Shift+F10: Toggle Endurance HUD visibility
-        // Ctrl+F10: Toggle Endurance HUD details
         while (KeyInputHandler.OPEN_ENDURANCE_QUEST_KEY.consumeClick()) {
-            boolean shiftHeld = Screen.hasShiftDown();
-            boolean ctrlHeld = Screen.hasControlDown();
-
-            if (shiftHeld) {
-                // Shift+F10: Toggle Endurance HUD visibility
-                com.frenkvs.devmod.hud.EnduranceQuestOverlay.toggle();
-                String status = com.frenkvs.devmod.hud.EnduranceQuestOverlay.isEnabled() ? "§aON" : "§cOFF";
-                player.displayClientMessage(
-                        I18n.translate("devmod.render.endurance_hud_status", status),
-                        true
-                );
-            } else if (ctrlHeld) {
-                // Ctrl+F10: Toggle details view
-                com.frenkvs.devmod.hud.EnduranceQuestOverlay.toggleDetails();
-                String detailStatus = com.frenkvs.devmod.hud.EnduranceQuestOverlay.isShowingDetails() ? "§aDetailed" : "§7Compact";
-                player.displayClientMessage(
-                        I18n.translate("devmod.render.endurance_details", detailStatus),
-                        true
-                );
-            } else if (!screenOpen) {
-                // F10: Open Quest Editor with Endurance modal
-                try {
-                    mc.setScreen(new com.frenkvs.devmod.quest.QuestEditorScreen(true));
-                } catch (Exception e) {
-                    DevMod.LOGGER.error("[DevMod] Error opening Endurance Quest: {}", e.getMessage(), e);
-                    player.displayClientMessage(
-                            I18n.translate("devmod.render.error_opening_quest", e.getMessage()),
-                            false
-                    );
-                }
+            ActionContext context = ClientActionContexts.forKeybind();
+            if (context.isShiftDown()) {
+                invokeAction(ActionIds.HUD_ENDURANCE_TOGGLE, context);
+            } else if (context.isCtrlDown()) {
+                invokeAction(ActionIds.HUD_ENDURANCE_DETAILS_TOGGLE, context);
+            } else {
+                invokeAction(ActionIds.UI_ENDURANCE_EDITOR_OPEN, context);
             }
         }
 
-        // F11: Continue/Respawn in Endurance Quest
         while (KeyInputHandler.QUEST_CONTINUE_KEY.consumeClick()) {
-            // Send action based on quest state
-            net.neoforged.neoforge.network.PacketDistributor.sendToServer(
-                new com.frenkvs.devmod.endurance.QuestActionPayload(
-                    com.frenkvs.devmod.endurance.QuestActionPayload.Action.CONTINUE_AFTER_DEATH
-                )
-            );
-            player.displayClientMessage(
-                    I18n.translate("devmod.network.continuing_quest"),
-                    true
-            );
+            invokeAction(ActionIds.ENDURANCE_QUEST_CONTINUE);
         }
 
-        // F12: Exit/Give Up in Endurance Quest (with confirmation dialog)
         while (KeyInputHandler.QUEST_EXIT_KEY.consumeClick()) {
-            // Open confirmation screen instead of directly exiting
-            mc.setScreen(new com.frenkvs.devmod.endurance.QuestExitConfirmScreen(mc.screen));
+            invokeAction(ActionIds.ENDURANCE_QUEST_EXIT);
         }
 
-        // F1: Toggle Quick Help Overlay
         while (KeyInputHandler.TOGGLE_HELP_KEY.consumeClick()) {
-            com.frenkvs.devmod.hud.QuickHelpOverlay.toggle();
-            String status = com.frenkvs.devmod.hud.QuickHelpOverlay.isEnabled() ? "§aON" : "§cOFF";
-            player.displayClientMessage(
-                I18n.translate("devmod.render.quick_help_status", status),
-                true
-            );
+            invokeAction(ActionIds.HUD_QUICK_HELP_TOGGLE);
         }
 
-        // ` (BACKTICK): Open Radial Menu - PRIMARY ACCESS to all DevMod tools
         while (KeyInputHandler.OPEN_RADIAL_MENU_KEY.consumeClick()) {
-            if (!screenOpen) {
-                mc.setScreen(new com.frenkvs.devmod.ui.radial.RadialMenuScreenV3());
-            }
+            invokeAction(ActionIds.UI_RADIAL_OPEN);
         }
 
-        // INSPECT MOB: Open MobConfigScreen for the mob being looked at
         while (KeyInputHandler.INSPECT_MOB_KEY.consumeClick()) {
-            if (!screenOpen) {
-                if (mc.hitResult instanceof net.minecraft.world.phys.EntityHitResult entityHit) {
-                    if (entityHit.getEntity() instanceof net.minecraft.world.entity.Mob mob) {
-                        mc.setScreen(new com.frenkvs.devmod.MobConfigScreen(mob));
-                    } else {
-                        // Looking at entity but not a Mob (e.g., player, item frame)
-                        player.displayClientMessage(
-                            I18n.translate("devmod.render.target_not_mob"),
-                            true
-                        );
-                    }
-                } else {
-                    // Not looking at any entity
-                    player.displayClientMessage(
-                        I18n.translate("devmod.render.no_entity_targeted"),
-                        true
-                    );
-                }
-            }
-        }
-
-        // TEST SCREEN SHAKE: If you press 0 (Test shake effect)
-        // Debug: check if keybind is detected at all using raw GLFW check
-        long windowHandle = mc.getWindow().getWindow();
-        boolean zeroKeyDown = com.mojang.blaze3d.platform.InputConstants.isKeyDown(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_0);
-        if (zeroKeyDown) {
-            DevMod.LOGGER.info("[DevMod] KEY_0 is DOWN (raw GLFW check)");
+            invokeAction(ActionIds.UI_MOB_CONFIG_OPEN);
         }
 
         while (KeyInputHandler.TEST_SCREEN_SHAKE_KEY.consumeClick()) {
-            DevMod.LOGGER.info("[DevMod] Screen shake keybind consumed!");
-            // Create a test shake at player position
-            com.frenkvs.devmod.effects.ShakeEffect testShake =
-                com.frenkvs.devmod.effects.ShakeManager.createMediumHit(player.position());
-            com.frenkvs.devmod.effects.ShakeManager.INSTANCE.addShake(testShake);
-            DevMod.LOGGER.info("[DevMod] Shake added, isEnabled={}, activeCount={}",
-                com.frenkvs.devmod.effects.ShakeManager.INSTANCE.isEnabled(),
-                com.frenkvs.devmod.effects.ShakeManager.INSTANCE.getActiveCount());
-            player.displayClientMessage(
-                Objects.requireNonNull(Component.literal("§e[DevMod] §fScreen shake test triggered! Active shakes: §a" +
-                    com.frenkvs.devmod.effects.ShakeManager.INSTANCE.getActiveCount()), "shakeMsg"),
-                true
-            );
+            invokeAction(ActionIds.DEBUG_SCREEN_SHAKE_TEST);
         }
 
-        // ABILITY SYSTEM: Dash (LEFT ALT)
         while (KeyInputHandler.DASH_KEY.consumeClick()) {
-            // Send dash request to server
-            net.neoforged.neoforge.network.PacketDistributor.sendToServer(
-                Objects.requireNonNull(com.frenkvs.devmod.abilities.AbilityActionPayload.dash())
-            );
+            invokeAction(ActionIds.ABILITY_DASH);
         }
 
-        // ABILITY SYSTEM: Dodge (LEFT CONTROL)
-        // Determine dodge direction from movement keys
         while (KeyInputHandler.DODGE_KEY.consumeClick()) {
-            var dodgeDirection = determineDodgeDirection(mc);
-            net.neoforged.neoforge.network.PacketDistributor.sendToServer(
-                Objects.requireNonNull(com.frenkvs.devmod.abilities.AbilityActionPayload.dodge(dodgeDirection))
-            );
+            invokeAction(ActionIds.ABILITY_DODGE);
         }
 
-        // ESC handling for onboarding tutorial skip
-        // Use InputConstants for reliable key detection
-        // NOTE: Check isActive() first, regardless of screenOpen state
-        // The tutorial overlay is a HUD, not a screen, so ESC should work even with no screen open
+        while (KeyInputHandler.OPEN_PARTY_KEY.consumeClick()) {
+            invokeAction(ActionIds.UI_PARTY_OPEN);
+        }
+
         if (com.frenkvs.devmod.hud.OnboardingOverlay.isActive()) {
             long escWindowHandle = mc.getWindow().getWindow();
             boolean escPressed = InputConstants.isKeyDown(escWindowHandle, InputConstants.KEY_ESCAPE);
 
             if (escPressed && !escWasPressed) {
-                // Use handleEscape() which properly handles the skip logic and returns success state
-                com.frenkvs.devmod.hud.OnboardingOverlay.handleEscape();
+                invokeAction(ActionIds.UI_ONBOARDING_SKIP);
             }
             escWasPressed = escPressed;
         } else {
@@ -862,53 +384,16 @@ public class RenderEvents {
         }
     }
 
+    private static void invokeAction(String actionId) {
+        ActionRegistry.invoke(actionId, ClientActionContexts.forKeybind());
+    }
+
+    private static void invokeAction(String actionId, ActionContext context) {
+        ActionRegistry.invoke(actionId, context);
+    }
+
     // Debounce state for ESC key in tutorial
     private static boolean escWasPressed = false;
-
-    /**
-     * Determine dodge direction based on movement keys.
-     * A = Left, D = Right, S = Back, W = Forward, None = Back (default)
-     */
-    private static com.frenkvs.devmod.abilities.DodgeAbilitySystem.DodgeDirection determineDodgeDirection(Minecraft mc) {
-        var options = mc.options;
-
-        boolean left = options.keyLeft.isDown();
-        boolean right = options.keyRight.isDown();
-        boolean back = options.keyDown.isDown();
-        boolean forward = options.keyUp.isDown();
-
-        // Priority: Left/Right > Back > Forward > Default (Back)
-        if (left && !right) {
-            return com.frenkvs.devmod.abilities.DodgeAbilitySystem.DodgeDirection.LEFT;
-        } else if (right && !left) {
-            return com.frenkvs.devmod.abilities.DodgeAbilitySystem.DodgeDirection.RIGHT;
-        } else if (back) {
-            return com.frenkvs.devmod.abilities.DodgeAbilitySystem.DodgeDirection.BACK;
-        } else if (forward) {
-            return com.frenkvs.devmod.abilities.DodgeAbilitySystem.DodgeDirection.FORWARD;
-        }
-
-        // Default to back
-        return com.frenkvs.devmod.abilities.DodgeAbilitySystem.DodgeDirection.BACK;
-    }
-
-    private static void cycleHeatmapType() {
-        // Disable the current type
-        if (currentHeatmapIndex >= 0 && currentHeatmapIndex < HEATMAP_CYCLE.length) {
-            HeatmapVisualizer.INSTANCE.setEnabled(HEATMAP_CYCLE[currentHeatmapIndex], false);
-        }
-
-        // Move to the next (or return to -1 = all off)
-        currentHeatmapIndex++;
-        if (currentHeatmapIndex >= HEATMAP_CYCLE.length) {
-            currentHeatmapIndex = -1; // All off
-        }
-
-        // Enable the new type
-        if (currentHeatmapIndex >= 0) {
-            HeatmapVisualizer.INSTANCE.setEnabled(HEATMAP_CYCLE[currentHeatmapIndex], true);
-        }
-    }
 
     /**
      * Client tick event to update 3D panels and the monitoring system.

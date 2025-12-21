@@ -10,6 +10,7 @@ let charts = {};
 let autoRefreshInterval = null;
 let lastQueryData = null;
 let cachedTableData = {};
+let arenaToken = '';
 
 // Chart.js global configuration
 Chart.defaults.color = '#8892a0';
@@ -26,6 +27,7 @@ const CHART_COLORS = [
 
 document.addEventListener('DOMContentLoaded', () => {
     setupNavigation();
+    initArenaToken();
     checkHealth();
     loadPlayersList();
     loadOverview();
@@ -109,17 +111,59 @@ function refreshAll() {
 
 // ==================== API Calls ====================
 
-async function fetchApi(endpoint) {
+async function fetchApi(endpoint, options = {}) {
     try {
         const range = document.getElementById('time-range')?.value || '24h';
         const separator = endpoint.includes('?') ? '&' : '?';
-        const url = `${API_BASE}${endpoint}${separator}range=${range}`;
-        const response = await fetch(url);
+        const url = options.skipRange ? `${API_BASE}${endpoint}` : `${API_BASE}${endpoint}${separator}range=${range}`;
+        const headers = {};
+        const shouldAuth = options.auth !== false && arenaToken &&
+            (endpoint.startsWith('/api/analytics/arena') ||
+             endpoint.startsWith('/api/export/arena') ||
+             endpoint.startsWith('/api/arena'));
+        if (shouldAuth) {
+            headers['Authorization'] = `Bearer ${arenaToken}`;
+        }
+        const response = await fetch(url, { headers });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return await response.json();
     } catch (error) {
         console.error(`API Error (${endpoint}):`, error);
         return null;
+    }
+}
+
+function initArenaToken() {
+    const stored = localStorage.getItem('arenaToken');
+    if (stored) {
+        arenaToken = stored;
+        const input = document.getElementById('arena-token');
+        if (input) input.value = stored;
+    } else {
+        requestArenaToken();
+    }
+}
+
+function onArenaTokenInput() {
+    const input = document.getElementById('arena-token');
+    setArenaToken(input ? input.value : '');
+}
+
+function setArenaToken(token) {
+    arenaToken = (token || '').trim();
+    if (arenaToken) {
+        localStorage.setItem('arenaToken', arenaToken);
+    } else {
+        localStorage.removeItem('arenaToken');
+    }
+}
+
+async function requestArenaToken() {
+    const data = await fetchApi('/api/arena/token', { skipRange: true, auth: false });
+    if (data?.token) {
+        setArenaToken(data.token);
+        const input = document.getElementById('arena-token');
+        if (input) input.value = data.token;
     }
 }
 
@@ -1541,6 +1585,9 @@ function onArenaTemplateChange() {
 }
 
 async function loadArenaSection() {
+    if (!arenaToken) {
+        await requestArenaToken();
+    }
     // Load template list first
     await loadArenaTemplateList();
 

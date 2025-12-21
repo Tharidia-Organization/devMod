@@ -264,7 +264,7 @@ public class ItemEditorScreen extends Screen {
     // ═══════════════════════════════════════════════════════════════
 
     public ItemEditorScreen(ItemStack item, EditorStartTab startTab) {
-        super(Component.literal("Item Editor"));
+        super(java.util.Objects.requireNonNull(Component.literal("Item Editor"), "title"));
         this.item = item.copy();
         this.originalItem = item.copy();
         this.requestedTab = startTab;

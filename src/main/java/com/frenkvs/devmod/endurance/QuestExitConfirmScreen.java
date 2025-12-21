@@ -1,11 +1,14 @@
 package com.frenkvs.devmod.endurance;
 
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.ui.ConfirmDialog;
 import com.frenkvs.devmod.ui.ConfirmDialog.Style;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 import javax.annotation.Nonnull;
 
@@ -51,10 +54,9 @@ public class QuestExitConfirmScreen extends Screen {
     }
 
     private void confirmExit() {
-        // Send exit action to server
-        PacketDistributor.sendToServer(
-            new QuestActionPayload(QuestActionPayload.Action.GIVE_UP_AFTER_DEATH)
-        );
+        ActionRegistry.invoke(ActionIds.ENDURANCE_QUEST_EXIT,
+            ClientActionContexts.forClient(ActionOrigin.UI, QuestActionPayload.Action.GIVE_UP_AFTER_DEATH)
+                .withConfirmed(true));
 
         // Close this screen
         if (minecraft != null) {

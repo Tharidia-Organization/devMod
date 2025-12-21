@@ -1,5 +1,9 @@
 package com.frenkvs.devmod.network.handlers;
 
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.endurance.*;
 import com.frenkvs.devmod.hud.InstanceLoadingOverlay;
 import com.frenkvs.devmod.network.PacketSecurityService;
@@ -205,10 +209,8 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handleQuestDeath(QuestDeathPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
-            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-            if (mc != null) {
-                mc.execute(() -> mc.setScreen(new QuestDeathScreen()));
-            }
+            ActionRegistry.invoke(ActionIds.UI_QUEST_DEATH_OPEN,
+                ClientActionContexts.forClient(ActionOrigin.EVENT));
         });
     }
 
@@ -224,10 +226,9 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handlePerkChoices(PerkChoicesPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
-            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-            if (mc != null) {
-                mc.execute(() -> mc.setScreen(new PerkSelectionScreen(payload.waveNumber(), payload.choices())));
-            }
+            EnduranceUiCache.setLastPerkChoices(payload);
+            ActionRegistry.invoke(ActionIds.UI_PERK_SELECTION_OPEN,
+                ClientActionContexts.forClient(ActionOrigin.EVENT, payload));
         });
     }
 
@@ -237,11 +238,47 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
 
         for (PerkSystem.Perk perk : perks) {
             int currentStacks = sessionOpt.map(s -> s.getPerkStacks(perk.id)).orElse(0);
-            choices.add(PerkChoicesPayload.PerkChoice.from(perk, currentStacks));
+            boolean suggested = sessionOpt.map(s -> s.isSuggested(perk.id)).orElse(false);
+            boolean required = sessionOpt.map(s -> s.isRequired(perk.id) && !s.hasPerk(perk.id)).orElse(false);
+            choices.add(PerkChoicesPayload.PerkChoice.from(perk, currentStacks, suggested, required));
         }
 
         PerkChoicesPayload payload = new PerkChoicesPayload(waveNumber, choices);
         sendPacket(player, payload);
+    }
+
+    // =================================================================================
+    // WAVE DIRECTIVES (risk/reward choices)
+    // =================================================================================
+    public static void handleWaveDirectiveChoices(WaveDirectiveChoicesPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> EnduranceUiCache.setLastDirectiveChoices(payload));
+    }
+
+    public static void handleWaveDirectiveSelection(WaveDirectiveSelectionPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayer player)) {
+                return;
+            }
+            var sessionOpt = EnduranceQuestManager.INSTANCE.getActiveSession(player);
+            if (sessionOpt.isEmpty()) {
+                return;
+            }
+            EnduranceQuestManager.ActiveQuestSession session = sessionOpt.get();
+            if (payload.waveNumber() != session.getDirectiveWaveNumber()) {
+                return;
+            }
+            if (!payload.isSkip()) {
+                session.selectDirective(payload.directiveId());
+            }
+        });
+    }
+
+    public static void sendWaveDirectiveChoices(ServerPlayer player, int waveNumber, List<WaveDirective> directives) {
+        List<WaveDirectiveChoicesPayload.DirectiveChoice> choices = new ArrayList<>();
+        for (WaveDirective directive : directives) {
+            choices.add(WaveDirectiveChoicesPayload.DirectiveChoice.from(directive));
+        }
+        sendPacket(player, new WaveDirectiveChoicesPayload(waveNumber, choices));
     }
 
     // =================================================================================
@@ -253,6 +290,13 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
                 String perkId = payload.perkId();
 
                 if (payload.isSkip()) {
+                    var sessionOpt = PerkSystem.INSTANCE.getSession(player.getUUID());
+                    if (sessionOpt.isPresent() && sessionOpt.get().hasRequiredPending()) {
+                        player.sendSystemMessage(nn(net.minecraft.network.chat.Component.literal(
+                            "[DevMod] Required perk must be selected before skipping")
+                            .withStyle(net.minecraft.ChatFormatting.RED)));
+                        return;
+                    }
                     player.sendSystemMessage(nn(I18n.translate("devmod.network.perk_skipped")
                         .withStyle(net.minecraft.ChatFormatting.GRAY)));
                     LOGGER.info("[Perk] Player {} skipped perk selection", player.getName().getString());
@@ -299,18 +343,18 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handleQuestCompletion(QuestCompletionPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
-            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-            if (mc != null) {
-                mc.execute(() -> mc.setScreen(new QuestCompletionScreen(payload)));
-            }
+            EnduranceUiCache.setLastQuestCompletion(payload);
+            ActionRegistry.invoke(ActionIds.UI_QUEST_COMPLETION_OPEN,
+                ClientActionContexts.forClient(ActionOrigin.EVENT, payload));
         });
     }
 
     public static void sendQuestCompletionScreen(ServerPlayer player,
-            EnduranceQuest quest,
+            EnduranceQuestManager.ActiveQuestSession session,
             RewardSystem.QuestRewards rewards,
             ComboSystem.ComboSession comboSession,
             int maxCombo) {
+        EnduranceQuest quest = session.getQuest();
 
         List<String> achievementNames = new ArrayList<>();
         if (rewards.achievementsUnlocked != null) {
@@ -319,12 +363,31 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
             }
         }
 
+        String templateId = session.getTemplateId() != null ? session.getTemplateId() : "";
+        Integer templateVersionValue = session.getTemplateVersion();
+        int templateVersion = templateVersionValue != null ? templateVersionValue.intValue() : 0;
+        String policyId = session.getPolicyId() != null ? session.getPolicyId() : "";
+        Integer policyVersionValue = session.getPolicyVersion();
+        int policyVersion = policyVersionValue != null ? policyVersionValue.intValue() : 0;
+        String instanceId = session.getInstanceId() != null ? session.getInstanceId().toString() : "";
+        String arenaId = session.getArena() != null ? session.getArena().getId().toString() : "";
+        String difficultyLabel = session.getDifficultyLabel() != null ? session.getDifficultyLabel() : "";
+        String questTypeLabel = session.getQuestTypeLabel() != null ? session.getQuestTypeLabel() : "";
+
         QuestCompletionPayload payload = new QuestCompletionPayload(
             quest.getDisplayName(),
             quest.getCurrentWave(),
             quest.getTotalWaves(),
             quest.isEndlessMode(),
             quest.getSessionDuration(),
+            templateId,
+            templateVersion,
+            policyId,
+            policyVersion,
+            instanceId,
+            arenaId,
+            difficultyLabel,
+            questTypeLabel,
             rewards.tokensEarned,
             rewards.baseTokens,
             rewards.prestigeEarned,

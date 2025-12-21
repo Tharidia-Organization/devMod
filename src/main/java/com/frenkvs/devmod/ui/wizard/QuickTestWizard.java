@@ -273,12 +273,12 @@ public class QuickTestWizard extends Screen {
         }
 
         // Description
-        String desc = selectedTestType.getDescription();
+        String desc = Objects.requireNonNullElse(selectedTestType.getDescription(), "");
         int descY = y + cardHeight + 20;
         graphics.drawString(getFont(), desc, panelX + 20, descY, UIConstants.Text.SECONDARY(), false);
 
         // Auto-configuration hint
-        String hint = "§7Auto-config: " + selectedTestType.getAutoConfigHint();
+        String hint = "§7Auto-config: " + Objects.requireNonNullElse(selectedTestType.getAutoConfigHint(), "");
         graphics.drawString(getFont(), hint, panelX + 20, descY + 15, UIConstants.Text.MUTED(), false);
     }
 

@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiConsumer;
+import javax.annotation.Nonnull;
 
 /**
  * Handles data operations for ItemEditorScreen: export, import, presets, templates.
@@ -398,7 +399,7 @@ public class ItemEditorDataOps {
 
         for (ItemEditorDataManager.EnchantData ench : template.enchantments) {
             if (ench == null || ench.id == null) continue;
-            String enchId = Objects.requireNonNull(ench.id, "enchant id");
+            @Nonnull String enchId = Objects.requireNonNull(ench.id, "enchant id");
             ResourceLocation id = ResourceLocation.tryParse(enchId);
             if (id == null) continue;
             ResourceKey<Enchantment> key = ResourceKey.create(Objects.requireNonNull(Registries.ENCHANTMENT), id);
@@ -417,7 +418,7 @@ public class ItemEditorDataOps {
 
         for (ItemEditorDataManager.AttrData attr : template.attributes) {
             if (attr == null || attr.id == null) continue;
-            String attrId = Objects.requireNonNull(attr.id, "attribute id");
+            @Nonnull String attrId = Objects.requireNonNull(attr.id, "attribute id");
             ResourceLocation id = ResourceLocation.tryParse(attrId);
             if (id == null) continue;
             ResourceKey<Attribute> key = ResourceKey.create(Objects.requireNonNull(Registries.ATTRIBUTE), id);
@@ -433,7 +434,7 @@ public class ItemEditorDataOps {
                 case 2 -> AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
                 default -> AttributeModifier.Operation.ADD_VALUE;
             };
-            ResourceLocation modifierId = Objects.requireNonNull(
+            @Nonnull ResourceLocation modifierId = Objects.requireNonNull(
                 ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "template_" + id.getPath()),
                 "modifier id");
             AttributeModifier modifier = new AttributeModifier(modifierId, attr.value, op);

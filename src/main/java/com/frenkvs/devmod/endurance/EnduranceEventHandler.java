@@ -1,8 +1,11 @@
 package com.frenkvs.devmod.endurance;
 
+import com.devmod.arena.policy.ArenaPolicy;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -62,17 +65,18 @@ public class EnduranceEventHandler {
     public static void onQuestStart(ServerPlayer player, EnduranceQuestManager.ActiveQuestSession session) {
         UUID playerId = player.getUUID();
         UUID questId = session.getQuest().getQuestId();
+        ArenaPolicy policy = EnduranceQuestManager.INSTANCE.getPolicyForSession(session);
 
         // Create combo session for DMC-style scoring
         ComboSystem.ComboSession comboSession = ComboSystem.INSTANCE.startSession(playerId, questId);
         EnduranceEventCombat.putComboSession(playerId, comboSession);
 
         // Create mutator session with random mutators
-        MutatorSystem.MutatorSession mutatorSession = MutatorSystem.INSTANCE.createSession(questId, 3, 1);
+        MutatorSystem.MutatorSession mutatorSession = MutatorSystem.INSTANCE.createSession(questId, 3, 1, policy);
         EnduranceEventCombat.putMutatorSession(questId, mutatorSession);
 
         // Create perk session for roguelike upgrades
-        PerkSystem.INSTANCE.startSession(playerId, questId);
+        PerkSystem.INSTANCE.startSession(playerId, questId, policy);
 
         // Create combat tracking session
         CombatTracker.INSTANCE.startTracking(questId, playerId, session.getQuest().getMobConfig().mobId);
@@ -83,6 +87,12 @@ public class EnduranceEventHandler {
         // Record telemetry for quest start
         int playerCount = session.getPlayerCount();
         QuestType questType = session.getQuestType();
+        String templateId = session.getTemplateId();
+        Integer templateVersion = session.getTemplateVersion();
+        String policyId = session.getPolicyId();
+        Integer policyVersion = session.getPolicyVersion();
+        UUID instanceId = session.getInstanceId();
+        UUID arenaId = session.getArena() != null ? session.getArena().getId() : null;
 
         EnduranceTelemetryService.INSTANCE.recordQuestStart(
             questId,
@@ -91,7 +101,13 @@ public class EnduranceEventHandler {
             session.getQuest().getTotalWaves(),
             session.getQuest().isEndlessMode(),
             playerCount,
-            questType
+            questType,
+            templateId,
+            templateVersion,
+            policyId,
+            policyVersion,
+            instanceId,
+            arenaId
         );
 
         // Trigger player attribute snapshot on quest start
@@ -118,13 +134,14 @@ public class EnduranceEventHandler {
         int maxCombo = comboSession != null ? comboSession.getMaxCombo() : 0;
 
         // Award rewards based on performance
+        ArenaPolicy policy = EnduranceQuestManager.INSTANCE.getPolicyForSession(session);
         RewardSystem.QuestRewards rewards = RewardSystem.INSTANCE.calculateQuestRewards(
-            player, session.getQuest(), comboSession, mutatorSession);
+            player, session.getQuest(), comboSession, mutatorSession, policy, session);
 
         // Send completion screen to client (only if quest completed or exited at checkpoint)
         if (rewards != null) {
             com.frenkvs.devmod.NetworkHandler.sendQuestCompletionScreen(
-                player, session.getQuest(), rewards, comboSession, maxCombo);
+                player, session, rewards, comboSession, maxCombo);
 
             // Send token gain overlay animation
             if (rewards.tokensEarned > 0) {
@@ -146,13 +163,14 @@ public class EnduranceEventHandler {
         CombatTracker.INSTANCE.stopTracking(questId);
 
         // Record gamification stats (leaderboards, badges, challenges)
-        if (completed && combatSessionData != null) {
+        if (completed && combatSessionData != null && EnduranceQuestManager.INSTANCE.isGamificationEnabled()) {
             GamificationManager.QuestCompletionResult gamificationResult =
                 GamificationManager.INSTANCE.recordQuestCompletion(
                     playerId,
                     player.getName().getString(),
                     session.getQuest(),
-                    combatSessionData
+                    combatSessionData,
+                    session
                 );
 
             // Send badge unlock notifications for newly earned badges
@@ -186,6 +204,16 @@ public class EnduranceEventHandler {
             questId, playerId, session.getQuest(), combatSessionData, comboSession, completed
         );
         LiveAnalyticsHookManager.INSTANCE.onQuestEnd(result);
+
+        if (combatSessionData != null) {
+            EnduranceTelemetryService.INSTANCE.recordQuestPerformance(
+                questId,
+                playerId,
+                session.getQuestType(),
+                combatSessionData,
+                session.getQuest().getCurrentWave()
+            );
+        }
 
         // Record telemetry for quest end
         EnduranceTelemetryService.INSTANCE.recordQuestEnd(
@@ -241,17 +269,46 @@ public class EnduranceEventHandler {
                 .withStyle(ChatFormatting.GRAY)));
             player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.boss_wave_divider"))
                 .withStyle(ChatFormatting.DARK_PURPLE)));
+            player.playSound(Objects.requireNonNull(SoundEvents.WITHER_SPAWN), 1.0f, 0.9f);
         } else {
             // Normal wave announcement
             int mobCount = quest.getCurrentWaveMobCount();
+            ArenaManager.Arena arena = session.getArena();
+            if (arena != null) {
+                mobCount = WaveManager.INSTANCE.getWaveState(arena.getId())
+                    .map(WaveManager.WaveState::getTotalToSpawn)
+                    .orElse(mobCount);
+            }
             player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.normal_divider"))
                 .withStyle(ChatFormatting.DARK_RED)));
             player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.wave_title", waveNumber, quest.getTotalWaves()))
                 .withStyle(ChatFormatting.RED, ChatFormatting.BOLD)));
             player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.enemies_count", mobCount, quest.getMobConfig().displayName))
                 .withStyle(ChatFormatting.GRAY)));
+            if (arena != null) {
+                WaveManager.INSTANCE.getWaveState(arena.getId()).ifPresent(waveState -> {
+                    WaveObjectiveState objective = waveState.getObjective();
+                    String objectiveLine = "Objective: " + objective.getTitle();
+                    if (objective.getDescription() != null && !objective.getDescription().isBlank()) {
+                        objectiveLine = objectiveLine + " (" + objective.getDescription() + ")";
+                    }
+                    player.sendSystemMessage(Objects.requireNonNull(Component.literal(objectiveLine)
+                        .withStyle(ChatFormatting.AQUA)));
+
+                    if (waveState.getDirectiveId() != null) {
+                        WaveDirective directive = WaveDirector.INSTANCE.findDirective(waveState.getDirectiveId());
+                        if (directive != null) {
+                            String directiveLine = "Directive: " + directive.name()
+                                + " (Reward x" + String.format("%.2f", waveState.getRewardMultiplier()) + ")";
+                            player.sendSystemMessage(Objects.requireNonNull(Component.literal(directiveLine)
+                                .withStyle(ChatFormatting.LIGHT_PURPLE)));
+                        }
+                    }
+                });
+            }
             player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.normal_divider"))
                 .withStyle(ChatFormatting.DARK_RED)));
+            player.playSound(Objects.requireNonNull(SoundEvents.NOTE_BLOCK_PLING.value()), 0.9f, 1.2f);
         }
 
         LOGGER.debug("[EnduranceQuest] Wave {} started for {} (boss: {})",
@@ -325,6 +382,14 @@ public class EnduranceEventHandler {
             com.frenkvs.devmod.NetworkHandler.sendPerkChoices(player, waveNumber, perkChoices);
         }
 
+        // === WAVE DIRECTIVES - Risk/Reward choices for next wave ===
+        if (quest.getCurrentWave() < quest.getTotalWaves() || quest.isEndlessMode()) {
+            int nextWave = waveNumber + 1;
+            List<WaveDirective> directives = WaveDirector.INSTANCE.rollDirectiveChoices(nextWave);
+            session.setPendingDirectives(directives, nextWave);
+            com.frenkvs.devmod.NetworkHandler.sendWaveDirectiveChoices(player, nextWave, directives);
+        }
+
         // === NOTIFY PLAYER ===
         player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.complete_divider"))
             .withStyle(ChatFormatting.GOLD)));
@@ -346,6 +411,27 @@ public class EnduranceEventHandler {
                 .withStyle(ChatFormatting.AQUA)));
         }
 
+        float directiveMultiplier = 1.0f;
+        ArenaManager.Arena arena = session.getArena();
+        if (arena != null) {
+            directiveMultiplier = WaveManager.INSTANCE.getWaveState(arena.getId())
+                .map(WaveManager.WaveState::getRewardMultiplier)
+                .orElse(1.0f);
+        }
+        RewardSystem.WaveReward waveReward = RewardSystem.INSTANCE.calculateWaveReward(
+            waveNumber, quest, comboSession, mutatorSession, directiveMultiplier);
+        String rewardLine = String.format(
+            "Reward: +%d tokens (base %d, style x%.1f, mutator x%.1f, directive x%.1f, bonus %d)",
+            waveReward.tokensEarned(),
+            waveReward.baseTokens(),
+            waveReward.styleMultiplier(),
+            waveReward.mutatorMultiplier(),
+            waveReward.directiveMultiplier(),
+            waveReward.bonusPoints());
+        player.sendSystemMessage(Objects.requireNonNull(Component.literal(
+            Objects.requireNonNull(rewardLine, "rewardLine"))
+            .withStyle(ChatFormatting.GOLD)));
+        player.playSound(Objects.requireNonNull(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE), 0.8f, 1.0f);
 
         if (quest.getCurrentWave() < quest.getTotalWaves() || quest.isEndlessMode()) {
             player.sendSystemMessage(Objects.requireNonNull(Objects.requireNonNull(I18n.translate("devmod.wave.checkpoint"))

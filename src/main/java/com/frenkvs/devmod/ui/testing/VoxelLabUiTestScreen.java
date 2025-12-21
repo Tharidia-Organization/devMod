@@ -53,7 +53,7 @@ public class VoxelLabUiTestScreen extends Screen {
     private long statusMessageTime = 0;
 
     public VoxelLabUiTestScreen() {
-        super(Component.literal("Voxel Lab"));
+        super(java.util.Objects.requireNonNull(Component.literal("Voxel Lab"), "title"));
     }
 
     // ═══════════════════════════════════════════════════════════════

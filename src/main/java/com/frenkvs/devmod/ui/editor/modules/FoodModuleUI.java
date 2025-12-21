@@ -11,11 +11,13 @@ import com.frenkvs.devmod.ui.editor.sections.SliderSectionAdapter;
 import com.frenkvs.devmod.ui.editor.sections.TextNoteSection;
 import com.frenkvs.devmod.ui.editor.sections.ToggleSectionAdapter;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import javax.annotation.Nonnull;
 
 /**
  * UI components and section builders for FoodModule.
@@ -165,8 +167,8 @@ public class FoodModuleUI {
         sections.add(new SimpleHeaderSection("debug-header", "Debug Information"));
 
         if (item != null && !item.isEmpty()) {
-            String itemId = BuiltInRegistries.ITEM.getKey(
-                Objects.requireNonNull(item.getItem(), "item")).toString();
+            @Nonnull Item safeItem = Objects.requireNonNull(item.getItem(), "item");
+            String itemId = BuiltInRegistries.ITEM.getKey(safeItem).toString();
             sections.add(new TextNoteSection("debug-item", "Item: " + itemId));
             sections.add(new TextNoteSection("debug-source", "Data Source: " + core.getSourcePrefix()));
 

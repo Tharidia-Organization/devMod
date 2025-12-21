@@ -75,7 +75,7 @@ Implementato il sistema di pool (deferred), migration audit, monitoring, release
 | DD65 | Pool Metrics | PoolMetrics with auto-disable >50% miss |
 | DD66 | Migration Detection | WrapperAnalyzer with pattern scanning |
 | DD67 | Deprecation CI | release-gate.yml with deprecation check |
-| DD68 | 48h Runbook | arena-alerts.md with soglie e escalation |
+| DD68 | 48h Runbook | docs/runbook/arena-alerts.md with soglie e escalation |
 | DD69 | Dashboard Validation | DashboardValidationJob daily 02:00 |
 | DD70 | Security Release Gate | release-gate.yml con 7 checks |
 | DD71 | Template Obsolescence | TemplateObsolescenceHandler session-safe |

@@ -1,6 +1,7 @@
 package com.devmod.arena.autosmoke;
 
 import com.devmod.arena.builder.ArenaBuilder;
+import com.devmod.arena.builder.TemplateArenaBuilder;
 import com.devmod.arena.cleanup.ArenaCleanupExecutor;
 import com.devmod.arena.cleanup.CleanupResult;
 import com.devmod.arena.override.ForceTemplateCapability;
@@ -49,7 +50,7 @@ public class AutosmokeRunner {
     private ForceTemplateCapability forceTemplateCapability;
 
     /** Optional arena builder for full cycle testing (G5: wave→cleanup) */
-    private ArenaBuilder arenaBuilder;
+    private TemplateArenaBuilder arenaBuilder;
 
     /** Optional cleanup executor for residual verification (G5) */
     private ArenaCleanupExecutor.LevelAccess levelAccess;
@@ -238,7 +239,7 @@ public class AutosmokeRunner {
      *
      * <p>Cycle phases:
      * <ol>
-     *   <li>Build - Place arena blocks using ArenaBuilder</li>
+     *   <li>Build - Place arena blocks using TemplateArenaBuilder</li>
      *   <li>Wave - Simulate mob spawns (count from template spawnSlots)</li>
      *   <li>Cleanup - Execute 4-phase cleanup via ArenaCleanupExecutor</li>
      *   <li>Verify - Check residuals against thresholds</li>
@@ -481,7 +482,7 @@ public class AutosmokeRunner {
     /**
      * G5: Configures full build→wave→cleanup cycle testing.
      * When enabled, testTemplate() will:
-     * 1. Build the arena using ArenaBuilder
+     * 1. Build the arena using TemplateArenaBuilder
      * 2. Simulate a wave cycle (entity spawn + delay)
      * 3. Execute cleanup with ArenaCleanupExecutor
      * 4. Verify residuals and report rollback/cleanup metrics
@@ -492,7 +493,7 @@ public class AutosmokeRunner {
      * @param originY Test build origin Y
      * @param originZ Test build origin Z
      */
-    public void enableFullCycle(ArenaBuilder builder, ArenaCleanupExecutor.LevelAccess levelAccess,
+    public void enableFullCycle(TemplateArenaBuilder builder, ArenaCleanupExecutor.LevelAccess levelAccess,
                                  int originX, int originY, int originZ) {
         this.arenaBuilder = builder;
         this.levelAccess = levelAccess;

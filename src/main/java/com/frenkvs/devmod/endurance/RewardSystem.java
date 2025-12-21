@@ -1,5 +1,9 @@
 package com.frenkvs.devmod.endurance;
 
+import com.devmod.arena.policy.ArenaPolicy;
+import com.devmod.arena.registry.ArenaTemplate;
+import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.frenkvs.devmod.util.I18n;
 import com.google.gson.Gson;
@@ -26,6 +30,7 @@ import java.io.*;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -67,6 +72,9 @@ public class RewardSystem {
     // Data persistence
     private Path dataDirectory;
     private final Random random = new Random();
+    private static final double MIN_TEMPLATE_DIFFICULTY_MULTIPLIER = 0.75;
+    private static final double MAX_TEMPLATE_DIFFICULTY_MULTIPLIER = 1.5;
+    private static final double MAX_TOTAL_REWARD_MULTIPLIER = 5.0;
 
     // ========== Currency System ==========
 
@@ -138,7 +146,9 @@ public class RewardSystem {
      */
     public QuestRewards calculateQuestRewards(ServerPlayer player, EnduranceQuest quest,
                                                ComboSystem.ComboSession comboSession,
-                                               MutatorSystem.MutatorSession mutatorSession) {
+                                               MutatorSystem.MutatorSession mutatorSession,
+                                               @javax.annotation.Nullable ArenaPolicy policy,
+                                               @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession session) {
         QuestRewards rewards = new QuestRewards();
         UUID playerId = player.getUUID();
         PlayerWallet wallet = getWallet(playerId);
@@ -183,8 +193,47 @@ public class RewardSystem {
             speedMultiplier = 1.0f + (1.0f - (float) quest.getSessionDuration() / parTime) * 0.5f;
         }
 
+        String templateId = session != null ? session.getTemplateId() : null;
+        boolean questCompleted = quest.getState() == EnduranceQuestState.COMPLETED;
+        double policyMultiplier = 1.0;
+        int streakCount = questCompleted ? wallet.updateCompletionStreak() : wallet.getCompletionStreak();
+
+        boolean hasHazards = false;
+        if (templateId != null) {
+            ArenaTemplateRegistry registry = DevMod.getArenaTemplateRegistry();
+            ArenaTemplate template = registry != null ? registry.get(templateId).orElse(null) : null;
+            hasHazards = template != null && template.hazards() != null && !template.hazards().isEmpty();
+        }
+
+        ArenaPolicy.RewardModifiers rewardModifiers = policy != null ? policy.rewardModifiers() : null;
+        if (rewardModifiers != null) {
+            policyMultiplier *= rewardModifiers.baseMultiplier();
+            if (questCompleted && templateId != null) {
+                boolean firstCompletion = !wallet.hasCompletedTemplate(templateId);
+                if (firstCompletion && rewardModifiers.firstCompletionBonus() > 0) {
+                    policyMultiplier *= (1.0 + rewardModifiers.firstCompletionBonus());
+                }
+                if (hasHazards && rewardModifiers.hazardBonus() > 0) {
+                    policyMultiplier *= (1.0 + rewardModifiers.hazardBonus());
+                }
+                if (rewardModifiers.streakMultiplier() > 0 && streakCount > 1) {
+                    policyMultiplier *= (1.0 + rewardModifiers.streakMultiplier() * (streakCount - 1));
+                }
+            }
+        }
+
+        double difficultyMultiplier = 1.0;
+        if (policy != null) {
+            difficultyMultiplier = Math.min(MAX_TEMPLATE_DIFFICULTY_MULTIPLIER,
+                Math.max(MIN_TEMPLATE_DIFFICULTY_MULTIPLIER, policy.weight()));
+        }
+
+        double totalMultiplier = styleMultiplier * mutatorMultiplier * noHitMultiplier * speedMultiplier;
+        totalMultiplier *= policyMultiplier * difficultyMultiplier;
+        totalMultiplier = Math.min(MAX_TOTAL_REWARD_MULTIPLIER, Math.max(0.25, totalMultiplier));
+
         // Calculate final tokens
-        int finalTokens = (int) (baseTokens * styleMultiplier * mutatorMultiplier * noHitMultiplier * speedMultiplier);
+        int finalTokens = (int) (baseTokens * totalMultiplier);
         finalTokens += waveBonus;
 
         rewards.tokensEarned = finalTokens;
@@ -196,6 +245,10 @@ public class RewardSystem {
 
         // Award tokens
         wallet.addCurrency(Currency.TOKENS, finalTokens);
+
+        if (questCompleted && templateId != null) {
+            wallet.recordTemplateCompletion(templateId);
+        }
 
         // Telemetry: record tokens earned
         EnduranceTelemetryService.INSTANCE.recordCurrencyEarned(
@@ -791,6 +844,9 @@ public class RewardSystem {
         private final Map<String, Integer> currencies = new HashMap<>();
         private final Map<String, Integer> purchases = new HashMap<>();
         private final Set<String> achievements = new HashSet<>();
+        private final Map<String, Integer> templateCompletions = new HashMap<>();
+        private int completionStreak = 0;
+        private long lastCompletionDay = -1;
 
         public PlayerWallet(UUID playerId) {
             this.playerId = playerId;
@@ -828,10 +884,40 @@ public class RewardSystem {
             achievements.add(achievementId);
         }
 
+        public boolean hasCompletedTemplate(String templateId) {
+            return templateId != null && templateCompletions.containsKey(templateId);
+        }
+
+        public void recordTemplateCompletion(String templateId) {
+            if (templateId == null || templateId.isBlank()) {
+                return;
+            }
+            templateCompletions.merge(templateId, 1, (a, b) -> a + b);
+        }
+
+        public int updateCompletionStreak() {
+            long today = LocalDate.now().toEpochDay();
+            if (lastCompletionDay == today) {
+                return completionStreak;
+            }
+            if (lastCompletionDay == today - 1) {
+                completionStreak++;
+            } else {
+                completionStreak = 1;
+            }
+            lastCompletionDay = today;
+            return completionStreak;
+        }
+
+        public int getCompletionStreak() {
+            return completionStreak;
+        }
+
         public UUID getPlayerId() { return playerId; }
         public Map<String, Integer> getCurrencies() { return currencies; }
         public Map<String, Integer> getPurchases() { return purchases; }
         public Set<String> getAchievements() { return achievements; }
+        public Map<String, Integer> getTemplateCompletions() { return templateCompletions; }
     }
 
     /**
@@ -988,6 +1074,7 @@ public class RewardSystem {
         int baseTokens,
         float styleMultiplier,
         float mutatorMultiplier,
+        float directiveMultiplier,
         int bonusPoints
     ) {}
 
@@ -1003,6 +1090,13 @@ public class RewardSystem {
     public WaveReward calculateWaveReward(int waveNumber, EnduranceQuest quest,
                                            ComboSystem.ComboSession comboSession,
                                            MutatorSystem.MutatorSession mutatorSession) {
+        return calculateWaveReward(waveNumber, quest, comboSession, mutatorSession, 1.0f);
+    }
+
+    public WaveReward calculateWaveReward(int waveNumber, EnduranceQuest quest,
+                                          ComboSystem.ComboSession comboSession,
+                                          MutatorSystem.MutatorSession mutatorSession,
+                                          float directiveMultiplier) {
         // Base tokens per wave (scales with wave number)
         int baseTokens = 10 + (waveNumber * 5);
 
@@ -1038,9 +1132,12 @@ public class RewardSystem {
             bonusPoints += 50;
         }
 
-        int totalTokens = (int) (baseTokens * styleMultiplier * mutatorMultiplier) + bonusPoints;
+        float safeDirectiveMultiplier = directiveMultiplier > 0f ? directiveMultiplier : 1.0f;
+        int totalTokens = (int) (baseTokens * styleMultiplier * mutatorMultiplier * safeDirectiveMultiplier)
+            + bonusPoints;
 
-        return new WaveReward(totalTokens, baseTokens, styleMultiplier, mutatorMultiplier, bonusPoints);
+        return new WaveReward(totalTokens, baseTokens, styleMultiplier, mutatorMultiplier,
+            safeDirectiveMultiplier, bonusPoints);
     }
 
     /**

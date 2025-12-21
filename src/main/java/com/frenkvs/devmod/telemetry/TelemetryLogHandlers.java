@@ -1,5 +1,7 @@
 package com.frenkvs.devmod.telemetry;
 
+import com.devmod.arena.api.ArenaHandle;
+import com.frenkvs.devmod.endurance.EnduranceQuestManager;
 import com.frenkvs.devmod.telemetry.boss.BossPhaseService;
 import com.frenkvs.devmod.telemetry.combat.FightSessionService;
 import com.frenkvs.devmod.telemetry.damage.DamageTrackingService;
@@ -10,10 +12,13 @@ import com.frenkvs.devmod.telemetry.entity.MinionService;
 import com.frenkvs.devmod.telemetry.skills.SkillTrackingService;
 import com.frenkvs.devmod.telemetry.spatial.HeatmapService;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -26,6 +31,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * Handles all log* methods for TelemetryService.
@@ -57,6 +64,8 @@ public class TelemetryLogHandlers {
                 ? stateJson(livingAttacker)
                 : "{}";
         String targetState = stateJson(target);
+        FightSessionService.CombatContext context = resolveCombatContext(attacker, target);
+        String contextJson = formatContextFields(context);
 
         String line = "{\"ts\":\"" + Instant.now() + "\","
                 + "\"room\":\"" + TelemetryJson.escape(room) + "\","
@@ -77,11 +86,18 @@ public class TelemetryLogHandlers {
                 + "\"hazardType\":\"" + TelemetryJson.escape(hazardType) + "\","
                 + "\"attackerState\":" + attackerState + ","
                 + "\"targetState\":" + targetState
+                + contextJson
                 + "}";
 
         // DuckDB PRIMARY, NDJSON fallback
         if (DuckDBTelemetryService.INSTANCE.isEnabled()) {
             DuckDBTelemetryService.INSTANCE.logHit(room, level.dimension().location().toString(),
+                context != null ? context.templateId() : null,
+                context != null ? context.templateVersion() : null,
+                context != null ? context.policyId() : null,
+                context != null ? context.policyVersion() : null,
+                context != null ? context.arenaId() : null,
+                context != null ? context.sessionId() : null,
                 attackerName, attackerType, target.getName().getString(), targetType,
                 amount, damageType, hpBefore, hpAfter, bodyPart, distance,
                 armorPenBonus, false, hazard, hazardType, attackerState, targetState);
@@ -101,7 +117,7 @@ public class TelemetryLogHandlers {
 
         if (level instanceof ServerLevel serverLevel) {
             FightSessionService.INSTANCE.registerHit(room, serverLevel.dimension().location().toString(),
-                attacker, target, hpAfter <= 0);
+                attacker, target, hpAfter <= 0, context);
         }
 
         // First-hit timestamp for TTK
@@ -130,8 +146,9 @@ public class TelemetryLogHandlers {
 
     public void logMiss(Level level, Entity attacker, Vec3 impactPos, String impactType) {
         if (level.isClientSide()) return;
-        Vec3 safeImpactPos = Objects.requireNonNull(impactPos, "impactPos");
-        String room = service.resolveRoom((ServerLevel) level, BlockPos.containing(safeImpactPos));
+        @Nonnull Vec3 safeImpactPos = Objects.requireNonNull(impactPos, "impactPos");
+        BlockPos impactBlock = BlockPos.containing(safeImpactPos.x, safeImpactPos.y, safeImpactPos.z);
+        String room = service.resolveRoom((ServerLevel) level, impactBlock);
         String attackerName = attacker != null ? attacker.getName().getString() : "unknown";
         String attackerType = attacker != null ? EntityTypeName.of(attacker) : "unknown";
         double distance = attacker != null ? attacker.position().distanceTo(safeImpactPos) : -1;
@@ -188,6 +205,8 @@ public class TelemetryLogHandlers {
     public void logDeath(Level level, LivingEntity entity, DamageSource source) {
         if (level.isClientSide()) return;
         String room = service.resolveRoom((ServerLevel) level, entity.blockPosition());
+        FightSessionService.CombatContext context = resolveCombatContext(source.getEntity(), entity);
+        String contextJson = formatContextFields(context);
         long deathTime = System.currentTimeMillis();
         Long firstHit = mobFirstHit.remove(entity.getUUID());
         Long firstSeen = mobSpawnTime.remove(entity.getUUID());
@@ -203,11 +222,18 @@ public class TelemetryLogHandlers {
                 + "\"cause\":\"" + TelemetryJson.escape(source.getMsgId()) + "\","
                 + "\"ttkFirstHitMs\":" + (ttkFirstHit != null ? ttkFirstHit : -1) + ","
                 + "\"ttkSpawnMs\":" + (ttkSpawn != null ? ttkSpawn : -1)
+                + contextJson
                 + "}";
 
         // DuckDB PRIMARY, NDJSON fallback
         if (DuckDBTelemetryService.INSTANCE.isEnabled()) {
             DuckDBTelemetryService.INSTANCE.logDeath(room, level.dimension().location().toString(),
+                context != null ? context.templateId() : null,
+                context != null ? context.templateVersion() : null,
+                context != null ? context.policyId() : null,
+                context != null ? context.policyVersion() : null,
+                context != null ? context.arenaId() : null,
+                context != null ? context.sessionId() : null,
                 entity.getName().getString(), EntityTypeName.of(entity),
                 source.getMsgId(), ttkFirstHit, ttkSpawn);
         }
@@ -251,6 +277,8 @@ public class TelemetryLogHandlers {
     public void logHeal(Level level, LivingEntity entity, double amount, String source) {
         if (level.isClientSide()) return;
         String room = service.resolveRoom((ServerLevel) level, entity.blockPosition());
+        FightSessionService.CombatContext context = resolveCombatContext(entity, null);
+        String contextJson = formatContextFields(context);
         double hpBefore = entity.getHealth();
         double hpAfter = Math.min(entity.getMaxHealth(), hpBefore + amount);
 
@@ -263,11 +291,18 @@ public class TelemetryLogHandlers {
                 + "\"hpBefore\":" + hpBefore + ","
                 + "\"hpAfter\":" + hpAfter + ","
                 + "\"source\":\"" + TelemetryJson.escape(source) + "\""
+                + contextJson
                 + "}";
 
         // DuckDB PRIMARY, NDJSON fallback
         if (DuckDBTelemetryService.INSTANCE.isEnabled()) {
             DuckDBTelemetryService.INSTANCE.logHeal(room, level.dimension().location().toString(),
+                context != null ? context.templateId() : null,
+                context != null ? context.templateVersion() : null,
+                context != null ? context.policyId() : null,
+                context != null ? context.policyVersion() : null,
+                context != null ? context.arenaId() : null,
+                context != null ? context.sessionId() : null,
                 entity.getName().getString(), EntityTypeName.of(entity),
                 amount, hpBefore, hpAfter, source);
         }
@@ -283,6 +318,8 @@ public class TelemetryLogHandlers {
         EntityTrackingService.INSTANCE.registerSpawn(entity.getUUID(),
                 level.dimension().location().toString(), entity.position());
         String room = service.resolveRoom(level, entity.blockPosition());
+        FightSessionService.CombatContext context = resolveCombatContext(entity, null);
+        String contextJson = formatContextFields(context);
         boolean failed = spawnInSolid(level, entity) ||
                 entity.getY() < level.getMinBuildHeight() ||
                 entity.getY() > level.getMaxBuildHeight() + 4;
@@ -294,11 +331,18 @@ public class TelemetryLogHandlers {
                 + "\"entityType\":\"" + TelemetryJson.escape(EntityTypeName.of(entity)) + "\","
                 + "\"reason\":\"" + TelemetryJson.escape(reason) + "\","
                 + "\"spawnFail\":" + failed
+                + contextJson
                 + "}";
 
         // DuckDB PRIMARY, NDJSON fallback
         if (DuckDBTelemetryService.INSTANCE.isEnabled()) {
             DuckDBTelemetryService.INSTANCE.logSpawn(room, level.dimension().location().toString(),
+                context != null ? context.templateId() : null,
+                context != null ? context.templateVersion() : null,
+                context != null ? context.policyId() : null,
+                context != null ? context.policyVersion() : null,
+                context != null ? context.arenaId() : null,
+                context != null ? context.sessionId() : null,
                 entity.getName().getString(), EntityTypeName.of(entity),
                 reason, failed, entity.getX(), entity.getY(), entity.getZ());
         }
@@ -319,6 +363,108 @@ public class TelemetryLogHandlers {
     }
 
     // ===== Utility Methods =====
+
+    private static @Nullable FightSessionService.CombatContext resolveCombatContext(@Nullable Entity primary,
+                                                                                   @Nullable Entity secondary) {
+        FightSessionService.CombatContext context = resolveContextFromPlayer(primary);
+        if (context != null) {
+            return context;
+        }
+        context = resolveContextFromPlayer(secondary);
+        if (context != null) {
+            return context;
+        }
+        context = resolveContextFromEntity(primary);
+        if (context != null) {
+            return context;
+        }
+        return resolveContextFromEntity(secondary);
+    }
+
+    private static @Nullable FightSessionService.CombatContext resolveContextFromPlayer(@Nullable Entity entity) {
+        if (!(entity instanceof ServerPlayer player)) {
+            return null;
+        }
+        return EnduranceQuestManager.INSTANCE.getActiveSession(player)
+            .map(session -> {
+                UUID sessionId = session.getQuest() != null ? session.getQuest().getQuestId() : null;
+                UUID arenaId = null;
+                ArenaHandle handle = session.getArenaHandle();
+                if (handle != null) {
+                    arenaId = handle.arenaId();
+                } else if (session.getArena() != null) {
+                    arenaId = session.getArena().getId();
+                }
+                return new FightSessionService.CombatContext(
+                    session.getTemplateId(),
+                    session.getTemplateVersion(),
+                    session.getPolicyId(),
+                    session.getPolicyVersion(),
+                    arenaId,
+                    sessionId
+                );
+            })
+            .orElse(null);
+    }
+
+    private static @Nullable FightSessionService.CombatContext resolveContextFromEntity(@Nullable Entity entity) {
+        if (!(entity instanceof LivingEntity living)) {
+            return null;
+        }
+        CompoundTag data = living.getPersistentData();
+        boolean hasContext = data.hasUUID("endurance_quest_id")
+            || data.hasUUID("endurance_arena_id")
+            || data.contains("endurance_template_id")
+            || data.contains("endurance_policy_id");
+        if (!hasContext) {
+            return null;
+        }
+        String templateId = data.contains("endurance_template_id") ? data.getString("endurance_template_id") : null;
+        Integer templateVersion = data.contains("endurance_template_version")
+            ? data.getInt("endurance_template_version")
+            : null;
+        String policyId = data.contains("endurance_policy_id") ? data.getString("endurance_policy_id") : null;
+        Integer policyVersion = data.contains("endurance_policy_version")
+            ? data.getInt("endurance_policy_version")
+            : null;
+        UUID arenaId = data.hasUUID("endurance_arena_id") ? data.getUUID("endurance_arena_id") : null;
+        UUID sessionId = data.hasUUID("endurance_quest_id") ? data.getUUID("endurance_quest_id") : null;
+
+        return new FightSessionService.CombatContext(
+            templateId,
+            templateVersion,
+            policyId,
+            policyVersion,
+            arenaId,
+            sessionId
+        );
+    }
+
+    private static String formatContextFields(@Nullable FightSessionService.CombatContext context) {
+        if (context == null) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        if (context.templateId() != null && !context.templateId().isBlank()) {
+            sb.append(",\"templateId\":\"").append(TelemetryJson.escape(context.templateId())).append("\"");
+        }
+        if (context.templateVersion() != null) {
+            sb.append(",\"templateVersion\":").append(context.templateVersion());
+        }
+        if (context.policyId() != null && !context.policyId().isBlank()) {
+            sb.append(",\"policyId\":\"").append(TelemetryJson.escape(context.policyId())).append("\"");
+        }
+        if (context.policyVersion() != null) {
+            sb.append(",\"policyVersion\":").append(context.policyVersion());
+        }
+        if (context.arenaId() != null) {
+            sb.append(",\"arenaId\":\"").append(context.arenaId()).append("\"");
+        }
+        if (context.sessionId() != null) {
+            sb.append(",\"sessionId\":\"").append(context.sessionId()).append("\"");
+        }
+        return sb.toString();
+    }
 
     private static String stateJson(LivingEntity entity) {
         StringBuilder effects = new StringBuilder();
@@ -351,17 +497,24 @@ public class TelemetryLogHandlers {
     }
 
     private static String classifyHazard(DamageSource source) {
-        if (source.is(Objects.requireNonNull(DamageTypeTags.IS_FIRE))) return "fire";
-        if (source.is(Objects.requireNonNull(DamageTypeTags.IS_FALL))) return "fall";
-        if (source.is(Objects.requireNonNull(DamageTypeTags.IS_DROWNING))) return "drown";
-        if (source.is(Objects.requireNonNull(DamageTypeTags.IS_FREEZING))) return "freeze";
-        if (source.is(Objects.requireNonNull(DamageTypeTags.IS_LIGHTNING))) return "lightning";
-        if (source.is(Objects.requireNonNull(DamageTypeTags.IS_EXPLOSION))) return "explosion";
-        if (source.is(Objects.requireNonNull(DamageTypeTags.IS_PROJECTILE))) return "projectile";
+        @Nonnull TagKey<DamageType> fireTag = Objects.requireNonNull(DamageTypeTags.IS_FIRE, "IS_FIRE");
+        @Nonnull TagKey<DamageType> fallTag = Objects.requireNonNull(DamageTypeTags.IS_FALL, "IS_FALL");
+        @Nonnull TagKey<DamageType> drownTag = Objects.requireNonNull(DamageTypeTags.IS_DROWNING, "IS_DROWNING");
+        @Nonnull TagKey<DamageType> freezeTag = Objects.requireNonNull(DamageTypeTags.IS_FREEZING, "IS_FREEZING");
+        @Nonnull TagKey<DamageType> lightningTag = Objects.requireNonNull(DamageTypeTags.IS_LIGHTNING, "IS_LIGHTNING");
+        @Nonnull TagKey<DamageType> explosionTag = Objects.requireNonNull(DamageTypeTags.IS_EXPLOSION, "IS_EXPLOSION");
+        @Nonnull TagKey<DamageType> projectileTag = Objects.requireNonNull(DamageTypeTags.IS_PROJECTILE, "IS_PROJECTILE");
+        if (source.is(fireTag)) return "fire";
+        if (source.is(fallTag)) return "fall";
+        if (source.is(drownTag)) return "drown";
+        if (source.is(freezeTag)) return "freeze";
+        if (source.is(lightningTag)) return "lightning";
+        if (source.is(explosionTag)) return "explosion";
+        if (source.is(projectileTag)) return "projectile";
         return source.type().msgId();
     }
 
-    private static boolean spawnInSolid(ServerLevel level, LivingEntity entity) {
+    private static boolean spawnInSolid(ServerLevel level, @Nonnull LivingEntity entity) {
         return !level.noCollision(Objects.requireNonNull(entity, "entity"));
     }
 

@@ -1,5 +1,10 @@
 package com.devmod.arena.autosmoke;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -7,58 +12,49 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 /**
- * Gap 5: Autosmoke Report Writer - writes reports to dedicated log file.
- *
- * <p>Features:</p>
- * <ul>
- *   <li>Writes autosmoke reports to logs/autosmoke-reports.log</li>
- *   <li>Rotation: daily files (autosmoke-reports-YYYY-MM-DD.log)</li>
- *   <li>Format: timestamped entries with CSV export appended</li>
- *   <li>Configurable log directory</li>
- * </ul>
+ * Autosmoke report writer (JSON + CSV) with daily files and retention.
  */
 public class AutosmokeReportWriter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AutosmokeReportWriter.class);
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    private static final String DEFAULT_LOG_DIR = "logs";
-    private static final String LOG_FILE_PREFIX = "autosmoke-reports";
-    private static final String LOG_FILE_EXTENSION = ".log";
+    private static final Path DEFAULT_REPORT_DIR = Path.of("run", "autosmoke-reports");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+    private static final DateTimeFormatter TS_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+    private static final int DEFAULT_RETENTION_DAYS = 30;
 
-    private final Path logDirectory;
+    private final Path reportDirectory;
     private final ZoneId zoneId;
+    private final int retentionDays;
 
     /**
-     * Creates a new report writer with default log directory.
+     * Creates a writer with default report directory and retention.
      */
     public AutosmokeReportWriter() {
-        this(Path.of(DEFAULT_LOG_DIR), ZoneId.systemDefault());
+        this(DEFAULT_REPORT_DIR, ZoneId.systemDefault(), DEFAULT_RETENTION_DAYS);
     }
 
     /**
-     * Creates a new report writer with custom log directory.
-     *
-     * @param logDirectory The directory for log files
-     * @param zoneId The timezone for timestamps
+     * Creates a writer with custom directory and retention.
      */
-    public AutosmokeReportWriter(Path logDirectory, ZoneId zoneId) {
-        this.logDirectory = Objects.requireNonNull(logDirectory, "logDirectory");
+    public AutosmokeReportWriter(Path reportDirectory, ZoneId zoneId, int retentionDays) {
+        this.reportDirectory = Objects.requireNonNull(reportDirectory, "reportDirectory");
         this.zoneId = Objects.requireNonNull(zoneId, "zoneId");
-        ensureLogDirectory();
+        this.retentionDays = retentionDays;
+        ensureDirectory();
     }
 
     /**
-     * Writes an autosmoke report to the dedicated log file.
-     *
-     * @param report The autosmoke report to write
+     * Writes an autosmoke report to JSON and CSV daily files.
      */
     public void writeReport(AutosmokeRunner.AutosmokeReport report) {
         if (report == null) {
@@ -66,149 +62,118 @@ public class AutosmokeReportWriter {
             return;
         }
 
+        String date = LocalDateTime.now(zoneId).format(DATE_FORMATTER);
+        Path jsonFile = reportDirectory.resolve(date + ".json");
+        Path csvFile = reportDirectory.resolve(date + ".csv");
+
         try {
-            Path logFile = getLogFilePath();
-            String entry = formatReportEntry(report);
-
-            Files.writeString(logFile, entry,
-                StandardOpenOption.CREATE,
-                StandardOpenOption.APPEND);
-
-            LOGGER.info("Autosmoke report written to {}", logFile);
+            writeJsonReport(jsonFile, report);
+            writeCsvReport(csvFile, report);
+            cleanupOldReports();
+            LOGGER.info("Autosmoke report written to {}", jsonFile);
         } catch (IOException e) {
-            LOGGER.error("Failed to write autosmoke report to log file", e);
+            LOGGER.error("Failed to write autosmoke report", e);
         }
     }
 
     /**
-     * Writes a scheduled run summary to the log file.
-     *
-     * @param status The run status
+     * Writes a run status entry for audits.
      */
     public void writeRunStatus(AutosmokeScheduler.RunStatus status) {
         if (status == null) {
             return;
         }
 
-        try {
-            Path logFile = getLogFilePath();
-            String entry = formatRunStatusEntry(status);
-
-            Files.writeString(logFile, entry,
-                StandardOpenOption.CREATE,
-                StandardOpenOption.APPEND);
-        } catch (IOException e) {
-            LOGGER.error("Failed to write run status to log file", e);
-        }
-    }
-
-    /**
-     * Gets the current log file path (with date rotation).
-     */
-    private Path getLogFilePath() {
         String date = LocalDateTime.now(zoneId).format(DATE_FORMATTER);
-        String filename = LOG_FILE_PREFIX + "-" + date + LOG_FILE_EXTENSION;
-        return logDirectory.resolve(filename);
+        Path statusFile = reportDirectory.resolve(date + ".status.log");
+        String timestamp = LocalDateTime.now(zoneId).format(TS_FORMATTER);
+        String entry = "[" + timestamp + "] " + status.formatSummary() + "\n";
+
+        try {
+            Files.writeString(statusFile, entry, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        } catch (IOException e) {
+            LOGGER.error("Failed to write autosmoke run status", e);
+        }
     }
 
-    /**
-     * Formats a report as a log entry.
-     */
-    private String formatReportEntry(AutosmokeRunner.AutosmokeReport report) {
-        StringBuilder sb = new StringBuilder();
-
-        String timestamp = LocalDateTime.now(zoneId).format(TIMESTAMP_FORMATTER);
-
-        sb.append("\n");
-        sb.append("================================================================================\n");
-        sb.append("[").append(timestamp).append("] AUTOSMOKE REPORT\n");
-        sb.append("================================================================================\n");
-
-        // Header info
-        if (report.header() != null) {
-            sb.append("Timestamp: ").append(report.header().timestamp()).append("\n");
-            sb.append("Mod Version: ").append(report.header().modVersion()).append("\n");
-            sb.append("Git Commit: ").append(report.header().gitCommit()).append("\n");
-            sb.append("Git Branch: ").append(report.header().gitBranch()).append("\n");
-            sb.append("Java Version: ").append(report.header().javaVersion()).append("\n");
-        }
-
-        // Summary
-        sb.append("\n--- SUMMARY ---\n");
-        sb.append("Passed: ").append(report.passedCount()).append("\n");
-        sb.append("Failed: ").append(report.failedCount()).append("\n");
-        sb.append("Total Duration: ").append(report.totalDuration().toMillis()).append("ms\n");
-
-        // Guard result
-        if (report.guardResult() != null) {
-            sb.append("\n--- GUARD ---\n");
-            sb.append("Allowed: ").append(report.guardResult().allowed()).append("\n");
-            sb.append("Env Check: ").append(report.guardResult().envCheckPassed()).append("\n");
-            sb.append("Flag Check: ").append(report.guardResult().flagCheckPassed()).append("\n");
-            sb.append("Marker Check: ").append(report.guardResult().markerCheckPassed()).append("\n");
-            if (!report.guardResult().allowed()) {
-                sb.append("Block Reasons: ").append(report.guardResult().getBlockReasons()).append("\n");
+    private void writeJsonReport(Path jsonFile, AutosmokeRunner.AutosmokeReport report) throws IOException {
+        JsonArray reports = new JsonArray();
+        if (Files.exists(jsonFile)) {
+            try {
+                String existing = Files.readString(jsonFile);
+                JsonElement parsed = JsonParser.parseString(existing);
+                if (parsed.isJsonArray()) {
+                    reports = parsed.getAsJsonArray();
+                }
+            } catch (Exception e) {
+                LOGGER.warn("Failed to parse existing JSON report, rewriting file");
             }
         }
 
-        // Individual results
-        sb.append("\n--- RESULTS ---\n");
-        sb.append(report.toCsv());
+        JsonElement reportJson = JsonParser.parseString(report.toJson());
+        reports.add(reportJson);
 
-        sb.append("================================================================================\n");
-
-        return sb.toString();
+        Files.writeString(
+            jsonFile,
+            GSON.toJson(reports),
+            StandardOpenOption.CREATE,
+            StandardOpenOption.TRUNCATE_EXISTING
+        );
     }
 
-    /**
-     * Formats a run status as a log entry.
-     */
-    private String formatRunStatusEntry(AutosmokeScheduler.RunStatus status) {
-        StringBuilder sb = new StringBuilder();
-
-        String timestamp = LocalDateTime.now(zoneId).format(TIMESTAMP_FORMATTER);
-
-        sb.append("[").append(timestamp).append("] ");
-        sb.append("RUN STATUS: ").append(status.formatSummary()).append("\n");
-        sb.append("  Started: ").append(status.startTime()).append("\n");
-        sb.append("  Ended: ").append(status.endTime()).append("\n");
-        sb.append("  Duration: ").append(status.duration().toMillis()).append("ms\n");
-
-        return sb.toString();
+    private void writeCsvReport(Path csvFile, AutosmokeRunner.AutosmokeReport report) throws IOException {
+        String csv = report.toCsv();
+        if (Files.exists(csvFile)) {
+            int newline = csv.indexOf('\n');
+            if (newline >= 0) {
+                csv = csv.substring(newline + 1);
+            }
+        }
+        Files.writeString(csvFile, csv, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
     }
 
-    /**
-     * Ensures the log directory exists.
-     */
-    private void ensureLogDirectory() {
+    private void ensureDirectory() {
         try {
-            if (!Files.exists(logDirectory)) {
-                Files.createDirectories(logDirectory);
-                LOGGER.info("Created autosmoke log directory: {}", logDirectory);
+            if (!Files.exists(reportDirectory)) {
+                Files.createDirectories(reportDirectory);
+                LOGGER.info("Created autosmoke report directory: {}", reportDirectory);
             }
         } catch (IOException e) {
-            LOGGER.error("Failed to create log directory: {}", logDirectory, e);
+            LOGGER.error("Failed to create autosmoke report directory: {}", reportDirectory, e);
+        }
+    }
+
+    private void cleanupOldReports() {
+        if (retentionDays <= 0) {
+            return;
+        }
+
+        Instant cutoff = Instant.now().minus(Duration.ofDays(retentionDays));
+        try {
+            Files.list(reportDirectory)
+                .filter(path -> {
+                    try {
+                        return Files.getLastModifiedTime(path).toInstant().isBefore(cutoff);
+                    } catch (IOException e) {
+                        return false;
+                    }
+                })
+                .forEach(path -> {
+                    try {
+                        Files.deleteIfExists(path);
+                    } catch (IOException e) {
+                        LOGGER.warn("Failed to delete old autosmoke report: {}", path);
+                    }
+                });
+        } catch (IOException e) {
+            LOGGER.warn("Failed to cleanup autosmoke reports", e);
         }
     }
 
     /**
-     * Gets the path to today's log file.
+     * Returns the report directory.
      */
-    public Path getTodayLogFile() {
-        return getLogFilePath();
-    }
-
-    /**
-     * Checks if today's log file exists.
-     */
-    public boolean hasTodayLog() {
-        return Files.exists(getLogFilePath());
-    }
-
-    /**
-     * Gets the configured log directory.
-     */
-    public Path getLogDirectory() {
-        return logDirectory;
+    public Path getReportDirectory() {
+        return reportDirectory;
     }
 }

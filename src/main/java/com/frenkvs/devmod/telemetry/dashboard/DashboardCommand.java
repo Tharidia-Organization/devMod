@@ -1,10 +1,19 @@
 package com.frenkvs.devmod.telemetry.dashboard;
 
+import com.frenkvs.devmod.actions.ActionCategory;
+import com.frenkvs.devmod.actions.ActionCommandInvoker;
+import com.frenkvs.devmod.actions.ActionContext;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionPreconditions;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.RadialAction;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Items;
 
 import java.util.Objects;
 
@@ -24,14 +33,75 @@ public class DashboardCommand {
             Commands.literal("devmod")
                 .then(Commands.literal("dashboard")
                     .requires(source -> source.hasPermission(2)) // Requires op level 2
-                    .executes(DashboardCommand::openDashboard)
+                    .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_DASHBOARD_SERVER_OPEN, ctx))
                     .then(Commands.literal("start")
-                        .executes(DashboardCommand::startServer))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_DASHBOARD_SERVER_START, ctx)))
                     .then(Commands.literal("stop")
-                        .executes(DashboardCommand::stopServer))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_DASHBOARD_SERVER_STOP, ctx)))
                     .then(Commands.literal("status")
-                        .executes(DashboardCommand::showStatus)))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_DASHBOARD_SERVER_STATUS, ctx))))
         );
+    }
+
+    public static void registerActions() {
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_DASHBOARD_SERVER_OPEN)
+            .labelKey("devmod.action.telemetry.dashboard.open")
+            .descriptionKey("devmod.action.telemetry.dashboard.open.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Dashboard/Open")
+            .icon(Items.MAP)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod dashboard")
+            .handler(context -> handleCommand(context, "devmod dashboard", DashboardCommand::openDashboard))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_DASHBOARD_SERVER_START)
+            .labelKey("devmod.action.telemetry.dashboard.start")
+            .descriptionKey("devmod.action.telemetry.dashboard.start.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Dashboard/Start")
+            .icon(Items.REDSTONE)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod dashboard start")
+            .handler(context -> handleCommand(context, "devmod dashboard start", DashboardCommand::startServer))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_DASHBOARD_SERVER_STOP)
+            .labelKey("devmod.action.telemetry.dashboard.stop")
+            .descriptionKey("devmod.action.telemetry.dashboard.stop.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Dashboard/Stop")
+            .icon(Items.BARRIER)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod dashboard stop")
+            .handler(context -> handleCommand(context, "devmod dashboard stop", DashboardCommand::stopServer))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_DASHBOARD_SERVER_STATUS)
+            .labelKey("devmod.action.telemetry.dashboard.status")
+            .descriptionKey("devmod.action.telemetry.dashboard.status.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Dashboard/Status")
+            .icon(Items.CLOCK)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod dashboard status")
+            .handler(context -> handleCommand(context, "devmod dashboard status", DashboardCommand::showStatus))
+            .build());
+    }
+
+    private static void handleCommand(ActionContext context, String command,
+                                      CommandHandler handler) {
+        CommandContext<CommandSourceStack> cmd = context.getCommandContext();
+        if (context.getOrigin() == ActionOrigin.COMMAND && cmd != null) {
+            handler.run(cmd);
+            return;
+        }
+        context.executeCommand(command);
+    }
+
+    @FunctionalInterface
+    private interface CommandHandler {
+        void run(CommandContext<CommandSourceStack> context);
     }
 
     private static int openDashboard(CommandContext<CommandSourceStack> context) {

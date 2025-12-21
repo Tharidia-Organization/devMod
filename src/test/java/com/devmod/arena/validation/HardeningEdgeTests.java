@@ -9,6 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -517,15 +518,15 @@ class HardeningEdgeTests {
             var manager = new RobustCleanupManager(executor);
 
             int cleanupCount = 20;
-            var futures = new CompletableFuture[cleanupCount];
+            var futures = new ArrayList<CompletableFuture<?>>(cleanupCount);
 
             for (int i = 0; i < cleanupCount; i++) {
                 var bounds = new ArenaCleanupExecutor.ArenaBounds(
                     i * 64, 0, 0, (i + 1) * 64 - 1, 63, 63);
-                futures[i] = manager.cleanupWithInvariantAsync(UUID.randomUUID(), bounds);
+                futures.add(manager.cleanupWithInvariantAsync(UUID.randomUUID(), bounds));
             }
 
-            CompletableFuture.allOf(futures).get(60, TimeUnit.SECONDS);
+            CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).get(60, TimeUnit.SECONDS);
 
             var stats = manager.getStats();
             assertEquals(cleanupCount, stats.total());

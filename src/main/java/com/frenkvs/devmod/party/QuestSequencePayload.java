@@ -20,7 +20,10 @@ public record QuestSequencePayload(
     Phase phase,
     int secondsRemaining,
     int totalMembers,
-    List<UUID> arrivedMembers
+    List<UUID> arrivedMembers,
+    String title,
+    String subtitle,
+    List<String> infoLines
 ) implements CustomPacketPayload {
 
     public static final Type<QuestSequencePayload> TYPE = new Type<>(
@@ -29,6 +32,8 @@ public record QuestSequencePayload(
 
     // Security limits
     private static final int MAX_MEMBERS = 20;
+    private static final int MAX_TEXT_LENGTH = 128;
+    private static final int MAX_INFO_LINES = 6;
 
     public static final StreamCodec<RegistryFriendlyByteBuf, QuestSequencePayload> STREAM_CODEC = new StreamCodec<>() {
         @Override
@@ -48,7 +53,17 @@ public record QuestSequencePayload(
                 arrivedMembers.add(Objects.requireNonNull(buf.readUUID()));
             }
 
-            return new QuestSequencePayload(partyId, phase, secondsRemaining, totalMembers, arrivedMembers);
+            String title = buf.readUtf(MAX_TEXT_LENGTH);
+            String subtitle = buf.readUtf(MAX_TEXT_LENGTH);
+
+            int infoCount = Math.min(buf.readVarInt(), MAX_INFO_LINES);
+            List<String> infoLines = new ArrayList<>(infoCount);
+            for (int i = 0; i < infoCount; i++) {
+                infoLines.add(buf.readUtf(MAX_TEXT_LENGTH));
+            }
+
+            return new QuestSequencePayload(partyId, phase, secondsRemaining, totalMembers, arrivedMembers,
+                title, subtitle, infoLines);
         }
 
         @Override
@@ -67,6 +82,17 @@ public record QuestSequencePayload(
                 buf.writeUUID(Objects.requireNonNull(memberId));
                 written++;
             }
+
+            buf.writeUtf(payload.title != null ? payload.title : "", MAX_TEXT_LENGTH);
+            buf.writeUtf(payload.subtitle != null ? payload.subtitle : "", MAX_TEXT_LENGTH);
+            List<String> lines = payload.infoLines != null ? payload.infoLines : List.of();
+            buf.writeVarInt(Math.min(lines.size(), MAX_INFO_LINES));
+            int lineWritten = 0;
+            for (String line : lines) {
+                if (lineWritten >= MAX_INFO_LINES) break;
+                buf.writeUtf(line != null ? line : "", MAX_TEXT_LENGTH);
+                lineWritten++;
+            }
         }
     };
 
@@ -74,7 +100,7 @@ public record QuestSequencePayload(
      * Convenience constructor for simple updates (backward compatible).
      */
     public QuestSequencePayload(UUID partyId, Phase phase, int secondsRemaining) {
-        this(partyId, phase, secondsRemaining, 0, List.of());
+        this(partyId, phase, secondsRemaining, 0, List.of(), "", "", List.of());
     }
 
     @Override
@@ -113,6 +139,14 @@ public record QuestSequencePayload(
         /** Quest has started */
         STARTED,
         /** Sequence was cancelled */
-        CANCELLED
+        CANCELLED,
+        /** Pre-quest briefing */
+        BRIEFING,
+        /** Safe window after teleport */
+        SAFE_WINDOW,
+        /** Wave countdown */
+        WAVE_INCOMING,
+        /** Boss intro pause */
+        BOSS_INTRO
     }
 }

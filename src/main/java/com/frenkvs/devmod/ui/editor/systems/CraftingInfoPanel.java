@@ -1,8 +1,10 @@
 package com.frenkvs.devmod.ui.editor.systems;
 
 import com.frenkvs.devmod.ui.AxiomRenderer;
-import com.frenkvs.devmod.ui.editor.EditorStartTab;
-import com.frenkvs.devmod.ui.editor.ItemEditorScreen;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.editor.core.BaseOverlay;
 import com.frenkvs.devmod.ui.editor.core.ScaledCoord;
@@ -604,8 +606,8 @@ public class CraftingInfoPanel extends BaseOverlay {
         // Close this panel first
         hide();
 
-        // Open the ItemEditorScreen with Recipe tab
-        Minecraft mc = Minecraft.getInstance();
-        mc.setScreen(new ItemEditorScreen(targetItem.copy(), EditorStartTab.RECIPE));
+        // Open the ItemEditorScreen with Recipe tab via ActionRegistry
+        ActionRegistry.invoke(ActionIds.UI_ITEM_EDITOR_OPEN_RECIPE,
+            ClientActionContexts.forClient(ActionOrigin.UI, targetItem.copy()));
     }
 }

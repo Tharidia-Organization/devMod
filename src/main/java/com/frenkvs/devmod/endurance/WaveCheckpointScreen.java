@@ -1,5 +1,9 @@
 package com.frenkvs.devmod.endurance;
 
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.util.I18n;
@@ -9,7 +13,6 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
 import javax.annotation.Nonnull;
@@ -515,18 +518,17 @@ public class WaveCheckpointScreen extends Screen {
     // === Actions ===
 
     private void continueToNextWave() {
-        PacketDistributor.sendToServer(
-            new QuestActionPayload(QuestActionPayload.Action.CONTINUE_TO_NEXT_WAVE)
-        );
+        ActionRegistry.invoke(ActionIds.ENDURANCE_QUEST_CONTINUE,
+            ClientActionContexts.forClient(ActionOrigin.UI, QuestActionPayload.Action.CONTINUE_TO_NEXT_WAVE));
         if (minecraft != null) {
             minecraft.setScreen(null);
         }
     }
 
     private void exitAndCollect() {
-        PacketDistributor.sendToServer(
-            new QuestActionPayload(QuestActionPayload.Action.EXIT_AT_CHECKPOINT)
-        );
+        ActionRegistry.invoke(ActionIds.ENDURANCE_QUEST_EXIT,
+            ClientActionContexts.forClient(ActionOrigin.UI, QuestActionPayload.Action.EXIT_AT_CHECKPOINT)
+                .withConfirmed(true));
         if (minecraft != null) {
             minecraft.setScreen(null);
         }

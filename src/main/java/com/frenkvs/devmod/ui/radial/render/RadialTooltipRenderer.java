@@ -8,6 +8,7 @@ import com.frenkvs.devmod.ui.radial.model.MacroCategory;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Objects;
 
@@ -128,7 +129,7 @@ public final class RadialTooltipRenderer {
 
         // Favorite item tooltip
         if (selectedFavoriteIndex >= 0 && selectedFavoriteIndex < favorites.size()) {
-            return "★ " + favorites.get(selectedFavoriteIndex).itemName();
+            return "* " + favorites.get(selectedFavoriteIndex).itemName();
         }
 
         // Category item tooltip (use visible items to match selectedItemIndex)
@@ -194,7 +195,7 @@ public final class RadialTooltipRenderer {
         if (searchMode) {
             helpLine = "§eSearch §7- Type to filter, Enter to select, Esc to cancel";
         } else {
-            helpLine = "§f[" + selectedMacro.getIcon() + " " + selectedMacro.getName() +
+            helpLine = "§f[" + selectedMacro.getName() +
                 "§f] §7Click center to switch §8| §7[/] Search §8| §7[1-4] Macro";
         }
 
@@ -251,7 +252,7 @@ public final class RadialTooltipRenderer {
         Objects.requireNonNull(graphics, "graphics cannot be null");
         Objects.requireNonNull(font, "font cannot be null");
 
-        String editText = "§c§l[EDIT MODE] §7Shift+Click to ★ favorite";
+        String editText = "§c§l[EDIT MODE] §7Shift+Click to * favorite";
         int textWidth = font.width(editText);
 
         int centerX = screenWidth / 2;
@@ -319,21 +320,21 @@ public final class RadialTooltipRenderer {
     /**
      * A search result for rendering in the overlay.
      *
-     * @param icon         item icon emoji
+     * @param iconStack    item icon
      * @param name         item name
      * @param categoryName category name
      * @param isToggle     whether item is a toggle
      * @param isActive     whether toggle is active
      */
     public record SearchResultDisplay(
-        String icon,
+        @Nonnull net.minecraft.world.item.ItemStack iconStack,
         String name,
         String categoryName,
         boolean isToggle,
         boolean isActive
     ) {
         public SearchResultDisplay {
-            Objects.requireNonNull(icon, "icon cannot be null");
+            Objects.requireNonNull(iconStack, "iconStack cannot be null");
             Objects.requireNonNull(name, "name cannot be null");
             Objects.requireNonNull(categoryName, "categoryName cannot be null");
         }
@@ -380,9 +381,10 @@ public final class RadialTooltipRenderer {
             config.theme.border);
         graphics.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, RadialMenuConstants.SEARCH_BOX_BG);
 
-        // Search icon and text
+        // Search label and text
         String displayText = !searchQuery.isEmpty() ? searchQuery : "§7Type to search...";
-        graphics.drawString(font, "🔍 " + displayText,
+        String searchPrefix = "Search: ";
+        graphics.drawString(font, searchPrefix + displayText,
             boxX + RadialMenuConstants.SEARCH_BOX_TEXT_OFFSET_X,
             boxY + RadialMenuConstants.SEARCH_BOX_TEXT_OFFSET_Y,
             config.theme.textPrimary);
@@ -390,7 +392,7 @@ public final class RadialTooltipRenderer {
         // Blinking cursor
         if (!searchQuery.isEmpty() &&
             (System.currentTimeMillis() / RadialMenuConstants.SEARCH_CURSOR_BLINK_MS) % 2 == 0) {
-            int cursorX = boxX + RadialMenuConstants.SEARCH_BOX_TEXT_OFFSET_X + font.width("🔍 " + searchQuery);
+            int cursorX = boxX + RadialMenuConstants.SEARCH_BOX_TEXT_OFFSET_X + font.width(searchPrefix + searchQuery);
             graphics.fill(cursorX, boxY + RadialMenuConstants.SEARCH_CURSOR_Y_START,
                 cursorX + RadialMenuConstants.SEARCH_CURSOR_WIDTH,
                 boxY + RadialMenuConstants.SEARCH_CURSOR_Y_END, config.theme.textPrimary);
@@ -405,14 +407,20 @@ public final class RadialTooltipRenderer {
             int resultBg = selected ? config.theme.selected : RadialMenuConstants.SEARCH_RESULT_BG;
             graphics.fill(boxX, resultY, boxX + boxWidth, resultY + RadialMenuConstants.SEARCH_RESULT_HEIGHT, resultBg);
 
+            int iconX = boxX + RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_X;
+            int iconY = resultY + 4;
+            if (!result.iconStack().isEmpty()) {
+                graphics.renderItem(result.iconStack(), iconX, iconY);
+            }
+
             String catName = "§7[" + result.categoryName + "]";
-            graphics.drawString(font, result.icon + " " + result.name + " " + catName,
-                boxX + RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_X,
+            graphics.drawString(font, result.name + " " + catName,
+                boxX + RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_X + 18,
                 resultY + RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_Y,
                 config.theme.textPrimary);
 
             if (result.isToggle && result.isActive) {
-                graphics.drawString(font, "§a● ON",
+                graphics.drawString(font, "§a* ON",
                     boxX + boxWidth - RadialMenuConstants.SEARCH_RESULT_STATUS_OFFSET_X,
                     resultY + RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_Y, config.theme.active);
             }

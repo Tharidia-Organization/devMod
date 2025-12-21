@@ -15,16 +15,16 @@ import java.sql.Statement;
  * for future migrations. Tables are organized by category:
  *
  * - Combat (5): hits, deaths, heals, spawns, fights
- * - Endurance (9): sessions, waves, wave_kills, combos, perks, mutators, rewards, parties, bosses
+ * - Endurance (10): sessions, waves, wave_kills, combos, perks, mutators, rewards, parties, bosses, performance
  * - Player (3): snapshots, attribute_changes, abilities
  * - Progression (6): blocks, xp, advancements, dimensions, trades, fishing
  * - Economy (4): mob_kills, mob_drops, item_pickups, item_usage
  * - Spatial (3): heatmaps, alerts, room_transitions
  * - Dungeon (1): dungeon_runs (P2-B)
- * - Arena (2): arena_template_builds, arena_template_usage (Fase 1)
+ * - Arena (3): arena_template_builds, arena_template_usage, arena_spatial_events (Fase 1 + heatmaps)
  * - System (2): performance, migrations
  *
- * Total: 35 tables
+ * Total: 37 tables
  */
 public final class DuckDBSchemaManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DuckDBSchemaManager.class);
@@ -116,6 +116,7 @@ public final class DuckDBSchemaManager {
             createEndurancePerksTable(stmt);
             createEnduranceMutatorsTable(stmt);
             createEnduranceRewardsTable(stmt);
+            createEndurancePerformanceTable(stmt);
             createEndurancePartiesTable(stmt);
             createEnduranceBossesTable(stmt);
 
@@ -149,8 +150,9 @@ public final class DuckDBSchemaManager {
             // Arena tables (Fase 1)
             createArenaTemplateBuildsTable(stmt);
             createArenaTemplateUsageTable(stmt);
+            createArenaSpatialEventsTable(stmt);
 
-            LOGGER.info("[DuckDB] Created 35 tables");
+            LOGGER.info("[DuckDB] Created 37 tables");
         }
     }
 
@@ -190,6 +192,12 @@ public final class DuckDBSchemaManager {
                 ts              TIMESTAMP NOT NULL,
                 room            VARCHAR(128),
                 world           VARCHAR(128),
+                template_id     VARCHAR(128),
+                template_version INTEGER,
+                policy_id       VARCHAR(128),
+                policy_version  INTEGER,
+                arena_id        UUID,
+                session_id      UUID,
                 attacker_name   VARCHAR(64),
                 attacker_type   VARCHAR(128),
                 target_name     VARCHAR(64),
@@ -220,6 +228,12 @@ public final class DuckDBSchemaManager {
                 ts              TIMESTAMP NOT NULL,
                 room            VARCHAR(128),
                 world           VARCHAR(128),
+                template_id     VARCHAR(128),
+                template_version INTEGER,
+                policy_id       VARCHAR(128),
+                policy_version  INTEGER,
+                arena_id        UUID,
+                session_id      UUID,
                 target_name     VARCHAR(64),
                 target_type     VARCHAR(128),
                 cause           VARCHAR(128),
@@ -238,6 +252,12 @@ public final class DuckDBSchemaManager {
                 ts              TIMESTAMP NOT NULL,
                 room            VARCHAR(128),
                 world           VARCHAR(128),
+                template_id     VARCHAR(128),
+                template_version INTEGER,
+                policy_id       VARCHAR(128),
+                policy_version  INTEGER,
+                arena_id        UUID,
+                session_id      UUID,
                 target_name     VARCHAR(64),
                 target_type     VARCHAR(128),
                 heal_amount     DOUBLE,
@@ -256,6 +276,12 @@ public final class DuckDBSchemaManager {
                 ts              TIMESTAMP NOT NULL,
                 room            VARCHAR(128),
                 world           VARCHAR(128),
+                template_id     VARCHAR(128),
+                template_version INTEGER,
+                policy_id       VARCHAR(128),
+                policy_version  INTEGER,
+                arena_id        UUID,
+                session_id      UUID,
                 entity_name     VARCHAR(64),
                 entity_type     VARCHAR(128),
                 reason          VARCHAR(64),
@@ -274,6 +300,12 @@ public final class DuckDBSchemaManager {
                 id              BIGINT PRIMARY KEY,
                 room            VARCHAR(128),
                 world           VARCHAR(128),
+                template_id     VARCHAR(128),
+                template_version INTEGER,
+                policy_id       VARCHAR(128),
+                policy_version  INTEGER,
+                arena_id        UUID,
+                session_id      UUID,
                 start_ts        TIMESTAMP NOT NULL,
                 end_ts          TIMESTAMP NOT NULL,
                 duration_ms     BIGINT,
@@ -317,7 +349,20 @@ public final class DuckDBSchemaManager {
                 tokens_earned   INTEGER DEFAULT 0,
                 prestige_earned INTEGER DEFAULT 0,
                 blood_gems_earned INTEGER DEFAULT 0,
-                no_damage_waves INTEGER DEFAULT 0
+                no_damage_waves INTEGER DEFAULT 0,
+                template_id     VARCHAR(128),
+                template_version INTEGER,
+                policy_id       VARCHAR(128),
+                policy_version  INTEGER,
+                instance_id     UUID,
+                arena_id        UUID,
+                countdown_started INTEGER DEFAULT 0,
+                countdown_cancelled INTEGER DEFAULT 0,
+                giveup_during_respawn INTEGER DEFAULT 0,
+                inventory_restore_success INTEGER DEFAULT 0,
+                inventory_restore_fallback INTEGER DEFAULT 0,
+                external_death_respawn_count INTEGER DEFAULT 0,
+                wave_blocked_detected INTEGER DEFAULT 0
             )
             """);
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_endurance_sessions_player ON endurance_sessions(player_id)");
@@ -329,6 +374,11 @@ public final class DuckDBSchemaManager {
                 id              BIGINT PRIMARY KEY,
                 ts              TIMESTAMP NOT NULL,
                 session_id      UUID,
+                template_id     VARCHAR(128),
+                template_version INTEGER,
+                policy_id       VARCHAR(128),
+                policy_version  INTEGER,
+                arena_id        UUID,
                 wave_number     INTEGER NOT NULL,
                 event_type      VARCHAR(32),
                 mob_count       INTEGER,
@@ -351,6 +401,11 @@ public final class DuckDBSchemaManager {
                 id              BIGINT PRIMARY KEY,
                 ts              TIMESTAMP NOT NULL,
                 session_id      UUID,
+                template_id     VARCHAR(128),
+                template_version INTEGER,
+                policy_id       VARCHAR(128),
+                policy_version  INTEGER,
+                arena_id        UUID,
                 wave_number     INTEGER,
                 mob_type        VARCHAR(128),
                 is_elite        BOOLEAN DEFAULT FALSE,
@@ -369,6 +424,11 @@ public final class DuckDBSchemaManager {
                 ts              TIMESTAMP NOT NULL,
                 player_id       UUID,
                 session_id      UUID,
+                template_id     VARCHAR(128),
+                template_version INTEGER,
+                policy_id       VARCHAR(128),
+                policy_version  INTEGER,
+                arena_id        UUID,
                 event_type      VARCHAR(32),
                 old_rank        VARCHAR(16),
                 new_rank        VARCHAR(16),
@@ -392,6 +452,11 @@ public final class DuckDBSchemaManager {
                 ts              TIMESTAMP NOT NULL,
                 player_id       UUID,
                 session_id      UUID,
+                template_id     VARCHAR(128),
+                template_version INTEGER,
+                policy_id       VARCHAR(128),
+                policy_version  INTEGER,
+                arena_id        UUID,
                 event_type      VARCHAR(32),
                 perk_id         VARCHAR(64),
                 perk_name       VARCHAR(128),
@@ -412,6 +477,11 @@ public final class DuckDBSchemaManager {
                 id              BIGINT PRIMARY KEY,
                 ts              TIMESTAMP NOT NULL,
                 session_id      UUID,
+                template_id     VARCHAR(128),
+                template_version INTEGER,
+                policy_id       VARCHAR(128),
+                policy_version  INTEGER,
+                arena_id        UUID,
                 event_type      VARCHAR(32),
                 mutator_id      VARCHAR(64),
                 mutator_category VARCHAR(32),
@@ -431,6 +501,11 @@ public final class DuckDBSchemaManager {
                 ts              TIMESTAMP NOT NULL,
                 player_id       UUID,
                 session_id      UUID,
+                template_id     VARCHAR(128),
+                template_version INTEGER,
+                policy_id       VARCHAR(128),
+                policy_version  INTEGER,
+                arena_id        UUID,
                 event_type      VARCHAR(32),
                 currency        VARCHAR(32),
                 amount          INTEGER,
@@ -445,6 +520,33 @@ public final class DuckDBSchemaManager {
             )
             """);
         stmt.execute("CREATE SEQUENCE IF NOT EXISTS seq_endurance_rewards START 1");
+    }
+
+    private static void createEndurancePerformanceTable(Statement stmt) throws SQLException {
+        stmt.execute("""
+            CREATE TABLE IF NOT EXISTS endurance_performance (
+                id              BIGINT PRIMARY KEY,
+                ts              TIMESTAMP NOT NULL,
+                session_id      UUID,
+                player_id       UUID,
+                quest_type      VARCHAR(32),
+                duration_ms     BIGINT,
+                waves_completed INTEGER,
+                kills           INTEGER,
+                damage_dealt    DOUBLE,
+                damage_taken    DOUBLE,
+                avg_ttk_ms      DOUBLE,
+                kps             DOUBLE,
+                dtps            DOUBLE,
+                dps             DOUBLE,
+                template_id     VARCHAR(128),
+                template_version INTEGER,
+                policy_id       VARCHAR(128),
+                policy_version  INTEGER,
+                arena_id        UUID
+            )
+            """);
+        stmt.execute("CREATE SEQUENCE IF NOT EXISTS seq_endurance_performance START 1");
     }
 
     private static void createEndurancePartiesTable(Statement stmt) throws SQLException {
@@ -473,6 +575,11 @@ public final class DuckDBSchemaManager {
                 id              BIGINT PRIMARY KEY,
                 ts              TIMESTAMP NOT NULL,
                 session_id      UUID,
+                template_id     VARCHAR(128),
+                template_version INTEGER,
+                policy_id       VARCHAR(128),
+                policy_version  INTEGER,
+                arena_id        UUID,
                 event_type      VARCHAR(32),
                 wave_number     INTEGER,
                 archetype       VARCHAR(64),
@@ -924,6 +1031,29 @@ public final class DuckDBSchemaManager {
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_arena_template_usage_player ON arena_template_usage(player_id)");
     }
 
+    private static void createArenaSpatialEventsTable(Statement stmt) throws SQLException {
+        stmt.execute("""
+            CREATE TABLE IF NOT EXISTS arena_spatial_events (
+                id              BIGINT PRIMARY KEY,
+                ts              TIMESTAMP NOT NULL,
+                template_id     VARCHAR(128),
+                template_version INTEGER,
+                session_id      UUID,
+                event_type      VARCHAR(32),
+                grid_x          INTEGER,
+                grid_z          INTEGER,
+                world_x         DOUBLE,
+                world_y         DOUBLE,
+                world_z         DOUBLE,
+                player_uuid     UUID
+            )
+            """);
+        stmt.execute("CREATE SEQUENCE IF NOT EXISTS seq_arena_spatial_events START 1");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_arena_spatial_events_template ON arena_spatial_events(template_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_arena_spatial_events_type ON arena_spatial_events(event_type)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_arena_spatial_events_version ON arena_spatial_events(template_version)");
+    }
+
     // ============================================
     // MIGRATIONS
     // ============================================
@@ -947,6 +1077,125 @@ public final class DuckDBSchemaManager {
             try (Statement stmt = conn.createStatement()) {
                 createArenaTemplateBuildsTable(stmt);
                 createArenaTemplateUsageTable(stmt);
+            }
+        }
+
+        // Migration V3 -> V4: Add endurance session metrics/context columns
+        if (oldVersion < 4) {
+            LOGGER.info("[DuckDB] Running migration V3 -> V4: Adding endurance session metrics columns");
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("ALTER TABLE endurance_sessions ADD COLUMN IF NOT EXISTS template_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE endurance_sessions ADD COLUMN IF NOT EXISTS template_version INTEGER");
+                stmt.execute("ALTER TABLE endurance_sessions ADD COLUMN IF NOT EXISTS policy_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE endurance_sessions ADD COLUMN IF NOT EXISTS policy_version INTEGER");
+                stmt.execute("ALTER TABLE endurance_sessions ADD COLUMN IF NOT EXISTS instance_id UUID");
+                stmt.execute("ALTER TABLE endurance_sessions ADD COLUMN IF NOT EXISTS arena_id UUID");
+                stmt.execute("ALTER TABLE endurance_sessions ADD COLUMN IF NOT EXISTS countdown_started INTEGER DEFAULT 0");
+                stmt.execute("ALTER TABLE endurance_sessions ADD COLUMN IF NOT EXISTS countdown_cancelled INTEGER DEFAULT 0");
+                stmt.execute("ALTER TABLE endurance_sessions ADD COLUMN IF NOT EXISTS giveup_during_respawn INTEGER DEFAULT 0");
+                stmt.execute("ALTER TABLE endurance_sessions ADD COLUMN IF NOT EXISTS inventory_restore_success INTEGER DEFAULT 0");
+                stmt.execute("ALTER TABLE endurance_sessions ADD COLUMN IF NOT EXISTS inventory_restore_fallback INTEGER DEFAULT 0");
+                stmt.execute("ALTER TABLE endurance_sessions ADD COLUMN IF NOT EXISTS external_death_respawn_count INTEGER DEFAULT 0");
+                stmt.execute("ALTER TABLE endurance_sessions ADD COLUMN IF NOT EXISTS wave_blocked_detected INTEGER DEFAULT 0");
+            }
+        }
+
+        // Migration V4 -> V5: Add endurance event context columns + performance table
+        if (oldVersion < 5) {
+            LOGGER.info("[DuckDB] Running migration V4 -> V5: Adding endurance context columns and performance table");
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("ALTER TABLE endurance_waves ADD COLUMN IF NOT EXISTS template_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE endurance_waves ADD COLUMN IF NOT EXISTS template_version INTEGER");
+                stmt.execute("ALTER TABLE endurance_waves ADD COLUMN IF NOT EXISTS policy_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE endurance_waves ADD COLUMN IF NOT EXISTS policy_version INTEGER");
+                stmt.execute("ALTER TABLE endurance_waves ADD COLUMN IF NOT EXISTS arena_id UUID");
+
+                stmt.execute("ALTER TABLE endurance_wave_kills ADD COLUMN IF NOT EXISTS template_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE endurance_wave_kills ADD COLUMN IF NOT EXISTS template_version INTEGER");
+                stmt.execute("ALTER TABLE endurance_wave_kills ADD COLUMN IF NOT EXISTS policy_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE endurance_wave_kills ADD COLUMN IF NOT EXISTS policy_version INTEGER");
+                stmt.execute("ALTER TABLE endurance_wave_kills ADD COLUMN IF NOT EXISTS arena_id UUID");
+
+                stmt.execute("ALTER TABLE endurance_combos ADD COLUMN IF NOT EXISTS template_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE endurance_combos ADD COLUMN IF NOT EXISTS template_version INTEGER");
+                stmt.execute("ALTER TABLE endurance_combos ADD COLUMN IF NOT EXISTS policy_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE endurance_combos ADD COLUMN IF NOT EXISTS policy_version INTEGER");
+                stmt.execute("ALTER TABLE endurance_combos ADD COLUMN IF NOT EXISTS arena_id UUID");
+
+                stmt.execute("ALTER TABLE endurance_perks ADD COLUMN IF NOT EXISTS template_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE endurance_perks ADD COLUMN IF NOT EXISTS template_version INTEGER");
+                stmt.execute("ALTER TABLE endurance_perks ADD COLUMN IF NOT EXISTS policy_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE endurance_perks ADD COLUMN IF NOT EXISTS policy_version INTEGER");
+                stmt.execute("ALTER TABLE endurance_perks ADD COLUMN IF NOT EXISTS arena_id UUID");
+
+                stmt.execute("ALTER TABLE endurance_mutators ADD COLUMN IF NOT EXISTS template_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE endurance_mutators ADD COLUMN IF NOT EXISTS template_version INTEGER");
+                stmt.execute("ALTER TABLE endurance_mutators ADD COLUMN IF NOT EXISTS policy_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE endurance_mutators ADD COLUMN IF NOT EXISTS policy_version INTEGER");
+                stmt.execute("ALTER TABLE endurance_mutators ADD COLUMN IF NOT EXISTS arena_id UUID");
+
+                stmt.execute("ALTER TABLE endurance_rewards ADD COLUMN IF NOT EXISTS template_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE endurance_rewards ADD COLUMN IF NOT EXISTS template_version INTEGER");
+                stmt.execute("ALTER TABLE endurance_rewards ADD COLUMN IF NOT EXISTS policy_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE endurance_rewards ADD COLUMN IF NOT EXISTS policy_version INTEGER");
+                stmt.execute("ALTER TABLE endurance_rewards ADD COLUMN IF NOT EXISTS arena_id UUID");
+
+                stmt.execute("ALTER TABLE endurance_bosses ADD COLUMN IF NOT EXISTS template_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE endurance_bosses ADD COLUMN IF NOT EXISTS template_version INTEGER");
+                stmt.execute("ALTER TABLE endurance_bosses ADD COLUMN IF NOT EXISTS policy_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE endurance_bosses ADD COLUMN IF NOT EXISTS policy_version INTEGER");
+                stmt.execute("ALTER TABLE endurance_bosses ADD COLUMN IF NOT EXISTS arena_id UUID");
+
+                createEndurancePerformanceTable(stmt);
+            }
+        }
+
+        // Migration V5 -> V6: Add arena spatial events table
+        if (oldVersion < 6) {
+            LOGGER.info("[DuckDB] Running migration V5 -> V6: Adding arena spatial events table");
+            try (Statement stmt = conn.createStatement()) {
+                createArenaSpatialEventsTable(stmt);
+            }
+        }
+
+        // Migration V6 -> V7: Add combat context columns (template/policy/arena/session)
+        if (oldVersion < 7) {
+            LOGGER.info("[DuckDB] Running migration V6 -> V7: Adding combat context columns");
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("ALTER TABLE combat_hits ADD COLUMN IF NOT EXISTS template_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE combat_hits ADD COLUMN IF NOT EXISTS template_version INTEGER");
+                stmt.execute("ALTER TABLE combat_hits ADD COLUMN IF NOT EXISTS policy_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE combat_hits ADD COLUMN IF NOT EXISTS policy_version INTEGER");
+                stmt.execute("ALTER TABLE combat_hits ADD COLUMN IF NOT EXISTS arena_id UUID");
+                stmt.execute("ALTER TABLE combat_hits ADD COLUMN IF NOT EXISTS session_id UUID");
+
+                stmt.execute("ALTER TABLE combat_deaths ADD COLUMN IF NOT EXISTS template_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE combat_deaths ADD COLUMN IF NOT EXISTS template_version INTEGER");
+                stmt.execute("ALTER TABLE combat_deaths ADD COLUMN IF NOT EXISTS policy_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE combat_deaths ADD COLUMN IF NOT EXISTS policy_version INTEGER");
+                stmt.execute("ALTER TABLE combat_deaths ADD COLUMN IF NOT EXISTS arena_id UUID");
+                stmt.execute("ALTER TABLE combat_deaths ADD COLUMN IF NOT EXISTS session_id UUID");
+
+                stmt.execute("ALTER TABLE combat_heals ADD COLUMN IF NOT EXISTS template_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE combat_heals ADD COLUMN IF NOT EXISTS template_version INTEGER");
+                stmt.execute("ALTER TABLE combat_heals ADD COLUMN IF NOT EXISTS policy_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE combat_heals ADD COLUMN IF NOT EXISTS policy_version INTEGER");
+                stmt.execute("ALTER TABLE combat_heals ADD COLUMN IF NOT EXISTS arena_id UUID");
+                stmt.execute("ALTER TABLE combat_heals ADD COLUMN IF NOT EXISTS session_id UUID");
+
+                stmt.execute("ALTER TABLE combat_spawns ADD COLUMN IF NOT EXISTS template_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE combat_spawns ADD COLUMN IF NOT EXISTS template_version INTEGER");
+                stmt.execute("ALTER TABLE combat_spawns ADD COLUMN IF NOT EXISTS policy_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE combat_spawns ADD COLUMN IF NOT EXISTS policy_version INTEGER");
+                stmt.execute("ALTER TABLE combat_spawns ADD COLUMN IF NOT EXISTS arena_id UUID");
+                stmt.execute("ALTER TABLE combat_spawns ADD COLUMN IF NOT EXISTS session_id UUID");
+
+                stmt.execute("ALTER TABLE combat_fights ADD COLUMN IF NOT EXISTS template_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE combat_fights ADD COLUMN IF NOT EXISTS template_version INTEGER");
+                stmt.execute("ALTER TABLE combat_fights ADD COLUMN IF NOT EXISTS policy_id VARCHAR(128)");
+                stmt.execute("ALTER TABLE combat_fights ADD COLUMN IF NOT EXISTS policy_version INTEGER");
+                stmt.execute("ALTER TABLE combat_fights ADD COLUMN IF NOT EXISTS arena_id UUID");
+                stmt.execute("ALTER TABLE combat_fights ADD COLUMN IF NOT EXISTS session_id UUID");
             }
         }
 

@@ -1,13 +1,15 @@
 package com.frenkvs.devmod.ui.hub;
 
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.testing.ActiveTestHudOverlay;
 import com.frenkvs.devmod.testing.TestCase;
 import com.frenkvs.devmod.testing.TestingSession;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
-import com.frenkvs.devmod.ui.editor.ItemEditorScreen;
-import com.frenkvs.devmod.ui.editor.EditorStartTab;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -18,6 +20,7 @@ import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Set;
 
@@ -111,22 +114,27 @@ public class TestingHub extends Screen {
         int fieldX = hubX + (hubWidth - fieldWidth) / 2;
         int fieldY = hubY + hubHeight / 2 - 30;
 
-        Font uiFont = Objects.requireNonNull(font, "font");
-        EditBox nameField = new EditBox(uiFont, fieldX, fieldY, fieldWidth, 20,
-            Objects.requireNonNull(I18n.translate("devmod.testing.tester_name"), "testerNameLabel"));
-        nameField.setHint(Objects.requireNonNull(I18n.translate("devmod.testing.enter_name"), "testerNameHint"));
+        @Nonnull Font uiFont = Objects.requireNonNull(font, "font");
+        String labelText = Objects.requireNonNullElse(
+            Objects.requireNonNull(I18n.translate("devmod.testing.tester_name"), "testerNameLabel").getString(),
+            "Tester Name");
+        String hintText = Objects.requireNonNullElse(
+            Objects.requireNonNull(I18n.translate("devmod.testing.enter_name"), "testerNameHint").getString(),
+            "Enter name");
+        @Nonnull EditBox nameField = new EditBox(uiFont, fieldX, fieldY, fieldWidth, 20,
+            Objects.requireNonNull(Component.literal(
+                Objects.requireNonNull(labelText, "labelText")), "labelTextComponent"));
+        nameField.setHint(Objects.requireNonNull(Component.literal(
+            Objects.requireNonNull(hintText, "hintText")), "hintTextComponent"));
         nameField.setMaxLength(32);
-        String testerName = Objects.requireNonNull(
-            Objects.requireNonNullElse(TestingSession.INSTANCE.getTesterName(), ""),
-            "testerName"
-        );
-        nameField.setValue(testerName);
+        String testerName = Objects.requireNonNullElse(TestingSession.INSTANCE.getTesterName(), "");
+        nameField.setValue(Objects.requireNonNull(testerName, "testerName"));
         testerNameField = nameField;
         this.addRenderableWidget(nameField);
     }
 
     private void initPanels() {
-        Font uiFont = Objects.requireNonNull(font, "font");
+        @Nonnull Font uiFont = Objects.requireNonNull(font, "font");
         // Calculate panel widths
         int categoryWidth = Math.max(180, (int)(hubWidth * 0.22f));
         int toolsWidth = Math.max(170, (int)(hubWidth * 0.25f));
@@ -154,7 +162,7 @@ public class TestingHub extends Screen {
             hubX + categoryWidth + detailWidth + PANEL_GAP * 2, contentY,
             toolsWidth, contentHeight,
             uiFont, state,
-            (tool, enabled) -> onToolToggled(tool, enabled != null && enabled),
+            this::onToolToggled,
             this::onEditorOpened
         );
 
@@ -190,7 +198,7 @@ public class TestingHub extends Screen {
     }
 
     private void renderSessionStart(GuiGraphics graphics, int mouseX, int mouseY) {
-        Font uiFont = Objects.requireNonNull(font, "font");
+        @Nonnull Font uiFont = Objects.requireNonNull(font, "font");
         // Central panel for session start
         int panelWidth = 350;
         int panelHeight = 200;
@@ -284,7 +292,7 @@ public class TestingHub extends Screen {
     }
 
     private void renderHeader(GuiGraphics graphics, int mouseX, int mouseY) {
-        Font uiFont = Objects.requireNonNull(font, "font");
+        @Nonnull Font uiFont = Objects.requireNonNull(font, "font");
         // Background header
         graphics.fill(hubX, hubY, hubX + hubWidth, hubY + HEADER_HEIGHT, UIConstants.Background.HEADER());
 
@@ -521,10 +529,11 @@ public class TestingHub extends Screen {
         }
     }
 
-    private void onToolToggled(ToolType tool, boolean enabled) {
-        state.setToolEnabled(tool, enabled);
+    private void onToolToggled(ToolType tool, @Nullable Boolean enabled) {
+        boolean isEnabled = Boolean.TRUE.equals(enabled);
+        state.setToolEnabled(tool, isEnabled);
         if (detailPanel != null) {
-            detailPanel.updateToolStatus(tool, enabled);
+            detailPanel.updateToolStatus(tool, isEnabled);
         }
     }
 
@@ -533,14 +542,8 @@ public class TestingHub extends Screen {
 
         switch (editor) {
             case WEAPON -> {
-                Minecraft mc = Minecraft.getInstance();
-                var player = mc.player;
-                if (player != null && !player.getMainHandItem().isEmpty()) {
-                    mc.setScreen(new ItemEditorScreen(player.getMainHandItem(), EditorStartTab.WEAPON));
-                } else {
-                    // Show message
-                    showNotification("Hold an item in your main hand first!");
-                }
+                ActionRegistry.invoke(ActionIds.UI_ITEM_EDITOR_OPEN_WEAPON,
+                    ClientActionContexts.forClient(ActionOrigin.UI));
             }
             case MOB_CONFIG -> {
                 showNotification("Right-click a mob while holding the config tool");
@@ -604,7 +607,8 @@ public class TestingHub extends Screen {
     public static void restoreFromHud() {
         TestingHubState.INSTANCE.setMinimized(false);
         ActiveTestHudOverlay.setEnabled(false);
-        Minecraft.getInstance().setScreen(new TestingHub());
+        ActionRegistry.invoke(ActionIds.UI_TESTING_HUB_OPEN,
+            ClientActionContexts.forClient(ActionOrigin.UI));
     }
 
     // === UTILITY ===
@@ -628,12 +632,13 @@ public class TestingHub extends Screen {
 
     private void showNotification(String message) {
         // Use Minecraft's action bar for feedback
-        Minecraft mc = this.minecraft;
+        @Nullable Minecraft mc = this.minecraft;
         if (mc == null) return;
         var player = mc.player;
         if (player == null) return;
-        String safeMessage = Objects.requireNonNull(Objects.requireNonNullElse(message, ""), "safeMessage");
-        Component messageComponent = Objects.requireNonNull(Component.literal(safeMessage), "messageComponent");
+        String safeMessage = Objects.requireNonNullElse(message, "");
+        Component messageComponent = Objects.requireNonNull(Component.literal(
+            Objects.requireNonNull(safeMessage, "safeMessage")), "messageComponent");
         player.displayClientMessage(messageComponent, true);
     }
 

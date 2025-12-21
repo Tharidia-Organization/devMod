@@ -55,6 +55,7 @@ public class PerkSelectionScreen extends Screen {
     private final List<PerkChoicesPayload.PerkChoice> choices;
     private int selectedIndex = -1;
     private int hoveredIndex = -1;  // For comparison panel
+    private final boolean skipAllowed;
 
     // === State ===
     private long openTime;
@@ -67,6 +68,7 @@ public class PerkSelectionScreen extends Screen {
         super(I18n.ui("perk.choose_perk"));
         this.waveNumber = waveNumber;
         this.choices = choices;
+        this.skipAllowed = choices == null || choices.stream().noneMatch(PerkChoicesPayload.PerkChoice::required);
     }
 
     @Override
@@ -95,6 +97,7 @@ public class PerkSelectionScreen extends Screen {
             .size(EditorButton.Size.LARGE)
             .onClick(this::skipPerk)
             .build();
+        skipButton.setEnabled(skipAllowed);
     }
 
     /**
@@ -255,6 +258,16 @@ public class PerkSelectionScreen extends Screen {
         String categoryName = truncateText(perk.categoryName(), cardW - 20);
         g.drawString(safeFont, categoryName, cardX + 10, textY, applyAlpha(perk.categoryColor() | 0xFF000000, alpha));
         textY += 16;
+
+        if (perk.required() || perk.suggested()) {
+            String tagText = perk.required() ? "REQUIRED" : "SUGGESTED";
+            int tagColor = perk.required() ? 0xFFE85C5C : 0xFF5B9BD5;
+            int tagWidth = safeFont.width(tagText) + 8;
+            int tagX = cardX + cardW - tagWidth - 8;
+            int tagY = cardY + 28;
+            g.fill(tagX, tagY, tagX + tagWidth, tagY + 12, applyAlpha(tagColor, alpha * 0.8f));
+            g.drawString(safeFont, tagText, tagX + 4, tagY + 2, applyAlpha(0xFFFFFFFF, alpha));
+        }
 
         // Description (word wrap) - limit to MAX_DESCRIPTION_LINES
         List<String> lines = wrapText(perk.description(), cardW - 20);
@@ -556,6 +569,9 @@ public class PerkSelectionScreen extends Screen {
     }
 
     private void skipPerk() {
+        if (!skipAllowed) {
+            return;
+        }
         // Send empty selection (skip)
         PacketDistributor.sendToServer(new PerkSelectionPayload(""));
 

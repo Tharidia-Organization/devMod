@@ -238,6 +238,18 @@ public class NetworkHandler {
                 nn(InstanceLoadingPayload.STREAM_CODEC),
                 EnduranceNetworkHandler::handleInstanceLoading
         );
+        // Channel 24: Wave Directive Choices
+        event.registrar("24").playToClient(
+                nn(WaveDirectiveChoicesPayload.TYPE),
+                nn(WaveDirectiveChoicesPayload.STREAM_CODEC),
+                EnduranceNetworkHandler::handleWaveDirectiveChoices
+        );
+        // Channel 25: Wave Directive Selection
+        event.registrar("25").playToServer(
+                nn(WaveDirectiveSelectionPayload.TYPE),
+                nn(WaveDirectiveSelectionPayload.STREAM_CODEC),
+                EnduranceNetworkHandler::handleWaveDirectiveSelection
+        );
 
         // ===================================================================
         // PARTY SYSTEM CHANNELS (24-30)
@@ -402,15 +414,20 @@ public class NetworkHandler {
         EnduranceNetworkHandler.sendPerkChoices(player, waveNumber, perks);
     }
 
+    public static void sendWaveDirectiveChoices(ServerPlayer player, int waveNumber,
+                                                java.util.List<WaveDirective> directives) {
+        EnduranceNetworkHandler.sendWaveDirectiveChoices(player, waveNumber, directives);
+    }
+
     /**
      * Send quest completion notification to player.
      */
     public static void sendQuestCompletionScreen(ServerPlayer player,
-            EnduranceQuest quest,
-            RewardSystem.QuestRewards rewards,
-            ComboSystem.ComboSession comboSession,
-            int maxCombo) {
-        EnduranceNetworkHandler.sendQuestCompletionScreen(player, quest, rewards, comboSession, maxCombo);
+                                                 EnduranceQuestManager.ActiveQuestSession session,
+                                                 RewardSystem.QuestRewards rewards,
+                                                 ComboSystem.ComboSession comboSession,
+                                                 int maxCombo) {
+        EnduranceNetworkHandler.sendQuestCompletionScreen(player, session, rewards, comboSession, maxCombo);
     }
 
     /**

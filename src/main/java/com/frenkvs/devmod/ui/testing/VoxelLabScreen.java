@@ -35,7 +35,7 @@ public class VoxelLabScreen extends Screen {
     private EditorButton closeButton;
 
     public VoxelLabScreen() {
-        super(Component.literal("Voxel Lab"));
+        super(java.util.Objects.requireNonNull(Component.literal("Voxel Lab"), "title"));
     }
 
     // ═══════════════════════════════════════════════════════════════

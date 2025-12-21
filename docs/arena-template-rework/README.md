@@ -1,54 +1,42 @@
 # Arena Template Rework
 
-Documentazione e task per il rework del sistema Arena Template.
+Documentazione e track record per il rework del sistema Arena Template.
 
 ## Struttura
 
 ```
 docs/arena-template-rework/
 ├── README.md                      # Questo file
+├── ARENA_TEMPLATE_AUDIT.md        # Audit + mappa doc + gap residui
 ├── TODO_ARENA_TEMPLATE.md         # Design Decisions complete (DD1-DD72)
-├── TODO_AGENT_COORDINATOR.md      # Piano di coordinamento agent paralleli
-├── TODO_AGENT_01_REGISTRY.md      # Agent 01: Registry & Resolver (DD 1-6)
-├── TODO_AGENT_02_BUILDER.md       # Agent 02: Builder Transazionale (DD 7-10)
-├── TODO_AGENT_03_BUDGET.md        # Agent 03: Budget & Async (DD 11-12)
-├── TODO_AGENT_04_METRICHE.md      # Agent 04: Metriche & API (DD 13-15)
-├── TODO_AGENT_05_OBSERVABILITY.md # Agent 05: Observability (DD 16-21)
-├── TODO_AGENT_06_IDENTITY.md      # Agent 06: Identity & Recovery (DD 22-28)
-├── TODO_AGENT_07_OPERATIONS.md    # Agent 07: Operations & Security (DD 29-36)
-├── TODO_AGENT_08_CLEANUP.md       # Agent 08: Cleanup & Migration (DD 37-43)
-├── TODO_AGENT_09_SPAWN.md         # Agent 09: Rollback & Spawn (DD 44-50)
-├── TODO_AGENT_10_GAMIFICATION.md  # Agent 10: Gamification (DD 51-56)
-├── TODO_AGENT_11_TELEMETRY.md     # Agent 11: Telemetry & Concurrency (DD 57-62)
-└── TODO_AGENT_12_READINESS.md     # Agent 12: Pool & Readiness (DD 63-72)
+├── TODO_GAPS.md                   # Gap residui post-audit
+├── MIGRATION_INVENTORY.md         # Inventario migrazione call-site legacy
+├── PRODUCTION_MARKER_README.md    # Guard autosmoke (DD32)
+├── arena_template.schema.json     # Schema L1 (ArenaTemplate)
+├── arena_policy.schema.json       # Schema L2 (ArenaPolicy)
+├── TODO_AGENT_01_COMPLETE.md      # Agent 01: Registry & Resolver
+├── TODO_AGENT_02_COMPLETE.md      # Agent 02: Builder Transazionale
+├── TODO_AGENT_03_COMPLETE.md      # Agent 03: Budget & Async
+├── TODO_AGENT_04_COMPLETE.md      # Agent 04: Metriche & API
+├── TODO_AGENT_05_COMPLETE.md      # Agent 05: Observability & Persistence
+├── TODO_AGENT_06_COMPLETE.md      # Agent 06: Identity & Recovery
+├── TODO_AGENT_07_COMPLETE.md      # Agent 07: Operations & Security
+├── TODO_AGENT_08_COMPLETE.md      # Agent 08: Cleanup & Migration
+├── TODO_AGENT_09_COMPLETE.md      # Agent 09: Rollback & Spawn
+├── TODO_AGENT_10_COMPLETE.md      # Agent 10: Gamification & Balance
+├── TODO_AGENT_11_COMPLETE.md      # Agent 11: Telemetry & Concurrency
+└── TODO_AGENT_12_COMPLETE.md      # Agent 12: Pool & Readiness
 ```
 
-## Quick Start
+Archivio storico (task list e script): `docs/_deprecated/arena-template-rework/`.
 
-### Opzione A: Script Automatico (Consigliato)
-```bash
-cd docs/arena-template-rework
-./run_agents.sh          # Esegue tutte le fasi in sequenza
-./run_agents.sh status   # Controlla stato completamento
-```
-
-### Opzione B: Tmux con Controllo Manuale
-```bash
-cd docs/arena-template-rework
-./run_agents_tmux.sh           # Avvia Fase 1 (6 agent)
-tmux attach -t arena-agents    # Connettiti per monitorare
-
-# Quando Fase 1 completa:
-./run_agents_tmux.sh phase2    # Avvia Agent 02, 06
-./run_agents_tmux.sh phase3    # Avvia Agent 03
-./run_agents_tmux.sh phase4    # Avvia Agent 04
-./run_agents_tmux.sh phase5    # Avvia Agent 11
-./run_agents_tmux.sh phase6    # Avvia Agent 12
-./run_agents_tmux.sh status    # Controlla completamento
-```
-
-### Opzione C: Manuale (12 terminali)
-Vedi [TODO_AGENT_COORDINATOR.md](TODO_AGENT_COORDINATOR.md) per il grafo delle dipendenze
+## Flusso consigliato (entrypoint)
+1. `docs/arena-template-rework/ARENA_TEMPLATE_AUDIT.md` - stato corrente, gap residui, doc canonicali
+2. `docs/arena-template-rework/TODO_ARENA_TEMPLATE.md` - spec completa v2.23
+3. `docs/arena-template-rework/TODO_GAPS.md` - gap residui post-audit
+4. `docs/arena-template-rework/MIGRATION_INVENTORY.md` - stato migrazione legacy
+5. `docs/arena-template-rework/TODO_AGENT_*_COMPLETE.md` - implementazione per area
+6. `docs/runbook/arena-alerts.md` - runbook alert (DD68)
 
 ### Tracking Completamento
 
@@ -56,6 +44,16 @@ Ogni agent crea un file `TODO_AGENT_XX_COMPLETE.md` quando finisce:
 ```bash
 ls docs/arena-template-rework/TODO_AGENT_*_COMPLETE.md
 ```
+
+## Archivio (deprecated)
+
+Materiale storico non piu' operativo:
+- `docs/_deprecated/arena-template-rework/TODO_AGENT_*.md` - task list originali
+- `docs/_deprecated/arena-template-rework/TODO_AGENT_COORDINATOR.md` - grafo dipendenze storico
+- `docs/_deprecated/arena-template-rework/run_agents*.sh` - script di esecuzione parallela
+- `docs/_deprecated/arena-template-rework/arena-alerts.md` - sostituito dal runbook
+- `docs/_deprecated/arena-template-rework/TODO_ARENA_TEMPLATE.md` - spec legacy (root)
+- `docs/_deprecated/arena-template-rework/ARENA_TEMPLATE_ROLLOUT_PLAN.md` - piano storico v2.2
 
 ## Design Decisions Summary
 

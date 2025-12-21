@@ -13,6 +13,7 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 import com.frenkvs.devmod.hud.ComboDecayOverlay;
 import com.frenkvs.devmod.hud.RecordBannerOverlay;
+import com.frenkvs.devmod.actions.client.DevModClientActions;
 
 // This class will not load on dedicated servers. Accessing client side code from here is safe.
 @Mod(value = DevMod.MODID, dist = Dist.CLIENT)
@@ -32,6 +33,8 @@ public class DevModClient {
         modEventBus.addListener(RecordBannerOverlay::registerOverlay);
 
         // NOTE: Keybinds are registered in DevMod.java to avoid loading issues
+
+        DevModClientActions.register();
     }
 
     @SubscribeEvent

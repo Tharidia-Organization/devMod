@@ -156,9 +156,11 @@ public class TemplateLoader {
             }
         }
 
-        // Inject fallback default if nothing loaded
+        // Inject fallback defaults if nothing loaded
         if (loaded.isEmpty()) {
             loaded.add(ArenaTemplate.defaultTemplate());
+            loaded.add(ArenaTemplate.bossRing80Template());
+            loaded.add(ArenaTemplate.smokeFlat64Template());
         }
     }
 

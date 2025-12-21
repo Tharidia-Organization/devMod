@@ -4,6 +4,7 @@ import com.frenkvs.devmod.instance.DynamicDimensionManager;
 import com.frenkvs.devmod.instance.RecoverySystem;
 import com.frenkvs.devmod.party.QuestSequencePayload;
 import com.frenkvs.devmod.telemetry.TelemetryService;
+import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.ChatFormatting;
 import net.minecraft.server.level.ServerPlayer;
@@ -25,14 +26,11 @@ public class EnduranceSessionHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceSessionHandler.class);
 
     private final Map<UUID, EnduranceQuestManager.ActiveQuestSession> activeSessions;
-    private final ArenaManager arenaManager;
     private final EnduranceQuestPersistence persistence;
 
     public EnduranceSessionHandler(Map<UUID, EnduranceQuestManager.ActiveQuestSession> activeSessions,
-                                    ArenaManager arenaManager,
                                     EnduranceQuestPersistence persistence) {
         this.activeSessions = activeSessions;
-        this.arenaManager = arenaManager;
         this.persistence = persistence;
     }
 
@@ -64,6 +62,9 @@ public class EnduranceSessionHandler {
             }
 
             session.getQuest().fail(true);
+            if (session.isRespawnCountdownActive()) {
+                EnduranceTelemetryService.INSTANCE.recordGiveupDuringRespawn(session.getQuest().getQuestId());
+            }
             cancelSoloSequence(player, session);
 
             // Cleanup wave state and boss fight systems FIRST (while player is still in arena)
@@ -87,15 +88,7 @@ public class EnduranceSessionHandler {
                 .withStyle(ChatFormatting.YELLOW)));
 
             // === NOW do the state restoration and cleanup ===
-            // For Instance mode: cleanupArenaOrInstance triggers teleport + full state restore
-            // For Legacy mode: restorePlayerAfterQuest handles it locally
-
-            // Restore player's original state (no-op for Instance mode)
-            EndurancePlayerStateManager.INSTANCE.restorePlayerAfterQuest(player, session);
-
-            // Cleanup arena/instance (triggers teleport + recovery for Instance mode)
-            EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(session, arenaManager, false);
-            ensureInstanceRecovery(player, session, "Quest abandoned");
+            restoreAndCleanup(player, session, false, "Quest abandoned");
 
             LOGGER.info("[EnduranceQuest] Player {} abandoned quest: {}",
                 player.getName().getString(), session.getQuest().getDisplayName());
@@ -124,6 +117,7 @@ public class EnduranceSessionHandler {
             session.getQuest().fail(false);
             session.clearPendingWaveStart();
             session.setRespawnRequested(false);
+            session.setRespawnCountdownActive(false);
 
             // Don't remove session immediately - allow respawn option
             session.setAwaitingRespawnChoice(true);
@@ -182,6 +176,9 @@ public class EnduranceSessionHandler {
             } else {
                 // End quest
                 activeSessions.remove(playerId);
+                if (session.isRespawnCountdownActive()) {
+                    EnduranceTelemetryService.INSTANCE.recordGiveupDuringRespawn(session.getQuest().getQuestId());
+                }
                 cancelSoloSequence(player, session);
 
                 // Cleanup wave state and boss fight systems FIRST
@@ -199,9 +196,7 @@ public class EnduranceSessionHandler {
                 PacketDistributor.sendToPlayer(player, Objects.requireNonNull(QuestSyncPayload.empty()));
 
                 // === NOW do the state restoration and cleanup ===
-                EndurancePlayerStateManager.INSTANCE.restorePlayerAfterQuest(player, session);
-                EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(session, arenaManager, false);
-                ensureInstanceRecovery(player, session, "Quest ended");
+                restoreAndCleanup(player, session, false, "Quest ended");
 
                 LOGGER.info("[EnduranceQuest] Player {} gave up after death", player.getName().getString());
             }
@@ -231,19 +226,16 @@ public class EnduranceSessionHandler {
 
         boolean teleported = false;
 
-        // Teleport back to arena (handle both instance and legacy modes)
+        // Teleport back to arena (instance-only flow)
         if (session.isInInstanceDimension()) {
             UUID instanceId = session.getInstanceId();
             if (instanceId != null) {
                 teleported = DynamicDimensionManager.INSTANCE.teleportToInstance(player, instanceId);
                 if (teleported && session.getArena() != null) {
-                    EnduranceQuestManager.INSTANCE.teleportPlayersToArena(
-                        List.of(player), session.getArena(), session.getArenaHandle());
+                    teleported = !EnduranceQuestManager.INSTANCE.teleportPlayersToArena(
+                        List.of(player), session.getArena(), session.getArenaHandle()).isEmpty();
                 }
             }
-        } else if (session.getArena() != null && arenaManager != null) {
-            arenaManager.teleportToArena(player, session.getArena());
-            teleported = true;
         }
 
         if (!teleported) {
@@ -264,9 +256,14 @@ public class EnduranceSessionHandler {
         session.setRespawnRequested(false);
 
         // Delay wave start to give time for instance load
+        session.scheduleSafeWindow(EnduranceQuestManager.SAFE_WINDOW_TICKS);
         session.scheduleWaveStart(EnduranceQuestManager.WAVE_START_COUNTDOWN_TICKS);
-        EnduranceQuestManager.INSTANCE.sendSoloSequenceUpdate(player, session, QuestSequencePayload.Phase.SYNCING,
-            (int) Math.ceil(EnduranceQuestManager.WAVE_START_COUNTDOWN_TICKS / 20.0));
+        session.setRespawnCountdownActive(true);
+        EnduranceQuestManager.INSTANCE.sendSoloSequenceUpdate(player, session, QuestSequencePayload.Phase.SAFE_WINDOW,
+            (int) Math.ceil(EnduranceQuestManager.SAFE_WINDOW_TICKS / 20.0),
+            session.getQuest().getDisplayName(),
+            "Safe window",
+            List.of("Invulnerability active"));
 
         // Notify player of penalty
         player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.endurance.respawned_penalty", session.getQuest().getDeathsThisSession())
@@ -283,8 +280,19 @@ public class EnduranceSessionHandler {
         }
 
         var level = arena.getLevel();
-        var bounds = Objects.requireNonNull(arena.getBounds(), "arena bounds");
-        List<ItemEntity> items = level.getEntitiesOfClass(ItemEntity.class, bounds);
+        net.minecraft.world.phys.AABB bounds;
+        var handle = session.getArenaHandle();
+        if (handle != null && handle.bounds() != null) {
+            var hb = handle.bounds();
+            bounds = new net.minecraft.world.phys.AABB(
+                hb.minX(), hb.minY(), hb.minZ(),
+                hb.maxX() + 1.0, hb.maxY() + 1.0, hb.maxZ() + 1.0
+            );
+        } else {
+            bounds = arena.getBounds();
+        }
+        List<ItemEntity> items = level.getEntitiesOfClass(ItemEntity.class,
+            java.util.Objects.requireNonNull(bounds, "bounds"));
         if (items.isEmpty()) {
             return;
         }
@@ -332,9 +340,7 @@ public class EnduranceSessionHandler {
                     player.getName().getString(), session.getQuest().getDisplayName());
 
                 // === NOW do the state restoration and cleanup ===
-                EndurancePlayerStateManager.INSTANCE.restorePlayerAfterQuest(player, session);
-                EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(session, arenaManager, true);
-                ensureInstanceRecovery(player, session, "Quest completed");
+                restoreAndCleanup(player, session, true, "Quest completed");
             }
         }
     }
@@ -347,12 +353,8 @@ public class EnduranceSessionHandler {
         if (session != null && session.getQuest().getState() == EnduranceQuestState.WAVE_COMPLETE) {
             session.getQuest().continueToNextWave();
             session.resetWaveKills();
-
-            // Start spawning mobs for the new wave
-            WaveManager.INSTANCE.startWave(session);
-
-            // Notify subsystems that new wave has started
-            EnduranceEventHandler.onWaveStart(player, session, session.getQuest().getCurrentWave());
+            session.scheduleWaveStart(EnduranceQuestManager.WAVE_START_COUNTDOWN_TICKS);
+            session.setRespawnCountdownActive(false);
 
             LOGGER.info("[EnduranceQuest] Player {} starting wave {}",
                 player.getName().getString(), session.getQuest().getCurrentWave());
@@ -387,9 +389,7 @@ public class EnduranceSessionHandler {
                 player.getName().getString(), session.getQuest().getCurrentWave());
 
             // === NOW do the state restoration and cleanup ===
-            EndurancePlayerStateManager.INSTANCE.restorePlayerAfterQuest(player, session);
-            EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(session, arenaManager, false);
-            ensureInstanceRecovery(player, session, "Quest exited");
+            restoreAndCleanup(player, session, false, "Quest exited");
         }
     }
 
@@ -397,21 +397,38 @@ public class EnduranceSessionHandler {
         if (session == null || player == null) {
             return;
         }
-        session.clearPendingWaveStart();
+        session.clearAllSequences();
         EnduranceQuestManager.INSTANCE.sendSoloSequenceUpdate(player, session,
             QuestSequencePayload.Phase.CANCELLED, 0);
     }
 
-    private void ensureInstanceRecovery(ServerPlayer player, EnduranceQuestManager.ActiveQuestSession session, String reason) {
+    private boolean ensureInstanceRecovery(ServerPlayer player,
+                                           EnduranceQuestManager.ActiveQuestSession session,
+                                           String reason) {
         if (session == null || player == null || !session.isInInstanceDimension()) {
-            return;
+            return false;
         }
         UUID playerId = player.getUUID();
-        if (!RecoverySystem.INSTANCE.hasSnapshot(playerId)) {
-            return;
-        }
-        RecoverySystem.INSTANCE.loadSnapshot(playerId).ifPresent(snapshot ->
-            RecoverySystem.INSTANCE.performRecovery(player, snapshot, reason)
+        return RecoverySystem.INSTANCE.loadSnapshot(playerId)
+            .map(snapshot -> {
+                RecoverySystem.INSTANCE.performRecovery(player, snapshot, reason);
+                return true;
+            })
+            .orElse(false);
+    }
+
+    private void restoreAndCleanup(ServerPlayer player,
+                                   EnduranceQuestManager.ActiveQuestSession session,
+                                   boolean success,
+                                   String reason) {
+        boolean restored = EndurancePlayerStateManager.INSTANCE.restorePlayerAfterQuest(player, session);
+        EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(session, success);
+        boolean fallbackUsed = ensureInstanceRecovery(player, session, reason);
+        boolean restoreSuccess = restored || session.isInInstanceDimension();
+        EnduranceTelemetryService.INSTANCE.recordInventoryRestore(
+            session.getQuest().getQuestId(),
+            restoreSuccess,
+            fallbackUsed
         );
     }
 }

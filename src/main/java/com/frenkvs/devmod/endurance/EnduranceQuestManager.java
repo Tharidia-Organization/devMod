@@ -1,13 +1,19 @@
 package com.frenkvs.devmod.endurance;
 
 import com.devmod.arena.api.ArenaHandle;
+import com.devmod.arena.builder.AsyncArenaBuildCoordinator;
+import com.devmod.arena.builder.AsyncArenaBuilder;
 import com.devmod.arena.builder.ArenaBuilder;
 import com.devmod.arena.builder.ChunkLoadingManager;
 import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.config.InstanceLimitConfig;
+import com.devmod.arena.error.UserFriendlyError;
+import com.devmod.arena.fallback.CircuitBreaker;
+import com.devmod.arena.fallback.FallbackMetrics;
 import com.devmod.arena.integration.MinecraftBlockPlacer;
 import com.devmod.arena.integration.MinecraftEntitySpawner;
 import com.devmod.arena.override.OverrideManager;
+import com.devmod.arena.policy.ArenaPolicy;
 import com.devmod.arena.policy.ArenaPolicyRegistry;
 import com.devmod.arena.policy.PolicyResolver;
 import com.devmod.arena.policy.ResolveContext;
@@ -30,6 +36,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.nbt.ListTag;
@@ -41,6 +48,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -69,8 +77,6 @@ public class EnduranceQuestManager {
     private final EnduranceQuestPersistence persistence = new EnduranceQuestPersistence();
     private EnduranceSessionHandler sessionHandler;
 
-    // Arena manager reference
-    private ArenaManager arenaManager;
 
     // Data directory
     private Path dataDirectory;
@@ -88,9 +94,17 @@ public class EnduranceQuestManager {
     private ArenaTelemetry arenaTelemetry;
     private ArenaTemplateConfig arenaTemplateConfig;
     private ArenaTemplateConfig.ConfigSnapshot arenaConfigSnapshot;
+    private final AsyncArenaBuildCoordinator asyncBuildCoordinator =
+        new AsyncArenaBuildCoordinator(() -> arenaConfigSnapshot);
     private static final long INSTANCE_CREATION_TIMEOUT_SECONDS = 30;
-    public static final int PRE_TELEPORT_COUNTDOWN_TICKS = 100;
+    public static final int PRE_TELEPORT_COUNTDOWN_TICKS = 200;
     public static final int WAVE_START_COUNTDOWN_TICKS = 200;
+    public static final int BRIEFING_TICKS = 80;
+    public static final int SAFE_WINDOW_TICKS = 60;
+    public static final int BOSS_INTRO_TICKS = 20;
+    private static final String FALLBACK_TEMPLATE_ID = "default_flat_64";
+    private static final CircuitBreaker BUILD_FALLBACK_CIRCUIT = new CircuitBreaker();
+    private static final FallbackMetrics BUILD_FALLBACK_METRICS = new FallbackMetrics();
 
     private EnduranceQuestManager() {}
 
@@ -113,6 +127,13 @@ public class EnduranceQuestManager {
      */
     public boolean isUseInstanceDimensions() {
         return useInstanceDimensions;
+    }
+
+    public void tickAsyncBuilds(net.minecraft.server.MinecraftServer server) {
+        if (server == null) {
+            return;
+        }
+        asyncBuildCoordinator.onServerTick(server);
     }
 
     /**
@@ -156,10 +177,10 @@ public class EnduranceQuestManager {
         persistence.initialize(dataDirectory);
 
         // Initialize arena manager
-        this.arenaManager = new ArenaManager();
+        // Legacy overworld arenas are deprecated; instance-only flow enforced.
 
         // Initialize session handler with dependencies
-        this.sessionHandler = new EnduranceSessionHandler(activeSessions, arenaManager, persistence);
+        this.sessionHandler = new EnduranceSessionHandler(activeSessions, persistence);
 
         // Initialize reward system
         RewardSystem.INSTANCE.initialize(configDir);
@@ -298,13 +319,30 @@ public class EnduranceQuestManager {
     @javax.annotation.Nullable
     private String getTemplateSystemReadinessError() {
         if (!useInstanceDimensions) {
-            emitLegacyCall("instance_dimensions_disabled", "getTemplateSystemReadinessError", null);
-            return "Instance dimensions required; legacy arena path is deprecated.";
+            emitGateFailure("instance_dimensions_disabled", null);
+            return "Instance dimensions required for Endurance. Please enable instance mode.";
+        }
+        if (arenaTemplateConfig == null) {
+            emitGateFailure("arena_template_config_missing", null);
+            return "Arena template config missing; templates are required for Endurance.";
+        }
+        if (!arenaTemplateConfig.instanceOnly()) {
+            emitGateFailure("instance_only_disabled", null);
+            return "Arena templates require instance-only mode. Enable devmod.arena.instanceOnly.";
+        }
+        if (!arenaTemplateConfig.arenaTemplateEnabled()) {
+            emitGateFailure("arena_template_disabled", null);
+            return "Arena template system disabled. Enable devmod.arena.templateEnabled.";
         }
         if (!shouldUseTemplateSystem()) {
-            return "Arena template system not initialized or disabled; enable devmod.arena.templateEnabled and load policies.";
+            emitGateFailure("arena_template_not_ready", null);
+            return "Arena template system not initialized. Load templates/policies and retry.";
         }
         return null;
+    }
+
+    String getTemplateSystemReadinessErrorForTesting() {
+        return getTemplateSystemReadinessError();
     }
 
     private ResolvedArena resolveArenaTemplate(UUID playerId, ResourceLocation mobId, QuestSettings settings) {
@@ -357,6 +395,28 @@ public class EnduranceQuestManager {
         return "normal";
     }
 
+    private List<String> buildBriefingLines(EnduranceQuest quest,
+                                            ResolvedArena resolved,
+                                            ActiveQuestSession session) {
+        List<String> lines = new ArrayList<>();
+        if (resolved != null) {
+            lines.add("Template: " + resolved.template().id() + " v" + resolved.template().version());
+            lines.add("Policy: " + resolved.policy().id() + " v" + resolved.policy().version());
+        }
+        if (session != null) {
+            String difficulty = session.getDifficultyLabel();
+            if (difficulty != null && !difficulty.isBlank()) {
+                lines.add("Difficulty: " + difficulty);
+            }
+        }
+        lines.add("Goal: Survive waves");
+        lines.add("Rewards: Tokens + loot drops");
+        if (quest != null && quest.getQuestId() != null) {
+            lines.add("Run ID: " + quest.getQuestId());
+        }
+        return lines;
+    }
+
     private Set<String> resolveTags(QuestSettings settings, EnduranceQuestRegistry.MobQuestConfig mobConfig) {
         Set<String> tags = new HashSet<>();
         if (settings != null && settings.isMultiplayer()) {
@@ -371,10 +431,19 @@ public class EnduranceQuestManager {
         if (mobConfig != null && mobConfig.tier == EnduranceQuestRegistry.MobTier.BOSS) {
             tags.add("boss");
         }
+        if (arenaTemplateConfig != null && arenaTemplateConfig.routingEnabled() && mobConfig != null
+            && mobConfig.entityType != null) {
+            Class<?> baseClass = mobConfig.entityType.getBaseClass();
+            if (baseClass != null && RangedAttackMob.class.isAssignableFrom(baseClass)) {
+                tags.add("ranged");
+            } else {
+                tags.add("melee");
+            }
+        }
         return tags;
     }
 
-    private ArenaBuilder createTemplateBuilder(ServerLevel level) {
+    private com.devmod.arena.builder.TemplateArenaBuilder createTemplateBuilder(ServerLevel level) {
         Objects.requireNonNull(level, "level");
         ArenaTelemetry telemetry = arenaTelemetry != null ? arenaTelemetry : new ArenaTelemetry();
         MinecraftBlockPlacer blockPlacer = new MinecraftBlockPlacer(level);
@@ -396,7 +465,7 @@ public class EnduranceQuestManager {
             }
         );
         var instanceLimits = InstanceLimitConfig.load().toLimits();
-        return new ArenaBuilder(
+        return new com.devmod.arena.builder.TemplateArenaBuilder(
             telemetry,
             blockPlacer,
             entitySpawner,
@@ -435,6 +504,197 @@ public class EnduranceQuestManager {
         }
 
         return prepareTemplateArenaForParty(leader, mobId, settings, template.getMobConfig());
+    }
+
+    public CompletableFuture<PreparedArenaResult> prepareArenaForPartyAsync(ServerPlayer leader,
+                                                                            ResourceLocation mobId,
+                                                                            QuestSettings settings) {
+        EnduranceQuest template = questTemplates.get(mobId);
+        if (template == null) {
+            return CompletableFuture.completedFuture(PreparedArenaResult.failure("Unknown quest type: " + mobId));
+        }
+
+        String readinessError = getTemplateSystemReadinessError();
+        if (readinessError != null) {
+            LOGGER.error("[EnduranceQuest] prepareArenaForPartyAsync blocked: {}", readinessError);
+            return CompletableFuture.completedFuture(PreparedArenaResult.failure(readinessError));
+        }
+
+        return prepareTemplateArenaForPartyAsync(leader, mobId, settings, template.getMobConfig());
+    }
+
+    private CompletableFuture<PreparedArenaResult> prepareTemplateArenaForPartyAsync(
+        ServerPlayer leader,
+        ResourceLocation mobId,
+        QuestSettings settings,
+        EnduranceQuestRegistry.MobQuestConfig mobConfig) {
+        ResolvedArena resolved = resolveArenaTemplate(leader.getUUID(), mobId, settings);
+        if (resolved == null) {
+            return CompletableFuture.completedFuture(PreparedArenaResult.failure("No matching arena template/policy"));
+        }
+
+        ArenaTemplate template = resolved.template();
+        List<UUID> partyMembers = settings.partyMemberIds != null && !settings.partyMemberIds.isEmpty()
+            ? new ArrayList<>(settings.partyMemberIds)
+            : null;
+
+        CompletableFuture<PreparedArenaResult> result = new CompletableFuture<>();
+        InstanceManager.INSTANCE
+            .startInstanceQuestImmediate(leader, template.id(), mobId.toString(), partyMembers)
+            .orTimeout(INSTANCE_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .whenComplete((instanceId, throwable) -> {
+                var server = leader.getServer();
+                if (server == null) {
+                    if (instanceId != null) {
+                        InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+                    }
+                    result.complete(PreparedArenaResult.failure("Server not available"));
+                    return;
+                }
+                server.execute(() -> {
+                    if (throwable != null || instanceId == null) {
+                        String message = throwable != null && throwable.getMessage() != null
+                            ? throwable.getMessage()
+                            : "Failed to create instance for party";
+                        LOGGER.error("[EnduranceQuest] Failed to create instance for party: {}", message);
+                        result.complete(PreparedArenaResult.failure("Failed to create instance: " + message));
+                        return;
+                    }
+
+                    Optional<InstanceData> instanceOpt = InstanceRegistry.INSTANCE.getInstance(instanceId);
+                    if (instanceOpt.isEmpty()) {
+                        InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+                        result.complete(PreparedArenaResult.failure("Instance not found after creation"));
+                        return;
+                    }
+
+                    InstanceData instance = instanceOpt.get();
+                    var dimensionKey = instance.getDimensionKey();
+                    if (dimensionKey == null) {
+                        InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+                        result.complete(PreparedArenaResult.failure("Instance dimension not ready"));
+                        return;
+                    }
+
+                    ServerLevel instanceLevel = server.getLevel(dimensionKey);
+                    if (instanceLevel == null) {
+                        InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+                        result.complete(PreparedArenaResult.failure("Instance level not found"));
+                        return;
+                    }
+
+                    OriginResolution origin = resolveTemplateOrigin(template);
+                    if (shouldBuildAsync(template)) {
+                        AsyncArenaBuilder asyncBuilder = asyncBuildCoordinator.getOrCreate(instanceLevel);
+                        UUID arenaId = UUID.randomUUID();
+                        asyncBuilder.submitBuildAsync(
+                            arenaId,
+                            template,
+                            origin.centerX(),
+                            origin.originY(),
+                            origin.centerZ()
+                        ).whenComplete((asyncResult, buildError) -> {
+                            server.execute(() -> {
+                                if (buildError != null || asyncResult == null || !asyncResult.success()) {
+                                    String msg = buildError != null && buildError.getMessage() != null
+                                        ? buildError.getMessage()
+                                        : (asyncResult != null ? asyncResult.errorMessage() : "Build failed");
+                                    com.devmod.arena.builder.TemplateArenaBuilder builder =
+                                        createTemplateBuilder(instanceLevel);
+                                    BuildAttemptResult fallbackAttempt = attemptFallbackOnly(
+                                        builder,
+                                        resolved,
+                                        "party_async",
+                                        msg
+                                    );
+                                    if (fallbackAttempt != null && fallbackAttempt.result().success()) {
+                                        result.complete(finalizePreparedArena(
+                                            fallbackAttempt.result(),
+                                            fallbackAttempt.resolved(),
+                                            instanceId,
+                                            fallbackAttempt.origin(),
+                                            instanceLevel,
+                                            instance,
+                                            mobId,
+                                            mobConfig
+                                        ));
+                                        return;
+                                    }
+                                    String technicalMessage = msg;
+                                    if (fallbackAttempt != null && fallbackAttempt.result() != null
+                                        && fallbackAttempt.result().errorMessage() != null) {
+                                        technicalMessage = fallbackAttempt.result().errorMessage();
+                                    }
+                                    String userMessage = handleBuildAbort(
+                                        resolved,
+                                        "party_async",
+                                        technicalMessage,
+                                        buildError,
+                                        fallbackAttempt != null
+                                    );
+                                    InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+                                    result.complete(PreparedArenaResult.failure(userMessage));
+                                    return;
+                                }
+                                ArenaBuilder.BuildResult buildResult = ArenaBuilder.BuildResult.success(
+                                    asyncResult.arenaId(),
+                                    template.id(),
+                                    asyncResult.blocksPlaced(),
+                                    asyncResult.durationMs()
+                                );
+                                result.complete(finalizePreparedArena(
+                                    buildResult,
+                                    resolved,
+                                    instanceId,
+                                    origin,
+                                    instanceLevel,
+                                    instance,
+                                    mobId,
+                                    mobConfig
+                                ));
+                            });
+                        });
+                        return;
+                    }
+
+                    com.devmod.arena.builder.TemplateArenaBuilder builder = createTemplateBuilder(instanceLevel);
+                    BuildAttemptResult attempt = buildWithFallback(
+                        builder,
+                        resolved,
+                        origin,
+                        "party_sync"
+                    );
+
+                    if (!attempt.result().success()) {
+                        String msg = attempt.result().errorMessage() != null
+                            ? attempt.result().errorMessage()
+                            : "Build failed";
+                        String userMessage = handleBuildAbort(
+                            attempt.resolved(),
+                            "party_sync",
+                            msg,
+                            null,
+                            attempt.fallbackAttempted()
+                        );
+                        InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+                        result.complete(PreparedArenaResult.failure(userMessage));
+                        return;
+                    }
+
+                    result.complete(finalizePreparedArena(
+                        attempt.result(),
+                        attempt.resolved(),
+                        instanceId,
+                        attempt.origin(),
+                        instanceLevel,
+                        instance,
+                        mobId,
+                        mobConfig
+                    ));
+                });
+            });
+
+        return result;
     }
 
     private PreparedArenaResult prepareTemplateArenaForParty(ServerPlayer leader,
@@ -489,27 +749,59 @@ public class EnduranceQuestManager {
             return PreparedArenaResult.failure("Instance level not found");
         }
 
-        ArenaBuilder builder = createTemplateBuilder(instanceLevel);
+        com.devmod.arena.builder.TemplateArenaBuilder builder = createTemplateBuilder(instanceLevel);
         OriginResolution origin = resolveTemplateOrigin(template);
-        ArenaBuilder.BuildResult buildResult = builder.build(
-            template,
-            resolved.policy().id(),
-            resolved.policy().version(),
-            origin.centerX(),
-            origin.originY(),
-            origin.centerZ()
+        BuildAttemptResult attempt = buildWithFallback(
+            builder,
+            resolved,
+            origin,
+            "party_sync"
         );
 
-        if (!buildResult.success()) {
+        if (!attempt.result().success()) {
+            String msg = attempt.result().errorMessage() != null
+                ? attempt.result().errorMessage()
+                : "Build failed";
+            String userMessage = handleBuildAbort(
+                attempt.resolved(),
+                "party_sync",
+                msg,
+                null,
+                attempt.fallbackAttempted()
+            );
             InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
-            String msg = buildResult.errorMessage() != null ? buildResult.errorMessage() : "Build failed";
-            return PreparedArenaResult.failure(msg);
+            return PreparedArenaResult.failure(userMessage);
         }
 
+        return finalizePreparedArena(
+            attempt.result(),
+            attempt.resolved(),
+            instanceId,
+            attempt.origin(),
+            instanceLevel,
+            instance,
+            mobId,
+            mobConfig
+        );
+    }
+
+    private PreparedArenaResult finalizePreparedArena(ArenaBuilder.BuildResult buildResult,
+                                                      ResolvedArena resolved,
+                                                      UUID instanceId,
+                                                      OriginResolution origin,
+                                                      ServerLevel instanceLevel,
+                                                      InstanceData instance,
+                                                      ResourceLocation mobId,
+                                                      EnduranceQuestRegistry.MobQuestConfig mobConfig) {
+        ArenaTemplate template = resolved.template();
         ArenaHandle handle = createArenaHandle(buildResult, resolved, instanceId, origin, instanceLevel);
+        if (!isHandleValid(handle)) {
+            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            emitGateFailure("missing_spawn_slots", resolved);
+            return PreparedArenaResult.failure("Template missing required spawn slots (player/mob)");
+        }
         ArenaManager.Arena arena = createArenaAdapter(instanceLevel, template, handle, origin);
         updateInstanceArenaMetadata(instance, template, handle, origin);
-
         return PreparedArenaResult.success(arena, handle, mobId, mobConfig, instanceId);
     }
 
@@ -521,43 +813,19 @@ public class EnduranceQuestManager {
      * @param arena The prepared arena
      * @return Map of player UUID to their spawn position in arena
      */
+    @Deprecated(forRemoval = true)
     public Map<UUID, net.minecraft.core.BlockPos> teleportPlayersToArena(List<ServerPlayer> players,
                                                                         ArenaManager.Arena arena) {
-        Map<UUID, net.minecraft.core.BlockPos> spawnPositions = new HashMap<>();
-        net.minecraft.core.BlockPos center = arena.getCenter();
-        int playerCount = players.size();
-
-        // Calculate spread positions for players (circle around center)
-        double radius = Math.min(arena.getSize() / 4.0, 10.0);
-
-        for (int i = 0; i < playerCount; i++) {
-            ServerPlayer player = players.get(i);
-            if (player == null || !player.isAlive()) continue;
-
-            // Calculate position in a circle
-            double angle = (2 * Math.PI * i) / playerCount;
-            double x = center.getX() + 0.5 + radius * Math.cos(angle);
-            double z = center.getZ() + 0.5 + radius * Math.sin(angle);
-
-            // Teleport player
-            player.teleportTo(x, center.getY(), z);
-
-            // Store spawn position
-            spawnPositions.put(player.getUUID(), new net.minecraft.core.BlockPos((int) x, center.getY(), (int) z));
-
-            LOGGER.debug("[EnduranceQuest] Teleported {} to arena at ({}, {}, {})",
-                player.getName().getString(), x, center.getY(), z);
-        }
-
-        LOGGER.info("[EnduranceQuest] Teleported {} players to arena {}", spawnPositions.size(), arena.getId());
-        return spawnPositions;
+        LOGGER.error("[EnduranceQuest] Legacy teleport blocked; ArenaHandle required");
+        return Collections.emptyMap();
     }
 
     public Map<UUID, net.minecraft.core.BlockPos> teleportPlayersToArena(List<ServerPlayer> players,
                                                                         ArenaManager.Arena arena,
                                                                         @javax.annotation.Nullable ArenaHandle handle) {
         if (handle == null || handle.playerSpawnPositions() == null || handle.playerSpawnPositions().isEmpty()) {
-            return teleportPlayersToArena(players, arena);
+            LOGGER.error("[EnduranceQuest] Missing player spawn slots; ArenaHandle required");
+            return Collections.emptyMap();
         }
 
         Map<UUID, net.minecraft.core.BlockPos> spawnPositions = new HashMap<>();
@@ -590,8 +858,8 @@ public class EnduranceQuestManager {
                 level
             );
             if (spawnPos == null) {
-                LOGGER.warn("[EnduranceQuest] No valid template spawn found; falling back to arena center");
-                return teleportPlayersToArena(players, arena);
+                LOGGER.warn("[EnduranceQuest] No valid template player spawn found");
+                return Collections.emptyMap();
             }
             double x = spawnPos.getX() + 0.5;
             double y = spawnPos.getY();
@@ -666,6 +934,21 @@ public class EnduranceQuestManager {
         arenaTelemetry.emit("arena.legacy.call", data);
     }
 
+    private void emitGateFailure(String reason, @javax.annotation.Nullable ResolvedArena resolved) {
+        if (arenaTelemetry == null) {
+            return;
+        }
+        Map<String, Object> data = new HashMap<>();
+        data.put("reason", reason);
+        data.put("instanceOnly", arenaTemplateConfig != null && arenaTemplateConfig.instanceOnly());
+        data.put("templateEnabled", arenaTemplateConfig != null && arenaTemplateConfig.arenaTemplateEnabled());
+        if (resolved != null) {
+            data.put("templateId", resolved.template().id());
+            data.put("policyId", resolved.policy().id());
+        }
+        arenaTelemetry.emit("endurance.gate.failure", data);
+    }
+
     private Map<net.minecraft.core.BlockPos, ArenaTemplate.SpawnSlot> buildPlayerSpawnSlotMap(
             ArenaTemplate template, ArenaHandle handle) {
         Map<net.minecraft.core.BlockPos, ArenaTemplate.SpawnSlot> slotMap = new HashMap<>();
@@ -717,10 +1000,12 @@ public class EnduranceQuestManager {
      */
     @Deprecated(forRemoval = true)
     public void destroyArena(ArenaManager.Arena arena) {
-        if (arena != null && arenaManager != null) {
-            LOGGER.error("[EnduranceQuest] destroyArena is deprecated; use instance cleanup via InstanceArenaManager");
-            arenaManager.destroyArena(arena);
+        if (arena == null) {
+            return;
         }
+        LOGGER.error("[EnduranceQuest] destroyArena is deprecated; use instance cleanup via InstanceArenaManager");
+        emitLegacyCall("destroyArena_deprecated", "EnduranceQuestManager.destroyArena",
+            arena.getLevel());
     }
 
     // ========== Template Handle Helpers ==========
@@ -768,6 +1053,225 @@ public class EnduranceQuestManager {
         return new OriginResolution(originX, originY, originZ, centerX, centerZ);
     }
 
+    private boolean shouldBuildAsync(ArenaTemplate template) {
+        if (template == null || template.buildSettings() == null) {
+            return false;
+        }
+        return template.buildSettings().buildPriority() == ArenaTemplate.BuildSettings.Priority.ASYNC;
+    }
+
+    private record BuildAttemptResult(
+        ResolvedArena resolved,
+        OriginResolution origin,
+        ArenaBuilder.BuildResult result,
+        boolean fallbackAttempted,
+        boolean fallbackSucceeded
+    ) {}
+
+    private BuildAttemptResult buildWithFallback(com.devmod.arena.builder.TemplateArenaBuilder builder,
+                                                 ResolvedArena resolved,
+                                                 OriginResolution origin,
+                                                 String context) {
+        long primaryStart = System.nanoTime();
+        ArenaBuilder.BuildResult primaryResult = builder.build(
+            resolved,
+            origin.centerX(),
+            origin.originY(),
+            origin.centerZ()
+        );
+        BUILD_FALLBACK_METRICS.recordPrimaryTime(System.nanoTime() - primaryStart);
+
+        if (primaryResult.success()) {
+            BUILD_FALLBACK_CIRCUIT.recordSuccess();
+            BUILD_FALLBACK_METRICS.record(FallbackMetrics.MetricType.PRIMARY_SUCCESS);
+            return new BuildAttemptResult(resolved, origin, primaryResult, false, false);
+        }
+
+        ResolvedArena fallbackResolved = resolveFallbackArena(resolved);
+        if (fallbackResolved == null || fallbackResolved.template().id().equals(resolved.template().id())) {
+            BUILD_FALLBACK_METRICS.record(FallbackMetrics.MetricType.ALL_FAILED);
+            return new BuildAttemptResult(resolved, origin, primaryResult, false, false);
+        }
+
+        if (!BUILD_FALLBACK_CIRCUIT.allowRequest()) {
+            emitBuildFallbackBlocked(resolved, fallbackResolved, context, "circuit_open");
+            BUILD_FALLBACK_METRICS.record(FallbackMetrics.MetricType.ALL_FAILED);
+            return new BuildAttemptResult(resolved, origin, primaryResult, false, false);
+        }
+
+        emitBuildFallbackAttempt(resolved, fallbackResolved, context, primaryResult.errorMessage());
+        OriginResolution fallbackOrigin = resolveTemplateOrigin(fallbackResolved.template());
+        long fallbackStart = System.nanoTime();
+        ArenaBuilder.BuildResult fallbackResult = builder.build(
+            fallbackResolved,
+            fallbackOrigin.centerX(),
+            fallbackOrigin.originY(),
+            fallbackOrigin.centerZ()
+        );
+        BUILD_FALLBACK_METRICS.recordFallbackTime(System.nanoTime() - fallbackStart);
+
+        if (fallbackResult.success()) {
+            BUILD_FALLBACK_CIRCUIT.recordSuccess();
+            BUILD_FALLBACK_METRICS.record(FallbackMetrics.MetricType.FALLBACK_USED);
+            return new BuildAttemptResult(fallbackResolved, fallbackOrigin, fallbackResult, true, true);
+        }
+
+        BUILD_FALLBACK_CIRCUIT.recordFailure();
+        BUILD_FALLBACK_METRICS.record(FallbackMetrics.MetricType.ALL_FAILED);
+        return new BuildAttemptResult(fallbackResolved, fallbackOrigin, fallbackResult, true, false);
+    }
+
+    private @javax.annotation.Nullable BuildAttemptResult attemptFallbackOnly(
+        com.devmod.arena.builder.TemplateArenaBuilder builder,
+        ResolvedArena primary,
+        String context,
+        @javax.annotation.Nullable String primaryError) {
+        ResolvedArena fallbackResolved = resolveFallbackArena(primary);
+        if (fallbackResolved == null || fallbackResolved.template().id().equals(primary.template().id())) {
+            BUILD_FALLBACK_METRICS.record(FallbackMetrics.MetricType.ALL_FAILED);
+            return null;
+        }
+
+        if (!BUILD_FALLBACK_CIRCUIT.allowRequest()) {
+            emitBuildFallbackBlocked(primary, fallbackResolved, context, "circuit_open");
+            BUILD_FALLBACK_METRICS.record(FallbackMetrics.MetricType.ALL_FAILED);
+            return null;
+        }
+
+        emitBuildFallbackAttempt(primary, fallbackResolved, context, primaryError);
+        OriginResolution fallbackOrigin = resolveTemplateOrigin(fallbackResolved.template());
+        long fallbackStart = System.nanoTime();
+        ArenaBuilder.BuildResult fallbackResult = builder.build(
+            fallbackResolved,
+            fallbackOrigin.centerX(),
+            fallbackOrigin.originY(),
+            fallbackOrigin.centerZ()
+        );
+        BUILD_FALLBACK_METRICS.recordFallbackTime(System.nanoTime() - fallbackStart);
+
+        if (fallbackResult.success()) {
+            BUILD_FALLBACK_CIRCUIT.recordSuccess();
+            BUILD_FALLBACK_METRICS.record(FallbackMetrics.MetricType.FALLBACK_USED);
+            return new BuildAttemptResult(fallbackResolved, fallbackOrigin, fallbackResult, true, true);
+        }
+
+        BUILD_FALLBACK_CIRCUIT.recordFailure();
+        BUILD_FALLBACK_METRICS.record(FallbackMetrics.MetricType.ALL_FAILED);
+        return new BuildAttemptResult(fallbackResolved, fallbackOrigin, fallbackResult, true, false);
+    }
+
+    private @javax.annotation.Nullable ResolvedArena resolveFallbackArena(ResolvedArena primary) {
+        if (arenaTemplateRegistry == null || primary == null) {
+            return null;
+        }
+        if (FALLBACK_TEMPLATE_ID.equals(primary.template().id())) {
+            return null;
+        }
+        ArenaTemplate fallbackTemplate = arenaTemplateRegistry.get(FALLBACK_TEMPLATE_ID).orElse(null);
+        if (fallbackTemplate == null) {
+            return null;
+        }
+        ArenaPolicy policy = selectFallbackPolicy(fallbackTemplate.id());
+        return ResolvedArena.create(fallbackTemplate, policy, Map.of("fallback", 1.0));
+    }
+
+    private ArenaPolicy selectFallbackPolicy(String templateId) {
+        if (arenaPolicyRegistry != null) {
+            List<ArenaPolicy> candidates = arenaPolicyRegistry.forTemplate(templateId).stream()
+                .filter(ArenaPolicy::enabled)
+                .toList();
+            if (!candidates.isEmpty()) {
+                return candidates.stream()
+                    .sorted(Comparator
+                        .comparingInt(ArenaPolicy::priority).reversed()
+                        .thenComparingDouble(ArenaPolicy::weight).reversed()
+                        .thenComparingInt(ArenaPolicy::version).reversed())
+                    .findFirst()
+                    .orElse(ArenaPolicy.DEFAULT);
+            }
+        }
+        return ArenaPolicy.DEFAULT;
+    }
+
+    private void emitBuildFallbackAttempt(ResolvedArena primary,
+                                          ResolvedArena fallback,
+                                          String context,
+                                          @javax.annotation.Nullable String primaryError) {
+        if (arenaTelemetry == null || primary == null || fallback == null) {
+            return;
+        }
+        Map<String, Object> data = new HashMap<>();
+        data.put("context", context != null ? context : "");
+        data.put("primaryTemplateId", primary.template().id());
+        data.put("primaryTemplateVersion", primary.template().version());
+        data.put("primaryPolicyId", primary.policy().id());
+        data.put("fallbackTemplateId", fallback.template().id());
+        data.put("fallbackTemplateVersion", fallback.template().version());
+        data.put("fallbackPolicyId", fallback.policy().id());
+        data.put("circuitState", BUILD_FALLBACK_CIRCUIT.getState().name());
+        if (primaryError != null && !primaryError.isBlank()) {
+            data.put("primaryError", primaryError);
+        }
+        arenaTelemetry.emit("arena.build.fallback_attempt", data);
+    }
+
+    private void emitBuildFallbackBlocked(ResolvedArena primary,
+                                          ResolvedArena fallback,
+                                          String context,
+                                          String reason) {
+        if (arenaTelemetry == null || primary == null || fallback == null) {
+            return;
+        }
+        Map<String, Object> data = new HashMap<>();
+        data.put("context", context != null ? context : "");
+        data.put("primaryTemplateId", primary.template().id());
+        data.put("fallbackTemplateId", fallback.template().id());
+        data.put("reason", reason != null ? reason : "unknown");
+        data.put("circuitState", BUILD_FALLBACK_CIRCUIT.getState().name());
+        arenaTelemetry.emit("arena.build.fallback_blocked", data);
+    }
+
+    private String handleBuildAbort(ResolvedArena resolved,
+                                    String context,
+                                    String technicalMessage,
+                                    @javax.annotation.Nullable Throwable cause,
+                                    boolean fallbackAttempted) {
+        Map<String, Object> ctx = new HashMap<>();
+        ctx.put("context", context != null ? context : "");
+        if (resolved != null) {
+            ctx.put("templateId", resolved.template().id());
+            ctx.put("templateVersion", resolved.template().version());
+            ctx.put("policyId", resolved.policy().id());
+            ctx.put("policyVersion", resolved.policy().version());
+        }
+        ctx.put("fallbackAttempted", fallbackAttempted);
+
+        UserFriendlyError error = new UserFriendlyError.Builder()
+            .type(UserFriendlyError.ErrorType.ARENA_BUILD_FAILED)
+            .technicalMessage(technicalMessage != null ? technicalMessage : "Build failed")
+            .cause(cause)
+            .context(ctx)
+            .build();
+        error.log();
+
+        if (arenaTelemetry != null && resolved != null) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("context", context != null ? context : "");
+            data.put("templateId", resolved.template().id());
+            data.put("templateVersion", resolved.template().version());
+            data.put("policyId", resolved.policy().id());
+            data.put("policyVersion", resolved.policy().version());
+            data.put("fallbackAttempted", fallbackAttempted);
+            data.put("errorRef", error.getShortRef());
+            if (technicalMessage != null && !technicalMessage.isBlank()) {
+                data.put("error", technicalMessage);
+            }
+            arenaTelemetry.emit("arena.build.abort", data);
+        }
+
+        return error.getPlayerMessage();
+    }
+
     private ArenaHandle createArenaHandle(ArenaBuilder.BuildResult buildResult,
                                           ResolvedArena resolved,
                                           UUID instanceId,
@@ -790,6 +1294,15 @@ public class EnduranceQuestManager {
             .playerSpawnPositions(playerSpawns)
             .mobSpawnPositions(mobSpawns)
             .build();
+    }
+
+    private boolean isHandleValid(@javax.annotation.Nullable ArenaHandle handle) {
+        if (handle == null) {
+            return false;
+        }
+        boolean hasPlayerSpawns = handle.playerSpawnPositions() != null && !handle.playerSpawnPositions().isEmpty();
+        boolean hasMobSpawns = handle.mobSpawnPositions() != null && !handle.mobSpawnPositions().isEmpty();
+        return hasPlayerSpawns && hasMobSpawns;
     }
 
     private ArenaManager.Arena createArenaAdapter(ServerLevel level,
@@ -1102,6 +1615,17 @@ public class EnduranceQuestManager {
             }
             return results;
         }
+        if (!isHandleValid(arenaHandle)) {
+            String error = "Arena template missing required spawn slots.";
+            emitGateFailure("missing_spawn_slots", null);
+            LOGGER.error("[EnduranceQuest] startPreparedQuest blocked: {}", error);
+            for (ServerPlayer player : players) {
+                if (player != null) {
+                    results.put(player.getUUID(), new StartQuestResult(false, error, null));
+                }
+            }
+            return results;
+        }
 
         // Get quest template
         EnduranceQuest template = questTemplates.get(mobId);
@@ -1150,6 +1674,8 @@ public class EnduranceQuestManager {
             if (arenaHandle != null) {
                 session.setArenaHandle(arenaHandle);
             }
+            session.setDifficultyLabel(resolveDifficultyLabel(settings, quest.getMobConfig()));
+            session.setQuestTypeLabel(resolveQuestTypeLabel(settings, quest.getMobConfig()));
             activeSessions.put(playerId, session); // Replaces placeholder
 
             // Prepare player (save state, give kit - NO TELEPORT, already done)
@@ -1291,13 +1817,26 @@ public class EnduranceQuestManager {
         }
 
         pendingSession.setPending(true);
+        pendingSession.setDifficultyLabel(resolveDifficultyLabel(settings, quest.getMobConfig()));
+        pendingSession.setQuestTypeLabel(resolveQuestTypeLabel(settings, quest.getMobConfig()));
+        pendingSession.scheduleBriefing(BRIEFING_TICKS);
         pendingSession.scheduleInstanceStart(mobId, settings, resolved, PRE_TELEPORT_COUNTDOWN_TICKS);
 
-        int countdownSeconds = (int) Math.ceil(PRE_TELEPORT_COUNTDOWN_TICKS / 20.0);
-        sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.COUNTDOWN_START, countdownSeconds);
-        pendingSession.setLastTeleportCountdownSeconds(countdownSeconds);
+        int briefingSeconds = (int) Math.ceil(BRIEFING_TICKS / 20.0);
+        List<String> briefingLines = buildBriefingLines(quest, resolved, pendingSession);
+        pendingSession.setBriefingLines(briefingLines);
+        sendSoloSequenceUpdate(
+            player,
+            pendingSession,
+            QuestSequencePayload.Phase.BRIEFING,
+            briefingSeconds,
+            quest.getDisplayName(),
+            "Endurance briefing",
+            briefingLines
+        );
+        pendingSession.setLastBriefingSeconds(briefingSeconds);
 
-        return new StartQuestResult(true, "Teleporting in " + countdownSeconds + " seconds...", pendingSession);
+        return new StartQuestResult(true, "Preparing instance...", pendingSession);
     }
 
     void startPendingInstanceQuest(ServerPlayer player, ActiveQuestSession session) {
@@ -1332,13 +1871,29 @@ public class EnduranceQuestManager {
 
     void sendSoloSequenceUpdate(ServerPlayer player, ActiveQuestSession session,
                                 QuestSequencePayload.Phase phase, int secondsRemaining) {
+        sendSoloSequenceUpdate(player, session, phase, secondsRemaining, null, null, List.of());
+    }
+
+    void sendSoloSequenceUpdate(ServerPlayer player, ActiveQuestSession session,
+                                QuestSequencePayload.Phase phase, int secondsRemaining,
+                                @javax.annotation.Nullable String title,
+                                @javax.annotation.Nullable String subtitle,
+                                List<String> infoLines) {
         if (player == null || session == null || session.isMultiplayer()) {
             return;
+        }
+        if (phase == QuestSequencePayload.Phase.CANCELLED) {
+            EnduranceTelemetryService.INSTANCE.recordCountdownCancelled(session.getQuest().getQuestId());
         }
         PacketDistributor.sendToPlayer(player, new QuestSequencePayload(
             player.getUUID(),
             phase,
-            Math.max(0, secondsRemaining)
+            Math.max(0, secondsRemaining),
+            0,
+            List.of(),
+            title,
+            subtitle,
+            infoLines != null ? infoLines : List.of()
         ));
     }
 
@@ -1402,46 +1957,197 @@ public class EnduranceQuestManager {
         }
 
         ArenaTemplate template = resolved.template();
-        ArenaBuilder builder = createTemplateBuilder(instanceLevel);
         OriginResolution origin = resolveTemplateOrigin(template);
-        ArenaBuilder.BuildResult buildResult = builder.build(
-            template,
-            resolved.policy().id(),
-            resolved.policy().version(),
-            origin.centerX(),
-            origin.originY(),
-            origin.centerZ()
-        );
 
-        if (!buildResult.success()) {
-            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
-            activeSessions.remove(playerId);
-            com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingHide(player);
-            sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.CANCELLED, 0);
-            String msg = buildResult.errorMessage() != null ? buildResult.errorMessage() : "Build failed";
-            player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] " + msg)
-                .withStyle(ChatFormatting.RED)));
+        if (shouldBuildAsync(template)) {
+            AsyncArenaBuilder asyncBuilder = asyncBuildCoordinator.getOrCreate(instanceLevel);
+            UUID arenaId = UUID.randomUUID();
+            asyncBuilder.submitBuildAsync(
+                arenaId,
+                template,
+                origin.centerX(),
+                origin.originY(),
+                origin.centerZ()
+            ).whenComplete((asyncResult, buildError) -> {
+                server.execute(() -> {
+                    ActiveQuestSession currentSession = activeSessions.get(playerId);
+                    ServerPlayer currentPlayer = server.getPlayerList().getPlayer(Objects.requireNonNull(playerId));
+                    if (currentPlayer == null || currentSession == null) {
+                        InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+                        activeSessions.remove(playerId);
+                        return;
+                    }
+                    if (buildError != null || asyncResult == null || !asyncResult.success()) {
+                        String msg = buildError != null && buildError.getMessage() != null
+                            ? buildError.getMessage()
+                            : (asyncResult != null ? asyncResult.errorMessage() : "Build failed");
+                        com.devmod.arena.builder.TemplateArenaBuilder builder =
+                            createTemplateBuilder(instanceLevel);
+                        BuildAttemptResult fallbackAttempt = attemptFallbackOnly(
+                            builder,
+                            resolved,
+                            "solo_async",
+                            msg
+                        );
+                        if (fallbackAttempt != null && fallbackAttempt.result().success()) {
+                            finalizeTemplateInstanceQuestSetup(
+                                currentPlayer,
+                                currentSession,
+                                mobId,
+                                quest,
+                                settings,
+                                fallbackAttempt.resolved(),
+                                instanceId,
+                                instanceLevel,
+                                fallbackAttempt.origin(),
+                                instance,
+                                fallbackAttempt.result()
+                            );
+                            return;
+                        }
+                        String technicalMessage = msg;
+                        if (fallbackAttempt != null && fallbackAttempt.result() != null
+                            && fallbackAttempt.result().errorMessage() != null) {
+                            technicalMessage = fallbackAttempt.result().errorMessage();
+                        }
+                        String userMessage = handleBuildAbort(
+                            resolved,
+                            "solo_async",
+                            technicalMessage,
+                            buildError,
+                            fallbackAttempt != null
+                        );
+                        failPendingInstanceSetup(currentPlayer, currentSession, instanceId, userMessage);
+                        return;
+                    }
+                    ArenaBuilder.BuildResult buildResult = ArenaBuilder.BuildResult.success(
+                        asyncResult.arenaId(),
+                        template.id(),
+                        asyncResult.blocksPlaced(),
+                        asyncResult.durationMs()
+                    );
+                    finalizeTemplateInstanceQuestSetup(
+                        currentPlayer,
+                        currentSession,
+                        mobId,
+                        quest,
+                        settings,
+                        resolved,
+                        instanceId,
+                        instanceLevel,
+                        origin,
+                        instance,
+                        buildResult
+                    );
+                });
+            });
             return;
         }
 
+        com.devmod.arena.builder.TemplateArenaBuilder builder = createTemplateBuilder(instanceLevel);
+        BuildAttemptResult attempt = buildWithFallback(
+            builder,
+            resolved,
+            origin,
+            "solo_sync"
+        );
+
+        if (!attempt.result().success()) {
+            String msg = attempt.result().errorMessage() != null
+                ? attempt.result().errorMessage()
+                : "Build failed";
+            String userMessage = handleBuildAbort(
+                attempt.resolved(),
+                "solo_sync",
+                msg,
+                null,
+                attempt.fallbackAttempted()
+            );
+            failPendingInstanceSetup(player, pendingSession, instanceId, userMessage);
+            return;
+        }
+
+        finalizeTemplateInstanceQuestSetup(
+            player,
+            pendingSession,
+            mobId,
+            quest,
+            settings,
+            attempt.resolved(),
+            instanceId,
+            instanceLevel,
+            attempt.origin(),
+            instance,
+            attempt.result()
+        );
+    }
+
+    private void failPendingInstanceSetup(ServerPlayer player,
+                                          @javax.annotation.Nullable ActiveQuestSession pendingSession,
+                                          @javax.annotation.Nullable UUID instanceId,
+                                          String message) {
+        if (instanceId != null) {
+            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+        }
+        if (pendingSession != null) {
+            activeSessions.remove(pendingSession.getPlayerId());
+        }
+        if (player != null) {
+            com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingHide(player);
+            if (pendingSession != null) {
+                sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.CANCELLED, 0);
+            }
+            String msg = message != null ? message : "Build failed";
+            player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] " + msg)
+                .withStyle(ChatFormatting.RED)));
+        }
+    }
+
+    private void finalizeTemplateInstanceQuestSetup(ServerPlayer player,
+                                                    ActiveQuestSession pendingSession,
+                                                    ResourceLocation mobId,
+                                                    EnduranceQuest quest,
+                                                    QuestSettings settings,
+                                                    ResolvedArena resolved,
+                                                    UUID instanceId,
+                                                    ServerLevel instanceLevel,
+                                                    OriginResolution origin,
+                                                    InstanceData instance,
+                                                    ArenaBuilder.BuildResult buildResult) {
+        ArenaTemplate template = resolved.template();
         ArenaHandle handle = createArenaHandle(buildResult, resolved, instanceId, origin, instanceLevel);
+        if (!isHandleValid(handle)) {
+            failPendingInstanceSetup(player, pendingSession, instanceId, "Template missing required spawn slots (player/mob)");
+            return;
+        }
         ArenaManager.Arena arena = createArenaAdapter(instanceLevel, template, handle, origin);
         updateInstanceArenaMetadata(instance, template, handle, origin);
 
         com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingHide(player);
 
         // Ensure player is positioned at template-defined spawn
-        teleportPlayersToArena(java.util.List.of(player), arena, handle);
+        if (teleportPlayersToArena(java.util.List.of(player), arena, handle).isEmpty()) {
+            failPendingInstanceSetup(player, pendingSession, instanceId, "No valid player spawn slots in template");
+            return;
+        }
 
         quest.start(arena.getId());
 
+        UUID effectivePlayerId = pendingSession != null ? pendingSession.getPlayerId() : player.getUUID();
         ActiveQuestSession session = new ActiveQuestSession(
-            playerId, quest, arena, System.currentTimeMillis(),
+            effectivePlayerId, quest, arena, System.currentTimeMillis(),
             settings.partyId, settings.questType, settings.getPlayerCount()
         );
         session.setInstanceId(instanceId);
         session.setArenaHandle(handle);
-        activeSessions.put(playerId, session);
+        if (pendingSession != null) {
+            session.setDifficultyLabel(pendingSession.getDifficultyLabel());
+            session.setQuestTypeLabel(pendingSession.getQuestTypeLabel());
+        } else {
+            session.setDifficultyLabel(resolveDifficultyLabel(settings, quest.getMobConfig()));
+            session.setQuestTypeLabel(resolveQuestTypeLabel(settings, quest.getMobConfig()));
+        }
+        activeSessions.put(effectivePlayerId, session);
 
         EndurancePlayerStateManager.INSTANCE.preparePlayerForQuest(player, session);
 
@@ -1450,9 +2156,13 @@ public class EnduranceQuestManager {
         String dungeonId = "endurance_instance_" + mobId.toString().replace(":", "_");
         TelemetryService.INSTANCE.startDungeonSession(player, dungeonId);
 
+        session.scheduleSafeWindow(SAFE_WINDOW_TICKS);
         session.scheduleWaveStart(WAVE_START_COUNTDOWN_TICKS);
-        sendSoloSequenceUpdate(player, session, QuestSequencePayload.Phase.SYNCING,
-            (int) Math.ceil(WAVE_START_COUNTDOWN_TICKS / 20.0));
+        sendSoloSequenceUpdate(player, session, QuestSequencePayload.Phase.SAFE_WINDOW,
+            (int) Math.ceil(SAFE_WINDOW_TICKS / 20.0),
+            quest.getDisplayName(),
+            "Safe window",
+            List.of("Invulnerability active"));
 
         LOGGER.info("[EnduranceQuest] Player {} started TEMPLATE quest: {} (instance: {})",
             player.getName().getString(), quest.getDisplayName(), instanceId);
@@ -1475,6 +2185,21 @@ public class EnduranceQuestManager {
      */
     public Optional<ActiveQuestSession> getActiveSession(Player player) {
         return getActiveSession(player.getUUID());
+    }
+
+    public boolean isGamificationEnabled() {
+        return arenaTemplateConfig != null && arenaTemplateConfig.gamificationEnabled();
+    }
+
+    public @javax.annotation.Nullable ArenaPolicy getPolicyForSession(@javax.annotation.Nullable ActiveQuestSession session) {
+        if (session == null || arenaPolicyRegistry == null) {
+            return null;
+        }
+        String policyId = session.getPolicyId();
+        if (policyId == null || policyId.isBlank()) {
+            return null;
+        }
+        return arenaPolicyRegistry.get(policyId).orElse(null);
     }
 
     /**
@@ -1667,7 +2392,7 @@ public class EnduranceQuestManager {
 
             // Cleanup arena/boss state (handles both legacy and instance modes)
             EndurancePlayerStateManager.INSTANCE.cleanupQuestSystems(session);
-            EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(session, arenaManager, false);
+            EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(session, false);
         } catch (Exception e) {
             LOGGER.warn("[EnduranceQuest] Failed shutdown cleanup for session {}", session.getPlayerId(), e);
         }
@@ -1764,9 +2489,28 @@ public class EnduranceQuestManager {
         private @javax.annotation.Nullable QuestSettings pendingSettings;
         private @javax.annotation.Nullable ResolvedArena pendingResolved;
 
+        // Briefing countdown (solo pre-teleport lobby)
+        private int pendingBriefingTicks = 0;
+        private int lastBriefingSeconds = -1;
+        private List<String> briefingLines = List.of();
+
         // Wave start countdown (solo start / respawn delay)
         private int pendingWaveStartTicks = 0;
         private int lastWaveCountdownSeconds = -1;
+
+        // Safe window countdown (post-teleport / post-respawn)
+        private int pendingSafeWindowTicks = 0;
+        private int lastSafeWindowSeconds = -1;
+
+        // Boss intro countdown (short cinematic pause)
+        private int pendingBossIntroTicks = 0;
+        private int lastBossIntroSeconds = -1;
+        private boolean respawnCountdownActive = false;
+
+        // Wave directive choices (risk/reward between waves)
+        private List<WaveDirective> pendingDirectives = List.of();
+        private @javax.annotation.Nullable String selectedDirectiveId;
+        private int directiveWaveNumber = -1;
 
         // Saved player state (to restore after quest)
         private GameType originalGameMode;
@@ -1778,6 +2522,8 @@ public class EnduranceQuestManager {
         private UUID partyId;
         private QuestType questType = QuestType.PVE_COOP;
         private int playerCount = 1;
+        private String difficultyLabel;
+        private String questTypeLabel;
 
         public ActiveQuestSession(UUID playerId, EnduranceQuest quest, ArenaManager.Arena arena, long startTime) {
             this.playerId = playerId;
@@ -1867,6 +2613,32 @@ public class EnduranceQuestManager {
             this.lastTeleportCountdownSeconds = -1;
         }
 
+        public void scheduleBriefing(int ticks) {
+            this.pendingBriefingTicks = Math.max(0, ticks);
+            this.lastBriefingSeconds = -1;
+        }
+
+        public boolean isBriefingPending() {
+            return pendingBriefingTicks > 0;
+        }
+
+        public int tickBriefingCountdown() {
+            if (pendingBriefingTicks > 0) {
+                pendingBriefingTicks--;
+            }
+            return pendingBriefingTicks;
+        }
+
+        public int getLastBriefingSeconds() { return lastBriefingSeconds; }
+
+        public void setLastBriefingSeconds(int seconds) { this.lastBriefingSeconds = seconds; }
+
+        public List<String> getBriefingLines() { return briefingLines; }
+
+        public void setBriefingLines(List<String> briefingLines) {
+            this.briefingLines = briefingLines != null ? List.copyOf(briefingLines) : List.of();
+        }
+
         public boolean isInstanceStartPending() {
             return pendingInstanceStartTicks > 0 && pendingMobId != null && pendingSettings != null && pendingResolved != null;
         }
@@ -1921,6 +2693,78 @@ public class EnduranceQuestManager {
             lastWaveCountdownSeconds = -1;
         }
 
+        public void scheduleSafeWindow(int ticks) {
+            if (ticks <= 0) {
+                pendingSafeWindowTicks = 0;
+                lastSafeWindowSeconds = -1;
+                return;
+            }
+            pendingSafeWindowTicks = ticks;
+            lastSafeWindowSeconds = -1;
+        }
+
+        public boolean isSafeWindowPending() { return pendingSafeWindowTicks > 0; }
+
+        public int tickSafeWindowCountdown() {
+            if (pendingSafeWindowTicks > 0) {
+                pendingSafeWindowTicks--;
+            }
+            return pendingSafeWindowTicks;
+        }
+
+        public int getLastSafeWindowSeconds() { return lastSafeWindowSeconds; }
+
+        public void setLastSafeWindowSeconds(int seconds) { this.lastSafeWindowSeconds = seconds; }
+
+        public void clearPendingSafeWindow() {
+            pendingSafeWindowTicks = 0;
+            lastSafeWindowSeconds = -1;
+        }
+
+        public void scheduleBossIntro(int ticks) {
+            if (ticks <= 0) {
+                pendingBossIntroTicks = 0;
+                lastBossIntroSeconds = -1;
+                return;
+            }
+            pendingBossIntroTicks = ticks;
+            lastBossIntroSeconds = -1;
+        }
+
+        public boolean isBossIntroPending() { return pendingBossIntroTicks > 0; }
+
+        public int tickBossIntroCountdown() {
+            if (pendingBossIntroTicks > 0) {
+                pendingBossIntroTicks--;
+            }
+            return pendingBossIntroTicks;
+        }
+
+        public int getLastBossIntroSeconds() { return lastBossIntroSeconds; }
+
+        public void setLastBossIntroSeconds(int seconds) { this.lastBossIntroSeconds = seconds; }
+
+        public void clearPendingBossIntro() {
+            pendingBossIntroTicks = 0;
+            lastBossIntroSeconds = -1;
+        }
+
+        public boolean isRespawnCountdownActive() { return respawnCountdownActive; }
+
+        public void setRespawnCountdownActive(boolean active) { this.respawnCountdownActive = active; }
+
+        public void clearAllSequences() {
+            clearPendingWaveStart();
+            clearPendingSafeWindow();
+            clearPendingBossIntro();
+            clearPendingInstanceStart();
+            pendingBriefingTicks = 0;
+            lastBriefingSeconds = -1;
+            briefingLines = List.of();
+            respawnCountdownActive = false;
+            clearDirectives();
+        }
+
         // Party/Multiplayer getters/setters
         public UUID getPartyId() { return partyId; }
         public void setPartyId(UUID partyId) { this.partyId = partyId; }
@@ -1929,6 +2773,74 @@ public class EnduranceQuestManager {
         public int getPlayerCount() { return playerCount; }
         public void setPlayerCount(int playerCount) { this.playerCount = Math.max(1, playerCount); }
         public boolean isMultiplayer() { return partyId != null && playerCount > 1; }
+
+        public String getDifficultyLabel() { return difficultyLabel; }
+
+        public void setDifficultyLabel(String difficultyLabel) { this.difficultyLabel = difficultyLabel; }
+
+        public String getQuestTypeLabel() { return questTypeLabel; }
+
+        public void setQuestTypeLabel(String questTypeLabel) { this.questTypeLabel = questTypeLabel; }
+
+        public void setPendingDirectives(List<WaveDirective> directives, int waveNumber) {
+            this.pendingDirectives = directives != null ? List.copyOf(directives) : List.of();
+            this.directiveWaveNumber = waveNumber;
+            this.selectedDirectiveId = null;
+        }
+
+        public List<WaveDirective> getPendingDirectives() {
+            return pendingDirectives;
+        }
+
+        public boolean hasPendingDirectives() {
+            return pendingDirectives != null && !pendingDirectives.isEmpty();
+        }
+
+        public int getDirectiveWaveNumber() {
+            return directiveWaveNumber;
+        }
+
+        public void selectDirective(@javax.annotation.Nullable String directiveId) {
+            if (directiveId == null || pendingDirectives == null) {
+                return;
+            }
+            for (WaveDirective directive : pendingDirectives) {
+                if (directive != null && directive.id().equals(directiveId)) {
+                    this.selectedDirectiveId = directiveId;
+                    return;
+                }
+            }
+        }
+
+        public @javax.annotation.Nullable WaveDirective consumeDirectiveForWave(int waveNumber) {
+            if (waveNumber != directiveWaveNumber) {
+                return null;
+            }
+            WaveDirective selected = null;
+            if (selectedDirectiveId != null) {
+                for (WaveDirective directive : pendingDirectives) {
+                    if (directive != null && directive.id().equals(selectedDirectiveId)) {
+                        selected = directive;
+                        break;
+                    }
+                }
+            } else {
+                for (WaveDirective directive : pendingDirectives) {
+                    if (directive != null && "steady".equals(directive.id())) {
+                        selected = directive;
+                        break;
+                    }
+                }
+            }
+            clearDirectives();
+            return selected;
+        }
+
+        public void clearDirectives() {
+            pendingDirectives = List.of();
+            selectedDirectiveId = null;
+            directiveWaveNumber = -1;
+        }
     }
 
     /**

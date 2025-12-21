@@ -2,8 +2,11 @@ package com.devmod.arena.command;
 
 import com.devmod.arena.autosmoke.AutosmokeRunner;
 import com.devmod.arena.autosmoke.AutosmokeScheduler;
-import com.devmod.arena.builder.AsyncArenaBuilder;
+import com.devmod.arena.alert.AlertRouter;
+import com.devmod.arena.alert.AlertRouterRegistry;
 import com.devmod.arena.builder.ArenaBuilder;
+import com.devmod.arena.builder.AsyncArenaBuilder;
+import com.devmod.arena.builder.TemplateArenaBuilder;
 import com.devmod.arena.hud.ArenaDebugHud;
 import com.devmod.arena.hud.ArenaDebugState;
 import com.devmod.arena.override.ForceTemplateCapability;
@@ -17,6 +20,8 @@ import com.devmod.arena.security.ArenaCommandPermissions;
 import com.devmod.arena.security.ArenaCommandPermissions.CommandCategory;
 import com.devmod.arena.gate.InstanceOnlyGate;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+import com.frenkvs.devmod.actions.ActionCommandInvoker;
+import com.frenkvs.devmod.actions.ActionIds;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -74,8 +79,8 @@ public class ArenaCommands {
     private final AutosmokeRunner autosmokeRunner;
     private final AutosmokeScheduler autosmokeScheduler;
     private final Path templatesDirectory;
-    private final ArenaBuilder arenaBuilder;
-    private final Function<ServerLevel, ArenaBuilder> builderFactory;
+    private final TemplateArenaBuilder arenaBuilder;
+    private final Function<ServerLevel, TemplateArenaBuilder> builderFactory;
     @Nullable
     private final Function<ServerLevel, AsyncArenaBuilder> asyncBuilderFactory;
     @Nullable
@@ -89,7 +94,7 @@ public class ArenaCommands {
             AutosmokeRunner autosmokeRunner,
             AutosmokeScheduler autosmokeScheduler,
             Path templatesDirectory,
-            ArenaBuilder arenaBuilder) {
+            TemplateArenaBuilder arenaBuilder) {
         this(registry, autosmokeRunner, autosmokeScheduler, templatesDirectory, arenaBuilder,
             (Supplier<com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot>) null, null, null);
     }
@@ -99,7 +104,7 @@ public class ArenaCommands {
             AutosmokeRunner autosmokeRunner,
             AutosmokeScheduler autosmokeScheduler,
             Path templatesDirectory,
-            ArenaBuilder arenaBuilder,
+            TemplateArenaBuilder arenaBuilder,
             com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
         this(registry, autosmokeRunner, autosmokeScheduler, templatesDirectory, arenaBuilder,
             configSnapshot != null ? () -> configSnapshot : null, null, null);
@@ -110,7 +115,7 @@ public class ArenaCommands {
             AutosmokeRunner autosmokeRunner,
             AutosmokeScheduler autosmokeScheduler,
             Path templatesDirectory,
-            ArenaBuilder arenaBuilder,
+            TemplateArenaBuilder arenaBuilder,
             com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot configSnapshot,
             ForceTemplateCapability forceTemplateCapability) {
         this(registry, autosmokeRunner, autosmokeScheduler, templatesDirectory, arenaBuilder,
@@ -122,7 +127,7 @@ public class ArenaCommands {
             AutosmokeRunner autosmokeRunner,
             AutosmokeScheduler autosmokeScheduler,
             Path templatesDirectory,
-            ArenaBuilder arenaBuilder,
+            TemplateArenaBuilder arenaBuilder,
             @Nullable Supplier<com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot> configSnapshotSupplier,
             ForceTemplateCapability forceTemplateCapability,
             TemplateRegistryBootstrap bootstrap) {
@@ -140,8 +145,10 @@ public class ArenaCommands {
         this.templateValidator = new TemplateValidator();
         this.bootstrap = bootstrap;
         if (this.autosmokeScheduler != null && configSnapshotSupplier != null && configSnapshotSupplier.get() != null) {
-            // Wire alert router for autosmoke if available
-            this.autosmokeScheduler.setAlertRouter(new com.devmod.arena.alert.AlertRouter());
+            AlertRouter router = AlertRouterRegistry.get();
+            if (router != null) {
+                this.autosmokeScheduler.setAlertRouter(router);
+            }
         }
     }
 
@@ -150,7 +157,7 @@ public class ArenaCommands {
             AutosmokeRunner autosmokeRunner,
             AutosmokeScheduler autosmokeScheduler,
             Path templatesDirectory,
-            Function<ServerLevel, ArenaBuilder> builderFactory,
+            Function<ServerLevel, TemplateArenaBuilder> builderFactory,
             @Nullable Function<ServerLevel, AsyncArenaBuilder> asyncBuilderFactory,
             @Nullable Supplier<com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot> configSnapshotSupplier,
             ForceTemplateCapability forceTemplateCapability,
@@ -169,8 +176,10 @@ public class ArenaCommands {
         this.templateValidator = new TemplateValidator();
         this.bootstrap = bootstrap;
         if (this.autosmokeScheduler != null && configSnapshotSupplier != null && configSnapshotSupplier.get() != null) {
-            // Wire alert router for autosmoke if available
-            this.autosmokeScheduler.setAlertRouter(new com.devmod.arena.alert.AlertRouter());
+            AlertRouter router = AlertRouterRegistry.get();
+            if (router != null) {
+                this.autosmokeScheduler.setAlertRouter(router);
+            }
         }
     }
 
@@ -178,6 +187,7 @@ public class ArenaCommands {
      * Registers all arena commands.
      */
     public void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+        registerBridgeHandlers();
         dispatcher.register(
             Commands.literal("arena")
                 // /arena create <template>
@@ -185,26 +195,26 @@ public class ArenaCommands {
                     .requires(src -> permissions.hasPermission(src, CommandCategory.CREATE))
                     .then(Commands.argument("template", StringArgumentType.word())
                         .suggests(this::suggestTemplates)
-                        .executes(this::createArena)))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_CREATE, ctx))))
 
                 // /arena template ...
                 .then(Commands.literal("template")
                     // /arena template list
                     .then(Commands.literal("list")
                         .requires(src -> permissions.hasPermission(src, CommandCategory.LIST))
-                        .executes(this::listTemplates))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_TEMPLATE_LIST, ctx)))
 
                     // /arena template info <id>
                     .then(Commands.literal("info")
                         .requires(src -> permissions.hasPermission(src, CommandCategory.INFO))
                         .then(Commands.argument("id", StringArgumentType.word())
                             .suggests(this::suggestTemplates)
-                            .executes(this::templateInfo)))
+                            .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_TEMPLATE_INFO, ctx))))
 
                     // /arena template reload
                     .then(Commands.literal("reload")
                         .requires(src -> permissions.hasPermission(src, CommandCategory.TEMPLATE_MANAGE))
-                        .executes(this::reloadTemplates)))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_TEMPLATE_RELOAD, ctx))))
 
                 // /arena autosmoke ...
                 .then(Commands.literal("autosmoke")
@@ -212,76 +222,107 @@ public class ArenaCommands {
 
                     // /arena autosmoke run
                     .then(Commands.literal("run")
-                        .executes(this::runAutosmoke))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_AUTOSMOKE_RUN, ctx)))
 
                     // /arena autosmoke status
                     .then(Commands.literal("status")
-                        .executes(this::autosmokeStatus))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_AUTOSMOKE_STATUS, ctx)))
 
                     // /arena autosmoke schedule
                     .then(Commands.literal("schedule")
-                        .executes(this::autosmokeScheduleStatus)))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_AUTOSMOKE_SCHEDULE_STATUS, ctx))))
 
                 // /arena status
                 .then(Commands.literal("status")
                     .requires(src -> permissions.hasPermission(src, CommandCategory.STATUS))
-                    .executes(this::arenaStatus))
+                    .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_STATUS, ctx)))
 
                 // /arena validate <id> - DD29 dry-run validation
                 .then(Commands.literal("validate")
                     .requires(src -> permissions.hasPermission(src, CommandCategory.INFO))
                     .then(Commands.argument("id", StringArgumentType.word())
                         .suggests(this::suggestTemplates)
-                        .executes(ctx -> validateTemplate(ctx))))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_VALIDATE, ctx))))
 
                 // /arena force <id> [minutes] - DD29 force template session
                 .then(Commands.literal("force")
                     .requires(src -> permissions.hasPermission(src, CommandCategory.FORCE_TEMPLATE))
                     // /arena force clear
                     .then(Commands.literal("clear")
-                        .executes(ctx -> clearForceTemplate(ctx)))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_FORCE_CLEAR, ctx)))
                     // /arena force status
                     .then(Commands.literal("status")
-                        .executes(ctx -> forceTemplateStatus(ctx)))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_FORCE_STATUS, ctx)))
                     // /arena force <id> [minutes]
                     .then(Commands.argument("template", StringArgumentType.word())
                         .suggests(this::suggestTemplates)
-                        .executes(ctx -> forceTemplate(ctx, 30))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_FORCE, ctx))
                         .then(Commands.argument("minutes", IntegerArgumentType.integer(1, 240))
-                            .executes(ctx -> forceTemplate(ctx, IntegerArgumentType.getInteger(ctx, "minutes"))))))
+                            .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_FORCE, ctx)))))
 
                 // /arena metrics <id> - Show template build metrics
                 .then(Commands.literal("metrics")
                     .requires(src -> permissions.hasPermission(src, CommandCategory.INFO))
                     .then(Commands.argument("id", StringArgumentType.word())
                         .suggests(this::suggestTemplates)
-                        .executes(ctx -> templateMetrics(ctx))))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_METRICS, ctx))))
 
                 // /arena hud - DD30 HUD toggle commands
                 .then(Commands.literal("hud")
                     .requires(src -> permissions.hasPermission(src, CommandCategory.INFO))
                     // /arena hud toggle
                     .then(Commands.literal("toggle")
-                        .executes(ctx -> toggleHud(ctx)))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_HUD_TOGGLE, ctx)))
                     // /arena hud on
                     .then(Commands.literal("on")
-                        .executes(ctx -> setHud(ctx, true)))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_HUD_ON, ctx)))
                     // /arena hud off
                     .then(Commands.literal("off")
-                        .executes(ctx -> setHud(ctx, false)))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_HUD_OFF, ctx)))
                     // /arena hud status
                     .then(Commands.literal("status")
-                        .executes(ctx -> hudStatus(ctx))))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_HUD_STATUS, ctx))))
 
                 // /arena help
                 .then(Commands.literal("help")
-                    .executes(this::showHelp))
+                    .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_HELP, ctx)))
 
                 // Default: show help
-                .executes(this::showHelp)
+                .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.ARENA_HELP, ctx))
         );
 
         LOGGER.info("Arena commands registered");
+    }
+
+    private void registerBridgeHandlers() {
+        ArenaActionBridge.register(ActionIds.ARENA_HELP, this::showHelp);
+        ArenaActionBridge.register(ActionIds.ARENA_CREATE, this::createArena);
+        ArenaActionBridge.register(ActionIds.ARENA_TEMPLATE_LIST, this::listTemplates);
+        ArenaActionBridge.register(ActionIds.ARENA_TEMPLATE_INFO, this::templateInfo);
+        ArenaActionBridge.register(ActionIds.ARENA_TEMPLATE_RELOAD, this::reloadTemplates);
+        ArenaActionBridge.register(ActionIds.ARENA_AUTOSMOKE_RUN, this::runAutosmoke);
+        ArenaActionBridge.register(ActionIds.ARENA_AUTOSMOKE_STATUS, this::autosmokeStatus);
+        ArenaActionBridge.register(ActionIds.ARENA_AUTOSMOKE_SCHEDULE_STATUS, this::autosmokeScheduleStatus);
+        ArenaActionBridge.register(ActionIds.ARENA_STATUS, this::arenaStatus);
+        ArenaActionBridge.register(ActionIds.ARENA_VALIDATE, this::validateTemplate);
+        ArenaActionBridge.register(ActionIds.ARENA_FORCE, ctx -> forceTemplate(ctx, resolveForceMinutes(ctx)));
+        ArenaActionBridge.register(ActionIds.ARENA_FORCE_CLEAR, this::clearForceTemplate);
+        ArenaActionBridge.register(ActionIds.ARENA_FORCE_STATUS, this::forceTemplateStatus);
+        ArenaActionBridge.register(ActionIds.ARENA_METRICS, this::templateMetrics);
+        ArenaActionBridge.register(ActionIds.ARENA_HUD_TOGGLE, this::toggleHud);
+        ArenaActionBridge.register(ActionIds.ARENA_HUD_ON, ctx -> setHud(ctx, true));
+        ArenaActionBridge.register(ActionIds.ARENA_HUD_OFF, ctx -> setHud(ctx, false));
+        ArenaActionBridge.register(ActionIds.ARENA_HUD_STATUS, this::hudStatus);
+    }
+
+    private int resolveForceMinutes(CommandContext<CommandSourceStack> ctx) {
+        int minutes = 30;
+        try {
+            minutes = IntegerArgumentType.getInteger(ctx, "minutes");
+        } catch (IllegalArgumentException ignored) {
+            // Optional argument not provided.
+        }
+        return minutes;
     }
 
     // ========== Command Handlers ==========
@@ -431,8 +472,8 @@ public class ArenaCommands {
             return 1;
         }
 
-        // Build the arena using ArenaBuilder (sync)
-        ArenaBuilder builder = builderFactory.apply(level);
+        // Build the arena using TemplateArenaBuilder (sync)
+        TemplateArenaBuilder builder = builderFactory.apply(level);
         if (builder == null) {
             src.sendFailure(Component.literal("§cArena builder not available"));
             return 0;

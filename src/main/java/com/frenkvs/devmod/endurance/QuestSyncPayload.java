@@ -16,6 +16,14 @@ import java.util.Objects;
 public record QuestSyncPayload(
     boolean hasActiveQuest,
     String questName,
+    String templateId,
+    int templateVersion,
+    String policyId,
+    int policyVersion,
+    String instanceId,
+    String arenaId,
+    String difficultyLabel,
+    String questTypeLabel,
     int currentWave,
     int totalWaves,
     boolean endlessMode,
@@ -28,6 +36,13 @@ public record QuestSyncPayload(
     int deaths,
     long sessionDurationMs,
     int stateOrdinal,
+    int objectiveTypeOrdinal,
+    String objectiveTitle,
+    String objectiveDescription,
+    int objectiveProgress,
+    int objectiveTarget,
+    boolean objectiveComplete,
+    boolean objectiveFailed,
     List<String> waveModifiers,
     // Combo system data
     int currentCombo,
@@ -48,6 +63,14 @@ public record QuestSyncPayload(
     private static void encode(RegistryFriendlyByteBuf buf, QuestSyncPayload payload) {
         buf.writeBoolean(payload.hasActiveQuest);
         buf.writeUtf(Objects.requireNonNull(payload.questName));
+        buf.writeUtf(Objects.requireNonNull(payload.templateId));
+        buf.writeVarInt(payload.templateVersion);
+        buf.writeUtf(Objects.requireNonNull(payload.policyId));
+        buf.writeVarInt(payload.policyVersion);
+        buf.writeUtf(Objects.requireNonNull(payload.instanceId));
+        buf.writeUtf(Objects.requireNonNull(payload.arenaId));
+        buf.writeUtf(Objects.requireNonNull(payload.difficultyLabel));
+        buf.writeUtf(Objects.requireNonNull(payload.questTypeLabel));
         buf.writeVarInt(payload.currentWave);
         buf.writeVarInt(payload.totalWaves);
         buf.writeBoolean(payload.endlessMode);
@@ -60,6 +83,13 @@ public record QuestSyncPayload(
         buf.writeVarInt(payload.deaths);
         buf.writeLong(payload.sessionDurationMs);
         buf.writeVarInt(payload.stateOrdinal);
+        buf.writeVarInt(payload.objectiveTypeOrdinal);
+        buf.writeUtf(Objects.requireNonNull(payload.objectiveTitle));
+        buf.writeUtf(Objects.requireNonNull(payload.objectiveDescription));
+        buf.writeVarInt(payload.objectiveProgress);
+        buf.writeVarInt(payload.objectiveTarget);
+        buf.writeBoolean(payload.objectiveComplete);
+        buf.writeBoolean(payload.objectiveFailed);
 
         // Write modifiers list
         buf.writeVarInt(payload.waveModifiers.size());
@@ -81,6 +111,14 @@ public record QuestSyncPayload(
         boolean hasActiveQuest = buf.readBoolean();
         // SECURITY FIX: Limit string length
         String questName = buf.readUtf(MAX_STRING_LENGTH);
+        String templateId = buf.readUtf(MAX_STRING_LENGTH);
+        int templateVersion = buf.readVarInt();
+        String policyId = buf.readUtf(MAX_STRING_LENGTH);
+        int policyVersion = buf.readVarInt();
+        String instanceId = buf.readUtf(MAX_STRING_LENGTH);
+        String arenaId = buf.readUtf(MAX_STRING_LENGTH);
+        String difficultyLabel = buf.readUtf(MAX_STRING_LENGTH);
+        String questTypeLabel = buf.readUtf(MAX_STRING_LENGTH);
         int currentWave = buf.readVarInt();
         int totalWaves = buf.readVarInt();
         boolean endlessMode = buf.readBoolean();
@@ -93,6 +131,13 @@ public record QuestSyncPayload(
         int deaths = buf.readVarInt();
         long sessionDurationMs = buf.readLong();
         int stateOrdinal = buf.readVarInt();
+        int objectiveTypeOrdinal = buf.readVarInt();
+        String objectiveTitle = buf.readUtf(MAX_STRING_LENGTH);
+        String objectiveDescription = buf.readUtf(MAX_STRING_LENGTH);
+        int objectiveProgress = buf.readVarInt();
+        int objectiveTarget = buf.readVarInt();
+        boolean objectiveComplete = buf.readBoolean();
+        boolean objectiveFailed = buf.readBoolean();
 
         // Read modifiers list with security bounds
         int modCount = buf.readVarInt();
@@ -114,9 +159,13 @@ public record QuestSyncPayload(
         int styleRankOrdinal = buf.readVarInt();
 
         return new QuestSyncPayload(
-            hasActiveQuest, questName, currentWave, totalWaves, endlessMode,
+            hasActiveQuest, questName, templateId, templateVersion, policyId, policyVersion,
+            instanceId, arenaId, difficultyLabel, questTypeLabel,
+            currentWave, totalWaves, endlessMode,
             pointsEarned, mobsKilled, mobsKilledInWave, totalMobsInWave,
             damageDealt, damageTaken, deaths, sessionDurationMs, stateOrdinal,
+            objectiveTypeOrdinal, objectiveTitle, objectiveDescription,
+            objectiveProgress, objectiveTarget, objectiveComplete, objectiveFailed,
             modifiers, currentCombo, maxCombo, styleScore, styleRankOrdinal
         );
     }
@@ -131,7 +180,9 @@ public record QuestSyncPayload(
      */
     public static QuestSyncPayload empty() {
         return new QuestSyncPayload(
-            false, "", 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            false, "", "", 0, "", 0, "", "", "", "",
+            0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, "", "", 0, 0, false, false,
             List.of(), 0, 0, 0, 0
         );
     }
@@ -156,5 +207,13 @@ public record QuestSyncPayload(
             return values[styleRankOrdinal];
         }
         return ComboSystem.StyleRank.D;
+    }
+
+    public WaveObjectiveState.Type getObjectiveType() {
+        WaveObjectiveState.Type[] values = WaveObjectiveState.Type.values();
+        if (objectiveTypeOrdinal >= 0 && objectiveTypeOrdinal < values.length) {
+            return values[objectiveTypeOrdinal];
+        }
+        return WaveObjectiveState.Type.KILL_ALL;
     }
 }

@@ -25,6 +25,9 @@ import org.lwjgl.glfw.GLFW;
  *   <li>Letter keys use mnemonics (L=Light, H=Heatmap, P=Pathfinding)</li>
  * </ul>
  *
+ * <p><b>Defaults:</b> Only the Radial Menu is bound by default. All other keybinds ship
+ * unassigned; the keys documented below are suggested mappings.</p>
+ *
  * <p><b>NOTE:</b> Input event handling is in {@code KeyInputEvents.java} (top-level class)
  * because NeoForge does NOT scan inner classes for @EventBusSubscriber annotations.</p>
  *
@@ -81,7 +84,7 @@ public class KeyInputHandler {
             "key.devmod.settings",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_K,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -104,7 +107,7 @@ public class KeyInputHandler {
             "key.devmod.weapon_editor",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_M,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -123,7 +126,7 @@ public class KeyInputHandler {
             "key.devmod.dashboard",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_J,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -142,7 +145,7 @@ public class KeyInputHandler {
             "key.devmod.inspect_mob",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_X,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -165,7 +168,7 @@ public class KeyInputHandler {
             "key.devmod.debug_overlay",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_O,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -185,7 +188,7 @@ public class KeyInputHandler {
             "key.devmod.light_overlay",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_L,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -204,7 +207,7 @@ public class KeyInputHandler {
             "key.devmod.heatmap",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_H,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -217,7 +220,7 @@ public class KeyInputHandler {
             "key.devmod.dismiss_impact_hud",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_BACKSPACE,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -236,7 +239,7 @@ public class KeyInputHandler {
             "key.devmod.room_bounds",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_R,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -255,7 +258,7 @@ public class KeyInputHandler {
             "key.devmod.pathfinding",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_P,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -274,7 +277,7 @@ public class KeyInputHandler {
             "key.devmod.los",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_V,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -293,7 +296,7 @@ public class KeyInputHandler {
             "key.devmod.vertical_levels",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_Y,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -312,7 +315,7 @@ public class KeyInputHandler {
             "key.devmod.safe_spot",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_C,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -331,7 +334,7 @@ public class KeyInputHandler {
             "key.devmod.attribute_monitor",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_U,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -353,7 +356,7 @@ public class KeyInputHandler {
             "key.devmod.fps_tracker",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_F8,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -371,7 +374,7 @@ public class KeyInputHandler {
             "key.devmod.profiler",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_F9,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -389,7 +392,7 @@ public class KeyInputHandler {
             "key.devmod.entity_density",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_F6,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -408,7 +411,7 @@ public class KeyInputHandler {
             "key.devmod.boss_phase",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_B,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -427,7 +430,7 @@ public class KeyInputHandler {
             "key.devmod.skill_efficacy",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_Z,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -445,7 +448,7 @@ public class KeyInputHandler {
             "key.devmod.spawnability",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_F4,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -468,7 +471,7 @@ public class KeyInputHandler {
             "key.devmod.qa_testing",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_N,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -486,7 +489,7 @@ public class KeyInputHandler {
             "key.devmod.testing_hub",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_F7,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -508,7 +511,7 @@ public class KeyInputHandler {
             "key.devmod.quest_hud",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_BACKSLASH,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -526,7 +529,7 @@ public class KeyInputHandler {
             "key.devmod.quest_complete",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_RIGHT_BRACKET,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -544,7 +547,7 @@ public class KeyInputHandler {
             "key.devmod.quest_editor",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_LEFT_BRACKET,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -563,7 +566,7 @@ public class KeyInputHandler {
             "key.devmod.endurance_quest",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_F10,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -581,7 +584,7 @@ public class KeyInputHandler {
             "key.devmod.quest_continue",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_F11,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -599,7 +602,7 @@ public class KeyInputHandler {
             "key.devmod.quest_exit",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_F12,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -618,7 +621,7 @@ public class KeyInputHandler {
             "key.devmod.party",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_F5,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -641,7 +644,7 @@ public class KeyInputHandler {
             "key.devmod.economy",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_SEMICOLON,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -660,7 +663,7 @@ public class KeyInputHandler {
             "key.devmod.chunk_perf",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_APOSTROPHE,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -678,7 +681,7 @@ public class KeyInputHandler {
             "key.devmod.help_overlay",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_GRAVE_ACCENT,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -700,7 +703,7 @@ public class KeyInputHandler {
             "key.devmod.test_shake",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_0,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod"
     );
 
@@ -722,7 +725,7 @@ public class KeyInputHandler {
             "key.devmod.dash",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_LEFT_ALT,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod.abilities"
     );
 
@@ -741,7 +744,7 @@ public class KeyInputHandler {
             "key.devmod.dodge",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_LEFT_CONTROL,
+            GLFW.GLFW_KEY_UNKNOWN,
             "key.categories.devmod.abilities"
     );
 }

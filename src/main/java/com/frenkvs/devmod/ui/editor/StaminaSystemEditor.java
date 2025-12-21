@@ -42,7 +42,7 @@ public class StaminaSystemEditor extends Screen {
     private int selectedField = DEFAULT_SELECTED_FIELD;
     
     public StaminaSystemEditor() {
-        super(Component.literal("Stamina System Editor"));
+        super(java.util.Objects.requireNonNull(Component.literal("Stamina System Editor"), "title"));
         this.data = new StaminaSystem.StaminaData();
     }
     

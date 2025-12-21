@@ -1,5 +1,9 @@
 package com.frenkvs.devmod;
 
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.util.I18n;
@@ -353,7 +357,8 @@ public class MobConfigScreen extends Screen {
 
         int equipX = applyX + btnW + btnGap;
         if (AxiomRenderer.isMouseOver(mx, my, equipX, btnY, btnW, btnH)) {
-            Minecraft.getInstance().setScreen(new MobEquipmentScreen(mob, this));
+            ActionRegistry.invoke(ActionIds.UI_MOB_EQUIPMENT_OPEN,
+                ClientActionContexts.forClient(ActionOrigin.UI));
             return true;
         }
 
@@ -413,6 +418,10 @@ public class MobConfigScreen extends Screen {
         }
 
         return false;
+    }
+
+    public Mob getMob() {
+        return mob;
     }
 
     @Override

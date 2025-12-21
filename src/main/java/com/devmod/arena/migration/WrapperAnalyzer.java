@@ -36,6 +36,11 @@ public class WrapperAnalyzer {
             "Use ArenaTemplate.createInstance() instead"
         ),
         new LegacyPattern(
+            "ArenaManager.createArena",
+            Pattern.compile("ArenaManager\\.createArena\\s*\\("),
+            "Use TemplateArenaBuilder.build() instead"
+        ),
+        new LegacyPattern(
             "LegacyArenaConfig",
             Pattern.compile("new\\s+LegacyArenaConfig\\s*\\("),
             "Use ArenaConfig with ArenaTemplate instead"

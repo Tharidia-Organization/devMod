@@ -38,6 +38,10 @@ public class ArenaTemplateConfig {
     private static final int DEFAULT_STRUCTURE_MAX_ENTITIES = 50;
     private static final List<String> DEFAULT_STRUCTURE_NAMESPACES = List.of("devmod");
     private static final List<String> DEFAULT_CUSTOM_HAZARD_BUILDERS = List.of();
+    private static final double DEFAULT_WARN_FAILURE_RATE = 0.05;
+    private static final double DEFAULT_ERROR_FAILURE_RATE = 0.15;
+    private static final double DEFAULT_WARN_ROLLBACK_RATE = 0.02;
+    private static final double DEFAULT_ERROR_ROLLBACK_RATE = 0.10;
 
     // DD6: Policy resolver lock settings
     private static final long DEFAULT_LOCK_TIMEOUT_MS = 5000;
@@ -81,10 +85,22 @@ public class ArenaTemplateConfig {
         int warnEntitiesResidual,
         int errorEntitiesResidual,
         int warnBlocksResidual,
-        int errorBlocksResidual
+        int errorBlocksResidual,
+        double warnFailureRate24h,
+        double errorFailureRate24h,
+        double warnRollbackRate24h,
+        double errorRollbackRate24h
     ) {
         public static AlertThresholds defaults() {
-            return new AlertThresholds(3000, 8000, 40, 50, 18, 15, 0, 5, 0, 10);
+            return new AlertThresholds(
+                3000, 8000,
+                40, 50,
+                18, 15,
+                0, 5,
+                0, 10,
+                DEFAULT_WARN_FAILURE_RATE, DEFAULT_ERROR_FAILURE_RATE,
+                DEFAULT_WARN_ROLLBACK_RATE, DEFAULT_ERROR_ROLLBACK_RATE
+            );
         }
     }
 
@@ -108,7 +124,35 @@ public class ArenaTemplateConfig {
         cfg.bossMaxBuildTimeMs = getInt("devmod.arena.bossMaxBuildTimeMs", "DEVMOD_ARENA_BOSS_MAX_BUILD_MS", DEFAULT_BOSS_MAX_BUILD_TIME_MS);
         cfg.autosmokeSchedule = getString("devmod.arena.autosmokeSchedule", "DEVMOD_ARENA_AUTOSMOKE_CRON", DEFAULT_AUTOSMOKE_CRON);
         cfg.autosmokeTimezone = getString("devmod.arena.autosmokeTimezone", "DEVMOD_ARENA_AUTOSMOKE_TZ", DEFAULT_AUTOSMOKE_TZ);
-        cfg.alertThresholds = AlertThresholds.defaults(); // simple default; can add overrides later
+        double warnFailureRate = getDouble(
+            "devmod.arena.warnFailureRate",
+            "DEVMOD_ARENA_WARN_FAILURE_RATE",
+            DEFAULT_WARN_FAILURE_RATE
+        );
+        double errorFailureRate = getDouble(
+            "devmod.arena.errorFailureRate",
+            "DEVMOD_ARENA_ERROR_FAILURE_RATE",
+            DEFAULT_ERROR_FAILURE_RATE
+        );
+        double warnRollbackRate = getDouble(
+            "devmod.arena.warnRollbackRate",
+            "DEVMOD_ARENA_WARN_ROLLBACK_RATE",
+            DEFAULT_WARN_ROLLBACK_RATE
+        );
+        double errorRollbackRate = getDouble(
+            "devmod.arena.errorRollbackRate",
+            "DEVMOD_ARENA_ERROR_ROLLBACK_RATE",
+            DEFAULT_ERROR_ROLLBACK_RATE
+        );
+        cfg.alertThresholds = new AlertThresholds(
+            3000, 8000,
+            40, 50,
+            18, 15,
+            0, 5,
+            0, 10,
+            warnFailureRate, errorFailureRate,
+            warnRollbackRate, errorRollbackRate
+        );
         cfg.schemaValidationMode = getString(
             "devmod.arena.schemaValidationMode",
             "DEVMOD_ARENA_SCHEMA_VALIDATION_MODE",
@@ -161,6 +205,12 @@ public class ArenaTemplateConfig {
         }
         if (alertThresholds.warnTps() <= alertThresholds.errorTps()) {
             errors.add("warnTps must be > errorTps");
+        }
+        if (alertThresholds.warnFailureRate24h() >= alertThresholds.errorFailureRate24h()) {
+            errors.add("warnFailureRate24h must be < errorFailureRate24h");
+        }
+        if (alertThresholds.warnRollbackRate24h() >= alertThresholds.errorRollbackRate24h()) {
+            errors.add("warnRollbackRate24h must be < errorRollbackRate24h");
         }
         if (!isValidValidationMode(schemaValidationMode)) {
             warnings.add("schemaValidationMode should be strict|permissive|lenient (got: " + schemaValidationMode + ")");
@@ -281,6 +331,22 @@ public class ArenaTemplateConfig {
         if (e != null && !e.isBlank()) {
             try {
                 return Long.parseLong(e);
+            } catch (NumberFormatException ignored) {}
+        }
+        return def;
+    }
+
+    private static double getDouble(String sys, String env, double def) {
+        String s = System.getProperty(sys);
+        if (s != null && !s.isBlank()) {
+            try {
+                return Double.parseDouble(s);
+            } catch (NumberFormatException ignored) {}
+        }
+        String e = System.getenv(env);
+        if (e != null && !e.isBlank()) {
+            try {
+                return Double.parseDouble(e);
             } catch (NumberFormatException ignored) {}
         }
         return def;

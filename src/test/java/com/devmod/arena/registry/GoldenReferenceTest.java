@@ -3,8 +3,6 @@ package com.devmod.arena.registry;
 import org.junit.jupiter.api.Test;
 import com.devmod.arena.builder.BuildDryRunCalculator;
 
-import java.util.Objects;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -16,14 +14,8 @@ class GoldenReferenceTest {
         ArenaTemplate template = ArenaTemplate.defaultTemplate();
 
         // Bounds computed like TemplateValidator
-        Integer sizeXValue = template.sizeX();
-        int sizeX = sizeXValue != null
-            ? sizeXValue.intValue()
-            : Objects.requireNonNull(template.size(), "sizeX").intValue();
-        Integer sizeZValue = template.sizeZ();
-        int sizeZ = sizeZValue != null
-            ? sizeZValue.intValue()
-            : Objects.requireNonNull(template.size(), "sizeZ").intValue();
+        int sizeX = resolveSize(template.sizeX(), template.size(), "sizeX");
+        int sizeZ = resolveSize(template.sizeZ(), template.size(), "sizeZ");
         int originX = template.origin().x();
         int originZ = template.origin().z();
         int minX = originX - sizeX / 2;
@@ -65,14 +57,8 @@ class GoldenReferenceTest {
         GoldenReference ref = GoldenReference.bossRing80();
         ArenaTemplate template = ArenaTemplate.bossRing80Template();
 
-        Integer sizeXValue = template.sizeX();
-        int sizeX = sizeXValue != null
-            ? sizeXValue.intValue()
-            : Objects.requireNonNull(template.size(), "sizeX").intValue();
-        Integer sizeZValue = template.sizeZ();
-        int sizeZ = sizeZValue != null
-            ? sizeZValue.intValue()
-            : Objects.requireNonNull(template.size(), "sizeZ").intValue();
+        int sizeX = resolveSize(template.sizeX(), template.size(), "sizeX");
+        int sizeZ = resolveSize(template.sizeZ(), template.size(), "sizeZ");
         int originX = template.origin().x();
         int originZ = template.origin().z();
         int minX = originX - sizeX / 2;
@@ -98,5 +84,13 @@ class GoldenReferenceTest {
         assertArrayEquals(new int[]{30, 65, 0}, ref.spawnSlots().get(2));
         assertArrayEquals(new int[]{35, 65, 35}, ref.spawnSlots().get(3));
         assertArrayEquals(new int[]{0, 65, 30}, ref.spawnSlots().get(4));
+    }
+
+    private static int resolveSize(Integer primary, Integer fallback, String label) {
+        Integer value = primary != null ? primary : fallback;
+        if (value == null) {
+            throw new IllegalStateException(label + " is missing");
+        }
+        return value;
     }
 }

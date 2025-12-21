@@ -97,7 +97,7 @@ src/main/java/com/frenkvs/devmod/
 ├── debug/                      # Debug commands and rendering
 ├── effects/                    # Visual effects (trails)
 ├── endurance/                  # Endurance Quest System
-│   ├── ArenaManager.java       # Arena lifecycle
+│   ├── ArenaManager.java       # Legacy arena adapter (deprecated)
 │   ├── WaveManager.java        # Wave spawning logic
 │   ├── PerkSystem.java         # Roguelike perks
 │   ├── ComboSystem.java        # Style scoring (D→SSS)
@@ -114,6 +114,16 @@ src/main/java/com/frenkvs/devmod/
 ├── telemetry/                  # Data collection services
 ├── testing/                    # QA testing framework
 └── ui/                         # Screen implementations
+```
+
+```
+src/main/java/com/devmod/arena/
+├── registry/                   # Template registry + validation
+├── policy/                     # Policy routing + scoring
+├── builder/                    # TemplateArenaBuilder + async build
+├── telemetry/                  # Arena metrics + audit
+├── cleanup/                    # Cleanup executor + residuals
+└── ...                         # Pool, monitoring, alerts, etc.
 ```
 
 ## Configuration

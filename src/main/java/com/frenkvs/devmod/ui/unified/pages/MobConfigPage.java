@@ -6,6 +6,10 @@ import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.unified.SettingsCategory;
 import com.frenkvs.devmod.ui.unified.SettingsPage;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -81,7 +85,7 @@ public class MobConfigPage implements SettingsPage {
 
     @Override
     public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
-        Font safeFont = Objects.requireNonNull(font, "font");
+        @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         int currentY = y;
 
         // === Nearby Mobs Section ===
@@ -162,7 +166,7 @@ public class MobConfigPage implements SettingsPage {
 
     private int renderMobRow(GuiGraphics graphics, Font font, int x, int y, int width,
                               int mouseX, int mouseY, LivingEntity mob, int index) {
-        Font safeFont = Objects.requireNonNull(font, "font");
+        @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         int rowWidth = width - 20;
         boolean hovered = mouseX >= x && mouseX < x + rowWidth && mouseY >= y && mouseY < y + ROW_HEIGHT;
 
@@ -234,7 +238,8 @@ public class MobConfigPage implements SettingsPage {
 
                 LivingEntity entity = nearbyMobs.get(i);
                 if (entity instanceof Mob mob) {
-                    Minecraft.getInstance().setScreen(new com.frenkvs.devmod.MobConfigScreen(mob));
+                    ActionRegistry.invoke(ActionIds.UI_MOB_CONFIG_OPEN,
+                        ClientActionContexts.forClient(ActionOrigin.UI, mob));
                     return true;
                 } else {
                     // Show feedback for non-configurable entities (players, armor stands, etc.)

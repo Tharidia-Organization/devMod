@@ -1,5 +1,13 @@
 package com.frenkvs.devmod.telemetry.dungeon;
 
+import com.frenkvs.devmod.actions.ActionCategory;
+import com.frenkvs.devmod.actions.ActionCommandInvoker;
+import com.frenkvs.devmod.actions.ActionContext;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionPreconditions;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.RadialAction;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -11,6 +19,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.Items;
 import org.slf4j.Logger;
 
 import java.util.Arrays;
@@ -33,31 +42,99 @@ public class DungeonCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
-            Commands.literal("devmod")
+                Commands.literal("devmod")
                 .then(Commands.literal("dungeon")
                     .requires(source -> source.hasPermission(2)) // Requires op level 2
                     .then(Commands.literal("start")
                         .then(Commands.argument("dungeon_id", Objects.requireNonNull(StringArgumentType.word()))
-                            .executes(DungeonCommand::startRun)))
+                            .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.DUNGEON_START, ctx))))
                     .then(Commands.literal("end")
                         .then(Commands.argument("outcome", Objects.requireNonNull(StringArgumentType.word()))
                             .suggests(DungeonCommand::suggestOutcomes)
-                            .executes(ctx -> endRun(ctx, 0, 0, 0))
+                            .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.DUNGEON_END, ctx))
                             .then(Commands.argument("kills", Objects.requireNonNull(IntegerArgumentType.integer(0)))
-                                .executes(ctx -> endRun(ctx, IntegerArgumentType.getInteger(ctx, "kills"), 0, 0))
+                                .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.DUNGEON_END, ctx))
                                 .then(Commands.argument("deaths", Objects.requireNonNull(IntegerArgumentType.integer(0)))
-                                    .executes(ctx -> endRun(ctx,
-                                        IntegerArgumentType.getInteger(ctx, "kills"),
-                                        IntegerArgumentType.getInteger(ctx, "deaths"), 0))
+                                    .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.DUNGEON_END, ctx))
                                     .then(Commands.argument("reward_count", Objects.requireNonNull(IntegerArgumentType.integer(0)))
-                                        .executes(ctx -> endRun(ctx,
-                                            IntegerArgumentType.getInteger(ctx, "kills"),
-                                            IntegerArgumentType.getInteger(ctx, "deaths"),
-                                            IntegerArgumentType.getInteger(ctx, "reward_count"))))))))
+                                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.DUNGEON_END, ctx)))))))
                     .then(Commands.literal("status")
-                        .executes(DungeonCommand::showStatus))
-                    .executes(DungeonCommand::showHelp))
+                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.DUNGEON_STATUS, ctx)))
+                    .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.DUNGEON_HELP, ctx)))
         );
+    }
+
+    public static void registerActions() {
+        ActionRegistry.register(RadialAction.builder(ActionIds.DUNGEON_HELP)
+            .labelKey("devmod.action.dungeon.help")
+            .descriptionKey("devmod.action.dungeon.help.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Dungeon/Help")
+            .icon(Items.BOOK)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod dungeon")
+            .handler(context -> handleCommand(context, "devmod dungeon", DungeonCommand::showHelp))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.DUNGEON_START)
+            .labelKey("devmod.action.dungeon.start")
+            .descriptionKey("devmod.action.dungeon.start.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Dungeon/Start")
+            .icon(Items.DIAMOND_PICKAXE)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod dungeon start <id>")
+            .handler(context -> handleCommandPrompt(context, "devmod dungeon start ", DungeonCommand::startRun))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.DUNGEON_END)
+            .labelKey("devmod.action.dungeon.end")
+            .descriptionKey("devmod.action.dungeon.end.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Dungeon/End")
+            .icon(Items.DIAMOND_SWORD)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod dungeon end <outcome>")
+            .handler(context -> handleCommandPrompt(context, "devmod dungeon end ", DungeonCommand::endRunFromContext))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.DUNGEON_STATUS)
+            .labelKey("devmod.action.dungeon.status")
+            .descriptionKey("devmod.action.dungeon.status.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Dungeon/Status")
+            .icon(Items.CLOCK)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod dungeon status")
+            .handler(context -> handleCommand(context, "devmod dungeon status", DungeonCommand::showStatus))
+            .build());
+    }
+
+    private static void handleCommand(ActionContext context, String command,
+                                      CommandHandler handler) {
+        CommandContext<CommandSourceStack> cmd = context.getCommandContext();
+        if (context.getOrigin() == ActionOrigin.COMMAND && cmd != null) {
+            handler.run(cmd);
+            return;
+        }
+        context.executeCommand(command);
+    }
+
+    private static void handleCommandPrompt(ActionContext context, String command,
+                                            CommandHandler handler) {
+        CommandContext<CommandSourceStack> cmd = context.getCommandContext();
+        if (context.getOrigin() == ActionOrigin.COMMAND && cmd != null) {
+            handler.run(cmd);
+            return;
+        }
+        if (!context.openCommandPrompt(command)) {
+            context.executeCommand(command);
+        }
+    }
+
+    @FunctionalInterface
+    private interface CommandHandler {
+        void run(CommandContext<CommandSourceStack> context);
     }
 
     private static int showHelp(CommandContext<CommandSourceStack> context) {
@@ -147,6 +224,28 @@ public class DungeonCommand {
             player.getName().getString(), outcome, kills, deaths, rewardCount);
 
         return 1;
+    }
+
+    private static int endRunFromContext(CommandContext<CommandSourceStack> context) {
+        int kills = 0;
+        int deaths = 0;
+        int rewardCount = 0;
+        try {
+            kills = IntegerArgumentType.getInteger(context, "kills");
+        } catch (IllegalArgumentException ignored) {
+            // Optional argument not supplied.
+        }
+        try {
+            deaths = IntegerArgumentType.getInteger(context, "deaths");
+        } catch (IllegalArgumentException ignored) {
+            // Optional argument not supplied.
+        }
+        try {
+            rewardCount = IntegerArgumentType.getInteger(context, "reward_count");
+        } catch (IllegalArgumentException ignored) {
+            // Optional argument not supplied.
+        }
+        return endRun(context, kills, deaths, rewardCount);
     }
 
     private static int showStatus(CommandContext<CommandSourceStack> context) {

@@ -452,6 +452,9 @@ public final class RadialMenuConstants {
     /** Help text fade-in duration (milliseconds) */
     public static final long HELP_FADE_DURATION_MS = 200;
 
+    /** Long-press threshold for action details (milliseconds) */
+    public static final long LONG_PRESS_DURATION_MS = 350;
+
     // ================================================================
     // SELECTION INDICES
     // ================================================================

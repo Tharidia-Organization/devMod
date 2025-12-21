@@ -8,6 +8,8 @@ Ogni test deve essere eseguito e documentato con:
 - Data e versione
 - Note eventuali
 
+Nota: la costruzione arena usa Arena Template. Per validazione template e smoke: `docs/arena-template-rework/TODO_ARENA_TEMPLATE.md`.
+
 ---
 
 ## Pre-requisiti
@@ -30,7 +32,7 @@ Ogni test deve essere eseguito e documentato con:
 | 4 | Seleziona un mob (es. Zombie) | Mob selezionato | [ ] |
 | 5 | Clicca "Start Quest" | Messaggio countdown o "Preparing..." | [ ] |
 | 6 | Attendi teleport | Player in arena void | [ ] |
-| 7 | Verifica piattaforma stone bricks | Arena visibile | [ ] |
+| 7 | Verifica arena conforme al template (es. default_flat_64) | Arena visibile | [ ] |
 | 8 | Verifica mob spawn | Mob appaiono | [ ] |
 
 ### M1.2 Completamento Quest
@@ -195,6 +197,15 @@ Ogni test deve essere eseguito e documentato con:
 | 10 cicli create/destroy | No leak | ___ | [ ] |
 
 ---
+
+## M7. Template Build Metrics
+
+Compilare per ogni run di template build (da log/telemetria arena.build.end o dashboard):
+
+| templateId | templateVersion | build_ms | entities_residual | blocks_residual | rollback_count | Note | Status |
+|------------|-----------------|----------|-------------------|-----------------|----------------|------|--------|
+| ___ | ___ | ___ | ___ | ___ | ___ | ___ | [ ] |
+| ___ | ___ | ___ | ___ | ___ | ___ | ___ | [ ] |
 
 ## M7. Verifica Log
 

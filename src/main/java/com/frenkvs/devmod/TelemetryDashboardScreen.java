@@ -1,5 +1,10 @@
 package com.frenkvs.devmod;
 
+import com.frenkvs.devmod.actions.ActionContext;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.rendering.DebugRenderer;
 import com.frenkvs.devmod.rendering.HeatmapVisualizer;
 import com.frenkvs.devmod.rendering.LightLevelOverlay;
@@ -537,28 +542,20 @@ public class TelemetryDashboardScreen extends Screen {
     private boolean handleOverlaysClick(int mx, int my, int x, int y) {
         y += 20; // section header
 
-        Runnable[] toggles = {
-            () -> DebugRenderer.INSTANCE.toggle(),
-            () -> LightLevelOverlay.INSTANCE.toggle(),
-            () -> {
-                // Heatmap toggle: if any active, disable all; otherwise show hint
-                if (HeatmapVisualizer.INSTANCE.hasActiveHeatmaps()) {
-                    HeatmapVisualizer.INSTANCE.clearAll();
-                    showMessage("All heatmaps disabled");
-                } else {
-                    showMessage("Enable heatmaps in Visualizers tab or press H in-game");
-                }
-            },
-            () -> RoomBoundsVisualizer.INSTANCE.toggle(),
-            () -> PathfindingDebugger.INSTANCE.toggle(),
-            () -> LineOfSightVisualizer.INSTANCE.toggle(),
-            () -> VerticalLevelsVisualizer.INSTANCE.toggle(),
-            () -> SafeSpotVisualizer.INSTANCE.toggle()
+        String[] actionIds = {
+            ActionIds.DEBUG_OVERLAY_TOGGLE,
+            ActionIds.DEBUG_LIGHT_OVERLAY_TOGGLE,
+            ActionIds.DEBUG_HEATMAP_TOGGLE,
+            ActionIds.DEBUG_ROOM_BOUNDS_TOGGLE,
+            ActionIds.DEBUG_PATHFINDING_TOGGLE,
+            ActionIds.DEBUG_LOS_TOGGLE,
+            ActionIds.DEBUG_VERTICAL_LEVELS_TOGGLE,
+            ActionIds.DEBUG_SAFE_SPOTS_TOGGLE
         };
 
-        for (Runnable toggle : toggles) {
+        for (String actionId : actionIds) {
             if (AxiomRenderer.isMouseOver(mx, my, x, y, CONTENT_WIDTH, ROW_HEIGHT - 2)) {
-                toggle.run();
+                invokeAction(actionId);
                 return true;
             }
             y += ROW_HEIGHT;
@@ -569,20 +566,32 @@ public class TelemetryDashboardScreen extends Screen {
     private boolean handleExportClick(int mx, int my, int x, int y) {
         y += 20; // section header
 
-        Runnable[] exports = {
-            () -> { TelemetryService.INSTANCE.exportDeathHeatmap(); showMessage("Death heatmap exported!"); },
-            () -> { TelemetryService.INSTANCE.exportMovementHeatmap(); showMessage("Movement heatmap exported!"); },
-            () -> { TelemetryService.INSTANCE.exportCampingHeatmap(); showMessage("Camping heatmap exported!"); },
-            () -> { TelemetryService.INSTANCE.exportStuckHeatmap(); showMessage("Stuck heatmap exported!"); },
-            () -> { TelemetryService.INSTANCE.exportAggroDropHeatmap(); showMessage("Aggro drop heatmap exported!"); },
-            () -> { TelemetryService.INSTANCE.exportKitingHeatmap(); showMessage("Kiting heatmap exported!"); },
-            () -> { TelemetryService.INSTANCE.exportChokePointHeatmap(); showMessage("Choke points exported!"); },
-            () -> { TelemetryService.INSTANCE.exportParkourFallHeatmap(); showMessage("Parkour falls exported!"); }
+        String[] exportActions = {
+            ActionIds.TELEMETRY_EXPORT_HEATMAP_DEATH,
+            ActionIds.TELEMETRY_EXPORT_HEATMAP_MOVEMENT,
+            ActionIds.TELEMETRY_EXPORT_HEATMAP_CAMPING,
+            ActionIds.TELEMETRY_EXPORT_HEATMAP_STUCK,
+            ActionIds.TELEMETRY_EXPORT_HEATMAP_AGGRO_DROP,
+            ActionIds.TELEMETRY_EXPORT_HEATMAP_KITING,
+            ActionIds.TELEMETRY_EXPORT_HEATMAP_CHOKE_POINTS,
+            ActionIds.TELEMETRY_EXPORT_HEATMAP_PARKOUR_FALLS
         };
 
-        for (Runnable export : exports) {
+        String[] exportMessages = {
+            "devmod.telemetry.exported_heatmap.death",
+            "devmod.telemetry.exported_heatmap.movement",
+            "devmod.telemetry.exported_heatmap.camping",
+            "devmod.telemetry.exported_heatmap.stuck",
+            "devmod.telemetry.exported_heatmap.aggro_drop",
+            "devmod.telemetry.exported_heatmap.kiting",
+            "devmod.telemetry.exported_heatmap.choke_points",
+            "devmod.telemetry.exported_heatmap.parkour_falls"
+        };
+
+        for (int i = 0; i < exportActions.length; i++) {
             if (AxiomRenderer.isMouseOver(mx, my, x, y, CONTENT_WIDTH, ROW_HEIGHT - 4)) {
-                export.run();
+                invokeAction(exportActions[i]);
+                showMessage(I18n.translate(exportMessages[i]).getString());
                 return true;
             }
             y += ROW_HEIGHT;
@@ -591,8 +600,8 @@ public class TelemetryDashboardScreen extends Screen {
         // Gap + Damage Statistics button
         y += 8;
         if (AxiomRenderer.isMouseOver(mx, my, x, y, CONTENT_WIDTH, ROW_HEIGHT - 4)) {
-            TelemetryService.INSTANCE.exportDamageStats();
-            showMessage("Damage statistics exported!");
+            invokeAction(ActionIds.TELEMETRY_EXPORT_DAMAGE_STATS);
+            showMessage(I18n.translate("devmod.telemetry.exported_damage_stats").getString());
             return true;
         }
 
@@ -648,11 +657,22 @@ public class TelemetryDashboardScreen extends Screen {
             HeatmapVisualizer.HeatmapType.KITING
         };
 
-        for (HeatmapVisualizer.HeatmapType type : types) {
+        String[] actionIds = {
+            ActionIds.DEBUG_HEATMAP_DEATH_TOGGLE,
+            ActionIds.DEBUG_HEATMAP_MOVEMENT_TOGGLE,
+            ActionIds.DEBUG_HEATMAP_CAMPING_TOGGLE,
+            ActionIds.DEBUG_HEATMAP_STUCK_TOGGLE,
+            ActionIds.DEBUG_HEATMAP_AGGRO_DROP_TOGGLE,
+            ActionIds.DEBUG_HEATMAP_KITING_TOGGLE
+        };
+
+        for (int i = 0; i < types.length; i++) {
+            HeatmapVisualizer.HeatmapType type = types[i];
             if (AxiomRenderer.isMouseOver(mx, my, x, y, CONTENT_WIDTH, ROW_HEIGHT - 4)) {
                 boolean currentlyEnabled = HeatmapVisualizer.INSTANCE.isEnabled(type);
-                HeatmapVisualizer.INSTANCE.setEnabled(type, !currentlyEnabled);
-                showMessage(type.name() + " heatmap " + (currentlyEnabled ? "disabled!" : "loaded!"));
+                invokeAction(actionIds[i]);
+                String status = currentlyEnabled ? "§cOFF" : "§aON";
+                showMessage(I18n.translate("devmod.render.heatmap_type_toggle_status", type.name(), status).getString());
                 return true;
             }
             y += ROW_HEIGHT;
@@ -666,10 +686,8 @@ public class TelemetryDashboardScreen extends Screen {
 
             // "Yes, Clear All" button
             if (AxiomRenderer.isMouseOver(mx, my, x, y, btnWidth, ROW_HEIGHT - 4)) {
-                for (HeatmapVisualizer.HeatmapType type : HeatmapVisualizer.HeatmapType.values()) {
-                    HeatmapVisualizer.INSTANCE.setEnabled(type, false);
-                }
-                showMessage("All heatmaps cleared!");
+                invokeConfirmedAction(ActionIds.DEBUG_HEATMAP_CLEAR_ALL);
+                showMessage(I18n.translate("devmod.render.heatmaps_cleared").getString());
                 showClearConfirmation = false;
                 return true;
             }
@@ -738,6 +756,16 @@ public class TelemetryDashboardScreen extends Screen {
         if (mc != null && mc.player != null) {
             mc.player.displayClientMessage(I18n.literal(message), true);
         }
+    }
+
+    private boolean invokeAction(String actionId) {
+        ActionContext context = ClientActionContexts.forClient(ActionOrigin.UI);
+        return ActionRegistry.invoke(actionId, context);
+    }
+
+    private boolean invokeConfirmedAction(String actionId) {
+        ActionContext context = ClientActionContexts.forClient(ActionOrigin.UI).withConfirmed(true);
+        return ActionRegistry.invoke(actionId, context);
     }
 
     @Override

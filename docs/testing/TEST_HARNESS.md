@@ -46,6 +46,18 @@ src/test/java/com/frenkvs/devmod/
 └── ... (other test packages)
 ```
 
+```
+src/test/java/com/devmod/arena/
+├── registry/   # Template loader, schema, golden reference
+├── builder/    # Async builder + dry-run
+├── spawn/      # Spawn slots validation/resolution
+├── fallback/   # Rollback/fallback strategy
+├── cleanup/    # Cleanup executor tests
+├── monitor/    # MSPT monitor tests
+├── alert/      # Alert router tests
+└── integration/# Arena integration tests
+```
+
 ### Running JUnit Tests
 
 ```bash
@@ -121,6 +133,16 @@ src/main/resources/data/devmod/structure/
 | instance | ErrorRecoveryScenarioTest | All recovery scenarios |
 | instance | EdgeCaseStressTest | Boundary conditions, stress |
 | instance | MultiplayerConcurrencyTest | Party, thread safety |
+
+### Arena Template JUnit Suite (Packages)
+
+| Package | Focus |
+|---------|-------|
+| arena.registry | Schema validation, inheritance, golden reference |
+| arena.builder | Dry-run estimation, async build, priority |
+| arena.spawn | Spawn slot validation/resolution |
+| arena.fallback | Rollback/fallback strategy |
+| arena.alert | Alert routing |
 
 ### GameTest Batches (@GameTest batch parameter)
 

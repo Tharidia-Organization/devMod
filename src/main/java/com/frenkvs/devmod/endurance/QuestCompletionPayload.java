@@ -22,6 +22,14 @@ public record QuestCompletionPayload(
     int totalWaves,
     boolean endlessMode,
     long durationMs,
+    String templateId,
+    int templateVersion,
+    String policyId,
+    int policyVersion,
+    String instanceId,
+    String arenaId,
+    String difficultyLabel,
+    String questTypeLabel,
 
     // Rewards
     int tokensEarned,
@@ -65,6 +73,14 @@ public record QuestCompletionPayload(
             int totalWaves = buf.readInt();
             boolean endlessMode = buf.readBoolean();
             long durationMs = buf.readLong();
+            String templateId = readString(buf);
+            int templateVersion = buf.readInt();
+            String policyId = readString(buf);
+            int policyVersion = buf.readInt();
+            String instanceId = readString(buf);
+            String arenaId = readString(buf);
+            String difficultyLabel = readString(buf);
+            String questTypeLabel = readString(buf);
 
             int tokensEarned = buf.readInt();
             int baseTokens = buf.readInt();
@@ -93,6 +109,8 @@ public record QuestCompletionPayload(
 
             return new QuestCompletionPayload(
                 questName, finalWave, totalWaves, endlessMode, durationMs,
+                templateId, templateVersion, policyId, policyVersion, instanceId, arenaId,
+                difficultyLabel, questTypeLabel,
                 tokensEarned, baseTokens, prestigeEarned, bloodGemsEarned,
                 styleMultiplier, mutatorMultiplier,
                 noHitBonus, speedBonus, styleRankOrdinal, activeMutators,
@@ -108,6 +126,14 @@ public record QuestCompletionPayload(
             buf.writeInt(payload.totalWaves);
             buf.writeBoolean(payload.endlessMode);
             buf.writeLong(payload.durationMs);
+            writeString(buf, payload.templateId);
+            buf.writeInt(payload.templateVersion);
+            writeString(buf, payload.policyId);
+            buf.writeInt(payload.policyVersion);
+            writeString(buf, payload.instanceId);
+            writeString(buf, payload.arenaId);
+            writeString(buf, payload.difficultyLabel);
+            writeString(buf, payload.questTypeLabel);
 
             buf.writeInt(payload.tokensEarned);
             buf.writeInt(payload.baseTokens);

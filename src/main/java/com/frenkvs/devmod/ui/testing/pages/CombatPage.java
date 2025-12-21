@@ -5,7 +5,7 @@ import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.testing.VoxelLabTab;
 import com.frenkvs.devmod.ui.testing.panel.*;
 
-import java.util.Objects;
+import javax.annotation.Nonnull;
 
 import static com.frenkvs.devmod.ui.testing.pages.PageUtils.safeGetBool;
 import static com.frenkvs.devmod.ui.testing.pages.PageUtils.nonNullDouble;
@@ -46,20 +46,20 @@ public class CombatPage extends AbstractVoxelLabPage {
             new CollapsiblePanel("collapsible-mult", "Damage Multipliers",
                 CompositePanel.of("mult-content", "Multipliers",
                     SliderPanel.of("slider-head", "Head Multiplier",
-                        () -> Objects.requireNonNull(nonNullDouble(Config.HEAD_DAMAGE_MULTIPLIER, 2.0), "headMultiplier"),
-                        v -> Config.HEAD_DAMAGE_MULTIPLIER.set(Objects.requireNonNull(v, "headMultiplierValue")),
+                        () -> nonNullDouble(Config.HEAD_DAMAGE_MULTIPLIER, 2.0),
+                        (@Nonnull Double v) -> Config.HEAD_DAMAGE_MULTIPLIER.set(v),
                         0.5, 4.0, 0.1, "%.1fx"),
                     SliderPanel.of("slider-body", "Body Multiplier",
-                        () -> Objects.requireNonNull(nonNullDouble(Config.BODY_DAMAGE_MULTIPLIER, 1.0), "bodyMultiplier"),
-                        v -> Config.BODY_DAMAGE_MULTIPLIER.set(Objects.requireNonNull(v, "bodyMultiplierValue")),
+                        () -> nonNullDouble(Config.BODY_DAMAGE_MULTIPLIER, 1.0),
+                        (@Nonnull Double v) -> Config.BODY_DAMAGE_MULTIPLIER.set(v),
                         0.5, 2.0, 0.1, "%.1fx"),
                     SliderPanel.of("slider-arms", "Arms Multiplier",
-                        () -> Objects.requireNonNull(nonNullDouble(Config.ARMS_DAMAGE_MULTIPLIER, 0.75), "armsMultiplier"),
-                        v -> Config.ARMS_DAMAGE_MULTIPLIER.set(Objects.requireNonNull(v, "armsMultiplierValue")),
+                        () -> nonNullDouble(Config.ARMS_DAMAGE_MULTIPLIER, 0.75),
+                        (@Nonnull Double v) -> Config.ARMS_DAMAGE_MULTIPLIER.set(v),
                         0.25, 1.5, 0.05, "%.2fx"),
                     SliderPanel.of("slider-legs", "Legs Multiplier",
-                        () -> Objects.requireNonNull(nonNullDouble(Config.LEGS_DAMAGE_MULTIPLIER, 0.75), "legsMultiplier"),
-                        v -> Config.LEGS_DAMAGE_MULTIPLIER.set(Objects.requireNonNull(v, "legsMultiplierValue")),
+                        () -> nonNullDouble(Config.LEGS_DAMAGE_MULTIPLIER, 0.75),
+                        (@Nonnull Double v) -> Config.LEGS_DAMAGE_MULTIPLIER.set(v),
                         0.25, 1.5, 0.05, "%.2fx")
                 ),
                 0xFFFF5500)
@@ -70,12 +70,12 @@ public class CombatPage extends AbstractVoxelLabPage {
             new CollapsiblePanel("collapsible-armor", "Armor Penetration",
                 CompositePanel.of("armor-content", "Armor Settings",
                     SliderPanel.of("slider-armor-mult", "Penetration Multiplier",
-                        () -> Objects.requireNonNull(nonNullDouble(Config.ARMOR_PEN_MULTIPLIER, 1.0), "armorPenMultiplier"),
-                        v -> Config.ARMOR_PEN_MULTIPLIER.set(Objects.requireNonNull(v, "armorPenMultiplierValue")),
+                        () -> nonNullDouble(Config.ARMOR_PEN_MULTIPLIER, 1.0),
+                        (@Nonnull Double v) -> Config.ARMOR_PEN_MULTIPLIER.set(v),
                         0.0, 2.0, 0.1, "%.1fx"),
                     SliderPanel.of("slider-armor-flat", "Flat Penetration Bonus",
-                        () -> Objects.requireNonNull(nonNullDouble(Config.ARMOR_PEN_FLAT_BONUS, 0.0), "armorPenFlatBonus"),
-                        v -> Config.ARMOR_PEN_FLAT_BONUS.set(Objects.requireNonNull(v, "armorPenFlatBonusValue")),
+                        () -> nonNullDouble(Config.ARMOR_PEN_FLAT_BONUS, 0.0),
+                        (@Nonnull Double v) -> Config.ARMOR_PEN_FLAT_BONUS.set(v),
                         0.0, 10.0, 0.5, "%.1f")
                 ),
                 0xFF00AAFF)

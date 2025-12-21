@@ -207,7 +207,7 @@ public class UnifiedSettingsScreen extends Screen {
     }
 
     private void renderTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
-        Font safeFont = Objects.requireNonNull(font, "font");
+        @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         // Check if hovering over sidebar item for tooltip
         if (mouseX < SIDEBAR_WIDTH && mouseY > HEADER_HEIGHT + PADDING + SEARCH_HEIGHT + 8) {
             int y = HEADER_HEIGHT + PADDING + SEARCH_HEIGHT + 8;
@@ -248,7 +248,7 @@ public class UnifiedSettingsScreen extends Screen {
     }
 
     private void renderDialogs(GuiGraphics graphics, int mouseX, int mouseY) {
-        Font safeFont = Objects.requireNonNull(font, "font");
+        @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         if (resetDialog != null) resetDialog.render(graphics, safeFont, width, height, mouseX, mouseY);
         if (factoryResetDialog != null) factoryResetDialog.render(graphics, safeFont, width, height, mouseX, mouseY);
         if (progressResetDialog != null) progressResetDialog.render(graphics, safeFont, width, height, mouseX, mouseY);
@@ -327,7 +327,7 @@ public class UnifiedSettingsScreen extends Screen {
     // === Header ===
 
     private void renderHeader(GuiGraphics graphics) {
-        Font safeFont = Objects.requireNonNull(font, "font");
+        @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         // Background header
         graphics.fill(0, 0, width, HEADER_HEIGHT, UIConstants.Background.HEADER());
         graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, UIConstants.Border.DEFAULT());
@@ -375,7 +375,7 @@ public class UnifiedSettingsScreen extends Screen {
     }
 
     private void renderSearchBox(GuiGraphics graphics, int x, int y, int boxWidth, int mouseX, int mouseY) {
-        Font safeFont = Objects.requireNonNull(font, "font");
+        @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         String safeSearchQuery = Objects.requireNonNullElse(searchQuery, "");
         // Background
         int bgColor = searchFocused ? UIConstants.Background.INPUT() : UIConstants.Background.PANEL();
@@ -410,7 +410,7 @@ public class UnifiedSettingsScreen extends Screen {
 
     private void renderSidebarItem(GuiGraphics graphics, SettingsCategory category, int y,
                                     boolean selected, boolean hovered, boolean hasPage) {
-        Font safeFont = Objects.requireNonNull(font, "font");
+        @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         int x = PADDING;
         int itemWidth = SIDEBAR_WIDTH - PADDING * 2;
 
@@ -454,7 +454,7 @@ public class UnifiedSettingsScreen extends Screen {
     // === Content Area ===
 
     private void renderContent(GuiGraphics graphics, int mouseX, int mouseY) {
-        Font safeFont = Objects.requireNonNull(font, "font");
+        @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         int contentX = SIDEBAR_WIDTH + PADDING;
         int contentY = HEADER_HEIGHT + PADDING;
         int contentWidth = width - SIDEBAR_WIDTH - PADDING * 2;
@@ -510,7 +510,7 @@ public class UnifiedSettingsScreen extends Screen {
     // === Footer ===
 
     private void renderFooter(GuiGraphics graphics, int mouseX, int mouseY) {
-        Font safeFont = Objects.requireNonNull(font, "font");
+        @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         int footerY = height - FOOTER_HEIGHT;
 
         // Background

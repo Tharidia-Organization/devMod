@@ -44,6 +44,9 @@ public class QuestSequenceOverlay {
     private int phaseStartSeconds = 0;
     private int totalMembers = 0;
     private List<UUID> arrivedMembers = List.of();
+    private String title = "";
+    private String subtitle = "";
+    private List<String> infoLines = List.of();
 
     // Track if we've sent arrival confirmation
     private boolean arrivalConfirmed = false;
@@ -90,6 +93,9 @@ public class QuestSequenceOverlay {
         this.secondsRemaining = payload.secondsRemaining();
         this.totalMembers = payload.totalMembers();
         this.arrivedMembers = payload.arrivedMembers();
+        this.title = payload.title();
+        this.subtitle = payload.subtitle();
+        this.infoLines = payload.infoLines();
         this.fadingOut = false;
         this.fadeOutTicks = 0;
 
@@ -196,8 +202,19 @@ public class QuestSequenceOverlay {
         if (alpha < 10) return;
 
         // Calculate box size - larger for arrival phase
-        int boxWidth = 220;
-        int boxHeight = currentPhase == QuestSequencePayload.Phase.WAITING_FOR_ARRIVALS ? 90 : 70;
+        int boxWidth = 240;
+        int baseHeight = currentPhase == QuestSequencePayload.Phase.WAITING_FOR_ARRIVALS ? 90 : 70;
+        int extraLines = 0;
+        if (currentPhase == QuestSequencePayload.Phase.BRIEFING) {
+            extraLines += infoLines.size();
+        }
+        if (subtitle != null && !subtitle.isBlank()) {
+            extraLines += 1;
+        }
+        if (title != null && !title.isBlank() && currentPhase == QuestSequencePayload.Phase.BRIEFING) {
+            extraLines += 1;
+        }
+        int boxHeight = baseHeight + Math.min(extraLines * 10, 60);
         int boxX = (screenWidth - boxWidth) / 2;
         int boxY = 40;
 
@@ -216,7 +233,9 @@ public class QuestSequenceOverlay {
         graphics.drawCenteredString(font, phaseText, boxX + boxWidth / 2, boxY + 8, textColor);
 
         // Render based on phase
-        if (currentPhase == QuestSequencePayload.Phase.WAITING_FOR_ARRIVALS) {
+        if (currentPhase == QuestSequencePayload.Phase.BRIEFING) {
+            renderBriefing(graphics, Objects.requireNonNull(font, "font"), boxX, boxY, boxWidth, alpha);
+        } else if (currentPhase == QuestSequencePayload.Phase.WAITING_FOR_ARRIVALS) {
             renderArrivalStatus(graphics, Objects.requireNonNull(font, "font"), boxX, boxY, boxWidth, alpha);
         } else if (secondsRemaining > 0 && !fadingOut) {
             renderCountdown(graphics, Objects.requireNonNull(font, "font"), boxX, boxY, boxWidth, alpha);
@@ -232,6 +251,12 @@ public class QuestSequenceOverlay {
      * Render countdown number.
      */
     private void renderCountdown(GuiGraphics graphics, net.minecraft.client.gui.Font font, int boxX, int boxY, int boxWidth, int alpha) {
+        var safeFont = Objects.requireNonNull(font, "font");
+        if (subtitle != null && !subtitle.isBlank()) {
+            String safeSubtitle = Objects.requireNonNull(subtitle, "subtitle");
+            int subtitleColor = UIConstants.setAlpha(UIConstants.Text.SECONDARY(), alpha);
+            graphics.drawCenteredString(safeFont, safeSubtitle, boxX + boxWidth / 2, boxY + 22, subtitleColor);
+        }
         String countdownText = Objects.requireNonNull(String.valueOf(secondsRemaining), "countdown");
         int countdownColor = getCountdownColor();
         countdownColor = UIConstants.setAlpha(countdownColor, alpha);
@@ -239,8 +264,38 @@ public class QuestSequenceOverlay {
         graphics.pose().pushPose();
         graphics.pose().translate(boxX + boxWidth / 2f, boxY + 32, 0);
         graphics.pose().scale(2f, 2f, 1f);
-        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), countdownText, 0, 0, countdownColor);
+        graphics.drawCenteredString(safeFont, countdownText, 0, 0, countdownColor);
         graphics.pose().popPose();
+    }
+
+    private void renderBriefing(GuiGraphics graphics, net.minecraft.client.gui.Font font,
+                                int boxX, int boxY, int boxWidth, int alpha) {
+        var safeFont = Objects.requireNonNull(font, "font");
+        int textColor = UIConstants.setAlpha(UIConstants.Text.SECONDARY(), alpha);
+        int lineY = boxY + 24;
+
+        if (title != null && !title.isBlank()) {
+            String safeTitle = Objects.requireNonNull(title, "title");
+            graphics.drawCenteredString(safeFont, safeTitle, boxX + boxWidth / 2, lineY, textColor);
+            lineY += 10;
+        }
+
+        if (subtitle != null && !subtitle.isBlank()) {
+            String safeSubtitle = Objects.requireNonNull(subtitle, "subtitle");
+            graphics.drawCenteredString(safeFont, safeSubtitle, boxX + boxWidth / 2, lineY, textColor);
+            lineY += 10;
+        }
+
+        if (infoLines != null) {
+            for (String line : infoLines) {
+                String safeLine = Objects.requireNonNull(line, "info line");
+                if (safeLine.isBlank()) {
+                    continue;
+                }
+                graphics.drawCenteredString(safeFont, safeLine, boxX + boxWidth / 2, lineY, textColor);
+                lineY += 10;
+            }
+        }
     }
 
     /**
@@ -329,6 +384,10 @@ public class QuestSequenceOverlay {
             case STARTING -> Component.translatable("devmod.sequence.starting");
             case STARTED -> Component.translatable("devmod.sequence.started");
             case CANCELLED -> Component.translatable("devmod.sequence.cancelled");
+            case BRIEFING -> Component.literal("Briefing");
+            case SAFE_WINDOW -> Component.literal("Safe Window");
+            case WAVE_INCOMING -> Component.literal("Wave Incoming");
+            case BOSS_INTRO -> Component.literal("Boss Intro");
         };
     }
 
@@ -341,6 +400,10 @@ public class QuestSequenceOverlay {
             case STARTING -> UIConstants.Accent.GREEN();
             case STARTED -> UIConstants.Accent.GREEN();
             case CANCELLED -> UIConstants.Accent.RED();
+            case BRIEFING -> UIConstants.Accent.CYAN();
+            case SAFE_WINDOW -> UIConstants.Accent.GREEN();
+            case WAVE_INCOMING -> UIConstants.Accent.GOLD();
+            case BOSS_INTRO -> UIConstants.Accent.RED();
         };
     }
 
@@ -369,6 +432,22 @@ public class QuestSequenceOverlay {
             }
             case STARTING, STARTED -> 1f;
             case CANCELLED -> 0f;
+            case BRIEFING -> {
+                int totalSeconds = phaseStartSeconds > 0 ? phaseStartSeconds : 3;
+                yield secondsRemaining > 0 ? 1f - (secondsRemaining / (float) totalSeconds) : 1f;
+            }
+            case SAFE_WINDOW -> {
+                int totalSeconds = phaseStartSeconds > 0 ? phaseStartSeconds : 3;
+                yield secondsRemaining > 0 ? 1f - (secondsRemaining / (float) totalSeconds) : 1f;
+            }
+            case WAVE_INCOMING -> {
+                int totalSeconds = phaseStartSeconds > 0 ? phaseStartSeconds : 10;
+                yield secondsRemaining > 0 ? 1f - (secondsRemaining / (float) totalSeconds) : 1f;
+            }
+            case BOSS_INTRO -> {
+                int totalSeconds = phaseStartSeconds > 0 ? phaseStartSeconds : 1;
+                yield secondsRemaining > 0 ? 1f - (secondsRemaining / (float) totalSeconds) : 1f;
+            }
         };
     }
 }

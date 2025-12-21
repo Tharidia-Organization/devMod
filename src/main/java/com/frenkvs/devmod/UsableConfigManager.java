@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.Nonnull;
 
 /**
  * Configuration manager for usable item stats (cooldowns, use duration, throwable properties).
@@ -131,7 +132,7 @@ public class UsableConfigManager {
         CustomData.update(Objects.requireNonNull(CUSTOM_DATA), Objects.requireNonNull(stack), tag -> {
             CompoundTag statsTag = new CompoundTag();
             copy.save(statsTag);
-            CompoundTag statsTagCopy = Objects.requireNonNull(statsTag.copy(), "statsTag");
+            @Nonnull CompoundTag statsTagCopy = Objects.requireNonNull(statsTag.copy(), "statsTag");
             tag.put("UsableModStats", statsTagCopy);
             // Also mirror to typed data component for forward compatibility
             var setComponent = UsableComponents.usableStatsComponent();
@@ -201,10 +202,10 @@ public class UsableConfigManager {
                 if (loaded != null) {
                     globalStats.clear();
                     loaded.forEach((key, stats) -> {
-                        String safeKey = Objects.requireNonNull(key, "itemKey");
+                        @Nonnull String safeKey = Objects.requireNonNull(key, "itemKey");
                         ResourceLocation resLoc = ResourceLocation.tryParse(safeKey);
                         if (resLoc != null && BuiltInRegistries.ITEM.containsKey(resLoc)) {
-                            Item item = Objects.requireNonNull(BuiltInRegistries.ITEM.get(resLoc), "item");
+                            @Nonnull Item item = Objects.requireNonNull(BuiltInRegistries.ITEM.get(resLoc), "item");
                             globalStats.put(item, stats);
                         } else {
                             LOGGER.warn("[UsableConfig] Unknown item in config: {}", safeKey);
@@ -241,7 +242,7 @@ public class UsableConfigManager {
                 globalStats.forEach((item, stats) -> {
                     ResourceLocation key = BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(item, "item"));
                     String safeKey = Objects.requireNonNull(key, "itemKey").toString();
-                    toSave.put(safeKey, stats);
+                    toSave.put(Objects.requireNonNull(safeKey, "itemKeyString"), stats);
                 });
                 GSON.toJson(toSave, writer);
                 writer.flush();

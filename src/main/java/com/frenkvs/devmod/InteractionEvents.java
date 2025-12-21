@@ -1,7 +1,10 @@
 package com.frenkvs.devmod;
 
 import static com.frenkvs.devmod.DevMod.MODID;
-import net.minecraft.client.Minecraft;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import net.minecraft.world.InteractionHand; // <--- Important
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Mob;
@@ -26,8 +29,9 @@ public class InteractionEvents {
         if (event.getItemStack().getItem() == DevMod.VIEWER_ITEM.get()) {
 
             if (event.getTarget() instanceof Mob mob) {
-                // Open the GUI
-                Minecraft.getInstance().setScreen(new MobConfigScreen(mob));
+                // Route through ActionRegistry for consistency
+                ActionRegistry.invoke(ActionIds.UI_MOB_CONFIG_OPEN,
+                    ClientActionContexts.forClient(ActionOrigin.EVENT, mob));
 
                 // Block the normal action and stop input
                 event.setCanceled(true);

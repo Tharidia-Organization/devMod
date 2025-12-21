@@ -33,7 +33,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 
-import com.frenkvs.devmod.ui.WelcomeScreen;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 
 @EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
@@ -180,7 +183,8 @@ public class ClientModEvents {
                 // Try to show screen if no other screen is open
                 var currentScreen = mc.screen;
                 if (currentScreen == null) {
-                    mc.setScreen(new WelcomeScreen());
+                    ActionRegistry.invoke(ActionIds.UI_WELCOME_OPEN,
+                        ClientActionContexts.forClient(ActionOrigin.EVENT));
                     welcomeScreenShown = true;
                     LOGGER.info("Showing welcome screen for first-time user (attempt {})", attempt + 1);
                 } else {

@@ -55,7 +55,7 @@ public class QuestCompletionScreen extends Screen {
     private EditorButton continueButton;
 
     public QuestCompletionScreen(QuestCompletionPayload data) {
-        super(Component.literal("Quest Complete!"));
+        super(java.util.Objects.requireNonNull(Component.literal("Quest Complete!"), "title"));
         this.data = data;
     }
 
@@ -191,7 +191,57 @@ public class QuestCompletionScreen extends Screen {
 
         // Duration
         g.drawCenteredString(safeFont, "Time: " + data.getFormattedDuration(), centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
-        y += 25;
+        y += 16;
+
+        boolean hasRunInfo = (data.templateId() != null && !data.templateId().isBlank())
+            || (data.policyId() != null && !data.policyId().isBlank())
+            || (data.instanceId() != null && !data.instanceId().isBlank())
+            || (data.arenaId() != null && !data.arenaId().isBlank());
+
+        if (hasRunInfo) {
+            g.drawCenteredString(safeFont, "-- RUN INFO --", centerX, y, applyAlpha(COLOR_BONUS, alpha));
+            y += 14;
+
+            if (data.templateId() != null && !data.templateId().isBlank()) {
+                String templateLine = "Template: " + data.templateId() + " v" + data.templateVersion();
+                g.drawCenteredString(safeFont,
+                    Objects.requireNonNull(truncateText(templateLine, PANEL_WIDTH - 60), "templateLine"),
+                    centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
+                y += 12;
+            }
+            if (data.policyId() != null && !data.policyId().isBlank()) {
+                String policyLine = "Policy: " + data.policyId() + " v" + data.policyVersion();
+                g.drawCenteredString(safeFont,
+                    Objects.requireNonNull(truncateText(policyLine, PANEL_WIDTH - 60), "policyLine"),
+                    centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
+                y += 12;
+            }
+
+            String difficulty = data.difficultyLabel() != null && !data.difficultyLabel().isBlank()
+                ? data.difficultyLabel() : "standard";
+            String mode = data.questTypeLabel() != null && !data.questTypeLabel().isBlank()
+                ? data.questTypeLabel() : "endurance";
+            g.drawCenteredString(safeFont, "Difficulty: " + difficulty + " | Mode: " + mode,
+                centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
+            y += 12;
+
+            if (data.instanceId() != null && !data.instanceId().isBlank()) {
+                String runLine = "Run ID: " + data.instanceId();
+                g.drawCenteredString(safeFont,
+                    Objects.requireNonNull(truncateText(runLine, PANEL_WIDTH - 60), "runLine"),
+                    centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
+                y += 12;
+            } else if (data.arenaId() != null && !data.arenaId().isBlank()) {
+                String arenaLine = "Arena ID: " + data.arenaId();
+                g.drawCenteredString(safeFont,
+                    Objects.requireNonNull(truncateText(arenaLine, PANEL_WIDTH - 60), "arenaLine"),
+                    centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
+                y += 12;
+            }
+            y += 6;
+        } else {
+            y += 8;
+        }
 
         // Separator
         int sepColor = applyAlpha(UIConstants.Border.SEPARATOR(), alpha);

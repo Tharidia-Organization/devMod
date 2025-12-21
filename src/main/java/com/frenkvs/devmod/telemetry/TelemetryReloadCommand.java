@@ -1,5 +1,13 @@
 package com.frenkvs.devmod.telemetry;
 
+import com.frenkvs.devmod.actions.ActionCategory;
+import com.frenkvs.devmod.actions.ActionCommandInvoker;
+import com.frenkvs.devmod.actions.ActionContext;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionPreconditions;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.RadialAction;
 import com.frenkvs.devmod.util.I18n;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -9,6 +17,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.Items;
 import java.util.Objects;
 
 /**
@@ -25,48 +34,296 @@ public class TelemetryReloadCommand {
                         .requires(source -> source.hasPermission(2))
                         .then(Commands.literal("telemetry")
                                 .then(Commands.literal("reload")
-                                        .executes(TelemetryReloadCommand::reload))
+                                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_RELOAD, ctx)))
                                 .then(Commands.literal("dump")
                                         .then(Commands.literal("weapons")
-                                                .executes(TelemetryReloadCommand::dumpWeapons))
+                                                .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_DUMP_WEAPONS, ctx)))
                                         .then(Commands.literal("rooms")
-                                                .executes(TelemetryReloadCommand::dumpRooms))
+                                                .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_DUMP_ROOMS, ctx)))
                                         .then(Commands.literal("fights")
-                                                .executes(TelemetryReloadCommand::dumpFights))
+                                                .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_DUMP_FIGHTS, ctx)))
                                         .then(Commands.literal("minions")
-                                                .executes(TelemetryReloadCommand::dumpMinions)))
+                                                .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_DUMP_MINIONS, ctx))))
                                 .then(Commands.literal("export")
                                         .then(Commands.literal("heatmaps")
-                                                .executes(TelemetryReloadCommand::exportHeatmaps))
+                                                .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_EXPORT_HEATMAPS, ctx)))
                                         .then(Commands.literal("png")
-                                                .executes(TelemetryReloadCommand::exportHeatmapsPng))
+                                                .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_EXPORT_PNG, ctx)))
                                         .then(Commands.literal("csv")
-                                                .executes(TelemetryReloadCommand::exportCsv))
+                                                .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_EXPORT_CSV, ctx)))
                                         .then(Commands.literal("json")
-                                                .executes(TelemetryReloadCommand::exportJsonReport))
+                                                .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_EXPORT_JSON, ctx)))
                                         .then(Commands.literal("all")
-                                                .executes(TelemetryReloadCommand::exportAll)))
+                                                .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_EXPORT_ALL, ctx))))
                                 .then(Commands.literal("scan")
                                         .then(Commands.literal("light")
-                                                .executes(TelemetryReloadCommand::scanLightAll)
+                                                .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_SCAN_LIGHT_ALL, ctx))
                                                 .then(Commands.argument("roomId", Objects.requireNonNull(StringArgumentType.string()))
-                                                        .executes(TelemetryReloadCommand::scanLightRoom))))
+                                                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_SCAN_LIGHT_ROOM, ctx)))))
                                 .then(Commands.literal("spawnability")
                                         .then(Commands.argument("roomId", Objects.requireNonNull(StringArgumentType.string()))
-                                                .executes(TelemetryReloadCommand::checkSpawnability)))
+                                                .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_SPAWNABILITY, ctx))))
                                 .then(Commands.literal("desirelines")
-                                        .executes(TelemetryReloadCommand::dumpDesireLines)
+                                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_DESIRELINES_DUMP, ctx))
                                         .then(Commands.argument("roomId", Objects.requireNonNull(StringArgumentType.string()))
-                                                .executes(TelemetryReloadCommand::analyzeDesireLines)))
+                                                .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_DESIRELINES_ANALYZE, ctx))))
                                 .then(Commands.literal("dungeons")
-                                        .executes(TelemetryReloadCommand::dumpDungeonRuns)
+                                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_DUNGEONS_DUMP, ctx))
                                         .then(Commands.argument("dungeonId", Objects.requireNonNull(StringArgumentType.string()))
-                                                .executes(TelemetryReloadCommand::getDungeonStats)))
+                                                .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_DUNGEONS_STATS, ctx))))
                                 .then(Commands.literal("backtracking")
-                                        .executes(TelemetryReloadCommand::dumpBacktracking)
+                                        .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_BACKTRACKING_DUMP, ctx))
                                         .then(Commands.literal("confusing")
-                                                .executes(TelemetryReloadCommand::getMostConfusingRooms))))
+                                                .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TELEMETRY_BACKTRACKING_CONFUSING, ctx)))))
         );
+    }
+
+    public static void registerActions() {
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_RELOAD)
+            .labelKey("devmod.action.telemetry.reload")
+            .descriptionKey("devmod.action.telemetry.reload.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Admin/Reload")
+            .icon(Items.REPEATER)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod telemetry reload")
+            .handler(context -> handleCommand(context, "devmod telemetry reload", TelemetryReloadCommand::reload))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_DUMP_WEAPONS)
+            .labelKey("devmod.action.telemetry.dump.weapons")
+            .descriptionKey("devmod.action.telemetry.dump.weapons.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Dump/Weapons")
+            .icon(Items.DIAMOND_SWORD)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod telemetry dump weapons")
+            .handler(context -> handleCommand(context, "devmod telemetry dump weapons", TelemetryReloadCommand::dumpWeapons))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_DUMP_ROOMS)
+            .labelKey("devmod.action.telemetry.dump.rooms")
+            .descriptionKey("devmod.action.telemetry.dump.rooms.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Dump/Rooms")
+            .icon(Items.MAP)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod telemetry dump rooms")
+            .handler(context -> handleCommand(context, "devmod telemetry dump rooms", TelemetryReloadCommand::dumpRooms))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_DUMP_FIGHTS)
+            .labelKey("devmod.action.telemetry.dump.fights")
+            .descriptionKey("devmod.action.telemetry.dump.fights.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Dump/Fights")
+            .icon(Items.SHIELD)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod telemetry dump fights")
+            .handler(context -> handleCommand(context, "devmod telemetry dump fights", TelemetryReloadCommand::dumpFights))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_DUMP_MINIONS)
+            .labelKey("devmod.action.telemetry.dump.minions")
+            .descriptionKey("devmod.action.telemetry.dump.minions.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Dump/Minions")
+            .icon(Items.ZOMBIE_HEAD)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod telemetry dump minions")
+            .handler(context -> handleCommand(context, "devmod telemetry dump minions", TelemetryReloadCommand::dumpMinions))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_EXPORT_HEATMAPS)
+            .labelKey("devmod.action.telemetry.export.heatmaps")
+            .descriptionKey("devmod.action.telemetry.export.heatmaps.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Export/Heatmaps")
+            .icon(Items.BLAZE_POWDER)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod telemetry export heatmaps")
+            .handler(context -> handleCommand(context, "devmod telemetry export heatmaps", TelemetryReloadCommand::exportHeatmaps))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_EXPORT_PNG)
+            .labelKey("devmod.action.telemetry.export.png")
+            .descriptionKey("devmod.action.telemetry.export.png.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Export/PNG")
+            .icon(Items.PAINTING)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod telemetry export png")
+            .handler(context -> handleCommand(context, "devmod telemetry export png", TelemetryReloadCommand::exportHeatmapsPng))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_EXPORT_CSV)
+            .labelKey("devmod.action.telemetry.export.csv")
+            .descriptionKey("devmod.action.telemetry.export.csv.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Export/CSV")
+            .icon(Items.PAPER)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod telemetry export csv")
+            .handler(context -> handleCommand(context, "devmod telemetry export csv", TelemetryReloadCommand::exportCsv))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_EXPORT_JSON)
+            .labelKey("devmod.action.telemetry.export.json")
+            .descriptionKey("devmod.action.telemetry.export.json.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Export/JSON")
+            .icon(Items.WRITABLE_BOOK)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod telemetry export json")
+            .handler(context -> handleCommand(context, "devmod telemetry export json", TelemetryReloadCommand::exportJsonReport))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_EXPORT_ALL)
+            .labelKey("devmod.action.telemetry.export.all")
+            .descriptionKey("devmod.action.telemetry.export.all.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Export/All")
+            .icon(Items.CHEST)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod telemetry export all")
+            .handler(context -> handleCommand(context, "devmod telemetry export all", TelemetryReloadCommand::exportAll))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_SCAN_LIGHT_ALL)
+            .labelKey("devmod.action.telemetry.scan.light_all")
+            .descriptionKey("devmod.action.telemetry.scan.light_all.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Scan/Light All")
+            .icon(Items.LANTERN)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod telemetry scan light")
+            .handler(context -> handleCommand(context, "devmod telemetry scan light", TelemetryReloadCommand::scanLightAll))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_SCAN_LIGHT_ROOM)
+            .labelKey("devmod.action.telemetry.scan.light_room")
+            .descriptionKey("devmod.action.telemetry.scan.light_room.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Scan/Light Room")
+            .icon(Items.SOUL_LANTERN)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod telemetry scan light <roomId>")
+            .handler(context -> handleCommandPrompt(context, "devmod telemetry scan light ", TelemetryReloadCommand::scanLightRoom))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_SPAWNABILITY)
+            .labelKey("devmod.action.telemetry.spawnability")
+            .descriptionKey("devmod.action.telemetry.spawnability.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Analysis/Spawnability")
+            .icon(Items.SKELETON_SKULL)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod telemetry spawnability <roomId>")
+            .handler(context -> handleCommandPrompt(context, "devmod telemetry spawnability ", TelemetryReloadCommand::checkSpawnability))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_DESIRELINES_DUMP)
+            .labelKey("devmod.action.telemetry.desirelines.dump")
+            .descriptionKey("devmod.action.telemetry.desirelines.dump.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Analysis/Desire Lines")
+            .icon(Items.STRING)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod telemetry desirelines")
+            .handler(context -> handleCommand(context, "devmod telemetry desirelines", TelemetryReloadCommand::dumpDesireLines))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_DESIRELINES_ANALYZE)
+            .labelKey("devmod.action.telemetry.desirelines.analyze")
+            .descriptionKey("devmod.action.telemetry.desirelines.analyze.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Analysis/Desire Lines Room")
+            .icon(Items.SPYGLASS)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod telemetry desirelines <roomId>")
+            .handler(context -> handleCommandPrompt(context, "devmod telemetry desirelines ", TelemetryReloadCommand::analyzeDesireLines))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_DUNGEONS_DUMP)
+            .labelKey("devmod.action.telemetry.dungeons.dump")
+            .descriptionKey("devmod.action.telemetry.dungeons.dump.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Analysis/Dungeons")
+            .icon(Items.DIAMOND_PICKAXE)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod telemetry dungeons")
+            .handler(context -> handleCommand(context, "devmod telemetry dungeons", TelemetryReloadCommand::dumpDungeonRuns))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_DUNGEONS_STATS)
+            .labelKey("devmod.action.telemetry.dungeons.stats")
+            .descriptionKey("devmod.action.telemetry.dungeons.stats.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Analysis/Dungeon Stats")
+            .icon(Items.DIAMOND_ORE)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod telemetry dungeons <id>")
+            .handler(context -> handleCommandPrompt(context, "devmod telemetry dungeons ", TelemetryReloadCommand::getDungeonStats))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_BACKTRACKING_DUMP)
+            .labelKey("devmod.action.telemetry.backtracking.dump")
+            .descriptionKey("devmod.action.telemetry.backtracking.dump.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Analysis/Backtracking")
+            .icon(Items.COMPASS)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod telemetry backtracking")
+            .handler(context -> handleCommand(context, "devmod telemetry backtracking", TelemetryReloadCommand::dumpBacktracking))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_BACKTRACKING_CONFUSING)
+            .labelKey("devmod.action.telemetry.backtracking.confusing")
+            .descriptionKey("devmod.action.telemetry.backtracking.confusing.desc")
+            .category(ActionCategory.TELEMETRY)
+            .menuPath("Root/Telemetry/Analysis/Backtracking Confusing")
+            .icon(Items.REDSTONE_TORCH)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devmod telemetry backtracking confusing")
+            .handler(context -> handleCommand(context, "devmod telemetry backtracking confusing", TelemetryReloadCommand::getMostConfusingRooms))
+            .build());
+    }
+
+    private static void handleCommand(ActionContext context, String command,
+                                      CommandHandler handler) {
+        CommandContext<CommandSourceStack> cmd = context.getCommandContext();
+        if (context.getOrigin() == ActionOrigin.COMMAND && cmd != null) {
+            try {
+                handler.run(cmd);
+            } catch (CommandSyntaxException e) {
+                String message = Objects.requireNonNullElse(e.getMessage(), "Unknown error");
+                context.sendFailure(Component.literal(Objects.requireNonNull(message, "errorMessage")));
+            }
+            return;
+        }
+        context.executeCommand(command);
+    }
+
+    private static void handleCommandPrompt(ActionContext context, String command,
+                                            CommandHandler handler) {
+        CommandContext<CommandSourceStack> cmd = context.getCommandContext();
+        if (context.getOrigin() == ActionOrigin.COMMAND && cmd != null) {
+            try {
+                handler.run(cmd);
+            } catch (CommandSyntaxException e) {
+                String message = Objects.requireNonNullElse(e.getMessage(), "Unknown error");
+                context.sendFailure(Component.literal(Objects.requireNonNull(message, "errorMessage")));
+            }
+            return;
+        }
+        if (!context.openCommandPrompt(command)) {
+            context.executeCommand(command);
+        }
+    }
+
+    @FunctionalInterface
+    private interface CommandHandler {
+        void run(CommandContext<CommandSourceStack> context) throws CommandSyntaxException;
     }
 
     private static int reload(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {

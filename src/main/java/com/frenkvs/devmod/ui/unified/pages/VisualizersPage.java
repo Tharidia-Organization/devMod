@@ -7,6 +7,10 @@ import com.frenkvs.devmod.rendering.SafeSpotVisualizer;
 import com.frenkvs.devmod.rendering.VerticalLevelsVisualizer;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.unified.SettingsCategory;
 import com.frenkvs.devmod.ui.unified.SettingsPage;
@@ -78,7 +82,7 @@ public class VisualizersPage implements SettingsPage {
 
     @Override
     public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
-        Font safeFont = Objects.requireNonNull(font, "font");
+        @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         // Decay slider pulse animations
         if (lightSliderPulse > 0) lightSliderPulse = Math.max(0, lightSliderPulse - 0.05f);
         if (viewDistSliderPulse > 0) viewDistSliderPulse = Math.max(0, viewDistSliderPulse - 0.05f);
@@ -102,7 +106,7 @@ public class VisualizersPage implements SettingsPage {
             int currentY = y - scrollOffset;
 
             // === SECTION: Light Level Overlay ===
-            AxiomRenderer.drawSectionHeader(graphics, safeFont, x, currentY, "Light Level Overlay [L]");
+            AxiomRenderer.drawSectionHeader(graphics, safeFont, x, currentY, "Light Level Overlay");
             currentY += ROW_HEIGHT;
 
             // Light Level toggle
@@ -153,8 +157,8 @@ public class VisualizersPage implements SettingsPage {
             // === SECTION: Heatmaps ===
             int activeCount = countActiveHeatmaps();
             String heatmapTitle = activeCount > 0
-                ? "Heatmaps (" + activeCount + " active) [H to cycle]"
-                : "Heatmaps [H to cycle]";
+                ? "Heatmaps (" + activeCount + " active)"
+                : "Heatmaps";
             AxiomRenderer.drawSectionHeader(graphics, safeFont, x, currentY, heatmapTitle);
 
             // "Disable All" button if any active
@@ -203,12 +207,12 @@ public class VisualizersPage implements SettingsPage {
 
             // Safe Spot Visualizer
             currentY = renderToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
-                    "Safe Spots [C]", "Highlight camping/safe positions",
+                    "Safe Spots", "Highlight camping/safe positions",
                     SafeSpotVisualizer.INSTANCE.isEnabled());
 
             // Vertical Levels
             currentY = renderToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
-                    "Vertical Levels [Y]", "Show room height zones",
+                    "Vertical Levels", "Show room height zones",
                     VerticalLevelsVisualizer.INSTANCE.isEnabled());
 
             // Separator
@@ -261,7 +265,7 @@ public class VisualizersPage implements SettingsPage {
 
             // Hint
             currentY += 8;
-            AxiomRenderer.drawHint(graphics, font, x, currentY, "Keybinds shown in brackets work in-game.");
+            AxiomRenderer.drawHint(graphics, font, x, currentY, "Assign keybinds in Controls for quick access.");
         } finally {
             // Disable scissoring
             graphics.disableScissor();
@@ -364,10 +368,25 @@ public class VisualizersPage implements SettingsPage {
     }
 
     private void disableAllHeatmaps() {
-        for (HeatmapType type : HeatmapType.values()) {
-            HeatmapVisualizer.INSTANCE.setEnabled(type, false);
-        }
+        invokeAction(ActionIds.DEBUG_HEATMAP_CLEAR_ALL);
         UIConstants.Sound.delete();
+    }
+
+    private void invokeAction(String actionId) {
+        ActionRegistry.invoke(actionId, ClientActionContexts.forClient(ActionOrigin.UI));
+    }
+
+    private String heatmapActionId(HeatmapType type) {
+        return switch (type) {
+            case DEATH -> ActionIds.DEBUG_HEATMAP_DEATH_TOGGLE;
+            case MOVEMENT -> ActionIds.DEBUG_HEATMAP_MOVEMENT_TOGGLE;
+            case CAMPING -> ActionIds.DEBUG_HEATMAP_CAMPING_TOGGLE;
+            case STUCK -> ActionIds.DEBUG_HEATMAP_STUCK_TOGGLE;
+            case AGGRO_DROP -> ActionIds.DEBUG_HEATMAP_AGGRO_DROP_TOGGLE;
+            case KITING -> ActionIds.DEBUG_HEATMAP_KITING_TOGGLE;
+            case LIGHT_SPAWNABLE -> ActionIds.DEBUG_HEATMAP_LIGHT_SPAWNABLE_TOGGLE;
+            case LIGHT_DARK -> ActionIds.DEBUG_HEATMAP_LIGHT_DARK_TOGGLE;
+        };
     }
 
     private void renderSlider(GuiGraphics graphics, int x, int y, int width, int height,
@@ -433,7 +452,7 @@ public class VisualizersPage implements SettingsPage {
         // Light Level toggle
         if (isInToggleArea(mouseX, mouseY, contentX, y, rowWidth)) {
             boolean wasEnabled = LightLevelOverlay.INSTANCE.isEnabled();
-            LightLevelOverlay.INSTANCE.toggle();
+            invokeAction(ActionIds.DEBUG_LIGHT_OVERLAY_TOGGLE);
             if (wasEnabled) UIConstants.Sound.toggleOff(); else UIConstants.Sound.toggleOn();
             return true;
         }
@@ -465,7 +484,12 @@ public class VisualizersPage implements SettingsPage {
         for (HeatmapType type : HeatmapType.values()) {
             if (isInToggleArea(mouseX, mouseY, contentX, y, rowWidth)) {
                 boolean wasEnabled = HeatmapVisualizer.INSTANCE.isEnabled(type);
-                HeatmapVisualizer.INSTANCE.toggle(type);
+                String actionId = heatmapActionId(type);
+                if (actionId != null) {
+                    invokeAction(actionId);
+                } else {
+                    HeatmapVisualizer.INSTANCE.toggle(type);
+                }
                 if (wasEnabled) UIConstants.Sound.toggleOff(); else UIConstants.Sound.toggleOn();
                 return true;
             }
@@ -481,7 +505,7 @@ public class VisualizersPage implements SettingsPage {
         // Safe Spot toggle
         if (isInToggleArea(mouseX, mouseY, contentX, y, rowWidth)) {
             boolean wasEnabled = SafeSpotVisualizer.INSTANCE.isEnabled();
-            SafeSpotVisualizer.INSTANCE.toggle();
+            invokeAction(ActionIds.DEBUG_SAFE_SPOTS_TOGGLE);
             if (wasEnabled) UIConstants.Sound.toggleOff(); else UIConstants.Sound.toggleOn();
             return true;
         }
@@ -490,7 +514,7 @@ public class VisualizersPage implements SettingsPage {
         // Vertical Levels toggle
         if (isInToggleArea(mouseX, mouseY, contentX, y, rowWidth)) {
             boolean wasEnabled = VerticalLevelsVisualizer.INSTANCE.isEnabled();
-            VerticalLevelsVisualizer.INSTANCE.toggle();
+            invokeAction(ActionIds.DEBUG_VERTICAL_LEVELS_TOGGLE);
             if (wasEnabled) UIConstants.Sound.toggleOff(); else UIConstants.Sound.toggleOn();
             return true;
         }

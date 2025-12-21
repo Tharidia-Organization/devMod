@@ -1,5 +1,8 @@
 package com.frenkvs.devmod.ui.radial;
 
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ActionKeybindRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -53,7 +56,7 @@ public abstract class RadialAction {
      * Emoji fallback icon
      */
     public String getIconEmoji() {
-        return "●";
+        return "*";
     }
 
     /**
@@ -70,6 +73,14 @@ public abstract class RadialAction {
      */
     @Nullable
     public RadialCategory getSubcategory() {
+        return null;
+    }
+
+    /**
+     * Return backing registry id when this action is registry-backed.
+     */
+    @Nullable
+    public String getRegistryId() {
         return null;
     }
 
@@ -161,6 +172,13 @@ public abstract class RadialAction {
     public static RadialAction subcategory(String name, String description, String emoji,
                                             RadialCategory subcategory) {
         return new SubcategoryAction(name, description, emoji, subcategory);
+    }
+
+    /**
+     * Create an action backed by the central ActionRegistry.
+     */
+    public static RadialAction registry(String actionId) {
+        return new RegistryAction(actionId);
     }
 
     // ============================================================
@@ -448,7 +466,7 @@ public abstract class RadialAction {
 
         @Override
         public Component getLabel() {
-            return Objects.requireNonNull(Component.literal(Objects.requireNonNull(name) + " →"));
+            return Objects.requireNonNull(Component.literal(Objects.requireNonNull(name) + " ->"));
         }
 
         @Override
@@ -469,6 +487,92 @@ public abstract class RadialAction {
         @Override
         public boolean isSubcategoryAction() {
             return true;
+        }
+    }
+
+    /**
+     * Registry-backed action wrapper.
+     */
+    private static class RegistryAction extends RadialAction {
+        private final String actionId;
+
+        RegistryAction(String actionId) {
+            this.actionId = actionId;
+        }
+
+        @Override
+        public void execute() {
+            ActionRegistry.invoke(actionId, ClientActionContexts.forRadial());
+        }
+
+        @Override
+        public Component getLabel() {
+            com.frenkvs.devmod.actions.RadialAction action = ActionRegistry.getAction(actionId);
+            if (action == null) {
+                return Component.literal(Objects.requireNonNull(actionId, "actionId"));
+            }
+            return action.getLabel();
+        }
+
+        @Override
+        public String getDescription() {
+            com.frenkvs.devmod.actions.RadialAction action = ActionRegistry.getAction(actionId);
+            if (action == null) {
+                return actionId;
+            }
+            String description = action.getDescription().getString();
+            String commandHint = action.getCommandHint();
+            if (commandHint != null && !commandHint.isBlank()) {
+                description += "\n§7Command: §f/" + commandHint;
+            }
+            ActionKeybindRegistry.KeybindHint keybindHint = ActionKeybindRegistry.getKeybindHint(actionId);
+            if (keybindHint != null) {
+                String keyName = keybindHint.keyMapping().getTranslatedKeyMessage().getString();
+                String modifier = keybindHint.modifierHint();
+                String keyLabel = modifier != null && !modifier.isBlank()
+                    ? modifier + "+" + keyName
+                    : keyName;
+                description += "\n§7Key: §f" + keyLabel;
+            }
+            return description;
+        }
+
+        @Override
+        public boolean isAvailable() {
+            com.frenkvs.devmod.actions.RadialAction action = ActionRegistry.getAction(actionId);
+            if (action == null) {
+                return false;
+            }
+            return action.getPrecondition().test(ClientActionContexts.forRadial());
+        }
+
+        @Override
+        public boolean isToggle() {
+            com.frenkvs.devmod.actions.RadialAction action = ActionRegistry.getAction(actionId);
+            return action != null && action.isToggle();
+        }
+
+        @Override
+        public boolean isActive() {
+            com.frenkvs.devmod.actions.RadialAction action = ActionRegistry.getAction(actionId);
+            if (action == null) {
+                return false;
+            }
+            return action.isActive(ClientActionContexts.forRadial());
+        }
+
+        @Override
+        public ItemStack getIconStack() {
+            com.frenkvs.devmod.actions.RadialAction action = ActionRegistry.getAction(actionId);
+            if (action == null) {
+                return null;
+            }
+            return action.getIconStack();
+        }
+
+        @Override
+        public String getRegistryId() {
+            return actionId;
         }
     }
 }

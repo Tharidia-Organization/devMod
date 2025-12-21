@@ -333,6 +333,12 @@ public class TelemetryService {
                 DuckDBTelemetryService.INSTANCE.logFight(
                     result.room(),
                     result.worldId(),
+                    result.templateId(),
+                    result.templateVersion(),
+                    result.policyId(),
+                    result.policyVersion(),
+                    result.arenaId(),
+                    result.sessionId(),
                     result.startInstant(),
                     result.endInstant(),
                     result.durationMs(),
@@ -728,6 +734,13 @@ public class TelemetryService {
 
         Path file = telemetryDir.resolve(fileName);
         asyncWriter.queueWrite(file, line);
+    }
+
+    /**
+     * Append action invocation telemetry line.
+     */
+    public void appendActionLine(String line) {
+        appendLine("actions.ndjson", line);
     }
 
     /**

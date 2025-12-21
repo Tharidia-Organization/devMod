@@ -7,6 +7,7 @@ import com.devmod.arena.concurrency.BuildPermit;
 import com.devmod.arena.concurrency.TemplateLockManager;
 import com.devmod.arena.metrics.MetricsCompatibilityLayer;
 import com.devmod.arena.monitor.MsptMonitor;
+import com.devmod.arena.monitoring.BuildOutcomeMonitor;
 import com.devmod.arena.performance.PerformanceBudgetEnforcer;
 import com.devmod.arena.performance.PerformanceBudgetEnforcer.PerformanceAction;
 import com.devmod.arena.registry.ArenaTemplate;
@@ -484,12 +485,14 @@ public class ArenaBuilder {
                 endEventData.put("policyId", policyId);
                 endEventData.put("policyVersion", policyVersion);
             }
-            telemetry.emit("arena.build.end", endEventData);
+        telemetry.emit("arena.build.end", endEventData);
 
-            LOGGER.info("Build completed for '{}' in {}ms: {} blocks",
-                template.id(), duration, transaction.getBlockCount());
+        LOGGER.info("Build completed for '{}' in {}ms: {} blocks",
+            template.id(), duration, transaction.getBlockCount());
 
-            return BuildResult.success(arenaId, template.id(), transaction.getBlockCount(), duration);
+        recordBuildOutcome(true, false, template.id());
+
+        return BuildResult.success(arenaId, template.id(), transaction.getBlockCount(), duration);
 
         } catch (BuildLimitExceededException e) {
             if (transaction == null) {
@@ -572,7 +575,16 @@ public class ArenaBuilder {
         }
         telemetry.emit("arena.build.fail", failEventData);
 
+        recordBuildOutcome(false, rollbackResult.blocksReverted() > 0, template.id());
+
         return BuildResult.failure(error.getMessage(), rollbackResult);
+    }
+
+    private void recordBuildOutcome(boolean success, boolean rolledBack, String templateId) {
+        ArenaTemplateConfig.AlertThresholds thresholds = configSnapshot != null
+            ? configSnapshot.alertThresholds()
+            : ArenaTemplateConfig.AlertThresholds.defaults();
+        BuildOutcomeMonitor.recordBuild(thresholds, success, rolledBack, templateId);
     }
 
     // === Build Steps ===
@@ -949,7 +961,7 @@ public class ArenaBuilder {
     }
 
     private void finalizePerformanceMonitoring(ArenaTemplate template, UUID arenaId) {
-        PerformanceBudgetEnforcer enforcer = performanceEnforcer;
+        @Nullable PerformanceBudgetEnforcer enforcer = performanceEnforcer;
         if (enforcer == null) {
             return;
         }
@@ -977,9 +989,9 @@ public class ArenaBuilder {
     }
 
     private void maybeCheckPerformance(BuildTransaction tx) {
-        Supplier<Double> supplier = msptSupplier;
-        MsptMonitor monitor = msptMonitor;
-        PerformanceBudgetEnforcer enforcer = performanceEnforcer;
+        @Nullable Supplier<Double> supplier = msptSupplier;
+        @Nullable MsptMonitor monitor = msptMonitor;
+        @Nullable PerformanceBudgetEnforcer enforcer = performanceEnforcer;
         if (enforcer == null || monitor == null || supplier == null) {
             return;
         }

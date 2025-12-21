@@ -4,11 +4,13 @@ import com.frenkvs.devmod.WeaponConfigManager;
 import com.frenkvs.devmod.WeaponStats;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
-import com.frenkvs.devmod.ui.editor.ItemEditorScreen;
-import com.frenkvs.devmod.ui.editor.EditorStartTab;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.unified.SettingsCategory;
 import com.frenkvs.devmod.ui.unified.SettingsPage;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -116,9 +118,8 @@ public class CombatSettingsPage implements SettingsPage {
             openEditorButton
                 .enabled(hasWeapon)
                 .onClick(() -> {
-                    if (!heldItem.isEmpty()) {
-                        Minecraft.getInstance().setScreen(new ItemEditorScreen(heldItem, EditorStartTab.WEAPON));
-                    }
+                    ActionRegistry.invoke(ActionIds.UI_ITEM_EDITOR_OPEN_WEAPON,
+                        ClientActionContexts.forClient(ActionOrigin.UI));
                 });
             openEditorButton.render(graphics, x, currentY, buttonWidth, buttonHeight, mouseX, mouseY);
             currentY += buttonHeight + 8;

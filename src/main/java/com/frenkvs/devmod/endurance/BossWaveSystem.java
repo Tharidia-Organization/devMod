@@ -1,5 +1,10 @@
 package com.frenkvs.devmod.endurance;
 
+import com.devmod.arena.api.ArenaHandle;
+import com.devmod.arena.registry.ArenaTemplate;
+import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.arena.registry.SpawnSlotValidator;
+import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -332,6 +337,7 @@ public class BossWaveSystem {
         ArenaManager.Arena arena = session.getArena();
         ServerLevel level = Objects.requireNonNull(arena.getLevel());
         BlockPos center = Objects.requireNonNull(arena.getCenter());
+        ArenaHandle handle = session.getArenaHandle();
 
         // Get multiplayer scaling parameters
         int playerCount = session.getPlayerCount();
@@ -345,14 +351,19 @@ public class BossWaveSystem {
         BossFight fight = new BossFight(bossId, arena.getId(), archetype, waveNumber, quest.getMobId());
 
         // Spawn boss with multiplayer scaling
-        Mob boss = spawnBoss(arena, quest.getMobConfig(), archetype, waveNumber, quest.getQuestId(), playerCount, questType);
+        BlockPos spawnPos = resolveBossSpawnPosition(arena, handle, quest.getQuestId(), waveNumber);
+        Mob boss = spawnBoss(arena, spawnPos, quest.getMobConfig(), archetype, waveNumber, quest.getQuestId(), playerCount, questType, handle);
         if (boss != null) {
             fight.setBossEntity(boss);
             fight.setMaxHealth(boss.getMaxHealth());
             activeBosses.put(arena.getId(), fight);
+            if (handle != null && spawnPos != null) {
+                EnduranceTelemetryService.INSTANCE.recordSpawnHeatmap(
+                    quest.getQuestId(), handle, spawnPos);
+            }
 
             // Announce boss
-            announceBoss(level, center, archetype, waveNumber);
+            announceBoss(level, spawnPos != null ? spawnPos : center, archetype, waveNumber);
 
             // Telemetry: record boss wave start
             EnduranceTelemetryService.INSTANCE.recordBossWaveStart(
@@ -380,9 +391,12 @@ public class BossWaveSystem {
     /**
      * Spawn the boss mob with enhanced stats and multiplayer scaling.
      */
-    private Mob spawnBoss(ArenaManager.Arena arena, EnduranceQuestRegistry.MobQuestConfig mobConfig,
+    private Mob spawnBoss(ArenaManager.Arena arena,
+                          @javax.annotation.Nullable BlockPos spawnPos,
+                          EnduranceQuestRegistry.MobQuestConfig mobConfig,
                           BossArchetype archetype, int waveNumber, UUID questId,
-                          int playerCount, QuestType questType) {
+                          int playerCount, QuestType questType,
+                          @javax.annotation.Nullable ArenaHandle handle) {
         ServerLevel level = Objects.requireNonNull(arena.getLevel());
         BlockPos center = Objects.requireNonNull(arena.getCenter());
         BossArchetype safeArchetype = Objects.requireNonNull(archetype);
@@ -393,7 +407,8 @@ public class BossWaveSystem {
         if (!(entity instanceof Mob mob)) return null;
 
         // Position at center
-        mob.setPos(center.getX() + 0.5, center.getY(), center.getZ() + 0.5);
+        BlockPos resolvedPos = spawnPos != null ? spawnPos : center;
+        mob.setPos(resolvedPos.getX() + 0.5, resolvedPos.getY(), resolvedPos.getZ() + 0.5);
 
         // Apply boss stats with multiplayer scaling
         float waveScaling = 1.0f + (waveNumber * 0.1f);
@@ -440,19 +455,129 @@ public class BossWaveSystem {
         tag.putString("endurance_archetype", Objects.requireNonNull(safeArchetype.name()));
         tag.putUUID("endurance_arena_id", arenaId);
         tag.putUUID("endurance_quest_id", safeQuestId);
+        if (handle != null) {
+            String templateId = handle.templateId();
+            if (templateId != null) {
+                tag.putString("endurance_template_id", templateId);
+            }
+            tag.putInt("endurance_template_version", handle.templateVersion());
+            String policyId = handle.policyId();
+            if (policyId != null) {
+                tag.putString("endurance_policy_id", policyId);
+            }
+            tag.putInt("endurance_policy_version", handle.policyVersion());
+        }
 
         // Add spawn effects
         level.addFreshEntity(mob);
 
         // Spawn particles
         for (int i = 0; i < 50; i++) {
-            double x = center.getX() + random.nextGaussian() * 2;
-            double y = center.getY() + random.nextDouble() * 3;
-            double z = center.getZ() + random.nextGaussian() * 2;
+            double x = resolvedPos.getX() + random.nextGaussian() * 2;
+            double y = resolvedPos.getY() + random.nextDouble() * 3;
+            double z = resolvedPos.getZ() + random.nextGaussian() * 2;
             level.sendParticles(Objects.requireNonNull(ParticleTypes.FLAME), x, y, z, 1, 0, 0.1, 0, 0.05);
         }
 
         return mob;
+    }
+
+    private BlockPos resolveBossSpawnPosition(ArenaManager.Arena arena,
+                                              @javax.annotation.Nullable ArenaHandle handle,
+                                              UUID questId,
+                                              int waveNumber) {
+        BlockPos center = Objects.requireNonNull(arena.getCenter());
+        if (handle == null) {
+            EnduranceTelemetryService.INSTANCE.recordSpawnFallback(
+                questId,
+                waveNumber,
+                "boss_fallback_center",
+                null,
+                "missing_handle"
+            );
+            return center;
+        }
+        ArenaTemplateRegistry registry = DevMod.getArenaTemplateRegistry();
+        if (registry == null) {
+            EnduranceTelemetryService.INSTANCE.recordSpawnFallback(
+                questId,
+                waveNumber,
+                "boss_fallback_center",
+                handle.templateId(),
+                "registry_unavailable"
+            );
+            return center;
+        }
+        ArenaTemplate template = registry.get(handle.templateId()).orElse(null);
+        if (template == null || template.spawnSlots() == null || template.spawnSlots().isEmpty()) {
+            EnduranceTelemetryService.INSTANCE.recordSpawnFallback(
+                questId,
+                waveNumber,
+                "boss_fallback_center",
+                handle.templateId(),
+                "missing_slots"
+            );
+            return center;
+        }
+
+        List<ArenaTemplate.SpawnSlot> bossSlots = new ArrayList<>();
+        List<ArenaTemplate.SpawnSlot> mobSlots = new ArrayList<>();
+        for (ArenaTemplate.SpawnSlot slot : template.spawnSlots()) {
+            if (slot.tags() == null) {
+                continue;
+            }
+            if (slot.tags().contains("boss")) {
+                bossSlots.add(slot);
+            } else if (slot.tags().contains("mob")) {
+                mobSlots.add(slot);
+            }
+        }
+
+        List<ArenaTemplate.SpawnSlot> candidates = !bossSlots.isEmpty() ? bossSlots : mobSlots;
+        if (candidates.isEmpty()) {
+            EnduranceTelemetryService.INSTANCE.recordSpawnFallback(
+                questId,
+                waveNumber,
+                "boss_fallback_center",
+                handle.templateId(),
+                "no_tagged_slots"
+            );
+            return center;
+        }
+
+        Collections.shuffle(candidates, random);
+        SpawnSlotValidator validator = new SpawnSlotValidator();
+        for (ArenaTemplate.SpawnSlot slot : candidates) {
+            int[] pos = slot.pos();
+            if (pos == null || pos.length != 3) {
+                continue;
+            }
+            int x = handle.originX() + pos[0];
+            int y = resolveSpawnY(slot, template, handle.originY());
+            int z = handle.originZ() + pos[2];
+            BlockPos candidate = new BlockPos(x, y, z);
+            if (validator.validateAtRuntime(template.id(), slot, arena.getLevel(), candidate)) {
+                return candidate;
+            }
+        }
+
+        EnduranceTelemetryService.INSTANCE.recordSpawnFallback(
+            questId,
+            waveNumber,
+            "boss_fallback_center",
+            handle.templateId(),
+            "runtime_validation_failed"
+        );
+        return center;
+    }
+
+    private int resolveSpawnY(ArenaTemplate.SpawnSlot slot, ArenaTemplate template, int originY) {
+        int baseY = slot.pos() != null && slot.pos().length == 3 ? slot.pos()[1] : 0;
+        int floorY = template.floor() != null ? template.floor().y() : originY;
+        if (slot.yMode() == ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR) {
+            return floorY + baseY;
+        }
+        return baseY;
     }
 
     /**
@@ -694,6 +819,25 @@ public class BossWaveSystem {
                 CompoundTag tag = minionMob.getPersistentData();
                 tag.putBoolean("endurance_minion", true);
                 tag.putUUID("endurance_arena_id", fightArenaId);
+                CompoundTag bossTag = boss.getPersistentData();
+                if (bossTag.contains("endurance_template_id")) {
+                    String templateId = bossTag.getString("endurance_template_id");
+                    if (templateId != null) {
+                        tag.putString("endurance_template_id", templateId);
+                    }
+                }
+                if (bossTag.contains("endurance_template_version")) {
+                    tag.putInt("endurance_template_version", bossTag.getInt("endurance_template_version"));
+                }
+                if (bossTag.contains("endurance_policy_id")) {
+                    String policyId = bossTag.getString("endurance_policy_id");
+                    if (policyId != null) {
+                        tag.putString("endurance_policy_id", policyId);
+                    }
+                }
+                if (bossTag.contains("endurance_policy_version")) {
+                    tag.putInt("endurance_policy_version", bossTag.getInt("endurance_policy_version"));
+                }
 
                 level.addFreshEntity(minionMob);
                 fight.activeMinions.add(minionMob.getUUID());

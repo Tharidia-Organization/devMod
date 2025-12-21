@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.endurance;
 
+import com.devmod.arena.policy.ArenaPolicy;
 import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -224,9 +225,25 @@ public class PerkSystem {
         // Applied attribute modifiers (for cleanup)
         private final List<AttributeModifier> appliedModifiers = new ArrayList<>();
 
+        private Set<String> suggestedPerks = Set.of();
+        private Set<String> excludedPerks = Set.of();
+        private Set<String> requiredPerks = Set.of();
+
         public PerkSession(UUID playerId, UUID questId) {
             this.playerId = playerId;
             this.questId = questId;
+        }
+
+        public void applyBindings(@javax.annotation.Nullable ArenaPolicy.PerkBindings bindings) {
+            if (bindings == null) {
+                this.suggestedPerks = Set.of();
+                this.excludedPerks = Set.of();
+                this.requiredPerks = Set.of();
+                return;
+            }
+            this.suggestedPerks = bindings.suggested() != null ? Set.copyOf(bindings.suggested()) : Set.of();
+            this.excludedPerks = bindings.excluded() != null ? Set.copyOf(bindings.excluded()) : Set.of();
+            this.requiredPerks = bindings.required() != null ? Set.copyOf(bindings.required()) : Set.of();
         }
 
         public boolean hasPerk(String perkId) {
@@ -248,6 +265,32 @@ public class PerkSystem {
         public int getTotalPerksAcquired() {
             return acquiredPerks.values().stream().mapToInt(Integer::intValue).sum();
         }
+
+        public boolean isSuggested(String perkId) {
+            return perkId != null && suggestedPerks.contains(perkId);
+        }
+
+        public boolean isExcluded(String perkId) {
+            return perkId != null && excludedPerks.contains(perkId);
+        }
+
+        public boolean isRequired(String perkId) {
+            return perkId != null && requiredPerks.contains(perkId);
+        }
+
+        public boolean hasRequiredPending() {
+            if (requiredPerks.isEmpty()) {
+                return false;
+            }
+            for (String required : requiredPerks) {
+                if (!hasPerk(required)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public Set<String> getRequiredPerks() { return requiredPerks; }
 
         // Stat getters and modifiers
         public float getDamageMultiplier() { return damageMultiplier; }
@@ -501,7 +544,14 @@ public class PerkSystem {
      * Start a new perk session for a player.
      */
     public PerkSession startSession(UUID playerId, UUID questId) {
+        return startSession(playerId, questId, null);
+    }
+
+    public PerkSession startSession(UUID playerId, UUID questId, @javax.annotation.Nullable ArenaPolicy policy) {
         PerkSession session = new PerkSession(playerId, questId);
+        if (policy != null && policy.perkBindings() != null) {
+            session.applyBindings(policy.perkBindings());
+        }
         activeSessions.put(playerId, session);
         LOGGER.debug("[PerkSystem] Started session for player {}", playerId);
         return session;
@@ -590,11 +640,15 @@ public class PerkSystem {
 
         List<Perk> choices = new ArrayList<>();
         List<Perk> availablePerks = getAvailablePerks(session, waveNumber);
+        List<Perk> requiredPerks = getRequiredPerksToOffer(session, waveNumber);
+        if (!requiredPerks.isEmpty()) {
+            availablePerks = requiredPerks;
+        }
 
         // Select 3 random perks weighted by tier
         int attempts = 0;
         while (choices.size() < 3 && attempts < 100 && !availablePerks.isEmpty()) {
-            Perk selected = selectWeightedPerk(availablePerks, waveNumber);
+            Perk selected = selectWeightedPerk(availablePerks, waveNumber, session);
             if (selected != null && !choices.contains(selected)) {
                 choices.add(selected);
                 availablePerks.remove(selected);
@@ -624,6 +678,8 @@ public class PerkSystem {
         List<Perk> available = new ArrayList<>();
 
         for (Perk perk : allPerks.values()) {
+            if (session.isExcluded(perk.id)) continue;
+
             // Check if already at max stacks
             if (!perk.stackable && session.hasPerk(perk.id)) continue;
             if (perk.stackable && session.getPerkStacks(perk.id) >= perk.maxStacks) continue;
@@ -666,10 +722,40 @@ public class PerkSystem {
         return available;
     }
 
+    private List<Perk> getRequiredPerksToOffer(PerkSession session, int waveNumber) {
+        if (!session.hasRequiredPending()) {
+            return List.of();
+        }
+        List<Perk> required = new ArrayList<>();
+        for (String perkId : session.getRequiredPerks()) {
+            if (session.hasPerk(perkId)) {
+                continue;
+            }
+            Perk perk = allPerks.get(perkId);
+            if (perk == null) {
+                LOGGER.warn("[PerkSystem] Required perk '{}' not found", perkId);
+                continue;
+            }
+            if (perk.incompatiblePerks.stream().anyMatch(session::hasPerk)) {
+                LOGGER.warn("[PerkSystem] Required perk '{}' incompatible with existing perks", perkId);
+                continue;
+            }
+            if (!perk.requiredPerks.isEmpty()) {
+                boolean hasAll = perk.requiredPerks.stream().allMatch(session::hasPerk);
+                if (!hasAll) {
+                    LOGGER.warn("[PerkSystem] Required perk '{}' missing prerequisites", perkId);
+                    continue;
+                }
+            }
+            required.add(perk);
+        }
+        return required;
+    }
+
     /**
      * Select a perk weighted by tier rarity.
      */
-    private Perk selectWeightedPerk(List<Perk> perks, int waveNumber) {
+    private Perk selectWeightedPerk(List<Perk> perks, int waveNumber, @javax.annotation.Nullable PerkSession session) {
         if (perks.isEmpty()) return null;
 
         // Calculate total weight
@@ -678,6 +764,9 @@ public class PerkSystem {
             // Higher waves increase rare perk chances
             int weight = perk.tier.weight;
             if (waveNumber >= 5) weight *= (perk.tier.ordinal() + 1);
+            if (session != null && session.isSuggested(perk.id)) {
+                weight = (int) Math.ceil(weight * 1.5);
+            }
             totalWeight += weight;
         }
 
@@ -687,6 +776,9 @@ public class PerkSystem {
         for (Perk perk : perks) {
             int weight = perk.tier.weight;
             if (waveNumber >= 5) weight *= (perk.tier.ordinal() + 1);
+            if (session != null && session.isSuggested(perk.id)) {
+                weight = (int) Math.ceil(weight * 1.5);
+            }
             cumulative += weight;
             if (roll < cumulative) {
                 return perk;

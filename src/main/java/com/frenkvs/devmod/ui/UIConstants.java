@@ -3,9 +3,11 @@ package com.frenkvs.devmod.ui;
 import com.frenkvs.devmod.ui.editor.core.ThemeManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.sounds.SoundEvents;
 
 import java.util.Objects;
+import javax.annotation.Nonnull;
 
 /**
  * Design System - Costanti UI unificate per DevMod.
@@ -293,8 +295,8 @@ public final class UIConstants {
         private static void playSound(net.minecraft.sounds.SoundEvent sound, float volume, float pitch) {
             Minecraft mc = Minecraft.getInstance();
             if (mc != null && mc.getSoundManager() != null) {
-                var safeSound = Objects.requireNonNull(sound, "sound");
-                var soundInstance = Objects.requireNonNull(
+                @Nonnull net.minecraft.sounds.SoundEvent safeSound = Objects.requireNonNull(sound, "sound");
+                @Nonnull SoundInstance soundInstance = Objects.requireNonNull(
                     SimpleSoundInstance.forUI(safeSound, pitch, volume), "soundInstance");
                 mc.getSoundManager().play(soundInstance);
             }

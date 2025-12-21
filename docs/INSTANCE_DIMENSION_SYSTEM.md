@@ -4,6 +4,8 @@
 
 Sistema per creare dimensioni temporanee isolate per le Endurance Quest. Ogni istanza viene generata on-demand, ospita una o più sessioni di quest, e viene **completamente distrutta** al termine.
 
+Nota: la costruzione dell'arena usa il sistema Arena Template (L1/L2). Vedi `docs/arena-template-rework/TODO_ARENA_TEMPLATE.md`.
+
 ### Obiettivi
 - **Zero dati residui**: Istanza cancellata = nessun file/chunk rimasto
 - **Isolamento totale**: Ogni quest in dimensione separata
@@ -115,9 +117,9 @@ Player richiede quest
         ▼
 ┌───────────────────────────────────────┐
 │ 6. Genera Arena (Async)               │
-│    - Force-load chunks centrali       │
-│    - Piazza struttura arena           │
-│    - Spawn point setup                │
+│    - Resolve template/policy          │
+│    - TemplateArenaBuilder build       │
+│    - Spawn point setup (ArenaHandle)  │
 │    - Stato istanza → READY            │
 └───────────────────────────────────────┘
         │
@@ -717,7 +719,7 @@ public class InstanceSystemConfig {
 
 8. **Integration with Existing Quest System**
    - Modify EnduranceQuestManager
-   - Update ArenaManager
+   - Integrate Arena Template system (TemplateArenaBuilder)
 
 9. **Multiplayer/Party**
    - Party system

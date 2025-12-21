@@ -6,6 +6,8 @@
 **Coverage aree**: State machine, data consistency, recovery, concurrency, edge cases
 **Gap identificati**: Test di integrazione server-side, GameTest, scenari multiplayer reali
 
+Nota: per test specifici su Arena Template (build/rollback/validation/telemetria) vedi `docs/arena-template-rework/TODO_ARENA_TEMPLATE.md`.
+
 ---
 
 ## 1. Mappa dell'Esperienza Utente

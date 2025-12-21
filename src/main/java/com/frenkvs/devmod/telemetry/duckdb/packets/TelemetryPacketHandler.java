@@ -147,10 +147,17 @@ public class TelemetryPacketHandler {
     private void processCombatHit(ServerPlayer player, long timestamp, String jsonData) {
         LOGGER.trace("[TelemetryPacket] Combat hit from {}", player.getName().getString());
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
+        EnduranceContext ctx = getEnduranceContext(json);
 
         DuckDBTelemetryService.INSTANCE.logHit(
             getStringOrNull(json, "room"),
             getStringOrNull(json, "world"),
+            ctx.templateId,
+            ctx.templateVersion,
+            ctx.policyId,
+            ctx.policyVersion,
+            ctx.arenaId,
+            ctx.sessionId,
             getStringOrNull(json, "attackerName"),
             getStringOrNull(json, "attackerType"),
             getStringOrNull(json, "targetName"),
@@ -173,10 +180,17 @@ public class TelemetryPacketHandler {
     private void processCombatDeath(ServerPlayer player, long timestamp, String jsonData) {
         LOGGER.trace("[TelemetryPacket] Combat death from {}", player.getName().getString());
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
+        EnduranceContext ctx = getEnduranceContext(json);
 
         DuckDBTelemetryService.INSTANCE.logDeath(
             getStringOrNull(json, "room"),
             getStringOrNull(json, "world"),
+            ctx.templateId,
+            ctx.templateVersion,
+            ctx.policyId,
+            ctx.policyVersion,
+            ctx.arenaId,
+            ctx.sessionId,
             getStringOrNull(json, "targetName"),
             getStringOrNull(json, "targetType"),
             getStringOrNull(json, "cause"),
@@ -188,10 +202,17 @@ public class TelemetryPacketHandler {
     private void processCombatHeal(ServerPlayer player, long timestamp, String jsonData) {
         LOGGER.trace("[TelemetryPacket] Combat heal from {}", player.getName().getString());
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
+        EnduranceContext ctx = getEnduranceContext(json);
 
         DuckDBTelemetryService.INSTANCE.logHeal(
             getStringOrNull(json, "room"),
             getStringOrNull(json, "world"),
+            ctx.templateId,
+            ctx.templateVersion,
+            ctx.policyId,
+            ctx.policyVersion,
+            ctx.arenaId,
+            ctx.sessionId,
             getStringOrNull(json, "targetName"),
             getStringOrNull(json, "targetType"),
             json.has("healAmount") ? json.get("healAmount").getAsDouble() : 0,
@@ -204,10 +225,17 @@ public class TelemetryPacketHandler {
     private void processCombatSpawn(ServerPlayer player, long timestamp, String jsonData) {
         LOGGER.trace("[TelemetryPacket] Combat spawn from {}", player.getName().getString());
         JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
+        EnduranceContext ctx = getEnduranceContext(json);
 
         DuckDBTelemetryService.INSTANCE.logSpawn(
             getStringOrNull(json, "room"),
             getStringOrNull(json, "world"),
+            ctx.templateId,
+            ctx.templateVersion,
+            ctx.policyId,
+            ctx.policyVersion,
+            ctx.arenaId,
+            ctx.sessionId,
             getStringOrNull(json, "entityName"),
             getStringOrNull(json, "entityType"),
             getStringOrNull(json, "reason"),
@@ -350,7 +378,13 @@ public class TelemetryPacketHandler {
                 getStringOrNull(json, "questType"),
                 json.has("totalWaves") ? json.get("totalWaves").getAsInt() : 0,
                 json.has("isEndless") && json.get("isEndless").getAsBoolean(),
-                json.has("playerCount") ? json.get("playerCount").getAsInt() : 1
+                json.has("playerCount") ? json.get("playerCount").getAsInt() : 1,
+                getStringOrNull(json, "templateId"),
+                json.has("templateVersion") ? json.get("templateVersion").getAsInt() : null,
+                getStringOrNull(json, "policyId"),
+                json.has("policyVersion") ? json.get("policyVersion").getAsInt() : null,
+                json.has("instanceId") ? UUID.fromString(json.get("instanceId").getAsString()) : null,
+                json.has("arenaId") ? UUID.fromString(json.get("arenaId").getAsString()) : null
             );
         } else if ("end".equals(eventType)) {
             long startTs = json.has("startTimestamp") ? json.get("startTimestamp").getAsLong() : timestamp;
@@ -372,7 +406,20 @@ public class TelemetryPacketHandler {
                 json.has("tokensEarned") ? json.get("tokensEarned").getAsInt() : 0,
                 json.has("prestigeEarned") ? json.get("prestigeEarned").getAsInt() : 0,
                 json.has("bloodGemsEarned") ? json.get("bloodGemsEarned").getAsInt() : 0,
-                json.has("noDamageWaves") ? json.get("noDamageWaves").getAsInt() : 0
+                json.has("noDamageWaves") ? json.get("noDamageWaves").getAsInt() : 0,
+                getStringOrNull(json, "templateId"),
+                json.has("templateVersion") ? json.get("templateVersion").getAsInt() : null,
+                getStringOrNull(json, "policyId"),
+                json.has("policyVersion") ? json.get("policyVersion").getAsInt() : null,
+                json.has("instanceId") ? UUID.fromString(json.get("instanceId").getAsString()) : null,
+                json.has("arenaId") ? UUID.fromString(json.get("arenaId").getAsString()) : null,
+                json.has("countdownStarted") ? json.get("countdownStarted").getAsInt() : null,
+                json.has("countdownCancelled") ? json.get("countdownCancelled").getAsInt() : null,
+                json.has("giveupDuringRespawn") ? json.get("giveupDuringRespawn").getAsInt() : null,
+                json.has("inventoryRestoreSuccess") ? json.get("inventoryRestoreSuccess").getAsInt() : null,
+                json.has("inventoryRestoreFallback") ? json.get("inventoryRestoreFallback").getAsInt() : null,
+                json.has("externalDeathRespawnCount") ? json.get("externalDeathRespawnCount").getAsInt() : null,
+                json.has("waveBlockedDetected") ? json.get("waveBlockedDetected").getAsInt() : null
             );
         }
     }
@@ -384,6 +431,7 @@ public class TelemetryPacketHandler {
         UUID sessionId = json.has("sessionId") ? UUID.fromString(json.get("sessionId").getAsString()) : null;
         if (sessionId == null) return;
 
+        EnduranceContext ctx = getEnduranceContext(json);
         String eventType = getStringOrNull(json, "eventType");
         int waveNumber = json.has("waveNumber") ? json.get("waveNumber").getAsInt() : 0;
 
@@ -398,7 +446,12 @@ public class TelemetryPacketHandler {
                 json.has("mobCount") ? json.get("mobCount").getAsInt() : 0,
                 json.has("playerCount") ? json.get("playerCount").getAsInt() : 1,
                 getStringOrNull(json, "questType"),
-                modifiers
+                modifiers,
+                ctx.templateId,
+                ctx.templateVersion,
+                ctx.policyId,
+                ctx.policyVersion,
+                ctx.arenaId
             );
         } else if ("complete".equals(eventType)) {
             DuckDBTelemetryService.INSTANCE.logWaveComplete(
@@ -407,7 +460,12 @@ public class TelemetryPacketHandler {
                 json.has("mobsKilled") ? json.get("mobsKilled").getAsInt() : 0,
                 json.has("durationMs") ? json.get("durationMs").getAsLong() : 0,
                 json.has("noDamage") && json.get("noDamage").getAsBoolean(),
-                json.has("killsPerSecond") ? json.get("killsPerSecond").getAsDouble() : 0
+                json.has("killsPerSecond") ? json.get("killsPerSecond").getAsDouble() : 0,
+                ctx.templateId,
+                ctx.templateVersion,
+                ctx.policyId,
+                ctx.policyVersion,
+                ctx.arenaId
             );
         }
     }
@@ -419,13 +477,19 @@ public class TelemetryPacketHandler {
         UUID sessionId = json.has("sessionId") ? UUID.fromString(json.get("sessionId").getAsString()) : null;
         if (sessionId == null) return;
 
+        EnduranceContext ctx = getEnduranceContext(json);
         DuckDBTelemetryService.INSTANCE.logWaveKill(
             sessionId,
             json.has("waveNumber") ? json.get("waveNumber").getAsInt() : 0,
             getStringOrNull(json, "mobType"),
             json.has("isElite") && json.get("isElite").getAsBoolean(),
             getStringOrNull(json, "killerWeapon"),
-            json.has("damageDealt") ? json.get("damageDealt").getAsDouble() : 0
+            json.has("damageDealt") ? json.get("damageDealt").getAsDouble() : 0,
+            ctx.templateId,
+            ctx.templateVersion,
+            ctx.policyId,
+            ctx.policyVersion,
+            ctx.arenaId
         );
     }
 
@@ -436,6 +500,7 @@ public class TelemetryPacketHandler {
         UUID sessionId = json.has("sessionId") ? UUID.fromString(json.get("sessionId").getAsString()) : null;
         if (sessionId == null) return;
 
+        EnduranceContext ctx = getEnduranceContext(json);
         String eventType = getStringOrNull(json, "eventType");
 
         if ("milestone".equals(eventType)) {
@@ -445,7 +510,12 @@ public class TelemetryPacketHandler {
                 json.has("milestone") ? json.get("milestone").getAsInt() : 0,
                 json.has("pointsEarned") ? json.get("pointsEarned").getAsInt() : 0,
                 json.has("styleEarned") ? json.get("styleEarned").getAsInt() : 0,
-                getStringOrNull(json, "rank")
+                getStringOrNull(json, "rank"),
+                ctx.templateId,
+                ctx.templateVersion,
+                ctx.policyId,
+                ctx.policyVersion,
+                ctx.arenaId
             );
         } else if ("break".equals(eventType)) {
             DuckDBTelemetryService.INSTANCE.logComboBreak(
@@ -454,7 +524,12 @@ public class TelemetryPacketHandler {
                 json.has("comboLost") ? json.get("comboLost").getAsInt() : 0,
                 getStringOrNull(json, "previousRank"),
                 getStringOrNull(json, "newRank"),
-                json.has("damageTaken") ? json.get("damageTaken").getAsDouble() : 0
+                json.has("damageTaken") ? json.get("damageTaken").getAsDouble() : 0,
+                ctx.templateId,
+                ctx.templateVersion,
+                ctx.policyId,
+                ctx.policyVersion,
+                ctx.arenaId
             );
         } else {
             // Generic combo event (rank up/down)
@@ -465,7 +540,12 @@ public class TelemetryPacketHandler {
                 getStringOrNull(json, "oldRank"),
                 getStringOrNull(json, "newRank"),
                 json.has("styleScore") ? json.get("styleScore").getAsInt() : 0,
-                json.has("currentCombo") ? json.get("currentCombo").getAsInt() : 0
+                json.has("currentCombo") ? json.get("currentCombo").getAsInt() : 0,
+                ctx.templateId,
+                ctx.templateVersion,
+                ctx.policyId,
+                ctx.policyVersion,
+                ctx.arenaId
             );
         }
     }
@@ -477,6 +557,7 @@ public class TelemetryPacketHandler {
         UUID sessionId = json.has("sessionId") ? UUID.fromString(json.get("sessionId").getAsString()) : null;
         if (sessionId == null) return;
 
+        EnduranceContext ctx = getEnduranceContext(json);
         String eventType = getStringOrNull(json, "eventType");
 
         if ("choices".equals(eventType)) {
@@ -484,7 +565,12 @@ public class TelemetryPacketHandler {
                 player.getUUID(),
                 sessionId,
                 json.has("waveNumber") ? json.get("waveNumber").getAsInt() : 0,
-                getStringOrNull(json, "choicesJson")
+                getStringOrNull(json, "choicesJson"),
+                ctx.templateId,
+                ctx.templateVersion,
+                ctx.policyId,
+                ctx.policyVersion,
+                ctx.arenaId
             );
         } else {
             // Perk selected
@@ -497,7 +583,12 @@ public class TelemetryPacketHandler {
                 getStringOrNull(json, "category"),
                 json.has("stackCount") ? json.get("stackCount").getAsInt() : 1,
                 json.has("totalPerks") ? json.get("totalPerks").getAsInt() : 0,
-                json.has("waveNumber") ? json.get("waveNumber").getAsInt() : 0
+                json.has("waveNumber") ? json.get("waveNumber").getAsInt() : 0,
+                ctx.templateId,
+                ctx.templateVersion,
+                ctx.policyId,
+                ctx.policyVersion,
+                ctx.arenaId
             );
         }
     }
@@ -509,6 +600,7 @@ public class TelemetryPacketHandler {
         UUID sessionId = json.has("sessionId") ? UUID.fromString(json.get("sessionId").getAsString()) : null;
         if (sessionId == null) return;
 
+        EnduranceContext ctx = getEnduranceContext(json);
         String rewardType = getStringOrNull(json, "rewardType");
 
         if ("currency".equals(rewardType)) {
@@ -517,7 +609,12 @@ public class TelemetryPacketHandler {
                 sessionId,
                 getStringOrNull(json, "currency"),
                 json.has("amount") ? json.get("amount").getAsInt() : 0,
-                getStringOrNull(json, "source")
+                getStringOrNull(json, "source"),
+                ctx.templateId,
+                ctx.templateVersion,
+                ctx.policyId,
+                ctx.policyVersion,
+                ctx.arenaId
             );
         } else if ("loot".equals(rewardType)) {
             DuckDBTelemetryService.INSTANCE.logLootDrop(
@@ -525,7 +622,12 @@ public class TelemetryPacketHandler {
                 sessionId,
                 getStringOrNull(json, "itemId"),
                 json.has("itemCount") ? json.get("itemCount").getAsInt() : 1,
-                getStringOrNull(json, "lootTier")
+                getStringOrNull(json, "lootTier"),
+                ctx.templateId,
+                ctx.templateVersion,
+                ctx.policyId,
+                ctx.policyVersion,
+                ctx.arenaId
             );
         }
     }
@@ -545,6 +647,38 @@ public class TelemetryPacketHandler {
     private static Long getLongOrNull(JsonObject json, String key) {
         return json.has(key) && !json.get(key).isJsonNull() ? json.get(key).getAsLong() : null;
     }
+
+    private static UUID getUuidOrNull(JsonObject json, String key) {
+        return json.has(key) && !json.get(key).isJsonNull()
+            ? UUID.fromString(json.get(key).getAsString())
+            : null;
+    }
+
+    private static EnduranceContext getEnduranceContext(JsonObject json) {
+        String templateId = getStringOrNull(json, "templateId");
+        Integer templateVersion = json.has("templateVersion") && !json.get("templateVersion").isJsonNull()
+            ? json.get("templateVersion").getAsInt()
+            : null;
+        String policyId = getStringOrNull(json, "policyId");
+        Integer policyVersion = json.has("policyVersion") && !json.get("policyVersion").isJsonNull()
+            ? json.get("policyVersion").getAsInt()
+            : null;
+        UUID arenaId = getUuidOrNull(json, "arenaId");
+        UUID sessionId = getUuidOrNull(json, "sessionId");
+        if (sessionId == null) {
+            sessionId = getUuidOrNull(json, "questId");
+        }
+        return new EnduranceContext(templateId, templateVersion, policyId, policyVersion, arenaId, sessionId);
+    }
+
+    private record EnduranceContext(
+        String templateId,
+        Integer templateVersion,
+        String policyId,
+        Integer policyVersion,
+        UUID arenaId,
+        UUID sessionId
+    ) {}
 
     // ============================================
     // RATE LIMITING

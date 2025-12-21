@@ -3,6 +3,7 @@ package com.frenkvs.devmod;
 import net.minecraft.nbt.CompoundTag;
 
 import java.util.Objects;
+import javax.annotation.Nonnull;
 
 /**
  * Usable item statistics for items with cooldowns, use durations, and throwable properties.
@@ -15,7 +16,7 @@ public class UsableStats {
 
     public int useDuration = 0;           // Ticks to complete use (0 = instant)
     public int cooldownDuration = 0;      // Cooldown in ticks after use
-    public String useAnimation = "NONE";  // ItemUseAnimation name
+    public @Nonnull String useAnimation = "NONE";  // ItemUseAnimation name
 
     // ═══════════════════════════════════════════════════════════════
     // THROWABLE PROPERTIES (for projectiles)
@@ -32,7 +33,7 @@ public class UsableStats {
     // ═══════════════════════════════════════════════════════════════
 
     public boolean consumeOnUse = true;   // Whether item is consumed
-    public String remainderItem = "";     // Item left after use (e.g., "minecraft:bucket")
+    public @Nonnull String remainderItem = "";     // Item left after use (e.g., "minecraft:bucket")
 
     // ═══════════════════════════════════════════════════════════════
     // SERIALIZATION
@@ -75,7 +76,9 @@ public class UsableStats {
         // Use properties
         if (tag.contains("UseDur")) stats.useDuration = tag.getInt("UseDur");
         if (tag.contains("Cooldown")) stats.cooldownDuration = tag.getInt("Cooldown");
-        if (tag.contains("UseAnim")) stats.useAnimation = tag.getString("UseAnim");
+        if (tag.contains("UseAnim")) {
+            stats.useAnimation = Objects.requireNonNull(tag.getString("UseAnim"), "UseAnim");
+        }
 
         // Throwable properties
         if (tag.contains("Throwable")) {
@@ -88,7 +91,9 @@ public class UsableStats {
 
         // Consumption
         if (tag.contains("NoConsume")) stats.consumeOnUse = !tag.getBoolean("NoConsume");
-        if (tag.contains("Remainder")) stats.remainderItem = tag.getString("Remainder");
+        if (tag.contains("Remainder")) {
+            stats.remainderItem = Objects.requireNonNull(tag.getString("Remainder"), "Remainder");
+        }
 
         return stats;
     }

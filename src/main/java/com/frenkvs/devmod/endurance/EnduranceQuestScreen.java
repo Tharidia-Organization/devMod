@@ -1,5 +1,9 @@
 package com.frenkvs.devmod.endurance;
 
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
@@ -7,7 +11,6 @@ import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
-import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -180,7 +183,8 @@ public class EnduranceQuestScreen extends Screen {
     }
 
     private void openShop() {
-        Objects.requireNonNull(minecraft).setScreen(new EnduranceShopScreen());
+        ActionRegistry.invoke(ActionIds.UI_ENDURANCE_SHOP_OPEN,
+            ClientActionContexts.forClient(ActionOrigin.UI));
     }
 
     private void loadQuests() {
@@ -799,14 +803,13 @@ public class EnduranceQuestScreen extends Screen {
         LOGGER.info("[EnduranceQuest] Starting quest: {} with {} waves, endless={}",
             selectedQuest.displayName, questWaves, endlessMode);
 
-        // Send StartQuestPayload to server
-        PacketDistributor.sendToServer(new StartQuestPayload(
+        StartQuestPayload payload = new StartQuestPayload(
             selectedQuest.mobId.toString(),
             questWaves,
             endlessMode
-        ));
-
-        onClose();
+        );
+        ActionRegistry.invoke(ActionIds.ENDURANCE_QUEST_START,
+            ClientActionContexts.forClient(ActionOrigin.UI, payload));
     }
 
     @Override

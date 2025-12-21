@@ -93,6 +93,31 @@ public record ArenaPolicy(
     );
 
     /**
+     * Boss routing policy for boss_ring_80.
+     */
+    public static final ArenaPolicy BOSS_RING_80 = new ArenaPolicy(
+        "boss_ring_80_default",
+        1,
+        "boss_ring_80",
+        null,
+        null,
+        null,
+        Set.of("boss"),
+        Set.of("hard"),
+        null,
+        null,
+        Set.of("boss"),
+        3,
+        1.3,
+        null,
+        null,
+        null,
+        null,
+        true,
+        "Boss routing policy for boss_ring_80"
+    );
+
+    /**
      * Creates a builder for this policy.
      */
     public static Builder builder(String id) {

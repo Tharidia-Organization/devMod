@@ -394,6 +394,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
      */
     public record AnalyticsQueryParams(
         String templateId,
+        Integer templateVersion,
         Instant from,
         Instant to,
         int page,
@@ -420,6 +421,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
         public static AnalyticsQueryParams forTemplate(String templateId) {
             return new AnalyticsQueryParams(
                 templateId,
+                null,
                 Instant.now().minus(Duration.ofDays(7)),
                 Instant.now(),
                 0,
@@ -520,7 +522,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
             throw new SecurityException("Token lacks analytics permission");
         }
 
-        String cacheKey = "build-metrics:" + params.templateId();
+        String cacheKey = buildCacheKey("build-metrics", params);
         return getCachedMetric(cacheKey, () ->
             executeWithTimeout(() -> computeBuildMetrics(params), BuildMetricsResponse.empty(params.templateId()))
         );
@@ -535,7 +537,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
             throw new SecurityException("Token lacks analytics permission");
         }
 
-        String cacheKey = "performance:" + params.templateId();
+        String cacheKey = buildCacheKey("performance", params);
         return getCachedMetric(cacheKey, () ->
             executeWithTimeout(() -> computePerformance(params), PerformanceResponse.empty(params.templateId()))
         );
@@ -550,7 +552,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
             throw new SecurityException("Token lacks analytics permission");
         }
 
-        String cacheKey = "spawn-heatmap:" + params.templateId();
+        String cacheKey = buildCacheKey("spawn-heatmap", params);
         return getCachedMetric(cacheKey, () ->
             executeWithTimeout(() -> computeHeatmap(params, "spawn"), HeatmapResponse.empty(params.templateId(), "spawn"))
         );
@@ -565,7 +567,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
             throw new SecurityException("Token lacks analytics permission");
         }
 
-        String cacheKey = "death-heatmap:" + params.templateId();
+        String cacheKey = buildCacheKey("death-heatmap", params);
         return getCachedMetric(cacheKey, () ->
             executeWithTimeout(() -> computeHeatmap(params, "death"), HeatmapResponse.empty(params.templateId(), "death"))
         );
@@ -580,7 +582,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
             throw new SecurityException("Token lacks analytics permission");
         }
 
-        String cacheKey = "wave-correlation:" + params.templateId();
+        String cacheKey = buildCacheKey("wave-correlation", params);
         return getCachedMetric(cacheKey, () ->
             executeWithTimeout(() -> computeWaveCorrelation(params), WaveCorrelationResponse.empty(params.templateId()))
         );
@@ -600,6 +602,28 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
         return getCachedMetric(cacheKey, () ->
             executeWithTimeout(this::computeTemplatesFailureRate, TemplatesFailureRateResponse.empty())
         );
+    }
+
+    /**
+     * Handles /api/analytics/arena/templates request.
+     * Returns list of available template IDs.
+     */
+    public TemplateListResponse handleTemplates(TokenInfo token) {
+        if (!token.permissions().canReadAnalytics()) {
+            throw new SecurityException("Token lacks analytics permission");
+        }
+
+        String cacheKey = "templates:list";
+        return getCachedMetric(cacheKey, () -> executeWithTimeout(this::computeTemplateList, TemplateListResponse.empty()));
+    }
+
+    public record TemplateListResponse(
+        List<String> templates,
+        Instant generatedAt
+    ) {
+        public static TemplateListResponse empty() {
+            return new TemplateListResponse(List.of(), Instant.now());
+        }
     }
 
     /**
@@ -623,6 +647,20 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
         int failedBuilds,
         double failureRate
     ) {}
+
+    private TemplateListResponse computeTemplateList() {
+        if (repository == null) {
+            LOGGER.warn("No repository configured, returning empty template list");
+            return TemplateListResponse.empty();
+        }
+        try {
+            List<String> templateIds = repository.getAllTemplateIds();
+            return new TemplateListResponse(templateIds, Instant.now());
+        } catch (SQLException e) {
+            LOGGER.error("Failed to fetch template list", e);
+            return TemplateListResponse.empty();
+        }
+    }
 
     /**
      * Gap 3: Computes failure rate for all templates.
@@ -691,6 +729,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
             // Query recent builds for this template
             List<DuckDbRepository.BuildRecord> builds = repository.getRecentBuilds(
                 params.templateId(),
+                params.templateVersion(),
                 params.pageSize()
             );
 
@@ -765,6 +804,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
             // Query recent builds to estimate performance impact
             List<DuckDbRepository.BuildRecord> builds = repository.getRecentBuilds(
                 params.templateId(),
+                params.templateVersion(),
                 100
             );
 
@@ -826,7 +866,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
         if (repository != null) {
             try {
                 // Gap 4: Try to get real spatial event data first
-                grid = repository.getSpatialEventHeatmap(params.templateId(), type, gridSize);
+                grid = repository.getSpatialEventHeatmap(params.templateId(), params.templateVersion(), type, gridSize);
 
                 // Check if we have any real data
                 int totalEvents = 0;
@@ -839,14 +879,14 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
                 // If no real data, fall back to simulated data for demo purposes
                 if (totalEvents == 0) {
                     LOGGER.debug("No spatial events found, using simulated heatmap data");
-                    grid = generateSimulatedHeatmap(params.templateId(), gridSize);
+                    grid = generateSimulatedHeatmap(params.templateId(), params.templateVersion(), gridSize);
                 }
             } catch (SQLException e) {
                 LOGGER.warn("Failed to query spatial events: {}", e.getMessage());
-                grid = generateSimulatedHeatmap(params.templateId(), gridSize);
+                grid = generateSimulatedHeatmap(params.templateId(), params.templateVersion(), gridSize);
             }
         } else {
-            grid = generateSimulatedHeatmap(params.templateId(), gridSize);
+            grid = generateSimulatedHeatmap(params.templateId(), params.templateVersion(), gridSize);
         }
 
         // Calculate max and total
@@ -873,12 +913,13 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
     /**
      * Gap 4: Generates simulated heatmap data for demo/fallback.
      */
-    private int[][] generateSimulatedHeatmap(String templateId, int gridSize) {
+    private int[][] generateSimulatedHeatmap(String templateId, Integer templateVersion, int gridSize) {
         int[][] grid = new int[gridSize][gridSize];
 
         if (repository != null) {
             try {
-                List<DuckDbRepository.BuildRecord> builds = repository.getRecentBuilds(templateId, 50);
+                List<DuckDbRepository.BuildRecord> builds =
+                    repository.getRecentBuilds(templateId, templateVersion, 50);
 
                 if (!builds.isEmpty()) {
                     int centerX = gridSize / 2;
@@ -912,46 +953,59 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
      */
     private WaveCorrelationResponse computeWaveCorrelation(AnalyticsQueryParams params) {
         LOGGER.debug("Computing wave correlation for template: {}", params.templateId());
-
-        // Wave data requires endurance-specific telemetry
-        // Generate reasonable placeholder data
-
-        List<WaveCorrelationResponse.WaveData> waves = new ArrayList<>();
-
-        // Simulate wave progression with decreasing completion rates
-        for (int wave = 1; wave <= 10; wave++) {
-            int baseAttempts = 100 - (wave * 5);
-            int completions = (int) (baseAttempts * (1.0 - wave * 0.08));
-            double completionRate = baseAttempts > 0 ? (double) completions / baseAttempts * 100 : 0;
-            double avgDuration = 30.0 + wave * 15.0; // Waves get longer
-
-            waves.add(new WaveCorrelationResponse.WaveData(
-                wave,
-                Math.max(1, baseAttempts),
-                Math.max(0, completions),
-                completionRate,
-                avgDuration
-            ));
+        if (repository == null) {
+            LOGGER.warn("No repository configured, returning empty wave correlation");
+            return WaveCorrelationResponse.empty(params.templateId());
         }
 
-        double avgCompletionRate = waves.stream()
-            .mapToDouble(WaveCorrelationResponse.WaveData::completionRate)
-            .average()
-            .orElse(0);
+        try {
+            List<DuckDbRepository.WaveAggregate> aggregates = repository.getWaveAggregates(
+                params.templateId(), params.templateVersion(), params.from(), params.to());
+            if (aggregates.isEmpty()) {
+                return WaveCorrelationResponse.empty(params.templateId());
+            }
 
-        // Estimate average wave reached (weighted by attempts)
-        int totalAttempts = waves.stream().mapToInt(WaveCorrelationResponse.WaveData::attempts).sum();
-        int weightedWaves = waves.stream()
-            .mapToInt(w -> w.waveNumber() * w.attempts())
-            .sum();
-        int avgWaveReached = totalAttempts > 0 ? weightedWaves / totalAttempts : 0;
+            List<WaveCorrelationResponse.WaveData> waves = new ArrayList<>();
+            for (DuckDbRepository.WaveAggregate agg : aggregates) {
+                int attempts = Math.max(0, agg.attempts());
+                int completions = Math.max(0, agg.completions());
+                double completionRate = attempts > 0 ? (double) completions / attempts * 100.0 : 0.0;
+                double avgDurationSeconds = agg.avgDurationMs() > 0 ? agg.avgDurationMs() / 1000.0 : 0.0;
+                waves.add(new WaveCorrelationResponse.WaveData(
+                    agg.waveNumber(),
+                    attempts,
+                    completions,
+                    completionRate,
+                    avgDurationSeconds
+                ));
+            }
 
-        return new WaveCorrelationResponse(
-            params.templateId(),
-            waves,
-            avgCompletionRate,
-            avgWaveReached
-        );
+            double avgCompletionRate = waves.stream()
+                .mapToDouble(WaveCorrelationResponse.WaveData::completionRate)
+                .average()
+                .orElse(0.0);
+
+            double avgWavesCompleted = repository.getAverageWavesCompleted(
+                params.templateId(), params.templateVersion(), params.from(), params.to());
+            int avgWaveReached = avgWavesCompleted > 0 ? (int) Math.round(avgWavesCompleted) : 0;
+
+            return new WaveCorrelationResponse(
+                params.templateId(),
+                waves,
+                avgCompletionRate,
+                avgWaveReached
+            );
+        } catch (SQLException e) {
+            LOGGER.error("Failed to compute wave correlation for template: {}", params.templateId(), e);
+            return WaveCorrelationResponse.empty(params.templateId());
+        }
+    }
+
+    private String buildCacheKey(String prefix, AnalyticsQueryParams params) {
+        if (params.templateVersion() != null) {
+            return prefix + ":" + params.templateId() + ":v" + params.templateVersion();
+        }
+        return prefix + ":" + params.templateId();
     }
 
     // ========== G9: Export Endpoints ==========

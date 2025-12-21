@@ -24,17 +24,24 @@ public class TelemetryAnalyticsHandlers {
 
     public String handleAnalyticsOverview(HttpExchange exchange) {
         String interval = server.getTimeInterval(exchange);
+        Map<String, String> params = parseQueryParams(exchange);
+        String arenaFilter = buildArenaFilter(
+            params.get("templateId"),
+            params.get("templateVersion"),
+            params.get("policyId"),
+            params.get("policyVersion")
+        );
         Map<String, Object> overview = new HashMap<>();
 
         // Total hits
-        var hitsResult = server.executeQuery("SELECT COUNT(*) as total, SUM(damage) as total_damage FROM combat_hits WHERE ts >= NOW() - INTERVAL '" + interval + "'");
+        var hitsResult = server.executeQuery("SELECT COUNT(*) as total, SUM(damage) as total_damage FROM combat_hits WHERE ts >= NOW() - INTERVAL '" + interval + "'" + arenaFilter);
         if (!hitsResult.isEmpty()) {
             overview.put("totalHits", hitsResult.get(0).get("total"));
             overview.put("totalDamage", hitsResult.get(0).get("total_damage"));
         }
 
         // Total deaths
-        var deathsResult = server.executeQuery("SELECT COUNT(*) as total FROM combat_deaths WHERE ts >= NOW() - INTERVAL '" + interval + "'");
+        var deathsResult = server.executeQuery("SELECT COUNT(*) as total FROM combat_deaths WHERE ts >= NOW() - INTERVAL '" + interval + "'" + arenaFilter);
         if (!deathsResult.isEmpty()) {
             overview.put("totalDeaths", deathsResult.get(0).get("total"));
         }
@@ -45,7 +52,7 @@ public class TelemetryAnalyticsHandlers {
                 COUNT(*) as total,
                 SUM(CASE WHEN is_miss THEN 1 ELSE 0 END) as misses
             FROM combat_hits
-            WHERE ts >= NOW() - INTERVAL '""" + interval + "'");
+            WHERE ts >= NOW() - INTERVAL '""" + interval + "'" + arenaFilter);
         if (!accuracyResult.isEmpty()) {
             long total = ((Number) accuracyResult.get(0).getOrDefault("total", 0L)).longValue();
             long misses = ((Number) accuracyResult.get(0).getOrDefault("misses", 0L)).longValue();
@@ -70,6 +77,13 @@ public class TelemetryAnalyticsHandlers {
 
     public String handleHitsTimeline(HttpExchange exchange) {
         String interval = server.getTimeInterval(exchange);
+        Map<String, String> params = parseQueryParams(exchange);
+        String arenaFilter = buildArenaFilter(
+            params.get("templateId"),
+            params.get("templateVersion"),
+            params.get("policyId"),
+            params.get("policyVersion")
+        );
         String bucket = interval.contains("hour") ? "minute" : "hour";
         String sql = """
             SELECT
@@ -78,14 +92,22 @@ public class TelemetryAnalyticsHandlers {
                 ROUND(SUM(damage), 1) as total_damage
             FROM combat_hits
             WHERE ts >= NOW() - INTERVAL '%s'
+            %s
             GROUP BY time_bucket
             ORDER BY time_bucket
-            """.formatted(bucket, interval);
+            """.formatted(bucket, interval, arenaFilter);
         return gson.toJson(server.executeQuery(sql));
     }
 
     public String handleDamageByBodypart(HttpExchange exchange) {
         String interval = server.getTimeInterval(exchange);
+        Map<String, String> params = parseQueryParams(exchange);
+        String arenaFilter = buildArenaFilter(
+            params.get("templateId"),
+            params.get("templateVersion"),
+            params.get("policyId"),
+            params.get("policyVersion")
+        );
         String sql = """
             SELECT
                 COALESCE(body_part, 'UNKNOWN') as body_part,
@@ -95,14 +117,22 @@ public class TelemetryAnalyticsHandlers {
             FROM combat_hits
             WHERE ts >= NOW() - INTERVAL '%s'
               AND body_part IS NOT NULL
+              %s
             GROUP BY body_part
             ORDER BY total_damage DESC
-            """.formatted(interval);
+            """.formatted(interval, arenaFilter);
         return gson.toJson(server.executeQuery(sql));
     }
 
     public String handleDamageByType(HttpExchange exchange) {
         String interval = server.getTimeInterval(exchange);
+        Map<String, String> params = parseQueryParams(exchange);
+        String arenaFilter = buildArenaFilter(
+            params.get("templateId"),
+            params.get("templateVersion"),
+            params.get("policyId"),
+            params.get("policyVersion")
+        );
         String sql = """
             SELECT
                 COALESCE(damage_type, 'unknown') as damage_type,
@@ -110,15 +140,23 @@ public class TelemetryAnalyticsHandlers {
                 ROUND(SUM(damage), 1) as total_damage
             FROM combat_hits
             WHERE ts >= NOW() - INTERVAL '%s'
+            %s
             GROUP BY damage_type
             ORDER BY total_damage DESC
             LIMIT 15
-            """.formatted(interval);
+            """.formatted(interval, arenaFilter);
         return gson.toJson(server.executeQuery(sql));
     }
 
     public String handleWeaponAnalytics(HttpExchange exchange) {
         String interval = server.getTimeInterval(exchange);
+        Map<String, String> params = parseQueryParams(exchange);
+        String arenaFilter = buildArenaFilter(
+            params.get("templateId"),
+            params.get("templateVersion"),
+            params.get("policyId"),
+            params.get("policyVersion")
+        );
         String sql = """
             SELECT
                 COALESCE(NULLIF(JSON_EXTRACT_STRING(attacker_state, '$.mainHand'), ''), 'fist') as weapon,
@@ -130,10 +168,11 @@ public class TelemetryAnalyticsHandlers {
             FROM combat_hits
             WHERE ts >= NOW() - INTERVAL '%s'
               AND attacker_name IS NOT NULL
+              %s
             GROUP BY weapon
             ORDER BY total_damage DESC
             LIMIT 15
-            """.formatted(interval);
+            """.formatted(interval, arenaFilter);
         return gson.toJson(server.executeQuery(sql));
     }
 
@@ -156,6 +195,13 @@ public class TelemetryAnalyticsHandlers {
 
     public String handleTTKAnalytics(HttpExchange exchange) {
         String interval = server.getTimeInterval(exchange);
+        Map<String, String> params = parseQueryParams(exchange);
+        String arenaFilter = buildArenaFilter(
+            params.get("templateId"),
+            params.get("templateVersion"),
+            params.get("policyId"),
+            params.get("policyVersion")
+        );
         String sql = """
             SELECT
                 REPLACE(target_type, 'entity.', '') as mob_type,
@@ -167,15 +213,23 @@ public class TelemetryAnalyticsHandlers {
             WHERE ts >= NOW() - INTERVAL '%s'
               AND ttk_spawn_ms IS NOT NULL
               AND ttk_spawn_ms > 0
+              %s
             GROUP BY target_type
             ORDER BY deaths DESC
             LIMIT 15
-            """.formatted(interval);
+            """.formatted(interval, arenaFilter);
         return gson.toJson(server.executeQuery(sql));
     }
 
     public String handleAccuracyTimeline(HttpExchange exchange) {
         String interval = server.getTimeInterval(exchange);
+        Map<String, String> params = parseQueryParams(exchange);
+        String arenaFilter = buildArenaFilter(
+            params.get("templateId"),
+            params.get("templateVersion"),
+            params.get("policyId"),
+            params.get("policyVersion")
+        );
         String bucket = interval.contains("hour") ? "minute" : "hour";
         String sql = """
             SELECT
@@ -185,14 +239,22 @@ public class TelemetryAnalyticsHandlers {
                 ROUND(100.0 * (COUNT(*) - SUM(CASE WHEN is_miss THEN 1 ELSE 0 END)) / NULLIF(COUNT(*), 0), 1) as accuracy
             FROM combat_hits
             WHERE ts >= NOW() - INTERVAL '%s'
+            %s
             GROUP BY time_bucket
             ORDER BY time_bucket
-            """.formatted(bucket, interval);
+            """.formatted(bucket, interval, arenaFilter);
         return gson.toJson(server.executeQuery(sql));
     }
 
     public String handleEnduranceAnalytics(HttpExchange exchange) {
         String interval = server.getTimeInterval(exchange);
+        Map<String, String> params = parseQueryParams(exchange);
+        String templateFilter = buildArenaFilter(
+            params.get("templateId"),
+            params.get("templateVersion"),
+            params.get("policyId"),
+            params.get("policyVersion")
+        );
         Map<String, Object> stats = new HashMap<>();
 
         // Session stats
@@ -204,7 +266,7 @@ public class TelemetryAnalyticsHandlers {
                 ROUND(AVG(waves_completed), 1) as avg_waves,
                 MAX(waves_completed) as best_wave
             FROM endurance_sessions
-            WHERE start_ts >= NOW() - INTERVAL '""" + interval + "'");
+            WHERE start_ts >= NOW() - INTERVAL '""" + interval + "'" + templateFilter);
         if (!sessionResult.isEmpty()) {
             stats.putAll(sessionResult.get(0));
             long total = ((Number) sessionResult.get(0).getOrDefault("total_sessions", 0L)).longValue();
@@ -220,7 +282,7 @@ public class TelemetryAnalyticsHandlers {
                 COUNT(*) as count
             FROM endurance_sessions
             WHERE start_ts >= NOW() - INTERVAL '""" + interval + """
-            '
+            '""" + templateFilter + """
             GROUP BY day, outcome
             ORDER BY day
             """);
@@ -234,7 +296,7 @@ public class TelemetryAnalyticsHandlers {
             FROM endurance_perks
             WHERE event_type = 'selected'
               AND ts >= NOW() - INTERVAL '""" + interval + """
-            '
+            '""" + templateFilter + """
             GROUP BY perk_name
             ORDER BY picks DESC
             LIMIT 10
@@ -242,6 +304,49 @@ public class TelemetryAnalyticsHandlers {
         stats.put("perks", perksResult);
 
         return gson.toJson(stats);
+    }
+
+    private Map<String, String> parseQueryParams(HttpExchange exchange) {
+        Map<String, String> params = new HashMap<>();
+        String query = exchange.getRequestURI().getQuery();
+        if (query == null || query.isBlank()) {
+            return params;
+        }
+        String[] pairs = query.split("&");
+        for (String pair : pairs) {
+            if (pair.isEmpty()) continue;
+            int idx = pair.indexOf('=');
+            if (idx >= 0) {
+                String key = pair.substring(0, idx);
+                String value = pair.substring(idx + 1);
+                params.put(key, value.replace("+", " "));
+            } else {
+                params.put(pair, "");
+            }
+        }
+        return params;
+    }
+
+    private String buildArenaFilter(String templateId, String templateVersion,
+                                    String policyId, String policyVersion) {
+        StringBuilder filter = new StringBuilder();
+        if (templateId != null && !templateId.isBlank()) {
+            filter.append(" AND template_id = '").append(escapeSql(templateId)).append("'");
+        }
+        if (templateVersion != null && templateVersion.matches("^-?\\d+$")) {
+            filter.append(" AND template_version = ").append(templateVersion);
+        }
+        if (policyId != null && !policyId.isBlank()) {
+            filter.append(" AND policy_id = '").append(escapeSql(policyId)).append("'");
+        }
+        if (policyVersion != null && policyVersion.matches("^-?\\d+$")) {
+            filter.append(" AND policy_version = ").append(policyVersion);
+        }
+        return filter.toString();
+    }
+
+    private String escapeSql(String value) {
+        return value.replace("'", "''");
     }
 
     public String handleDungeonAnalytics(HttpExchange exchange) {
@@ -285,6 +390,13 @@ public class TelemetryAnalyticsHandlers {
 
     public String handleRoomAnalytics(HttpExchange exchange) {
         String interval = server.getTimeInterval(exchange);
+        Map<String, String> params = parseQueryParams(exchange);
+        String arenaFilter = buildArenaFilter(
+            params.get("templateId"),
+            params.get("templateVersion"),
+            params.get("policyId"),
+            params.get("policyVersion")
+        );
         Map<String, Object> stats = new HashMap<>();
 
         // Room visits
@@ -308,7 +420,7 @@ public class TelemetryAnalyticsHandlers {
                 COUNT(*) as deaths
             FROM combat_deaths
             WHERE ts >= NOW() - INTERVAL '""" + interval + """
-            '
+            '""" + arenaFilter + """
             GROUP BY room
             ORDER BY deaths DESC
             LIMIT 15
@@ -344,6 +456,12 @@ public class TelemetryAnalyticsHandlers {
         String interval = server.getTimeInterval(exchange);
         Map<String, String> params = server.parseQueryParams(exchange);
         String player = params.get("player");
+        String arenaFilter = buildArenaFilter(
+            params.get("templateId"),
+            params.get("templateVersion"),
+            params.get("policyId"),
+            params.get("policyVersion")
+        );
 
         String playerFilter = (player != null && !player.isBlank())
             ? " AND attacker_name = '" + player + "'"
@@ -365,9 +483,10 @@ public class TelemetryAnalyticsHandlers {
               AND attacker_name IS NOT NULL
               AND NOT is_miss
               %s
+              %s
             GROUP BY time_bucket
             ORDER BY time_bucket
-            """.formatted(bucket, bucketSeconds, interval, playerFilter);
+            """.formatted(bucket, bucketSeconds, interval, playerFilter, arenaFilter);
         return gson.toJson(server.executeQuery(sql));
     }
 
@@ -378,6 +497,12 @@ public class TelemetryAnalyticsHandlers {
         String interval = server.getTimeInterval(exchange);
         Map<String, String> params = server.parseQueryParams(exchange);
         String player = params.get("player");
+        String arenaFilter = buildArenaFilter(
+            params.get("templateId"),
+            params.get("templateVersion"),
+            params.get("policyId"),
+            params.get("policyVersion")
+        );
 
         if (player == null || player.isBlank()) {
             return gson.toJson(Map.of("error", "Missing 'player' parameter"));
@@ -398,7 +523,8 @@ public class TelemetryAnalyticsHandlers {
             FROM combat_hits
             WHERE attacker_name = '%s'
               AND ts >= NOW() - INTERVAL '%s'
-            """.formatted(player, interval));
+              %s
+            """.formatted(player, interval, arenaFilter));
         if (!attackerStats.isEmpty()) {
             stats.put("combat", attackerStats.get(0));
         }
@@ -413,7 +539,8 @@ public class TelemetryAnalyticsHandlers {
             FROM combat_hits
             WHERE target_name = '%s'
               AND ts >= NOW() - INTERVAL '%s'
-            """.formatted(player, interval));
+              %s
+            """.formatted(player, interval, arenaFilter));
         if (!damageTaken.isEmpty()) {
             stats.put("damageTaken", damageTaken.get(0));
         }
@@ -426,7 +553,8 @@ public class TelemetryAnalyticsHandlers {
             FROM combat_deaths
             WHERE target_name = '%s'
               AND ts >= NOW() - INTERVAL '%s'
-            """.formatted(player, interval));
+              %s
+            """.formatted(player, interval, arenaFilter));
         if (!deaths.isEmpty()) {
             stats.put("deaths", deaths.get(0));
         }
@@ -453,10 +581,11 @@ public class TelemetryAnalyticsHandlers {
             WHERE attacker_name = '%s'
               AND ts >= NOW() - INTERVAL '%s'
               AND NOT is_miss
+              %s
             GROUP BY weapon
             ORDER BY damage DESC
             LIMIT 10
-            """.formatted(player, interval));
+            """.formatted(player, interval, arenaFilter));
         stats.put("weapons", weapons);
 
         // DPS over time
@@ -468,10 +597,11 @@ public class TelemetryAnalyticsHandlers {
             WHERE attacker_name = '%s'
               AND ts >= NOW() - INTERVAL '%s'
               AND NOT is_miss
+              %s
             GROUP BY time_bucket
             ORDER BY time_bucket
             LIMIT 60
-            """.formatted(player, interval));
+            """.formatted(player, interval, arenaFilter));
         stats.put("dpsTimeline", dpsTimeline);
 
         return gson.toJson(stats);
@@ -482,6 +612,13 @@ public class TelemetryAnalyticsHandlers {
      */
     public String handlePlayerComparison(HttpExchange exchange) {
         String interval = server.getTimeInterval(exchange);
+        Map<String, String> params = server.parseQueryParams(exchange);
+        String arenaFilter = buildArenaFilter(
+            params.get("templateId"),
+            params.get("templateVersion"),
+            params.get("policyId"),
+            params.get("policyVersion")
+        );
         String sql = """
             SELECT
                 attacker_name as player,
@@ -494,11 +631,12 @@ public class TelemetryAnalyticsHandlers {
             FROM combat_hits
             WHERE ts >= NOW() - INTERVAL '%s'
               AND attacker_name IS NOT NULL
+              %s
             GROUP BY attacker_name
             HAVING COUNT(*) >= 10
             ORDER BY total_damage DESC
             LIMIT 20
-            """.formatted(interval);
+            """.formatted(interval, arenaFilter);
         return gson.toJson(server.executeQuery(sql));
     }
 
@@ -507,6 +645,13 @@ public class TelemetryAnalyticsHandlers {
      */
     public String handleTrends(HttpExchange exchange) {
         String interval = server.getTimeInterval(exchange);
+        Map<String, String> params = server.parseQueryParams(exchange);
+        String arenaFilter = buildArenaFilter(
+            params.get("templateId"),
+            params.get("templateVersion"),
+            params.get("policyId"),
+            params.get("policyVersion")
+        );
         Map<String, Object> trends = new HashMap<>();
 
         // Current period stats
@@ -518,7 +663,8 @@ public class TelemetryAnalyticsHandlers {
                 ROUND(AVG(damage), 2) as avg_damage
             FROM combat_hits
             WHERE ts >= NOW() - INTERVAL '%s'
-            """.formatted(interval));
+            %s
+            """.formatted(interval, arenaFilter));
 
         // Previous period stats (same duration, before current)
         var previous = server.executeQuery("""
@@ -530,7 +676,8 @@ public class TelemetryAnalyticsHandlers {
             FROM combat_hits
             WHERE ts >= NOW() - INTERVAL '%s' - INTERVAL '%s'
               AND ts < NOW() - INTERVAL '%s'
-            """.formatted(interval, interval, interval));
+            %s
+            """.formatted(interval, interval, interval, arenaFilter));
 
         if (!current.isEmpty()) trends.put("current", current.get(0));
         if (!previous.isEmpty()) trends.put("previous", previous.get(0));
@@ -550,8 +697,8 @@ public class TelemetryAnalyticsHandlers {
         }
 
         // Deaths trends
-        var currentDeaths = server.executeQuery("SELECT COUNT(*) as deaths FROM combat_deaths WHERE ts >= NOW() - INTERVAL '" + interval + "'");
-        var previousDeaths = server.executeQuery("SELECT COUNT(*) as deaths FROM combat_deaths WHERE ts >= NOW() - INTERVAL '" + interval + "' - INTERVAL '" + interval + "' AND ts < NOW() - INTERVAL '" + interval + "'");
+        var currentDeaths = server.executeQuery("SELECT COUNT(*) as deaths FROM combat_deaths WHERE ts >= NOW() - INTERVAL '" + interval + "'" + arenaFilter);
+        var previousDeaths = server.executeQuery("SELECT COUNT(*) as deaths FROM combat_deaths WHERE ts >= NOW() - INTERVAL '" + interval + "' - INTERVAL '" + interval + "' AND ts < NOW() - INTERVAL '" + interval + "'" + arenaFilter);
 
         if (!currentDeaths.isEmpty()) trends.put("currentDeaths", currentDeaths.get(0).get("deaths"));
         if (!previousDeaths.isEmpty()) trends.put("previousDeaths", previousDeaths.get(0).get("deaths"));
@@ -650,6 +797,13 @@ public class TelemetryAnalyticsHandlers {
      */
     public String handleFightAnalysis(HttpExchange exchange) {
         String interval = server.getTimeInterval(exchange);
+        Map<String, String> params = server.parseQueryParams(exchange);
+        String arenaFilter = buildArenaFilter(
+            params.get("templateId"),
+            params.get("templateVersion"),
+            params.get("policyId"),
+            params.get("policyVersion")
+        );
         Map<String, Object> analysis = new HashMap<>();
 
         // Recent fights with details
@@ -667,9 +821,10 @@ public class TelemetryAnalyticsHandlers {
                 outcome
             FROM combat_fights
             WHERE start_ts >= NOW() - INTERVAL '%s'
+              %s
             ORDER BY start_ts DESC
             LIMIT 50
-            """.formatted(interval));
+            """.formatted(interval, arenaFilter));
         analysis.put("fights", fights);
 
         // Aggregated fight stats
@@ -685,7 +840,8 @@ public class TelemetryAnalyticsHandlers {
                 SUM(CASE WHEN outcome = 'defeat' THEN 1 ELSE 0 END) as defeats
             FROM combat_fights
             WHERE start_ts >= NOW() - INTERVAL '%s'
-            """.formatted(interval));
+              %s
+            """.formatted(interval, arenaFilter));
         if (!stats.isEmpty()) {
             analysis.put("stats", stats.get(0));
         }
@@ -700,6 +856,12 @@ public class TelemetryAnalyticsHandlers {
         String interval = server.getTimeInterval(exchange);
         Map<String, String> params = server.parseQueryParams(exchange);
         String player = params.get("player");
+        String arenaFilter = buildArenaFilter(
+            params.get("templateId"),
+            params.get("templateVersion"),
+            params.get("policyId"),
+            params.get("policyVersion")
+        );
 
         String playerFilter = (player != null && !player.isBlank())
             ? " AND target_name = '" + player + "'"
@@ -718,10 +880,11 @@ public class TelemetryAnalyticsHandlers {
             WHERE ts >= NOW() - INTERVAL '%s'
               AND target_name IS NOT NULL
               %s
+              %s
             GROUP BY source
             ORDER BY total_damage DESC
             LIMIT 15
-            """.formatted(interval, playerFilter));
+            """.formatted(interval, playerFilter, arenaFilter));
         analysis.put("bySource", bySource);
 
         // Damage by type
@@ -734,9 +897,10 @@ public class TelemetryAnalyticsHandlers {
             WHERE ts >= NOW() - INTERVAL '%s'
               AND target_name IS NOT NULL
               %s
+              %s
             GROUP BY damage_type
             ORDER BY total_damage DESC
-            """.formatted(interval, playerFilter));
+            """.formatted(interval, playerFilter, arenaFilter));
         analysis.put("byType", byType);
 
         // Damage timeline
@@ -750,9 +914,10 @@ public class TelemetryAnalyticsHandlers {
             WHERE ts >= NOW() - INTERVAL '%s'
               AND target_name IS NOT NULL
               %s
+              %s
             GROUP BY time_bucket
             ORDER BY time_bucket
-            """.formatted(bucket, interval, playerFilter));
+            """.formatted(bucket, interval, playerFilter, arenaFilter));
         analysis.put("timeline", timeline);
 
         return gson.toJson(analysis);
@@ -763,6 +928,13 @@ public class TelemetryAnalyticsHandlers {
      */
     public String handlePlayersList(HttpExchange exchange) {
         String interval = server.getTimeInterval(exchange);
+        Map<String, String> params = server.parseQueryParams(exchange);
+        String arenaFilter = buildArenaFilter(
+            params.get("templateId"),
+            params.get("templateVersion"),
+            params.get("policyId"),
+            params.get("policyVersion")
+        );
         String sql = """
             SELECT DISTINCT
                 attacker_name as player,
@@ -770,10 +942,11 @@ public class TelemetryAnalyticsHandlers {
             FROM combat_hits
             WHERE ts >= NOW() - INTERVAL '%s'
               AND attacker_name IS NOT NULL
+              %s
             GROUP BY attacker_name
             ORDER BY activity DESC
             LIMIT 50
-            """.formatted(interval);
+            """.formatted(interval, arenaFilter);
         return gson.toJson(server.executeQuery(sql));
     }
 }

@@ -57,6 +57,7 @@ public class AlertRouter implements AutoCloseable {
     private final AtomicInteger deliveredCount;
     private final AtomicInteger failedCount;
     private final AtomicInteger retriedCount;
+    private volatile AlertDeliveryRecorder deliveryRecorder;
 
     /**
      * Represents an alert channel for delivery.
@@ -66,6 +67,13 @@ public class AlertRouter implements AutoCloseable {
          * Unique channel identifier.
          */
         String getId();
+
+        /**
+         * Channel type for persistence/analytics.
+         */
+        default String getType() {
+            return getClass().getSimpleName();
+        }
 
         /**
          * Whether this channel is critical (requires retry on failure).
@@ -115,6 +123,27 @@ public class AlertRouter implements AutoCloseable {
                 return false;
             }
         }
+    }
+
+    /**
+     * Delivery status for persistence/analytics.
+     */
+    public enum DeliveryStatus {
+        DELIVERED,
+        FAILED,
+        RETRYING
+    }
+
+    /**
+     * Optional recorder for alert delivery history.
+     */
+    public interface AlertDeliveryRecorder {
+        void record(ErrorContext context,
+                    AlertChannel channel,
+                    DeliveryStatus status,
+                    int attemptCount,
+                    Instant nextRetryAt,
+                    String errorMessage);
     }
 
     /**
@@ -192,6 +221,13 @@ public class AlertRouter implements AutoCloseable {
     }
 
     /**
+     * Sets a delivery recorder to persist alert history.
+     */
+    public void setDeliveryRecorder(AlertDeliveryRecorder deliveryRecorder) {
+        this.deliveryRecorder = deliveryRecorder;
+    }
+
+    /**
      * Unregisters an alert channel.
      *
      * @param channelId The channel ID to unregister
@@ -228,19 +264,29 @@ public class AlertRouter implements AutoCloseable {
         for (AlertChannel channel : channels.values()) {
             CompletableFuture<ChannelDeliveryResult> future = CompletableFuture.supplyAsync(() -> {
                 boolean success = false;
+                String errorMessage = null;
                 try {
                     success = channel.deliver(context);
                 } catch (Exception e) {
+                    errorMessage = e.getMessage();
                     LOGGER.log(Level.WARNING, "Exception delivering to " + channel.getId(), e);
                 }
 
                 if (success) {
                     deliveredCount.incrementAndGet();
+                    recordDelivery(context, channel, DeliveryStatus.DELIVERED, 1, null, errorMessage);
                 } else {
                     failedCount.incrementAndGet();
                     // Queue for retry if critical channel
                     if (channel.isCritical()) {
-                        queueForRetry(context, channel.getId());
+                        RetryableAlert retry = queueForRetry(context, channel.getId());
+                        if (retry != null) {
+                            recordDelivery(context, channel, DeliveryStatus.RETRYING, 1, retry.nextRetryAt(), errorMessage);
+                        } else {
+                            recordDelivery(context, channel, DeliveryStatus.FAILED, 1, null, errorMessage);
+                        }
+                    } else {
+                        recordDelivery(context, channel, DeliveryStatus.FAILED, 1, null, errorMessage);
                     }
                 }
 
@@ -289,7 +335,7 @@ public class AlertRouter implements AutoCloseable {
     /**
      * Queues an alert for retry on a critical channel.
      */
-    private void queueForRetry(ErrorContext context, String channelId) {
+    private RetryableAlert queueForRetry(ErrorContext context, String channelId) {
         RetryableAlert retryable = new RetryableAlert(
             context,
             channelId,
@@ -299,9 +345,10 @@ public class AlertRouter implements AutoCloseable {
 
         if (!retryQueue.offer(retryable)) {
             LOGGER.warning("Retry queue full, dropping alert for channel: " + channelId);
-        } else {
-            retriedCount.incrementAndGet();
+            return null;
         }
+        retriedCount.incrementAndGet();
+        return retryable;
     }
 
     /**
@@ -330,27 +377,52 @@ public class AlertRouter implements AutoCloseable {
                 }
 
                 boolean success = false;
+                String errorMessage = null;
                 try {
                     success = channel.deliver(alert.context());
                 } catch (Exception e) {
+                    errorMessage = e.getMessage();
                     LOGGER.log(Level.WARNING, "Retry delivery failed for " + alert.channelId(), e);
                 }
 
                 if (success) {
                     deliveredCount.incrementAndGet();
+                    recordDelivery(alert.context(), channel, DeliveryStatus.DELIVERED, alert.attemptCount() + 1, null, errorMessage);
                     LOGGER.fine("Retry succeeded for channel: " + alert.channelId());
                 } else if (alert.hasRetriesRemaining()) {
                     // Re-queue with incremented attempt
                     RetryableAlert nextAttempt = alert.withIncrementedAttempt();
                     if (!retryQueue.offer(nextAttempt)) {
                         LOGGER.warning("Retry queue full, dropping retry for: " + alert.channelId());
+                        recordDelivery(alert.context(), channel, DeliveryStatus.FAILED, alert.attemptCount() + 1, null, errorMessage);
+                    } else {
+                        recordDelivery(alert.context(), channel, DeliveryStatus.RETRYING,
+                            alert.attemptCount() + 1, nextAttempt.nextRetryAt(), errorMessage);
                     }
                 } else {
                     LOGGER.severe("Max retries exceeded for channel: " + alert.channelId() +
                                   ", error: " + alert.context().errorId());
+                    recordDelivery(alert.context(), channel, DeliveryStatus.FAILED, alert.attemptCount() + 1, null, errorMessage);
                 }
             }
         }, 100, 100, TimeUnit.MILLISECONDS);
+    }
+
+    private void recordDelivery(ErrorContext context,
+                                AlertChannel channel,
+                                DeliveryStatus status,
+                                int attemptCount,
+                                Instant nextRetryAt,
+                                String errorMessage) {
+        AlertDeliveryRecorder recorder = deliveryRecorder;
+        if (recorder == null) {
+            return;
+        }
+        try {
+            recorder.record(context, channel, status, attemptCount, nextRetryAt, errorMessage);
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Failed to record alert delivery for " + channel.getId(), e);
+        }
     }
 
     /**

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Objects;
 import java.util.UUID;
+import javax.annotation.Nonnull;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -45,7 +46,7 @@ class ArenaBuilderAsyncPriorityTest {
         ArenaBuilder.BuildResult result = builder.build(template, 0, 64, 0);
 
         assertFalse(result.success());
-        String errorMessage = Objects.requireNonNull(result.errorMessage(), "errorMessage");
+        @Nonnull String errorMessage = Objects.requireNonNull(result.errorMessage(), "errorMessage");
         assertNotNull(errorMessage);
         assertTrue(errorMessage.contains("ASYNC"));
     }

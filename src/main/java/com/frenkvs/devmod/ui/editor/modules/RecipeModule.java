@@ -27,6 +27,7 @@ import net.minecraft.world.item.ItemStack;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import javax.annotation.Nonnull;
 
 /**
  * Editor module for crafting recipes.
@@ -224,14 +225,18 @@ public class RecipeModule extends AbstractEditorModule {
         var level = mc.level;
         if (level == null) return null;
 
-        var recipeManager = level.getRecipeManager();
-        var itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(
-            Objects.requireNonNull(item.getItem(), "item"));
-        var registryAccess = Objects.requireNonNull(level.registryAccess(), "registry access");
+        @Nonnull var safeLevel = Objects.requireNonNull(level, "level");
+        var recipeManager = safeLevel.getRecipeManager();
+        @Nonnull var baseItem = Objects.requireNonNull(item.getItem(), "item");
+        var itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(baseItem);
+        @Nonnull var registryAccess = Objects.requireNonNull(safeLevel.registryAccess(), "registry access");
 
         // Search crafting recipes
-        for (var holder : recipeManager.getAllRecipesFor(
-            Objects.requireNonNull(net.minecraft.world.item.crafting.RecipeType.CRAFTING, "crafting recipe type"))) {
+        @Nonnull var craftingType = Objects.requireNonNull(
+            net.minecraft.world.item.crafting.RecipeType.CRAFTING,
+            "crafting recipe type"
+        );
+        for (var holder : recipeManager.getAllRecipesFor(craftingType)) {
             var result = holder.value().getResultItem(registryAccess);
             if (!result.isEmpty()
                 && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(
@@ -241,8 +246,11 @@ public class RecipeModule extends AbstractEditorModule {
         }
 
         // Search smelting recipes
-        for (var holder : recipeManager.getAllRecipesFor(
-            Objects.requireNonNull(net.minecraft.world.item.crafting.RecipeType.SMELTING, "smelting recipe type"))) {
+        @Nonnull var smeltingType = Objects.requireNonNull(
+            net.minecraft.world.item.crafting.RecipeType.SMELTING,
+            "smelting recipe type"
+        );
+        for (var holder : recipeManager.getAllRecipesFor(smeltingType)) {
             var result = holder.value().getResultItem(registryAccess);
             if (!result.isEmpty()
                 && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(
@@ -252,8 +260,11 @@ public class RecipeModule extends AbstractEditorModule {
         }
 
         // Search blasting recipes
-        for (var holder : recipeManager.getAllRecipesFor(
-            Objects.requireNonNull(net.minecraft.world.item.crafting.RecipeType.BLASTING, "blasting recipe type"))) {
+        @Nonnull var blastingType = Objects.requireNonNull(
+            net.minecraft.world.item.crafting.RecipeType.BLASTING,
+            "blasting recipe type"
+        );
+        for (var holder : recipeManager.getAllRecipesFor(blastingType)) {
             var result = holder.value().getResultItem(registryAccess);
             if (!result.isEmpty()
                 && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(
@@ -263,8 +274,11 @@ public class RecipeModule extends AbstractEditorModule {
         }
 
         // Search smoking recipes
-        for (var holder : recipeManager.getAllRecipesFor(
-            Objects.requireNonNull(net.minecraft.world.item.crafting.RecipeType.SMOKING, "smoking recipe type"))) {
+        @Nonnull var smokingType = Objects.requireNonNull(
+            net.minecraft.world.item.crafting.RecipeType.SMOKING,
+            "smoking recipe type"
+        );
+        for (var holder : recipeManager.getAllRecipesFor(smokingType)) {
             var result = holder.value().getResultItem(registryAccess);
             if (!result.isEmpty()
                 && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(
@@ -274,8 +288,11 @@ public class RecipeModule extends AbstractEditorModule {
         }
 
         // Search campfire cooking recipes
-        for (var holder : recipeManager.getAllRecipesFor(
-            Objects.requireNonNull(net.minecraft.world.item.crafting.RecipeType.CAMPFIRE_COOKING, "campfire recipe type"))) {
+        @Nonnull var campfireType = Objects.requireNonNull(
+            net.minecraft.world.item.crafting.RecipeType.CAMPFIRE_COOKING,
+            "campfire recipe type"
+        );
+        for (var holder : recipeManager.getAllRecipesFor(campfireType)) {
             var result = holder.value().getResultItem(registryAccess);
             if (!result.isEmpty()
                 && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(
@@ -285,8 +302,11 @@ public class RecipeModule extends AbstractEditorModule {
         }
 
         // Search smithing recipes
-        for (var holder : recipeManager.getAllRecipesFor(
-            Objects.requireNonNull(net.minecraft.world.item.crafting.RecipeType.SMITHING, "smithing recipe type"))) {
+        @Nonnull var smithingType = Objects.requireNonNull(
+            net.minecraft.world.item.crafting.RecipeType.SMITHING,
+            "smithing recipe type"
+        );
+        for (var holder : recipeManager.getAllRecipesFor(smithingType)) {
             var result = holder.value().getResultItem(registryAccess);
             if (!result.isEmpty()
                 && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(
@@ -296,8 +316,11 @@ public class RecipeModule extends AbstractEditorModule {
         }
 
         // Search stonecutting recipes
-        for (var holder : recipeManager.getAllRecipesFor(
-            Objects.requireNonNull(net.minecraft.world.item.crafting.RecipeType.STONECUTTING, "stonecutting recipe type"))) {
+        @Nonnull var stonecuttingType = Objects.requireNonNull(
+            net.minecraft.world.item.crafting.RecipeType.STONECUTTING,
+            "stonecutting recipe type"
+        );
+        for (var holder : recipeManager.getAllRecipesFor(stonecuttingType)) {
             var result = holder.value().getResultItem(registryAccess);
             if (!result.isEmpty()
                 && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(

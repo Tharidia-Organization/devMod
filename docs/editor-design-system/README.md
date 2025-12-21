@@ -30,6 +30,15 @@ Sistema di design unificato per gli editor di item/armor/weapon di DevMod.
 - [15-weapon-properties.md](15-weapon-properties.md) - Architettura proprietà armi
 - [16-ranged-weapons.md](16-ranged-weapons.md) - Supporto armi a distanza
 
+### Audits
+- [EDITOR_BUTTON_AUDIT_COMPLETE.md](EDITOR_BUTTON_AUDIT_COMPLETE.md) - Audit consolidato EditorButton
+
+### Tracking & Status
+- [AUDIT.md](AUDIT.md) - Fase 0 audit (code/doc alignment)
+- [EDITOR_IMPLEMENTATION_LOG.md](EDITOR_IMPLEMENTATION_LOG.md) - Implementation log
+- [TODO_EDITOR_MISSING_FEATURES.md](TODO_EDITOR_MISSING_FEATURES.md) - Gap list
+- [MISSING_MECHANICS_ANALYSIS.md](MISSING_MECHANICS_ANALYSIS.md) - Missing mechanics analysis
+
 ## Stato Implementazione
 
 ### P0 - Priorità Massima
@@ -74,6 +83,8 @@ Sistema di design unificato per gli editor di item/armor/weapon di DevMod.
 3. **Numerazione Sequenziale**: I file sono ora numerati in sequenza logica senza gap o sovrapposizioni.
 
 4. **Aggiornamenti recenti**: Il Crafting Info Panel (03-crafting-analysis.md) è stato implementato con overlay modale, selezione multi-ricetta e lista ingredienti scrollabile (trigger “Recipe” nel footer).
+
+5. **Archivi**: documenti legacy o TODO spostati in `docs/_deprecated/editor-design-system/` (es. `EDITOR_DESIGN_SYSTEM_OLD.md`, `EDITOR_DESIGN_SYSTEM.md`, `EDITOR_BUTTON_AUDIT.md`, `ARMOR_EDITOR_REDESIGN_PLAN.md`, `WEAPON_EDITOR_REDESIGN_PLAN.md`, `ARMOR_EDITOR_ARCHITECTURE.md`, `WEAPON_EDITOR_AUDIT.md`, `15-weapon-properties.todo.md`, `15-armor-properties.todo.md`).
 
 ## Strategia di Completamento
 

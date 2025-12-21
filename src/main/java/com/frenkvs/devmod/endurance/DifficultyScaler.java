@@ -188,12 +188,12 @@ public class DifficultyScaler {
      * @return Wave difficulty multiplier (1.0 = baseline)
      */
     public float getWaveMultiplier(int waveNumber, int totalWaves) {
-        if (waveNumber <= 1) {
+        if (waveNumber <= 2) {
             return 1.0f;
         }
 
         // Progressive scaling: each wave adds ~5% difficulty
-        float waveScale = 1.0f + (waveNumber - 1) * 0.05f;
+        float waveScale = 1.0f + (waveNumber - 2) * 0.05f;
 
         // In endless mode, scale more aggressively after wave 10
         if (totalWaves == 0 && waveNumber > 10) {

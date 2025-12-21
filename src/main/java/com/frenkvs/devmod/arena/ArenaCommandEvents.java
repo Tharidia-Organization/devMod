@@ -1,20 +1,33 @@
 package com.frenkvs.devmod.arena;
 
+import com.devmod.arena.autosmoke.AutosmokeReportWriter;
 import com.devmod.arena.autosmoke.AutosmokeRunner;
 import com.devmod.arena.autosmoke.AutosmokeScheduler;
-import com.devmod.arena.builder.ArenaBuilder;
+import com.devmod.arena.alert.AlertRouter;
+import com.devmod.arena.alert.AlertRouterRegistry;
+import com.devmod.arena.alert.ConsoleAlertChannel;
+import com.devmod.arena.alert.DiscordAlertChannel;
+import com.devmod.arena.alert.DuckDbAlertRecorder;
+import com.devmod.arena.alert.LogAlertChannel;
+import com.devmod.arena.alert.TelemetryAlertChannel;
+import com.devmod.arena.alert.WebhookAlertChannel;
 import com.devmod.arena.builder.AsyncArenaBuildCoordinator;
 import com.devmod.arena.builder.AsyncArenaBuilder;
 import com.devmod.arena.builder.ChunkLoadingManager;
+import com.devmod.arena.builder.TemplateArenaBuilder;
 import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.config.InstanceLimitConfig;
 import com.devmod.arena.command.ArenaCommands;
 import com.devmod.arena.integration.MinecraftBlockPlacer;
 import com.devmod.arena.integration.MinecraftEntitySpawner;
+import com.devmod.arena.logging.LogAggregationPipeline;
+import com.devmod.arena.logging.NdjsonWriter;
+import com.devmod.arena.persistence.DuckDbRepository;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateRegistryBootstrap;
 import com.devmod.arena.telemetry.ArenaTelemetry;
 import com.frenkvs.devmod.DevMod;
+import com.frenkvs.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -39,6 +52,10 @@ public final class ArenaCommandEvents {
 
     private static AutosmokeRunner autosmokeRunner;
     private static AutosmokeScheduler autosmokeScheduler;
+    private static AutosmokeReportWriter autosmokeReportWriter;
+    private static AlertRouter alertRouter;
+    private static DuckDbRepository alertRepository;
+    private static LogAggregationPipeline telemetryPipeline;
     private static final AtomicReference<ArenaTemplateConfig.ConfigSnapshot> CONFIG_SNAPSHOT = new AtomicReference<>();
     private static final AsyncArenaBuildCoordinator ASYNC_COORDINATOR =
         new AsyncArenaBuildCoordinator(CONFIG_SNAPSHOT::get);
@@ -47,6 +64,7 @@ public final class ArenaCommandEvents {
 
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
+        ensureTelemetryPipeline();
         ArenaTemplateRegistry registry = DevMod.getArenaTemplateRegistry();
         if (registry == null) {
             LOGGER.warn("[ArenaCommands] Registry not initialized; skipping command registration");
@@ -69,10 +87,19 @@ public final class ArenaCommandEvents {
 
         autosmokeRunner = runner;
         autosmokeScheduler = scheduler;
+        ensureAlertRouter();
+        if (alertRouter != null) {
+            autosmokeScheduler.setAlertRouter(alertRouter);
+        }
+        if (autosmokeReportWriter == null) {
+            autosmokeReportWriter = new AutosmokeReportWriter(Path.of("run", "autosmoke-reports"),
+                resolveZone(config.autosmokeTimezone()), 30);
+            autosmokeRunner.addReportListener(autosmokeReportWriter::writeReport);
+        }
 
         Path templateDir = snapshot != null ? snapshot.templateDirectory() : Path.of("config/devmod/arena_templates/");
 
-        Function<ServerLevel, ArenaBuilder> builderFactory = level -> createBuilder(level, CONFIG_SNAPSHOT.get());
+        Function<ServerLevel, TemplateArenaBuilder> builderFactory = level -> createBuilder(level, CONFIG_SNAPSHOT.get());
         Function<ServerLevel, AsyncArenaBuilder> asyncBuilderFactory = level -> ASYNC_COORDINATOR.getOrCreate(level);
 
         ArenaCommands commands = new ArenaCommands(
@@ -92,6 +119,7 @@ public final class ArenaCommandEvents {
 
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
+        maybeAttachAlertRecorder();
         if (autosmokeScheduler != null) {
             autosmokeScheduler.start();
         }
@@ -106,6 +134,19 @@ public final class ArenaCommandEvents {
             autosmokeRunner.shutdown();
         }
         ASYNC_COORDINATOR.clear();
+        if (alertRouter != null) {
+            alertRouter.close();
+            alertRouter = null;
+        }
+        if (alertRepository != null) {
+            try { alertRepository.close(); } catch (Exception ignored) {}
+            alertRepository = null;
+        }
+        if (telemetryPipeline != null) {
+            telemetryPipeline.close();
+            telemetryPipeline = null;
+            ArenaTelemetry.setGlobalHandler(null);
+        }
         TemplateRegistryBootstrap bootstrap = DevMod.getArenaTemplateBootstrap();
         if (bootstrap != null) {
             bootstrap.close();
@@ -129,7 +170,65 @@ public final class ArenaCommandEvents {
         }
     }
 
-    private static ArenaBuilder createBuilder(ServerLevel level, ArenaTemplateConfig.ConfigSnapshot snapshot) {
+    private static void ensureTelemetryPipeline() {
+        if (telemetryPipeline != null) {
+            return;
+        }
+        try {
+            NdjsonWriter ndjsonWriter = new NdjsonWriter(Path.of("run"), "arena-telemetry");
+            telemetryPipeline = LogAggregationPipeline.builder()
+                .addDestination(new LogAggregationPipeline.NdjsonDestination(ndjsonWriter))
+                .addConsoleDestination()
+                .build();
+            telemetryPipeline.start();
+            ArenaTelemetry.setGlobalHandler(telemetryPipeline.asTelemetryConsumer());
+        } catch (Exception e) {
+            LOGGER.warn("[ArenaCommands] Failed to initialize telemetry pipeline: {}", e.getMessage());
+        }
+    }
+
+    private static void ensureAlertRouter() {
+        if (alertRouter != null) {
+            return;
+        }
+        ArenaTelemetry telemetry = new ArenaTelemetry();
+        AlertRouter router = new AlertRouter();
+        router.registerChannel(new ConsoleAlertChannel());
+        router.registerChannel(new LogAlertChannel());
+        router.registerChannel(new TelemetryAlertChannel(telemetry));
+
+        String webhookUrl = System.getenv("DEVMOD_ARENA_ALERT_WEBHOOK_URL");
+        String webhookAuth = System.getenv("DEVMOD_ARENA_ALERT_WEBHOOK_AUTH");
+        if (webhookUrl != null && !webhookUrl.isBlank()) {
+            router.registerChannel(new WebhookAlertChannel("webhook", webhookUrl, true, 5000, webhookAuth));
+        }
+
+        String discordUrl = System.getenv("DEVMOD_ARENA_ALERT_DISCORD_WEBHOOK_URL");
+        if (discordUrl != null && !discordUrl.isBlank()) {
+            router.registerChannel(new DiscordAlertChannel("discord", discordUrl, true, 5000, "Arena Alerts", null, null));
+        }
+
+        alertRouter = router;
+        AlertRouterRegistry.set(router);
+    }
+
+    private static void maybeAttachAlertRecorder() {
+        if (alertRouter == null || alertRepository != null) {
+            return;
+        }
+        try {
+            if (DuckDBTelemetryService.INSTANCE.getDbPath() == null) {
+                return;
+            }
+            alertRepository = new DuckDbRepository(DuckDBTelemetryService.INSTANCE.getDbPath().toString());
+            alertRepository.initialize();
+            alertRouter.setDeliveryRecorder(new DuckDbAlertRecorder(alertRepository));
+        } catch (Exception e) {
+            LOGGER.warn("[ArenaCommands] Failed to attach DuckDB alert recorder: {}", e.getMessage());
+        }
+    }
+
+    private static TemplateArenaBuilder createBuilder(ServerLevel level, ArenaTemplateConfig.ConfigSnapshot snapshot) {
         Objects.requireNonNull(level, "level");
 
         ArenaTelemetry telemetry = new ArenaTelemetry();
@@ -154,7 +253,7 @@ public final class ArenaCommandEvents {
         );
 
         var instanceLimits = InstanceLimitConfig.load().toLimits();
-        return new ArenaBuilder(
+        return new TemplateArenaBuilder(
             telemetry,
             blockPlacer,
             entitySpawner,

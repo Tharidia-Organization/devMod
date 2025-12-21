@@ -72,13 +72,31 @@ EnduranceQuestManager ◄──────────────────�
 
 | Subsystem | Purpose | Key Classes |
 |-----------|---------|-------------|
-| WaveManager | Spawns mobs, tracks wave state | `WaveManager`, `ArenaManager` |
+| WaveManager | Spawns mobs, tracks wave state | `WaveManager`, `ArenaHandle` |
 | PerkSystem | Manages perk pool, selection, stacking | `PerkSystem`, `PerkSession` |
 | ComboSystem | Style scoring, combo tracking | `ComboSystem`, `ComboSession` |
 | RewardSystem | Currency, shop, achievements | `RewardSystem`, `PlayerWallet` |
 | MutatorSystem | Difficulty modifiers | `MutatorSystem`, `MutatorSession` |
 
-### 3. Party System
+### 3. Arena Template System
+**Package:** `com.devmod.arena`
+
+Arena Template (L1) + Policy (L2) system for deterministic arena builds.
+
+```
+ArenaTemplateRegistry ──► TemplateResolver ──► TemplateArenaBuilder
+        │                        │                      │
+        ▼                        ▼                      ▼
+   TemplateLoader          PolicyResolver           ArenaHandle
+```
+
+**Key Components:**
+- `ArenaTemplateRegistry`: load/validate templates, inheritance, fallback
+- `PolicyResolver`: routing/scoring for template selection
+- `TemplateArenaBuilder`: transactional build with rollback
+- `ArenaHandle`: runtime contract for spawn/bounds/metadata
+
+### 4. Party System
 **Package:** `com.frenkvs.devmod.party`
 
 Multiplayer coordination for synchronized quest starts.
@@ -101,7 +119,7 @@ FORMING ──► READY ──► IN_QUEST ──► FORMING
     └─────────────────────┘ (on failure/complete)
 ```
 
-### 4. Instance System
+### 5. Instance System
 **Package:** `com.frenkvs.devmod.instance`
 
 Dynamic dimension management for isolated quest instances.
@@ -116,7 +134,7 @@ InstanceArenaManager ──► DynamicDimensionManager
   RecoverySystem (crash recovery)
 ```
 
-### 5. Telemetry System
+### 6. Telemetry System
 **Package:** `com.frenkvs.devmod.telemetry`
 
 Data collection for level design analysis.
@@ -228,9 +246,10 @@ Client ──► [Payload] ──► Server
 2. PartyActionPayload(START_QUEST) sent to server
 3. Server validates party state (all ready)
 4. InstanceArenaManager creates instance
-5. Players teleported to arena
-6. WaveManager starts first wave
-7. QuestSyncPayload sent to all party members
+5. TemplateArenaBuilder builds arena from template
+6. Players teleported to arena
+7. WaveManager starts first wave
+8. QuestSyncPayload sent to all party members
 ```
 
 ### Combat Hit Flow

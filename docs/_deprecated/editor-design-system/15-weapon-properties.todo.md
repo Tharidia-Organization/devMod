@@ -1,0 +1,76 @@
+# Weapon Properties – Compliance TODO
+
+> DEPRECATED: superseded by `docs/editor-design-system/15-weapon-properties.md`.
+
+Checklist to align implementation with `docs/editor-design-system/15-weapon-properties.md` across all editor modules (Weapon, Ranged, Armor/General). Status reflects current codebase snapshot after ranged work.
+
+## Snapshot (Updated 2025-01)
+- ✅ `WeaponComponents.WEAPON_STATS` data component is registered and used as primary source of truth.
+- ✅ Custom attributes registered (`ModAttributes`) with Pufferfish mapping for compatibility.
+- ✅ `WeaponModule` uses component-backed model with value-source prefixes `[DEV]/[NBT]/[VANILLA]`.
+- ✅ `DamageHandler` applies armor shred, vs-* bonuses, fire/magic, true damage from component stats.
+- ✅ `WeaponStatsPayloadV2` typed payload with StreamCodec, server-side clamping via `PacketSecurityService`.
+- ✅ Tool rules (default speed, damage per block, 3 rules, clear toggle) fully implemented.
+- ✅ Mace/Trident variant tabs with component-backed model.
+- ⏳ GameTests for component materialization and damage calc need expansion.
+- ⏳ Armor/General module docs exist separately (`15-armor-properties.todo.md`, `16-armor-properties.md`).
+
+## TODO (high priority first)
+- [x] Data components as source of truth for melee stats
+  - Create `WeaponComponents` (or reuse AttributeModifiers) to store Tier1 vanilla stats (attack damage/speed/knockback/reach/sweep) instead of NBT-only `WeaponModStats`.
+  - Persist Tier3 DevMod attributes (crit chance/multiplier, armor shred, lifesteal, vs-* bonuses, true dmg) via attribute modifiers on stack; keep compatibility with Pufferfish map.
+  - Mirror load/save between components and editor model; migrate existing NBT gracefully.
+    - ✅ Added `WeaponComponents.WEAPON_STATS` typed data component and mirrored setSpecificStats/load to use it (legacy CustomData preserved).
+    - ✅ Auto-migrate legacy `WeaponModStats` into the component when missing.
+    - ✅ Apply attribute modifiers on save (vanilla + DevMod attributes, Pufferfish-mapped where present) while leaving other modifiers intact and pruning zeroed entries.
+      - Now clamps modifiers server-side via `PacketSecurityService` before writing.
+    - ✅ Editor load now prefers the component and falls back to legacy data; variant data read from component when CustomData is missing.
+    - ✅ Payloads now include both component and legacy tags; previews apply full stack edits (CustomData + component + attribute modifiers).
+    - ✅ Fallback load reconstructs stats from devmod attribute modifiers when components/legacy data are absent.
+    - ✅ Reconstructed stats are persisted back into the component to avoid repeated rebuilds.
+    - ✅ Editor import/export updated to include sweeping, armor shred, vs-* bonuses, and true damage fields.
+    - ✅ Global stats now materialize onto stacks (component + modifiers) when no per-item data exists.
+    - ✅ Component/legacy loads now also ensure stack attribute modifiers reflect the stats (clamped via security).
+    - ✅ Stats are clamped via `PacketSecurityService` before persisting (global/specific) and before ensuring modifiers.
+    - ✅ Client payload clamps stats before sending.
+    - ✅ `WeaponComponents` has `weaponStatsComponent()` with `isBound()` check and fallback for test environments.
+- [x] UI parity with design doc
+  - Rework WeaponModule tabs to show value-source badges (vanilla vs dev vs stack) like ranged; expose Tool tab as separate section (default speed, damage/block, 3 rules, clear toggle).
+  - Add Damage Types tab wiring (vs-undead/arthropod/player, fire bonus, true damage) with clamped sliders and tooltips from doc.
+  - Add per-variant tabs (Mace/Trident) using the same component-backed model; guard visibility by detection.
+    - ✅ Value-source prefixes `[DEV]/[NBT]/[VANILLA]` on WeaponModule sliders based on loaded source.
+    - ✅ Tool Rules tab with default speed, damage per block, 3 rule slots, clear toggle.
+    - ✅ Damage Types tab with vs-undead/arthropod/player sliders, fire/magic toggles, true damage slider.
+    - ✅ Mace variant tab with smash bonus/cap/knockback/AOE/fall negation.
+    - ✅ Trident variant tab with throw damage/speed, loyalty speed, riptide distance/damage/water requirement.
+- [x] Network & validation
+  - Replace `WeaponStatsPayload` raw NBT with typed payload mirroring `RangedWeaponStatsPayload`; clamp all Tier1/3 fields server-side using `PacketSecurityService`.
+  - Add migration path so legacy payloads are accepted but normalized into components.
+    - ✅ Added `weapon_stats_v2` payload (typed record + StreamCodec), still carrying legacy/component tags for compatibility.
+    - ✅ Clamp now centralized via `WeaponConfigManager.clampStats` inside server handler; normalized into component on apply.
+- [x] Runtime application
+  - On equip/shoot/swing, read component/attribute modifiers instead of custom NBT; ensure armor shred, vs-* bonuses, true damage and tool rules are enforced server-side.
+    - ✅ DamageHandler now merges component stats with DevMod attribute modifiers to avoid stale legacy-only values.
+    - ✅ DamageHandler applies armor shred (line 155), vs-* bonuses (lines 184-197), fire/magic bonuses (198-203), true damage (204-208).
+    - ✅ Tool clear flag clears tool component on load/materialization to enforce removal.
+    - ✅ Equip change event sanitizes weapon stats/components (main/off hand) to reapply modifiers and clear tool rules (clamped).
+    - ✅ BreakSpeed event sanitizes tool/weapon component before mining.
+    - ✅ Drop event clears TOOL component when clearToolRules is set to avoid custom drops.
+    - ✅ DevMod now overwrites any existing modifier on the same attribute (removes all and re-adds its own) to avoid stacking.
+  - TODO: Validate attribute modifier ranges on equip/apply (not only payload clamp) - LOW PRIORITY.
+- [ ] Armor/General module alignment
+  - Create dedicated docs/plans for Armor and General modules mirroring doc-15 structure; ensure UI/payload/runtime follow the same component-first pattern and hook into `DamageHandler`/durability systems.
+  - Add coverage for shields' block strength/reflect/cooldown using data components instead of bespoke NBT.
+  - NOTE: `15-armor-properties.todo.md` and `16-armor-properties.md` exist with similar structure.
+- [ ] Tests & diagnostics
+  - GameTests: serialize/deserialize WeaponComponents, attribute modifier application, migration from NBT; runtime damage calculations for armor shred/true damage/vs-* targets.
+    - TODO: GameTest for component→modifiers materialization and back.
+    - TODO: Damage calc tests for armor shred + true damage + vs-undead/arthropods/players.
+  - Regression tests for tool rules editing and enforcement.
+    - ✅ Clear toggle removes tool component (JUnit @Disabled placeholder; needs runtime env).
+    - NOTE: `DamageCalculationTest.java` and `EnvironmentalDamageTest.java` exist but need expansion.
+- [x] Documentation upkeep
+  - Update `15-weapon-properties.md` checklist to reflect actual status; document migration notes and component IDs.
+  - Add short "implementation status" section to ranged/armor/general docs referencing shared attribute system.
+  - ✅ Datapack export/import ora include campi avanzati (sweep, armor_shred, vs-*, true_damage, clear_tool_rules).
+  - ✅ This TODO document updated to reflect actual implementation status.

@@ -41,9 +41,11 @@ public record PerkChoicesPayload(
         int categoryColor,
         boolean stackable,
         int currentStacks,
-        int maxStacks
+        int maxStacks,
+        boolean suggested,
+        boolean required
     ) {
-        public static PerkChoice from(PerkSystem.Perk perk, int currentStacks) {
+        public static PerkChoice from(PerkSystem.Perk perk, int currentStacks, boolean suggested, boolean required) {
             return new PerkChoice(
                 perk.id,
                 perk.name,
@@ -54,7 +56,9 @@ public record PerkChoicesPayload(
                 perk.category.color,
                 perk.stackable,
                 currentStacks,
-                perk.maxStacks
+                perk.maxStacks,
+                suggested,
+                required
             );
         }
     }
@@ -94,9 +98,11 @@ public record PerkChoicesPayload(
             boolean stackable = buf.readBoolean();
             int currentStacks = buf.readInt();
             int maxStacks = buf.readInt();
+            boolean suggested = buf.readBoolean();
+            boolean required = buf.readBoolean();
 
             return new PerkChoice(id, name, description, tierName, tierColor,
-                categoryName, categoryColor, stackable, currentStacks, maxStacks);
+                categoryName, categoryColor, stackable, currentStacks, maxStacks, suggested, required);
         }
 
         private void encodePerkChoice(ByteBuf buf, PerkChoice choice) {
@@ -110,6 +116,8 @@ public record PerkChoicesPayload(
             buf.writeBoolean(choice.stackable);
             buf.writeInt(choice.currentStacks);
             buf.writeInt(choice.maxStacks);
+            buf.writeBoolean(choice.suggested);
+            buf.writeBoolean(choice.required);
         }
 
         private String readString(ByteBuf buf) {

@@ -1,5 +1,6 @@
 package com.frenkvs.devmod;
 
+import com.frenkvs.devmod.actions.DevModActions;
 import com.frenkvs.devmod.integration.ModIntegrationManager;
 import com.devmod.arena.registry.TemplateRegistryBootstrap;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
@@ -98,6 +99,8 @@ public class DevMod {
 
         // Initialize PresetRegistry (hierarchical preset system)
         PresetRegistry.INSTANCE.loadFromConfig();
+
+        DevModActions.registerCommon();
 
         // Network payload registration (mod bus)
         eventBus.addListener(DebugNetworkHandler::registerPayloads);

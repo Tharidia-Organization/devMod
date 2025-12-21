@@ -73,7 +73,7 @@ public final class ModuleCardSection implements EditorSection.CustomSection {
 
     @Override
     public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
-        Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
+        @Nonnull Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
         @Nonnull String safeIcon = Objects.requireNonNull(Objects.requireNonNullElse(icon, ""), "icon");
         @Nonnull String safeTitle = Objects.requireNonNull(Objects.requireNonNullElse(title, ""), "title");
         @Nonnull String safeDescription = Objects.requireNonNull(Objects.requireNonNullElse(description, ""), "description");

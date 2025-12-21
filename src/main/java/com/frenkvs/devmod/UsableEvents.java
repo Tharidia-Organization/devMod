@@ -2,11 +2,14 @@ package com.frenkvs.devmod;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 import org.slf4j.Logger;
+import javax.annotation.Nonnull;
+import java.util.Objects;
 
 /**
  * Event handlers for usable items.
@@ -55,8 +58,9 @@ public class UsableEvents {
 
         // Apply cooldown if set
         if (stats.cooldownDuration > 0) {
+            @Nonnull Item safeItem = Objects.requireNonNull(stack.getItem(), "item");
             player.getCooldowns().addCooldown(
-                java.util.Objects.requireNonNull(stack.getItem(), "item"),
+                safeItem,
                 stats.cooldownDuration);
             LOGGER.debug("[UsableEvents] Applied cooldown of {} ticks to {} for player {}",
                 stats.cooldownDuration, stack.getHoverName().getString(), player.getName().getString());

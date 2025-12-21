@@ -70,9 +70,14 @@ public class ActiveTestHudOverlay {
 
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
+        @Nonnull ResourceLocation overlay = Objects.requireNonNull(
+            VanillaGuiLayers.HOTBAR,
+            "hotbar layer"
+        );
+        @Nonnull ResourceLocation layerId = Objects.requireNonNull(LAYER_ID, "layer id");
         event.registerAbove(
-            Objects.requireNonNull(VanillaGuiLayers.HOTBAR),
-            Objects.requireNonNull(LAYER_ID),
+            overlay,
+            layerId,
             ActiveTestHudOverlay::render
         );
     }
@@ -199,7 +204,8 @@ public class ActiveTestHudOverlay {
         int x = 10;
 
         // Calculate dynamic height based on instructions
-        String[] instructions = activeTest.getInstructions().split("\n");
+        String instructionText = Objects.requireNonNullElse(activeTest.getInstructions(), "");
+        String[] instructions = instructionText.split("\n");
         int instructionLines = Math.min(instructions.length, 6); // Max 6 steps visible
         int height = HEADER_HEIGHT + PANEL_PADDING * 3 +
                      LINE_HEIGHT * 2 + // Name + Description
@@ -240,10 +246,11 @@ public class ActiveTestHudOverlay {
 
         // Test name
         String testName = Objects.requireNonNullElse(activeTest.getName(), "Unnamed Test");
-        if (font.width(Objects.requireNonNull(testName, "test name")) > PANEL_WIDTH - 50) {
+        testName = Objects.requireNonNull(testName, "testName");
+        if (font.width(testName) > PANEL_WIDTH - 50) {
             testName = testName.substring(0, 25) + "...";
         }
-        g.drawString(font, Objects.requireNonNull(testName, "test name"), x + PANEL_PADDING + 10, y + 7, TEXT_TITLE, false);
+        g.drawString(font, testName, x + PANEL_PADDING + 10, y + 7, TEXT_TITLE, false);
 
         // Priority badge
         String priorityBadge = "[" + activeTest.getPriority().name().charAt(0) + "]";
@@ -253,11 +260,12 @@ public class ActiveTestHudOverlay {
         int contentY = y + HEADER_HEIGHT + PANEL_PADDING;
 
         // Category
-        g.drawString(font, activeTest.getCategory(), x + PANEL_PADDING, contentY, TEXT_SECONDARY, false);
+        String category = Objects.requireNonNullElse(activeTest.getCategory(), "Uncategorized");
+        g.drawString(font, category, x + PANEL_PADDING, contentY, TEXT_SECONDARY, false);
         contentY += LINE_HEIGHT + 2;
 
         // Description (truncated)
-        String desc = activeTest.getDescription();
+        String desc = Objects.requireNonNullElse(activeTest.getDescription(), "");
         if (desc.length() > 45) desc = desc.substring(0, 42) + "...";
         g.drawString(font, desc, x + PANEL_PADDING, contentY, TEXT_MUTED, false);
         contentY += LINE_HEIGHT + 6;
@@ -293,7 +301,7 @@ public class ActiveTestHudOverlay {
 
         if (instructions.length > instructionLines) {
             g.drawString(font, "... +" + (instructions.length - instructionLines) + " more",
-                        x + PANEL_PADDING + 4, contentY, TEXT_MUTED, false);
+                x + PANEL_PADDING + 4, contentY, TEXT_MUTED, false);
             contentY += LINE_HEIGHT;
         }
 
@@ -310,7 +318,7 @@ public class ActiveTestHudOverlay {
                    progress >= 1f ? PROGRESS_COMPLETE : PROGRESS_FILL);
 
             // Progress percentage
-            final @Nonnull String progressText = Objects.requireNonNull(
+            final String progressText = Objects.requireNonNull(
                 String.format("%.0f%%", progress * 100),
                 "progress text");
             int textX = x + PANEL_PADDING + progressBarWidth / 2 - font.width(progressText) / 2;

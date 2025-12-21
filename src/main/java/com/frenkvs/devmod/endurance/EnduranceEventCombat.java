@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.endurance;
 
+import com.devmod.arena.api.ArenaHandle;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -218,15 +219,9 @@ public class EnduranceEventCombat {
 
             // Notify wave manager
             if (arenaId != null) {
-                WaveManager.INSTANCE.handleMobDeath(entity.getUUID(), arenaId);
-
-                // Check if wave is complete
-                if (WaveManager.INSTANCE.isWaveComplete(arenaId)) {
-                    EnduranceQuestManager.INSTANCE.getActiveSession(player).ifPresent(session -> {
-                        EnduranceEventHandler.onWaveComplete(player, session, session.getQuest().getCurrentWave());
-                    });
-                    EnduranceQuestManager.INSTANCE.completeWave(player);
-                }
+                EnduranceQuestManager.ActiveQuestSession session =
+                    EnduranceQuestManager.INSTANCE.getActiveSession(player).orElse(null);
+                WaveManager.INSTANCE.handleMobDeath(entity.getUUID(), arenaId, session, player);
             }
         } else {
             // Mob died from external cause (not player kill)
@@ -249,6 +244,15 @@ public class EnduranceEventCombat {
             EnduranceQuestManager.INSTANCE.getActiveSession(player);
 
         if (session.isPresent()) {
+            ArenaHandle handle = session.get().getArenaHandle();
+            if (handle != null) {
+                EnduranceTelemetryService.INSTANCE.recordDeathHeatmap(
+                    session.get().getQuest().getQuestId(),
+                    handle,
+                    player.blockPosition(),
+                    player.getUUID()
+                );
+            }
             CombatTracker.INSTANCE.onPlayerDeath(player);
             EnduranceQuestManager.INSTANCE.handlePlayerDeath(player);
         }

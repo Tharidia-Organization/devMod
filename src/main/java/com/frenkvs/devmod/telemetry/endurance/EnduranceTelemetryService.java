@@ -1,10 +1,12 @@
 package com.frenkvs.devmod.telemetry.endurance;
 
+import com.devmod.arena.api.ArenaHandle;
 import com.frenkvs.devmod.endurance.*;
 import com.frenkvs.devmod.telemetry.TelemetryService;
 import com.frenkvs.devmod.telemetry.duckdb.DuckDBConfig;
 import com.frenkvs.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.mojang.logging.LogUtils;
+import net.minecraft.core.BlockPos;
 import org.slf4j.Logger;
 
 import java.time.Instant;
@@ -40,6 +42,8 @@ public class EnduranceTelemetryService {
     private static final AtomicLong lastSkipLogTime = new AtomicLong(0);
     private static final long SKIP_LOG_INTERVAL_MS = 30_000; // Log at most once per 30 seconds
 
+    private static final int ARENA_HEATMAP_GRID = 16;
+
     private EnduranceTelemetryService() {}
 
     /**
@@ -63,21 +67,32 @@ public class EnduranceTelemetryService {
                                  QuestType questType, Set<WaveManager.WaveModifier> modifiers) {
         String modifierList = modifiers.isEmpty() ? "none" :
             modifiers.stream().map(m -> m.name()).reduce((a, b) -> a + "," + b).orElse("none");
-
-        String json = String.format(
-            "{\"ts\":\"%s\",\"type\":\"wave_start\",\"questId\":\"%s\",\"wave\":%d,\"mobCount\":%d," +
-            "\"playerCount\":%d,\"questType\":\"%s\",\"modifiers\":\"%s\"}",
-            Instant.now(), questId, waveNumber, mobCount, playerCount, questType.name(), modifierList
-        );
+        QuestSessionStats stats = questStats.get(questId);
+        StringBuilder json = new StringBuilder(260);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"wave_start\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"wave\":").append(waveNumber).append(",");
+        json.append("\"mobCount\":").append(mobCount).append(",");
+        json.append("\"playerCount\":").append(playerCount).append(",");
+        json.append("\"questType\":\"").append(questType.name()).append("\",");
+        json.append("\"modifiers\":\"").append(escape(modifierList)).append("\"");
+        appendContext(json, stats);
+        json.append("}");
 
         // DuckDB: Primary storage
         String[] modifierArray = modifiers.stream().map(Enum::name).toArray(String[]::new);
         DuckDBTelemetryService.INSTANCE.logWaveStart(questId, waveNumber, mobCount,
-            playerCount, questType.name(), modifierArray);
+            playerCount, questType.name(), modifierArray,
+            stats != null ? stats.templateId : null,
+            stats != null ? stats.templateVersion : null,
+            stats != null ? stats.policyId : null,
+            stats != null ? stats.policyVersion : null,
+            stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         } else {
             logNdjsonSkip();
         }
@@ -94,6 +109,7 @@ public class EnduranceTelemetryService {
      */
     public void recordWaveComplete(UUID questId, int waveNumber, int mobsKilled, long durationMs,
                                     boolean noDamage, float killsPerSecond) {
+        QuestSessionStats stats = questStats.get(questId);
         StringBuilder json = new StringBuilder(180);
         json.append("{\"ts\":\"").append(Instant.now()).append("\",");
         json.append("\"type\":\"wave_complete\",");
@@ -103,11 +119,17 @@ public class EnduranceTelemetryService {
         json.append("\"durationMs\":").append(durationMs).append(",");
         json.append("\"noDamage\":").append(noDamage).append(",");
         json.append("\"killsPerSecond\":"); appendFloat2(json, killsPerSecond);
+        appendContext(json, stats);
         json.append("}");
 
         // DuckDB: Primary storage
         DuckDBTelemetryService.INSTANCE.logWaveComplete(questId, waveNumber, mobsKilled,
-            durationMs, noDamage, killsPerSecond);
+            durationMs, noDamage, killsPerSecond,
+            stats != null ? stats.templateId : null,
+            stats != null ? stats.templateVersion : null,
+            stats != null ? stats.policyId : null,
+            stats != null ? stats.policyVersion : null,
+            stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
@@ -126,6 +148,7 @@ public class EnduranceTelemetryService {
      */
     public void recordWaveKill(UUID questId, int waveNumber, String mobType, boolean isElite,
                                 String killerWeapon, float damageDealt) {
+        QuestSessionStats stats = questStats.get(questId);
         StringBuilder json = new StringBuilder(200);
         json.append("{\"ts\":\"").append(Instant.now()).append("\",");
         json.append("\"type\":\"wave_kill\",");
@@ -135,16 +158,102 @@ public class EnduranceTelemetryService {
         json.append("\"isElite\":").append(isElite).append(",");
         json.append("\"weapon\":\"").append(escape(killerWeapon)).append("\",");
         json.append("\"damage\":"); appendFloat1(json, damageDealt);
+        appendContext(json, stats);
         json.append("}");
 
         // DuckDB: Primary storage (HOT PATH - high volume)
         DuckDBTelemetryService.INSTANCE.logWaveKill(questId, waveNumber, mobType,
-            isElite, killerWeapon, damageDealt);
+            isElite, killerWeapon, damageDealt,
+            stats != null ? stats.templateId : null,
+            stats != null ? stats.templateVersion : null,
+            stats != null ? stats.policyId : null,
+            stats != null ? stats.policyVersion : null,
+            stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
+    }
+
+    /**
+     * Record a spawn slot fallback (e.g., pool exhausted or missing slots).
+     */
+    public void recordSpawnFallback(UUID questId, int waveNumber, String poolTag,
+                                    @javax.annotation.Nullable String templateId,
+                                    @javax.annotation.Nullable String reason) {
+        StringBuilder json = new StringBuilder(200);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"spawn_fallback\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"wave\":").append(waveNumber).append(",");
+        json.append("\"pool\":\"").append(escape(poolTag)).append("\",");
+        json.append("\"templateId\":\"").append(escape(templateId != null ? templateId : "")).append("\",");
+        json.append("\"reason\":\"").append(escape(reason != null ? reason : "")).append("\"");
+        json.append("}");
+
+        TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
+    }
+
+    /**
+     * Record a spawn failure after exhausting all pools.
+     */
+    public void recordSpawnFailure(UUID questId, int waveNumber, String reason,
+                                   @javax.annotation.Nullable String templateId) {
+        StringBuilder json = new StringBuilder(180);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"spawn_failure\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"wave\":").append(waveNumber).append(",");
+        json.append("\"reason\":\"").append(escape(reason != null ? reason : "")).append("\",");
+        json.append("\"templateId\":\"").append(escape(templateId != null ? templateId : "")).append("\"");
+        json.append("}");
+
+        TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
+    }
+
+    public void recordSpawnHeatmap(UUID questId, ArenaHandle handle, BlockPos pos) {
+        recordArenaSpatialEvent("spawn", questId, handle, pos, null);
+    }
+
+    public void recordDeathHeatmap(UUID questId, ArenaHandle handle, BlockPos pos, UUID playerId) {
+        recordArenaSpatialEvent("death", questId, handle, pos, playerId);
+    }
+
+    private void recordArenaSpatialEvent(String eventType, UUID questId, ArenaHandle handle,
+                                         BlockPos pos, UUID playerId) {
+        if (handle == null || pos == null || handle.bounds() == null) {
+            return;
+        }
+        String templateId = handle.templateId();
+        if (templateId == null || templateId.isBlank()) {
+            return;
+        }
+        ArenaHandle.AABB bounds = handle.bounds();
+        int gridX = toGridIndex(pos.getX(), bounds.minX(), bounds.maxX(), ARENA_HEATMAP_GRID);
+        int gridZ = toGridIndex(pos.getZ(), bounds.minZ(), bounds.maxZ(), ARENA_HEATMAP_GRID);
+
+        DuckDBTelemetryService.INSTANCE.logArenaSpatialEvent(
+            templateId,
+            handle.templateVersion(),
+            questId,
+            eventType,
+            gridX,
+            gridZ,
+            pos.getX(),
+            pos.getY(),
+            pos.getZ(),
+            playerId
+        );
+    }
+
+    private int toGridIndex(int coord, int min, int max, int gridSize) {
+        int size = Math.max(1, max - min + 1);
+        int relative = coord - min;
+        int index = (int) Math.floor((relative * (double) gridSize) / size);
+        if (index < 0) return 0;
+        if (index >= gridSize) return gridSize - 1;
+        return index;
     }
 
     // ===== COMBO/STYLE EVENTS =====
@@ -155,19 +264,32 @@ public class EnduranceTelemetryService {
     public void recordStyleRankChange(UUID playerId, UUID questId, ComboSystem.StyleRank oldRank,
                                        ComboSystem.StyleRank newRank, int styleScore, int currentCombo) {
         boolean isRankUp = newRank.ordinal() > oldRank.ordinal();
-        String json = String.format(
-            "{\"ts\":\"%s\",\"type\":\"style_rank_change\",\"player\":\"%s\",\"questId\":\"%s\"," +
-            "\"oldRank\":\"%s\",\"newRank\":\"%s\",\"isRankUp\":%b,\"styleScore\":%d,\"combo\":%d}",
-            Instant.now(), playerId, questId, oldRank.name(), newRank.name(), isRankUp, styleScore, currentCombo
-        );
+        QuestSessionStats stats = questStats.get(questId);
+        StringBuilder json = new StringBuilder(220);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"style_rank_change\",");
+        json.append("\"player\":\"").append(playerId).append("\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"oldRank\":\"").append(oldRank.name()).append("\",");
+        json.append("\"newRank\":\"").append(newRank.name()).append("\",");
+        json.append("\"isRankUp\":").append(isRankUp).append(",");
+        json.append("\"styleScore\":").append(styleScore).append(",");
+        json.append("\"combo\":").append(currentCombo);
+        appendContext(json, stats);
+        json.append("}");
 
         // DuckDB: Primary storage
         DuckDBTelemetryService.INSTANCE.logComboEvent(playerId, questId,
-            isRankUp ? "rank_up" : "rank_down", oldRank.name(), newRank.name(), styleScore, currentCombo);
+            isRankUp ? "rank_up" : "rank_down", oldRank.name(), newRank.name(), styleScore, currentCombo,
+            stats != null ? stats.templateId : null,
+            stats != null ? stats.templateVersion : null,
+            stats != null ? stats.policyId : null,
+            stats != null ? stats.policyVersion : null,
+            stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
         if (isRankUp) {
@@ -180,20 +302,31 @@ public class EnduranceTelemetryService {
      */
     public void recordComboMilestone(UUID playerId, UUID questId, int milestone, int styleEarned,
                                       ComboSystem.StyleRank currentRank) {
-        String json = String.format(
-            "{\"ts\":\"%s\",\"type\":\"combo_milestone\",\"player\":\"%s\",\"questId\":\"%s\"," +
-            "\"milestone\":%d,\"styleEarned\":%d,\"rank\":\"%s\"}",
-            Instant.now(), playerId, questId, milestone, styleEarned, currentRank.name()
-        );
+        QuestSessionStats stats = questStats.get(questId);
+        StringBuilder json = new StringBuilder(200);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"combo_milestone\",");
+        json.append("\"player\":\"").append(playerId).append("\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"milestone\":").append(milestone).append(",");
+        json.append("\"styleEarned\":").append(styleEarned).append(",");
+        json.append("\"rank\":\"").append(currentRank.name()).append("\"");
+        appendContext(json, stats);
+        json.append("}");
 
         // DuckDB: Primary storage
         // Note: pointsEarned not available in this method, using styleEarned for both
         DuckDBTelemetryService.INSTANCE.logComboMilestone(playerId, questId, milestone,
-            styleEarned, styleEarned, currentRank.name());
+            styleEarned, styleEarned, currentRank.name(),
+            stats != null ? stats.templateId : null,
+            stats != null ? stats.templateVersion : null,
+            stats != null ? stats.policyId : null,
+            stats != null ? stats.policyVersion : null,
+            stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
 
@@ -203,19 +336,31 @@ public class EnduranceTelemetryService {
     public void recordComboBreak(UUID playerId, UUID questId, int comboLost,
                                   ComboSystem.StyleRank previousRank, ComboSystem.StyleRank newRank,
                                   float damageTaken) {
-        String json = String.format(
-            "{\"ts\":\"%s\",\"type\":\"combo_break\",\"player\":\"%s\",\"questId\":\"%s\"," +
-            "\"comboLost\":%d,\"previousRank\":\"%s\",\"newRank\":\"%s\",\"damageTaken\":%.1f}",
-            Instant.now(), playerId, questId, comboLost, previousRank.name(), newRank.name(), damageTaken
-        );
+        QuestSessionStats stats = questStats.get(questId);
+        StringBuilder json = new StringBuilder(210);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"combo_break\",");
+        json.append("\"player\":\"").append(playerId).append("\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"comboLost\":").append(comboLost).append(",");
+        json.append("\"previousRank\":\"").append(previousRank.name()).append("\",");
+        json.append("\"newRank\":\"").append(newRank.name()).append("\",");
+        json.append("\"damageTaken\":"); appendFloat1(json, damageTaken);
+        appendContext(json, stats);
+        json.append("}");
 
         // DuckDB: Primary storage
         DuckDBTelemetryService.INSTANCE.logComboBreak(playerId, questId, comboLost,
-            previousRank.name(), newRank.name(), damageTaken);
+            previousRank.name(), newRank.name(), damageTaken,
+            stats != null ? stats.templateId : null,
+            stats != null ? stats.templateVersion : null,
+            stats != null ? stats.policyId : null,
+            stats != null ? stats.policyVersion : null,
+            stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
 
@@ -224,15 +369,22 @@ public class EnduranceTelemetryService {
      */
     public void recordSpecialAction(UUID playerId, UUID questId, ComboSystem.ActionType action,
                                      int pointsEarned, int styleEarned, int currentCombo) {
-        String json = String.format(
-            "{\"ts\":\"%s\",\"type\":\"special_action\",\"player\":\"%s\",\"questId\":\"%s\"," +
-            "\"action\":\"%s\",\"points\":%d,\"style\":%d,\"combo\":%d}",
-            Instant.now(), playerId, questId, action.name(), pointsEarned, styleEarned, currentCombo
-        );
+        QuestSessionStats stats = questStats.get(questId);
+        StringBuilder json = new StringBuilder(200);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"special_action\",");
+        json.append("\"player\":\"").append(playerId).append("\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"action\":\"").append(action.name()).append("\",");
+        json.append("\"points\":").append(pointsEarned).append(",");
+        json.append("\"style\":").append(styleEarned).append(",");
+        json.append("\"combo\":").append(currentCombo);
+        appendContext(json, stats);
+        json.append("}");
 
         // NDJSON: Fallback only (no DuckDB mapping for special_action yet)
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
 
@@ -244,22 +396,34 @@ public class EnduranceTelemetryService {
     public void recordPerkSelected(UUID playerId, UUID questId, String perkId, String perkName,
                                     PerkSystem.PerkTier tier, PerkSystem.PerkCategory category,
                                     int stackCount, int totalPerks) {
-        String json = String.format(
-            "{\"ts\":\"%s\",\"type\":\"perk_selected\",\"player\":\"%s\",\"questId\":\"%s\"," +
-            "\"perkId\":\"%s\",\"perkName\":\"%s\",\"tier\":\"%s\",\"category\":\"%s\"," +
-            "\"stackCount\":%d,\"totalPerks\":%d}",
-            Instant.now(), playerId, questId, escape(perkId), escape(perkName),
-            tier.name(), category.name(), stackCount, totalPerks
-        );
+        QuestSessionStats stats = questStats.get(questId);
+        StringBuilder json = new StringBuilder(240);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"perk_selected\",");
+        json.append("\"player\":\"").append(playerId).append("\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"perkId\":\"").append(escape(perkId)).append("\",");
+        json.append("\"perkName\":\"").append(escape(perkName)).append("\",");
+        json.append("\"tier\":\"").append(tier.name()).append("\",");
+        json.append("\"category\":\"").append(category.name()).append("\",");
+        json.append("\"stackCount\":").append(stackCount).append(",");
+        json.append("\"totalPerks\":").append(totalPerks);
+        appendContext(json, stats);
+        json.append("}");
 
         // DuckDB: Primary storage
         // Note: waveNumber not available here, passing 0 as placeholder
         DuckDBTelemetryService.INSTANCE.logPerkSelected(playerId, questId, perkId, perkName,
-            tier.name(), category.name(), stackCount, totalPerks, 0);
+            tier.name(), category.name(), stackCount, totalPerks, 0,
+            stats != null ? stats.templateId : null,
+            stats != null ? stats.templateVersion : null,
+            stats != null ? stats.policyId : null,
+            stats != null ? stats.policyVersion : null,
+            stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
         LOGGER.debug("[Endurance] Perk selected: {} ({}) - stack {}", perkName, tier.displayName, stackCount);
@@ -272,6 +436,7 @@ public class EnduranceTelemetryService {
      */
     public void recordPerkChoicesOffered(UUID playerId, UUID questId, int waveNumber,
                                           List<PerkSystem.Perk> choices) {
+        QuestSessionStats stats = questStats.get(questId);
         StringBuilder choicesJson = new StringBuilder("[");
         for (int i = 0; i < choices.size(); i++) {
             PerkSystem.Perk perk = choices.get(i);
@@ -281,18 +446,27 @@ public class EnduranceTelemetryService {
         }
         choicesJson.append("]");
 
-        String json = String.format(
-            "{\"ts\":\"%s\",\"type\":\"perk_choices\",\"player\":\"%s\",\"questId\":\"%s\"," +
-            "\"wave\":%d,\"choices\":%s}",
-            Instant.now(), playerId, questId, waveNumber, choicesJson
-        );
+        StringBuilder json = new StringBuilder(200);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"perk_choices\",");
+        json.append("\"player\":\"").append(playerId).append("\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"wave\":").append(waveNumber).append(",");
+        json.append("\"choices\":").append(choicesJson);
+        appendContext(json, stats);
+        json.append("}");
 
         // DuckDB: Primary storage
-        DuckDBTelemetryService.INSTANCE.logPerkChoices(playerId, questId, waveNumber, choicesJson.toString());
+        DuckDBTelemetryService.INSTANCE.logPerkChoices(playerId, questId, waveNumber, choicesJson.toString(),
+            stats != null ? stats.templateId : null,
+            stats != null ? stats.templateVersion : null,
+            stats != null ? stats.policyId : null,
+            stats != null ? stats.policyVersion : null,
+            stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
 
@@ -303,6 +477,7 @@ public class EnduranceTelemetryService {
      */
     public void recordMutatorsAssigned(UUID questId, List<MutatorSystem.Mutator> mutators,
                                         float totalRewardMultiplier) {
+        QuestSessionStats stats = questStats.get(questId);
         StringBuilder mutatorJson = new StringBuilder("[");
         for (int i = 0; i < mutators.size(); i++) {
             MutatorSystem.Mutator m = mutators.get(i);
@@ -312,19 +487,28 @@ public class EnduranceTelemetryService {
         }
         mutatorJson.append("]");
 
-        String json = String.format(
-            "{\"ts\":\"%s\",\"type\":\"mutators_assigned\",\"questId\":\"%s\"," +
-            "\"mutators\":%s,\"rewardMultiplier\":%.2f,\"count\":%d}",
-            Instant.now(), questId, mutatorJson, totalRewardMultiplier, mutators.size()
-        );
+        StringBuilder json = new StringBuilder(220);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"mutators_assigned\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"mutators\":").append(mutatorJson).append(",");
+        json.append("\"rewardMultiplier\":"); appendFloat2(json, totalRewardMultiplier);
+        json.append(",\"count\":").append(mutators.size());
+        appendContext(json, stats);
+        json.append("}");
 
         // DuckDB: Primary storage
         DuckDBTelemetryService.INSTANCE.logMutatorsAssigned(questId, mutatorJson.toString(),
-            totalRewardMultiplier, mutators.size());
+            totalRewardMultiplier, mutators.size(),
+            stats != null ? stats.templateId : null,
+            stats != null ? stats.templateVersion : null,
+            stats != null ? stats.policyId : null,
+            stats != null ? stats.policyVersion : null,
+            stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
         LOGGER.debug("[Endurance] {} mutators assigned ({}x rewards)", mutators.size(), totalRewardMultiplier);
@@ -334,18 +518,28 @@ public class EnduranceTelemetryService {
      * Record new mutator added mid-quest.
      */
     public void recordMutatorAdded(UUID questId, MutatorSystem.Mutator mutator, int waveNumber) {
-        String json = String.format(
-            "{\"ts\":\"%s\",\"type\":\"mutator_added\",\"questId\":\"%s\"," +
-            "\"mutatorId\":\"%s\",\"category\":\"%s\",\"wave\":%d}",
-            Instant.now(), questId, escape(mutator.id), mutator.category.name(), waveNumber
-        );
+        QuestSessionStats stats = questStats.get(questId);
+        StringBuilder json = new StringBuilder(200);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"mutator_added\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"mutatorId\":\"").append(escape(mutator.id)).append("\",");
+        json.append("\"category\":\"").append(mutator.category.name()).append("\",");
+        json.append("\"wave\":").append(waveNumber);
+        appendContext(json, stats);
+        json.append("}");
 
         // DuckDB: Primary storage
-        DuckDBTelemetryService.INSTANCE.logMutatorAdded(questId, mutator.id, mutator.category.name(), waveNumber);
+        DuckDBTelemetryService.INSTANCE.logMutatorAdded(questId, mutator.id, mutator.category.name(), waveNumber,
+            stats != null ? stats.templateId : null,
+            stats != null ? stats.templateVersion : null,
+            stats != null ? stats.policyId : null,
+            stats != null ? stats.policyVersion : null,
+            stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
 
@@ -356,18 +550,29 @@ public class EnduranceTelemetryService {
      */
     public void recordCurrencyEarned(UUID playerId, UUID questId, RewardSystem.Currency currency,
                                       int amount, String source) {
-        String json = String.format(
-            "{\"ts\":\"%s\",\"type\":\"currency_earned\",\"player\":\"%s\",\"questId\":\"%s\"," +
-            "\"currency\":\"%s\",\"amount\":%d,\"source\":\"%s\"}",
-            Instant.now(), playerId, questId, currency.name(), amount, escape(source)
-        );
+        QuestSessionStats stats = questStats.get(questId);
+        StringBuilder json = new StringBuilder(220);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"currency_earned\",");
+        json.append("\"player\":\"").append(playerId).append("\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"currency\":\"").append(currency.name()).append("\",");
+        json.append("\"amount\":").append(amount).append(",");
+        json.append("\"source\":\"").append(escape(source)).append("\"");
+        appendContext(json, stats);
+        json.append("}");
 
         // DuckDB: Primary storage
-        DuckDBTelemetryService.INSTANCE.logCurrencyEarned(playerId, questId, currency.name(), amount, source);
+        DuckDBTelemetryService.INSTANCE.logCurrencyEarned(playerId, questId, currency.name(), amount, source,
+            stats != null ? stats.templateId : null,
+            stats != null ? stats.templateVersion : null,
+            stats != null ? stats.policyId : null,
+            stats != null ? stats.policyVersion : null,
+            stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
         getOrCreateStats(questId).currencyEarned(currency, amount);
@@ -378,18 +583,29 @@ public class EnduranceTelemetryService {
      */
     public void recordLootDrop(UUID playerId, UUID questId, String itemId, int count,
                                 RewardSystem.LootTier tier) {
-        String json = String.format(
-            "{\"ts\":\"%s\",\"type\":\"loot_drop\",\"player\":\"%s\",\"questId\":\"%s\"," +
-            "\"item\":\"%s\",\"count\":%d,\"tier\":\"%s\"}",
-            Instant.now(), playerId, questId, escape(itemId), count, tier.name()
-        );
+        QuestSessionStats stats = questStats.get(questId);
+        StringBuilder json = new StringBuilder(200);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"loot_drop\",");
+        json.append("\"player\":\"").append(playerId).append("\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"item\":\"").append(escape(itemId)).append("\",");
+        json.append("\"count\":").append(count).append(",");
+        json.append("\"tier\":\"").append(tier.name()).append("\"");
+        appendContext(json, stats);
+        json.append("}");
 
         // DuckDB: Primary storage
-        DuckDBTelemetryService.INSTANCE.logLootDrop(playerId, questId, itemId, count, tier.name());
+        DuckDBTelemetryService.INSTANCE.logLootDrop(playerId, questId, itemId, count, tier.name(),
+            stats != null ? stats.templateId : null,
+            stats != null ? stats.templateVersion : null,
+            stats != null ? stats.policyId : null,
+            stats != null ? stats.policyVersion : null,
+            stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
 
@@ -399,16 +615,31 @@ public class EnduranceTelemetryService {
     public void recordAchievementUnlocked(UUID playerId, UUID questId, String achievementId,
                                            String achievementName, RewardSystem.Currency rewardCurrency,
                                            int rewardAmount) {
-        String json = String.format(
-            "{\"ts\":\"%s\",\"type\":\"achievement_unlocked\",\"player\":\"%s\",\"questId\":\"%s\"," +
-            "\"achievementId\":\"%s\",\"name\":\"%s\",\"rewardCurrency\":\"%s\",\"rewardAmount\":%d}",
-            Instant.now(), playerId, questId, escape(achievementId), escape(achievementName),
-            rewardCurrency.name(), rewardAmount
-        );
+        QuestSessionStats stats = questStats.get(questId);
+        StringBuilder json = new StringBuilder(240);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"achievement_unlocked\",");
+        json.append("\"player\":\"").append(playerId).append("\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"achievementId\":\"").append(escape(achievementId)).append("\",");
+        json.append("\"name\":\"").append(escape(achievementName)).append("\",");
+        json.append("\"rewardCurrency\":\"").append(rewardCurrency.name()).append("\",");
+        json.append("\"rewardAmount\":").append(rewardAmount);
+        appendContext(json, stats);
+        json.append("}");
 
-        // NDJSON: Fallback only (no DuckDB mapping for achievement yet)
+        // DuckDB: Primary storage
+        DuckDBTelemetryService.INSTANCE.logAchievementUnlocked(playerId, questId, achievementId,
+            achievementName, rewardCurrency.name(), rewardAmount,
+            stats != null ? stats.templateId : null,
+            stats != null ? stats.templateVersion : null,
+            stats != null ? stats.policyId : null,
+            stats != null ? stats.policyVersion : null,
+            stats != null ? stats.arenaId : null);
+
+        // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
         LOGGER.info("[Endurance] Achievement unlocked: {}", achievementName);
     }
@@ -426,7 +657,7 @@ public class EnduranceTelemetryService {
 
         // NDJSON: Fallback only (no DuckDB mapping for shop_purchase yet)
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
 
@@ -447,7 +678,7 @@ public class EnduranceTelemetryService {
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
         LOGGER.debug("[Endurance] Party created: {} (leader: {})", partyId, leaderName);
@@ -468,7 +699,7 @@ public class EnduranceTelemetryService {
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
 
@@ -487,7 +718,7 @@ public class EnduranceTelemetryService {
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
 
@@ -506,7 +737,7 @@ public class EnduranceTelemetryService {
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
 
@@ -525,7 +756,7 @@ public class EnduranceTelemetryService {
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
 
@@ -544,7 +775,7 @@ public class EnduranceTelemetryService {
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
 
@@ -555,19 +786,30 @@ public class EnduranceTelemetryService {
      */
     public void recordBossWaveStart(UUID questId, int waveNumber, String bossArchetype,
                                      float bossMaxHealth, int playerCount) {
-        String json = String.format(
-            "{\"ts\":\"%s\",\"type\":\"boss_wave_start\",\"questId\":\"%s\",\"wave\":%d," +
-            "\"archetype\":\"%s\",\"maxHealth\":%.1f,\"playerCount\":%d}",
-            Instant.now(), questId, waveNumber, escape(bossArchetype), bossMaxHealth, playerCount
-        );
+        QuestSessionStats stats = questStats.get(questId);
+        StringBuilder json = new StringBuilder(220);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"boss_wave_start\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"wave\":").append(waveNumber).append(",");
+        json.append("\"archetype\":\"").append(escape(bossArchetype)).append("\",");
+        json.append("\"maxHealth\":"); appendFloat1(json, bossMaxHealth);
+        json.append(",\"playerCount\":").append(playerCount);
+        appendContext(json, stats);
+        json.append("}");
 
         // DuckDB: Primary storage
         DuckDBTelemetryService.INSTANCE.logBossWaveStart(questId, waveNumber, bossArchetype,
-            bossMaxHealth, playerCount);
+            bossMaxHealth, playerCount,
+            stats != null ? stats.templateId : null,
+            stats != null ? stats.templateVersion : null,
+            stats != null ? stats.policyId : null,
+            stats != null ? stats.policyVersion : null,
+            stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
         LOGGER.info("[Endurance] Boss wave {} started: {}", waveNumber, bossArchetype);
@@ -578,19 +820,30 @@ public class EnduranceTelemetryService {
      */
     public void recordBossAbility(UUID questId, String bossArchetype, String abilityName,
                                    int playersHit, float damageDealt) {
-        String json = String.format(
-            "{\"ts\":\"%s\",\"type\":\"boss_ability\",\"questId\":\"%s\"," +
-            "\"archetype\":\"%s\",\"ability\":\"%s\",\"playersHit\":%d,\"damage\":%.1f}",
-            Instant.now(), questId, escape(bossArchetype), escape(abilityName), playersHit, damageDealt
-        );
+        QuestSessionStats stats = questStats.get(questId);
+        StringBuilder json = new StringBuilder(220);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"boss_ability\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"archetype\":\"").append(escape(bossArchetype)).append("\",");
+        json.append("\"ability\":\"").append(escape(abilityName)).append("\",");
+        json.append("\"playersHit\":").append(playersHit).append(",");
+        json.append("\"damage\":"); appendFloat1(json, damageDealt);
+        appendContext(json, stats);
+        json.append("}");
 
         // DuckDB: Primary storage
         DuckDBTelemetryService.INSTANCE.logBossAbility(questId, bossArchetype, abilityName,
-            playersHit, damageDealt);
+            playersHit, damageDealt,
+            stats != null ? stats.templateId : null,
+            stats != null ? stats.templateVersion : null,
+            stats != null ? stats.policyId : null,
+            stats != null ? stats.policyVersion : null,
+            stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
 
@@ -599,20 +852,31 @@ public class EnduranceTelemetryService {
      */
     public void recordBossDefeated(UUID questId, int waveNumber, String bossArchetype,
                                     long fightDurationMs, int bonusPoints, float damageDealtToBoss) {
-        String json = String.format(
-            "{\"ts\":\"%s\",\"type\":\"boss_defeated\",\"questId\":\"%s\",\"wave\":%d," +
-            "\"archetype\":\"%s\",\"durationMs\":%d,\"bonusPoints\":%d,\"damageDealt\":%.1f}",
-            Instant.now(), questId, waveNumber, escape(bossArchetype), fightDurationMs,
-            bonusPoints, damageDealtToBoss
-        );
+        QuestSessionStats stats = questStats.get(questId);
+        StringBuilder json = new StringBuilder(240);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"boss_defeated\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"wave\":").append(waveNumber).append(",");
+        json.append("\"archetype\":\"").append(escape(bossArchetype)).append("\",");
+        json.append("\"durationMs\":").append(fightDurationMs).append(",");
+        json.append("\"bonusPoints\":").append(bonusPoints).append(",");
+        json.append("\"damageDealt\":"); appendFloat1(json, damageDealtToBoss);
+        appendContext(json, stats);
+        json.append("}");
 
         // DuckDB: Primary storage
         DuckDBTelemetryService.INSTANCE.logBossDefeated(questId, waveNumber, bossArchetype,
-            fightDurationMs, bonusPoints, damageDealtToBoss);
+            fightDurationMs, bonusPoints, damageDealtToBoss,
+            stats != null ? stats.templateId : null,
+            stats != null ? stats.templateVersion : null,
+            stats != null ? stats.policyId : null,
+            stats != null ? stats.policyVersion : null,
+            stats != null ? stats.arenaId : null);
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
         LOGGER.info("[Endurance] Boss {} defeated in {}ms", bossArchetype, fightDurationMs);
@@ -624,22 +888,31 @@ public class EnduranceTelemetryService {
      * Record quest start.
      */
     public void recordQuestStart(UUID questId, UUID playerId, String questName, int totalWaves,
-                                  boolean isEndless, int playerCount, QuestType questType) {
+                                  boolean isEndless, int playerCount, QuestType questType,
+                                  String templateId, Integer templateVersion,
+                                  String policyId, Integer policyVersion,
+                                  UUID instanceId, UUID arenaId) {
         Instant startTs = Instant.now();
 
         String json = String.format(
             "{\"ts\":\"%s\",\"type\":\"quest_start\",\"questId\":\"%s\",\"playerId\":\"%s\"," +
-            "\"questName\":\"%s\",\"totalWaves\":%d,\"isEndless\":%b,\"playerCount\":%d,\"questType\":\"%s\"}",
-            startTs, questId, playerId, escape(questName), totalWaves, isEndless, playerCount, questType.name()
+            "\"questName\":\"%s\",\"totalWaves\":%d,\"isEndless\":%b,\"playerCount\":%d,\"questType\":\"%s\"," +
+            "\"templateId\":\"%s\",\"templateVersion\":%d,\"policyId\":\"%s\",\"policyVersion\":%d," +
+            "\"instanceId\":\"%s\",\"arenaId\":\"%s\"}",
+            startTs, questId, playerId, escape(questName), totalWaves, isEndless, playerCount, questType.name(),
+            escape(templateId != null ? templateId : ""), templateVersion != null ? templateVersion.intValue() : 0,
+            escape(policyId != null ? policyId : ""), policyVersion != null ? policyVersion.intValue() : 0,
+            instanceId != null ? instanceId : "", arenaId != null ? arenaId : ""
         );
 
         // DuckDB: Primary storage
         DuckDBTelemetryService.INSTANCE.logSessionStart(questId, playerId, null,
-            questName, questType.name(), totalWaves, isEndless, playerCount);
+            questName, questType.name(), totalWaves, isEndless, playerCount,
+            templateId, templateVersion, policyId, policyVersion, instanceId, arenaId);
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
         LOGGER.info("[Endurance] Quest started: {} ({} waves, {} players)", questName, totalWaves, playerCount);
@@ -652,7 +925,108 @@ public class EnduranceTelemetryService {
         stats.isEndless = isEndless;
         stats.playerCount = playerCount;
         stats.startTs = startTs;
+        stats.templateId = templateId;
+        stats.templateVersion = templateVersion;
+        stats.policyId = policyId;
+        stats.policyVersion = policyVersion;
+        stats.instanceId = instanceId;
+        stats.arenaId = arenaId;
         questStats.put(questId, stats);
+    }
+
+    /**
+     * Record countdown start (pre-teleport, pre-wave, respawn).
+     */
+    public void recordCountdownStarted(UUID questId) {
+        getOrCreateStats(questId).countdownStarted();
+    }
+
+    /**
+     * Record countdown cancellation (abandon/giveup/disconnect).
+     */
+    public void recordCountdownCancelled(UUID questId) {
+        getOrCreateStats(questId).countdownCancelled();
+    }
+
+    /**
+     * Record giveup during respawn countdown.
+     */
+    public void recordGiveupDuringRespawn(UUID questId) {
+        getOrCreateStats(questId).giveupDuringRespawn();
+    }
+
+    /**
+     * Record inventory restore outcome.
+     */
+    public void recordInventoryRestore(UUID questId, boolean success, boolean fallbackUsed) {
+        getOrCreateStats(questId).inventoryRestore(success, fallbackUsed);
+    }
+
+    /**
+     * Record respawn of externally killed mobs.
+     */
+    public void recordExternalDeathRespawn(UUID questId, int count) {
+        getOrCreateStats(questId).externalDeathRespawn(count);
+    }
+
+    /**
+     * Record wave blocked detection (spawn/respawn failures).
+     */
+    public void recordWaveBlocked(UUID questId) {
+        getOrCreateStats(questId).waveBlockedDetected();
+    }
+
+    /**
+     * Record end-of-quest performance summary (TTK/KPS/DTPS).
+     */
+    public void recordQuestPerformance(UUID questId, UUID playerId, QuestType questType,
+                                        CombatTracker.QuestCombatSession combatSession,
+                                        int wavesCompleted) {
+        if (combatSession == null) {
+            return;
+        }
+
+        QuestSessionStats stats = questStats.get(questId);
+        long durationMs = combatSession.getSessionDuration();
+        int kills = combatSession.getKills();
+        double damageDealt = combatSession.getTotalDamageDealt();
+        double damageTaken = combatSession.getTotalDamageTaken();
+        double avgTtkMs = combatSession.getAverageKillTime();
+        double seconds = durationMs > 0 ? durationMs / 1000.0 : 0.0;
+        double kps = seconds > 0 ? kills / seconds : 0.0;
+        double dtps = seconds > 0 ? damageTaken / seconds : 0.0;
+        double dps = seconds > 0 ? damageDealt / seconds : 0.0;
+
+        StringBuilder json = new StringBuilder(260);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"quest_performance\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"playerId\":\"").append(playerId).append("\",");
+        json.append("\"questType\":\"").append(questType.name()).append("\",");
+        json.append("\"durationMs\":").append(durationMs).append(",");
+        json.append("\"wavesCompleted\":").append(wavesCompleted).append(",");
+        json.append("\"kills\":").append(kills).append(",");
+        json.append("\"damageDealt\":"); appendFloat1(json, (float) damageDealt);
+        json.append(",\"damageTaken\":"); appendFloat1(json, (float) damageTaken);
+        json.append(",\"avgTtkMs\":"); appendFloat1(json, (float) avgTtkMs);
+        json.append(",\"kps\":"); appendFloat2(json, (float) kps);
+        json.append(",\"dtps\":"); appendFloat2(json, (float) dtps);
+        json.append(",\"dps\":"); appendFloat2(json, (float) dps);
+        appendContext(json, stats);
+        json.append("}");
+
+        DuckDBTelemetryService.INSTANCE.logEndurancePerformance(
+            questId, playerId, questType.name(), durationMs, wavesCompleted, kills,
+            damageDealt, damageTaken, avgTtkMs, kps, dtps, dps,
+            stats != null ? stats.templateId : null,
+            stats != null ? stats.templateVersion : null,
+            stats != null ? stats.policyId : null,
+            stats != null ? stats.policyVersion : null,
+            stats != null ? stats.arenaId : null);
+
+        if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
+        }
     }
 
     /**
@@ -673,7 +1047,12 @@ public class EnduranceTelemetryService {
             "\"wavesCompleted\":%d,\"trackedWavesCompleted\":%d,\"durationMs\":%d,\"totalKills\":%d," +
             "\"damageDealt\":%.1f,\"damageTaken\":%.1f," +
             "\"perksCommon\":%d,\"perksUncommon\":%d,\"perksRare\":%d,\"perksEpic\":%d,\"perksLegendary\":%d," +
-            "\"noDamageWaves\":%d,\"tokensEarned\":%d,\"prestigeEarned\":%d,\"bloodGemsEarned\":%d}",
+            "\"noDamageWaves\":%d,\"tokensEarned\":%d,\"prestigeEarned\":%d,\"bloodGemsEarned\":%d," +
+            "\"countdownStarted\":%d,\"countdownCancelled\":%d,\"giveupDuringRespawn\":%d," +
+            "\"inventoryRestoreSuccess\":%d,\"inventoryRestoreFallback\":%d," +
+            "\"externalDeathRespawnCount\":%d,\"waveBlockedDetected\":%d," +
+            "\"templateId\":\"%s\",\"templateVersion\":%d,\"policyId\":\"%s\",\"policyVersion\":%d," +
+            "\"instanceId\":\"%s\",\"arenaId\":\"%s\"}",
             Instant.now(), trackedQuestId, playerIdStr, outcome.name(), wavesCompleted, trackedWaves, sessionDurationMs, totalKills,
             totalDamageDealt, totalDamageTaken,
             stats != null ? stats.perksByTier.getOrDefault(PerkSystem.PerkTier.COMMON, 0) : 0,
@@ -684,7 +1063,20 @@ public class EnduranceTelemetryService {
             stats != null ? stats.noDamageWaves : 0,
             stats != null ? stats.tokensEarned : 0,
             stats != null ? stats.prestigeEarned : 0,
-            stats != null ? stats.bloodGemsEarned : 0
+            stats != null ? stats.bloodGemsEarned : 0,
+            stats != null ? stats.countdownStarted : 0,
+            stats != null ? stats.countdownCancelled : 0,
+            stats != null ? stats.giveupDuringRespawn : 0,
+            stats != null ? stats.inventoryRestoreSuccess : 0,
+            stats != null ? stats.inventoryRestoreFallback : 0,
+            stats != null ? stats.externalDeathRespawnCount : 0,
+            stats != null ? stats.waveBlockedDetected : 0,
+            escape(stats != null ? stats.templateId : ""),
+            stats != null && stats.templateVersion != null ? stats.templateVersion.intValue() : 0,
+            escape(stats != null ? stats.policyId : ""),
+            stats != null && stats.policyVersion != null ? stats.policyVersion.intValue() : 0,
+            stats != null && stats.instanceId != null ? stats.instanceId : "",
+            stats != null && stats.arenaId != null ? stats.arenaId : ""
         );
 
         // DuckDB: Primary storage
@@ -696,13 +1088,20 @@ public class EnduranceTelemetryService {
                 outcome.name(), trackedWaves, totalKills,
                 (double) totalDamageDealt, (double) totalDamageTaken,
                 stats.tokensEarned, stats.prestigeEarned,
-                stats.bloodGemsEarned, stats.noDamageWaves
+                stats.bloodGemsEarned, stats.noDamageWaves,
+                stats.templateId, stats.templateVersion,
+                stats.policyId, stats.policyVersion,
+                stats.instanceId, stats.arenaId,
+                stats.countdownStarted, stats.countdownCancelled,
+                stats.giveupDuringRespawn,
+                stats.inventoryRestoreSuccess, stats.inventoryRestoreFallback,
+                stats.externalDeathRespawnCount, stats.waveBlockedDetected
             );
         }
 
         // NDJSON: Fallback only
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
 
         LOGGER.info("[Endurance] Quest ended: {} - {} waves in {}ms", outcome, trackedWaves, sessionDurationMs);
@@ -722,7 +1121,7 @@ public class EnduranceTelemetryService {
 
         // NDJSON: Fallback only (no DuckDB mapping for badge yet)
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
 
@@ -739,7 +1138,7 @@ public class EnduranceTelemetryService {
 
         // NDJSON: Fallback only (no DuckDB mapping for leaderboard yet)
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
-            TelemetryService.INSTANCE.appendEnduranceLine(json);
+            TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
     }
 
@@ -747,6 +1146,19 @@ public class EnduranceTelemetryService {
 
     private QuestSessionStats getOrCreateStats(UUID questId) {
         return questStats.computeIfAbsent(questId, id -> new QuestSessionStats(id, null));
+    }
+
+    private static void appendContext(StringBuilder json, QuestSessionStats stats) {
+        json.append(",\"templateId\":\"").append(escape(stats != null ? stats.templateId : null)).append("\"");
+        Integer templateVersion = stats != null ? stats.templateVersion : null;
+        json.append(",\"templateVersion\":").append(templateVersion != null ? templateVersion.intValue() : 0);
+        json.append(",\"policyId\":\"").append(escape(stats != null ? stats.policyId : null)).append("\"");
+        Integer policyVersion = stats != null ? stats.policyVersion : null;
+        json.append(",\"policyVersion\":").append(policyVersion != null ? policyVersion.intValue() : 0);
+        UUID instanceId = stats != null ? stats.instanceId : null;
+        json.append(",\"instanceId\":\"").append(instanceId != null ? instanceId : "").append("\"");
+        UUID arenaId = stats != null ? stats.arenaId : null;
+        json.append(",\"arenaId\":\"").append(arenaId != null ? arenaId : "").append("\"");
     }
 
     /**
@@ -761,6 +1173,13 @@ public class EnduranceTelemetryService {
         int tokensEarned = 0;
         int prestigeEarned = 0;
         int bloodGemsEarned = 0;
+        int countdownStarted = 0;
+        int countdownCancelled = 0;
+        int giveupDuringRespawn = 0;
+        int inventoryRestoreSuccess = 0;
+        int inventoryRestoreFallback = 0;
+        int externalDeathRespawnCount = 0;
+        int waveBlockedDetected = 0;
 
         // Additional fields for DuckDB session end tracking
         String questName;
@@ -769,6 +1188,12 @@ public class EnduranceTelemetryService {
         boolean isEndless;
         int playerCount;
         Instant startTs;
+        String templateId;
+        Integer templateVersion;
+        String policyId;
+        Integer policyVersion;
+        UUID instanceId;
+        UUID arenaId;
 
         QuestSessionStats(UUID questId, UUID playerId) {
             this.questId = questId;
@@ -794,6 +1219,35 @@ public class EnduranceTelemetryService {
                 case PRESTIGE -> prestigeEarned += amount;
                 case BLOOD_GEMS -> bloodGemsEarned += amount;
             }
+        }
+
+        void countdownStarted() {
+            countdownStarted++;
+        }
+
+        void countdownCancelled() {
+            countdownCancelled++;
+        }
+
+        void giveupDuringRespawn() {
+            giveupDuringRespawn++;
+        }
+
+        void inventoryRestore(boolean success, boolean fallbackUsed) {
+            if (success) {
+                inventoryRestoreSuccess++;
+            }
+            if (fallbackUsed) {
+                inventoryRestoreFallback++;
+            }
+        }
+
+        void externalDeathRespawn(int count) {
+            externalDeathRespawnCount += Math.max(0, count);
+        }
+
+        void waveBlockedDetected() {
+            waveBlockedDetected++;
         }
     }
 

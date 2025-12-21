@@ -1,16 +1,11 @@
 package com.frenkvs.devmod.ui.radial;
 
-import com.frenkvs.devmod.ModConfig;
-import com.frenkvs.devmod.hud.*;
-import com.frenkvs.devmod.rendering.*;
-import com.frenkvs.devmod.telemetry.FpsTracker;
 import com.frenkvs.devmod.ArmorConfigManager;
-import com.frenkvs.devmod.ui.editor.ItemEditorScreen;
-import com.frenkvs.devmod.ui.editor.EditorStartTab;
+import com.frenkvs.devmod.actions.ActionIds;
 import com.frenkvs.devmod.ui.editor.WeaponTypeDetector;
 import com.frenkvs.devmod.ui.radial.model.MacroCategory;
-import com.frenkvs.devmod.ui.testing.VoxelLabUiTestScreen;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.RecipeType;
@@ -18,6 +13,7 @@ import net.minecraft.world.item.crafting.RecipeType;
 import java.util.*;
 import java.util.Objects;
 import java.util.function.Supplier;
+import javax.annotation.Nonnull;
 
 /**
  * Registry for radial menu category definitions.
@@ -26,10 +22,10 @@ import java.util.function.Supplier;
  * to keep RadialMenuScreenV3 focused on UI logic.
  *
  * Structure:
- * - ANALYZE (6): Debug, Spatial, Perf, Light, Paths, Entity
- * - COMBAT (6): Stats, Editors, Heatmaps, Boss, Economy, Attrs
- * - TOOLS (6): Settings, Dashboard, Testing, Mob Edit, Items, Commands
- * - PLAY (6): Quests, Endurance, Party, Achieve, Challenges, Leaders
+ * - ANALYZE (6): Debug, Spatial, Performance, Telemetry Ops, Telemetry Dump, Telemetry Scan
+ * - COMBAT (6): Combat HUD, Heatmaps, Abilities, Endurance Core, Endurance HUD, Quest Tools
+ * - TOOLS (6): Settings, Dashboard, Testing, Mob Tools, Item Editors, Commands
+ * - PLAY (6): Arena Ops, Templates, Force, Autosmoke, Arena HUD, Party
  */
 public final class RadialMenuRegistry {
 
@@ -41,7 +37,7 @@ public final class RadialMenuRegistry {
      * cannot verify this. This helper provides explicit null assertion.
      */
     private static ItemStack stack(net.minecraft.world.item.Item item) {
-        return new ItemStack(Objects.requireNonNull(item));
+        return new ItemStack(Objects.requireNonNull(item, "item"));
     }
 
     private static ItemStack getHeldItem() {
@@ -76,18 +72,21 @@ public final class RadialMenuRegistry {
 
     private static boolean isFoodItem(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return false;
-        return stack.getItem().components().has(Objects.requireNonNull(net.minecraft.core.component.DataComponents.FOOD));
+        @Nonnull DataComponentType<?> foodComponent = Objects.requireNonNull(
+            net.minecraft.core.component.DataComponents.FOOD, "food component");
+        return stack.getItem().components().has(foodComponent);
     }
 
     private static boolean isFuelItem(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return false;
         // Check if item has a burn time
-        return stack.getBurnTime(Objects.requireNonNull(RecipeType.SMELTING)) > 0;
+        @Nonnull RecipeType<?> smeltingType = Objects.requireNonNull(RecipeType.SMELTING, "smelting recipe type");
+        return stack.getBurnTime(smeltingType) > 0;
     }
 
     private static boolean isUsableItem(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return false;
-        var item = stack.getItem();
+        @Nonnull var item = Objects.requireNonNull(stack.getItem(), "item");
         // Throwable items
         if (item instanceof net.minecraft.world.item.SnowballItem ||
             item instanceof net.minecraft.world.item.EggItem ||
@@ -98,10 +97,8 @@ public final class RadialMenuRegistry {
         }
         // Items with use duration (potions, food already handled separately)
         var player = Minecraft.getInstance().player;
-        if (player != null && item.getUseDuration(stack, player) > 0 && !isFoodItem(stack)) {
-            return true;
-        }
-        return false;
+        if (player == null) return false;
+        return item.getUseDuration(stack, player) > 0 && !isFoodItem(stack);
     }
 
     /**
@@ -143,122 +140,135 @@ public final class RadialMenuRegistry {
     private static void buildAnalyzeCategories(Map<MacroCategory, List<RadialCategory>> map) {
         List<RadialCategory> categories = map.get(MacroCategory.ANALYZE);
 
-        // Category 1: Debug Overlays
-        categories.add(RadialCategory.builder("debug")
+        // Category 1: Debug
+        RadialCategory debug = RadialCategory.builder("debug")
             .name("Debug")
             .color(0xFF4488FF)
-            .icon("\uD83D\uDC41") // eye
+            .icon("")
             .iconStack(stack(Items.ENDER_EYE))
-            .item(RadialMenuItem.toggle("Body Parts", "\uD83C\uDFAF",
-                stack(Items.ARMOR_STAND),
-                () -> ModConfig.showBodyPartBoxes,
-                v -> ModConfig.showBodyPartBoxes = v,
-                "Show body part hitboxes on entities"))
-            .item(RadialMenuItem.toggle("Mob Debug", "\uD83D\uDC7E",
-                stack(Items.ZOMBIE_HEAD),
-                () -> DebugRenderer.INSTANCE.isEnabled(),
-                v -> DebugRenderer.INSTANCE.setEnabled(v),
-                "Show mob stats, hitboxes & aggro ranges"))
-            .item(RadialMenuItem.toggle("Line of Sight", "\uD83D\uDC40",
-                stack(Items.SPYGLASS),
-                () -> LineOfSightVisualizer.INSTANCE.isEnabled(),
-                v -> LineOfSightVisualizer.INSTANCE.setEnabled(v),
-                "Show mob vision cones"))
-            .build());
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_OVERLAY_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_BODY_PARTS_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_OVERLAYS_ENABLE_ALL))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_OVERLAYS_DISABLE_ALL))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_LOS_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_AGGRO_RANGE_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_PATHFINDING_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_COMMAND_HELP))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_COMMAND_LIST))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_COMMAND_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_COMMAND_OFF))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_SCREEN_SHAKE_TEST))
+            .build();
 
-        // Category 2: Spatial Analysis
+        RadialCategory nativeDebug = debug.addSubcategory("native_debug", "Native Debug", 0xFF4488FF,
+            stack(Items.DEBUG_STICK));
+        nativeDebug.addItems(
+            RadialMenuItem.registry(ActionIds.DEBUG_NATIVE_ENTITY_PATHING_TOGGLE),
+            RadialMenuItem.registry(ActionIds.DEBUG_NATIVE_ENTITY_GOALS_TOGGLE),
+            RadialMenuItem.registry(ActionIds.DEBUG_NATIVE_ENTITY_BRAINS_TOGGLE),
+            RadialMenuItem.registry(ActionIds.DEBUG_NATIVE_POI_TOGGLE),
+            RadialMenuItem.registry(ActionIds.DEBUG_NATIVE_RAIDS_TOGGLE),
+            RadialMenuItem.registry(ActionIds.DEBUG_NATIVE_BEES_TOGGLE),
+            RadialMenuItem.registry(ActionIds.DEBUG_NATIVE_GAME_EVENTS_TOGGLE),
+            RadialMenuItem.registry(ActionIds.DEBUG_NATIVE_STRUCTURES_TOGGLE)
+        );
+
+        categories.add(debug);
+
+        // Category 2: Spatial
         categories.add(RadialCategory.builder("spatial")
             .name("Spatial")
             .color(0xFF66AAFF)
-            .icon("\uD83D\uDDFA") // map
-            .iconStack(stack(Items.FILLED_MAP))
-            .item(RadialMenuItem.toggle("Room Bounds", "\uD83C\uDFE0",
-                stack(Items.STRUCTURE_BLOCK),
-                () -> RoomBoundsVisualizer.INSTANCE.isEnabled(),
-                v -> RoomBoundsVisualizer.INSTANCE.setEnabled(v),
-                "Detect and highlight room boundaries"))
-            .item(RadialMenuItem.toggle("Vertical Levels", "\uD83D\uDCF6",
-                stack(Items.LADDER),
-                () -> VerticalLevelsVisualizer.INSTANCE.isEnabled(),
-                v -> VerticalLevelsVisualizer.INSTANCE.setEnabled(v),
-                "Show Y-level zone layers"))
-            .item(RadialMenuItem.toggle("Safe Spots", "\uD83D\uDEE1",
-                stack(Items.SHIELD),
-                () -> SafeSpotVisualizer.INSTANCE.isEnabled(),
-                v -> SafeSpotVisualizer.INSTANCE.setEnabled(v),
-                "Highlight camping positions"))
+            .icon("")
+            .iconStack(stack(Items.STRUCTURE_BLOCK))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_ROOM_BOUNDS_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_ROOM_BOUNDS_RELOAD))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_LIGHT_OVERLAY_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_VERTICAL_LEVELS_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_SAFE_SPOTS_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_SPAWNABILITY_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.UI_ROOM_BOUNDS_EDITOR_OPEN))
             .build());
 
         // Category 3: Performance
-        categories.add(RadialCategory.builder("perf")
-            .name("Perf")
+        categories.add(RadialCategory.builder("performance")
+            .name("Performance")
             .color(0xFF88CCFF)
-            .icon("\uD83D\uDCCA") // chart
+            .icon("")
             .iconStack(stack(Items.CLOCK))
-            .item(RadialMenuItem.toggle("FPS Tracker", "\uD83C\uDFAE",
-                stack(Items.CLOCK),
-                () -> FpsTracker.INSTANCE.isEnabled(),
-                v -> FpsTracker.INSTANCE.setEnabled(v),
-                "Display FPS graph and statistics"))
-            .item(RadialMenuItem.toggle("Entity Density", "\uD83D\uDC65",
-                stack(Items.VILLAGER_SPAWN_EGG),
-                () -> EntityDensityOverlay.isEnabled(),
-                v -> EntityDensityOverlay.setEnabled(v),
-                "Show entity count per area"))
-            .item(RadialMenuItem.toggle("Profiler", "\u23F1",
-                stack(Items.REDSTONE),
-                () -> com.frenkvs.devmod.telemetry.PerformanceProfiler.INSTANCE.isEnabled(),
-                v -> com.frenkvs.devmod.telemetry.PerformanceProfiler.INSTANCE.setEnabled(v),
-                "Performance profiling overlay"))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_FPS_TRACKER_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_PROFILER_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_CHUNK_PERF_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_ENTITY_DENSITY_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_ATTRIBUTE_MONITOR_TOGGLE))
             .build());
 
-        // Category 4: Light & Spawn
-        categories.add(RadialCategory.builder("lightspawn")
-            .name("Light")
+        // Category 4: Telemetry Ops
+        categories.add(RadialCategory.builder("telemetry_ops")
+            .name("Telemetry")
             .color(0xFFAADDFF)
-            .icon("\uD83D\uDCA1") // light bulb
-            .iconStack(stack(Items.TORCH))
-            .item(RadialMenuItem.toggle("Light Levels", "\uD83D\uDCA1",
-                stack(Items.TORCH),
-                () -> LightLevelOverlay.INSTANCE.isEnabled(),
-                v -> LightLevelOverlay.INSTANCE.setEnabled(v),
-                "Display spawn light levels on blocks"))
-            .item(RadialMenuItem.toggle("Spawnability", "\uD83D\uDC7E",
-                stack(Items.SPAWNER),
-                () -> SpawnabilityOverlay.INSTANCE.isEnabled(),
-                v -> SpawnabilityOverlay.INSTANCE.setEnabled(v),
-                "Mark potential mob spawn zones"))
-            .item(RadialMenuItem.toggle("Chunk Perf", "\uD83D\uDCE6",
-                stack(Items.CHEST),
-                () -> ChunkPerformanceVisualizer.INSTANCE.isEnabled(),
-                v -> ChunkPerformanceVisualizer.INSTANCE.setEnabled(v),
-                "Show chunk render performance"))
+            .icon("")
+            .iconStack(stack(Items.MAP))
+            .item(RadialMenuItem.registry(ActionIds.UI_TELEMETRY_DASHBOARD_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DASHBOARD_SERVER_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DASHBOARD_SERVER_START))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DASHBOARD_SERVER_STOP))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DASHBOARD_SERVER_STATUS))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_RELOAD))
+            .item(RadialMenuItem.registry(ActionIds.DUNGEON_HELP))
+            .item(RadialMenuItem.registry(ActionIds.DUNGEON_START))
+            .item(RadialMenuItem.registry(ActionIds.DUNGEON_END))
+            .item(RadialMenuItem.registry(ActionIds.DUNGEON_STATUS))
             .build());
 
-        // Category 5: Pathfinding
-        categories.add(RadialCategory.builder("pathfinding")
-            .name("Paths")
+        // Category 5: Telemetry Data
+        RadialCategory telemetryData = RadialCategory.builder("telemetry_data")
+            .name("Telemetry Data")
             .color(0xFFCCEEFF)
-            .icon("\uD83D\uDEE4") // rail
-            .iconStack(stack(Items.RAIL))
-            .item(RadialMenuItem.toggle("Pathfinding", "\uD83D\uDEE4",
-                stack(Items.RAIL),
-                () -> PathfindingDebugger.INSTANCE.isEnabled(),
-                v -> PathfindingDebugger.INSTANCE.setEnabled(v),
-                "Visualize mob pathfinding routes"))
-            .build());
+            .icon("")
+            .iconStack(stack(Items.PAPER))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DUMP_WEAPONS))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DUMP_ROOMS))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DUMP_FIGHTS))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DUMP_MINIONS))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DUNGEONS_DUMP))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_EXPORT_HEATMAPS))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_EXPORT_PNG))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_EXPORT_CSV))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_EXPORT_JSON))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_EXPORT_ALL))
+            .build();
 
-        // Category 6: Entity Debug
-        categories.add(RadialCategory.builder("entitydebug")
-            .name("Entity")
+        RadialCategory heatmapExports = telemetryData.addSubcategory("telemetry_heatmap_exports",
+            "Heatmap Exports", 0xFFCCEEFF, stack(Items.MAP));
+        heatmapExports.addItems(
+            RadialMenuItem.registry(ActionIds.TELEMETRY_EXPORT_HEATMAP_DEATH),
+            RadialMenuItem.registry(ActionIds.TELEMETRY_EXPORT_HEATMAP_MOVEMENT),
+            RadialMenuItem.registry(ActionIds.TELEMETRY_EXPORT_HEATMAP_CAMPING),
+            RadialMenuItem.registry(ActionIds.TELEMETRY_EXPORT_HEATMAP_STUCK),
+            RadialMenuItem.registry(ActionIds.TELEMETRY_EXPORT_HEATMAP_AGGRO_DROP),
+            RadialMenuItem.registry(ActionIds.TELEMETRY_EXPORT_HEATMAP_KITING),
+            RadialMenuItem.registry(ActionIds.TELEMETRY_EXPORT_HEATMAP_CHOKE_POINTS),
+            RadialMenuItem.registry(ActionIds.TELEMETRY_EXPORT_HEATMAP_PARKOUR_FALLS),
+            RadialMenuItem.registry(ActionIds.TELEMETRY_EXPORT_DAMAGE_STATS)
+        );
+
+        categories.add(telemetryData);
+
+        // Category 6: Telemetry Scan
+        categories.add(RadialCategory.builder("telemetry_scan")
+            .name("Telemetry Scan")
             .color(0xFFEEFFFF)
-            .icon("\uD83D\uDD0D") // magnifying glass
-            .iconStack(stack(Items.SPECTRAL_ARROW))
-            .item(RadialMenuItem.toggle("Attr Monitor", "\uD83D\uDCC8",
-                stack(Items.EXPERIENCE_BOTTLE),
-                () -> com.frenkvs.devmod.attributes.AttributeMonitoringSystem.INSTANCE.isEnabled(),
-                v -> com.frenkvs.devmod.attributes.AttributeMonitoringSystem.INSTANCE.setEnabled(v),
-                "Track entity attributes in real-time"))
+            .icon("")
+            .iconStack(stack(Items.SPYGLASS))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_SCAN_LIGHT_ALL))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_SCAN_LIGHT_ROOM))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_SPAWNABILITY))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DESIRELINES_DUMP))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DESIRELINES_ANALYZE))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_BACKTRACKING_DUMP))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_BACKTRACKING_CONFUSING))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DUNGEONS_STATS))
             .build());
     }
 
@@ -269,77 +279,96 @@ public final class RadialMenuRegistry {
     private static void buildCombatCategories(Map<MacroCategory, List<RadialCategory>> map) {
         List<RadialCategory> categories = map.get(MacroCategory.COMBAT);
 
-        // Category 1: Combat Stats
-        categories.add(RadialCategory.builder("combatstats")
-            .name("Stats")
+        // Category 1: Combat HUD
+        categories.add(RadialCategory.builder("combat_hud")
+            .name("Combat HUD")
             .color(0xFFFF4444)
-            .icon("\u2694") // crossed swords
+            .icon("")
             .iconStack(stack(Items.DIAMOND_SWORD))
-            .item(RadialMenuItem.toggle("Impact HUD", "\uD83D\uDCA5",
-                stack(Items.NETHERITE_SWORD),
-                () -> ImpactHudOverlay.isEnabled(),
-                v -> ImpactHudOverlay.setEnabled(v),
-                "Show real-time damage breakdown on hit"))
-            .item(RadialMenuItem.toggle("Boss Phases", "\uD83D\uDC79",
-                stack(Items.WITHER_SKELETON_SKULL),
-                () -> BossPhaseOverlay.isEnabled(),
-                v -> BossPhaseOverlay.setEnabled(v),
-                "Display boss phase information"))
-            .item(RadialMenuItem.toggle("Skill Efficacy", "\u2728",
-                stack(Items.ENCHANTED_BOOK),
-                () -> SkillEfficacyOverlay.isEnabled(),
-                v -> SkillEfficacyOverlay.setEnabled(v),
-                "Track skill effectiveness"))
+            .item(RadialMenuItem.registry(ActionIds.HUD_IMPACT_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_IMPACT_DISMISS))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_BOSS_PHASE_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_SKILL_EFFICACY_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_ECONOMY_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_ECONOMY_VIEW_CYCLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_ECONOMY_SORT_CYCLE))
             .build());
 
         // Category 2: Heatmaps
-        categories.add(RadialCategory.builder("heatmaps")
+        RadialCategory heatmaps = RadialCategory.builder("heatmaps")
             .name("Heatmaps")
             .color(0xFFFF8888)
-            .icon("\uD83D\uDD25") // fire
+            .icon("")
             .iconStack(stack(Items.BLAZE_POWDER))
-            .item(RadialMenuItem.toggle("Death Heatmap", "\uD83D\uDC80",
-                stack(Items.BONE),
-                () -> HeatmapVisualizer.INSTANCE.hasActiveHeatmaps(),
-                v -> HeatmapVisualizer.INSTANCE.toggle(HeatmapVisualizer.HeatmapType.DEATH),
-                "Toggle death heatmap visualization"))
-            .build());
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_HEATMAP_CYCLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_HEATMAP_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_HEATMAP_CLEAR_CURRENT))
+            .item(RadialMenuItem.registry(ActionIds.DEBUG_HEATMAP_CLEAR_ALL))
+            .build();
 
-        // Category 3: Boss Tools
-        categories.add(RadialCategory.builder("bosstools")
-            .name("Boss")
+        RadialCategory heatmapTypes = heatmaps.addSubcategory("heatmap_types", "Heatmap Types", 0xFFFF8888,
+            stack(Items.FILLED_MAP));
+        heatmapTypes.addItems(
+            RadialMenuItem.registry(ActionIds.DEBUG_HEATMAP_DEATH_TOGGLE),
+            RadialMenuItem.registry(ActionIds.DEBUG_HEATMAP_MOVEMENT_TOGGLE),
+            RadialMenuItem.registry(ActionIds.DEBUG_HEATMAP_CAMPING_TOGGLE),
+            RadialMenuItem.registry(ActionIds.DEBUG_HEATMAP_STUCK_TOGGLE),
+            RadialMenuItem.registry(ActionIds.DEBUG_HEATMAP_AGGRO_DROP_TOGGLE),
+            RadialMenuItem.registry(ActionIds.DEBUG_HEATMAP_KITING_TOGGLE),
+            RadialMenuItem.registry(ActionIds.DEBUG_HEATMAP_LIGHT_SPAWNABLE_TOGGLE),
+            RadialMenuItem.registry(ActionIds.DEBUG_HEATMAP_LIGHT_DARK_TOGGLE)
+        );
+
+        categories.add(heatmaps);
+
+        // Category 3: Abilities
+        categories.add(RadialCategory.builder("abilities")
+            .name("Abilities")
             .color(0xFFFFAAAA)
-            .icon("\uD83D\uDC79") // ogre
-            .iconStack(stack(Items.DRAGON_HEAD))
+            .icon("")
+            .iconStack(stack(Items.FEATHER))
+            .item(RadialMenuItem.registry(ActionIds.ABILITY_DASH))
+            .item(RadialMenuItem.registry(ActionIds.ABILITY_DODGE))
+            .item(RadialMenuItem.registry(ActionIds.UI_STAMINA_EDITOR_OPEN))
             .build());
 
-        // Category 4: Economy
-        categories.add(RadialCategory.builder("economy")
-            .name("Economy")
+        // Category 4: Endurance Core
+        categories.add(RadialCategory.builder("endurance_core")
+            .name("Endurance")
             .color(0xFFFFCCCC)
-            .icon("\uD83D\uDCB0") // money bag
-            .iconStack(stack(Items.GOLD_INGOT))
-            .item(RadialMenuItem.toggle("Economy", "\uD83D\uDCB0",
-                stack(Items.GOLD_INGOT),
-                () -> EconomyOverlay.isEnabled(),
-                v -> EconomyOverlay.setEnabled(v),
-                "Show loot and gold statistics"))
+            .icon("")
+            .iconStack(stack(Items.TOTEM_OF_UNDYING))
+            .item(RadialMenuItem.registry(ActionIds.UI_ENDURANCE_SCREEN_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_ENDURANCE_SHOP_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.ENDURANCE_QUEST_START))
+            .item(RadialMenuItem.registry(ActionIds.ENDURANCE_QUEST_CONTINUE))
+            .item(RadialMenuItem.registry(ActionIds.ENDURANCE_QUEST_EXIT))
             .build());
 
-        // Category 5: Attributes
-        categories.add(RadialCategory.builder("attributes")
-            .name("Attrs")
+        // Category 5: Endurance HUD
+        categories.add(RadialCategory.builder("endurance_hud")
+            .name("Endurance HUD")
             .color(0xFFFFEEEE)
-            .icon("\uD83D\uDCCA") // chart
-            .iconStack(stack(Items.NETHER_STAR))
+            .icon("")
+            .iconStack(stack(Items.MAP))
+            .item(RadialMenuItem.registry(ActionIds.HUD_ENDURANCE_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.HUD_ENDURANCE_DETAILS_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.HUD_QUEST_TOGGLE))
             .build());
 
-        // Category 6: Combat Analysis
-        categories.add(RadialCategory.builder("combatanalysis")
-            .name("Analysis")
+        // Category 6: Quest Tools
+        categories.add(RadialCategory.builder("quest_tools")
+            .name("Quest Tools")
             .color(0xFFFFFFFF)
-            .icon("\uD83D\uDD0D") // magnifying glass
-            .iconStack(stack(Items.SPYGLASS))
+            .icon("")
+            .iconStack(stack(Items.FEATHER))
+            .item(RadialMenuItem.registry(ActionIds.UI_QUEST_EDITOR_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_ENDURANCE_EDITOR_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.QUEST_TASK_COMPLETE))
+            .item(RadialMenuItem.registry(ActionIds.UI_PERK_SELECTION_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_WAVE_CHECKPOINT_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_QUEST_DEATH_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_QUEST_COMPLETION_OPEN))
             .build());
     }
 
@@ -355,122 +384,139 @@ public final class RadialMenuRegistry {
         categories.add(RadialCategory.builder("settings")
             .name("Settings")
             .color(0xFFFFAA00)
-            .icon("\u2699") // gear
+            .icon("")
             .iconStack(stack(Items.COMPARATOR))
-            .item(RadialMenuItem.screen("Settings", "\u2699",
-                stack(Items.COMPARATOR),
-                () -> new com.frenkvs.devmod.ui.unified.UnifiedSettingsScreen(null),
-                "Open DevMod configuration"))
-            .item(RadialMenuItem.toggle("Quick Help", "\u2753",
-                stack(Items.KNOWLEDGE_BOOK),
-                () -> QuickHelpOverlay.isEnabled(),
-                v -> QuickHelpOverlay.setEnabled(v),
-                "Show keybind help overlay"))
+            .item(RadialMenuItem.registry(ActionIds.UI_SETTINGS_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_KEYBINDS_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.HUD_QUICK_HELP_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.UI_WELCOME_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_ONBOARDING_START))
+            .item(RadialMenuItem.registry(ActionIds.UI_ONBOARDING_SKIP))
             .build());
 
         // Category 2: Dashboard
         categories.add(RadialCategory.builder("dashboard")
             .name("Dashboard")
             .color(0xFFFFBB33)
-            .icon("\uD83D\uDCCB") // clipboard
+            .icon("")
             .iconStack(stack(Items.WRITABLE_BOOK))
-            .item(RadialMenuItem.screen("Dashboard", "\uD83D\uDCCB",
-                stack(Items.WRITABLE_BOOK),
-                () -> new com.frenkvs.devmod.TelemetryDashboardScreen(null),
-                "Telemetry analytics dashboard"))
+            .item(RadialMenuItem.registry(ActionIds.UI_TELEMETRY_DASHBOARD_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DASHBOARD_SERVER_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DASHBOARD_SERVER_STATUS))
             .build());
 
         // Category 3: Testing
-        categories.add(RadialCategory.builder("testing")
+        RadialCategory testing = RadialCategory.builder("testing")
             .name("Testing")
             .color(0xFFFFCC66)
-            .icon("\uD83E\uDDEA") // test tube
+            .icon("")
             .iconStack(stack(Items.BREWING_STAND))
-            .item(RadialMenuItem.screen("Testing Hub", "\uD83E\uDDEA",
-                stack(Items.BREWING_STAND),
-                () -> new com.frenkvs.devmod.ui.hub.TestingHub(),
-                "QA testing and validation tools"))
-            .item(RadialMenuItem.screen("Quick Test", "\u26A1",
-                stack(Items.LIGHTNING_ROD),
-                () -> new com.frenkvs.devmod.ui.wizard.QuickTestWizard(),
-                "Guided workflow to start testing"))
-            .item(RadialMenuItem.screen("Badge Tests", "\uD83C\uDFC6",
-                stack(Items.NETHER_STAR),
-                () -> new com.frenkvs.devmod.testing.BadgeTestScreen(),
-                "Test badge popup animations & sounds"))
-            .item(RadialMenuItem.screen("UI Test Lab", "\uD83D\uDD8C",
-                stack(Items.GLOW_ITEM_FRAME),
-                VoxelLabUiTestScreen::new,
-                "Voxel Lab: mostra e interagisci con tutte le varianti di EditorButton"))
-            .build());
+            .item(RadialMenuItem.registry(ActionIds.UI_TESTING_HUB_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_QA_TESTING_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_QUICK_TEST_WIZARD_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_BADGE_TESTS_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_VOXELLAB_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_VOXELLAB_UI_TESTS_OPEN))
+            .build();
+
+        RadialCategory hudTests = testing.addSubcategory("testing_hud", "HUD", 0xFFFFCC66,
+            stack(Items.ITEM_FRAME));
+        hudTests.addItems(
+            RadialMenuItem.registry(ActionIds.TEST_HUD_ON),
+            RadialMenuItem.registry(ActionIds.TEST_HUD_OFF),
+            RadialMenuItem.registry(ActionIds.TEST_HUD_TOGGLE),
+            RadialMenuItem.registry(ActionIds.TEST_HUD_EXPORT),
+            RadialMenuItem.registry(ActionIds.TEST_HUD_IMPORT)
+        );
+
+        RadialCategory panelTests = testing.addSubcategory("testing_panels", "Panels", 0xFFFFCC66,
+            stack(Items.GLASS_PANE));
+        panelTests.addItems(
+            RadialMenuItem.registry(ActionIds.TEST_PANEL_ON),
+            RadialMenuItem.registry(ActionIds.TEST_PANEL_OFF),
+            RadialMenuItem.registry(ActionIds.TEST_PANEL_TOGGLE),
+            RadialMenuItem.registry(ActionIds.TEST_PANELCLEAR)
+        );
+
+        RadialCategory debugTests = testing.addSubcategory("testing_debug", "Debug", 0xFFFFCC66,
+            stack(Items.REDSTONE));
+        debugTests.addItems(
+            RadialMenuItem.registry(ActionIds.TEST_DEBUG_ON),
+            RadialMenuItem.registry(ActionIds.TEST_DEBUG_OFF),
+            RadialMenuItem.registry(ActionIds.TEST_DEBUG_TOGGLE),
+            RadialMenuItem.registry(ActionIds.TEST_DEBUGBOX),
+            RadialMenuItem.registry(ActionIds.TEST_DEBUGCLEAR)
+        );
+
+        RadialCategory enduranceTests = testing.addSubcategory("testing_endurance", "Endurance", 0xFFFFCC66,
+            stack(Items.TOTEM_OF_UNDYING));
+        enduranceTests.addItems(
+            RadialMenuItem.registry(ActionIds.TEST_ENDURANCE_STATS),
+            RadialMenuItem.registry(ActionIds.TEST_ENDURANCE_PERKS),
+            RadialMenuItem.registry(ActionIds.TEST_ENDURANCE_SMOKE),
+            RadialMenuItem.registry(ActionIds.TEST_ENDURANCE_EXPORT_TABLE),
+            RadialMenuItem.registry(ActionIds.TEST_ENDURANCE_EXPORT_ALL),
+            RadialMenuItem.registry(ActionIds.TEST_ENDURANCE_AUTOSMOKE)
+        );
+
+        RadialCategory miscTests = testing.addSubcategory("testing_misc", "Misc", 0xFFFFCC66,
+            stack(Items.BOOK));
+        miscTests.addItems(
+            RadialMenuItem.registry(ActionIds.TEST_INFO),
+            RadialMenuItem.registry(ActionIds.TEST_BODYPART_INFO),
+            RadialMenuItem.registry(ActionIds.TEST_QA_OPEN)
+        );
+
+        categories.add(testing);
 
         // Category 4: Mob Editor
         RadialCategory.Builder mobEditorBuilder = RadialCategory.builder("mobeditor")
             .name("Mob Edit")
             .color(0xFFFFDD99)
-            .icon("\uD83D\uDC3E") // paw
+            .icon("")
             .iconStack(stack(Items.LEAD));
         if (mobEditorItemSupplier != null) {
             mobEditorBuilder.item(mobEditorItemSupplier.get());
         }
+        mobEditorBuilder.item(RadialMenuItem.registry(ActionIds.UI_MOB_EQUIPMENT_OPEN));
+        mobEditorBuilder.item(RadialMenuItem.registry(ActionIds.UI_ROOM_BOUNDS_EDITOR_OPEN));
         categories.add(mobEditorBuilder.build());
 
         // Category 5: Item Editors
         // Note: Using dynamic visibility suppliers and fresh getHeldItem() in actions
         // so the menu responds to item changes in real-time
-        RadialMenuItem weaponEditor = RadialMenuItem.screen("Weapon Editor", "\uD83D\uDDE1",
-            stack(Items.DIAMOND_SWORD),
-            () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.WEAPON),
-            "Edit weapon stats and body part multipliers")
+        RadialMenuItem autoEditor = RadialMenuItem.registry(ActionIds.UI_ITEM_EDITOR_OPEN_AUTO);
+
+        RadialMenuItem weaponEditor = RadialMenuItem.registry(ActionIds.UI_ITEM_EDITOR_OPEN_WEAPON)
             .setVisibilitySupplier(() -> isWeaponItem(getHeldItem()));
 
-        RadialMenuItem armorEditor = RadialMenuItem.screen("Armor Editor", "\uD83D\uDEE1",
-            stack(Items.DIAMOND_CHESTPLATE),
-            () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.ARMOR),
-            "Edit armor protection and attributes")
+        RadialMenuItem armorEditor = RadialMenuItem.registry(ActionIds.UI_ITEM_EDITOR_OPEN_ARMOR)
             .setVisibilitySupplier(() -> isArmorItem(getHeldItem()));
 
-        RadialMenuItem shieldEditor = RadialMenuItem.screen("Shield Editor", "盾",
-            stack(Items.SHIELD),
-            () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.ARMOR),
-            "Edit shield block/reflect")
+        RadialMenuItem shieldEditor = RadialMenuItem.registry(ActionIds.UI_ITEM_EDITOR_OPEN_SHIELD)
             .setCustomColor(0xFFDDDDDD)
             .setVisibilitySupplier(() -> isShieldItem(getHeldItem()));
 
-        RadialMenuItem generalEditor = RadialMenuItem.screen("Item Editor", "\u2699",
-            stack(Items.BOOK),
-            () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.GENERAL),
-            "Edit generic item data")
+        RadialMenuItem generalEditor = RadialMenuItem.registry(ActionIds.UI_ITEM_EDITOR_OPEN_GENERAL)
             .setVisibilitySupplier(() -> isGeneralItem(getHeldItem()));
 
-        RadialMenuItem recipeEditor = RadialMenuItem.screen("Recipe Editor", "\uD83D\uDCD6",
-            stack(Items.CRAFTING_TABLE),
-            () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.RECIPE),
-            "Create and edit crafting recipes");
+        RadialMenuItem recipeEditor = RadialMenuItem.registry(ActionIds.UI_ITEM_EDITOR_OPEN_RECIPE);
 
-        RadialMenuItem foodEditor = RadialMenuItem.screen("Food Editor", "\uD83C\uDF56",
-            stack(Items.COOKED_BEEF),
-            () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.FOOD),
-            "Edit nutrition, saturation, and effects")
+        RadialMenuItem foodEditor = RadialMenuItem.registry(ActionIds.UI_ITEM_EDITOR_OPEN_FOOD)
             .setVisibilitySupplier(() -> isFoodItem(getHeldItem()));
 
-        RadialMenuItem fuelEditor = RadialMenuItem.screen("Fuel Editor", "\uD83D\uDD25",
-            stack(Items.COAL),
-            () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.FUEL),
-            "Edit burn time and efficiency")
+        RadialMenuItem fuelEditor = RadialMenuItem.registry(ActionIds.UI_ITEM_EDITOR_OPEN_FUEL)
             .setVisibilitySupplier(() -> isFuelItem(getHeldItem()));
 
-        RadialMenuItem usableEditor = RadialMenuItem.screen("Usable Editor", "\u23F1",
-            stack(Items.SNOWBALL),
-            () -> new ItemEditorScreen(getHeldItem(), EditorStartTab.USABLE),
-            "Edit throwables, cooldowns, and use duration")
+        RadialMenuItem usableEditor = RadialMenuItem.registry(ActionIds.UI_ITEM_EDITOR_OPEN_USABLE)
             .setVisibilitySupplier(() -> isUsableItem(getHeldItem()));
 
         categories.add(RadialCategory.builder("itemeditors")
             .name("Items")
             .color(0xFFFFEECC)
-            .icon("\uD83D\uDDE1") // dagger
+            .icon("")
             .iconStack(stack(Items.DIAMOND_SWORD))
+            .item(autoEditor)
             .item(weaponEditor)
             .item(armorEditor)
             .item(shieldEditor)
@@ -485,20 +531,14 @@ public final class RadialMenuRegistry {
         categories.add(RadialCategory.builder("commands")
             .name("Commands")
             .color(0xFFFFFFEE)
-            .icon("\uD83D\uDCDC") // scroll
+            .icon("")
             .iconStack(stack(Items.COMMAND_BLOCK))
-            .item(RadialMenuItem.command("Gamemode Creative", "\uD83C\uDFA8",
-                stack(Items.GRASS_BLOCK), "/gamemode creative", "Switch to creative mode"))
-            .item(RadialMenuItem.command("Gamemode Survival", "\u2694",
-                stack(Items.IRON_SWORD), "/gamemode survival", "Switch to survival mode"))
-            .item(RadialMenuItem.command("Heal", "\u2764",
-                stack(Items.GOLDEN_APPLE), "/heal", "Restore full health"))
-            .item(RadialMenuItem.command("Time Day", "\u2600",
-                stack(Items.SUNFLOWER), "/time set day", "Set time to day"))
-            .item(RadialMenuItem.command("Time Night", "\uD83C\uDF19",
-                stack(Items.CLOCK), "/time set night", "Set time to night"))
-            .item(RadialMenuItem.command("Weather Clear", "\uD83C\uDF24",
-                stack(Items.FEATHER), "/weather clear", "Clear the weather"))
+            .item(RadialMenuItem.registry(ActionIds.COMMAND_GAMEMODE_CREATIVE))
+            .item(RadialMenuItem.registry(ActionIds.COMMAND_GAMEMODE_SURVIVAL))
+            .item(RadialMenuItem.registry(ActionIds.COMMAND_HEAL))
+            .item(RadialMenuItem.registry(ActionIds.COMMAND_TIME_DAY))
+            .item(RadialMenuItem.registry(ActionIds.COMMAND_TIME_NIGHT))
+            .item(RadialMenuItem.registry(ActionIds.COMMAND_WEATHER_CLEAR))
             .build());
     }
 
@@ -509,74 +549,73 @@ public final class RadialMenuRegistry {
     private static void buildPlayCategories(Map<MacroCategory, List<RadialCategory>> map) {
         List<RadialCategory> categories = map.get(MacroCategory.PLAY);
 
-        // Category 1: Quest System
-        categories.add(RadialCategory.builder("questsystem")
-            .name("Quests")
+        // Category 1: Arena Ops
+        categories.add(RadialCategory.builder("arena_ops")
+            .name("Arena Ops")
             .color(0xFF44FF88)
-            .icon("\uD83D\uDCDC") // scroll
-            .iconStack(stack(Items.PAPER))
-            .item(RadialMenuItem.toggle("Quest HUD", "\uD83D\uDCCB",
-                stack(Items.MAP),
-                () -> com.frenkvs.devmod.quest.QuestHudOverlay.isEnabled(),
-                v -> com.frenkvs.devmod.quest.QuestHudOverlay.setEnabled(v),
-                "Quest tracker overlay"))
-            .item(RadialMenuItem.screen("Quest Editor", "\u270F",
-                stack(Items.FEATHER),
-                () -> new com.frenkvs.devmod.quest.QuestEditorScreen(),
-                "Create and edit quests"))
+            .icon("")
+            .iconStack(stack(Items.COMMAND_BLOCK))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_HELP))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_CREATE))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_QUICK_TEST_WIZARD_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_STATUS))
             .build());
 
-        // Category 2: Endurance Mode
-        categories.add(RadialCategory.builder("endurance")
-            .name("Endurance")
+        // Category 2: Arena Templates
+        categories.add(RadialCategory.builder("arena_templates")
+            .name("Arena Templates")
             .color(0xFF66FFAA)
-            .icon("\uD83D\uDCAA") // flexed bicep
-            .iconStack(stack(Items.IRON_CHESTPLATE))
-            .item(RadialMenuItem.toggle("Endurance HUD", "\uD83D\uDCAA",
-                stack(Items.IRON_CHESTPLATE),
-                () -> EnduranceQuestOverlay.isEnabled(),
-                v -> EnduranceQuestOverlay.setEnabled(v),
-                "Endurance quest overlay"))
-            .item(RadialMenuItem.screen("Endurance", "\uD83C\uDFC6",
-                stack(Items.GOLDEN_HELMET),
-                () -> new com.frenkvs.devmod.endurance.EnduranceQuestScreen(),
-                "Start endurance quest mode"))
+            .icon("")
+            .iconStack(stack(Items.MAP))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_TEMPLATE_LIST))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_TEMPLATE_INFO))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_TEMPLATE_RELOAD))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_VALIDATE))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_METRICS))
             .build());
 
-        // Category 3: Multiplayer
-        categories.add(RadialCategory.builder("multiplayer")
-            .name("Party")
+        // Category 3: Arena Force
+        categories.add(RadialCategory.builder("arena_force")
+            .name("Arena Force")
             .color(0xFF88FFCC)
-            .icon("\uD83D\uDC65") // busts
-            .iconStack(stack(Items.PLAYER_HEAD))
-            .item(RadialMenuItem.screen("Party", "\uD83D\uDC65",
-                stack(Items.PLAYER_HEAD),
-                () -> new com.frenkvs.devmod.party.PartyScreen(),
-                "Party & multiplayer quests"))
+            .icon("")
+            .iconStack(stack(Items.NAME_TAG))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_FORCE))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_FORCE_CLEAR))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_FORCE_STATUS))
             .build());
 
-        // Category 4: Achievements
-        categories.add(RadialCategory.builder("achievements")
-            .name("Achieve")
+        // Category 4: Arena Autosmoke
+        categories.add(RadialCategory.builder("arena_autosmoke")
+            .name("Arena Autosmoke")
             .color(0xFFAAFFDD)
-            .icon("\uD83C\uDFC5") // medal
-            .iconStack(stack(Items.GOLDEN_APPLE))
+            .icon("")
+            .iconStack(stack(Items.CAMPFIRE))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_AUTOSMOKE_RUN))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_AUTOSMOKE_STATUS))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_AUTOSMOKE_SCHEDULE_STATUS))
             .build());
 
-        // Category 5: Challenges
-        categories.add(RadialCategory.builder("challenges")
-            .name("Challenges")
+        // Category 5: Arena HUD
+        categories.add(RadialCategory.builder("arena_hud")
+            .name("Arena HUD")
             .color(0xFFCCFFEE)
-            .icon("\u26A1") // lightning
-            .iconStack(stack(Items.DRAGON_BREATH))
+            .icon("")
+            .iconStack(stack(Items.REDSTONE_TORCH))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_HUD_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_HUD_ON))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_HUD_OFF))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_HUD_STATUS))
             .build());
 
-        // Category 6: Leaderboards
-        categories.add(RadialCategory.builder("leaderboards")
-            .name("Leaders")
+        // Category 6: Party
+        categories.add(RadialCategory.builder("party")
+            .name("Party")
             .color(0xFFEEFFFF)
-            .icon("\uD83C\uDFC6") // trophy
-            .iconStack(stack(Items.GOLD_BLOCK))
+            .icon("")
+            .iconStack(stack(Items.PLAYER_HEAD))
+            .item(RadialMenuItem.registry(ActionIds.UI_PARTY_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_PARTY_INVITE_POPUP_OPEN))
             .build());
     }
 }

@@ -34,6 +34,7 @@ public class ClientQuestCache {
         if (!payload.hasActiveQuest()) {
             lastWave = 0;
             wasActive = false;
+            com.frenkvs.devmod.hud.QuestSequenceOverlay.INSTANCE.clear();
         }
 
         // Sync with IntegratedTestSession
@@ -85,6 +86,8 @@ public class ClientQuestCache {
     public static void clear() {
         cachedData = null;
         lastUpdateTime = 0;
+        com.frenkvs.devmod.hud.QuestSequenceOverlay.INSTANCE.clear();
+        EnduranceUiCache.clear();
     }
 
     /**
@@ -121,6 +124,38 @@ public class ClientQuestCache {
         return cachedData != null ? cachedData.questName() : "";
     }
 
+    public static String getTemplateId() {
+        return cachedData != null ? cachedData.templateId() : "";
+    }
+
+    public static int getTemplateVersion() {
+        return cachedData != null ? cachedData.templateVersion() : 0;
+    }
+
+    public static String getPolicyId() {
+        return cachedData != null ? cachedData.policyId() : "";
+    }
+
+    public static int getPolicyVersion() {
+        return cachedData != null ? cachedData.policyVersion() : 0;
+    }
+
+    public static String getInstanceId() {
+        return cachedData != null ? cachedData.instanceId() : "";
+    }
+
+    public static String getArenaId() {
+        return cachedData != null ? cachedData.arenaId() : "";
+    }
+
+    public static String getDifficultyLabel() {
+        return cachedData != null ? cachedData.difficultyLabel() : "";
+    }
+
+    public static String getQuestTypeLabel() {
+        return cachedData != null ? cachedData.questTypeLabel() : "";
+    }
+
     public static int getCurrentWave() {
         return cachedData != null ? cachedData.currentWave() : 0;
     }
@@ -150,8 +185,16 @@ public class ClientQuestCache {
     }
 
     public static float getWaveProgress() {
-        if (cachedData == null || cachedData.totalMobsInWave() <= 0) return 0;
-        return (float) cachedData.mobsKilledInWave() / cachedData.totalMobsInWave();
+        if (cachedData == null) return 0;
+        WaveObjectiveState.Type type = cachedData.getObjectiveType();
+        int target = type == WaveObjectiveState.Type.KILL_ALL
+            ? cachedData.totalMobsInWave()
+            : cachedData.objectiveTarget();
+        int progress = type == WaveObjectiveState.Type.KILL_ALL
+            ? cachedData.mobsKilledInWave()
+            : cachedData.objectiveProgress();
+        if (target <= 0) return 0;
+        return (float) progress / target;
     }
 
     public static int getDamageDealt() {
@@ -192,6 +235,34 @@ public class ClientQuestCache {
 
     public static ComboSystem.StyleRank getStyleRank() {
         return cachedData != null ? cachedData.getStyleRank() : ComboSystem.StyleRank.D;
+    }
+
+    public static WaveObjectiveState.Type getObjectiveType() {
+        return cachedData != null ? cachedData.getObjectiveType() : WaveObjectiveState.Type.KILL_ALL;
+    }
+
+    public static String getObjectiveTitle() {
+        return cachedData != null ? cachedData.objectiveTitle() : "";
+    }
+
+    public static String getObjectiveDescription() {
+        return cachedData != null ? cachedData.objectiveDescription() : "";
+    }
+
+    public static int getObjectiveProgress() {
+        return cachedData != null ? cachedData.objectiveProgress() : 0;
+    }
+
+    public static int getObjectiveTarget() {
+        return cachedData != null ? cachedData.objectiveTarget() : 0;
+    }
+
+    public static boolean isObjectiveComplete() {
+        return cachedData != null && cachedData.objectiveComplete();
+    }
+
+    public static boolean isObjectiveFailed() {
+        return cachedData != null && cachedData.objectiveFailed();
     }
 
     public static boolean isAwaitingRespawn() {

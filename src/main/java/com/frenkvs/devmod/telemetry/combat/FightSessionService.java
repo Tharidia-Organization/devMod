@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
@@ -42,13 +43,35 @@ public class FightSessionService {
      * Registers a hit in a combat session.
      * Creates the session if it doesn't exist.
      */
-    public void registerHit(String room, String worldId, Entity attacker, LivingEntity target, boolean isKill) {
+    public void registerHit(String room, String worldId, Entity attacker, LivingEntity target, boolean isKill,
+                            @javax.annotation.Nullable CombatContext context) {
         long now = System.currentTimeMillis();
         FightSession session = activeFights.computeIfAbsent(room,
             id -> new FightSession(worldId, now));
 
         session.lastHitMs = now;
         session.hits++;
+
+        if (context != null) {
+            if (session.templateId == null && context.templateId() != null) {
+                session.templateId = context.templateId();
+            }
+            if (session.templateVersion == null && context.templateVersion() != null) {
+                session.templateVersion = context.templateVersion();
+            }
+            if (session.policyId == null && context.policyId() != null) {
+                session.policyId = context.policyId();
+            }
+            if (session.policyVersion == null && context.policyVersion() != null) {
+                session.policyVersion = context.policyVersion();
+            }
+            if (session.arenaId == null && context.arenaId() != null) {
+                session.arenaId = context.arenaId();
+            }
+            if (session.sessionId == null && context.sessionId() != null) {
+                session.sessionId = context.sessionId();
+            }
+        }
 
         // Add player to participants list
         if (attacker instanceof ServerPlayer player) {
@@ -163,6 +186,12 @@ public class FightSessionService {
         return new FightSessionResult(
             room,
             session.worldId,
+            session.templateId,
+            session.templateVersion,
+            session.policyId,
+            session.policyVersion,
+            session.arenaId,
+            session.sessionId,
             session.startMs,
             endMs,
             session.hits,
@@ -203,6 +232,12 @@ public class FightSessionService {
         int hits;
         int mobKills;
         int playerDeaths;
+        String templateId;
+        Integer templateVersion;
+        String policyId;
+        Integer policyVersion;
+        UUID arenaId;
+        UUID sessionId;
         final Set<String> players = new HashSet<>();
         final Map<String, Integer> mobKillsByType = new HashMap<>();
         final Map<String, Integer> playerDeathsByName = new HashMap<>();
@@ -252,6 +287,18 @@ public class FightSessionService {
     }
 
     /**
+     * Optional arena context attached to combat events.
+     */
+    public record CombatContext(
+        String templateId,
+        Integer templateVersion,
+        String policyId,
+        Integer policyVersion,
+        UUID arenaId,
+        UUID sessionId
+    ) {}
+
+    /**
      * Summary of an active fight session.
      */
     public record FightSessionSummary(
@@ -277,6 +324,12 @@ public class FightSessionService {
     public record FightSessionResult(
         String room,
         String worldId,
+        String templateId,
+        Integer templateVersion,
+        String policyId,
+        Integer policyVersion,
+        UUID arenaId,
+        UUID sessionId,
         long startMs,
         long endMs,
         int hits,
@@ -309,6 +362,12 @@ public class FightSessionService {
             StringBuilder sb = new StringBuilder();
             sb.append("{\"room\":\"").append(escapeJson(room)).append("\",");
             sb.append("\"world\":\"").append(escapeJson(worldId)).append("\",");
+            sb.append("\"templateId\":").append(templateId != null ? "\"" + escapeJson(templateId) + "\"" : "null").append(",");
+            sb.append("\"templateVersion\":").append(templateVersion != null ? templateVersion : "null").append(",");
+            sb.append("\"policyId\":").append(policyId != null ? "\"" + escapeJson(policyId) + "\"" : "null").append(",");
+            sb.append("\"policyVersion\":").append(policyVersion != null ? policyVersion : "null").append(",");
+            sb.append("\"arenaId\":").append(arenaId != null ? "\"" + arenaId + "\"" : "null").append(",");
+            sb.append("\"sessionId\":").append(sessionId != null ? "\"" + sessionId + "\"" : "null").append(",");
             sb.append("\"start\":\"").append(startInstant()).append("\",");
             sb.append("\"end\":\"").append(endInstant()).append("\",");
             sb.append("\"durationMs\":").append(durationMs()).append(",");

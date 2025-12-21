@@ -75,6 +75,10 @@ public class AutosmokeScheduler {
             return;
         }
 
+        if (config.runOnStartup()) {
+            scheduler.execute(this::executeRun);
+        }
+
         scheduleNextRun();
         LOGGER.info("Autosmoke scheduler started, next run at {}", getNextRunTime());
     }

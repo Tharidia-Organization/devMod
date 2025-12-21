@@ -1,7 +1,10 @@
 package com.frenkvs.devmod.ui;
 
-import com.frenkvs.devmod.testing.TutorialManager;
-import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
+import com.frenkvs.devmod.actions.client.OnboardingActionPayload;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -12,6 +15,8 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.client.resources.sounds.SoundInstance;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -84,10 +89,10 @@ public class WelcomeScreen extends Screen {
     };
 
     private static final Keybind[] KEYBINDS = {
-        new Keybind("G", "Open Radial Menu (all tools)"),
-        new Keybind("F10", "Start Endurance Quest"),
-        new Keybind("L", "Toggle Light Levels"),
-        new Keybind("H", "Cycle Heatmaps")
+        new Keybind("G", "Open Radial Menu (default)"),
+        new Keybind("F10", "Start Endurance Quest (assign in Controls)"),
+        new Keybind("L", "Light Levels (assign in Controls)"),
+        new Keybind("H", "Heatmap Cycle (assign in Controls)")
     };
 
     public WelcomeScreen() {
@@ -115,11 +120,12 @@ public class WelcomeScreen extends Screen {
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.LARGE)
             .onClick(this::startTutorial);
-        tutorialButtonWidget = Objects.requireNonNull(
+        @Nonnull Button safeTutorialButtonWidget = Objects.requireNonNull(
             tutorialButton.asVanilla(panelX + 35, buttonY, buttonWidth, 28),
             "tutorialButtonWidget");
-        tutorialButtonWidget.visible = false;
-        addRenderableWidget(Objects.requireNonNull(tutorialButtonWidget, "tutorialButtonWidget"));
+        tutorialButtonWidget = safeTutorialButtonWidget;
+        safeTutorialButtonWidget.visible = false;
+        addRenderableWidget(safeTutorialButtonWidget);
 
         // Skip button - positioned relative to actual panel width
         String skipLabel = Objects.requireNonNull(I18n.ui("skip_know_this").getString(), "skipLabel");
@@ -127,21 +133,23 @@ public class WelcomeScreen extends Screen {
             .style(EditorButton.Style.NORMAL)
             .size(EditorButton.Size.LARGE)
             .onClick(this::skip);
-        skipButtonWidget = Objects.requireNonNull(
+        @Nonnull Button safeSkipButtonWidget = Objects.requireNonNull(
             skipButton.asVanilla(panelX + actualPanelWidth - buttonWidth - 35, buttonY, buttonWidth, 28),
             "skipButtonWidget");
-        skipButtonWidget.visible = false;
-        addRenderableWidget(Objects.requireNonNull(skipButtonWidget, "skipButtonWidget"));
+        skipButtonWidget = safeSkipButtonWidget;
+        safeSkipButtonWidget.visible = false;
+        addRenderableWidget(safeSkipButtonWidget);
 
         // Checkbox (using EditorToggle for consistent theming)
         String dontShowLabel = Objects.requireNonNull(I18n.ui("dont_show_again").getString(), "dontShowLabel");
         dontShowCheckbox = new EditorToggle("welcome-dont-show", dontShowLabel, false)
             .onChange(value -> dontShowAgain = value);
-        dontShowCheckboxWidget = (Checkbox) Objects.requireNonNull(
+        @Nonnull Checkbox safeDontShowCheckboxWidget = (Checkbox) Objects.requireNonNull(
             dontShowCheckbox.asVanilla(panelX + 35, panelY + PANEL_HEIGHT - 40, buttonWidth * 2, 18),
             "dontShowCheckboxWidget");
-        dontShowCheckboxWidget.visible = false;
-        addRenderableWidget(Objects.requireNonNull(dontShowCheckboxWidget, "dontShowCheckboxWidget"));
+        dontShowCheckboxWidget = safeDontShowCheckboxWidget;
+        safeDontShowCheckboxWidget.visible = false;
+        addRenderableWidget(safeDontShowCheckboxWidget);
 
         // Initialize background particles
         for (int i = 0; i < 30; i++) {
@@ -209,8 +217,8 @@ public class WelcomeScreen extends Screen {
             // Play intro sound once
             if (!introSoundPlayed) {
                 Minecraft mc = Minecraft.getInstance();
-                var soundEvent = Objects.requireNonNull(SoundEvents.UI_TOAST_IN, "toastIn");
-                var soundInstance = Objects.requireNonNull(
+                @Nonnull SoundEvent soundEvent = Objects.requireNonNull(SoundEvents.UI_TOAST_IN, "toastIn");
+                @Nonnull SoundInstance soundInstance = Objects.requireNonNull(
                     SimpleSoundInstance.forUI(soundEvent, 1.0f, 0.9f), "toastInSound");
                 mc.getSoundManager().play(soundInstance);
                 introSoundPlayed = true;
@@ -279,7 +287,7 @@ public class WelcomeScreen extends Screen {
     }
 
     private void renderTitle(GuiGraphics g, int centerX, int panelY, float alpha, long elapsed) {
-        Font safeFont = safeFont();
+        @Nonnull Font safeFont = safeFont();
         // Animated "DevMod" logo text
         float logoScale = 1.0f + 0.03f * (float) Math.sin(elapsed / 400.0);
 
@@ -304,7 +312,7 @@ public class WelcomeScreen extends Screen {
     }
 
     private void renderFeatures(GuiGraphics g, int panelX, int startY, long elapsed) {
-        Font safeFont = safeFont();
+        @Nonnull Font safeFont = safeFont();
         long featureElapsed = elapsed - FEATURES_REVEAL_DELAY;
 
         int y = startY;
@@ -330,7 +338,7 @@ public class WelcomeScreen extends Screen {
     }
 
     private void renderFeatureItem(GuiGraphics g, Feature feature, int x, int y, float alpha, long elapsed) {
-        Font safeFont = safeFont();
+        @Nonnull Font safeFont = safeFont();
         // Bullet animation
         float bulletPulse = 1.0f + 0.2f * (float) Math.sin(elapsed / 300.0 + feature.name.hashCode());
 
@@ -357,7 +365,7 @@ public class WelcomeScreen extends Screen {
     }
 
     private void renderKeybinds(GuiGraphics g, int centerX, int startY, long elapsed) {
-        Font safeFont = safeFont();
+        @Nonnull Font safeFont = safeFont();
         long keybindElapsed = elapsed - KEYBINDS_REVEAL_DELAY;
         float alpha = Math.min(1.0f, keybindElapsed / 300.0f);
 
@@ -367,7 +375,7 @@ public class WelcomeScreen extends Screen {
 
         // Header
         int headerColor = applyAlpha(COLOR_TEXT, alpha);
-        g.drawCenteredString(safeFont, "Quick Start", centerX, startY + 10, headerColor);
+        g.drawCenteredString(safeFont, "Suggested Keybinds", centerX, startY + 10, headerColor);
 
         // Keybinds
         int y = startY + 28;
@@ -382,7 +390,7 @@ public class WelcomeScreen extends Screen {
     }
 
     private void renderKeybindItem(GuiGraphics g, Keybind kb, int x, int y, float alpha) {
-        Font safeFont = safeFont();
+        @Nonnull Font safeFont = safeFont();
         // Key box background
         String keyText = "[" + kb.key + "]";
         int keyWidth = safeFont.width(keyText);
@@ -440,51 +448,18 @@ public class WelcomeScreen extends Screen {
     // === Actions ===
 
     private void startTutorial() {
-        Minecraft mc = Minecraft.getInstance();
-        var soundEvent = Objects.requireNonNull(SoundEvents.UI_BUTTON_CLICK.value(), "uiClick");
-        var soundInstance = Objects.requireNonNull(
-            SimpleSoundInstance.forUI(soundEvent, 1.0f, 1.0f), "uiClickSound");
-        mc.getSoundManager().play(soundInstance);
-
-        savePreference();
-        TutorialManager.INSTANCE.setPhase(TutorialManager.TutorialPhase.WELCOME);
-        TutorialManager.INSTANCE.setOnboardingCompleted(false);
-
-        mc.setScreen(null);
-
-        // Start the interactive onboarding overlay on next tick
-        // This ensures the screen has fully closed before the overlay checks mc.screen
-        mc.execute(() -> {
-            com.frenkvs.devmod.hud.OnboardingOverlay.start();
-        });
+        ActionRegistry.invoke(ActionIds.UI_ONBOARDING_START,
+            ClientActionContexts.forClient(ActionOrigin.UI, new OnboardingActionPayload(dontShowAgain)));
     }
 
     private void skip() {
-        Minecraft mc = Minecraft.getInstance();
-        var soundEvent = Objects.requireNonNull(SoundEvents.UI_BUTTON_CLICK.value(), "uiClick");
-        var soundInstance = Objects.requireNonNull(
-            SimpleSoundInstance.forUI(soundEvent, 1.0f, 0.8f), "uiClickSound");
-        mc.getSoundManager().play(soundInstance);
-
-        savePreference();
-        TutorialManager.INSTANCE.setOnboardingCompleted(true);
-
-        mc.setScreen(null);
+        ActionRegistry.invoke(ActionIds.UI_ONBOARDING_SKIP,
+            ClientActionContexts.forClient(ActionOrigin.UI, new OnboardingActionPayload(dontShowAgain)));
     }
 
     @Nonnull
     private Font safeFont() {
         return Objects.requireNonNull(font, "font");
-    }
-
-    private void savePreference() {
-        // Only mark as seen if user explicitly checked "Don't show again"
-        if (dontShowAgain) {
-            SettingsManager.INSTANCE.getSettings().onboarding.hasSeenWelcome = true;
-            SettingsManager.INSTANCE.getSettings().onboarding.tutorialCompleted = true;
-        }
-        SettingsManager.INSTANCE.markDirty();
-        SettingsManager.INSTANCE.save();
     }
 
     @Override

@@ -1,31 +1,31 @@
 package com.devmod.arena.command;
 
-import com.devmod.arena.builder.ArenaBuilder;
+import com.devmod.arena.builder.TemplateArenaBuilder;
 import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.telemetry.ArenaTelemetry;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 import java.nio.file.Path;
 import java.util.Objects;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.argThat;
 
 class ArenaCommandGateIntegrationTest {
 
     @Test
-    @SuppressWarnings("null")
+    @SuppressWarnings({"null", "unchecked"})
     void arenaCreateFailsWhenInstanceOnlyFalse() throws Exception {
         String prevInstanceOnly = System.getProperty("devmod.arena.instanceOnly");
         String prevLegacyAllowed = System.getProperty("devmod.arena.allowLegacyOverworldArena");
@@ -48,7 +48,7 @@ class ArenaCommandGateIntegrationTest {
                     null,
                     null,
                     Path.of("config/devmod/arena_templates"),
-                    level -> mock(ArenaBuilder.class),
+                    level -> mock(TemplateArenaBuilder.class),
                     null,
                     () -> snapshot,
                     null,
@@ -66,12 +66,18 @@ class ArenaCommandGateIntegrationTest {
                 CommandSourceStack source = mock(CommandSourceStack.class);
                 when(source.isPlayer()).thenReturn(false);
 
-                dispatcher.execute("arena create default_flat_64", source);
+                CommandContext<CommandSourceStack> context = mock(CommandContext.class);
+                when(context.getSource()).thenReturn(source);
+                when(context.getArgument("template", String.class)).thenReturn("default_flat_64");
 
-                ArgumentCaptor<Component> captor = ArgumentCaptor.forClass(Component.class);
-                verify(source).sendFailure(captor.capture());
-                Component failure = Objects.requireNonNull(captor.getValue(), "failureMessage");
-                assertTrue(failure.getString().contains("Instance-only mode"));
+                var handler = ArenaActionBridge.getHandler(com.frenkvs.devmod.actions.ActionIds.ARENA_CREATE);
+                assertNotNull(handler, "Expected arena create handler to be registered");
+                handler.apply(context);
+
+                verify(source).sendFailure(argThat((net.minecraft.network.chat.Component message) -> {
+                    net.minecraft.network.chat.Component safe = Objects.requireNonNull(message, "failureMessage");
+                    return safe.getString().contains("Instance-only mode");
+                }));
             }
         } finally {
             restoreProperty("devmod.arena.instanceOnly", prevInstanceOnly);

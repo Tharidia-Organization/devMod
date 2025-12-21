@@ -1,5 +1,12 @@
 package com.frenkvs.devmod.debug;
 
+import com.frenkvs.devmod.actions.ActionCategory;
+import com.frenkvs.devmod.actions.ActionCommandInvoker;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionPreconditions;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.RadialAction;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -10,6 +17,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraft.world.item.Items;
 
 import java.util.Arrays;
 import java.util.Locale;
@@ -30,14 +38,90 @@ public class DebugCommand {
             Commands.literal("devdebug")
                 .requires(source -> source.hasPermission(2)) // Requires op level 2
                 .then(Commands.literal("list")
-                    .executes(DebugCommand::listFeatures))
+                    .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.DEBUG_COMMAND_LIST, ctx)))
                 .then(Commands.literal("off")
-                    .executes(DebugCommand::disableAll))
+                    .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.DEBUG_COMMAND_OFF, ctx)))
                 .then(Commands.argument("feature", Objects.requireNonNull(StringArgumentType.word()))
                     .suggests(DebugCommand::suggestFeatures)
-                    .executes(DebugCommand::toggleFeature))
-                .executes(DebugCommand::showHelp)
+                    .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.DEBUG_COMMAND_TOGGLE, ctx)))
+                .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.DEBUG_COMMAND_HELP, ctx))
         );
+    }
+
+    public static void registerActions() {
+        ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_COMMAND_HELP)
+            .labelKey("devmod.action.debug.command.help")
+            .descriptionKey("devmod.action.debug.command.help.desc")
+            .category(ActionCategory.DEBUG)
+            .menuPath("Root/Debug/Native/Help")
+            .icon(Items.PAPER)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devdebug")
+            .handler(context -> {
+                CommandContext<CommandSourceStack> cmd = context.getCommandContext();
+                if (context.getOrigin() == ActionOrigin.COMMAND && cmd != null) {
+                    showHelp(cmd);
+                    return;
+                }
+                context.executeCommand("devdebug");
+            })
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_COMMAND_LIST)
+            .labelKey("devmod.action.debug.command.list")
+            .descriptionKey("devmod.action.debug.command.list.desc")
+            .category(ActionCategory.DEBUG)
+            .menuPath("Root/Debug/Native/List")
+            .icon(Items.BOOK)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devdebug list")
+            .handler(context -> {
+                CommandContext<CommandSourceStack> cmd = context.getCommandContext();
+                if (context.getOrigin() == ActionOrigin.COMMAND && cmd != null) {
+                    listFeatures(cmd);
+                    return;
+                }
+                context.executeCommand("devdebug list");
+            })
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_COMMAND_OFF)
+            .labelKey("devmod.action.debug.command.off")
+            .descriptionKey("devmod.action.debug.command.off.desc")
+            .category(ActionCategory.DEBUG)
+            .menuPath("Root/Debug/Native/Disable All")
+            .icon(Items.BARRIER)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devdebug off")
+            .handler(context -> {
+                CommandContext<CommandSourceStack> cmd = context.getCommandContext();
+                if (context.getOrigin() == ActionOrigin.COMMAND && cmd != null) {
+                    disableAll(cmd);
+                    return;
+                }
+                context.executeCommand("devdebug off");
+            })
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_COMMAND_TOGGLE)
+            .labelKey("devmod.action.debug.command.toggle")
+            .descriptionKey("devmod.action.debug.command.toggle.desc")
+            .category(ActionCategory.DEBUG)
+            .menuPath("Root/Debug/Native/Toggle Feature")
+            .icon(Items.COMMAND_BLOCK)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devdebug <feature>")
+            .handler(context -> {
+                CommandContext<CommandSourceStack> cmd = context.getCommandContext();
+                if (context.getOrigin() == ActionOrigin.COMMAND && cmd != null) {
+                    toggleFeature(cmd);
+                    return;
+                }
+                if (!context.openCommandPrompt("devdebug ")) {
+                    context.executeCommand("devdebug");
+                }
+            })
+            .build());
     }
 
     private static int showHelp(CommandContext<CommandSourceStack> context) {

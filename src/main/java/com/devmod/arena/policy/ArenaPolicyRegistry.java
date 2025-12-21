@@ -34,6 +34,9 @@ public class ArenaPolicyRegistry {
 
     private static final double MIN_WEIGHT = 0.1;
     private static final double MAX_WEIGHT = 10.0;
+    private static final List<ArenaPolicy> BUILT_IN_POLICIES = List.of(
+        ArenaPolicy.BOSS_RING_80
+    );
 
     private final ConcurrentHashMap<String, ArenaPolicy> policies = new ConcurrentHashMap<>();
     private final AtomicInteger generation = new AtomicInteger(0);
@@ -263,6 +266,7 @@ public class ArenaPolicyRegistry {
 
         // Always include default
         newRegistry.put(ArenaPolicy.DEFAULT.id(), ArenaPolicy.DEFAULT);
+        injectBuiltInPolicies(newRegistry);
 
         // Validate and normalize each policy
         for (ArenaPolicy policy : newPolicies) {
@@ -384,7 +388,42 @@ public class ArenaPolicyRegistry {
             loaded.add(ArenaPolicy.DEFAULT);
         }
 
+        registerBuiltInPolicies(loaded);
+
         return new LoadResult(loaded, errors);
+    }
+
+    private void registerBuiltInPolicies(List<ArenaPolicy> loaded) {
+        for (ArenaPolicy policy : BUILT_IN_POLICIES) {
+            if (policies.containsKey(policy.id())) {
+                continue;
+            }
+            ValidationResult result = register(policy);
+            if (result.valid()) {
+                loaded.add(policy);
+            } else {
+                LOGGER.warn("Skipping built-in policy '{}': {}", policy.id(), result.errors());
+            }
+        }
+    }
+
+    private void injectBuiltInPolicies(ConcurrentHashMap<String, ArenaPolicy> newRegistry) {
+        for (ArenaPolicy policy : BUILT_IN_POLICIES) {
+            if (newRegistry.containsKey(policy.id())) {
+                continue;
+            }
+            ValidationResult result = validatePolicy(policy);
+            if (!result.valid()) {
+                LOGGER.warn("Skipping built-in policy '{}' during hot-reload: {}", policy.id(), result.errors());
+                telemetry.emit("arena.policy.builtin_skip", Map.of(
+                    "policyId", policy.id(),
+                    "errors", result.errors()
+                ));
+                continue;
+            }
+            ArenaPolicy normalized = clampWeight(policy, new ArrayList<>());
+            newRegistry.put(normalized.id(), normalized);
+        }
     }
 
     /**

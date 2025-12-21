@@ -1,9 +1,12 @@
 package com.frenkvs.devmod.endurance;
 
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.util.I18n;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -494,7 +497,8 @@ public class EnduranceShopScreen extends Screen {
     }
 
     private void goBack() {
-        Minecraft.getInstance().setScreen(new EnduranceQuestScreen());
+        ActionRegistry.invoke(ActionIds.UI_ENDURANCE_SCREEN_OPEN,
+            ClientActionContexts.forClient(ActionOrigin.UI));
     }
 
     @Override

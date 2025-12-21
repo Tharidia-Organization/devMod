@@ -62,7 +62,7 @@ public class InvitePopupScreen extends Screen {
      * Create an invite popup from notification payload.
      */
     public InvitePopupScreen(UUID inviteId, String senderName, QuestType questType, long expiresAt) {
-        super(Component.translatable("devmod.party.invite_title"));
+        super(java.util.Objects.requireNonNull(Component.translatable("devmod.party.invite_title"), "title"));
         this.inviteId = inviteId;
         this.senderName = senderName;
         this.questType = questType;
@@ -272,6 +272,7 @@ public class InvitePopupScreen extends Screen {
             LOGGER.info("[InvitePopup] Auto-declining invite on close");
             PacketDistributor.sendToServer(new InviteResponsePayload(inviteId, false));
         }
+        PartyUiCache.clear();
         super.onClose();
     }
 

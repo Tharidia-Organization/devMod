@@ -1,8 +1,10 @@
 package com.frenkvs.devmod.ui.unified.pages;
 
-import com.frenkvs.devmod.debug.DebugFeature;
-import com.frenkvs.devmod.debug.DebugTogglePayload;
 import com.frenkvs.devmod.debug.client.DebugRenderBools;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.rendering.DebugRenderer;
 import com.frenkvs.devmod.rendering.LightLevelOverlay;
 import com.frenkvs.devmod.rendering.LineOfSightVisualizer;
@@ -13,10 +15,8 @@ import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.unified.SettingsCategory;
 import com.frenkvs.devmod.ui.unified.SettingsPage;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
@@ -57,7 +57,7 @@ public class DebugOverlaysPage implements SettingsPage {
 
     @Override
     public void render(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height, int mouseX, int mouseY) {
-        Font safeFont = Objects.requireNonNull(font, "font");
+        @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         // Store dimensions for scroll calculations
         lastContentY = y;
         lastContentHeight = height;
@@ -133,12 +133,12 @@ public class DebugOverlaysPage implements SettingsPage {
             // Debug Renderer toggle
             currentY = renderToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Debug Renderer", "Show debug shapes (boxes, lines, spheres)",
-                DebugRenderer.INSTANCE.isEnabled(), "G");
+                DebugRenderer.INSTANCE.isEnabled(), "");
 
             // Light Level Overlay toggle
             currentY = renderToggleRow(graphics, safeFont, x, currentY, width, mouseX, mouseY,
                 "Light Levels", "Show spawn-safe light levels on blocks",
-                LightLevelOverlay.INSTANCE.isEnabled(), "L");
+                LightLevelOverlay.INSTANCE.isEnabled(), "");
 
             currentY += SECTION_SPACING;
 
@@ -251,9 +251,9 @@ public class DebugOverlaysPage implements SettingsPage {
     private int renderNativeToggleRow(GuiGraphics graphics, Font font, int x, int y, int width,
                                        int mouseX, int mouseY, String label, String description,
                                        boolean enabled) {
-        Font safeFont = Objects.requireNonNull(font, "font");
-        String safeLabel = Objects.requireNonNull(label, "label");
-        String safeDescription = Objects.requireNonNull(description, "description");
+        @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
+        @Nonnull String safeLabel = Objects.requireNonNull(label, "label");
+        @Nonnull String safeDescription = Objects.requireNonNull(description, "description");
         int rowWidth = width - 20;
         boolean hovered = mouseX >= x && mouseX < x + rowWidth && mouseY >= y && mouseY < y + ROW_HEIGHT;
 
@@ -282,9 +282,9 @@ public class DebugOverlaysPage implements SettingsPage {
     private int renderToggleRow(GuiGraphics graphics, Font font, int x, int y, int width,
                                  int mouseX, int mouseY, String label, String description,
                                  boolean enabled, String hotkey) {
-        Font safeFont = Objects.requireNonNull(font, "font");
-        String safeLabel = Objects.requireNonNull(label, "label");
-        String safeDescription = Objects.requireNonNull(description, "description");
+        @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
+        @Nonnull String safeLabel = Objects.requireNonNull(label, "label");
+        @Nonnull String safeDescription = Objects.requireNonNull(description, "description");
         String safeHotkey = Objects.requireNonNullElse(hotkey, "");
         int rowWidth = width - 20;
         boolean hovered = mouseX >= x && mouseX < x + rowWidth && mouseY >= y && mouseY < y + ROW_HEIGHT;
@@ -355,56 +355,56 @@ public class DebugOverlaysPage implements SettingsPage {
 
         // Entity Pathing
         if (isInToggleRow(mouseX, mouseY, contentX, y, rowWidth)) {
-            toggleNativeFeature(DebugFeature.ENTITY_PATHING);
+            invokeAction(ActionIds.DEBUG_NATIVE_ENTITY_PATHING_TOGGLE);
             return true;
         }
         y += ROW_HEIGHT;
 
         // Entity Goals
         if (isInToggleRow(mouseX, mouseY, contentX, y, rowWidth)) {
-            toggleNativeFeature(DebugFeature.ENTITY_GOALS);
+            invokeAction(ActionIds.DEBUG_NATIVE_ENTITY_GOALS_TOGGLE);
             return true;
         }
         y += ROW_HEIGHT;
 
         // Entity Brains
         if (isInToggleRow(mouseX, mouseY, contentX, y, rowWidth)) {
-            toggleNativeFeature(DebugFeature.ENTITY_BRAINS);
+            invokeAction(ActionIds.DEBUG_NATIVE_ENTITY_BRAINS_TOGGLE);
             return true;
         }
         y += ROW_HEIGHT;
 
         // POI
         if (isInToggleRow(mouseX, mouseY, contentX, y, rowWidth)) {
-            toggleNativeFeature(DebugFeature.POI);
+            invokeAction(ActionIds.DEBUG_NATIVE_POI_TOGGLE);
             return true;
         }
         y += ROW_HEIGHT;
 
         // Raids
         if (isInToggleRow(mouseX, mouseY, contentX, y, rowWidth)) {
-            toggleNativeFeature(DebugFeature.RAIDS);
+            invokeAction(ActionIds.DEBUG_NATIVE_RAIDS_TOGGLE);
             return true;
         }
         y += ROW_HEIGHT;
 
         // Bees
         if (isInToggleRow(mouseX, mouseY, contentX, y, rowWidth)) {
-            toggleNativeFeature(DebugFeature.BEES);
+            invokeAction(ActionIds.DEBUG_NATIVE_BEES_TOGGLE);
             return true;
         }
         y += ROW_HEIGHT;
 
         // Game Events
         if (isInToggleRow(mouseX, mouseY, contentX, y, rowWidth)) {
-            toggleNativeFeature(DebugFeature.GAME_EVENTS);
+            invokeAction(ActionIds.DEBUG_NATIVE_GAME_EVENTS_TOGGLE);
             return true;
         }
         y += ROW_HEIGHT;
 
         // Structures
         if (isInToggleRow(mouseX, mouseY, contentX, y, rowWidth)) {
-            toggleNativeFeature(DebugFeature.STRUCTURE_GENERATIONS);
+            invokeAction(ActionIds.DEBUG_NATIVE_STRUCTURES_TOGGLE);
             return true;
         }
         y += ROW_HEIGHT + SECTION_SPACING;
@@ -417,14 +417,14 @@ public class DebugOverlaysPage implements SettingsPage {
 
         // Debug Renderer toggle
         if (isInToggleRow(mouseX, mouseY, contentX, y, rowWidth)) {
-            DebugRenderer.INSTANCE.toggle();
+            invokeAction(ActionIds.DEBUG_OVERLAY_TOGGLE);
             return true;
         }
         y += ROW_HEIGHT;
 
         // Light Level toggle
         if (isInToggleRow(mouseX, mouseY, contentX, y, rowWidth)) {
-            LightLevelOverlay.INSTANCE.toggle();
+            invokeAction(ActionIds.DEBUG_LIGHT_OVERLAY_TOGGLE);
             return true;
         }
         y += ROW_HEIGHT + SECTION_SPACING;
@@ -437,14 +437,14 @@ public class DebugOverlaysPage implements SettingsPage {
 
         // Line of Sight toggle
         if (isInToggleRow(mouseX, mouseY, contentX, y, rowWidth)) {
-            LineOfSightVisualizer.INSTANCE.toggle();
+            invokeAction(ActionIds.DEBUG_LOS_TOGGLE);
             return true;
         }
         y += ROW_HEIGHT;
 
         // Custom Pathfinding toggle
         if (isInToggleRow(mouseX, mouseY, contentX, y, rowWidth)) {
-            PathfindingDebugger.INSTANCE.toggle();
+            invokeAction(ActionIds.DEBUG_PATHFINDING_TOGGLE);
             return true;
         }
         y += ROW_HEIGHT + SECTION_SPACING;
@@ -457,7 +457,7 @@ public class DebugOverlaysPage implements SettingsPage {
 
         // Room Bounds toggle
         if (isInToggleRow(mouseX, mouseY, contentX, y, rowWidth)) {
-            RoomBoundsVisualizer.INSTANCE.toggle();
+            invokeAction(ActionIds.DEBUG_ROOM_BOUNDS_TOGGLE);
             return true;
         }
         y += ROW_HEIGHT + SECTION_SPACING;
@@ -474,54 +474,20 @@ public class DebugOverlaysPage implements SettingsPage {
         return false;
     }
 
-    /**
-     * Toggle a native Minecraft debug feature by sending packet to server.
-     */
-    private void toggleNativeFeature(DebugFeature feature) {
-        if (Minecraft.getInstance().getConnection() != null) {
-            PacketDistributor.sendToServer(new DebugTogglePayload(feature.getId()));
-        }
-    }
-
     private boolean isInToggleRow(double mouseX, double mouseY, int x, int y, int width) {
         return mouseX >= x && mouseX < x + width && mouseY >= y - 2 && mouseY < y + ROW_HEIGHT - 2;
     }
 
     private void disableAll() {
-        // Disable custom debug tools
-        DebugRenderer.INSTANCE.disable();
-        LightLevelOverlay.INSTANCE.setEnabled(false);
-        LineOfSightVisualizer.INSTANCE.setEnabled(false);
-        PathfindingDebugger.INSTANCE.setEnabled(false);
-        RoomBoundsVisualizer.INSTANCE.setEnabled(false);
-
-        // Disable native debug features
-        if (Minecraft.getInstance().getConnection() != null) {
-            // Send disable for all enabled features
-            if (DebugRenderBools.ENTITY_PATHING) toggleNativeFeature(DebugFeature.ENTITY_PATHING);
-            if (DebugRenderBools.ENTITY_GOALS) toggleNativeFeature(DebugFeature.ENTITY_GOALS);
-            if (DebugRenderBools.ENTITY_BRAINS) toggleNativeFeature(DebugFeature.ENTITY_BRAINS);
-            if (DebugRenderBools.POI) toggleNativeFeature(DebugFeature.POI);
-            if (DebugRenderBools.RAIDS) toggleNativeFeature(DebugFeature.RAIDS);
-            if (DebugRenderBools.BEES) toggleNativeFeature(DebugFeature.BEES);
-            if (DebugRenderBools.GAME_EVENTS) toggleNativeFeature(DebugFeature.GAME_EVENTS);
-            if (DebugRenderBools.STRUCTURES) toggleNativeFeature(DebugFeature.STRUCTURE_GENERATIONS);
-        }
+        invokeAction(ActionIds.DEBUG_OVERLAYS_DISABLE_ALL);
     }
 
     private void enableAll() {
-        // Enable custom debug tools
-        DebugRenderer.INSTANCE.enable();
-        LightLevelOverlay.INSTANCE.setEnabled(true);
-        LineOfSightVisualizer.INSTANCE.setEnabled(true);
-        PathfindingDebugger.INSTANCE.setEnabled(true);
-        RoomBoundsVisualizer.INSTANCE.setEnabled(true);
+        invokeAction(ActionIds.DEBUG_OVERLAYS_ENABLE_ALL);
+    }
 
-        // Enable main native debug features
-        if (Minecraft.getInstance().getConnection() != null) {
-            if (!DebugRenderBools.ENTITY_PATHING) toggleNativeFeature(DebugFeature.ENTITY_PATHING);
-            if (!DebugRenderBools.ENTITY_GOALS) toggleNativeFeature(DebugFeature.ENTITY_GOALS);
-        }
+    private void invokeAction(String actionId) {
+        ActionRegistry.invoke(actionId, ClientActionContexts.forClient(ActionOrigin.UI));
     }
 
     @Override

@@ -1,5 +1,10 @@
 package com.frenkvs.devmod.ui.hub;
 
+import com.frenkvs.devmod.actions.ActionContext;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.endurance.ClientQuestCache;
 import com.frenkvs.devmod.endurance.EnduranceQuestState;
 import com.frenkvs.devmod.endurance.QuestActionPayload;
@@ -7,13 +12,9 @@ import com.frenkvs.devmod.testing.TestingSession;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
-import com.frenkvs.devmod.telemetry.dashboard.TelemetryDashboardServer;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.neoforged.neoforge.network.PacketDistributor;
 
-import java.awt.Desktop;
-import java.net.URI;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
@@ -356,16 +357,17 @@ public class QuickToolsPanel implements HubPanel {
         if (!ClientQuestCache.hasActiveQuest()) {
             return;
         }
-        PacketDistributor.sendToServer(new QuestActionPayload(action));
+        ActionContext context = ClientActionContexts.forClient(ActionOrigin.UI, action);
+        if (action == QuestActionPayload.Action.CONTINUE_TO_NEXT_WAVE
+            || action == QuestActionPayload.Action.CONTINUE_AFTER_DEATH) {
+            ActionRegistry.invoke(ActionIds.ENDURANCE_QUEST_CONTINUE, context);
+            return;
+        }
+        ActionRegistry.invoke(ActionIds.ENDURANCE_QUEST_EXIT, context.withConfirmed(true));
     }
 
     private void openDashboard() {
-        TelemetryDashboardServer.INSTANCE.start();
-        try {
-            if (Desktop.isDesktopSupported()) {
-                Desktop.getDesktop().browse(new URI("http://127.0.0.1:8642/dashboard"));
-            }
-        } catch (Exception ignored) {
-        }
+        ActionRegistry.invoke(ActionIds.TELEMETRY_DASHBOARD_SERVER_OPEN,
+            ClientActionContexts.forClient(ActionOrigin.UI));
     }
 }

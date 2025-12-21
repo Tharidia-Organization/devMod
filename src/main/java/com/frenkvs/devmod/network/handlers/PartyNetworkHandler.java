@@ -1,5 +1,9 @@
 package com.frenkvs.devmod.network.handlers;
 
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.party.*;
 import com.frenkvs.devmod.hud.QuestSequenceOverlay;
 import com.frenkvs.devmod.util.I18n;
@@ -275,7 +279,11 @@ public final class PartyNetworkHandler extends NetworkHandlerBase {
             if (player == null) return;
 
             switch (payload.notificationType()) {
-                case INVITE_RECEIVED -> mc.execute(() -> InvitePopupScreen.showInvite(payload));
+                case INVITE_RECEIVED -> {
+                    PartyUiCache.setLastInvite(payload);
+                    ActionRegistry.invoke(ActionIds.UI_PARTY_INVITE_POPUP_OPEN,
+                        ClientActionContexts.forClient(ActionOrigin.EVENT, payload));
+                }
                 case YOU_WERE_KICKED, PARTY_DISBANDED -> player.displayClientMessage(
                     I18n.translate("devmod.party." + payload.notificationType().name().toLowerCase()), true);
                 case MEMBER_JOINED, MEMBER_LEFT -> player.displayClientMessage(

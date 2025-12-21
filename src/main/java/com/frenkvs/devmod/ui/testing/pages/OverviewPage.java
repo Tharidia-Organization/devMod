@@ -11,6 +11,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 
 import java.util.Objects;
+import javax.annotation.Nonnull;
 
 import static com.frenkvs.devmod.ui.testing.pages.PageUtils.safeGetBool;
 
@@ -148,7 +149,7 @@ public class OverviewPage extends AbstractVoxelLabPage {
     private String getSystemStats() {
         Minecraft mc = Minecraft.getInstance();
         if (mc == null || mc.level == null) return "";
-        ClientLevel level = Objects.requireNonNull(mc.level, "level");
+        @Nonnull ClientLevel level = Objects.requireNonNull(mc.level, "level");
 
         int fps = mc.getFps();
         int entities = 0;

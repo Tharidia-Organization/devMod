@@ -1,13 +1,16 @@
 # TODO - Arena Template Rollout (Instance-First) v2.23
 
-Allineato con [ARENA_TEMPLATE_ROLLOUT_PLAN.md](../ARENA_TEMPLATE_ROLLOUT_PLAN.md) v2.2
+Storico: derivato da [ARENA_TEMPLATE_ROLLOUT_PLAN.md](../_deprecated/arena-template-rework/ARENA_TEMPLATE_ROLLOUT_PLAN.md) v2.2 (deprecated).
 
 ## Parallel Agent Files
-Questo TODO è suddiviso in 12 agent per esecuzione parallela. Vedi [TODO_AGENT_COORDINATOR.md](TODO_AGENT_COORDINATOR.md) per il piano di esecuzione.
+Questo TODO e' suddiviso in 12 agent per esecuzione parallela. Il piano originale e' archiviato in [TODO_AGENT_COORDINATOR.md](../_deprecated/arena-template-rework/TODO_AGENT_COORDINATOR.md) (storico, non operativo).
+
+> Nota: lo stato implementativo e' tracciato nei file `TODO_AGENT_*_COMPLETE.md` e nell'audit `ARENA_TEMPLATE_AUDIT.md`. Le checklist qui sotto sono la spec, non lo stato.
+> Nota 2: le task list `TODO_AGENT_*.md` sono archiviate in `docs/_deprecated/arena-template-rework/`.
 
 ## Changelog
 
-**v2.23**: Aggiunte Design Decisions DD63-DD72: Prebuild Pool Deferral (DD63 - DEFERRED, evaluate dopo 2 settimane telemetria), Pool Cleanup Unused (DD64 - state machine READY→RESERVED→IN_USE, double-check eviction), Pool Metrics Operational (DD65 - hit/miss linked a feature flag, auto-disable >50%), Migration Wrapper Detection (DD66 - grep+AST+runtime telemetry), Deprecation CI+Runtime (DD67 - warning M1, -Werror M2, removal M3), Monitoring 48h Runbook (DD68 - soglie + ownership + escalation), Dashboard Validation (DD69 - automated job + manual checklist), Security Release Gate (DD70 - CI bloccante, 7 checks), Template Obsolescence (DD71 - versioned extends, session-safe deprecation), Success Criteria KPIs (DD72 - build_p95<5s, rollback<1%, completion>75%). Aggiunta categoria task Pool & Operational Readiness.
+**v2.23**: Aggiunte Design Decisions DD63-DD72: Prebuild Pool Deferral (DD63 - DEFERRED, evaluate dopo 2 settimane telemetria), Pool Cleanup Unused (DD64 - state machine READY→RESERVED→IN_USE, double-check eviction), Pool Metrics Operational (DD65 - hit/miss linked a feature flag, auto-disable >50%), Migration Wrapper Detection (DD66 - grep+AST+runtime telemetry), Deprecation CI+Runtime (DD67 - warning M1, -Werror M2, removal M3), Monitoring 48h Runbook (DD68 - soglie + ownership + escalation), Dashboard Validation (DD69 - automated job + manual checklist), Security Release Gate (DD70 - CI bloccante, 7 checks), Template Obsolescence (DD71 - versioned extendsTemplate, session-safe deprecation), Success Criteria KPIs (DD72 - build_p95<5s, rollback<1%, completion>75%). Aggiunta categoria task Pool & Operational Readiness.
 **v2.22**: Aggiunte Design Decisions DD57-DD62: Telemetry Propagation Audit (DD57 - TelemetryAuditJob daily, 12 sub-services, CI check eventi orfani), Room ID Uniqueness (DD58 - arenaId immutabile, sessionId per reconnect), Balance Report Job (DD59 - settimanale Dom 06:00, <30s, JSON+Slack), Lock Map Cleanup (DD60 - scheduled cleanup 5min, no leak), Rate Limit 4th Build (DD61 - queue max 10, timeout 60s, reject con retry-after), Telemetry Contention (DD62 - waitTimeMs + templateId per bottleneck analysis). Aggiunta categoria task Telemetry & Concurrency.
 **v2.21**: Aggiunte Design Decisions DD51-DD56: Perk Suggestions Bias (DD51 - shuffle SUGGESTED, A/B test 10%, weekly winrate analysis), Badge Template Tracking (DD52 - usage table source of truth, version-agnostic count), Reward Multipliers (DD53 - weight*0.05+1.0, bounds 0.5-2.0, anti-exploit), Currency Source Enum (DD54 - enum ~15 valori, sourceId separato), Challenge Generation (DD55 - 5 availability checks, fallback generica), Leaderboard Batch (DD56 - calcolo 03:00 daily, Redis cache, O(1) read). Aggiunta categoria task Gamification & Balance.
 **v2.20**: Aggiunte Design Decisions DD44-DD50: Rollback Staging Test (DD44 - scenario obbligatorio pre-deploy, checklist 4 punti), Fallback Chain Limits (DD45 - max 1 retry, circuit breaker 3/5min), Default Fail Message (DD46 - user-friendly, no tech details, stack trace solo log), SpawnSlots Distance (DD47 - melee 3-15, ranged 12-30, LOS+ground+forbidden), SpawnSlotValidator Performance (DD48 - O(n²) at load, O(1) runtime), Heatmap Privacy (DD49 - 5x5 cell, hourly bucket, no player ID), Mutator Binding (DD50 - SUGGESTED soft, EXCLUDED/REQUIRED hard). Aggiunta categoria task Rollback & Spawn.
@@ -27,7 +30,7 @@ Questo TODO è suddiviso in 12 agent per esecuzione parallela. Vedi [TODO_AGENT_
 **v2.6**: Aggiunta Error Handling Strategy per inheritance (severity table, cycle detection algorithm, InheritanceValidation sealed interface, user-friendly messages).
 **v2.5**: Aggiunta Merge Strategy dettagliata per tutti i campi (OVERRIDE vs SHALLOW_MERGE vs SKIP, esempi, FieldMerger, FIELD_STRATEGIES mapping).
 **v2.4**: Aggiunta Inheritance Strategy completa (catena lineare, no diamond, max depth 3, merge rules, eccezioni dedicate, unit test).
-**v2.3**: Aggiunta Versioning Strategy completa (version int, schemaVersion SemVer, breakingChange, minTemplateVersion/maxTemplateVersion binding, VersionCompatibilityChecker).
+**v2.3**: Aggiunta Versioning Strategy completa (version int, schemaVersion int per template, breakingChange, minTemplateVersion/maxTemplateVersion binding, VersionCompatibilityChecker).
 **v2.2**: Separazione concettuale Template (L1 Layout) + Policy (L2 Gameplay). Integrazione completa con tutte le capacità esistenti del progetto.
 
 ---
@@ -1019,7 +1022,7 @@ public class DuckDBRecovery {
 
 ```java
 public record ArenaSessionSnapshot(
-    int schemaVersion,  // Incrementato ad ogni breaking change
+    String schemaVersion,  // SemVer per snapshot di recovery
     UUID arenaId,
     String templateId,
     int templateVersion,
@@ -1027,35 +1030,35 @@ public record ArenaSessionSnapshot(
     // ... altri campi
     @Nullable String migratedFrom  // null se nativo
 ) {
-    public static final int CURRENT_SCHEMA = 2;
+    public static final String CURRENT_SCHEMA_VERSION = "2.0.0";
+    private static final Map<String, String> MIGRATION_PATH = Map.of(
+        "1.0.0", "1.1.0",
+        "1.1.0", "2.0.0"
+    );
 
     public static ArenaSessionSnapshot migrate(ArenaSessionSnapshot old) {
-        if (old.schemaVersion() == CURRENT_SCHEMA) {
+        if (CURRENT_SCHEMA_VERSION.equals(old.schemaVersion())) {
             return old;
         }
 
-        // Chain migration: v1 → v2 → ... → current
         ArenaSessionSnapshot migrated = old;
-        while (migrated.schemaVersion() < CURRENT_SCHEMA) {
-            migrated = switch (migrated.schemaVersion()) {
-                case 1 -> migrateV1ToV2(migrated);
-                // case 2 -> migrateV2ToV3(migrated);
-                default -> throw new IllegalStateException(
+        while (!CURRENT_SCHEMA_VERSION.equals(migrated.schemaVersion())) {
+            String next = MIGRATION_PATH.get(migrated.schemaVersion());
+            if (next == null) {
+                throw new IllegalStateException(
                     "Unknown schema version: " + migrated.schemaVersion());
-            };
+            }
+            migrated = applyMigration(migrated, next);
         }
         return migrated;
     }
 
-    private static ArenaSessionSnapshot migrateV1ToV2(ArenaSessionSnapshot v1) {
-        return new ArenaSessionSnapshot(
-            2,
-            v1.arenaId(),
-            v1.templateId(),
-            v1.templateVersion(),
-            v1.createdAt(),
-            "v1"  // Mark as migrated
-        );
+    private static ArenaSessionSnapshot applyMigration(ArenaSessionSnapshot snapshot, String targetVersion) {
+        return switch (targetVersion) {
+            case "1.1.0" -> migrateV1_0_to_V1_1(snapshot);
+            case "2.0.0" -> migrateV1_1_to_V2_0(snapshot);
+            default -> snapshot;
+        };
     }
 }
 ```
@@ -3386,7 +3389,7 @@ jobs:
 
 ### 71. Template Obsolescence - Migration Without Breaking
 
-**Decisione**: Versioned extends, graceful degradation, session-safe deprecation.
+**Decisione**: Versioned extendsTemplate, graceful degradation, session-safe deprecation.
 
 ```java
 public class TemplateObsolescenceHandler {
@@ -3404,8 +3407,8 @@ public class TemplateObsolescenceHandler {
             return registry.getDefault();
         }
 
-        // Check if extends points to obsolete parent
-        if (template.extendsId() != null && registry.get(template.extendsId()) == null) {
+        // Check if extendsTemplate points to obsolete parent
+        if (template.extendsTemplate() != null && registry.get(template.extendsTemplate()) == null) {
             return flattenWithDefaults(template);
         }
 
@@ -3424,7 +3427,7 @@ public class TemplateObsolescenceHandler {
 }
 ```
 
-**Migration layers**: Soft deprecation, session-safe removal, extends fallback, recovery degradation.
+**Migration layers**: Soft deprecation, session-safe removal, extendsTemplate fallback, recovery degradation.
 
 **Ownership**: Tech Lead / Core Dev
 **Status**: ✅ DEFINITIVE
@@ -3547,7 +3550,7 @@ public enum RolloutPhase {
 - [ ] Implementare `DuckDBCleaner.deleteOlderThan()`
 - [ ] Configurare logger separato `arena.retention` per audit
 - [ ] Implementare `DuckDBRecovery.rebuildFromNdjson()`
-- [ ] Aggiungere `schemaVersion` a `ArenaSessionSnapshot`
+- [ ] Aggiungere `schemaVersion` (SemVer string) a `ArenaSessionSnapshot`
 - [ ] Implementare migration chain v1→v2 in snapshot
 - [ ] Implementare `InstanceName` record con validazione
 - [ ] Implementare `InstanceName.sanitize()` e `generate()`
@@ -3845,7 +3848,7 @@ public enum RolloutPhase {
 - [ ] Unit test DashboardValidationJob temporal consistency
 - [ ] Unit test release-gate workflow 7 checks
 - [ ] Unit test TemplateObsolescenceHandler successor lookup
-- [ ] Unit test TemplateObsolescenceHandler extends fallback
+- [ ] Unit test TemplateObsolescenceHandler extendsTemplate fallback
 - [ ] Unit test session-safe removal (wait for active)
 - [ ] Unit test RolloutSuccessCriteria defaults
 - [ ] Unit test RolloutEvaluator canAdvance() gates
@@ -3885,15 +3888,15 @@ Lo schema deve contenere **tutti** i parametri necessari per costruire l'arena. 
 #### Metadati
 - `id`: string, identificatore unico
 - `version`: int, per tracking breaking changes
-- `extends`: string|null, ID template parent per inheritance
-- `schemaVersion`: string (es. "1.0.0"), versione dello schema
+- `extendsTemplate`: string|null, ID template parent per inheritance
+- `schemaVersion`: int (es. 1), versione schema template
 - `breakingChange`: bool, true se incompatibile con versioni precedenti
 
 #### Geometria e Origine
 - `origin`: oggetto che definisce il punto (0,0,0) del template
   ```json
   "origin": {
-    "mode": "center" | "corner_nw" | "corner_sw",
+    "mode": "CENTER" | "CORNER_NW" | "CORNER_SW",
     "x": 0, "y": 64, "z": 0
   }
   ```
@@ -4757,7 +4760,7 @@ public void onServerConfigReload(InstanceManagerConfig newConfig) {
 
 #### Template Versioning
 - [ ] Implementare campo `version` (int) - incrementa ad ogni modifica del template
-- [ ] Implementare campo `schemaVersion` (SemVer, es. "1.0.0") - versione della struttura dello schema
+- [ ] Implementare campo `schemaVersion` (int, es. 1) - versione della struttura dello schema template
 - [ ] Implementare campo `breakingChange` (bool) - true se incompatibile con versioni precedenti
 
 #### Breaking Change Rules
@@ -4997,7 +5000,7 @@ public SchemaValidationResult validateSchema(JsonObject json, ValidationMode mod
 - [ ] Implementare `ValidationMode` enum
 - [ ] Config flag `schemaValidation` (default STRICT)
 - [ ] Skip `$schema`, `_comment`, `//` prefixed fields
-- [ ] Required fields: `id`, `version`, `schemaVersion`, `size`
+- [ ] Required fields: `id`, `version`, `schemaVersion`, `origin`, `size`, `floor`, `mobSpawnStrategy`
 - [ ] Telemetria `arena.template.unknown_fields`
 - [ ] Unit test per ogni mode
 
@@ -5120,7 +5123,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
 |-------|------|-----------|-----------|
 | `id` | string | N/A (mai ereditato) | Identità unica |
 | `version` | int | N/A (mai ereditato) | Versione child |
-| `extends` | string | N/A (consumato dal loader) | Solo per risoluzione |
+| `extendsTemplate` | string | N/A (consumato dal loader) | Solo per risoluzione |
 | `size`, `sizeX`, `sizeZ` | int | **OVERRIDE** | Dimensioni = identità layout |
 | `origin` | object | **SHALLOW MERGE** | `{...parent.origin, ...child.origin}` |
 | `floor` | object | **SHALLOW MERGE** | Child può cambiare solo `material` senza ripetere `y`, `thickness` |
@@ -5217,7 +5220,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
   Map<String, MergeStrategy> FIELD_STRATEGIES = Map.ofEntries(
       entry("id", SKIP),
       entry("version", SKIP),
-      entry("extends", SKIP),
+      entry("extendsTemplate", SKIP),
       entry("size", OVERRIDE),
       entry("floor", SHALLOW_MERGE),
       entry("walls", SHALLOW_MERGE),
@@ -5253,9 +5256,9 @@ public class ArenaTemplateRegistry implements AutoCloseable {
       Set<String> seen = new HashSet<>();
       ArenaTemplate current = get(templateId);
 
-      while (current.extends_() != null) {
+      while (current.extendsTemplate() != null) {
           // Cycle check
-          if (seen.contains(current.extends_())) {
+          if (seen.contains(current.extendsTemplate())) {
               throw new CircularInheritanceException(templateId, chain);
           }
           // Depth check
@@ -5263,11 +5266,11 @@ public class ArenaTemplateRegistry implements AutoCloseable {
               throw new InheritanceDepthException(templateId, MAX_INHERITANCE_DEPTH);
           }
           // Diamond check (duplicate ancestor)
-          if (!seen.add(current.extends_())) {
-              throw new DiamondInheritanceException(templateId, current.extends_());
+          if (!seen.add(current.extendsTemplate())) {
+              throw new DiamondInheritanceException(templateId, current.extendsTemplate());
           }
           chain.add(current.id());
-          current = get(current.extends_());
+          current = get(current.extendsTemplate());
       }
 
       // Merge dalla root verso il child
@@ -5293,8 +5296,10 @@ public class ArenaTemplateRegistry implements AutoCloseable {
 | Parent non trovato | **ERROR** | Blocco load, throw exception | Nessuno |
 | Parent con `breakingChange=true` incompatibile | **ERROR** | Blocco load, throw exception | Nessuno |
 | Parent deprecato (`deprecated=true`) | **WARN** | Log warning, continua load | Usa parent deprecato |
-| schemaVersion mismatch (minor) | **WARN** | Log warning, usa defaults per campi nuovi | Template parziale |
+| schemaVersion mismatch (same major) | **WARN** | Log warning, usa defaults per campi nuovi | Template parziale |
 | schemaVersion mismatch (major) | **ERROR** | Blocco load | Nessuno |
+
+Nota: per il template `schemaVersion` e' un int; il "major" e' `schemaVersion / 1000`.
 
 #### Cycle Detection Algorithm
 ```java
@@ -5303,8 +5308,8 @@ public InheritanceValidation validateInheritance(String templateId) {
     List<String> path = new ArrayList<>();
     ArenaTemplate current = rawTemplates.get(templateId);
 
-    while (current != null && current.extends_() != null) {
-        String parentId = current.extends_();
+    while (current != null && current.extendsTemplate() != null) {
+        String parentId = current.extendsTemplate();
         path.add(current.id());
 
         // 1. Cycle check (ERROR - hard block)
@@ -5363,7 +5368,7 @@ public InheritanceValidation validateInheritance(String templateId) {
                 "parentId", parentId,
                 "replacement", parent.replacementVersion()
             ));
-            LOGGER.warn("Template '{}' extends deprecated parent '{}'. Consider migrating to '{}'",
+            LOGGER.warn("Template '{}' extendsTemplate deprecated parent '{}'. Consider migrating to '{}'",
                 templateId, parentId, parent.replacementVersion());
         }
 
@@ -5396,9 +5401,9 @@ public sealed interface InheritanceValidation {
 public enum InheritanceError {
     CIRCULAR_REFERENCE,           // A → B → A
     MAX_DEPTH_EXCEEDED,           // chain > 3
-    PARENT_NOT_FOUND,             // extends non-existent template
+    PARENT_NOT_FOUND,             // extendsTemplate non-existent template
     BREAKING_CHANGE_INCOMPATIBLE, // parent.breakingChange && version mismatch
-    SCHEMA_VERSION_MAJOR_MISMATCH // schemaVersion 1.x → 2.x
+    SCHEMA_VERSION_MAJOR_MISMATCH // schemaVersion major mismatch (schemaVersion/1000)
 }
 ```
 
@@ -5407,9 +5412,9 @@ public enum InheritanceError {
 - [ ] Implementare `InheritanceError` enum con tutti i tipi
 - [ ] Implementare `validateInheritance()` con algoritmo sopra
 - [ ] Formattare messaggi errore user-friendly:
-  - Ciclo: `"Circular inheritance: A → B → C → A. Remove one extends."`
+  - Ciclo: `"Circular inheritance: A → B → C → A. Remove one extendsTemplate."`
   - Depth: `"Chain too deep (4 > 3): A → B → C → D. Flatten hierarchy."`
-  - Parent not found: `"'foo' extends 'bar' but 'bar' does not exist."`
+  - Parent not found: `"'foo' extendsTemplate 'bar' but 'bar' does not exist."`
 - [ ] Telemetria per ogni tipo di errore:
   - `arena.template.inheritance_error` con `{type, templateId, message, chain}`
 - [ ] UI/CLI output:

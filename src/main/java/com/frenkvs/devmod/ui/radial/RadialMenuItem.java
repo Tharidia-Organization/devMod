@@ -91,7 +91,7 @@ public class RadialMenuItem {
     public String getIconEmoji() {
         // Prefer action's emoji if set, otherwise use item's
         String actionEmoji = action.getIconEmoji();
-        return actionEmoji != null && !actionEmoji.equals("●") ? actionEmoji : iconEmoji;
+        return actionEmoji != null && !actionEmoji.equals("*") ? actionEmoji : iconEmoji;
     }
 
     @Nullable
@@ -105,10 +105,8 @@ public class RadialMenuItem {
      * Check if item is visible. Uses dynamic supplier if set, otherwise static value.
      */
     public boolean isVisible() {
-        if (visibilitySupplier != null) {
-            return visibilitySupplier.getAsBoolean();
-        }
-        return visible;
+        boolean baseVisible = visibilitySupplier != null ? visibilitySupplier.getAsBoolean() : visible;
+        return baseVisible && action.isAvailable();
     }
 
     /**
@@ -225,5 +223,15 @@ public class RadialMenuItem {
         return new RadialMenuItem(name,
             RadialAction.screen(name, description, emoji, icon, screenFactory),
             emoji, icon);
+    }
+
+    /**
+     * Create an item backed by the ActionRegistry.
+     */
+    public static RadialMenuItem registry(String actionId) {
+        RadialAction action = RadialAction.registry(actionId);
+        String name = action.getLabel().getString();
+        ItemStack icon = action.getIconStack();
+        return new RadialMenuItem(name, action, action.getIconEmoji(), icon);
     }
 }

@@ -167,7 +167,7 @@ public class CategoryPanel implements HubPanel {
         int totalHeight = 0;
 
         for (Map.Entry<String, List<TestCase>> entry : categories.entrySet()) {
-            String category = entry.getKey();
+            @Nonnull String category = Objects.requireNonNull(entry.getKey(), "category");
             List<TestCase> tests = entry.getValue();
 
             // Category row
@@ -362,7 +362,7 @@ public class CategoryPanel implements HubPanel {
         int itemY = listStartY - scrollOffset;
 
         for (Map.Entry<String, List<TestCase>> entry : categories.entrySet()) {
-            String category = entry.getKey();
+            @Nonnull String category = Objects.requireNonNull(entry.getKey(), "category");
             List<TestCase> tests = entry.getValue();
 
             // Click on category

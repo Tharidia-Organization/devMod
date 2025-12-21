@@ -125,6 +125,47 @@ public record ArenaTemplate(
     }
 
     /**
+     * Smoke variant of default_flat_64 for autosmoke coverage.
+     */
+    public static ArenaTemplate smokeFlat64Template() {
+        ArenaTemplate base = defaultTemplate();
+        return new ArenaTemplate(
+            "default_flat_64_smoke",
+            base.extendsTemplate(),
+            base.version(),
+            base.schemaVersion(),
+            base.breakingChange(),
+            base.deprecated(),
+            base.replacementVersion(),
+            base.minParentVersion(),
+            base.templateType(),
+            base.origin(),
+            base.size(),
+            base.sizeX(),
+            base.sizeZ(),
+            base.floor(),
+            base.walls(),
+            base.ceiling(),
+            base.underfloor(),
+            base.palette(),
+            base.biome(),
+            base.lighting(),
+            base.spawnSlots(),
+            base.playerSpawnOffset(),
+            base.mobSpawnStrategy(),
+            base.forbiddenZones(),
+            base.hazards(),
+            base.environment(),
+            base.compat(),
+            base.instanceSettings(),
+            base.structureNbt(),
+            base.limits(),
+            base.buildSettings(),
+            List.of("default", "flat", "smoke")
+        );
+    }
+
+    /**
      * Boss ring template 80x80 with a lava ring hazard (golden reference).
      */
     public static ArenaTemplate bossRing80Template() {

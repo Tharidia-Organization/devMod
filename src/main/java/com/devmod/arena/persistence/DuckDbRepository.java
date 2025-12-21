@@ -150,6 +150,7 @@ public class DuckDbRepository implements AutoCloseable {
             CREATE TABLE IF NOT EXISTS arena_spatial_events (
                 event_id UUID PRIMARY KEY,
                 template_id VARCHAR NOT NULL,
+                template_version INTEGER,
                 session_id UUID NOT NULL,
                 event_type VARCHAR NOT NULL,
                 grid_x INTEGER NOT NULL,
@@ -164,6 +165,7 @@ public class DuckDbRepository implements AutoCloseable {
             """,
             // Gap 4: Index for heatmap queries
             "CREATE INDEX IF NOT EXISTS idx_spatial_template_type ON arena_spatial_events (template_id, event_type)",
+            "CREATE INDEX IF NOT EXISTS idx_spatial_template_version_type ON arena_spatial_events (template_id, template_version, event_type)",
             // DD21: 5 indices for dashboard queries (<200ms target)
             // idx_builds_template_day: for filtering builds by template and date
             "CREATE INDEX IF NOT EXISTS idx_builds_template_day ON arena_template_builds (template_id, CAST(started_at AS DATE))",
@@ -260,6 +262,68 @@ public class DuckDbRepository implements AutoCloseable {
     }
 
     /**
+     * Computes a deterministic alert ID for error+channel.
+     */
+    public UUID computeAlertId(UUID errorId, String channelId) {
+        String key = errorId + ":" + channelId;
+        return UUID.nameUUIDFromBytes(key.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Records an alert delivery attempt.
+     */
+    public void recordAlertDelivery(
+        UUID alertId,
+        UUID errorId,
+        String channelId,
+        String channelType,
+        boolean critical,
+        String deliveryStatus,
+        int attemptCount,
+        int maxAttempts,
+        Instant attemptAt,
+        Instant nextRetryAt,
+        String lastError
+    ) throws SQLException {
+        String sql = """
+            INSERT INTO arena_template_alerts
+            (alert_id, error_id, channel_id, channel_type, is_critical, delivery_status,
+             attempt_count, max_attempts, first_attempt_at, last_attempt_at, delivered_at,
+             next_retry_at, last_error)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (alert_id) DO UPDATE SET
+              delivery_status = EXCLUDED.delivery_status,
+              attempt_count = EXCLUDED.attempt_count,
+              last_attempt_at = EXCLUDED.last_attempt_at,
+              delivered_at = EXCLUDED.delivered_at,
+              next_retry_at = EXCLUDED.next_retry_at,
+              last_error = EXCLUDED.last_error,
+              updated_at = CURRENT_TIMESTAMP,
+              first_attempt_at = COALESCE(arena_template_alerts.first_attempt_at, EXCLUDED.first_attempt_at)
+            """;
+
+        boolean delivered = "delivered".equalsIgnoreCase(deliveryStatus);
+        Timestamp attemptTs = attemptAt != null ? Timestamp.from(attemptAt) : Timestamp.from(Instant.now());
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, alertId.toString());
+            stmt.setString(2, errorId.toString());
+            stmt.setString(3, channelId);
+            stmt.setString(4, channelType != null ? channelType : "unknown");
+            stmt.setBoolean(5, critical);
+            stmt.setString(6, deliveryStatus);
+            stmt.setInt(7, attemptCount);
+            stmt.setInt(8, maxAttempts);
+            stmt.setTimestamp(9, attemptTs);
+            stmt.setTimestamp(10, attemptTs);
+            stmt.setTimestamp(11, delivered ? attemptTs : null);
+            stmt.setTimestamp(12, nextRetryAt != null ? Timestamp.from(nextRetryAt) : null);
+            stmt.setString(13, lastError);
+            stmt.executeUpdate();
+        }
+    }
+
+    /**
      * Records usage from a drift result.
      */
     public void recordDriftResult(DriftResult drift, String status) throws SQLException {
@@ -302,19 +366,40 @@ public class DuckDbRepository implements AutoCloseable {
      * Queries recent builds for a template.
      */
     public List<BuildRecord> getRecentBuilds(String templateId, int limit) throws SQLException {
-        String sql = """
-            SELECT build_id, template_id, template_version, started_at, completed_at,
-                   duration_ms, status, error_message
-            FROM arena_template_builds
-            WHERE template_id = ?
-            ORDER BY started_at DESC
-            LIMIT ?
-            """;
+        return getRecentBuilds(templateId, null, limit);
+    }
+
+    public List<BuildRecord> getRecentBuilds(String templateId, Integer templateVersion, int limit) throws SQLException {
+        String sql;
+        if (templateVersion != null) {
+            sql = """
+                SELECT build_id, template_id, template_version, started_at, completed_at,
+                       duration_ms, status, error_message
+                FROM arena_template_builds
+                WHERE template_id = ? AND template_version = ?
+                ORDER BY started_at DESC
+                LIMIT ?
+                """;
+        } else {
+            sql = """
+                SELECT build_id, template_id, template_version, started_at, completed_at,
+                       duration_ms, status, error_message
+                FROM arena_template_builds
+                WHERE template_id = ?
+                ORDER BY started_at DESC
+                LIMIT ?
+                """;
+        }
 
         List<BuildRecord> results = new ArrayList<>();
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, templateId);
-            stmt.setInt(2, limit);
+            if (templateVersion != null) {
+                stmt.setString(2, templateVersion.toString());
+                stmt.setInt(3, limit);
+            } else {
+                stmt.setInt(2, limit);
+            }
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -333,6 +418,100 @@ public class DuckDbRepository implements AutoCloseable {
             }
         }
         return results;
+    }
+
+    public List<WaveAggregate> getWaveAggregates(String templateId, Integer templateVersion,
+                                                 Instant from, Instant to) throws SQLException {
+        Instant fromTs = from != null ? from : Instant.EPOCH;
+        Instant toTs = to != null ? to : Instant.now();
+        String sql;
+        if (templateVersion != null) {
+            sql = """
+                SELECT wave_number,
+                       SUM(CASE WHEN event_type = 'start' THEN 1 ELSE 0 END) as attempts,
+                       SUM(CASE WHEN event_type = 'complete' THEN 1 ELSE 0 END) as completions,
+                       AVG(CASE WHEN event_type = 'complete' THEN duration_ms END) as avg_duration_ms
+                FROM endurance_waves
+                WHERE template_id = ? AND template_version = ? AND ts >= ? AND ts <= ?
+                GROUP BY wave_number
+                ORDER BY wave_number
+                """;
+        } else {
+            sql = """
+                SELECT wave_number,
+                       SUM(CASE WHEN event_type = 'start' THEN 1 ELSE 0 END) as attempts,
+                       SUM(CASE WHEN event_type = 'complete' THEN 1 ELSE 0 END) as completions,
+                       AVG(CASE WHEN event_type = 'complete' THEN duration_ms END) as avg_duration_ms
+                FROM endurance_waves
+                WHERE template_id = ? AND ts >= ? AND ts <= ?
+                GROUP BY wave_number
+                ORDER BY wave_number
+                """;
+        }
+
+        List<WaveAggregate> results = new ArrayList<>();
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, templateId);
+            if (templateVersion != null) {
+                stmt.setInt(2, templateVersion);
+                stmt.setTimestamp(3, Timestamp.from(fromTs));
+                stmt.setTimestamp(4, Timestamp.from(toTs));
+            } else {
+                stmt.setTimestamp(2, Timestamp.from(fromTs));
+                stmt.setTimestamp(3, Timestamp.from(toTs));
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    results.add(new WaveAggregate(
+                        rs.getInt("wave_number"),
+                        rs.getInt("attempts"),
+                        rs.getInt("completions"),
+                        rs.getDouble("avg_duration_ms")
+                    ));
+                }
+            }
+        }
+        return results;
+    }
+
+    public double getAverageWavesCompleted(String templateId, Integer templateVersion,
+                                           Instant from, Instant to) throws SQLException {
+        Instant fromTs = from != null ? from : Instant.EPOCH;
+        Instant toTs = to != null ? to : Instant.now();
+        String sql;
+        if (templateVersion != null) {
+            sql = """
+                SELECT AVG(waves_completed) as avg_waves
+                FROM endurance_sessions
+                WHERE template_id = ? AND template_version = ? AND start_ts >= ? AND start_ts <= ?
+                """;
+        } else {
+            sql = """
+                SELECT AVG(waves_completed) as avg_waves
+                FROM endurance_sessions
+                WHERE template_id = ? AND start_ts >= ? AND start_ts <= ?
+                """;
+        }
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, templateId);
+            if (templateVersion != null) {
+                stmt.setInt(2, templateVersion);
+                stmt.setTimestamp(3, Timestamp.from(fromTs));
+                stmt.setTimestamp(4, Timestamp.from(toTs));
+            } else {
+                stmt.setTimestamp(2, Timestamp.from(fromTs));
+                stmt.setTimestamp(3, Timestamp.from(toTs));
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getDouble("avg_waves");
+                }
+            }
+        }
+        return 0.0;
     }
 
     /**
@@ -406,23 +585,28 @@ public class DuckDbRepository implements AutoCloseable {
     public void recordSpatialEvent(SpatialEventRecord event) throws SQLException {
         String sql = """
             INSERT INTO arena_spatial_events
-                (event_id, template_id, session_id, event_type, grid_x, grid_z,
+                (event_id, template_id, template_version, session_id, event_type, grid_x, grid_z,
                  world_x, world_y, world_z, player_uuid, occurred_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, event.eventId().toString());
             stmt.setString(2, event.templateId());
-            stmt.setString(3, event.sessionId().toString());
-            stmt.setString(4, event.eventType());
-            stmt.setInt(5, event.gridX());
-            stmt.setInt(6, event.gridZ());
-            stmt.setDouble(7, event.worldX());
-            stmt.setDouble(8, event.worldY());
-            stmt.setDouble(9, event.worldZ());
-            stmt.setString(10, event.playerUuid() != null ? event.playerUuid().toString() : null);
-            stmt.setTimestamp(11, Timestamp.from(event.occurredAt()));
+            if (event.templateVersion() != null) {
+                stmt.setInt(3, event.templateVersion());
+            } else {
+                stmt.setNull(3, java.sql.Types.INTEGER);
+            }
+            stmt.setString(4, event.sessionId().toString());
+            stmt.setString(5, event.eventType());
+            stmt.setInt(6, event.gridX());
+            stmt.setInt(7, event.gridZ());
+            stmt.setDouble(8, event.worldX());
+            stmt.setDouble(9, event.worldY());
+            stmt.setDouble(10, event.worldZ());
+            stmt.setString(11, event.playerUuid() != null ? event.playerUuid().toString() : null);
+            stmt.setTimestamp(12, Timestamp.from(event.occurredAt()));
             stmt.executeUpdate();
         }
     }
@@ -433,6 +617,7 @@ public class DuckDbRepository implements AutoCloseable {
     public record SpatialEventRecord(
         UUID eventId,
         String templateId,
+        Integer templateVersion,
         UUID sessionId,
         String eventType,
         int gridX,
@@ -448,7 +633,7 @@ public class DuckDbRepository implements AutoCloseable {
          */
         public static SpatialEventRecord spawn(String templateId, UUID sessionId,
                 int gridX, int gridZ, double worldX, double worldY, double worldZ, UUID playerUuid) {
-            return new SpatialEventRecord(UUID.randomUUID(), templateId, sessionId,
+            return new SpatialEventRecord(UUID.randomUUID(), templateId, null, sessionId,
                 "spawn", gridX, gridZ, worldX, worldY, worldZ, playerUuid, Instant.now());
         }
 
@@ -457,7 +642,7 @@ public class DuckDbRepository implements AutoCloseable {
          */
         public static SpatialEventRecord death(String templateId, UUID sessionId,
                 int gridX, int gridZ, double worldX, double worldY, double worldZ, UUID playerUuid) {
-            return new SpatialEventRecord(UUID.randomUUID(), templateId, sessionId,
+            return new SpatialEventRecord(UUID.randomUUID(), templateId, null, sessionId,
                 "death", gridX, gridZ, worldX, worldY, worldZ, playerUuid, Instant.now());
         }
     }
@@ -472,18 +657,38 @@ public class DuckDbRepository implements AutoCloseable {
      * @return 2D array of event counts [x][z]
      */
     public int[][] getSpatialEventHeatmap(String templateId, String eventType, int gridSize) throws SQLException {
-        String sql = """
-            SELECT grid_x, grid_z, COUNT(*) as count
-            FROM arena_spatial_events
-            WHERE template_id = ? AND event_type = ?
-            GROUP BY grid_x, grid_z
-            """;
+        return getSpatialEventHeatmap(templateId, null, eventType, gridSize);
+    }
+
+    public int[][] getSpatialEventHeatmap(String templateId, Integer templateVersion, String eventType, int gridSize)
+        throws SQLException {
+        String sql;
+        if (templateVersion != null) {
+            sql = """
+                SELECT grid_x, grid_z, COUNT(*) as count
+                FROM arena_spatial_events
+                WHERE template_id = ? AND template_version = ? AND event_type = ?
+                GROUP BY grid_x, grid_z
+                """;
+        } else {
+            sql = """
+                SELECT grid_x, grid_z, COUNT(*) as count
+                FROM arena_spatial_events
+                WHERE template_id = ? AND event_type = ?
+                GROUP BY grid_x, grid_z
+                """;
+        }
 
         int[][] grid = new int[gridSize][gridSize];
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, templateId);
-            stmt.setString(2, eventType);
+            if (templateVersion != null) {
+                stmt.setInt(2, templateVersion);
+                stmt.setString(3, eventType);
+            } else {
+                stmt.setString(2, eventType);
+            }
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -505,15 +710,33 @@ public class DuckDbRepository implements AutoCloseable {
      * Gap 4: Gets total count of spatial events for a template and type.
      */
     public int getSpatialEventCount(String templateId, String eventType) throws SQLException {
-        String sql = """
-            SELECT COUNT(*) as total
-            FROM arena_spatial_events
-            WHERE template_id = ? AND event_type = ?
-            """;
+        return getSpatialEventCount(templateId, null, eventType);
+    }
+
+    public int getSpatialEventCount(String templateId, Integer templateVersion, String eventType) throws SQLException {
+        String sql;
+        if (templateVersion != null) {
+            sql = """
+                SELECT COUNT(*) as total
+                FROM arena_spatial_events
+                WHERE template_id = ? AND template_version = ? AND event_type = ?
+                """;
+        } else {
+            sql = """
+                SELECT COUNT(*) as total
+                FROM arena_spatial_events
+                WHERE template_id = ? AND event_type = ?
+                """;
+        }
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, templateId);
-            stmt.setString(2, eventType);
+            if (templateVersion != null) {
+                stmt.setInt(2, templateVersion);
+                stmt.setString(3, eventType);
+            } else {
+                stmt.setString(2, eventType);
+            }
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -835,6 +1058,13 @@ public class DuckDbRepository implements AutoCloseable {
             );
         }
     }
+
+    public record WaveAggregate(
+        int waveNumber,
+        int attempts,
+        int completions,
+        double avgDurationMs
+    ) {}
 
     /**
      * Record for temporal gaps between builds.

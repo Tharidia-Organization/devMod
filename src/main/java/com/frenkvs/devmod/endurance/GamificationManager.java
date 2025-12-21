@@ -1,5 +1,8 @@
 package com.frenkvs.devmod.endurance;
 
+import com.devmod.arena.registry.ArenaTemplate;
+import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -68,6 +71,7 @@ public class GamificationManager {
     private final Leaderboard allTimeLeaderboard = new Leaderboard("All Time");
     private Leaderboard weeklyLeaderboard = new Leaderboard("Weekly");
     private Leaderboard dailyLeaderboard = new Leaderboard("Daily");
+    private Leaderboard templateCoverageLeaderboard = new Leaderboard("Template Coverage");
 
     // Available badges
     private final Map<String, Badge> availableBadges = new LinkedHashMap<>();
@@ -148,6 +152,12 @@ public class GamificationManager {
         addBadge("weekly_champion", "Weekly Champion", "Complete all weekly challenges", 100, BadgeRarity.RARE);
         addBadge("streak_7", "Week Streak", "Play 7 days in a row", 50, BadgeRarity.UNCOMMON);
         addBadge("streak_30", "Monthly Dedication", "Play 30 days in a row", 200, BadgeRarity.EPIC);
+
+        // Template badges
+        addBadge("template_explorer", "Template Explorer", "Complete quests in 2 different templates", 60, BadgeRarity.UNCOMMON);
+        addBadge("smoke_ranger", "Smoke Ranger", "Complete a smoke template quest", 75, BadgeRarity.RARE);
+        addBadge("arena_master", "Arena Master", "Complete every available arena template", 150, BadgeRarity.RARE);
+        addBadge("speedrunner", "Speedrunner", "Complete a quest in under 3 minutes", 120, BadgeRarity.RARE);
     }
 
     private void addBadge(String id, String name, String description, int bonusPoints, BadgeRarity rarity) {
@@ -214,6 +224,10 @@ public class GamificationManager {
 
         // Mobs defeated (for variety tracking)
         public Set<String> defeatedMobTypes = new HashSet<>();
+
+        // Templates completed (for template coverage)
+        public Set<String> completedTemplates = new HashSet<>();
+        public Set<String> completedTemplateVersions = new HashSet<>();
 
         public PlayerProfile() {}
 
@@ -283,6 +297,7 @@ public class GamificationManager {
         DEAL_DAMAGE,
         COMPLETE_SPECIFIC_MOB,
         COMPLETE_DIFFICULTY,
+        COMPLETE_TEMPLATE,
         NO_DEATH_RUN,
         SPEED_RUN
     }
@@ -415,6 +430,12 @@ public class GamificationManager {
      */
     public QuestCompletionResult recordQuestCompletion(UUID playerId, String playerName, EnduranceQuest quest,
                                       CombatTracker.QuestCombatSession combatSession) {
+        return recordQuestCompletion(playerId, playerName, quest, combatSession, null);
+    }
+
+    public QuestCompletionResult recordQuestCompletion(UUID playerId, String playerName, EnduranceQuest quest,
+                                      CombatTracker.QuestCombatSession combatSession,
+                                      @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession session) {
         PlayerProfile profile = getProfile(playerId, playerName);
 
         // Track previous records for notification
@@ -429,6 +450,18 @@ public class GamificationManager {
             profile.highestWaveReached = quest.getCurrentWave();
         }
         profile.defeatedMobTypes.add(quest.getMobId().toString());
+
+        ArenaTemplate template = resolveTemplateForSession(session);
+        if (quest.getState() == EnduranceQuestState.COMPLETED && session != null) {
+            String templateId = session.getTemplateId();
+            if (templateId != null) {
+                profile.completedTemplates.add(templateId);
+                Integer templateVersion = session.getTemplateVersion();
+                if (templateVersion != null) {
+                    profile.completedTemplateVersions.add(templateId + ":" + templateVersion);
+                }
+            }
+        }
 
         // Update streak
         LocalDate today = LocalDate.now();
@@ -452,10 +485,10 @@ public class GamificationManager {
         awardPoints(playerId, playerName, basePoints, "Quest completion");
 
         // Check for badges
-        checkQuestBadges(profile, quest, combatSession);
+        checkQuestBadges(profile, quest, combatSession, template);
 
         // Check challenges
-        checkChallenges(profile, quest, combatSession);
+        checkChallenges(profile, quest, combatSession, session, template);
 
         saveData();
 
@@ -474,7 +507,27 @@ public class GamificationManager {
             }
         }
 
+        if (template != null) {
+            templateCoverageLeaderboard.updateEntry(
+                profile.playerId,
+                profile.playerName,
+                profile.completedTemplates.size()
+            );
+        }
+
         return result;
+    }
+
+    private @javax.annotation.Nullable ArenaTemplate resolveTemplateForSession(
+        @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession session) {
+        if (session == null || session.getTemplateId() == null) {
+            return null;
+        }
+        ArenaTemplateRegistry registry = DevMod.getArenaTemplateRegistry();
+        if (registry == null) {
+            return null;
+        }
+        return registry.get(session.getTemplateId()).orElse(null);
     }
 
     /**
@@ -516,7 +569,8 @@ public class GamificationManager {
     }
 
     private void checkQuestBadges(PlayerProfile profile, EnduranceQuest quest,
-                                  CombatTracker.QuestCombatSession session) {
+                                  CombatTracker.QuestCombatSession session,
+                                  @javax.annotation.Nullable ArenaTemplate template) {
         // Completion count badges
         if (profile.totalQuestsCompleted >= 1) awardBadge(profile, "first_blood");
         if (profile.totalQuestsCompleted >= 5) awardBadge(profile, "getting_started");
@@ -554,6 +608,9 @@ public class GamificationManager {
         if (session.getSessionDuration() < 300000 && quest.getState() == EnduranceQuestState.COMPLETED) {
             awardBadge(profile, "speed_demon"); // Under 5 minutes
         }
+        if (session.getSessionDuration() < 180000 && quest.getState() == EnduranceQuestState.COMPLETED) {
+            awardBadge(profile, "speedrunner"); // Under 3 minutes
+        }
         if (session.getDeaths() == 0 && quest.getCurrentWave() >= 10) {
             awardBadge(profile, "flawless");
         }
@@ -568,14 +625,34 @@ public class GamificationManager {
         // Streak badges
         if (profile.currentStreak >= 7) awardBadge(profile, "streak_7");
         if (profile.currentStreak >= 30) awardBadge(profile, "streak_30");
+
+        if (profile.completedTemplates.size() >= 2) {
+            awardBadge(profile, "template_explorer");
+        }
+        if (template != null && template.tags() != null
+            && template.tags().contains("smoke")
+            && quest.getState() == EnduranceQuestState.COMPLETED) {
+            awardBadge(profile, "smoke_ranger");
+        }
+        ArenaTemplateRegistry registry = DevMod.getArenaTemplateRegistry();
+        if (registry != null && !registry.all().isEmpty()) {
+            Set<String> allTemplates = registry.all().stream()
+                .map(ArenaTemplate::id)
+                .collect(Collectors.toSet());
+            if (!allTemplates.isEmpty() && profile.completedTemplates.containsAll(allTemplates)) {
+                awardBadge(profile, "arena_master");
+            }
+        }
     }
 
     private void checkChallenges(PlayerProfile profile, EnduranceQuest quest,
-                                 CombatTracker.QuestCombatSession session) {
+                                 CombatTracker.QuestCombatSession session,
+                                 @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession questSession,
+                                 @javax.annotation.Nullable ArenaTemplate template) {
         // Check daily challenges
         for (Challenge challenge : dailyChallenges) {
             if (!profile.completedDailyChallenges.contains(challenge.id)) {
-                if (isChallengeCompleted(profile, challenge, quest, session)) {
+                if (isChallengeCompleted(profile, challenge, quest, session, questSession, template)) {
                     profile.completedDailyChallenges.add(challenge.id);
                     awardPoints(profile.playerId, profile.playerName, challenge.rewardPoints,
                         "Daily challenge: " + challenge.name);
@@ -587,7 +664,7 @@ public class GamificationManager {
         // Check weekly challenges
         for (Challenge challenge : weeklyChallenges) {
             if (!profile.completedWeeklyChallenges.contains(challenge.id)) {
-                if (isChallengeCompleted(profile, challenge, quest, session)) {
+                if (isChallengeCompleted(profile, challenge, quest, session, questSession, template)) {
                     profile.completedWeeklyChallenges.add(challenge.id);
                     awardPoints(profile.playerId, profile.playerName, challenge.rewardPoints,
                         "Weekly challenge: " + challenge.name);
@@ -603,7 +680,9 @@ public class GamificationManager {
     }
 
     private boolean isChallengeCompleted(PlayerProfile profile, Challenge challenge,
-                                         EnduranceQuest quest, CombatTracker.QuestCombatSession session) {
+                                         EnduranceQuest quest, CombatTracker.QuestCombatSession session,
+                                         @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession questSession,
+                                         @javax.annotation.Nullable ArenaTemplate template) {
         return switch (challenge.type) {
             case COMPLETE_QUESTS -> profile.totalQuestsCompleted >= challenge.targetValue;
             case KILL_MOBS -> session.getKills() >= challenge.targetValue;
@@ -613,6 +692,20 @@ public class GamificationManager {
                 quest.getState() == EnduranceQuestState.COMPLETED;
             case COMPLETE_DIFFICULTY -> quest.getTier().name().equals(challenge.parameters.get("difficulty")) &&
                 quest.getState() == EnduranceQuestState.COMPLETED;
+            case COMPLETE_TEMPLATE -> {
+                if (quest.getState() != EnduranceQuestState.COMPLETED || template == null) {
+                    yield false;
+                }
+                String requiredId = challenge.parameters.get("templateId");
+                if (requiredId == null || !requiredId.equals(template.id())) {
+                    yield false;
+                }
+                String requiredVersion = challenge.parameters.get("templateVersion");
+                if (requiredVersion != null && questSession != null && questSession.getTemplateVersion() != null) {
+                    yield requiredVersion.equals(String.valueOf(questSession.getTemplateVersion()));
+                }
+                yield true;
+            }
             case NO_DEATH_RUN -> session.getDeaths() == 0 && quest.getState() == EnduranceQuestState.COMPLETED;
             case SPEED_RUN -> session.getSessionDuration() < challenge.targetValue &&
                 quest.getState() == EnduranceQuestState.COMPLETED;
@@ -686,13 +779,28 @@ public class GamificationManager {
             50, 75
         ));
 
-        dailyChallenges.add(new Challenge(
-            "daily_wave_" + LocalDate.now(),
-            "Wave Crusher",
-            "Reach wave 7 in any quest",
-            ChallengeType.REACH_WAVE,
-            7, 60
-        ));
+        ArenaTemplate template = pickTemplateForChallenge(t ->
+            t.tags() != null && t.tags().contains("smoke"));
+        if (template != null) {
+            Challenge challenge = new Challenge(
+                "daily_template_" + LocalDate.now(),
+                "Smoke Trial",
+                "Complete template " + template.id(),
+                ChallengeType.COMPLETE_TEMPLATE,
+                1, 80
+            );
+            challenge.parameters.put("templateId", template.id());
+            challenge.parameters.put("templateVersion", String.valueOf(template.version()));
+            dailyChallenges.add(challenge);
+        } else {
+            dailyChallenges.add(new Challenge(
+                "daily_wave_" + LocalDate.now(),
+                "Wave Crusher",
+                "Reach wave 7 in any quest",
+                ChallengeType.REACH_WAVE,
+                7, 60
+            ));
+        }
     }
 
     private void generateWeeklyChallenges() {
@@ -729,6 +837,37 @@ public class GamificationManager {
             ChallengeType.SPEED_RUN,
             600000, 125
         ));
+
+        ArenaTemplate bossTemplate = pickTemplateForChallenge(t ->
+            t.tags() != null && t.tags().contains("boss"));
+        if (bossTemplate != null) {
+            Challenge challenge = new Challenge(
+                "weekly_template_" + LocalDate.now(),
+                "Boss Arena",
+                "Complete template " + bossTemplate.id(),
+                ChallengeType.COMPLETE_TEMPLATE,
+                1, 160
+            );
+            challenge.parameters.put("templateId", bossTemplate.id());
+            challenge.parameters.put("templateVersion", String.valueOf(bossTemplate.version()));
+            weeklyChallenges.add(challenge);
+        }
+    }
+
+    private @javax.annotation.Nullable ArenaTemplate pickTemplateForChallenge(
+        java.util.function.Predicate<ArenaTemplate> predicate) {
+        ArenaTemplateRegistry registry = DevMod.getArenaTemplateRegistry();
+        if (registry == null) {
+            return null;
+        }
+        List<ArenaTemplate> templates = registry.all().stream()
+            .filter(Objects::nonNull)
+            .filter(predicate)
+            .toList();
+        if (templates.isEmpty()) {
+            return null;
+        }
+        return templates.get(new Random().nextInt(templates.size()));
     }
 
     // ========== Persistence ==========
@@ -757,6 +896,7 @@ public class GamificationManager {
                     if (data.allTime != null) allTimeLeaderboard.entries = data.allTime.entries;
                     if (data.weekly != null) weeklyLeaderboard.entries = data.weekly.entries;
                     if (data.daily != null) dailyLeaderboard.entries = data.daily.entries;
+                    if (data.templateCoverage != null) templateCoverageLeaderboard.entries = data.templateCoverage.entries;
                     lastDailyReset = data.lastDailyReset;
                     lastWeeklyReset = data.lastWeeklyReset;
                 }
@@ -790,6 +930,7 @@ public class GamificationManager {
         allTimeLeaderboard.entries.clear();
         weeklyLeaderboard.entries.clear();
         dailyLeaderboard.entries.clear();
+        templateCoverageLeaderboard.entries.clear();
         dailyChallenges.clear();
         weeklyChallenges.clear();
         lastDailyReset = null;
@@ -829,6 +970,7 @@ public class GamificationManager {
             data.allTime = allTimeLeaderboard;
             data.weekly = weeklyLeaderboard;
             data.daily = dailyLeaderboard;
+            data.templateCoverage = templateCoverageLeaderboard;
             data.lastDailyReset = lastDailyReset;
             data.lastWeeklyReset = lastWeeklyReset;
             GSON.toJson(data, writer);
@@ -841,6 +983,7 @@ public class GamificationManager {
         Leaderboard allTime;
         Leaderboard weekly;
         Leaderboard daily;
+        Leaderboard templateCoverage;
         LocalDate lastDailyReset;
         LocalDate lastWeeklyReset;
     }
@@ -854,6 +997,7 @@ public class GamificationManager {
     public Leaderboard getAllTimeLeaderboard() { return allTimeLeaderboard; }
     public Leaderboard getWeeklyLeaderboard() { return weeklyLeaderboard; }
     public Leaderboard getDailyLeaderboard() { return dailyLeaderboard; }
+    public Leaderboard getTemplateCoverageLeaderboard() { return templateCoverageLeaderboard; }
     public List<Challenge> getDailyChallenges() { return Collections.unmodifiableList(dailyChallenges); }
     public List<Challenge> getWeeklyChallenges() { return Collections.unmodifiableList(weeklyChallenges); }
 }

@@ -4,7 +4,6 @@ import com.frenkvs.devmod.ui.radial.config.RadialMenuConstants;
 import com.frenkvs.devmod.ui.radial.model.MacroCategory;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 
 import java.util.Objects;
@@ -246,20 +245,16 @@ public final class RadialHubRenderer {
         int iconX = (int) (cx + Math.cos(midAngle) * iconRadius);
         int iconY = (int) (cy + Math.sin(midAngle) * iconRadius);
 
-        ResourceLocation tex = macro.getIconTexture();
-        if (tex != null) {
-            int size = RadialMenuConstants.MACRO_ICON_SIZE;
-            graphics.blit(tex, iconX - size / 2,
-                iconY - size / 2 + RadialMenuConstants.MACRO_ICON_TEXTURE_OFFSET_Y,
-                0, 0, size, size, size, size);
-        } else {
-            int iconColor = isSelected
-                ? RadialMenuConstants.COLOR_TEXT_PRIMARY
-                : (isHovered ? macro.getColor() : RadialMenuConstants.COLOR_INACTIVE);
-            String iconText = Objects.requireNonNull(macro.getIcon(), "macro icon");
-            graphics.drawCenteredString(safeFont, iconText, iconX,
-                iconY + RadialMenuConstants.MACRO_ICON_TEXT_OFFSET_Y, iconColor);
+        int iconColor = isSelected
+            ? RadialMenuConstants.COLOR_TEXT_PRIMARY
+            : (isHovered ? macro.getColor() : RadialMenuConstants.COLOR_INACTIVE);
+        String iconText = Objects.requireNonNullElse(macro.getIcon(), "");
+        if (iconText.isBlank()) {
+            String name = Objects.requireNonNull(macro.getName(), "macro name");
+            iconText = name.isEmpty() ? "?" : name.substring(0, 1);
         }
+        graphics.drawCenteredString(safeFont, Objects.requireNonNull(iconText, "iconText"), iconX,
+            iconY + RadialMenuConstants.MACRO_ICON_TEXT_OFFSET_Y, iconColor);
     }
 
     /**
@@ -284,32 +279,22 @@ public final class RadialHubRenderer {
             closeBtnRadius, closeBorderColor);
 
         // Icon
-        String centerIcon;
-        int centerIconColor;
-        ResourceLocation centerTex = null;
+        String centerIcon = null;
+        int centerIconColor = RadialMenuConstants.COLOR_TEXT_PRIMARY;
 
         if (centerHovered) {
-            centerIcon = state.inSubcategory ? "←" : "✕";
+            centerIcon = state.inSubcategory ? "<" : "X";
             centerIconColor = state.inSubcategory ? RadialMenuConstants.COLOR_CENTER_ICON_BACK
                 : RadialMenuConstants.COLOR_CLOSE_BORDER_HOVER;
         } else if (state.searchMode) {
-            centerIcon = "🔍";
-            centerIconColor = RadialMenuConstants.COLOR_CENTER_ICON_SEARCH;
+            centerIcon = "\uD83D\uDD0D";
         } else {
-            // Show selected macro icon in center when not hovered
-            centerIcon = state.selectedMacro.getIcon();
-            centerTex = state.selectedMacro.getIconTexture();
+            centerIcon = Objects.requireNonNullElse(state.selectedMacro.getIcon(), "");
             centerIconColor = state.selectedMacro.getColor();
         }
 
-        if (centerTex != null && !centerHovered && !state.searchMode) {
-            int size = (int) (closeBtnRadius * RadialMenuConstants.CENTER_ICON_SCALE);
-            graphics.blit(centerTex, state.centerX - size / 2,
-                state.centerY - size / 2 + RadialMenuConstants.CENTER_ICON_TEXTURE_OFFSET_Y,
-                0, 0, size, size, size, size);
-        } else {
-            String iconText = Objects.requireNonNull(centerIcon, "center icon");
-            graphics.drawCenteredString(safeFont, iconText, state.centerX,
+        if (centerIcon != null) {
+            graphics.drawCenteredString(safeFont, centerIcon, state.centerX,
                 state.centerY + RadialMenuConstants.CENTER_ICON_TEXT_OFFSET_Y, centerIconColor);
         }
     }
@@ -342,7 +327,7 @@ public final class RadialHubRenderer {
         Objects.requireNonNull(selectedMacro, "selectedMacro cannot be null");
 
         if (hoveredMacro == selectedMacro) {
-            return "§a● " + hoveredMacro.getName() + " §7(active) - " + hoveredMacro.getDescription();
+            return "§a* " + hoveredMacro.getName() + " §7(active) - " + hoveredMacro.getDescription();
         } else {
             return "§7Click: §f" + hoveredMacro.getName() + " §7- " + hoveredMacro.getDescription();
         }

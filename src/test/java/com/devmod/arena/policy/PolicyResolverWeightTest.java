@@ -88,4 +88,60 @@ class PolicyResolverWeightTest {
             .anyMatch(e -> e.name().equals("arena.routing.weight_clamped"));
         assertTrue(clampedEventFound, "Weight clamp should emit telemetry");
     }
+
+    @Test
+    void tieBreaksByVersionThenId() {
+        ArenaPolicy older = ArenaPolicy.builder("beta")
+            .templateId("default_flat_64")
+            .mobTypes(Set.of("zombie"))
+            .weight(1.0)
+            .version(1)
+            .build();
+
+        ArenaPolicy newer = ArenaPolicy.builder("alpha")
+            .templateId("default_flat_64")
+            .mobTypes(Set.of("zombie"))
+            .weight(1.0)
+            .version(2)
+            .build();
+
+        resolver.registerPolicy(older);
+        resolver.registerPolicy(newer);
+
+        ResolveContext context = ResolveContext.builder(UUID.randomUUID())
+            .mobType("zombie")
+            .playerCount(1)
+            .build();
+
+        ResolvedArena resolved = resolver.resolve(context);
+        assertEquals("alpha", resolved.policy().id(), "Higher version should win tie");
+    }
+
+    @Test
+    void tieBreaksByIdWhenVersionsEqual() {
+        ArenaPolicy alpha = ArenaPolicy.builder("alpha")
+            .templateId("default_flat_64")
+            .mobTypes(Set.of("skeleton"))
+            .weight(1.0)
+            .version(1)
+            .build();
+
+        ArenaPolicy beta = ArenaPolicy.builder("beta")
+            .templateId("default_flat_64")
+            .mobTypes(Set.of("skeleton"))
+            .weight(1.0)
+            .version(1)
+            .build();
+
+        resolver.registerPolicy(beta);
+        resolver.registerPolicy(alpha);
+
+        ResolveContext context = ResolveContext.builder(UUID.randomUUID())
+            .mobType("skeleton")
+            .playerCount(1)
+            .build();
+
+        ResolvedArena resolved = resolver.resolve(context);
+        assertEquals("alpha", resolved.policy().id(), "Alphabetical id should win tie");
+    }
 }

@@ -105,7 +105,7 @@ public class RoomBoundsEditorScreen extends Screen {
             currentDimension = mc.level.dimension().location().toString();
         }
 
-        Font safeFont = Objects.requireNonNull(font, "font");
+        @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         int centerX = width / 2;
         int centerY = height / 2;
         int panelX = centerX - PANEL_WIDTH / 2;
@@ -347,8 +347,8 @@ public class RoomBoundsEditorScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        GuiGraphics safeGraphics = Objects.requireNonNull(graphics, "graphics");
-        Font safeFont = Objects.requireNonNull(font, "font");
+        @Nonnull GuiGraphics safeGraphics = Objects.requireNonNull(graphics, "graphics");
+        @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         renderBackground(safeGraphics, mouseX, mouseY, partialTick);
 
         int centerX = width / 2;

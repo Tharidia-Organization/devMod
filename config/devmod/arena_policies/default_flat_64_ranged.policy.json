@@ -1,0 +1,17 @@
+{
+  "id": "default_flat_64_ranged.policy",
+  "version": 1,
+  "templateId": "default_flat_64",
+  "minTemplateVersion": 1,
+  "maxTemplateVersion": null,
+  "mobTypes": [],
+  "questType": "endurance",
+  "difficulty": "normal",
+  "minPlayers": 1,
+  "maxPlayers": 4,
+  "tags": ["ranged"],
+  "priority": 1,
+  "weight": 1.1,
+  "enabled": true,
+  "description": "Routing policy for ranged mobs on default_flat_64"
+}

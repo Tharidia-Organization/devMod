@@ -6,7 +6,11 @@ import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.unified.SettingsCategory;
 import com.frenkvs.devmod.ui.unified.SettingsPage;
-import net.minecraft.client.Minecraft;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
+import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -35,7 +39,7 @@ public class TelemetryPage implements SettingsPage {
     private final EditorButton stuckButton = new EditorButton("tele-stuck", "Stuck Points");
     private final EditorButton aggroButton = new EditorButton("tele-aggro", "Aggro Drops");
     private final EditorButton kitingButton = new EditorButton("tele-kiting", "Kiting Paths");
-    private final EditorButton dashboardButton = new EditorButton("tele-dashboard", "Open Full Dashboard [J]");
+    private final EditorButton dashboardButton = new EditorButton("tele-dashboard", "Open Full Dashboard");
 
     @Override
     public SettingsCategory getCategory() {
@@ -99,17 +103,13 @@ public class TelemetryPage implements SettingsPage {
         }
 
         // Row 1
-        deathButton.onClick(() -> {
-            TelemetryService.INSTANCE.exportDeathHeatmap();
-            showStatus("Death heatmap exported!");
-        });
+        deathButton.onClick(() -> invokeExport(ActionIds.TELEMETRY_EXPORT_HEATMAP_DEATH,
+            "devmod.telemetry.exported_heatmap.death"));
         deathButton.render(graphics, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT, mouseX, mouseY);
 
         if (!useOneColumn) {
-            movementButton.onClick(() -> {
-                TelemetryService.INSTANCE.exportMovementHeatmap();
-                showStatus("Movement map exported!");
-            });
+            movementButton.onClick(() -> invokeExport(ActionIds.TELEMETRY_EXPORT_HEATMAP_MOVEMENT,
+                "devmod.telemetry.exported_heatmap.movement"));
             movementButton.render(graphics, col2X, currentY, effectiveButtonWidth, BUTTON_HEIGHT, mouseX, mouseY);
         }
         currentY += BUTTON_HEIGHT + 4;
@@ -120,17 +120,13 @@ public class TelemetryPage implements SettingsPage {
         }
 
         // Row 2
-        campingButton.onClick(() -> {
-            TelemetryService.INSTANCE.exportCampingHeatmap();
-            showStatus("Camping spots exported!");
-        });
+        campingButton.onClick(() -> invokeExport(ActionIds.TELEMETRY_EXPORT_HEATMAP_CAMPING,
+            "devmod.telemetry.exported_heatmap.camping"));
         campingButton.render(graphics, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT, mouseX, mouseY);
 
         if (!useOneColumn) {
-            stuckButton.onClick(() -> {
-                TelemetryService.INSTANCE.exportStuckHeatmap();
-                showStatus("Stuck points exported!");
-            });
+            stuckButton.onClick(() -> invokeExport(ActionIds.TELEMETRY_EXPORT_HEATMAP_STUCK,
+                "devmod.telemetry.exported_heatmap.stuck"));
             stuckButton.render(graphics, col2X, currentY, effectiveButtonWidth, BUTTON_HEIGHT, mouseX, mouseY);
         }
         currentY += BUTTON_HEIGHT + 4;
@@ -141,17 +137,13 @@ public class TelemetryPage implements SettingsPage {
         }
 
         // Row 3
-        aggroButton.onClick(() -> {
-            TelemetryService.INSTANCE.exportAggroDropHeatmap();
-            showStatus("Aggro drops exported!");
-        });
+        aggroButton.onClick(() -> invokeExport(ActionIds.TELEMETRY_EXPORT_HEATMAP_AGGRO_DROP,
+            "devmod.telemetry.exported_heatmap.aggro_drop"));
         aggroButton.render(graphics, x, currentY, effectiveButtonWidth, BUTTON_HEIGHT, mouseX, mouseY);
 
         if (!useOneColumn) {
-            kitingButton.onClick(() -> {
-                TelemetryService.INSTANCE.exportKitingHeatmap();
-                showStatus("Kiting paths exported!");
-            });
+            kitingButton.onClick(() -> invokeExport(ActionIds.TELEMETRY_EXPORT_HEATMAP_KITING,
+                "devmod.telemetry.exported_heatmap.kiting"));
             kitingButton.render(graphics, col2X, currentY, effectiveButtonWidth, BUTTON_HEIGHT, mouseX, mouseY);
         }
         currentY += BUTTON_HEIGHT + 4;
@@ -172,7 +164,8 @@ public class TelemetryPage implements SettingsPage {
 
         // Open full dashboard button
         dashboardButton.onClick(() -> {
-            Minecraft.getInstance().setScreen(new com.frenkvs.devmod.TelemetryDashboardScreen(null));
+            ActionRegistry.invoke(ActionIds.UI_TELEMETRY_DASHBOARD_OPEN,
+                ClientActionContexts.forClient(ActionOrigin.UI));
         });
         dashboardButton.render(graphics, x, currentY, BUTTON_WIDTH + 40, BUTTON_HEIGHT, mouseX, mouseY);
         currentY += BUTTON_HEIGHT + 8;
@@ -218,6 +211,11 @@ public class TelemetryPage implements SettingsPage {
     private void showStatus(String message) {
         statusMessage = message;
         statusDisplayTime = System.currentTimeMillis();
+    }
+
+    private void invokeExport(String actionId, String statusKey) {
+        ActionRegistry.invoke(actionId, ClientActionContexts.forClient(ActionOrigin.UI));
+        showStatus(I18n.translate(statusKey).getString());
     }
 
     @Override

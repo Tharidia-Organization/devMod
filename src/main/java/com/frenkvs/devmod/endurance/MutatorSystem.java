@@ -1,5 +1,6 @@
 package com.frenkvs.devmod.endurance;
 
+import com.devmod.arena.policy.ArenaPolicy;
 import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
@@ -122,8 +123,36 @@ public class MutatorSystem {
         private boolean fastForward = false;
         private boolean bulletHell = false;
 
+        private Set<String> suggestedMutators = Set.of();
+        private Set<String> excludedMutators = Set.of();
+        private Set<String> requiredMutators = Set.of();
+
         public MutatorSession(UUID questId) {
             this.questId = questId;
+        }
+
+        public void applyBindings(@javax.annotation.Nullable ArenaPolicy.MutatorBindings bindings) {
+            if (bindings == null) {
+                suggestedMutators = Set.of();
+                excludedMutators = Set.of();
+                requiredMutators = Set.of();
+                return;
+            }
+            suggestedMutators = bindings.suggested() != null ? Set.copyOf(bindings.suggested()) : Set.of();
+            excludedMutators = bindings.excluded() != null ? Set.copyOf(bindings.excluded()) : Set.of();
+            requiredMutators = bindings.required() != null ? Set.copyOf(bindings.required()) : Set.of();
+        }
+
+        public boolean isSuggested(String mutatorId) {
+            return mutatorId != null && suggestedMutators.contains(mutatorId);
+        }
+
+        public boolean isExcluded(String mutatorId) {
+            return mutatorId != null && excludedMutators.contains(mutatorId);
+        }
+
+        public Set<String> getRequiredMutators() {
+            return requiredMutators;
         }
 
         public void addMutator(Mutator mutator) {
@@ -329,16 +358,47 @@ public class MutatorSystem {
      * Create a new mutator session with randomly selected mutators.
      */
     public MutatorSession createSession(UUID questId, int mutatorCount, int waveNumber) {
+        return createSession(questId, mutatorCount, waveNumber, null);
+    }
+
+    public MutatorSession createSession(UUID questId, int mutatorCount, int waveNumber,
+                                        @javax.annotation.Nullable ArenaPolicy policy) {
         MutatorSession session = new MutatorSession(questId);
+        if (policy != null && policy.mutatorBindings() != null) {
+            session.applyBindings(policy.mutatorBindings());
+        }
 
         List<Mutator> available = new ArrayList<>(allMutators.values());
+        available.removeIf(m -> session.isExcluded(m.id));
         Set<String> selectedIds = new HashSet<>();
 
         // Higher waves allow more/harder mutators
         int actualCount = Math.min(mutatorCount, 1 + waveNumber / 3);
 
+        if (!session.getRequiredMutators().isEmpty()) {
+            for (String requiredId : session.getRequiredMutators()) {
+                Mutator required = allMutators.get(requiredId);
+                if (required == null) {
+                    LOGGER.warn("[MutatorSystem] Required mutator '{}' not found", requiredId);
+                    continue;
+                }
+                if (session.isExcluded(required.id)) {
+                    LOGGER.warn("[MutatorSystem] Required mutator '{}' excluded by policy", requiredId);
+                    continue;
+                }
+                session.addMutator(required);
+                selectedIds.add(required.id);
+                available.removeIf(m ->
+                    m.id.equals(required.id) ||
+                    m.incompatibleMutators.contains(required.id) ||
+                    required.incompatibleMutators.contains(m.id)
+                );
+            }
+            actualCount = Math.max(actualCount, selectedIds.size());
+        }
+
         for (int i = 0; i < actualCount && !available.isEmpty(); i++) {
-            Mutator selected = selectWeightedMutator(available);
+            Mutator selected = selectWeightedMutator(available, session);
             if (selected != null) {
                 session.addMutator(selected);
                 selectedIds.add(selected.id);
@@ -416,6 +476,7 @@ public class MutatorSystem {
         // Get available mutators (not already active)
         List<Mutator> available = new ArrayList<>(allMutators.values());
         available.removeIf(m -> session.hasMutator(m.id));
+        available.removeIf(m -> session.isExcluded(m.id));
 
         // Prefer negative mutators (challenging) as waves progress
         List<Mutator> negativeMutators = available.stream()
@@ -425,7 +486,7 @@ public class MutatorSystem {
         List<Mutator> pool = negativeMutators.isEmpty() ? available : negativeMutators;
 
         if (!pool.isEmpty()) {
-            Mutator newMutator = selectWeightedMutator(pool);
+            Mutator newMutator = selectWeightedMutator(pool, session);
             if (newMutator != null) {
                 session.addMutator(newMutator);
                 LOGGER.info("[MutatorSystem] Added new mutator: {} ({})", newMutator.name, newMutator.id);
@@ -440,18 +501,26 @@ public class MutatorSystem {
         }
     }
 
-    /**
-     * Select a random mutator weighted by rarity.
-     */
-    private Mutator selectWeightedMutator(List<Mutator> mutators) {
+    private Mutator selectWeightedMutator(List<Mutator> mutators, @javax.annotation.Nullable MutatorSession session) {
         if (mutators.isEmpty()) return null;
 
-        int totalWeight = mutators.stream().mapToInt(m -> m.weight).sum();
+        int totalWeight = 0;
+        for (Mutator mutator : mutators) {
+            int weight = mutator.weight;
+            if (session != null && session.isSuggested(mutator.id)) {
+                weight = (int) Math.ceil(weight * 1.5);
+            }
+            totalWeight += weight;
+        }
         int roll = random.nextInt(totalWeight);
         int cumulative = 0;
 
         for (Mutator mutator : mutators) {
-            cumulative += mutator.weight;
+            int weight = mutator.weight;
+            if (session != null && session.isSuggested(mutator.id)) {
+                weight = (int) Math.ceil(weight * 1.5);
+            }
+            cumulative += weight;
             if (roll < cumulative) {
                 return mutator;
             }

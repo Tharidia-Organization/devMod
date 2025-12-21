@@ -1,12 +1,19 @@
 package com.frenkvs.devmod.hud;
 
 import com.frenkvs.devmod.DevMod;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.endurance.ClientQuestCache;
 import com.frenkvs.devmod.endurance.ComboSystem;
 import com.frenkvs.devmod.endurance.EnduranceQuestState;
+import com.frenkvs.devmod.endurance.EnduranceUiCache;
+import com.frenkvs.devmod.endurance.PerkSelectionScreen;
 import com.frenkvs.devmod.endurance.QuestSyncPayload;
 import com.frenkvs.devmod.endurance.WaveCheckpointScreen;
-import com.frenkvs.devmod.endurance.PerkSelectionScreen;
+import com.frenkvs.devmod.endurance.WaveDirectiveScreen;
+import com.frenkvs.devmod.endurance.WaveObjectiveState;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -187,6 +194,35 @@ public class EnduranceQuestOverlay {
         g.drawString(font, pointsText, x + width - PANEL_PADDING - pointsWidth, textY, TEXT_ACCENT, false);
         textY += LINE_HEIGHT + 4;
 
+        // === Template/Policy/Difficulty ===
+        String templatePolicy = buildTemplatePolicyLine(data);
+        if (!templatePolicy.isBlank()) {
+            g.drawString(font, templatePolicy, textX, textY, TEXT_DIM, false);
+            textY += LINE_HEIGHT;
+        }
+
+        String difficultyLine = buildDifficultyLine(data);
+        if (!difficultyLine.isBlank()) {
+            g.drawString(font, difficultyLine, textX, textY, TEXT_DIM, false);
+            textY += LINE_HEIGHT;
+        }
+
+        // === Objective & Status ===
+        String objectiveTitle = data.objectiveTitle();
+        if (objectiveTitle == null || objectiveTitle.isBlank()) {
+            objectiveTitle = "Survive waves";
+        }
+        g.drawString(font, "Objective: " + objectiveTitle, textX, textY, TEXT_DIM, false);
+        textY += LINE_HEIGHT;
+        String objectiveDescription = data.objectiveDescription();
+        if (objectiveDescription != null && !objectiveDescription.isBlank()) {
+            g.drawString(font, objectiveDescription, textX, textY, TEXT_DIM, false);
+            textY += LINE_HEIGHT;
+        }
+        String statusLabel = "Status: " + getStatusLabel(data);
+        g.drawString(font, statusLabel, textX, textY, getStatusColor(data), false);
+        textY += LINE_HEIGHT + 2;
+
         // === Wave Progress (on separate row) ===
         String waveText;
         if (data.endlessMode()) {
@@ -202,17 +238,22 @@ public class EnduranceQuestOverlay {
         g.drawString(font, killsText, x + width - PANEL_PADDING - killsWidth, textY, TEXT_SUCCESS, false);
         textY += LINE_HEIGHT + 4;
 
-        // === Progress Bar (Mobs in wave) ===
-        int killed = data.mobsKilledInWave();
-        int total = data.totalMobsInWave();
-        float progress = total > 0 ? (float) killed / total : 0;
+        // === Progress Bar (Objective progress) ===
+        WaveObjectiveState.Type objectiveType = data.getObjectiveType();
+        int progressValue = objectiveType == WaveObjectiveState.Type.KILL_ALL
+            ? data.mobsKilledInWave()
+            : data.objectiveProgress();
+        int targetValue = objectiveType == WaveObjectiveState.Type.KILL_ALL
+            ? data.totalMobsInWave()
+            : data.objectiveTarget();
+        float progress = targetValue > 0 ? (float) progressValue / targetValue : 0;
 
         renderProgressBar(g, textX, textY, width - PANEL_PADDING * 2, PROGRESS_BAR_HEIGHT, progress);
 
         // Progress text above the bar
-        String mobText = killed + " / " + total + " mobs";
-        int mobTextWidth = font.width(mobText);
-        g.drawString(font, mobText, textX + (width - PANEL_PADDING * 2 - mobTextWidth) / 2,
+        String progressLabel = buildObjectiveProgressLabel(objectiveType, progressValue, targetValue);
+        int mobTextWidth = font.width(Objects.requireNonNull(progressLabel, "progressLabel"));
+        g.drawString(font, progressLabel, textX + (width - PANEL_PADDING * 2 - mobTextWidth) / 2,
                      textY - 1, TEXT_DIM, false);
         textY += PROGRESS_BAR_HEIGHT + 6;
 
@@ -252,6 +293,9 @@ public class EnduranceQuestOverlay {
             // Separator line
             g.fill(x + 4, textY, x + width - 4, textY + 1, PANEL_BORDER & 0x55FFFFFF);
             textY += 4;
+
+            g.drawString(font, "Run Stats", textX, textY, TEXT_ACCENT, false);
+            textY += LINE_HEIGHT;
 
             // Session timer
             long duration = data.sessionDurationMs();
@@ -401,6 +445,17 @@ public class EnduranceQuestOverlay {
     private static int calculatePanelHeight(QuestSyncPayload data) {
         int height = PANEL_PADDING * 2;
         height += LINE_HEIGHT + 2;  // Header (quest name)
+        if (!buildTemplatePolicyLine(data).isBlank()) {
+            height += LINE_HEIGHT; // Template/Policy
+        }
+        if (!buildDifficultyLine(data).isBlank()) {
+            height += LINE_HEIGHT; // Difficulty/Mode
+        }
+        height += LINE_HEIGHT;     // Objective
+        if (data.objectiveDescription() != null && !data.objectiveDescription().isBlank()) {
+            height += LINE_HEIGHT; // Objective description
+        }
+        height += LINE_HEIGHT + 2; // Status
         height += LINE_HEIGHT + 4;  // Wave progress text
         height += PROGRESS_BAR_HEIGHT + 6; // Progress bar
 
@@ -429,7 +484,7 @@ public class EnduranceQuestOverlay {
 
         if (showDetails) {
             height += 4;  // Separator
-            height += LINE_HEIGHT * 3; // Time + Kills/DMG + metrics
+            height += LINE_HEIGHT * 4; // Run Stats + Time + Kills/DMG + metrics
 
             if (data.deaths() > 0) {
                 height += LINE_HEIGHT; // Deaths
@@ -449,6 +504,67 @@ public class EnduranceQuestOverlay {
         long minutes = seconds / 60;
         seconds = seconds % 60;
         return String.format("%02d:%02d", minutes, seconds);
+    }
+
+    private static String buildTemplatePolicyLine(QuestSyncPayload data) {
+        String templateId = shortId(data.templateId());
+        String policyId = shortId(data.policyId());
+        if ((templateId == null || templateId.isBlank()) && (policyId == null || policyId.isBlank())) {
+            return "";
+        }
+        String templateLabel = templateId != null && !templateId.isBlank()
+            ? "Template: " + templateId + " v" + data.templateVersion()
+            : "Template: -";
+        String policyLabel = policyId != null && !policyId.isBlank()
+            ? "Policy: " + policyId + " v" + data.policyVersion()
+            : "Policy: -";
+        return templateLabel + " | " + policyLabel;
+    }
+
+    private static String buildDifficultyLine(QuestSyncPayload data) {
+        String difficulty = data.difficultyLabel();
+        String questType = data.questTypeLabel();
+        if ((difficulty == null || difficulty.isBlank()) && (questType == null || questType.isBlank())) {
+            return "";
+        }
+        String difficultyLabel = difficulty != null && !difficulty.isBlank() ? difficulty : "standard";
+        String questTypeLabel = questType != null && !questType.isBlank() ? questType : "endurance";
+        return "Difficulty: " + difficultyLabel + " | Mode: " + questTypeLabel;
+    }
+
+    private static String shortId(String value) {
+        if (value == null) {
+            return "";
+        }
+        String trimmed = value;
+        int idx = trimmed.indexOf(':');
+        if (idx >= 0 && idx + 1 < trimmed.length()) {
+            trimmed = trimmed.substring(idx + 1);
+        }
+        if (trimmed.length() > 18) {
+            trimmed = trimmed.substring(0, 18) + "...";
+        }
+        return trimmed;
+    }
+
+    private static String getStatusLabel(QuestSyncPayload data) {
+        EnduranceQuestState state = data.getState();
+        return switch (state) {
+            case IN_PROGRESS -> "Combat";
+            case WAVE_COMPLETE -> "Intermission";
+            case FAILED -> "Downed";
+            case COMPLETED -> "Complete";
+            case COOLDOWN -> "Cooldown";
+            default -> "Starting";
+        };
+    }
+
+    private static int getStatusColor(QuestSyncPayload data) {
+        return switch (data.getState()) {
+            case WAVE_COMPLETE, COMPLETED -> TEXT_SUCCESS;
+            case FAILED -> TEXT_DANGER;
+            default -> TEXT_NORMAL;
+        };
     }
 
     /**
@@ -493,6 +609,17 @@ public class EnduranceQuestOverlay {
         };
     }
 
+    private static String buildObjectiveProgressLabel(WaveObjectiveState.Type type, int progress, int target) {
+        if (target <= 0) {
+            return "Progress: " + progress;
+        }
+        return switch (type) {
+            case SURVIVE_TIME, HOLD_ZONE -> progress + " / " + target + "s";
+            case ELITE_HUNT -> progress + " / " + target + " elite";
+            case KILL_ALL -> progress + " / " + target + " mobs";
+        };
+    }
+
     // === State Transition Handler ===
 
     /**
@@ -518,6 +645,19 @@ public class EnduranceQuestOverlay {
                         return; // Wait for player to finish perk selection
                     }
 
+                    if (EnduranceUiCache.getLastDirectiveChoices() != null) {
+                        if (mc.screen instanceof WaveDirectiveScreen) {
+                            return;
+                        }
+                        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) {
+                            mc.setScreen(null);
+                        }
+                        if (mc.screen == null) {
+                            mc.setScreen(new WaveDirectiveScreen());
+                        }
+                        return;
+                    }
+
                     // Mark as shown to prevent reopening (only after perk selection is done)
                     checkpointScreenShown = true;
 
@@ -531,7 +671,8 @@ public class EnduranceQuestOverlay {
 
                     // Open checkpoint screen if no screen is active
                     if (mc.screen == null) {
-                        mc.setScreen(new WaveCheckpointScreen());
+                        ActionRegistry.invoke(ActionIds.UI_WAVE_CHECKPOINT_OPEN,
+                            ClientActionContexts.forClient(ActionOrigin.EVENT));
                     }
                 });
             }

@@ -427,11 +427,8 @@ public class ArenaTemplateRegistry implements AutoCloseable {
 
         // Fallback injection if nothing loaded
         if (registry.isEmpty()) {
-            LOGGER.warn("No templates loaded from {}. Injecting default_flat_64 fallback.", directory);
-            registry.put(ArenaTemplate.defaultTemplate().id(), ArenaTemplate.defaultTemplate());
-            telemetry.emit("arena.template.fallback_injected", Map.of(
-                "source", directory.toString()
-            ));
+            LOGGER.warn("No templates loaded from {}. Injecting built-in fallbacks.", directory);
+            injectFallbackTemplates(directory, "load_empty");
         }
         return result;
     }
@@ -465,15 +462,27 @@ public class ArenaTemplateRegistry implements AutoCloseable {
 
         if (!rr.success() && registry.isEmpty()) {
             // If reload failed and registry would be empty, ensure fallback
-            registry.put(ArenaTemplate.defaultTemplate().id(), ArenaTemplate.defaultTemplate());
-            telemetry.emit("arena.template.fallback_injected", Map.of(
-                "source", directory.toString(),
-                "reason", "reload_empty"
-            ));
+            injectFallbackTemplates(directory, "reload_empty");
         }
         // Leak prevention: prune stale handles/locks on any reload attempt
         pruneEphemeralState();
         return rr;
+    }
+
+    private void injectFallbackTemplates(Path directory, String reason) {
+        List<ArenaTemplate> fallbacks = List.of(
+            ArenaTemplate.defaultTemplate(),
+            ArenaTemplate.bossRing80Template(),
+            ArenaTemplate.smokeFlat64Template()
+        );
+        for (ArenaTemplate template : fallbacks) {
+            registry.put(template.id(), template);
+        }
+        telemetry.emit("arena.template.fallback_injected", Map.of(
+            "source", directory.toString(),
+            "reason", reason,
+            "templates", fallbacks.stream().map(ArenaTemplate::id).toList()
+        ));
     }
 
     private TemplateValidator.ValidationMode resolveValidationMode() {

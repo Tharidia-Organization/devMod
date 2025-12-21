@@ -144,6 +144,29 @@ tasks.withType(JavaCompile).configureEach { compileTask ->
     }
 }
 
+// DD67 M3: Legacy call-site check (opt-in via -PlegacyCheck)
+tasks.register("legacyCallCheck", JavaExec) {
+    group = "verification"
+    description = "Detect legacy arena API call-sites (WrapperAnalyzer)."
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = "com.devmod.arena.migration.LegacyCallCheck"
+    if (project.hasProperty("legacyMax")) {
+        systemProperty "devmod.legacy.max", project.property("legacyMax")
+    }
+    if (project.hasProperty("legacySourceRoot")) {
+        systemProperty "devmod.legacy.root", project.property("legacySourceRoot")
+    }
+    if (project.hasProperty("legacyReport")) {
+        systemProperty "devmod.legacy.report", project.property("legacyReport")
+    }
+}
+
+if (project.hasProperty("legacyCheck")) {
+    tasks.named("check").configure {
+        dependsOn tasks.named("legacyCallCheck")
+    }
+}
+
 // Sets up a dependency configuration called 'localRuntime'.
 // This configuration should be used instead of 'runtimeOnly' to declare
 // a dependency that will be present for runtime testing but that is
@@ -295,6 +318,12 @@ test {
     // Reduce concurrency for JVM tests to avoid occasional XML write collisions
     // that may happen on some filesystems or CI environments.
     maxParallelForks = 1
+    jacoco {
+        excludes = [
+            'net/minecraft/*',
+            'com/mojang/*'
+        ]
+    }
     finalizedBy jacocoTestReport
 }
 

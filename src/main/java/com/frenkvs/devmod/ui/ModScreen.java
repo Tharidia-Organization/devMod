@@ -29,7 +29,7 @@ public abstract class ModScreen extends Screen {
     protected static final int BOTTOM_MARGIN = 28;
 
     protected ModScreen(Component title, Screen parent) {
-        super(title);
+        super(java.util.Objects.requireNonNull(title, "title"));
         this.parent = parent;
     }
 

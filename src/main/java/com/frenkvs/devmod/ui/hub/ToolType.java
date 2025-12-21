@@ -1,16 +1,11 @@
 package com.frenkvs.devmod.ui.hub;
 
-import com.frenkvs.devmod.rendering.DebugRenderer;
-import com.frenkvs.devmod.rendering.HeatmapVisualizer;
-import com.frenkvs.devmod.rendering.LightLevelOverlay;
-import com.frenkvs.devmod.rendering.LineOfSightVisualizer;
-import com.frenkvs.devmod.rendering.PathfindingDebugger;
-import com.frenkvs.devmod.rendering.RoomBoundsVisualizer;
-import com.frenkvs.devmod.rendering.SafeSpotVisualizer;
-import com.frenkvs.devmod.rendering.VerticalLevelsVisualizer;
-
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import com.frenkvs.devmod.actions.ActionContext;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.RadialAction;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 
 /**
  * Enum representing the available tools/overlays in the TestingHub.
@@ -18,54 +13,23 @@ import java.util.function.Supplier;
  * and a method to toggle it.
  */
 public enum ToolType {
-    DEBUG("Debug Overlay", "G",
-        () -> DebugRenderer.INSTANCE.isEnabled(),
-        enabled -> { if (enabled) DebugRenderer.INSTANCE.enable(); else DebugRenderer.INSTANCE.disable(); }),
-
-    LIGHT_LEVEL("Light Levels", "L",
-        () -> LightLevelOverlay.INSTANCE.isEnabled(),
-        enabled -> LightLevelOverlay.INSTANCE.setEnabled(enabled)),
-
-    HEATMAP("Heatmap", "H",
-        () -> HeatmapVisualizer.INSTANCE.hasActiveHeatmaps(),
-        enabled -> {
-            for (HeatmapVisualizer.HeatmapType type : HeatmapVisualizer.HeatmapType.values()) {
-                HeatmapVisualizer.INSTANCE.setEnabled(type, enabled);
-            }
-        }),
-
-    ROOM_BOUNDS("Room Bounds", "R",
-        () -> RoomBoundsVisualizer.INSTANCE.isEnabled(),
-        enabled -> RoomBoundsVisualizer.INSTANCE.setEnabled(enabled)),
-
-    PATHFINDING("Pathfinding", "P",
-        () -> PathfindingDebugger.INSTANCE.isEnabled(),
-        enabled -> PathfindingDebugger.INSTANCE.setEnabled(enabled)),
-
-    LINE_OF_SIGHT("Line of Sight", "V",
-        () -> LineOfSightVisualizer.INSTANCE.isEnabled(),
-        enabled -> LineOfSightVisualizer.INSTANCE.setEnabled(enabled)),
-
-    VERTICAL_LEVELS("Vertical Levels", "Y",
-        () -> VerticalLevelsVisualizer.INSTANCE.isEnabled(),
-        enabled -> VerticalLevelsVisualizer.INSTANCE.setEnabled(enabled)),
-
-    SAFE_SPOTS("Safe Spots", "C",
-        () -> SafeSpotVisualizer.INSTANCE.isEnabled(),
-        enabled -> SafeSpotVisualizer.INSTANCE.setEnabled(enabled));
+    DEBUG("Debug Overlay", "G", ActionIds.DEBUG_OVERLAY_TOGGLE),
+    LIGHT_LEVEL("Light Levels", "L", ActionIds.DEBUG_LIGHT_OVERLAY_TOGGLE),
+    HEATMAP("Heatmap", "H", ActionIds.DEBUG_HEATMAP_TOGGLE),
+    ROOM_BOUNDS("Room Bounds", "R", ActionIds.DEBUG_ROOM_BOUNDS_TOGGLE),
+    PATHFINDING("Pathfinding", "P", ActionIds.DEBUG_PATHFINDING_TOGGLE),
+    LINE_OF_SIGHT("Line of Sight", "V", ActionIds.DEBUG_LOS_TOGGLE),
+    VERTICAL_LEVELS("Vertical Levels", "Y", ActionIds.DEBUG_VERTICAL_LEVELS_TOGGLE),
+    SAFE_SPOTS("Safe Spots", "C", ActionIds.DEBUG_SAFE_SPOTS_TOGGLE);
 
     private final String label;
     private final String hotkey;
-    private final Supplier<Boolean> isEnabledSupplier;
-    private final Consumer<Boolean> setEnabledConsumer;
+    private final String actionId;
 
-    ToolType(String label, String hotkey,
-             Supplier<Boolean> isEnabledSupplier,
-             Consumer<Boolean> setEnabledConsumer) {
+    ToolType(String label, String hotkey, String actionId) {
         this.label = label;
         this.hotkey = hotkey;
-        this.isEnabledSupplier = isEnabledSupplier;
-        this.setEnabledConsumer = setEnabledConsumer;
+        this.actionId = actionId;
     }
 
     public String getLabel() {
@@ -77,14 +41,24 @@ public enum ToolType {
     }
 
     public boolean isEnabled() {
-        return isEnabledSupplier.get();
+        RadialAction action = ActionRegistry.getAction(actionId);
+        if (action == null) {
+            return false;
+        }
+        return action.isActive(clientContext());
     }
 
     public void setEnabled(boolean enabled) {
-        setEnabledConsumer.accept(enabled);
+        if (enabled != isEnabled()) {
+            ActionRegistry.invoke(actionId, clientContext());
+        }
     }
 
     public void toggle() {
-        setEnabled(!isEnabled());
+        ActionRegistry.invoke(actionId, clientContext());
+    }
+
+    private static ActionContext clientContext() {
+        return ClientActionContexts.forClient(ActionOrigin.UI);
     }
 }

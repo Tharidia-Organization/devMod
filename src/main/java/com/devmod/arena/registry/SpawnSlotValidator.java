@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.Objects;
+import javax.annotation.Nonnull;
 
 /**
  * SpawnSlot validation (bounds, duplicates, forbidden zones, hazards overlap, required tags).
@@ -239,7 +240,7 @@ public class SpawnSlotValidator {
 
         // Air above
         for (int y = 0; y < rules.requireAirAbove(); y++) {
-            net.minecraft.core.BlockPos above = Objects.requireNonNull(absPos.above(y));
+            @Nonnull net.minecraft.core.BlockPos above = Objects.requireNonNull(absPos.above(y), "above");
             if (!query.isAir(above)) {
                 emitTelemetry("arena.spawnslot.validation_failed", templateId, absPos.toShortString());
                 return false;
@@ -252,7 +253,7 @@ public class SpawnSlotValidator {
             for (int dx = -r; dx <= r; dx++) {
                 for (int dz = -r; dz <= r; dz++) {
                     if (dx == 0 && dz == 0) continue;
-                    net.minecraft.core.BlockPos check = Objects.requireNonNull(absPos.offset(dx, 0, dz));
+                    @Nonnull net.minecraft.core.BlockPos check = Objects.requireNonNull(absPos.offset(dx, 0, dz), "check");
                     if (query.isSolid(check)) {
                         emitTelemetry("arena.spawnslot.validation_failed", templateId, absPos.toShortString());
                         return false;

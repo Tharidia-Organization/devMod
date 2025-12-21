@@ -50,7 +50,7 @@ public class RadialMenuConfig {
     public float searchBoxAnimationSpeed = RadialMenuConstants.SEARCH_BOX_LERP;
 
     // === ICON OPTIONS ===
-    public IconMode iconMode = IconMode.AUTO;  // AUTO, EMOJI, ITEMSTACK
+    public IconMode iconMode = IconMode.ITEMSTACK;  // AUTO, EMOJI, ITEMSTACK
 
     // === INPUT BINDINGS ===
     public InputBindings input = new InputBindings();
@@ -283,7 +283,7 @@ public class RadialMenuConfig {
         this.hoverOutSpeed = other.hoverOutSpeed;
         this.morphAnimationSpeed = other.morphAnimationSpeed;
         this.searchBoxAnimationSpeed = other.searchBoxAnimationSpeed;
-        this.iconMode = other.iconMode;
+        this.iconMode = other.iconMode == IconMode.EMOJI ? IconMode.ITEMSTACK : other.iconMode;
         this.input = other.input != null ? other.input : new InputBindings();
         sanitizeInputBindings();
         save(); // persist sanitized binds so the JSON stays consistent

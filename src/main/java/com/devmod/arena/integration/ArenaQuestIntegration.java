@@ -2,8 +2,8 @@ package com.devmod.arena.integration;
 
 import com.devmod.arena.api.ArenaHandle;
 import com.devmod.arena.builder.ArenaBuilder;
+import com.devmod.arena.builder.AsyncArenaBuilder;
 import com.devmod.arena.gate.InstanceOnlyGate;
-import com.devmod.arena.policy.ArenaPolicy;
 import com.devmod.arena.policy.ArenaPolicyRegistry;
 import com.devmod.arena.policy.PolicyResolver;
 import com.devmod.arena.policy.ResolveContext;
@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -56,6 +57,8 @@ public class ArenaQuestIntegration {
     private final ArenaPolicyRegistry policyRegistry;
     private final PolicyResolver policyResolver;
     private final ArenaBuilder arenaBuilder;
+    @Nullable
+    private final AsyncArenaBuilder asyncArenaBuilder;
     private final ArenaTelemetry telemetry;
     private final Executor asyncExecutor;
     @Nullable
@@ -77,7 +80,7 @@ public class ArenaQuestIntegration {
             ArenaBuilder arenaBuilder,
             ArenaTelemetry telemetry,
             Executor asyncExecutor) {
-        this(templateRegistry, policyRegistry, policyResolver, arenaBuilder, telemetry, asyncExecutor,
+        this(templateRegistry, policyRegistry, policyResolver, arenaBuilder, null, telemetry, asyncExecutor,
             (Supplier<com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot>) null);
     }
 
@@ -89,7 +92,7 @@ public class ArenaQuestIntegration {
             ArenaTelemetry telemetry,
             Executor asyncExecutor,
             com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
-        this(templateRegistry, policyRegistry, policyResolver, arenaBuilder, telemetry, asyncExecutor,
+        this(templateRegistry, policyRegistry, policyResolver, arenaBuilder, null, telemetry, asyncExecutor,
             configSnapshot != null ? () -> configSnapshot : null);
     }
 
@@ -101,10 +104,49 @@ public class ArenaQuestIntegration {
             ArenaTelemetry telemetry,
             Executor asyncExecutor,
             @Nullable Supplier<com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot> configSnapshotSupplier) {
+        this(templateRegistry, policyRegistry, policyResolver, arenaBuilder, null, telemetry, asyncExecutor,
+            configSnapshotSupplier);
+    }
+
+    public ArenaQuestIntegration(
+            ArenaTemplateRegistry templateRegistry,
+            ArenaPolicyRegistry policyRegistry,
+            PolicyResolver policyResolver,
+            ArenaBuilder arenaBuilder,
+            @Nullable AsyncArenaBuilder asyncArenaBuilder,
+            ArenaTelemetry telemetry,
+            Executor asyncExecutor) {
+        this(templateRegistry, policyRegistry, policyResolver, arenaBuilder, asyncArenaBuilder, telemetry, asyncExecutor,
+            (Supplier<com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot>) null);
+    }
+
+    public ArenaQuestIntegration(
+            ArenaTemplateRegistry templateRegistry,
+            ArenaPolicyRegistry policyRegistry,
+            PolicyResolver policyResolver,
+            ArenaBuilder arenaBuilder,
+            @Nullable AsyncArenaBuilder asyncArenaBuilder,
+            ArenaTelemetry telemetry,
+            Executor asyncExecutor,
+            com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
+        this(templateRegistry, policyRegistry, policyResolver, arenaBuilder, asyncArenaBuilder, telemetry, asyncExecutor,
+            configSnapshot != null ? () -> configSnapshot : null);
+    }
+
+    public ArenaQuestIntegration(
+            ArenaTemplateRegistry templateRegistry,
+            ArenaPolicyRegistry policyRegistry,
+            PolicyResolver policyResolver,
+            ArenaBuilder arenaBuilder,
+            @Nullable AsyncArenaBuilder asyncArenaBuilder,
+            ArenaTelemetry telemetry,
+            Executor asyncExecutor,
+            @Nullable Supplier<com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot> configSnapshotSupplier) {
         this.templateRegistry = Objects.requireNonNull(templateRegistry, "templateRegistry");
         this.policyRegistry = Objects.requireNonNull(policyRegistry, "policyRegistry");
         this.policyResolver = Objects.requireNonNull(policyResolver, "policyResolver");
         this.arenaBuilder = Objects.requireNonNull(arenaBuilder, "arenaBuilder");
+        this.asyncArenaBuilder = asyncArenaBuilder;
         this.telemetry = Objects.requireNonNull(telemetry, "telemetry");
         this.asyncExecutor = Objects.requireNonNull(asyncExecutor, "asyncExecutor");
         this.configSnapshotSupplier = configSnapshotSupplier;
@@ -131,115 +173,245 @@ public class ArenaQuestIntegration {
         LOGGER.info("Preparing arena for quest: type={}, players={}, sessionId={}",
             context.questType(), context.playerCount(), sessionId);
 
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                InstanceOnlyGate gate = resolveInstanceGate();
-                if (gate != null) {
-                    InstanceOnlyGate.Result gateResult = gate.checkInstanceId(
-                        context.instanceId(),
-                        "ArenaQuestIntegration.prepareArena"
-                    );
-                    if (gateResult == InstanceOnlyGate.Result.BLOCKED) {
-                        return PrepareResult.failed(sessionId, "Instance-only mode: provide instanceId");
-                    }
-                    if (gateResult == InstanceOnlyGate.Result.ALLOWED_DEBUG_ONLY) {
-                        LOGGER.warn("[INSTANCE_GATE] Debug-only prepareArena allowed without instanceId");
-                    }
-                }
-
-                // Step 1: Resolve policy and template
-                ResolveContext resolveCtx = ResolveContext.builder(context.leaderId())
-                    .questType(context.questType())
-                    .difficulty(context.difficulty())
-                    .playerCount(context.playerCount())
-                    .mobType(context.mobTypes() != null && !context.mobTypes().isEmpty()
-                        ? context.mobTypes().get(0) : null)
-                    .tags(context.tags() != null ? new java.util.HashSet<>(context.tags()) : Set.of())
-                    .build();
-
-                ResolvedArena resolved = policyResolver.resolve(resolveCtx);
-                if (resolved == null) {
-                    return PrepareResult.failed(sessionId, "No matching template found");
-                }
-
-                LOGGER.debug("Resolved template '{}' with policy '{}'",
-                    resolved.template().id(), resolved.policy().id());
-
-                // Step 2: Calculate origin (from context or default)
-                Integer prefX = context.preferredOriginX();
-                Integer prefY = context.preferredOriginY();
-                Integer prefZ = context.preferredOriginZ();
-                int originX = prefX != null ? prefX.intValue() : 0;
-                int originY = prefY != null ? prefY.intValue() : 64;
-                int originZ = prefZ != null ? prefZ.intValue() : 0;
-
-                // Step 3: Build arena (with policy context for telemetry)
-                ArenaBuilder.BuildResult buildResult = arenaBuilder.build(
-                    resolved.template(),
-                    resolved.policy().id(),
-                    resolved.policy().version(),
-                    originX, originY, originZ
-                );
-
-                if (!buildResult.success()) {
-                    LOGGER.error("Arena build failed: {}", buildResult.errorMessage());
-                    return PrepareResult.failed(sessionId, buildResult.errorMessage());
-                }
-
-                // Step 4: Create ArenaHandle
-                ArenaHandle handle = createHandle(
-                    buildResult,
-                    resolved,
-                    context.instanceId(),
-                    originX, originY, originZ
-                );
-
-                // Step 5: Store prepared arena
-                preparedArenas.put(handle.arenaId(), handle);
-
-                // Step 6: Create session context
-                SessionContext session = new SessionContext(
-                    sessionId,
-                    handle,
-                    context,
-                    startTime,
-                    SessionState.PREPARED
-                );
-                activeSessions.put(sessionId, session);
-
-                // Step 7: Emit telemetry
-                Duration prepTime = Duration.between(startTime, Instant.now());
-                telemetry.emit("arena.quest.prepared", Map.of(
-                    "sessionId", sessionId.toString(),
-                    "templateId", resolved.template().id(),
-                    "policyId", resolved.policy().id(),
-                    "questType", context.questType(),
-                    "playerCount", context.playerCount(),
-                    "prepTimeMs", prepTime.toMillis()
-                ));
-
-                // Notify listeners
-                fireEvent(new ArenaEvent(ArenaEventType.PREPARED, sessionId, handle));
-
-                LOGGER.info("Arena prepared: sessionId={}, arenaId={}, template={}",
-                    sessionId, handle.arenaId(), resolved.template().id());
-
-                return PrepareResult.success(sessionId, handle);
-
-            } catch (Exception e) {
-                LOGGER.error("Arena preparation failed", e);
-                telemetry.emit("arena.quest.prepare_failed", Map.of(
-                    "sessionId", sessionId.toString(),
-                    "error", e.getMessage() != null ? e.getMessage() : "Unknown error"
-                ));
-                return PrepareResult.failed(sessionId, e.getMessage());
+        return CompletableFuture.supplyAsync(
+            () -> resolvePreparation(sessionId, startTime, context),
+            asyncExecutor
+        ).thenCompose(plan -> {
+            if (!plan.isReady()) {
+                return CompletableFuture.completedFuture(
+                    PrepareResult.failed(sessionId, plan.errorMessage()));
             }
+
+            ResolvedArena resolved = Objects.requireNonNull(plan.resolved(), "resolved");
+            if (shouldBuildAsync(resolved.template())) {
+                return buildAsync(plan, resolved);
+            }
+
+            return CompletableFuture.completedFuture(buildSync(plan, resolved));
+        }).exceptionally(error -> handlePreparationException(sessionId, error));
+    }
+
+    private PreparePlan resolvePreparation(UUID sessionId, Instant startTime, QuestContext context) {
+        com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot snapshot = null;
+        if (configSnapshotSupplier != null) {
+            snapshot = configSnapshotSupplier.get();
+        }
+        if (snapshot != null && !snapshot.arenaTemplateEnabled()) {
+            Map<String, Object> data = new LinkedHashMap<>();
+            data.put("sessionId", sessionId.toString());
+            data.put("reason", "arena_template_disabled");
+            data.put("arenaTemplateEnabled", snapshot.arenaTemplateEnabled());
+            data.put("routingEnabled", snapshot.routingEnabled());
+            telemetry.emit("arena.quest.prepare_blocked", data);
+            return PreparePlan.failure(sessionId, startTime, context,
+                "Arena template system disabled; enable devmod.arena.templateEnabled");
+        }
+        if (snapshot != null && !snapshot.routingEnabled()) {
+            Map<String, Object> data = new LinkedHashMap<>();
+            data.put("sessionId", sessionId.toString());
+            data.put("reason", "arena_routing_disabled");
+            data.put("arenaTemplateEnabled", snapshot.arenaTemplateEnabled());
+            data.put("routingEnabled", snapshot.routingEnabled());
+            telemetry.emit("arena.quest.prepare_blocked", data);
+            return PreparePlan.failure(sessionId, startTime, context,
+                "Arena routing disabled; enable devmod.arena.routingEnabled");
+        }
+
+        InstanceOnlyGate gate = resolveInstanceGate();
+        if (gate != null) {
+            InstanceOnlyGate.Result gateResult = gate.checkInstanceId(
+                context.instanceId(),
+                "ArenaQuestIntegration.prepareArena"
+            );
+            if (gateResult == InstanceOnlyGate.Result.BLOCKED) {
+                return PreparePlan.failure(sessionId, startTime, context,
+                    "Instance-only mode: provide instanceId");
+            }
+            if (gateResult == InstanceOnlyGate.Result.ALLOWED_DEBUG_ONLY) {
+                LOGGER.warn("[INSTANCE_GATE] Debug-only prepareArena allowed without instanceId");
+            }
+        }
+
+        // Step 1: Resolve policy and template
+        ResolveContext resolveCtx = ResolveContext.builder(context.leaderId())
+            .questType(context.questType())
+            .difficulty(context.difficulty())
+            .playerCount(context.playerCount())
+            .mobType(context.mobTypes() != null && !context.mobTypes().isEmpty()
+                ? context.mobTypes().get(0) : null)
+            .tags(context.tags() != null ? new java.util.HashSet<>(context.tags()) : Set.of())
+            .build();
+
+        ResolvedArena resolved = policyResolver.resolve(resolveCtx);
+        if (resolved == null) {
+            return PreparePlan.failure(sessionId, startTime, context, "No matching template found");
+        }
+
+        LOGGER.debug("Resolved template '{}' with policy '{}'",
+            resolved.template().id(), resolved.policy().id());
+
+        // Step 2: Calculate origin (from context or default)
+        Integer prefX = context.preferredOriginX();
+        Integer prefY = context.preferredOriginY();
+        Integer prefZ = context.preferredOriginZ();
+        int originX = prefX != null ? prefX.intValue() : 0;
+        int originY = prefY != null ? prefY.intValue() : 64;
+        int originZ = prefZ != null ? prefZ.intValue() : 0;
+
+        return PreparePlan.success(sessionId, startTime, context, resolved, originX, originY, originZ);
+    }
+
+    private PrepareResult buildSync(PreparePlan plan, ResolvedArena resolved) {
+        // Step 3: Build arena (with policy context for telemetry)
+        ArenaBuilder.BuildResult buildResult = arenaBuilder.build(
+            resolved.template(),
+            resolved.policy().id(),
+            resolved.policy().version(),
+            plan.originX(), plan.originY(), plan.originZ()
+        );
+
+        if (!buildResult.success()) {
+            String error = buildResult.errorMessage() != null ? buildResult.errorMessage() : "Arena build failed";
+            LOGGER.error("Arena build failed: {}", error);
+            return PrepareResult.failed(plan.sessionId(), error);
+        }
+
+        // Step 4: Create ArenaHandle
+        ArenaHandle handle = createHandle(
+            buildResult,
+            resolved,
+            plan.context().instanceId(),
+            plan.originX(), plan.originY(), plan.originZ()
+        );
+
+        return finalizePreparedArena(plan, resolved, handle);
+    }
+
+    private CompletableFuture<PrepareResult> buildAsync(PreparePlan plan, ResolvedArena resolved) {
+        ArenaTemplate template = resolved.template();
+        if (asyncArenaBuilder == null) {
+            String msg = "Template '%s' requires ASYNC build; async builder unavailable"
+                .formatted(template.id());
+            LOGGER.error("{}", msg);
+            return CompletableFuture.completedFuture(PrepareResult.failed(plan.sessionId(), msg));
+        }
+
+        UUID arenaId = UUID.randomUUID();
+        AsyncArenaBuilder builder = asyncArenaBuilder;
+        if (builder == null) {
+            String msg = "Template '%s' requires ASYNC build; async builder unavailable"
+                .formatted(template.id());
+            LOGGER.error("{}", msg);
+            return CompletableFuture.completedFuture(PrepareResult.failed(plan.sessionId(), msg));
+        }
+        return builder.submitBuildAsync(
+            arenaId,
+            template,
+            plan.originX(),
+            plan.originY(),
+            plan.originZ()
+        ).handleAsync((result, error) -> {
+            if (error != null) {
+                String message = resolveAsyncErrorMessage(error);
+                LOGGER.error("Arena async build failed: {}", message);
+                return PrepareResult.failed(plan.sessionId(), message);
+            }
+            if (result == null || !result.success()) {
+                String message = result != null && result.errorMessage() != null
+                    ? result.errorMessage()
+                    : "Async build failed";
+                LOGGER.error("Arena async build failed: {}", message);
+                return PrepareResult.failed(plan.sessionId(), message);
+            }
+
+            ArenaHandle handle = createHandle(
+                arenaId,
+                resolved,
+                plan.context().instanceId(),
+                plan.originX(),
+                plan.originY(),
+                plan.originZ()
+            );
+
+            return finalizePreparedArena(plan, resolved, handle);
         }, asyncExecutor);
+    }
+
+    private PrepareResult finalizePreparedArena(PreparePlan plan, ResolvedArena resolved, ArenaHandle handle) {
+        // Step 5: Store prepared arena
+        preparedArenas.put(handle.arenaId(), handle);
+
+        // Step 6: Create session context
+        SessionContext session = new SessionContext(
+            plan.sessionId(),
+            handle,
+            plan.context(),
+            plan.startTime(),
+            SessionState.PREPARED
+        );
+        activeSessions.put(plan.sessionId(), session);
+
+        // Step 7: Emit telemetry
+        Duration prepTime = Duration.between(plan.startTime(), Instant.now());
+        telemetry.emit("arena.quest.prepared", Map.of(
+            "sessionId", plan.sessionId().toString(),
+            "templateId", resolved.template().id(),
+            "policyId", resolved.policy().id(),
+            "questType", plan.context().questType(),
+            "playerCount", plan.context().playerCount(),
+            "prepTimeMs", prepTime.toMillis()
+        ));
+
+        // Notify listeners
+        fireEvent(new ArenaEvent(ArenaEventType.PREPARED, plan.sessionId(), handle));
+
+        LOGGER.info("Arena prepared: sessionId={}, arenaId={}, template={}",
+            plan.sessionId(), handle.arenaId(), resolved.template().id());
+
+        return PrepareResult.success(plan.sessionId(), handle);
+    }
+
+    private boolean shouldBuildAsync(ArenaTemplate template) {
+        if (template.buildSettings() == null || template.buildSettings().buildPriority() == null) {
+            return false;
+        }
+        return template.buildSettings().buildPriority() == ArenaTemplate.BuildSettings.Priority.ASYNC;
+    }
+
+    private PrepareResult handlePreparationException(UUID sessionId, Throwable error) {
+        Throwable cause = unwrapCompletionException(error);
+        String message = cause.getMessage() != null ? cause.getMessage() : "Unknown error";
+        LOGGER.error("Arena preparation failed", cause);
+        telemetry.emit("arena.quest.prepare_failed", Map.of(
+            "sessionId", sessionId.toString(),
+            "error", message
+        ));
+        return PrepareResult.failed(sessionId, message);
+    }
+
+    private String resolveAsyncErrorMessage(Throwable error) {
+        Throwable cause = unwrapCompletionException(error);
+        if (cause instanceof AsyncArenaBuilder.BuildException buildException) {
+            AsyncArenaBuilder.AsyncBuildResult result = buildException.getResult();
+            if (result != null && result.errorMessage() != null && !result.errorMessage().isBlank()) {
+                return result.errorMessage();
+            }
+        }
+        String message = cause.getMessage();
+        return message != null && !message.isBlank() ? message : "Async build failed";
+    }
+
+    private Throwable unwrapCompletionException(Throwable error) {
+        if (error instanceof CompletionException && error.getCause() != null) {
+            return error.getCause();
+        }
+        return error;
     }
 
     @Nullable
     private InstanceOnlyGate resolveInstanceGate() {
-        Supplier<com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot> snapshotSupplier = configSnapshotSupplier;
+        @Nullable Supplier<com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot> snapshotSupplier =
+            this.configSnapshotSupplier;
         if (snapshotSupplier == null) {
             return null;
         }
@@ -341,6 +513,15 @@ public class ArenaQuestIntegration {
             ResolvedArena resolved,
             UUID instanceId,
             int originX, int originY, int originZ) {
+        UUID arenaId = Objects.requireNonNull(buildResult.arenaId(), "arenaId");
+        return createHandle(arenaId, resolved, instanceId, originX, originY, originZ);
+    }
+
+    private ArenaHandle createHandle(
+            UUID arenaId,
+            ResolvedArena resolved,
+            UUID instanceId,
+            int originX, int originY, int originZ) {
 
         ArenaTemplate template = resolved.template();
 
@@ -370,7 +551,7 @@ public class ArenaQuestIntegration {
         List<ArenaHandle.BlockPos> mobSpawns = extractMobSpawns(template, originX, originY, originZ);
 
         return ArenaHandle.builder()
-            .arenaId(buildResult.arenaId())
+            .arenaId(arenaId)
             .instanceId(instanceId != null ? instanceId : UUID.randomUUID())
             .templateId(template.id())
             .templateVersion(template.version())
@@ -644,6 +825,30 @@ public class ArenaQuestIntegration {
     }
 
     // ========== Records ==========
+
+    private record PreparePlan(
+        UUID sessionId,
+        Instant startTime,
+        QuestContext context,
+        @Nullable ResolvedArena resolved,
+        int originX,
+        int originY,
+        int originZ,
+        @Nullable String errorMessage
+    ) {
+        static PreparePlan success(UUID sessionId, Instant startTime, QuestContext context,
+                                   ResolvedArena resolved, int originX, int originY, int originZ) {
+            return new PreparePlan(sessionId, startTime, context, resolved, originX, originY, originZ, null);
+        }
+
+        static PreparePlan failure(UUID sessionId, Instant startTime, QuestContext context, String errorMessage) {
+            return new PreparePlan(sessionId, startTime, context, null, 0, 0, 0, errorMessage);
+        }
+
+        boolean isReady() {
+            return errorMessage == null;
+        }
+    }
 
     /**
      * Quest context for arena preparation.

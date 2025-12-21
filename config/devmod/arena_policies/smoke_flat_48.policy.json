@@ -1,0 +1,31 @@
+{
+  "id": "smoke_flat_48.policy",
+  "version": 1,
+  "templateId": "smoke_flat_48",
+  "minTemplateVersion": 1,
+  "maxTemplateVersion": null,
+  "mobTypes": [],
+  "questType": "endurance",
+  "difficulty": "normal",
+  "minPlayers": 1,
+  "maxPlayers": 4,
+  "tags": ["smoke"],
+  "priority": 1,
+  "weight": 0.8,
+  "perkBindings": {
+    "suggested": ["swift_feet", "showoff"],
+    "excluded": ["ultimate_curse"]
+  },
+  "mutatorBindings": {
+    "suggested": ["speedy_mobs"],
+    "excluded": ["one_hit"]
+  },
+  "rewardModifiers": {
+    "baseMultiplier": 1.05,
+    "firstCompletionBonus": 0.2,
+    "hazardBonus": 0.0,
+    "streakMultiplier": 0.02
+  },
+  "enabled": true,
+  "description": "Smoke baseline policy for smoke_flat_48 template"
+}

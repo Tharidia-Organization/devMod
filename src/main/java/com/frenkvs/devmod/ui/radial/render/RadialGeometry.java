@@ -151,9 +151,10 @@ public final class RadialGeometry {
         RenderSystem.enableBlend();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
+        @Nonnull VertexFormat vertexFormat = positionColorFormat();
         BufferBuilder buffer = Tesselator.getInstance().begin(
-            VertexFormat.Mode.TRIANGLE_FAN, positionColorFormat());
-        Matrix4f matrix = poseMatrix(graphics);
+            VertexFormat.Mode.TRIANGLE_FAN, vertexFormat);
+        @Nonnull Matrix4f matrix = poseMatrix(graphics);
 
         float[] rgba = extractRGBA(color);
         float r = rgba[0], g = rgba[1], b = rgba[2], a = rgba[3];
@@ -168,7 +169,8 @@ public final class RadialGeometry {
             buffer.addVertex(matrix, x, y, 0).setColor(r, g, b, a);
         }
 
-        BufferUploader.drawWithShader(buildMesh(buffer));
+        @Nonnull MeshData meshData = buildMesh(buffer);
+        BufferUploader.drawWithShader(meshData);
         RenderSystem.disableBlend();
     }
 
@@ -191,9 +193,10 @@ public final class RadialGeometry {
         RenderSystem.enableBlend();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
+        @Nonnull VertexFormat vertexFormat = positionColorFormat();
         BufferBuilder buffer = Tesselator.getInstance().begin(
-            VertexFormat.Mode.TRIANGLE_STRIP, positionColorFormat());
-        Matrix4f matrix = poseMatrix(graphics);
+            VertexFormat.Mode.TRIANGLE_STRIP, vertexFormat);
+        @Nonnull Matrix4f matrix = poseMatrix(graphics);
 
         float[] rgba = extractRGBA(color);
         float r = rgba[0], g = rgba[1], b = rgba[2], a = rgba[3];
@@ -207,7 +210,8 @@ public final class RadialGeometry {
                 .setColor(r, g, b, a);
         }
 
-        BufferUploader.drawWithShader(buildMesh(buffer));
+        @Nonnull MeshData meshData = buildMesh(buffer);
+        BufferUploader.drawWithShader(meshData);
         RenderSystem.disableBlend();
     }
 
@@ -236,9 +240,10 @@ public final class RadialGeometry {
         RenderSystem.enableBlend();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
+        @Nonnull VertexFormat vertexFormat = positionColorFormat();
         BufferBuilder buffer = Tesselator.getInstance().begin(
-            VertexFormat.Mode.TRIANGLE_STRIP, positionColorFormat());
-        Matrix4f matrix = poseMatrix(graphics);
+            VertexFormat.Mode.TRIANGLE_STRIP, vertexFormat);
+        @Nonnull Matrix4f matrix = poseMatrix(graphics);
 
         float[] rgba = extractRGBA(color);
         float r = rgba[0], g = rgba[1], b = rgba[2], a = rgba[3];
@@ -253,7 +258,8 @@ public final class RadialGeometry {
                 .setColor(r, g, b, a);
         }
 
-        BufferUploader.drawWithShader(buildMesh(buffer));
+        @Nonnull MeshData meshData = buildMesh(buffer);
+        BufferUploader.drawWithShader(meshData);
         RenderSystem.disableBlend();
     }
 
@@ -283,9 +289,10 @@ public final class RadialGeometry {
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.lineWidth(lineWidth);
 
+        @Nonnull VertexFormat vertexFormat = positionColorFormat();
         BufferBuilder buffer = Tesselator.getInstance().begin(
-            VertexFormat.Mode.DEBUG_LINE_STRIP, positionColorFormat());
-        Matrix4f matrix = poseMatrix(graphics);
+            VertexFormat.Mode.DEBUG_LINE_STRIP, vertexFormat);
+        @Nonnull Matrix4f matrix = poseMatrix(graphics);
 
         float[] rgba = extractRGBA(color);
         float r = rgba[0], g = rgba[1], b = rgba[2], a = rgba[3];
@@ -297,7 +304,8 @@ public final class RadialGeometry {
             buffer.addVertex(matrix, x, y, 0).setColor(r, g, b, a);
         }
 
-        BufferUploader.drawWithShader(buildMesh(buffer));
+        @Nonnull MeshData meshData = buildMesh(buffer);
+        BufferUploader.drawWithShader(meshData);
         RenderSystem.disableBlend();
     }
 
@@ -319,9 +327,10 @@ public final class RadialGeometry {
         RenderSystem.enableBlend();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
+        @Nonnull VertexFormat vertexFormat = positionColorFormat();
         BufferBuilder buffer = Tesselator.getInstance().begin(
-            VertexFormat.Mode.DEBUG_LINES, positionColorFormat());
-        Matrix4f matrix = poseMatrix(graphics);
+            VertexFormat.Mode.DEBUG_LINES, vertexFormat);
+        @Nonnull Matrix4f matrix = poseMatrix(graphics);
 
         float[] rgba = extractRGBA(color);
         float r = rgba[0], g = rgba[1], b = rgba[2], a = rgba[3];
@@ -329,7 +338,8 @@ public final class RadialGeometry {
         buffer.addVertex(matrix, x1, y1, 0).setColor(r, g, b, a);
         buffer.addVertex(matrix, x2, y2, 0).setColor(r, g, b, a);
 
-        BufferUploader.drawWithShader(buildMesh(buffer));
+        @Nonnull MeshData meshData = buildMesh(buffer);
+        BufferUploader.drawWithShader(meshData);
         RenderSystem.disableBlend();
     }
 

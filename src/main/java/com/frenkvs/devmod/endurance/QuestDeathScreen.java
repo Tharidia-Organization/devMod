@@ -1,5 +1,9 @@
 package com.frenkvs.devmod.endurance;
 
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.util.I18n;
@@ -9,7 +13,6 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
 import javax.annotation.Nonnull;
@@ -245,9 +248,8 @@ public class QuestDeathScreen extends Screen {
     }
 
     private void respawnAndContinue() {
-        PacketDistributor.sendToServer(
-            new QuestActionPayload(QuestActionPayload.Action.CONTINUE_AFTER_DEATH)
-        );
+        ActionRegistry.invoke(ActionIds.ENDURANCE_QUEST_CONTINUE,
+            ClientActionContexts.forClient(ActionOrigin.UI, QuestActionPayload.Action.CONTINUE_AFTER_DEATH));
         var mc = minecraft;
         if (mc != null) {
             mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(Objects.requireNonNull(SoundEvents.PLAYER_LEVELUP), 1.0f)));
@@ -256,9 +258,9 @@ public class QuestDeathScreen extends Screen {
     }
 
     private void giveUpAndCollect() {
-        PacketDistributor.sendToServer(
-            new QuestActionPayload(QuestActionPayload.Action.GIVE_UP_AFTER_DEATH)
-        );
+        ActionRegistry.invoke(ActionIds.ENDURANCE_QUEST_EXIT,
+            ClientActionContexts.forClient(ActionOrigin.UI, QuestActionPayload.Action.GIVE_UP_AFTER_DEATH)
+                .withConfirmed(true));
         var mc = minecraft;
         if (mc != null) {
             mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(Objects.requireNonNull(SoundEvents.UI_BUTTON_CLICK.value()), 1.0f)));

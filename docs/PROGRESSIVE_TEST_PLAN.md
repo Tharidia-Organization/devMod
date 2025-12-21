@@ -26,7 +26,7 @@
     |-- Select Mob Type
     |-- Configure Waves (1-100)
     |-- Toggle Endless Mode
-    |-- Set Arena Size (32-128)
+    |-- Select Arena Template (e.g., default_flat_64)
     |
     v
 [Start Quest] --> [StartQuestPayload to Server]
@@ -34,8 +34,9 @@
     v
 [InstanceManager.startQuest()]
     |-- Create PlayerInstanceSnapshot (disk-persisted)
-    |-- Create Arena (ArenaManager)
     |-- Create Dynamic Dimension (DynamicDimensionManager)
+    |-- Resolve Arena Template (TemplateResolver)
+    |-- Build Arena (TemplateArenaBuilder)
     |-- Teleport Player to Instance
     |
     v
@@ -570,7 +571,7 @@ To advance from Level N to Level N+1:
 | Combo System | ComboSystem | MEDIUM |
 | Combat Tracker | CombatTracker | MEDIUM |
 | Reward System | RewardSystem | HIGH |
-| Arena Manager | ArenaManager | HIGH |
+| Arena Template System | TemplateArenaBuilder | HIGH |
 | Dynamic Dimension | DynamicDimensionManager | CRITICAL |
 
 ### Network Payloads
