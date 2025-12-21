@@ -10,14 +10,40 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public final class RadialAction {
+    /**
+     * UI Feedback type shown when action completes or fails.
+     */
+    public enum UIFeedback {
+        /** No UI feedback (silent) */
+        NONE,
+        /** Show toast notification */
+        TOAST,
+        /** Show dialog/popup */
+        DIALOG,
+        /** Use server/chat feedback */
+        CHAT
+    }
+
     private final String id;
     private final String labelKey;
     private final String descriptionKey;
     private final ActionCategory category;
     @Nullable
+    private final ActionType actionType;
+    @Nullable
     private final String menuPath;
     @Nullable
     private final ItemLike iconItem;
+    /**
+     * Visibility predicate - determines if action is shown in menu.
+     * Checked before rendering. If false, item is hidden (not grayed out).
+     */
+    @Nullable
+    private final Predicate<ActionContext> visibilityPredicate;
+    /**
+     * Execution precondition - determines if action can be executed.
+     * Checked when action is invoked. If false, action is blocked with error.
+     */
     private final ActionPrecondition precondition;
     private final Consumer<ActionContext> handler;
     private final boolean requiresConfirm;
@@ -26,20 +52,33 @@ public final class RadialAction {
     private final Predicate<ActionContext> activePredicate;
     @Nullable
     private final String commandHint;
+    /**
+     * Explicit permission level required (for documentation/contract).
+     * -1 means no specific permission required.
+     */
+    private final int permissionLevel;
+    /**
+     * UI feedback type to show on completion/failure.
+     */
+    private final UIFeedback uiFeedback;
 
     private RadialAction(Builder builder) {
         this.id = Objects.requireNonNull(builder.id, "id");
         this.labelKey = Objects.requireNonNull(builder.labelKey, "labelKey");
         this.descriptionKey = Objects.requireNonNull(builder.descriptionKey, "descriptionKey");
         this.category = Objects.requireNonNull(builder.category, "category");
+        this.actionType = builder.actionType;
         this.menuPath = builder.menuPath;
         this.iconItem = builder.iconItem;
+        this.visibilityPredicate = builder.visibilityPredicate;
         this.precondition = builder.precondition != null ? builder.precondition : ActionPreconditions.always();
         this.handler = Objects.requireNonNull(builder.handler, "handler");
         this.requiresConfirm = builder.requiresConfirm;
         this.toggle = builder.toggle;
         this.activePredicate = builder.activePredicate;
         this.commandHint = builder.commandHint;
+        this.permissionLevel = builder.permissionLevel;
+        this.uiFeedback = builder.uiFeedback != null ? builder.uiFeedback : UIFeedback.NONE;
     }
 
     public static Builder builder(String id) {
@@ -70,6 +109,15 @@ public final class RadialAction {
         return category;
     }
 
+    /**
+     * Returns the type of this action, or null if not explicitly set.
+     * Used for telemetry, gating patterns, and behavior categorization.
+     */
+    @Nullable
+    public ActionType getActionType() {
+        return actionType;
+    }
+
     @Nullable
     public String getMenuPath() {
         return menuPath;
@@ -82,6 +130,38 @@ public final class RadialAction {
 
     public ActionPrecondition getPrecondition() {
         return precondition;
+    }
+
+    /**
+     * Returns the visibility predicate, or null if always visible.
+     * Used by UI to determine if action should be shown in menu.
+     */
+    @Nullable
+    public Predicate<ActionContext> getVisibilityPredicate() {
+        return visibilityPredicate;
+    }
+
+    /**
+     * Check if this action should be visible in the given context.
+     * Returns true if no visibility predicate is set (always visible).
+     */
+    public boolean isVisible(ActionContext context) {
+        Predicate<ActionContext> pred = visibilityPredicate;
+        return pred == null || pred.test(context);
+    }
+
+    /**
+     * Returns the explicit permission level required, or -1 if none.
+     */
+    public int getPermissionLevel() {
+        return permissionLevel;
+    }
+
+    /**
+     * Returns the UI feedback type for this action.
+     */
+    public UIFeedback getUIFeedback() {
+        return uiFeedback;
     }
 
     public boolean requiresConfirm() {
@@ -115,9 +195,13 @@ public final class RadialAction {
         private String descriptionKey;
         private ActionCategory category;
         @Nullable
+        private ActionType actionType;
+        @Nullable
         private String menuPath;
         @Nullable
         private ItemLike iconItem;
+        @Nullable
+        private Predicate<ActionContext> visibilityPredicate;
         @Nullable
         private ActionPrecondition precondition;
         @Nullable
@@ -128,6 +212,9 @@ public final class RadialAction {
         private Predicate<ActionContext> activePredicate;
         @Nullable
         private String commandHint;
+        private int permissionLevel = -1;
+        @Nullable
+        private UIFeedback uiFeedback;
 
         private Builder(String id) {
             this.id = Objects.requireNonNull(id, "id");
@@ -148,6 +235,11 @@ public final class RadialAction {
             return this;
         }
 
+        public Builder actionType(@Nullable ActionType actionType) {
+            this.actionType = actionType;
+            return this;
+        }
+
         public Builder menuPath(@Nullable String menuPath) {
             this.menuPath = menuPath;
             return this;
@@ -160,6 +252,32 @@ public final class RadialAction {
 
         public Builder precondition(@Nullable ActionPrecondition precondition) {
             this.precondition = precondition;
+            return this;
+        }
+
+        /**
+         * Set visibility predicate - controls whether action is shown in menu.
+         * This is separate from precondition (which controls execution).
+         * Use for permission-based hiding (Scenario 9).
+         */
+        public Builder visibilityPredicate(@Nullable Predicate<ActionContext> visibilityPredicate) {
+            this.visibilityPredicate = visibilityPredicate;
+            return this;
+        }
+
+        /**
+         * Set explicit permission level for documentation/contract.
+         */
+        public Builder permissionLevel(int level) {
+            this.permissionLevel = level;
+            return this;
+        }
+
+        /**
+         * Set UI feedback type shown on completion/failure.
+         */
+        public Builder uiFeedback(@Nullable UIFeedback uiFeedback) {
+            this.uiFeedback = uiFeedback;
             return this;
         }
 

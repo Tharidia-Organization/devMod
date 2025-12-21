@@ -48,11 +48,12 @@ public class DashboardCommand {
             .labelKey("devmod.action.telemetry.dashboard.open")
             .descriptionKey("devmod.action.telemetry.dashboard.open.desc")
             .category(ActionCategory.TELEMETRY)
+            .actionType(com.frenkvs.devmod.actions.ActionType.OPEN_EXTERNAL)
             .menuPath("Root/Telemetry/Dashboard/Open")
             .icon(Items.MAP)
             .precondition(ActionPreconditions.requiresPermissionOrClient(2))
             .commandHint("devmod dashboard")
-            .handler(context -> handleCommand(context, "devmod dashboard", DashboardCommand::openDashboard))
+            .handler(DashboardCommand::handleOpenDashboard)
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.TELEMETRY_DASHBOARD_SERVER_START)
@@ -97,6 +98,45 @@ public class DashboardCommand {
             return;
         }
         context.executeCommand(command);
+    }
+
+    /**
+     * Handler for OPEN_EXTERNAL action from radial menu.
+     * Shows confirmation dialog with copy fallback on client, executes command on server.
+     */
+    private static void handleOpenDashboard(ActionContext context) {
+        // If called from server command, use the original behavior
+        if (context.getOrigin() == ActionOrigin.COMMAND && context.getCommandContext() != null) {
+            openDashboard(context.getCommandContext());
+            return;
+        }
+
+        // Client-side: use confirmation dialog
+        if (context.isClientSide()) {
+            TelemetryDashboardServer server = TelemetryDashboardServer.INSTANCE;
+
+            // Start server if not running
+            if (!server.isRunning()) {
+                server.start();
+            }
+
+            if (server.isRunning()) {
+                String url = server.getDashboardUrl();
+                net.minecraft.client.Minecraft.getInstance().tell(() -> {
+                    com.frenkvs.devmod.ui.OpenExternalConfirmScreen.openWithConfirmation(
+                        null,
+                        url,
+                        "Open Telemetry Dashboard?"
+                    );
+                });
+            } else {
+                // Server failed to start - show error
+                context.sendFailure(Component.translatable("devmod.dashboard.start_failed"));
+            }
+        } else {
+            // Server-side: execute command
+            context.executeCommand("devmod dashboard");
+        }
     }
 
     @FunctionalInterface

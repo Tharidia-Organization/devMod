@@ -103,10 +103,19 @@ public class RadialMenuItem {
 
     /**
      * Check if item is visible. Uses dynamic supplier if set, otherwise static value.
+     * Uses action.isVisible() for visibility gating (separate from execution precondition).
      */
     public boolean isVisible() {
         boolean baseVisible = visibilitySupplier != null ? visibilitySupplier.getAsBoolean() : visible;
-        return baseVisible && action.isAvailable();
+        return baseVisible && action.isVisible();
+    }
+
+    /**
+     * Check if item can be executed (precondition would pass).
+     * Used for grayed-out rendering - item is visible but not clickable.
+     */
+    public boolean canExecute() {
+        return action.canExecute();
     }
 
     /**
@@ -168,7 +177,9 @@ public class RadialMenuItem {
 
     /**
      * Create an action item (one-shot, not toggle)
+     * @deprecated Use {@link #registry(String)} with ActionRegistry instead
      */
+    @Deprecated
     public static RadialMenuItem action(String name, String emoji, Runnable action, String description) {
         return new RadialMenuItem(name,
             RadialAction.custom(name, description, emoji, action),
@@ -177,7 +188,9 @@ public class RadialMenuItem {
 
     /**
      * Create an action item with ItemStack icon
+     * @deprecated Use {@link #registry(String)} with ActionRegistry instead
      */
+    @Deprecated
     public static RadialMenuItem action(String name, String emoji, ItemStack icon,
                                          Runnable action, String description) {
         return new RadialMenuItem(name,
@@ -187,7 +200,9 @@ public class RadialMenuItem {
 
     /**
      * Create a command item
+     * @deprecated Use {@link #registry(String)} with ActionRegistry instead
      */
+    @Deprecated
     public static RadialMenuItem command(String name, String emoji, String command, String description) {
         return new RadialMenuItem(name,
             RadialAction.command(name, description, emoji, command),
@@ -196,7 +211,9 @@ public class RadialMenuItem {
 
     /**
      * Create a command item with ItemStack icon
+     * @deprecated Use {@link #registry(String)} with ActionRegistry instead
      */
+    @Deprecated
     public static RadialMenuItem command(String name, String emoji, ItemStack icon, String command, String description) {
         return new RadialMenuItem(name,
             RadialAction.command(name, description, emoji, icon, command),

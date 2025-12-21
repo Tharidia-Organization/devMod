@@ -17,13 +17,24 @@ public final class DevModActions {
     }
 
     private static void registerCommandActions() {
+        // Admin command actions with proper gating:
+        // - visibilityPredicate: hides from non-admins (Scenario 9)
+        // - precondition: blocks execution with error feedback (Scenario 2)
+        // - permissionLevel: explicit for contract documentation
+        // - uiFeedback: CHAT since server sends feedback
+        // - actionType: RUN_SERVER_COMMAND for telemetry
+
         ActionRegistry.register(RadialAction.builder(ActionIds.COMMAND_GAMEMODE_CREATIVE)
             .labelKey("devmod.action.command.gamemode_creative")
             .descriptionKey("devmod.action.command.gamemode_creative.desc")
             .category(ActionCategory.TOOLS)
+            .actionType(ActionType.RUN_SERVER_COMMAND)
             .menuPath("Root/Tools/Commands/Gamemode Creative")
             .icon(Items.GRASS_BLOCK)
-            .precondition(ActionPreconditions.always())
+            .visibilityPredicate(ctx -> hasPermission(ctx, 2))
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .permissionLevel(2)
+            .uiFeedback(RadialAction.UIFeedback.CHAT)
             .commandHint("gamemode creative")
             .handler(context -> context.executeCommand("gamemode creative"))
             .build());
@@ -32,9 +43,13 @@ public final class DevModActions {
             .labelKey("devmod.action.command.gamemode_survival")
             .descriptionKey("devmod.action.command.gamemode_survival.desc")
             .category(ActionCategory.TOOLS)
+            .actionType(ActionType.RUN_SERVER_COMMAND)
             .menuPath("Root/Tools/Commands/Gamemode Survival")
             .icon(Items.IRON_SWORD)
-            .precondition(ActionPreconditions.always())
+            .visibilityPredicate(ctx -> hasPermission(ctx, 2))
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .permissionLevel(2)
+            .uiFeedback(RadialAction.UIFeedback.CHAT)
             .commandHint("gamemode survival")
             .handler(context -> context.executeCommand("gamemode survival"))
             .build());
@@ -43,9 +58,13 @@ public final class DevModActions {
             .labelKey("devmod.action.command.heal")
             .descriptionKey("devmod.action.command.heal.desc")
             .category(ActionCategory.TOOLS)
+            .actionType(ActionType.RUN_SERVER_COMMAND)
             .menuPath("Root/Tools/Commands/Heal")
             .icon(Items.GOLDEN_APPLE)
-            .precondition(ActionPreconditions.always())
+            .visibilityPredicate(ctx -> hasPermission(ctx, 2))
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .permissionLevel(2)
+            .uiFeedback(RadialAction.UIFeedback.CHAT)
             .commandHint("heal")
             .handler(context -> context.executeCommand("heal"))
             .build());
@@ -54,9 +73,13 @@ public final class DevModActions {
             .labelKey("devmod.action.command.time_day")
             .descriptionKey("devmod.action.command.time_day.desc")
             .category(ActionCategory.TOOLS)
+            .actionType(ActionType.RUN_SERVER_COMMAND)
             .menuPath("Root/Tools/Commands/Time Day")
             .icon(Items.SUNFLOWER)
-            .precondition(ActionPreconditions.always())
+            .visibilityPredicate(ctx -> hasPermission(ctx, 2))
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .permissionLevel(2)
+            .uiFeedback(RadialAction.UIFeedback.CHAT)
             .commandHint("time set day")
             .handler(context -> context.executeCommand("time set day"))
             .build());
@@ -65,9 +88,13 @@ public final class DevModActions {
             .labelKey("devmod.action.command.time_night")
             .descriptionKey("devmod.action.command.time_night.desc")
             .category(ActionCategory.TOOLS)
+            .actionType(ActionType.RUN_SERVER_COMMAND)
             .menuPath("Root/Tools/Commands/Time Night")
             .icon(Items.CLOCK)
-            .precondition(ActionPreconditions.always())
+            .visibilityPredicate(ctx -> hasPermission(ctx, 2))
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .permissionLevel(2)
+            .uiFeedback(RadialAction.UIFeedback.CHAT)
             .commandHint("time set night")
             .handler(context -> context.executeCommand("time set night"))
             .build());
@@ -76,12 +103,24 @@ public final class DevModActions {
             .labelKey("devmod.action.command.weather_clear")
             .descriptionKey("devmod.action.command.weather_clear.desc")
             .category(ActionCategory.TOOLS)
+            .actionType(ActionType.RUN_SERVER_COMMAND)
             .menuPath("Root/Tools/Commands/Weather Clear")
             .icon(Items.FEATHER)
-            .precondition(ActionPreconditions.always())
+            .visibilityPredicate(ctx -> hasPermission(ctx, 2))
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .permissionLevel(2)
+            .uiFeedback(RadialAction.UIFeedback.CHAT)
             .commandHint("weather clear")
             .handler(context -> context.executeCommand("weather clear"))
             .build());
+    }
+
+    /**
+     * Helper to check permission for visibility gating.
+     */
+    private static boolean hasPermission(ActionContext ctx, int level) {
+        var player = ctx.getPlayer();
+        return player != null && player.hasPermissions(level);
     }
 
     private static void registerServerActions() {

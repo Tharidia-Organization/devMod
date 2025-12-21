@@ -96,6 +96,10 @@ public class RadialMenuScreenV3 extends Screen {
         buildAnimConfig());
     private long openTime;
 
+    // === Telemetry Tracking ===
+    private boolean firstActionExecuted = false;
+    private int actionsExecutedCount = 0;
+
     // === Search System ===
     private boolean searchMode = false;
     private StringBuilder searchQuery = new StringBuilder();
@@ -295,6 +299,55 @@ public class RadialMenuScreenV3 extends Screen {
         centerX = width / 2;
         centerY = height / 2;
         OnboardingOverlay.onRadialMenuOpened();
+
+        // Reset telemetry tracking for this session
+        openTime = System.currentTimeMillis();
+        firstActionExecuted = false;
+        actionsExecutedCount = 0;
+
+        // Log menu opened event
+        logMenuOpened();
+    }
+
+    private void logMenuOpened() {
+        var player = Minecraft.getInstance().player;
+        String playerName = player != null ? player.getGameProfile().getName() : "unknown";
+
+        String line = "{\"ts\":\"" + java.time.Instant.now() + "\"," +
+            "\"type\":\"radial_menu_opened\"," +
+            "\"screenId\":\"RadialMenuScreenV3\"," +
+            "\"macroCategory\":\"" + selectedMacro.name() + "\"," +
+            "\"player\":\"" + com.frenkvs.devmod.telemetry.TelemetryJson.escape(playerName) + "\"}";
+
+        com.frenkvs.devmod.telemetry.TelemetryService.INSTANCE.appendActionLine(line);
+    }
+
+    private void logTimeToFirstAction(long timeMs) {
+        var player = Minecraft.getInstance().player;
+        String playerName = player != null ? player.getGameProfile().getName() : "unknown";
+
+        String line = "{\"ts\":\"" + java.time.Instant.now() + "\"," +
+            "\"type\":\"radial_time_to_first_action\"," +
+            "\"screenId\":\"RadialMenuScreenV3\"," +
+            "\"timeMs\":" + timeMs + "," +
+            "\"player\":\"" + com.frenkvs.devmod.telemetry.TelemetryJson.escape(playerName) + "\"}";
+
+        com.frenkvs.devmod.telemetry.TelemetryService.INSTANCE.appendActionLine(line);
+    }
+
+    private void logMenuClosed() {
+        long durationMs = System.currentTimeMillis() - openTime;
+        var player = Minecraft.getInstance().player;
+        String playerName = player != null ? player.getGameProfile().getName() : "unknown";
+
+        String line = "{\"ts\":\"" + java.time.Instant.now() + "\"," +
+            "\"type\":\"radial_menu_closed\"," +
+            "\"screenId\":\"RadialMenuScreenV3\"," +
+            "\"actionsExecuted\":" + actionsExecutedCount + "," +
+            "\"durationMs\":" + durationMs + "," +
+            "\"player\":\"" + com.frenkvs.devmod.telemetry.TelemetryJson.escape(playerName) + "\"}";
+
+        com.frenkvs.devmod.telemetry.TelemetryService.INSTANCE.appendActionLine(line);
     }
 
     @Override
@@ -1008,6 +1061,14 @@ public class RadialMenuScreenV3 extends Screen {
     }
 
     private void executeItem(RadialMenuItem item, RadialCategory category) {
+        // Track time to first action
+        if (!firstActionExecuted) {
+            firstActionExecuted = true;
+            long timeToFirstAction = System.currentTimeMillis() - openTime;
+            logTimeToFirstAction(timeToFirstAction);
+        }
+        actionsExecutedCount++;
+
         String actionId = item.getAction().getRegistryId();
         if (actionId != null) {
             com.frenkvs.devmod.actions.RadialAction action = ActionRegistry.getAction(actionId);
@@ -1109,6 +1170,12 @@ public class RadialMenuScreenV3 extends Screen {
                 Objects.requireNonNull(Component.literal(safeMessage), "messageComponent"),
                 true);
         }
+    }
+
+    @Override
+    public void onClose() {
+        logMenuClosed();
+        super.onClose();
     }
 
     @Override

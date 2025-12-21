@@ -24,10 +24,29 @@ public abstract class RadialAction {
     public abstract String getDescription();
 
     /**
-     * Whether this action is currently available
+     * Whether this action is currently available for execution.
+     * For backward compatibility, returns true by default.
      */
     public boolean isAvailable() {
         return true;
+    }
+
+    /**
+     * Whether this action should be visible in the menu.
+     * Separate from isAvailable() to support visibility gating.
+     * Default implementation returns isAvailable() for backward compat.
+     */
+    public boolean isVisible() {
+        return isAvailable();
+    }
+
+    /**
+     * Whether the execution precondition would pass.
+     * Used for grayed-out rendering (visible but not executable).
+     * Default implementation returns isAvailable().
+     */
+    public boolean canExecute() {
+        return isAvailable();
     }
 
     /**
@@ -105,15 +124,21 @@ public abstract class RadialAction {
     }
 
     /**
-     * Create a command action
+     * Create a command action.
+     * @deprecated Use {@link #registry(String)} with an action registered in ActionRegistry instead.
+     *             CommandAction sends commands directly via chat which bypasses the action system.
      */
+    @Deprecated
     public static RadialAction command(String name, String description, String emoji, String command) {
         return command(name, description, emoji, null, command);
     }
 
     /**
-     * Create a command action with ItemStack icon
+     * Create a command action with ItemStack icon.
+     * @deprecated Use {@link #registry(String)} with an action registered in ActionRegistry instead.
+     *             CommandAction sends commands directly via chat which bypasses the action system.
      */
+    @Deprecated
     public static RadialAction command(String name, String description, String emoji,
                                         @Nullable ItemStack icon, String command) {
         return new CommandAction(name, description, emoji, icon, command);
@@ -152,15 +177,21 @@ public abstract class RadialAction {
     }
 
     /**
-     * Create a custom runnable action
+     * Create a custom runnable action.
+     * @deprecated Use {@link #registry(String)} with an action registered in ActionRegistry instead.
+     *             CustomAction uses opaque Runnables which bypass telemetry and precondition checks.
      */
+    @Deprecated
     public static RadialAction custom(String name, String description, String emoji, Runnable action) {
         return custom(name, description, emoji, null, action);
     }
 
     /**
-     * Create a custom runnable action with ItemStack icon
+     * Create a custom runnable action with ItemStack icon.
+     * @deprecated Use {@link #registry(String)} with an action registered in ActionRegistry instead.
+     *             CustomAction uses opaque Runnables which bypass telemetry and precondition checks.
      */
+    @Deprecated
     public static RadialAction custom(String name, String description, String emoji,
                                        @Nullable ItemStack icon, Runnable action) {
         return new CustomAction(name, description, emoji, icon, action);
@@ -244,14 +275,17 @@ public abstract class RadialAction {
 
     /**
      * Command execution action
+     * @deprecated Use {@link RegistryAction} with an action registered in ActionRegistry instead.
      */
+    @Deprecated
     private static class CommandAction extends RadialAction {
-        private final String name;
-        private final String description;
-        private final String emoji;
-        private final ItemStack icon;
-        private final String command;
+        @Deprecated private final String name;
+        @Deprecated private final String description;
+        @Deprecated private final String emoji;
+        @Deprecated private final ItemStack icon;
+        @Deprecated private final String command;
 
+        @Deprecated
         CommandAction(String name, String description, String emoji, ItemStack icon, String command) {
             this.name = name;
             this.description = description;
@@ -260,6 +294,7 @@ public abstract class RadialAction {
             this.command = command.startsWith("/") ? command : "/" + command;
         }
 
+        @Deprecated
         @Override
         public void execute() {
             Minecraft mc = Minecraft.getInstance();
@@ -273,21 +308,25 @@ public abstract class RadialAction {
             }
         }
 
+        @Deprecated
         @Override
         public Component getLabel() {
             return Objects.requireNonNull(Component.literal(Objects.requireNonNull(name)));
         }
 
+        @Deprecated
         @Override
         public String getDescription() {
             return description + "\n§7Command: §f" + command;
         }
 
+        @Deprecated
         @Override
         public ItemStack getIconStack() {
             return icon != null ? icon : new ItemStack(Objects.requireNonNull(Items.COMMAND_BLOCK));
         }
 
+        @Deprecated
         @Override
         public String getIconEmoji() {
             return emoji;
@@ -401,14 +440,17 @@ public abstract class RadialAction {
 
     /**
      * Custom runnable action
+     * @deprecated Use {@link RegistryAction} with an action registered in ActionRegistry instead.
      */
+    @Deprecated
     private static class CustomAction extends RadialAction {
-        private final String name;
-        private final String description;
-        private final String emoji;
-        private final ItemStack icon;
-        private final Runnable action;
+        @Deprecated private final String name;
+        @Deprecated private final String description;
+        @Deprecated private final String emoji;
+        @Deprecated private final ItemStack icon;
+        @Deprecated private final Runnable action;
 
+        @Deprecated
         CustomAction(String name, String description, String emoji, ItemStack icon, Runnable action) {
             this.name = name;
             this.description = description;
@@ -417,26 +459,31 @@ public abstract class RadialAction {
             this.action = action;
         }
 
+        @Deprecated
         @Override
         public void execute() {
             action.run();
         }
 
+        @Deprecated
         @Override
         public Component getLabel() {
             return Objects.requireNonNull(Component.literal(Objects.requireNonNull(name)));
         }
 
+        @Deprecated
         @Override
         public String getDescription() {
             return description;
         }
 
+        @Deprecated
         @Override
         public ItemStack getIconStack() {
             return icon;
         }
 
+        @Deprecated
         @Override
         public String getIconEmoji() {
             return emoji;
@@ -537,8 +584,40 @@ public abstract class RadialAction {
             return description;
         }
 
+        /**
+         * Returns true if this action is visible in the menu.
+         * Uses the visibility predicate, NOT the execution precondition.
+         * This implements Scenario 9: hidden actions for non-admins.
+         */
+        public boolean isVisible() {
+            com.frenkvs.devmod.actions.RadialAction action = ActionRegistry.getAction(actionId);
+            if (action == null) {
+                return false;
+            }
+            return action.isVisible(ClientActionContexts.forRadial());
+        }
+
+        /**
+         * Returns true if this action can be executed.
+         * Uses the execution precondition.
+         * Note: This is checked at invoke time for proper error feedback.
+         */
         @Override
         public boolean isAvailable() {
+            com.frenkvs.devmod.actions.RadialAction action = ActionRegistry.getAction(actionId);
+            if (action == null) {
+                return false;
+            }
+            // For visibility gating: use isVisible()
+            // For execution: precondition is checked at invoke time with proper error feedback
+            // Return visibility here to maintain backward compat with RadialMenuItem.isVisible()
+            return action.isVisible(ClientActionContexts.forRadial());
+        }
+
+        /**
+         * Check if precondition would pass (for grayed-out rendering).
+         */
+        public boolean canExecute() {
             com.frenkvs.devmod.actions.RadialAction action = ActionRegistry.getAction(actionId);
             if (action == null) {
                 return false;

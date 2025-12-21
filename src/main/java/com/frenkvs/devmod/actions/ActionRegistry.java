@@ -38,38 +38,63 @@ public final class ActionRegistry {
         return ACTIONS.get(id);
     }
 
+    /**
+     * Invokes an action and returns a boolean for backward compatibility.
+     * @see #invokeWithResult(String, ActionContext) for structured results
+     */
     public static boolean invoke(String id, ActionContext context) {
+        return invokeWithResult(id, context).isSuccess();
+    }
+
+    /**
+     * Invokes an action and returns a structured ActionResult with status, error code, and duration.
+     */
+    public static ActionResult invokeWithResult(String id, ActionContext context) {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(context, "context");
+
+        long startTime = System.currentTimeMillis();
 
         RadialAction action = ACTIONS.get(id);
         if (action == null) {
             DevMod.LOGGER.warn("[ActionRegistry] Unknown action id {}", id);
-            return false;
+            ActionResult result = ActionResult.blocked(ActionResult.ERROR_UNKNOWN_ACTION,
+                "Unknown action: " + id);
+            logInvocationExtended(id, null, context, result);
+            return result;
         }
 
         ActionPrecondition precondition = action.getPrecondition();
         if (!precondition.test(context)) {
             context.sendFailure(precondition.failureMessage(context));
-            logInvocation(action, context, false);
-            return false;
+            ActionResult result = ActionResult.blocked(ActionResult.ERROR_PRECONDITION_FAILED,
+                precondition.failureMessage(context).getString());
+            logInvocationExtended(id, action, context, result);
+            return result;
         }
 
         if (action.requiresConfirm() && !context.isConfirmed()) {
             context.sendFailure(Component.translatable("devmod.action.requires_confirm"));
-            logInvocation(action, context, false);
-            return false;
+            ActionResult result = ActionResult.blocked(ActionResult.ERROR_REQUIRES_CONFIRM,
+                "Action requires confirmation");
+            logInvocationExtended(id, action, context, result);
+            return result;
         }
 
         try {
             action.invoke(context);
-            logInvocation(action, context, true);
-            return true;
+            long durationMs = System.currentTimeMillis() - startTime;
+            ActionResult result = ActionResult.ok(durationMs);
+            logInvocationExtended(id, action, context, result);
+            return result;
         } catch (Exception e) {
+            long durationMs = System.currentTimeMillis() - startTime;
             DevMod.LOGGER.error("[ActionRegistry] Failed to invoke action {}", id, e);
             context.sendFailure(Component.translatable("devmod.action.failed", action.getLabel()));
-            logInvocation(action, context, false);
-            return false;
+            ActionResult result = ActionResult.failed(ActionResult.ERROR_EXCEPTION,
+                e.getMessage(), durationMs);
+            logInvocationExtended(id, action, context, result);
+            return result;
         }
     }
 
@@ -101,10 +126,12 @@ public final class ActionRegistry {
         return available;
     }
 
-    private static void logInvocation(RadialAction action, ActionContext context, boolean success) {
-        if (context.getSource() == null && context.getServerPlayer() == null) {
-            return;
-        }
+    /**
+     * Extended telemetry logging with ActionResult details.
+     * Logs radial_action_invoked, radial_action_blocked, or radial_action_failed events.
+     */
+    private static void logInvocationExtended(String actionId, @Nullable RadialAction action,
+                                               ActionContext context, ActionResult result) {
         String playerName = "server";
         var player = context.getPlayer();
         if (player != null) {
@@ -116,14 +143,36 @@ public final class ActionRegistry {
             dimension = level.dimension().location().toString();
         }
 
-        String line = "{\"ts\":\"" + Instant.now() + "\"," +
-            "\"type\":\"action.invoked\"," +
-            "\"action\":\"" + TelemetryJson.escape(action.getId()) + "\"," +
-            "\"origin\":\"" + TelemetryJson.escape(context.getOrigin().name().toLowerCase(Locale.ROOT)) + "\"," +
-            "\"player\":\"" + TelemetryJson.escape(playerName) + "\"," +
-            "\"dimension\":\"" + TelemetryJson.escape(dimension) + "\"," +
-            "\"success\":" + success + "}";
+        String eventType = switch (result.status()) {
+            case OK -> "radial_action_invoked";
+            case BLOCKED -> "radial_action_blocked";
+            case FAILED -> "radial_action_failed";
+        };
 
-        TelemetryService.INSTANCE.appendActionLine(line);
+        String actionTypeStr = "";
+        if (action != null) {
+            ActionType actionType = action.getActionType();
+            if (actionType != null) {
+                actionTypeStr = actionType.name().toLowerCase(Locale.ROOT);
+            }
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        sb.append("\"type\":\"").append(eventType).append("\",");
+        sb.append("\"actionId\":\"").append(TelemetryJson.escape(actionId)).append("\",");
+        sb.append("\"origin\":\"").append(TelemetryJson.escape(context.getOrigin().name().toLowerCase(Locale.ROOT))).append("\",");
+        sb.append("\"player\":\"").append(TelemetryJson.escape(playerName)).append("\",");
+        sb.append("\"dimension\":\"").append(TelemetryJson.escape(dimension)).append("\",");
+        if (!actionTypeStr.isEmpty()) {
+            sb.append("\"actionType\":\"").append(actionTypeStr).append("\",");
+        }
+        sb.append("\"result\":\"").append(result.status().name()).append("\",");
+        if (result.errorCode() != null) {
+            sb.append("\"errorCode\":\"").append(TelemetryJson.escape(result.errorCode())).append("\",");
+        }
+        sb.append("\"durationMs\":").append(result.durationMs()).append("}");
+
+        TelemetryService.INSTANCE.appendActionLine(sb.toString());
     }
 }
