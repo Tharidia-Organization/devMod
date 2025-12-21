@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Integration layer between Arena system and Quest system.
@@ -57,7 +58,8 @@ public class ArenaQuestIntegration {
     private final ArenaBuilder arenaBuilder;
     private final ArenaTelemetry telemetry;
     private final Executor asyncExecutor;
-    private final com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot configSnapshot;
+    @Nullable
+    private final Supplier<com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot> configSnapshotSupplier;
 
     // Active sessions: sessionId -> SessionContext
     private final ConcurrentHashMap<UUID, SessionContext> activeSessions = new ConcurrentHashMap<>();
@@ -75,7 +77,8 @@ public class ArenaQuestIntegration {
             ArenaBuilder arenaBuilder,
             ArenaTelemetry telemetry,
             Executor asyncExecutor) {
-        this(templateRegistry, policyRegistry, policyResolver, arenaBuilder, telemetry, asyncExecutor, null);
+        this(templateRegistry, policyRegistry, policyResolver, arenaBuilder, telemetry, asyncExecutor,
+            (Supplier<com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot>) null);
     }
 
     public ArenaQuestIntegration(
@@ -86,13 +89,25 @@ public class ArenaQuestIntegration {
             ArenaTelemetry telemetry,
             Executor asyncExecutor,
             com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
+        this(templateRegistry, policyRegistry, policyResolver, arenaBuilder, telemetry, asyncExecutor,
+            configSnapshot != null ? () -> configSnapshot : null);
+    }
+
+    public ArenaQuestIntegration(
+            ArenaTemplateRegistry templateRegistry,
+            ArenaPolicyRegistry policyRegistry,
+            PolicyResolver policyResolver,
+            ArenaBuilder arenaBuilder,
+            ArenaTelemetry telemetry,
+            Executor asyncExecutor,
+            @Nullable Supplier<com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot> configSnapshotSupplier) {
         this.templateRegistry = Objects.requireNonNull(templateRegistry, "templateRegistry");
         this.policyRegistry = Objects.requireNonNull(policyRegistry, "policyRegistry");
         this.policyResolver = Objects.requireNonNull(policyResolver, "policyResolver");
         this.arenaBuilder = Objects.requireNonNull(arenaBuilder, "arenaBuilder");
         this.telemetry = Objects.requireNonNull(telemetry, "telemetry");
         this.asyncExecutor = Objects.requireNonNull(asyncExecutor, "asyncExecutor");
-        this.configSnapshot = configSnapshot;
+        this.configSnapshotSupplier = configSnapshotSupplier;
 
         // Load policies from default path if present (config/devmod/arena_policies)
         loadPoliciesFromDisk();
@@ -118,8 +133,8 @@ public class ArenaQuestIntegration {
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                if (configSnapshot != null) {
-                    InstanceOnlyGate gate = new InstanceOnlyGate(configSnapshot, telemetry);
+                InstanceOnlyGate gate = resolveInstanceGate();
+                if (gate != null) {
                     InstanceOnlyGate.Result gateResult = gate.checkInstanceId(
                         context.instanceId(),
                         "ArenaQuestIntegration.prepareArena"
@@ -220,6 +235,19 @@ public class ArenaQuestIntegration {
                 return PrepareResult.failed(sessionId, e.getMessage());
             }
         }, asyncExecutor);
+    }
+
+    @Nullable
+    private InstanceOnlyGate resolveInstanceGate() {
+        Supplier<com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot> snapshotSupplier = configSnapshotSupplier;
+        if (snapshotSupplier == null) {
+            return null;
+        }
+        com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot snapshot = snapshotSupplier.get();
+        if (snapshot == null) {
+            return null;
+        }
+        return new InstanceOnlyGate(snapshot, telemetry);
     }
 
     /**
@@ -349,6 +377,7 @@ public class ArenaQuestIntegration {
             .policyId(resolved.policy().id())
             .policyVersion(resolved.policy().version())
             .bounds(bounds)
+            .origin(originX, originY, originZ)
             .playerSpawnPositions(playerSpawns)
             .mobSpawnPositions(mobSpawns)
             .build();

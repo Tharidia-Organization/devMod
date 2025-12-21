@@ -1,0 +1,26 @@
+package com.devmod.arena.spawn;
+
+import net.minecraft.core.BlockPos;
+
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * Session-scoped tracker for spawn slot occupancy.
+ */
+public class SpawnOccupancyTracker {
+
+    private final Set<Long> occupied = ConcurrentHashMap.newKeySet();
+
+    public boolean isOccupied(BlockPos pos) {
+        return occupied.contains(pos.asLong());
+    }
+
+    public boolean markOccupied(BlockPos pos) {
+        return occupied.add(pos.asLong());
+    }
+
+    public void clear() {
+        occupied.clear();
+    }
+}

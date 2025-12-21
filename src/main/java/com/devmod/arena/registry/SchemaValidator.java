@@ -240,12 +240,28 @@ public final class SchemaValidator {
             errors.accept("sizeZ must be 8-256");
         }
 
+        if (json.has("mobSpawnStrategy")) {
+            String strategy = getString(json, "mobSpawnStrategy", null);
+            if (strategy != null && !List.of("DISTRIBUTED", "CLUSTERED", "CORNERS", "RING").contains(strategy)) {
+                errors.accept("mobSpawnStrategy must be DISTRIBUTED|CLUSTERED|CORNERS|RING");
+            }
+        }
+
         if (json.has("origin") && json.get("origin").isJsonObject()) {
             JsonObject origin = json.getAsJsonObject("origin");
             checkUnknownFields(origin, allowedForDef("Origin"), "origin", mode, errors, warnings, unknownFields);
             String modeValue = getString(origin, "mode", null);
             if (modeValue != null && !List.of("CENTER", "CORNER_NW", "CORNER_SW").contains(modeValue)) {
                 errors.accept("origin.mode must be CENTER|CORNER_NW|CORNER_SW");
+            }
+        }
+
+        if (json.has("templateType") && json.get("templateType").isJsonObject()) {
+            JsonObject templateType = json.getAsJsonObject("templateType");
+            checkUnknownFields(templateType, allowedForDef("TemplateType"), "templateType", mode, errors, warnings, unknownFields);
+            String type = getString(templateType, "type", null);
+            if (type != null && !List.of("flat", "structure", "schematic", "composite").contains(type)) {
+                errors.accept("templateType.type must be flat|structure|schematic|composite");
             }
         }
 
@@ -265,6 +281,10 @@ public final class SchemaValidator {
             checkUnknownFields(walls, allowedForDef("Walls"), "walls", mode, errors, warnings, unknownFields);
             if (getInt(walls, "height", 1) <= 0) errors.accept("walls.height must be >0");
             if (getInt(walls, "thickness", 1) <= 0) errors.accept("walls.thickness must be >0");
+            String style = getString(walls, "style", null);
+            if (style != null && !List.of("solid", "fence", "glass", "barrier").contains(style)) {
+                errors.accept("walls.style must be solid|fence|glass|barrier");
+            }
         }
 
         if (json.has("ceiling") && json.get("ceiling").isJsonObject()) {
@@ -279,7 +299,7 @@ public final class SchemaValidator {
         if (json.has("underfloor") && json.get("underfloor").isJsonObject()) {
             JsonObject uf = json.getAsJsonObject("underfloor");
             checkUnknownFields(uf, allowedForDef("Underfloor"), "underfloor", mode, errors, warnings, unknownFields);
-            if (getInt(uf, "depth", 0) < 0) errors.accept("underfloor.depth must be >=0");
+            if (getInt(uf, "depth", 0) < 1) errors.accept("underfloor.depth must be >=1");
         }
 
         if (json.has("lighting") && json.get("lighting").isJsonObject()) {
@@ -311,8 +331,8 @@ public final class SchemaValidator {
             checkUnknownFields(is, allowedForDef("InstanceSettings"), "instanceSettings", mode, errors, warnings, unknownFields);
             int chunkRadius = getInt(is, "chunkRadius", 0);
             int tickDistance = getInt(is, "tickDistance", 0);
-            if (chunkRadius < 0) errors.accept("instanceSettings.chunkRadius must be >=0");
-            if (tickDistance < 0) errors.accept("instanceSettings.tickDistance must be >=0");
+            if (chunkRadius < 1) errors.accept("instanceSettings.chunkRadius must be >=1");
+            if (tickDistance < 1) errors.accept("instanceSettings.tickDistance must be >=1");
         }
 
         if (json.has("compat") && json.get("compat").isJsonObject()) {
@@ -320,8 +340,8 @@ public final class SchemaValidator {
             checkUnknownFields(compat, allowedForDef("Compat"), "compat", mode, errors, warnings, unknownFields);
             int min = getInt(compat, "minPlayers", 0);
             int max = getInt(compat, "maxPlayers", 0);
-            if (min < 0) errors.accept("compat.minPlayers must be >=0");
-            if (max < 0) errors.accept("compat.maxPlayers must be >=0");
+            if (min < 1) errors.accept("compat.minPlayers must be >=1");
+            if (max < 1) errors.accept("compat.maxPlayers must be >=1");
             if (min > 0 && max > 0 && min > max) {
                 warnings.accept("compat.minPlayers > maxPlayers");
             }
@@ -341,6 +361,15 @@ public final class SchemaValidator {
             if (isBlank(palette, "accent")) errors.accept("palette.accent is required");
             if (isBlank(palette, "highlight")) errors.accept("palette.highlight is required");
             if (isBlank(palette, "hazardBorder")) errors.accept("palette.hazardBorder is required");
+        }
+
+        if (json.has("biome") && json.get("biome").isJsonObject()) {
+            JsonObject biome = json.getAsJsonObject("biome");
+            checkUnknownFields(biome, allowedForDef("Biome"), "biome", mode, errors, warnings, unknownFields);
+            String applyTo = getString(biome, "applyTo", null);
+            if (applyTo != null && !List.of("BOUNDS", "CHUNKS").contains(applyTo)) {
+                errors.accept("biome.applyTo must be BOUNDS|CHUNKS");
+            }
         }
 
         if (json.has("environment") && json.get("environment").isJsonObject()) {
@@ -400,6 +429,18 @@ public final class SchemaValidator {
                     warnings,
                     unknownFields);
             }
+            String rotation = getString(structure, "rotation", null);
+            if (rotation != null && !List.of("none", "clockwise_90", "180", "counterclockwise_90").contains(rotation)) {
+                errors.accept("structureNbt.rotation must be none|clockwise_90|180|counterclockwise_90");
+            }
+            String mirror = getString(structure, "mirror", null);
+            if (mirror != null && !List.of("none", "front_back", "left_right").contains(mirror)) {
+                errors.accept("structureNbt.mirror must be none|front_back|left_right");
+            }
+            String seedPolicy = getString(structure, "seedPolicy", null);
+            if (seedPolicy != null && !List.of("fixed", "perRun").contains(seedPolicy)) {
+                errors.accept("structureNbt.seedPolicy must be fixed|perRun");
+            }
         }
 
         if (json.has("playerSpawnOffset") && json.get("playerSpawnOffset").isJsonObject()) {
@@ -418,6 +459,10 @@ public final class SchemaValidator {
                 if (!slots.get(i).isJsonObject()) continue;
                 JsonObject slot = slots.get(i).getAsJsonObject();
                 checkUnknownFields(slot, allowedForDef("SpawnSlot"), "spawnSlots[" + i + "]", mode, errors, warnings, unknownFields);
+                String yMode = getString(slot, "yMode", null);
+                if (yMode != null && !List.of("RELATIVE_TO_FLOOR", "ABSOLUTE").contains(yMode)) {
+                    errors.accept("spawnSlots[" + i + "].yMode must be RELATIVE_TO_FLOOR|ABSOLUTE");
+                }
                 if (slot.has("validation") && slot.get("validation").isJsonObject()) {
                     checkUnknownFields(slot.get("validation").getAsJsonObject(),
                         EXTRA_ALLOWED_FIELDS.get("spawnSlots.validation"),
@@ -434,13 +479,18 @@ public final class SchemaValidator {
             var zones = json.getAsJsonArray("forbiddenZones");
             for (int i = 0; i < zones.size(); i++) {
                 if (!zones.get(i).isJsonObject()) continue;
-                checkUnknownFields(zones.get(i).getAsJsonObject(),
+                JsonObject zone = zones.get(i).getAsJsonObject();
+                checkUnknownFields(zone,
                     allowedForDef("ForbiddenZone"),
                     "forbiddenZones[" + i + "]",
                     mode,
                     errors,
                     warnings,
                     unknownFields);
+                String yMode = getString(zone, "yMode", null);
+                if (yMode != null && !List.of("RELATIVE_TO_FLOOR", "ABSOLUTE").contains(yMode)) {
+                    errors.accept("forbiddenZones[" + i + "].yMode must be RELATIVE_TO_FLOOR|ABSOLUTE");
+                }
             }
         }
 
@@ -448,13 +498,18 @@ public final class SchemaValidator {
             var hazards = json.getAsJsonArray("hazards");
             for (int i = 0; i < hazards.size(); i++) {
                 if (!hazards.get(i).isJsonObject()) continue;
-                checkUnknownFields(hazards.get(i).getAsJsonObject(),
+                JsonObject hazard = hazards.get(i).getAsJsonObject();
+                checkUnknownFields(hazard,
                     allowedForDef("Hazard"),
                     "hazards[" + i + "]",
                     mode,
                     errors,
                     warnings,
                     unknownFields);
+                String yMode = getString(hazard, "yMode", null);
+                if (yMode != null && !List.of("RELATIVE_TO_FLOOR", "ABSOLUTE").contains(yMode)) {
+                    errors.accept("hazards[" + i + "].yMode must be RELATIVE_TO_FLOOR|ABSOLUTE");
+                }
             }
         }
     }
@@ -495,6 +550,29 @@ public final class SchemaValidator {
     private static Map<String, Set<String>> defaultNestedAllowedFields() {
         Map<String, Set<String>> map = new HashMap<>();
         map.put("Origin", Set.of("mode", "x", "y", "z"));
+        map.put("TemplateType", Set.of(
+            "type",
+            "sizeX",
+            "sizeZ",
+            "floorY",
+            "wallHeight",
+            "floorMaterial",
+            "wallMaterial",
+            "ceilingMaterial",
+            "generateUnderfloor",
+            "structurePath",
+            "schematicPath",
+            "offsetX",
+            "offsetY",
+            "offsetZ",
+            "rotation",
+            "mirror",
+            "ignoreAir",
+            "seedOverride",
+            "replaceExisting",
+            "layers",
+            "mergeStrategy"
+        ));
         map.put("Offset", Set.of("x", "y", "z"));
         map.put("Floor", Set.of("y", "thickness", "material", "pattern", "borderMaterial", "borderWidth"));
         map.put("Walls", Set.of("enabled", "material", "height", "thickness", "startY", "style"));

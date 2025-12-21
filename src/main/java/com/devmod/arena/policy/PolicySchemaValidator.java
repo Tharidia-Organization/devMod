@@ -190,46 +190,109 @@ public final class PolicySchemaValidator {
         if (json.has("routing") && json.get("routing").isJsonObject()) {
             JsonObject routing = json.getAsJsonObject("routing");
             checkUnknownFields(routing, allowedForDef("Routing"), "routing", mode, errors, warnings, unknownFields);
+            validateStringArray(routing, "mobIds", "routing.mobIds", errors);
+            validateStringArray(routing, "questTypes", "routing.questTypes", errors);
+            validateStringArray(routing, "difficultyTags", "routing.difficultyTags", errors);
+            Double weight = readNumber(routing, "weight", errors, "routing.weight");
+            if (weight != null && (weight < 0.1 || weight > 10.0)) {
+                warnings.accept("routing.weight out of range [0.1, 10.0]");
+            }
         }
         if (json.has("perkBindings") && json.get("perkBindings").isJsonObject()) {
             JsonObject pb = json.getAsJsonObject("perkBindings");
             checkUnknownFields(pb, allowedForDef("PerkBindings"), "perkBindings", mode, errors, warnings, unknownFields);
+            validateStringArray(pb, "suggested", "perkBindings.suggested", errors);
+            validateStringArray(pb, "excluded", "perkBindings.excluded", errors);
+            validateStringArray(pb, "required", "perkBindings.required", errors);
         }
         if (json.has("mutatorBindings") && json.get("mutatorBindings").isJsonObject()) {
             JsonObject mb = json.getAsJsonObject("mutatorBindings");
             checkUnknownFields(mb, allowedForDef("MutatorBindings"), "mutatorBindings", mode, errors, warnings, unknownFields);
+            validateStringArray(mb, "suggested", "mutatorBindings.suggested", errors);
+            validateStringArray(mb, "excluded", "mutatorBindings.excluded", errors);
+            validateStringArray(mb, "required", "mutatorBindings.required", errors);
         }
         if (json.has("rewardModifiers") && json.get("rewardModifiers").isJsonObject()) {
             JsonObject rm = json.getAsJsonObject("rewardModifiers");
             checkUnknownFields(rm, allowedForDef("RewardModifiers"), "rewardModifiers", mode, errors, warnings, unknownFields);
+            Double base = readNumber(rm, "baseMultiplier", errors, "rewardModifiers.baseMultiplier");
+            if (base != null && base < 0.0) {
+                errors.accept("rewardModifiers.baseMultiplier must be >= 0");
+            }
+            Double first = readNumber(rm, "firstCompletionBonus", errors, "rewardModifiers.firstCompletionBonus");
+            if (first != null && first < 0.0) {
+                warnings.accept("rewardModifiers.firstCompletionBonus < 0, clamped to 0");
+            }
+            Double hazard = readNumber(rm, "hazardBonus", errors, "rewardModifiers.hazardBonus");
+            if (hazard != null && hazard < 0.0) {
+                warnings.accept("rewardModifiers.hazardBonus < 0, clamped to 0");
+            }
+            Double streak = readNumber(rm, "streakMultiplier", errors, "rewardModifiers.streakMultiplier");
+            if (streak != null && streak < 0.0) {
+                warnings.accept("rewardModifiers.streakMultiplier < 0, clamped to 0");
+            }
         }
         if (json.has("balanceOverrides") && json.get("balanceOverrides").isJsonObject()) {
             JsonObject bo = json.getAsJsonObject("balanceOverrides");
             checkUnknownFields(bo, allowedForDef("BalanceOverrides"), "balanceOverrides", mode, errors, warnings, unknownFields);
+            readNumber(bo, "spawnRateMultiplier", errors, "balanceOverrides.spawnRateMultiplier");
+            readNumber(bo, "damageMultiplier", errors, "balanceOverrides.damageMultiplier");
+            readNumber(bo, "waveScaling", errors, "balanceOverrides.waveScaling");
+        }
+
+        Double weight = readNumber(json, "weight", errors, "weight");
+        if (weight != null && (weight < 0.1 || weight > 10.0)) {
+            warnings.accept("weight out of range [0.1, 10.0]");
+        }
+        Integer minPlayers = readInt(json, "minPlayers", errors, "minPlayers");
+        if (minPlayers != null && minPlayers < 1) {
+            errors.accept("minPlayers must be >= 1");
+        }
+        Integer maxPlayers = readInt(json, "maxPlayers", errors, "maxPlayers");
+        if (maxPlayers != null && maxPlayers < 1) {
+            errors.accept("maxPlayers must be >= 1");
         }
 
         // Arrays of strings for tags/mobTypes/questTypes/difficultyTags
-        validateStringArray(json, "tags", errors);
-        validateStringArray(json, "mobTypes", errors);
-        validateStringArray(json, "mobIds", errors);
-        validateStringArray(json, "questTypes", errors);
-        validateStringArray(json, "difficultyTags", errors);
+        validateStringArray(json, "tags", "tags", errors);
+        validateStringArray(json, "mobTypes", "mobTypes", errors);
+        validateStringArray(json, "mobIds", "mobIds", errors);
+        validateStringArray(json, "questTypes", "questTypes", errors);
+        validateStringArray(json, "difficultyTags", "difficultyTags", errors);
     }
 
-    private static void validateStringArray(JsonObject json, String field, Consumer<String> errors) {
+    private static void validateStringArray(JsonObject json, String field, String path, Consumer<String> errors) {
         if (!json.has(field)) return;
         if (!json.get(field).isJsonArray()) {
-            errors.accept(field + " must be an array of strings");
+            errors.accept(path + " must be an array of strings");
             return;
         }
         int idx = 0;
         for (JsonElement el : json.getAsJsonArray(field)) {
             if (!el.isJsonPrimitive() || !el.getAsJsonPrimitive().isString()) {
-                errors.accept(field + " contains non-string at index " + idx);
+                errors.accept(path + " contains non-string at index " + idx);
                 return;
             }
             idx++;
         }
+    }
+
+    private static Double readNumber(JsonObject obj, String field, Consumer<String> errors, String path) {
+        if (!obj.has(field) || obj.get(field).isJsonNull()) return null;
+        if (!obj.get(field).isJsonPrimitive() || !obj.get(field).getAsJsonPrimitive().isNumber()) {
+            errors.accept(path + " must be a number");
+            return null;
+        }
+        return obj.get(field).getAsDouble();
+    }
+
+    private static Integer readInt(JsonObject obj, String field, Consumer<String> errors, String path) {
+        if (!obj.has(field) || obj.get(field).isJsonNull()) return null;
+        if (!obj.get(field).isJsonPrimitive() || !obj.get(field).getAsJsonPrimitive().isNumber()) {
+            errors.accept(path + " must be an integer");
+            return null;
+        }
+        return obj.get(field).getAsInt();
     }
 
     private static Set<String> allowedForDef(String defName) {

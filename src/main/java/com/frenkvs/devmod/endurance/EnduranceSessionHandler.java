@@ -9,6 +9,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -114,6 +115,7 @@ public class EnduranceSessionHandler {
             }
 
             session.getQuest().fail(false);
+            session.clearPendingWaveStart();
 
             // Don't remove session immediately - allow respawn option
             session.setAwaitingRespawnChoice(true);
@@ -160,27 +162,42 @@ public class EnduranceSessionHandler {
 
         if (session != null && session.isAwaitingRespawnChoice()) {
             if (continueQuest) {
+                // Reset wave state before respawn to avoid stale mobs/state.
+                EndurancePlayerStateManager.INSTANCE.cleanupQuestSystems(session);
+                session.resetWaveKills();
+
+                boolean teleported = false;
+
+                // Teleport back to arena (handle both instance and legacy modes)
+                if (session.isInInstanceDimension()) {
+                    UUID instanceId = session.getInstanceId();
+                    if (instanceId != null) {
+                        teleported = DynamicDimensionManager.INSTANCE.teleportToInstance(player, instanceId);
+                        if (teleported && session.getArena() != null) {
+                            EnduranceQuestManager.INSTANCE.teleportPlayersToArena(
+                                List.of(player), session.getArena(), session.getArenaHandle());
+                        }
+                    }
+                } else if (session.getArena() != null && arenaManager != null) {
+                    arenaManager.teleportToArena(player, session.getArena());
+                    teleported = true;
+                }
+
+                if (!teleported) {
+                    LOGGER.error("[EnduranceQuest] Cannot respawn player {} - arena/instance unavailable",
+                        player.getName().getString());
+                    player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+                        "[DevMod] Respawn failed - arena is unavailable.")
+                        .withStyle(ChatFormatting.RED)));
+                    return;
+                }
+
                 // Continue from current wave with death penalty
                 session.getQuest().continueAfterDeath();
                 session.setAwaitingRespawnChoice(false);
 
-                // Teleport back to arena (handle both instance and legacy modes)
-                if (session.isInInstanceDimension()) {
-                    // Instance mode: use DynamicDimensionManager
-                    DynamicDimensionManager.INSTANCE.teleportToInstance(player, session.getInstanceId());
-                } else if (session.getArena() != null && arenaManager != null) {
-                    // Legacy mode: use arenaManager
-                    arenaManager.teleportToArena(player, session.getArena());
-                } else {
-                    LOGGER.error("[EnduranceQuest] Cannot teleport player {} - no arena or instance available",
-                        player.getName().getString());
-                }
-
-                // Restart the wave (respawn mobs)
-                WaveManager.INSTANCE.startWave(session);
-
-                // Notify subsystems
-                EnduranceEventHandler.onWaveStart(player, session, session.getQuest().getCurrentWave());
+                // Delay wave start to give time for instance load
+                session.scheduleWaveStart(EnduranceQuestManager.WAVE_START_COUNTDOWN_TICKS);
 
                 // Notify player of penalty
                 player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.endurance.respawned_penalty", session.getQuest().getDeathsThisSession())

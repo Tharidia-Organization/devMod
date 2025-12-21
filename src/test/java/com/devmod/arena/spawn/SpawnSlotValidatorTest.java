@@ -33,6 +33,7 @@ class SpawnSlotValidatorTest {
         );
 
         resolver = new SpawnSlotResolver(testSlots, SpawnSlotConstraints.MELEE_DEFAULTS);
+        resolver.setGroundChecker(slot -> true);
         validator = new SpawnSlotValidator(resolver);
     }
 
@@ -168,6 +169,7 @@ class SpawnSlotValidatorTest {
         );
 
         SpawnSlotResolver farResolver = new SpawnSlotResolver(farSlots, SpawnSlotConstraints.MELEE_DEFAULTS);
+        farResolver.setGroundChecker(slot -> true);
         SpawnSlotValidator farValidator = new SpawnSlotValidator(farResolver);
         farValidator.buildCache();
 

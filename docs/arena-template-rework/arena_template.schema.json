@@ -44,10 +44,11 @@
       "description": "Minimum parent version for inheritance compatibility"
     },
     "templateType": {
-      "type": "string",
-      "enum": ["flat", "structure", "schematic", "composite"],
-      "default": "flat",
-      "description": "Template type variant (DD1-DD2)"
+      "description": "Template type variant (DD1-DD2)",
+      "oneOf": [
+        { "type": "string", "enum": ["flat", "structure", "schematic", "composite"] },
+        { "$ref": "#/$defs/TemplateType" }
+      ]
     },
     "origin": {
       "$ref": "#/$defs/Origin",
@@ -157,6 +158,34 @@
     }
   },
   "$defs": {
+    "TemplateType": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "enum": ["flat", "structure", "schematic", "composite"] },
+        "sizeX": { "type": "integer" },
+        "sizeZ": { "type": "integer" },
+        "floorY": { "type": "integer" },
+        "wallHeight": { "type": "integer" },
+        "floorMaterial": { "type": "string" },
+        "wallMaterial": { "type": "string" },
+        "ceilingMaterial": { "type": ["string", "null"] },
+        "generateUnderfloor": { "type": "boolean" },
+        "structurePath": { "type": "string" },
+        "schematicPath": { "type": "string" },
+        "offsetX": { "type": "integer" },
+        "offsetY": { "type": "integer" },
+        "offsetZ": { "type": "integer" },
+        "rotation": { "type": "string" },
+        "mirror": { "type": "string" },
+        "ignoreAir": { "type": "boolean" },
+        "seedOverride": { "type": ["integer", "null"] },
+        "replaceExisting": { "type": "boolean" },
+        "layers": { "type": "array" },
+        "mergeStrategy": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
     "Origin": {
       "type": "object",
       "required": ["mode", "x", "y", "z"],
@@ -234,7 +263,7 @@
     },
     "Biome": {
       "type": "object",
-      "required": ["id"],
+      "required": ["id", "applyTo"],
       "properties": {
         "id": { "type": "string", "description": "Biome ID (e.g., minecraft:plains)" },
         "applyTo": { "type": "string", "enum": ["BOUNDS", "CHUNKS"], "default": "BOUNDS" }
@@ -316,7 +345,7 @@
             "properties": {
               "type": { "type": "string" },
               "rate": { "type": "number", "minimum": 0 },
-              "area": { "type": "string" }
+              "area": { "type": "string", "enum": ["bounds", "chunks"] }
             }
           }
         },

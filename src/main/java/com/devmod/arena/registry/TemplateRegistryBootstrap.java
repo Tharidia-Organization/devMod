@@ -10,8 +10,9 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Set;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Bootstrap helper to create and load {@link ArenaTemplateRegistry} with sane defaults.
@@ -25,13 +26,16 @@ import java.util.Map;
 public class TemplateRegistryBootstrap implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateRegistryBootstrap.class);
+    private static final long WATCHER_DEBOUNCE_MS = 250L;
 
-    private final Path templateDirectory;
+    private Path templateDirectory;
     private final TemplateValidator.ValidationMode validationMode;
     private final ArenaTemplateRegistry registry;
     private final FeatureFlagManager featureFlagManager;
     private ArenaTemplateConfig config;
     private ArenaTemplateConfig.ConfigSnapshot configSnapshot;
+    private final AtomicBoolean watcherReloadInProgress = new AtomicBoolean(false);
+    private TemplateDirectoryWatcher watcher;
 
     private TemplateLoader.LoadResult lastLoadResult;
 
@@ -68,13 +72,7 @@ public class TemplateRegistryBootstrap implements AutoCloseable {
         }
         cfgValidation.warnings().forEach(w -> LOGGER.warn("ArenaTemplateConfig warning: {}", w));
 
-        String dirProp = System.getProperty("devmod.template.dir");
-        String dirEnv = System.getenv("DEVMOD_TEMPLATE_DIR");
-        Path dir = Path.of(
-            dirProp != null && !dirProp.isBlank() ? dirProp :
-                dirEnv != null && !dirEnv.isBlank() ? dirEnv :
-                    config.templateDirectory() != null ? config.templateDirectory() : "config/devmod/arena_templates/"
-        );
+        Path dir = resolveTemplateDirectory(config);
 
         String modeProp = System.getProperty("devmod.template.validationMode");
         String modeEnv = System.getenv("DEVMOD_TEMPLATE_VALIDATION_MODE");
@@ -159,6 +157,11 @@ public class TemplateRegistryBootstrap implements AutoCloseable {
     public void applyConfig(ArenaTemplateConfig newConfig) {
         this.config = newConfig;
         this.configSnapshot = newConfig.snapshot();
+        Path resolvedDir = resolveTemplateDirectory(newConfig);
+        if (resolvedDir != null && !resolvedDir.equals(this.templateDirectory)) {
+            LOGGER.info("Template directory updated: {} -> {}", this.templateDirectory, resolvedDir);
+            this.templateDirectory = resolvedDir;
+        }
         featureFlagManager.applyConfig(newConfig);
         // Refresh structure validation and custom hazards using new snapshot
         if (configSnapshot.customHazardBuilders() != null) {
@@ -178,6 +181,7 @@ public class TemplateRegistryBootstrap implements AutoCloseable {
         } catch (Exception e) {
             LOGGER.warn("Failed to refresh structure validation on config reload: {}", e.getMessage());
         }
+        refreshWatcher();
     }
 
     public List<String> lastErrors() {
@@ -186,10 +190,75 @@ public class TemplateRegistryBootstrap implements AutoCloseable {
 
     @Override
     public void close() {
+        closeWatcher();
         try {
             registry.close();
         } catch (Exception e) {
             LOGGER.warn("Failed to close ArenaTemplateRegistry: {}", e.getMessage());
         }
+    }
+
+    private void refreshWatcher() {
+        boolean enabled = resolveWatchEnabled();
+        if (!enabled) {
+            closeWatcher();
+            return;
+        }
+        if (templateDirectory == null) {
+            return;
+        }
+        if (watcher != null && templateDirectory.equals(watcher.directory())) {
+            return;
+        }
+        closeWatcher();
+        watcher = new TemplateDirectoryWatcher(templateDirectory, this::reloadFromWatcher, WATCHER_DEBOUNCE_MS);
+        watcher.start();
+    }
+
+    private void reloadFromWatcher() {
+        if (!watcherReloadInProgress.compareAndSet(false, true)) {
+            return;
+        }
+        try {
+            LOGGER.info("Template directory change detected, running hot reload");
+            reloadWithConfig();
+        } finally {
+            watcherReloadInProgress.set(false);
+        }
+    }
+
+    private void closeWatcher() {
+        if (watcher != null) {
+            watcher.close();
+            watcher = null;
+        }
+    }
+
+    private static Path resolveTemplateDirectory(ArenaTemplateConfig config) {
+        String dirProp = System.getProperty("devmod.template.dir");
+        if (dirProp != null && !dirProp.isBlank()) {
+            return Path.of(dirProp);
+        }
+        String dirEnv = System.getenv("DEVMOD_TEMPLATE_DIR");
+        if (dirEnv != null && !dirEnv.isBlank()) {
+            return Path.of(dirEnv);
+        }
+        String cfgDir = config != null ? config.templateDirectory() : null;
+        if (cfgDir != null && !cfgDir.isBlank()) {
+            return Path.of(cfgDir);
+        }
+        return Path.of("config/devmod/arena_templates/");
+    }
+
+    private static boolean resolveWatchEnabled() {
+        String prop = System.getProperty("devmod.template.watch");
+        if (prop != null) {
+            return Boolean.parseBoolean(prop);
+        }
+        String env = System.getenv("DEVMOD_TEMPLATE_WATCH");
+        if (env != null) {
+            return Boolean.parseBoolean(env);
+        }
+        return false;
     }
 }

@@ -2,6 +2,7 @@ package com.devmod.arena.command;
 
 import com.devmod.arena.autosmoke.AutosmokeRunner;
 import com.devmod.arena.autosmoke.AutosmokeScheduler;
+import com.devmod.arena.builder.AsyncArenaBuilder;
 import com.devmod.arena.builder.ArenaBuilder;
 import com.devmod.arena.hud.ArenaDebugHud;
 import com.devmod.arena.hud.ArenaDebugState;
@@ -15,6 +16,7 @@ import com.devmod.arena.security.ArenaCommandAudit;
 import com.devmod.arena.security.ArenaCommandPermissions;
 import com.devmod.arena.security.ArenaCommandPermissions.CommandCategory;
 import com.devmod.arena.gate.InstanceOnlyGate;
+import com.devmod.arena.telemetry.ArenaTelemetry;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -23,9 +25,11 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,8 +39,11 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 /**
  * DD30: Arena dev commands for template management and testing.
@@ -69,7 +76,10 @@ public class ArenaCommands {
     private final Path templatesDirectory;
     private final ArenaBuilder arenaBuilder;
     private final Function<ServerLevel, ArenaBuilder> builderFactory;
-    private final InstanceOnlyGate instanceGate;
+    @Nullable
+    private final Function<ServerLevel, AsyncArenaBuilder> asyncBuilderFactory;
+    @Nullable
+    private final Supplier<com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot> configSnapshotSupplier;
     private final ForceTemplateCapability forceTemplateCapability;
     private final TemplateValidator templateValidator;
     private final TemplateRegistryBootstrap bootstrap;
@@ -80,7 +90,8 @@ public class ArenaCommands {
             AutosmokeScheduler autosmokeScheduler,
             Path templatesDirectory,
             ArenaBuilder arenaBuilder) {
-        this(registry, autosmokeRunner, autosmokeScheduler, templatesDirectory, arenaBuilder, null, null, null);
+        this(registry, autosmokeRunner, autosmokeScheduler, templatesDirectory, arenaBuilder,
+            (Supplier<com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot>) null, null, null);
     }
 
     public ArenaCommands(
@@ -90,7 +101,8 @@ public class ArenaCommands {
             Path templatesDirectory,
             ArenaBuilder arenaBuilder,
             com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
-        this(registry, autosmokeRunner, autosmokeScheduler, templatesDirectory, arenaBuilder, configSnapshot, null, null);
+        this(registry, autosmokeRunner, autosmokeScheduler, templatesDirectory, arenaBuilder,
+            configSnapshot != null ? () -> configSnapshot : null, null, null);
     }
 
     public ArenaCommands(
@@ -101,7 +113,8 @@ public class ArenaCommands {
             ArenaBuilder arenaBuilder,
             com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot configSnapshot,
             ForceTemplateCapability forceTemplateCapability) {
-        this(registry, autosmokeRunner, autosmokeScheduler, templatesDirectory, arenaBuilder, configSnapshot, forceTemplateCapability, null);
+        this(registry, autosmokeRunner, autosmokeScheduler, templatesDirectory, arenaBuilder,
+            configSnapshot != null ? () -> configSnapshot : null, forceTemplateCapability, null);
     }
 
     public ArenaCommands(
@@ -110,7 +123,7 @@ public class ArenaCommands {
             AutosmokeScheduler autosmokeScheduler,
             Path templatesDirectory,
             ArenaBuilder arenaBuilder,
-            com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot configSnapshot,
+            @Nullable Supplier<com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot> configSnapshotSupplier,
             ForceTemplateCapability forceTemplateCapability,
             TemplateRegistryBootstrap bootstrap) {
         this.registry = Objects.requireNonNull(registry, "registry");
@@ -121,13 +134,12 @@ public class ArenaCommands {
         this.templatesDirectory = templatesDirectory;
         this.arenaBuilder = Objects.requireNonNull(arenaBuilder, "arenaBuilder");
         this.builderFactory = level -> this.arenaBuilder;
-        this.instanceGate = configSnapshot != null
-            ? new InstanceOnlyGate(configSnapshot, new com.devmod.arena.telemetry.ArenaTelemetry())
-            : null;
+        this.asyncBuilderFactory = null;
+        this.configSnapshotSupplier = configSnapshotSupplier;
         this.forceTemplateCapability = forceTemplateCapability;
         this.templateValidator = new TemplateValidator();
         this.bootstrap = bootstrap;
-        if (this.autosmokeScheduler != null && configSnapshot != null) {
+        if (this.autosmokeScheduler != null && configSnapshotSupplier != null && configSnapshotSupplier.get() != null) {
             // Wire alert router for autosmoke if available
             this.autosmokeScheduler.setAlertRouter(new com.devmod.arena.alert.AlertRouter());
         }
@@ -139,7 +151,8 @@ public class ArenaCommands {
             AutosmokeScheduler autosmokeScheduler,
             Path templatesDirectory,
             Function<ServerLevel, ArenaBuilder> builderFactory,
-            com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot configSnapshot,
+            @Nullable Function<ServerLevel, AsyncArenaBuilder> asyncBuilderFactory,
+            @Nullable Supplier<com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot> configSnapshotSupplier,
             ForceTemplateCapability forceTemplateCapability,
             TemplateRegistryBootstrap bootstrap) {
         this.registry = Objects.requireNonNull(registry, "registry");
@@ -150,13 +163,12 @@ public class ArenaCommands {
         this.templatesDirectory = templatesDirectory;
         this.arenaBuilder = null;
         this.builderFactory = Objects.requireNonNull(builderFactory, "builderFactory");
-        this.instanceGate = configSnapshot != null
-            ? new InstanceOnlyGate(configSnapshot, new com.devmod.arena.telemetry.ArenaTelemetry())
-            : null;
+        this.asyncBuilderFactory = asyncBuilderFactory;
+        this.configSnapshotSupplier = configSnapshotSupplier;
         this.forceTemplateCapability = forceTemplateCapability;
         this.templateValidator = new TemplateValidator();
         this.bootstrap = bootstrap;
-        if (this.autosmokeScheduler != null && configSnapshot != null) {
+        if (this.autosmokeScheduler != null && configSnapshotSupplier != null && configSnapshotSupplier.get() != null) {
             // Wire alert router for autosmoke if available
             this.autosmokeScheduler.setAlertRouter(new com.devmod.arena.alert.AlertRouter());
         }
@@ -314,18 +326,21 @@ public class ArenaCommands {
         int originX;
         int originY;
         int originZ;
-        var level = src.getLevel();
 
-        if (instanceGate != null) {
-            var gateResult = instanceGate.check(level, "/arena create");
+        InstanceOnlyGate gate = resolveInstanceGate();
+        ResourceKey<Level> dimensionKey = resolveDimensionKey(src);
+        String dimensionLabel = dimensionKey != null ? dimensionKey.location().toString() : "unknown";
+        if (gate != null) {
+            var gateResult = gate.checkDimensionKey(dimensionKey, "/arena create");
             if (gateResult == InstanceOnlyGate.Result.BLOCKED) {
-                src.sendFailure(Component.literal("§cInstance-only mode: cannot create arenas in " + level.dimension().location()));
+                src.sendFailure(Component.literal("§cInstance-only mode: cannot create arenas in " + dimensionLabel));
                 return 0;
             } else if (gateResult == InstanceOnlyGate.Result.ALLOWED_DEBUG_ONLY) {
-                src.sendSuccess(() -> Component.literal("§eDebug-only override: creating in " + level.dimension().location()), false);
+                src.sendSuccess(() -> Component.literal("§eDebug-only override: creating in " + dimensionLabel), false);
             }
         }
 
+        var level = src.getLevel();
         if (src.getEntity() instanceof ServerPlayer player) {
             originX = player.blockPosition().getX();
             originY = player.blockPosition().getY();
@@ -343,7 +358,79 @@ public class ArenaCommands {
                 templateId, template.version(), originX, originY, originZ)
         ), false);
 
-        // Build the arena using ArenaBuilder
+        ArenaTemplate.BuildSettings buildSettings = template.buildSettings();
+        boolean asyncPreferred = buildSettings != null
+            && buildSettings.buildPriority() == ArenaTemplate.BuildSettings.Priority.ASYNC;
+
+        if (asyncPreferred) {
+            if (asyncBuilderFactory == null) {
+                src.sendFailure(Component.literal("§cAsync arena builder not available"));
+                return 0;
+            }
+            AsyncArenaBuilder asyncBuilder = asyncBuilderFactory.apply(level);
+            if (asyncBuilder == null) {
+                src.sendFailure(Component.literal("§cAsync arena builder not available"));
+                return 0;
+            }
+            UUID arenaId = UUID.randomUUID();
+            src.sendSuccess(() -> Component.literal(
+                String.format("§7Queued ASYNC arena build '%s' v%d (arenaId: %s)",
+                    templateId, template.version(), arenaId)
+            ), false);
+
+            CompletableFuture<AsyncArenaBuilder.AsyncBuildResult> future = asyncBuilder.submitBuildAsync(
+                arenaId, template, originX, originY, originZ);
+            var server = src.getServer();
+            future.whenComplete((asyncResult, throwable) -> {
+                Runnable notifier = () -> {
+                    if (throwable != null) {
+                        String message = throwable.getMessage() != null ? throwable.getMessage() : "Unknown error";
+                        if (throwable instanceof AsyncArenaBuilder.BuildException be
+                            && be.getResult() != null
+                            && be.getResult().errorMessage() != null) {
+                            message = be.getResult().errorMessage();
+                        }
+                        src.sendFailure(Component.literal("§cAsync arena build failed: " + message));
+                        LOGGER.error("Async arena build failed for template '{}': {}", templateId, message);
+                        return;
+                    }
+                    if (asyncResult == null || !asyncResult.success()) {
+                        String message = asyncResult != null && asyncResult.errorMessage() != null
+                            ? asyncResult.errorMessage() : "Unknown error";
+                        src.sendFailure(Component.literal("§cAsync arena build failed: " + message));
+                        LOGGER.error("Async arena build failed for template '{}': {}", templateId, message);
+                        return;
+                    }
+
+                    int sizeX = Objects.requireNonNullElse(template.sizeX(), template.size());
+                    int sizeZ = Objects.requireNonNullElse(template.sizeZ(), template.size());
+                    int spawnSlotCount = template.spawnSlots() != null ? template.spawnSlots().size() : 0;
+
+                    src.sendSuccess(() -> Component.literal(
+                        String.format("§aAsync arena created successfully! ID: %s", asyncResult.arenaId())
+                    ), true);
+                    src.sendSuccess(() -> Component.literal(
+                        String.format("§7Size: %dx%d, Blocks placed: %d, Duration: %dms",
+                            sizeX, sizeZ, asyncResult.blocksPlaced(), asyncResult.durationMs())
+                    ), false);
+                    src.sendSuccess(() -> Component.literal(
+                        String.format("§7Spawn slots: %d", spawnSlotCount)
+                    ), false);
+
+                    LOGGER.info("Async arena '{}' created by {} at ({},{},{}) - {} blocks in {}ms",
+                        asyncResult.arenaId(), src.getTextName(), originX, originY, originZ,
+                        asyncResult.blocksPlaced(), asyncResult.durationMs());
+                };
+                if (server != null) {
+                    server.execute(notifier);
+                } else {
+                    notifier.run();
+                }
+            });
+            return 1;
+        }
+
+        // Build the arena using ArenaBuilder (sync)
         ArenaBuilder builder = builderFactory.apply(level);
         if (builder == null) {
             src.sendFailure(Component.literal("§cArena builder not available"));
@@ -351,28 +438,7 @@ public class ArenaCommands {
         }
         ArenaBuilder.BuildResult result = builder.build(template, originX, originY, originZ);
 
-        if (result.success()) {
-            int sizeX = Objects.requireNonNullElse(template.sizeX(), template.size());
-            int sizeZ = Objects.requireNonNullElse(template.sizeZ(), template.size());
-            int spawnSlotCount = template.spawnSlots() != null ? template.spawnSlots().size() : 0;
-
-            src.sendSuccess(() -> Component.literal(
-                String.format("§aArena created successfully! ID: %s", result.arenaId())
-            ), true);
-            src.sendSuccess(() -> Component.literal(
-                String.format("§7Size: %dx%d, Blocks placed: %d, Duration: %dms",
-                    sizeX, sizeZ, result.blockCount(), result.durationMs())
-            ), false);
-            src.sendSuccess(() -> Component.literal(
-                String.format("§7Spawn slots: %d", spawnSlotCount)
-            ), false);
-
-            LOGGER.info("Arena '{}' created by {} at ({},{},{}) - {} blocks in {}ms",
-                result.arenaId(), src.getTextName(), originX, originY, originZ,
-                result.blockCount(), result.durationMs());
-
-            return 1;
-        } else {
+        if (!result.success()) {
             src.sendFailure(Component.literal("§cArena creation failed: " + result.errorMessage()));
 
             if (result.rollbackResult() != null) {
@@ -386,6 +452,27 @@ public class ArenaCommands {
             LOGGER.error("Arena creation failed for template '{}': {}", templateId, result.errorMessage());
             return 0;
         }
+
+        int sizeX = Objects.requireNonNullElse(template.sizeX(), template.size());
+        int sizeZ = Objects.requireNonNullElse(template.sizeZ(), template.size());
+        int spawnSlotCount = template.spawnSlots() != null ? template.spawnSlots().size() : 0;
+
+        src.sendSuccess(() -> Component.literal(
+            String.format("§aArena created successfully! ID: %s", result.arenaId())
+        ), true);
+        src.sendSuccess(() -> Component.literal(
+            String.format("§7Size: %dx%d, Blocks placed: %d, Duration: %dms",
+                sizeX, sizeZ, result.blockCount(), result.durationMs())
+        ), false);
+        src.sendSuccess(() -> Component.literal(
+            String.format("§7Spawn slots: %d", spawnSlotCount)
+        ), false);
+
+        LOGGER.info("Arena '{}' created by {} at ({},{},{}) - {} blocks in {}ms",
+            result.arenaId(), src.getTextName(), originX, originY, originZ,
+            result.blockCount(), result.durationMs());
+
+        return 1;
     }
 
     private int listTemplates(CommandContext<CommandSourceStack> ctx) {
@@ -487,7 +574,11 @@ public class ArenaCommands {
             if (bootstrap != null) {
                 result = bootstrap.reloadWithConfig();
             } else {
-                result = registry.reloadFromDirectoryAtomic(templatesDirectory);
+                Path directory = resolveTemplatesDirectory();
+                if (configSnapshotSupplier != null) {
+                    registry.applyConfigSnapshot(configSnapshotSupplier.get());
+                }
+                result = registry.reloadFromDirectoryAtomic(directory);
             }
 
             if (result.success()) {
@@ -508,6 +599,33 @@ public class ArenaCommands {
             src.sendFailure(Component.literal("§cReload failed: " + e.getMessage()));
             return 0;
         }
+    }
+
+    @Nullable
+    private InstanceOnlyGate resolveInstanceGate() {
+        if (configSnapshotSupplier == null) {
+            return null;
+        }
+        com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot snapshot = configSnapshotSupplier.get();
+        if (snapshot == null) {
+            return null;
+        }
+        return new InstanceOnlyGate(snapshot, new ArenaTelemetry());
+    }
+
+    protected ResourceKey<Level> resolveDimensionKey(CommandSourceStack source) {
+        return source.getLevel().dimension();
+    }
+
+    private Path resolveTemplatesDirectory() {
+        if (configSnapshotSupplier == null) {
+            return templatesDirectory;
+        }
+        com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot snapshot = configSnapshotSupplier.get();
+        if (snapshot != null && snapshot.templateDirectory() != null) {
+            return snapshot.templateDirectory();
+        }
+        return templatesDirectory;
     }
 
     private int runAutosmoke(CommandContext<CommandSourceStack> ctx) {

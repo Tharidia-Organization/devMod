@@ -597,8 +597,15 @@ public class DynamicDimensionManager {
             return false;
         }
 
-        // Teleport to arena center
-        BlockPos spawnPos = new BlockPos(0, 65, 0);  // One block above the platform
+        // Teleport to arena center (if known)
+        BlockPos spawnPos = new BlockPos(0, 65, 0);  // default fallback
+        var instanceOpt = InstanceRegistry.INSTANCE.getInstance(instanceId);
+        if (instanceOpt.isPresent()) {
+            BlockPos center = instanceOpt.get().getArenaCenter();
+            if (center != null) {
+                spawnPos = center;
+            }
+        }
 
         // Make sure the destination chunk is fully loaded before teleport
         level.getChunkAt(spawnPos);

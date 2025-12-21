@@ -290,6 +290,8 @@ test {
         events "passed", "skipped", "failed"
         showStandardStreams = true
     }
+    // Allow Byte Buddy to instrument Java 21 classes in Mockito inline mocks.
+    jvmArgs '-Dnet.bytebuddy.experimental=true'
     // Reduce concurrency for JVM tests to avoid occasional XML write collisions
     // that may happen on some filesystems or CI environments.
     maxParallelForks = 1

@@ -18,6 +18,7 @@ public class TemplateValidator {
     private static final List<String> ALLOWED_ROTATIONS = List.of("none", "clockwise_90", "180", "counterclockwise_90");
     private static final List<String> ALLOWED_MIRRORS = List.of("none", "front_back", "left_right");
     private static final List<String> ALLOWED_SEED_POLICIES = List.of("fixed", "perRun");
+    private static final List<String> ALLOWED_WALL_STYLES = List.of("solid", "fence", "glass", "barrier");
     private static final Set<String> DIMENSION_TAGS = Set.of("overworld", "nether", "end", "indoor", "outdoor");
 
     private ValidationMode mode = ValidationMode.STRICT;
@@ -163,6 +164,7 @@ public class TemplateValidator {
         validateUnderfloor(template.underfloor(), errors);
         validatePalette(template.palette(), warnings, errors);
         validateBiome(template.biome(), errors);
+        validateCompat(template.compat(), errors);
         validateForbiddenZones(template, template.forbiddenZones(), sizeX, sizeZ, errors);
         validateStructureNbt(template, errors, warnings);
         validateMobSpawnStrategy(template, errors, warnings, sizeX, sizeZ);
@@ -189,6 +191,7 @@ public class TemplateValidator {
 
         // Limits & instance settings
         validateLimits(template, errors);
+        validateInstanceSettings(template.instanceSettings(), errors);
         InstanceSettingsValidator isValidator = new InstanceSettingsValidator(instanceTelemetry);
         var isResult = isValidator.validate(template, instanceLimits);
         errors.addAll(isResult.errors());
@@ -241,6 +244,8 @@ public class TemplateValidator {
         }
         if (walls.style() == null || walls.style().isBlank()) {
             errors.add("walls.style is required");
+        } else if (!ALLOWED_WALL_STYLES.contains(walls.style())) {
+            errors.add("walls.style must be solid|fence|glass|barrier");
         }
     }
 
@@ -256,8 +261,8 @@ public class TemplateValidator {
 
     private void validateUnderfloor(ArenaTemplate.Underfloor underfloor, List<String> errors) {
         if (underfloor == null) return;
-        if (underfloor.depth() < 0) {
-            errors.add("underfloor.depth must be >=0");
+        if (underfloor.depth() < 1) {
+            errors.add("underfloor.depth must be >=1");
         }
         if (underfloor.material() == null || underfloor.material().isBlank()) {
             errors.add("underfloor.material is required");
@@ -281,6 +286,9 @@ public class TemplateValidator {
         if (biome == null) return;
         if (biome.id() == null || biome.id().isBlank()) {
             errors.add("biome.id is required");
+        }
+        if (biome.applyTo() == null) {
+            errors.add("biome.applyTo is required");
         }
     }
 
@@ -326,6 +334,19 @@ public class TemplateValidator {
         }
         if (dimensionFound.size() > 1) {
             warnings.add("Multiple dimension tags present: " + dimensionFound);
+        }
+    }
+
+    private void validateCompat(ArenaTemplate.Compat compat, List<String> errors) {
+        if (compat == null) return;
+        if (compat.minPlayers() < 1) {
+            errors.add("compat.minPlayers must be >=1");
+        }
+        if (compat.maxPlayers() < 1) {
+            errors.add("compat.maxPlayers must be >=1");
+        }
+        if (compat.minPlayers() > 0 && compat.maxPlayers() > 0 && compat.minPlayers() > compat.maxPlayers()) {
+            errors.add("compat.minPlayers > maxPlayers");
         }
     }
 
@@ -409,7 +430,10 @@ public class TemplateValidator {
             }
             int minY = zone.min()[1];
             int maxY = zone.max()[1];
-            if (zone.yMode() == ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR) {
+            ArenaTemplate.SpawnSlot.YMode mode = zone.yMode() != null
+                ? zone.yMode()
+                : ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR;
+            if (mode == ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR) {
                 minY += template.floor().y();
                 maxY += template.floor().y();
             }
@@ -436,6 +460,16 @@ public class TemplateValidator {
         }
         if (template.limits().maxBuildTimeMs() <= 0) {
             errors.add("limits.maxBuildTimeMs must be >0");
+        }
+    }
+
+    private void validateInstanceSettings(ArenaTemplate.InstanceSettings settings, List<String> errors) {
+        if (settings == null) return;
+        if (settings.chunkRadius() < 1) {
+            errors.add("instanceSettings.chunkRadius must be >=1");
+        }
+        if (settings.tickDistance() < 1) {
+            errors.add("instanceSettings.tickDistance must be >=1");
         }
     }
 

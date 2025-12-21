@@ -36,7 +36,7 @@ class SpawnSlotResolverTest {
     @Test
     @DisplayName("Resolves correct number of slots")
     void resolvesCorrectNumberOfSlots() {
-        SpawnSlotResolver resolver = new SpawnSlotResolver(testSlots, SpawnSlotConstraints.MELEE_DEFAULTS);
+        SpawnSlotResolver resolver = newResolver(testSlots, SpawnSlotConstraints.MELEE_DEFAULTS, Collections.emptyList());
 
         List<SpawnSlot> resolved = resolver.resolveSlots(2);
 
@@ -47,7 +47,7 @@ class SpawnSlotResolverTest {
     @DisplayName("DD47: Respects distance constraints")
     void respectsDistanceConstraints() {
         SpawnSlotConstraints constraints = SpawnSlotConstraints.MELEE_DEFAULTS; // 3-15
-        SpawnSlotResolver resolver = new SpawnSlotResolver(testSlots, constraints);
+        SpawnSlotResolver resolver = newResolver(testSlots, constraints, Collections.emptyList());
 
         List<SpawnSlot> resolved = resolver.resolveSlots(2);
 
@@ -65,7 +65,7 @@ class SpawnSlotResolverTest {
     @DisplayName("DD47: Forbidden zone rejection")
     void forbiddenZoneRejection() {
         ForbiddenZone zone = ForbiddenZone.box(0, 60, 0, 5, 70, 5);
-        SpawnSlotResolver resolver = new SpawnSlotResolver(
+        SpawnSlotResolver resolver = newResolver(
             testSlots,
             SpawnSlotConstraints.MELEE_DEFAULTS,
             Collections.singletonList(zone)
@@ -82,7 +82,7 @@ class SpawnSlotResolverTest {
     @Test
     @DisplayName("DD47: LOS check is called")
     void losCheckIsCalled() {
-        SpawnSlotResolver resolver = new SpawnSlotResolver(testSlots, SpawnSlotConstraints.MELEE_DEFAULTS);
+        SpawnSlotResolver resolver = newResolver(testSlots, SpawnSlotConstraints.MELEE_DEFAULTS, Collections.emptyList());
 
         // Set custom LOS checker that blocks everything
         resolver.setLineOfSightChecker((from, to) -> false);
@@ -97,7 +97,7 @@ class SpawnSlotResolverTest {
     @Test
     @DisplayName("hasLineOfSight returns true by default")
     void hasLineOfSightDefaultTrue() {
-        SpawnSlotResolver resolver = new SpawnSlotResolver(testSlots, SpawnSlotConstraints.MELEE_DEFAULTS);
+        SpawnSlotResolver resolver = newResolver(testSlots, SpawnSlotConstraints.MELEE_DEFAULTS, Collections.emptyList());
 
         SpawnSlot a = testSlots.get(0);
         SpawnSlot b = testSlots.get(1);
@@ -109,7 +109,7 @@ class SpawnSlotResolverTest {
     @Test
     @DisplayName("Validates slot assignment correctly")
     void validatesSlotAssignmentCorrectly() {
-        SpawnSlotResolver resolver = new SpawnSlotResolver(testSlots, SpawnSlotConstraints.MELEE_DEFAULTS);
+        SpawnSlotResolver resolver = newResolver(testSlots, SpawnSlotConstraints.MELEE_DEFAULTS, Collections.emptyList());
 
         SpawnSlot validSlot = SpawnSlot.at(10, 64, 0);
         SpawnSlot existing = SpawnSlot.at(0, 64, 0);
@@ -124,7 +124,7 @@ class SpawnSlotResolverTest {
     @Test
     @DisplayName("Empty input returns empty result")
     void emptyInputReturnsEmpty() {
-        SpawnSlotResolver resolver = new SpawnSlotResolver(Collections.emptyList());
+        SpawnSlotResolver resolver = newResolver(Collections.emptyList(), SpawnSlotConstraints.MELEE_DEFAULTS, Collections.emptyList());
 
         List<SpawnSlot> resolved = resolver.resolveSlots(2);
 
@@ -134,7 +134,7 @@ class SpawnSlotResolverTest {
     @Test
     @DisplayName("Zero count returns empty result")
     void zeroCountReturnsEmpty() {
-        SpawnSlotResolver resolver = new SpawnSlotResolver(testSlots);
+        SpawnSlotResolver resolver = newResolver(testSlots, SpawnSlotConstraints.MELEE_DEFAULTS, Collections.emptyList());
 
         List<SpawnSlot> resolved = resolver.resolveSlots(0);
 
@@ -145,7 +145,7 @@ class SpawnSlotResolverTest {
     @DisplayName("Get valid slots filters correctly")
     void getValidSlotsFiltersCorrectly() {
         ForbiddenZone zone = ForbiddenZone.box(0, 60, 0, 5, 70, 5);
-        SpawnSlotResolver resolver = new SpawnSlotResolver(
+        SpawnSlotResolver resolver = newResolver(
             testSlots,
             SpawnSlotConstraints.MELEE_DEFAULTS,
             Collections.singletonList(zone)
@@ -160,7 +160,7 @@ class SpawnSlotResolverTest {
     @Test
     @DisplayName("Add/remove forbidden zones works")
     void addRemoveForbiddenZonesWorks() {
-        SpawnSlotResolver resolver = new SpawnSlotResolver(testSlots);
+        SpawnSlotResolver resolver = newResolver(testSlots, SpawnSlotConstraints.MELEE_DEFAULTS, Collections.emptyList());
         ForbiddenZone zone = ForbiddenZone.box(0, 60, 0, 5, 70, 5);
 
         assertTrue(resolver.getForbiddenZones().isEmpty());
@@ -175,11 +175,17 @@ class SpawnSlotResolverTest {
     @Test
     @DisplayName("Avoids occupied slots")
     void avoidsOccupiedSlots() {
-        SpawnSlotResolver resolver = new SpawnSlotResolver(testSlots, SpawnSlotConstraints.MELEE_DEFAULTS);
+        SpawnSlotResolver resolver = newResolver(testSlots, SpawnSlotConstraints.MELEE_DEFAULTS, Collections.emptyList());
 
         SpawnSlot occupied = testSlots.get(0);
         List<SpawnSlot> resolved = resolver.resolveSlots(2, Collections.singletonList(occupied));
 
         assertFalse(resolved.contains(occupied));
+    }
+
+    private SpawnSlotResolver newResolver(List<SpawnSlot> slots, SpawnSlotConstraints constraints, List<ForbiddenZone> zones) {
+        SpawnSlotResolver resolver = new SpawnSlotResolver(slots, constraints, zones);
+        resolver.setGroundChecker(slot -> true);
+        return resolver;
     }
 }

@@ -481,8 +481,8 @@ public class ArenaTemplateRegistry implements AutoCloseable {
                 "reason", "reload_empty"
             ));
         }
-        // Leak prevention: clear stale listener handles on any reload attempt
-        listenerHandles.clear();
+        // Leak prevention: prune stale handles/locks on any reload attempt
+        pruneEphemeralState();
         return rr;
     }
 
@@ -521,6 +521,11 @@ public class ArenaTemplateRegistry implements AutoCloseable {
     private void clearEphemeralState() {
         templateLocks.clear();
         listenerHandles.clear();
+    }
+
+    private void pruneEphemeralState() {
+        templateLocks.keySet().removeIf(id -> !registry.containsKey(id));
+        listenerHandles.keySet().removeIf(id -> !registry.containsKey(id));
     }
 
     private void runHealthCheck() {

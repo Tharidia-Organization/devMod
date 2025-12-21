@@ -29,6 +29,9 @@ public record ArenaHandle(
     String policyId,
     int policyVersion,
     AABB bounds,
+    int originX,
+    int originY,
+    int originZ,
     List<BlockPos> playerSpawnPositions,
     List<BlockPos> mobSpawnPositions,
     Instant createdAt
@@ -172,6 +175,9 @@ public record ArenaHandle(
         private String policyId;
         private int policyVersion;
         private AABB bounds;
+        private int originX;
+        private int originY;
+        private int originZ;
         private List<BlockPos> playerSpawnPositions = List.of();
         private List<BlockPos> mobSpawnPositions = List.of();
         private Instant createdAt = Instant.now();
@@ -216,6 +222,13 @@ public record ArenaHandle(
             return this;
         }
 
+        public Builder origin(int originX, int originY, int originZ) {
+            this.originX = originX;
+            this.originY = originY;
+            this.originZ = originZ;
+            return this;
+        }
+
         public Builder playerSpawnPositions(List<BlockPos> positions) {
             this.playerSpawnPositions = positions;
             return this;
@@ -246,6 +259,9 @@ public record ArenaHandle(
                 policyId,
                 policyVersion,
                 bounds,
+                originX,
+                originY,
+                originZ,
                 playerSpawnPositions,
                 mobSpawnPositions,
                 createdAt

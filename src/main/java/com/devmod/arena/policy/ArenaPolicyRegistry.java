@@ -253,6 +253,7 @@ public class ArenaPolicyRegistry {
 
         ConcurrentHashMap<String, ArenaPolicy> newRegistry = new ConcurrentHashMap<>();
         List<String> errors = new ArrayList<>();
+        weightClampWarnings.clear();
 
         // Always include default
         newRegistry.put(ArenaPolicy.DEFAULT.id(), ArenaPolicy.DEFAULT);

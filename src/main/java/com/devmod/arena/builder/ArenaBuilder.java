@@ -6,6 +6,9 @@ import com.devmod.arena.concurrency.ArenaBuildRateLimiter;
 import com.devmod.arena.concurrency.BuildPermit;
 import com.devmod.arena.concurrency.TemplateLockManager;
 import com.devmod.arena.metrics.MetricsCompatibilityLayer;
+import com.devmod.arena.monitor.MsptMonitor;
+import com.devmod.arena.performance.PerformanceBudgetEnforcer;
+import com.devmod.arena.performance.PerformanceBudgetEnforcer.PerformanceAction;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.integration.MinecraftBlockPlacer;
 import com.devmod.arena.registry.GoldenReference;
@@ -18,6 +21,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +67,7 @@ public class ArenaBuilder {
     private static final double ACCURACY_EXCELLENT = 0.20;  // ±20%
     private static final double ACCURACY_GOOD = 0.35;       // ±35%
     private static final double ACCURACY_ACCEPTABLE = 0.50; // ±50%
+    private static final int PERFORMANCE_CHECK_INTERVAL_BLOCKS = 256;
 
     private final ArenaTelemetry telemetry;
     private final BlockPlacer blockPlacer;
@@ -77,6 +82,13 @@ public class ArenaBuilder {
     private final InstanceOnlyGate instanceGate;
     @Nullable
     private final ArenaTemplateConfig.ConfigSnapshot configSnapshot;
+    @Nullable
+    private MsptMonitor msptMonitor;
+    @Nullable
+    private PerformanceBudgetEnforcer performanceEnforcer;
+    @Nullable
+    private Supplier<Double> msptSupplier;
+    private long nextPerformanceCheckAt = 0;
 
     private static void ensureLockManagerStarted() {
         if (LOCK_MANAGER_STARTED.compareAndSet(false, true)) {
@@ -198,6 +210,17 @@ public class ArenaBuilder {
         UUID arenaId = UUID.randomUUID();
         long startTime = System.currentTimeMillis();
 
+        // Instance-only gate check (fail fast before validation)
+        var gate = instanceGate;
+        if (gate != null && blockPlacer instanceof MinecraftBlockPlacer mcb) {
+            try {
+                gate.requireAllowedOrThrow(mcb.getLevel(), "ArenaBuilder.build", template.id(), template.version());
+            } catch (InstanceOnlyGate.GateBlockedException e) {
+                LOGGER.error(e.getMessage());
+                return BuildResult.failure(e.getMessage(), new BuildTransaction.RollbackResult(true, 0, 0, 0, 0));
+            }
+        }
+
         // Pre-build validation (defensive even if registry validated)
         ValidationResult validation = templateValidator.validate(template);
         if (!validation.valid()) {
@@ -218,20 +241,6 @@ public class ArenaBuilder {
                 "templateVersion", template.version(),
                 "warnings", validation.warnings()
             ));
-        }
-
-        // Instance-only gate check (if configured)
-        var gate = instanceGate;
-        if (gate != null && blockPlacer instanceof MinecraftBlockPlacer mcb) {
-            var level = mcb.getLevel();
-            InstanceOnlyGate.Result gateResult = gate.check(level, "ArenaBuilder.build");
-            if (gateResult == InstanceOnlyGate.Result.BLOCKED) {
-                String msg = "Instance-only mode: build blocked in dimension " + level.dimension().location();
-                LOGGER.error(msg);
-                return BuildResult.failure(msg, new BuildTransaction.RollbackResult(true, 0, 0, 0, 0));
-            } else if (gateResult == InstanceOnlyGate.Result.ALLOWED_DEBUG_ONLY) {
-                LOGGER.warn("[INSTANCE_GATE] Debug-only build allowed in {}", level.dimension().location());
-            }
         }
 
         // Instance settings clamp/coverage check (server limits)
@@ -260,11 +269,15 @@ public class ArenaBuilder {
         ArenaTemplate.BuildSettings.Order buildOrder = resolveBuildOrder(template);
         ArenaTemplate.BuildSettings.Priority buildPriority = resolveBuildPriority(template);
         if (buildPriority == ArenaTemplate.BuildSettings.Priority.ASYNC) {
-            LOGGER.warn("Template '{}' requests ASYNC build but sync builder was used", template.id());
-            telemetry.emit("arena.build.priority_ignored", Map.of(
+            String msg = "Template '%s' requires ASYNC build; sync builder is not allowed"
+                .formatted(template.id());
+            LOGGER.error("{}", msg);
+            telemetry.emit("arena.build.priority_blocked", Map.of(
                 "templateId", template.id(),
+                "templateVersion", template.version(),
                 "requestedPriority", buildPriority.name()
             ));
+            return BuildResult.failure(msg, new BuildTransaction.RollbackResult(true, 0, 0, 0, 0));
         }
 
         // Determine max blocks based on template category
@@ -369,6 +382,8 @@ public class ArenaBuilder {
                 startEventData.put("policyVersion", policyVersion);
             }
             telemetry.emit("arena.build.start", startEventData);
+
+            initPerformanceMonitoring();
 
             // 1. Ensure chunks are loaded (DD9)
             ChunkLoadingManager.ChunkLoadResult chunkResult = loadRequiredChunks(template, originX, originZ);
@@ -487,6 +502,7 @@ public class ArenaBuilder {
             return handleBuildFailure(template, policyId, policyVersion, arenaId, transaction,
                 new BuildException("Unexpected error: " + e.getMessage(), e), startTime);
         } finally {
+            finalizePerformanceMonitoring(template, arenaId);
             if (buildPermit != null) {
                 BUILD_RATE_LIMITER.releasePermit(buildPermit.permitId());
             }
@@ -895,9 +911,104 @@ public class ArenaBuilder {
     }
 
     private void placeBlock(int x, int y, int z, String material, BuildTransaction tx) {
+        maybeCheckPerformance(tx);
         long packedPos = CompactBlockTracker.pack(x, y, z);
         int previousStateId = blockPlacer.placeBlock(x, y, z, material);
         tx.trackBlock(packedPos, previousStateId);
+    }
+
+    private void initPerformanceMonitoring() {
+        if (!(blockPlacer instanceof MinecraftBlockPlacer mcPlacer)) {
+            return;
+        }
+        var level = mcPlacer.getLevel();
+        if (level == null || level.getServer() == null) {
+            return;
+        }
+        Supplier<Double> supplier = () -> level.getServer().getAverageTickTimeNanos() / 1_000_000.0;
+        MsptMonitor monitor = new MsptMonitor();
+        msptSupplier = supplier;
+        msptMonitor = monitor;
+        double seedMspt = supplier.get();
+        for (int i = 0; i < 5; i++) {
+            monitor.recordSample(seedMspt);
+        }
+        PerformanceBudgetEnforcer enforcer = new PerformanceBudgetEnforcer(monitor);
+        performanceEnforcer = enforcer;
+        enforcer.captureBaseline();
+        enforcer.beginBuild();
+        nextPerformanceCheckAt = 0;
+    }
+
+    private void finalizePerformanceMonitoring(ArenaTemplate template, UUID arenaId) {
+        PerformanceBudgetEnforcer enforcer = performanceEnforcer;
+        if (enforcer == null) {
+            return;
+        }
+        PerformanceBudgetEnforcer.BuildPerformanceReport report = enforcer.endBuild();
+        telemetry.emit("arena.build.performance_summary", Map.of(
+            "templateId", template.id(),
+            "arenaId", arenaId.toString(),
+            "baselineMspt", report.baseline(),
+            "averageMspt", report.averageMspt(),
+            "peakMspt", report.peakMspt(),
+            "maxBuildImpactMs", report.maxBuildImpact(),
+            "pauseCount", report.pauseCount(),
+            "throttleCount", report.throttleCount(),
+            "aborted", report.wasAborted(),
+            "durationMs", report.buildDuration().toMillis()
+        ));
+        resetPerformanceMonitoring();
+    }
+
+    private void resetPerformanceMonitoring() {
+        msptMonitor = null;
+        performanceEnforcer = null;
+        msptSupplier = null;
+        nextPerformanceCheckAt = 0;
+    }
+
+    private void maybeCheckPerformance(BuildTransaction tx) {
+        Supplier<Double> supplier = msptSupplier;
+        MsptMonitor monitor = msptMonitor;
+        PerformanceBudgetEnforcer enforcer = performanceEnforcer;
+        if (enforcer == null || monitor == null || supplier == null) {
+            return;
+        }
+        long placements = tx.getTotalBlockPlacements();
+        if (placements < nextPerformanceCheckAt) {
+            return;
+        }
+        nextPerformanceCheckAt = placements + PERFORMANCE_CHECK_INTERVAL_BLOCKS;
+
+        double mspt = supplier.get();
+        monitor.recordSample(mspt);
+        PerformanceAction action = enforcer.checkPerformance();
+        if (action == PerformanceAction.CONTINUE) {
+            return;
+        }
+
+        double tps = mspt > 0 ? Math.min(1000.0 / mspt, 20.0) : 20.0;
+        if (action == PerformanceAction.ABORT) {
+            telemetry.emit("arena.build.performance_abort", Map.of(
+                "templateId", tx.getTemplateId(),
+                "mspt", mspt,
+                "tps", tps,
+                "baselineMspt", enforcer.getBaseline(),
+                "buildImpactMs", enforcer.getBuildImpact()
+            ));
+            throw new BuildException("Performance budget exceeded; build aborted");
+        }
+
+        telemetry.emit("arena.build.performance_backpressure", Map.of(
+            "templateId", tx.getTemplateId(),
+            "action", action.name(),
+            "mspt", mspt,
+            "tps", tps,
+            "baselineMspt", enforcer.getBaseline(),
+            "buildImpactMs", enforcer.getBuildImpact()
+        ));
+        enforcer.applyBackpressure(action);
     }
 
     // === Chunk Loading ===

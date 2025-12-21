@@ -1,5 +1,8 @@
 package com.devmod.arena.spawn;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.BlockGetter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -7,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
@@ -27,6 +31,7 @@ public class SpawnSlotResolver {
     private final List<SpawnSlot> availableSlots;
     private final List<ForbiddenZone> forbiddenZones;
     private final SpawnSlotConstraints constraints;
+    private final BlockGetter level;
 
     // Pluggable LOS checker - can be replaced with actual game engine implementation
     private BiPredicate<SpawnSlot, SpawnSlot> lineOfSightChecker;
@@ -38,14 +43,14 @@ public class SpawnSlotResolver {
      * Create a resolver with default constraints.
      */
     public SpawnSlotResolver(List<SpawnSlot> availableSlots) {
-        this(availableSlots, SpawnSlotConstraints.MELEE_DEFAULTS, Collections.emptyList());
+        this(availableSlots, SpawnSlotConstraints.MELEE_DEFAULTS, Collections.emptyList(), null);
     }
 
     /**
      * Create a resolver with specific constraints.
      */
     public SpawnSlotResolver(List<SpawnSlot> availableSlots, SpawnSlotConstraints constraints) {
-        this(availableSlots, constraints, Collections.emptyList());
+        this(availableSlots, constraints, Collections.emptyList(), null);
     }
 
     /**
@@ -55,10 +60,22 @@ public class SpawnSlotResolver {
             List<SpawnSlot> availableSlots,
             SpawnSlotConstraints constraints,
             List<ForbiddenZone> forbiddenZones) {
+        this(availableSlots, constraints, forbiddenZones, null);
+    }
+
+    /**
+     * Create a resolver with constraints, forbidden zones, and a level for ground checks.
+     */
+    public SpawnSlotResolver(
+            List<SpawnSlot> availableSlots,
+            SpawnSlotConstraints constraints,
+            List<ForbiddenZone> forbiddenZones,
+            BlockGetter level) {
 
         this.availableSlots = new ArrayList<>(availableSlots);
         this.constraints = constraints;
         this.forbiddenZones = new ArrayList<>(forbiddenZones);
+        this.level = level;
 
         // Default implementations
         this.lineOfSightChecker = this::defaultLineOfSightCheck;
@@ -111,12 +128,23 @@ public class SpawnSlotResolver {
     }
 
     /**
-     * Default ground check (simplified - assumes valid).
-     * In actual implementation, this would check for solid block beneath.
+     * Default ground check using the provided level.
+     * Requires solid ground below and air at/above the slot position.
      */
     private boolean defaultGroundCheck(SpawnSlot slot) {
-        // Real implementation would check for solid block at slot.y() - 1
-        return true;
+        if (level == null) {
+            LOGGER.warn("Ground check skipped (no level provided) for slot {}", slot.id());
+            return false;
+        }
+        BlockPos pos = Objects.requireNonNull(BlockPos.containing(slot.x(), slot.y(), slot.z()), "slotPos");
+        BlockPos below = Objects.requireNonNull(pos.below(), "slotBelow");
+        BlockPos above = Objects.requireNonNull(pos.above(), "slotAbove");
+
+        boolean solidBelow = level.getBlockState(below).isFaceSturdy(level, below, Direction.UP);
+        boolean airAtPos = level.getBlockState(pos).isAir();
+        boolean airAbove = level.getBlockState(above).isAir();
+
+        return solidBelow && airAtPos && airAbove;
     }
 
     /**

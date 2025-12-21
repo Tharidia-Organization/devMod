@@ -77,6 +77,18 @@ public class PerformanceBudgetEnforcer {
     }
 
     /**
+     * Captures baseline only if it has not been set yet.
+     *
+     * @return true if a baseline was captured, false if it was already set or unavailable
+     */
+    public boolean captureBaselineIfNeeded() {
+        if (baseline >= 0) {
+            return false;
+        }
+        return captureBaseline() >= 0;
+    }
+
+    /**
      * Begins performance tracking for a build.
      */
     public void beginBuild() {
@@ -132,6 +144,7 @@ public class PerformanceBudgetEnforcer {
         MsptSample current = msptMonitor.getCurrentSample();
         double currentMspt = current.mspt();
         double buildImpact = baseline > 0 ? currentMspt - baseline : 0;
+        double currentTps = msptToTps(currentMspt);
 
         // Record snapshot
         snapshots.add(new PerformanceSnapshot(
@@ -147,7 +160,7 @@ public class PerformanceBudgetEnforcer {
         }
 
         // Check fail-fast conditions
-        PerformanceViolation violation = checkViolation(currentMspt, buildImpact);
+        PerformanceViolation violation = checkViolation(currentMspt, buildImpact, currentTps);
 
         if (violation != null) {
             consecutiveViolations.incrementAndGet();
@@ -211,11 +224,28 @@ public class PerformanceBudgetEnforcer {
     }
 
     /**
+     * Applies backpressure action (pause/throttle) when requested.
+     */
+    public void applyBackpressure(PerformanceAction action) {
+        if (action == PerformanceAction.PAUSE) {
+            applyPause();
+            return;
+        }
+        if (action == PerformanceAction.THROTTLE) {
+            long sleepMs = Math.max(1L, Math.min(10L, config.pauseDuration().toMillis() / 5));
+            try {
+                Thread.sleep(sleepMs);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    /**
      * Applies pause backpressure.
      */
     private void applyPause() {
-        buildPaused.set(true);
-        totalPauses.incrementAndGet();
+        recordPauseApplied();
 
         LOGGER.info("Applying pause backpressure for {}ms", config.pauseDuration().toMillis());
 
@@ -229,9 +259,17 @@ public class PerformanceBudgetEnforcer {
     }
 
     /**
+     * Records a pause backpressure without sleeping (for async tick integration).
+     */
+    public void recordPauseApplied() {
+        buildPaused.set(true);
+        totalPauses.incrementAndGet();
+    }
+
+    /**
      * Checks for performance violations.
      */
-    private PerformanceViolation checkViolation(double currentMspt, double buildImpact) {
+    private PerformanceViolation checkViolation(double currentMspt, double buildImpact, double currentTps) {
         // Check MSPT threshold
         if (currentMspt > config.msptThreshold()) {
             return new PerformanceViolation(
@@ -240,6 +278,17 @@ public class PerformanceBudgetEnforcer {
                     currentMspt, config.msptThreshold()),
                 currentMspt,
                 config.msptThreshold()
+            );
+        }
+
+        // Check TPS threshold
+        if (currentTps < config.tpsThreshold()) {
+            return new PerformanceViolation(
+                ViolationType.TPS_LOW,
+                String.format("TPS %.1f below threshold %.1f",
+                    currentTps, config.tpsThreshold()),
+                currentTps,
+                config.tpsThreshold()
             );
         }
 
@@ -264,6 +313,11 @@ public class PerformanceBudgetEnforcer {
         // Critical violations
         if (violation.type() == ViolationType.MSPT_EXCEEDED
             && violation.actual() > config.msptThreshold() * 1.5) {
+            return PerformanceAction.PAUSE;
+        }
+
+        if (violation.type() == ViolationType.TPS_LOW
+            && violation.actual() < config.tpsThreshold() * 0.8) {
             return PerformanceAction.PAUSE;
         }
 
@@ -313,6 +367,13 @@ public class PerformanceBudgetEnforcer {
             .mapToDouble(PerformanceSnapshot::buildImpact)
             .max()
             .orElse(0);
+    }
+
+    private double msptToTps(double mspt) {
+        if (mspt <= 0) {
+            return 20.0;
+        }
+        return Math.min(1000.0 / mspt, 20.0);
     }
 
     public boolean isBuildAborted() {

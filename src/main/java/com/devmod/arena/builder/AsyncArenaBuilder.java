@@ -4,6 +4,9 @@ import com.devmod.arena.budget.BackpressureManager;
 import com.devmod.arena.budget.BuildBudget;
 import com.devmod.arena.event.TemplateEventDispatcher;
 import com.devmod.arena.gate.InstanceOnlyGate;
+import com.devmod.arena.monitor.MsptMonitor;
+import com.devmod.arena.performance.PerformanceBudgetEnforcer;
+import com.devmod.arena.performance.PerformanceBudgetEnforcer.PerformanceAction;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.telemetry.ArenaTelemetry;
 import com.devmod.arena.config.ArenaTemplateConfig;
@@ -27,11 +30,14 @@ public class AsyncArenaBuilder {
     private static final Logger LOGGER = LoggerFactory.getLogger(AsyncArenaBuilder.class);
 
     private final ArenaTelemetry telemetry;
-    private final BlockPlacer blockPlacer;
+    private final ArenaBuilder.BlockPlacer blockPlacer;
     private final BackpressureManager backpressure;
     private final Supplier<Double> msptSupplier;
     private final TemplateEventDispatcher eventDispatcher;
     private final InstanceOnlyGate instanceGate;
+    private final MsptMonitor msptMonitor;
+    private final PerformanceBudgetEnforcer performanceEnforcer;
+    private boolean performanceTrackingActive = false;
 
     // Active builds
     private final Queue<AsyncBuild> activeBuildQueue = new ConcurrentLinkedQueue<>();
@@ -44,14 +50,14 @@ public class AsyncArenaBuilder {
 
     public AsyncArenaBuilder(
             ArenaTelemetry telemetry,
-            BlockPlacer blockPlacer,
+            ArenaBuilder.BlockPlacer blockPlacer,
             Supplier<Double> msptSupplier) {
         this(telemetry, blockPlacer, msptSupplier, new BackpressureManager(), null);
     }
 
     public AsyncArenaBuilder(
             ArenaTelemetry telemetry,
-            BlockPlacer blockPlacer,
+            ArenaBuilder.BlockPlacer blockPlacer,
             Supplier<Double> msptSupplier,
             BackpressureManager backpressure) {
         this(telemetry, blockPlacer, msptSupplier, backpressure, null);
@@ -59,7 +65,7 @@ public class AsyncArenaBuilder {
 
     public AsyncArenaBuilder(
             ArenaTelemetry telemetry,
-            BlockPlacer blockPlacer,
+            ArenaBuilder.BlockPlacer blockPlacer,
             Supplier<Double> msptSupplier,
             ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
         this(telemetry, blockPlacer, msptSupplier, new BackpressureManager(), configSnapshot);
@@ -67,7 +73,7 @@ public class AsyncArenaBuilder {
 
     public AsyncArenaBuilder(
             ArenaTelemetry telemetry,
-            BlockPlacer blockPlacer,
+            ArenaBuilder.BlockPlacer blockPlacer,
             Supplier<Double> msptSupplier,
             BackpressureManager backpressure,
             ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
@@ -77,6 +83,8 @@ public class AsyncArenaBuilder {
         this.backpressure = backpressure;
         this.eventDispatcher = TemplateEventDispatcher.getInstance();
         this.instanceGate = configSnapshot != null ? new InstanceOnlyGate(configSnapshot, telemetry) : null;
+        this.msptMonitor = new MsptMonitor();
+        this.performanceEnforcer = new PerformanceBudgetEnforcer(msptMonitor);
     }
 
     /**
@@ -182,12 +190,81 @@ public class AsyncArenaBuilder {
      */
     public void onTick() {
         if (activeBuildQueue.isEmpty()) {
+            if (performanceTrackingActive) {
+                finishPerformanceTracking();
+            }
             return;
         }
 
-        // Update backpressure based on current MSPT
         double currentMspt = msptSupplier.get();
+        startPerformanceTrackingIfNeeded(currentMspt);
+        msptMonitor.recordSample(currentMspt);
+        performanceEnforcer.captureBaselineIfNeeded();
+
+        PerformanceAction action = performanceEnforcer.checkPerformance();
+        double tps = currentMspt > 0 ? Math.min(1000.0 / currentMspt, 20.0) : 20.0;
+        double buildImpact = performanceEnforcer.getBuildImpact();
+
+        if (buildImpact > PerformanceBudgetEnforcer.DEFAULT_BUILD_IMPACT_THRESHOLD
+            || tps < PerformanceBudgetEnforcer.DEFAULT_TPS_THRESHOLD) {
+            telemetry.emit("arena.build.perf.degraded", Map.of(
+                "mspt", currentMspt,
+                "tps", tps,
+                "baselineMspt", performanceEnforcer.getBaseline(),
+                "buildImpactMs", buildImpact,
+                "confidence", msptMonitor.getCurrentSample().confidenceScore(),
+                "action", action.name(),
+                "queueSize", activeBuildQueue.size(),
+                "activeBuilds", buildsByArenaId.size()
+            ));
+        }
+
         int blocksThisTick = backpressure.update(currentMspt);
+
+        if (action == PerformanceAction.ABORT) {
+            telemetry.emit("arena.build.aborted.performance", Map.of(
+                "mspt", currentMspt,
+                "tps", tps,
+                "baselineMspt", performanceEnforcer.getBaseline(),
+                "buildImpactMs", buildImpact,
+                "queueSize", activeBuildQueue.size(),
+                "activeBuilds", buildsByArenaId.size()
+            ));
+            abortAllBuilds("Performance budget exceeded");
+            finishPerformanceTracking();
+            return;
+        }
+
+        if (action == PerformanceAction.PAUSE) {
+            performanceEnforcer.recordPauseApplied();
+            telemetry.emit("arena.build.backpressure", Map.of(
+                "mspt", currentMspt,
+                "tps", tps,
+                "buildImpactMs", buildImpact,
+                "action", action.name(),
+                "previousBlocksPerTick", blocksThisTick,
+                "blocksPerTick", 0,
+                "queueSize", activeBuildQueue.size(),
+                "activeBuilds", buildsByArenaId.size()
+            ));
+            return;
+        }
+
+        if (action == PerformanceAction.THROTTLE) {
+            int previousBlocks = blocksThisTick;
+            backpressure.setBlocksPerTick(previousBlocks / 2);
+            blocksThisTick = backpressure.getCurrentBlocksPerTick();
+            telemetry.emit("arena.build.backpressure", Map.of(
+                "mspt", currentMspt,
+                "tps", tps,
+                "buildImpactMs", buildImpact,
+                "action", action.name(),
+                "previousBlocksPerTick", previousBlocks,
+                "blocksPerTick", blocksThisTick,
+                "queueSize", activeBuildQueue.size(),
+                "activeBuilds", buildsByArenaId.size()
+            ));
+        }
 
         // Process builds round-robin
         int blocksRemaining = blocksThisTick;
@@ -221,6 +298,47 @@ public class AsyncArenaBuilder {
             if (buildsProcessed >= buildsByArenaId.size()) {
                 break;
             }
+        }
+
+        if (activeBuildQueue.isEmpty() && performanceTrackingActive) {
+            finishPerformanceTracking();
+        }
+    }
+
+    private void startPerformanceTrackingIfNeeded(double seedMspt) {
+        if (performanceTrackingActive) {
+            return;
+        }
+        msptMonitor.reset();
+        for (int i = 0; i < 5; i++) {
+            msptMonitor.recordSample(seedMspt);
+        }
+        performanceEnforcer.captureBaseline();
+        performanceEnforcer.beginBuild();
+        performanceTrackingActive = true;
+    }
+
+    private void finishPerformanceTracking() {
+        PerformanceBudgetEnforcer.BuildPerformanceReport report = performanceEnforcer.endBuild();
+        telemetry.emit("arena.build.performance_summary", Map.of(
+            "buildType", "async",
+            "baselineMspt", report.baseline(),
+            "averageMspt", report.averageMspt(),
+            "peakMspt", report.peakMspt(),
+            "maxBuildImpactMs", report.maxBuildImpact(),
+            "pauseCount", report.pauseCount(),
+            "throttleCount", report.throttleCount(),
+            "aborted", report.wasAborted(),
+            "durationMs", report.buildDuration().toMillis()
+        ));
+        performanceTrackingActive = false;
+    }
+
+    private void abortAllBuilds(String reason) {
+        List<AsyncBuild> builds = new ArrayList<>(buildsByArenaId.values());
+        activeBuildQueue.clear();
+        for (AsyncBuild build : builds) {
+            completeBuild(build, new RuntimeException(reason));
         }
     }
 
@@ -466,14 +584,6 @@ public class AsyncArenaBuilder {
 
         public static AsyncBuildResult failure(UUID arenaId, String templateId, String error, int blocks, long duration) {
             return new AsyncBuildResult(false, arenaId, templateId, blocks, duration, error);
-        }
-    }
-
-    @FunctionalInterface
-    public interface BlockPlacer {
-        int placeBlock(int x, int y, int z, String material);
-        default boolean revertBlock(long packedPos, int stateId) {
-            return true;
         }
     }
 

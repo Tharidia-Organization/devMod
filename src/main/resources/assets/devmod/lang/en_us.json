@@ -504,6 +504,7 @@
   "devmod.endurance.arena_failed": "Failed to create arena",
   "devmod.endurance.respawned_penalty": "Respawned with -100 points penalty. Deaths this run: %d",
   "devmod.endurance.starting_wave": "Starting wave %d",
+  "devmod.endurance.wave_starting_in": "Wave starts in %d...",
   "devmod.endurance.exited_checkpoint": "Exited at checkpoint (wave %d)",
   "devmod.endurance.you_died_icon": "  \u2620 YOU DIED \u2620",
   "devmod.endurance.must_choose": "You must choose: Respawn or Give Up",

@@ -20,6 +20,7 @@ public class ArenaTemplateConfig {
     // === Defaults ===
     private static final String DEFAULT_TEMPLATE_DIR = "config/devmod/arena_templates/";
     private static final boolean DEFAULT_INSTANCE_ONLY = true;
+    private static final boolean DEFAULT_ALLOW_LEGACY_OVERWORLD_ARENA = false;
     private static final boolean DEFAULT_ARENA_TEMPLATE_ENABLED = true;
     private static final boolean DEFAULT_ROUTING_ENABLED = true;
     private static final boolean DEFAULT_GAMIFICATION_ENABLED = false;
@@ -43,6 +44,7 @@ public class ArenaTemplateConfig {
 
     private String templateDirectory = DEFAULT_TEMPLATE_DIR;
     private boolean instanceOnly = DEFAULT_INSTANCE_ONLY;
+    private boolean allowLegacyOverworldArena = DEFAULT_ALLOW_LEGACY_OVERWORLD_ARENA;
     private boolean arenaTemplateEnabled = DEFAULT_ARENA_TEMPLATE_ENABLED;
     private boolean routingEnabled = DEFAULT_ROUTING_ENABLED;
     private boolean gamificationEnabled = DEFAULT_GAMIFICATION_ENABLED;
@@ -88,6 +90,11 @@ public class ArenaTemplateConfig {
         ArenaTemplateConfig cfg = new ArenaTemplateConfig();
         cfg.templateDirectory = getString("devmod.arena.templateDirectory", "DEVMOD_TEMPLATE_DIR", DEFAULT_TEMPLATE_DIR);
         cfg.instanceOnly = getBool("devmod.arena.instanceOnly", "DEVMOD_INSTANCE_ONLY", DEFAULT_INSTANCE_ONLY);
+        cfg.allowLegacyOverworldArena = getBool(
+            "devmod.arena.allowLegacyOverworldArena",
+            "DEVMOD_ARENA_ALLOW_LEGACY_OVERWORLD",
+            DEFAULT_ALLOW_LEGACY_OVERWORLD_ARENA
+        );
         cfg.arenaTemplateEnabled = getBool("devmod.arena.templateEnabled", "DEVMOD_ARENA_TEMPLATE_ENABLED", DEFAULT_ARENA_TEMPLATE_ENABLED);
         cfg.routingEnabled = getBool("devmod.arena.routingEnabled", "DEVMOD_ROUTING_ENABLED", DEFAULT_ROUTING_ENABLED);
         cfg.gamificationEnabled = getBool("devmod.arena.gamificationEnabled", "DEVMOD_GAMIFICATION_ENABLED", DEFAULT_GAMIFICATION_ENABLED);
@@ -128,7 +135,7 @@ public class ArenaTemplateConfig {
             errors.add("gamificationEnabled=true requires arenaTemplateEnabled=true");
         }
         if (arenaTemplateEnabled && !instanceOnly) {
-            warnings.add("arenaTemplateEnabled=true with instanceOnly=false (legacy overworld allowed)");
+            warnings.add("arenaTemplateEnabled=true with instanceOnly=false (legacy overworld blocked unless allowLegacyOverworldArena + debug)");
         }
 
         // Threshold sanity
@@ -149,6 +156,7 @@ public class ArenaTemplateConfig {
         return new ConfigSnapshot(
             Path.of(templateDirectory),
             instanceOnly,
+            allowLegacyOverworldArena,
             arenaTemplateEnabled,
             routingEnabled,
             gamificationEnabled,
@@ -174,6 +182,7 @@ public class ArenaTemplateConfig {
     public record ConfigSnapshot(
         Path templateDirectory,
         boolean instanceOnly,
+        boolean allowLegacyOverworldArena,
         boolean arenaTemplateEnabled,
         boolean routingEnabled,
         boolean gamificationEnabled,
@@ -247,6 +256,7 @@ public class ArenaTemplateConfig {
     // === Getters/Setters (if needed externally) ===
     public String templateDirectory() { return templateDirectory; }
     public boolean instanceOnly() { return instanceOnly; }
+    public boolean allowLegacyOverworldArena() { return allowLegacyOverworldArena; }
     public boolean arenaTemplateEnabled() { return arenaTemplateEnabled; }
     public boolean routingEnabled() { return routingEnabled; }
     public boolean gamificationEnabled() { return gamificationEnabled; }

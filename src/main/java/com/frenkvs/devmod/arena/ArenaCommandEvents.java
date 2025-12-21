@@ -3,6 +3,8 @@ package com.frenkvs.devmod.arena;
 import com.devmod.arena.autosmoke.AutosmokeRunner;
 import com.devmod.arena.autosmoke.AutosmokeScheduler;
 import com.devmod.arena.builder.ArenaBuilder;
+import com.devmod.arena.builder.AsyncArenaBuildCoordinator;
+import com.devmod.arena.builder.AsyncArenaBuilder;
 import com.devmod.arena.builder.ChunkLoadingManager;
 import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.config.InstanceLimitConfig;
@@ -20,12 +22,14 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.time.ZoneId;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 @EventBusSubscriber(modid = DevMod.MODID)
@@ -35,6 +39,9 @@ public final class ArenaCommandEvents {
 
     private static AutosmokeRunner autosmokeRunner;
     private static AutosmokeScheduler autosmokeScheduler;
+    private static final AtomicReference<ArenaTemplateConfig.ConfigSnapshot> CONFIG_SNAPSHOT = new AtomicReference<>();
+    private static final AsyncArenaBuildCoordinator ASYNC_COORDINATOR =
+        new AsyncArenaBuildCoordinator(CONFIG_SNAPSHOT::get);
 
     private ArenaCommandEvents() {}
 
@@ -49,6 +56,7 @@ public final class ArenaCommandEvents {
         TemplateRegistryBootstrap bootstrap = DevMod.getArenaTemplateBootstrap();
         ArenaTemplateConfig config = ArenaTemplateConfig.load();
         ArenaTemplateConfig.ConfigSnapshot snapshot = bootstrap != null ? bootstrap.configSnapshot() : config.snapshot();
+        CONFIG_SNAPSHOT.set(snapshot);
 
         AutosmokeRunner runner = autosmokeRunner != null ? autosmokeRunner : new AutosmokeRunner(registry);
         AutosmokeScheduler scheduler = autosmokeScheduler != null
@@ -64,7 +72,8 @@ public final class ArenaCommandEvents {
 
         Path templateDir = snapshot != null ? snapshot.templateDirectory() : Path.of("config/devmod/arena_templates/");
 
-        Function<ServerLevel, ArenaBuilder> builderFactory = level -> createBuilder(level, snapshot);
+        Function<ServerLevel, ArenaBuilder> builderFactory = level -> createBuilder(level, CONFIG_SNAPSHOT.get());
+        Function<ServerLevel, AsyncArenaBuilder> asyncBuilderFactory = level -> ASYNC_COORDINATOR.getOrCreate(level);
 
         ArenaCommands commands = new ArenaCommands(
             registry,
@@ -72,7 +81,8 @@ public final class ArenaCommandEvents {
             scheduler,
             templateDir,
             builderFactory,
-            snapshot,
+            asyncBuilderFactory,
+            CONFIG_SNAPSHOT::get,
             null,
             bootstrap
         );
@@ -95,14 +105,22 @@ public final class ArenaCommandEvents {
         if (autosmokeRunner != null) {
             autosmokeRunner.shutdown();
         }
+        ASYNC_COORDINATOR.clear();
         TemplateRegistryBootstrap bootstrap = DevMod.getArenaTemplateBootstrap();
         if (bootstrap != null) {
             bootstrap.close();
         }
     }
 
+    @SubscribeEvent
+    public static void onServerTick(ServerTickEvent.Post event) {
+        ASYNC_COORDINATOR.onServerTick(event.getServer());
+    }
+
     public static void onArenaConfigReload(ArenaTemplateConfig newConfig) {
         if (newConfig == null) return;
+        CONFIG_SNAPSHOT.set(newConfig.snapshot());
+        ASYNC_COORDINATOR.clear();
         if (autosmokeScheduler != null) {
             autosmokeScheduler.updateConfig(
                 AutosmokeScheduler.ScheduleConfig.fromCron(newConfig.autosmokeSchedule())

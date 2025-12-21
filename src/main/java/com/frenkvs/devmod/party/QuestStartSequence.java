@@ -119,16 +119,18 @@ public class QuestStartSequence {
      * Cleanup prepared arena when sequence is cancelled or fails.
      */
     private void cleanupPreparedArena(ActiveSequence sequence) {
-        if (sequence.instanceId != null) {
+        UUID instanceId = sequence.instanceId;
+        if (instanceId == null && sequence.preparedArenaHandle != null) {
+            instanceId = sequence.preparedArenaHandle.instanceId();
+        }
+        if (instanceId != null) {
             LOGGER.info("[QuestSequence] Ending instance {} due to sequence cancel/failure",
-                sequence.instanceId);
-            InstanceArenaManager.INSTANCE.endInstanceQuest(sequence.instanceId, false);
+                instanceId);
+            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
             sequence.instanceId = null;
         } else if (sequence.preparedArena != null) {
-            LOGGER.info("[QuestSequence] Cleaning up prepared arena {} due to sequence cancel/failure",
+            LOGGER.error("[QuestSequence] Legacy arena cleanup invoked; instanceId missing for arena {}",
                 sequence.preparedArena.getId());
-            // Destroy the arena to free resources
-            EnduranceQuestManager.INSTANCE.destroyArena(sequence.preparedArena);
             sequence.preparedArena = null;
         }
         sequence.preparedArenaHandle = null;
@@ -415,7 +417,14 @@ public class QuestStartSequence {
                 }
             }
         } else {
-            // InstanceManager already teleported via startInstanceQuestForParty
+            // InstanceManager already teleported; align to template spawns if available
+            if (arenaResult.handle() != null) {
+                EnduranceQuestManager.INSTANCE.teleportPlayersToArena(
+                    sequence.members,
+                    arenaResult.arena(),
+                    arenaResult.handle()
+                );
+            }
             for (ServerPlayer member : sequence.members) {
                 if (member != null && member.isAlive()) {
                     member.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Teleporting party to instance...")));

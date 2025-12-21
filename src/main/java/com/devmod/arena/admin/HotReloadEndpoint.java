@@ -1,5 +1,6 @@
 package com.devmod.arena.admin;
 
+import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.security.ArenaCommandAudit;
 import com.devmod.arena.telemetry.ArenaTelemetry;
@@ -129,7 +130,7 @@ public class HotReloadEndpoint {
             ArenaTemplateRegistry.ReloadResult registryResult =
                 bootstrap != null
                     ? bootstrap.reloadWithConfig()
-                    : registry.reloadFromDirectoryAtomic(templatesDirectory);
+                    : reloadWithConfigFallback();
 
             Duration duration = Duration.between(startTime, Instant.now());
             lastReloadTime.set(Instant.now());
@@ -212,6 +213,16 @@ public class HotReloadEndpoint {
         } finally {
             reloadInProgress.set(false);
         }
+    }
+
+    private ArenaTemplateRegistry.ReloadResult reloadWithConfigFallback() {
+        try {
+            ArenaTemplateConfig config = ArenaTemplateConfig.load();
+            registry.applyConfigSnapshot(config.snapshot());
+        } catch (Exception e) {
+            LOGGER.warn("[HotReload] Failed to apply config snapshot before reload: {}", e.getMessage());
+        }
+        return registry.reloadFromDirectoryAtomic(templatesDirectory);
     }
 
     /**

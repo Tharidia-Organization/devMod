@@ -13,8 +13,19 @@ import java.util.Objects;
 public class SpawnSlotValidator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SpawnSlotValidator.class);
+    private static final ArenaTemplate.SpawnSlot.Validation DEFAULT_VALIDATION =
+        new ArenaTemplate.SpawnSlot.Validation(true, 2, 1);
 
     private ArenaTelemetry telemetry;
+
+    @FunctionalInterface
+    public interface BlockQuery {
+        boolean isAir(net.minecraft.core.BlockPos pos);
+
+        default boolean isSolid(net.minecraft.core.BlockPos pos) {
+            return !isAir(pos);
+        }
+    }
 
     public SpawnSlotValidator() {
     }
@@ -126,14 +137,20 @@ public class SpawnSlotValidator {
     }
 
     private int computeY(int y, ArenaTemplate.SpawnSlot.YMode mode, int floorY) {
-        return mode == ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR ? floorY + y : y;
+        if (mode == null || mode == ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR) {
+            return floorY + y;
+        }
+        return y;
     }
 
     private boolean isInForbidden(int x, int y, int z, ArenaTemplate.ForbiddenZone zone, int floorY) {
         if (zone == null || zone.min() == null || zone.max() == null) return false;
         int minY = zone.min()[1];
         int maxY = zone.max()[1];
-        if (zone.yMode() == ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR) {
+        ArenaTemplate.SpawnSlot.YMode mode = zone.yMode() != null
+            ? zone.yMode()
+            : ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR;
+        if (mode == ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR) {
             minY += floorY;
             maxY += floorY;
         }
@@ -207,14 +224,14 @@ public class SpawnSlotValidator {
     /**
     * Runtime validation of a single spawn slot according to validation rules.
     */
-    public boolean validateAtRuntime(String templateId, ArenaTemplate.SpawnSlot slot, net.minecraft.server.level.ServerLevel level, net.minecraft.core.BlockPos absPos) {
-        if (slot == null || slot.validation() == null) return true;
-        var rules = slot.validation();
+    public boolean validateAtRuntime(String templateId, ArenaTemplate.SpawnSlot slot, BlockQuery query, net.minecraft.core.BlockPos absPos) {
+        if (slot == null) return true;
+        var rules = slot.validation() != null ? slot.validation() : DEFAULT_VALIDATION;
 
         // Solid below
         if (rules.requireSolidBelow()) {
             net.minecraft.core.BlockPos below = Objects.requireNonNull(absPos.below());
-            if (!level.getBlockState(below).isSolidRender(level, below)) {
+            if (!query.isSolid(below)) {
                 emitTelemetry("arena.spawnslot.validation_failed", templateId, absPos.toShortString());
                 return false;
             }
@@ -223,7 +240,7 @@ public class SpawnSlotValidator {
         // Air above
         for (int y = 0; y < rules.requireAirAbove(); y++) {
             net.minecraft.core.BlockPos above = Objects.requireNonNull(absPos.above(y));
-            if (!level.getBlockState(above).isAir()) {
+            if (!query.isAir(above)) {
                 emitTelemetry("arena.spawnslot.validation_failed", templateId, absPos.toShortString());
                 return false;
             }
@@ -236,7 +253,7 @@ public class SpawnSlotValidator {
                 for (int dz = -r; dz <= r; dz++) {
                     if (dx == 0 && dz == 0) continue;
                     net.minecraft.core.BlockPos check = Objects.requireNonNull(absPos.offset(dx, 0, dz));
-                    if (level.getBlockState(check).isSolidRender(level, check)) {
+                    if (query.isSolid(check)) {
                         emitTelemetry("arena.spawnslot.validation_failed", templateId, absPos.toShortString());
                         return false;
                     }
@@ -244,5 +261,20 @@ public class SpawnSlotValidator {
             }
         }
         return true;
+    }
+
+    public boolean validateAtRuntime(String templateId, ArenaTemplate.SpawnSlot slot, net.minecraft.server.level.ServerLevel level, net.minecraft.core.BlockPos absPos) {
+        return validateAtRuntime(templateId, slot, new BlockQuery() {
+            @Override
+            public boolean isAir(net.minecraft.core.BlockPos pos) {
+                return level.getBlockState(Objects.requireNonNull(pos, "pos")).isAir();
+            }
+
+            @Override
+            public boolean isSolid(net.minecraft.core.BlockPos pos) {
+                net.minecraft.core.BlockPos safePos = Objects.requireNonNull(pos, "pos");
+                return level.getBlockState(safePos).isSolidRender(level, safePos);
+            }
+        }, absPos);
     }
 }

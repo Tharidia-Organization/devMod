@@ -3,6 +3,7 @@ package com.frenkvs.devmod.endurance;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
@@ -56,6 +57,7 @@ public class EnduranceEventTick {
         var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
             QuestStartSequence.INSTANCE.tick(server);
+            tickPendingWaveStarts(server);
 
             // Tick perk effects and enforce arena confinement for all players in active quests
             for (UUID playerId : EnduranceQuestManager.INSTANCE.getActiveSessions().keySet()) {
@@ -93,6 +95,59 @@ public class EnduranceEventTick {
             if (gamificationTickCounter >= 60) {
                 gamificationTickCounter = 0;
                 GamificationManager.INSTANCE.tickResets();
+            }
+        }
+    }
+
+    /**
+     * Handle delayed wave starts (solo start + respawn).
+     * Only counts down once the player is in the arena.
+     */
+    private static void tickPendingWaveStarts(MinecraftServer server) {
+        for (EnduranceQuestManager.ActiveQuestSession session :
+                EnduranceQuestManager.INSTANCE.getActiveSessions().values()) {
+            if (!session.isWaveStartPending()) {
+                continue;
+            }
+            if (session.getQuest().getState() != EnduranceQuestState.IN_PROGRESS) {
+                session.clearPendingWaveStart();
+                continue;
+            }
+
+            ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(session.getPlayerId()));
+            if (player == null) {
+                continue;
+            }
+
+            ArenaManager.Arena arena = session.getArena();
+            if (arena == null) {
+                session.clearPendingWaveStart();
+                LOGGER.warn("[EnduranceQuest] Pending wave start cancelled - arena missing for {}",
+                    player.getName().getString());
+                continue;
+            }
+
+            // Wait until the player is actually inside the arena before counting down.
+            if (!player.level().dimension().equals(arena.getLevel().dimension())) {
+                continue;
+            }
+            if (!EnduranceQuestManager.INSTANCE.isPlayerInArena(player, arena)) {
+                continue;
+            }
+
+            int ticksRemaining = session.tickWaveStartCountdown();
+            int secondsRemaining = (int) Math.ceil(ticksRemaining / 20.0);
+
+            if (secondsRemaining > 0 && secondsRemaining != session.getLastWaveCountdownSeconds()) {
+                session.setLastWaveCountdownSeconds(secondsRemaining);
+                player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.endurance.wave_starting_in", secondsRemaining)
+                    .withStyle(ChatFormatting.YELLOW)));
+            }
+
+            if (ticksRemaining <= 0) {
+                session.clearPendingWaveStart();
+                WaveManager.INSTANCE.startWave(session);
+                EnduranceEventHandler.onWaveStart(player, session, session.getQuest().getCurrentWave());
             }
         }
     }
@@ -179,9 +234,18 @@ public class EnduranceEventTick {
             EnduranceQuestManager.INSTANCE.getActiveSession(player);
 
         if (session.isPresent()) {
-            ArenaManager.Arena arena = session.get().getArena();
+            EnduranceQuestManager.ActiveQuestSession activeSession = session.get();
+            if (activeSession.isAwaitingRespawnChoice()
+                || activeSession.getQuest().getState() != EnduranceQuestState.IN_PROGRESS) {
+                return;
+            }
+
+            ArenaManager.Arena arena = activeSession.getArena();
             if (arena == null) {
                 // Arena not yet assigned, skip confinement check
+                return;
+            }
+            if (!player.level().dimension().equals(arena.getLevel().dimension())) {
                 return;
             }
             if (!arena.contains(Objects.requireNonNull(player.position()))) {

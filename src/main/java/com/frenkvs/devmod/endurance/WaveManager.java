@@ -1,7 +1,12 @@
 package com.frenkvs.devmod.endurance;
 
-import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.arena.api.ArenaHandle;
+import com.devmod.arena.registry.ArenaTemplate;
+import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.arena.registry.SpawnSlotValidator;
+import com.devmod.arena.spawn.SpawnOccupancyTracker;
+import com.frenkvs.devmod.DevMod;
+import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
@@ -225,6 +230,25 @@ public class WaveManager {
 
         int toSpawn = waveState.totalToSpawn - waveState.spawned;
         List<BlockPos> spawnPositions = resolveSpawnPositions(arena, handle, toSpawn);
+        if (spawnPositions.isEmpty()) {
+            LOGGER.error("[EnduranceQuest] No spawn positions available for wave {}", waveState.waveNumber);
+            return;
+        }
+
+        ArenaTemplate template = null;
+        SpawnSlotValidator runtimeValidator = null;
+        Map<BlockPos, ArenaTemplate.SpawnSlot> slotMap = Collections.emptyMap();
+        if (handle != null) {
+            ArenaTemplateRegistry registry = DevMod.getArenaTemplateRegistry();
+            if (registry != null) {
+                template = registry.get(handle.templateId()).orElse(null);
+                if (template != null) {
+                    slotMap = buildMobSpawnSlotMap(template, handle);
+                    runtimeValidator = new SpawnSlotValidator();
+                }
+            }
+        }
+        SpawnOccupancyTracker occupied = new SpawnOccupancyTracker();
 
         int successfulSpawns = 0;
         int failedSpawns = 0;
@@ -236,8 +260,19 @@ public class WaveManager {
         }
 
         for (int i = 0; i < toSpawn; i++) {
-            // Use modulo to reuse positions if we don't have enough
-            BlockPos spawnPos = spawnPositions.get(i % Math.max(1, spawnPositions.size()));
+            BlockPos spawnPos = pickValidatedSpawnPosition(
+                spawnPositions,
+                i,
+                occupied,
+                runtimeValidator,
+                slotMap,
+                template,
+                level
+            );
+            if (spawnPos == null) {
+                failedSpawns++;
+                continue;
+            }
 
             Entity entity = entityType.create(Objects.requireNonNull(level));
             if (entity instanceof Mob mob) {
@@ -294,6 +329,35 @@ public class WaveManager {
             waveState.waveNumber, successfulSpawns, toSpawn);
     }
 
+    private BlockPos pickValidatedSpawnPosition(
+            List<BlockPos> positions,
+            int startIndex,
+            SpawnOccupancyTracker occupied,
+            @javax.annotation.Nullable SpawnSlotValidator runtimeValidator,
+            Map<BlockPos, ArenaTemplate.SpawnSlot> slotMap,
+            @javax.annotation.Nullable ArenaTemplate template,
+            ServerLevel level) {
+        int size = positions.size();
+        for (int offset = 0; offset < size; offset++) {
+            BlockPos pos = positions.get((startIndex + offset) % size);
+            if (occupied.isOccupied(pos)) {
+                continue;
+            }
+            if (runtimeValidator != null && template != null && !slotMap.isEmpty()) {
+                ArenaTemplate.SpawnSlot slot = slotMap.get(pos);
+                if (slot == null) {
+                    continue;
+                }
+                if (!runtimeValidator.validateAtRuntime(template.id(), slot, level, pos)) {
+                    continue;
+                }
+            }
+            occupied.markOccupied(pos);
+            return pos;
+        }
+        return null;
+    }
+
     private List<BlockPos> resolveSpawnPositions(ArenaManager.Arena arena,
                                                  @javax.annotation.Nullable ArenaHandle handle,
                                                  int count) {
@@ -305,6 +369,35 @@ public class WaveManager {
             return positions;
         }
         return arena.getDistributedSpawnPositions(count);
+    }
+
+    private Map<BlockPos, ArenaTemplate.SpawnSlot> buildMobSpawnSlotMap(
+            ArenaTemplate template, ArenaHandle handle) {
+        Map<BlockPos, ArenaTemplate.SpawnSlot> slotMap = new HashMap<>();
+        if (template.spawnSlots() == null) {
+            return slotMap;
+        }
+        for (ArenaTemplate.SpawnSlot slot : template.spawnSlots()) {
+            if (slot.tags() == null || !(slot.tags().contains("mob") || slot.tags().contains("boss"))) {
+                continue;
+            }
+            int[] pos = slot.pos();
+            if (pos == null || pos.length != 3) continue;
+            int x = handle.originX() + pos[0];
+            int y = resolveSpawnY(slot, template, handle.originY());
+            int z = handle.originZ() + pos[2];
+            slotMap.put(new BlockPos(x, y, z), slot);
+        }
+        return slotMap;
+    }
+
+    private int resolveSpawnY(ArenaTemplate.SpawnSlot slot, ArenaTemplate template, int originY) {
+        int baseY = slot.pos() != null && slot.pos().length == 3 ? slot.pos()[1] : 0;
+        int floorY = template.floor() != null ? template.floor().y() : originY;
+        if (slot.yMode() == ArenaTemplate.SpawnSlot.YMode.RELATIVE_TO_FLOOR) {
+            return floorY + baseY;
+        }
+        return baseY;
     }
 
     /**

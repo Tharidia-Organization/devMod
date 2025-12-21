@@ -494,6 +494,7 @@
   "devmod.endurance.arena_failed": "Creazione arena fallita",
   "devmod.endurance.respawned_penalty": "Risorto con penalita' -100 punti. Morti in questa run: %d",
   "devmod.endurance.starting_wave": "Inizio ondata %d",
+  "devmod.endurance.wave_starting_in": "Ondata inizia tra %d...",
   "devmod.endurance.exited_checkpoint": "Uscito al checkpoint (ondata %d)",
   "devmod.endurance.you_died_icon": "  \u2620 SEI MORTO \u2620",
   "devmod.endurance.must_choose": "Devi scegliere: Risorgi o Arrenditi",

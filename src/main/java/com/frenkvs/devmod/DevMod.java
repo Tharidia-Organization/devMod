@@ -5,6 +5,7 @@ import com.devmod.arena.registry.TemplateRegistryBootstrap;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+import com.frenkvs.devmod.endurance.EnduranceQuestManager;
 import com.frenkvs.devmod.ui.editor.core.EditorConfig;
 import com.frenkvs.devmod.ui.editor.systems.PresetRegistry;
 import com.mojang.logging.LogUtils;
@@ -127,6 +128,7 @@ public class DevMod {
         if (event.getConfig().getSpec() == Config.SPEC && ARENA_BOOTSTRAP != null) {
             ArenaTemplateConfig newConfig = ArenaTemplateConfig.load();
             ARENA_BOOTSTRAP.applyConfig(newConfig);
+            EnduranceQuestManager.INSTANCE.applyArenaConfig(newConfig);
             LOGGER.info("[DevMod] ArenaTemplateConfig reloaded and applied");
             com.frenkvs.devmod.arena.ArenaCommandEvents.onArenaConfigReload(newConfig);
         }

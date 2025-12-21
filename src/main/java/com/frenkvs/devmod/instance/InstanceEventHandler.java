@@ -194,6 +194,23 @@ public class InstanceEventHandler {
                                 }
                             }
 
+                            // Allow Endurance quest respawn flow to leave/re-enter without force-ending instance.
+                            var enduranceSession = com.frenkvs.devmod.endurance.EnduranceQuestManager.INSTANCE
+                                .getActiveSession(player.getUUID());
+                            if (enduranceSession.isPresent()) {
+                                var session = enduranceSession.get();
+                                if (session.isAwaitingRespawnChoice() || session.getQuest().getState() == com.frenkvs.devmod.endurance.EnduranceQuestState.FAILED) {
+                                    LOGGER.debug("[InstanceEvents] Player {} left instance during Endurance respawn window, preserving instance",
+                                        player.getName().getString());
+                                    return;
+                                }
+
+                                LOGGER.warn("[InstanceEvents] Player {} left instance during active Endurance quest, abandoning quest",
+                                    player.getName().getString());
+                                com.frenkvs.devmod.endurance.EnduranceQuestManager.INSTANCE.abandonQuest(player);
+                                return;
+                            }
+
                             LOGGER.warn("[InstanceEvents] Player {} left instance dimension unexpectedly (from {} to {})",
                                 player.getName().getString(), event.getFrom().location(), event.getTo().location());
                             // This shouldn't happen in normal flow, but handle it gracefully
