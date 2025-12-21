@@ -36,6 +36,10 @@ public class InstanceData {
     private BlockPos arenaCenter;
     private int arenaRadius;
     private String arenaTemplate;
+    private int arenaTemplateVersion;
+    @Nullable
+    private String arenaPolicyId;
+    private int arenaPolicyVersion;
 
     // === Quest State ===
     private ResourceLocation questMobId;
@@ -277,6 +281,19 @@ public class InstanceData {
         return arenaTemplate;
     }
 
+    public int getArenaTemplateVersion() {
+        return arenaTemplateVersion;
+    }
+
+    @Nullable
+    public String getArenaPolicyId() {
+        return arenaPolicyId;
+    }
+
+    public int getArenaPolicyVersion() {
+        return arenaPolicyVersion;
+    }
+
     @Nullable
     public ResourceLocation getQuestMobId() {
         return questMobId;
@@ -304,10 +321,22 @@ public class InstanceData {
 
     // === Setters ===
 
-    public void setArena(BlockPos center, int radius, String template) {
+    public void setArena(@Nullable BlockPos center, int radius, @Nullable String template) {
+        setArena(center, radius, template, 0, null, 0);
+    }
+
+    public void setArena(@Nullable BlockPos center,
+                         int radius,
+                         @Nullable String template,
+                         int templateVersion,
+                         @Nullable String policyId,
+                         int policyVersion) {
         this.arenaCenter = center;
         this.arenaRadius = radius;
         this.arenaTemplate = template;
+        this.arenaTemplateVersion = templateVersion;
+        this.arenaPolicyId = policyId;
+        this.arenaPolicyVersion = policyVersion;
     }
 
     public void setQuest(ResourceLocation mobId, int totalWaves, boolean endless) {
@@ -362,6 +391,15 @@ public class InstanceData {
         if (arenaTemplate != null) {
             map.put("arenaTemplate", arenaTemplate);
         }
+        if (arenaTemplateVersion > 0) {
+            map.put("arenaTemplateVersion", arenaTemplateVersion);
+        }
+        if (arenaPolicyId != null) {
+            map.put("arenaPolicyId", arenaPolicyId);
+        }
+        if (arenaPolicyVersion > 0) {
+            map.put("arenaPolicyVersion", arenaPolicyVersion);
+        }
 
         if (questMobId != null) {
             map.put("questMob", questMobId.toString());
@@ -408,6 +446,15 @@ public class InstanceData {
         }
         if (map.containsKey("arenaTemplate")) {
             data.arenaTemplate = (String) map.get("arenaTemplate");
+        }
+        if (map.containsKey("arenaTemplateVersion")) {
+            data.arenaTemplateVersion = ((Number) map.get("arenaTemplateVersion")).intValue();
+        }
+        if (map.containsKey("arenaPolicyId")) {
+            data.arenaPolicyId = (String) map.get("arenaPolicyId");
+        }
+        if (map.containsKey("arenaPolicyVersion")) {
+            data.arenaPolicyVersion = ((Number) map.get("arenaPolicyVersion")).intValue();
         }
 
         if (map.containsKey("questMob")) {

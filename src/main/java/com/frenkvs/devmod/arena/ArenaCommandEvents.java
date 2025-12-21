@@ -20,15 +20,21 @@ import com.devmod.arena.config.InstanceLimitConfig;
 import com.devmod.arena.command.ArenaCommands;
 import com.devmod.arena.integration.MinecraftBlockPlacer;
 import com.devmod.arena.integration.MinecraftEntitySpawner;
+import com.devmod.arena.logging.DuckDbDestination;
 import com.devmod.arena.logging.LogAggregationPipeline;
 import com.devmod.arena.logging.NdjsonWriter;
+import com.devmod.arena.override.ForceTemplateCapability;
 import com.devmod.arena.persistence.DuckDbRepository;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateRegistryBootstrap;
+import com.devmod.arena.security.ArenaCommandPermissions;
 import com.devmod.arena.telemetry.ArenaTelemetry;
 import com.frenkvs.devmod.DevMod;
+import com.frenkvs.devmod.endurance.EnduranceQuestManager;
 import com.frenkvs.devmod.telemetry.duckdb.DuckDBTelemetryService;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -36,12 +42,16 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.time.ZoneId;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -55,7 +65,9 @@ public final class ArenaCommandEvents {
     private static AutosmokeReportWriter autosmokeReportWriter;
     private static AlertRouter alertRouter;
     private static DuckDbRepository alertRepository;
+    private static DuckDbRepository telemetryRepository;
     private static LogAggregationPipeline telemetryPipeline;
+    private static ForceTemplateCapability forceTemplateCapability;
     private static final AtomicReference<ArenaTemplateConfig.ConfigSnapshot> CONFIG_SNAPSHOT = new AtomicReference<>();
     private static final AsyncArenaBuildCoordinator ASYNC_COORDINATOR =
         new AsyncArenaBuildCoordinator(CONFIG_SNAPSHOT::get);
@@ -87,6 +99,13 @@ public final class ArenaCommandEvents {
 
         autosmokeRunner = runner;
         autosmokeScheduler = scheduler;
+        if (forceTemplateCapability == null) {
+            forceTemplateCapability = buildForceTemplateCapability();
+        }
+        if (forceTemplateCapability != null) {
+            autosmokeRunner.setForceTemplateCapability(forceTemplateCapability);
+            EnduranceQuestManager.INSTANCE.setForceTemplateCapability(forceTemplateCapability);
+        }
         ensureAlertRouter();
         if (alertRouter != null) {
             autosmokeScheduler.setAlertRouter(alertRouter);
@@ -110,7 +129,7 @@ public final class ArenaCommandEvents {
             builderFactory,
             asyncBuilderFactory,
             CONFIG_SNAPSHOT::get,
-            null,
+            forceTemplateCapability,
             bootstrap
         );
         commands.register(event.getDispatcher());
@@ -137,6 +156,12 @@ public final class ArenaCommandEvents {
         if (alertRouter != null) {
             alertRouter.close();
             alertRouter = null;
+        }
+        if (telemetryRepository != null) {
+            if (telemetryRepository != alertRepository) {
+                try { telemetryRepository.close(); } catch (Exception ignored) {}
+            }
+            telemetryRepository = null;
         }
         if (alertRepository != null) {
             try { alertRepository.close(); } catch (Exception ignored) {}
@@ -178,6 +203,7 @@ public final class ArenaCommandEvents {
             NdjsonWriter ndjsonWriter = new NdjsonWriter(Path.of("run"), "arena-telemetry");
             telemetryPipeline = LogAggregationPipeline.builder()
                 .addDestination(new LogAggregationPipeline.NdjsonDestination(ndjsonWriter))
+                .addDestination(new DuckDbDestination(ArenaCommandEvents::getOrCreateTelemetryRepository))
                 .addConsoleDestination()
                 .build();
             telemetryPipeline.start();
@@ -185,6 +211,26 @@ public final class ArenaCommandEvents {
         } catch (Exception e) {
             LOGGER.warn("[ArenaCommands] Failed to initialize telemetry pipeline: {}", e.getMessage());
         }
+    }
+
+    private static synchronized DuckDbRepository getOrCreateTelemetryRepository() {
+        if (telemetryRepository != null) {
+            return telemetryRepository;
+        }
+        if (alertRepository != null) {
+            telemetryRepository = alertRepository;
+            return telemetryRepository;
+        }
+        try {
+            if (DuckDBTelemetryService.INSTANCE.getDbPath() == null) {
+                return null;
+            }
+            telemetryRepository = new DuckDbRepository(DuckDBTelemetryService.INSTANCE.getDbPath().toString());
+            telemetryRepository.initialize();
+        } catch (Exception e) {
+            LOGGER.warn("[ArenaCommands] Failed to initialize DuckDB telemetry repository: {}", e.getMessage());
+        }
+        return telemetryRepository;
     }
 
     private static void ensureAlertRouter() {
@@ -212,16 +258,96 @@ public final class ArenaCommandEvents {
         AlertRouterRegistry.set(router);
     }
 
+    private static ForceTemplateCapability buildForceTemplateCapability() {
+        ArenaTelemetry telemetry = new ArenaTelemetry();
+        ForceTemplateCapability.PermissionChecker permissionChecker = new ForceTemplateCapability.PermissionChecker() {
+            @Override
+            public boolean hasPermission(UUID playerId, String permission) {
+                MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+                if (server == null) {
+                    return false;
+                }
+                if (playerId == null) {
+                    return false;
+                }
+                ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+                if (player == null) {
+                    return false;
+                }
+                return ArenaCommandPermissions.getInstance()
+                    .hasPermission(player, ArenaCommandPermissions.CommandCategory.FORCE_TEMPLATE);
+            }
+
+            @Override
+            public Set<String> getPlayerRoles(UUID playerId) {
+                MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+                if (server == null) {
+                    return Set.of();
+                }
+                if (playerId == null) {
+                    return Set.of();
+                }
+                ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+                if (player == null) {
+                    return Set.of();
+                }
+                var level = ArenaCommandPermissions.getInstance().getPlayerLevel(player);
+                return Set.of(level.name().toLowerCase(Locale.ROOT));
+            }
+        };
+
+        ForceTemplateCapability.CapabilityTelemetry capabilityTelemetry =
+            new ForceTemplateCapability.CapabilityTelemetry() {
+                @Override
+                public void onSessionCreated(ForceTemplateCapability.ForceSession session) {
+                    telemetry.emit("arena.force.session_created", java.util.Map.of(
+                        "playerId", session.playerId().toString(),
+                        "templateId", session.templateId(),
+                        "expiresAt", session.expiresAt().toString(),
+                        "reason", session.reason() != null ? session.reason() : ""
+                    ));
+                }
+
+                @Override
+                public void onSessionExpired(ForceTemplateCapability.ForceSession session) {
+                    telemetry.emit("arena.force.session_expired", java.util.Map.of(
+                        "playerId", session.playerId().toString(),
+                        "templateId", session.templateId()
+                    ));
+                }
+
+                @Override
+                public void onSessionRevoked(ForceTemplateCapability.ForceSession session, String revokedBy) {
+                    telemetry.emit("arena.force.session_revoked", java.util.Map.of(
+                        "playerId", session.playerId().toString(),
+                        "templateId", session.templateId(),
+                        "revokedBy", revokedBy != null ? revokedBy : ""
+                    ));
+                }
+
+                @Override
+                public void onCapabilityDenied(UUID playerId, String templateId, String reason) {
+                    telemetry.emit("arena.force.session_denied", java.util.Map.of(
+                        "playerId", playerId.toString(),
+                        "templateId", templateId != null ? templateId : "",
+                        "reason", reason != null ? reason : ""
+                    ));
+                }
+            };
+
+        return new ForceTemplateCapability(permissionChecker, capabilityTelemetry);
+    }
+
     private static void maybeAttachAlertRecorder() {
         if (alertRouter == null || alertRepository != null) {
             return;
         }
         try {
-            if (DuckDBTelemetryService.INSTANCE.getDbPath() == null) {
+            DuckDbRepository repo = getOrCreateTelemetryRepository();
+            if (repo == null) {
                 return;
             }
-            alertRepository = new DuckDbRepository(DuckDBTelemetryService.INSTANCE.getDbPath().toString());
-            alertRepository.initialize();
+            alertRepository = repo;
             alertRouter.setDeliveryRecorder(new DuckDbAlertRecorder(alertRepository));
         } catch (Exception e) {
             LOGGER.warn("[ArenaCommands] Failed to attach DuckDB alert recorder: {}", e.getMessage());

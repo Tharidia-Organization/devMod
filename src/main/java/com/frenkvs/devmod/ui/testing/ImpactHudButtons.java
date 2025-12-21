@@ -1,6 +1,10 @@
 package com.frenkvs.devmod.ui.testing;
 
 import com.frenkvs.devmod.Config;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.hud.Impact3DPanelManager;
 import com.frenkvs.devmod.hud.ImpactHudOverlay;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
@@ -87,72 +91,80 @@ public final class ImpactHudButtons {
             .style(EditorButton.Style.PRIMARY)
             .toggleable(true)
             .icon("\uD83D\uDCCA")
-            .onToggle(v -> ImpactHudOverlay.setEnabled(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.HUD_IMPACT_TOGGLE,
+                Boolean.TRUE.equals(v), ImpactHudOverlay.isEnabled()));
 
         historyToggle = new EditorButton("impact-history", "History")
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.SMALL)
             .toggleable(true)
-            .onToggle(v -> Config.IMPACT_HUD_HISTORY_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_HUD_HISTORY_TOGGLE,
+                Boolean.TRUE.equals(v), getConfigBool(Config.IMPACT_HUD_HISTORY_ENABLED)));
 
         dpsToggle = new EditorButton("impact-dps", "DPS Tracker")
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.SMALL)
             .toggleable(true)
-            .onToggle(v -> Config.IMPACT_HUD_DPS_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_HUD_DPS_TOGGLE,
+                Boolean.TRUE.equals(v), getConfigBool(Config.IMPACT_HUD_DPS_ENABLED)));
 
         // === 3D Panel ===
         panel3dToggle = new EditorButton("impact-3d", "3D World Panel")
             .style(EditorButton.Style.PRIMARY)
             .toggleable(true)
             .icon("\uD83C\uDF10")
-            .onToggle(v -> Impact3DPanelManager.INSTANCE.setEnabled(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.HUD_IMPACT_3D_TOGGLE,
+                Boolean.TRUE.equals(v), Impact3DPanelManager.INSTANCE.isEnabled()));
 
         // === VFX ===
         vfxMasterToggle = new EditorButton("vfx-master", "VFX Master")
             .style(EditorButton.Style.SUCCESS)
             .toggleable(true)
             .icon("\u2728")
-            .onToggle(v -> Config.IMPACT_VFX_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_VFX_TOGGLE,
+                Boolean.TRUE.equals(v), getConfigBool(Config.IMPACT_VFX_ENABLED)));
 
         vfxVortexToggle = new EditorButton("vfx-vortex", "Vortex")
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.SMALL)
             .toggleable(true)
-            .onToggle(v -> Config.IMPACT_VFX_VORTEX_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_VFX_VORTEX_TOGGLE,
+                Boolean.TRUE.equals(v), getConfigBool(Config.IMPACT_VFX_VORTEX_ENABLED)));
 
         vfxSlashToggle = new EditorButton("vfx-slash", "Slash")
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.SMALL)
             .toggleable(true)
-            .onToggle(v -> Config.IMPACT_VFX_SLASH_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_VFX_SLASH_TOGGLE,
+                Boolean.TRUE.equals(v), getConfigBool(Config.IMPACT_VFX_SLASH_ENABLED)));
 
         vfxLinesToggle = new EditorButton("vfx-lines", "Lines")
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.SMALL)
             .toggleable(true)
-            .onToggle(v -> Config.IMPACT_VFX_LINES_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_VFX_LINES_TOGGLE,
+                Boolean.TRUE.equals(v), getConfigBool(Config.IMPACT_VFX_LINES_ENABLED)));
 
         // === Intensity ===
         intensityLow = new EditorButton("int-low", "Low")
             .size(EditorButton.Size.SMALL)
             .toggleable(true)
-            .onToggle(v -> { if (Boolean.TRUE.equals(v)) setIntensity(0.5); });
+            .onToggle(v -> { if (Boolean.TRUE.equals(v)) invokeAction(ActionIds.CONFIG_IMPACT_VFX_INTENSITY_LOW); });
 
         intensityMed = new EditorButton("int-med", "Normal")
             .size(EditorButton.Size.SMALL)
             .toggleable(true)
-            .onToggle(v -> { if (Boolean.TRUE.equals(v)) setIntensity(1.0); });
+            .onToggle(v -> { if (Boolean.TRUE.equals(v)) invokeAction(ActionIds.CONFIG_IMPACT_VFX_INTENSITY_MED); });
 
         intensityHigh = new EditorButton("int-high", "High")
             .size(EditorButton.Size.SMALL)
             .toggleable(true)
-            .onToggle(v -> { if (Boolean.TRUE.equals(v)) setIntensity(1.5); });
+            .onToggle(v -> { if (Boolean.TRUE.equals(v)) invokeAction(ActionIds.CONFIG_IMPACT_VFX_INTENSITY_HIGH); });
 
         intensityMax = new EditorButton("int-max", "Max")
             .size(EditorButton.Size.SMALL)
             .toggleable(true)
-            .onToggle(v -> { if (Boolean.TRUE.equals(v)) setIntensity(2.0); });
+            .onToggle(v -> { if (Boolean.TRUE.equals(v)) invokeAction(ActionIds.CONFIG_IMPACT_VFX_INTENSITY_MAX); });
 
         // === Position ===
         for (Config.HudPosition pos : Config.HudPosition.values()) {
@@ -161,8 +173,9 @@ public final class ImpactHudButtons {
                 .toggleable(true)
                 .onToggle(v -> {
                     if (Boolean.TRUE.equals(v)) {
+                        ActionRegistry.invoke(resolvePositionAction(pos),
+                            ClientActionContexts.forClient(ActionOrigin.UI));
                         currentPosition = pos;
-                        Config.IMPACT_HUD_POSITION.set(pos);
                         updatePositionStates();
                     }
                 });
@@ -170,10 +183,14 @@ public final class ImpactHudButtons {
         }
 
         // === Offset ===
-        offsetXMinus = new EditorButton("ox-", "-").size(EditorButton.Size.SMALL).onClick(() -> adjustOffset(true, -10));
-        offsetXPlus = new EditorButton("ox+", "+").size(EditorButton.Size.SMALL).onClick(() -> adjustOffset(true, 10));
-        offsetYMinus = new EditorButton("oy-", "-").size(EditorButton.Size.SMALL).onClick(() -> adjustOffset(false, -10));
-        offsetYPlus = new EditorButton("oy+", "+").size(EditorButton.Size.SMALL).onClick(() -> adjustOffset(false, 10));
+        offsetXMinus = new EditorButton("ox-", "-").size(EditorButton.Size.SMALL)
+            .onClick(() -> invokeAction(ActionIds.CONFIG_IMPACT_HUD_OFFSET_X_MINUS));
+        offsetXPlus = new EditorButton("ox+", "+").size(EditorButton.Size.SMALL)
+            .onClick(() -> invokeAction(ActionIds.CONFIG_IMPACT_HUD_OFFSET_X_PLUS));
+        offsetYMinus = new EditorButton("oy-", "-").size(EditorButton.Size.SMALL)
+            .onClick(() -> invokeAction(ActionIds.CONFIG_IMPACT_HUD_OFFSET_Y_MINUS));
+        offsetYPlus = new EditorButton("oy+", "+").size(EditorButton.Size.SMALL)
+            .onClick(() -> invokeAction(ActionIds.CONFIG_IMPACT_HUD_OFFSET_Y_PLUS));
 
         // === Presets ===
         exportPreset = new EditorButton("export", "Export")
@@ -200,12 +217,14 @@ public final class ImpactHudButtons {
 
         // Wire up preset buttons with callback
         exportPreset.onClick(() -> {
-            boolean success = com.frenkvs.devmod.hud.ImpactHudPresets.exportToDefault();
+            boolean success = ActionRegistry.invoke(ActionIds.CONFIG_IMPACT_HUD_PRESET_EXPORT,
+                ClientActionContexts.forClient(ActionOrigin.UI));
             statusCallback.accept(success ? "Exported!" : "Export failed!");
         });
 
         importPreset.onClick(() -> {
-            boolean success = com.frenkvs.devmod.hud.ImpactHudPresets.importFromDefault();
+            boolean success = ActionRegistry.invoke(ActionIds.CONFIG_IMPACT_HUD_PRESET_IMPORT,
+                ClientActionContexts.forClient(ActionOrigin.UI));
             statusCallback.accept(success ? "Imported!" : "Import failed!");
             syncAll();
         });
@@ -255,38 +274,9 @@ public final class ImpactHudButtons {
     // ACTIONS
     // ═══════════════════════════════════════════════════════════════
 
-    private void setIntensity(double value) {
-        Config.IMPACT_VFX_INTENSITY.set(value);
-        syncAll();
-    }
-
-    private void adjustOffset(boolean isX, int delta) {
-        try {
-            if (isX) {
-                int current = Config.IMPACT_HUD_OFFSET_X.get();
-                Config.IMPACT_HUD_OFFSET_X.set(Math.max(0, Math.min(200, current + delta)));
-            } else {
-                int current = Config.IMPACT_HUD_OFFSET_Y.get();
-                Config.IMPACT_HUD_OFFSET_Y.set(Math.max(0, Math.min(200, current + delta)));
-            }
-        } catch (Exception ignored) {}
-    }
-
     private void resetToDefaults() {
-        Config.IMPACT_HUD_ENABLED.set(true);
-        Config.IMPACT_HUD_POSITION.set(Config.HudPosition.TOP_RIGHT);
-        Config.IMPACT_HUD_OFFSET_X.set(10);
-        Config.IMPACT_HUD_OFFSET_Y.set(10);
-        Config.IMPACT_HUD_HISTORY_ENABLED.set(true);
-        Config.IMPACT_HUD_DPS_ENABLED.set(true);
-        Config.IMPACT_VFX_ENABLED.set(true);
-        Config.IMPACT_VFX_VORTEX_ENABLED.set(true);
-        Config.IMPACT_VFX_SLASH_ENABLED.set(true);
-        Config.IMPACT_VFX_LINES_ENABLED.set(true);
-        Config.IMPACT_VFX_INTENSITY.set(1.0);
-
-        ImpactHudOverlay.setEnabled(true);
-        Impact3DPanelManager.INSTANCE.setEnabled(true);
+        invokeAction(ActionIds.CONFIG_IMPACT_HUD_RESET_DEFAULTS);
+        invokeAction(ActionIds.CONFIG_IMPACT_VFX_RESET_DEFAULTS);
         currentPosition = Config.HudPosition.TOP_RIGHT;
 
         syncAll();
@@ -339,6 +329,29 @@ public final class ImpactHudButtons {
 
     private static double getConfigDouble(ModConfigSpec.DoubleValue config, double def) {
         try { return config.get(); } catch (Exception e) { return def; }
+    }
+
+    private void invokeToggleAction(String actionId, boolean desired, boolean current) {
+        if (desired == current) {
+            return;
+        }
+        ActionRegistry.invoke(actionId, ClientActionContexts.forClient(ActionOrigin.UI));
+    }
+
+    private void invokeAction(String actionId) {
+        ActionRegistry.invoke(actionId, ClientActionContexts.forClient(ActionOrigin.UI));
+        syncAll();
+    }
+
+    private static String resolvePositionAction(Config.HudPosition pos) {
+        return switch (pos) {
+            case TOP_LEFT -> ActionIds.CONFIG_IMPACT_HUD_POSITION_TOP_LEFT;
+            case TOP_RIGHT -> ActionIds.CONFIG_IMPACT_HUD_POSITION_TOP_RIGHT;
+            case CENTER_LEFT -> ActionIds.CONFIG_IMPACT_HUD_POSITION_CENTER_LEFT;
+            case CENTER_RIGHT -> ActionIds.CONFIG_IMPACT_HUD_POSITION_CENTER_RIGHT;
+            case BOTTOM_LEFT -> ActionIds.CONFIG_IMPACT_HUD_POSITION_BOTTOM_LEFT;
+            case BOTTOM_RIGHT -> ActionIds.CONFIG_IMPACT_HUD_POSITION_BOTTOM_RIGHT;
+        };
     }
 
     public static int getOffsetX() {

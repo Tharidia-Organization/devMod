@@ -43,7 +43,7 @@ public class PolicyMutatorResolver {
      */
     public PolicyMutatorResolver(Collection<MutatorBinding> initialBindings) {
         for (MutatorBinding binding : initialBindings) {
-            addBinding(binding);
+            addBindingInternal(binding);
         }
     }
 
@@ -51,6 +51,10 @@ public class PolicyMutatorResolver {
      * Add a mutator binding.
      */
     public void addBinding(MutatorBinding binding) {
+        addBindingInternal(binding);
+    }
+
+    private void addBindingInternal(MutatorBinding binding) {
         if (binding == null) {
             return;
         }

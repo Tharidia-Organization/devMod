@@ -13,7 +13,7 @@ import java.util.Objects;
  *
  * <p>The hub consists of:</p>
  * <ul>
- *   <li>4 macro-category segments (ANALYZE, COMBAT, TOOLS, PLAY)</li>
+ *   <li>Macro-category segments (ANALYZE, TELEMETRY, COMBAT, ARENA, PLAY, TOOLS)</li>
  *   <li>Close/back button in the very center</li>
  *   <li>Divider lines between segments</li>
  *   <li>Outer ring around the entire hub</li>
@@ -112,7 +112,7 @@ public final class RadialHubRenderer {
         double angle = Math.atan2(dy, dx);
         if (angle < 0) angle += RadialMenuConstants.TWO_PI;
 
-        // 4 segments, starting from top (-PI/2), going clockwise
+        // Macro segments, starting from top (-PI/2), going clockwise
         double startOffset = RadialMenuConstants.MACRO_START_OFFSET;
         double adjustedAngle = angle - startOffset;
         if (adjustedAngle < 0) adjustedAngle += RadialMenuConstants.TWO_PI;
@@ -166,7 +166,7 @@ public final class RadialHubRenderer {
     }
 
     /**
-     * Renders the 4 macro-category segments.
+     * Renders the macro-category segments.
      */
     private static void renderMacroSegments(GuiGraphics graphics, Font font, HubState state) {
         MacroCategory[] macros = MacroCategory.values();

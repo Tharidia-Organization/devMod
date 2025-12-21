@@ -303,7 +303,7 @@ public final class WaveDirector {
             ArenaHandle.BlockPos center = handle.center();
             return new BlockPos(center.x(), center.y(), center.z());
         }
-        ArenaManager.Arena arena = session.getArena();
+        ArenaContext arena = session.getArena();
         return arena != null ? arena.getCenter() : BlockPos.ZERO;
     }
 

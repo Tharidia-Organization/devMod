@@ -1,6 +1,11 @@
 package com.frenkvs.devmod.ui.testing.pages;
 
 import com.frenkvs.devmod.Config;
+import com.frenkvs.devmod.ModConfig;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.testing.VoxelLabTab;
 import com.frenkvs.devmod.ui.testing.panel.*;
@@ -97,15 +102,17 @@ public class CombatPage extends AbstractVoxelLabPage {
             .toggled(safeGetBool(Config.BODY_PART_DETECTION_ENABLED))
             .style(EditorButton.Style.PRIMARY)
             .icon("\u25CE")
-            .onToggle(v -> Config.BODY_PART_DETECTION_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_BODY_PART_DETECTION_TOGGLE,
+                Boolean.TRUE.equals(v), safeGetBool(Config.BODY_PART_DETECTION_ENABLED)));
 
         showBodyPartBoxesToggle = new EditorButton("toggle-boxes", "Show Hit Boxes")
             .toggleable(true)
-            .toggled(safeGetBool(Config.SHOW_BODY_PART_BOXES))
+            .toggled(ModConfig.showBodyPartBoxes)
             .style(EditorButton.Style.SUCCESS)
             .icon("\u25A1")
             .hotkeyHint("[Shift+G]")
-            .onToggle(v -> Config.SHOW_BODY_PART_BOXES.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_BODY_PARTS_TOGGLE,
+                Boolean.TRUE.equals(v), ModConfig.showBodyPartBoxes));
     }
 
     @Override
@@ -115,7 +122,14 @@ public class CombatPage extends AbstractVoxelLabPage {
 
     private void syncButtonStates() {
         bodyPartToggle.toggled(safeGetBool(Config.BODY_PART_DETECTION_ENABLED));
-        showBodyPartBoxesToggle.toggled(safeGetBool(Config.SHOW_BODY_PART_BOXES));
+        showBodyPartBoxesToggle.toggled(ModConfig.showBodyPartBoxes);
+    }
+
+    private void invokeToggleAction(String actionId, boolean desired, boolean current) {
+        if (desired == current) {
+            return;
+        }
+        ActionRegistry.invoke(actionId, ClientActionContexts.forClient(ActionOrigin.UI));
     }
 
 }

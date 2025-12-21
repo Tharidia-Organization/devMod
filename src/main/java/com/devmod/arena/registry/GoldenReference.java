@@ -23,11 +23,11 @@ public record GoldenReference(
         Bounds ceiling = new Bounds(-32, 74, -32, 31, 74, 31, 0, 0);
 
         int floorBlocks = 64 * 64 * 1;
-        int wallBlocks = 2520; // 2*(sizeX + sizeZ - 2) * height = 252 * 10
+        int wallBlocks = 2268; // 2*(sizeX + sizeZ - 2) * (height - overlaps) = 252 * 9
         int ceilingBlocks = 64 * 64 * 1;
         int underfloorBlocks = 64 * 64 * 3;
         int hazardBlocks = 0;
-        int total = floorBlocks + wallBlocks + ceilingBlocks + underfloorBlocks + hazardBlocks; // 23_000
+        int total = floorBlocks + wallBlocks + ceilingBlocks + underfloorBlocks + hazardBlocks; // 22_748
 
         List<int[]> slots = List.of(
             new int[]{0, 65, 0},
@@ -60,7 +60,7 @@ public record GoldenReference(
 
         int size = 80;
         int floorBlocks = size * size * 1; // 6,400
-        int wallBlocks = (2 * (size + size - 2)) * 12; // perimeter * height = 316 * 12 = 3,792
+        int wallBlocks = (2 * (size + size - 2)) * 11; // perimeter * (height - overlaps) = 316 * 11 = 3,476
         int ceilingBlocks = size * size * 1; // 6,400
         int underfloorBlocks = size * size * 3; // 19,200
         int hazardBlocks = (int) Math.round(Math.PI * ((32 * 32) - (30 * 30))); // ~390

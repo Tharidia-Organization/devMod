@@ -168,6 +168,6 @@ public class InstanceArenaManager {
         boolean success,
         String message,
         @Nullable UUID instanceId,
-        @Nullable ArenaManager.Arena arena
+        @Nullable ArenaContext arena
     ) {}
 }

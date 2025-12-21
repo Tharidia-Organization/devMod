@@ -402,19 +402,79 @@ public final class RadialCategoryRenderer {
         @Nonnull String name = Objects.requireNonNull(Objects.requireNonNullElse(item.getName(), ""), "name");
         int maxWidth = RadialMenuConstants.ITEM_NAME_MAX_WIDTH;
 
-        if (safeFont.width(name) > maxWidth) {
-            String ellipsis = "...";
-            int minChars = Math.min(RadialMenuConstants.ITEM_NAME_MIN_CHARS, name.length());
-            while (safeFont.width(name + ellipsis) > maxWidth && name.length() > minChars) {
-                name = Objects.requireNonNull(name.substring(0, name.length() - 1), "name");
-            }
-            name += ellipsis;
-        }
-
+        java.util.List<String> lines = splitNameLines(safeFont, name, maxWidth);
         int nameColor = selected
             ? theme.textPrimary
             : (isActive ? theme.active : theme.textSecondary);
-        graphics.drawCenteredString(safeFont, name, x, y + RadialMenuConstants.ITEM_NAME_OFFSET_Y, nameColor);
+        @Nonnull String line0 = Objects.requireNonNull(lines.get(0), "line0");
+        if (lines.size() == 1) {
+            graphics.drawCenteredString(safeFont, line0, x,
+                y + RadialMenuConstants.ITEM_NAME_OFFSET_Y, nameColor);
+            return;
+        }
+
+        int lineHeight = safeFont.lineHeight;
+        int line1Y = y + RadialMenuConstants.ITEM_NAME_OFFSET_Y - (lineHeight / 2);
+        int line2Y = line1Y + lineHeight;
+        @Nonnull String line1 = line0;
+        @Nonnull String line2 = Objects.requireNonNull(lines.get(1), "line2");
+        graphics.drawCenteredString(safeFont, line1, x, line1Y, nameColor);
+        graphics.drawCenteredString(safeFont, line2, x, line2Y, nameColor);
+    }
+
+    private static java.util.List<String> splitNameLines(@Nonnull Font font, @Nonnull String name, int maxWidth) {
+        if (font.width(name) <= maxWidth) {
+            return java.util.List.of(name);
+        }
+
+        String[] words = name.split(" ");
+        if (words.length < 2) {
+            return java.util.List.of(truncateToWidth(font, name, maxWidth));
+        }
+
+        int bestSplit = -1;
+        int bestMaxWidth = Integer.MAX_VALUE;
+        for (int i = 0; i < words.length - 1; i++) {
+            @Nonnull String line1 = Objects.requireNonNull(joinWords(words, 0, i), "line1");
+            @Nonnull String line2 = Objects.requireNonNull(joinWords(words, i + 1, words.length - 1), "line2");
+            int line1Width = font.width(line1);
+            int line2Width = font.width(line2);
+            int maxLineWidth = Math.max(line1Width, line2Width);
+            if (line1Width <= maxWidth && line2Width <= maxWidth && maxLineWidth < bestMaxWidth) {
+                bestSplit = i;
+                bestMaxWidth = maxLineWidth;
+            }
+        }
+
+        if (bestSplit != -1) {
+            return java.util.List.of(
+                joinWords(words, 0, bestSplit),
+                joinWords(words, bestSplit + 1, words.length - 1)
+            );
+        }
+
+        return java.util.List.of(truncateToWidth(font, name, maxWidth));
+    }
+
+    private static String truncateToWidth(@Nonnull Font font, @Nonnull String name, int maxWidth) {
+        String trimmed = name;
+        String ellipsis = "...";
+        int minChars = Math.min(RadialMenuConstants.ITEM_NAME_MIN_CHARS, trimmed.length());
+        while (font.width(trimmed + ellipsis) > maxWidth && trimmed.length() > minChars) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed + ellipsis;
+    }
+
+    private static String joinWords(String[] words, int start, int end) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = start; i <= end; i++) {
+            if (builder.length() > 0) {
+                builder.append(' ');
+            }
+            builder.append(words[i]);
+        }
+        return builder.toString();
     }
 
     /**

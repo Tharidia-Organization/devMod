@@ -502,6 +502,12 @@ public class RecoverySystem {
         // Set instance reference
         if (instance != null) {
             snapshot.setInstanceId(instance.getInstanceId());
+            snapshot.withArenaTemplate(
+                instance.getArenaTemplate(),
+                instance.getArenaTemplateVersion(),
+                instance.getArenaPolicyId(),
+                instance.getArenaPolicyVersion()
+            );
         }
 
         // Position

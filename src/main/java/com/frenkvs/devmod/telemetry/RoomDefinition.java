@@ -4,6 +4,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 
 public record RoomDefinition(String id, String dimension, BlockPos min, BlockPos max) {
+    public RoomDefinition {
+        if (dimension == null || dimension.isBlank()) {
+            dimension = "minecraft:overworld";
+        }
+    }
+
     /**
      * Constructor without dimension (defaults to overworld for backwards compatibility)
      */

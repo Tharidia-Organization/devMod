@@ -196,7 +196,7 @@ public final class RadialTooltipRenderer {
             helpLine = "§eSearch §7- Type to filter, Enter to select, Esc to cancel";
         } else {
             helpLine = "§f[" + selectedMacro.getName() +
-                "§f] §7Click center to switch §8| §7[/] Search §8| §7[1-4] Macro";
+                "§f] §7Click center to switch macros §8| §7[/] Search";
         }
 
         graphics.drawCenteredString(font, helpLine, screenWidth / 2,

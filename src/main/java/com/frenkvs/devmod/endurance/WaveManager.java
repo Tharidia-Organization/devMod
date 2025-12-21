@@ -264,7 +264,7 @@ public class WaveManager {
      */
     public WaveState startWave(EnduranceQuestManager.ActiveQuestSession session) {
         EnduranceQuest quest = session.getQuest();
-        ArenaManager.Arena arena = session.getArena();
+        ArenaContext arena = session.getArena();
         ArenaHandle handle = session.getArenaHandle();
         int waveNumber = quest.getCurrentWave();
 
@@ -429,7 +429,7 @@ public class WaveManager {
         EnduranceQuestManager.INSTANCE.abandonQuest(player);
     }
 
-    private void spawnDueBatches(WaveState waveState, ArenaManager.Arena arena, ArenaHandle handle) {
+    private void spawnDueBatches(WaveState waveState, ArenaContext arena, ArenaHandle handle) {
         if (waveState == null || waveState.getSpawnPlan().isEmpty()) {
             return;
         }
@@ -444,7 +444,7 @@ public class WaveManager {
     }
 
     private void spawnWaveBatch(WaveState waveState,
-                                ArenaManager.Arena arena,
+                                ArenaContext arena,
                                 ArenaHandle handle,
                                 WaveDirector.SpawnBatch batch) {
         if (batch == null) {
@@ -458,7 +458,7 @@ public class WaveManager {
      * Verifies each spawn and logs failures for debugging.
      */
     private void spawnWaveMobs(WaveState waveState,
-                               ArenaManager.Arena arena,
+                               ArenaContext arena,
                                @javax.annotation.Nullable ArenaHandle handle,
                                int count,
                                SpawnAffix affix,
@@ -619,7 +619,7 @@ public class WaveManager {
             return 0;
         }
 
-        ArenaManager.Arena arena = session.getArena();
+        ArenaContext arena = session.getArena();
         ArenaHandle handle = session.getArenaHandle();
         if (arena == null || handle == null) {
             EnduranceTelemetryService.INSTANCE.recordWaveBlocked(waveState.quest.getQuestId());
@@ -760,7 +760,7 @@ public class WaveManager {
         if (session == null || session.getQuest().getState() != EnduranceQuestState.IN_PROGRESS) {
             return;
         }
-        ArenaManager.Arena arena = session.getArena();
+        ArenaContext arena = session.getArena();
         if (arena == null) {
             return;
         }
@@ -800,7 +800,7 @@ public class WaveManager {
         waveState.markCompletionNotified();
         waveState.advanceSpawnIndex(waveState.getSpawnPlan().size());
 
-        ArenaManager.Arena arena = session.getArena();
+        ArenaContext arena = session.getArena();
         if (arena != null) {
             despawnRemainingMobs(waveState, arena.getLevel());
         }
@@ -921,7 +921,7 @@ public class WaveManager {
         return new SpawnPools(positions, melee, ranged, corner);
     }
 
-    private @javax.annotation.Nullable SpawnContext buildSpawnContext(ArenaManager.Arena arena, ArenaHandle handle) {
+    private @javax.annotation.Nullable SpawnContext buildSpawnContext(ArenaContext arena, ArenaHandle handle) {
         if (arena == null || handle == null || handle.mobSpawnPositions() == null || handle.mobSpawnPositions().isEmpty()) {
             return null;
         }

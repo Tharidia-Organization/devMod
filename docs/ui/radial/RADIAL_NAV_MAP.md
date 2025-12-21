@@ -5,7 +5,7 @@ Obiettivo: Radial come gateway unico. Max 6-8 categorie root, con sub-wheel cont
 ## Root Wheel (6–8 categorie)
 
 1) **Tools** (CRAFTING_TABLE)
-   - Settings (COMPARATOR)
+   - Settings (COMPARATOR): Keybinds + Quick Help + Onboarding + HUD Config (history/DPS/position/offset/presets) + Effects (Impact VFX + intensity, screen shake, trails, badge popups) + Telemetry Config + Combat Config
    - Welcome / Tutorial Start / Skip (BOOK / WRITABLE_BOOK / BARRIER)
    - Item Editor (ANVIL)
    - Mob Config (SPAWNER)
@@ -15,6 +15,7 @@ Obiettivo: Radial come gateway unico. Max 6-8 categorie root, con sub-wheel cont
 
 2) **Combat** (IRON_SWORD)
    - Abilities: Dash, Dodge (FEATHER / SHIELD)
+   - Impact HUD 2D/3D (NETHERITE_SWORD / ITEM_FRAME)
    - Boss Phase HUD (WITHER_SKELETON_SKULL)
    - Skill Efficacy (NETHER_STAR)
    - Stamina Editor (HONEY_BOTTLE)
@@ -51,7 +52,7 @@ Obiettivo: Radial come gateway unico. Max 6-8 categorie root, con sub-wheel cont
    - Heatmaps (FILLED_MAP, Toggle/Cycle/Clear + per-type toggles incl. Light Spawnable/Dark)
    - Pathfinding / LOS / Aggro Range (COMPASS / SPYGLASS / TARGET)
    - Native Debug (DEBUG_STICK)
-   - Room Bounds / Vertical / Safe Spots / Spawnability (STRUCTURE_BLOCK / LADDER / SHIELD / SPAWNER)
+   - Room Bounds (Editor + Set A/B + Save + Delete) / Vertical / Safe Spots / Spawnability (STRUCTURE_BLOCK / LADDER / SHIELD / SPAWNER)
    - Perf: FPS / Profiler / Chunk Perf / Attribute Monitor (CLOCK / REDSTONE / OBSERVER)
    - VFX: Screen Shake Test (AMETHYST_SHARD)
    - HUD: Quick Help / Impact Dismiss (BOOK / BARRIER)
@@ -59,6 +60,7 @@ Obiettivo: Radial come gateway unico. Max 6-8 categorie root, con sub-wheel cont
 7) **Testing** (TARGET)
    - Testing Hub (LECTERN)
    - QA Testing (NOTE_BLOCK)
+   - QA Actions: Start/Resume, Pass/Fail/Skip/Auto, Save/Copy Report
    - VoxelLab / UI Tests (PINK_CONCRETE / MAGENTA_DYE)
    - Impact HUD tools (GLASS_PANE)
    - Debug tools (STRUCTURE_VOID)

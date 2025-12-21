@@ -44,21 +44,21 @@ public class AdvancedArenaTemplateValidator {
         // === Static Rules (schema validation) ===
 
         // Template ID required
-        addStaticRule("template_id_required", ValidationSeverity.ERROR,
+        addStaticRuleInternal("template_id_required", ValidationSeverity.ERROR,
             ctx -> ctx.templateId() != null && !ctx.templateId().isBlank(),
             "Template ID is required");
 
         // Version must be positive
-        addStaticRule("version_positive", ValidationSeverity.ERROR,
+        addStaticRuleInternal("version_positive", ValidationSeverity.ERROR,
             ctx -> ctx.version() > 0,
             "Template version must be positive");
 
         // Bounds validation
-        addStaticRule("bounds_defined", ValidationSeverity.ERROR,
+        addStaticRuleInternal("bounds_defined", ValidationSeverity.ERROR,
             ctx -> ctx.bounds() != null,
             "Arena bounds must be defined");
 
-        addStaticRule("bounds_size_limit", ValidationSeverity.ERROR,
+        addStaticRuleInternal("bounds_size_limit", ValidationSeverity.ERROR,
             ctx -> {
                 if (ctx.bounds() == null) return true; // checked by bounds_defined
                 return ctx.bounds().sizeX() <= MAX_ARENA_SIZE
@@ -67,7 +67,7 @@ public class AdvancedArenaTemplateValidator {
             },
             "Arena dimensions must not exceed " + MAX_ARENA_SIZE + " blocks per axis");
 
-        addStaticRule("bounds_positive", ValidationSeverity.ERROR,
+        addStaticRuleInternal("bounds_positive", ValidationSeverity.ERROR,
             ctx -> {
                 if (ctx.bounds() == null) return true;
                 return ctx.bounds().sizeX() > 0
@@ -77,33 +77,33 @@ public class AdvancedArenaTemplateValidator {
             "Arena dimensions must be positive");
 
         // Spawn slot validation
-        addStaticRule("spawn_slots_defined", ValidationSeverity.ERROR,
+        addStaticRuleInternal("spawn_slots_defined", ValidationSeverity.ERROR,
             ctx -> ctx.spawnSlotCount() > 0,
             "At least one spawn slot must be defined");
 
-        addStaticRule("spawn_count_limit", ValidationSeverity.ERROR,
+        addStaticRuleInternal("spawn_count_limit", ValidationSeverity.ERROR,
             ctx -> ctx.spawnSlotCount() <= MAX_SPAWN_COUNT,
             "Spawn count must not exceed " + MAX_SPAWN_COUNT);
 
         // Hazard validation
-        addStaticRule("hazard_count_limit", ValidationSeverity.ERROR,
+        addStaticRuleInternal("hazard_count_limit", ValidationSeverity.ERROR,
             ctx -> ctx.hazardCount() <= MAX_HAZARD_COUNT,
             "Hazard count must not exceed " + MAX_HAZARD_COUNT);
 
         // Block count estimation
-        addStaticRule("block_count_limit", ValidationSeverity.WARNING,
+        addStaticRuleInternal("block_count_limit", ValidationSeverity.WARNING,
             ctx -> ctx.estimatedBlockCount() <= MAX_BLOCK_COUNT,
             "Estimated block count exceeds " + MAX_BLOCK_COUNT + ", build may be slow");
 
         // Inheritance depth
-        addStaticRule("inheritance_depth_limit", ValidationSeverity.ERROR,
+        addStaticRuleInternal("inheritance_depth_limit", ValidationSeverity.ERROR,
             ctx -> ctx.inheritanceDepth() <= MAX_INHERITANCE_DEPTH,
             "Inheritance depth must not exceed " + MAX_INHERITANCE_DEPTH);
 
         // === Static Rules (semantic validation) ===
 
         // Player spawn inside bounds
-        addStaticRule("player_spawn_in_bounds", ValidationSeverity.ERROR,
+        addStaticRuleInternal("player_spawn_in_bounds", ValidationSeverity.ERROR,
             ctx -> {
                 if (ctx.bounds() == null || ctx.playerSpawn() == null) return true;
                 return ctx.bounds().contains(ctx.playerSpawn());
@@ -111,7 +111,7 @@ public class AdvancedArenaTemplateValidator {
             "Player spawn must be inside arena bounds");
 
         // Exit portal defined for closed arenas
-        addStaticRule("exit_portal_defined", ValidationSeverity.WARNING,
+        addStaticRuleInternal("exit_portal_defined", ValidationSeverity.WARNING,
             ctx -> {
                 if (!ctx.isClosedArena()) return true;
                 return ctx.hasExitPortal();
@@ -119,7 +119,7 @@ public class AdvancedArenaTemplateValidator {
             "Closed arenas should have an exit portal defined");
 
         // Wave spawner configuration
-        addStaticRule("wave_spawner_config", ValidationSeverity.WARNING,
+        addStaticRuleInternal("wave_spawner_config", ValidationSeverity.WARNING,
             ctx -> {
                 if (!ctx.hasWaveSpawner()) return true;
                 return ctx.waveSpawnerHasValidConfig();
@@ -132,6 +132,11 @@ public class AdvancedArenaTemplateValidator {
      */
     public void addStaticRule(String id, ValidationSeverity severity,
                                Predicate<ValidationContext> check, String message) {
+        addStaticRuleInternal(id, severity, check, message);
+    }
+
+    private void addStaticRuleInternal(String id, ValidationSeverity severity,
+                                        Predicate<ValidationContext> check, String message) {
         staticRules.add(new ValidationRule(id, severity, check, message, RulePhase.STATIC));
     }
 

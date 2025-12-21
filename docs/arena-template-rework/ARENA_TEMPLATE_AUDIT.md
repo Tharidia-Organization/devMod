@@ -39,7 +39,7 @@ Nota: le task list storiche `docs/_deprecated/arena-template-rework/TODO_AGENT_*
 
 ## Gap residui (focus evolutivo)
 1. **Prebuild Pool (DD63)**: decisione enablement dopo 2 settimane di telemetria; definire go/no-go e configurazione finale.
-2. **Legacy cleanup**: pianificare rimozione definitiva dell'adapter legacy quando KPI+gate sono verdi.
+2. **Legacy cleanup**: adapter legacy rimosso dai flussi endurance; resta solo il wrapper deprecato per compatibilita' storica.
 
 ## Documenti deprecati (vedi header nei file)
 - `docs/_deprecated/arena-template-rework/TODO_ARENA_TEMPLATE.md` -> usa `docs/arena-template-rework/TODO_ARENA_TEMPLATE.md`

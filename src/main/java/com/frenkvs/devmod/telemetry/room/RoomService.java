@@ -142,8 +142,11 @@ public class RoomService {
      * @return List of rooms in the dimension
      */
     public List<RoomDefinition> getRoomsInDimension(String dimensionId) {
+        if (dimensionId == null || dimensionId.isBlank()) {
+            return List.of();
+        }
         return rooms.stream()
-            .filter(r -> r.dimension().equals(dimensionId))
+            .filter(r -> dimensionId.equals(r.dimension()))
             .toList();
     }
 

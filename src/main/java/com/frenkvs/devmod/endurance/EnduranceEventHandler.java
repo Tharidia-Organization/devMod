@@ -273,7 +273,7 @@ public class EnduranceEventHandler {
         } else {
             // Normal wave announcement
             int mobCount = quest.getCurrentWaveMobCount();
-            ArenaManager.Arena arena = session.getArena();
+            ArenaContext arena = session.getArena();
             if (arena != null) {
                 mobCount = WaveManager.INSTANCE.getWaveState(arena.getId())
                     .map(WaveManager.WaveState::getTotalToSpawn)
@@ -412,7 +412,7 @@ public class EnduranceEventHandler {
         }
 
         float directiveMultiplier = 1.0f;
-        ArenaManager.Arena arena = session.getArena();
+        ArenaContext arena = session.getArena();
         if (arena != null) {
             directiveMultiplier = WaveManager.INSTANCE.getWaveState(arena.getId())
                 .map(WaveManager.WaveState::getRewardMultiplier)

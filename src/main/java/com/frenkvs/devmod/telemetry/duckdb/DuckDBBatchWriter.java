@@ -1114,7 +1114,6 @@ public class DuckDBBatchWriter {
             "external_death_respawn_count, wave_blocked_detected) " +
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
             "ON CONFLICT(id) DO UPDATE SET " +
-            "player_id = CASE WHEN excluded.player_id IS NULL THEN endurance_sessions.player_id ELSE excluded.player_id END, " +
             "player_name = CASE WHEN excluded.player_name IS NULL THEN endurance_sessions.player_name ELSE excluded.player_name END, " +
             "quest_name = CASE WHEN excluded.quest_name IS NULL THEN endurance_sessions.quest_name ELSE excluded.quest_name END, " +
             "quest_type = CASE WHEN excluded.quest_type IS NULL THEN endurance_sessions.quest_type ELSE excluded.quest_type END, " +

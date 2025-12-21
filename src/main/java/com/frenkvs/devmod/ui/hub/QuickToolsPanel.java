@@ -12,6 +12,7 @@ import com.frenkvs.devmod.testing.TestingSession;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -367,7 +368,8 @@ public class QuickToolsPanel implements HubPanel {
     }
 
     private void openDashboard() {
-        ActionRegistry.invoke(ActionIds.TELEMETRY_DASHBOARD_SERVER_OPEN,
-            ClientActionContexts.forClient(ActionOrigin.UI));
+        ActionContext context = ClientActionContexts.forClient(
+            ActionOrigin.UI, Minecraft.getInstance().screen);
+        ActionRegistry.invoke(ActionIds.UI_TELEMETRY_DASHBOARD_OPEN, context);
     }
 }

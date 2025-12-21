@@ -3,13 +3,17 @@ package com.frenkvs.devmod.ui.radial.model;
 import java.util.Objects;
 
 /**
- * Macro-categories that organize the radial menu into 4 logical groups.
- * Each macro-category contains up to 6 sub-categories displayed in the outer ring.
+ * Macro-categories that organize the radial menu into 6 logical groups.
+ * Each macro-category contains a focused set of sub-categories displayed in the outer ring.
  *
  * <p>Layout:</p>
  * <pre>
- *     ANALYZE (top-left)     COMBAT (top-right)
- *     TOOLS (bottom-left)    PLAY (bottom-right)
+ *     ANALYZE (top)
+ *     TELEMETRY (upper-right)
+ *     COMBAT (right-lower)
+ *     ARENA (bottom)
+ *     PLAY (lower-left)
+ *     TOOLS (left-upper)
  * </pre>
  *
  * <p>Each macro has:</p>
@@ -28,22 +32,34 @@ public enum MacroCategory {
     ANALYZE("Analyze", "\uD83D\uDD0E", 0xFF4488FF, "Debug, spatial analysis, visualization"),
 
     /**
-     * Combat tools, editors, and heatmaps.
+     * Telemetry data, dashboards, and exports.
+     * Color: Cyan (0xFF66CCFF)
+     */
+    TELEMETRY("Telemetry", "\uD83D\uDCE1", 0xFF66CCFF, "Telemetry, dashboards, exports"),
+
+    /**
+     * Combat tools, abilities, and heatmaps.
      * Color: Red (0xFFFF4444)
      */
-    COMBAT("Combat", "\u2694", 0xFFFF4444, "Combat tools, editors, heatmaps"),
+    COMBAT("Combat", "\u2694", 0xFFFF4444, "Combat tools, abilities, heatmaps"),
+
+    /**
+     * Arena systems and operations.
+     * Color: Emerald (0xFF55DD88)
+     */
+    ARENA("Arena", "\uD83C\uDFF0", 0xFF55DD88, "Arena ops, templates, autosmoke"),
+
+    /**
+     * Quests, endurance mode, and party play.
+     * Color: Green (0xFF44FF88)
+     */
+    PLAY("Play", "\uD83C\uDFAE", 0xFF44FF88, "Quests, endurance, party"),
 
     /**
      * Settings, editors, and testing utilities.
      * Color: Orange (0xFFFFAA00)
      */
-    TOOLS("Tools", "\uD83D\uDEE0", 0xFFFFAA00, "Settings, editors, testing utilities"),
-
-    /**
-     * Quests, endurance mode, and multiplayer features.
-     * Color: Green (0xFF44FF88)
-     */
-    PLAY("Play", "\uD83C\uDFAE", 0xFF44FF88, "Quests, endurance, multiplayer");
+    TOOLS("Tools", "\uD83D\uDEE0", 0xFFFFAA00, "Settings, editors, testing utilities");
 
     private final String name;
     private final int color;
@@ -105,7 +121,7 @@ public enum MacroCategory {
 
     /**
      * Returns the number of macro-categories.
-     * @return 4
+     * @return 6
      */
     public static int count() {
         return values().length;

@@ -19,6 +19,10 @@ public final class ActionIds {
     public static final String UI_MOB_CONFIG_OPEN = "devmod.ui.mob_config.open";
     public static final String UI_MOB_EQUIPMENT_OPEN = "devmod.ui.mob_equipment.open";
     public static final String UI_ROOM_BOUNDS_EDITOR_OPEN = "devmod.ui.room_bounds_editor.open";
+    public static final String UI_ROOM_BOUNDS_POINT_A = "devmod.ui.room_bounds_editor.point_a";
+    public static final String UI_ROOM_BOUNDS_POINT_B = "devmod.ui.room_bounds_editor.point_b";
+    public static final String UI_ROOM_BOUNDS_SAVE = "devmod.ui.room_bounds_editor.save";
+    public static final String UI_ROOM_BOUNDS_DELETE_LAST = "devmod.ui.room_bounds_editor.delete_last";
     public static final String UI_TESTING_HUB_OPEN = "devmod.ui.testing_hub.open";
     public static final String UI_QUICK_TEST_WIZARD_OPEN = "devmod.ui.quick_test_wizard.open";
     public static final String UI_BADGE_TESTS_OPEN = "devmod.ui.badge_tests.open";
@@ -94,9 +98,44 @@ public final class ActionIds {
 
     public static final String HUD_QUICK_HELP_TOGGLE = "devmod.hud.quick_help.toggle";
     public static final String HUD_IMPACT_TOGGLE = "devmod.hud.impact.toggle";
+    public static final String HUD_IMPACT_3D_TOGGLE = "devmod.hud.impact_3d.toggle";
     public static final String HUD_QUEST_TOGGLE = "devmod.hud.quest.toggle";
     public static final String HUD_ENDURANCE_TOGGLE = "devmod.endurance.hud.toggle";
     public static final String HUD_ENDURANCE_DETAILS_TOGGLE = "devmod.endurance.hud.details_toggle";
+
+    // Config toggles (client)
+    public static final String CONFIG_BODY_PART_DETECTION_TOGGLE = "devmod.config.body_part_detection.toggle";
+    public static final String CONFIG_TELEMETRY_TOGGLE = "devmod.config.telemetry.toggle";
+    public static final String CONFIG_TELEMETRY_HITS_TOGGLE = "devmod.config.telemetry.hits.toggle";
+    public static final String CONFIG_TELEMETRY_DEATHS_TOGGLE = "devmod.config.telemetry.deaths.toggle";
+    public static final String CONFIG_TELEMETRY_SPAWNS_TOGGLE = "devmod.config.telemetry.spawns.toggle";
+    public static final String CONFIG_IMPACT_HUD_HISTORY_TOGGLE = "devmod.config.impact_hud.history.toggle";
+    public static final String CONFIG_IMPACT_HUD_DPS_TOGGLE = "devmod.config.impact_hud.dps.toggle";
+    public static final String CONFIG_IMPACT_HUD_POSITION_TOP_LEFT = "devmod.config.impact_hud.position.top_left";
+    public static final String CONFIG_IMPACT_HUD_POSITION_TOP_RIGHT = "devmod.config.impact_hud.position.top_right";
+    public static final String CONFIG_IMPACT_HUD_POSITION_CENTER_LEFT = "devmod.config.impact_hud.position.center_left";
+    public static final String CONFIG_IMPACT_HUD_POSITION_CENTER_RIGHT = "devmod.config.impact_hud.position.center_right";
+    public static final String CONFIG_IMPACT_HUD_POSITION_BOTTOM_LEFT = "devmod.config.impact_hud.position.bottom_left";
+    public static final String CONFIG_IMPACT_HUD_POSITION_BOTTOM_RIGHT = "devmod.config.impact_hud.position.bottom_right";
+    public static final String CONFIG_IMPACT_HUD_OFFSET_X_MINUS = "devmod.config.impact_hud.offset_x.minus";
+    public static final String CONFIG_IMPACT_HUD_OFFSET_X_PLUS = "devmod.config.impact_hud.offset_x.plus";
+    public static final String CONFIG_IMPACT_HUD_OFFSET_Y_MINUS = "devmod.config.impact_hud.offset_y.minus";
+    public static final String CONFIG_IMPACT_HUD_OFFSET_Y_PLUS = "devmod.config.impact_hud.offset_y.plus";
+    public static final String CONFIG_IMPACT_HUD_PRESET_EXPORT = "devmod.config.impact_hud.preset.export";
+    public static final String CONFIG_IMPACT_HUD_PRESET_IMPORT = "devmod.config.impact_hud.preset.import";
+    public static final String CONFIG_IMPACT_HUD_RESET_DEFAULTS = "devmod.config.impact_hud.reset_defaults";
+    public static final String CONFIG_IMPACT_VFX_TOGGLE = "devmod.config.impact_vfx.toggle";
+    public static final String CONFIG_IMPACT_VFX_VORTEX_TOGGLE = "devmod.config.impact_vfx.vortex.toggle";
+    public static final String CONFIG_IMPACT_VFX_SLASH_TOGGLE = "devmod.config.impact_vfx.slash.toggle";
+    public static final String CONFIG_IMPACT_VFX_LINES_TOGGLE = "devmod.config.impact_vfx.lines.toggle";
+    public static final String CONFIG_IMPACT_VFX_INTENSITY_LOW = "devmod.config.impact_vfx.intensity.low";
+    public static final String CONFIG_IMPACT_VFX_INTENSITY_MED = "devmod.config.impact_vfx.intensity.med";
+    public static final String CONFIG_IMPACT_VFX_INTENSITY_HIGH = "devmod.config.impact_vfx.intensity.high";
+    public static final String CONFIG_IMPACT_VFX_INTENSITY_MAX = "devmod.config.impact_vfx.intensity.max";
+    public static final String CONFIG_IMPACT_VFX_RESET_DEFAULTS = "devmod.config.impact_vfx.reset_defaults";
+    public static final String CONFIG_SCREEN_SHAKE_TOGGLE = "devmod.config.screen_shake.toggle";
+    public static final String CONFIG_PROJECTILE_TRAILS_TOGGLE = "devmod.config.projectile_trails.toggle";
+    public static final String CONFIG_BADGE_POPUPS_TOGGLE = "devmod.config.badge_popups.toggle";
 
     // Endurance actions
     public static final String QUEST_TASK_COMPLETE = "devmod.quest.task.complete";
@@ -202,4 +241,14 @@ public final class ActionIds {
     public static final String TEST_INFO = "devmod.testing.info";
     public static final String TEST_QA_OPEN = "devmod.testing.qa.open";
     public static final String TEST_BODYPART_INFO = "devmod.testing.bodypart.info";
+
+    // QA testing session (client)
+    public static final String QA_SESSION_START = "devmod.testing.session.start";
+    public static final String QA_SESSION_RESUME = "devmod.testing.session.resume";
+    public static final String QA_REPORT_SAVE = "devmod.testing.report.save";
+    public static final String QA_REPORT_COPY = "devmod.testing.report.copy";
+    public static final String QA_TEST_PASS = "devmod.testing.test.pass";
+    public static final String QA_TEST_FAIL = "devmod.testing.test.fail";
+    public static final String QA_TEST_SKIP = "devmod.testing.test.skip";
+    public static final String QA_TEST_AUTO = "devmod.testing.test.auto";
 }

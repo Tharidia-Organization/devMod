@@ -166,7 +166,8 @@ public class QuestStartSequence {
             return;
         }
 
-        if (!EnduranceQuestManager.INSTANCE.isPlayerInArena(player, sequence.preparedArena)) {
+        if (!EnduranceQuestManager.INSTANCE.isPlayerInArena(
+            player, sequence.preparedArenaHandle, sequence.preparedArena)) {
             LOGGER.warn("[QuestSequence] Player {} sent arrival confirm but is NOT in arena bounds!",
                 player.getName().getString());
             // Don't confirm - player might be cheating or lagging
@@ -651,7 +652,7 @@ public class QuestStartSequence {
         CompletableFuture<EnduranceQuestManager.PreparedArenaResult> pendingArenaFuture;
 
         // Pre-created arena (set during TELEPORTING phase)
-        com.frenkvs.devmod.endurance.ArenaManager.Arena preparedArena;
+        com.frenkvs.devmod.endurance.ArenaContext preparedArena;
         ArenaHandle preparedArenaHandle;
         ResourceLocation mobId;
 

@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * - L1: Data integrity (proper values, no nulls)
  * - L2: Distribution tests (all 24 categories, no duplicates)
  * - L3: Selection logic (state transitions)
- * - L4: Keyboard shortcuts (1-4 for macros)
+ * - L4: Keyboard shortcuts (1-6 for macros)
  * - L5: Persistence (static field for state)
  * - L6: Integration (method existence)
  *
@@ -72,8 +72,8 @@ class RadialMenuMacroCategoryTest {
         }
 
         @Test
-        @DisplayName("L0-02: MacroCategory has exactly 4 values")
-        void macroCategoryHasFourValues() {
+        @DisplayName("L0-02: MacroCategory has exactly 6 values")
+        void macroCategoryHasSixValues() {
             // Find enum declaration block
             Pattern enumPattern = Pattern.compile(
                 "enum MacroCategory\\s*\\{([^}]+?)\\s*;",
@@ -83,21 +83,21 @@ class RadialMenuMacroCategoryTest {
 
             String enumBody = matcher.group(1);
             // Count enum constants (format: NAME(...))
-            Pattern constantPattern = Pattern.compile("(ANALYZE|COMBAT|TOOLS|PLAY)\\s*\\(");
+            Pattern constantPattern = Pattern.compile("(ANALYZE|TELEMETRY|COMBAT|ARENA|PLAY|TOOLS)\\s*\\(");
             Matcher constantMatcher = constantPattern.matcher(enumBody);
 
             int count = 0;
             while (constantMatcher.find()) {
                 count++;
             }
-            assertEquals(4, count,
-                "MacroCategory should have exactly 4 values (ANALYZE, COMBAT, TOOLS, PLAY)");
+            assertEquals(6, count,
+                "MacroCategory should have exactly 6 values (ANALYZE, TELEMETRY, COMBAT, ARENA, PLAY, TOOLS)");
         }
 
         @Test
         @DisplayName("L0-03: MacroCategory values are correctly named")
         void macroCategoryValuesNamed() {
-            String[] expectedValues = {"ANALYZE", "COMBAT", "TOOLS", "PLAY"};
+            String[] expectedValues = {"ANALYZE", "TELEMETRY", "COMBAT", "ARENA", "PLAY", "TOOLS"};
             for (String value : expectedValues) {
                 assertTrue(macroCategorySourceCode.contains(value + "("),
                     "MacroCategory should contain " + value);
@@ -298,13 +298,15 @@ class RadialMenuMacroCategoryTest {
         }
 
         @Test
-        @DisplayName("L2-07: Each macro-category has 6 categories added")
-        void eachMacroHas6Categories() {
+        @DisplayName("L2-07: Macro build methods exist and total categories are added")
+        void macroBuildMethodsAndTotalCategories() {
             // Category definitions moved to RadialMenuRegistry
             // Verify each build method exists and total of 24 categories are added
             String[] buildMethods = {
                 "buildAnalyzeCategories",
+                "buildTelemetryCategories",
                 "buildCombatCategories",
+                "buildArenaCategories",
                 "buildToolsCategories",
                 "buildPlayCategories"
             };
@@ -315,7 +317,7 @@ class RadialMenuMacroCategoryTest {
                     "Method " + methodName + " should exist in RadialMenuRegistry");
             }
 
-            // Count total categories.add() calls - should be 24 (6 per macro)
+            // Count total categories.add() calls - should be 24 total
             Pattern addPattern = Pattern.compile("categories\\.add\\(");
             Matcher addMatcher = addPattern.matcher(registrySourceCode);
             int totalCount = 0;
@@ -323,7 +325,7 @@ class RadialMenuMacroCategoryTest {
                 totalCount++;
             }
             assertEquals(24, totalCount,
-                "RadialMenuRegistry should add exactly 24 categories total (6 per macro). Found: " + totalCount);
+                "RadialMenuRegistry should add exactly 24 categories total. Found: " + totalCount);
         }
     }
 
@@ -375,25 +377,25 @@ class RadialMenuMacroCategoryTest {
     class L4KeyboardShortcutTests {
 
         @Test
-        @DisplayName("L4-01: Keys 1-4 switch macro-categories")
-        void keys1to4SwitchMacroCategories() {
-            assertTrue(screenSourceCode.contains("Keys 1-4 switch macro-categories"),
-                "Comment should document keys 1-4 for macro switching");
-            assertTrue(screenSourceCode.contains("GLFW_KEY_1") && screenSourceCode.contains("GLFW_KEY_4"),
-                "Key handling should check GLFW_KEY_1 through GLFW_KEY_4");
+        @DisplayName("L4-01: Keys 1-6 switch macro-categories")
+        void keys1to6SwitchMacroCategories() {
+            assertTrue(screenSourceCode.contains("defaults: GLFW_KEY_1 .. GLFW_KEY_6"),
+                "Comment should document keys 1-6 for macro switching");
+            assertTrue(screenSourceCode.contains("GLFW_KEY_1") && screenSourceCode.contains("GLFW_KEY_6"),
+                "Key handling should check GLFW_KEY_1 through GLFW_KEY_6");
         }
 
         @Test
-        @DisplayName("L4-02: Keys 5-9 and 0 select categories")
-        void keys5to0SelectCategories() {
-            assertTrue(screenSourceCode.contains("GLFW_KEY_5") && screenSourceCode.contains("GLFW_KEY_9"),
-                "Key handling should check GLFW_KEY_5 through GLFW_KEY_9");
-            assertTrue(screenSourceCode.contains("GLFW_KEY_0"),
-                "Key handling should check GLFW_KEY_0 for 6th category");
+        @DisplayName("L4-02: Keys 7-0 and -/= select categories")
+        void keys7toEqualSelectCategories() {
+            assertTrue(screenSourceCode.contains("GLFW_KEY_7") && screenSourceCode.contains("GLFW_KEY_0"),
+                "Key handling should check GLFW_KEY_7 through GLFW_KEY_0");
+            assertTrue(screenSourceCode.contains("GLFW_KEY_MINUS") && screenSourceCode.contains("GLFW_KEY_EQUAL"),
+                "Key handling should check GLFW_KEY_MINUS and GLFW_KEY_EQUAL for extra categories");
         }
 
         @Test
-        @DisplayName("L4-03: Macro key range is bounded to 4 macros")
+        @DisplayName("L4-03: Macro key range is bounded to macro count")
         void macroKeyRangeBounded() {
             // Should check macroIndex < macros.length before switching
             assertTrue(screenSourceCode.contains("macroIndex < macros.length"),

@@ -2,6 +2,10 @@ package com.frenkvs.devmod.instance;
 
 import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.mixin.MinecraftServerAccessor;
+import com.devmod.arena.config.InstanceLimitConfig;
+import com.devmod.arena.registry.ArenaTemplate;
+import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.arena.registry.InstanceSettingsValidator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
@@ -52,6 +56,9 @@ import net.minecraft.world.entity.RelativeMovement;
 public class DynamicDimensionManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DynamicDimensionManager.class);
     public static final DynamicDimensionManager INSTANCE = new DynamicDimensionManager();
+    private static final int DEFAULT_PLATFORM_RADIUS = 25;
+    private static final int DEFAULT_FORCE_CHUNK_RADIUS = (DEFAULT_PLATFORM_RADIUS / 16) + 2;
+    private static final int DEFAULT_TICK_DISTANCE = 3;
 
     // Tracks dimensions we've created dynamically
     private final Map<ResourceKey<Level>, UUID> dimensionToInstance = new ConcurrentHashMap<>();
@@ -322,9 +329,11 @@ public class DynamicDimensionManager {
      * This creates the physical arena structure.
      */
     private void generateArenaPlatform(ServerLevel level, String arenaId) {
+        InstanceLoadSettings settings = resolveInstanceSettings(arenaId);
+
         // Default spawn position
         BlockPos center = new BlockPos(0, 64, 0);
-        int radius = 25;  // 50x50 platform
+        int radius = DEFAULT_PLATFORM_RADIUS;  // 50x50 platform
 
         // Preload the center chunk to avoid void fall during early teleports
         level.getChunkAt(nn(center, "center chunk"));
@@ -334,33 +343,39 @@ public class DynamicDimensionManager {
         // We use multiple approaches to guarantee entity ticking:
         // 1. setChunkForced - marks chunk as force-loaded
         // 2. PLAYER ticket - ensures entity ticking level
-        int chunkRadius = (radius / 16) + 2;  // Cover arena + margin
+        int chunkRadius = settings.chunkRadius > 0 ? settings.chunkRadius : DEFAULT_FORCE_CHUNK_RADIUS;
         int centerChunkX = center.getX() >> 4;
         int centerChunkZ = center.getZ() >> 4;
 
         ChunkPos centerChunkPos = new ChunkPos(centerChunkX, centerChunkZ);
 
         int chunksForced = 0;
-        for (int cx = -chunkRadius; cx <= chunkRadius; cx++) {
-            for (int cz = -chunkRadius; cz <= chunkRadius; cz++) {
-                int chunkX = centerChunkX + cx;
-                int chunkZ = centerChunkZ + cz;
-                // setChunkForced ensures chunk stays loaded AND entities tick
-                level.setChunkForced(chunkX, chunkZ, true);
-                chunksForced++;
+        if (settings.keepLoaded) {
+            for (int cx = -chunkRadius; cx <= chunkRadius; cx++) {
+                for (int cz = -chunkRadius; cz <= chunkRadius; cz++) {
+                    int chunkX = centerChunkX + cx;
+                    int chunkZ = centerChunkZ + cz;
+                    // setChunkForced ensures chunk stays loaded AND entities tick
+                    level.setChunkForced(chunkX, chunkZ, true);
+                    chunksForced++;
+                }
             }
+
+            // Add PLAYER ticket to center chunk to guarantee entity ticking
+            // PLAYER tickets have level 33 - 31 = 2, which enables entity ticking
+            int ticketRadius = Math.max(1, settings.tickDistance);
+            level.getChunkSource().addRegionTicket(
+                nn(net.minecraft.server.level.TicketType.PLAYER, "player ticket type"),
+                centerChunkPos,
+                ticketRadius,
+                centerChunkPos
+            );
+
+            LOGGER.info("[DynamicDim] Force-loaded {} chunks around arena center with PLAYER ticket (radius={})",
+                chunksForced, settings.tickDistance);
+        } else {
+            LOGGER.info("[DynamicDim] keepLoaded=false; skipping forced chunks for template {}", settings.templateId);
         }
-
-        // Add PLAYER ticket to center chunk to guarantee entity ticking
-        // PLAYER tickets have level 33 - 31 = 2, which enables entity ticking
-        level.getChunkSource().addRegionTicket(
-            nn(net.minecraft.server.level.TicketType.PLAYER, "player ticket type"),
-            centerChunkPos,
-            3,  // radius in chunks around the center
-            centerChunkPos
-        );
-
-        LOGGER.info("[DynamicDim] Force-loaded {} chunks around arena center with PLAYER ticket", chunksForced);
 
         LOGGER.debug("[DynamicDim] Generating arena platform at {} with radius {}", center, radius);
 
@@ -381,22 +396,47 @@ public class DynamicDimensionManager {
             }
         }
 
-        // Add corner pillars
-        int pillarHeight = 4;
-        int[][] corners = {{-radius, -radius}, {radius, -radius}, {-radius, radius}, {radius, radius}};
-        for (int[] corner : corners) {
-            BlockPos pillarBase = center.offset(corner[0], 0, corner[1]);
-            for (int y = 0; y <= pillarHeight; y++) {
-                level.setBlock(nn(pillarBase.above(y), "pillar pos"), nn(Blocks.STONE_BRICK_WALL.defaultBlockState(), "pillar block"), 2);
-            }
-            // Torch on top
-            level.setBlock(nn(pillarBase.above(pillarHeight + 1), "torch pos"), nn(Blocks.TORCH.defaultBlockState(), "torch block"), 2);
+        LOGGER.info("[DynamicDim] Arena platform generated for arena type: {}", arenaId);
+    }
+
+    private InstanceLoadSettings resolveInstanceSettings(@Nullable String arenaId) {
+        String templateId = arenaId != null ? arenaId : "unknown";
+        ArenaTemplateRegistry registry = DevMod.getArenaTemplateRegistry();
+        if (registry == null || arenaId == null || arenaId.isBlank()) {
+            return InstanceLoadSettings.defaults(templateId);
+        }
+        ArenaTemplate template = registry.get(arenaId).orElse(null);
+        if (template == null) {
+            LOGGER.warn("[DynamicDim] Template '{}' not found; using default instance settings", arenaId);
+            return InstanceLoadSettings.defaults(templateId);
         }
 
-        // Add spawn marker at center
-        level.setBlock(nn(center.above(1), "lodestone pos"), nn(Blocks.LODESTONE.defaultBlockState(), "lodestone block"), 2);
+        InstanceLimitConfig limits = InstanceLimitConfig.load();
+        InstanceSettingsValidator validator = new InstanceSettingsValidator();
+        InstanceSettingsValidator.Result result = validator.validate(template, limits.toLimits());
+        if (!result.errors().isEmpty()) {
+            LOGGER.warn("[DynamicDim] Instance settings invalid for template {}: {}",
+                template.id(), String.join("; ", result.errors()));
+        }
+        if (!result.warnings().isEmpty()) {
+            LOGGER.info("[DynamicDim] Instance settings warnings for template {}: {}",
+                template.id(), String.join("; ", result.warnings()));
+        }
 
-        LOGGER.info("[DynamicDim] Arena platform generated for arena type: {}", arenaId);
+        ArenaTemplate.InstanceSettings settings = template.instanceSettings();
+        boolean keepLoaded = settings == null || settings.keepLoaded();
+        return new InstanceLoadSettings(
+            template.id(),
+            Math.max(1, result.effectiveChunkRadius()),
+            Math.max(1, result.effectiveTickDistance()),
+            keepLoaded
+        );
+    }
+
+    private record InstanceLoadSettings(String templateId, int chunkRadius, int tickDistance, boolean keepLoaded) {
+        private static InstanceLoadSettings defaults(String templateId) {
+            return new InstanceLoadSettings(templateId, DEFAULT_FORCE_CHUNK_RADIUS, DEFAULT_TICK_DISTANCE, true);
+        }
     }
 
     // === Dimension Destruction ===
@@ -442,14 +482,22 @@ public class DynamicDimensionManager {
     public boolean destroyDimensionSync(UUID instanceId) {
         ResourceKey<Level> dimensionKey = instanceToDimension.get(instanceId);
         if (dimensionKey == null) {
-            LOGGER.warn("[DynamicDim] No dimension found for instance {}", instanceId);
-            return false;
+            @Nonnull ResourceKey<Level> fallbackKey = nn(resolveDimensionKey(instanceId), "fallback dimension key");
+            Path dimensionPath = resolveDimensionPath(instanceId);
+            boolean hasFiles = dimensionPath != null && Files.exists(dimensionPath);
+            ServerLevel level = server != null ? server.getLevel(nn(fallbackKey, "fallback dimension key")) : null;
+            if (level == null && !hasFiles) {
+                LOGGER.debug("[DynamicDim] No tracked dimension for instance {}, treating as already destroyed", instanceId);
+                return true;
+            }
+            dimensionKey = fallbackKey;
         }
 
         LOGGER.info("[DynamicDim] Destroying dimension for instance {}", instanceId);
 
         boolean unloadSucceeded = false;
-        ServerLevel level = server.getLevel(dimensionKey);
+        @Nonnull ResourceKey<Level> resolvedKey = nn(dimensionKey, "dimension key");
+        ServerLevel level = server.getLevel(resolvedKey);
         if (level != null) {
             // 1. Check for players still in dimension
             List<ServerPlayer> playersInDim = new ArrayList<>(level.players());
@@ -473,18 +521,18 @@ public class DynamicDimensionManager {
 
             // 2. Unload the dimension (closes resources)
             // This requires Mixin to remove from MinecraftServer.levels
-            unloadSucceeded = unloadDimension(dimensionKey, level);
+            unloadSucceeded = unloadDimension(resolvedKey, level);
         } else {
             // Level doesn't exist in memory - safe to proceed with cleanup
             unloadSucceeded = true;
         }
 
         // 3. Unregister from Distant Horizons BEFORE cleanup
-        com.frenkvs.devmod.integration.DistantHorizonsIntegration.unregisterDynamicDimension(dimensionKey);
+        com.frenkvs.devmod.integration.DistantHorizonsIntegration.unregisterDynamicDimension(resolvedKey);
 
         // 4. Clean up tracking maps BEFORE file deletion
         // This prevents other code from trying to use this dimension
-        dimensionToInstance.remove(dimensionKey);
+        dimensionToInstance.remove(resolvedKey);
         instanceToDimension.remove(instanceId);
 
         // 5. Delete dimension files ONLY if unload succeeded
@@ -538,14 +586,10 @@ public class DynamicDimensionManager {
      * Deletes all files associated with an instance dimension.
      */
     private void deleteDimensionFiles(UUID instanceId) {
-        if (server == null) return;
-
-        String dimensionName = "instance_" + instanceId.toString().replace("-", "");
-        var rootResource = nn(net.minecraft.world.level.storage.LevelResource.ROOT, "level resource root");
-        Path dimensionPath = nn(server.getWorldPath(rootResource), "world path")
-            .resolve("dimensions")
-            .resolve(DevMod.MODID)
-            .resolve(dimensionName);
+        Path dimensionPath = resolveDimensionPath(instanceId);
+        if (dimensionPath == null) {
+            return;
+        }
 
         if (!Files.exists(dimensionPath)) {
             LOGGER.debug("[DynamicDim] No dimension folder to delete: {}", dimensionPath);
@@ -682,6 +726,26 @@ public class DynamicDimensionManager {
      */
     public boolean isReady() {
         return initialized && server != null;
+    }
+
+    private ResourceKey<Level> resolveDimensionKey(UUID instanceId) {
+        String dimensionName = "instance_" + instanceId.toString().replace("-", "");
+        ResourceLocation dimensionLocation = nn(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, dimensionName), "dimension location");
+        ResourceKey<? extends net.minecraft.core.Registry<Level>> dimensionRegistryKey =
+            nn(Registries.DIMENSION, "dimension registry key");
+        return ResourceKey.create(dimensionRegistryKey, dimensionLocation);
+    }
+
+    private Path resolveDimensionPath(UUID instanceId) {
+        if (server == null) {
+            return null;
+        }
+        String dimensionName = "instance_" + instanceId.toString().replace("-", "");
+        var rootResource = nn(net.minecraft.world.level.storage.LevelResource.ROOT, "level resource root");
+        return nn(server.getWorldPath(rootResource), "world path")
+            .resolve("dimensions")
+            .resolve(DevMod.MODID)
+            .resolve(dimensionName);
     }
 
     /**

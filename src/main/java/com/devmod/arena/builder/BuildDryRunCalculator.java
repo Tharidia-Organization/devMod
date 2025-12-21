@@ -31,11 +31,24 @@ public final class BuildDryRunCalculator {
                 int wallEndY = wallStartY + wallLayers - 1;
                 int ceilingStartY = template.ceiling().y();
                 int ceilingEndY = ceilingStartY + template.ceiling().thickness() - 1;
-                int overlapStart = Math.max(wallStartY, ceilingStartY);
-                int overlapEnd = Math.min(wallEndY, ceilingEndY);
-                if (overlapEnd >= overlapStart) {
-                    overlapLayers = overlapEnd - overlapStart + 1;
+                int floorStartY = Integer.MIN_VALUE;
+                int floorEndY = Integer.MIN_VALUE;
+                if (template.floor() != null && template.floor().thickness() > 0) {
+                    floorStartY = template.floor().y();
+                    floorEndY = floorStartY + template.floor().thickness() - 1;
                 }
+
+                int overlapCeiling = countOverlap(wallStartY, wallEndY, ceilingStartY, ceilingEndY);
+                int overlapFloor = template.floor() != null
+                    ? countOverlap(wallStartY, wallEndY, floorStartY, floorEndY)
+                    : 0;
+                overlapLayers = mergeOverlap(overlapCeiling, ceilingStartY, ceilingEndY, overlapFloor, floorStartY, floorEndY, wallStartY, wallEndY);
+            } else if (template.floor() != null && template.floor().thickness() > 0) {
+                int wallStartY = template.walls().startY();
+                int wallEndY = wallStartY + wallLayers - 1;
+                int floorStartY = template.floor().y();
+                int floorEndY = floorStartY + template.floor().thickness() - 1;
+                overlapLayers = countOverlap(wallStartY, wallEndY, floorStartY, floorEndY);
             }
             int effectiveWallLayers = Math.max(0, wallLayers - overlapLayers);
             wallBlocks = perimeterPerLayer * wallThickness * effectiveWallLayers;
@@ -88,5 +101,37 @@ public final class BuildDryRunCalculator {
         }
 
         return new BuildDryRun(floorBlocks, wallBlocks, ceilingBlocks, underfloorBlocks, hazardBlocks);
+    }
+
+    private static int countOverlap(int wallStart, int wallEnd, int otherStart, int otherEnd) {
+        if (otherStart == Integer.MIN_VALUE || otherEnd == Integer.MIN_VALUE) {
+            return 0;
+        }
+        int overlapStart = Math.max(wallStart, otherStart);
+        int overlapEnd = Math.min(wallEnd, otherEnd);
+        if (overlapEnd < overlapStart) {
+            return 0;
+        }
+        return overlapEnd - overlapStart + 1;
+    }
+
+    private static int mergeOverlap(int overlapA, int aStart, int aEnd, int overlapB, int bStart, int bEnd, int wallStart, int wallEnd) {
+        if (overlapA == 0) {
+            return overlapB;
+        }
+        if (overlapB == 0) {
+            return overlapA;
+        }
+        int aOverlapStart = Math.max(wallStart, aStart);
+        int aOverlapEnd = Math.min(wallEnd, aEnd);
+        int bOverlapStart = Math.max(wallStart, bStart);
+        int bOverlapEnd = Math.min(wallEnd, bEnd);
+        if (bOverlapEnd < aOverlapStart || bOverlapStart > aOverlapEnd) {
+            return overlapA + overlapB;
+        }
+        int overlapStart = Math.max(aOverlapStart, bOverlapStart);
+        int overlapEnd = Math.min(aOverlapEnd, bOverlapEnd);
+        int doubleCount = overlapEnd - overlapStart + 1;
+        return overlapA + overlapB - Math.max(0, doubleCount);
     }
 }

@@ -27,9 +27,9 @@ class GoldenReferenceTest {
         assertEquals(ref.floorBounds(), new Bounds(minX, template.floor().y(), minZ, maxX, template.floor().y(), maxZ, originX, originZ));
         assertEquals(ref.ceilingBounds(), new Bounds(minX, template.ceiling().y(), minZ, maxX, template.ceiling().y(), maxZ, originX, originZ));
 
-        assertEquals(23000, ref.totalBlocks());
+        assertEquals(22748, ref.totalBlocks());
         assertEquals(4096, ref.floorBlocks());
-        assertEquals(2520, ref.wallBlocks());
+        assertEquals(2268, ref.wallBlocks());
         assertEquals(4096, ref.ceilingBlocks());
         assertEquals(12288, ref.underfloorBlocks());
         assertEquals(0, ref.hazardBlocks());

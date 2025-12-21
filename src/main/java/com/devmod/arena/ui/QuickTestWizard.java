@@ -2,9 +2,11 @@ package com.devmod.arena.ui;
 
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.frenkvs.devmod.ui.UIConstants;
+import com.frenkvs.devmod.ui.editor.components.EditorButton;
+import com.frenkvs.devmod.ui.editor.components.EditorButtonWidget;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -37,15 +39,7 @@ public class QuickTestWizard extends Screen {
     private static final int PANEL_HEIGHT = 350;
     private static final int PADDING = 12;
     private static final int ROW_HEIGHT = 24;
-    private static final int BUTTON_HEIGHT = 20;
-
-    // Colors
-    private static final int BG_COLOR = 0xE0101010;
-    private static final int BORDER_COLOR = 0xFF404040;
-    private static final int HEADER_COLOR = 0xFFFFAA00;
-    private static final int TEXT_COLOR = 0xFFFFFFFF;
-    private static final int MUTED_COLOR = 0xFF888888;
-    private static final int SELECTED_COLOR = 0xFF00AA00;
+    private static final int BUTTON_HEIGHT = EditorButton.Size.MEDIUM.height();
 
     private final ArenaTemplateRegistry registry;
     private final Consumer<TestConfig> onTest;
@@ -66,6 +60,11 @@ public class QuickTestWizard extends Screen {
     // Panel position
     private int panelX;
     private int panelY;
+
+    // Buttons
+    private EditorButton testButton;
+    private EditorButton dryRunButton;
+    private EditorButton forceTemplateButton;
 
     public QuickTestWizard(ArenaTemplateRegistry registry, Consumer<TestConfig> onTest) {
         super(Component.literal("Quick Test Wizard"));
@@ -99,24 +98,35 @@ public class QuickTestWizard extends Screen {
         int buttonY = panelY + PANEL_HEIGHT - PADDING - BUTTON_HEIGHT;
         int buttonWidth = (PANEL_WIDTH - PADDING * 3) / 2;
 
-        // Test button
-        addRenderableWidget(Objects.requireNonNull(Button.builder(
-            Objects.requireNonNull(Component.literal("Test Arena")),
-            b -> startTest()
-        ).bounds(panelX + PADDING, buttonY, buttonWidth, BUTTON_HEIGHT).build()));
+        testButton = EditorButton.builder("arena-test", "Test Arena")
+            .style(EditorButton.Style.SUCCESS)
+            .size(EditorButton.Size.MEDIUM)
+            .onClick(this::startTest)
+            .build();
+        addRenderableWidget(new EditorButtonWidget(testButton,
+            panelX + PADDING, buttonY, buttonWidth, BUTTON_HEIGHT));
 
-        // Dry Run button
-        addRenderableWidget(Objects.requireNonNull(Button.builder(
-            Objects.requireNonNull(Component.literal(dryRun ? "[X] Dry Run" : "[ ] Dry Run")),
-            b -> toggleDryRun()
-        ).bounds(panelX + PADDING * 2 + buttonWidth, buttonY, buttonWidth, BUTTON_HEIGHT).build()));
+        dryRunButton = EditorButton.builder("arena-dry-run", "Dry Run")
+            .style(EditorButton.Style.NORMAL)
+            .size(EditorButton.Size.MEDIUM)
+            .toggleable(true)
+            .toggled(dryRun)
+            .onToggle(value -> dryRun = value)
+            .build();
+        addRenderableWidget(new EditorButtonWidget(dryRunButton,
+            panelX + PADDING * 2 + buttonWidth, buttonY, buttonWidth, BUTTON_HEIGHT));
 
         // Force Template button (DD29) - row above
         int forceButtonY = buttonY - BUTTON_HEIGHT - 4;
-        addRenderableWidget(Objects.requireNonNull(Button.builder(
-            Objects.requireNonNull(Component.literal(forceTemplate ? "[X] Force Template" : "[ ] Force Template")),
-            b -> toggleForceTemplate()
-        ).bounds(panelX + PADDING, forceButtonY, PANEL_WIDTH - PADDING * 2, BUTTON_HEIGHT).build()));
+        forceTemplateButton = EditorButton.builder("arena-force-template", "Force Template")
+            .style(EditorButton.Style.PRIMARY)
+            .size(EditorButton.Size.MEDIUM)
+            .toggleable(true)
+            .toggled(forceTemplate)
+            .onToggle(value -> forceTemplate = value)
+            .build();
+        addRenderableWidget(new EditorButtonWidget(forceTemplateButton,
+            panelX + PADDING, forceButtonY, PANEL_WIDTH - PADDING * 2, BUTTON_HEIGHT));
 
         // Initialize template list
         refreshTemplateList();
@@ -178,13 +188,14 @@ public class QuickTestWizard extends Screen {
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
         // Panel background
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, BG_COLOR);
+        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, UIConstants.Background.PANEL());
 
         // Border
-        graphics.renderOutline(panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, BORDER_COLOR);
+        graphics.renderOutline(panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, UIConstants.Border.DEFAULT());
 
         // Header
-        graphics.drawCenteredString(Objects.requireNonNull(font), "Quick Test Wizard", panelX + PANEL_WIDTH / 2, panelY + PADDING, HEADER_COLOR);
+        graphics.drawCenteredString(Objects.requireNonNull(font), "Quick Test Wizard",
+            panelX + PANEL_WIDTH / 2, panelY + PADDING, UIConstants.Text.TITLE());
 
         // Template list
         renderTemplateList(graphics, mouseX, mouseY);
@@ -205,7 +216,8 @@ public class QuickTestWizard extends Screen {
         var safeFont = Objects.requireNonNull(font);
 
         // List background
-        graphics.fill(listX, listY, listX + listWidth, listY + listHeight, 0x40000000);
+        graphics.fill(listX, listY, listX + listWidth, listY + listHeight,
+            UIConstants.setAlpha(UIConstants.Background.INPUT(), 0x88));
 
         // Calculate visible rows
         maxVisibleRows = listHeight / ROW_HEIGHT;
@@ -218,32 +230,37 @@ public class QuickTestWizard extends Screen {
 
             // Selection highlight
             if (index == selectedIndex) {
-                graphics.fill(listX, rowY, listX + listWidth, rowY + ROW_HEIGHT - 1, 0x40FFFFFF);
+                graphics.fill(listX, rowY, listX + listWidth, rowY + ROW_HEIGHT - 1,
+                    UIConstants.setAlpha(UIConstants.Accent.CYAN(), 0x33));
             }
 
             // Hover highlight
             if (mouseX >= listX && mouseX < listX + listWidth &&
                 mouseY >= rowY && mouseY < rowY + ROW_HEIGHT) {
-                graphics.fill(listX, rowY, listX + listWidth, rowY + ROW_HEIGHT - 1, 0x20FFFFFF);
+                graphics.fill(listX, rowY, listX + listWidth, rowY + ROW_HEIGHT - 1,
+                    UIConstants.setAlpha(UIConstants.Background.HOVER(), 0x55));
             }
 
             // Template name
             String prefix = entry.isRecent() ? "\u2605 " : "";
-            int textColor = index == selectedIndex ? SELECTED_COLOR : TEXT_COLOR;
+            int textColor = index == selectedIndex ? UIConstants.Accent.CYAN() : UIConstants.Text.PRIMARY();
             graphics.drawString(safeFont, prefix + entry.template().id(), listX + 4, rowY + 6, textColor);
 
             // Version
             String version = "v" + entry.template().version();
             int versionWidth = safeFont.width(version);
-            graphics.drawString(safeFont, version, listX + listWidth - versionWidth - 4, rowY + 6, MUTED_COLOR);
+            graphics.drawString(safeFont, version, listX + listWidth - versionWidth - 4, rowY + 6,
+                UIConstants.Text.MUTED());
         }
 
         // Scroll indicators
         if (scrollOffset > 0) {
-            graphics.drawCenteredString(safeFont, "\u25B2", listX + listWidth / 2, listY - 8, MUTED_COLOR);
+            graphics.drawCenteredString(safeFont, "\u25B2", listX + listWidth / 2, listY - 8,
+                UIConstants.Text.MUTED());
         }
         if (scrollOffset + maxVisibleRows < filteredTemplates.size()) {
-            graphics.drawCenteredString(safeFont, "\u25BC", listX + listWidth / 2, listY + listHeight + 2, MUTED_COLOR);
+            graphics.drawCenteredString(safeFont, "\u25BC", listX + listWidth / 2, listY + listHeight + 2,
+                UIConstants.Text.MUTED());
         }
     }
 
@@ -257,11 +274,13 @@ public class QuickTestWizard extends Screen {
             // Size
             int sizeX = Objects.requireNonNullElse(t.sizeX(), t.size());
             int sizeZ = Objects.requireNonNullElse(t.sizeZ(), t.size());
-            graphics.drawString(safeFont, "Size: " + sizeX + " x " + sizeZ, panelX + PADDING, infoY, TEXT_COLOR);
+            graphics.drawString(safeFont, "Size: " + sizeX + " x " + sizeZ,
+                panelX + PADDING, infoY, UIConstants.Text.PRIMARY());
 
             // Spawn slots
             int slots = t.spawnSlots() != null ? t.spawnSlots().size() : 0;
-            graphics.drawString(safeFont, "Spawn Slots: " + slots, panelX + PADDING + 150, infoY, TEXT_COLOR);
+            graphics.drawString(safeFont, "Spawn Slots: " + slots,
+                panelX + PADDING + 150, infoY, UIConstants.Text.PRIMARY());
 
             // Palette preview (DD35: floor/walls/ceiling materials)
             infoY += 14;
@@ -272,16 +291,18 @@ public class QuickTestWizard extends Screen {
             if (t.tags() != null && !t.tags().isEmpty()) {
                 String tags = "Tags: " + String.join(", ", t.tags());
                 if (tags.length() > 50) tags = tags.substring(0, 47) + "...";
-                graphics.drawString(safeFont, tags, panelX + PADDING, infoY, MUTED_COLOR);
+                graphics.drawString(safeFont, tags, panelX + PADDING, infoY, UIConstants.Text.MUTED());
             }
 
             // Deprecated warning
             if (t.deprecated()) {
                 infoY += 14;
-                graphics.drawString(safeFont, "\u26A0 DEPRECATED", panelX + PADDING, infoY, 0xFFFF5555);
+                graphics.drawString(safeFont, "\u26A0 DEPRECATED", panelX + PADDING, infoY,
+                    UIConstants.Accent.RED());
             }
         } else {
-            graphics.drawString(safeFont, "Select a template to test", panelX + PADDING, infoY, MUTED_COLOR);
+            graphics.drawString(safeFont, "Select a template to test", panelX + PADDING, infoY,
+                UIConstants.Text.MUTED());
         }
     }
 
@@ -292,7 +313,7 @@ public class QuickTestWizard extends Screen {
         var safeFont = Objects.requireNonNull(font);
         int x = panelX + PADDING;
 
-        graphics.drawString(safeFont, "Palette:", x, y, MUTED_COLOR);
+        graphics.drawString(safeFont, "Palette:", x, y, UIConstants.Text.MUTED());
         x += 50;
 
         // Floor material
@@ -300,7 +321,7 @@ public class QuickTestWizard extends Screen {
             String floorMat = shortenMaterial(t.floor().material());
             int floorColor = getMaterialColor(t.floor().material());
             graphics.fill(x, y, x + 10, y + 10, floorColor);
-            graphics.drawString(safeFont, floorMat, x + 14, y, TEXT_COLOR);
+            graphics.drawString(safeFont, floorMat, x + 14, y, UIConstants.Text.PRIMARY());
             x += 80;
         }
 
@@ -309,7 +330,7 @@ public class QuickTestWizard extends Screen {
             String wallMat = shortenMaterial(t.walls().material());
             int wallColor = getMaterialColor(t.walls().material());
             graphics.fill(x, y, x + 10, y + 10, wallColor);
-            graphics.drawString(safeFont, wallMat, x + 14, y, TEXT_COLOR);
+            graphics.drawString(safeFont, wallMat, x + 14, y, UIConstants.Text.PRIMARY());
             x += 80;
         }
 
@@ -318,7 +339,7 @@ public class QuickTestWizard extends Screen {
             String ceilMat = shortenMaterial(t.ceiling().material());
             int ceilColor = getMaterialColor(t.ceiling().material());
             graphics.fill(x, y, x + 10, y + 10, ceilColor);
-            graphics.drawString(safeFont, ceilMat, x + 14, y, TEXT_COLOR);
+            graphics.drawString(safeFont, ceilMat, x + 14, y, UIConstants.Text.PRIMARY());
         }
     }
 
@@ -452,20 +473,9 @@ public class QuickTestWizard extends Screen {
         }
     }
 
-    private void toggleDryRun() {
-        dryRun = !dryRun;
-        // Rebuild buttons to update label
-        rebuildWidgets();
-    }
-
-    /**
-     * DD29: Toggles the force template option.
-     * When enabled, the selected template will be forced for the player's session.
-     */
-    private void toggleForceTemplate() {
-        forceTemplate = !forceTemplate;
-        // Rebuild buttons to update label
-        rebuildWidgets();
+    @Override
+    public void renderBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        graphics.fill(0, 0, width, height, UIConstants.setAlpha(UIConstants.Background.SCREEN(), 0x66));
     }
 
     private void startTest() {

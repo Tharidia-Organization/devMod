@@ -301,6 +301,8 @@ public class LogAggregationPipeline implements AutoCloseable {
     public interface LogDestination extends AutoCloseable {
         String name();
         void write(List<LogEvent> events) throws Exception;
+        @Override
+        void close();
     }
 
     /**

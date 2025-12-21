@@ -14,10 +14,10 @@ class BuildDryRunCalculatorTest {
         BuildDryRun dryRun = BuildDryRunCalculator.calculate(template);
 
         assertEquals(4096, dryRun.floorBlocks());
-        assertEquals(2520, dryRun.wallBlocks());
+        assertEquals(2268, dryRun.wallBlocks());
         assertEquals(4096, dryRun.ceilingBlocks());
         assertEquals(12288, dryRun.underfloorBlocks());
         assertEquals(0, dryRun.hazardBlocks());
-        assertEquals(23000, dryRun.totalBlocks());
+        assertEquals(22748, dryRun.totalBlocks());
     }
 }

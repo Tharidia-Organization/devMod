@@ -1,6 +1,10 @@
 package com.frenkvs.devmod.ui.testing.pages;
 
 import com.frenkvs.devmod.Config;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.testing.VoxelLabTab;
 import com.frenkvs.devmod.ui.testing.panel.*;
@@ -116,7 +120,8 @@ public class EffectsPage extends AbstractVoxelLabPage {
             .toggled(safeGetBool(Config.IMPACT_VFX_ENABLED))
             .style(EditorButton.Style.SUCCESS)
             .icon("\u2728")
-            .onToggle(v -> Config.IMPACT_VFX_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_VFX_TOGGLE,
+                Boolean.TRUE.equals(v), safeGetBool(Config.IMPACT_VFX_ENABLED)));
 
         // VFX types
         vfxVortexToggle = new EditorButton("toggle-vortex", "Vortex")
@@ -124,42 +129,45 @@ public class EffectsPage extends AbstractVoxelLabPage {
             .toggled(safeGetBool(Config.IMPACT_VFX_VORTEX_ENABLED))
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.SMALL)
-            .onToggle(v -> Config.IMPACT_VFX_VORTEX_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_VFX_VORTEX_TOGGLE,
+                Boolean.TRUE.equals(v), safeGetBool(Config.IMPACT_VFX_VORTEX_ENABLED)));
 
         vfxSlashToggle = new EditorButton("toggle-slash", "Slash")
             .toggleable(true)
             .toggled(safeGetBool(Config.IMPACT_VFX_SLASH_ENABLED))
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.SMALL)
-            .onToggle(v -> Config.IMPACT_VFX_SLASH_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_VFX_SLASH_TOGGLE,
+                Boolean.TRUE.equals(v), safeGetBool(Config.IMPACT_VFX_SLASH_ENABLED)));
 
         vfxLinesToggle = new EditorButton("toggle-lines", "Lines")
             .toggleable(true)
             .toggled(safeGetBool(Config.IMPACT_VFX_LINES_ENABLED))
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.SMALL)
-            .onToggle(v -> Config.IMPACT_VFX_LINES_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_VFX_LINES_TOGGLE,
+                Boolean.TRUE.equals(v), safeGetBool(Config.IMPACT_VFX_LINES_ENABLED)));
 
         // Intensity presets
         intensityLow = new EditorButton("int-low", "Low")
             .toggleable(true)
             .size(EditorButton.Size.SMALL)
-            .onToggle(v -> { if (Boolean.TRUE.equals(v)) setIntensity(0.5); });
+            .onToggle(v -> { if (Boolean.TRUE.equals(v)) invokeAction(ActionIds.CONFIG_IMPACT_VFX_INTENSITY_LOW); });
 
         intensityMed = new EditorButton("int-med", "Normal")
             .toggleable(true)
             .size(EditorButton.Size.SMALL)
-            .onToggle(v -> { if (Boolean.TRUE.equals(v)) setIntensity(1.0); });
+            .onToggle(v -> { if (Boolean.TRUE.equals(v)) invokeAction(ActionIds.CONFIG_IMPACT_VFX_INTENSITY_MED); });
 
         intensityHigh = new EditorButton("int-high", "High")
             .toggleable(true)
             .size(EditorButton.Size.SMALL)
-            .onToggle(v -> { if (Boolean.TRUE.equals(v)) setIntensity(1.5); });
+            .onToggle(v -> { if (Boolean.TRUE.equals(v)) invokeAction(ActionIds.CONFIG_IMPACT_VFX_INTENSITY_HIGH); });
 
         intensityMax = new EditorButton("int-max", "Max")
             .toggleable(true)
             .size(EditorButton.Size.SMALL)
-            .onToggle(v -> { if (Boolean.TRUE.equals(v)) setIntensity(2.0); });
+            .onToggle(v -> { if (Boolean.TRUE.equals(v)) invokeAction(ActionIds.CONFIG_IMPACT_VFX_INTENSITY_MAX); });
 
         // Screen effects
         screenShakeToggle = new EditorButton("toggle-shake", "Screen Shake")
@@ -167,26 +175,24 @@ public class EffectsPage extends AbstractVoxelLabPage {
             .toggled(safeGetBool(Config.SCREEN_SHAKE_ENABLED))
             .style(EditorButton.Style.PRIMARY)
             .icon("\u21C4")
-            .onToggle(v -> Config.SCREEN_SHAKE_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_SCREEN_SHAKE_TOGGLE,
+                Boolean.TRUE.equals(v), safeGetBool(Config.SCREEN_SHAKE_ENABLED)));
 
         projectileTrailsToggle = new EditorButton("toggle-trails", "Projectile Trails")
             .toggleable(true)
             .toggled(safeGetBool(Config.PROJECTILE_TRAILS_ENABLED))
             .style(EditorButton.Style.PRIMARY)
             .icon("\u27A1")
-            .onToggle(v -> Config.PROJECTILE_TRAILS_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_PROJECTILE_TRAILS_TOGGLE,
+                Boolean.TRUE.equals(v), safeGetBool(Config.PROJECTILE_TRAILS_ENABLED)));
 
         badgePopupToggle = new EditorButton("toggle-badge", "Badge Popups")
             .toggleable(true)
             .toggled(safeGetBool(Config.BADGE_POPUP_ENABLED))
             .style(EditorButton.Style.SUCCESS)
             .icon("\u2605")
-            .onToggle(v -> Config.BADGE_POPUP_ENABLED.set(Boolean.TRUE.equals(v)));
-    }
-
-    private void setIntensity(double value) {
-        Config.IMPACT_VFX_INTENSITY.set(value);
-        syncIntensityButtons();
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_BADGE_POPUPS_TOGGLE,
+                Boolean.TRUE.equals(v), safeGetBool(Config.BADGE_POPUP_ENABLED)));
     }
 
     @Override
@@ -197,7 +203,7 @@ public class EffectsPage extends AbstractVoxelLabPage {
     private void syncButtonStates() {
         vfxMasterToggle.toggled(safeGetBool(Config.IMPACT_VFX_ENABLED));
         vfxVortexToggle.toggled(safeGetBool(Config.IMPACT_VFX_VORTEX_ENABLED));
-        vfxSlashToggle.toggled(safeGetBool(Config.IMPACT_VFX_LINES_ENABLED));
+        vfxSlashToggle.toggled(safeGetBool(Config.IMPACT_VFX_SLASH_ENABLED));
         vfxLinesToggle.toggled(safeGetBool(Config.IMPACT_VFX_LINES_ENABLED));
         screenShakeToggle.toggled(safeGetBool(Config.SCREEN_SHAKE_ENABLED));
         projectileTrailsToggle.toggled(safeGetBool(Config.PROJECTILE_TRAILS_ENABLED));
@@ -211,6 +217,18 @@ public class EffectsPage extends AbstractVoxelLabPage {
         intensityMed.toggled(intensity >= 0.7 && intensity < 1.3);
         intensityHigh.toggled(intensity >= 1.3 && intensity < 1.8);
         intensityMax.toggled(intensity >= 1.8);
+    }
+
+    private void invokeToggleAction(String actionId, boolean desired, boolean current) {
+        if (desired == current) {
+            return;
+        }
+        ActionRegistry.invoke(actionId, ClientActionContexts.forClient(ActionOrigin.UI));
+    }
+
+    private void invokeAction(String actionId) {
+        ActionRegistry.invoke(actionId, ClientActionContexts.forClient(ActionOrigin.UI));
+        syncIntensityButtons();
     }
 
 }

@@ -1,6 +1,10 @@
 package com.frenkvs.devmod.ui.testing.pages;
 
 import com.frenkvs.devmod.Config;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.hud.Impact3DPanelManager;
 import com.frenkvs.devmod.hud.ImpactHudOverlay;
 import com.frenkvs.devmod.rendering.DebugRenderer;
@@ -89,45 +93,51 @@ public class OverviewPage extends AbstractVoxelLabPage {
     private void createButtons() {
         debugToggle = new EditorButton("toggle-debug", "Debug Overlay")
             .toggleable(true)
-            .toggled(safeGetBool(Config.DEBUG_OVERLAY_ENABLED))
+            .toggled(DebugRenderer.INSTANCE.isEnabled())
             .style(EditorButton.Style.PRIMARY)
             .icon("\u2699")
-            .onToggle(v -> Config.DEBUG_OVERLAY_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_OVERLAY_TOGGLE,
+                Boolean.TRUE.equals(v), DebugRenderer.INSTANCE.isEnabled()));
 
         impactHudToggle = new EditorButton("toggle-impact-hud", "Impact HUD 2D")
             .toggleable(true)
             .toggled(ImpactHudOverlay.isEnabled())
             .style(EditorButton.Style.SUCCESS)
             .icon("\u25A1")
-            .onToggle(v -> ImpactHudOverlay.setEnabled(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.HUD_IMPACT_TOGGLE,
+                Boolean.TRUE.equals(v), ImpactHudOverlay.isEnabled()));
 
         impact3dToggle = new EditorButton("toggle-impact-3d", "Impact HUD 3D")
             .toggleable(true)
             .toggled(Impact3DPanelManager.INSTANCE.isEnabled())
             .style(EditorButton.Style.SUCCESS)
             .icon("\u25A0")
-            .onToggle(v -> Impact3DPanelManager.INSTANCE.setEnabled(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.HUD_IMPACT_3D_TOGGLE,
+                Boolean.TRUE.equals(v), Impact3DPanelManager.INSTANCE.isEnabled()));
 
         vfxToggle = new EditorButton("toggle-vfx", "Impact VFX")
             .toggleable(true)
             .toggled(safeGetBool(Config.IMPACT_VFX_ENABLED))
             .style(EditorButton.Style.PRIMARY)
             .icon("\u2728")
-            .onToggle(v -> Config.IMPACT_VFX_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_VFX_TOGGLE,
+                Boolean.TRUE.equals(v), safeGetBool(Config.IMPACT_VFX_ENABLED)));
 
         screenShakeToggle = new EditorButton("toggle-shake", "Screen Shake")
             .toggleable(true)
             .toggled(safeGetBool(Config.SCREEN_SHAKE_ENABLED))
             .style(EditorButton.Style.PRIMARY)
             .icon("\u21C4")
-            .onToggle(v -> Config.SCREEN_SHAKE_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_SCREEN_SHAKE_TOGGLE,
+                Boolean.TRUE.equals(v), safeGetBool(Config.SCREEN_SHAKE_ENABLED)));
 
         telemetryToggle = new EditorButton("toggle-telemetry", "Recording")
             .toggleable(true)
             .toggled(safeGetBool(Config.TELEMETRY_ENABLED))
             .style(EditorButton.Style.DANGER)
             .icon("\u25CF")
-            .onToggle(v -> Config.TELEMETRY_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_TELEMETRY_TOGGLE,
+                Boolean.TRUE.equals(v), safeGetBool(Config.TELEMETRY_ENABLED)));
     }
 
     @Override
@@ -137,12 +147,19 @@ public class OverviewPage extends AbstractVoxelLabPage {
     }
 
     private void syncButtonStates() {
-        debugToggle.toggled(safeGetBool(Config.DEBUG_OVERLAY_ENABLED));
+        debugToggle.toggled(DebugRenderer.INSTANCE.isEnabled());
         impactHudToggle.toggled(ImpactHudOverlay.isEnabled());
         impact3dToggle.toggled(Impact3DPanelManager.INSTANCE.isEnabled());
         vfxToggle.toggled(safeGetBool(Config.IMPACT_VFX_ENABLED));
         screenShakeToggle.toggled(safeGetBool(Config.SCREEN_SHAKE_ENABLED));
         telemetryToggle.toggled(safeGetBool(Config.TELEMETRY_ENABLED));
+    }
+
+    private void invokeToggleAction(String actionId, boolean desired, boolean current) {
+        if (desired == current) {
+            return;
+        }
+        ActionRegistry.invoke(actionId, ClientActionContexts.forClient(ActionOrigin.UI));
     }
 
 

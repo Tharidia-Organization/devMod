@@ -185,7 +185,7 @@ public class EndurancePlayerStateManager {
      * This ensures all state is properly reset for the next quest.
      */
     public void cleanupQuestSystems(EnduranceQuestManager.ActiveQuestSession session) {
-        ArenaManager.Arena arena = session.getArena();
+        ArenaContext arena = session.getArena();
         if (arena == null) {
             LOGGER.warn("[EnduranceQuest] Cannot cleanup quest systems - arena is null");
             return;

@@ -274,7 +274,7 @@ public class EnduranceSessionHandler {
     }
 
     private void cleanupDroppedItems(EnduranceQuestManager.ActiveQuestSession session) {
-        ArenaManager.Arena arena = session.getArena();
+        ArenaContext arena = session.getArena();
         if (arena == null) {
             return;
         }

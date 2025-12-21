@@ -29,8 +29,6 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaDashboardEndpoint.class);
 
-    private static final ArenaDashboardEndpoint INSTANCE = new ArenaDashboardEndpoint();
-
     /** Rate limit: requests per minute */
     private static final int RATE_LIMIT_PER_MINUTE = 60;
 
@@ -42,6 +40,8 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
 
     /** DD36: Query timeout duration */
     private static final Duration QUERY_TIMEOUT = Duration.ofSeconds(10);
+
+    private static final ArenaDashboardEndpoint INSTANCE = new ArenaDashboardEndpoint();
 
     /** Active authentication tokens */
     private final Map<String, TokenInfo> validTokens = new ConcurrentHashMap<>();
@@ -801,6 +801,40 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
         }
 
         try {
+            // Prefer real performance samples if available
+            List<DuckDbRepository.BuildPerformanceSample> perfSamples =
+                repository.getBuildPerformanceSamples(params.templateId(), params.templateVersion(), 100);
+            if (!perfSamples.isEmpty()) {
+                List<PerformanceResponse.MsptSample> samples = new ArrayList<>();
+                double totalMspt = 0;
+                double maxMspt = 0;
+                int count = 0;
+                for (DuckDbRepository.BuildPerformanceSample sample : perfSamples) {
+                    Double msptValue = sample.avgMspt() != null ? sample.avgMspt() : sample.peakMspt();
+                    if (msptValue == null || msptValue <= 0) {
+                        continue;
+                    }
+                    double mspt = msptValue;
+                    double tps = Math.min(1000.0 / mspt, 20.0);
+                    samples.add(new PerformanceResponse.MsptSample(sample.timestamp(), mspt, tps));
+                    totalMspt += mspt;
+                    maxMspt = Math.max(maxMspt, mspt);
+                    count++;
+                }
+                if (count > 0) {
+                    double avgMspt = totalMspt / count;
+                    double avgTps = Math.max(1.0, 20.0 - (avgMspt / 5.0));
+                    return new PerformanceResponse(
+                        params.templateId(),
+                        avgMspt,
+                        maxMspt,
+                        avgTps,
+                        samples.size(),
+                        samples.subList(0, Math.min(50, samples.size()))
+                    );
+                }
+            }
+
             // Query recent builds to estimate performance impact
             List<DuckDbRepository.BuildRecord> builds = repository.getRecentBuilds(
                 params.templateId(),

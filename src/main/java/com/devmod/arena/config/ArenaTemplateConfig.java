@@ -24,6 +24,7 @@ public class ArenaTemplateConfig {
     private static final boolean DEFAULT_ARENA_TEMPLATE_ENABLED = true;
     private static final boolean DEFAULT_ROUTING_ENABLED = true;
     private static final boolean DEFAULT_GAMIFICATION_ENABLED = false;
+    private static final boolean DEFAULT_PREBUILD_POOL_ENABLED = false;
     private static final int DEFAULT_MAX_BLOCKS = 8000;
     private static final int DEFAULT_MAX_BUILD_TIME_MS = 5000;
     private static final int DEFAULT_BOSS_MAX_BLOCKS = 100000;
@@ -54,6 +55,7 @@ public class ArenaTemplateConfig {
     private boolean arenaTemplateEnabled = DEFAULT_ARENA_TEMPLATE_ENABLED;
     private boolean routingEnabled = DEFAULT_ROUTING_ENABLED;
     private boolean gamificationEnabled = DEFAULT_GAMIFICATION_ENABLED;
+    private boolean prebuildPoolEnabled = DEFAULT_PREBUILD_POOL_ENABLED;
     private int defaultMaxBlocks = DEFAULT_MAX_BLOCKS;
     private int defaultMaxBuildTimeMs = DEFAULT_MAX_BUILD_TIME_MS;
     private int bossMaxBlocks = DEFAULT_BOSS_MAX_BLOCKS;
@@ -118,6 +120,7 @@ public class ArenaTemplateConfig {
         cfg.arenaTemplateEnabled = getBool("devmod.arena.templateEnabled", "DEVMOD_ARENA_TEMPLATE_ENABLED", DEFAULT_ARENA_TEMPLATE_ENABLED);
         cfg.routingEnabled = getBool("devmod.arena.routingEnabled", "DEVMOD_ROUTING_ENABLED", DEFAULT_ROUTING_ENABLED);
         cfg.gamificationEnabled = getBool("devmod.arena.gamificationEnabled", "DEVMOD_GAMIFICATION_ENABLED", DEFAULT_GAMIFICATION_ENABLED);
+        cfg.prebuildPoolEnabled = getBool("devmod.arena.prebuildPoolEnabled", "DEVMOD_ARENA_PREBUILD_POOL_ENABLED", DEFAULT_PREBUILD_POOL_ENABLED);
         cfg.defaultMaxBlocks = getInt("devmod.arena.maxBlocks", "DEVMOD_ARENA_MAX_BLOCKS", DEFAULT_MAX_BLOCKS);
         cfg.defaultMaxBuildTimeMs = getInt("devmod.arena.maxBuildTimeMs", "DEVMOD_ARENA_MAX_BUILD_MS", DEFAULT_MAX_BUILD_TIME_MS);
         cfg.bossMaxBlocks = getInt("devmod.arena.bossMaxBlocks", "DEVMOD_ARENA_BOSS_MAX_BLOCKS", DEFAULT_BOSS_MAX_BLOCKS);
@@ -192,6 +195,9 @@ public class ArenaTemplateConfig {
         if (gamificationEnabled && !arenaTemplateEnabled) {
             errors.add("gamificationEnabled=true requires arenaTemplateEnabled=true");
         }
+        if (prebuildPoolEnabled && !arenaTemplateEnabled) {
+            errors.add("prebuildPoolEnabled=true requires arenaTemplateEnabled=true");
+        }
         if (arenaTemplateEnabled && !instanceOnly) {
             warnings.add("arenaTemplateEnabled=true with instanceOnly=false (legacy overworld blocked unless allowLegacyOverworldArena + debug)");
         }
@@ -230,6 +236,7 @@ public class ArenaTemplateConfig {
             arenaTemplateEnabled,
             routingEnabled,
             gamificationEnabled,
+            prebuildPoolEnabled,
             defaultMaxBlocks,
             defaultMaxBuildTimeMs,
             bossMaxBlocks,
@@ -258,6 +265,7 @@ public class ArenaTemplateConfig {
         boolean arenaTemplateEnabled,
         boolean routingEnabled,
         boolean gamificationEnabled,
+        boolean prebuildPoolEnabled,
         int defaultMaxBlocks,
         int defaultMaxBuildTimeMs,
         int bossMaxBlocks,
@@ -359,6 +367,7 @@ public class ArenaTemplateConfig {
     public boolean arenaTemplateEnabled() { return arenaTemplateEnabled; }
     public boolean routingEnabled() { return routingEnabled; }
     public boolean gamificationEnabled() { return gamificationEnabled; }
+    public boolean prebuildPoolEnabled() { return prebuildPoolEnabled; }
     public int defaultMaxBlocks() { return defaultMaxBlocks; }
     public int defaultMaxBuildTimeMs() { return defaultMaxBuildTimeMs; }
     public int bossMaxBlocks() { return bossMaxBlocks; }

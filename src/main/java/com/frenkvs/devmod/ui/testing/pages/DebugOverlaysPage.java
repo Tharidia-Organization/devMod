@@ -1,6 +1,10 @@
 package com.frenkvs.devmod.ui.testing.pages;
 
-import com.frenkvs.devmod.Config;
+import com.frenkvs.devmod.ModConfig;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.rendering.*;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.testing.VoxelLabTab;
@@ -10,7 +14,6 @@ import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.frenkvs.devmod.ui.testing.pages.PageUtils.safeGetBool;
 
 /**
  * Debug Overlays Page - Configuration for all debug visualizers.
@@ -112,18 +115,8 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
             .style(EditorButton.Style.PRIMARY)
             .icon("\u2699")
             .hotkeyHint("[G]")
-            .onToggle(v -> {
-                if (Boolean.TRUE.equals(v)) {
-                    DebugRenderer.INSTANCE.toggle();
-                    if (!DebugRenderer.INSTANCE.isEnabled()) {
-                        DebugRenderer.INSTANCE.toggle();
-                    }
-                } else {
-                    if (DebugRenderer.INSTANCE.isEnabled()) {
-                        DebugRenderer.INSTANCE.toggle();
-                    }
-                }
-            });
+            .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_OVERLAY_TOGGLE,
+                Boolean.TRUE.equals(v), DebugRenderer.INSTANCE.isEnabled()));
 
         lightLevelToggle = new EditorButton("toggle-light", "Light Levels")
             .toggleable(true)
@@ -131,15 +124,17 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
             .style(EditorButton.Style.SUCCESS)
             .icon("\u2600")
             .hotkeyHint("[L]")
-            .onToggle(v -> LightLevelOverlay.INSTANCE.setEnabled(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_LIGHT_OVERLAY_TOGGLE,
+                Boolean.TRUE.equals(v), LightLevelOverlay.INSTANCE.isEnabled()));
 
         bodyPartBoxToggle = new EditorButton("toggle-bodypart", "Body Part Boxes")
             .toggleable(true)
-            .toggled(safeGetBool(Config.SHOW_BODY_PART_BOXES))
+            .toggled(ModConfig.showBodyPartBoxes)
             .style(EditorButton.Style.SUCCESS)
             .icon("\u25A1")
             .hotkeyHint("[Shift+G]")
-            .onToggle(v -> Config.SHOW_BODY_PART_BOXES.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_BODY_PARTS_TOGGLE,
+                Boolean.TRUE.equals(v), ModConfig.showBodyPartBoxes));
 
         // Entity debug
         lineOfSightToggle = new EditorButton("toggle-los", "Line of Sight")
@@ -147,21 +142,24 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
             .toggled(LineOfSightVisualizer.INSTANCE.isEnabled())
             .style(EditorButton.Style.PRIMARY)
             .icon("\u2192")
-            .onToggle(v -> LineOfSightVisualizer.INSTANCE.setEnabled(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_LOS_TOGGLE,
+                Boolean.TRUE.equals(v), LineOfSightVisualizer.INSTANCE.isEnabled()));
 
         aggroRangeToggle = new EditorButton("toggle-aggro", "Aggro Range")
             .toggleable(true)
             .toggled(AggroRangeVisualizer.INSTANCE.isEnabled())
             .style(EditorButton.Style.DANGER)
             .icon("\u26A0")
-            .onToggle(v -> AggroRangeVisualizer.INSTANCE.setEnabled(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_AGGRO_RANGE_TOGGLE,
+                Boolean.TRUE.equals(v), AggroRangeVisualizer.INSTANCE.isEnabled()));
 
         safeSpotToggle = new EditorButton("toggle-safe", "Safe Spots")
             .toggleable(true)
             .toggled(SafeSpotVisualizer.INSTANCE.isEnabled())
             .style(EditorButton.Style.SUCCESS)
             .icon("\u2713")
-            .onToggle(v -> SafeSpotVisualizer.INSTANCE.setEnabled(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_SAFE_SPOTS_TOGGLE,
+                Boolean.TRUE.equals(v), SafeSpotVisualizer.INSTANCE.isEnabled()));
 
         // Spatial debug
         roomBoundsToggle = new EditorButton("toggle-room", "Room Bounds")
@@ -169,28 +167,32 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
             .toggled(RoomBoundsVisualizer.INSTANCE.isEnabled())
             .style(EditorButton.Style.PRIMARY)
             .icon("\u25A0")
-            .onToggle(v -> RoomBoundsVisualizer.INSTANCE.setEnabled(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_ROOM_BOUNDS_TOGGLE,
+                Boolean.TRUE.equals(v), RoomBoundsVisualizer.INSTANCE.isEnabled()));
 
         verticalLevelsToggle = new EditorButton("toggle-vertical", "Vertical Levels")
             .toggleable(true)
             .toggled(VerticalLevelsVisualizer.INSTANCE.isEnabled())
             .style(EditorButton.Style.PRIMARY)
             .icon("\u2195")
-            .onToggle(v -> VerticalLevelsVisualizer.INSTANCE.setEnabled(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_VERTICAL_LEVELS_TOGGLE,
+                Boolean.TRUE.equals(v), VerticalLevelsVisualizer.INSTANCE.isEnabled()));
 
         spawnabilityToggle = new EditorButton("toggle-spawn", "Spawnability")
             .toggleable(true)
             .toggled(SpawnabilityOverlay.INSTANCE.isEnabled())
             .style(EditorButton.Style.DANGER)
             .icon("\u2605")
-            .onToggle(v -> SpawnabilityOverlay.INSTANCE.setEnabled(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_SPAWNABILITY_TOGGLE,
+                Boolean.TRUE.equals(v), SpawnabilityOverlay.INSTANCE.isEnabled()));
 
         chunkPerfToggle = new EditorButton("toggle-chunk", "Chunk Perf")
             .toggleable(true)
             .toggled(ChunkPerformanceVisualizer.INSTANCE.isEnabled())
             .style(EditorButton.Style.PRIMARY)
             .icon("\u2593")
-            .onToggle(v -> ChunkPerformanceVisualizer.INSTANCE.setEnabled(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_CHUNK_PERF_TOGGLE,
+                Boolean.TRUE.equals(v), ChunkPerformanceVisualizer.INSTANCE.isEnabled()));
 
         // Heatmap buttons
         heatmapButtons.clear();
@@ -200,7 +202,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
                 .toggled(HeatmapVisualizer.INSTANCE.isEnabled(type))
                 .style(EditorButton.Style.GHOST)
                 .size(EditorButton.Size.SMALL)
-                .onToggle(v -> HeatmapVisualizer.INSTANCE.setEnabled(type, Boolean.TRUE.equals(v)));
+                .onToggle(v -> invokeHeatmapAction(type, Boolean.TRUE.equals(v)));
             heatmapButtons.add(btn);
         }
     }
@@ -213,7 +215,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
     private void syncButtonStates() {
         debugMasterToggle.toggled(DebugRenderer.INSTANCE.isEnabled());
         lightLevelToggle.toggled(LightLevelOverlay.INSTANCE.isEnabled());
-        bodyPartBoxToggle.toggled(safeGetBool(Config.SHOW_BODY_PART_BOXES));
+        bodyPartBoxToggle.toggled(ModConfig.showBodyPartBoxes);
         lineOfSightToggle.toggled(LineOfSightVisualizer.INSTANCE.isEnabled());
         aggroRangeToggle.toggled(AggroRangeVisualizer.INSTANCE.isEnabled());
         safeSpotToggle.toggled(SafeSpotVisualizer.INSTANCE.isEnabled());
@@ -230,5 +232,37 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
             }
             i++;
         }
+    }
+
+    private void invokeToggleAction(String actionId, boolean desired, boolean current) {
+        if (desired == current) {
+            return;
+        }
+        ActionRegistry.invoke(actionId, ClientActionContexts.forClient(ActionOrigin.UI));
+    }
+
+    private void invokeHeatmapAction(HeatmapVisualizer.HeatmapType type, boolean desired) {
+        String actionId = resolveHeatmapAction(type);
+        if (actionId == null) {
+            return;
+        }
+        boolean current = HeatmapVisualizer.INSTANCE.isEnabled(type);
+        if (desired == current) {
+            return;
+        }
+        ActionRegistry.invoke(actionId, ClientActionContexts.forClient(ActionOrigin.UI));
+    }
+
+    private static String resolveHeatmapAction(HeatmapVisualizer.HeatmapType type) {
+        return switch (type) {
+            case DEATH -> ActionIds.DEBUG_HEATMAP_DEATH_TOGGLE;
+            case MOVEMENT -> ActionIds.DEBUG_HEATMAP_MOVEMENT_TOGGLE;
+            case CAMPING -> ActionIds.DEBUG_HEATMAP_CAMPING_TOGGLE;
+            case STUCK -> ActionIds.DEBUG_HEATMAP_STUCK_TOGGLE;
+            case AGGRO_DROP -> ActionIds.DEBUG_HEATMAP_AGGRO_DROP_TOGGLE;
+            case KITING -> ActionIds.DEBUG_HEATMAP_KITING_TOGGLE;
+            case LIGHT_SPAWNABLE -> ActionIds.DEBUG_HEATMAP_LIGHT_SPAWNABLE_TOGGLE;
+            case LIGHT_DARK -> ActionIds.DEBUG_HEATMAP_LIGHT_DARK_TOGGLE;
+        };
     }
 }

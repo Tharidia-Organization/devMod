@@ -1,5 +1,10 @@
 package com.frenkvs.devmod.ui;
 
+import com.frenkvs.devmod.actions.ActionContext;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.rendering.RoomBoundsVisualizer;
 import com.frenkvs.devmod.telemetry.RoomDefinition;
 import com.frenkvs.devmod.telemetry.TelemetryConfig;
@@ -14,6 +19,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -129,7 +135,7 @@ public class RoomBoundsEditorScreen extends Screen {
         setPointAButton = EditorButton.builder("set-point-a", setPointALabel)
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.MEDIUM)
-            .onClick(this::setPointA)
+            .onClick(() -> invokeAction(ActionIds.UI_ROOM_BOUNDS_POINT_A))
             .build();
         addRenderableWidget(Objects.requireNonNull(
             setPointAButton.asVanilla(panelX + 20, panelY + 80, 130, 20),
@@ -140,7 +146,7 @@ public class RoomBoundsEditorScreen extends Screen {
         setPointBButton = EditorButton.builder("set-point-b", setPointBLabel)
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.MEDIUM)
-            .onClick(this::setPointB)
+            .onClick(() -> invokeAction(ActionIds.UI_ROOM_BOUNDS_POINT_B))
             .build();
         addRenderableWidget(Objects.requireNonNull(
             setPointBButton.asVanilla(panelX + 170, panelY + 80, 130, 20),
@@ -151,7 +157,7 @@ public class RoomBoundsEditorScreen extends Screen {
         saveButton = EditorButton.builder("save-room", saveLabel)
             .style(EditorButton.Style.SUCCESS)
             .size(EditorButton.Size.MEDIUM)
-            .onClick(this::saveRoom)
+            .onClick(() -> invokeAction(ActionIds.UI_ROOM_BOUNDS_SAVE))
             .build();
         addRenderableWidget(Objects.requireNonNull(
             saveButton.asVanilla(panelX + 20, panelY + 200, 130, 20),
@@ -188,7 +194,7 @@ public class RoomBoundsEditorScreen extends Screen {
             "Delete",
             "Cancel",
             ConfirmDialog.Style.DANGER,
-            this::deletePendingRoom,
+            this::confirmDeleteLast,
             this::clearPendingDelete,
             "This will delete the selected room."
         );
@@ -198,10 +204,27 @@ public class RoomBoundsEditorScreen extends Screen {
             "Overwrite",
             "Cancel",
             ConfirmDialog.Style.WARNING,
-            this::applyPendingSave,
+            this::confirmOverwrite,
             this::clearPendingSave,
             "A room with this name already exists."
         );
+    }
+
+    private void confirmDeleteLast() {
+        invokeConfirmedAction(ActionIds.UI_ROOM_BOUNDS_DELETE_LAST);
+    }
+
+    private void confirmOverwrite() {
+        invokeConfirmedAction(ActionIds.UI_ROOM_BOUNDS_SAVE);
+    }
+
+    private void invokeAction(String actionId) {
+        ActionRegistry.invoke(actionId, ClientActionContexts.forClient(ActionOrigin.UI));
+    }
+
+    private void invokeConfirmedAction(String actionId) {
+        ActionRegistry.invoke(actionId,
+            ClientActionContexts.forClient(ActionOrigin.UI).withConfirmed(true));
     }
 
     private void loadExistingRooms() {
@@ -447,6 +470,207 @@ public class RoomBoundsEditorScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // ACTION BRIDGE (Radial / UI)
+    // ═══════════════════════════════════════════════════════════════
+
+    public static final class Actions {
+        private Actions() {}
+
+        public static boolean setPointA(ActionContext context) {
+            RoomBoundsEditorScreen screen = getOpenScreen();
+            if (screen != null) {
+                screen.setPointA();
+                return true;
+            }
+            return setPointFromContext(context, true);
+        }
+
+        public static boolean setPointB(ActionContext context) {
+            RoomBoundsEditorScreen screen = getOpenScreen();
+            if (screen != null) {
+                screen.setPointB();
+                return true;
+            }
+            return setPointFromContext(context, false);
+        }
+
+        public static boolean saveRoom(ActionContext context) {
+            RoomBoundsEditorScreen screen = getOpenScreen();
+            if (screen != null) {
+                if (context.isConfirmed() && screen.pendingSaveRoom != null) {
+                    screen.applyPendingSave();
+                    return true;
+                }
+                screen.saveRoom();
+                return true;
+            }
+            return saveRoomWithoutScreen(context);
+        }
+
+        public static boolean deleteLastRoom(ActionContext context) {
+            RoomBoundsEditorScreen screen = getOpenScreen();
+            if (screen != null && screen.pendingDeleteRoom != null) {
+                screen.deletePendingRoom();
+                return true;
+            }
+            return deleteLastRoomWithoutScreen(context);
+        }
+
+        private static RoomBoundsEditorScreen getOpenScreen() {
+            Screen screen = Minecraft.getInstance().screen;
+            if (screen instanceof RoomBoundsEditorScreen editor) {
+                return editor;
+            }
+            return null;
+        }
+
+        private static boolean setPointFromContext(ActionContext context, boolean isPointA) {
+            var player = context.getPlayer();
+            if (player == null) {
+                context.sendFailure(Component.translatable("devmod.action.requires_player"));
+                return false;
+            }
+
+            BlockPos pos = player.blockPosition();
+            if (isPointA) {
+                pointA = pos;
+                RoomBoundsVisualizer.INSTANCE.setPendingPointA(pos);
+            } else {
+                pointB = pos;
+                RoomBoundsVisualizer.INSTANCE.setPendingPointB(pos);
+            }
+
+            updatePreviewFallback();
+            String label = isPointA ? "Point A set: " : "Point B set: ";
+            context.sendSuccess(Component.literal(label + formatBlockPosStatic(pos)), true);
+            return true;
+        }
+
+        private static boolean saveRoomWithoutScreen(ActionContext context) {
+            String roomName = safePendingRoomName();
+            if (roomName.isBlank()) {
+                context.sendFailure(Component.literal("Error: Room name cannot be empty!"));
+                return false;
+            }
+            if (pointA == null || pointB == null) {
+                context.sendFailure(Component.literal("Error: Set both Point A and Point B!"));
+                return false;
+            }
+
+            String dimension = resolveDimension();
+            RoomDefinition room = buildRoomDefinition(roomName, dimension);
+
+            List<RoomDefinition> rooms = new ArrayList<>(new TelemetryConfig().loadRooms());
+            boolean replacing = rooms.removeIf(existing -> existing.id().equals(roomName));
+            if (replacing && !context.isConfirmed()) {
+                context.sendFailure(Component.translatable("devmod.action.requires_confirm"));
+                return false;
+            }
+
+            rooms.add(room);
+            if (!writeRoomsToFile(rooms)) {
+                context.sendFailure(Component.literal("Error: Failed to save file!"));
+                return false;
+            }
+
+            String action = replacing ? "overwritten" : "saved";
+            RoomBoundsVisualizer.INSTANCE.removeRoom("_preview_" + room.id());
+            RoomBoundsVisualizer.INSTANCE.reload();
+            RoomBoundsVisualizer.INSTANCE.clearPendingPoints();
+
+            pointA = null;
+            pointB = null;
+            pendingRoomName = "new_room_" + (rooms.size() + 1);
+
+            context.sendSuccess(Component.literal("Room '" + room.id() + "' " + action + "!"), true);
+            return true;
+        }
+
+        private static boolean deleteLastRoomWithoutScreen(ActionContext context) {
+            List<RoomDefinition> rooms = new ArrayList<>(new TelemetryConfig().loadRooms());
+            if (rooms.isEmpty()) {
+                context.sendFailure(Component.literal("No rooms to delete!"));
+                return false;
+            }
+
+            RoomDefinition removed = rooms.remove(rooms.size() - 1);
+            if (!writeRoomsToFile(rooms)) {
+                context.sendFailure(Component.literal("Error: Failed to save file!"));
+                return false;
+            }
+
+            RoomBoundsVisualizer.INSTANCE.reload();
+            RoomBoundsVisualizer.INSTANCE.clearPendingPoints();
+
+            pointA = null;
+            pointB = null;
+            pendingRoomName = "new_room_" + (rooms.size() + 1);
+
+            context.sendSuccess(Component.literal("Deleted room: " + removed.id()), true);
+            return true;
+        }
+
+        private static void updatePreviewFallback() {
+            if (pointA == null || pointB == null) {
+                return;
+            }
+            String previewId = "_preview_" + safePendingRoomName();
+            RoomBoundsVisualizer.INSTANCE.addRoom(previewId, pointA, pointB);
+            if (!RoomBoundsVisualizer.INSTANCE.isEnabled()) {
+                RoomBoundsVisualizer.INSTANCE.setEnabled(true);
+            }
+        }
+
+        private static String safePendingRoomName() {
+            if (pendingRoomName == null || pendingRoomName.isBlank()) {
+                pendingRoomName = "new_room";
+            }
+            return pendingRoomName;
+        }
+
+        private static String resolveDimension() {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.level != null) {
+                return mc.level.dimension().location().toString();
+            }
+            return "minecraft:overworld";
+        }
+
+        private static RoomDefinition buildRoomDefinition(String roomName, String dimension) {
+            BlockPos min = new BlockPos(
+                Math.min(pointA.getX(), pointB.getX()),
+                Math.min(pointA.getY(), pointB.getY()),
+                Math.min(pointA.getZ(), pointB.getZ())
+            );
+            BlockPos max = new BlockPos(
+                Math.max(pointA.getX(), pointB.getX()),
+                Math.max(pointA.getY(), pointB.getY()),
+                Math.max(pointA.getZ(), pointB.getZ())
+            );
+            return new RoomDefinition(roomName, dimension, min, max);
+        }
+
+        private static boolean writeRoomsToFile(List<RoomDefinition> rooms) {
+            Path file = ConfigPaths.getTelemetryRoomsFile();
+            try {
+                Files.createDirectories(file.getParent());
+                try (Writer writer = Files.newBufferedWriter(file)) {
+                    GSON.toJson(rooms, writer);
+                }
+                LOGGER.info("[RoomBoundsEditor] Saved {} rooms to {}", rooms.size(), file);
+                return true;
+            } catch (IOException e) {
+                LOGGER.error("[RoomBoundsEditor] Failed to save rooms", e);
+                return false;
+            }
+        }
+
+        private static String formatBlockPosStatic(BlockPos pos) {
+            return String.format("(%d, %d, %d)", pos.getX(), pos.getY(), pos.getZ());
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════

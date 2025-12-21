@@ -546,8 +546,19 @@ public class TestingHub extends Screen {
                     ClientActionContexts.forClient(ActionOrigin.UI));
             }
             case MOB_CONFIG -> {
-                showNotification("Right-click a mob while holding the config tool");
-                minimizeToHud();
+                boolean opened = ActionRegistry.invoke(ActionIds.UI_MOB_CONFIG_OPEN,
+                    ClientActionContexts.forClient(ActionOrigin.UI));
+                if (!opened) {
+                    Minecraft mc = this.minecraft;
+                    boolean hasMobTarget = false;
+                    if (mc != null && mc.hitResult instanceof net.minecraft.world.phys.EntityHitResult entityHit) {
+                        hasMobTarget = entityHit.getEntity() instanceof net.minecraft.world.entity.Mob;
+                    }
+                    if (!hasMobTarget) {
+                        showNotification("Right-click a mob while holding the config tool");
+                        minimizeToHud();
+                    }
+                }
             }
         }
     }

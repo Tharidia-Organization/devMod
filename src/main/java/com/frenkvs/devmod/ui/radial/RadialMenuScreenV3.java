@@ -34,9 +34,9 @@ import java.util.*;
  * RADIAL MENU V3 - MACRO-CATEGORY EDITION
  *
  * Architecture:
- * - Center hub divided into 4 macro-category segments (ANALYZE, COMBAT, TOOLS, PLAY)
- * - Each macro-category controls 6 categories in the outer ring
- * - Total capacity: 24 categories (4 macros x 6 categories)
+ * - Center hub divided into 6 macro-category segments (ANALYZE, TELEMETRY, COMBAT, ARENA, PLAY, TOOLS)
+ * - Each macro-category controls a focused set of categories in the outer ring
+ * - Total capacity: 36 categories (6 macros x 6 categories max)
  * - Clicking center segment switches active macro-category
  * - Smooth transitions between macro-categories
  * - State persisted across menu opens
@@ -233,15 +233,17 @@ public class RadialMenuScreenV3 extends Screen {
     // ================================================================
 
     /**
-     * Initializes the 4 macro-categories, each containing 6 sub-categories.
+     * Initializes the macro-categories and their sub-categories.
      * Total: 24 categories organized hierarchically for better UX.
      *
      * Categories are defined in RadialMenuRegistry for better separation of concerns.
      *
-     * ANALYZE: Debug overlays, Spatial analysis, Performance, Telemetry ops
-     * COMBAT: Combat HUD, Heatmaps, Abilities, Endurance tools
-     * TOOLS: Settings, Dashboard, Testing, Mob tools, Item editors, Commands
-     * PLAY: Arena ops, Templates, Force, Autosmoke, Arena HUD, Party
+     * ANALYZE: Debug, Spatial, Performance
+     * TELEMETRY: Ops, Data, Scan, Dashboard
+     * COMBAT: HUD, Heatmaps, Abilities
+     * ARENA: Ops, Templates, Force, Autosmoke, HUD
+     * PLAY: Endurance, Quests, Party
+     * TOOLS: Settings, Testing, Mob tools, Item editors, Commands
      */
     private void initializeCategories() {
         // Build categories from registry with mob editor supplier for context-dependent items
@@ -395,7 +397,7 @@ public class RadialMenuScreenV3 extends Screen {
         selectedItemIndex = RadialMenuConstants.NO_SELECTION;
         selectedFavoriteIndex = RadialMenuConstants.NO_SELECTION;
 
-        // Macro hub area (center with 4 segments) - handled in renderCenterHub
+        // Macro hub area (center with macro segments) - handled in renderCenterHub
         if (distance < macroHubRadius) {
             return;
         }
@@ -565,7 +567,7 @@ public class RadialMenuScreenV3 extends Screen {
     }
 
     /**
-     * Renders the center hub with 4 macro-category segments.
+     * Renders the center hub with macro-category segments.
      * Each segment is clickable and switches the active macro-category.
      * The selected macro is highlighted with its color.
      */
@@ -870,7 +872,7 @@ public class RadialMenuScreenV3 extends Screen {
             return true;
         }
 
-        // Keys 1-4 switch macro-categories (defaults: GLFW_KEY_1 .. GLFW_KEY_4)
+        // Number keys switch macro-categories (defaults: GLFW_KEY_1 .. GLFW_KEY_6)
         int macroIndex = indexOfKey(keyCode, config.input.macroKeys);
         if (macroIndex != RadialMenuConstants.NO_SELECTION) {
             MacroCategory[] macros = MacroCategory.values();
@@ -885,7 +887,7 @@ public class RadialMenuScreenV3 extends Screen {
             return true;
         }
 
-        // Keys 5-9 and 0 select categories within current macro (defaults: GLFW_KEY_5 .. GLFW_KEY_9, GLFW_KEY_0)
+        // Keys 7-0 and -/= select categories within current macro (defaults: GLFW_KEY_7 .. GLFW_KEY_0, GLFW_KEY_MINUS, GLFW_KEY_EQUAL)
         int categoryIndex = indexOfKey(keyCode, config.input.categoryKeys);
         if (categoryIndex != RadialMenuConstants.NO_SELECTION) {
             if (categoryIndex < getActiveCategories().size()) {

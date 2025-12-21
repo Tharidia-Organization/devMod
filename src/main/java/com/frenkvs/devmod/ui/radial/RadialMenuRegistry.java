@@ -22,10 +22,12 @@ import javax.annotation.Nonnull;
  * to keep RadialMenuScreenV3 focused on UI logic.
  *
  * Structure:
- * - ANALYZE (6): Debug, Spatial, Performance, Telemetry Ops, Telemetry Dump, Telemetry Scan
- * - COMBAT (6): Combat HUD, Heatmaps, Abilities, Endurance Core, Endurance HUD, Quest Tools
- * - TOOLS (6): Settings, Dashboard, Testing, Mob Tools, Item Editors, Commands
- * - PLAY (6): Arena Ops, Templates, Force, Autosmoke, Arena HUD, Party
+ * - ANALYZE (3): Debug, Spatial, Performance
+ * - TELEMETRY (4): Ops, Data, Scan, Dashboard
+ * - COMBAT (3): HUD, Heatmaps, Abilities
+ * - ARENA (5): Ops, Templates, Force, Autosmoke, HUD
+ * - PLAY (4): Endurance, Endurance HUD, Quest Tools, Party
+ * - TOOLS (5): Settings, Testing, Mob Tools, Item Editors, Commands
  */
 public final class RadialMenuRegistry {
 
@@ -126,9 +128,11 @@ public final class RadialMenuRegistry {
 
         // Build all categories
         buildAnalyzeCategories(map);
+        buildTelemetryCategories(map);
         buildCombatCategories(map);
-        buildToolsCategories(map, mobEditorItemSupplier);
+        buildArenaCategories(map);
         buildPlayCategories(map);
+        buildToolsCategories(map, mobEditorItemSupplier);
 
         return map;
     }
@@ -176,7 +180,7 @@ public final class RadialMenuRegistry {
         categories.add(debug);
 
         // Category 2: Spatial
-        categories.add(RadialCategory.builder("spatial")
+        RadialCategory spatial = RadialCategory.builder("spatial")
             .name("Spatial")
             .color(0xFF66AAFF)
             .icon("")
@@ -187,8 +191,19 @@ public final class RadialMenuRegistry {
             .item(RadialMenuItem.registry(ActionIds.DEBUG_VERTICAL_LEVELS_TOGGLE))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_SAFE_SPOTS_TOGGLE))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_SPAWNABILITY_TOGGLE))
-            .item(RadialMenuItem.registry(ActionIds.UI_ROOM_BOUNDS_EDITOR_OPEN))
-            .build());
+            .build();
+
+        RadialCategory roomBounds = spatial.addSubcategory("room_bounds", "Room Bounds", 0xFF66AAFF,
+            stack(Items.STRUCTURE_BLOCK));
+        roomBounds.addItems(
+            RadialMenuItem.registry(ActionIds.UI_ROOM_BOUNDS_EDITOR_OPEN),
+            RadialMenuItem.registry(ActionIds.UI_ROOM_BOUNDS_POINT_A),
+            RadialMenuItem.registry(ActionIds.UI_ROOM_BOUNDS_POINT_B),
+            RadialMenuItem.registry(ActionIds.UI_ROOM_BOUNDS_SAVE),
+            RadialMenuItem.registry(ActionIds.UI_ROOM_BOUNDS_DELETE_LAST)
+        );
+
+        categories.add(spatial);
 
         // Category 3: Performance
         categories.add(RadialCategory.builder("performance")
@@ -202,18 +217,23 @@ public final class RadialMenuRegistry {
             .item(RadialMenuItem.registry(ActionIds.DEBUG_ENTITY_DENSITY_TOGGLE))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_ATTRIBUTE_MONITOR_TOGGLE))
             .build());
+    }
 
-        // Category 4: Telemetry Ops
+    // ================================================================
+    // MACRO: TELEMETRY - Dashboards, exports, scans
+    // ================================================================
+
+    private static void buildTelemetryCategories(Map<MacroCategory, List<RadialCategory>> map) {
+        List<RadialCategory> categories = map.get(MacroCategory.TELEMETRY);
+
+        // Category 1: Telemetry Ops
         categories.add(RadialCategory.builder("telemetry_ops")
-            .name("Telemetry")
+            .name("Ops")
             .color(0xFFAADDFF)
             .icon("")
             .iconStack(stack(Items.MAP))
-            .item(RadialMenuItem.registry(ActionIds.UI_TELEMETRY_DASHBOARD_OPEN))
-            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DASHBOARD_SERVER_OPEN))
             .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DASHBOARD_SERVER_START))
             .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DASHBOARD_SERVER_STOP))
-            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DASHBOARD_SERVER_STATUS))
             .item(RadialMenuItem.registry(ActionIds.TELEMETRY_RELOAD))
             .item(RadialMenuItem.registry(ActionIds.DUNGEON_HELP))
             .item(RadialMenuItem.registry(ActionIds.DUNGEON_START))
@@ -221,9 +241,9 @@ public final class RadialMenuRegistry {
             .item(RadialMenuItem.registry(ActionIds.DUNGEON_STATUS))
             .build());
 
-        // Category 5: Telemetry Data
+        // Category 2: Telemetry Data
         RadialCategory telemetryData = RadialCategory.builder("telemetry_data")
-            .name("Telemetry Data")
+            .name("Data")
             .color(0xFFCCEEFF)
             .icon("")
             .iconStack(stack(Items.PAPER))
@@ -255,9 +275,9 @@ public final class RadialMenuRegistry {
 
         categories.add(telemetryData);
 
-        // Category 6: Telemetry Scan
+        // Category 3: Telemetry Scan
         categories.add(RadialCategory.builder("telemetry_scan")
-            .name("Telemetry Scan")
+            .name("Scan")
             .color(0xFFEEFFFF)
             .icon("")
             .iconStack(stack(Items.SPYGLASS))
@@ -270,6 +290,17 @@ public final class RadialMenuRegistry {
             .item(RadialMenuItem.registry(ActionIds.TELEMETRY_BACKTRACKING_CONFUSING))
             .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DUNGEONS_STATS))
             .build());
+
+        // Category 4: Dashboard
+        categories.add(RadialCategory.builder("dashboard")
+            .name("Dash")
+            .color(0xFFBBDDFF)
+            .icon("")
+            .iconStack(stack(Items.WRITABLE_BOOK))
+            .item(RadialMenuItem.registry(ActionIds.UI_TELEMETRY_DASHBOARD_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DASHBOARD_SERVER_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DASHBOARD_SERVER_STATUS))
+            .build());
     }
 
     // ================================================================
@@ -281,11 +312,12 @@ public final class RadialMenuRegistry {
 
         // Category 1: Combat HUD
         categories.add(RadialCategory.builder("combat_hud")
-            .name("Combat HUD")
+            .name("HUD")
             .color(0xFFFF4444)
             .icon("")
             .iconStack(stack(Items.DIAMOND_SWORD))
             .item(RadialMenuItem.registry(ActionIds.HUD_IMPACT_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.HUD_IMPACT_3D_TOGGLE))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_IMPACT_DISMISS))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_BOSS_PHASE_TOGGLE))
             .item(RadialMenuItem.registry(ActionIds.DEBUG_SKILL_EFFICACY_TOGGLE))
@@ -332,43 +364,72 @@ public final class RadialMenuRegistry {
             .item(RadialMenuItem.registry(ActionIds.UI_STAMINA_EDITOR_OPEN))
             .build());
 
-        // Category 4: Endurance Core
-        categories.add(RadialCategory.builder("endurance_core")
-            .name("Endurance")
-            .color(0xFFFFCCCC)
+    }
+
+    // ================================================================
+    // MACRO: ARENA - Arena systems and operations
+    // ================================================================
+
+    private static void buildArenaCategories(Map<MacroCategory, List<RadialCategory>> map) {
+        List<RadialCategory> categories = map.get(MacroCategory.ARENA);
+
+        // Category 1: Arena Ops
+        categories.add(RadialCategory.builder("arena_ops")
+            .name("Ops")
+            .color(0xFF44FF88)
             .icon("")
-            .iconStack(stack(Items.TOTEM_OF_UNDYING))
-            .item(RadialMenuItem.registry(ActionIds.UI_ENDURANCE_SCREEN_OPEN))
-            .item(RadialMenuItem.registry(ActionIds.UI_ENDURANCE_SHOP_OPEN))
-            .item(RadialMenuItem.registry(ActionIds.ENDURANCE_QUEST_START))
-            .item(RadialMenuItem.registry(ActionIds.ENDURANCE_QUEST_CONTINUE))
-            .item(RadialMenuItem.registry(ActionIds.ENDURANCE_QUEST_EXIT))
+            .iconStack(stack(Items.COMMAND_BLOCK))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_HELP))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_CREATE))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_QUICK_TEST_WIZARD_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_STATUS))
             .build());
 
-        // Category 5: Endurance HUD
-        categories.add(RadialCategory.builder("endurance_hud")
-            .name("Endurance HUD")
-            .color(0xFFFFEEEE)
+        // Category 2: Arena Templates
+        categories.add(RadialCategory.builder("arena_templates")
+            .name("Templates")
+            .color(0xFF66FFAA)
             .icon("")
             .iconStack(stack(Items.MAP))
-            .item(RadialMenuItem.registry(ActionIds.HUD_ENDURANCE_TOGGLE))
-            .item(RadialMenuItem.registry(ActionIds.HUD_ENDURANCE_DETAILS_TOGGLE))
-            .item(RadialMenuItem.registry(ActionIds.HUD_QUEST_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_TEMPLATE_LIST))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_TEMPLATE_INFO))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_TEMPLATE_RELOAD))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_VALIDATE))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_METRICS))
             .build());
 
-        // Category 6: Quest Tools
-        categories.add(RadialCategory.builder("quest_tools")
-            .name("Quest Tools")
-            .color(0xFFFFFFFF)
+        // Category 3: Arena Force
+        categories.add(RadialCategory.builder("arena_force")
+            .name("Force")
+            .color(0xFF88FFCC)
             .icon("")
-            .iconStack(stack(Items.FEATHER))
-            .item(RadialMenuItem.registry(ActionIds.UI_QUEST_EDITOR_OPEN))
-            .item(RadialMenuItem.registry(ActionIds.UI_ENDURANCE_EDITOR_OPEN))
-            .item(RadialMenuItem.registry(ActionIds.QUEST_TASK_COMPLETE))
-            .item(RadialMenuItem.registry(ActionIds.UI_PERK_SELECTION_OPEN))
-            .item(RadialMenuItem.registry(ActionIds.UI_WAVE_CHECKPOINT_OPEN))
-            .item(RadialMenuItem.registry(ActionIds.UI_QUEST_DEATH_OPEN))
-            .item(RadialMenuItem.registry(ActionIds.UI_QUEST_COMPLETION_OPEN))
+            .iconStack(stack(Items.NAME_TAG))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_FORCE))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_FORCE_CLEAR))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_FORCE_STATUS))
+            .build());
+
+        // Category 4: Arena Autosmoke
+        categories.add(RadialCategory.builder("arena_autosmoke")
+            .name("Autosmoke")
+            .color(0xFFAAFFDD)
+            .icon("")
+            .iconStack(stack(Items.CAMPFIRE))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_AUTOSMOKE_RUN))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_AUTOSMOKE_STATUS))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_AUTOSMOKE_SCHEDULE_STATUS))
+            .build());
+
+        // Category 5: Arena HUD
+        categories.add(RadialCategory.builder("arena_hud")
+            .name("HUD")
+            .color(0xFFCCFFEE)
+            .icon("")
+            .iconStack(stack(Items.REDSTONE_TORCH))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_HUD_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_HUD_ON))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_HUD_OFF))
+            .item(RadialMenuItem.registry(ActionIds.ARENA_HUD_STATUS))
             .build());
     }
 
@@ -381,7 +442,7 @@ public final class RadialMenuRegistry {
         List<RadialCategory> categories = map.get(MacroCategory.TOOLS);
 
         // Category 1: Settings
-        categories.add(RadialCategory.builder("settings")
+        RadialCategory settings = RadialCategory.builder("settings")
             .name("Settings")
             .color(0xFFFFAA00)
             .icon("")
@@ -392,20 +453,88 @@ public final class RadialMenuRegistry {
             .item(RadialMenuItem.registry(ActionIds.UI_WELCOME_OPEN))
             .item(RadialMenuItem.registry(ActionIds.UI_ONBOARDING_START))
             .item(RadialMenuItem.registry(ActionIds.UI_ONBOARDING_SKIP))
-            .build());
+            .build();
 
-        // Category 2: Dashboard
-        categories.add(RadialCategory.builder("dashboard")
-            .name("Dashboard")
-            .color(0xFFFFBB33)
-            .icon("")
-            .iconStack(stack(Items.WRITABLE_BOOK))
-            .item(RadialMenuItem.registry(ActionIds.UI_TELEMETRY_DASHBOARD_OPEN))
-            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DASHBOARD_SERVER_OPEN))
-            .item(RadialMenuItem.registry(ActionIds.TELEMETRY_DASHBOARD_SERVER_STATUS))
-            .build());
+        RadialCategory hudConfig = settings.addSubcategory("config_hud", "HUD Config", 0xFFFFAA00,
+            stack(Items.ITEM_FRAME));
+        hudConfig.addItems(
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_HISTORY_TOGGLE),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_DPS_TOGGLE)
+        );
 
-        // Category 3: Testing
+        RadialCategory hudPosition = hudConfig.addSubcategory("hud_position", "Position", 0xFFFFAA00,
+            stack(Items.COMPASS));
+        hudPosition.addItems(
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_POSITION_TOP_LEFT),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_POSITION_TOP_RIGHT),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_POSITION_CENTER_LEFT),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_POSITION_CENTER_RIGHT),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_POSITION_BOTTOM_LEFT),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_POSITION_BOTTOM_RIGHT)
+        );
+
+        RadialCategory hudOffset = hudConfig.addSubcategory("hud_offset", "Offset", 0xFFFFAA00,
+            stack(Items.ARROW));
+        hudOffset.addItems(
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_OFFSET_X_MINUS),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_OFFSET_X_PLUS),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_OFFSET_Y_MINUS),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_OFFSET_Y_PLUS)
+        );
+
+        RadialCategory hudPresets = hudConfig.addSubcategory("hud_presets", "Presets", 0xFFFFAA00,
+            stack(Items.WRITABLE_BOOK));
+        hudPresets.addItems(
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_PRESET_EXPORT),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_PRESET_IMPORT),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_HUD_RESET_DEFAULTS)
+        );
+
+        RadialCategory effectsConfig = settings.addSubcategory("config_effects", "Effects", 0xFFFFAA00,
+            stack(Items.BLAZE_POWDER));
+        RadialCategory impactVfx = effectsConfig.addSubcategory("impact_vfx", "Impact VFX", 0xFFFFAA00,
+            stack(Items.BLAZE_POWDER));
+        impactVfx.addItems(
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_TOGGLE),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_VORTEX_TOGGLE),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_SLASH_TOGGLE),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_LINES_TOGGLE),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_RESET_DEFAULTS)
+        );
+
+        RadialCategory vfxIntensity = impactVfx.addSubcategory("impact_vfx_intensity", "Intensity", 0xFFFFAA00,
+            stack(Items.GLOWSTONE_DUST));
+        vfxIntensity.addItems(
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_INTENSITY_LOW),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_INTENSITY_MED),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_INTENSITY_HIGH),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_INTENSITY_MAX)
+        );
+
+        effectsConfig.addItems(
+            RadialMenuItem.registry(ActionIds.CONFIG_SCREEN_SHAKE_TOGGLE),
+            RadialMenuItem.registry(ActionIds.CONFIG_PROJECTILE_TRAILS_TOGGLE),
+            RadialMenuItem.registry(ActionIds.CONFIG_BADGE_POPUPS_TOGGLE)
+        );
+
+        RadialCategory telemetryConfig = settings.addSubcategory("config_telemetry", "Telemetry Config", 0xFFFFAA00,
+            stack(Items.MAP));
+        telemetryConfig.addItems(
+            RadialMenuItem.registry(ActionIds.CONFIG_TELEMETRY_TOGGLE),
+            RadialMenuItem.registry(ActionIds.CONFIG_TELEMETRY_HITS_TOGGLE),
+            RadialMenuItem.registry(ActionIds.CONFIG_TELEMETRY_DEATHS_TOGGLE),
+            RadialMenuItem.registry(ActionIds.CONFIG_TELEMETRY_SPAWNS_TOGGLE)
+        );
+
+        RadialCategory combatConfig = settings.addSubcategory("config_combat", "Combat Config", 0xFFFFAA00,
+            stack(Items.TARGET));
+        combatConfig.addItems(
+            RadialMenuItem.registry(ActionIds.CONFIG_BODY_PART_DETECTION_TOGGLE)
+        );
+
+        categories.add(settings);
+
+        // Category 2: Testing
         RadialCategory testing = RadialCategory.builder("testing")
             .name("Testing")
             .color(0xFFFFCC66)
@@ -467,9 +596,22 @@ public final class RadialMenuRegistry {
             RadialMenuItem.registry(ActionIds.TEST_QA_OPEN)
         );
 
+        RadialCategory qaTests = testing.addSubcategory("testing_qa", "QA", 0xFFFFCC66,
+            stack(Items.NOTE_BLOCK));
+        qaTests.addItems(
+            RadialMenuItem.registry(ActionIds.QA_SESSION_START),
+            RadialMenuItem.registry(ActionIds.QA_SESSION_RESUME),
+            RadialMenuItem.registry(ActionIds.QA_REPORT_SAVE),
+            RadialMenuItem.registry(ActionIds.QA_REPORT_COPY),
+            RadialMenuItem.registry(ActionIds.QA_TEST_PASS),
+            RadialMenuItem.registry(ActionIds.QA_TEST_FAIL),
+            RadialMenuItem.registry(ActionIds.QA_TEST_SKIP),
+            RadialMenuItem.registry(ActionIds.QA_TEST_AUTO)
+        );
+
         categories.add(testing);
 
-        // Category 4: Mob Editor
+        // Category 3: Mob Editor
         RadialCategory.Builder mobEditorBuilder = RadialCategory.builder("mobeditor")
             .name("Mob Edit")
             .color(0xFFFFDD99)
@@ -482,7 +624,7 @@ public final class RadialMenuRegistry {
         mobEditorBuilder.item(RadialMenuItem.registry(ActionIds.UI_ROOM_BOUNDS_EDITOR_OPEN));
         categories.add(mobEditorBuilder.build());
 
-        // Category 5: Item Editors
+        // Category 4: Item Editors
         // Note: Using dynamic visibility suppliers and fresh getHeldItem() in actions
         // so the menu responds to item changes in real-time
         RadialMenuItem autoEditor = RadialMenuItem.registry(ActionIds.UI_ITEM_EDITOR_OPEN_AUTO);
@@ -527,7 +669,7 @@ public final class RadialMenuRegistry {
             .item(usableEditor)
             .build());
 
-        // Category 6: Commands
+        // Category 5: Commands
         categories.add(RadialCategory.builder("commands")
             .name("Commands")
             .color(0xFFFFFFEE)
@@ -549,66 +691,46 @@ public final class RadialMenuRegistry {
     private static void buildPlayCategories(Map<MacroCategory, List<RadialCategory>> map) {
         List<RadialCategory> categories = map.get(MacroCategory.PLAY);
 
-        // Category 1: Arena Ops
-        categories.add(RadialCategory.builder("arena_ops")
-            .name("Arena Ops")
-            .color(0xFF44FF88)
+        // Category 1: Endurance
+        categories.add(RadialCategory.builder("endurance_core")
+            .name("Endurance")
+            .color(0xFFFFCCCC)
             .icon("")
-            .iconStack(stack(Items.COMMAND_BLOCK))
-            .item(RadialMenuItem.registry(ActionIds.ARENA_HELP))
-            .item(RadialMenuItem.registry(ActionIds.ARENA_CREATE))
-            .item(RadialMenuItem.registry(ActionIds.ARENA_QUICK_TEST_WIZARD_OPEN))
-            .item(RadialMenuItem.registry(ActionIds.ARENA_STATUS))
+            .iconStack(stack(Items.TOTEM_OF_UNDYING))
+            .item(RadialMenuItem.registry(ActionIds.UI_ENDURANCE_SCREEN_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_ENDURANCE_SHOP_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.ENDURANCE_QUEST_START))
+            .item(RadialMenuItem.registry(ActionIds.ENDURANCE_QUEST_CONTINUE))
+            .item(RadialMenuItem.registry(ActionIds.ENDURANCE_QUEST_EXIT))
             .build());
 
-        // Category 2: Arena Templates
-        categories.add(RadialCategory.builder("arena_templates")
-            .name("Arena Templates")
-            .color(0xFF66FFAA)
+        // Category 2: Quests
+        categories.add(RadialCategory.builder("quest_tools")
+            .name("Quests")
+            .color(0xFFFFFFFF)
+            .icon("")
+            .iconStack(stack(Items.FEATHER))
+            .item(RadialMenuItem.registry(ActionIds.UI_QUEST_EDITOR_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_ENDURANCE_EDITOR_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.QUEST_TASK_COMPLETE))
+            .item(RadialMenuItem.registry(ActionIds.UI_PERK_SELECTION_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_WAVE_CHECKPOINT_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_QUEST_DEATH_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_QUEST_COMPLETION_OPEN))
+            .build());
+
+        // Category 3: Endurance HUD
+        categories.add(RadialCategory.builder("endurance_hud")
+            .name("HUD")
+            .color(0xFFFFEEEE)
             .icon("")
             .iconStack(stack(Items.MAP))
-            .item(RadialMenuItem.registry(ActionIds.ARENA_TEMPLATE_LIST))
-            .item(RadialMenuItem.registry(ActionIds.ARENA_TEMPLATE_INFO))
-            .item(RadialMenuItem.registry(ActionIds.ARENA_TEMPLATE_RELOAD))
-            .item(RadialMenuItem.registry(ActionIds.ARENA_VALIDATE))
-            .item(RadialMenuItem.registry(ActionIds.ARENA_METRICS))
+            .item(RadialMenuItem.registry(ActionIds.HUD_ENDURANCE_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.HUD_ENDURANCE_DETAILS_TOGGLE))
+            .item(RadialMenuItem.registry(ActionIds.HUD_QUEST_TOGGLE))
             .build());
 
-        // Category 3: Arena Force
-        categories.add(RadialCategory.builder("arena_force")
-            .name("Arena Force")
-            .color(0xFF88FFCC)
-            .icon("")
-            .iconStack(stack(Items.NAME_TAG))
-            .item(RadialMenuItem.registry(ActionIds.ARENA_FORCE))
-            .item(RadialMenuItem.registry(ActionIds.ARENA_FORCE_CLEAR))
-            .item(RadialMenuItem.registry(ActionIds.ARENA_FORCE_STATUS))
-            .build());
-
-        // Category 4: Arena Autosmoke
-        categories.add(RadialCategory.builder("arena_autosmoke")
-            .name("Arena Autosmoke")
-            .color(0xFFAAFFDD)
-            .icon("")
-            .iconStack(stack(Items.CAMPFIRE))
-            .item(RadialMenuItem.registry(ActionIds.ARENA_AUTOSMOKE_RUN))
-            .item(RadialMenuItem.registry(ActionIds.ARENA_AUTOSMOKE_STATUS))
-            .item(RadialMenuItem.registry(ActionIds.ARENA_AUTOSMOKE_SCHEDULE_STATUS))
-            .build());
-
-        // Category 5: Arena HUD
-        categories.add(RadialCategory.builder("arena_hud")
-            .name("Arena HUD")
-            .color(0xFFCCFFEE)
-            .icon("")
-            .iconStack(stack(Items.REDSTONE_TORCH))
-            .item(RadialMenuItem.registry(ActionIds.ARENA_HUD_TOGGLE))
-            .item(RadialMenuItem.registry(ActionIds.ARENA_HUD_ON))
-            .item(RadialMenuItem.registry(ActionIds.ARENA_HUD_OFF))
-            .item(RadialMenuItem.registry(ActionIds.ARENA_HUD_STATUS))
-            .build());
-
-        // Category 6: Party
+        // Category 4: Party
         categories.add(RadialCategory.builder("party")
             .name("Party")
             .color(0xFFEEFFFF)

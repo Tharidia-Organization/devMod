@@ -1,9 +1,12 @@
 package com.frenkvs.devmod.ui.testing.pages;
 
 import com.frenkvs.devmod.Config;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.hud.Impact3DPanelManager;
 import com.frenkvs.devmod.hud.ImpactHudOverlay;
-import com.frenkvs.devmod.hud.ImpactHudPresets;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.testing.VoxelLabTab;
 import com.frenkvs.devmod.ui.testing.panel.*;
@@ -125,21 +128,24 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
             .toggled(ImpactHudOverlay.isEnabled())
             .style(EditorButton.Style.PRIMARY)
             .icon("\uD83D\uDCCA")
-            .onToggle(v -> ImpactHudOverlay.setEnabled(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.HUD_IMPACT_TOGGLE,
+                Boolean.TRUE.equals(v), ImpactHudOverlay.isEnabled()));
 
         historyToggle = new EditorButton("toggle-history", "History")
             .toggleable(true)
             .toggled(safeGetBool(Config.IMPACT_HUD_HISTORY_ENABLED))
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.SMALL)
-            .onToggle(v -> Config.IMPACT_HUD_HISTORY_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_HUD_HISTORY_TOGGLE,
+                Boolean.TRUE.equals(v), safeGetBool(Config.IMPACT_HUD_HISTORY_ENABLED)));
 
         dpsToggle = new EditorButton("toggle-dps", "DPS Tracker")
             .toggleable(true)
             .toggled(safeGetBool(Config.IMPACT_HUD_DPS_ENABLED))
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.SMALL)
-            .onToggle(v -> Config.IMPACT_HUD_DPS_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_HUD_DPS_TOGGLE,
+                Boolean.TRUE.equals(v), safeGetBool(Config.IMPACT_HUD_DPS_ENABLED)));
 
         // 3D Panel toggle
         panel3dToggle = new EditorButton("toggle-3d", "Enable 3D Panel")
@@ -147,7 +153,8 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
             .toggled(Impact3DPanelManager.INSTANCE.isEnabled())
             .style(EditorButton.Style.PRIMARY)
             .icon("\uD83C\uDF10")
-            .onToggle(v -> Impact3DPanelManager.INSTANCE.setEnabled(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.HUD_IMPACT_3D_TOGGLE,
+                Boolean.TRUE.equals(v), Impact3DPanelManager.INSTANCE.isEnabled()));
 
         // Position buttons
         positionButtons.clear();
@@ -158,8 +165,9 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
                 .size(EditorButton.Size.SMALL)
                 .onToggle(v -> {
                     if (Boolean.TRUE.equals(v)) {
+                        ActionRegistry.invoke(resolvePositionAction(pos),
+                            ClientActionContexts.forClient(ActionOrigin.UI));
                         currentPosition = pos;
-                        Config.IMPACT_HUD_POSITION.set(pos);
                         updatePositionButtonStates();
                     }
                 });
@@ -169,19 +177,19 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
         // Offset buttons
         offsetXMinus = new EditorButton("ox-", "X-")
             .size(EditorButton.Size.SMALL)
-            .onClick(() -> adjustOffset(true, -10));
+            .onClick(() -> invokeAction(ActionIds.CONFIG_IMPACT_HUD_OFFSET_X_MINUS));
 
         offsetXPlus = new EditorButton("ox+", "X+")
             .size(EditorButton.Size.SMALL)
-            .onClick(() -> adjustOffset(true, 10));
+            .onClick(() -> invokeAction(ActionIds.CONFIG_IMPACT_HUD_OFFSET_X_PLUS));
 
         offsetYMinus = new EditorButton("oy-", "Y-")
             .size(EditorButton.Size.SMALL)
-            .onClick(() -> adjustOffset(false, -10));
+            .onClick(() -> invokeAction(ActionIds.CONFIG_IMPACT_HUD_OFFSET_Y_MINUS));
 
         offsetYPlus = new EditorButton("oy+", "Y+")
             .size(EditorButton.Size.SMALL)
-            .onClick(() -> adjustOffset(false, 10));
+            .onClick(() -> invokeAction(ActionIds.CONFIG_IMPACT_HUD_OFFSET_Y_PLUS));
 
         // Preset buttons
         exportPreset = new EditorButton("export", "Export")
@@ -189,7 +197,8 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
             .size(EditorButton.Size.SMALL)
             .icon("\uD83D\uDCE4")
             .onClick(() -> {
-                boolean success = ImpactHudPresets.exportToDefault();
+                boolean success = ActionRegistry.invoke(ActionIds.CONFIG_IMPACT_HUD_PRESET_EXPORT,
+                    ClientActionContexts.forClient(ActionOrigin.UI));
                 showStatus(success ? "Exported!" : "Export failed!");
             });
 
@@ -198,7 +207,8 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
             .size(EditorButton.Size.SMALL)
             .icon("\uD83D\uDCE5")
             .onClick(() -> {
-                boolean success = ImpactHudPresets.importFromDefault();
+                boolean success = ActionRegistry.invoke(ActionIds.CONFIG_IMPACT_HUD_PRESET_IMPORT,
+                    ClientActionContexts.forClient(ActionOrigin.UI));
                 showStatus(success ? "Imported!" : "Import failed!");
                 syncButtonStates();
             });
@@ -206,31 +216,14 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
         resetDefaults = new EditorButton("reset", "Reset Defaults")
             .style(EditorButton.Style.DANGER)
             .size(EditorButton.Size.SMALL)
-            .onClick(this::resetToDefaults);
-    }
-
-    private void adjustOffset(boolean isX, int delta) {
-        try {
-            if (isX) {
-                int current = Config.IMPACT_HUD_OFFSET_X.get();
-                Config.IMPACT_HUD_OFFSET_X.set(Math.max(0, Math.min(200, current + delta)));
-            } else {
-                int current = Config.IMPACT_HUD_OFFSET_Y.get();
-                Config.IMPACT_HUD_OFFSET_Y.set(Math.max(0, Math.min(200, current + delta)));
-            }
-        } catch (Exception ignored) {}
+            .onClick(() -> {
+                ActionRegistry.invoke(ActionIds.CONFIG_IMPACT_HUD_RESET_DEFAULTS,
+                    ClientActionContexts.forClient(ActionOrigin.UI));
+                resetToDefaults();
+            });
     }
 
     private void resetToDefaults() {
-        Config.IMPACT_HUD_ENABLED.set(true);
-        Config.IMPACT_HUD_POSITION.set(Config.HudPosition.TOP_RIGHT);
-        Config.IMPACT_HUD_OFFSET_X.set(10);
-        Config.IMPACT_HUD_OFFSET_Y.set(10);
-        Config.IMPACT_HUD_HISTORY_ENABLED.set(true);
-        Config.IMPACT_HUD_DPS_ENABLED.set(true);
-
-        ImpactHudOverlay.setEnabled(true);
-        Impact3DPanelManager.INSTANCE.setEnabled(true);
         currentPosition = Config.HudPosition.TOP_RIGHT;
 
         syncButtonStates();
@@ -267,6 +260,28 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
         for (int i = 0; i < positionButtons.size() && i < positions.length; i++) {
             positionButtons.get(i).toggled(positions[i] == currentPosition);
         }
+    }
+
+    private void invokeToggleAction(String actionId, boolean desired, boolean current) {
+        if (desired == current) {
+            return;
+        }
+        ActionRegistry.invoke(actionId, ClientActionContexts.forClient(ActionOrigin.UI));
+    }
+
+    private void invokeAction(String actionId) {
+        ActionRegistry.invoke(actionId, ClientActionContexts.forClient(ActionOrigin.UI));
+    }
+
+    private static String resolvePositionAction(Config.HudPosition pos) {
+        return switch (pos) {
+            case TOP_LEFT -> ActionIds.CONFIG_IMPACT_HUD_POSITION_TOP_LEFT;
+            case TOP_RIGHT -> ActionIds.CONFIG_IMPACT_HUD_POSITION_TOP_RIGHT;
+            case CENTER_LEFT -> ActionIds.CONFIG_IMPACT_HUD_POSITION_CENTER_LEFT;
+            case CENTER_RIGHT -> ActionIds.CONFIG_IMPACT_HUD_POSITION_CENTER_RIGHT;
+            case BOTTOM_LEFT -> ActionIds.CONFIG_IMPACT_HUD_POSITION_BOTTOM_LEFT;
+            case BOTTOM_RIGHT -> ActionIds.CONFIG_IMPACT_HUD_POSITION_BOTTOM_RIGHT;
+        };
     }
 
     private static String formatPositionName(Config.HudPosition pos) {

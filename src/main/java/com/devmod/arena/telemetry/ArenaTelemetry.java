@@ -27,17 +27,20 @@ public class ArenaTelemetry {
     private final BlockingQueue<TelemetryEvent> buffer = new LinkedBlockingQueue<>(BUFFER_SIZE);
     private final AtomicLong droppedCount = new AtomicLong(0);
     private final AtomicLong emittedCount = new AtomicLong(0);
+    private final Consumer<TelemetryEvent> fallbackHandler = this::defaultHandler;
 
     private Consumer<TelemetryEvent> eventHandler;
+    private volatile boolean followGlobalHandler;
     private volatile boolean enabled = true;
 
     public ArenaTelemetry() {
-        Consumer<TelemetryEvent> handler = globalHandler;
-        this.eventHandler = handler != null ? handler : this::defaultHandler;
+        this.eventHandler = fallbackHandler;
+        this.followGlobalHandler = true;
     }
 
     public ArenaTelemetry(Consumer<TelemetryEvent> eventHandler) {
-        this.eventHandler = eventHandler != null ? eventHandler : this::defaultHandler;
+        this.eventHandler = eventHandler != null ? eventHandler : fallbackHandler;
+        this.followGlobalHandler = false;
     }
 
     /**
@@ -75,7 +78,7 @@ public class ArenaTelemetry {
             try {
                 TelemetryEvent e = buffer.poll();
                 if (e != null) {
-                    eventHandler.accept(e);
+                    resolveHandler().accept(e);
                 }
             } catch (Exception e) {
                 LOGGER.debug("Error processing telemetry event: {}", e.getMessage());
@@ -155,7 +158,10 @@ public class ArenaTelemetry {
      * Sets a custom event handler.
      */
     public void setEventHandler(Consumer<TelemetryEvent> handler) {
-        this.eventHandler = handler != null ? handler : this::defaultHandler;
+        this.eventHandler = handler != null ? handler : fallbackHandler;
+        if (followGlobalHandler) {
+            followGlobalHandler = false;
+        }
     }
 
     /**
@@ -192,6 +198,14 @@ public class ArenaTelemetry {
 
     private void defaultHandler(TelemetryEvent event) {
         LOGGER.debug("[TELEMETRY] {} - {}", event.name(), event.data());
+    }
+
+    private Consumer<TelemetryEvent> resolveHandler() {
+        if (followGlobalHandler) {
+            Consumer<TelemetryEvent> handler = globalHandler;
+            return handler != null ? handler : fallbackHandler;
+        }
+        return eventHandler;
     }
 
     /**

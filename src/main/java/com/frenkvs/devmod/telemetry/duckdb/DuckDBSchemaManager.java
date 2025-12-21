@@ -994,7 +994,14 @@ public final class DuckDBSchemaManager {
                 success         BOOLEAN NOT NULL,
                 error_message   VARCHAR(512),
                 rollback_ms     BIGINT,
-                blocks_reverted INTEGER
+                blocks_reverted INTEGER,
+                baseline_mspt   DOUBLE,
+                avg_mspt        DOUBLE,
+                peak_mspt       DOUBLE,
+                max_build_impact_ms DOUBLE,
+                pause_count     INTEGER,
+                throttle_count  INTEGER,
+                perf_aborted    BOOLEAN
             )
             """);
         stmt.execute("CREATE SEQUENCE IF NOT EXISTS seq_arena_template_builds START 1");
@@ -1196,6 +1203,20 @@ public final class DuckDBSchemaManager {
                 stmt.execute("ALTER TABLE combat_fights ADD COLUMN IF NOT EXISTS policy_version INTEGER");
                 stmt.execute("ALTER TABLE combat_fights ADD COLUMN IF NOT EXISTS arena_id UUID");
                 stmt.execute("ALTER TABLE combat_fights ADD COLUMN IF NOT EXISTS session_id UUID");
+            }
+        }
+
+        // Migration V7 -> V8: Add arena build performance columns
+        if (oldVersion < 8) {
+            LOGGER.info("[DuckDB] Running migration V7 -> V8: Adding arena build performance columns");
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("ALTER TABLE arena_template_builds ADD COLUMN IF NOT EXISTS baseline_mspt DOUBLE");
+                stmt.execute("ALTER TABLE arena_template_builds ADD COLUMN IF NOT EXISTS avg_mspt DOUBLE");
+                stmt.execute("ALTER TABLE arena_template_builds ADD COLUMN IF NOT EXISTS peak_mspt DOUBLE");
+                stmt.execute("ALTER TABLE arena_template_builds ADD COLUMN IF NOT EXISTS max_build_impact_ms DOUBLE");
+                stmt.execute("ALTER TABLE arena_template_builds ADD COLUMN IF NOT EXISTS pause_count INTEGER");
+                stmt.execute("ALTER TABLE arena_template_builds ADD COLUMN IF NOT EXISTS throttle_count INTEGER");
+                stmt.execute("ALTER TABLE arena_template_builds ADD COLUMN IF NOT EXISTS perf_aborted BOOLEAN");
             }
         }
 

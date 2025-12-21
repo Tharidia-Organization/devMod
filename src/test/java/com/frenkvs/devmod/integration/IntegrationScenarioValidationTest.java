@@ -337,15 +337,10 @@ class IntegrationScenarioValidationTest {
         void instanceQuestModeFlagControlsBehavior() {
             boolean useInstanceDimensions = true;
 
-            if (useInstanceDimensions) {
-                // Use InstanceArenaManager for quest setup
-                String manager = "InstanceArenaManager";
-                assertEquals("InstanceArenaManager", manager);
-            } else {
-                // Use legacy ArenaManager
-                String manager = "ArenaManager";
-                assertEquals("ArenaManager", manager);
-            }
+            assertTrue(useInstanceDimensions);
+            // Instance-only flow: legacy ArenaManager removed.
+            String manager = "InstanceArenaManager";
+            assertEquals("InstanceArenaManager", manager);
         }
 
         @Test
@@ -643,7 +638,7 @@ class IntegrationScenarioValidationTest {
                 "Initialize EnduranceQuestRegistry",
                 "Create quest templates",
                 "Load player stats",
-                "Initialize ArenaManager",
+                "Initialize Arena template integration",
                 "Initialize RewardSystem",
                 "Initialize GamificationManager",
                 "Initialize EnduranceAnalytics"

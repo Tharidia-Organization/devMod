@@ -1,6 +1,11 @@
 package com.frenkvs.devmod.testing;
 
 import com.frenkvs.devmod.testing.TutorialManager.TutorialStep;
+import com.frenkvs.devmod.actions.ActionContext;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.ui.AxiomRenderer;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
@@ -98,7 +103,7 @@ public class QATestingScreen extends Screen {
             (hasExisting ? I18n.translate("devmod.testing.new_session") : I18n.translate("devmod.testing.start_session")).getString())
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.LARGE)
-            .onClick(this::startNewSession)
+            .onClick(() -> invokeAction(ActionIds.QA_SESSION_START))
             .build();
 
         // Resume session button (if there's an existing session)
@@ -109,7 +114,7 @@ public class QATestingScreen extends Screen {
                 TestingSession.INSTANCE.getTotalTests()).getString())
             .style(EditorButton.Style.SUCCESS)
             .size(EditorButton.Size.MEDIUM)
-            .onClick(this::resumeSession)
+            .onClick(() -> invokeAction(ActionIds.QA_SESSION_RESUME))
             .build();
 
         this.saveReportButton = EditorButton.builder(
@@ -117,7 +122,7 @@ public class QATestingScreen extends Screen {
             I18n.translate("devmod.testing.save_report").getString()
         ).style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.MEDIUM)
-            .onClick(this::saveReport)
+            .onClick(() -> invokeAction(ActionIds.QA_REPORT_SAVE))
             .build();
 
         this.copyReportButton = EditorButton.builder(
@@ -125,7 +130,7 @@ public class QATestingScreen extends Screen {
             I18n.translate("devmod.testing.copy_clipboard").getString()
         ).style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.MEDIUM)
-            .onClick(this::copyReport)
+            .onClick(() -> invokeAction(ActionIds.QA_REPORT_COPY))
             .build();
 
         // Close button (rendered manually)
@@ -135,34 +140,10 @@ public class QATestingScreen extends Screen {
             .onClick(this::onClose)
             .build();
 
-        passButton.onClick(() -> {
-            if (selectedTest == null) return;
-            selectedTest.markPassed("Manual pass");
-            TestingSession.INSTANCE.markDirty();
-            TutorialManager.INSTANCE.awardTestXP(selectedTest, true);
-            advanceToNextTest();
-        });
-        failButton.onClick(() -> {
-            if (selectedTest == null) return;
-            selectedTest.markFailed("Manual failure", "Marked as failed by tester");
-            TestingSession.INSTANCE.markDirty();
-            TutorialManager.INSTANCE.awardTestXP(selectedTest, false);
-        });
-        skipButton.onClick(() -> {
-            if (selectedTest == null) return;
-            selectedTest.skip("Skipped by tester");
-            TestingSession.INSTANCE.markDirty();
-            advanceToNextTest();
-        });
-        autoButton.onClick(() -> {
-            if (selectedTest == null || !selectedTest.hasAutoValidator()) return;
-            boolean passed = selectedTest.runAutoValidation();
-            TestingSession.INSTANCE.markDirty();
-            TutorialManager.INSTANCE.awardTestXP(selectedTest, passed);
-            if (passed) {
-                advanceToNextTest();
-            }
-        });
+        passButton.onClick(() -> invokeAction(ActionIds.QA_TEST_PASS, "Manual pass", null));
+        failButton.onClick(() -> invokeAction(ActionIds.QA_TEST_FAIL, "Manual failure", "Marked as failed by tester"));
+        skipButton.onClick(() -> invokeAction(ActionIds.QA_TEST_SKIP, "Skipped by tester", null));
+        autoButton.onClick(() -> invokeAction(ActionIds.QA_TEST_AUTO));
 
         // Set first category as selected
         List<String> categories = TestingSession.INSTANCE.getCategories();
@@ -895,6 +876,49 @@ public class QATestingScreen extends Screen {
         return handled || super.mouseReleased(mouseX, mouseY, button);
     }
 
+    private boolean invokeAction(String actionId) {
+        ActionContext context = ClientActionContexts.forClient(ActionOrigin.UI, this);
+        return ActionRegistry.invoke(actionId, context);
+    }
+
+    private boolean invokeAction(String actionId, String reason, String details) {
+        QaActionRequest request = new QaActionRequest(this, reason, details);
+        ActionContext context = ClientActionContexts.forClient(ActionOrigin.UI, request);
+        return ActionRegistry.invoke(actionId, context);
+    }
+
+    private void handlePass(String reason) {
+        if (selectedTest == null) return;
+        selectedTest.markPassed(reason);
+        TestingSession.INSTANCE.markDirty();
+        TutorialManager.INSTANCE.awardTestXP(selectedTest, true);
+        advanceToNextTest();
+    }
+
+    private void handleFail(String reason, String details) {
+        if (selectedTest == null) return;
+        selectedTest.markFailed(reason, details);
+        TestingSession.INSTANCE.markDirty();
+        TutorialManager.INSTANCE.awardTestXP(selectedTest, false);
+    }
+
+    private void handleSkip(String reason) {
+        if (selectedTest == null) return;
+        selectedTest.skip(reason);
+        TestingSession.INSTANCE.markDirty();
+        advanceToNextTest();
+    }
+
+    private void handleAutoCheck() {
+        if (selectedTest == null || !selectedTest.hasAutoValidator()) return;
+        boolean passed = selectedTest.runAutoValidation();
+        TestingSession.INSTANCE.markDirty();
+        TutorialManager.INSTANCE.awardTestXP(selectedTest, passed);
+        if (passed) {
+            advanceToNextTest();
+        }
+    }
+
     private void advanceToNextTest() {
         TestCase next = TestingSession.INSTANCE.getNextPendingTest();
         if (next != null) {
@@ -905,6 +929,199 @@ public class QATestingScreen extends Screen {
         } else {
             selectedTest = null;
             ActiveTestHudOverlay.clearActiveTest();
+        }
+    }
+
+    private record QaActionRequest(QATestingScreen screen, String reason, String details) {}
+
+    public static final class Actions {
+        private Actions() {}
+
+        public static boolean hasActiveTest(ActionContext context) {
+            return resolveTest(context) != null && TestingSession.INSTANCE.isSessionActive();
+        }
+
+        public static boolean hasAutoTest(ActionContext context) {
+            TestCase test = resolveTest(context);
+            return test != null && test.hasAutoValidator();
+        }
+
+        public static void startSession(ActionContext context) {
+            QATestingScreen screen = resolveScreen(context);
+            if (screen != null) {
+                screen.startNewSession();
+                return;
+            }
+            String testerName = resolveTesterName(context);
+            TestingSession.INSTANCE.resetSession();
+            TestingSession.INSTANCE.startSession(testerName);
+        }
+
+        public static void resumeSession(ActionContext context) {
+            QATestingScreen screen = resolveScreen(context);
+            if (screen != null) {
+                screen.resumeSession();
+                return;
+            }
+            String testerName = resolveTesterName(context);
+            TestingSession.INSTANCE.resumeSession(testerName);
+        }
+
+        public static void saveReport(ActionContext context) {
+            QATestingScreen screen = resolveScreen(context);
+            if (screen != null) {
+                screen.saveReport();
+                return;
+            }
+            try {
+                TestingSession.INSTANCE.captureLogs();
+                String path = TestingSession.INSTANCE.saveReport();
+                context.sendSuccess(I18n.translate("devmod.testing.report_saved", path), true);
+            } catch (Exception e) {
+                context.sendFailure(I18n.translate("devmod.testing.report_error", e.getMessage()));
+            }
+        }
+
+        public static void copyReport(ActionContext context) {
+            QATestingScreen screen = resolveScreen(context);
+            if (screen != null) {
+                screen.copyReport();
+                return;
+            }
+            TestingSession.INSTANCE.captureLogs();
+            TestingSession.INSTANCE.copyReportToClipboard();
+            context.sendSuccess(I18n.translate("devmod.testing.report_copied"), true);
+        }
+
+        public static void passTest(ActionContext context) {
+            QATestingScreen screen = resolveScreen(context);
+            String reason = resolveReason(context, "Manual pass");
+            if (screen != null) {
+                screen.handlePass(reason);
+                return;
+            }
+            TestCase test = resolveTest(context);
+            if (test == null) {
+                return;
+            }
+            test.markPassed(reason);
+            TestingSession.INSTANCE.markDirty();
+            TutorialManager.INSTANCE.awardTestXP(test, true);
+            advanceToNextTestFallback();
+        }
+
+        public static void failTest(ActionContext context) {
+            QATestingScreen screen = resolveScreen(context);
+            String reason = resolveReason(context, "Manual failure");
+            String details = resolveDetails(context, "Marked as failed by tester");
+            if (screen != null) {
+                screen.handleFail(reason, details);
+                return;
+            }
+            TestCase test = resolveTest(context);
+            if (test == null) {
+                return;
+            }
+            test.markFailed(reason, details);
+            TestingSession.INSTANCE.markDirty();
+            TutorialManager.INSTANCE.awardTestXP(test, false);
+        }
+
+        public static void skipTest(ActionContext context) {
+            QATestingScreen screen = resolveScreen(context);
+            String reason = resolveReason(context, "Skipped by tester");
+            if (screen != null) {
+                screen.handleSkip(reason);
+                return;
+            }
+            TestCase test = resolveTest(context);
+            if (test == null) {
+                return;
+            }
+            test.skip(reason);
+            TestingSession.INSTANCE.markDirty();
+            advanceToNextTestFallback();
+        }
+
+        public static void autoCheckTest(ActionContext context) {
+            QATestingScreen screen = resolveScreen(context);
+            if (screen != null) {
+                screen.handleAutoCheck();
+                return;
+            }
+            TestCase test = resolveTest(context);
+            if (test == null || !test.hasAutoValidator()) {
+                return;
+            }
+            boolean passed = test.runAutoValidation();
+            TestingSession.INSTANCE.markDirty();
+            TutorialManager.INSTANCE.awardTestXP(test, passed);
+            if (passed) {
+                advanceToNextTestFallback();
+            }
+        }
+
+        private static QATestingScreen resolveScreen(ActionContext context) {
+            QaActionRequest request = context.getPayload(QaActionRequest.class);
+            if (request != null && request.screen() != null) {
+                return request.screen();
+            }
+            return context.getPayload(QATestingScreen.class);
+        }
+
+        private static String resolveTesterName(ActionContext context) {
+            QATestingScreen screen = resolveScreen(context);
+            if (screen != null && screen.testerNameField != null) {
+                String name = screen.testerNameField.getValue().trim();
+                if (!name.isEmpty()) {
+                    return name;
+                }
+            }
+            String name = TestingSession.INSTANCE.getTesterName();
+            return (name == null || name.isBlank()) ? "Anonymous" : name;
+        }
+
+        private static String resolveReason(ActionContext context, String fallback) {
+            QaActionRequest request = context.getPayload(QaActionRequest.class);
+            if (request != null && request.reason() != null) {
+                return request.reason();
+            }
+            return fallback;
+        }
+
+        private static String resolveDetails(ActionContext context, String fallback) {
+            QaActionRequest request = context.getPayload(QaActionRequest.class);
+            if (request != null && request.details() != null) {
+                return request.details();
+            }
+            return fallback;
+        }
+
+        private static TestCase resolveTest(ActionContext context) {
+            QATestingScreen screen = resolveScreen(context);
+            if (screen != null) {
+                return screen.selectedTest;
+            }
+            TestCase payloadTest = context.getPayload(TestCase.class);
+            if (payloadTest != null) {
+                return payloadTest;
+            }
+            for (TestCase test : TestingSession.INSTANCE.getAllTests()) {
+                if (test.getStatus() == TestCase.TestStatus.IN_PROGRESS) {
+                    return test;
+                }
+            }
+            return null;
+        }
+
+        private static void advanceToNextTestFallback() {
+            TestCase next = TestingSession.INSTANCE.getNextPendingTest();
+            if (next != null) {
+                next.startTest();
+                ActiveTestHudOverlay.setActiveTest(next);
+            } else {
+                ActiveTestHudOverlay.clearActiveTest();
+            }
         }
     }
 
@@ -934,30 +1151,14 @@ public class QATestingScreen extends Screen {
         if (selectedTest != null && sessionStarted) {
             // 1 = Pass, 2 = Fail, 3 = Skip
             if (keyCode == 49) { // 1
-                selectedTest.markPassed("Keyboard pass");
-                TestingSession.INSTANCE.markDirty();
-                TutorialManager.INSTANCE.awardTestXP(selectedTest, true);
-                advanceToNextTest();
-                return true;
+                return invokeAction(ActionIds.QA_TEST_PASS, "Keyboard pass", null);
             } else if (keyCode == 50) { // 2
-                selectedTest.markFailed("Keyboard shortcut failure", "Marked as failed via keyboard");
-                TestingSession.INSTANCE.markDirty();
-                TutorialManager.INSTANCE.awardTestXP(selectedTest, false);
-                return true;
+                return invokeAction(ActionIds.QA_TEST_FAIL, "Keyboard shortcut failure", "Marked as failed via keyboard");
             } else if (keyCode == 51) { // 3
-                selectedTest.skip("Keyboard shortcut skip");
-                TestingSession.INSTANCE.markDirty();
-                advanceToNextTest();
-                return true;
+                return invokeAction(ActionIds.QA_TEST_SKIP, "Keyboard shortcut skip", null);
             } else if (keyCode == 257) { // Enter - auto-validate if available
                 if (selectedTest.hasAutoValidator()) {
-                    boolean passed = selectedTest.runAutoValidation();
-                    TestingSession.INSTANCE.markDirty();
-                    TutorialManager.INSTANCE.awardTestXP(selectedTest, passed);
-                    if (passed) {
-                        advanceToNextTest();
-                    }
-                    return true;
+                    return invokeAction(ActionIds.QA_TEST_AUTO);
                 }
             }
         }

@@ -1,6 +1,10 @@
 package com.frenkvs.devmod.ui.testing.pages;
 
 import com.frenkvs.devmod.Config;
+import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionOrigin;
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.ui.editor.components.EditorButton;
 import com.frenkvs.devmod.ui.testing.VoxelLabTab;
 import com.frenkvs.devmod.ui.testing.panel.*;
@@ -76,7 +80,8 @@ public class TelemetryPage extends AbstractVoxelLabPage {
             .toggled(safeGetBool(Config.TELEMETRY_ENABLED))
             .style(EditorButton.Style.DANGER)
             .icon("\u25CF")
-            .onToggle(v -> Config.TELEMETRY_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_TELEMETRY_TOGGLE,
+                Boolean.TRUE.equals(v), safeGetBool(Config.TELEMETRY_ENABLED)));
 
         hitsToggle = new EditorButton("toggle-hits", "Hits")
             .toggleable(true)
@@ -84,7 +89,8 @@ public class TelemetryPage extends AbstractVoxelLabPage {
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.SMALL)
             .icon("\u2694")
-            .onToggle(v -> Config.TELEMETRY_HITS_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_TELEMETRY_HITS_TOGGLE,
+                Boolean.TRUE.equals(v), safeGetBool(Config.TELEMETRY_HITS_ENABLED)));
 
         deathsToggle = new EditorButton("toggle-deaths", "Deaths")
             .toggleable(true)
@@ -92,7 +98,8 @@ public class TelemetryPage extends AbstractVoxelLabPage {
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.SMALL)
             .icon("\u2620")
-            .onToggle(v -> Config.TELEMETRY_DEATHS_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_TELEMETRY_DEATHS_TOGGLE,
+                Boolean.TRUE.equals(v), safeGetBool(Config.TELEMETRY_DEATHS_ENABLED)));
 
         spawnsToggle = new EditorButton("toggle-spawns", "Spawns")
             .toggleable(true)
@@ -100,7 +107,8 @@ public class TelemetryPage extends AbstractVoxelLabPage {
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.SMALL)
             .icon("\u2605")
-            .onToggle(v -> Config.TELEMETRY_SPAWNS_ENABLED.set(Boolean.TRUE.equals(v)));
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_TELEMETRY_SPAWNS_TOGGLE,
+                Boolean.TRUE.equals(v), safeGetBool(Config.TELEMETRY_SPAWNS_ENABLED)));
     }
 
     @Override
@@ -113,6 +121,13 @@ public class TelemetryPage extends AbstractVoxelLabPage {
         hitsToggle.toggled(safeGetBool(Config.TELEMETRY_HITS_ENABLED));
         deathsToggle.toggled(safeGetBool(Config.TELEMETRY_DEATHS_ENABLED));
         spawnsToggle.toggled(safeGetBool(Config.TELEMETRY_SPAWNS_ENABLED));
+    }
+
+    private void invokeToggleAction(String actionId, boolean desired, boolean current) {
+        if (desired == current) {
+            return;
+        }
+        ActionRegistry.invoke(actionId, ClientActionContexts.forClient(ActionOrigin.UI));
     }
 
 }

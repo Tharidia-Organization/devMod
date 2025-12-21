@@ -350,7 +350,7 @@ public final class RadialMenuConstants {
     public static final int CATEGORIES_PER_MACRO = 6;
 
     /** Number of macro-categories */
-    public static final int MACRO_COUNT = 4;
+    public static final int MACRO_COUNT = 6;
 
     /** Total category capacity (MACRO_COUNT * CATEGORIES_PER_MACRO) */
     public static final int TOTAL_CATEGORIES = MACRO_COUNT * CATEGORIES_PER_MACRO;
@@ -439,11 +439,11 @@ public final class RadialMenuConstants {
     /** Starting angle offset for category ring (top of screen) */
     public static final double CATEGORY_START_OFFSET = -HALF_PI;
 
-    /** Starting angle offset for macro hub (top-left quadrant) */
-    public static final double MACRO_START_OFFSET = -HALF_PI - QUARTER_PI;
+    /** Segment angle for macro-categories */
+    public static final double MACRO_SEGMENT_ANGLE = TWO_PI / MACRO_COUNT;
 
-    /** Segment angle for macro-categories (4 segments = PI/2 each) */
-    public static final double MACRO_SEGMENT_ANGLE = HALF_PI;
+    /** Starting angle offset for macro hub (centered at top) */
+    public static final double MACRO_START_OFFSET = -HALF_PI - (MACRO_SEGMENT_ANGLE / 2);
 
     // ================================================================
     // TIMING

@@ -199,7 +199,7 @@ public class EnduranceEventTick {
                 continue;
             }
 
-            ArenaManager.Arena arena = session.getArena();
+            ArenaContext arena = session.getArena();
             if (arena == null) {
                 session.clearPendingWaveStart();
                 session.setRespawnCountdownActive(false);
@@ -320,7 +320,7 @@ public class EnduranceEventTick {
             UUID playerId = entry.getKey();
             EnduranceQuestManager.ActiveQuestSession session = entry.getValue();
             EnduranceQuest quest = session.getQuest();
-            ArenaManager.Arena arena = session.getArena();
+            ArenaContext arena = session.getArena();
             if (arena == null) {
                 // Session is still pending (instance not ready) or arena setup failed.
                 continue;
@@ -435,7 +435,7 @@ public class EnduranceEventTick {
                 return;
             }
 
-            ArenaManager.Arena arena = activeSession.getArena();
+            ArenaContext arena = activeSession.getArena();
             if (arena == null) {
                 // Arena not yet assigned, skip confinement check
                 return;
@@ -486,7 +486,7 @@ public class EnduranceEventTick {
                 bounds.maxX() + 1.0, bounds.maxY() + 1.0, bounds.maxZ() + 1.0
             );
         }
-        ArenaManager.Arena arena = session.getArena();
+        ArenaContext arena = session.getArena();
         return arena != null ? arena.getBounds() : null;
     }
 
@@ -505,7 +505,7 @@ public class EnduranceEventTick {
         for (EnduranceQuestManager.ActiveQuestSession session :
                 EnduranceQuestManager.INSTANCE.getActiveSessions().values()) {
 
-            ArenaManager.Arena arena = session.getArena();
+            ArenaContext arena = session.getArena();
             if (arena == null) {
                 // Arena not yet assigned, skip cleanup for this session
                 continue;
@@ -565,7 +565,7 @@ public class EnduranceEventTick {
             // Only validate during active wave combat
             if (quest.getState() != EnduranceQuestState.IN_PROGRESS) continue;
 
-            ArenaManager.Arena arena = session.getArena();
+            ArenaContext arena = session.getArena();
             if (arena == null || session.getArenaHandle() == null) {
                 continue;
             }

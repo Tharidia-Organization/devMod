@@ -334,7 +334,7 @@ public class BossWaveSystem {
      */
     public BossFight startBossWave(EnduranceQuestManager.ActiveQuestSession session, int waveNumber) {
         EnduranceQuest quest = session.getQuest();
-        ArenaManager.Arena arena = session.getArena();
+        ArenaContext arena = session.getArena();
         ServerLevel level = Objects.requireNonNull(arena.getLevel());
         BlockPos center = Objects.requireNonNull(arena.getCenter());
         ArenaHandle handle = session.getArenaHandle();
@@ -391,7 +391,7 @@ public class BossWaveSystem {
     /**
      * Spawn the boss mob with enhanced stats and multiplayer scaling.
      */
-    private Mob spawnBoss(ArenaManager.Arena arena,
+    private Mob spawnBoss(ArenaContext arena,
                           @javax.annotation.Nullable BlockPos spawnPos,
                           EnduranceQuestRegistry.MobQuestConfig mobConfig,
                           BossArchetype archetype, int waveNumber, UUID questId,
@@ -482,7 +482,7 @@ public class BossWaveSystem {
         return mob;
     }
 
-    private BlockPos resolveBossSpawnPosition(ArenaManager.Arena arena,
+    private BlockPos resolveBossSpawnPosition(ArenaContext arena,
                                               @javax.annotation.Nullable ArenaHandle handle,
                                               UUID questId,
                                               int waveNumber) {
@@ -918,7 +918,7 @@ public class BossWaveSystem {
         Optional<EnduranceQuestManager.ActiveQuestSession> sessionOpt =
             EnduranceQuestManager.INSTANCE.getActiveSession(target);
         if (sessionOpt.isPresent()) {
-            ArenaManager.Arena arena = sessionOpt.get().getArena();
+            ArenaContext arena = sessionOpt.get().getArena();
             int halfSize = arena.getSize() / 2;
             // Clamp position to arena bounds
             double minX = arena.getCenter().getX() - halfSize;

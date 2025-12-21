@@ -85,16 +85,18 @@ public class RadialMenuConfig {
             GLFW.GLFW_KEY_1,
             GLFW.GLFW_KEY_2,
             GLFW.GLFW_KEY_3,
-            GLFW.GLFW_KEY_4
+            GLFW.GLFW_KEY_4,
+            GLFW.GLFW_KEY_5,
+            GLFW.GLFW_KEY_6
         };
 
         public int[] categoryKeys = {
-            GLFW.GLFW_KEY_5,
-            GLFW.GLFW_KEY_6,
             GLFW.GLFW_KEY_7,
             GLFW.GLFW_KEY_8,
             GLFW.GLFW_KEY_9,
-            GLFW.GLFW_KEY_0
+            GLFW.GLFW_KEY_0,
+            GLFW.GLFW_KEY_MINUS,
+            GLFW.GLFW_KEY_EQUAL
         };
 
         public int[] itemKeys = {

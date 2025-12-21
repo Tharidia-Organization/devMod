@@ -15,10 +15,13 @@ import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,6 +43,18 @@ public class DuckDbRepository implements AutoCloseable {
 
     private final String databasePath;
     private volatile Connection connection;
+    private volatile BuildSchema buildSchema = BuildSchema.LEGACY;
+    private volatile SpatialSchema spatialSchema = SpatialSchema.LEGACY;
+
+    private enum BuildSchema {
+        LEGACY,
+        TELEMETRY
+    }
+
+    private enum SpatialSchema {
+        LEGACY,
+        TELEMETRY
+    }
 
     /**
      * Creates a new DuckDB repository.
@@ -64,6 +79,8 @@ public class DuckDbRepository implements AutoCloseable {
         initializeSchema();
         // Ensure baseline schema exists even if resource file is missing/unsupported
         initializeInlineSchema();
+        detectSchemas();
+        ensureBuildColumns();
         LOGGER.info("DuckDB repository initialized: " + databasePath);
     }
 
@@ -84,13 +101,21 @@ public class DuckDbRepository implements AutoCloseable {
             for (String statement : schema.split(";")) {
                 String trimmed = statement.trim();
                 if (!trimmed.isEmpty() && !trimmed.startsWith("--")) {
+                    String upper = trimmed.toUpperCase(Locale.ROOT);
+                    boolean isIndexStatement = upper.startsWith("CREATE INDEX") || upper.startsWith("CREATE UNIQUE INDEX");
                     try (var stmt = connection.createStatement()) {
                         stmt.execute(trimmed);
                     } catch (SQLException e) {
-                        // Skip errors for DROP statements or if table already exists
-                        if (!e.getMessage().contains("already exists")) {
-                            LOGGER.log(Level.WARNING, "Schema statement failed: " + trimmed, e);
+                        String message = e.getMessage();
+                        if (message != null && message.contains("already exists")) {
+                            continue;
                         }
+                        if (isIndexStatement && message != null
+                            && (message.contains("Referenced column") || message.contains("does not have a column named"))) {
+                            LOGGER.log(Level.WARNING, "Index statement skipped: " + trimmed, e);
+                            continue;
+                        }
+                        LOGGER.log(Level.WARNING, "Schema statement failed: " + trimmed, e);
                     }
                 }
             }
@@ -114,6 +139,24 @@ public class DuckDbRepository implements AutoCloseable {
                 duration_ms BIGINT,
                 status VARCHAR NOT NULL,
                 error_message VARCHAR,
+                policy_id VARCHAR,
+                policy_version INTEGER,
+                origin_x INTEGER,
+                origin_y INTEGER,
+                origin_z INTEGER,
+                dimension VARCHAR,
+                estimated_blocks INTEGER,
+                actual_blocks INTEGER,
+                estimated_ms BIGINT,
+                rollback_ms BIGINT,
+                blocks_reverted INTEGER,
+                baseline_mspt DOUBLE,
+                avg_mspt DOUBLE,
+                peak_mspt DOUBLE,
+                max_build_impact_ms DOUBLE,
+                pause_count INTEGER,
+                throttle_count INTEGER,
+                perf_aborted BOOLEAN,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """,
@@ -180,13 +223,95 @@ public class DuckDbRepository implements AutoCloseable {
         };
 
         for (String sql : statements) {
+            String trimmed = sql.trim();
+            String upper = trimmed.toUpperCase(Locale.ROOT);
+            boolean isIndexStatement = upper.startsWith("CREATE INDEX") || upper.startsWith("CREATE UNIQUE INDEX");
             try (var stmt = connection.createStatement()) {
                 stmt.execute(sql);
             } catch (SQLException e) {
-                if (!e.getMessage().contains("already exists")) {
-                    throw e;
+                String message = e.getMessage();
+                if (message != null && message.contains("already exists")) {
+                    continue;
+                }
+            if (isIndexStatement && message != null
+                && (message.contains("Referenced column") || message.contains("does not have a column named"))) {
+                LOGGER.log(Level.WARNING, "Index statement skipped: " + trimmed, e);
+                continue;
+            }
+                throw e;
+            }
+        }
+    }
+
+    private void detectSchemas() throws SQLException {
+        Set<String> buildColumns = getTableColumns("arena_template_builds");
+        if (buildColumns.contains("build_id")) {
+            buildSchema = BuildSchema.LEGACY;
+        } else if (buildColumns.contains("id") && buildColumns.contains("ts")) {
+            buildSchema = BuildSchema.TELEMETRY;
+        } else {
+            buildSchema = BuildSchema.LEGACY;
+        }
+
+        Set<String> spatialColumns = getTableColumns("arena_spatial_events");
+        if (spatialColumns.contains("event_id")) {
+            spatialSchema = SpatialSchema.LEGACY;
+        } else if (spatialColumns.contains("id") && spatialColumns.contains("ts")) {
+            spatialSchema = SpatialSchema.TELEMETRY;
+        } else {
+            spatialSchema = SpatialSchema.LEGACY;
+        }
+    }
+
+    private void ensureBuildColumns() throws SQLException {
+        Set<String> columns = getTableColumns("arena_template_builds");
+        if (columns.isEmpty()) {
+            return;
+        }
+        try (var stmt = connection.createStatement()) {
+            stmt.execute("CREATE SEQUENCE IF NOT EXISTS seq_arena_template_builds START 1");
+        }
+        addColumnIfMissing(columns, "policy_id", "VARCHAR");
+        addColumnIfMissing(columns, "policy_version", "INTEGER");
+        addColumnIfMissing(columns, "origin_x", "INTEGER");
+        addColumnIfMissing(columns, "origin_y", "INTEGER");
+        addColumnIfMissing(columns, "origin_z", "INTEGER");
+        addColumnIfMissing(columns, "dimension", "VARCHAR");
+        addColumnIfMissing(columns, "estimated_blocks", "INTEGER");
+        addColumnIfMissing(columns, "actual_blocks", "INTEGER");
+        addColumnIfMissing(columns, "estimated_ms", "BIGINT");
+        addColumnIfMissing(columns, "rollback_ms", "BIGINT");
+        addColumnIfMissing(columns, "blocks_reverted", "INTEGER");
+        addColumnIfMissing(columns, "baseline_mspt", "DOUBLE");
+        addColumnIfMissing(columns, "avg_mspt", "DOUBLE");
+        addColumnIfMissing(columns, "peak_mspt", "DOUBLE");
+        addColumnIfMissing(columns, "max_build_impact_ms", "DOUBLE");
+        addColumnIfMissing(columns, "pause_count", "INTEGER");
+        addColumnIfMissing(columns, "throttle_count", "INTEGER");
+        addColumnIfMissing(columns, "perf_aborted", "BOOLEAN");
+    }
+
+    private Set<String> getTableColumns(String table) throws SQLException {
+        Set<String> columns = new HashSet<>();
+        String sql = "SELECT column_name FROM information_schema.columns WHERE table_name = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, table);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    columns.add(rs.getString(1).toLowerCase());
                 }
             }
+        }
+        return columns;
+    }
+
+    private void addColumnIfMissing(Set<String> columns, String column, String type) throws SQLException {
+        if (columns.contains(column.toLowerCase())) {
+            return;
+        }
+        String sql = "ALTER TABLE arena_template_builds ADD COLUMN IF NOT EXISTS " + column + " " + type;
+        try (var stmt = connection.createStatement()) {
+            stmt.execute(sql);
         }
     }
 
@@ -194,22 +319,213 @@ public class DuckDbRepository implements AutoCloseable {
      * Records a template build event.
      */
     public void recordBuild(BuildRecord build) throws SQLException {
+        if (buildSchema == BuildSchema.LEGACY) {
+            recordBuildLegacy(build);
+            return;
+        }
+        recordBuildEvent(BuildEventRecord.fromBuildRecord(build));
+    }
+
+    private void recordBuildLegacy(BuildRecord build) throws SQLException {
+        if (build == null || build.templateId() == null || build.templateId().isBlank()) {
+            return;
+        }
+        Instant startedAt = build.startedAt() != null ? build.startedAt() : Instant.now();
+        Long durationMs = build.durationMs();
+        Instant completedAt = build.completedAt();
+        if (completedAt == null && durationMs != null) {
+            completedAt = startedAt.plusMillis(durationMs);
+        }
+        String templateVersion = build.templateVersion();
+        if (templateVersion == null || templateVersion.isBlank()) {
+            templateVersion = "unknown";
+        }
+
         String sql = """
             INSERT INTO arena_template_builds
-            (build_id, template_id, template_version, started_at, completed_at, duration_ms, status, error_message)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (build_id, template_id, template_version, started_at, completed_at, duration_ms,
+                 status, error_message, policy_id, policy_version,
+                 origin_x, origin_y, origin_z, dimension,
+                 estimated_blocks, actual_blocks, estimated_ms,
+                 rollback_ms, blocks_reverted,
+                 baseline_mspt, avg_mspt, peak_mspt, max_build_impact_ms,
+                 pause_count, throttle_count, perf_aborted)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
-
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, build.buildId().toString());
+            stmt.setString(1, build.buildId() != null ? build.buildId().toString() : UUID.randomUUID().toString());
             stmt.setString(2, build.templateId());
-            stmt.setString(3, build.templateVersion());
-            stmt.setTimestamp(4, Timestamp.from(build.startedAt()));
-            stmt.setTimestamp(5, build.completedAt() != null ? Timestamp.from(build.completedAt()) : null);
-            stmt.setLong(6, build.durationMs() != null ? build.durationMs() : 0L);
-            stmt.setString(7, build.status());
+            stmt.setString(3, templateVersion);
+            stmt.setTimestamp(4, Timestamp.from(startedAt));
+            stmt.setTimestamp(5, completedAt != null ? Timestamp.from(completedAt) : null);
+            setNullableLong(stmt, 6, durationMs);
+            stmt.setString(7, build.status() != null ? build.status() : "unknown");
             stmt.setString(8, build.errorMessage());
+            stmt.setString(9, null);
+            stmt.setNull(10, java.sql.Types.INTEGER);
+            stmt.setNull(11, java.sql.Types.INTEGER);
+            stmt.setNull(12, java.sql.Types.INTEGER);
+            stmt.setNull(13, java.sql.Types.INTEGER);
+            stmt.setString(14, null);
+            stmt.setNull(15, java.sql.Types.INTEGER);
+            stmt.setNull(16, java.sql.Types.INTEGER);
+            stmt.setNull(17, java.sql.Types.BIGINT);
+            stmt.setNull(18, java.sql.Types.BIGINT);
+            stmt.setNull(19, java.sql.Types.INTEGER);
+            stmt.setNull(20, java.sql.Types.DOUBLE);
+            stmt.setNull(21, java.sql.Types.DOUBLE);
+            stmt.setNull(22, java.sql.Types.DOUBLE);
+            stmt.setNull(23, java.sql.Types.DOUBLE);
+            stmt.setNull(24, java.sql.Types.INTEGER);
+            stmt.setNull(25, java.sql.Types.INTEGER);
+            stmt.setNull(26, java.sql.Types.BOOLEAN);
             stmt.executeUpdate();
+        }
+    }
+
+    /**
+     * Records a template build event with extended fields.
+     */
+    public void recordBuildEvent(BuildEventRecord event) throws SQLException {
+        if (event == null || event.templateId() == null || event.templateId().isBlank()) {
+            return;
+        }
+        Instant startedAt = event.startedAt() != null ? event.startedAt() : Instant.now();
+        Long actualMs = event.actualMs();
+        Instant completedAt = event.completedAt();
+        if (completedAt == null && actualMs != null) {
+            completedAt = startedAt.plusMillis(actualMs);
+        }
+        boolean success = event.success() != null ? event.success() : true;
+
+        if (buildSchema == BuildSchema.TELEMETRY) {
+            String sql = """
+                INSERT INTO arena_template_builds
+                    (id, ts, arena_id, template_id, template_version, policy_id, policy_version,
+                     origin_x, origin_y, origin_z, dimension,
+                     estimated_blocks, actual_blocks, estimated_ms, actual_ms, success,
+                     error_message, rollback_ms, blocks_reverted,
+                     baseline_mspt, avg_mspt, peak_mspt, max_build_impact_ms,
+                     pause_count, throttle_count, perf_aborted)
+                VALUES (nextval('seq_arena_template_builds'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                stmt.setTimestamp(1, Timestamp.from(startedAt));
+                stmt.setString(2, event.arenaId() != null ? event.arenaId().toString() : null);
+                stmt.setString(3, event.templateId());
+                if (event.templateVersion() != null) {
+                    stmt.setInt(4, event.templateVersion());
+                } else {
+                    stmt.setNull(4, java.sql.Types.INTEGER);
+                }
+                stmt.setString(5, event.policyId());
+                if (event.policyVersion() != null) {
+                    stmt.setInt(6, event.policyVersion());
+                } else {
+                    stmt.setNull(6, java.sql.Types.INTEGER);
+                }
+                setNullableInt(stmt, 7, event.originX());
+                setNullableInt(stmt, 8, event.originY());
+                setNullableInt(stmt, 9, event.originZ());
+                stmt.setString(10, event.dimension());
+                setNullableInt(stmt, 11, toInt(event.estimatedBlocks()));
+                setNullableInt(stmt, 12, toInt(event.actualBlocks()));
+                setNullableLong(stmt, 13, event.estimatedMs());
+                setNullableLong(stmt, 14, actualMs);
+                stmt.setBoolean(15, success);
+                stmt.setString(16, event.errorMessage());
+                setNullableLong(stmt, 17, event.rollbackMs());
+                setNullableInt(stmt, 18, event.blocksReverted());
+                setNullableDouble(stmt, 19, event.baselineMspt());
+                setNullableDouble(stmt, 20, event.avgMspt());
+                setNullableDouble(stmt, 21, event.peakMspt());
+                setNullableDouble(stmt, 22, event.maxBuildImpactMs());
+                setNullableInt(stmt, 23, event.pauseCount());
+                setNullableInt(stmt, 24, event.throttleCount());
+                setNullableBoolean(stmt, 25, event.perfAborted());
+                stmt.executeUpdate();
+            }
+            return;
+        }
+
+        String sql = """
+            INSERT INTO arena_template_builds
+                (build_id, template_id, template_version, started_at, completed_at, duration_ms,
+                 status, error_message, policy_id, policy_version,
+                 origin_x, origin_y, origin_z, dimension,
+                 estimated_blocks, actual_blocks, estimated_ms,
+                 rollback_ms, blocks_reverted,
+                 baseline_mspt, avg_mspt, peak_mspt, max_build_impact_ms,
+                 pause_count, throttle_count, perf_aborted)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """;
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, event.arenaId() != null ? event.arenaId().toString() : UUID.randomUUID().toString());
+            stmt.setString(2, event.templateId());
+            stmt.setString(3, event.templateVersion() != null ? String.valueOf(event.templateVersion()) : "unknown");
+            stmt.setTimestamp(4, Timestamp.from(startedAt));
+            stmt.setTimestamp(5, completedAt != null ? Timestamp.from(completedAt) : null);
+            setNullableLong(stmt, 6, actualMs);
+            stmt.setString(7, success ? "success" : "failed");
+            stmt.setString(8, event.errorMessage());
+            stmt.setString(9, event.policyId());
+            setNullableInt(stmt, 10, event.policyVersion());
+            setNullableInt(stmt, 11, event.originX());
+            setNullableInt(stmt, 12, event.originY());
+            setNullableInt(stmt, 13, event.originZ());
+            stmt.setString(14, event.dimension());
+            setNullableInt(stmt, 15, toInt(event.estimatedBlocks()));
+            setNullableInt(stmt, 16, toInt(event.actualBlocks()));
+            setNullableLong(stmt, 17, event.estimatedMs());
+            setNullableLong(stmt, 18, event.rollbackMs());
+            setNullableInt(stmt, 19, event.blocksReverted());
+            setNullableDouble(stmt, 20, event.baselineMspt());
+            setNullableDouble(stmt, 21, event.avgMspt());
+            setNullableDouble(stmt, 22, event.peakMspt());
+            setNullableDouble(stmt, 23, event.maxBuildImpactMs());
+            setNullableInt(stmt, 24, event.pauseCount());
+            setNullableInt(stmt, 25, event.throttleCount());
+            setNullableBoolean(stmt, 26, event.perfAborted());
+            stmt.executeUpdate();
+        }
+    }
+
+    /**
+     * Updates performance summary fields for an existing build.
+     */
+    public void updateBuildPerformance(BuildPerformanceRecord record) throws SQLException {
+        if (record == null || record.arenaId() == null) {
+            return;
+        }
+        String sql;
+        if (buildSchema == BuildSchema.TELEMETRY) {
+            sql = """
+                UPDATE arena_template_builds
+                SET baseline_mspt = ?, avg_mspt = ?, peak_mspt = ?, max_build_impact_ms = ?,
+                    pause_count = ?, throttle_count = ?, perf_aborted = ?
+                WHERE arena_id = ?
+                """;
+        } else {
+            sql = """
+                UPDATE arena_template_builds
+                SET baseline_mspt = ?, avg_mspt = ?, peak_mspt = ?, max_build_impact_ms = ?,
+                    pause_count = ?, throttle_count = ?, perf_aborted = ?
+                WHERE build_id = ?
+                """;
+        }
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            setNullableDouble(stmt, 1, record.baselineMspt());
+            setNullableDouble(stmt, 2, record.avgMspt());
+            setNullableDouble(stmt, 3, record.peakMspt());
+            setNullableDouble(stmt, 4, record.maxBuildImpactMs());
+            setNullableInt(stmt, 5, record.pauseCount());
+            setNullableInt(stmt, 6, record.throttleCount());
+            setNullableBoolean(stmt, 7, record.perfAborted());
+            stmt.setString(8, record.arenaId().toString());
+            int updated = stmt.executeUpdate();
+            if (updated == 0) {
+                LOGGER.log(Level.FINE, "No build row found for arenaId " + record.arenaId());
+            }
         }
     }
 
@@ -370,6 +686,9 @@ public class DuckDbRepository implements AutoCloseable {
     }
 
     public List<BuildRecord> getRecentBuilds(String templateId, Integer templateVersion, int limit) throws SQLException {
+        if (buildSchema == BuildSchema.TELEMETRY) {
+            return getRecentBuildsTelemetry(templateId, templateVersion, limit);
+        }
         String sql;
         if (templateVersion != null) {
             sql = """
@@ -414,6 +733,111 @@ public class DuckDbRepository implements AutoCloseable {
                         rs.getString("status"),
                         rs.getString("error_message")
                     ));
+                }
+            }
+        }
+        return results;
+    }
+
+    private List<BuildRecord> getRecentBuildsTelemetry(String templateId, Integer templateVersion, int limit)
+        throws SQLException {
+        String sql;
+        if (templateVersion != null) {
+            sql = """
+                SELECT arena_id, template_id, template_version, ts, actual_ms, success, error_message
+                FROM arena_template_builds
+                WHERE template_id = ? AND template_version = ?
+                ORDER BY ts DESC
+                LIMIT ?
+                """;
+        } else {
+            sql = """
+                SELECT arena_id, template_id, template_version, ts, actual_ms, success, error_message
+                FROM arena_template_builds
+                WHERE template_id = ?
+                ORDER BY ts DESC
+                LIMIT ?
+                """;
+        }
+
+        List<BuildRecord> results = new ArrayList<>();
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, templateId);
+            if (templateVersion != null) {
+                stmt.setInt(2, templateVersion);
+                stmt.setInt(3, limit);
+            } else {
+                stmt.setInt(2, limit);
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    String arenaId = rs.getString("arena_id");
+                    Instant startedAt = rs.getTimestamp("ts").toInstant();
+                    long actualMsValue = rs.getLong("actual_ms");
+                    Long actualMs = rs.wasNull() ? null : actualMsValue;
+                    boolean success = rs.getBoolean("success");
+                    String status = success ? "success" : "failed";
+                    String error = rs.getString("error_message");
+                    Instant completedAt = actualMs != null && actualMs > 0
+                        ? startedAt.plusMillis(actualMs)
+                        : startedAt;
+
+                    results.add(new BuildRecord(
+                        arenaId != null ? UUID.fromString(arenaId) : UUID.randomUUID(),
+                        rs.getString("template_id"),
+                        String.valueOf(rs.getInt("template_version")),
+                        startedAt,
+                        completedAt,
+                        actualMs,
+                        status,
+                        error
+                    ));
+                }
+            }
+        }
+        return results;
+    }
+
+    /**
+     * Queries recent build performance samples for a template.
+     */
+    public List<BuildPerformanceSample> getBuildPerformanceSamples(String templateId, Integer templateVersion, int limit)
+        throws SQLException {
+        String timeColumn = buildSchema == BuildSchema.TELEMETRY ? "ts" : "started_at";
+        String versionColumn = "template_version";
+        String sql;
+        if (templateVersion != null) {
+            sql = "SELECT " + timeColumn + " AS ts, baseline_mspt, avg_mspt, peak_mspt " +
+                "FROM arena_template_builds WHERE template_id = ? AND " + versionColumn + " = ? " +
+                "AND avg_mspt IS NOT NULL ORDER BY " + timeColumn + " DESC LIMIT ?";
+        } else {
+            sql = "SELECT " + timeColumn + " AS ts, baseline_mspt, avg_mspt, peak_mspt " +
+                "FROM arena_template_builds WHERE template_id = ? " +
+                "AND avg_mspt IS NOT NULL ORDER BY " + timeColumn + " DESC LIMIT ?";
+        }
+
+        List<BuildPerformanceSample> results = new ArrayList<>();
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, templateId);
+            if (templateVersion != null) {
+                if (buildSchema == BuildSchema.TELEMETRY) {
+                    stmt.setInt(2, templateVersion);
+                } else {
+                    stmt.setString(2, templateVersion.toString());
+                }
+                stmt.setInt(3, limit);
+            } else {
+                stmt.setInt(2, limit);
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Instant ts = rs.getTimestamp("ts").toInstant();
+                    Double baselineMspt = getNullableDouble(rs, "baseline_mspt");
+                    Double avgMspt = getNullableDouble(rs, "avg_mspt");
+                    Double peakMspt = getNullableDouble(rs, "peak_mspt");
+                    results.add(new BuildPerformanceSample(ts, baselineMspt, avgMspt, peakMspt));
                 }
             }
         }
@@ -518,11 +942,8 @@ public class DuckDbRepository implements AutoCloseable {
      * Counts builds with a start timestamp after the given instant.
      */
     public long countBuildsAfter(Instant timestamp) throws SQLException {
-        String sql = """
-            SELECT COUNT(*) AS count
-            FROM arena_template_builds
-            WHERE started_at > ?
-            """;
+        String timeColumn = buildSchema == BuildSchema.TELEMETRY ? "ts" : "started_at";
+        String sql = "SELECT COUNT(*) AS count FROM arena_template_builds WHERE " + timeColumn + " > ?";
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setTimestamp(1, Timestamp.from(timestamp));
@@ -539,20 +960,21 @@ public class DuckDbRepository implements AutoCloseable {
      * Finds temporal gaps between consecutive builds within the lookback window.
      */
     public List<TemporalGap> findBuildGaps(Instant since, Duration minGap, int limit) throws SQLException {
+        String timeColumn = buildSchema == BuildSchema.TELEMETRY ? "ts" : "started_at";
         String sql = """
             SELECT current_ts, prev_ts, gap_seconds
             FROM (
                 SELECT
-                    started_at AS current_ts,
-                    LAG(started_at) OVER (ORDER BY started_at) AS prev_ts,
-                    EXTRACT(EPOCH FROM (started_at - LAG(started_at) OVER (ORDER BY started_at))) AS gap_seconds
+                    %s AS current_ts,
+                    LAG(%s) OVER (ORDER BY %s) AS prev_ts,
+                    EXTRACT(EPOCH FROM (%s - LAG(%s) OVER (ORDER BY %s))) AS gap_seconds
                 FROM arena_template_builds
-                WHERE started_at >= ?
+                WHERE %s >= ?
             ) sub
             WHERE prev_ts IS NOT NULL AND gap_seconds > ?
             ORDER BY gap_seconds DESC
             LIMIT ?
-            """;
+            """.formatted(timeColumn, timeColumn, timeColumn, timeColumn, timeColumn, timeColumn, timeColumn);
 
         List<TemporalGap> gaps = new ArrayList<>();
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
@@ -583,6 +1005,34 @@ public class DuckDbRepository implements AutoCloseable {
      * Gap 4: Records a spatial event (spawn, death, etc.) for heatmap visualization.
      */
     public void recordSpatialEvent(SpatialEventRecord event) throws SQLException {
+        if (spatialSchema == SpatialSchema.TELEMETRY) {
+            String sql = """
+                INSERT INTO arena_spatial_events
+                    (id, ts, template_id, template_version, session_id, event_type, grid_x, grid_z,
+                     world_x, world_y, world_z, player_uuid)
+                VALUES (nextval('seq_arena_spatial_events'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                stmt.setTimestamp(1, Timestamp.from(event.occurredAt()));
+                stmt.setString(2, event.templateId());
+                if (event.templateVersion() != null) {
+                    stmt.setInt(3, event.templateVersion());
+                } else {
+                    stmt.setNull(3, java.sql.Types.INTEGER);
+                }
+                stmt.setString(4, event.sessionId().toString());
+                stmt.setString(5, event.eventType());
+                stmt.setInt(6, event.gridX());
+                stmt.setInt(7, event.gridZ());
+                stmt.setDouble(8, event.worldX());
+                stmt.setDouble(9, event.worldY());
+                stmt.setDouble(10, event.worldZ());
+                stmt.setString(11, event.playerUuid() != null ? event.playerUuid().toString() : null);
+                stmt.executeUpdate();
+            }
+            return;
+        }
+
         String sql = """
             INSERT INTO arena_spatial_events
                 (event_id, template_id, template_version, session_id, event_type, grid_x, grid_z,
@@ -966,6 +1416,56 @@ public class DuckDbRepository implements AutoCloseable {
         return json.substring(start, end);
     }
 
+    private void setNullableInt(PreparedStatement stmt, int index, Integer value) throws SQLException {
+        if (value != null) {
+            stmt.setInt(index, value);
+        } else {
+            stmt.setNull(index, java.sql.Types.INTEGER);
+        }
+    }
+
+    private void setNullableLong(PreparedStatement stmt, int index, Long value) throws SQLException {
+        if (value != null) {
+            stmt.setLong(index, value);
+        } else {
+            stmt.setNull(index, java.sql.Types.BIGINT);
+        }
+    }
+
+    private void setNullableDouble(PreparedStatement stmt, int index, Double value) throws SQLException {
+        if (value != null) {
+            stmt.setDouble(index, value);
+        } else {
+            stmt.setNull(index, java.sql.Types.DOUBLE);
+        }
+    }
+
+    private void setNullableBoolean(PreparedStatement stmt, int index, Boolean value) throws SQLException {
+        if (value != null) {
+            stmt.setBoolean(index, value);
+        } else {
+            stmt.setNull(index, java.sql.Types.BOOLEAN);
+        }
+    }
+
+    private Integer toInt(Long value) {
+        if (value == null) {
+            return null;
+        }
+        if (value > Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+        }
+        if (value < Integer.MIN_VALUE) {
+            return Integer.MIN_VALUE;
+        }
+        return value.intValue();
+    }
+
+    private Double getNullableDouble(ResultSet rs, String column) throws SQLException {
+        double value = rs.getDouble(column);
+        return rs.wasNull() ? null : value;
+    }
+
     /**
      * Cleans up old data (DD17: 14 days retention).
      */
@@ -1058,6 +1558,99 @@ public class DuckDbRepository implements AutoCloseable {
             );
         }
     }
+
+    /**
+     * Record for enriched build telemetry ingestion.
+     */
+    public record BuildEventRecord(
+        UUID arenaId,
+        String templateId,
+        Integer templateVersion,
+        String policyId,
+        Integer policyVersion,
+        Instant startedAt,
+        Instant completedAt,
+        Long estimatedBlocks,
+        Long actualBlocks,
+        Long estimatedMs,
+        Long actualMs,
+        Boolean success,
+        String errorMessage,
+        Long rollbackMs,
+        Integer blocksReverted,
+        Integer originX,
+        Integer originY,
+        Integer originZ,
+        String dimension,
+        Double baselineMspt,
+        Double avgMspt,
+        Double peakMspt,
+        Double maxBuildImpactMs,
+        Integer pauseCount,
+        Integer throttleCount,
+        Boolean perfAborted
+    ) {
+        public static BuildEventRecord fromBuildRecord(BuildRecord build) {
+            Integer version = null;
+            try {
+                version = build.templateVersion() != null ? Integer.parseInt(build.templateVersion()) : null;
+            } catch (NumberFormatException ignored) {
+                version = null;
+            }
+            return new BuildEventRecord(
+                build.buildId(),
+                build.templateId(),
+                version,
+                null,
+                null,
+                build.startedAt(),
+                build.completedAt(),
+                null,
+                null,
+                null,
+                build.durationMs(),
+                "success".equalsIgnoreCase(build.status()),
+                build.errorMessage(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            );
+        }
+    }
+
+    /**
+     * Record for build performance updates.
+     */
+    public record BuildPerformanceRecord(
+        UUID arenaId,
+        Double baselineMspt,
+        Double avgMspt,
+        Double peakMspt,
+        Double maxBuildImpactMs,
+        Integer pauseCount,
+        Integer throttleCount,
+        Boolean perfAborted
+    ) {}
+
+    /**
+     * Record for performance samples.
+     */
+    public record BuildPerformanceSample(
+        Instant timestamp,
+        Double baselineMspt,
+        Double avgMspt,
+        Double peakMspt
+    ) {}
 
     public record WaveAggregate(
         int waveNumber,

@@ -210,6 +210,7 @@ public class ArenaBuilder {
                                int originX, int originY, int originZ) {
         UUID arenaId = UUID.randomUUID();
         long startTime = System.currentTimeMillis();
+        String dimension = resolveDimension();
 
         // Instance-only gate check (fail fast before validation)
         var gate = instanceGate;
@@ -376,6 +377,12 @@ public class ArenaBuilder {
             startEventData.put("templateVersion", template.version());
             startEventData.put("arenaId", arenaId.toString());
             startEventData.put("origin", "%d,%d,%d".formatted(originX, originY, originZ));
+            startEventData.put("originX", originX);
+            startEventData.put("originY", originY);
+            startEventData.put("originZ", originZ);
+            if (dimension != null) {
+                startEventData.put("dimension", dimension);
+            }
             startEventData.put("estimatedMs", estimateBuildTimeMs(template));
             startEventData.put("maxBlocks", maxBlocks);
             if (policyId != null) {
@@ -455,6 +462,12 @@ public class ArenaBuilder {
             endEventData.put("build_ms", duration); // baseline compatibility
             endEventData.put("actualBlocks", transaction.getBlockCount());
             endEventData.put("totalPlacements", transaction.getTotalBlockPlacements());
+            endEventData.put("originX", originX);
+            endEventData.put("originY", originY);
+            endEventData.put("originZ", originZ);
+            if (dimension != null) {
+                endEventData.put("dimension", dimension);
+            }
             int expectedBlocks = BuildDryRunCalculator.calculate(template).totalBlocks();
             ResidualMetrics residualMetrics = null;
             String residualSource = "unknown";
@@ -498,20 +511,23 @@ public class ArenaBuilder {
             if (transaction == null) {
                 return BuildResult.failure(e.getMessage(), new BuildTransaction.RollbackResult(true, 0, 0, 0, 0));
             }
-            return handleBuildFailure(template, policyId, policyVersion, arenaId, transaction, e, startTime);
+            return handleBuildFailure(template, policyId, policyVersion, arenaId, transaction, e, startTime,
+                originX, originY, originZ, dimension);
 
         } catch (BuildException e) {
             if (transaction == null) {
                 return BuildResult.failure(e.getMessage(), new BuildTransaction.RollbackResult(true, 0, 0, 0, 0));
             }
-            return handleBuildFailure(template, policyId, policyVersion, arenaId, transaction, e, startTime);
+            return handleBuildFailure(template, policyId, policyVersion, arenaId, transaction, e, startTime,
+                originX, originY, originZ, dimension);
 
         } catch (Exception e) {
             if (transaction == null) {
                 return BuildResult.failure(e.getMessage(), new BuildTransaction.RollbackResult(true, 0, 0, 0, 0));
             }
             return handleBuildFailure(template, policyId, policyVersion, arenaId, transaction,
-                new BuildException("Unexpected error: " + e.getMessage(), e), startTime);
+                new BuildException("Unexpected error: " + e.getMessage(), e), startTime,
+                originX, originY, originZ, dimension);
         } finally {
             finalizePerformanceMonitoring(template, arenaId);
             if (buildPermit != null) {
@@ -538,7 +554,11 @@ public class ArenaBuilder {
             UUID arenaId,
             BuildTransaction transaction,
             Exception error,
-            long startTime) {
+            long startTime,
+            int originX,
+            int originY,
+            int originZ,
+            @Nullable String dimension) {
 
         LOGGER.error("Build failed for '{}': {}", template.id(), error.getMessage());
         transaction.markFailed();
@@ -569,6 +589,13 @@ public class ArenaBuilder {
         failEventData.put("blocksPlaced", transaction.getBlockCount());
         failEventData.put("rollbackMs", rollbackResult.durationMs());
         failEventData.put("blocksReverted", rollbackResult.blocksReverted());
+        failEventData.put("actualMs", duration);
+        failEventData.put("originX", originX);
+        failEventData.put("originY", originY);
+        failEventData.put("originZ", originZ);
+        if (dimension != null) {
+            failEventData.put("dimension", dimension);
+        }
         if (policyId != null) {
             failEventData.put("policyId", policyId);
             failEventData.put("policyVersion", policyVersion);
@@ -588,6 +615,17 @@ public class ArenaBuilder {
     }
 
     // === Build Steps ===
+
+    @Nullable
+    private String resolveDimension() {
+        if (blockPlacer instanceof MinecraftBlockPlacer mcPlacer) {
+            var level = mcPlacer.getLevel();
+            if (level != null) {
+                return level.dimension().location().toString();
+            }
+        }
+        return null;
+    }
 
     private int getSizeX(ArenaTemplate template) {
         Integer sx = template.sizeX();

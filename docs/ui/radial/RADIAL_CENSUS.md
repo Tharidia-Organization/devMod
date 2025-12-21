@@ -18,18 +18,30 @@ Legenda priorita': P0 = core workflow/testing/comandi critici, P1 = debug/qualit
 | devmod.ui.item_editor.open_food | Apri Item Editor (Food tab) | UI (radial) | `RadialMenuRegistry` | S | P1 | Root / Tools / Item Editor / Food |
 | devmod.ui.item_editor.open_fuel | Apri Item Editor (Fuel tab) | UI (radial) | `RadialMenuRegistry` | S | P1 | Root / Tools / Item Editor / Fuel |
 | devmod.ui.item_editor.open_usable | Apri Item Editor (Usable tab) | UI (radial) | `RadialMenuRegistry` | S | P1 | Root / Tools / Item Editor / Usable |
-| devmod.ui.telemetry_dashboard.open | Apri Telemetry Dashboard (in-game) | Keybind J; UI (TelemetryPage) | `RenderEvents.handleKeyBindings`, `TelemetryPage` | S | P0 | Root / Telemetry / Dashboard |
-| devmod.ui.mob_config.open | Apri Mob Config (targeted mob) | Keybind X; Event (viewer item) | `RenderEvents.handleKeyBindings`, `InteractionEvents.onEntityInteract` | S | P0 | Root / Tools / Mob Config |
+| devmod.ui.telemetry_dashboard.open | Apri Telemetry Dashboard (in-game) | Keybind J; UI (TelemetryPage, TestingHub) | `RenderEvents.handleKeyBindings`, `TelemetryPage`, `QuickToolsPanel` | S | P0 | Root / Telemetry / Dashboard |
+| devmod.ui.mob_config.open | Apri Mob Config (targeted mob) | Keybind X; Event (viewer item); UI (TestingHub) | `RenderEvents.handleKeyBindings`, `InteractionEvents.onEntityInteract`, `TestingHub.onEditorOpened` | S | P0 | Root / Tools / Mob Config |
 | devmod.ui.mob_equipment.open | Apri Mob Equipment (da MobConfig) | UI button; UI (radial) | `MobConfigScreen`, `DevModClientActions.openMobEquipment` | S | P1 | Root / Tools / Mob Config / Equipment |
 | devmod.ui.party.open | Apri Party Screen | Keybind; UI (radial) | `RenderEvents.handleKeyBindings`, `DevModClientActions.registerUiActions` | S | P0 | Root / Play / Party |
 | devmod.ui.testing_hub.open | Apri Testing Hub | Keybind N/F7; command /devtest qa | `RenderEvents.handleKeyBindings`, `TestHarnessCommands` | S | P0 | Root / Testing / Hub |
 | devmod.ui.qa_testing.open | Apri QA Testing Screen | Keybind N; UI (radial) | `RenderEvents.handleKeyBindings`, `DevModClientActions.registerUiActions` | S | P2 | Root / Testing / QA |
+| devmod.testing.session.start | Avvia nuova sessione QA | UI (QATestingScreen), radial | `QATestingScreen`, `DevModClientActions` | S | P1 | Root / Testing / QA / Session / Start |
+| devmod.testing.session.resume | Riprendi sessione QA | UI (QATestingScreen), radial | `QATestingScreen`, `DevModClientActions` | S | P1 | Root / Testing / QA / Session / Resume |
+| devmod.testing.report.save | Salva report QA | UI (QATestingScreen), radial | `QATestingScreen`, `DevModClientActions` | S | P1 | Root / Testing / QA / Report / Save |
+| devmod.testing.report.copy | Copia report QA | UI (QATestingScreen), radial | `QATestingScreen`, `DevModClientActions` | S | P2 | Root / Testing / QA / Report / Copy |
+| devmod.testing.test.pass | Segna test come superato | UI (QATestingScreen), radial | `QATestingScreen`, `DevModClientActions` | S | P1 | Root / Testing / QA / Actions / Pass |
+| devmod.testing.test.fail | Segna test come fallito | UI (QATestingScreen), radial | `QATestingScreen`, `DevModClientActions` | S | P1 | Root / Testing / QA / Actions / Fail |
+| devmod.testing.test.skip | Salta test | UI (QATestingScreen), radial | `QATestingScreen`, `DevModClientActions` | S | P2 | Root / Testing / QA / Actions / Skip |
+| devmod.testing.test.auto | Auto-check test | UI (QATestingScreen), radial | `QATestingScreen`, `DevModClientActions` | S | P2 | Root / Testing / QA / Actions / Auto |
 | devmod.ui.badge_tests.open | Apri Badge Test Screen | UI (radial) | `RadialMenuRegistry` | S | P2 | Root / Testing / Badge Tests |
 | devmod.ui.voxellab.open | Apri VoxelLab Screen | UI (radial) | `DevModClientActions.registerUiActions` | S | P2 | Root / Testing / VoxelLab |
 | devmod.ui.voxellab_ui_tests.open | Apri VoxelLab UI Test Screen | UI (radial) | `RadialMenuRegistry` | S | P2 | Root / Testing / VoxelLab UI |
 | devmod.ui.quick_test_wizard.open | Apri Quick Test Wizard (DevMod) | UI (radial) | `RadialMenuRegistry` | S | P1 | Root / Testing / Quick Test Wizard |
 | devmod.arena.quick_test_wizard.open | Apri Quick Test Wizard (Arena) | UI (radial) | `DevModClientActions.openArenaQuickTestWizard` | S | P1 | Root / Arena / Quick Test Wizard |
 | devmod.ui.room_bounds_editor.open | Apri Room Bounds Editor | Keybind Shift+R; UI | `RenderEvents.handleKeyBindings` | S | P1 | Root / Debug / Spatial / Room Bounds Editor |
+| devmod.ui.room_bounds_editor.point_a | Set Point A per bounds stanza | UI (RoomBoundsEditor, radial) | `RoomBoundsEditorScreen`, `DevModClientActions` | S | P1 | Root / Debug / Spatial / Room Bounds / Set Point A |
+| devmod.ui.room_bounds_editor.point_b | Set Point B per bounds stanza | UI (RoomBoundsEditor, radial) | `RoomBoundsEditorScreen`, `DevModClientActions` | S | P1 | Root / Debug / Spatial / Room Bounds / Set Point B |
+| devmod.ui.room_bounds_editor.save | Salva bounds stanza | UI (RoomBoundsEditor, radial) | `RoomBoundsEditorScreen`, `DevModClientActions` | S | P1 | Root / Debug / Spatial / Room Bounds / Save |
+| devmod.ui.room_bounds_editor.delete_last | Elimina ultima stanza | UI (RoomBoundsEditor, radial) | `RoomBoundsEditorScreen`, `DevModClientActions` | S | P2 | Root / Debug / Spatial / Room Bounds / Delete Last |
 | devmod.ui.welcome.open | Welcome Screen (first run) | Event (ClientModEvents); UI (radial) | `ClientModEvents`, `DevModClientActions` | S | P2 | Root / Help / Welcome |
 | devmod.ui.stamina_editor.open | Stamina System Editor | UI (radial) | `DevModClientActions.registerUiActions` | S | P2 | Root / Combat / Stamina Editor |
 | devmod.ui.quest_editor.open | Apri Quest Editor | Keybind [; UI (radial) | `RenderEvents.handleKeyBindings`, `RadialMenuRegistry` | S | P0 | Root / Endurance / Quest Editor |
@@ -89,6 +101,29 @@ Legenda priorita': P0 = core workflow/testing/comandi critici, P1 = debug/qualit
 | devmod.debug.economy.view_cycle | Cycle Economy View | Keybind Shift+F3 | `RenderEvents.handleKeyBindings` | S | P2 | Root / Debug / Economy / View |
 | devmod.debug.economy.sort_cycle | Cycle Economy Sort | Keybind Ctrl+F3 | `RenderEvents.handleKeyBindings` | S | P2 | Root / Debug / Economy / Sort |
 | devmod.hud.impact.dismiss | Dismiss Impact HUD | Keybind Backspace | `RenderEvents.handleKeyBindings` | S | P2 | Root / Debug / HUD / Dismiss Impact |
+| devmod.hud.impact.toggle | Toggle Impact HUD (2D) | UI (HudSystems/Impact HUD tools, radial) | `HudSystemsPage`, `ImpactHudButtons`, `DevModClientActions` | S | P0 | Root / Combat / Impact HUD |
+| devmod.hud.impact_3d.toggle | Toggle Impact HUD 3D panels | UI (HudSystems/Impact HUD tools, radial) | `HudSystemsPage`, `ImpactHudButtons`, `DevModClientActions` | S | P1 | Root / Combat / Impact HUD / 3D Panels |
+| devmod.config.impact_hud.history.toggle | Toggle Impact HUD history | UI (HudSystems, radial) | `DevModClientActions.registerConfigActions`, `HudSystemsPage` | S | P1 | Root / Tools / Settings / HUD Config / History |
+| devmod.config.impact_hud.dps.toggle | Toggle Impact HUD DPS | UI (HudSystems, radial) | `DevModClientActions.registerConfigActions`, `HudSystemsPage` | S | P1 | Root / Tools / Settings / HUD Config / DPS |
+| devmod.config.impact_hud.position.* | Set Impact HUD position (6 anchors) | UI (HudSystems/Impact HUD tools, radial) | `DevModClientActions.registerConfigActions`, `HudSystemsPage`, `ImpactHudButtons` | S | P1 | Root / Tools / Settings / HUD Config / Position |
+| devmod.config.impact_hud.offset_x.plus/minus | Adjust Impact HUD X offset | UI (HudSystems/Impact HUD tools, radial) | `DevModClientActions.registerConfigActions`, `HudSystemsPage`, `ImpactHudButtons` | S | P2 | Root / Tools / Settings / HUD Config / Offset |
+| devmod.config.impact_hud.offset_y.plus/minus | Adjust Impact HUD Y offset | UI (HudSystems/Impact HUD tools, radial) | `DevModClientActions.registerConfigActions`, `HudSystemsPage`, `ImpactHudButtons` | S | P2 | Root / Tools / Settings / HUD Config / Offset |
+| devmod.config.impact_hud.preset.export/import | Export/Import Impact HUD presets | UI (HudSystems/Impact HUD tools, radial) | `DevModClientActions.registerConfigActions`, `HudSystemsPage`, `ImpactHudButtons` | S | P2 | Root / Tools / Settings / HUD Config / Presets |
+| devmod.config.impact_hud.reset_defaults | Reset Impact HUD defaults | UI (HudSystems/Impact HUD tools, radial) | `DevModClientActions.registerConfigActions`, `HudSystemsPage`, `ImpactHudButtons` | S | P2 | Root / Tools / Settings / HUD Config / Presets |
+| devmod.config.impact_vfx.toggle | Toggle Impact VFX master | UI (EffectsPage/Impact HUD tools, radial) | `DevModClientActions.registerConfigActions`, `EffectsPage`, `ImpactHudButtons` | S | P1 | Root / Tools / Settings / Effects / Impact VFX |
+| devmod.config.impact_vfx.vortex.toggle | Toggle Impact VFX vortex | UI (EffectsPage/Impact HUD tools, radial) | `DevModClientActions.registerConfigActions`, `EffectsPage`, `ImpactHudButtons` | S | P2 | Root / Tools / Settings / Effects / Impact VFX |
+| devmod.config.impact_vfx.slash.toggle | Toggle Impact VFX slash | UI (EffectsPage/Impact HUD tools, radial) | `DevModClientActions.registerConfigActions`, `EffectsPage`, `ImpactHudButtons` | S | P2 | Root / Tools / Settings / Effects / Impact VFX |
+| devmod.config.impact_vfx.lines.toggle | Toggle Impact VFX lines | UI (EffectsPage/Impact HUD tools, radial) | `DevModClientActions.registerConfigActions`, `EffectsPage`, `ImpactHudButtons` | S | P2 | Root / Tools / Settings / Effects / Impact VFX |
+| devmod.config.impact_vfx.intensity.* | Set Impact VFX intensity presets | UI (EffectsPage/Impact HUD tools, radial) | `DevModClientActions.registerConfigActions`, `EffectsPage`, `ImpactHudButtons` | S | P2 | Root / Tools / Settings / Effects / Impact VFX / Intensity |
+| devmod.config.impact_vfx.reset_defaults | Reset Impact VFX defaults | UI (EffectsPage/Impact HUD tools, radial) | `DevModClientActions.registerConfigActions`, `EffectsPage`, `ImpactHudButtons` | S | P2 | Root / Tools / Settings / Effects / Impact VFX |
+| devmod.config.screen_shake.toggle | Toggle screen shake feedback | UI (EffectsPage, radial) | `DevModClientActions.registerConfigActions`, `EffectsPage` | S | P2 | Root / Tools / Settings / Effects / Screen Shake |
+| devmod.config.projectile_trails.toggle | Toggle projectile trails | UI (EffectsPage, radial) | `DevModClientActions.registerConfigActions`, `EffectsPage` | S | P2 | Root / Tools / Settings / Effects / Projectile Trails |
+| devmod.config.badge_popups.toggle | Toggle badge popups | UI (EffectsPage, radial) | `DevModClientActions.registerConfigActions`, `EffectsPage` | S | P2 | Root / Tools / Settings / Effects / Badge Popups |
+| devmod.config.telemetry.toggle | Toggle telemetry master | UI (TelemetryPage, radial) | `DevModClientActions.registerConfigActions`, `TelemetryPage` | S | P1 | Root / Tools / Settings / Telemetry Config |
+| devmod.config.telemetry.hits.toggle | Toggle telemetry hits | UI (TelemetryPage, radial) | `DevModClientActions.registerConfigActions`, `TelemetryPage` | S | P2 | Root / Tools / Settings / Telemetry Config |
+| devmod.config.telemetry.deaths.toggle | Toggle telemetry deaths | UI (TelemetryPage, radial) | `DevModClientActions.registerConfigActions`, `TelemetryPage` | S | P2 | Root / Tools / Settings / Telemetry Config |
+| devmod.config.telemetry.spawns.toggle | Toggle telemetry spawns | UI (TelemetryPage, radial) | `DevModClientActions.registerConfigActions`, `TelemetryPage` | S | P2 | Root / Tools / Settings / Telemetry Config |
+| devmod.config.body_part_detection.toggle | Toggle body part detection | UI (CombatPage, radial) | `DevModClientActions.registerConfigActions`, `CombatPage` | S | P1 | Root / Tools / Settings / Combat Config |
 | devmod.hud.quick_help.toggle | Toggle Quick Help Overlay | Keybind F1 | `RenderEvents.handleKeyBindings`, `QuickHelpOverlay` | S | P1 | Root / Help / Keybinds |
 | devmod.hud.quest.toggle | Toggle Quest HUD | Keybind `TOGGLE_QUEST_HUD_KEY` | `RenderEvents.handleKeyBindings` | S | P0 | Root / Endurance / HUD |
 | devmod.quest.task.complete | Complete current quest task | Keybind `QUEST_COMPLETE_TASK_KEY` | `RenderEvents.handleKeyBindings` | S | P0 | Root / Endurance / Task / Complete |

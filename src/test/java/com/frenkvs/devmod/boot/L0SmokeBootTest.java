@@ -244,7 +244,6 @@ public class L0SmokeBootTest {
         @DisplayName("Endurance system files exist")
         void enduranceSystemFilesExist() {
             String[] enduranceFiles = {
-                "endurance/ArenaManager.java",
                 "endurance/WaveManager.java",
                 "endurance/EnduranceQuestManager.java"
             };

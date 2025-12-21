@@ -276,6 +276,8 @@ public class BuildTransaction {
      * Exception thrown when a transaction exceeds its time limit.
      */
     public static class TransactionExpiredException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
         public TransactionExpiredException(String message) {
             super(message);
         }

@@ -2,6 +2,7 @@ package com.devmod.arena.builder;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +30,7 @@ public class CompactBlockTracker {
     // DD8: Using fastutil for memory efficiency and dynamic resizing
     private final LongArrayList positions;
     private final IntArrayList previousStateIds;
+    private final LongOpenHashSet seenPositions;
     private final int maxCapacity;
 
     public CompactBlockTracker() {
@@ -41,6 +43,7 @@ public class CompactBlockTracker {
         int initialCapacity = Math.min(1000, maxCapacity);
         this.positions = new LongArrayList(initialCapacity);
         this.previousStateIds = new IntArrayList(initialCapacity);
+        this.seenPositions = new LongOpenHashSet(initialCapacity);
     }
 
     /**
@@ -51,6 +54,9 @@ public class CompactBlockTracker {
      * @throws BuildLimitExceededException if limit exceeded
      */
     public void track(long packedPos, int previousStateId) {
+        if (seenPositions.contains(packedPos)) {
+            return;
+        }
         if (positions.size() >= maxCapacity) {
             throw new BuildLimitExceededException(
                 BuildLimitExceededException.LimitType.BLOCKS,
@@ -59,6 +65,7 @@ public class CompactBlockTracker {
             );
         }
         // DD8: LongArrayList.add() handles dynamic resizing
+        seenPositions.add(packedPos);
         positions.add(packedPos);
         previousStateIds.add(previousStateId);
     }
@@ -88,6 +95,7 @@ public class CompactBlockTracker {
     public void clear() {
         positions.clear();
         previousStateIds.clear();
+        seenPositions.clear();
     }
 
     /**
