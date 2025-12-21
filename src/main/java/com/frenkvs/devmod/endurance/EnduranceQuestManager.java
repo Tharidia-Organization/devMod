@@ -298,6 +298,7 @@ public class EnduranceQuestManager {
     @javax.annotation.Nullable
     private String getTemplateSystemReadinessError() {
         if (!useInstanceDimensions) {
+            emitLegacyCall("instance_dimensions_disabled", "getTemplateSystemReadinessError", null);
             return "Instance dimensions required; legacy arena path is deprecated.";
         }
         if (!shouldUseTemplateSystem()) {
@@ -639,6 +640,30 @@ public class EnduranceQuestManager {
             return pos;
         }
         return null;
+    }
+
+    private void emitLegacyCall(String reason, String context, @javax.annotation.Nullable ServerLevel level) {
+        if (arenaTelemetry == null) {
+            return;
+        }
+        Map<String, Object> data = new HashMap<>();
+        data.put("caller", getClass().getName());
+        if (context != null && !context.isBlank()) {
+            data.put("context", context);
+        }
+        data.put("dimension", level != null ? level.dimension().location().toString() : "unknown");
+        data.put("result", "BLOCKED");
+        data.put("debug", false);
+        data.put("useInstanceDimensions", useInstanceDimensions);
+        if (arenaConfigSnapshot != null) {
+            data.put("instanceOnly", arenaConfigSnapshot.instanceOnly());
+            data.put("allowLegacyOverworldArena", arenaConfigSnapshot.allowLegacyOverworldArena());
+            data.put("arenaTemplateEnabled", arenaConfigSnapshot.arenaTemplateEnabled());
+        }
+        if (reason != null && !reason.isBlank()) {
+            data.put("reason", reason);
+        }
+        arenaTelemetry.emit("arena.legacy.call", data);
     }
 
     private Map<net.minecraft.core.BlockPos, ArenaTemplate.SpawnSlot> buildPlayerSpawnSlotMap(
@@ -1067,6 +1092,8 @@ public class EnduranceQuestManager {
         }
         if (arenaHandle == null) {
             String error = "ArenaHandle required; legacy arena path is deprecated.";
+            emitLegacyCall("missing_arena_handle", "startPreparedQuest",
+                arena != null ? arena.getLevel() : null);
             LOGGER.error("[EnduranceQuest] startPreparedQuest blocked: {}", error);
             for (ServerPlayer player : players) {
                 if (player != null) {
