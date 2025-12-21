@@ -172,6 +172,7 @@
   "devmod.ui.exit_collect": "Exit & Collect",
   "devmod.ui.choose_fate": "Choose your fate:",
   "devmod.ui.respawn_info": "Respawn: Continue from current wave",
+  "devmod.ui.respawn_countdown": "Wave restarts after the countdown",
   "devmod.ui.giveup_info": "Give Up: End quest, keep rewards",
   "devmod.ui.add_symbol": "+",
   "devmod.ui.delete_symbol": "X",

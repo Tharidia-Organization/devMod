@@ -29,7 +29,8 @@ public class InstanceOnlyGate {
     private static final Set<String> DEBUG_CALLERS = Set.of(
         "QuickTestWizard",
         "DevCommand",
-        "ArenaDebugCommand"
+        "ArenaDebugCommand",
+        "ArenaCommands"
     );
 
     private final ArenaTemplateConfig.ConfigSnapshot config;

@@ -153,13 +153,12 @@ public class InstanceEventHandler {
                 var session = sessionOpt.get();
 
                 // Only handle if awaiting respawn choice (player died and we showed death screen)
-                if (session.isAwaitingRespawnChoice()) {
-                    LOGGER.info("[InstanceEvents] Player {} used vanilla respawn while in Endurance Quest - redirecting to instance arena",
+                if (session.isAwaitingRespawnChoice() || session.isRespawnRequested()) {
+                    LOGGER.info("[InstanceEvents] Player {} respawned while in Endurance Quest - redirecting to instance arena",
                         player.getName().getString());
 
-                    // Use EnduranceQuestManager's respawn handling with continueQuest=true
-                    // This will teleport them back to the arena and restart the wave
-                    com.frenkvs.devmod.endurance.EnduranceQuestManager.INSTANCE.handleRespawnChoice(player, true);
+                    // Redirect them back to the arena and restart the wave
+                    com.frenkvs.devmod.endurance.EnduranceQuestManager.INSTANCE.handleVanillaRespawn(player);
                 }
             }
         }
@@ -199,7 +198,8 @@ public class InstanceEventHandler {
                                 .getActiveSession(player.getUUID());
                             if (enduranceSession.isPresent()) {
                                 var session = enduranceSession.get();
-                                if (session.isAwaitingRespawnChoice() || session.getQuest().getState() == com.frenkvs.devmod.endurance.EnduranceQuestState.FAILED) {
+                                if (session.isAwaitingRespawnChoice() || session.isRespawnRequested()
+                                    || session.getQuest().getState() == com.frenkvs.devmod.endurance.EnduranceQuestState.FAILED) {
                                     LOGGER.debug("[InstanceEvents] Player {} left instance during Endurance respawn window, preserving instance",
                                         player.getName().getString());
                                     return;

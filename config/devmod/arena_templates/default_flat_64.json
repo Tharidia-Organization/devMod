@@ -20,7 +20,7 @@
   "walls": {
     "enabled": true,
     "material": "minecraft:barrier",
-    "height": 10,
+    "height": 11,
     "thickness": 1,
     "startY": 64,
     "style": "solid"
@@ -52,7 +52,18 @@
     { "pos": [0, 1, 0], "yMode": "RELATIVE_TO_FLOOR", "tags": ["center", "player"], "validation": { "requireSolidBelow": true, "requireAirAbove": 2, "requireClearRadius": 1 } },
     { "pos": [10, 1, 0], "yMode": "RELATIVE_TO_FLOOR", "tags": ["melee", "mob"], "validation": { "requireSolidBelow": true, "requireAirAbove": 2, "requireClearRadius": 1 } },
     { "pos": [-10, 1, 0], "yMode": "RELATIVE_TO_FLOOR", "tags": ["ranged", "mob"], "validation": { "requireSolidBelow": true, "requireAirAbove": 2, "requireClearRadius": 1 } },
-    { "pos": [20, 1, 20], "yMode": "RELATIVE_TO_FLOOR", "tags": ["corner", "mob"], "validation": { "requireSolidBelow": true, "requireAirAbove": 2, "requireClearRadius": 1 } }
+    { "pos": [0, 1, 10], "yMode": "RELATIVE_TO_FLOOR", "tags": ["mid", "mob"], "validation": { "requireSolidBelow": true, "requireAirAbove": 2, "requireClearRadius": 1 } },
+    { "pos": [0, 1, -10], "yMode": "RELATIVE_TO_FLOOR", "tags": ["mid", "mob"], "validation": { "requireSolidBelow": true, "requireAirAbove": 2, "requireClearRadius": 1 } },
+    { "pos": [20, 1, 20], "yMode": "RELATIVE_TO_FLOOR", "tags": ["corner", "mob"], "validation": { "requireSolidBelow": true, "requireAirAbove": 2, "requireClearRadius": 1 } },
+    { "pos": [-20, 1, 20], "yMode": "RELATIVE_TO_FLOOR", "tags": ["corner", "mob"], "validation": { "requireSolidBelow": true, "requireAirAbove": 2, "requireClearRadius": 1 } },
+    { "pos": [20, 1, -20], "yMode": "RELATIVE_TO_FLOOR", "tags": ["corner", "mob"], "validation": { "requireSolidBelow": true, "requireAirAbove": 2, "requireClearRadius": 1 } },
+    { "pos": [-20, 1, -20], "yMode": "RELATIVE_TO_FLOOR", "tags": ["corner", "mob"], "validation": { "requireSolidBelow": true, "requireAirAbove": 2, "requireClearRadius": 1 } },
+    { "pos": [25, 1, 0], "yMode": "RELATIVE_TO_FLOOR", "tags": ["flank", "mob"], "validation": { "requireSolidBelow": true, "requireAirAbove": 2, "requireClearRadius": 1 } },
+    { "pos": [-25, 1, 0], "yMode": "RELATIVE_TO_FLOOR", "tags": ["flank", "mob"], "validation": { "requireSolidBelow": true, "requireAirAbove": 2, "requireClearRadius": 1 } },
+    { "pos": [0, 1, 25], "yMode": "RELATIVE_TO_FLOOR", "tags": ["rear", "mob"], "validation": { "requireSolidBelow": true, "requireAirAbove": 2, "requireClearRadius": 1 } },
+    { "pos": [0, 1, -25], "yMode": "RELATIVE_TO_FLOOR", "tags": ["rear", "mob"], "validation": { "requireSolidBelow": true, "requireAirAbove": 2, "requireClearRadius": 1 } },
+    { "pos": [14, 1, -8], "yMode": "RELATIVE_TO_FLOOR", "tags": ["skirmish", "mob"], "validation": { "requireSolidBelow": true, "requireAirAbove": 2, "requireClearRadius": 1 } },
+    { "pos": [-14, 1, 8], "yMode": "RELATIVE_TO_FLOOR", "tags": ["skirmish", "mob"], "validation": { "requireSolidBelow": true, "requireAirAbove": 2, "requireClearRadius": 1 } }
   ],
   "playerSpawnOffset": { "x": 0, "y": 0, "z": 0 },
   "mobSpawnStrategy": "DISTRIBUTED",

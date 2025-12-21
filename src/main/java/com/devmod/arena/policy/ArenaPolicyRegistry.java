@@ -1,5 +1,6 @@
 package com.devmod.arena.policy;
 
+import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateValidator;
@@ -39,26 +40,31 @@ public class ArenaPolicyRegistry {
     private final ArenaTelemetry telemetry;
     private final ArenaTemplateRegistry templateRegistry;
     private final Set<String> weightClampWarnings = ConcurrentHashMap.newKeySet();
-    private final TemplateValidator.ValidationMode schemaMode;
+    private volatile TemplateValidator.ValidationMode schemaMode;
 
     // Stats
     private final RegistryStats stats = new RegistryStats();
 
     public ArenaPolicyRegistry(ArenaTelemetry telemetry, ArenaTemplateRegistry templateRegistry) {
+        this(telemetry, templateRegistry, null);
+    }
+
+    public ArenaPolicyRegistry(ArenaTelemetry telemetry,
+                               ArenaTemplateRegistry templateRegistry,
+                               @Nullable ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
         this.telemetry = Objects.requireNonNull(telemetry, "telemetry");
         this.templateRegistry = Objects.requireNonNull(templateRegistry, "templateRegistry");
-        this.schemaMode = TemplateValidator.fromString(
-            System.getProperty("devmod.policy.validationMode") != null
-                ? System.getProperty("devmod.policy.validationMode")
-                : System.getenv("DEVMOD_POLICY_VALIDATION_MODE"),
-            TemplateValidator.ValidationMode.STRICT
-        );
+        this.schemaMode = resolveSchemaMode(configSnapshot);
         PolicySchemaValidator.tryLoadFromResource("schemas/arena_policy.schema.json");
         PolicySchemaValidator.tryLoadFromPath(Path.of("docs/arena-template-rework/arena_policy.schema.json"));
 
         // Always register default policy
         policies.put(ArenaPolicy.DEFAULT.id(), ArenaPolicy.DEFAULT);
         LOGGER.info("ArenaPolicyRegistry initialized with default policy");
+    }
+
+    public void applyConfigSnapshot(@Nullable ArenaTemplateConfig.ConfigSnapshot snapshot) {
+        this.schemaMode = resolveSchemaMode(snapshot);
     }
 
     /**
@@ -343,7 +349,10 @@ public class ArenaPolicyRegistry {
         List<ArenaPolicy> loaded = new ArrayList<>();
         List<String> errors = new ArrayList<>();
 
-        // 1) Datapacks
+        // 1) Jar resources (lowest priority)
+        loadFromPath(Path.of("data/devmod/arena_policies/"), loaded, errors);
+
+        // 2) Datapacks
         Path datapacksRoot = Path.of("datapacks");
         if (Files.isDirectory(datapacksRoot)) {
             try (var packs = Files.list(datapacksRoot)) {
@@ -356,7 +365,7 @@ public class ArenaPolicyRegistry {
             }
         }
 
-        // 2) Config override (highest priority)
+        // 3) Config override (highest priority)
         loadFromPath(configDirectory, loaded, errors);
 
         // Register loaded policies with validation
@@ -374,6 +383,47 @@ public class ArenaPolicyRegistry {
             register(ArenaPolicy.DEFAULT);
             loaded.add(ArenaPolicy.DEFAULT);
         }
+
+        return new LoadResult(loaded, errors);
+    }
+
+    /**
+     * Atomic reload from all sources (jar < datapacks < config).
+     * Parses and validates policies before swapping the registry.
+     */
+    public ReloadResult reloadFromDirectoryAtomic(Path configDirectory) {
+        LoadResult loadResult = loadAllSourcesRaw(configDirectory);
+        if (!loadResult.success()) {
+            LOGGER.error("Policy reload aborted, {} errors", loadResult.errors().size());
+            telemetry.emit("arena.policy.hot_reload", Map.of(
+                "success", false,
+                "errorCount", loadResult.errors().size(),
+                "errors", loadResult.errors()
+            ));
+            return new ReloadResult(false, 0, loadResult.errors());
+        }
+        return hotReload(loadResult.policies());
+    }
+
+    private LoadResult loadAllSourcesRaw(Path configDirectory) {
+        List<ArenaPolicy> loaded = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+
+        loadFromPath(Path.of("data/devmod/arena_policies/"), loaded, errors);
+
+        Path datapacksRoot = Path.of("datapacks");
+        if (Files.isDirectory(datapacksRoot)) {
+            try (var packs = Files.list(datapacksRoot)) {
+                packs.filter(Files::isDirectory).forEach(dp -> {
+                    Path arenaPath = dp.resolve("data/devmod/arena_policies/");
+                    loadFromPath(arenaPath, loaded, errors);
+                });
+            } catch (IOException e) {
+                errors.add("Failed to list datapacks: " + e.getMessage());
+            }
+        }
+
+        loadFromPath(configDirectory, loaded, errors);
 
         return new LoadResult(loaded, errors);
     }
@@ -416,6 +466,16 @@ public class ArenaPolicyRegistry {
         } catch (Exception e) {
             errors.add(path + ": " + e.getMessage());
         }
+    }
+
+    private TemplateValidator.ValidationMode resolveSchemaMode(@Nullable ArenaTemplateConfig.ConfigSnapshot snapshot) {
+        String configured = snapshot != null ? snapshot.policySchemaValidationMode() : null;
+        if (configured == null || configured.isBlank()) {
+            String prop = System.getProperty("devmod.policy.validationMode");
+            String env = System.getenv("DEVMOD_POLICY_VALIDATION_MODE");
+            configured = prop != null ? prop : env;
+        }
+        return TemplateValidator.fromString(configured, TemplateValidator.ValidationMode.STRICT);
     }
 
     /**

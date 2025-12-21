@@ -36,6 +36,7 @@ public class RoomBoundsVisualizer {
     private boolean showGaps = true; // Show gap detection by default
     private final List<RoomVisual> rooms = new ArrayList<>();
     private final Set<BlockPos> detectedGaps = new HashSet<>(); // Positions where room is not closed
+    private boolean gapsDirty = false;
 
     // Pending room definition markers (persist even when editor is closed)
     private BlockPos pendingPointA = null;
@@ -58,8 +59,13 @@ public class RoomBoundsVisualizer {
     public void toggle() {
         enabled = !enabled;
         // Sync rooms from config when enabling
-        if (enabled && rooms.isEmpty()) {
-            syncFromConfig();
+        if (enabled) {
+            if (rooms.isEmpty()) {
+                syncFromConfig();
+            } else {
+                markGapsDirty();
+                refreshGapsIfNeeded();
+            }
         }
     }
 
@@ -92,9 +98,8 @@ public class RoomBoundsVisualizer {
         }
 
         // Scan for gaps after loading rooms
-        if (mc.level != null && showGaps) {
-            scanForGaps(mc.level);
-        }
+        markGapsDirty();
+        refreshGapsIfNeeded();
     }
 
     /**
@@ -103,12 +108,11 @@ public class RoomBoundsVisualizer {
     public void toggleGapDetection() {
         showGaps = !showGaps;
         if (showGaps) {
-            Minecraft mc = Minecraft.getInstance();
-            if (mc.level != null) {
-                scanForGaps(mc.level);
-            }
+            markGapsDirty();
+            refreshGapsIfNeeded();
         } else {
             detectedGaps.clear();
+            gapsDirty = false;
         }
     }
 
@@ -188,6 +192,7 @@ public class RoomBoundsVisualizer {
                 }
             }
         }
+        gapsDirty = false;
     }
 
     /**
@@ -237,6 +242,7 @@ public class RoomBoundsVisualizer {
 
         int colorIndex = rooms.size() % ROOM_COLORS.length;
         rooms.add(new RoomVisual(id, min, max, ROOM_COLORS[colorIndex]));
+        markGapsDirty();
     }
 
     /**
@@ -244,6 +250,7 @@ public class RoomBoundsVisualizer {
      */
     public void removeRoom(String id) {
         rooms.removeIf(r -> r.id.equals(id));
+        markGapsDirty();
     }
 
     /**
@@ -251,6 +258,8 @@ public class RoomBoundsVisualizer {
      */
     public void clearRooms() {
         rooms.clear();
+        detectedGaps.clear();
+        gapsDirty = false;
     }
 
     /**
@@ -263,6 +272,8 @@ public class RoomBoundsVisualizer {
             rooms.add(new RoomVisual(data.id, data.min, data.max, ROOM_COLORS[colorIndex % ROOM_COLORS.length]));
             colorIndex++;
         }
+        markGapsDirty();
+        refreshGapsIfNeeded();
     }
 
     /**
@@ -274,6 +285,8 @@ public class RoomBoundsVisualizer {
 
         if (!enabled && !hasPending) return;
         if (!enabled && rooms.isEmpty() && !hasPending) return;
+
+        refreshGapsIfNeeded();
 
         VertexConsumer consumer = Objects.requireNonNull(buffer.getBuffer(Objects.requireNonNull(RenderType.lines())));
 
@@ -426,6 +439,22 @@ public class RoomBoundsVisualizer {
      */
     public int getRoomCount() {
         return rooms.size();
+    }
+
+    private void markGapsDirty() {
+        if (showGaps) {
+            gapsDirty = true;
+        }
+    }
+
+    private void refreshGapsIfNeeded() {
+        if (!showGaps || !gapsDirty) {
+            return;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level != null) {
+            scanForGaps(mc.level);
+        }
     }
 
     // Internal data classes

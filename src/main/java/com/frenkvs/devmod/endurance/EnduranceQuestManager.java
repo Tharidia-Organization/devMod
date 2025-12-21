@@ -20,6 +20,7 @@ import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.instance.InstanceData;
 import com.frenkvs.devmod.instance.InstanceManager;
 import com.frenkvs.devmod.instance.InstanceRegistry;
+import com.frenkvs.devmod.party.QuestSequencePayload;
 import com.frenkvs.devmod.telemetry.TelemetryService;
 import com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.frenkvs.devmod.util.I18n;
@@ -32,6 +33,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.nbt.ListTag;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +89,8 @@ public class EnduranceQuestManager {
     private ArenaTemplateConfig arenaTemplateConfig;
     private ArenaTemplateConfig.ConfigSnapshot arenaConfigSnapshot;
     private static final long INSTANCE_CREATION_TIMEOUT_SECONDS = 30;
-    public static final int WAVE_START_COUNTDOWN_TICKS = 60;
+    public static final int PRE_TELEPORT_COUNTDOWN_TICKS = 100;
+    public static final int WAVE_START_COUNTDOWN_TICKS = 200;
 
     private EnduranceQuestManager() {}
 
@@ -1261,6 +1264,32 @@ public class EnduranceQuestManager {
         }
 
         pendingSession.setPending(true);
+        pendingSession.scheduleInstanceStart(mobId, settings, resolved, PRE_TELEPORT_COUNTDOWN_TICKS);
+
+        int countdownSeconds = (int) Math.ceil(PRE_TELEPORT_COUNTDOWN_TICKS / 20.0);
+        sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.COUNTDOWN_START, countdownSeconds);
+        pendingSession.setLastTeleportCountdownSeconds(countdownSeconds);
+
+        return new StartQuestResult(true, "Teleporting in " + countdownSeconds + " seconds...", pendingSession);
+    }
+
+    void startPendingInstanceQuest(ServerPlayer player, ActiveQuestSession session) {
+        if (player == null || session == null) {
+            return;
+        }
+
+        ResourceLocation mobId = session.getPendingMobId();
+        QuestSettings settings = session.getPendingSettings();
+        ResolvedArena resolved = session.getPendingResolved();
+        session.clearPendingInstanceStart();
+
+        if (mobId == null || settings == null || resolved == null) {
+            LOGGER.error("[EnduranceQuest] Pending instance start missing data for player {}",
+                player.getName().getString());
+            activeSessions.remove(session.getPlayerId());
+            sendSoloSequenceUpdate(player, session, QuestSequencePayload.Phase.CANCELLED, 0);
+            return;
+        }
 
         com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingShow(player, "Creating template instance...");
         player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Creating instance dimension...")
@@ -1269,10 +1298,21 @@ public class EnduranceQuestManager {
         InstanceManager.INSTANCE
             .startInstanceQuestImmediate(player, resolved.template().id(), mobId.toString(), null)
             .thenAccept(instanceId -> {
-                completeTemplateInstanceQuestSetup(player, playerId, mobId, quest, settings, resolved, instanceId);
+                completeTemplateInstanceQuestSetup(player, session.getPlayerId(), mobId, session.getQuest(),
+                    settings, resolved, instanceId);
             });
+    }
 
-        return new StartQuestResult(true, "Creating instance dimension...", pendingSession);
+    void sendSoloSequenceUpdate(ServerPlayer player, ActiveQuestSession session,
+                                QuestSequencePayload.Phase phase, int secondsRemaining) {
+        if (player == null || session == null || session.isMultiplayer()) {
+            return;
+        }
+        PacketDistributor.sendToPlayer(player, new QuestSequencePayload(
+            player.getUUID(),
+            phase,
+            Math.max(0, secondsRemaining)
+        ));
     }
 
     private void completeTemplateInstanceQuestSetup(ServerPlayer player, UUID playerId, ResourceLocation mobId,
@@ -1280,6 +1320,7 @@ public class EnduranceQuestManager {
                                                     ResolvedArena resolved,
                                                     @javax.annotation.Nullable UUID instanceId) {
         var server = player.getServer();
+        ActiveQuestSession pendingSession = activeSessions.get(playerId);
         if (server == null || server.getPlayerList().getPlayer(Objects.requireNonNull(playerId)) == null) {
             LOGGER.warn("[EnduranceQuest] Player {} disconnected during template instance creation", playerId);
             activeSessions.remove(playerId);
@@ -1293,6 +1334,7 @@ public class EnduranceQuestManager {
             LOGGER.error("[EnduranceQuest] Template instance creation failed for player {}", playerId);
             activeSessions.remove(playerId);
             com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingHide(player);
+            sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.CANCELLED, 0);
             player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Failed to create instance")
                 .withStyle(ChatFormatting.RED)));
             return;
@@ -1303,6 +1345,7 @@ public class EnduranceQuestManager {
             InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
             activeSessions.remove(playerId);
             com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingHide(player);
+            sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.CANCELLED, 0);
             player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Instance not found")
                 .withStyle(ChatFormatting.RED)));
             return;
@@ -1314,6 +1357,7 @@ public class EnduranceQuestManager {
             InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
             activeSessions.remove(playerId);
             com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingHide(player);
+            sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.CANCELLED, 0);
             player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Instance dimension not ready")
                 .withStyle(ChatFormatting.RED)));
             return;
@@ -1324,6 +1368,7 @@ public class EnduranceQuestManager {
             InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
             activeSessions.remove(playerId);
             com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingHide(player);
+            sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.CANCELLED, 0);
             player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Instance level not found")
                 .withStyle(ChatFormatting.RED)));
             return;
@@ -1345,6 +1390,7 @@ public class EnduranceQuestManager {
             InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
             activeSessions.remove(playerId);
             com.frenkvs.devmod.NetworkHandler.sendInstanceLoadingHide(player);
+            sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.CANCELLED, 0);
             String msg = buildResult.errorMessage() != null ? buildResult.errorMessage() : "Build failed";
             player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] " + msg)
                 .withStyle(ChatFormatting.RED)));
@@ -1378,6 +1424,8 @@ public class EnduranceQuestManager {
         TelemetryService.INSTANCE.startDungeonSession(player, dungeonId);
 
         session.scheduleWaveStart(WAVE_START_COUNTDOWN_TICKS);
+        sendSoloSequenceUpdate(player, session, QuestSequencePayload.Phase.SYNCING,
+            (int) Math.ceil(WAVE_START_COUNTDOWN_TICKS / 20.0));
 
         LOGGER.info("[EnduranceQuest] Player {} started TEMPLATE quest: {} (instance: {})",
             player.getName().getString(), quest.getDisplayName(), instanceId);
@@ -1421,6 +1469,13 @@ public class EnduranceQuestManager {
      */
     public void handleRespawnChoice(ServerPlayer player, boolean continueQuest) {
         sessionHandler.handleRespawnChoice(player, continueQuest);
+    }
+
+    /**
+     * Handle vanilla respawn after death (player clicked the vanilla respawn button).
+     */
+    public void handleVanillaRespawn(ServerPlayer player) {
+        sessionHandler.handleVanillaRespawn(player);
     }
 
     /**
@@ -1660,6 +1715,7 @@ public class EnduranceQuestManager {
         private final long startTime;
         private int killsInCurrentWave = 0;
         private boolean awaitingRespawnChoice = false;
+        private boolean respawnRequested = false;
 
         // Instance dimension ID (null if using legacy overworld arena)
         private UUID instanceId;
@@ -1673,6 +1729,13 @@ public class EnduranceQuestManager {
 
         // Pending flag - true while instance is being created asynchronously
         private boolean pending = false;
+
+        // Instance start countdown (solo pre-teleport)
+        private int pendingInstanceStartTicks = 0;
+        private int lastTeleportCountdownSeconds = -1;
+        private @javax.annotation.Nullable ResourceLocation pendingMobId;
+        private @javax.annotation.Nullable QuestSettings pendingSettings;
+        private @javax.annotation.Nullable ResolvedArena pendingResolved;
 
         // Wave start countdown (solo start / respawn delay)
         private int pendingWaveStartTicks = 0;
@@ -1716,10 +1779,12 @@ public class EnduranceQuestManager {
         public long getStartTime() { return startTime; }
         public int getKillsInCurrentWave() { return killsInCurrentWave; }
         public boolean isAwaitingRespawnChoice() { return awaitingRespawnChoice; }
+        public boolean isRespawnRequested() { return respawnRequested; }
 
         public void setAwaitingRespawnChoice(boolean awaiting) {
             this.awaitingRespawnChoice = awaiting;
         }
+        public void setRespawnRequested(boolean respawnRequested) { this.respawnRequested = respawnRequested; }
 
         public void incrementKillCount() {
             killsInCurrentWave++;
@@ -1766,6 +1831,40 @@ public class EnduranceQuestManager {
         // Pending state (while instance is being created)
         public boolean isPending() { return pending; }
         public void setPending(boolean pending) { this.pending = pending; }
+
+        public void scheduleInstanceStart(ResourceLocation mobId, QuestSettings settings, ResolvedArena resolved, int ticks) {
+            this.pendingMobId = mobId;
+            this.pendingSettings = settings;
+            this.pendingResolved = resolved;
+            this.pendingInstanceStartTicks = Math.max(0, ticks);
+            this.lastTeleportCountdownSeconds = -1;
+        }
+
+        public boolean isInstanceStartPending() {
+            return pendingInstanceStartTicks > 0 && pendingMobId != null && pendingSettings != null && pendingResolved != null;
+        }
+
+        public int tickInstanceStartCountdown() {
+            if (pendingInstanceStartTicks > 0) {
+                pendingInstanceStartTicks--;
+            }
+            return pendingInstanceStartTicks;
+        }
+
+        public int getLastTeleportCountdownSeconds() { return lastTeleportCountdownSeconds; }
+        public void setLastTeleportCountdownSeconds(int seconds) { this.lastTeleportCountdownSeconds = seconds; }
+
+        public @javax.annotation.Nullable ResourceLocation getPendingMobId() { return pendingMobId; }
+        public @javax.annotation.Nullable QuestSettings getPendingSettings() { return pendingSettings; }
+        public @javax.annotation.Nullable ResolvedArena getPendingResolved() { return pendingResolved; }
+
+        public void clearPendingInstanceStart() {
+            pendingInstanceStartTicks = 0;
+            lastTeleportCountdownSeconds = -1;
+            pendingMobId = null;
+            pendingSettings = null;
+            pendingResolved = null;
+        }
 
         public void scheduleWaveStart(int ticks) {
             if (ticks <= 0) {

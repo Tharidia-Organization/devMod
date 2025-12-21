@@ -12,6 +12,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -332,6 +333,69 @@ public class DuckDbRepository implements AutoCloseable {
             }
         }
         return results;
+    }
+
+    /**
+     * Counts builds with a start timestamp after the given instant.
+     */
+    public long countBuildsAfter(Instant timestamp) throws SQLException {
+        String sql = """
+            SELECT COUNT(*) AS count
+            FROM arena_template_builds
+            WHERE started_at > ?
+            """;
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setTimestamp(1, Timestamp.from(timestamp));
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong("count");
+                }
+            }
+        }
+        return 0L;
+    }
+
+    /**
+     * Finds temporal gaps between consecutive builds within the lookback window.
+     */
+    public List<TemporalGap> findBuildGaps(Instant since, Duration minGap, int limit) throws SQLException {
+        String sql = """
+            SELECT current_ts, prev_ts, gap_seconds
+            FROM (
+                SELECT
+                    started_at AS current_ts,
+                    LAG(started_at) OVER (ORDER BY started_at) AS prev_ts,
+                    EXTRACT(EPOCH FROM (started_at - LAG(started_at) OVER (ORDER BY started_at))) AS gap_seconds
+                FROM arena_template_builds
+                WHERE started_at >= ?
+            ) sub
+            WHERE prev_ts IS NOT NULL AND gap_seconds > ?
+            ORDER BY gap_seconds DESC
+            LIMIT ?
+            """;
+
+        List<TemporalGap> gaps = new ArrayList<>();
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setTimestamp(1, Timestamp.from(since));
+            stmt.setDouble(2, Math.max(0.0, minGap.toSeconds()));
+            stmt.setInt(3, Math.max(1, limit));
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Timestamp currentTs = rs.getTimestamp("current_ts");
+                    Timestamp prevTs = rs.getTimestamp("prev_ts");
+                    double gapSeconds = rs.getDouble("gap_seconds");
+                    if (currentTs != null && prevTs != null) {
+                        gaps.add(new TemporalGap(
+                            prevTs.toInstant(),
+                            currentTs.toInstant(),
+                            Duration.ofMillis((long) (gapSeconds * 1000))
+                        ));
+                    }
+                }
+            }
+        }
+        return gaps;
     }
 
     // ========== Gap 4: Spatial Events for Heatmap ==========
@@ -771,6 +835,15 @@ public class DuckDbRepository implements AutoCloseable {
             );
         }
     }
+
+    /**
+     * Record for temporal gaps between builds.
+     */
+    public record TemporalGap(
+        Instant previous,
+        Instant current,
+        Duration gap
+    ) {}
 
     /**
      * Record for usage data.

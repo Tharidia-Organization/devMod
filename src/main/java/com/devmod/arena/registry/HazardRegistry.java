@@ -25,7 +25,7 @@ import java.util.*;
  *   <li>{@code custom} - Custom builder-based hazard (limit: 2)</li>
  * </ul>
  */
-public class HazardRegistry {
+public final class HazardRegistry {
 
     /** Global instance limit across all hazard types. */
     public static final int MAX_TOTAL_HAZARDS = 50;
@@ -36,54 +36,48 @@ public class HazardRegistry {
     /** Warning threshold for coverage (25%). */
     public static final double WARN_COVERAGE = 0.25;
 
+    private static final List<HazardTypeInfo> BUILTIN_TYPES = List.of(
+        new HazardTypeInfo("lava_ring", 3,
+            List.of("innerRadius", "outerRadius"),
+            List.of("material"),
+            "Ring of lava surrounding the arena"),
+        new HazardTypeInfo("lava_pool", 5,
+            List.of("radius", "center"),
+            List.of("depth", "material"),
+            "Circular lava pool at specified position"),
+        new HazardTypeInfo("void_pit", 3,
+            List.of("radius", "center"),
+            List.of("depth"),
+            "Void pit that kills on contact"),
+        new HazardTypeInfo("spike_trap", 20,
+            List.of("positions"),
+            List.of("damage", "cooldown"),
+            "Spike traps at specified positions"),
+        new HazardTypeInfo("fire_zone", 5,
+            List.of("min", "max"),
+            List.of("damage", "interval"),
+            "Fire damage zone within AABB"),
+        new HazardTypeInfo("magma_floor", 1,
+            List.of("coverage"),
+            List.of("pattern"),
+            "Magma block floor with coverage percentage"),
+        new HazardTypeInfo("falling_blocks", 2,
+            List.of("area"),
+            List.of("interval", "count", "blockType"),
+            "Falling blocks in specified area"),
+        new HazardTypeInfo("custom", 2,
+            List.of("builderId"),
+            List.of(),
+            "Custom hazard via registered builder")
+    );
+
     private final Map<String, HazardTypeInfo> registry = new LinkedHashMap<>();
     private final Set<String> customBuilders = new HashSet<>();
 
     public HazardRegistry() {
-        registerBuiltinTypes();
-    }
-
-    private void registerBuiltinTypes() {
-        // DD8: Built-in hazard types with limits and required params
-        register(new HazardTypeInfo("lava_ring", 3,
-            List.of("innerRadius", "outerRadius"),
-            List.of("material"),
-            "Ring of lava surrounding the arena"));
-
-        register(new HazardTypeInfo("lava_pool", 5,
-            List.of("radius", "center"),
-            List.of("depth", "material"),
-            "Circular lava pool at specified position"));
-
-        register(new HazardTypeInfo("void_pit", 3,
-            List.of("radius", "center"),
-            List.of("depth"),
-            "Void pit that kills on contact"));
-
-        register(new HazardTypeInfo("spike_trap", 20,
-            List.of("positions"),
-            List.of("damage", "cooldown"),
-            "Spike traps at specified positions"));
-
-        register(new HazardTypeInfo("fire_zone", 5,
-            List.of("min", "max"),
-            List.of("damage", "interval"),
-            "Fire damage zone within AABB"));
-
-        register(new HazardTypeInfo("magma_floor", 1,
-            List.of("coverage"),
-            List.of("pattern"),
-            "Magma block floor with coverage percentage"));
-
-        register(new HazardTypeInfo("falling_blocks", 2,
-            List.of("area"),
-            List.of("interval", "count", "blockType"),
-            "Falling blocks in specified area"));
-
-        register(new HazardTypeInfo("custom", 2,
-            List.of("builderId"),
-            List.of(),
-            "Custom hazard via registered builder"));
+        for (HazardTypeInfo info : BUILTIN_TYPES) {
+            registry.put(info.type(), info);
+        }
     }
 
     /**

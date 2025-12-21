@@ -29,7 +29,7 @@ public class TemplateRegistryBootstrap implements AutoCloseable {
     private static final long WATCHER_DEBOUNCE_MS = 250L;
 
     private Path templateDirectory;
-    private final TemplateValidator.ValidationMode validationMode;
+    private TemplateValidator.ValidationMode validationMode;
     private final ArenaTemplateRegistry registry;
     private final FeatureFlagManager featureFlagManager;
     private ArenaTemplateConfig config;
@@ -74,10 +74,8 @@ public class TemplateRegistryBootstrap implements AutoCloseable {
 
         Path dir = resolveTemplateDirectory(config);
 
-        String modeProp = System.getProperty("devmod.template.validationMode");
-        String modeEnv = System.getenv("DEVMOD_TEMPLATE_VALIDATION_MODE");
         TemplateValidator.ValidationMode mode = TemplateValidator.fromString(
-            modeProp != null ? modeProp : modeEnv,
+            config.schemaValidationMode(),
             TemplateValidator.ValidationMode.STRICT
         );
 
@@ -157,6 +155,10 @@ public class TemplateRegistryBootstrap implements AutoCloseable {
     public void applyConfig(ArenaTemplateConfig newConfig) {
         this.config = newConfig;
         this.configSnapshot = newConfig.snapshot();
+        this.validationMode = TemplateValidator.fromString(
+            newConfig.schemaValidationMode(),
+            TemplateValidator.ValidationMode.STRICT
+        );
         Path resolvedDir = resolveTemplateDirectory(newConfig);
         if (resolvedDir != null && !resolvedDir.equals(this.templateDirectory)) {
             LOGGER.info("Template directory updated: {} -> {}", this.templateDirectory, resolvedDir);

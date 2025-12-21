@@ -162,6 +162,7 @@ public class TemplateValidator {
         validateWalls(template.walls(), errors);
         validateCeiling(template.ceiling(), errors);
         validateUnderfloor(template.underfloor(), errors);
+        validateBoundsClosure(template, errors, warnings);
         validatePalette(template.palette(), warnings, errors);
         validateBiome(template.biome(), errors);
         validateCompat(template.compat(), errors);
@@ -256,6 +257,55 @@ public class TemplateValidator {
         }
         if (ceiling.enabled() && (ceiling.material() == null || ceiling.material().isBlank())) {
             errors.add("ceiling.material is required when enabled");
+        }
+    }
+
+    private void validateBoundsClosure(ArenaTemplate template, List<String> errors, List<String> warnings) {
+        if (template == null || template.templateType() == null) {
+            return;
+        }
+        if (template.templateType().discriminator() != TemplateType.TypeDiscriminator.FLAT) {
+            return;
+        }
+
+        ArenaTemplate.Floor floor = template.floor();
+        ArenaTemplate.Walls walls = template.walls();
+        ArenaTemplate.Ceiling ceiling = template.ceiling();
+
+        if (walls == null || !walls.enabled()) {
+            errors.add("bounds gap: walls must be enabled for closed bounds");
+            return;
+        }
+
+        if (ceiling == null || !ceiling.enabled()) {
+            errors.add("bounds gap: ceiling must be enabled for closed bounds");
+        }
+
+        if ("fence".equalsIgnoreCase(walls.style())) {
+            errors.add("bounds gap: walls.style fence introduces gaps");
+        }
+
+        if (floor != null) {
+            int floorTop = floor.y() + Math.max(1, floor.thickness()) - 1;
+            if (walls.startY() > floorTop) {
+                errors.add("bounds gap: walls.startY above floor top");
+            }
+        }
+
+        if (ceiling != null && ceiling.enabled()) {
+            int wallTop = walls.startY() + walls.height() - 1;
+            if (wallTop < ceiling.y()) {
+                errors.add("bounds gap: walls.height does not reach ceiling");
+            }
+            if (ceiling.material() != null && !ceiling.material().isBlank()
+                && !"minecraft:barrier".equals(ceiling.material())) {
+                warnings.add("bounds: ceiling.material is not barrier");
+            }
+        }
+
+        if (walls.material() != null && !walls.material().isBlank()
+            && !"minecraft:barrier".equals(walls.material())) {
+            warnings.add("bounds: walls.material is not barrier");
         }
     }
 

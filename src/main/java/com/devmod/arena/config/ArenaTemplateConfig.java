@@ -30,6 +30,8 @@ public class ArenaTemplateConfig {
     private static final int DEFAULT_BOSS_MAX_BUILD_TIME_MS = 15000;
     private static final String DEFAULT_AUTOSMOKE_CRON = "0 3 * * *";
     private static final String DEFAULT_AUTOSMOKE_TZ = "UTC";
+    private static final String DEFAULT_SCHEMA_VALIDATION_MODE = "STRICT";
+    private static final String DEFAULT_POLICY_SCHEMA_VALIDATION_MODE = "STRICT";
     private static final String DEFAULT_STRUCTURE_MANIFEST = "config/devmod/structures_manifest.json";
     private static final long DEFAULT_STRUCTURE_MAX_FILE_SIZE = 512 * 1024;
     private static final int DEFAULT_STRUCTURE_MAX_BLOCKS = 100_000;
@@ -55,6 +57,8 @@ public class ArenaTemplateConfig {
     private String autosmokeSchedule = DEFAULT_AUTOSMOKE_CRON;
     private String autosmokeTimezone = DEFAULT_AUTOSMOKE_TZ;
     private AlertThresholds alertThresholds = AlertThresholds.defaults();
+    private String schemaValidationMode = DEFAULT_SCHEMA_VALIDATION_MODE;
+    private String policySchemaValidationMode = DEFAULT_POLICY_SCHEMA_VALIDATION_MODE;
     private String structureManifestPath = DEFAULT_STRUCTURE_MANIFEST;
     private long structureMaxFileSizeBytes = DEFAULT_STRUCTURE_MAX_FILE_SIZE;
     private int structureMaxBlockCount = DEFAULT_STRUCTURE_MAX_BLOCKS;
@@ -105,6 +109,16 @@ public class ArenaTemplateConfig {
         cfg.autosmokeSchedule = getString("devmod.arena.autosmokeSchedule", "DEVMOD_ARENA_AUTOSMOKE_CRON", DEFAULT_AUTOSMOKE_CRON);
         cfg.autosmokeTimezone = getString("devmod.arena.autosmokeTimezone", "DEVMOD_ARENA_AUTOSMOKE_TZ", DEFAULT_AUTOSMOKE_TZ);
         cfg.alertThresholds = AlertThresholds.defaults(); // simple default; can add overrides later
+        cfg.schemaValidationMode = getString(
+            "devmod.arena.schemaValidationMode",
+            "DEVMOD_ARENA_SCHEMA_VALIDATION_MODE",
+            DEFAULT_SCHEMA_VALIDATION_MODE
+        );
+        cfg.policySchemaValidationMode = getString(
+            "devmod.arena.policySchemaValidationMode",
+            "DEVMOD_ARENA_POLICY_SCHEMA_VALIDATION_MODE",
+            DEFAULT_POLICY_SCHEMA_VALIDATION_MODE
+        );
         cfg.structureManifestPath = getString("devmod.arena.structureManifest", "DEVMOD_ARENA_STRUCTURE_MANIFEST", DEFAULT_STRUCTURE_MANIFEST);
         cfg.structureMaxFileSizeBytes = getLong("devmod.arena.structureMaxFileSizeBytes", "DEVMOD_ARENA_STRUCTURE_MAX_SIZE", DEFAULT_STRUCTURE_MAX_FILE_SIZE);
         cfg.structureMaxBlockCount = getInt("devmod.arena.structureMaxBlockCount", "DEVMOD_ARENA_STRUCTURE_MAX_BLOCKS", DEFAULT_STRUCTURE_MAX_BLOCKS);
@@ -148,6 +162,12 @@ public class ArenaTemplateConfig {
         if (alertThresholds.warnTps() <= alertThresholds.errorTps()) {
             errors.add("warnTps must be > errorTps");
         }
+        if (!isValidValidationMode(schemaValidationMode)) {
+            warnings.add("schemaValidationMode should be strict|permissive|lenient (got: " + schemaValidationMode + ")");
+        }
+        if (!isValidValidationMode(policySchemaValidationMode)) {
+            warnings.add("policySchemaValidationMode should be strict|permissive|lenient (got: " + policySchemaValidationMode + ")");
+        }
 
         return new ValidationResult(errors.isEmpty(), errors, warnings);
     }
@@ -167,6 +187,8 @@ public class ArenaTemplateConfig {
             autosmokeSchedule,
             autosmokeTimezone,
             alertThresholds,
+            schemaValidationMode,
+            policySchemaValidationMode,
             structureManifestPath,
             structureMaxFileSizeBytes,
             structureMaxBlockCount,
@@ -193,6 +215,8 @@ public class ArenaTemplateConfig {
         String autosmokeSchedule,
         String autosmokeTimezone,
         AlertThresholds alertThresholds,
+        String schemaValidationMode,
+        String policySchemaValidationMode,
         String structureManifestPath,
         long structureMaxFileSizeBytes,
         int structureMaxBlockCount,
@@ -203,6 +227,9 @@ public class ArenaTemplateConfig {
         long lockCleanupIntervalMs,
         long lockStaleThresholdMs
     ) {}
+
+    public String schemaValidationMode() { return schemaValidationMode; }
+    public String policySchemaValidationMode() { return policySchemaValidationMode; }
 
     // === Helpers ===
     private static String getString(String sys, String env, String def) {
@@ -219,6 +246,12 @@ public class ArenaTemplateConfig {
         String e = System.getenv(env);
         if (e != null) return Boolean.parseBoolean(e);
         return def;
+    }
+
+    private static boolean isValidValidationMode(String mode) {
+        if (mode == null) return false;
+        String normalized = mode.trim().toLowerCase();
+        return "strict".equals(normalized) || "permissive".equals(normalized) || "lenient".equals(normalized);
     }
 
     private static int getInt(String sys, String env, int def) {

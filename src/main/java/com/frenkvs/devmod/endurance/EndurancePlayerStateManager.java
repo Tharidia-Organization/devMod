@@ -103,6 +103,20 @@ public class EndurancePlayerStateManager {
         LOGGER.debug("[EnduranceQuest] Gave starter kit to {}", player.getName().getString());
     }
 
+    /**
+     * Reset quest loadout after death to ensure the player has the expected kit.
+     */
+    public void resetQuestLoadout(ServerPlayer player) {
+        player.getInventory().clearContent();
+        giveStarterKit(player);
+
+        player.setHealth(player.getMaxHealth());
+        player.getFoodData().setFoodLevel(20);
+        player.getFoodData().setSaturation(5.0f);
+
+        LOGGER.debug("[EnduranceQuest] Reset quest loadout for {}", player.getName().getString());
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // RESTORE PLAYER AFTER QUEST
     // ═══════════════════════════════════════════════════════════════

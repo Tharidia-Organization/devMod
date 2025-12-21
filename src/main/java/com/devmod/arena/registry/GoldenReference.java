@@ -33,7 +33,18 @@ public record GoldenReference(
             new int[]{0, 65, 0},
             new int[]{10, 65, 0},
             new int[]{-10, 65, 0},
-            new int[]{20, 65, 20}
+            new int[]{0, 65, 10},
+            new int[]{0, 65, -10},
+            new int[]{20, 65, 20},
+            new int[]{-20, 65, 20},
+            new int[]{20, 65, -20},
+            new int[]{-20, 65, -20},
+            new int[]{25, 65, 0},
+            new int[]{-25, 65, 0},
+            new int[]{0, 65, 25},
+            new int[]{0, 65, -25},
+            new int[]{14, 65, -8},
+            new int[]{-14, 65, 8}
         );
 
         return new GoldenReference(arena, floor, ceiling, floorBlocks, wallBlocks, ceilingBlocks, underfloorBlocks, hazardBlocks, total, slots);

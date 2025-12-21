@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -300,6 +301,66 @@ class DuckDbRepositoryTest {
             // This test verifies the cleanup method runs without error
             int deleted = repository.cleanupOldData(14);
             assertTrue(deleted >= 0, "Cleanup should return non-negative count");
+        }
+    }
+
+    @Nested
+    @DisplayName("Temporal Gap Tests")
+    class TemporalGapTests {
+
+        @Test
+        @DisplayName("Counts builds after a future cutoff")
+        void countsFutureBuilds() throws SQLException {
+            Instant futureStart = Instant.now().plusSeconds(600);
+            BuildRecord build = new BuildRecord(
+                UUID.randomUUID(),
+                "future-template",
+                "1.0.0",
+                futureStart,
+                null,
+                null,
+                "success",
+                null
+            );
+            repository.recordBuild(build);
+
+            long count = repository.countBuildsAfter(Instant.now().plusSeconds(300));
+            assertEquals(1L, count);
+        }
+
+        @Test
+        @DisplayName("Detects large gaps between builds")
+        void detectsLargeBuildGaps() throws SQLException {
+            Instant now = Instant.now();
+            repository.recordBuild(new BuildRecord(
+                UUID.randomUUID(),
+                "gap-template",
+                "1.0.0",
+                now.minusSeconds(7200),
+                null,
+                null,
+                "success",
+                null
+            ));
+            repository.recordBuild(new BuildRecord(
+                UUID.randomUUID(),
+                "gap-template",
+                "1.0.1",
+                now,
+                null,
+                null,
+                "success",
+                null
+            ));
+
+            List<DuckDbRepository.TemporalGap> gaps = repository.findBuildGaps(
+                now.minusSeconds(10_000),
+                Duration.ofHours(1),
+                5
+            );
+
+            assertFalse(gaps.isEmpty());
+            assertTrue(gaps.get(0).gap().toMinutes() >= 120);
         }
     }
 }

@@ -72,7 +72,7 @@ public record ArenaTemplate(
             .origin(new Origin(OriginMode.CENTER, 0, 64, 0))
             .size(64)
             .floor(new Floor(64, 1, "minecraft:stone_bricks", "solid", "minecraft:polished_andesite", 0))
-            .walls(new Walls(true, "minecraft:barrier", 10, 1, 64, "solid"))
+            .walls(new Walls(true, "minecraft:barrier", 11, 1, 64, "solid"))
             .ceiling(new Ceiling(true, "minecraft:barrier", 74, 1))
             .underfloor(new Underfloor("minecraft:bedrock", 3, false))
             .palette(new Palette("minecraft:polished_andesite", "minecraft:glowstone", "minecraft:magma_block"))
@@ -85,7 +85,29 @@ public record ArenaTemplate(
                     new SpawnSlot.Validation(true, 2, 1)),
                 new SpawnSlot(new int[]{-10, 1, 0}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("ranged", "mob"),
                     new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{0, 1, 10}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("mid", "mob"),
+                    new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{0, 1, -10}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("mid", "mob"),
+                    new SpawnSlot.Validation(true, 2, 1)),
                 new SpawnSlot(new int[]{20, 1, 20}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("corner", "mob"),
+                    new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{-20, 1, 20}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("corner", "mob"),
+                    new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{20, 1, -20}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("corner", "mob"),
+                    new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{-20, 1, -20}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("corner", "mob"),
+                    new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{25, 1, 0}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("flank", "mob"),
+                    new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{-25, 1, 0}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("flank", "mob"),
+                    new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{0, 1, 25}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("rear", "mob"),
+                    new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{0, 1, -25}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("rear", "mob"),
+                    new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{14, 1, -8}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("skirmish", "mob"),
+                    new SpawnSlot.Validation(true, 2, 1)),
+                new SpawnSlot(new int[]{-14, 1, 8}, SpawnSlot.YMode.RELATIVE_TO_FLOOR, List.of("skirmish", "mob"),
                     new SpawnSlot.Validation(true, 2, 1))
             ))
             .playerSpawnOffset(new Offset(0, 0, 0))
@@ -117,7 +139,7 @@ public record ArenaTemplate(
             .origin(new Origin(OriginMode.CENTER, 0, 64, 0))
             .size(80)
             .floor(new Floor(64, 1, "minecraft:stone_bricks", "solid", "minecraft:polished_andesite", 0))
-            .walls(new Walls(true, "minecraft:barrier", 12, 1, 64, "solid"))
+            .walls(new Walls(true, "minecraft:barrier", 13, 1, 64, "solid"))
             .ceiling(new Ceiling(true, "minecraft:barrier", 76, 1))
             .underfloor(new Underfloor("minecraft:bedrock", 3, false))
             .palette(new Palette("minecraft:polished_andesite", "minecraft:glowstone", "minecraft:magma_block"))

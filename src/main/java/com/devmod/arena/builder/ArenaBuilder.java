@@ -456,20 +456,28 @@ public class ArenaBuilder {
             endEventData.put("totalPlacements", transaction.getTotalBlockPlacements());
             int expectedBlocks = BuildDryRunCalculator.calculate(template).totalBlocks();
             ResidualMetrics residualMetrics = null;
+            String residualSource = "unknown";
             if (blockPlacer instanceof ResidualProvider residualProvider) {
                 residualMetrics = residualProvider.measureResiduals(template, originX, originY, originZ, expectedBlocks);
+                residualSource = "provider";
             } else if (blockPlacer instanceof MinecraftBlockPlacer mcPlacer) {
                 residualMetrics = measureResiduals(template, originX, originY, originZ, mcPlacer);
+                residualSource = "minecraft";
+            } else {
+                residualMetrics = measureResidualsFromTransaction(expectedBlocks, transaction);
+                residualSource = "transaction";
             }
             if (residualMetrics != null) {
                 endEventData.put("entities_residual", residualMetrics.entitiesResidual());
                 endEventData.put("blocks_residual", residualMetrics.blocksResidual());
                 endEventData.put("expected_blocks", expectedBlocks);
+                endEventData.put("residuals_source", residualSource);
                 endEventData.put("residuals_unknown", false);
             } else {
                 endEventData.put("entities_residual", -1);
                 endEventData.put("blocks_residual", -1);
                 endEventData.put("expected_blocks", expectedBlocks);
+                endEventData.put("residuals_source", "unknown");
                 endEventData.put("residuals_unknown", true);
             }
             if (policyId != null) {
@@ -1113,6 +1121,42 @@ public class ArenaBuilder {
         return BuildDryRunCalculator.calculate(template);
     }
 
+    /**
+     * Dry-run validation summary: block counts, chunk requirements, and time estimates.
+     */
+    public BuildValidation validateBuild(ArenaTemplate template) {
+        List<String> errors = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
+
+        BuildDryRun dryRun = BuildDryRunCalculator.calculate(template);
+        int blocksRequired = dryRun.totalBlocks();
+        int maxBlocks = determineMaxBlocks(template);
+        int warnBlocks = (int) (maxBlocks * 0.80);
+
+        if (blocksRequired > maxBlocks) {
+            errors.add("Estimated blocks %d exceed limit %d".formatted(blocksRequired, maxBlocks));
+        } else if (blocksRequired > warnBlocks) {
+            warnings.add("Estimated blocks %d near limit %d".formatted(blocksRequired, maxBlocks));
+        }
+
+        long estimatedMs = estimateBuildTimeMs(template);
+        long maxBuildTimeMs = determineMaxBuildTimeMs(template);
+        long warnBuildTimeMs = (long) (maxBuildTimeMs * 0.80);
+        if (estimatedMs > maxBuildTimeMs) {
+            errors.add("Estimated build time %dms exceeds limit %dms".formatted(estimatedMs, maxBuildTimeMs));
+        } else if (estimatedMs > warnBuildTimeMs) {
+            warnings.add("Estimated build time %dms near limit %dms".formatted(estimatedMs, maxBuildTimeMs));
+        }
+
+        int sizeX = getSizeX(template);
+        int sizeZ = getSizeZ(template);
+        int chunksX = (int) Math.ceil(sizeX / 16.0);
+        int chunksZ = (int) Math.ceil(sizeZ / 16.0);
+        int chunksRequired = Math.max(1, chunksX * chunksZ);
+
+        return new BuildValidation(errors.isEmpty(), blocksRequired, chunksRequired, estimatedMs, warnings, errors);
+    }
+
     private int estimateBlockCount(ArenaTemplate template) {
         int sizeX = getSizeX(template);
         int sizeZ = getSizeZ(template);
@@ -1358,5 +1402,23 @@ public class ArenaBuilder {
         return new ResidualMetrics(residuals.entitiesResidual(), residuals.blocksResidual());
     }
 
+    private ResidualMetrics measureResidualsFromTransaction(int expectedBlocks, BuildTransaction transaction) {
+        if (transaction == null) {
+            return null;
+        }
+        int placedBlocks = transaction.getBlockCount();
+        int blocksResidual = placedBlocks - expectedBlocks;
+        return new ResidualMetrics(0, blocksResidual);
+    }
+
     public record ResidualMetrics(int entitiesResidual, int blocksResidual) {}
+
+    public record BuildValidation(
+        boolean valid,
+        int blocksRequired,
+        int chunksRequired,
+        long estimatedMs,
+        List<String> warnings,
+        List<String> errors
+    ) {}
 }

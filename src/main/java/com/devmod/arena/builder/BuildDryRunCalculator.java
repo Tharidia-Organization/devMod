@@ -23,7 +23,22 @@ public final class BuildDryRunCalculator {
         int wallBlocks = 0;
         if (template.walls() != null && template.walls().enabled()) {
             int perimeterPerLayer = 2 * (sizeX + sizeZ - 2);
-            wallBlocks = perimeterPerLayer * template.walls().height() * template.walls().thickness();
+            int wallLayers = template.walls().height();
+            int wallThickness = template.walls().thickness();
+            int overlapLayers = 0;
+            if (template.ceiling() != null && template.ceiling().enabled()) {
+                int wallStartY = template.walls().startY();
+                int wallEndY = wallStartY + wallLayers - 1;
+                int ceilingStartY = template.ceiling().y();
+                int ceilingEndY = ceilingStartY + template.ceiling().thickness() - 1;
+                int overlapStart = Math.max(wallStartY, ceilingStartY);
+                int overlapEnd = Math.min(wallEndY, ceilingEndY);
+                if (overlapEnd >= overlapStart) {
+                    overlapLayers = overlapEnd - overlapStart + 1;
+                }
+            }
+            int effectiveWallLayers = Math.max(0, wallLayers - overlapLayers);
+            wallBlocks = perimeterPerLayer * wallThickness * effectiveWallLayers;
         }
 
         int ceilingBlocks = 0;

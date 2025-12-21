@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.frenkvs.devmod.endurance.analytics.LiveAnalyticsHookManager;
+import com.frenkvs.devmod.party.QuestSequencePayload;
 import com.frenkvs.devmod.party.QuestStartSequence;
 
 import java.util.ArrayList;
@@ -57,6 +58,7 @@ public class EnduranceEventTick {
         var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
             QuestStartSequence.INSTANCE.tick(server);
+            tickPendingInstanceStarts(server);
             tickPendingWaveStarts(server);
 
             // Tick perk effects and enforce arena confinement for all players in active quests
@@ -84,8 +86,7 @@ public class EnduranceEventTick {
         }
 
         // Periodic checks (every second)
-        if (tickCounter >= WAVE_CHECK_INTERVAL) {
-            tickCounter = 0;
+        if (tickCounter % WAVE_CHECK_INTERVAL == 0) {
 
             // Sync quest state to all players with active quests
             syncQuestStateToClients();
@@ -97,11 +98,47 @@ public class EnduranceEventTick {
                 GamificationManager.INSTANCE.tickResets();
             }
         }
+
+        if (tickCounter >= 1_000_000) {
+            tickCounter = 0;
+        }
+    }
+
+    /**
+     * Handle pre-teleport countdowns for solo instance starts.
+     */
+    private static void tickPendingInstanceStarts(MinecraftServer server) {
+        for (EnduranceQuestManager.ActiveQuestSession session :
+                EnduranceQuestManager.INSTANCE.getActiveSessions().values()) {
+            if (!session.isInstanceStartPending()) {
+                continue;
+            }
+
+            ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(session.getPlayerId()));
+            if (player == null) {
+                continue;
+            }
+
+            int ticksRemaining = session.tickInstanceStartCountdown();
+            int secondsRemaining = (int) Math.ceil(ticksRemaining / 20.0);
+
+            if (secondsRemaining > 0 && secondsRemaining != session.getLastTeleportCountdownSeconds()) {
+                session.setLastTeleportCountdownSeconds(secondsRemaining);
+                EnduranceQuestManager.INSTANCE.sendSoloSequenceUpdate(player, session,
+                    QuestSequencePayload.Phase.COUNTDOWN_START, secondsRemaining);
+            }
+
+            if (ticksRemaining <= 0) {
+                EnduranceQuestManager.INSTANCE.sendSoloSequenceUpdate(player, session,
+                    QuestSequencePayload.Phase.TELEPORTING, 0);
+                EnduranceQuestManager.INSTANCE.startPendingInstanceQuest(player, session);
+            }
+        }
     }
 
     /**
      * Handle delayed wave starts (solo start + respawn).
-     * Only counts down once the player is in the arena.
+     * Only counts down once the player is in the instance dimension.
      */
     private static void tickPendingWaveStarts(MinecraftServer server) {
         for (EnduranceQuestManager.ActiveQuestSession session :
@@ -131,21 +168,22 @@ public class EnduranceEventTick {
             if (!player.level().dimension().equals(arena.getLevel().dimension())) {
                 continue;
             }
-            if (!EnduranceQuestManager.INSTANCE.isPlayerInArena(player, arena)) {
-                continue;
-            }
 
             int ticksRemaining = session.tickWaveStartCountdown();
             int secondsRemaining = (int) Math.ceil(ticksRemaining / 20.0);
 
             if (secondsRemaining > 0 && secondsRemaining != session.getLastWaveCountdownSeconds()) {
                 session.setLastWaveCountdownSeconds(secondsRemaining);
+                EnduranceQuestManager.INSTANCE.sendSoloSequenceUpdate(player, session,
+                    QuestSequencePayload.Phase.SYNCING, secondsRemaining);
                 player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.endurance.wave_starting_in", secondsRemaining)
                     .withStyle(ChatFormatting.YELLOW)));
             }
 
             if (ticksRemaining <= 0) {
                 session.clearPendingWaveStart();
+                EnduranceQuestManager.INSTANCE.sendSoloSequenceUpdate(player, session,
+                    QuestSequencePayload.Phase.STARTED, 0);
                 WaveManager.INSTANCE.startWave(session);
                 EnduranceEventHandler.onWaveStart(player, session, session.getQuest().getCurrentWave());
             }
@@ -166,6 +204,11 @@ public class EnduranceEventTick {
             UUID playerId = entry.getKey();
             EnduranceQuestManager.ActiveQuestSession session = entry.getValue();
             EnduranceQuest quest = session.getQuest();
+            ArenaManager.Arena arena = session.getArena();
+            if (arena == null) {
+                // Session is still pending (instance not ready) or arena setup failed.
+                continue;
+            }
 
             // Find the player
             var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
@@ -176,7 +219,7 @@ public class EnduranceEventTick {
 
             // Build modifier list
             List<String> modifiers = new ArrayList<>();
-            var waveStateOpt = WaveManager.INSTANCE.getWaveState(session.getArena().getId());
+            var waveStateOpt = WaveManager.INSTANCE.getWaveState(arena.getId());
             if (waveStateOpt.isPresent()) {
                 for (WaveManager.WaveModifier mod : waveStateOpt.get().getModifiers()) {
                     modifiers.add(mod.displayName);
@@ -236,6 +279,7 @@ public class EnduranceEventTick {
         if (session.isPresent()) {
             EnduranceQuestManager.ActiveQuestSession activeSession = session.get();
             if (activeSession.isAwaitingRespawnChoice()
+                || activeSession.isRespawnRequested()
                 || activeSession.getQuest().getState() != EnduranceQuestState.IN_PROGRESS) {
                 return;
             }

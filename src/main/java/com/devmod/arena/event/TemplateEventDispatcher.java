@@ -3,6 +3,7 @@ package com.devmod.arena.event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.ref.WeakReference;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,8 +32,8 @@ public class TemplateEventDispatcher {
 
     private static final TemplateEventDispatcher INSTANCE = new TemplateEventDispatcher();
 
-    private final Map<Class<? extends TemplateEvent>, List<Consumer<? extends TemplateEvent>>> listeners = new ConcurrentHashMap<>();
-    private final List<Consumer<TemplateEvent>> globalListeners = new CopyOnWriteArrayList<>();
+    private final Map<Class<? extends TemplateEvent>, List<ListenerEntry<? extends TemplateEvent>>> listeners = new ConcurrentHashMap<>();
+    private final List<ListenerEntry<TemplateEvent>> globalListeners = new CopyOnWriteArrayList<>();
     private final Executor asyncExecutor;
 
     private volatile boolean enabled = true;
@@ -65,16 +66,17 @@ public class TemplateEventDispatcher {
     public <T extends TemplateEvent> ListenerRegistration register(
             Class<T> eventType, Consumer<T> listener) {
 
-        List<Consumer<? extends TemplateEvent>> typeListeners =
+        List<ListenerEntry<? extends TemplateEvent>> typeListeners =
             listeners.computeIfAbsent(eventType, k -> new CopyOnWriteArrayList<>());
 
-        typeListeners.add(listener);
+        ListenerEntry<T> entry = new ListenerEntry<>(listener);
+        typeListeners.add(entry);
 
         LOGGER.debug("Registered listener for {} (total: {})",
             eventType.getSimpleName(), typeListeners.size());
 
         return () -> {
-            typeListeners.remove(listener);
+            typeListeners.remove(entry);
             LOGGER.debug("Unregistered listener for {}", eventType.getSimpleName());
         };
     }
@@ -86,11 +88,12 @@ public class TemplateEventDispatcher {
      * @return a registration handle for unregistering
      */
     public ListenerRegistration registerGlobal(Consumer<TemplateEvent> listener) {
-        globalListeners.add(listener);
+        ListenerEntry<TemplateEvent> entry = new ListenerEntry<>(listener);
+        globalListeners.add(entry);
         LOGGER.debug("Registered global listener (total: {})", globalListeners.size());
 
         return () -> {
-            globalListeners.remove(listener);
+            globalListeners.remove(entry);
             LOGGER.debug("Unregistered global listener");
         };
     }
@@ -132,11 +135,16 @@ public class TemplateEventDispatcher {
             event.eventType(), event.templateId());
 
         // Notify type-specific listeners
-        List<Consumer<? extends TemplateEvent>> typeListeners =
+        List<ListenerEntry<? extends TemplateEvent>> typeListeners =
             listeners.get(event.getClass());
 
         if (typeListeners != null) {
-            for (Consumer<? extends TemplateEvent> listener : typeListeners) {
+            for (ListenerEntry<? extends TemplateEvent> entry : typeListeners) {
+                Consumer<? extends TemplateEvent> listener = entry.get();
+                if (listener == null) {
+                    typeListeners.remove(entry);
+                    continue;
+                }
                 try {
                     ((Consumer<TemplateEvent>) listener).accept(event);
                 } catch (Exception e) {
@@ -147,7 +155,12 @@ public class TemplateEventDispatcher {
         }
 
         // Notify global listeners
-        for (Consumer<TemplateEvent> listener : globalListeners) {
+        for (ListenerEntry<TemplateEvent> entry : globalListeners) {
+            Consumer<TemplateEvent> listener = entry.get();
+            if (listener == null) {
+                globalListeners.remove(entry);
+                continue;
+            }
             try {
                 listener.accept(event);
             } catch (Exception e) {
@@ -164,6 +177,18 @@ public class TemplateEventDispatcher {
      */
     public void emitAsync(TemplateEvent event) {
         asyncExecutor.execute(() -> emit(event));
+    }
+
+    private static final class ListenerEntry<T extends TemplateEvent> {
+        private final WeakReference<Consumer<T>> ref;
+
+        private ListenerEntry(Consumer<T> listener) {
+            this.ref = new WeakReference<>(listener);
+        }
+
+        private Consumer<T> get() {
+            return ref.get();
+        }
     }
 
     // ========== Convenience Methods ==========

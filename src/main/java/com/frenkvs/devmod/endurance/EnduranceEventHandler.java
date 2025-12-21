@@ -9,6 +9,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.player.CriticalHitEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -419,6 +420,18 @@ public class EnduranceEventHandler {
         // Check if a player in a quest died
         if (entity instanceof ServerPlayer player) {
             EnduranceEventCombat.handlePlayerDeath(player);
+        }
+    }
+
+    /**
+     * Prevent quest gear from littering the arena on player death.
+     */
+    @SubscribeEvent
+    public static void onLivingDrops(LivingDropsEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            if (EnduranceQuestManager.INSTANCE.getActiveSession(player).isPresent()) {
+                event.getDrops().clear();
+            }
         }
     }
 

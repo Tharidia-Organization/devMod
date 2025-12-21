@@ -218,6 +218,10 @@ public class HotReloadEndpoint {
     private ArenaTemplateRegistry.ReloadResult reloadWithConfigFallback() {
         try {
             ArenaTemplateConfig config = ArenaTemplateConfig.load();
+            if (bootstrap != null) {
+                bootstrap.applyConfig(config);
+                return bootstrap.reload();
+            }
             registry.applyConfigSnapshot(config.snapshot());
         } catch (Exception e) {
             LOGGER.warn("[HotReload] Failed to apply config snapshot before reload: {}", e.getMessage());

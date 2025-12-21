@@ -167,6 +167,7 @@
   "devmod.ui.exit_collect": "Esci e Raccogli",
   "devmod.ui.choose_fate": "Scegli il tuo destino:",
   "devmod.ui.respawn_info": "Risorgi: Continua dall'ondata corrente",
+  "devmod.ui.respawn_countdown": "L'ondata riparte dopo il countdown",
   "devmod.ui.giveup_info": "Arrenditi: Termina la quest, mantieni le ricompense",
   "devmod.ui.add_symbol": "+",
   "devmod.ui.delete_symbol": "X",

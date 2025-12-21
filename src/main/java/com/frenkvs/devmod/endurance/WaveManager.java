@@ -37,6 +37,15 @@ public class WaveManager {
 
     private final Random random = new Random();
 
+    private static final int MODIFIER_START_WAVE = 3;
+    private static final int MAX_MODIFIERS_EARLY = 1;
+    private static final int MAX_MODIFIERS_MID = 2;
+    private static final int MAX_MODIFIERS_LATE = 3;
+    private static final float BASE_MODIFIER_CHANCE = 0.08f;
+    private static final float MODIFIER_CHANCE_PER_WAVE = 0.04f;
+    private static final float MAX_MODIFIER_CHANCE = 0.6f;
+    private static final int ELITE_RAMP_WAVES = 6;
+
     // Active wave states per arena (ConcurrentHashMap for thread-safety in multiplayer)
     private final Map<UUID, WaveState> activeWaves = new java.util.concurrent.ConcurrentHashMap<>();
 
@@ -206,15 +215,21 @@ public class WaveManager {
     private void applyWaveModifiers(WaveState waveState) {
         int waveNum = waveState.waveNumber;
 
-        // Chance for modifiers increases with wave number
-        float modifierChance = Math.min(0.1f + (waveNum * 0.05f), 0.6f);
+        if (waveNum < MODIFIER_START_WAVE) {
+            return;
+        }
+
+        float modifierChance = Math.min(
+            BASE_MODIFIER_CHANCE + ((waveNum - MODIFIER_START_WAVE) * MODIFIER_CHANCE_PER_WAVE),
+            MAX_MODIFIER_CHANCE
+        );
+        int maxModifiers = waveNum < 5 ? MAX_MODIFIERS_EARLY : (waveNum < 8 ? MAX_MODIFIERS_MID : MAX_MODIFIERS_LATE);
 
         for (WaveModifier modifier : WaveModifier.values()) {
             if (random.nextFloat() < modifierChance) {
                 waveState.modifiers.add(modifier);
 
-                // Limit to max 3 modifiers
-                if (waveState.modifiers.size() >= 3) break;
+                if (waveState.modifiers.size() >= maxModifiers) break;
             }
         }
     }
@@ -249,6 +264,7 @@ public class WaveManager {
             }
         }
         SpawnOccupancyTracker occupied = new SpawnOccupancyTracker();
+        boolean allowReuse = spawnPositions.size() < toSpawn;
 
         int successfulSpawns = 0;
         int failedSpawns = 0;
@@ -267,7 +283,8 @@ public class WaveManager {
                 runtimeValidator,
                 slotMap,
                 template,
-                level
+                level,
+                allowReuse
             );
             if (spawnPos == null) {
                 failedSpawns++;
@@ -285,8 +302,8 @@ public class WaveManager {
                 // Apply multiplayer HP scaling
                 applyMultiplayerHPScaling(mob, waveState);
 
-                // Apply elite chance buffs
-                if (random.nextFloat() < mobConfig.eliteChance) {
+                // Apply elite chance buffs (ramped by wave)
+                if (random.nextFloat() < getEliteChance(mobConfig.eliteChance, waveState.waveNumber)) {
                     applyEliteBuffs(mob, waveState.waveNumber);
                 }
 
@@ -336,11 +353,12 @@ public class WaveManager {
             @javax.annotation.Nullable SpawnSlotValidator runtimeValidator,
             Map<BlockPos, ArenaTemplate.SpawnSlot> slotMap,
             @javax.annotation.Nullable ArenaTemplate template,
-            ServerLevel level) {
+            ServerLevel level,
+            boolean allowReuse) {
         int size = positions.size();
         for (int offset = 0; offset < size; offset++) {
             BlockPos pos = positions.get((startIndex + offset) % size);
-            if (occupied.isOccupied(pos)) {
+            if (!allowReuse && occupied.isOccupied(pos)) {
                 continue;
             }
             if (runtimeValidator != null && template != null && !slotMap.isEmpty()) {
@@ -352,7 +370,9 @@ public class WaveManager {
                     continue;
                 }
             }
-            occupied.markOccupied(pos);
+            if (!allowReuse) {
+                occupied.markOccupied(pos);
+            }
             return pos;
         }
         return null;
@@ -456,6 +476,7 @@ public class WaveManager {
         EnduranceQuestRegistry.MobQuestConfig mobConfig = waveState.quest.getMobConfig();
         int playerCount = waveState.getPlayerCount();
         QuestType questType = waveState.getQuestType();
+        float waveScale = DifficultyScaler.INSTANCE.getWaveMultiplier(waveState.waveNumber, waveState.quest.getTotalWaves());
 
         // Apply HP scaling using MobQuestConfig (includes difficultyPreset.hpMultiplier)
         var healthAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
@@ -469,11 +490,12 @@ public class WaveManager {
                 scaledHP = scaledHP * ratio;
             }
 
+            scaledHP *= waveScale;
             healthAttr.setBaseValue(scaledHP);
             mob.setHealth(mob.getMaxHealth());
 
-            LOGGER.debug("[EnduranceQuest] Mob HP scaled: {} -> {} (players={}, preset={}, type={})",
-                baseHP, scaledHP, playerCount, mobConfig.difficultyPreset.displayName, questType);
+            LOGGER.debug("[EnduranceQuest] Mob HP scaled: {} -> {} (players={}, preset={}, type={}, waveScale={})",
+                baseHP, scaledHP, playerCount, mobConfig.difficultyPreset.displayName, questType, waveScale);
         }
 
         // Apply damage scaling using MobQuestConfig (includes difficultyPreset.damageMultiplier)
@@ -488,11 +510,20 @@ public class WaveManager {
                 scaledDamage = scaledDamage * ratio;
             }
 
+            scaledDamage *= waveScale;
             attackAttr.setBaseValue(scaledDamage);
 
-            LOGGER.debug("[EnduranceQuest] Mob DMG scaled: {} -> {} (players={}, preset={})",
-                baseDamage, scaledDamage, playerCount, mobConfig.difficultyPreset.displayName);
+            LOGGER.debug("[EnduranceQuest] Mob DMG scaled: {} -> {} (players={}, preset={}, waveScale={})",
+                baseDamage, scaledDamage, playerCount, mobConfig.difficultyPreset.displayName, waveScale);
         }
+    }
+
+    private float getEliteChance(float baseChance, int waveNumber) {
+        if (baseChance <= 0f || waveNumber < MODIFIER_START_WAVE) {
+            return 0f;
+        }
+        float ramp = Math.min(1f, (waveNumber - MODIFIER_START_WAVE + 1) / (float) ELITE_RAMP_WAVES);
+        return baseChance * ramp;
     }
 
     /**

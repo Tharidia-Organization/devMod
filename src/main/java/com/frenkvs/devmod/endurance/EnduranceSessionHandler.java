@@ -1,10 +1,12 @@
 package com.frenkvs.devmod.endurance;
 
 import com.frenkvs.devmod.instance.DynamicDimensionManager;
+import com.frenkvs.devmod.party.QuestSequencePayload;
 import com.frenkvs.devmod.telemetry.TelemetryService;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.ChatFormatting;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +55,8 @@ public class EnduranceSessionHandler {
                 if (session.getInstanceId() != null) {
                     InstanceArenaManager.INSTANCE.forceEndPlayerQuest(playerId);
                 }
+                EnduranceQuestManager.INSTANCE.sendSoloSequenceUpdate(player, session,
+                    QuestSequencePayload.Phase.CANCELLED, 0);
                 player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Quest cancelled.")
                     .withStyle(ChatFormatting.YELLOW)));
                 return;
@@ -116,6 +120,7 @@ public class EnduranceSessionHandler {
 
             session.getQuest().fail(false);
             session.clearPendingWaveStart();
+            session.setRespawnRequested(false);
 
             // Don't remove session immediately - allow respawn option
             session.setAwaitingRespawnChoice(true);
@@ -162,49 +167,15 @@ public class EnduranceSessionHandler {
 
         if (session != null && session.isAwaitingRespawnChoice()) {
             if (continueQuest) {
-                // Reset wave state before respawn to avoid stale mobs/state.
-                EndurancePlayerStateManager.INSTANCE.cleanupQuestSystems(session);
-                session.resetWaveKills();
-
-                boolean teleported = false;
-
-                // Teleport back to arena (handle both instance and legacy modes)
-                if (session.isInInstanceDimension()) {
-                    UUID instanceId = session.getInstanceId();
-                    if (instanceId != null) {
-                        teleported = DynamicDimensionManager.INSTANCE.teleportToInstance(player, instanceId);
-                        if (teleported && session.getArena() != null) {
-                            EnduranceQuestManager.INSTANCE.teleportPlayersToArena(
-                                List.of(player), session.getArena(), session.getArenaHandle());
-                        }
-                    }
-                } else if (session.getArena() != null && arenaManager != null) {
-                    arenaManager.teleportToArena(player, session.getArena());
-                    teleported = true;
-                }
-
-                if (!teleported) {
-                    LOGGER.error("[EnduranceQuest] Cannot respawn player {} - arena/instance unavailable",
+                if (player.isDeadOrDying()) {
+                    session.setRespawnRequested(true);
+                    session.setAwaitingRespawnChoice(false);
+                    LOGGER.info("[EnduranceQuest] Player {} accepted respawn; waiting for vanilla respawn event",
                         player.getName().getString());
-                    player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
-                        "[DevMod] Respawn failed - arena is unavailable.")
-                        .withStyle(ChatFormatting.RED)));
                     return;
                 }
 
-                // Continue from current wave with death penalty
-                session.getQuest().continueAfterDeath();
-                session.setAwaitingRespawnChoice(false);
-
-                // Delay wave start to give time for instance load
-                session.scheduleWaveStart(EnduranceQuestManager.WAVE_START_COUNTDOWN_TICKS);
-
-                // Notify player of penalty
-                player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.endurance.respawned_penalty", session.getQuest().getDeathsThisSession())
-                    .withStyle(ChatFormatting.RED)));
-
-                LOGGER.info("[EnduranceQuest] Player {} continuing quest after death at wave {}",
-                    player.getName().getString(), session.getQuest().getCurrentWave());
+                continueQuestAfterRespawn(player, session);
             } else {
                 // End quest
                 activeSessions.remove(playerId);
@@ -230,6 +201,94 @@ public class EnduranceSessionHandler {
                 LOGGER.info("[EnduranceQuest] Player {} gave up after death", player.getName().getString());
             }
         }
+    }
+
+    /**
+     * Handle vanilla respawn after death. If the player used the vanilla respawn button,
+     * redirect them back into the quest instance and restart the wave.
+     */
+    public void handleVanillaRespawn(ServerPlayer player) {
+        EnduranceQuestManager.ActiveQuestSession session = activeSessions.get(player.getUUID());
+        if (session == null) {
+            return;
+        }
+        if (!session.isAwaitingRespawnChoice() && !session.isRespawnRequested()) {
+            return;
+        }
+
+        continueQuestAfterRespawn(player, session);
+    }
+
+    private void continueQuestAfterRespawn(ServerPlayer player, EnduranceQuestManager.ActiveQuestSession session) {
+        // Reset wave state before respawn to avoid stale mobs/state.
+        EndurancePlayerStateManager.INSTANCE.cleanupQuestSystems(session);
+        session.resetWaveKills();
+
+        boolean teleported = false;
+
+        // Teleport back to arena (handle both instance and legacy modes)
+        if (session.isInInstanceDimension()) {
+            UUID instanceId = session.getInstanceId();
+            if (instanceId != null) {
+                teleported = DynamicDimensionManager.INSTANCE.teleportToInstance(player, instanceId);
+                if (teleported && session.getArena() != null) {
+                    EnduranceQuestManager.INSTANCE.teleportPlayersToArena(
+                        List.of(player), session.getArena(), session.getArenaHandle());
+                }
+            }
+        } else if (session.getArena() != null && arenaManager != null) {
+            arenaManager.teleportToArena(player, session.getArena());
+            teleported = true;
+        }
+
+        if (!teleported) {
+            LOGGER.error("[EnduranceQuest] Cannot respawn player {} - arena/instance unavailable",
+                player.getName().getString());
+            player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+                "[DevMod] Respawn failed - arena is unavailable.")
+                .withStyle(ChatFormatting.RED)));
+            return;
+        }
+
+        cleanupDroppedItems(session);
+        EndurancePlayerStateManager.INSTANCE.resetQuestLoadout(player);
+
+        // Continue from current wave with death penalty
+        session.getQuest().continueAfterDeath();
+        session.setAwaitingRespawnChoice(false);
+        session.setRespawnRequested(false);
+
+        // Delay wave start to give time for instance load
+        session.scheduleWaveStart(EnduranceQuestManager.WAVE_START_COUNTDOWN_TICKS);
+        EnduranceQuestManager.INSTANCE.sendSoloSequenceUpdate(player, session, QuestSequencePayload.Phase.SYNCING,
+            (int) Math.ceil(EnduranceQuestManager.WAVE_START_COUNTDOWN_TICKS / 20.0));
+
+        // Notify player of penalty
+        player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.endurance.respawned_penalty", session.getQuest().getDeathsThisSession())
+            .withStyle(ChatFormatting.RED)));
+
+        LOGGER.info("[EnduranceQuest] Player {} continuing quest after death at wave {}",
+            player.getName().getString(), session.getQuest().getCurrentWave());
+    }
+
+    private void cleanupDroppedItems(EnduranceQuestManager.ActiveQuestSession session) {
+        ArenaManager.Arena arena = session.getArena();
+        if (arena == null) {
+            return;
+        }
+
+        var level = arena.getLevel();
+        var bounds = Objects.requireNonNull(arena.getBounds(), "arena bounds");
+        List<ItemEntity> items = level.getEntitiesOfClass(ItemEntity.class, bounds);
+        if (items.isEmpty()) {
+            return;
+        }
+
+        for (ItemEntity item : items) {
+            item.discard();
+        }
+
+        LOGGER.debug("[EnduranceQuest] Removed {} dropped items from arena {}", items.size(), arena.getId());
     }
 
     // ═══════════════════════════════════════════════════════════════

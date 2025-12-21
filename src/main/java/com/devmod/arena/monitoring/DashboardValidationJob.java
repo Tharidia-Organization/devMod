@@ -42,6 +42,10 @@ public class DashboardValidationJob {
 
     private static final Duration MAX_DATA_AGE = Duration.ofHours(1);
     private static final double MAX_VARIANCE_PERCENT = 1.0; // 1% tolerance
+    private static final Duration TEMPORAL_LOOKBACK = Duration.ofHours(24);
+    private static final Duration MAX_TEMPORAL_GAP = MAX_DATA_AGE;
+    private static final Duration FUTURE_TIMESTAMP_TOLERANCE = Duration.ofMinutes(5);
+    private static final int MAX_GAP_REPORTS = 3;
 
     private final DuckDbRepository repository;
     private final AlertRouter alertRouter;
@@ -79,6 +83,7 @@ public class DashboardValidationJob {
         try {
             results.add(validateRowCounts());
             results.add(validateDataFreshness());
+            results.add(validateTemporalConsistency());
             results.add(validateErrorRates());
 
             boolean allPassed = results.stream().allMatch(ValidationResult::passed);
@@ -190,6 +195,42 @@ public class DashboardValidationJob {
             return ValidationResult.passed("Error rates within acceptable bounds");
         } catch (Exception e) {
             return ValidationResult.failed("Error rate validation error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * DD69: Validates temporal consistency (no future timestamps, no large gaps).
+     */
+    private ValidationResult validateTemporalConsistency() {
+        try {
+            Instant futureCutoff = Instant.now().plus(FUTURE_TIMESTAMP_TOLERANCE);
+            long futureCount = repository.countBuildsAfter(futureCutoff);
+            if (futureCount > 0) {
+                return ValidationResult.failed(
+                    String.format("Future timestamps detected: %d builds after %s",
+                        futureCount, futureCutoff)
+                );
+            }
+
+            Instant since = Instant.now().minus(TEMPORAL_LOOKBACK);
+            List<DuckDbRepository.TemporalGap> gaps = repository.findBuildGaps(
+                since,
+                MAX_TEMPORAL_GAP,
+                MAX_GAP_REPORTS
+            );
+            if (!gaps.isEmpty()) {
+                DuckDbRepository.TemporalGap largest = gaps.get(0);
+                return ValidationResult.failed(
+                    String.format("Temporal gaps detected: largest gap %d minutes between %s and %s",
+                        largest.gap().toMinutes(),
+                        largest.previous(),
+                        largest.current())
+                );
+            }
+
+            return ValidationResult.passed("Temporal consistency OK");
+        } catch (Exception e) {
+            return ValidationResult.failed("Temporal consistency validation error: " + e.getMessage());
         }
     }
 

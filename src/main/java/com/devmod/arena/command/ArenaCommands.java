@@ -331,7 +331,8 @@ public class ArenaCommands {
         ResourceKey<Level> dimensionKey = resolveDimensionKey(src);
         String dimensionLabel = dimensionKey != null ? dimensionKey.location().toString() : "unknown";
         if (gate != null) {
-            var gateResult = gate.checkDimensionKey(dimensionKey, "/arena create");
+            String gateCaller = getClass().getName();
+            var gateResult = gate.checkDimensionKey(dimensionKey, gateCaller);
             if (gateResult == InstanceOnlyGate.Result.BLOCKED) {
                 src.sendFailure(Component.literal("§cInstance-only mode: cannot create arenas in " + dimensionLabel));
                 return 0;
@@ -774,19 +775,33 @@ public class ArenaCommands {
 
         ArenaTemplate template = templateOpt.get();
         ValidationResult result = templateValidator.validate(template);
+        ArenaBuilder.BuildValidation buildValidation = arenaBuilder.validateBuild(template);
 
         src.sendSuccess(() -> Component.literal("§e=== Validation: " + templateId + " ==="), false);
 
-        if (result.valid()) {
+        if (result.valid() && buildValidation.valid()) {
             src.sendSuccess(() -> Component.literal("§a✓ Template is valid"), false);
         } else {
             src.sendSuccess(() -> Component.literal("§c✗ Template has errors"), false);
         }
 
+        src.sendSuccess(() -> Component.literal(String.format(
+            "§7Estimated blocks: §f%d §7| chunks: §f%d §7| est. time: §f%dms",
+            buildValidation.blocksRequired(),
+            buildValidation.chunksRequired(),
+            buildValidation.estimatedMs()
+        )), false);
+
         // Show errors
         if (!result.errors().isEmpty()) {
             src.sendSuccess(() -> Component.literal("§cErrors (" + result.errors().size() + "):"), false);
             for (String error : result.errors()) {
+                src.sendSuccess(() -> Component.literal("§c  • " + error), false);
+            }
+        }
+        if (!buildValidation.errors().isEmpty()) {
+            src.sendSuccess(() -> Component.literal("§cBuild Errors (" + buildValidation.errors().size() + "):"), false);
+            for (String error : buildValidation.errors()) {
                 src.sendSuccess(() -> Component.literal("§c  • " + error), false);
             }
         }
@@ -798,12 +813,19 @@ public class ArenaCommands {
                 src.sendSuccess(() -> Component.literal("§e  • " + warning), false);
             }
         }
+        if (!buildValidation.warnings().isEmpty()) {
+            src.sendSuccess(() -> Component.literal("§eBuild Warnings (" + buildValidation.warnings().size() + "):"), false);
+            for (String warning : buildValidation.warnings()) {
+                src.sendSuccess(() -> Component.literal("§e  • " + warning), false);
+            }
+        }
 
-        if (result.valid() && result.warnings().isEmpty()) {
+        if (result.valid() && result.warnings().isEmpty()
+            && buildValidation.valid() && buildValidation.warnings().isEmpty()) {
             src.sendSuccess(() -> Component.literal("§7No issues found."), false);
         }
 
-        return result.valid() ? 1 : 0;
+        return (result.valid() && buildValidation.valid()) ? 1 : 0;
     }
 
     // ========== Force Template Commands (DD29) ==========

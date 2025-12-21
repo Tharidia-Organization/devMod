@@ -42,11 +42,22 @@ class GoldenReferenceTest {
         assertEquals(12288, ref.underfloorBlocks());
         assertEquals(0, ref.hazardBlocks());
 
-        assertEquals(4, ref.spawnSlots().size());
+        assertEquals(15, ref.spawnSlots().size());
         assertArrayEquals(new int[]{0, 65, 0}, ref.spawnSlots().get(0));
         assertArrayEquals(new int[]{10, 65, 0}, ref.spawnSlots().get(1));
         assertArrayEquals(new int[]{-10, 65, 0}, ref.spawnSlots().get(2));
-        assertArrayEquals(new int[]{20, 65, 20}, ref.spawnSlots().get(3));
+        assertArrayEquals(new int[]{0, 65, 10}, ref.spawnSlots().get(3));
+        assertArrayEquals(new int[]{0, 65, -10}, ref.spawnSlots().get(4));
+        assertArrayEquals(new int[]{20, 65, 20}, ref.spawnSlots().get(5));
+        assertArrayEquals(new int[]{-20, 65, 20}, ref.spawnSlots().get(6));
+        assertArrayEquals(new int[]{20, 65, -20}, ref.spawnSlots().get(7));
+        assertArrayEquals(new int[]{-20, 65, -20}, ref.spawnSlots().get(8));
+        assertArrayEquals(new int[]{25, 65, 0}, ref.spawnSlots().get(9));
+        assertArrayEquals(new int[]{-25, 65, 0}, ref.spawnSlots().get(10));
+        assertArrayEquals(new int[]{0, 65, 25}, ref.spawnSlots().get(11));
+        assertArrayEquals(new int[]{0, 65, -25}, ref.spawnSlots().get(12));
+        assertArrayEquals(new int[]{14, 65, -8}, ref.spawnSlots().get(13));
+        assertArrayEquals(new int[]{-14, 65, 8}, ref.spawnSlots().get(14));
     }
 
     @Test

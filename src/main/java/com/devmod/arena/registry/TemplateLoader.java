@@ -60,37 +60,7 @@ public class TemplateLoader {
             errors.add("Failed to list directory " + directory + ": " + e.getMessage());
         }
 
-        // Post-validate inheritance references (parents must exist)
-        if (errors.isEmpty()) {
-            validateParentReferences(loaded, errors);
-        } else {
-            // Still validate parents to give actionable feedback even if other files failed
-            validateParentReferences(loaded, errors);
-        }
-
-        // Remove any templates that reference missing parents to avoid returning invalid data
-        if (!errors.isEmpty()) {
-            Set<String> missingParentIds = new HashSet<>();
-            for (String error : errors) {
-                if (error.contains("extends missing parent")) {
-                    int start = error.indexOf("parent '");
-                    if (start >= 0) {
-                        int end = error.indexOf("'", start + 8);
-                        if (end > start) {
-                            missingParentIds.add(error.substring(start + 8, end));
-                        }
-                    }
-                }
-            }
-            if (!missingParentIds.isEmpty()) {
-                loaded.removeIf(t -> missingParentIds.contains(t.extendsTemplate()));
-            }
-        }
-
-        // Inject fallback default if nothing loaded
-        if (loaded.isEmpty()) {
-            loaded.add(ArenaTemplate.defaultTemplate());
-        }
+        postProcessLoaded(loaded, errors);
 
         return new LoadResult(loaded, errors);
     }
@@ -125,6 +95,8 @@ public class TemplateLoader {
         // 3) Config override (highest priority)
         loadFromPath(directory, loaded, errors);
 
+        postProcessLoaded(loaded, errors);
+
         return new LoadResult(loaded, errors);
     }
 
@@ -158,6 +130,35 @@ public class TemplateLoader {
                     "parentId", extendsTemplate
                 ));
             }
+        }
+    }
+
+    private void postProcessLoaded(List<ArenaTemplate> loaded, List<String> errors) {
+        // Post-validate inheritance references (parents must exist)
+        validateParentReferences(loaded, errors);
+
+        // Remove any templates that reference missing parents to avoid returning invalid data
+        if (!errors.isEmpty()) {
+            Set<String> missingParentIds = new HashSet<>();
+            for (String error : errors) {
+                if (error.contains("extends missing parent")) {
+                    int start = error.indexOf("parent '");
+                    if (start >= 0) {
+                        int end = error.indexOf("'", start + 8);
+                        if (end > start) {
+                            missingParentIds.add(error.substring(start + 8, end));
+                        }
+                    }
+                }
+            }
+            if (!missingParentIds.isEmpty()) {
+                loaded.removeIf(t -> missingParentIds.contains(t.extendsTemplate()));
+            }
+        }
+
+        // Inject fallback default if nothing loaded
+        if (loaded.isEmpty()) {
+            loaded.add(ArenaTemplate.defaultTemplate());
         }
     }
 

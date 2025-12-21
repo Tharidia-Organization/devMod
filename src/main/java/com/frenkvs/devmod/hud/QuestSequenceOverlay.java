@@ -41,6 +41,7 @@ public class QuestSequenceOverlay {
     private UUID activePartyId = null;
     private QuestSequencePayload.Phase currentPhase = QuestSequencePayload.Phase.CANCELLED;
     private int secondsRemaining = 0;
+    private int phaseStartSeconds = 0;
     private int totalMembers = 0;
     private List<UUID> arrivedMembers = List.of();
 
@@ -82,6 +83,8 @@ public class QuestSequenceOverlay {
      * Update the sequence state from server payload.
      */
     public void update(QuestSequencePayload payload) {
+        QuestSequencePayload.Phase previousPhase = this.currentPhase;
+
         this.activePartyId = payload.partyId();
         this.currentPhase = payload.phase();
         this.secondsRemaining = payload.secondsRemaining();
@@ -89,6 +92,12 @@ public class QuestSequenceOverlay {
         this.arrivedMembers = payload.arrivedMembers();
         this.fadingOut = false;
         this.fadeOutTicks = 0;
+
+        if (currentPhase != previousPhase) {
+            phaseStartSeconds = secondsRemaining;
+        } else if (secondsRemaining > phaseStartSeconds) {
+            phaseStartSeconds = secondsRemaining;
+        }
 
         // Reset arrival confirmation when starting new sequence
         if (currentPhase == QuestSequencePayload.Phase.COUNTDOWN_START) {
@@ -343,7 +352,10 @@ public class QuestSequenceOverlay {
 
     private float getPhaseProgress() {
         return switch (currentPhase) {
-            case COUNTDOWN_START -> secondsRemaining > 0 ? 1f - (secondsRemaining / 5f) : 1f;
+            case COUNTDOWN_START -> {
+                int totalSeconds = phaseStartSeconds > 0 ? phaseStartSeconds : 5;
+                yield secondsRemaining > 0 ? 1f - (secondsRemaining / (float) totalSeconds) : 1f;
+            }
             case TELEPORTING -> 0.3f;
             case WAITING_FOR_ARRIVALS -> {
                 if (totalMembers > 0) {
@@ -351,7 +363,10 @@ public class QuestSequenceOverlay {
                 }
                 yield 0.5f;
             }
-            case SYNCING -> secondsRemaining > 0 ? 0.7f + (0.3f * (1f - secondsRemaining / 3f)) : 1f;
+            case SYNCING -> {
+                int totalSeconds = phaseStartSeconds > 0 ? phaseStartSeconds : 3;
+                yield secondsRemaining > 0 ? 0.7f + (0.3f * (1f - secondsRemaining / (float) totalSeconds)) : 1f;
+            }
             case STARTING, STARTED -> 1f;
             case CANCELLED -> 0f;
         };

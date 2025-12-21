@@ -441,12 +441,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
      * Env var: DEVMOD_TEMPLATE_VALIDATION_MODE, SysProp: devmod.template.validationMode
      */
     public TemplateLoader.LoadResult loadFromDirectory(Path directory) {
-        String env = System.getenv("DEVMOD_TEMPLATE_VALIDATION_MODE");
-        String prop = System.getProperty("devmod.template.validationMode");
-        TemplateValidator.ValidationMode mode = TemplateValidator.fromString(
-            prop != null ? prop : env,
-            TemplateValidator.ValidationMode.STRICT
-        );
+        TemplateValidator.ValidationMode mode = resolveValidationMode();
         return loadFromDirectory(directory, mode);
     }
 
@@ -455,14 +450,9 @@ public class ArenaTemplateRegistry implements AutoCloseable {
      * Uses validation mode from env/sysprop (same as {@link #loadFromDirectory(Path)}).
      */
     public ReloadResult reloadFromDirectoryAtomic(Path directory) {
-        String env = System.getenv("DEVMOD_TEMPLATE_VALIDATION_MODE");
-        String prop = System.getProperty("devmod.template.validationMode");
-        TemplateValidator.ValidationMode mode = TemplateValidator.fromString(
-            prop != null ? prop : env,
-            TemplateValidator.ValidationMode.STRICT
-        );
+        TemplateValidator.ValidationMode mode = resolveValidationMode();
         TemplateLoader loader = new TemplateLoader(validator, mode, telemetry);
-        TemplateLoader.LoadResult loadResult = loader.loadAll(directory);
+        TemplateLoader.LoadResult loadResult = loader.loadAllSources(directory);
 
         if (!loadResult.success()) {
             LOGGER.error("Template reload aborted, {} errors", loadResult.errors().size());
@@ -484,6 +474,20 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         // Leak prevention: prune stale handles/locks on any reload attempt
         pruneEphemeralState();
         return rr;
+    }
+
+    private TemplateValidator.ValidationMode resolveValidationMode() {
+        String configured = null;
+        ArenaTemplateConfig.ConfigSnapshot snapshot = configSnapshot;
+        if (snapshot != null && snapshot.schemaValidationMode() != null) {
+            configured = snapshot.schemaValidationMode();
+        }
+        if (configured == null || configured.isBlank()) {
+            String env = System.getenv("DEVMOD_TEMPLATE_VALIDATION_MODE");
+            String prop = System.getProperty("devmod.template.validationMode");
+            configured = prop != null ? prop : env;
+        }
+        return TemplateValidator.fromString(configured, TemplateValidator.ValidationMode.STRICT);
     }
 
     /**

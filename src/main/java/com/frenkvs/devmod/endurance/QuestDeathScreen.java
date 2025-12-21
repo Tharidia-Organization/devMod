@@ -211,6 +211,8 @@ public class QuestDeathScreen extends Screen {
         g.drawString(safeFont, "• " + I18n.ui("respawn_info").getString(), panelX + 30, y, applyAlpha(COLOR_SUCCESS, alpha));
         y += 12;
         g.drawString(safeFont, "  " + I18n.translate("devmod.endurance.respawn_cost").getString(), panelX + 30, y, applyAlpha(COLOR_WARNING, alpha));
+        y += 12;
+        g.drawString(safeFont, "  " + I18n.ui("respawn_countdown").getString(), panelX + 30, y, applyAlpha(COLOR_TEXT_DIM, alpha));
         y += 18;
 
         // Give up info
