@@ -248,7 +248,7 @@ public class EnduranceSessionHandler {
         }
 
         cleanupDroppedItems(session);
-        EndurancePlayerStateManager.INSTANCE.resetQuestLoadout(player);
+        EndurancePlayerStateManager.INSTANCE.resetQuestLoadout(player, session);
 
         // Continue from current wave with death penalty
         session.getQuest().continueAfterDeath();

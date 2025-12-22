@@ -370,48 +370,93 @@ public class EnduranceQuestOverlay {
 
     /**
      * Renders the prominent wave banner at the top-center of the screen.
-     * Shows a large and visible wave number.
+     * Shows a large and visible wave number, or a countdown timer for time-based objectives.
      */
     private static void renderWaveBanner(GuiGraphics g, Font font, int screenWidth, QuestSyncPayload data) {
-        // Banner positioned at top-center
-        int bannerWidth = 160;
+        WaveObjectiveState.Type objectiveType = data.getObjectiveType();
+        boolean isTimedObjective = objectiveType == WaveObjectiveState.Type.SURVIVE_TIME ||
+                                   objectiveType == WaveObjectiveState.Type.HOLD_ZONE;
+
+        // Banner positioned at top-center - wider for timed objectives
+        int bannerWidth = isTimedObjective ? 220 : 160;
+        int bannerHeight = isTimedObjective ? 48 : WAVE_BANNER_HEIGHT;
         int bannerX = (screenWidth - bannerWidth) / 2;
         int bannerY = 5;
 
+        // Choose colors based on objective type
+        int borderColor = isTimedObjective ? 0xFF4CAF50 : PANEL_BORDER; // Green for survive, orange for kill
+        int bgColor = isTimedObjective ? 0xBB1A2E1A : WAVE_BANNER_BG;   // Greenish tint for survive
+
         // Semi-transparent background
-        g.fill(bannerX, bannerY, bannerX + bannerWidth, bannerY + WAVE_BANNER_HEIGHT, WAVE_BANNER_BG);
+        g.fill(bannerX, bannerY, bannerX + bannerWidth, bannerY + bannerHeight, bgColor);
 
-        // Orange borders
-        g.fill(bannerX, bannerY, bannerX + bannerWidth, bannerY + 2, PANEL_BORDER);
-        g.fill(bannerX, bannerY + WAVE_BANNER_HEIGHT - 2, bannerX + bannerWidth, bannerY + WAVE_BANNER_HEIGHT, PANEL_BORDER);
+        // Borders
+        g.fill(bannerX, bannerY, bannerX + bannerWidth, bannerY + 2, borderColor);
+        g.fill(bannerX, bannerY + bannerHeight - 2, bannerX + bannerWidth, bannerY + bannerHeight, borderColor);
 
-        // Large wave number at center
-        String waveNum = String.valueOf(data.currentWave());
-
-        // Scale the wave number to make it prominent
-        g.pose().pushPose();
-        float scale = 2.0f;
         var safeFont = Objects.requireNonNull(font);
-        int numWidth = safeFont.width(Objects.requireNonNull(waveNum));
 
-        // Large centered number
-        g.pose().translate(bannerX + bannerWidth / 2.0f, bannerY + 4, 0);
-        g.pose().scale(scale, scale, 1.0f);
-        g.pose().translate(-numWidth / 2.0f, 0, 0);
-        g.drawString(font, waveNum, 0, 0, WAVE_NUMBER_COLOR, true);
-        g.pose().popPose();
+        if (isTimedObjective) {
+            // === TIMED OBJECTIVE MODE ===
+            // Show objective type label at top
+            String objectiveLabel = objectiveType == WaveObjectiveState.Type.SURVIVE_TIME
+                ? "\u23F1 SURVIVE" : "\u2B55 HOLD ZONE";  // ⏱ SURVIVE or ⭕ HOLD ZONE
+            int labelWidth = safeFont.width(objectiveLabel);
+            g.drawString(font, objectiveLabel, bannerX + bannerWidth / 2 - labelWidth / 2,
+                        bannerY + 4, 0xFF4CAF50, true); // Green
 
-        // Label below the number (only if endless or to show total)
-        if (!data.endlessMode()) {
-            String totalLabel = "/ " + data.totalWaves();
-            int labelWidth = font.width(totalLabel);
-            g.drawString(font, totalLabel, bannerX + bannerWidth / 2 - labelWidth / 2,
-                        bannerY + WAVE_BANNER_HEIGHT - 11, TEXT_DIM, false);
+            // Calculate remaining time
+            int progress = data.objectiveProgress();
+            int target = data.objectiveTarget();
+            int remaining = Math.max(0, target - progress);
+
+            // Large countdown timer in center
+            String timerText = remaining + "s";
+            g.pose().pushPose();
+            float scale = 2.0f;
+            int timerWidth = safeFont.width(timerText);
+
+            g.pose().translate(bannerX + bannerWidth / 2.0f, bannerY + 14, 0);
+            g.pose().scale(scale, scale, 1.0f);
+            g.pose().translate(-timerWidth / 2.0f, 0, 0);
+
+            // Pulse effect when time is low
+            int timerColor = remaining <= 5 ? 0xFFFF5252 : 0xFFFFFFFF; // Red when <= 5s
+            g.drawString(font, timerText, 0, 0, timerColor, true);
+            g.pose().popPose();
+
+            // Wave number smaller at bottom
+            String waveLabel = "Wave " + data.currentWave();
+            int waveLabelWidth = safeFont.width(waveLabel);
+            g.drawString(font, waveLabel, bannerX + bannerWidth / 2 - waveLabelWidth / 2,
+                        bannerY + bannerHeight - 12, TEXT_DIM, false);
         } else {
-            String endlessLabel = "ENDLESS";
-            int labelWidth = font.width(endlessLabel);
-            g.drawString(font, endlessLabel, bannerX + bannerWidth / 2 - labelWidth / 2,
-                        bannerY + WAVE_BANNER_HEIGHT - 11, TEXT_ACCENT, false);
+            // === KILL OBJECTIVE MODE (original behavior) ===
+            // Large wave number at center
+            String waveNum = String.valueOf(data.currentWave());
+
+            g.pose().pushPose();
+            float scale = 2.0f;
+            int numWidth = safeFont.width(Objects.requireNonNull(waveNum));
+
+            g.pose().translate(bannerX + bannerWidth / 2.0f, bannerY + 4, 0);
+            g.pose().scale(scale, scale, 1.0f);
+            g.pose().translate(-numWidth / 2.0f, 0, 0);
+            g.drawString(font, waveNum, 0, 0, WAVE_NUMBER_COLOR, true);
+            g.pose().popPose();
+
+            // Label below the number
+            if (!data.endlessMode()) {
+                String totalLabel = "/ " + data.totalWaves();
+                int labelWidth = safeFont.width(totalLabel);
+                g.drawString(font, totalLabel, bannerX + bannerWidth / 2 - labelWidth / 2,
+                            bannerY + bannerHeight - 11, TEXT_DIM, false);
+            } else {
+                String endlessLabel = "ENDLESS";
+                int labelWidth = safeFont.width(endlessLabel);
+                g.drawString(font, endlessLabel, bannerX + bannerWidth / 2 - labelWidth / 2,
+                            bannerY + bannerHeight - 11, TEXT_ACCENT, false);
+            }
         }
     }
 

@@ -120,11 +120,21 @@ public class WaveDirectiveScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         for (EditorButton btn : selectButtons) {
-            if (btn.mouseClicked((int) mouseX, (int) mouseY, button)) {
+            if (btn.mouseClicked(mouseX, mouseY, button)) {
                 return true;
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        for (EditorButton btn : selectButtons) {
+            if (btn.mouseReleased(mouseX, mouseY, button)) {
+                return true;
+            }
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override

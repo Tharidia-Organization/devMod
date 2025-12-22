@@ -1,8 +1,10 @@
 package com.frenkvs.devmod.ui.radial;
 
-import com.frenkvs.devmod.hud.OnboardingOverlay;
 import com.frenkvs.devmod.actions.ActionIds;
+import com.frenkvs.devmod.actions.ActionResult;
 import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
+import com.frenkvs.devmod.hud.OnboardingOverlay;
 import com.frenkvs.devmod.ui.radial.animation.RadialAnimator;
 import com.frenkvs.devmod.ui.radial.config.RadialMenuConstants;
 import com.frenkvs.devmod.ui.radial.input.RadialSearchHandler;
@@ -221,13 +223,33 @@ public class RadialMenuScreenV3 extends Screen {
     }
 
     private void nextCategory() {
-        selectedCategoryIndex = (selectedCategoryIndex + 1) % rootCategories.size();
+        List<RadialCategory> categories = getActiveCategories();
+        int count = categories.size();
+        if (count == 0) {
+            return;
+        }
+        if (isInSubcategory()) {
+            clearSubcategory();
+        }
+        int nextIndex = selectedCategoryIndex >= 0 ? (selectedCategoryIndex + 1) % count : 0;
+        selectedCategoryIndex = nextIndex;
         animator.startMorph();
         playSound(RadialMenuConstants.SOUND_PITCH_CATEGORY_NEXT);
     }
 
     private void prevCategory() {
-        selectedCategoryIndex = (selectedCategoryIndex - 1 + rootCategories.size()) % rootCategories.size();
+        List<RadialCategory> categories = getActiveCategories();
+        int count = categories.size();
+        if (count == 0) {
+            return;
+        }
+        if (isInSubcategory()) {
+            clearSubcategory();
+        }
+        int prevIndex = selectedCategoryIndex >= 0
+            ? (selectedCategoryIndex - 1 + count) % count
+            : count - 1;
+        selectedCategoryIndex = prevIndex;
         animator.startMorph();
         playSound(RadialMenuConstants.SOUND_PITCH_CATEGORY_PREV);
     }
@@ -386,8 +408,11 @@ public class RadialMenuScreenV3 extends Screen {
         renderFavoritesRing(graphics);
         renderCenterHub(graphics, mouseX, mouseY);
 
-        if (selectedCategoryIndex >= 0 && selectedCategoryIndex < getActiveCategories().size()) {
-            renderCategoryItems(graphics, getActiveCategories().get(selectedCategoryIndex));
+        RadialCategory itemCategory = getActiveItemCategory();
+        if (itemCategory != null
+            && selectedCategoryIndex >= 0
+            && selectedCategoryIndex < getActiveCategories().size()) {
+            renderCategoryItems(graphics, itemCategory);
         }
 
         if (config.showTooltips) {
@@ -426,9 +451,9 @@ public class RadialMenuScreenV3 extends Screen {
         List<RadialCategory> categories = getActiveCategories();
         animator.updateCategoryAnimations(selectedCategoryIndex, categories.size());
 
-        if (selectedCategoryIndex >= 0 && selectedCategoryIndex < categories.size()) {
-            RadialCategory cat = categories.get(selectedCategoryIndex);
-            animator.updateItemAnimations(selectedItemIndex, cat.getVisibleItemCount());
+        RadialCategory itemCategory = getActiveItemCategory();
+        if (itemCategory != null) {
+            animator.updateItemAnimations(selectedItemIndex, itemCategory.getVisibleItemCount());
         }
 
         animator.updateFavoriteAnimations(selectedFavoriteIndex, favorites.size());
@@ -486,13 +511,26 @@ public class RadialMenuScreenV3 extends Screen {
         double adjustedAngle = angle - startOffset;
         if (adjustedAngle < 0) adjustedAngle += RadialMenuConstants.TWO_PI;
 
-        selectedCategoryIndex = (int)(adjustedAngle / segmentAngle) % numCategories;
+        int computedCategoryIndex = (int)(adjustedAngle / segmentAngle) % numCategories;
+        boolean inSubcategory = isInSubcategory();
+        if (inSubcategory) {
+            int topLevelIndex = resolveTopLevelCategoryIndex(currentCategory);
+            if (topLevelIndex == RadialMenuConstants.NO_SELECTION) {
+                clearSubcategory();
+                inSubcategory = false;
+            } else {
+                selectedCategoryIndex = topLevelIndex;
+            }
+        }
+        if (!inSubcategory) {
+            selectedCategoryIndex = computedCategoryIndex;
+        }
 
         // Select item if mouse is beyond the outer ring
         // Use getVisibleItems() to only consider visible items for selection
         if (distance > outerRadius && selectedCategoryIndex >= 0 && selectedCategoryIndex < categories.size()) {
-            RadialCategory cat = categories.get(selectedCategoryIndex);
-            int numVisibleItems = cat.getVisibleItemCount();
+            RadialCategory itemCategory = inSubcategory ? currentCategory : categories.get(selectedCategoryIndex);
+            int numVisibleItems = itemCategory != null ? itemCategory.getVisibleItemCount() : 0;
             if (numVisibleItems > 0) {
                 double itemSegment = segmentAngle / numVisibleItems;
                 double catStartAngle = startOffset + selectedCategoryIndex * segmentAngle;
@@ -517,7 +555,64 @@ public class RadialMenuScreenV3 extends Screen {
      * categories belonging to the active macro.
      */
     private List<RadialCategory> getActiveCategories() {
-        return macroCategoryMap.getOrDefault(selectedMacro, Collections.emptyList());
+        return getVisibleCategoriesForMacro(selectedMacro);
+    }
+
+    private List<RadialCategory> getVisibleCategoriesForMacro(MacroCategory macro) {
+        List<RadialCategory> categories = macroCategoryMap.getOrDefault(macro, Collections.emptyList());
+        if (categories.isEmpty()) {
+            return categories;
+        }
+        List<RadialCategory> visible = new ArrayList<>();
+        for (RadialCategory category : categories) {
+            if (category.getVisibleItemCount() > 0) {
+                visible.add(category);
+            }
+        }
+        return visible;
+    }
+
+    private boolean isInSubcategory() {
+        return currentCategory != null && currentCategory.hasParent();
+    }
+
+    @Nullable
+    private RadialCategory getSelectedCategory() {
+        List<RadialCategory> categories = getActiveCategories();
+        if (selectedCategoryIndex < 0 || selectedCategoryIndex >= categories.size()) {
+            return null;
+        }
+        return categories.get(selectedCategoryIndex);
+    }
+
+    @Nullable
+    private RadialCategory getActiveItemCategory() {
+        if (isInSubcategory()) {
+            return currentCategory;
+        }
+        return getSelectedCategory();
+    }
+
+    private int resolveTopLevelCategoryIndex(@Nullable RadialCategory category) {
+        if (category == null) {
+            return RadialMenuConstants.NO_SELECTION;
+        }
+        RadialCategory root = category;
+        while (root.getParent() != null) {
+            root = Objects.requireNonNull(root.getParent());
+        }
+        List<RadialCategory> categories = getActiveCategories();
+        for (int i = 0; i < categories.size(); i++) {
+            if (categories.get(i) == root) {
+                return i;
+            }
+        }
+        return RadialMenuConstants.NO_SELECTION;
+    }
+
+    private void clearSubcategory() {
+        currentCategory = null;
+        navigationStack.clear();
     }
 
     @Nonnull
@@ -595,7 +690,8 @@ public class RadialMenuScreenV3 extends Screen {
                 r.getItem().getName(),
                 r.getCategory().getName(),
                 r.getItem().isToggle(),
-                r.getItem().isActive()
+                r.getItem().isActive(),
+                r.getItem().canExecute()
             ))
             .toList();
 
@@ -668,7 +764,7 @@ public class RadialMenuScreenV3 extends Screen {
         if (isTransitioning) {
             // Render outgoing categories with decreasing alpha
             float outgoingAlpha = 1f - animator.getMacroTransitionProgress();
-            List<RadialCategory> outgoingCategories = macroCategoryMap.getOrDefault(transitionFromMacro, Collections.emptyList());
+            List<RadialCategory> outgoingCategories = getVisibleCategoriesForMacro(transitionFromMacro);
             RadialCategoryRenderer.renderCategoryRing(graphics, safeFont, outgoingCategories, ringConfig, outgoingAlpha, false);
         }
 
@@ -708,7 +804,7 @@ public class RadialMenuScreenV3 extends Screen {
             hoveredMacro, selectedMacro,
             selectedFavoriteIndex, favoriteRefs,
             selectedCategoryIndex, selectedItemIndex,
-            getActiveCategories(),
+            getActiveCategories(), getActiveItemCategory(),
             centerHovered, macroHubHovered, editMode
         );
 
@@ -794,11 +890,13 @@ public class RadialMenuScreenV3 extends Screen {
 
         // Shift+click to toggle favorite
         if (shiftHeld && selectedItemIndex >= 0 && selectedCategoryIndex >= 0) {
-            RadialCategory cat = getActiveCategories().get(selectedCategoryIndex);
-            List<RadialMenuItem> visibleItems = cat.getVisibleItems();
-            if (selectedItemIndex < visibleItems.size()) {
-                RadialMenuItem item = visibleItems.get(selectedItemIndex);
-                toggleFavorite(item, cat);
+            RadialCategory itemCategory = getActiveItemCategory();
+            if (itemCategory != null) {
+                List<RadialMenuItem> visibleItems = itemCategory.getVisibleItems();
+                if (selectedItemIndex < visibleItems.size()) {
+                    RadialMenuItem item = visibleItems.get(selectedItemIndex);
+                    toggleFavorite(item, itemCategory);
+                }
             }
             return true;
         }
@@ -818,9 +916,9 @@ public class RadialMenuScreenV3 extends Screen {
             return true;
         }
 
-        if (selectedCategoryIndex >= 0 && selectedCategoryIndex < getActiveCategories().size()) {
-            RadialCategory cat = getActiveCategories().get(selectedCategoryIndex);
-            List<RadialMenuItem> visibleItems = cat.getVisibleItems();
+        RadialCategory itemCategory = getActiveItemCategory();
+        if (itemCategory != null) {
+            List<RadialMenuItem> visibleItems = itemCategory.getVisibleItems();
             if (selectedItemIndex >= 0 && selectedItemIndex < visibleItems.size()) {
                 RadialMenuItem item = visibleItems.get(selectedItemIndex);
                 if (item.isSubcategoryLink()) {
@@ -935,6 +1033,7 @@ public class RadialMenuScreenV3 extends Screen {
                 animator.startMacroTransition();
                 selectedCategoryIndex = RadialMenuConstants.NO_SELECTION; // selectedCategoryIndex = -1 (reset on macro change)
                 selectedItemIndex = RadialMenuConstants.NO_SELECTION;
+                clearSubcategory();
                 playSound(RadialMenuConstants.SOUND_PITCH_MACRO_SWITCH);
             }
             return true;
@@ -944,6 +1043,7 @@ public class RadialMenuScreenV3 extends Screen {
         int categoryIndex = indexOfKey(keyCode, config.input.categoryKeys);
         if (categoryIndex != RadialMenuConstants.NO_SELECTION) {
             if (categoryIndex < getActiveCategories().size()) {
+                clearSubcategory();
                 animator.startMorph();
                 selectedCategoryIndex = categoryIndex;
             }
@@ -960,8 +1060,8 @@ public class RadialMenuScreenV3 extends Screen {
             return true;
         }
 
-        if (selectedCategoryIndex >= 0) {
-            RadialCategory cat = getActiveCategories().get(selectedCategoryIndex);
+        RadialCategory cat = getActiveItemCategory();
+        if (cat != null) {
             List<RadialMenuItem> visibleItems = cat.getVisibleItems();
             int itemNum = getItemKeyIndex(keyCode);
 
@@ -1029,6 +1129,7 @@ public class RadialMenuScreenV3 extends Screen {
                 animator.startMacroTransition();
                 selectedCategoryIndex = RadialMenuConstants.NO_SELECTION;
                 selectedItemIndex = RadialMenuConstants.NO_SELECTION;
+                clearSubcategory();
                 playSound(RadialMenuConstants.SOUND_PITCH_MACRO_SWITCH);
             }
             return;
@@ -1042,7 +1143,10 @@ public class RadialMenuScreenV3 extends Screen {
         }
 
         if (selectedCategoryIndex >= 0 && selectedCategoryIndex < getActiveCategories().size()) {
-            RadialCategory cat = getActiveCategories().get(selectedCategoryIndex);
+            RadialCategory cat = getActiveItemCategory();
+            if (cat == null) {
+                return;
+            }
             List<RadialMenuItem> visibleItems = cat.getVisibleItems();
             if (selectedItemIndex >= 0 && selectedItemIndex < visibleItems.size()) {
                 RadialMenuItem item = visibleItems.get(selectedItemIndex);
@@ -1069,6 +1173,7 @@ public class RadialMenuScreenV3 extends Screen {
         }
         actionsExecutedCount++;
 
+        boolean executed = true;
         String actionId = item.getAction().getRegistryId();
         if (actionId != null) {
             com.frenkvs.devmod.actions.RadialAction action = ActionRegistry.getAction(actionId);
@@ -1076,9 +1181,16 @@ public class RadialMenuScreenV3 extends Screen {
                 openItemDetails(item);
                 return;
             }
+            ActionResult result = ActionRegistry.invokeWithResult(actionId, ClientActionContexts.forRadial());
+            executed = result.isSuccess();
+        } else {
+            item.execute();
         }
 
-        item.execute();
+        if (!executed) {
+            return;
+        }
+
         recordUsage(item);
 
         SettingsManager.INSTANCE.syncFromSystems();
@@ -1121,6 +1233,10 @@ public class RadialMenuScreenV3 extends Screen {
         }
         currentCategory = category;
         selectedItemIndex = RadialMenuConstants.NO_SELECTION;
+        int topLevelIndex = resolveTopLevelCategoryIndex(category);
+        if (topLevelIndex != RadialMenuConstants.NO_SELECTION) {
+            selectedCategoryIndex = topLevelIndex;
+        }
         playSound(RadialMenuConstants.SOUND_PITCH_NAVIGATE_TO);
     }
 
@@ -1131,17 +1247,25 @@ public class RadialMenuScreenV3 extends Screen {
             currentCategory = null;
         }
         selectedItemIndex = RadialMenuConstants.NO_SELECTION;
+        if (currentCategory != null) {
+            int topLevelIndex = resolveTopLevelCategoryIndex(currentCategory);
+            if (topLevelIndex != RadialMenuConstants.NO_SELECTION) {
+                selectedCategoryIndex = topLevelIndex;
+            }
+        }
         playSound(RadialMenuConstants.SOUND_PITCH_NAVIGATE_BACK);
     }
 
     private void openItemEditor() {
         if (selectedCategoryIndex >= 0 && selectedItemIndex >= 0) {
-            RadialCategory cat = getActiveCategories().get(selectedCategoryIndex);
-            List<RadialMenuItem> visibleItems = cat.getVisibleItems();
-            if (selectedItemIndex < visibleItems.size()) {
-                RadialMenuItem item = visibleItems.get(selectedItemIndex);
-                showMessage(Minecraft.getInstance(),
-                    "§6[Edit] " + item.getName() + " - Shift+Click to toggle * favorite");
+            RadialCategory cat = getActiveItemCategory();
+            if (cat != null) {
+                List<RadialMenuItem> visibleItems = cat.getVisibleItems();
+                if (selectedItemIndex < visibleItems.size()) {
+                    RadialMenuItem item = visibleItems.get(selectedItemIndex);
+                    showMessage(Minecraft.getInstance(),
+                        "§6[Edit] " + item.getName() + " - Shift+Click to toggle * favorite");
+                }
             }
         }
     }

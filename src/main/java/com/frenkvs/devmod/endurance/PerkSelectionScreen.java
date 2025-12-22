@@ -82,8 +82,10 @@ public class PerkSelectionScreen extends Screen {
 
         for (int i = 0; i < choices.size(); i++) {
             final int index = i;
+            // Use numbered hotkey hint for quick selection (1, 2, 3)
+            String buttonLabel = "Choose [" + (i + 1) + "]";
 
-            EditorButton btn = EditorButton.builder("select-perk-" + index, I18n.ui("perk.select").getString())
+            EditorButton btn = EditorButton.builder("select-perk-" + index, buttonLabel)
                 .style(EditorButton.Style.PRIMARY)
                 .size(EditorButton.Size.MEDIUM)
                 .onClick(() -> selectPerk(index))
@@ -92,8 +94,9 @@ public class PerkSelectionScreen extends Screen {
         }
 
         // Skip button (bottom - prominent height for visibility)
-        skipButton = EditorButton.builder("perk-skip", I18n.ui("perk.skip").getString())
-            .style(EditorButton.Style.GHOST)
+        String skipLabel = skipAllowed ? "Skip Wave Perk" : "Must Choose";
+        skipButton = EditorButton.builder("perk-skip", skipLabel)
+            .style(skipAllowed ? EditorButton.Style.GHOST : EditorButton.Style.DANGER)
             .size(EditorButton.Size.LARGE)
             .onClick(this::skipPerk)
             .build();
@@ -239,60 +242,64 @@ public class PerkSelectionScreen extends Screen {
         g.fill(cardX + cardW - 3, cardY, cardX + cardW, cardY + cardH, borderColor);
 
         var safeFont = Objects.requireNonNull(font);
-        int textY = cardY + 12;
+        int textY = cardY + 10;
+        int contentPadding = 8;
+        int buttonAreaHeight = 40; // Reserve space for button at bottom
 
-        // Tier badge
+        // === HEADER ROW: Perk name + Tier badge ===
         String tierText = Objects.requireNonNull(perk.tierName());
-        int tierBadgeW = safeFont.width(tierText) + 10;
-        g.fill(cardX + cardW - tierBadgeW - 8, textY - 2, cardX + cardW - 8, textY + 12,
-            applyAlpha(perk.tierColor() | 0xFF000000, alpha * 0.8f));
-        g.drawString(safeFont, tierText, cardX + cardW - tierBadgeW - 3, textY, applyAlpha(COLOR_TEXT, alpha));
+        int tierBadgeW = safeFont.width(tierText) + 8;
+        int tierBadgeH = 14;
 
-        // Perk name (truncated to fit card width, leaving room for tier badge)
-        int maxNameWidth = cardW - tierBadgeW - 25; // Leave room for tier badge and padding
+        // Tier badge (top right)
+        g.fill(cardX + cardW - tierBadgeW - contentPadding, textY,
+               cardX + cardW - contentPadding, textY + tierBadgeH,
+               applyAlpha(perk.tierColor() | 0xFF000000, alpha * 0.85f));
+        g.drawString(safeFont, tierText, cardX + cardW - tierBadgeW - contentPadding + 4, textY + 3,
+                     applyAlpha(COLOR_TEXT, alpha));
+
+        // Perk name (left, truncated to avoid tier badge)
+        int maxNameWidth = cardW - tierBadgeW - contentPadding * 3;
         String perkName = truncateText(perk.name(), maxNameWidth);
-        g.drawString(safeFont, perkName, cardX + 10, textY, applyAlpha(COLOR_TEXT, alpha));
-        textY += 20;
+        g.drawString(safeFont, perkName, cardX + contentPadding, textY + 2, applyAlpha(COLOR_TEXT, alpha));
+        textY += 18;
 
-        // Category (truncated to fit card width)
-        String categoryName = truncateText(perk.categoryName(), cardW - 20);
-        g.drawString(safeFont, categoryName, cardX + 10, textY, applyAlpha(perk.categoryColor() | 0xFF000000, alpha));
-        textY += 16;
+        // === CATEGORY ROW ===
+        String categoryName = truncateText(perk.categoryName(), cardW - contentPadding * 2);
+        g.drawString(safeFont, categoryName, cardX + contentPadding, textY,
+                     applyAlpha(perk.categoryColor() | 0xFF000000, alpha));
+        textY += 14;
 
+        // === REQUIRED/SUGGESTED TAG (below category, not overlapping) ===
         if (perk.required() || perk.suggested()) {
-            String tagText = perk.required() ? "REQUIRED" : "SUGGESTED";
+            String tagText = perk.required() ? "!" : "\u2605"; // ! or ★
+            String tagLabel = perk.required() ? "Required" : "Suggested";
             int tagColor = perk.required() ? 0xFFE85C5C : 0xFF5B9BD5;
-            int tagWidth = safeFont.width(tagText) + 8;
-            int tagX = cardX + cardW - tagWidth - 8;
-            int tagY = cardY + 28;
-            g.fill(tagX, tagY, tagX + tagWidth, tagY + 12, applyAlpha(tagColor, alpha * 0.8f));
-            g.drawString(safeFont, tagText, tagX + 4, tagY + 2, applyAlpha(0xFFFFFFFF, alpha));
+            g.drawString(safeFont, tagText + " " + tagLabel, cardX + contentPadding, textY, applyAlpha(tagColor, alpha));
+            textY += 12;
         }
 
-        // Description (word wrap) - limit to MAX_DESCRIPTION_LINES
-        List<String> lines = wrapText(perk.description(), cardW - 20);
+        // === DESCRIPTION (word wrap) ===
+        textY += 2; // Small gap
+        int maxDescY = cardY + cardH - buttonAreaHeight - 25; // Leave room for stack info
+        List<String> lines = wrapText(perk.description(), cardW - contentPadding * 2);
         int linesRendered = 0;
         for (String line : lines) {
-            if (linesRendered >= MAX_DESCRIPTION_LINES || textY > cardY + cardH - 55) break;
-            g.drawString(safeFont, line, cardX + 10, textY, applyAlpha(COLOR_TEXT_DIM, alpha));
-            textY += 11;
+            if (textY > maxDescY || linesRendered >= MAX_DESCRIPTION_LINES) break;
+            g.drawString(safeFont, line, cardX + contentPadding, textY, applyAlpha(COLOR_TEXT_DIM, alpha));
+            textY += 10;
             linesRendered++;
         }
 
-        // Stack info
+        // === BOTTOM AREA: Stack info (above button) ===
+        int bottomInfoY = cardY + cardH - buttonAreaHeight - 14;
         if (perk.stackable()) {
-            textY = cardY + cardH - 50;
-            String stackText = I18n.translate("devmod.perk.stacks", perk.currentStacks(), perk.maxStacks()).getString();
-            g.drawString(safeFont, stackText, cardX + 10, textY, applyAlpha(COLOR_ACCENT, alpha));
-        }
-
-        // Comparison highlight when hovered - show key stat
-        if (hovered && !perk.description().isEmpty()) {
-            // Draw comparison arrow hint
-            int hintY = cardY + cardH - 35;
-            String hintText = "▲ " + getCompactStatHint(perk);
-            int hintColor = applyAlpha(UIConstants.Accent.GREEN(), alpha);
-            g.drawString(safeFont, hintText, cardX + 10, hintY - 12, hintColor);
+            String stackText = "Stacks: " + perk.currentStacks() + "/" + perk.maxStacks();
+            g.drawString(safeFont, stackText, cardX + contentPadding, bottomInfoY, applyAlpha(COLOR_ACCENT, alpha));
+        } else if (hovered && !perk.description().isEmpty()) {
+            // Show stat hint only if not stackable (to avoid overlap)
+            String hintText = "\u2191 " + getCompactStatHint(perk); // ↑ prefix
+            g.drawString(safeFont, hintText, cardX + contentPadding, bottomInfoY, applyAlpha(UIConstants.Accent.GREEN(), alpha));
         }
     }
 

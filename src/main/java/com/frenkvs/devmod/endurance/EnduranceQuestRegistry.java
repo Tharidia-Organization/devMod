@@ -2,8 +2,12 @@ package com.frenkvs.devmod.endurance;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +35,22 @@ public class EnduranceQuestRegistry {
     // Special boss mobs (detected by various heuristics)
     private final Set<ResourceLocation> bossMobs = new HashSet<>();
 
+    // Cache for actual mob attributes (populated on first world load)
+    private final Map<ResourceLocation, ActualMobStats> actualStatsCache = new HashMap<>();
+    private boolean attributesRefined = false;
+
     private boolean initialized = false;
+
+    /**
+     * Actual stats read from spawning a test entity.
+     */
+    public record ActualMobStats(double health, double damage, double speed, double armor, double knockbackResist) {
+        public static ActualMobStats UNKNOWN = new ActualMobStats(-1, -1, -1, -1, -1);
+
+        public boolean isValid() {
+            return health > 0;
+        }
+    }
 
     /**
      * Mob difficulty tiers for wave scaling.
@@ -436,20 +455,215 @@ public class EnduranceQuestRegistry {
     }
 
     /**
+     * Refine mob tiers using actual entity attributes.
+     * Should be called when a ServerLevel becomes available (e.g., on world load).
+     * This spawns test entities temporarily to read their real stats.
+     *
+     * @param level ServerLevel to spawn test entities in
+     */
+    public void refineWithAttributes(ServerLevel level) {
+        if (attributesRefined || level == null) {
+            return;
+        }
+
+        ensureInitialized();
+        LOGGER.info("[EnduranceQuest] Refining mob tiers with actual attributes...");
+
+        int refined = 0;
+        int errors = 0;
+        Map<MobTier, Integer> tierChanges = new EnumMap<>(MobTier.class);
+
+        for (Map.Entry<ResourceLocation, MobQuestConfig> entry : mobConfigs.entrySet()) {
+            ResourceLocation id = entry.getKey();
+            MobQuestConfig config = entry.getValue();
+
+            try {
+                ActualMobStats stats = readActualStats(config.entityType, level);
+                if (stats.isValid()) {
+                    actualStatsCache.put(id, stats);
+
+                    // Determine tier based on actual attributes
+                    MobTier newTier = determineTierFromAttributes(stats, id);
+                    MobTier oldTier = config.tier;
+
+                    if (newTier != oldTier) {
+                        // Update the config with new tier
+                        updateMobTier(id, config, newTier);
+                        tierChanges.merge(newTier, 1, (a, b) -> a + b);
+                        refined++;
+                        LOGGER.debug("[EnduranceQuest] Refined {} from {} to {} (HP:{}, DMG:{})",
+                            id, oldTier, newTier, stats.health(), stats.damage());
+                    }
+                }
+            } catch (Exception e) {
+                errors++;
+                LOGGER.debug("[EnduranceQuest] Could not read attributes for {}: {}", id, e.getMessage());
+            }
+        }
+
+        attributesRefined = true;
+        LOGGER.info("[EnduranceQuest] Attribute refinement complete. {} mobs refined, {} errors.", refined, errors);
+        if (!tierChanges.isEmpty()) {
+            LOGGER.info("[EnduranceQuest] Tier changes: {}", tierChanges);
+        }
+        LOGGER.info("[EnduranceQuest] Final tier distribution: {}",
+            mobsByTier.entrySet().stream()
+                .collect(Collectors.toMap(e -> e.getKey().name(), e -> e.getValue().size())));
+    }
+
+    /**
+     * Read actual stats from a test entity spawn.
+     */
+    private ActualMobStats readActualStats(EntityType<?> entityType, ServerLevel level) {
+        Entity testEntity = null;
+        try {
+            testEntity = entityType.create(Objects.requireNonNull(level));
+            if (testEntity instanceof Mob mob) {
+                double health = mob.getAttributeValue(Objects.requireNonNull(Attributes.MAX_HEALTH));
+                double damage = getAttributeSafe(mob, Objects.requireNonNull(Attributes.ATTACK_DAMAGE), 2.0);
+                double speed = getAttributeSafe(mob, Attributes.MOVEMENT_SPEED, 0.25);
+                double armor = getAttributeSafe(mob, Attributes.ARMOR, 0.0);
+                double knockback = getAttributeSafe(mob, Attributes.KNOCKBACK_RESISTANCE, 0.0);
+
+                return new ActualMobStats(health, damage, speed, armor, knockback);
+            }
+        } finally {
+            if (testEntity != null) {
+                testEntity.discard();
+            }
+        }
+        return ActualMobStats.UNKNOWN;
+    }
+
+    /**
+     * Safely get an attribute value with fallback.
+     */
+    private double getAttributeSafe(Mob mob, net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute> attribute, double fallback) {
+        try {
+            var instance = mob.getAttribute(Objects.requireNonNull(attribute));
+            return instance != null ? instance.getValue() : fallback;
+        } catch (Exception e) {
+            return fallback;
+        }
+    }
+
+    /**
+     * Determine tier based on actual mob attributes.
+     * Uses health and damage as primary indicators.
+     */
+    private MobTier determineTierFromAttributes(ActualMobStats stats, ResourceLocation id) {
+        double health = stats.health();
+        double damage = stats.damage();
+        String path = id.getPath().toLowerCase();
+
+        // First check for boss indicators in name (these override stats)
+        if (path.contains("boss") || path.contains("final") || path.contains("lord") ||
+            path.contains("king") || path.contains("queen") || path.contains("emperor")) {
+            return MobTier.BOSS;
+        }
+
+        // Attribute-based thresholds
+        // BOSS: HP > 200 OR (HP > 100 AND damage > 20)
+        if (health > 200 || (health > 100 && damage > 20)) {
+            return MobTier.BOSS;
+        }
+
+        // ELITE: HP 100-200 OR (HP > 60 AND damage > 12)
+        if (health >= 100 || (health > 60 && damage > 12)) {
+            return MobTier.ELITE;
+        }
+
+        // HARD: HP 50-100 OR (HP > 30 AND damage > 8)
+        if (health >= 50 || (health > 30 && damage > 8)) {
+            return MobTier.HARD;
+        }
+
+        // MEDIUM: HP 25-50 OR (HP > 15 AND damage > 4)
+        if (health >= 25 || (health > 15 && damage > 4)) {
+            return MobTier.MEDIUM;
+        }
+
+        // TRIVIAL: HP < 15 AND damage < 3
+        if (health < 15 && damage < 3) {
+            return MobTier.TRIVIAL;
+        }
+
+        // EASY: everything else
+        return MobTier.EASY;
+    }
+
+    /**
+     * Update a mob's tier and re-index it.
+     */
+    private void updateMobTier(ResourceLocation id, MobQuestConfig oldConfig, MobTier newTier) {
+        // Remove from old tier index
+        MobTier oldTier = oldConfig.tier;
+        List<ResourceLocation> oldTierList = mobsByTier.get(oldTier);
+        if (oldTierList != null) {
+            oldTierList.remove(id);
+        }
+
+        // Create new config with updated tier
+        MobQuestConfig newConfig = new MobQuestConfig(id, oldConfig.entityType, newTier, oldConfig.difficultyPreset);
+        mobConfigs.put(id, newConfig);
+
+        // Add to new tier index
+        mobsByTier.computeIfAbsent(newTier, k -> new ArrayList<>()).add(id);
+
+        // Update boss set
+        if (newTier == MobTier.BOSS && !bossMobs.contains(id)) {
+            bossMobs.add(id);
+        } else if (newTier != MobTier.BOSS && bossMobs.contains(id)) {
+            bossMobs.remove(id);
+        }
+    }
+
+    /**
+     * Get actual stats for a mob (if available from attribute refinement).
+     */
+    public Optional<ActualMobStats> getActualStats(ResourceLocation id) {
+        return Optional.ofNullable(actualStatsCache.get(id));
+    }
+
+    /**
+     * Check if attribute refinement has been performed.
+     */
+    public boolean isAttributesRefined() {
+        return attributesRefined;
+    }
+
+    /**
      * Check if an entity type is eligible for quests (hostile/neutral mob).
+     * Filters out spawners, projectiles, and other non-fightable entities.
      */
     private boolean isQuestEligible(EntityType<?> entityType) {
+        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(Objects.requireNonNull(entityType));
+        String path = id.getPath().toLowerCase();
+
+        // === EXCLUSIONS: Filter out non-mob entities ===
+        // Spawners, projectiles, effects, and utility entities
+        if (path.contains("spawner") || path.contains("spawn_egg") ||
+            path.contains("projectile") || path.contains("fireball") || path.contains("arrow") ||
+            path.contains("effect") || path.contains("particle") || path.contains("display") ||
+            path.contains("marker") || path.contains("area_effect") || path.contains("lightning") ||
+            path.contains("tnt") || path.contains("falling_block") || path.contains("item") ||
+            path.contains("experience") || path.contains("orb") || path.contains("boat") ||
+            path.contains("minecart") || path.contains("armor_stand") || path.contains("painting") ||
+            path.contains("item_frame") || path.contains("leash") || path.contains("ender_pearl") ||
+            path.contains("egg") || path.contains("snowball") || path.contains("potion") ||
+            path.contains("trident") || path.contains("shulker_bullet") || path.contains("llama_spit") ||
+            path.contains("evoker_fangs") || path.contains("eye_of_ender")) {
+            return false;
+        }
+
         MobCategory category = entityType.getCategory();
 
-        // Include hostile and some creatures (for neutral mobs like wolves, iron golems)
+        // Include hostile monsters
         if (category == MobCategory.MONSTER) {
             return true;
         }
 
         // Include some specific neutral mobs that can be hostile
-        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
-        String path = id.getPath().toLowerCase();
-
         // Known neutral mobs that can fight
         if (path.contains("golem") || path.contains("wolf") || path.contains("bee") ||
             path.contains("polar_bear") || path.contains("dolphin") || path.contains("llama") ||
@@ -457,7 +671,7 @@ public class EnduranceQuestRegistry {
             return true;
         }
 
-        // Check for modded boss indicators
+        // Check for modded boss indicators (but only if not already excluded)
         if (path.contains("boss") || path.contains("miniboss") || path.contains("elite")) {
             return true;
         }
@@ -467,47 +681,114 @@ public class EnduranceQuestRegistry {
 
     /**
      * Determine the difficulty tier for a mob based on various heuristics.
+     * Improved to handle modded mobs better using namespace patterns and common naming conventions.
      */
     private MobTier determineTier(EntityType<?> entityType, ResourceLocation id) {
         String path = id.getPath().toLowerCase();
+        String namespace = id.getNamespace().toLowerCase();
 
-        // Known bosses
-        if (path.equals("ender_dragon") || path.equals("wither") ||
-            path.contains("boss") || path.contains("final_boss")) {
+        // ============ BOSS TIER ============
+        // Known vanilla bosses
+        if (path.equals("ender_dragon") || path.equals("wither")) {
+            return MobTier.BOSS;
+        }
+        // Boss keywords in name
+        if (path.contains("boss") || path.contains("final_boss") || path.contains("lord") ||
+            path.contains("king") || path.contains("queen") || path.contains("emperor") ||
+            path.contains("overlord") || path.contains("ancient") || path.contains("titan")) {
             return MobTier.BOSS;
         }
 
-        // Elite mobs
-        if (path.contains("ravager") || path.contains("piglin_brute") ||
-            path.contains("warden") || path.contains("elite") ||
-            path.contains("champion") || path.contains("miniboss")) {
+        // ============ ELITE TIER ============
+        // Known vanilla elites
+        if (path.contains("ravager") || path.contains("piglin_brute") || path.contains("warden")) {
+            return MobTier.ELITE;
+        }
+        // Elite keywords in name
+        if (path.contains("elite") || path.contains("champion") || path.contains("miniboss") ||
+            path.contains("captain") || path.contains("commander") || path.contains("general") ||
+            path.contains("archon") || path.contains("greater") || path.contains("alpha") ||
+            path.contains("summoner") || path.contains("necromancer") || path.contains("lich") ||
+            path.contains("archmage") || path.contains("giant") || path.contains("golem") ||
+            path.contains("behemoth") || path.contains("colossus")) {
             return MobTier.ELITE;
         }
 
-        // Hard mobs
-        if (path.contains("enderman") || path.contains("witch") ||
-            path.contains("evoker") || path.contains("vindicator") ||
-            path.contains("blaze") || path.contains("ghast") ||
-            path.contains("guardian") || path.contains("elder")) {
+        // ============ HARD TIER ============
+        // Known vanilla hard mobs
+        if (path.contains("enderman") || path.contains("witch") || path.contains("evoker") ||
+            path.contains("vindicator") || path.contains("blaze") || path.contains("ghast") ||
+            path.contains("guardian") || path.contains("elder") || path.contains("shulker")) {
             return MobTier.HARD;
         }
+        // Hard keywords in name (magic users, warriors, dangerous creatures)
+        if (path.contains("knight") || path.contains("warrior") || path.contains("mage") ||
+            path.contains("wizard") || path.contains("sorcerer") || path.contains("demon") ||
+            path.contains("devil") || path.contains("wraith") || path.contains("specter") ||
+            path.contains("revenant") || path.contains("wight") || path.contains("shade") ||
+            path.contains("assassin") || path.contains("berserker") || path.contains("brute") ||
+            path.contains("drake") || path.contains("wyrm") || path.contains("dragon") ||
+            path.contains("golem") || path.contains("construct") || path.contains("automaton") ||
+            path.contains("sentinel") || path.contains("keeper") || path.contains("cultist") ||
+            path.contains("priest") || path.contains("warlock") || path.contains("pyromancer") ||
+            path.contains("cryomancer") || path.contains("electromancer") || path.contains("archillager") ||
+            path.contains("illusioner") || path.contains("dead_king")) {
+            return MobTier.HARD;
+        }
+        // Mod-specific patterns for known hard mob mods
+        if (namespace.equals("irons_spellbooks") || namespace.equals("ars_nouveau") ||
+            namespace.equals("cataclysm") || namespace.equals("born_in_chaos") ||
+            namespace.equals("mutant_monsters") || namespace.equals("mowzies_mobs") ||
+            namespace.equals("twilightforest") || namespace.equals("alexsmobs")) {
+            // These mods typically have harder mobs - check for specific trivial ones
+            if (!path.contains("small") && !path.contains("baby") && !path.contains("mini")) {
+                return MobTier.HARD;
+            }
+        }
 
-        // Medium mobs
-        if (path.contains("creeper") || path.contains("spider") ||
-            path.contains("skeleton") || path.contains("pillager") ||
-            path.contains("drowned") || path.contains("husk") ||
-            path.contains("stray") || path.contains("phantom")) {
+        // ============ MEDIUM TIER ============
+        // Known vanilla medium mobs
+        if (path.contains("creeper") || path.contains("spider") || path.contains("skeleton") ||
+            path.contains("pillager") || path.contains("drowned") || path.contains("husk") ||
+            path.contains("stray") || path.contains("phantom") || path.contains("hoglin") ||
+            path.contains("piglin") || path.contains("cave_spider")) {
+            return MobTier.MEDIUM;
+        }
+        // Medium keywords in name
+        if (path.contains("soldier") || path.contains("guard") || path.contains("archer") ||
+            path.contains("hunter") || path.contains("scout") || path.contains("raider") ||
+            path.contains("bandit") || path.contains("thief") || path.contains("undead") ||
+            path.contains("ghoul") || path.contains("vampire") || path.contains("werewolf") ||
+            path.contains("wolf") || path.contains("bear") || path.contains("crawler") ||
+            path.contains("lurker") || path.contains("stalker") || path.contains("horror") ||
+            path.contains("mimic") || path.contains("shade") || path.contains("spirit")) {
             return MobTier.MEDIUM;
         }
 
-        // Trivial mobs
-        if (path.contains("silverfish") || path.contains("slime") ||
-            path.contains("magma_cube") || path.contains("vex") ||
-            path.contains("bat")) {
+        // ============ TRIVIAL TIER ============
+        // Known vanilla trivial mobs
+        if (path.contains("silverfish") || path.contains("slime") || path.contains("magma_cube") ||
+            path.contains("vex") || path.contains("bat") || path.contains("endermite")) {
+            return MobTier.TRIVIAL;
+        }
+        // Trivial keywords
+        if (path.contains("small") || path.contains("baby") || path.contains("mini") ||
+            path.contains("lesser") || path.contains("tiny") || path.contains("weak") ||
+            path.contains("larva") || path.contains("spawn") || path.contains("minion")) {
             return MobTier.TRIVIAL;
         }
 
-        // Default to easy
+        // ============ DEFAULT HANDLING ============
+        // For modded mobs from unknown mods, use MEDIUM as default instead of EASY
+        // This prevents modded threats from being underestimated
+        if (!namespace.equals("minecraft")) {
+            MobCategory category = entityType.getCategory();
+            if (category == MobCategory.MONSTER) {
+                return MobTier.MEDIUM; // Modded monsters default to MEDIUM
+            }
+        }
+
+        // Vanilla unknown hostiles default to EASY
         return MobTier.EASY;
     }
 

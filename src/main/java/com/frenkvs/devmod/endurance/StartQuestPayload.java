@@ -24,7 +24,8 @@ public record StartQuestPayload(
     int arenaSize,
     QuestType questType,
     @Nullable UUID partyId,
-    List<UUID> partyMemberIds
+    List<UUID> partyMemberIds,
+    String kitId
 ) implements CustomPacketPayload {
 
     public static final Type<StartQuestPayload> TYPE = new Type<>(
@@ -64,7 +65,10 @@ public record StartQuestPayload(
                 partyMemberIds.add(Objects.requireNonNull(buf.readUUID()));
             }
 
-            return new StartQuestPayload(mobId, totalWaves, endlessMode, arenaSize, questType, partyId, partyMemberIds);
+            // Read kit ID
+            String kitId = buf.readUtf(MAX_STRING_LENGTH);
+
+            return new StartQuestPayload(mobId, totalWaves, endlessMode, arenaSize, questType, partyId, partyMemberIds, kitId);
         }
 
         @Override
@@ -88,6 +92,9 @@ public record StartQuestPayload(
             for (UUID memberId : payload.partyMemberIds) {
                 buf.writeUUID(Objects.requireNonNull(memberId));
             }
+
+            // Write kit ID
+            buf.writeUtf(payload.kitId != null ? payload.kitId : "STARTER");
         }
     };
 
@@ -95,14 +102,21 @@ public record StartQuestPayload(
      * Create for solo play with default settings.
      */
     public StartQuestPayload(String mobId, int totalWaves, boolean endlessMode) {
-        this(mobId, totalWaves, endlessMode, 64, QuestType.PVE_COOP, null, List.of());
+        this(mobId, totalWaves, endlessMode, 64, QuestType.PVE_COOP, null, List.of(), "STARTER");
     }
 
     /**
      * Create for solo play with custom arena size.
      */
     public StartQuestPayload(String mobId, int totalWaves, boolean endlessMode, int arenaSize) {
-        this(mobId, totalWaves, endlessMode, arenaSize, QuestType.PVE_COOP, null, List.of());
+        this(mobId, totalWaves, endlessMode, arenaSize, QuestType.PVE_COOP, null, List.of(), "STARTER");
+    }
+
+    /**
+     * Create for solo play with kit selection.
+     */
+    public StartQuestPayload(String mobId, int totalWaves, boolean endlessMode, String kitId) {
+        this(mobId, totalWaves, endlessMode, 64, QuestType.PVE_COOP, null, List.of(), kitId);
     }
 
     /**

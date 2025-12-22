@@ -321,6 +321,7 @@ public final class RadialCategoryRenderer {
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         boolean itemSelected = (index == config.selectedItemIndex);
         boolean isActive = item.isToggle() && item.isActive();
+        boolean canExecute = item.canExecute();
         float itemAnim = index < config.itemAnimations.length ? config.itemAnimations[index] : 0;
 
         double itemAngle = catStartAngle + (index + 0.5) * itemAngleStep;
@@ -341,12 +342,20 @@ public final class RadialCategoryRenderer {
             bgColor = RadialGeometry.blendColors(bgColor, config.theme.active,
                 RadialMenuConstants.ITEM_ACTIVE_BLEND);
         }
+        if (!canExecute) {
+            bgColor = RadialGeometry.blendColors(bgColor, RadialMenuConstants.COLOR_INACTIVE,
+                RadialMenuConstants.ITEM_DISABLED_BLEND);
+        }
         RadialGeometry.renderCircle(graphics, itemX, itemY, itemRadiusSize, bgColor);
 
         // Border
         int borderColor = isActive
             ? config.theme.active
             : (itemSelected ? category.getColor() : RadialMenuConstants.COLOR_DIVIDER);
+        if (!canExecute) {
+            borderColor = RadialGeometry.blendColors(borderColor, RadialMenuConstants.COLOR_INACTIVE,
+                RadialMenuConstants.ITEM_DISABLED_BLEND);
+        }
         int borderWidth = itemSelected
             ? RadialMenuConstants.BORDER_WIDTH_SELECTED
             : RadialMenuConstants.BORDER_WIDTH_DEFAULT;
@@ -357,18 +366,22 @@ public final class RadialCategoryRenderer {
         if (itemSelected) {
             int highlightColor = RadialGeometry.blendColors(category.getColor(), 0xFFFFFFFF,
                 RadialMenuConstants.ITEM_HIGHLIGHT_BLEND);
+            if (!canExecute) {
+                highlightColor = RadialGeometry.blendColors(highlightColor, RadialMenuConstants.COLOR_INACTIVE,
+                    RadialMenuConstants.ITEM_DISABLED_BLEND);
+            }
             RadialGeometry.renderRing(graphics, itemX, itemY,
                 itemRadiusSize - borderWidth - 1, itemRadiusSize - borderWidth, highlightColor);
         }
 
         // Icon
-        renderItemIcon(graphics, safeFont, item, itemX, itemY, itemSelected, config.theme);
+        renderItemIcon(graphics, safeFont, item, itemX, itemY, itemSelected, canExecute, config.theme);
 
         // Name (truncated if needed)
-        renderItemName(graphics, safeFont, item, itemX, itemY, itemSelected, isActive, config.theme);
+        renderItemName(graphics, safeFont, item, itemX, itemY, itemSelected, isActive, canExecute, config.theme);
 
         // Toggle status indicator
-        renderItemStatus(graphics, safeFont, item, itemX, itemY, isActive, config.theme);
+        renderItemStatus(graphics, safeFont, item, itemX, itemY, isActive, canExecute, config.theme);
     }
 
     /**
@@ -376,7 +389,7 @@ public final class RadialCategoryRenderer {
      */
     private static void renderItemIcon(GuiGraphics graphics, @Nonnull Font font,
                                          RadialMenuItem item, int x, int y,
-                                         boolean selected, RadialMenuConfig.ColorTheme theme) {
+                                         boolean selected, boolean canExecute, RadialMenuConfig.ColorTheme theme) {
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         ItemStack iconStack = Objects.requireNonNullElse(item.getIconStack(), ItemStack.EMPTY);
         if (!iconStack.isEmpty()) {
@@ -385,6 +398,9 @@ public final class RadialCategoryRenderer {
                 y + RadialMenuConstants.ITEM_ICON_STACK_OFFSET_Y);
         } else {
             int iconColor = selected ? theme.textPrimary : theme.textSecondary;
+            if (!canExecute) {
+                iconColor = RadialMenuConstants.COLOR_INACTIVE;
+            }
             @Nonnull String iconText = Objects.requireNonNull(Objects.requireNonNullElse(item.getIconEmoji(), ""), "iconText");
             graphics.drawCenteredString(safeFont, iconText, x,
                 y + RadialMenuConstants.ITEM_ICON_TEXT_OFFSET_Y, iconColor);
@@ -396,7 +412,7 @@ public final class RadialCategoryRenderer {
      */
     private static void renderItemName(GuiGraphics graphics, @Nonnull Font font,
                                          RadialMenuItem item, int x, int y,
-                                         boolean selected, boolean isActive,
+                                         boolean selected, boolean isActive, boolean canExecute,
                                          RadialMenuConfig.ColorTheme theme) {
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         @Nonnull String name = Objects.requireNonNull(Objects.requireNonNullElse(item.getName(), ""), "name");
@@ -406,6 +422,9 @@ public final class RadialCategoryRenderer {
         int nameColor = selected
             ? theme.textPrimary
             : (isActive ? theme.active : theme.textSecondary);
+        if (!canExecute) {
+            nameColor = RadialMenuConstants.COLOR_INACTIVE;
+        }
         @Nonnull String line0 = Objects.requireNonNull(lines.get(0), "line0");
         if (lines.size() == 1) {
             graphics.drawCenteredString(safeFont, line0, x,
@@ -482,17 +501,21 @@ public final class RadialCategoryRenderer {
      */
     private static void renderItemStatus(GuiGraphics graphics, @Nonnull Font font,
                                           RadialMenuItem item, int x, int y,
-                                          boolean isActive, RadialMenuConfig.ColorTheme theme) {
+                                          boolean isActive, boolean canExecute, RadialMenuConfig.ColorTheme theme) {
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         if (item.isToggle()) {
             @Nonnull String status = Objects.requireNonNull(isActive ? "ON" : "OFF", "status");
             int statusColor = isActive ? theme.active : RadialMenuConstants.ITEM_STATUS_INACTIVE_COLOR;
+            if (!canExecute) {
+                statusColor = RadialMenuConstants.COLOR_INACTIVE;
+            }
             graphics.drawCenteredString(safeFont, status, x,
                 y + RadialMenuConstants.ITEM_STATUS_OFFSET_Y, statusColor);
         } else if (item.isSubcategoryLink()) {
             @Nonnull String indicator = Objects.requireNonNull(">", "indicator");
+            int indicatorColor = canExecute ? theme.textSecondary : RadialMenuConstants.COLOR_INACTIVE;
             graphics.drawCenteredString(safeFont, indicator, x,
-                y + RadialMenuConstants.ITEM_STATUS_OFFSET_Y, theme.textSecondary);
+                y + RadialMenuConstants.ITEM_STATUS_OFFSET_Y, indicatorColor);
         }
     }
 

@@ -55,6 +55,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
                     settings.totalWaves = waves;
                     settings.endlessMode = payload.endlessMode();
                     settings.arenaSize = arenaSize;
+                    settings.kitId = payload.kitId() != null ? payload.kitId() : "STARTER";
 
                     EnduranceQuestManager.StartQuestResult result = EnduranceQuestManager.INSTANCE.startQuest(
                         player, mobLocation, settings);

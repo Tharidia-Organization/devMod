@@ -58,6 +58,13 @@ public class EnduranceEventTick {
         // Tick quest start sequences (countdown, validation, teleport) and quest-related updates
         var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
+            // Refine mob tiers with actual attributes (runs once on first server tick)
+            if (!EnduranceQuestRegistry.INSTANCE.isAttributesRefined()) {
+                var overworld = server.overworld();
+                if (overworld != null) {
+                    EnduranceQuestRegistry.INSTANCE.refineWithAttributes(overworld);
+                }
+            }
             QuestStartSequence.INSTANCE.tick(server);
             EnduranceQuestManager.INSTANCE.tickAsyncBuilds(server);
             tickPendingInstanceStarts(server);

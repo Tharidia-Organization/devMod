@@ -1,5 +1,7 @@
 package com.frenkvs.devmod.ui.radial.render;
 
+import com.frenkvs.devmod.actions.ActionRegistry;
+import com.frenkvs.devmod.actions.client.ClientActionContexts;
 import com.frenkvs.devmod.ui.radial.RadialCategory;
 import com.frenkvs.devmod.ui.radial.RadialMenuConfig;
 import com.frenkvs.devmod.ui.radial.RadialMenuItem;
@@ -9,6 +11,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Objects;
 
@@ -102,6 +105,7 @@ public final class RadialTooltipRenderer {
      * @param selectedCategoryIndex selected category index (-1 if none)
      * @param selectedItemIndex    selected item index (-1 if none)
      * @param categories           list of categories
+     * @param activeCategory       active category for item rendering (subcategory override)
      * @param centerHovered        whether center button is hovered
      * @param macroHubHovered      whether hovering over macro hub area
      * @param editMode             whether edit mode is active
@@ -114,6 +118,7 @@ public final class RadialTooltipRenderer {
                                           int selectedCategoryIndex,
                                           int selectedItemIndex,
                                           List<RadialCategory> categories,
+                                          @Nullable RadialCategory activeCategory,
                                           boolean centerHovered,
                                           boolean macroHubHovered,
                                           boolean editMode) {
@@ -134,11 +139,19 @@ public final class RadialTooltipRenderer {
 
         // Category item tooltip (use visible items to match selectedItemIndex)
         if (selectedCategoryIndex >= 0 && selectedCategoryIndex < categories.size()) {
-            RadialCategory cat = categories.get(selectedCategoryIndex);
+            RadialCategory cat = activeCategory != null ? activeCategory : categories.get(selectedCategoryIndex);
             java.util.List<RadialMenuItem> visibleItems = cat.getVisibleItems();
             if (selectedItemIndex >= 0 && selectedItemIndex < visibleItems.size()) {
                 RadialMenuItem item = visibleItems.get(selectedItemIndex);
-                String tooltip = item.getDescription();
+                String tooltip = Objects.requireNonNullElse(item.getDescription(), "");
+                if (!item.canExecute()) {
+                    String reason = resolveUnavailableReason(item);
+                    if (reason == null || reason.isBlank()) {
+                        tooltip += "\n§cUnavailable";
+                    } else {
+                        tooltip += "\n§c" + reason;
+                    }
+                }
                 if (editMode) {
                     tooltip += " §8| §cShift+Click to favorite";
                 }
@@ -325,13 +338,15 @@ public final class RadialTooltipRenderer {
      * @param categoryName category name
      * @param isToggle     whether item is a toggle
      * @param isActive     whether toggle is active
+     * @param canExecute   whether item can be executed
      */
     public record SearchResultDisplay(
         @Nonnull net.minecraft.world.item.ItemStack iconStack,
         String name,
         String categoryName,
         boolean isToggle,
-        boolean isActive
+        boolean isActive,
+        boolean canExecute
     ) {
         public SearchResultDisplay {
             Objects.requireNonNull(iconStack, "iconStack cannot be null");
@@ -413,19 +428,34 @@ public final class RadialTooltipRenderer {
                 graphics.renderItem(result.iconStack(), iconX, iconY);
             }
 
+            int textColor = result.canExecute() ? config.theme.textPrimary : RadialMenuConstants.COLOR_INACTIVE;
             String catName = "§7[" + result.categoryName + "]";
             graphics.drawString(font, result.name + " " + catName,
                 boxX + RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_X + 18,
                 resultY + RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_Y,
-                config.theme.textPrimary);
+                textColor);
 
             if (result.isToggle && result.isActive) {
-                graphics.drawString(font, "§a* ON",
+                int statusColor = result.canExecute() ? config.theme.active : RadialMenuConstants.COLOR_INACTIVE;
+                graphics.drawString(font, "* ON",
                     boxX + boxWidth - RadialMenuConstants.SEARCH_RESULT_STATUS_OFFSET_X,
-                    resultY + RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_Y, config.theme.active);
+                    resultY + RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_Y, statusColor);
             }
 
             resultY += RadialMenuConstants.SEARCH_RESULT_GAP;
         }
+    }
+
+    @Nullable
+    private static String resolveUnavailableReason(RadialMenuItem item) {
+        String actionId = item.getAction().getRegistryId();
+        if (actionId == null) {
+            return null;
+        }
+        com.frenkvs.devmod.actions.RadialAction action = ActionRegistry.getAction(actionId);
+        if (action == null) {
+            return null;
+        }
+        return action.getPrecondition().failureMessage(ClientActionContexts.forRadial()).getString();
     }
 }

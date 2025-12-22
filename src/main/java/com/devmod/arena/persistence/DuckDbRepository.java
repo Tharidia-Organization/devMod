@@ -45,6 +45,7 @@ public class DuckDbRepository implements AutoCloseable {
     private volatile Connection connection;
     private volatile BuildSchema buildSchema = BuildSchema.LEGACY;
     private volatile SpatialSchema spatialSchema = SpatialSchema.LEGACY;
+    private volatile UsageSchema usageSchema = UsageSchema.LEGACY;
 
     private enum BuildSchema {
         LEGACY,
@@ -52,6 +53,11 @@ public class DuckDbRepository implements AutoCloseable {
     }
 
     private enum SpatialSchema {
+        LEGACY,
+        TELEMETRY
+    }
+
+    private enum UsageSchema {
         LEGACY,
         TELEMETRY
     }
@@ -261,6 +267,17 @@ public class DuckDbRepository implements AutoCloseable {
         } else {
             spatialSchema = SpatialSchema.LEGACY;
         }
+
+        Set<String> usageColumns = getTableColumns("arena_template_usage");
+        if (usageColumns.contains("usage_id") && usageColumns.contains("session_started_at")) {
+            usageSchema = UsageSchema.LEGACY;
+        } else if (usageColumns.contains("id") && usageColumns.contains("ts")) {
+            usageSchema = UsageSchema.TELEMETRY;
+        } else {
+            usageSchema = UsageSchema.LEGACY;
+        }
+
+        LOGGER.info("Detected schemas - builds: " + buildSchema + ", spatial: " + spatialSchema + ", usage: " + usageSchema);
     }
 
     private void ensureBuildColumns() throws SQLException {
@@ -533,6 +550,14 @@ public class DuckDbRepository implements AutoCloseable {
      * Records a template usage session.
      */
     public void recordUsage(UsageRecord usage) throws SQLException {
+        if (usageSchema == UsageSchema.TELEMETRY) {
+            recordUsageTelemetry(usage);
+            return;
+        }
+        recordUsageLegacy(usage);
+    }
+
+    private void recordUsageLegacy(UsageRecord usage) throws SQLException {
         String sql = """
             INSERT INTO arena_template_usage
             (usage_id, session_id, template_id, template_version, session_started_at, session_ended_at,
@@ -551,6 +576,33 @@ public class DuckDbRepository implements AutoCloseable {
             stmt.setString(8, usage.status());
             stmt.setBoolean(9, usage.versionDriftDetected());
             stmt.setBoolean(10, usage.configurationDriftDetected());
+            stmt.executeUpdate();
+        }
+    }
+
+    private void recordUsageTelemetry(UsageRecord usage) throws SQLException {
+        // TELEMETRY schema uses: id, ts, template_id, template_version (INTEGER), session_id, event_type, etc.
+        String sql = """
+            INSERT INTO arena_template_usage
+            (id, ts, template_id, template_version, session_id, event_type, duration_ms, outcome)
+            VALUES (nextval('seq_arena_template_usage'), ?, ?, ?, ?, ?, ?, ?)
+            """;
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setTimestamp(1, Timestamp.from(usage.sessionStartedAt()));
+            stmt.setString(2, usage.templateId());
+            // Parse template version as integer, default to 1 if not parseable
+            int templateVersion = 1;
+            try {
+                if (usage.templateVersion() != null) {
+                    templateVersion = Integer.parseInt(usage.templateVersion());
+                }
+            } catch (NumberFormatException ignored) {}
+            stmt.setInt(3, templateVersion);
+            stmt.setString(4, usage.sessionId().toString());
+            stmt.setString(5, usage.status() != null ? usage.status() : "session_end");
+            setNullableLong(stmt, 6, usage.durationMs());
+            stmt.setString(7, usage.status());
             stmt.executeUpdate();
         }
     }
@@ -1201,6 +1253,12 @@ public class DuckDbRepository implements AutoCloseable {
      * Queries sessions with version drift.
      */
     public List<UsageRecord> getVersionDriftSessions(int limit) throws SQLException {
+        if (usageSchema == UsageSchema.TELEMETRY) {
+            // TELEMETRY schema doesn't have version_drift_detected column, return empty
+            // Version drift is tracked differently in telemetry schema
+            return new ArrayList<>();
+        }
+
         String sql = """
             SELECT usage_id, session_id, template_id, template_version, session_started_at,
                    session_ended_at, duration_ms, status, version_drift_detected, configuration_drift_detected
@@ -1342,20 +1400,44 @@ public class DuckDbRepository implements AutoCloseable {
         String timestamp = extractJsonString(json, "timestamp");
         String status = extractJsonString(json, "status");
 
-        if (buildId != null && templateId != null) {
-            String sql = """
-                INSERT INTO arena_template_builds
-                (build_id, template_id, template_version, started_at, status)
-                VALUES (?, ?, ?, ?, ?)
-                ON CONFLICT (build_id) DO NOTHING
-                """;
-            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-                stmt.setString(1, buildId);
-                stmt.setString(2, templateId);
-                stmt.setString(3, templateVersion != null ? templateVersion : "unknown");
-                stmt.setTimestamp(4, timestamp != null ? Timestamp.valueOf(timestamp.replace("T", " ").replace("Z", "")) : Timestamp.from(Instant.now()));
-                stmt.setString(5, status != null ? status : "unknown");
-                stmt.executeUpdate();
+        if (templateId != null) {
+            Timestamp ts = timestamp != null
+                ? Timestamp.valueOf(timestamp.replace("T", " ").replace("Z", ""))
+                : Timestamp.from(Instant.now());
+
+            if (buildSchema == BuildSchema.TELEMETRY) {
+                String sql = """
+                    INSERT INTO arena_template_builds
+                    (id, ts, arena_id, template_id, template_version, success)
+                    VALUES (nextval('seq_arena_template_builds'), ?, ?, ?, ?, ?)
+                    """;
+                try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                    stmt.setTimestamp(1, ts);
+                    stmt.setString(2, buildId != null ? buildId : UUID.randomUUID().toString());
+                    stmt.setString(3, templateId);
+                    int version = 1;
+                    if (templateVersion != null) {
+                        try { version = Integer.parseInt(templateVersion); } catch (NumberFormatException ignored) {}
+                    }
+                    stmt.setInt(4, version);
+                    stmt.setBoolean(5, !"failed".equalsIgnoreCase(status));
+                    stmt.executeUpdate();
+                }
+            } else if (buildId != null) {
+                String sql = """
+                    INSERT INTO arena_template_builds
+                    (build_id, template_id, template_version, started_at, status)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT (build_id) DO NOTHING
+                    """;
+                try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                    stmt.setString(1, buildId);
+                    stmt.setString(2, templateId);
+                    stmt.setString(3, templateVersion != null ? templateVersion : "unknown");
+                    stmt.setTimestamp(4, ts);
+                    stmt.setString(5, status != null ? status : "unknown");
+                    stmt.executeUpdate();
+                }
             }
         }
     }
@@ -1364,20 +1446,41 @@ public class DuckDbRepository implements AutoCloseable {
         String sessionId = extractJsonString(json, "sessionId");
         String templateId = extractJsonString(json, "templateId");
         if (sessionId != null && templateId != null) {
-            String sql = """
-                INSERT INTO arena_template_usage
-                (usage_id, session_id, template_id, template_version, session_started_at, status)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT (usage_id) DO NOTHING
-                """;
-            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-                stmt.setString(1, UUID.randomUUID().toString());
-                stmt.setString(2, sessionId);
-                stmt.setString(3, templateId);
-                stmt.setString(4, extractJsonString(json, "templateVersion") != null ? extractJsonString(json, "templateVersion") : "unknown");
-                stmt.setTimestamp(5, Timestamp.from(Instant.now()));
-                stmt.setString(6, "ingested");
-                stmt.executeUpdate();
+            if (usageSchema == UsageSchema.TELEMETRY) {
+                String sql = """
+                    INSERT INTO arena_template_usage
+                    (id, ts, template_id, template_version, session_id, event_type)
+                    VALUES (nextval('seq_arena_template_usage'), ?, ?, ?, ?, ?)
+                    """;
+                try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                    stmt.setTimestamp(1, Timestamp.from(Instant.now()));
+                    stmt.setString(2, templateId);
+                    int templateVersion = 1;
+                    String versionStr = extractJsonString(json, "templateVersion");
+                    if (versionStr != null) {
+                        try { templateVersion = Integer.parseInt(versionStr); } catch (NumberFormatException ignored) {}
+                    }
+                    stmt.setInt(3, templateVersion);
+                    stmt.setString(4, sessionId);
+                    stmt.setString(5, "ingested");
+                    stmt.executeUpdate();
+                }
+            } else {
+                String sql = """
+                    INSERT INTO arena_template_usage
+                    (usage_id, session_id, template_id, template_version, session_started_at, status)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT (usage_id) DO NOTHING
+                    """;
+                try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                    stmt.setString(1, UUID.randomUUID().toString());
+                    stmt.setString(2, sessionId);
+                    stmt.setString(3, templateId);
+                    stmt.setString(4, extractJsonString(json, "templateVersion") != null ? extractJsonString(json, "templateVersion") : "unknown");
+                    stmt.setTimestamp(5, Timestamp.from(Instant.now()));
+                    stmt.setString(6, "ingested");
+                    stmt.executeUpdate();
+                }
             }
         }
     }

@@ -1731,6 +1731,7 @@ public class EnduranceQuestManager {
             }
             session.setDifficultyLabel(resolveDifficultyLabel(settings, quest.getMobConfig()));
             session.setQuestTypeLabel(resolveQuestTypeLabel(settings, quest.getMobConfig()));
+            session.setKitId(settings.kitId);
             activeSessions.put(playerId, session); // Replaces placeholder
 
             // Prepare player (save state, give kit - NO TELEPORT, already done)
@@ -1874,6 +1875,7 @@ public class EnduranceQuestManager {
         pendingSession.setPending(true);
         pendingSession.setDifficultyLabel(resolveDifficultyLabel(settings, quest.getMobConfig()));
         pendingSession.setQuestTypeLabel(resolveQuestTypeLabel(settings, quest.getMobConfig()));
+        pendingSession.setKitId(settings.kitId);
         pendingSession.scheduleBriefing(BRIEFING_TICKS);
         pendingSession.scheduleInstanceStart(mobId, settings, resolved, PRE_TELEPORT_COUNTDOWN_TICKS);
 
@@ -2200,9 +2202,11 @@ public class EnduranceQuestManager {
         if (pendingSession != null) {
             session.setDifficultyLabel(pendingSession.getDifficultyLabel());
             session.setQuestTypeLabel(pendingSession.getQuestTypeLabel());
+            session.setKitId(pendingSession.getKitId());
         } else {
             session.setDifficultyLabel(resolveDifficultyLabel(settings, quest.getMobConfig()));
             session.setQuestTypeLabel(resolveQuestTypeLabel(settings, quest.getMobConfig()));
+            session.setKitId(settings.kitId);
         }
         activeSessions.put(effectivePlayerId, session);
 
@@ -2470,6 +2474,9 @@ public class EnduranceQuestManager {
         public UUID partyId = null;
         public java.util.List<UUID> partyMemberIds = java.util.List.of();
 
+        // Kit selection
+        public String kitId = "STARTER";
+
         public QuestSettings() {}
 
         public QuestSettings waves(int waves) {
@@ -2581,6 +2588,9 @@ public class EnduranceQuestManager {
         private int playerCount = 1;
         private String difficultyLabel;
         private String questTypeLabel;
+
+        // Kit selection for this quest
+        private String kitId = "STARTER";
 
         public ActiveQuestSession(UUID playerId, EnduranceQuest quest, ArenaContext arena, long startTime) {
             this.playerId = playerId;
@@ -2838,6 +2848,10 @@ public class EnduranceQuestManager {
         public String getQuestTypeLabel() { return questTypeLabel; }
 
         public void setQuestTypeLabel(String questTypeLabel) { this.questTypeLabel = questTypeLabel; }
+
+        public String getKitId() { return kitId; }
+
+        public void setKitId(String kitId) { this.kitId = kitId != null ? kitId : "STARTER"; }
 
         public void setPendingDirectives(List<WaveDirective> directives, int waveNumber) {
             this.pendingDirectives = directives != null ? List.copyOf(directives) : List.of();

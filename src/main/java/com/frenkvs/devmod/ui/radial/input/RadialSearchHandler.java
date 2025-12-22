@@ -7,8 +7,10 @@ import com.frenkvs.devmod.ui.radial.config.RadialMenuConstants;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Handles fuzzy search functionality for the Radial Menu.
@@ -98,13 +100,9 @@ public final class RadialSearchHandler {
         String normalizedQuery = query.toLowerCase();
         List<SearchResult> results = new ArrayList<>();
 
+        Set<RadialCategory> visited = new HashSet<>();
         for (RadialCategory cat : categories) {
-            for (RadialMenuItem item : cat.getItems()) {
-                int score = calculateScore(normalizedQuery, item);
-                if (score > 0) {
-                    results.add(new SearchResult(item, cat, score));
-                }
-            }
+            collectMatches(normalizedQuery, cat, results, visited);
         }
 
         // Sort by score descending
@@ -158,6 +156,26 @@ public final class RadialSearchHandler {
         }
 
         return score;
+    }
+
+    private static void collectMatches(String query, RadialCategory category,
+                                       List<SearchResult> results, Set<RadialCategory> visited) {
+        if (!visited.add(category)) {
+            return;
+        }
+
+        for (RadialMenuItem item : category.getVisibleItems()) {
+            int score = calculateScore(query, item);
+            if (score > 0) {
+                results.add(new SearchResult(item, category, score));
+            }
+            if (item.isSubcategoryLink()) {
+                RadialCategory subcategory = item.getLinkedSubcategory();
+                if (subcategory != null) {
+                    collectMatches(query, subcategory, results, visited);
+                }
+            }
+        }
     }
 
     /**

@@ -187,6 +187,9 @@ public final class RadialMenuConstants {
     /** Item active blend factor */
     public static final float ITEM_ACTIVE_BLEND = 0.25f;
 
+    /** Item disabled blend factor */
+    public static final float ITEM_DISABLED_BLEND = 0.55f;
+
     /** Item highlight blend factor */
     public static final float ITEM_HIGHLIGHT_BLEND = 0.3f;
 

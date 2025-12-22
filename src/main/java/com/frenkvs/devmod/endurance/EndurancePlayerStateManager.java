@@ -58,13 +58,45 @@ public class EndurancePlayerStateManager {
         // Set to survival mode
         player.setGameMode(GameType.SURVIVAL);
 
-        // Give starter kit
-        giveStarterKit(player);
+        // Apply the selected kit (or starter kit if not specified)
+        applyKitToPlayer(player, session.getKitId());
 
         // Heal player to full
         player.setHealth(player.getMaxHealth());
         player.getFoodData().setFoodLevel(20);
         player.getFoodData().setSaturation(5.0f);
+    }
+
+    /**
+     * Apply a kit to the player based on kit ID.
+     */
+    public void applyKitToPlayer(ServerPlayer player, String kitId) {
+        // Check for temporary (on-the-fly) kit first
+        if ("TEMPORARY".equals(kitId) && KitManager.INSTANCE.hasTemporaryKit()) {
+            KitManager.INSTANCE.applyTemporaryKit(player);
+            LOGGER.debug("[EnduranceQuest] Applied temporary kit to {}", player.getName().getString());
+            return;
+        }
+
+        // Check for custom kit by ID
+        if (kitId != null && kitId.length() == 8) {
+            // Custom kit IDs are 8 character UUIDs
+            var customKit = KitManager.INSTANCE.getCustomKit(kitId);
+            if (customKit.isPresent()) {
+                KitManager.INSTANCE.applyCustomKit(player, customKit.get());
+                LOGGER.debug("[EnduranceQuest] Applied custom kit {} to {}",
+                    customKit.get().getName(), player.getName().getString());
+                return;
+            }
+        }
+
+        // Fall back to preset kit
+        KitPreset kit = KitManager.INSTANCE.getKitById(kitId);
+        if (kit == null) {
+            kit = KitPreset.STARTER;
+        }
+        KitManager.INSTANCE.applyKit(player, kit);
+        LOGGER.debug("[EnduranceQuest] Applied kit {} to {}", kit.name(), player.getName().getString());
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -108,15 +140,16 @@ public class EndurancePlayerStateManager {
     /**
      * Reset quest loadout after death to ensure the player has the expected kit.
      */
-    public void resetQuestLoadout(ServerPlayer player) {
+    public void resetQuestLoadout(ServerPlayer player, EnduranceQuestManager.ActiveQuestSession session) {
         player.getInventory().clearContent();
-        giveStarterKit(player);
+        applyKitToPlayer(player, session.getKitId());
 
         player.setHealth(player.getMaxHealth());
         player.getFoodData().setFoodLevel(20);
         player.getFoodData().setSaturation(5.0f);
 
-        LOGGER.debug("[EnduranceQuest] Reset quest loadout for {}", player.getName().getString());
+        LOGGER.debug("[EnduranceQuest] Reset quest loadout for {} with kit {}",
+            player.getName().getString(), session.getKitId());
     }
 
     /**
