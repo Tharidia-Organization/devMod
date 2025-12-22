@@ -287,14 +287,13 @@ class RadialMenuMacroCategoryTest {
         }
 
         @Test
-        @DisplayName("L2-06: getActiveCategories uses macroCategoryMap")
+        @DisplayName("L2-06: getActiveCategories uses macroCategoryMap (via helper)")
         void getActiveCategoriesUsesMacroCategoryMap() {
-            // Find the method and verify it uses macroCategoryMap
-            Pattern pattern = Pattern.compile(
-                "getActiveCategories\\(\\)\\s*\\{[^}]*macroCategoryMap",
-                Pattern.DOTALL);
-            assertTrue(pattern.matcher(screenSourceCode).find(),
-                "getActiveCategories should use macroCategoryMap");
+            // Verify getActiveCategories delegates to getVisibleCategoriesForMacro which uses macroCategoryMap
+            assertTrue(screenSourceCode.contains("getVisibleCategoriesForMacro(selectedMacro)"),
+                "getActiveCategories should delegate to getVisibleCategoriesForMacro");
+            assertTrue(screenSourceCode.contains("macroCategoryMap.getOrDefault(macro"),
+                "getVisibleCategoriesForMacro should use macroCategoryMap");
         }
 
         @Test
@@ -442,8 +441,8 @@ class RadialMenuMacroCategoryTest {
         @Test
         @DisplayName("L5-04: transitionFromMacro is used for cross-fade rendering")
         void transitionFromMacroUsedInRendering() {
-            // Verify transitionFromMacro is read during rendering for cross-fade effect
-            assertTrue(screenSourceCode.contains("macroCategoryMap.getOrDefault(transitionFromMacro"),
+            // Verify transitionFromMacro is used via helper for cross-fade effect
+            assertTrue(screenSourceCode.contains("getVisibleCategoriesForMacro(transitionFromMacro)"),
                 "transitionFromMacro should be used to get outgoing categories for cross-fade");
         }
     }

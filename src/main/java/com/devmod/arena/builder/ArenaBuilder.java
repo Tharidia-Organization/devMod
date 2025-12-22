@@ -273,7 +273,7 @@ public class ArenaBuilder {
         if (buildPriority == ArenaTemplate.BuildSettings.Priority.ASYNC) {
             String msg = "Template '%s' requires ASYNC build; sync builder is not allowed"
                 .formatted(template.id());
-            LOGGER.error("{}", msg);
+            LOGGER.warn("{}", msg);
             telemetry.emit("arena.build.priority_blocked", Map.of(
                 "templateId", template.id(),
                 "templateVersion", template.version(),
