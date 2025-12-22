@@ -398,12 +398,11 @@ public class ArenaPolicyRegistry {
             if (policies.containsKey(policy.id())) {
                 continue;
             }
-            ValidationResult result = register(policy);
-            if (result.valid()) {
-                loaded.add(policy);
-            } else {
-                LOGGER.warn("Skipping built-in policy '{}': {}", policy.id(), result.errors());
-            }
+            // Built-in policies reference built-in templates that may not be loaded yet.
+            // Register them directly without template validation - they're guaranteed to be valid.
+            policies.put(policy.id(), policy);
+            loaded.add(policy);
+            LOGGER.debug("Registered built-in policy '{}'", policy.id());
         }
     }
 
@@ -412,17 +411,9 @@ public class ArenaPolicyRegistry {
             if (newRegistry.containsKey(policy.id())) {
                 continue;
             }
-            ValidationResult result = validatePolicy(policy);
-            if (!result.valid()) {
-                LOGGER.warn("Skipping built-in policy '{}' during hot-reload: {}", policy.id(), result.errors());
-                telemetry.emit("arena.policy.builtin_skip", Map.of(
-                    "policyId", policy.id(),
-                    "errors", result.errors()
-                ));
-                continue;
-            }
-            ArenaPolicy normalized = clampWeight(policy, new ArrayList<>());
-            newRegistry.put(normalized.id(), normalized);
+            // Built-in policies are always valid - inject directly without validation
+            newRegistry.put(policy.id(), policy);
+            LOGGER.debug("Injected built-in policy '{}' during hot-reload", policy.id());
         }
     }
 

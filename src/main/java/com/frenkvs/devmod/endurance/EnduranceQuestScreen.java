@@ -982,8 +982,14 @@ public class EnduranceQuestScreen extends Screen {
             if (resetFiltersButton != null && resetFiltersButton.mouseClicked(mouseX, mouseY, button)) return true;
         }
 
-        // Check sidebar clicks
+        // Check sidebar clicks - but let the search box handle its own clicks first
         if (mouseX < SIDEBAR_WIDTH) {
+            // Check if click is on search box area (bottom of sidebar)
+            int searchY = height - 28;
+            if (mouseY >= searchY && mouseY <= searchY + 18 && mouseX >= 10 && mouseX <= SIDEBAR_WIDTH - 10) {
+                // Let super handle it so the EditBox can receive focus
+                return super.mouseClicked(mouseX, mouseY, button);
+            }
             handleSidebarClick(mx, my);
             return true;
         }
@@ -1024,6 +1030,7 @@ public class EnduranceQuestScreen extends Screen {
         if (endlessToggleButton != null) handled |= endlessToggleButton.mouseReleased(mouseX, mouseY, button);
         if (prevKitButton != null) handled |= prevKitButton.mouseReleased(mouseX, mouseY, button);
         if (nextKitButton != null) handled |= nextKitButton.mouseReleased(mouseX, mouseY, button);
+        if (editKitButton != null) handled |= editKitButton.mouseReleased(mouseX, mouseY, button);
         if (resetFiltersButton != null) handled |= resetFiltersButton.mouseReleased(mouseX, mouseY, button);
 
         if (handled) return true;

@@ -90,9 +90,7 @@ public class DevMod {
 
         // Register config reload listener for runtime updates
         eventBus.addListener(DevMod::onConfigReload);
-
-        // Initialize EditorConfig cache (after config registration)
-        EditorConfig.initCache();
+        eventBus.addListener(DevMod::onConfigLoading);
 
         // Initialize external mod integration (Pehkui, Better Combat, etc.)
         ModIntegrationManager.init();
@@ -115,6 +113,17 @@ public class DevMod {
         initArenaTemplateRegistry();
 
         LOGGER.info("DevMod loaded successfully!");
+    }
+
+    /**
+     * Handle config loading events to initialize caches.
+     * Called when config is first loaded.
+     */
+    private static void onConfigLoading(ModConfigEvent.Loading event) {
+        if (event.getConfig().getSpec() == EditorClientConfig.SPEC) {
+            LOGGER.debug("[DevMod] Client config loaded, initializing EditorConfig cache...");
+            EditorConfig.initCache();
+        }
     }
 
     /**

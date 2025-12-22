@@ -148,9 +148,11 @@ public final class ArenaCommandEvents {
     public static void onServerStopped(ServerStoppedEvent event) {
         if (autosmokeScheduler != null) {
             autosmokeScheduler.close();
+            autosmokeScheduler = null;
         }
         if (autosmokeRunner != null) {
             autosmokeRunner.shutdown();
+            autosmokeRunner = null;
         }
         ASYNC_COORDINATOR.clear();
         if (alertRouter != null) {
