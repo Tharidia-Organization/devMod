@@ -1,7 +1,6 @@
 package com.frenkvs.devmod.telemetry.dashboard;
 
 import com.devmod.arena.dashboard.ArenaDashboardEndpoint;
-import com.devmod.arena.persistence.DuckDbRepository;
 import com.frenkvs.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -61,7 +60,6 @@ public class TelemetryDashboardServer {
     // Delegate for analytics handlers
     private TelemetryAnalyticsHandlers analyticsHandlers;
     private ArenaDashboardEndpoint arenaEndpoint;
-    private DuckDbRepository arenaRepository;
 
     private TelemetryDashboardServer() {}
 
@@ -171,10 +169,6 @@ public class TelemetryDashboardServer {
                 server.stop(1);
                 server = null;
             }
-            if (arenaRepository != null) {
-                try { arenaRepository.close(); } catch (Exception ignored) {}
-                arenaRepository = null;
-            }
             if (arenaEndpoint != null) {
                 try { arenaEndpoint.close(); } catch (Exception ignored) {}
                 arenaEndpoint = null;
@@ -188,20 +182,9 @@ public class TelemetryDashboardServer {
 
     private void initializeArenaDashboard() {
         arenaEndpoint = ArenaDashboardEndpoint.getInstance();
-        if (arenaRepository != null) {
-            return;
-        }
-
-        try {
-            if (DuckDBTelemetryService.INSTANCE.getDbPath() == null) {
-                LOGGER.warn("[Dashboard] DuckDB path unavailable; arena analytics disabled");
-                return;
-            }
-            arenaRepository = new DuckDbRepository(DuckDBTelemetryService.INSTANCE.getDbPath().toString());
-            arenaRepository.initialize();
-            arenaEndpoint.setRepository(arenaRepository);
-        } catch (Exception e) {
-            LOGGER.warn("[Dashboard] Failed to initialize arena analytics: {}", e.getMessage());
+        // Arena analytics now uses DuckDBTelemetryService.INSTANCE via QueryAPI
+        if (DuckDBTelemetryService.INSTANCE.getDbPath() == null) {
+            LOGGER.warn("[Dashboard] DuckDB path unavailable; arena analytics disabled");
         }
     }
 

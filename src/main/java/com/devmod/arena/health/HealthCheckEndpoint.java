@@ -2,7 +2,7 @@ package com.devmod.arena.health;
 
 import com.devmod.arena.fallback.CircuitBreaker;
 import com.devmod.arena.pool.PrebuildPoolManager;
-import com.devmod.arena.persistence.DuckDbRepository;
+import com.frenkvs.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +33,6 @@ public class HealthCheckEndpoint {
     private static final Duration PROBE_TIMEOUT = Duration.ofSeconds(5);
 
     private final Supplier<PrebuildPoolManager> poolManagerSupplier;
-    private final Supplier<DuckDbRepository> repositorySupplier;
     private final Supplier<CircuitBreaker> circuitBreakerSupplier;
 
     private volatile boolean startupComplete = false;
@@ -41,11 +40,21 @@ public class HealthCheckEndpoint {
 
     public HealthCheckEndpoint(
             Supplier<PrebuildPoolManager> poolManagerSupplier,
-            Supplier<DuckDbRepository> repositorySupplier,
             Supplier<CircuitBreaker> circuitBreakerSupplier) {
         this.poolManagerSupplier = poolManagerSupplier;
-        this.repositorySupplier = repositorySupplier;
         this.circuitBreakerSupplier = circuitBreakerSupplier;
+    }
+
+    /**
+     * Legacy constructor for backwards compatibility.
+     * @deprecated Use constructor without repository supplier
+     */
+    @Deprecated
+    public HealthCheckEndpoint(
+            Supplier<PrebuildPoolManager> poolManagerSupplier,
+            Object repositorySupplier,
+            Supplier<CircuitBreaker> circuitBreakerSupplier) {
+        this(poolManagerSupplier, circuitBreakerSupplier);
     }
 
     /**
@@ -162,15 +171,16 @@ public class HealthCheckEndpoint {
 
     private ComponentHealth checkDatabase() {
         try {
-            DuckDbRepository repository = repositorySupplier.get();
-            if (repository == null) {
-                return ComponentHealth.down("Database repository not available");
+            var connection = DuckDBTelemetryService.INSTANCE.getConnection();
+            if (connection == null) {
+                return ComponentHealth.down("Database connection not available");
             }
 
             // Quick connectivity check with timeout
             CompletableFuture<Boolean> check = CompletableFuture.supplyAsync(() -> {
                 try {
-                    repository.getErrorCountBySeverity(1);
+                    // Simple query to verify connectivity
+                    DuckDBTelemetryService.INSTANCE.getQueryAPI().countArenaBuildsAfter(Instant.EPOCH);
                     return true;
                 } catch (Exception e) {
                     return false;

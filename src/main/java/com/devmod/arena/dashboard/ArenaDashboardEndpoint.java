@@ -1,11 +1,12 @@
 package com.devmod.arena.dashboard;
 
-import com.devmod.arena.persistence.DuckDbRepository;
 import com.devmod.arena.security.ArenaCommandAudit;
+import com.frenkvs.devmod.telemetry.duckdb.ArenaRecords;
+import com.frenkvs.devmod.telemetry.duckdb.DuckDBQueryAPI;
+import com.frenkvs.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -71,8 +72,8 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
     /** Whether the endpoint is enabled */
     private volatile boolean enabled = true;
 
-    /** Optional DuckDB repository for analytics queries */
-    private DuckDbRepository repository;
+    /** Query API for analytics queries - uses unified DuckDBTelemetryService */
+    private DuckDBQueryAPI queryAPI;
 
     private ArenaDashboardEndpoint() {
         // Start background cache refresh
@@ -80,14 +81,23 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
     }
 
     /**
-     * Sets the DuckDB repository for analytics queries.
-     * DD36: Required for real analytics data instead of stub responses.
-     *
-     * @param repository The DuckDB repository
+     * Initializes the query API from DuckDBTelemetryService.
+     * Called automatically when queries are needed.
      */
-    public void setRepository(DuckDbRepository repository) {
-        this.repository = repository;
-        LOGGER.info("DuckDB repository configured for analytics");
+    private DuckDBQueryAPI getQueryAPI() {
+        if (queryAPI == null) {
+            queryAPI = DuckDBTelemetryService.INSTANCE.getQueryAPI();
+        }
+        return queryAPI;
+    }
+
+    /**
+     * Legacy method for backwards compatibility.
+     * @deprecated Query API is now obtained from DuckDBTelemetryService
+     */
+    @Deprecated
+    public void setRepository(Object repository) {
+        LOGGER.info("DuckDB repository configured via TelemetryService");
     }
 
     public static ArenaDashboardEndpoint getInstance() {
@@ -649,14 +659,14 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
     ) {}
 
     private TemplateListResponse computeTemplateList() {
-        if (repository == null) {
+        if (getQueryAPI() == null) {
             LOGGER.warn("No repository configured, returning empty template list");
             return TemplateListResponse.empty();
         }
         try {
-            List<String> templateIds = repository.getAllTemplateIds();
+            List<String> templateIds = getQueryAPI().getArenaTemplateIds();
             return new TemplateListResponse(templateIds, Instant.now());
-        } catch (SQLException e) {
+        } catch (Exception e) {
             LOGGER.error("Failed to fetch template list", e);
             return TemplateListResponse.empty();
         }
@@ -668,14 +678,14 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
     private TemplatesFailureRateResponse computeTemplatesFailureRate() {
         LOGGER.debug("Computing failure rates for all templates");
 
-        if (repository == null) {
+        if (getQueryAPI() == null) {
             LOGGER.warn("No repository configured, returning empty failure rates");
             return TemplatesFailureRateResponse.empty();
         }
 
         try {
             // Query all template IDs
-            List<String> templateIds = repository.getAllTemplateIds();
+            List<String> templateIds = getQueryAPI().getArenaTemplateIds();
 
             if (templateIds.isEmpty()) {
                 return TemplatesFailureRateResponse.empty();
@@ -684,7 +694,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
             List<TemplateFailureInfo> results = new ArrayList<>();
 
             for (String templateId : templateIds) {
-                List<DuckDbRepository.BuildRecord> builds = repository.getRecentBuilds(templateId, 1000);
+                List<ArenaRecords.BuildRecord> builds = getQueryAPI().getArenaRecentBuilds(templateId, 1000);
 
                 if (!builds.isEmpty()) {
                     int totalBuilds = builds.size();
@@ -706,7 +716,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
 
             return new TemplatesFailureRateResponse(results, Instant.now());
 
-        } catch (SQLException e) {
+        } catch (Exception e) {
             LOGGER.error("Failed to compute templates failure rate", e);
             return TemplatesFailureRateResponse.empty();
         }
@@ -715,19 +725,19 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
     // ========== Analytics Computation ==========
 
     /**
-     * DD36: Computes build metrics from DuckDB repository.
+     * DD36: Computes build metrics from DuckDB getQueryAPI().
      */
     private BuildMetricsResponse computeBuildMetrics(AnalyticsQueryParams params) {
         LOGGER.debug("Computing build metrics for template: {}", params.templateId());
 
-        if (repository == null) {
+        if (getQueryAPI() == null) {
             LOGGER.warn("No repository configured, returning empty metrics");
             return BuildMetricsResponse.empty(params.templateId());
         }
 
         try {
             // Query recent builds for this template
-            List<DuckDbRepository.BuildRecord> builds = repository.getRecentBuilds(
+            List<ArenaRecords.BuildRecord> builds = getQueryAPI().getArenaRecentBuilds(
                 params.templateId(),
                 params.templateVersion(),
                 params.pageSize()
@@ -744,7 +754,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
             long totalDurationMs = 0;
             List<Long> durations = new ArrayList<>();
 
-            for (DuckDbRepository.BuildRecord build : builds) {
+            for (ArenaRecords.BuildRecord build : builds) {
                 if ("success".equalsIgnoreCase(build.status())) {
                     successfulBuilds++;
                 } else if ("failed".equalsIgnoreCase(build.status())) {
@@ -782,7 +792,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
                 params.to()
             );
 
-        } catch (SQLException e) {
+        } catch (Exception e) {
             LOGGER.error("Failed to query build metrics for template: {}", params.templateId(), e);
             return BuildMetricsResponse.empty(params.templateId());
         }
@@ -796,20 +806,20 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
     private PerformanceResponse computePerformance(AnalyticsQueryParams params) {
         LOGGER.debug("Computing performance for template: {}", params.templateId());
 
-        if (repository == null) {
+        if (getQueryAPI() == null) {
             return PerformanceResponse.empty(params.templateId());
         }
 
         try {
             // Prefer real performance samples if available
-            List<DuckDbRepository.BuildPerformanceSample> perfSamples =
-                repository.getBuildPerformanceSamples(params.templateId(), params.templateVersion(), 100);
+            List<ArenaRecords.BuildPerformanceSample> perfSamples =
+                getQueryAPI().getArenaBuildPerformance(params.templateId(), params.templateVersion(), 100);
             if (!perfSamples.isEmpty()) {
                 List<PerformanceResponse.MsptSample> samples = new ArrayList<>();
                 double totalMspt = 0;
                 double maxMspt = 0;
                 int count = 0;
-                for (DuckDbRepository.BuildPerformanceSample sample : perfSamples) {
+                for (ArenaRecords.BuildPerformanceSample sample : perfSamples) {
                     Double msptValue = sample.avgMspt() != null ? sample.avgMspt() : sample.peakMspt();
                     if (msptValue == null || msptValue <= 0) {
                         continue;
@@ -836,7 +846,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
             }
 
             // Query recent builds to estimate performance impact
-            List<DuckDbRepository.BuildRecord> builds = repository.getRecentBuilds(
+            List<ArenaRecords.BuildRecord> builds = getQueryAPI().getArenaRecentBuilds(
                 params.templateId(),
                 params.templateVersion(),
                 100
@@ -852,7 +862,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
             double totalMspt = 0;
             double maxMspt = 0;
 
-            for (DuckDbRepository.BuildRecord build : builds) {
+            for (ArenaRecords.BuildRecord build : builds) {
                 if (build.durationMs() != null && build.durationMs() > 0 && build.completedAt() != null) {
                     // Estimate MSPT based on build duration (rough heuristic)
                     double estimatedMspt = Math.min(50.0, build.durationMs() / 100.0);
@@ -881,7 +891,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
                 samples.subList(0, Math.min(50, samples.size())) // Limit samples in response
             );
 
-        } catch (SQLException e) {
+        } catch (Exception e) {
             LOGGER.error("Failed to compute performance for template: {}", params.templateId(), e);
             return PerformanceResponse.empty(params.templateId());
         }
@@ -897,10 +907,10 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
         int gridSize = 16;
         int[][] grid = new int[gridSize][gridSize];
 
-        if (repository != null) {
+        if (getQueryAPI() != null) {
             try {
                 // Gap 4: Try to get real spatial event data first
-                grid = repository.getSpatialEventHeatmap(params.templateId(), params.templateVersion(), type, gridSize);
+                grid = getQueryAPI().getArenaHeatmap(params.templateId(), params.templateVersion(), type, gridSize);
 
                 // Check if we have any real data
                 int totalEvents = 0;
@@ -915,7 +925,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
                     LOGGER.debug("No spatial events found, using simulated heatmap data");
                     grid = generateSimulatedHeatmap(params.templateId(), params.templateVersion(), gridSize);
                 }
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 LOGGER.warn("Failed to query spatial events: {}", e.getMessage());
                 grid = generateSimulatedHeatmap(params.templateId(), params.templateVersion(), gridSize);
             }
@@ -950,10 +960,10 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
     private int[][] generateSimulatedHeatmap(String templateId, Integer templateVersion, int gridSize) {
         int[][] grid = new int[gridSize][gridSize];
 
-        if (repository != null) {
+        if (getQueryAPI() != null) {
             try {
-                List<DuckDbRepository.BuildRecord> builds =
-                    repository.getRecentBuilds(templateId, templateVersion, 50);
+                List<ArenaRecords.BuildRecord> builds =
+                    getQueryAPI().getArenaRecentBuilds(templateId, templateVersion, 50);
 
                 if (!builds.isEmpty()) {
                     int centerX = gridSize / 2;
@@ -972,7 +982,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
                         }
                     }
                 }
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 LOGGER.warn("Failed to generate simulated heatmap: {}", e.getMessage());
             }
         }
@@ -987,20 +997,20 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
      */
     private WaveCorrelationResponse computeWaveCorrelation(AnalyticsQueryParams params) {
         LOGGER.debug("Computing wave correlation for template: {}", params.templateId());
-        if (repository == null) {
+        if (getQueryAPI() == null) {
             LOGGER.warn("No repository configured, returning empty wave correlation");
             return WaveCorrelationResponse.empty(params.templateId());
         }
 
         try {
-            List<DuckDbRepository.WaveAggregate> aggregates = repository.getWaveAggregates(
+            List<ArenaRecords.WaveAggregate> aggregates = getQueryAPI().getArenaWaveAggregates(
                 params.templateId(), params.templateVersion(), params.from(), params.to());
             if (aggregates.isEmpty()) {
                 return WaveCorrelationResponse.empty(params.templateId());
             }
 
             List<WaveCorrelationResponse.WaveData> waves = new ArrayList<>();
-            for (DuckDbRepository.WaveAggregate agg : aggregates) {
+            for (ArenaRecords.WaveAggregate agg : aggregates) {
                 int attempts = Math.max(0, agg.attempts());
                 int completions = Math.max(0, agg.completions());
                 double completionRate = attempts > 0 ? (double) completions / attempts * 100.0 : 0.0;
@@ -1019,7 +1029,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
                 .average()
                 .orElse(0.0);
 
-            double avgWavesCompleted = repository.getAverageWavesCompleted(
+            double avgWavesCompleted = getQueryAPI().getArenaAverageWavesCompleted(
                 params.templateId(), params.templateVersion(), params.from(), params.to());
             int avgWaveReached = avgWavesCompleted > 0 ? (int) Math.round(avgWavesCompleted) : 0;
 
@@ -1029,7 +1039,7 @@ public class ArenaDashboardEndpoint implements AutoCloseable {
                 avgCompletionRate,
                 avgWaveReached
             );
-        } catch (SQLException e) {
+        } catch (Exception e) {
             LOGGER.error("Failed to compute wave correlation for template: {}", params.templateId(), e);
             return WaveCorrelationResponse.empty(params.templateId());
         }

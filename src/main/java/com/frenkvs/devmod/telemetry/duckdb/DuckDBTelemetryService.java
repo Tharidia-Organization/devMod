@@ -233,6 +233,14 @@ public class DuckDBTelemetryService {
     }
 
     /**
+     * Get the batch writer for direct access to queue methods.
+     * Useful for arena telemetry that needs to queue custom events.
+     */
+    public DuckDBBatchWriter getBatchWriter() {
+        return batchWriter;
+    }
+
+    /**
      * Get statistics about the batch writer.
      */
     public String getStats() {

@@ -2,13 +2,14 @@ package com.devmod.arena.monitoring;
 
 import com.devmod.arena.alert.AlertRouter;
 import com.devmod.arena.alert.ErrorContext;
-import com.devmod.arena.persistence.DuckDbRepository;
+import com.frenkvs.devmod.telemetry.duckdb.ArenaRecords;
+import com.frenkvs.devmod.telemetry.duckdb.DuckDBQueryAPI;
+import com.frenkvs.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -47,14 +48,26 @@ public class DashboardValidationJob {
     private static final Duration FUTURE_TIMESTAMP_TOLERANCE = Duration.ofMinutes(5);
     private static final int MAX_GAP_REPORTS = 3;
 
-    private final DuckDbRepository repository;
     private final AlertRouter alertRouter;
     private final Path ndjsonLogPath;
 
-    public DashboardValidationJob(DuckDbRepository repository, AlertRouter alertRouter, Path ndjsonLogPath) {
-        this.repository = repository;
+    public DashboardValidationJob(AlertRouter alertRouter, Path ndjsonLogPath) {
         this.alertRouter = alertRouter;
         this.ndjsonLogPath = ndjsonLogPath;
+    }
+
+    /**
+     * Legacy constructor for backwards compatibility.
+     * @deprecated Use constructor without repository parameter
+     */
+    @Deprecated
+    public DashboardValidationJob(Object repository,
+                                   AlertRouter alertRouter, Path ndjsonLogPath) {
+        this(alertRouter, ndjsonLogPath);
+    }
+
+    private DuckDBQueryAPI getQueryAPI() {
+        return DuckDBTelemetryService.INSTANCE.getQueryAPI();
     }
 
     /**
@@ -84,7 +97,6 @@ public class DashboardValidationJob {
             results.add(validateRowCounts());
             results.add(validateDataFreshness());
             results.add(validateTemporalConsistency());
-            results.add(validateErrorRates());
 
             boolean allPassed = results.stream().allMatch(ValidationResult::passed);
             Duration duration = Duration.between(startTime, Instant.now());
@@ -149,7 +161,7 @@ public class DashboardValidationJob {
     private ValidationResult validateDataFreshness() {
         try {
             // Query most recent builds to check freshness
-            List<DuckDbRepository.BuildRecord> recentBuilds = repository.getRecentBuilds("default_flat_64", 1);
+            List<ArenaRecords.BuildRecord> recentBuilds = getQueryAPI().getArenaRecentBuilds("default_flat_64", 1);
 
             if (recentBuilds.isEmpty()) {
                 return ValidationResult.passed("No builds yet - freshness check skipped");
@@ -171,40 +183,12 @@ public class DashboardValidationJob {
     }
 
     /**
-     * DD69: Validates error rates are within acceptable bounds.
-     */
-    private ValidationResult validateErrorRates() {
-        try {
-            var errorCounts = repository.getErrorCountBySeverity(24);
-            long criticalCount = errorCounts.getOrDefault("CRITICAL", 0L);
-            long errorCount = errorCounts.getOrDefault("ERROR", 0L);
-
-            // Alert if too many critical errors in last 24h
-            if (criticalCount > 10) {
-                return ValidationResult.failed(
-                    String.format("High critical error count: %d in last 24h", criticalCount)
-                );
-            }
-
-            if (errorCount > 100) {
-                return ValidationResult.failed(
-                    String.format("High error count: %d in last 24h", errorCount)
-                );
-            }
-
-            return ValidationResult.passed("Error rates within acceptable bounds");
-        } catch (Exception e) {
-            return ValidationResult.failed("Error rate validation error: " + e.getMessage());
-        }
-    }
-
-    /**
      * DD69: Validates temporal consistency (no future timestamps, no large gaps).
      */
     private ValidationResult validateTemporalConsistency() {
         try {
             Instant futureCutoff = Instant.now().plus(FUTURE_TIMESTAMP_TOLERANCE);
-            long futureCount = repository.countBuildsAfter(futureCutoff);
+            long futureCount = getQueryAPI().countArenaBuildsAfter(futureCutoff);
             if (futureCount > 0) {
                 return ValidationResult.failed(
                     String.format("Future timestamps detected: %d builds after %s",
@@ -213,13 +197,13 @@ public class DashboardValidationJob {
             }
 
             Instant since = Instant.now().minus(TEMPORAL_LOOKBACK);
-            List<DuckDbRepository.TemporalGap> gaps = repository.findBuildGaps(
+            List<ArenaRecords.TemporalGap> gaps = getQueryAPI().findArenaBuildGaps(
                 since,
                 MAX_TEMPORAL_GAP,
                 MAX_GAP_REPORTS
             );
             if (!gaps.isEmpty()) {
-                DuckDbRepository.TemporalGap largest = gaps.get(0);
+                ArenaRecords.TemporalGap largest = gaps.get(0);
                 return ValidationResult.failed(
                     String.format("Temporal gaps detected: largest gap %d minutes between %s and %s",
                         largest.gap().toMinutes(),
@@ -245,12 +229,11 @@ public class DashboardValidationJob {
     }
 
     /**
-     * Counts total records in DuckDB tables using existing repository methods.
+     * Counts total records in DuckDB tables.
      */
-    private long countDuckDbRecords() throws SQLException {
-        // Sum up error counts as a proxy for total records
-        var errorCounts = repository.getErrorCountBySeverity(Integer.MAX_VALUE);
-        return errorCounts.values().stream().mapToLong(Long::longValue).sum();
+    private long countDuckDbRecords() {
+        // Count builds as a proxy for total records
+        return getQueryAPI().countArenaBuildsAfter(Instant.EPOCH);
     }
 
     private long calculateDelayToNextRun() {

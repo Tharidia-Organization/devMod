@@ -1,8 +1,8 @@
 package com.devmod.arena.logging;
 
-import com.devmod.arena.persistence.DuckDbRepository;
-import com.devmod.arena.persistence.DuckDbRepository.BuildEventRecord;
-import com.devmod.arena.persistence.DuckDbRepository.BuildPerformanceRecord;
+import com.frenkvs.devmod.telemetry.duckdb.ArenaRecords;
+import com.frenkvs.devmod.telemetry.duckdb.DuckDBBatchWriter;
+import com.frenkvs.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.devmod.arena.logging.LogAggregationPipeline.LogDestination;
 import com.devmod.arena.logging.LogAggregationPipeline.LogEvent;
 import org.slf4j.Logger;
@@ -14,20 +14,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 
 /**
  * DuckDB destination for arena.build.* telemetry events.
+ * Uses DuckDBBatchWriter for async, non-blocking writes.
  */
 public class DuckDbDestination implements LogDestination {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DuckDbDestination.class);
 
-    private final Supplier<DuckDbRepository> repositorySupplier;
     private final ConcurrentHashMap<UUID, BuildStartInfo> buildStarts = new ConcurrentHashMap<>();
 
-    public DuckDbDestination(Supplier<DuckDbRepository> repositorySupplier) {
-        this.repositorySupplier = repositorySupplier;
+    public DuckDbDestination() {
+    }
+
+    /**
+     * Legacy constructor for backwards compatibility.
+     * @deprecated Use no-arg constructor instead
+     */
+    @Deprecated
+    public DuckDbDestination(Object repositorySupplier) {
+        // Ignore repository supplier - we use DuckDBTelemetryService.INSTANCE
     }
 
     @Override
@@ -37,21 +44,19 @@ public class DuckDbDestination implements LogDestination {
 
     @Override
     public void write(List<LogEvent> events) {
-        DuckDbRepository repository = repositorySupplier != null ? repositorySupplier.get() : null;
-        if (repository == null) {
+        DuckDBBatchWriter batchWriter = DuckDBTelemetryService.INSTANCE.getBatchWriter();
+        if (batchWriter == null) {
             return;
         }
 
-        synchronized (repository) {
-            for (LogEvent event : events) {
-                switch (event.eventName()) {
-                    case "arena.build.start" -> handleBuildStart(event);
-                    case "arena.build.end" -> handleBuildEnd(event, true);
-                    case "arena.build.fail" -> handleBuildEnd(event, false);
-                    case "arena.build.performance_summary" -> handlePerformanceSummary(event);
-                    default -> {
-                        // ignore
-                    }
+        for (LogEvent event : events) {
+            switch (event.eventName()) {
+                case "arena.build.start" -> handleBuildStart(event);
+                case "arena.build.end" -> handleBuildEnd(event, true);
+                case "arena.build.fail" -> handleBuildEnd(event, false);
+                case "arena.build.performance_summary" -> handlePerformanceSummary(event);
+                default -> {
+                    // ignore
                 }
             }
         }
@@ -59,7 +64,7 @@ public class DuckDbDestination implements LogDestination {
 
     @Override
     public void close() {
-        // Repository lifecycle is managed elsewhere.
+        // Lifecycle managed by DuckDBTelemetryService
     }
 
     private void handleBuildStart(LogEvent event) {
@@ -85,8 +90,8 @@ public class DuckDbDestination implements LogDestination {
     }
 
     private void handleBuildEnd(LogEvent event, boolean success) {
-        DuckDbRepository repository = repositorySupplier != null ? repositorySupplier.get() : null;
-        if (repository == null) {
+        DuckDBBatchWriter batchWriter = DuckDBTelemetryService.INSTANCE.getBatchWriter();
+        if (batchWriter == null) {
             return;
         }
         Map<String, Object> data = event.data();
@@ -139,45 +144,36 @@ public class DuckDbDestination implements LogDestination {
 
         Instant startedAt = start != null ? start.startedAt() : event.timestamp();
 
-        BuildEventRecord record = new BuildEventRecord(
-            arenaId,
-            templateId,
-            templateVersion,
-            policyId,
-            policyVersion,
-            startedAt,
-            event.timestamp(),
-            estimatedBlocks,
-            actualBlocks,
-            estimatedMs,
-            actualMs,
-            success,
-            errorMessage,
-            rollbackMs,
-            blocksReverted,
-            origin.x(),
-            origin.y(),
-            origin.z(),
-            dimension,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-        );
-
         try {
-            repository.recordBuildEvent(record);
+            batchWriter.queueArenaTemplateBuild(
+                startedAt,
+                arenaId,
+                templateId,
+                templateVersion,
+                policyId,
+                policyVersion,
+                origin.x(),
+                origin.y(),
+                origin.z(),
+                dimension,
+                estimatedBlocks != null ? estimatedBlocks.intValue() : null,
+                actualBlocks != null ? actualBlocks.intValue() : null,
+                estimatedMs,
+                actualMs,
+                success,
+                errorMessage,
+                rollbackMs,
+                blocksReverted,
+                null, null, null, null, null, null, null  // performance metrics set separately
+            );
         } catch (Exception e) {
-            LOGGER.debug("Failed to record build event: {}", e.getMessage());
+            LOGGER.debug("Failed to queue build event: {}", e.getMessage());
         }
     }
 
     private void handlePerformanceSummary(LogEvent event) {
-        DuckDbRepository repository = repositorySupplier != null ? repositorySupplier.get() : null;
-        if (repository == null) {
+        DuckDBBatchWriter batchWriter = DuckDBTelemetryService.INSTANCE.getBatchWriter();
+        if (batchWriter == null) {
             return;
         }
         Map<String, Object> data = event.data();
@@ -185,8 +181,16 @@ public class DuckDbDestination implements LogDestination {
         if (arenaId == null) {
             return;
         }
-        BuildPerformanceRecord record = new BuildPerformanceRecord(
+
+        // Performance updates need the full build event record
+        // Queue a new build event with performance data
+        ArenaRecords.BuildEventRecord record = new ArenaRecords.BuildEventRecord(
             arenaId,
+            null, null, null, null,
+            Instant.now(), Instant.now(),
+            null, null, null, null,
+            true, null, null, null,
+            null, null, null, null,
             asDouble(data.get("baselineMspt")),
             asDouble(data.get("averageMspt")),
             asDouble(data.get("peakMspt")),
@@ -195,10 +199,13 @@ public class DuckDbDestination implements LogDestination {
             asInteger(data.get("throttleCount")),
             asBoolean(data.get("aborted"))
         );
+
         try {
-            repository.updateBuildPerformance(record);
+            // Note: This queues a new row. Performance updates ideally would update existing rows,
+            // but BatchWriter doesn't support updates. The dashboard can aggregate by arenaId.
+            batchWriter.queueArenaTemplateBuild(record);
         } catch (Exception e) {
-            LOGGER.debug("Failed to update build performance: {}", e.getMessage());
+            LOGGER.debug("Failed to queue build performance: {}", e.getMessage());
         }
     }
 

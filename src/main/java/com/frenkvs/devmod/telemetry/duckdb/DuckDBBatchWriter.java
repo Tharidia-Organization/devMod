@@ -121,6 +121,10 @@ public class DuckDBBatchWriter {
         Map.entry("endurance_mutators", EventPriority.NORMAL),
         Map.entry("arena_spatial_events", EventPriority.NORMAL),
 
+        // ARENA (HIGH priority for builds/usage since they're session-level events)
+        Map.entry("arena_template_builds", EventPriority.HIGH),
+        Map.entry("arena_template_usage", EventPriority.HIGH),
+
         // LOW - Drop first under any pressure
         Map.entry("player_snapshots", EventPriority.LOW),
         Map.entry("player_attribute_changes", EventPriority.LOW),
@@ -613,6 +617,108 @@ public class DuckDBBatchWriter {
             ts, templateId, templateVersion, sessionId, eventType,
             gridX, gridZ, worldX, worldY, worldZ, playerId
         });
+    }
+
+    /**
+     * Queue an arena template build event.
+     */
+    public void queueArenaTemplateBuild(Instant ts, UUID arenaId, String templateId, Integer templateVersion,
+                                         String policyId, Integer policyVersion,
+                                         Integer originX, Integer originY, Integer originZ, String dimension,
+                                         Integer estimatedBlocks, Integer actualBlocks,
+                                         Long estimatedMs, Long actualMs,
+                                         boolean success, String errorMessage,
+                                         Long rollbackMs, Integer blocksReverted,
+                                         Double baselineMspt, Double avgMspt, Double peakMspt,
+                                         Double maxBuildImpactMs, Integer pauseCount,
+                                         Integer throttleCount, Boolean perfAborted) {
+        queueInsert("arena_template_builds", new Object[] {
+            ts, arenaId, templateId, templateVersion, policyId, policyVersion,
+            originX, originY, originZ, dimension,
+            estimatedBlocks, actualBlocks, estimatedMs, actualMs,
+            success, errorMessage, rollbackMs, blocksReverted,
+            baselineMspt, avgMspt, peakMspt, maxBuildImpactMs,
+            pauseCount, throttleCount, perfAborted
+        });
+    }
+
+    /**
+     * Queue an arena template build event from BuildEventRecord.
+     */
+    public void queueArenaTemplateBuild(ArenaRecords.BuildEventRecord record) {
+        queueArenaTemplateBuild(
+            record.startedAt() != null ? record.startedAt() : Instant.now(),
+            record.arenaId(),
+            record.templateId(),
+            record.templateVersion(),
+            record.policyId(),
+            record.policyVersion(),
+            record.originX(),
+            record.originY(),
+            record.originZ(),
+            record.dimension(),
+            record.estimatedBlocks() != null ? record.estimatedBlocks().intValue() : null,
+            record.actualBlocks() != null ? record.actualBlocks().intValue() : null,
+            record.estimatedMs(),
+            record.actualMs(),
+            record.success() != null && record.success(),
+            record.errorMessage(),
+            record.rollbackMs(),
+            record.blocksReverted(),
+            record.baselineMspt(),
+            record.avgMspt(),
+            record.peakMspt(),
+            record.maxBuildImpactMs(),
+            record.pauseCount(),
+            record.throttleCount(),
+            record.perfAborted()
+        );
+    }
+
+    /**
+     * Queue an arena template usage event.
+     */
+    public void queueArenaTemplateUsage(Instant ts, String templateId, Integer templateVersion,
+                                         String policyId, Integer policyVersion,
+                                         UUID playerId, String playerName,
+                                         String questType, String mobId, String difficulty,
+                                         Integer playerCount, UUID sessionId,
+                                         String eventType, Long durationMs,
+                                         Integer wavesCompleted, String outcome) {
+        queueInsert("arena_template_usage", new Object[] {
+            ts, templateId, templateVersion, policyId, policyVersion,
+            playerId, playerName, questType, mobId, difficulty,
+            playerCount, sessionId, eventType, durationMs, wavesCompleted, outcome
+        });
+    }
+
+    /**
+     * Queue an arena template usage start event.
+     */
+    public void queueArenaUsageStart(String templateId, Integer templateVersion,
+                                      String policyId, Integer policyVersion,
+                                      UUID playerId, String playerName,
+                                      String questType, String mobId, String difficulty,
+                                      Integer playerCount, UUID sessionId) {
+        queueArenaTemplateUsage(Instant.now(), templateId, templateVersion,
+            policyId, policyVersion, playerId, playerName,
+            questType, mobId, difficulty, playerCount, sessionId,
+            "start", null, null, null);
+    }
+
+    /**
+     * Queue an arena template usage end event.
+     */
+    public void queueArenaUsageEnd(String templateId, Integer templateVersion,
+                                    String policyId, Integer policyVersion,
+                                    UUID playerId, String playerName,
+                                    String questType, String mobId, String difficulty,
+                                    Integer playerCount, UUID sessionId,
+                                    Long durationMs, Integer wavesCompleted, String outcome) {
+        queueArenaTemplateUsage(Instant.now(), templateId, templateVersion,
+            policyId, policyVersion, playerId, playerName,
+            questType, mobId, difficulty, playerCount, sessionId,
+            "end", durationMs, wavesCompleted, outcome);
     }
 
     /**
@@ -1198,6 +1304,23 @@ public class DuckDBBatchWriter {
             "INSERT INTO arena_spatial_events (id, ts, template_id, template_version, session_id, event_type, " +
             "grid_x, grid_z, world_x, world_y, world_z, player_uuid) " +
             "VALUES (nextval('seq_arena_spatial_events'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+        // Arena tables (builds & usage)
+        insertSqlCache.put("arena_template_builds",
+            "INSERT INTO arena_template_builds (id, ts, arena_id, template_id, template_version, " +
+            "policy_id, policy_version, origin_x, origin_y, origin_z, dimension, " +
+            "estimated_blocks, actual_blocks, estimated_ms, actual_ms, " +
+            "success, error_message, rollback_ms, blocks_reverted, " +
+            "baseline_mspt, avg_mspt, peak_mspt, max_build_impact_ms, " +
+            "pause_count, throttle_count, perf_aborted) " +
+            "VALUES (nextval('seq_arena_template_builds'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+        insertSqlCache.put("arena_template_usage",
+            "INSERT INTO arena_template_usage (id, ts, template_id, template_version, " +
+            "policy_id, policy_version, player_id, player_name, " +
+            "quest_type, mob_id, difficulty, player_count, session_id, " +
+            "event_type, duration_ms, waves_completed, outcome) " +
+            "VALUES (nextval('seq_arena_template_usage'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         // System tables
         insertSqlCache.put("performance_samples",

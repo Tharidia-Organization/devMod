@@ -7,7 +7,6 @@ import com.devmod.arena.alert.AlertRouter;
 import com.devmod.arena.alert.AlertRouterRegistry;
 import com.devmod.arena.alert.ConsoleAlertChannel;
 import com.devmod.arena.alert.DiscordAlertChannel;
-import com.devmod.arena.alert.DuckDbAlertRecorder;
 import com.devmod.arena.alert.LogAlertChannel;
 import com.devmod.arena.alert.TelemetryAlertChannel;
 import com.devmod.arena.alert.WebhookAlertChannel;
@@ -24,14 +23,12 @@ import com.devmod.arena.logging.DuckDbDestination;
 import com.devmod.arena.logging.LogAggregationPipeline;
 import com.devmod.arena.logging.NdjsonWriter;
 import com.devmod.arena.override.ForceTemplateCapability;
-import com.devmod.arena.persistence.DuckDbRepository;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateRegistryBootstrap;
 import com.devmod.arena.security.ArenaCommandPermissions;
 import com.devmod.arena.telemetry.ArenaTelemetry;
 import com.frenkvs.devmod.DevMod;
 import com.frenkvs.devmod.endurance.EnduranceQuestManager;
-import com.frenkvs.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -64,8 +61,6 @@ public final class ArenaCommandEvents {
     private static AutosmokeScheduler autosmokeScheduler;
     private static AutosmokeReportWriter autosmokeReportWriter;
     private static AlertRouter alertRouter;
-    private static DuckDbRepository alertRepository;
-    private static DuckDbRepository telemetryRepository;
     private static LogAggregationPipeline telemetryPipeline;
     private static ForceTemplateCapability forceTemplateCapability;
     private static final AtomicReference<ArenaTemplateConfig.ConfigSnapshot> CONFIG_SNAPSHOT = new AtomicReference<>();
@@ -138,7 +133,6 @@ public final class ArenaCommandEvents {
 
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
-        maybeAttachAlertRecorder();
         if (autosmokeScheduler != null) {
             autosmokeScheduler.start();
         }
@@ -158,16 +152,6 @@ public final class ArenaCommandEvents {
         if (alertRouter != null) {
             alertRouter.close();
             alertRouter = null;
-        }
-        if (telemetryRepository != null) {
-            if (telemetryRepository != alertRepository) {
-                try { telemetryRepository.close(); } catch (Exception ignored) {}
-            }
-            telemetryRepository = null;
-        }
-        if (alertRepository != null) {
-            try { alertRepository.close(); } catch (Exception ignored) {}
-            alertRepository = null;
         }
         if (telemetryPipeline != null) {
             telemetryPipeline.close();
@@ -205,7 +189,7 @@ public final class ArenaCommandEvents {
             NdjsonWriter ndjsonWriter = new NdjsonWriter(Path.of("run"), "arena-telemetry");
             telemetryPipeline = LogAggregationPipeline.builder()
                 .addDestination(new LogAggregationPipeline.NdjsonDestination(ndjsonWriter))
-                .addDestination(new DuckDbDestination(ArenaCommandEvents::getOrCreateTelemetryRepository))
+                .addDestination(new DuckDbDestination())
                 .addConsoleDestination()
                 .build();
             telemetryPipeline.start();
@@ -213,26 +197,6 @@ public final class ArenaCommandEvents {
         } catch (Exception e) {
             LOGGER.warn("[ArenaCommands] Failed to initialize telemetry pipeline: {}", e.getMessage());
         }
-    }
-
-    private static synchronized DuckDbRepository getOrCreateTelemetryRepository() {
-        if (telemetryRepository != null) {
-            return telemetryRepository;
-        }
-        if (alertRepository != null) {
-            telemetryRepository = alertRepository;
-            return telemetryRepository;
-        }
-        try {
-            if (DuckDBTelemetryService.INSTANCE.getDbPath() == null) {
-                return null;
-            }
-            telemetryRepository = new DuckDbRepository(DuckDBTelemetryService.INSTANCE.getDbPath().toString());
-            telemetryRepository.initialize();
-        } catch (Exception e) {
-            LOGGER.warn("[ArenaCommands] Failed to initialize DuckDB telemetry repository: {}", e.getMessage());
-        }
-        return telemetryRepository;
     }
 
     private static void ensureAlertRouter() {
@@ -338,22 +302,6 @@ public final class ArenaCommandEvents {
             };
 
         return new ForceTemplateCapability(permissionChecker, capabilityTelemetry);
-    }
-
-    private static void maybeAttachAlertRecorder() {
-        if (alertRouter == null || alertRepository != null) {
-            return;
-        }
-        try {
-            DuckDbRepository repo = getOrCreateTelemetryRepository();
-            if (repo == null) {
-                return;
-            }
-            alertRepository = repo;
-            alertRouter.setDeliveryRecorder(new DuckDbAlertRecorder(alertRepository));
-        } catch (Exception e) {
-            LOGGER.warn("[ArenaCommands] Failed to attach DuckDB alert recorder: {}", e.getMessage());
-        }
     }
 
     private static TemplateArenaBuilder createBuilder(ServerLevel level, ArenaTemplateConfig.ConfigSnapshot snapshot) {

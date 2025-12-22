@@ -940,4 +940,453 @@ public class DuckDBQueryAPI {
                 .formatted(blocks, xp, advancements, dimensions, trades, fishing);
         }
     }
+
+    // ============================================
+    // ARENA ANALYTICS
+    // ============================================
+
+    /**
+     * Get all distinct template IDs from arena builds.
+     */
+    public List<String> getArenaTemplateIds() {
+        String sql = """
+            SELECT DISTINCT template_id
+            FROM arena_template_builds
+            ORDER BY template_id
+            """;
+
+        List<String> results = new ArrayList<>();
+        try {
+            Connection conn = connectionManager.getConnection();
+            try (var stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(sql)) {
+                while (rs.next()) {
+                    results.add(rs.getString("template_id"));
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.warn("[DuckDB] Failed to get arena template IDs: {}", e.getMessage());
+        }
+        return results;
+    }
+
+    /**
+     * Get recent arena template builds.
+     */
+    public List<ArenaRecords.BuildRecord> getArenaRecentBuilds(String templateId, int limit) {
+        return getArenaRecentBuilds(templateId, null, limit);
+    }
+
+    /**
+     * Get recent arena template builds with optional version filter.
+     */
+    public List<ArenaRecords.BuildRecord> getArenaRecentBuilds(String templateId, Integer templateVersion, int limit) {
+        String sql;
+        if (templateVersion != null) {
+            sql = """
+                SELECT arena_id, template_id, template_version, ts, actual_ms, success, error_message
+                FROM arena_template_builds
+                WHERE template_id = ? AND template_version = ?
+                ORDER BY ts DESC
+                LIMIT ?
+                """;
+        } else {
+            sql = """
+                SELECT arena_id, template_id, template_version, ts, actual_ms, success, error_message
+                FROM arena_template_builds
+                WHERE template_id = ?
+                ORDER BY ts DESC
+                LIMIT ?
+                """;
+        }
+
+        List<ArenaRecords.BuildRecord> results = new ArrayList<>();
+        try {
+            Connection conn = connectionManager.getConnection();
+            try (var stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, templateId);
+                if (templateVersion != null) {
+                    stmt.setInt(2, templateVersion);
+                    stmt.setInt(3, limit);
+                } else {
+                    stmt.setInt(2, limit);
+                }
+
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        String arenaIdStr = rs.getString("arena_id");
+                        UUID arenaId = arenaIdStr != null ? UUID.fromString(arenaIdStr) : UUID.randomUUID();
+                        Instant startedAt = rs.getTimestamp("ts").toInstant();
+                        long actualMsValue = rs.getLong("actual_ms");
+                        Long actualMs = rs.wasNull() ? null : actualMsValue;
+                        boolean success = rs.getBoolean("success");
+                        String status = success ? "success" : "failed";
+                        String error = rs.getString("error_message");
+                        Instant completedAt = actualMs != null && actualMs > 0
+                            ? startedAt.plusMillis(actualMs)
+                            : startedAt;
+
+                        results.add(new ArenaRecords.BuildRecord(
+                            arenaId,
+                            rs.getString("template_id"),
+                            String.valueOf(rs.getInt("template_version")),
+                            startedAt,
+                            completedAt,
+                            actualMs,
+                            status,
+                            error
+                        ));
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.warn("[DuckDB] Failed to get arena recent builds: {}", e.getMessage());
+        }
+        return results;
+    }
+
+    /**
+     * Get arena build performance samples.
+     */
+    public List<ArenaRecords.BuildPerformanceSample> getArenaBuildPerformance(String templateId, Integer templateVersion, int limit) {
+        String sql;
+        if (templateVersion != null) {
+            sql = """
+                SELECT ts, baseline_mspt, avg_mspt, peak_mspt
+                FROM arena_template_builds
+                WHERE template_id = ? AND template_version = ? AND avg_mspt IS NOT NULL
+                ORDER BY ts DESC
+                LIMIT ?
+                """;
+        } else {
+            sql = """
+                SELECT ts, baseline_mspt, avg_mspt, peak_mspt
+                FROM arena_template_builds
+                WHERE template_id = ? AND avg_mspt IS NOT NULL
+                ORDER BY ts DESC
+                LIMIT ?
+                """;
+        }
+
+        List<ArenaRecords.BuildPerformanceSample> results = new ArrayList<>();
+        try {
+            Connection conn = connectionManager.getConnection();
+            try (var stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, templateId);
+                if (templateVersion != null) {
+                    stmt.setInt(2, templateVersion);
+                    stmt.setInt(3, limit);
+                } else {
+                    stmt.setInt(2, limit);
+                }
+
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        results.add(new ArenaRecords.BuildPerformanceSample(
+                            rs.getTimestamp("ts").toInstant(),
+                            getNullableDouble(rs, "baseline_mspt"),
+                            getNullableDouble(rs, "avg_mspt"),
+                            getNullableDouble(rs, "peak_mspt")
+                        ));
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.warn("[DuckDB] Failed to get arena build performance: {}", e.getMessage());
+        }
+        return results;
+    }
+
+    /**
+     * Get arena spatial event heatmap.
+     */
+    public int[][] getArenaHeatmap(String templateId, String eventType, int gridSize) {
+        return getArenaHeatmap(templateId, null, eventType, gridSize);
+    }
+
+    /**
+     * Get arena spatial event heatmap with optional version filter.
+     */
+    public int[][] getArenaHeatmap(String templateId, Integer templateVersion, String eventType, int gridSize) {
+        String sql;
+        if (templateVersion != null) {
+            sql = """
+                SELECT grid_x, grid_z, COUNT(*) as count
+                FROM arena_spatial_events
+                WHERE template_id = ? AND template_version = ? AND event_type = ?
+                GROUP BY grid_x, grid_z
+                """;
+        } else {
+            sql = """
+                SELECT grid_x, grid_z, COUNT(*) as count
+                FROM arena_spatial_events
+                WHERE template_id = ? AND event_type = ?
+                GROUP BY grid_x, grid_z
+                """;
+        }
+
+        int[][] grid = new int[gridSize][gridSize];
+
+        try {
+            Connection conn = connectionManager.getConnection();
+            try (var stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, templateId);
+                if (templateVersion != null) {
+                    stmt.setInt(2, templateVersion);
+                    stmt.setString(3, eventType);
+                } else {
+                    stmt.setString(2, eventType);
+                }
+
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        int x = rs.getInt("grid_x");
+                        int z = rs.getInt("grid_z");
+                        int count = rs.getInt("count");
+
+                        if (x >= 0 && x < gridSize && z >= 0 && z < gridSize) {
+                            grid[x][z] = count;
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.warn("[DuckDB] Failed to get arena heatmap: {}", e.getMessage());
+        }
+        return grid;
+    }
+
+    /**
+     * Get arena spatial event count.
+     */
+    public int getArenaSpatialEventCount(String templateId, String eventType) {
+        return getArenaSpatialEventCount(templateId, null, eventType);
+    }
+
+    /**
+     * Get arena spatial event count with optional version filter.
+     */
+    public int getArenaSpatialEventCount(String templateId, Integer templateVersion, String eventType) {
+        String sql;
+        if (templateVersion != null) {
+            sql = """
+                SELECT COUNT(*) as total
+                FROM arena_spatial_events
+                WHERE template_id = ? AND template_version = ? AND event_type = ?
+                """;
+        } else {
+            sql = """
+                SELECT COUNT(*) as total
+                FROM arena_spatial_events
+                WHERE template_id = ? AND event_type = ?
+                """;
+        }
+
+        try {
+            Connection conn = connectionManager.getConnection();
+            try (var stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, templateId);
+                if (templateVersion != null) {
+                    stmt.setInt(2, templateVersion);
+                    stmt.setString(3, eventType);
+                } else {
+                    stmt.setString(2, eventType);
+                }
+
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt("total");
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.warn("[DuckDB] Failed to get arena spatial event count: {}", e.getMessage());
+        }
+        return 0;
+    }
+
+    /**
+     * Find temporal gaps between arena builds.
+     */
+    public List<ArenaRecords.TemporalGap> findArenaBuildGaps(Instant since, Duration minGap, int limit) {
+        String sql = """
+            SELECT current_ts, prev_ts, gap_seconds
+            FROM (
+                SELECT
+                    ts AS current_ts,
+                    LAG(ts) OVER (ORDER BY ts) AS prev_ts,
+                    EXTRACT(EPOCH FROM (ts - LAG(ts) OVER (ORDER BY ts))) AS gap_seconds
+                FROM arena_template_builds
+                WHERE ts >= ?
+            ) sub
+            WHERE prev_ts IS NOT NULL AND gap_seconds > ?
+            ORDER BY gap_seconds DESC
+            LIMIT ?
+            """;
+
+        List<ArenaRecords.TemporalGap> gaps = new ArrayList<>();
+        try {
+            Connection conn = connectionManager.getConnection();
+            try (var stmt = conn.prepareStatement(sql)) {
+                stmt.setTimestamp(1, Timestamp.from(since));
+                stmt.setDouble(2, Math.max(0.0, minGap.toSeconds()));
+                stmt.setInt(3, Math.max(1, limit));
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        Timestamp currentTs = rs.getTimestamp("current_ts");
+                        Timestamp prevTs = rs.getTimestamp("prev_ts");
+                        double gapSeconds = rs.getDouble("gap_seconds");
+                        if (currentTs != null && prevTs != null) {
+                            gaps.add(new ArenaRecords.TemporalGap(
+                                prevTs.toInstant(),
+                                currentTs.toInstant(),
+                                Duration.ofMillis((long) (gapSeconds * 1000))
+                            ));
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.warn("[DuckDB] Failed to find arena build gaps: {}", e.getMessage());
+        }
+        return gaps;
+    }
+
+    /**
+     * Count arena builds after a timestamp.
+     */
+    public long countArenaBuildsAfter(Instant timestamp) {
+        String sql = "SELECT COUNT(*) AS count FROM arena_template_builds WHERE ts > ?";
+
+        try {
+            Connection conn = connectionManager.getConnection();
+            try (var stmt = conn.prepareStatement(sql)) {
+                stmt.setTimestamp(1, Timestamp.from(timestamp));
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getLong("count");
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.warn("[DuckDB] Failed to count arena builds: {}", e.getMessage());
+        }
+        return 0L;
+    }
+
+    /**
+     * Get wave aggregates for arena template.
+     */
+    public List<ArenaRecords.WaveAggregate> getArenaWaveAggregates(String templateId, Integer templateVersion,
+                                                                    Instant from, Instant to) {
+        Instant fromTs = from != null ? from : Instant.EPOCH;
+        Instant toTs = to != null ? to : Instant.now();
+        String sql;
+        if (templateVersion != null) {
+            sql = """
+                SELECT wave_number,
+                       SUM(CASE WHEN event_type = 'start' THEN 1 ELSE 0 END) as attempts,
+                       SUM(CASE WHEN event_type = 'complete' THEN 1 ELSE 0 END) as completions,
+                       AVG(CASE WHEN event_type = 'complete' THEN duration_ms END) as avg_duration_ms
+                FROM endurance_waves
+                WHERE template_id = ? AND template_version = ? AND ts >= ? AND ts <= ?
+                GROUP BY wave_number
+                ORDER BY wave_number
+                """;
+        } else {
+            sql = """
+                SELECT wave_number,
+                       SUM(CASE WHEN event_type = 'start' THEN 1 ELSE 0 END) as attempts,
+                       SUM(CASE WHEN event_type = 'complete' THEN 1 ELSE 0 END) as completions,
+                       AVG(CASE WHEN event_type = 'complete' THEN duration_ms END) as avg_duration_ms
+                FROM endurance_waves
+                WHERE template_id = ? AND ts >= ? AND ts <= ?
+                GROUP BY wave_number
+                ORDER BY wave_number
+                """;
+        }
+
+        List<ArenaRecords.WaveAggregate> results = new ArrayList<>();
+        try {
+            Connection conn = connectionManager.getConnection();
+            try (var stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, templateId);
+                if (templateVersion != null) {
+                    stmt.setInt(2, templateVersion);
+                    stmt.setTimestamp(3, Timestamp.from(fromTs));
+                    stmt.setTimestamp(4, Timestamp.from(toTs));
+                } else {
+                    stmt.setTimestamp(2, Timestamp.from(fromTs));
+                    stmt.setTimestamp(3, Timestamp.from(toTs));
+                }
+
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        results.add(new ArenaRecords.WaveAggregate(
+                            rs.getInt("wave_number"),
+                            rs.getInt("attempts"),
+                            rs.getInt("completions"),
+                            rs.getDouble("avg_duration_ms")
+                        ));
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.warn("[DuckDB] Failed to get arena wave aggregates: {}", e.getMessage());
+        }
+        return results;
+    }
+
+    /**
+     * Get average waves completed for arena template.
+     */
+    public double getArenaAverageWavesCompleted(String templateId, Integer templateVersion,
+                                                 Instant from, Instant to) {
+        Instant fromTs = from != null ? from : Instant.EPOCH;
+        Instant toTs = to != null ? to : Instant.now();
+        String sql;
+        if (templateVersion != null) {
+            sql = """
+                SELECT AVG(waves_completed) as avg_waves
+                FROM endurance_sessions
+                WHERE template_id = ? AND template_version = ? AND start_ts >= ? AND start_ts <= ?
+                """;
+        } else {
+            sql = """
+                SELECT AVG(waves_completed) as avg_waves
+                FROM endurance_sessions
+                WHERE template_id = ? AND start_ts >= ? AND start_ts <= ?
+                """;
+        }
+
+        try {
+            Connection conn = connectionManager.getConnection();
+            try (var stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, templateId);
+                if (templateVersion != null) {
+                    stmt.setInt(2, templateVersion);
+                    stmt.setTimestamp(3, Timestamp.from(fromTs));
+                    stmt.setTimestamp(4, Timestamp.from(toTs));
+                } else {
+                    stmt.setTimestamp(2, Timestamp.from(fromTs));
+                    stmt.setTimestamp(3, Timestamp.from(toTs));
+                }
+
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getDouble("avg_waves");
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.warn("[DuckDB] Failed to get arena average waves: {}", e.getMessage());
+        }
+        return 0.0;
+    }
+
+    // Helper method for nullable double
+    private Double getNullableDouble(ResultSet rs, String column) throws SQLException {
+        double value = rs.getDouble(column);
+        return rs.wasNull() ? null : value;
+    }
 }
