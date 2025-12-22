@@ -7,6 +7,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +26,7 @@ import java.util.UUID;
  * - Accept/Decline buttons
  * - Auto-closes on timeout
  */
+@OnlyIn(Dist.CLIENT)
 public class InvitePopupScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(InvitePopupScreen.class);
 

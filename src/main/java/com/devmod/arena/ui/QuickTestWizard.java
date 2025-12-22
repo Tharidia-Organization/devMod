@@ -10,6 +10,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +33,7 @@ import java.util.function.Consumer;
  *   <li>Recent templates history</li>
  * </ul>
  */
+@OnlyIn(Dist.CLIENT)
 public class QuickTestWizard extends Screen {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(QuickTestWizard.class);

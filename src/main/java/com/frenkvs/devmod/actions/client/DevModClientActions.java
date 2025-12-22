@@ -2,7 +2,7 @@ package com.frenkvs.devmod.actions.client;
 
 import com.frenkvs.devmod.Config;
 import com.frenkvs.devmod.DevMod;
-import com.frenkvs.devmod.KeyInputHandler;
+import com.frenkvs.devmod.client.input.KeyInputHandler;
 import com.frenkvs.devmod.ModConfig;
 import com.frenkvs.devmod.actions.ActionCategory;
 import com.frenkvs.devmod.actions.ActionContext;

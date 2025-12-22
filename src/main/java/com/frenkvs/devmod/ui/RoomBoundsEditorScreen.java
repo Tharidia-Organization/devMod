@@ -20,6 +20,8 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +47,7 @@ import java.util.Objects;
  *
  * Keybind: Shift+R (when Room Bounds visualizer is active)
  */
-
+@OnlyIn(Dist.CLIENT)
 public class RoomBoundsEditorScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomBoundsEditorScreen.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

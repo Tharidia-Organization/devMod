@@ -9,6 +9,8 @@ import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.*;
@@ -18,6 +20,7 @@ import javax.annotation.Nonnull;
 /**
  * Shop screen for purchasing permanent upgrades with Endurance Tokens.
  */
+@OnlyIn(Dist.CLIENT)
 public class EnduranceShopScreen extends Screen {
 
     // Layout constants - using UIConstants for consistency

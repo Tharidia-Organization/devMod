@@ -13,6 +13,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Mob;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
@@ -30,6 +32,7 @@ import java.util.Objects;
  * - MobConfigScreenState: State management, values, presets
  * - MobConfigScreenRenderer: All rendering operations
  */
+@OnlyIn(Dist.CLIENT)
 public class MobConfigScreen extends Screen {
 
     private final Mob mob;

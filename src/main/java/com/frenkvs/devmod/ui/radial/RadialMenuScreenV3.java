@@ -27,6 +27,8 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -50,7 +52,7 @@ import java.util.*;
  * - Fuzzy search (type to filter)
  * - Keyboard shortcuts for power users
  */
-
+@OnlyIn(Dist.CLIENT)
 public class RadialMenuScreenV3 extends Screen {
 
     // ================================================================

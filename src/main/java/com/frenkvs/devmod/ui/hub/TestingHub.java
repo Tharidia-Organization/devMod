@@ -17,6 +17,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import org.lwjgl.glfw.GLFW;
 
 import javax.annotation.Nonnull;
@@ -34,7 +36,7 @@ import java.util.Set;
  * - Right: QuickToolsPanel (toggle overlay + editor shortcuts)
  * - Footer: ProgressFooter (progress bar + actions)
  */
-
+@OnlyIn(Dist.CLIENT)
 public class TestingHub extends Screen {
 
     // === LAYOUT CONSTANTS ===

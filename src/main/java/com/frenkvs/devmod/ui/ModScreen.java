@@ -5,6 +5,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.Objects;
 
@@ -17,6 +19,7 @@ import java.util.Objects;
  * - Themed styling with UIConstants
  * - Input field helpers with validation
  */
+@OnlyIn(Dist.CLIENT)
 public abstract class ModScreen extends Screen {
 
     protected final Screen parent;

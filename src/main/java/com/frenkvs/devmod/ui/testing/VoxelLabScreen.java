@@ -7,6 +7,8 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import javax.annotation.Nonnull;
 import java.util.EnumMap;
@@ -19,6 +21,7 @@ import java.util.Objects;
  * <p>Provides a tabbed interface for configuring 60+ services organized into
  * logical categories: Overview, Debug, HUD, Telemetry, Effects, Combat, and Showcase.</p>
  */
+@OnlyIn(Dist.CLIENT)
 public class VoxelLabScreen extends Screen {
 
     private static final int HEADER_HEIGHT = 50;

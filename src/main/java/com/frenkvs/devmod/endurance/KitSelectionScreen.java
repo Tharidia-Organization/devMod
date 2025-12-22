@@ -15,6 +15,8 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.item.enchantment.Enchantment;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +35,7 @@ import java.util.function.Predicate;
  * - Kit naming dialog
  * - Sound effects for feedback
  */
+@OnlyIn(Dist.CLIENT)
 public class KitSelectionScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(KitSelectionScreen.class);
 

@@ -11,6 +11,8 @@ import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +22,7 @@ import java.util.stream.Collectors;
 /**
  * Main UI screen for browsing and starting Endurance Quests.
  */
-
+@OnlyIn(Dist.CLIENT)
 public class EnduranceQuestScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestScreen.class);
 

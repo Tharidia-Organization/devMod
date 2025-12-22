@@ -15,6 +15,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +35,7 @@ import java.util.stream.Collectors;
  * Epic Party Management Screen - Guild Hall Style
  * Features animated borders, glow effects, and RPG-style presentation.
  */
+@OnlyIn(Dist.CLIENT)
 public class PartyScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyScreen.class);
 

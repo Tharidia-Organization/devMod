@@ -9,6 +9,8 @@ import com.frenkvs.devmod.ui.ConfirmDialog.Style;
 import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import javax.annotation.Nonnull;
 
@@ -17,7 +19,7 @@ import javax.annotation.Nonnull;
  * Prevents accidental exits by requiring explicit confirmation.
  * Uses standard UIConstants for consistent theming.
  */
-
+@OnlyIn(Dist.CLIENT)
 public class QuestExitConfirmScreen extends Screen {
 
     private final Screen parentScreen;

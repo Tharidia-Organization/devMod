@@ -16,6 +16,8 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -27,7 +29,7 @@ import java.util.Objects;
  * Achievement-style QA Testing Screen.
  * Displays tests organized by category with visual progress tracking.
  */
-
+@OnlyIn(Dist.CLIENT)
 public class QATestingScreen extends Screen {
 
     // Layout constants

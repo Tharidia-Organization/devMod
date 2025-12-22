@@ -1,5 +1,6 @@
 package com.frenkvs.devmod;
 
+import com.frenkvs.devmod.client.input.KeyInputHandler;
 import com.frenkvs.devmod.actions.ActionContext;
 import com.frenkvs.devmod.actions.ActionIds;
 import com.frenkvs.devmod.actions.ActionOrigin;
@@ -26,6 +27,8 @@ import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -37,7 +40,7 @@ import java.util.Objects;
  * Fornisce controlli per esportare heatmap, visualizzare statistiche e toggle overlay.
  * Refactored con Axiom-style UI.
  */
-
+@OnlyIn(Dist.CLIENT)
 public class TelemetryDashboardScreen extends Screen {
 
     private static final int CONTENT_WIDTH = 320;

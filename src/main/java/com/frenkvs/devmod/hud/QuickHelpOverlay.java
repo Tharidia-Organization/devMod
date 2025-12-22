@@ -1,7 +1,7 @@
 package com.frenkvs.devmod.hud;
 
 import com.frenkvs.devmod.DevMod;
-import com.frenkvs.devmod.KeyInputHandler;
+import com.frenkvs.devmod.client.input.KeyInputHandler;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;

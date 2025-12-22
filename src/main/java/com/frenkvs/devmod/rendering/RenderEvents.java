@@ -4,7 +4,7 @@ import com.frenkvs.devmod.ArmorConfigManager;
 import com.frenkvs.devmod.ArmorStats;
 import com.frenkvs.devmod.Config;
 import com.frenkvs.devmod.DevMod;
-import com.frenkvs.devmod.KeyInputHandler;
+import com.frenkvs.devmod.client.input.KeyInputHandler;
 import com.frenkvs.devmod.actions.ActionContext;
 import com.frenkvs.devmod.actions.ActionIds;
 import com.frenkvs.devmod.actions.ActionRegistry;

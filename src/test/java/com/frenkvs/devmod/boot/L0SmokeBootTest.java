@@ -209,8 +209,8 @@ public class L0SmokeBootTest {
         @Order(2)
         @DisplayName("KeyInputHandler.java exists")
         void keyInputHandlerSourceExists() {
-            assertTrue(sourceFileExists("KeyInputHandler.java"),
-                "KeyInputHandler.java should exist");
+            assertTrue(sourceFileExists("client/input/KeyInputHandler.java"),
+                "KeyInputHandler.java should exist in client/input package");
         }
 
         @Test
@@ -316,7 +316,7 @@ public class L0SmokeBootTest {
         void coreClassesCompiled() {
             String[] coreClasses = {
                 "DevMod.class",
-                "KeyInputHandler.class",
+                "client/input/KeyInputHandler.class",
                 "Config.class"
             };
 
@@ -362,8 +362,8 @@ public class L0SmokeBootTest {
         @Order(1)
         @DisplayName("KeyInputHandler defines expected keybinds")
         void keybindFieldsDefined() throws IOException {
-            Path sourceFile = Paths.get("src/main/java/com/frenkvs/devmod/KeyInputHandler.java");
-            assertTrue(Files.exists(sourceFile), "KeyInputHandler.java should exist");
+            Path sourceFile = Paths.get("src/main/java/com/frenkvs/devmod/client/input/KeyInputHandler.java");
+            assertTrue(Files.exists(sourceFile), "KeyInputHandler.java should exist in client/input package");
 
             String content = Files.readString(sourceFile);
 
@@ -387,7 +387,7 @@ public class L0SmokeBootTest {
         @Order(2)
         @DisplayName("KeyInputHandler has 35 KeyMapping fields")
         void keybindCount() throws IOException {
-            Path sourceFile = Paths.get("src/main/java/com/frenkvs/devmod/KeyInputHandler.java");
+            Path sourceFile = Paths.get("src/main/java/com/frenkvs/devmod/client/input/KeyInputHandler.java");
             String content = Files.readString(sourceFile);
 
             // Count KeyMapping field declarations
@@ -402,7 +402,7 @@ public class L0SmokeBootTest {
         @Order(3)
         @DisplayName("All keybinds use devmod category")
         void keybindsUseCorrectCategory() throws IOException {
-            Path sourceFile = Paths.get("src/main/java/com/frenkvs/devmod/KeyInputHandler.java");
+            Path sourceFile = Paths.get("src/main/java/com/frenkvs/devmod/client/input/KeyInputHandler.java");
             String content = Files.readString(sourceFile);
 
             // Count category references

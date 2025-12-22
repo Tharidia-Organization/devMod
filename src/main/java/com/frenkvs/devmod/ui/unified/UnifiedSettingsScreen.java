@@ -18,6 +18,8 @@ import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import com.frenkvs.devmod.util.I18n;
 
 import javax.annotation.Nonnull;
@@ -31,7 +33,7 @@ import java.util.Objects;
  * Unified settings screen for all mod settings.
  * Layout with sidebar for navigation and content area for pages.
  */
-
+@OnlyIn(Dist.CLIENT)
 public class UnifiedSettingsScreen extends Screen {
 
     // === Layout Constants ===

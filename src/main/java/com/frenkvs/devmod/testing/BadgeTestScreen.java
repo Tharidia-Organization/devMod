@@ -8,6 +8,8 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -22,6 +24,7 @@ import java.util.Objects;
  * - Visual effects (glow for rare+, particles for epic+)
  * - Queue system (multiple badges in sequence)
  */
+@OnlyIn(Dist.CLIENT)
 public class BadgeTestScreen extends Screen {
 
     private static final int BUTTON_WIDTH = 180;

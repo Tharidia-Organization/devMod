@@ -15,6 +15,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import javax.annotation.Nonnull;
@@ -24,7 +26,7 @@ import java.util.Objects;
  * Screen per modificare l'equipaggiamento di un mob.
  * Refactored con Axiom-style UI.
  */
-
+@OnlyIn(Dist.CLIENT)
 public class MobEquipmentScreen extends Screen {
 
     private static final int PANEL_WIDTH = 320;

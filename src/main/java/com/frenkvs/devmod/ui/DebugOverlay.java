@@ -30,6 +30,16 @@ public class DebugOverlay {
         }
         return false;
     }
+
+    /**
+     * Cycles through debug overlay modes: OFF -> PERFORMANCE -> MEMORY -> NETWORK -> OFF
+     */
+    public static void cycleMode() {
+        Mode[] modes = Mode.values();
+        int currentIndex = currentMode.ordinal();
+        int nextIndex = (currentIndex + 1) % modes.length;
+        currentMode = modes[nextIndex];
+    }
     
     public static void render(GuiGraphics graphics, int screenWidth, int screenHeight) {
         if (currentMode == Mode.OFF) return;

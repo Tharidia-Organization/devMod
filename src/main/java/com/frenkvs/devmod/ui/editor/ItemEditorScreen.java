@@ -69,6 +69,8 @@ import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.level.Level;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
@@ -83,6 +85,7 @@ import java.util.Objects;
  *
  * @see EDITOR_DESIGN_SYSTEM.md#31-unified-editor-architecture
  */
+@OnlyIn(Dist.CLIENT)
 public class ItemEditorScreen extends Screen {
 
     // ═══════════════════════════════════════════════════════════════

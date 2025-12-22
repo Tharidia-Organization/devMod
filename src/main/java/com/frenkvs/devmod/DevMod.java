@@ -17,13 +17,10 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.slf4j.Logger;
@@ -103,11 +100,7 @@ public class DevMod {
         // Network payload registration (mod bus)
         eventBus.addListener(DebugNetworkHandler::registerPayloads);
 
-        // Register keybinds only on client side
-        if (FMLEnvironment.dist == Dist.CLIENT) {
-            eventBus.addListener(DevMod::registerKeyMappings);
-            LOGGER.info("[DevMod] Client keybind registration scheduled");
-        }
+        // NOTE: Keybinds are now registered in DevModClient (client-only class)
 
         // Arena Template bootstrap (L1 registry)
         initArenaTemplateRegistry();
@@ -144,48 +137,6 @@ public class DevMod {
             LOGGER.info("[DevMod] ArenaTemplateConfig reloaded and applied");
             com.frenkvs.devmod.arena.ArenaCommandEvents.onArenaConfigReload(newConfig);
         }
-    }
-
-    private static void registerKeyMappings(RegisterKeyMappingsEvent event) {
-        LOGGER.info("[DevMod] Registering keybinds including N for QA Testing");
-        event.register(Objects.requireNonNull(KeyInputHandler.OPEN_SETTINGS_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.OPEN_WEAPON_EDITOR_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_DEBUG_OVERLAY_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_LIGHT_OVERLAY_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_HEATMAP_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.DISMISS_IMPACT_HUD_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_ROOM_BOUNDS_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_PATHFINDING_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_LOS_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_VERTICAL_LEVELS_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_SAFE_SPOT_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.OPEN_DASHBOARD_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_ATTRIBUTE_MONITOR_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_FPS_TRACKER_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_PROFILER_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.OPEN_QA_TESTING_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.OPEN_TESTING_HUB_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_BOSS_PHASE_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_ENTITY_DENSITY_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_SKILL_EFFICACY_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_SPAWNABILITY_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_QUEST_HUD_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.QUEST_COMPLETE_TASK_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.OPEN_QUEST_EDITOR_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_ECONOMY_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_CHUNK_PERF_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.OPEN_ENDURANCE_QUEST_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.QUEST_CONTINUE_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.QUEST_EXIT_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.OPEN_PARTY_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.TOGGLE_HELP_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.OPEN_RADIAL_MENU_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.INSPECT_MOB_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.TEST_SCREEN_SHAKE_KEY));
-        // Ability system keybinds
-        event.register(Objects.requireNonNull(KeyInputHandler.DASH_KEY));
-        event.register(Objects.requireNonNull(KeyInputHandler.DODGE_KEY));
-        LOGGER.info("[DevMod] All keybinds registered successfully");
     }
 
     /**

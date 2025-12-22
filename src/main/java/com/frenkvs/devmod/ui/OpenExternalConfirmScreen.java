@@ -6,6 +6,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -17,6 +19,7 @@ import java.util.Objects;
  * Confirmation screen for opening external URLs.
  * Provides "Open in Browser" and "Copy URL" options with fallback handling.
  */
+@OnlyIn(Dist.CLIENT)
 public class OpenExternalConfirmScreen extends Screen {
 
     private static final int DIALOG_WIDTH = 280;

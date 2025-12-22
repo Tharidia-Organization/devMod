@@ -1,7 +1,7 @@
 package com.frenkvs.devmod.hud;
 
 import com.frenkvs.devmod.DevMod;
-import com.frenkvs.devmod.KeyInputHandler;
+import com.frenkvs.devmod.client.input.KeyInputHandler;
 import com.frenkvs.devmod.ui.UIConstants;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 import com.frenkvs.devmod.util.I18n;

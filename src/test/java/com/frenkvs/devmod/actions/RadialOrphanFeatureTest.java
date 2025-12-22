@@ -1,6 +1,6 @@
 package com.frenkvs.devmod.actions;
 
-import com.frenkvs.devmod.KeyInputHandler;
+import com.frenkvs.devmod.client.input.KeyInputHandler;
 import com.frenkvs.devmod.TestBootstrap;
 import com.frenkvs.devmod.actions.client.ActionKeybindRegistry;
 import com.frenkvs.devmod.actions.client.DevModClientActions;

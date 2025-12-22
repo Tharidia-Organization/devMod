@@ -14,6 +14,8 @@ import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 import com.frenkvs.devmod.hud.ComboDecayOverlay;
 import com.frenkvs.devmod.hud.RecordBannerOverlay;
 import com.frenkvs.devmod.actions.client.DevModClientActions;
+import com.frenkvs.devmod.client.ClientUiBridgeImpl;
+import com.frenkvs.devmod.client.input.KeyInputHandler;
 
 // This class will not load on dedicated servers. Accessing client side code from here is safe.
 @Mod(value = DevMod.MODID, dist = Dist.CLIENT)
@@ -22,6 +24,9 @@ import com.frenkvs.devmod.actions.client.DevModClientActions;
 public class DevModClient {
     public DevModClient(IEventBus modEventBus, ModContainer container) {
         DevMod.LOGGER.debug("[DevMod] DevModClient constructor called");
+
+        // Initialize client UI bridge (allows common code to request UI operations)
+        ClientUiBridgeImpl.init();
 
         // Allows NeoForge to create a config screen for this mod's configs.
         // The config screen is accessed by going to the Mods screen > clicking on your mod > clicking on config.
@@ -32,7 +37,8 @@ public class DevModClient {
         modEventBus.addListener(ComboDecayOverlay::registerOverlay);
         modEventBus.addListener(RecordBannerOverlay::registerOverlay);
 
-        // NOTE: Keybinds are registered in DevMod.java to avoid loading issues
+        // Keybinds registration (client-only, in client.input package)
+        modEventBus.addListener(KeyInputHandler::registerKeyMappings);
 
         DevModClientActions.register();
     }

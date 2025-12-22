@@ -4,10 +4,13 @@ import com.frenkvs.devmod.abilities.StaminaSystem;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import org.lwjgl.glfw.GLFW;
 import javax.annotation.Nonnull;
 import java.util.Objects;
 
+@OnlyIn(Dist.CLIENT)
 public class StaminaSystemEditor extends Screen {
     private static final int DEFAULT_SELECTED_FIELD = 0;
     private static final int PANEL_WIDTH = 300;

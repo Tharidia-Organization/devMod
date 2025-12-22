@@ -11,6 +11,8 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -32,7 +34,7 @@ import java.util.Objects;
  * 3. Enable overlays (auto-suggest based on test type)
  * 4. Start test (launches integrated session)
  */
-
+@OnlyIn(Dist.CLIENT)
 public class QuickTestWizard extends Screen {
 
     // Layout
