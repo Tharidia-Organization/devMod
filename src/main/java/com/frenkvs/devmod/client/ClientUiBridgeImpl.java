@@ -46,9 +46,10 @@ public class ClientUiBridgeImpl implements ClientUiBridge {
 
     @Override
     public void openItemEditor() {
-        if (mc().player != null) {
+        var player = mc().player;
+        if (player != null) {
             mc().setScreen(new ItemEditorScreen(
-                mc().player.getMainHandItem(),
+                player.getMainHandItem(),
                 EditorStartTab.GENERAL));
         }
     }
@@ -98,8 +99,10 @@ public class ClientUiBridgeImpl implements ClientUiBridge {
     public void showNotification(String message, NotificationType type) {
         var player = mc().player;
         if (player != null) {
+            Component component = Component.literal("[" + type.name() + "] " + message);
+            java.util.Objects.requireNonNull(component);
             player.displayClientMessage(
-                Component.literal("[" + type.name() + "] " + message),
+                component,
                 true
             );
         }

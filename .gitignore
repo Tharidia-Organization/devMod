@@ -53,3 +53,9 @@ replay_pid*
 **/npm-debug.log*
 /logs/*
 
+
+
+
+
+# Ignore Smart Environment folder
+.smart-env

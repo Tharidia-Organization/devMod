@@ -1,0 +1,27 @@
+{
+  "id": "vanilla_default",
+  "name": "Vanilla Default",
+  "description": "Vanilla-like stats matching base Minecraft behavior",
+  "version": "1.0.0",
+  "author": "DevMod",
+  "category": "weapon",
+  "scope": "global",
+  "values": {
+    "headMult": 1.0,
+    "bodyMult": 1.0,
+    "limbMult": 1.0,
+    "baseDamage": 5.0,
+    "attackSpeed": 1.6,
+    "critChance": 0.0,
+    "critMultiplier": 1.5,
+    "armorPen": 0.0,
+    "lifesteal": 0.0,
+    "knockback": 0.0,
+    "damageBonus": 0.0,
+    "range": 3.0,
+    "blockBreakSpeed": 1.0,
+    "durabilityMult": 1.0,
+    "enchantability": 10.0
+  },
+  "tags": ["vanilla", "default", "official"]
+}

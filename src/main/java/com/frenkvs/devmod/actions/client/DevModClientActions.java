@@ -82,8 +82,9 @@ import com.frenkvs.devmod.ui.testing.VoxelLabUiTestScreen;
 import com.frenkvs.devmod.ui.unified.UnifiedSettingsScreen;
 import com.frenkvs.devmod.ui.unified.persistence.SettingsManager;
 import com.frenkvs.devmod.ui.wizard.QuickTestWizard;
-import com.frenkvs.devmod.util.I18n;
+import com.devmod.arena.command.ArenaActionRegistry;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.frenkvs.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.options.controls.KeyBindsScreen;
 import net.minecraft.network.chat.Component;
@@ -152,6 +153,7 @@ public final class DevModClientActions {
     }
 
     private static void registerUiActions() {
+        ArenaActionRegistry.registerClientActions();
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_RADIAL_OPEN)
             .labelKey("devmod.action.radial_open")
             .descriptionKey("devmod.action.radial_open.desc")

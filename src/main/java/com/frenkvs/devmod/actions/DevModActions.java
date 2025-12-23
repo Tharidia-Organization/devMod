@@ -124,7 +124,7 @@ public final class DevModActions {
     }
 
     private static void registerServerActions() {
-        ArenaActionRegistry.registerActions();
+        ArenaActionRegistry.registerCommonActions();
         DebugCommand.registerActions();
         TelemetryReloadCommand.registerActions();
         DashboardCommand.registerActions();

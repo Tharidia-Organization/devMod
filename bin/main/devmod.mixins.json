@@ -4,10 +4,14 @@
   "package": "com.frenkvs.devmod.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "MinecraftServerAccessor",
+    "RecipeManagerMixin"
   ],
   "client": [
     "GameRendererMixin",
-    "CameraShakeMixin"
+    "CameraShakeMixin",
+    "ModelPartTransformMixin",
+    "LivingEntityRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

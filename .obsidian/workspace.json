@@ -1,0 +1,273 @@
+{
+  "main": {
+    "id": "331f9deeb5783419",
+    "type": "split",
+    "children": [
+      {
+        "id": "8f6c1f64ffdd7628",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "448b4c5a904dabb6",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "b6679c9bae037fc2",
+    "type": "split",
+    "children": [
+      {
+        "id": "8c8201c7a1104270",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "a2314730a959c9cd",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "5ccbd9e5336cd199",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": true,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": true,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "56131e1ea0ae52a7",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 340.5
+  },
+  "right": {
+    "id": "e64e6fcda94edf4f",
+    "type": "split",
+    "children": [
+      {
+        "id": "2f41b3d923a5f544",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "22c6c89536817852",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "docs/ARCHITECTURE.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for ARCHITECTURE"
+            }
+          },
+          {
+            "id": "26a945bb02c5efbc",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "docs/ARCHITECTURE.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from ARCHITECTURE"
+            }
+          },
+          {
+            "id": "8479e3a72aa2a260",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "0da8fe4250c26a79",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "23e2ac687bfefe67",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Untitled.canvas",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of Untitled"
+            }
+          },
+          {
+            "id": "f5dd2019365f9239",
+            "type": "leaf",
+            "state": {
+              "type": "smart-connections-view",
+              "state": {},
+              "icon": "smart-connections",
+              "title": "Connections"
+            }
+          },
+          {
+            "id": "879203b9b13a3b80",
+            "type": "leaf",
+            "state": {
+              "type": "bases",
+              "state": {
+                "file": "TaskNotes/Views/mini-calendar-default.base",
+                "viewName": "Due"
+              },
+              "icon": "tasknotes-simple",
+              "title": "mini-calendar-default"
+            }
+          },
+          {
+            "id": "a49f70d2a3d97e9f",
+            "type": "leaf",
+            "state": {
+              "type": "smart-lookup-view",
+              "state": {},
+              "icon": "smart-lookup",
+              "title": "Lookup"
+            }
+          }
+        ],
+        "currentTab": 7
+      }
+    ],
+    "direction": "horizontal",
+    "width": 546.5
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "obsidian-excalidraw-plugin:New drawing": false,
+      "obsidian-kanban:Create new board": false,
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false,
+      "tasknotes:Open mini calendar": false,
+      "tasknotes:Open advanced calendar": false,
+      "tasknotes:Open task list": false,
+      "tasknotes:Open agenda": false,
+      "tasknotes:Open kanban board": false,
+      "tasknotes:Open pomodoro": false,
+      "tasknotes:Open pomodoro stats": false,
+      "tasknotes:Create new task": false,
+      "templater-obsidian:Templater": false,
+      "smart-connections:Smart Connections: Open connections view": false,
+      "smart-connections:Smart Lookup: Open lookup view": false,
+      "smart-connections:Smart Connections: Open random connection": false,
+      "task-board:Open task board": false,
+      "card-board:CardBoard": false
+    }
+  },
+  "active": "a2314730a959c9cd",
+  "lastOpenFiles": [
+    "Excalidraw/Drawing 2025-12-23 22.40.24.excalidraw.md",
+    "Untitled.canvas",
+    "README.md",
+    "Untitled 1.canvas",
+    "Excalidraw/Drawing 2025-12-23 22.30.17.excalidraw.md",
+    "TaskNotes/Views/mini-calendar-default.base",
+    "Excalidraw/Drawing 2025-12-23 22.23.07.excalidraw.md",
+    "test.canvas",
+    "Untitled.base",
+    "Untitled Kanban 2.md",
+    "Untitled Kanban 1.md",
+    "TaskNotes/Views/kanban-default.base",
+    "docs/ARCHITECTURE.md",
+    "build/reports/configuration-cache/46n5pdkxbecloeykdqmgwc8im/cxpvq18ygj2glt8bmmehbbzy7/configuration-cache-report.html",
+    "build/reports/configuration-cache/46n5pdkxbecloeykdqmgwc8im/cxpvq18ygj2glt8bmmehbbzy7",
+    "build/reports/configuration-cache/46n5pdkxbecloeykdqmgwc8im",
+    "run/run/arena-telemetry_2025-12-23.ndjson.gz",
+    "run/saves/New World (3)/level5852202018374310849.dat",
+    "run/saves/New World (3)/data/chunkloaders_loaded_chunks.dat8807032388110553226.neoforge-tmp",
+    "run/local/crash_assistant/normal_stop_pid87593.tmp",
+    "Excalidraw/Drawing 2025-12-23 17.02.30.excalidraw.md",
+    "docs/ARCHITECTURE.excalidraw.md",
+    "Excalidraw/Drawing 2025-12-23 17.02.34.excalidraw.md",
+    "docs/null-suppression-audit.md",
+    "Untitled Kanban.md",
+    "tools/mcp/codex-mcp-server/node_modules/mime-db/HISTORY.md",
+    "docs/recipe-editor-spec/README.md",
+    "tools/mcp/codex-mcp-server/node_modules/jose/README.md",
+    "tools/mcp/codex-mcp-server/node_modules/ajv/README.md",
+    "docs/impact-hud-audit/04-issues-and-bugs.md",
+    "docs/testing/TEST_HARNESS.md",
+    "docs/recipe-editor-spec/01-neoforge-api.md",
+    "docs/radial/RADIAL_AUDIT.md",
+    "docs/radial/RADIAL_BUTTON_CONTRACT.md",
+    "docs/radial/RADIAL_QA_SCENARIOS.md",
+    "docs/arena-template-rework/TODO_AGENT_02_COMPLETE.md",
+    "docs/arena-template-rework/TODO_AGENT_01_COMPLETE.md",
+    "docs/arena-template-rework/ARENA_TEMPLATE_AUDIT.md",
+    "run/journeymap/data/sp/New World (3)/devmod~instance_12b0635153c5487d9961fee796cd0619/night/-1,0.png"
+  ]
+}

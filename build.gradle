@@ -308,6 +308,7 @@ tasks.withType(JavaCompile).configureEach {
 
 // Configure JUnit 5 testing
 test {
+    dependsOn 'generateBuildProperties'
     useJUnitPlatform()
     testLogging {
         events "passed", "skipped", "failed"
@@ -430,38 +431,73 @@ tasks.named('jar') {
     archiveVersion.set('')
 }
 
-// DD34: Generate build.properties with git commit/branch info for AutosmokeReportHeader
-tasks.register('generateBuildProperties') {
-    // Uses exec/time; explicitly disable config cache for this task
-    notCompatibleWithConfigurationCache("buildProperties executes git and reads env at execution time")
+import org.gradle.api.tasks.*
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.Property
 
-    def propsFileProvider = layout.buildDirectory.file("resources/main/build.properties")
-    outputs.file(propsFileProvider)
+// Custom task to generate build properties in a configuration-cache-compatible way
+abstract class GenerateBuildProperties extends DefaultTask {
 
-    doLast {
-        def propsFile = propsFileProvider.get().asFile
-        def gitCommit = 'unknown'
-        def gitBranch = 'unknown'
-        try {
-            gitCommit = 'git rev-parse --short HEAD'.execute().text.trim()
-            gitBranch = 'git rev-parse --abbrev-ref HEAD'.execute().text.trim()
-        } catch (Exception e) {
-            logger.warn("Could not determine git info: ${e.message}")
-        }
+    @OutputFile
+    abstract RegularFileProperty getDestinationFile()
 
+    @Input
+    abstract Property<String> getModVersion()
+
+    @Input
+    abstract Property<String> getEnvironment()
+
+    @Input
+    abstract Property<String> getGitCommit()
+
+    @Input
+    abstract Property<String> getGitBranch()
+
+    @TaskAction
+    void generate() {
+        def propsFile = destinationFile.get().asFile
         def buildTime = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
-        def environment = providers.environmentVariable('DEVMOD_ENV').orElse('development').get()
-        def modVersionProp = providers.gradleProperty('mod_version').orElse('0.0.0').get()
-
+        
         propsFile.parentFile.mkdirs()
         propsFile.text = """# Auto-generated build properties
-git.commit=${gitCommit}
-git.branch=${gitBranch}
+git.commit=${gitCommit.get()}
+git.branch=${gitBranch.get()}
 build.time=${buildTime}
-mod.version=${modVersionProp}
-build.environment=${environment}
+mod.version=${modVersion.get()}
+build.environment=${environment.get()}
 """
     }
+}
+
+tasks.register('generateBuildProperties', GenerateBuildProperties) {
+    destinationFile.set(layout.buildDirectory.file("resources/main/build.properties"))
+    modVersion.set(providers.gradleProperty('mod_version').orElse('0.0.0'))
+    environment.set(providers.environmentVariable('DEVMOD_ENV').orElse('development'))
+
+    def headFile = layout.projectDirectory.file('.git/HEAD')
+    def headContents = providers.fileContents(headFile).getAsText().orElse("ref: refs/heads/unknown")
+    
+    gitBranch.set(headContents.map { head ->
+        if (head.startsWith('ref:')) {
+            def refPath = head.substring(5).trim()
+            if (refPath.startsWith("refs/heads/")) {
+                return refPath.substring(11)
+            }
+            return refPath
+        }
+        return "detached"
+    })
+
+    gitCommit.set(headContents.flatMap { head ->
+        if (head.startsWith('ref:')) {
+            def refPath = head.substring(5).trim()
+            def refFile = layout.projectDirectory.file(".git/" + refPath)
+            return providers.fileContents(refFile).getAsText().map { it.trim().substring(0, 7) }
+        } else {
+            // detached head
+            return providers.provider { head.trim().substring(0, 7) }
+        }
+    }.orElse("unknown"))
 }
 
 // Ensure build properties are generated before processResources

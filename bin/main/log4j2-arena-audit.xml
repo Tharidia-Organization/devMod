@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    DD31: Arena Audit Logger Configuration
+
+    This file provides configuration for the arena.audit logger.
+    Include this in your main log4j2.xml or use it standalone.
+
+    The arena.audit logger captures:
+    - Mutating command executions
+    - Permission denied events
+    - Permission level changes
+    - Arena lifecycle events
+    - Security events (rate limiting, suspicious activity)
+-->
+<Configuration status="WARN">
+    <Appenders>
+        <!-- Console appender for development -->
+        <Console name="ArenaAuditConsole" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%d{HH:mm:ss}] [arena.audit/%level]: %msg%n"/>
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+        </Console>
+
+        <!-- Rolling file appender for production audit trail -->
+        <RollingFile name="ArenaAuditFile"
+                     fileName="logs/arena-audit.log"
+                     filePattern="logs/arena-audit-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%level] %msg%n"/>
+            <Policies>
+                <!-- Roll over daily -->
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <!-- DD17: Roll when file reaches 500MB -->
+                <SizeBasedTriggeringPolicy size="500 MB"/>
+            </Policies>
+            <!-- DD17: Keep 14 days of audit logs, .gz compression -->
+            <DefaultRolloverStrategy max="14">
+                <Delete basePath="logs" maxDepth="1">
+                    <IfFileName glob="arena-audit-*.log.gz"/>
+                    <IfLastModified age="14d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+    </Appenders>
+
+    <Loggers>
+        <!-- Arena audit logger - separate from main application logs -->
+        <Logger name="arena.audit" level="INFO" additivity="false">
+            <AppenderRef ref="ArenaAuditConsole"/>
+            <AppenderRef ref="ArenaAuditFile"/>
+        </Logger>
+    </Loggers>
+</Configuration>
