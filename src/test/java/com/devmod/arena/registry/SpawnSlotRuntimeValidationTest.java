@@ -19,7 +19,7 @@ class SpawnSlotRuntimeValidationTest {
         );
 
         BlockPos absPos = new BlockPos(0, 64, 0);
-        SpawnSlotValidator.BlockQuery query = new SpawnSlotValidator.BlockQuery() {
+        TemplateSpawnValidator.BlockQuery query = new TemplateSpawnValidator.BlockQuery() {
             @Override
             public boolean isAir(BlockPos pos) {
                 return true;
@@ -31,7 +31,7 @@ class SpawnSlotRuntimeValidationTest {
             }
         };
 
-        SpawnSlotValidator validator = new SpawnSlotValidator();
+        TemplateSpawnValidator validator = new TemplateSpawnValidator();
         assertFalse(validator.validateAtRuntime("test_template", slot, query, absPos));
     }
 
@@ -46,7 +46,7 @@ class SpawnSlotRuntimeValidationTest {
 
         BlockPos absPos = new BlockPos(0, 64, 0);
         BlockPos below = absPos.below();
-        SpawnSlotValidator.BlockQuery query = new SpawnSlotValidator.BlockQuery() {
+        TemplateSpawnValidator.BlockQuery query = new TemplateSpawnValidator.BlockQuery() {
             @Override
             public boolean isAir(BlockPos pos) {
                 return !pos.equals(absPos);
@@ -58,7 +58,7 @@ class SpawnSlotRuntimeValidationTest {
             }
         };
 
-        SpawnSlotValidator validator = new SpawnSlotValidator();
+        TemplateSpawnValidator validator = new TemplateSpawnValidator();
         assertFalse(validator.validateAtRuntime("test_template", slot, query, absPos));
     }
 }

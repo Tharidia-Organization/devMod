@@ -185,7 +185,7 @@ public class TemplateValidator {
         if (template.spawnSlots() != null && template.spawnSlots().size() > MAX_SPAWN_SLOTS) {
             errors.add("Too many spawnSlots, max " + MAX_SPAWN_SLOTS);
         }
-        SpawnSlotValidator spawnSlotValidator = new SpawnSlotValidator();
+        TemplateSpawnValidator spawnSlotValidator = new TemplateSpawnValidator();
         ValidationResult spawnResult = spawnSlotValidator.validate(template, bounds);
         errors.addAll(spawnResult.errors());
         warnings.addAll(spawnResult.warnings());

@@ -102,6 +102,7 @@ LivingDamageEvent.Post (ActualDamageTracker) → Cattura danno reale
 - Gestione lifecycle (3s display + 500ms fade)
 - Isolamento multiplayer (per-player UUID)
 - Auto-cleanup entries scadute
+- **Timeout massimo 30s** per observation lock (BUG-005 FIXED)
 
 **Struttura Dati:**
 ```java
@@ -161,6 +162,7 @@ private static void maybeCleanup() {
     ┌─────────────────┐      │    ┌─────────────────┐
     │    OBSERVING    │◄─────┴───►│   FADE_START    │
     │ (timer paused)  │           │ (3s countdown)  │
+    │ MAX 30s timeout │ ◄── FIXED │                 │
     └─────────────────┘           └────────┬────────┘
                                            │
                                            ▼
@@ -176,13 +178,15 @@ private static void maybeCleanup() {
                                   └─────────────────┘
 ```
 
+**Nota:** Il timeout massimo di 30 secondi (MAX_OBSERVATION_TIME_MS) previene che l'HUD rimanga bloccato indefinitamente (BUG-005 FIXED).
+
 #### DamageBreakdown.java
-**Path:** `src/main/java/com/frenkvs/devmod/hud/DamageBreakdown.java`
+**Path:** `src/main/java/com/frenkvs/devmod/damage/DamageBreakdown.java`
 
 **Responsabilità:**
 - Calcolo dettagliato componenti danno
-- Generazione formula string per HUD
-- Gestione enchant bonus
+- Generazione formula string per HUD (cached nel constructor)
+- Gestione enchant bonus con filtro per target type
 
 **Struttura:**
 ```java
@@ -198,6 +202,25 @@ public class DamageBreakdown {
     public record EnchantBonus(String name, int level, float bonus) {}
 }
 ```
+
+#### ImpactHudContentBuilder.java (NEW)
+
+**Path:** `src/main/java/com/frenkvs/devmod/hud/ImpactHudContentBuilder.java`
+
+**Responsabilità:**
+
+- Generazione centralizzata contenuti HUD
+- Usato sia da 2D overlay che 3D renderer
+- Riduce duplicazione codice (OPT-001 ADDRESSED)
+
+#### DamageCalculator.java (NEW)
+
+**Path:** `src/main/java/com/frenkvs/devmod/damage/DamageCalculator.java`
+
+**Responsabilità:**
+
+- Calcolo centralizzato del danno
+- Separazione logica di calcolo da event handling
 
 ### 1.3 Layer di Rendering
 

@@ -1,5 +1,8 @@
 # Arena Template Documentation Audit (v2.23)
 
+> **Last Updated**: 2024-12-23
+> **Status**: ✅ CURRENT - Audit allineato con codebase
+
 ## Scope
 - Obiettivo: riallineare la documentazione Arena Template allo stato attuale del codice e all'obiettivo finale v2.23.
 - Copertura: spec/template/policy, runbook alert, schemi JSON, migrazione legacy, readiness.

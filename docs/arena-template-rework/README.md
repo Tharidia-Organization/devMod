@@ -1,6 +1,13 @@
 # Arena Template Rework
 
-Documentazione e track record per il rework del sistema Arena Template.
+> **Last Updated**: 2024-12-23
+> **Status**: ✅ CURRENT - Sistema Arena Template v2.23 documentato
+> **Design Decisions**: 72 DD completate (DD1-DD72)
+> **Main Reference**: [[areas/arena/README]] ← Documento principale consolidato
+
+Documentazione dettagliata e track record per il rework del sistema Arena Template.
+
+**Nota**: Per una panoramica consolidata del sistema Arena, vedere [[areas/arena/README]]. Questa cartella contiene le specifiche dettagliate e i record di implementazione.
 
 ## Struttura
 
@@ -9,8 +16,7 @@ docs/arena-template-rework/
 ├── README.md                      # Questo file
 ├── ARENA_TEMPLATE_AUDIT.md        # Audit + mappa doc + gap residui
 ├── TODO_ARENA_TEMPLATE.md         # Design Decisions complete (DD1-DD72)
-├── TODO_GAPS.md                   # Gap residui post-audit
-├── MIGRATION_INVENTORY.md         # Inventario migrazione call-site legacy
+├── DOCUMENTATION_AUDIT_REPORT.md  # Report audit documentazione
 ├── PRODUCTION_MARKER_README.md    # Guard autosmoke (DD32)
 ├── arena_template.schema.json     # Schema L1 (ArenaTemplate)
 ├── arena_policy.schema.json       # Schema L2 (ArenaPolicy)
@@ -31,12 +37,13 @@ docs/arena-template-rework/
 Archivio storico (task list e script): `docs/_deprecated/arena-template-rework/`.
 
 ## Flusso consigliato (entrypoint)
+
 1. `docs/arena-template-rework/ARENA_TEMPLATE_AUDIT.md` - stato corrente, gap residui, doc canonicali
 2. `docs/arena-template-rework/TODO_ARENA_TEMPLATE.md` - spec completa v2.23
-3. `docs/arena-template-rework/TODO_GAPS.md` - gap residui post-audit
-4. `docs/arena-template-rework/MIGRATION_INVENTORY.md` - stato migrazione legacy
-5. `docs/arena-template-rework/TODO_AGENT_*_COMPLETE.md` - implementazione per area
-6. `docs/runbook/arena-alerts.md` - runbook alert (DD68)
+3. `docs/arena-template-rework/TODO_AGENT_*_COMPLETE.md` - implementazione per area
+4. `docs/runbook/arena-alerts.md` - runbook alert (DD68)
+
+**Note**: I file `TODO_GAPS.md` e `MIGRATION_INVENTORY.md` sono stati spostati in `_deprecated/` poiché obsoleti.
 
 ### Tracking Completamento
 

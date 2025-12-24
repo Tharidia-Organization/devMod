@@ -1,5 +1,8 @@
 # Level 4 (L4) Test Report - Integration & Edge Cases
 
+> **Status**: 📊 HISTORICAL - Report snapshot from 2025-12-10
+> **Note**: Test counts may vary from current state. Run `./gradlew test` for current numbers.
+
 **Date:** 2025-12-10
 **Tester:** Claude Code (Automated Analysis)
 **DevMod Version:** 0.1.0+

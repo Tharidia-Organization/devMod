@@ -1,5 +1,8 @@
 # DevMod Item Editors — Fase 0 Audit (current HEAD)
 
+> **Status**: 📊 HISTORICAL - Audit snapshot pre-refactoring
+> **Note**: Alcuni issue elencati potrebbero essere stati risolti in commit successivi
+
 Baseline commands run: `./gradlew tasks --all`, `./gradlew --version`, `./gradlew test` (all green).
 
 ## TODO / FIXME / XXX scan

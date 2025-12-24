@@ -1,0 +1,58 @@
+name: Architecture Checks
+
+on: [push, pull_request]
+
+jobs:
+  architecture:
+    name: Architecture Guardrails
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Check 1: No frenkvs namespace
+      - name: Check no frenkvs namespace
+        run: |
+          echo "Checking for com.frenkvs references..."
+          if grep -r "com\.frenkvs" src/ --include="*.java" 2>/dev/null; then
+            echo "::error::Found com.frenkvs references - all code should be under com.devmod"
+            exit 1
+          fi
+          echo "PASS: No com.frenkvs references found"
+
+      # Check 2: Root package check (max 3 files)
+      - name: Check root package size
+        run: |
+          echo "Checking root package file count..."
+          count=$(find src/main/java/com/devmod -maxdepth 1 -name "*.java" 2>/dev/null | wc -l)
+          echo "Root package has $count files"
+          if [ "$count" -gt 3 ]; then
+            echo "::error::Root package has $count files (max 3 allowed: DevMod.java, DevModClient.java, ModConfig.java)"
+            find src/main/java/com/devmod -maxdepth 1 -name "*.java"
+            exit 1
+          fi
+          echo "PASS: Root package has $count files (max 3)"
+
+      # Check 3: Duplicate class names (warning only)
+      - name: Check duplicate class names
+        run: |
+          echo "Checking for duplicate class names..."
+          duplicates=$(find src/main/java -name "*.java" -exec basename {} \; 2>/dev/null | sort | uniq -d)
+          if [ -n "$duplicates" ]; then
+            echo "::warning::Duplicate class names found (may be intentional):"
+            echo "$duplicates"
+          else
+            echo "PASS: No duplicate class names"
+          fi
+
+      # Check 4: Namespace consistency
+      - name: Verify namespace consistency
+        run: |
+          echo "Verifying all Java files use com.devmod namespace..."
+          bad_packages=$(grep -rh "^package " src/main/java --include="*.java" 2>/dev/null | grep -v "package com\.devmod" | sort -u || true)
+          if [ -n "$bad_packages" ]; then
+            echo "::error::Found packages outside com.devmod namespace:"
+            echo "$bad_packages"
+            exit 1
+          fi
+          echo "PASS: All packages under com.devmod namespace"

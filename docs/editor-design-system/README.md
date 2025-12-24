@@ -1,5 +1,8 @@
 # Editor Design System
 
+> **Last Updated**: 2024-12-23
+> **Status**: ✅ CURRENT - Sistema design implementato e documentato
+
 Sistema di design unificato per gli editor di item/armor/weapon di DevMod.
 
 ## Struttura Documentazione

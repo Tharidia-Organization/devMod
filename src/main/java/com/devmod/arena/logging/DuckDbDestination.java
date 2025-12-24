@@ -1,8 +1,8 @@
 package com.devmod.arena.logging;
 
-import com.frenkvs.devmod.telemetry.duckdb.ArenaRecords;
-import com.frenkvs.devmod.telemetry.duckdb.DuckDBBatchWriter;
-import com.frenkvs.devmod.telemetry.duckdb.DuckDBTelemetryService;
+import com.devmod.telemetry.duckdb.ArenaRecords;
+import com.devmod.telemetry.duckdb.DuckDBBatchWriter;
+import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.devmod.arena.logging.LogAggregationPipeline.LogDestination;
 import com.devmod.arena.logging.LogAggregationPipeline.LogEvent;
 import org.slf4j.Logger;

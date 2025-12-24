@@ -166,7 +166,7 @@ private record CacheEntry(BodyPart bodyPart, Vec3 hitPoint, long timestamp) {
 
 ### Enchant Bonus Calculation
 ```java
-// DamageBreakdown.java:57-98
+// damage/DamageBreakdown.java:57-98
 private void calculateEnchantBonuses(ItemStack weapon, LivingEntity target) {
     ItemEnchantments enchantments = weapon.get(DataComponents.ENCHANTMENTS);
     if (enchantments == null || enchantments.isEmpty()) return;
@@ -198,9 +198,9 @@ private void calculateEnchantBonuses(ItemStack weapon, LivingEntity target) {
 }
 ```
 
-### Formula String Generation
+### Formula String Generation (Cached)
 ```java
-// DamageBreakdown.java:132-154
+// damage/DamageBreakdown.java:132-154 (now cached in constructor - BUG-010 FIXED)
 public String getFormulaString() {
     StringBuilder sb = new StringBuilder();
     sb.append(String.format("(%.1f", baseWeaponDamage));

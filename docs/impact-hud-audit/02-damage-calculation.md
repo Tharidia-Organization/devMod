@@ -126,7 +126,7 @@ if (isRanged && rangedCritChance > 0 && Math.random() < rangedCritChance) {
 ## 3. DamageBreakdown (Per HUD)
 
 ### 3.1 Formula
-**File:** `DamageBreakdown.java:50-54`
+**File:** `damage/DamageBreakdown.java:50-54`
 
 ```java
 // Final calculation: (base + enchants + pehkui) * bodyPartMult + armorPen
@@ -163,7 +163,7 @@ Formula String: "(7.0+3.0+1.8) × 1.50 + 2.0 = 19.6"
 ## 4. Calcolo Enchant Bonus
 
 ### 4.1 Sharpness
-**File:** `DamageBreakdown.java:72-76`
+**File:** `damage/DamageBreakdown.java:72-76`
 
 ```java
 if (enchName.contains("sharpness")) {
@@ -183,7 +183,7 @@ if (enchName.contains("sharpness")) {
 | V | 3.0 |
 
 ### 4.2 Smite (vs Undead)
-**File:** `DamageBreakdown.java:78-83`
+**File:** `damage/DamageBreakdown.java:78-83`
 
 ```java
 else if (enchName.contains("smite")) {
@@ -213,7 +213,7 @@ else if (enchName.contains("smite")) {
 | V | 12.5 |
 
 ### 4.3 Bane of Arthropods
-**File:** `DamageBreakdown.java:85-91`
+**File:** `damage/DamageBreakdown.java:85-91`
 
 ```java
 else if (enchName.contains("bane_of_arthropods")) {
@@ -241,7 +241,7 @@ private boolean isArthropod(LivingEntity entity) {
 - Bee
 
 ### 4.4 Fire Aspect
-**File:** `DamageBreakdown.java:93-96`
+**File:** `damage/DamageBreakdown.java:93-96`
 
 ```java
 else if (enchName.contains("fire_aspect")) {
@@ -257,10 +257,10 @@ else if (enchName.contains("fire_aspect")) {
 ## 5. Pehkui Size Bonus
 
 ### 5.1 Calcolo
-**File:** `DamageBreakdown.java:40-48`
+**File:** `damage/DamageBreakdown.java:40-48`
 
 ```java
-Float scale = ModIntegrationManager.getPehkuiScale(target);  // ⚠️ BUG: dovrebbe essere attacker
+Float scale = ModIntegrationManager.getPehkuiScale(attacker);  // ✅ FIXED (BUG-001)
 if (scale != null && scale > 1.0f) {
     this.pehkuiScale = scale;
     this.pehkuiSizeBonus = baseDmg * 0.25f * (scale - 1.0f);
@@ -282,15 +282,14 @@ if (scale != null && scale > 1.0f) {
 | 2.0 | 2.5 |
 | 3.0 | 5.0 |
 
-### 5.2 BUG CRITICO
+### 5.2 Status: FIXED (BUG-001)
 
-Il codice usa `target` invece di `attacker`:
+Il codice ora usa correttamente `attacker`:
 ```java
-Float scale = ModIntegrationManager.getPehkuiScale(target);  // SBAGLIATO
+Float scale = ModIntegrationManager.getPehkuiScale(attacker);  // ✅ CORRETTO
 ```
 
-**Comportamento Attuale:** Se colpisci un gigante, ottieni bonus danno.
-**Comportamento Atteso:** Se TU sei un gigante, ottieni bonus danno.
+**Comportamento Attuale:** Se TU sei un gigante, ottieni bonus danno (corretto).
 
 ---
 

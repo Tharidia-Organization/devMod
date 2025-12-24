@@ -2,7 +2,7 @@ package com.devmod.arena.health;
 
 import com.devmod.arena.fallback.CircuitBreaker;
 import com.devmod.arena.pool.PrebuildPoolManager;
-import com.frenkvs.devmod.telemetry.duckdb.DuckDBTelemetryService;
+import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

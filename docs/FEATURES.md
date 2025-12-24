@@ -1,5 +1,8 @@
 # DevMod Features
 
+> **Last Updated**: 2024-12-23
+> **Status**: ✅ CURRENT - Aligned with codebase
+
 Complete documentation of all DevMod features and systems.
 
 ## Table of Contents
@@ -23,7 +26,7 @@ Progressive waves of enemies with increasing difficulty.
 - **Wave Progression**: Each wave spawns more enemies with higher stats
 - **Mob Selection**: Choose target mob type before starting
 - **Arena System**: Isolated instances for each quest
-- **Boss Waves**: Special boss encounters every 10 waves
+- **Boss Waves**: Special boss encounters every 5 waves
 
 ### Perk System
 Roguelike perk selection between waves.
@@ -220,7 +223,7 @@ FORMING → READY → IN_QUEST → FORMING
 ### Overlay Keybinds
 | Key | Feature | Description |
 |-----|---------|-------------|
-| `G` | Debug Overlay | Hitbox wireframes, body parts |
+| `O` | Debug Overlay | Hitbox wireframes, body parts |
 | `L` | Light Level | Spawn-valid light levels |
 | `H` | Heatmap | Death/movement/camping maps |
 | `R` | Room Bounds | Room boundary visualization |
@@ -284,7 +287,7 @@ QA testing interface:
 - View test results
 - Export reports
 
-### Radial Menu (`O`)
+### Radial Menu (`G`)
 Quick access wheel:
 - Toggle common features
 - Quick teleport
@@ -297,7 +300,7 @@ Quick access wheel:
 ### Debug Keys
 | Key | Action |
 |-----|--------|
-| `G` | Toggle debug overlay |
+| `O` | Toggle debug overlay |
 | `L` | Toggle light levels |
 | `H` | Cycle heatmaps |
 | `R` | Toggle room bounds |
@@ -310,12 +313,13 @@ Quick access wheel:
 ### Screen Keys
 | Key | Screen |
 |-----|--------|
+| `G` | Radial Menu |
 | `K` | Unified Settings |
 | `M` | Weapon Editor |
 | `J` | Telemetry Dashboard |
 | `N` | Testing Hub |
 | `F7` | Testing Hub (alt) |
-| `O` | Radial Menu |
+| `F10` | Endurance Quest |
 
 ### Performance Keys
 | Key | Action |

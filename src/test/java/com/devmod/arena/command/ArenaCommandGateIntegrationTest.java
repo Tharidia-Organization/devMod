@@ -70,7 +70,7 @@ class ArenaCommandGateIntegrationTest {
                 when(context.getSource()).thenReturn(source);
                 when(context.getArgument("template", String.class)).thenReturn("default_flat_64");
 
-                var handler = ArenaActionBridge.getHandler(com.frenkvs.devmod.actions.ActionIds.ARENA_CREATE);
+                var handler = ArenaActionBridge.getHandler(com.devmod.actions.ActionIds.ARENA_CREATE);
                 assertNotNull(handler, "Expected arena create handler to be registered");
                 handler.apply(context);
 

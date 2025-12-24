@@ -1,12 +1,12 @@
 package com.devmod.arena.command;
 
-import com.frenkvs.devmod.actions.ActionCategory;
-import com.frenkvs.devmod.actions.ActionContext;
-import com.frenkvs.devmod.actions.ActionIds;
-import com.frenkvs.devmod.actions.ActionOrigin;
-import com.frenkvs.devmod.actions.ActionPreconditions;
-import com.frenkvs.devmod.actions.ActionRegistry;
-import com.frenkvs.devmod.actions.RadialAction;
+import com.devmod.actions.ActionCategory;
+import com.devmod.actions.ActionContext;
+import com.devmod.actions.ActionIds;
+import com.devmod.actions.ActionOrigin;
+import com.devmod.actions.ActionPreconditions;
+import com.devmod.actions.ActionRegistry;
+import com.devmod.actions.RadialAction;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.world.item.Items;

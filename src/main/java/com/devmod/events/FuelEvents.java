@@ -1,0 +1,53 @@
+package com.devmod.events;
+import com.devmod.stats.FuelStats;
+import com.devmod.config.FuelConfigManager;
+import com.devmod.components.FuelComponents;
+
+import com.devmod.DevMod;
+
+import com.mojang.logging.LogUtils;
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.furnace.FurnaceFuelBurnTimeEvent;
+import org.slf4j.Logger;
+
+/**
+ * Event handlers for fuel item modifications.
+ * Intercepts furnace fuel checks to apply custom burn times.
+ */
+@EventBusSubscriber(modid = DevMod.MODID)
+public class FuelEvents {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
+
+    /**
+     * Called when the game checks the burn time of an item.
+     * Applies custom burn time from FuelStats if configured.
+     */
+    @SubscribeEvent
+    public static void onFuelBurnTime(FurnaceFuelBurnTimeEvent event) {
+        ItemStack stack = event.getItemStack();
+        if (stack.isEmpty()) {
+            return;
+        }
+
+        // Check if this item has custom fuel stats
+        FuelStats stats = FuelConfigManager.getStats(stack);
+
+        // Only modify if override is enabled or we have custom component/global settings
+        if (!stats.overrideDefault && stats.burnTime == 0) {
+            return; // Let vanilla handle it
+        }
+
+        // Apply custom burn time with efficiency multiplier
+        int effectiveBurnTime = stats.getEffectiveBurnTime();
+
+        if (effectiveBurnTime > 0 || stats.overrideDefault) {
+            event.setBurnTime(effectiveBurnTime);
+
+            LOGGER.debug("[FuelEvents] Set burn time to {} ticks for {} (base={}, efficiency={})",
+                effectiveBurnTime, stack.getItem(), stats.burnTime, stats.efficiencyMultiplier);
+        }
+    }
+}

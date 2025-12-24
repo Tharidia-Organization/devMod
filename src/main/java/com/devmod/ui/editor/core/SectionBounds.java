@@ -1,0 +1,4 @@
+package com.devmod.ui.editor.core;
+
+public record SectionBounds(String sectionId, Bounds bounds) {
+}

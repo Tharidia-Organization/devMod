@@ -1,12 +1,17 @@
 # DevMod Architecture
 
-This document provides a high-level overview of the DevMod architecture, describing the major systems and their interactions.
+> **Ultimo Aggiornamento**: 24 Dicembre 2024
+> **Namespace**: `com.devmod.*` (unificato da `com.frenkvs.devmod`)
+> **Build Status**: PASS - 2740 test superati
 
-## System Overview
+Questo documento fornisce una panoramica dell'architettura DevMod, descrivendo i sistemi principali e le loro interazioni.
+
+## Panoramica Sistema
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                              DevMod                                      │
+│                    Namespace: com.devmod.*                               │
 ├─────────────────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐    │
 │  │   Combat    │  │  Endurance  │  │    Party    │  │  Telemetry  │    │
@@ -28,60 +33,61 @@ This document provides a high-level overview of the DevMod architecture, describ
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Core Systems
+## Sistemi Core
 
-### 1. Combat System
-**Package:** `com.frenkvs.devmod`
+### 1. Sistema Combat
+**Package:** `com.devmod.combat`
 
-The combat system handles damage calculation, body part detection, and weapon mechanics.
+Il sistema combat gestisce calcolo danno, rilevamento body part, e meccaniche armi.
 
 ```
-CombatEvents.java ─────► DamageHandler.java ─────► HitHelper.java
-                              │                         │
-                              ▼                         ▼
-                        WeaponStats.java         Body Part Detection
-                              │
-                              ▼
-                        MobConfigManager.java
+events/CombatEvents.java ─────► combat/DamageHandler.java ─────► combat/HitHelper.java
+                                       │                              │
+                                       ▼                              ▼
+                                 stats/WeaponStats.java        Body Part Detection
+                                       │
+                                       ▼
+                                config/MobConfigManager.java
 ```
 
-**Key Components:**
-- `HitHelper`: Raycast-based body part detection using entity bounding boxes
-- `DamageHandler`: Applies multipliers based on body part, weapon, and mob config
-- `WeaponConfigManager`: Per-weapon stat overrides
-- `MobConfigManager`: Per-mob stat overrides
+**Componenti Chiave:**
+- `HitHelper`: Rilevamento body part via raycast su entity bounding boxes
+- `DamageHandler`: Applica moltiplicatori per body part, arma, e configurazione mob
+- `WeaponConfigManager`: Override statistiche per arma
+- `MobConfigManager`: Override statistiche per mob
 
-### 2. Endurance Quest System
-**Package:** `com.frenkvs.devmod.endurance`
+### 2. Sistema Quest Endurance
+**Package:** `com.devmod.endurance`
 
-A roguelike-inspired wave combat system with multiple subsystems.
+Sistema combattimento wave-based ispirato ai roguelike con sottosistemi multipli.
 
 ```
 EnduranceQuestManager ◄──────────────────────────────────────────┐
         │                                                         │
-        ├── WaveManager (mob spawning, wave progression)          │
-        ├── PerkSystem (roguelike perk selection)                 │
-        ├── ComboSystem (DMC-style scoring D→SSS)                 │
-        ├── RewardSystem (currency, loot, achievements)           │
-        ├── MutatorSystem (gameplay modifiers)                    │
-        ├── BossWaveSystem (boss encounters)                      │
-        └── GamificationManager (progress, unlocks) ──────────────┘
+        ├── WaveManager (spawn mob, progressione wave)            │
+        ├── PerkSystem (selezione perk roguelike)                 │
+        ├── ComboSystem (scoring stile DMC: D→SSS)                │
+        ├── RewardSystem (valuta, loot, achievement)              │
+        ├── MutatorSystem (modificatori gameplay)                 │
+        ├── BossWaveSystem (encounter boss)                       │
+        └── GamificationManager (progresso, sblocchi) ────────────┘
 ```
 
-**Subsystem Details:**
+**Dettagli Sottosistemi:**
 
-| Subsystem | Purpose | Key Classes |
-|-----------|---------|-------------|
-| WaveManager | Spawns mobs, tracks wave state | `WaveManager`, `ArenaHandle` |
-| PerkSystem | Manages perk pool, selection, stacking | `PerkSystem`, `PerkSession` |
-| ComboSystem | Style scoring, combo tracking | `ComboSystem`, `ComboSession` |
-| RewardSystem | Currency, shop, achievements | `RewardSystem`, `PlayerWallet` |
-| MutatorSystem | Difficulty modifiers | `MutatorSystem`, `MutatorSession` |
+| Sottosistema | Scopo | Classi Chiave |
+|--------------|-------|---------------|
+| WaveManager | Spawn mob, stato wave | `WaveManager`, `ArenaHandle` |
+| PerkSystem | Gestione pool perk, selezione, stacking | `PerkSystem`, `PerkSession` |
+| ComboSystem | Scoring stile, tracking combo | `ComboSystem`, `ComboSession` |
+| RewardSystem | Valuta, shop, achievement | `RewardSystem`, `PlayerWallet` |
+| MutatorSystem | Modificatori difficoltà | `MutatorSystem`, `MutatorSession` |
 
-### 3. Arena Template System
+### 3. Sistema Template Arena
+
 **Package:** `com.devmod.arena`
 
-Arena Template (L1) + Policy (L2) system for deterministic arena builds.
+Sistema Arena Template (L1) + Policy (L2) per build arene deterministiche.
 
 ```
 ArenaTemplateRegistry ──► TemplateResolver ──► TemplateArenaBuilder
@@ -90,16 +96,18 @@ ArenaTemplateRegistry ──► TemplateResolver ──► TemplateArenaBuilder
    TemplateLoader          PolicyResolver           ArenaHandle
 ```
 
-**Key Components:**
-- `ArenaTemplateRegistry`: load/validate templates, inheritance, fallback
-- `PolicyResolver`: routing/scoring for template selection
-- `TemplateArenaBuilder`: transactional build with rollback
-- `ArenaHandle`: runtime contract for spawn/bounds/metadata
+**Componenti Chiave:**
 
-### 4. Party System
-**Package:** `com.frenkvs.devmod.party`
+- `ArenaTemplateRegistry`: carica/valida template, ereditarietà, fallback
+- `PolicyResolver`: routing/scoring per selezione template
+- `TemplateArenaBuilder`: build transazionale con rollback
+- `ArenaHandle`: contratto runtime per spawn/bounds/metadata
 
-Multiplayer coordination for synchronized quest starts.
+### 4. Sistema Party
+
+**Package:** `com.devmod.party`
+
+Coordinazione multiplayer per avvio sincronizzato quest.
 
 ```
 PartyScreen (UI) ◄────► PartyActionPayload (Network)
@@ -112,61 +120,66 @@ PartyScreen (UI) ◄────► PartyActionPayload (Network)
                    PartyMember   QuestType
 ```
 
-**State Machine:**
+**Macchina a Stati:**
+
 ```
 FORMING ──► READY ──► IN_QUEST ──► FORMING
     │                     │
-    └─────────────────────┘ (on failure/complete)
+    └─────────────────────┘ (su failure/complete)
 ```
 
-### 5. Instance System
-**Package:** `com.frenkvs.devmod.instance`
+### 5. Sistema Instance
 
-Dynamic dimension management for isolated quest instances.
+**Package:** `com.devmod.instance`
+
+Gestione dinamica dimensioni per istanze quest isolate.
 
 ```
 InstanceArenaManager ──► DynamicDimensionManager
         │                        │
         ▼                        ▼
-  Instance Lifecycle      Dimension Creation/Cleanup
+  Instance Lifecycle      Creazione/Cleanup Dimensione
         │
         ▼
-  RecoverySystem (crash recovery)
+  RecoverySystem (recupero crash)
 ```
 
-### 6. Telemetry System
-**Package:** `com.frenkvs.devmod.telemetry`
+### 6. Sistema Telemetry
 
-Data collection for level design analysis.
+**Package:** `com.devmod.telemetry`
+
+Raccolta dati per analisi level design.
 
 ```
-TelemetryService (Orchestrator)
+TelemetryService (Orchestratore)
         │
-        ├── DamageTrackingService (combat data)
-        ├── FightSessionService (TTK, kill times)
-        ├── SpatialMetricsService (heatmaps)
-        ├── EconomyMetricsService (currency flow)
-        └── DungeonSessionService (dungeon runs)
+        ├── DamageTrackingService (dati combat)
+        ├── FightSessionService (TTK, tempi kill)
+        ├── SpatialMetricsService (heatmap)
+        ├── EconomyMetricsService (flusso valuta)
+        └── DungeonSessionService (run dungeon)
                 │
                 ▼
-        NDJSON Export (run/telemetry/*.ndjson)
+        Export NDJSON (run/telemetry/*.ndjson)
 ```
 
-## Client Layer
+## Layer Client
 
-### HUD Overlays
-**Package:** `com.frenkvs.devmod.hud`
+### Overlay HUD
 
-| Overlay | Purpose |
-|---------|---------|
-| `ImpactHudOverlay` | Damage numbers, body part hit |
-| `ComboDecayOverlay` | Style rank, combo counter |
-| `EnduranceQuestOverlay` | Wave info, quest status |
-| `RecordBannerOverlay` | Personal record achievements |
-| `PartyHudOverlay` | Party member status |
+**Package:** `com.devmod.hud`
 
-### Screens (UI)
-**Package:** `com.frenkvs.devmod.ui`
+| Overlay | Scopo |
+|---------|-------|
+| `ImpactHudOverlay` | Numeri danno, body part colpita |
+| `ComboDecayOverlay` | Rank stile, contatore combo |
+| `EnduranceQuestOverlay` | Info wave, stato quest |
+| `RecordBannerOverlay` | Achievement record personali |
+| `PartyHudOverlay` | Stato membri party |
+
+### Schermate (UI)
+
+**Package:** `com.devmod.ui`
 
 ```
 UnifiedSettingsScreen ──► SettingsPage (interface)
@@ -176,21 +189,23 @@ UnifiedSettingsScreen ──► SettingsPage (interface)
   GeneralSettingsPage    CombatSettingsPage    TelemetryPage
 ```
 
-### Debug Rendering
-**Package:** `com.frenkvs.devmod.rendering`
+### Rendering Debug
 
-| Renderer | Visualization |
-|----------|---------------|
-| `BodyPartRenderer` | Hitbox wireframes |
-| `HeatmapVisualizer` | Death/movement heatmaps |
-| `LightLevelOverlay` | Spawn light levels |
-| `RoomBoundsVisualizer` | Room boundaries |
-| `SafeSpotVisualizer` | Exploit locations |
+**Package:** `com.devmod.rendering`
 
-### Custom Shader System
-**Package:** `com.frenkvs.devmod.rendering.shield`, `com.frenkvs.devmod.rendering.shader`
+| Renderer | Visualizzazione |
+|----------|-----------------|
+| `BodyPartRenderer` | Wireframe hitbox |
+| `HeatmapVisualizer` | Heatmap morte/movimento |
+| `LightLevelOverlay` | Livelli luce spawn |
+| `RoomBoundsVisualizer` | Confini stanza |
+| `SafeSpotVisualizer` | Posizioni exploit |
 
-GPU-accelerated visual effects using NeoForge's shader registration system.
+### Sistema Shader Custom
+
+**Package:** `com.devmod.rendering.shield`, `com.devmod.rendering.shader`
+
+Effetti visuali GPU-accelerati usando il sistema registrazione shader di NeoForge.
 
 ```
 RegisterShadersEvent ──► ShieldShaderRegistry
@@ -207,115 +222,153 @@ RegisterShadersEvent ──► ShieldShaderRegistry
                    (Uniforms: color, impact, time)
 ```
 
-**Key Components:**
-| Component | Purpose |
-|-----------|---------|
-| `ShieldShaderRegistry` | Registers shader via `RegisterShadersEvent`, creates custom `RenderType` |
-| `EnergyShieldRenderer` | Renders shield sphere, sets shader uniforms |
-| `ShaderPipeline` | Shader registration + RenderType creation with fallback |
-| `energy_shield.fsh` | Fragment shader with noise, fresnel, impact wave effects |
+**Componenti Chiave:**
 
-**Shader Files Location:** `assets/devmod/shaders/core/`
+| Componente | Scopo |
+|------------|-------|
+| `ShieldShaderRegistry` | Registra shader via `RegisterShadersEvent`, crea `RenderType` custom |
+| `EnergyShieldRenderer` | Renderizza sfera scudo, imposta shader uniforms |
+| `ShaderPipeline` | Registrazione shader + creazione RenderType con fallback |
+| `energy_shield.fsh` | Fragment shader con noise, fresnel, effetti onda impatto |
 
-See [SHADER_SYSTEM.md](SHADER_SYSTEM.md) for detailed implementation guide.
+**Posizione File Shader:** `assets/devmod/shaders/core/`
 
-## Network Layer
-**Package:** `com.frenkvs.devmod` (payloads)
+Vedi [SHADER_SYSTEM.md](SHADER_SYSTEM.md) per guida implementazione dettagliata.
 
-All client-server communication uses NeoForge's payload system:
+## Layer Network
+
+**Package:** `com.devmod.network`
+
+Tutta la comunicazione client-server usa il sistema payload di NeoForge:
 
 ```
 Client ──► [Payload] ──► Server
        ◄── [Payload] ◄──
 ```
 
-**Key Payloads:**
-| Payload | Direction | Purpose |
-|---------|-----------|---------|
-| `PartyActionPayload` | C2S | Party commands |
-| `PartySyncPayload` | S2C | Party state sync |
-| `QuestSyncPayload` | S2C | Quest state sync |
-| `PerkChoicesPayload` | S2C | Perk selection options |
-| `TokenGainPayload` | S2C | Currency notifications |
+**Payload Principali:**
 
-## Data Flow Examples
+| Payload | Direzione | Scopo |
+|---------|-----------|-------|
+| `PartyActionPayload` | C2S | Comandi party |
+| `PartySyncPayload` | S2C | Sync stato party |
+| `QuestSyncPayload` | S2C | Sync stato quest |
+| `PerkChoicesPayload` | S2C | Opzioni selezione perk |
+| `TokenGainPayload` | S2C | Notifiche valuta |
 
-### Quest Start Flow
+## Esempi Flusso Dati
+
+### Flusso Avvio Quest
+
 ```
-1. Player clicks "Start Quest" in PartyScreen
-2. PartyActionPayload(START_QUEST) sent to server
-3. Server validates party state (all ready)
-4. InstanceArenaManager creates instance
-5. TemplateArenaBuilder builds arena from template
-6. Players teleported to arena
-7. WaveManager starts first wave
-8. QuestSyncPayload sent to all party members
+1. Giocatore clicca "Avvia Quest" in PartyScreen
+2. PartyActionPayload(START_QUEST) inviato al server
+3. Server valida stato party (tutti pronti)
+4. InstanceArenaManager crea istanza
+5. TemplateArenaBuilder costruisce arena da template
+6. Giocatori teletrasportati in arena
+7. WaveManager avvia prima wave
+8. QuestSyncPayload inviato a tutti i membri party
 ```
 
-### Combat Hit Flow
+### Flusso Hit Combat
+
 ```
-1. Player attacks mob
+1. Giocatore attacca mob
 2. LivingAttackEvent fired
-3. HitHelper.calculateBodyPart() determines hit location
-4. DamageHandler applies multipliers
-5. ComboSystem.registerAction() updates style score
-6. ImpactHudOverlay displays damage
-7. TelemetryService logs hit data
+3. HitHelper.calculateBodyPart() determina location hit
+4. DamageHandler applica moltiplicatori
+5. ComboSystem.registerAction() aggiorna score stile
+6. ImpactHudOverlay mostra danno
+7. TelemetryService logga dati hit
 ```
 
-### Perk Selection Flow
+### Flusso Selezione Perk
+
 ```
-1. Wave completed
-2. PerkSystem generates 3 perk choices
-3. PerkChoicesPayload sent to client
-4. PerkSelectionScreen displays options
-5. Player selects perk
-6. PerkSelectionPayload sent to server
-7. PerkSession applies perk effects
+1. Wave completata
+2. PerkSystem genera 3 scelte perk
+3. PerkChoicesPayload inviato al client
+4. PerkSelectionScreen mostra opzioni
+5. Giocatore seleziona perk
+6. PerkSelectionPayload inviato al server
+7. PerkSession applica effetti perk
 ```
 
 ## Thread Safety
 
-Critical systems use concurrent data structures:
+Sistemi critici usano strutture dati concorrenti:
 
-| System | Synchronization |
-|--------|-----------------|
-| RewardSystem | Per-player locks for purchases |
-| TelemetryService | ConcurrentHashMap for sessions |
-| PartyData | Synchronized methods |
-| ComboSystem | ConcurrentHashMap for sessions |
+| Sistema | Sincronizzazione |
+|---------|------------------|
+| RewardSystem | Lock per-player per acquisti |
+| TelemetryService | ConcurrentHashMap per sessioni |
+| PartyData | Metodi sincronizzati |
+| ComboSystem | ConcurrentHashMap per sessioni |
 
-## Configuration
+## Configurazione
 
 ```
 run/config/devmod/
-├── devmod-common.toml      # Main config (NeoForge config)
-├── mob_configs.json        # Per-mob overrides
-├── weapon_configs.json     # Per-weapon overrides
+├── devmod-common.toml      # Config principale (NeoForge config)
+├── mob_configs.json        # Override per-mob
+├── weapon_configs.json     # Override per-arma
 └── rewards/
-    └── wallets.json        # Player currency data
+    └── wallets.json        # Dati valuta giocatore
 ```
 
-## Extension Points
+## Punti di Estensione
 
-### Adding a New Perk
-1. Add entry to `PerkSystem.initializePerks()`
-2. Implement effect in `PerkSession.applyPerk()`
-3. Add localization key to `en_us.json`
+### Aggiungere un Nuovo Perk
 
-### Adding a New Mutator
-1. Add entry to `MutatorSystem.initializeMutators()`
-2. Implement effect in `MutatorSession.applyMutator()`
-3. Update reward multiplier calculation
+1. Aggiungere entry a `PerkSystem.initializePerks()`
+2. Implementare effetto in `PerkSession.applyPerk()`
+3. Aggiungere chiave localizzazione a `en_us.json`
 
-### Adding a New Debug Overlay
-1. Create renderer class in `rendering/`
-2. Register keybind in `KeyInputHandler`
-3. Add toggle in `DebugOverlaysPage`
+### Aggiungere un Nuovo Mutator
 
-## Dependencies
+1. Aggiungere entry a `MutatorSystem.initializeMutators()`
+2. Implementare effetto in `MutatorSession.applyMutator()`
+3. Aggiornare calcolo moltiplicatore reward
 
-- **NeoForge 21.1.x**: Mod loader, events, networking
-- **Minecraft 1.21.1**: Base game APIs
-- **Optional: Pehkui**: Entity scaling support
-- **Optional: Better Combat**: Enhanced combat detection
+### Aggiungere un Nuovo Debug Overlay
+
+1. Creare classe renderer in `rendering/`
+2. Registrare keybind in `KeyInputHandler`
+3. Aggiungere toggle in `DebugOverlaysPage`
+
+## Dipendenze
+
+- **NeoForge 21.1.x**: Mod loader, eventi, networking
+- **Minecraft 1.21.1**: API base game
+- **Opzionale: Pehkui**: Supporto scaling entità
+- **Opzionale: Better Combat**: Rilevamento combat avanzato
+
+---
+
+## Riorganizzazione Dicembre 2024
+
+### Cambiamenti Namespace
+
+| Vecchio | Nuovo |
+|---------|-------|
+| `com.frenkvs.devmod.*` | `com.devmod.*` |
+| `com.devmod.ui.UIConstants` | `com.devmod.ui.editor.core.UIConstants` |
+| `com.devmod.combat.ArrowEvents` | `com.devmod.events.ArrowEvents` |
+| `com.devmod.combat.CombatEvents` | `com.devmod.events.CombatEvents` |
+
+### File Root Package
+
+Solo 3 file nel root `com.devmod/`:
+
+- `DevMod.java` - Entrypoint principale
+- `DevModClient.java` - Entrypoint client
+- `ModConfig.java` - Configurazione root
+
+### Documentazione Dettagliata
+
+Vedi [docs/reorg/REORG_COMPLETE.md](reorg/REORG_COMPLETE.md) per dettagli completi.
+
+---
+
+*Ultimo aggiornamento: 24 Dicembre 2024*

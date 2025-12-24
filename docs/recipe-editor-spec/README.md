@@ -1,10 +1,18 @@
 # Recipe Editor - Specifica Tecnica Completa
 
-> **Sistema universale per editing runtime di TUTTE le ricette Minecraft**
+> **Status**: ⏳ PLANNING - Feature non ancora implementata
+> **Last Updated**: 2024-12-23
+> **Type**: Specifica tecnica per sviluppo futuro
+
+## ⚠️ Nota Importante
+
+Questa cartella contiene la **specifica tecnica** per il Recipe Editor, una feature **pianificata ma non ancora implementata**. I documenti qui presenti sono riferimenti progettuali, NON documentazione di codice esistente.
+
+---
 
 ## Overview
 
-Il Recipe Editor di DevMod permette la creazione e modifica di qualsiasi tipo di ricetta direttamente in-game, con persistenza via datapack e sincronizzazione multiplayer.
+Il Recipe Editor di DevMod permetterà la creazione e modifica di qualsiasi tipo di ricetta direttamente in-game, con persistenza via datapack e sincronizzazione multiplayer.
 
 ## Scope
 
@@ -58,3 +66,11 @@ Il Recipe Editor di DevMod permette la creazione e modifica di qualsiasi tipo di
 - [NeoForge Custom Recipes](https://docs.neoforged.net/docs/resources/server/recipes/custom)
 - [NeoForge Ingredients](https://docs.neoforged.net/docs/resources/server/recipes/ingredients)
 - [Minecraft Wiki - Recipe](https://minecraft.wiki/w/Recipe)
+
+---
+
+## Cross-References
+
+- [[MOC]] - Master index
+- [[FEATURES]] - Feature list (Recipe Editor listed as PLANNED)
+- [[editor-design-system/README]] - Editor UI patterns da riutilizzare

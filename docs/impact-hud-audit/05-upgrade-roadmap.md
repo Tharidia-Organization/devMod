@@ -6,92 +6,37 @@ Questo documento definisce il piano di upgrade per l'Impact HUD system, organizz
 
 ---
 
-## Fase 0: Stabilizzazione (Quick Wins)
+## Fase 0: Stabilizzazione (Quick Wins) - **COMPLETATA**
 
 **Obiettivo:** Correggere bug critici senza modifiche architetturali
-**Effort Stimato:** 4-6 ore
-**Rischio:** Basso
+**Status:** ✅ DONE
 
-### Task 0.1: Fix Pehkui Bonus
-**File:** `DamageBreakdown.java`
+### Task 0.1: Fix Pehkui Bonus - ✅ DONE (BUG-001)
 
-```diff
-- public DamageBreakdown(ItemStack weapon, LivingEntity target,
-+ public DamageBreakdown(ItemStack weapon, LivingEntity attacker, LivingEntity target,
-                         float baseDmg, float bodyPartMult, float armorPenBonus) {
-    // ...
--   Float scale = ModIntegrationManager.getPehkuiScale(target);
-+   Float scale = ModIntegrationManager.getPehkuiScale(attacker);
-```
+**File:** `damage/DamageBreakdown.java`
 
-**Impatto:** Richiede update di tutte le chiamate a `new DamageBreakdown()` in `DamageHandler.java`.
+Il codice ora usa correttamente `attacker` invece di `target`.
 
-### Task 0.2: Fix True Damage
+### Task 0.2: Fix True Damage - ⚠️ OPEN (BUG-002)
+
 **File:** `DamageHandler.java`
 
-**Opzione A:** Rimuovere la feature (se non usata)
-```diff
-- if (stats.trueDamagePercent > 0) {
--     float truePortion = newDamage * stats.trueDamagePercent;
--     float normalPortion = newDamage * (1f - stats.trueDamagePercent);
--     newDamage = truePortion + normalPortion;
-- }
-```
+Ancora da implementare. Opzioni:
 
-**Opzione B:** Implementare correttamente (richiede DamageSource custom)
-```java
-if (stats.trueDamagePercent > 0) {
-    float truePortion = newDamage * stats.trueDamagePercent;
-    // Apply true damage separately that bypasses armor
-    victim.hurt(DamageSource.MAGIC, truePortion);  // Or custom source
-    newDamage *= (1f - stats.trueDamagePercent);
-}
-```
+- **Opzione A:** Rimuovere la feature (se non usata)
+- **Opzione B:** Implementare correttamente con DamageSource custom
 
-### Task 0.3: Fix Enchant Filtering
-**File:** `DamageBreakdown.java`
+### Task 0.3: Fix Enchant Filtering - ✅ DONE (BUG-004)
 
-Non aggiungere bonus per enchant non applicabili:
-```diff
-  else if (enchName.contains("smite")) {
--     if (target.isInvertedHealAndHarm()) {
-+     // Only add if target is undead AND bonus would apply
-+     if (target.isInvertedHealAndHarm()) {
-          float bonus = level * 2.5f;
-          enchantBonuses.add(new EnchantBonus("Smite " + toRoman(level), level, bonus));
-      }
-+     // Don't add anything if not undead - no misleading entry
-  }
-```
+**File:** `damage/DamageBreakdown.java`
 
-### Task 0.4: Cache Formula String
-**File:** `DamageBreakdown.java`
+Enchant bonus ora filtrati per target type valido prima di essere aggiunti.
 
-```java
-public class DamageBreakdown {
-    // ...existing fields...
-    private final String cachedFormulaString;
-    private final String cachedCompactString;
+### Task 0.4: Cache Formula String - ✅ DONE (BUG-010)
 
-    public DamageBreakdown(...) {
-        // ...existing calculation...
-        this.cachedFormulaString = buildFormulaString();
-        this.cachedCompactString = buildCompactString();
-    }
+**File:** `damage/DamageBreakdown.java`
 
-    public String getFormulaString() {
-        return cachedFormulaString;
-    }
-
-    public String toCompactString() {
-        return cachedCompactString;
-    }
-
-    private String buildFormulaString() {
-        // Existing getFormulaString() logic
-    }
-}
-```
+Formula string ora cached nel constructor.
 
 ---
 
@@ -142,27 +87,11 @@ private static int[] calculatePanelPosition(int screenWidth, int screenHeight, i
 }
 ```
 
-### Task 1.2: Observation Timeout
+### Task 1.2: Observation Timeout - ✅ DONE (BUG-005)
+
 **File:** `ImpactData.java`
 
-```java
-private static final long MAX_OBSERVATION_TIME_MS = 30000; // 30 seconds max
-
-public boolean isExpired() {
-    long now = System.currentTimeMillis();
-
-    // Max observation time - even if looking, expire after 30s
-    if (now - timestamp > MAX_OBSERVATION_TIME_MS) {
-        return true;
-    }
-
-    if (isBeingObserved) {
-        return false;
-    }
-
-    // ...existing logic...
-}
-```
+Implementato! MAX_OBSERVATION_TIME_MS = 30000 (30 secondi max).
 
 ### Task 1.3: Keybind per Dismiss
 **File:** `KeyBindings.java` (nuovo)
@@ -211,14 +140,14 @@ public class KeyBindings {
 
 ---
 
-## Fase 2: Architettura Migliorata
+## Fase 2: Architettura Migliorata - **PARZIALMENTE COMPLETATA**
 
 **Obiettivo:** Ridurre duplicazione, migliorare manutenibilità
-**Effort Stimato:** 16-24 ore
-**Rischio:** Medio
+**Status:** ⚡ IN PROGRESS
 
-### Task 2.1: Estrarre HUD Content Builder
-**File nuovo:** `ImpactHudContentBuilder.java`
+### Task 2.1: Estrarre HUD Content Builder - ✅ DONE (OPT-001)
+
+**File:** `hud/ImpactHudContentBuilder.java` (CREATO)
 
 ```java
 public class ImpactHudContentBuilder {
@@ -302,64 +231,11 @@ private static int renderSection(GuiGraphics g, Font font, HudSection section,
 ### Task 2.3: Refactor Impact3DRenderer
 Stessa logica, usando `ImpactHudContentBuilder.buildContent()`.
 
-### Task 2.4: Estrarre DamageCalculator
-**File nuovo:** `DamageCalculator.java`
+### Task 2.4: Estrarre DamageCalculator - ✅ DONE
 
-```java
-public class DamageCalculator {
+**File:** `damage/DamageCalculator.java` (CREATO)
 
-    public record CalculationResult(
-        float finalDamage,
-        float armorPenBonus,
-        float customArmorReduction,
-        DamageBreakdown breakdown
-    ) {}
-
-    public static CalculationResult calculate(
-        LivingEntity attacker,
-        LivingEntity victim,
-        ItemStack weapon,
-        HitHelper.BodyPart bodyPart,
-        float originalDamage,
-        boolean isRanged,
-        RangedStats rangedStats
-    ) {
-        WeaponStats stats = WeaponConfigManager.getStats(weapon);
-
-        float multiplier = getBodyPartMultiplier(stats, bodyPart);
-        float newDamage = (originalDamage + stats.baseDamageBonus) * multiplier;
-
-        // Apply ranged modifiers
-        if (isRanged && rangedStats != null) {
-            newDamage = applyRangedModifiers(newDamage, rangedStats);
-        }
-
-        // Damage bonus
-        newDamage += originalDamage * stats.damageBonus;
-
-        // Armor penetration
-        float armorPenBonus = calculateArmorPenBonus(stats, victim, newDamage);
-        newDamage += armorPenBonus;
-
-        // Custom armor reduction
-        float armorReduction = 0f;
-        if (victim instanceof Player playerVictim) {
-            armorReduction = calculateCustomArmorReduction(playerVictim, /* source */);
-            newDamage *= (1f - armorReduction);
-        }
-
-        // Damage type bonuses
-        newDamage = applyDamageTypeBonuses(newDamage, stats, victim);
-
-        // Create breakdown
-        DamageBreakdown breakdown = new DamageBreakdown(
-            weapon, attacker, victim, originalDamage, multiplier, armorPenBonus
-        );
-
-        return new CalculationResult(newDamage, armorPenBonus, armorReduction, breakdown);
-    }
-}
-```
+Calcolo centralizzato del danno separato dalla gestione eventi.
 
 ---
 
@@ -586,32 +462,23 @@ private float calculateAlpha() {
 
 ---
 
-## Timeline Suggerita
+## Riepilogo Stato Attuale
 
-```
-Settimana 1:  Fase 0 (Stabilizzazione)
-              ├── Task 0.1-0.4
-              └── Testing & QA
+| Fase | Task Totali | Completati | Status |
+| ---- | ----------- | ---------- | ------ |
+| Fase 0 | 4 | 3 | 75% (BUG-002 open) |
+| Fase 1 | 4 | 1 | 25% |
+| Fase 2 | 4 | 2 | 50% |
+| Fase 3 | 5 | 0 | 0% |
+| Fase 4 | 3 | 0 | 0% |
 
-Settimana 2:  Fase 1 (UX Improvements)
-              ├── Task 1.1-1.2
-              └── Testing
+### Prossimi Passi Prioritari
 
-Settimana 3:  Fase 1 (continua)
-              ├── Task 1.3-1.4
-              └── Testing & Documentation
-
-Settimana 4:  Fase 2 (Architettura)
-              ├── Task 2.1-2.2
-              └── Refactoring tests
-
-Settimana 5:  Fase 2 (continua)
-              ├── Task 2.3-2.4
-              └── Integration testing
-
-Settimana 6+: Fase 3 (Features) - Opzionale
-              └── Based on community feedback
-```
+1. **BUG-002**: True Damage implementation
+2. **BUG-003**: Breakdown riduzione danno
+3. **Task 1.1**: Posizione HUD configurabile
+4. **Task 1.3**: Keybind dismiss
+5. **Task 1.4**: Internazionalizzazione
 
 ---
 

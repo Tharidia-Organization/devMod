@@ -14,18 +14,10 @@ import java.util.concurrent.CompletableFuture;
  *
  * <p>Key features:
  * <ul>
- *   <li>New method: prepareArenaForPartyV2 with ArenaHandle return type</li>
- *   <li>Deprecated methods marked with @Deprecated</li>
- *   <li>Runtime warnings for deprecated method usage</li>
+ *   <li>prepareArenaForPartyV2 with ArenaHandle return type</li>
+ *   <li>Full resolution context support</li>
+ *   <li>Async operations with CompletableFuture</li>
  * </ul>
- *
- * <p>Migration path (DD14):
- * <ol>
- *   <li>Add V2 methods alongside legacy methods</li>
- *   <li>Mark legacy methods @Deprecated with forRemoval=true</li>
- *   <li>Log warnings on legacy method calls</li>
- *   <li>Remove legacy methods after migration complete</li>
- * </ol>
  */
 public interface ArenaServiceV2 {
 
@@ -90,83 +82,6 @@ public interface ArenaServiceV2 {
      * @return the resolved arena configuration
      */
     ResolvedArena resolveArena(ResolveContext context);
-
-    // ========================================
-    // Legacy API - Deprecated (DD14)
-    // ========================================
-
-    /**
-     * @deprecated Use {@link #prepareArenaForPartyV2(UUID, ResolveContext)} instead.
-     *             Will be removed in version 3.0.
-     *             DD14: Legacy method returns only arena ID, not full context.
-     */
-    @Deprecated(since = "2.0", forRemoval = true)
-    default CompletableFuture<UUID> prepareArenaForParty(UUID partyId, String mobType) {
-        logDeprecationWarning("prepareArenaForParty(UUID, String)", "prepareArenaForPartyV2");
-
-        ResolveContext context = ResolveContext.builder(partyId)
-            .partyId(partyId)
-            .mobType(mobType)
-            .build();
-
-        return prepareArenaForPartyV2(partyId, context)
-            .thenApply(ArenaHandle::arenaId);
-    }
-
-    /**
-     * @deprecated Use {@link #prepareArenaForPartyV2(UUID, String, String)} instead.
-     *             Will be removed in version 3.0.
-     */
-    @Deprecated(since = "2.0", forRemoval = true)
-    default CompletableFuture<UUID> prepareArenaForParty(UUID partyId, String mobType, String difficulty) {
-        logDeprecationWarning("prepareArenaForParty(UUID, String, String)", "prepareArenaForPartyV2");
-
-        ResolveContext context = ResolveContext.builder(partyId)
-            .partyId(partyId)
-            .mobType(mobType)
-            .difficulty(difficulty)
-            .build();
-
-        return prepareArenaForPartyV2(partyId, context)
-            .thenApply(ArenaHandle::arenaId);
-    }
-
-    /**
-     * @deprecated Use {@link #getArena(UUID)} instead.
-     *             Will be removed in version 3.0.
-     */
-    @Deprecated(since = "2.0", forRemoval = true)
-    default boolean isArenaActive(UUID arenaId) {
-        logDeprecationWarning("isArenaActive", "getArena");
-        return getArena(arenaId).isPresent();
-    }
-
-    /**
-     * @deprecated Use {@link #releaseArena(UUID)} instead.
-     *             Will be removed in version 3.0.
-     */
-    @Deprecated(since = "2.0", forRemoval = true)
-    default void destroyArena(UUID arenaId) {
-        logDeprecationWarning("destroyArena", "releaseArena");
-        releaseArena(arenaId).join();
-    }
-
-    /**
-     * Logs a deprecation warning.
-     * DD14: Runtime warning for deprecated method usage.
-     */
-    private static void logDeprecationWarning(String oldMethod, String newMethod) {
-        StackTraceElement caller = Thread.currentThread().getStackTrace()[3];
-        System.err.printf(
-            "[DEPRECATION WARNING] %s is deprecated, use %s instead. Called from %s.%s(%s:%d)%n",
-            oldMethod,
-            newMethod,
-            caller.getClassName(),
-            caller.getMethodName(),
-            caller.getFileName(),
-            caller.getLineNumber()
-        );
-    }
 
     // ========================================
     // Service Lifecycle
