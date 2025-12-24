@@ -1,0 +1,435 @@
+package com.devmod.ui.radial;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.devmod.ui.radial.config.RadialMenuConstants;
+import net.minecraft.client.Minecraft;
+import org.lwjgl.glfw.GLFW;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Configuration system for the Radial Menu.
+ * Supports customizable colors, behavior options, and theme presets.
+ */
+public class RadialMenuConfig {
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final String CONFIG_FILE = "config/devmod/radial_menu.json";
+    private static final InputBindings DEFAULT_INPUT = new InputBindings();
+
+    public static final RadialMenuConfig INSTANCE = new RadialMenuConfig();
+
+    // === BEHAVIOR OPTIONS ===
+    public boolean releaseToSelect = true;          // Release key to activate selection
+    public boolean rightClickToEdit = true;         // Right-click opens edit mode
+    public boolean enableAnimations = true;         // Enable smooth animations
+    public boolean enableSounds = true;             // Enable feedback sounds
+    public boolean showTooltips = true;             // Show item descriptions
+    public boolean closeOnToggle = false;           // Close menu after toggling item
+    public boolean showKeyHints = true;             // Show keyboard shortcuts
+
+    // === COLOR THEME ===
+    public ColorTheme theme = new ColorTheme();
+
+    // === LAYOUT OPTIONS ===
+    public int innerRadius = 55;
+    public int outerRadius = 130;
+    public int itemRadius = 95;
+    public int centerButtonRadius = 40;
+    public float openAnimationSpeed = 0.18f;
+    public float closeAnimationSpeed = 0.25f;
+    public float hoverInSpeed = RadialMenuConstants.HOVER_ANIM_IN;
+    public float hoverOutSpeed = RadialMenuConstants.HOVER_ANIM_OUT;
+    public float morphAnimationSpeed = RadialMenuConstants.MORPH_SPEED;
+    public float searchBoxAnimationSpeed = RadialMenuConstants.SEARCH_BOX_LERP;
+
+    // === ICON OPTIONS ===
+    public IconMode iconMode = IconMode.ITEMSTACK;  // AUTO, EMOJI, ITEMSTACK
+
+    // === INPUT BINDINGS ===
+    public InputBindings input = new InputBindings();
+
+    public enum IconMode {
+        AUTO,       // Use ItemStack if available, else emoji
+        EMOJI,      // Always use emoji
+        ITEMSTACK   // Always use ItemStack
+    }
+
+    /**
+     * Key bindings for radial menu shortcuts.
+     */
+    public static class InputBindings {
+        public int keyMenuClose = GLFW.GLFW_KEY_ESCAPE;
+        public int keyReleaseSelect = GLFW.GLFW_KEY_G;
+        public int keySearchTogglePrimary = GLFW.GLFW_KEY_SLASH;
+        public int keySearchToggleSecondary = GLFW.GLFW_KEY_F;
+        public int keyEditModeToggleLeft = GLFW.GLFW_KEY_LEFT_SHIFT;
+        public int keyEditModeToggleRight = GLFW.GLFW_KEY_RIGHT_SHIFT;
+        public int keyThemeCycle = GLFW.GLFW_KEY_T;
+        public int keyCategoryLeft = GLFW.GLFW_KEY_LEFT;
+        public int keyCategoryRight = GLFW.GLFW_KEY_RIGHT;
+        public int keySearchConfirm = GLFW.GLFW_KEY_ENTER;
+        public int keySearchBackspace = GLFW.GLFW_KEY_BACKSPACE;
+        public int keySearchUp = GLFW.GLFW_KEY_UP;
+        public int keySearchDown = GLFW.GLFW_KEY_DOWN;
+
+        public char searchQuerySpace = ' ';
+
+        public int[] macroKeys = {
+            GLFW.GLFW_KEY_1,
+            GLFW.GLFW_KEY_2,
+            GLFW.GLFW_KEY_3,
+            GLFW.GLFW_KEY_4,
+            GLFW.GLFW_KEY_5,
+            GLFW.GLFW_KEY_6
+        };
+
+        public int[] categoryKeys = {
+            GLFW.GLFW_KEY_7,
+            GLFW.GLFW_KEY_8,
+            GLFW.GLFW_KEY_9,
+            GLFW.GLFW_KEY_0,
+            GLFW.GLFW_KEY_MINUS,
+            GLFW.GLFW_KEY_EQUAL
+        };
+
+        public int[] itemKeys = {
+            GLFW.GLFW_KEY_Q,
+            GLFW.GLFW_KEY_W,
+            GLFW.GLFW_KEY_E,
+            GLFW.GLFW_KEY_R,
+            GLFW.GLFW_KEY_Y,
+            GLFW.GLFW_KEY_U,
+            GLFW.GLFW_KEY_I,
+            GLFW.GLFW_KEY_O,
+            GLFW.GLFW_KEY_P
+        };
+    }
+
+    /**
+     * Color theme configuration with preset support
+     */
+    public static class ColorTheme {
+        public String presetName = "default";
+
+        // Background colors
+        public int bgDark = 0xE6101020;
+        public int bgLight = 0xCC1a1a35;
+
+        // Selection colors
+        public int selected = 0xDD2a2a55;
+        public int hover = 0xEE353566;
+
+        // Status colors
+        public int active = 0xFF00FF88;
+        public int activeGlow = 0x4400FF88;
+        public int inactive = 0xFFAAAAAA;
+
+        // Text colors
+        public int textPrimary = 0xFFFFFFFF;
+        public int textSecondary = 0xFFAAAAAA;
+        public int textHighlight = 0xFF88CCFF;
+
+        // Border colors
+        public int border = 0xFF505080;
+        public int borderGlow = 0x40FFFFFF;
+
+        // Category accent colors (per-category override)
+        public int[] categoryColors = {
+            0xFF00DDFF,  // Debug - Cyan
+            0xFFFFDD00,  // Spatial - Yellow
+            0xFF00FF88,  // Perf - Green
+            0xFFFF4466,  // Combat - Red
+            0xFFFF9900,  // Tools - Orange
+            0xFFCC44FF   // Quest - Purple
+        };
+
+        /**
+         * Apply a preset theme
+         */
+        public void applyPreset(ThemePreset preset) {
+            this.presetName = preset.name;
+            this.bgDark = preset.bgDark;
+            this.bgLight = preset.bgLight;
+            this.selected = preset.selected;
+            this.hover = preset.hover;
+            this.active = preset.active;
+            this.activeGlow = preset.activeGlow;
+            this.border = preset.border;
+            this.textPrimary = preset.textPrimary;
+            this.textSecondary = preset.textSecondary;
+        }
+    }
+
+    /**
+     * Predefined theme presets
+     */
+    public enum ThemePreset {
+        DEFAULT("default",
+            0xE6101020, 0xCC1a1a35, 0xDD2a2a55, 0xEE353566,
+            0xFF00FF88, 0x4400FF88, 0xFF505080, 0xFFFFFFFF, 0xFFAAAAAA),
+
+        NEON("neon",
+            0xE6000510, 0xCC0a0a20, 0xDD1a1a40, 0xEE2525aa,
+            0xFF00FFFF, 0x4400FFFF, 0xFF0088FF, 0xFFFFFFFF, 0xFF88FFFF),
+
+        CRIMSON("crimson",
+            0xE6200808, 0xCC351010, 0xDD552020, 0xEE663030,
+            0xFFFF4444, 0x44FF4444, 0xFFFF6666, 0xFFFFFFFF, 0xFFFFAAAA),
+
+        FOREST("forest",
+            0xE6081808, 0xCC103510, 0xDD205520, 0xEE306630,
+            0xFF44FF44, 0x4444FF44, 0xFF66FF66, 0xFFFFFFFF, 0xFFAAFFAA),
+
+        GOLD("gold",
+            0xE6181408, 0xCC352810, 0xDD554420, 0xEE665530,
+            0xFFFFCC00, 0x44FFCC00, 0xFFFFDD44, 0xFFFFFFFF, 0xFFFFEEAA),
+
+        MIDNIGHT("midnight",
+            0xF0050510, 0xDD080820, 0xCC151540, 0xBB202060,
+            0xFF6666FF, 0x446666FF, 0xFF4444AA, 0xFFCCCCFF, 0xFF8888CC),
+
+        MINIMAL("minimal",
+            0xE6181818, 0xCC282828, 0xDD383838, 0xEE484848,
+            0xFFFFFFFF, 0x44FFFFFF, 0xFF606060, 0xFFFFFFFF, 0xFFAAAAAA);
+
+        public final String name;
+        public final int bgDark, bgLight, selected, hover;
+        public final int active, activeGlow, border;
+        public final int textPrimary, textSecondary;
+
+        ThemePreset(String name, int bgDark, int bgLight, int selected, int hover,
+                    int active, int activeGlow, int border, int textPrimary, int textSecondary) {
+            this.name = name;
+            this.bgDark = bgDark;
+            this.bgLight = bgLight;
+            this.selected = selected;
+            this.hover = hover;
+            this.active = active;
+            this.activeGlow = activeGlow;
+            this.border = border;
+            this.textPrimary = textPrimary;
+            this.textSecondary = textSecondary;
+        }
+
+        public static ThemePreset fromName(String name) {
+            for (ThemePreset preset : values()) {
+                if (preset.name.equalsIgnoreCase(name)) {
+                    return preset;
+                }
+            }
+            return DEFAULT;
+        }
+    }
+
+    /**
+     * Load configuration from file
+     */
+    public void load() {
+        try {
+            Path configPath = getConfigPath();
+            if (Files.exists(configPath)) {
+                try (Reader reader = Files.newBufferedReader(configPath)) {
+                    RadialMenuConfig loaded = GSON.fromJson(reader, RadialMenuConfig.class);
+                    if (loaded != null) {
+                        copyFrom(loaded);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[DevMod] Failed to load radial menu config: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Save configuration to file
+     */
+    public void save() {
+        try {
+            Path configPath = getConfigPath();
+            Files.createDirectories(configPath.getParent());
+            try (Writer writer = Files.newBufferedWriter(configPath)) {
+                GSON.toJson(this, writer);
+            }
+        } catch (Exception e) {
+            System.err.println("[DevMod] Failed to save radial menu config: " + e.getMessage());
+        }
+    }
+
+    private Path getConfigPath() {
+        return Minecraft.getInstance().gameDirectory.toPath().resolve(CONFIG_FILE);
+    }
+
+    private void copyFrom(RadialMenuConfig other) {
+        this.releaseToSelect = other.releaseToSelect;
+        this.rightClickToEdit = other.rightClickToEdit;
+        this.enableAnimations = other.enableAnimations;
+        this.enableSounds = other.enableSounds;
+        this.showTooltips = other.showTooltips;
+        this.closeOnToggle = other.closeOnToggle;
+        this.showKeyHints = other.showKeyHints;
+        this.theme = other.theme;
+        this.innerRadius = other.innerRadius;
+        this.outerRadius = other.outerRadius;
+        this.itemRadius = other.itemRadius;
+        this.centerButtonRadius = other.centerButtonRadius;
+        this.openAnimationSpeed = other.openAnimationSpeed;
+        this.closeAnimationSpeed = other.closeAnimationSpeed;
+        this.hoverInSpeed = other.hoverInSpeed;
+        this.hoverOutSpeed = other.hoverOutSpeed;
+        this.morphAnimationSpeed = other.morphAnimationSpeed;
+        this.searchBoxAnimationSpeed = other.searchBoxAnimationSpeed;
+        this.iconMode = other.iconMode == IconMode.EMOJI ? IconMode.ITEMSTACK : other.iconMode;
+        this.input = other.input != null ? other.input : new InputBindings();
+        sanitizeInputBindings();
+        save(); // persist sanitized binds so the JSON stays consistent
+    }
+
+    private void sanitizeInputBindings() {
+        if (input == null) {
+            input = new InputBindings();
+            return;
+        }
+
+        input.keyMenuClose = sanitizeKey(input.keyMenuClose, DEFAULT_INPUT.keyMenuClose, "input.keyMenuClose");
+        input.keyReleaseSelect = sanitizeKey(input.keyReleaseSelect, DEFAULT_INPUT.keyReleaseSelect,
+            "input.keyReleaseSelect");
+        input.keySearchTogglePrimary = sanitizeKey(input.keySearchTogglePrimary, DEFAULT_INPUT.keySearchTogglePrimary,
+            "input.keySearchTogglePrimary");
+        input.keySearchToggleSecondary = sanitizeKey(input.keySearchToggleSecondary, DEFAULT_INPUT.keySearchToggleSecondary,
+            "input.keySearchToggleSecondary");
+        input.keyEditModeToggleLeft = sanitizeKey(input.keyEditModeToggleLeft, DEFAULT_INPUT.keyEditModeToggleLeft,
+            "input.keyEditModeToggleLeft");
+        input.keyEditModeToggleRight = sanitizeKey(input.keyEditModeToggleRight, DEFAULT_INPUT.keyEditModeToggleRight,
+            "input.keyEditModeToggleRight");
+        input.keyThemeCycle = sanitizeKey(input.keyThemeCycle, DEFAULT_INPUT.keyThemeCycle, "input.keyThemeCycle");
+        input.keyCategoryLeft = sanitizeKey(input.keyCategoryLeft, DEFAULT_INPUT.keyCategoryLeft, "input.keyCategoryLeft");
+        input.keyCategoryRight = sanitizeKey(input.keyCategoryRight, DEFAULT_INPUT.keyCategoryRight, "input.keyCategoryRight");
+        input.keySearchConfirm = sanitizeKey(input.keySearchConfirm, DEFAULT_INPUT.keySearchConfirm, "input.keySearchConfirm");
+        input.keySearchBackspace = sanitizeKey(input.keySearchBackspace, DEFAULT_INPUT.keySearchBackspace,
+            "input.keySearchBackspace");
+        input.keySearchUp = sanitizeKey(input.keySearchUp, DEFAULT_INPUT.keySearchUp, "input.keySearchUp");
+        input.keySearchDown = sanitizeKey(input.keySearchDown, DEFAULT_INPUT.keySearchDown, "input.keySearchDown");
+
+        input.macroKeys = ensureKeyArray("input.macroKeys", input.macroKeys, DEFAULT_INPUT.macroKeys);
+        input.categoryKeys = ensureKeyArray("input.categoryKeys", input.categoryKeys, DEFAULT_INPUT.categoryKeys);
+        input.itemKeys = ensureKeyArray("input.itemKeys", input.itemKeys, DEFAULT_INPUT.itemKeys);
+
+        if (input.searchQuerySpace == '\0') {
+            input.searchQuerySpace = DEFAULT_INPUT.searchQuerySpace;
+        }
+
+        warnOnDuplicateKeys();
+    }
+
+    private int sanitizeKey(int value, int fallback, String name) {
+        if (value <= 0) {
+            System.err.println("[DevMod] Invalid key binding for " + name + ", resetting to default.");
+            return fallback;
+        }
+        return value;
+    }
+
+    private void warnOnDuplicateKeys() {
+        Map<Integer, List<String>> owners = new HashMap<>();
+        addKeyOwner(owners, "input.keyMenuClose", input.keyMenuClose);
+        addKeyOwner(owners, "input.keyReleaseSelect", input.keyReleaseSelect);
+        addKeyOwner(owners, "input.keySearchTogglePrimary", input.keySearchTogglePrimary);
+        addKeyOwner(owners, "input.keySearchToggleSecondary", input.keySearchToggleSecondary);
+        addKeyOwner(owners, "input.keyEditModeToggleLeft", input.keyEditModeToggleLeft);
+        addKeyOwner(owners, "input.keyEditModeToggleRight", input.keyEditModeToggleRight);
+        addKeyOwner(owners, "input.keyThemeCycle", input.keyThemeCycle);
+        addKeyOwner(owners, "input.keyCategoryLeft", input.keyCategoryLeft);
+        addKeyOwner(owners, "input.keyCategoryRight", input.keyCategoryRight);
+        addKeyOwner(owners, "input.keySearchConfirm", input.keySearchConfirm);
+        addKeyOwner(owners, "input.keySearchBackspace", input.keySearchBackspace);
+        addKeyOwner(owners, "input.keySearchUp", input.keySearchUp);
+        addKeyOwner(owners, "input.keySearchDown", input.keySearchDown);
+        addKeyArrayOwners(owners, "input.macroKeys", input.macroKeys);
+        addKeyArrayOwners(owners, "input.categoryKeys", input.categoryKeys);
+        addKeyArrayOwners(owners, "input.itemKeys", input.itemKeys);
+
+        for (Map.Entry<Integer, List<String>> entry : owners.entrySet()) {
+            List<String> values = entry.getValue();
+            if (values.size() > 1) {
+                System.err.println("[DevMod] Radial menu key binding conflict for key " + entry.getKey() +
+                    " assigned to: " + String.join(", ", values));
+            }
+        }
+    }
+
+    private static void addKeyOwner(Map<Integer, List<String>> owners, String name, int key) {
+        if (key <= 0) {
+            return;
+        }
+        owners.computeIfAbsent(key, k -> new ArrayList<>()).add(name);
+    }
+
+    private static void addKeyArrayOwners(Map<Integer, List<String>> owners, String name, int[] keys) {
+        for (int i = 0; i < keys.length; i++) {
+            int key = keys[i];
+            if (key <= 0) {
+                continue;
+            }
+            owners.computeIfAbsent(key, k -> new ArrayList<>()).add(name + "[" + i + "]");
+        }
+    }
+
+    private static int[] ensureKeyArray(String name, int[] candidate, int[] fallback) {
+        if (candidate == null || candidate.length == 0) {
+            return fallback.clone();
+        }
+
+        if (candidate.length != fallback.length) {
+            System.err.println("[DevMod] Key binding array " + name + " has length " + candidate.length +
+                " (expected " + fallback.length + "). Truncating/expanding with defaults.");
+        }
+
+        int[] normalized = new int[fallback.length];
+        for (int i = 0; i < normalized.length; i++) {
+            int value = (i < candidate.length) ? candidate[i] : 0;
+            if (value <= 0) {
+                System.err.println("[DevMod] Invalid key binding for " + name + "[" + i + "], resetting to default.");
+                normalized[i] = fallback[i];
+            } else {
+                normalized[i] = value;
+            }
+        }
+        return normalized;
+    }
+
+    /**
+     * Apply a theme preset by name
+     */
+    public void setTheme(String presetName) {
+        theme.applyPreset(ThemePreset.fromName(presetName));
+        save();
+    }
+
+    /**
+     * Cycle to the next theme preset
+     */
+    public void cycleTheme() {
+        ThemePreset[] presets = ThemePreset.values();
+        ThemePreset current = ThemePreset.fromName(theme.presetName);
+        int nextIndex = (current.ordinal() + 1) % presets.length;
+        theme.applyPreset(presets[nextIndex]);
+        save();
+    }
+
+    /**
+     * Get category color with fallback
+     */
+    public int getCategoryColor(int index) {
+        if (index >= 0 && index < theme.categoryColors.length) {
+            return theme.categoryColors[index];
+        }
+        return theme.active;
+    }
+}
