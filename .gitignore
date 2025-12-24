@@ -59,3 +59,6 @@ replay_pid*
 
 # Ignore Smart Environment folder
 .smart-env
+
+# Obsidian plugins with secrets
+.obsidian/plugins/tasknotes/
