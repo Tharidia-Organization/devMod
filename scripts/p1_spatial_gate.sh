@@ -95,7 +95,7 @@ echo "============================================"
 echo "  CONFIG CHECK"
 echo "============================================"
 echo ""
-CONFIG_FILE="$PROJECT_DIR/src/main/java/com/frenkvs/devmod/telemetry/duckdb/DuckDBConfig.java"
+CONFIG_FILE="$PROJECT_DIR/src/main/java/com/devmod/telemetry/duckdb/DuckDBConfig.java"
 if [[ -f "$CONFIG_FILE" ]]; then
     echo "DuckDBConfig.java:"
     grep -E "ENABLED|NDJSON_FALLBACK|FALLBACK_ON_ERROR" "$CONFIG_FILE" | head -5 || echo "  (could not parse)"
@@ -238,7 +238,7 @@ public class P1SpatialGate {
                         System.out.println("");
 
                         // Show call-site grep
-                        String eventFile = projectDir + "/src/main/java/com/frenkvs/devmod/telemetry/TelemetryService.java";
+                        String eventFile = projectDir + "/src/main/java/com/devmod/telemetry/TelemetryService.java";
                         String methodName = getMethodName(TABLES[i]);
                         System.out.println("Call-site check (grep for " + methodName + "):");
                         try {

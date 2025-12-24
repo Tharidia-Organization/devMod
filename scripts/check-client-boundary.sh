@@ -20,14 +20,14 @@ SRC_MAIN="$PROJECT_ROOT/src/main/java"
 
 # Directories that MUST be server-safe (no client-only imports)
 SERVER_SAFE_DIRS=(
-    "com/frenkvs/devmod"  # Root package - but will exclude client/
+    "com/devmod"  # Root package - but will exclude client/
     "com/devmod/arena"     # Arena system - server logic
 )
 
 # Directories that are ALLOWED to have client imports
 CLIENT_ALLOWED_DIRS=(
-    "com/frenkvs/devmod/client"
-    "com/frenkvs/devmod/mixin"
+    "com/devmod/client"
+    "com/devmod/mixin"
 )
 
 # Client-only import patterns that should NOT appear in server-safe code
@@ -77,7 +77,7 @@ is_client_allowed() {
 
 # Check for client imports in DevMod.java (the main entry point)
 echo "Checking DevMod.java for client-only imports..."
-DEVMOD_FILE="$SRC_MAIN/com/frenkvs/devmod/DevMod.java"
+DEVMOD_FILE="$SRC_MAIN/com/devmod/DevMod.java"
 if [[ -f "$DEVMOD_FILE" ]]; then
     for pattern in "${CLIENT_PATTERNS[@]}"; do
         if grep -q "$pattern" "$DEVMOD_FILE"; then
@@ -95,8 +95,8 @@ fi
 
 # Check that KeyInputHandler is in client package
 echo "Checking KeyInputHandler location..."
-OLD_LOCATION="$SRC_MAIN/com/frenkvs/devmod/KeyInputHandler.java"
-NEW_LOCATION="$SRC_MAIN/com/frenkvs/devmod/client/input/KeyInputHandler.java"
+OLD_LOCATION="$SRC_MAIN/com/devmod/KeyInputHandler.java"
+NEW_LOCATION="$SRC_MAIN/com/devmod/client/input/KeyInputHandler.java"
 
 if [[ -f "$OLD_LOCATION" ]]; then
     echo -e "${RED}ERROR: KeyInputHandler.java is in wrong location (should be in client/input/)${NC}"
@@ -116,7 +116,7 @@ fi
 
 # Check ClientUiBridge exists
 echo "Checking ClientUiBridge pattern..."
-BRIDGE_FILE="$SRC_MAIN/com/frenkvs/devmod/bridge/ClientUiBridge.java"
+BRIDGE_FILE="$SRC_MAIN/com/devmod/bridge/ClientUiBridge.java"
 if [[ ! -f "$BRIDGE_FILE" ]]; then
     echo -e "${RED}ERROR: ClientUiBridge.java not found${NC}"
     ERRORS_FOUND=$((ERRORS_FOUND + 1))

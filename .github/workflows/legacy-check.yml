@@ -80,7 +80,7 @@ jobs:
           echo "Verifying @Deprecated annotations on legacy APIs..."
 
           # Check that ArenaManager.createArena has @Deprecated
-          if grep -q "@Deprecated" src/main/java/com/frenkvs/devmod/arena/ArenaManager.java 2>/dev/null; then
+          if grep -q "@Deprecated" src/main/java/com/devmod/arena/ArenaManager.java 2>/dev/null; then
             echo "ArenaManager has @Deprecated annotations."
           else
             echo "::notice::ArenaManager.java may need @Deprecated annotations (file may not exist yet)"

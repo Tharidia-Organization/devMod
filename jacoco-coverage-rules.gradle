@@ -49,9 +49,9 @@ jacocoTestCoverageVerification {
             element = 'PACKAGE'
 
             includes = [
-                'com.frenkvs.devmod.arena.cleanup.*',
-                'com.frenkvs.devmod.arena.template.*',
-                'com.frenkvs.devmod.arena.validation.*'
+                'com.devmod.arena.cleanup.*',
+                'com.devmod.arena.template.*',
+                'com.devmod.arena.validation.*'
             ]
 
             limit {
@@ -74,9 +74,9 @@ jacocoTestCoverageVerification {
             element = 'PACKAGE'
 
             includes = [
-                'com.frenkvs.devmod.arena.monitor.*',
-                'com.frenkvs.devmod.arena.world.*',
-                'com.frenkvs.devmod.arena.entity.*'
+                'com.devmod.arena.monitor.*',
+                'com.devmod.arena.world.*',
+                'com.devmod.arena.entity.*'
             ]
 
             limit {
@@ -98,8 +98,8 @@ jacocoTestCoverageVerification {
             element = 'PACKAGE'
 
             includes = [
-                'com.frenkvs.devmod.arena.network.*',
-                'com.frenkvs.devmod.arena.ui.*'
+                'com.devmod.arena.network.*',
+                'com.devmod.arena.ui.*'
             ]
 
             limit {
@@ -115,19 +115,19 @@ jacocoTestCoverageVerification {
             element = 'PACKAGE'
 
             includes = [
-                'com.frenkvs.devmod.arena.*'
+                'com.devmod.arena.*'
             ]
 
             // Exclude sub-packages (handled by specific rules)
             excludes = [
-                'com.frenkvs.devmod.arena.cleanup.*',
-                'com.frenkvs.devmod.arena.template.*',
-                'com.frenkvs.devmod.arena.validation.*',
-                'com.frenkvs.devmod.arena.monitor.*',
-                'com.frenkvs.devmod.arena.world.*',
-                'com.frenkvs.devmod.arena.entity.*',
-                'com.frenkvs.devmod.arena.network.*',
-                'com.frenkvs.devmod.arena.ui.*'
+                'com.devmod.arena.cleanup.*',
+                'com.devmod.arena.template.*',
+                'com.devmod.arena.validation.*',
+                'com.devmod.arena.monitor.*',
+                'com.devmod.arena.world.*',
+                'com.devmod.arena.entity.*',
+                'com.devmod.arena.network.*',
+                'com.devmod.arena.ui.*'
             ]
 
             limit {
@@ -173,9 +173,9 @@ ext.coverageThresholds = [
         line: 0.80,
         branch: 0.80,  // DD41: Branch coverage 80%
         packages: [
-            'com.frenkvs.devmod.arena.cleanup',
-            'com.frenkvs.devmod.arena.template',
-            'com.frenkvs.devmod.arena.validation'
+            'com.devmod.arena.cleanup',
+            'com.devmod.arena.template',
+            'com.devmod.arena.validation'
         ]
     ],
     mcDependent: [
@@ -183,9 +183,9 @@ ext.coverageThresholds = [
         line: 0.60,
         branch: 0.50,
         packages: [
-            'com.frenkvs.devmod.arena.monitor',
-            'com.frenkvs.devmod.arena.world',
-            'com.frenkvs.devmod.arena.entity'
+            'com.devmod.arena.monitor',
+            'com.devmod.arena.world',
+            'com.devmod.arena.entity'
         ]
     ],
     networkUi: [
@@ -193,8 +193,8 @@ ext.coverageThresholds = [
         line: 0.50,
         branch: 0.40,
         packages: [
-            'com.frenkvs.devmod.arena.network',
-            'com.frenkvs.devmod.arena.ui'
+            'com.devmod.arena.network',
+            'com.devmod.arena.ui'
         ]
     ]
 ]

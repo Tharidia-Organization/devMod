@@ -6,19 +6,23 @@ tags: [excalidraw]
 ---
 
 %%
+
 # Excalidraw Data
+
 ```json
 {
-	"type": "excalidraw",
-	"version": 2,
-	"source": "https://github.com/zsviczian/obsidian-excalidraw-plugin/releases/tag/1.9.19",
-	"elements": [],
-	"appState": {
-		"gridSize": null,
-		"viewBackgroundColor": "#ffffff"
-	}
+  "type": "excalidraw",
+  "version": 2,
+  "source": "https://github.com/zsviczian/obsidian-excalidraw-plugin/releases/tag/1.9.19",
+  "elements": [],
+  "appState": {
+    "gridSize": null,
+    "viewBackgroundColor": "#ffffff"
+  }
 }
-```%%
+```
+
+%%
 
 # DevMod Architecture
 
@@ -29,16 +33,19 @@ This document provides a high-level overview of the DevMod architecture. You can
 ## Core Systems
 
 ### Primary Packages
+
 - `com.devmod.arena`
 - `com.frenkvs.devmod`
 
 ---
 
 ### System: Combat
+
 **Package**: `com.frenkvs.devmod.combat`
 **Description**: Handles damage calculation, body part detection, and weapon mechanics.
 
 **Key Classes**:
+
 - `DamageHandler`
 - `HitHelper`
 - `WeaponConfigManager`
@@ -47,10 +54,12 @@ This document provides a high-level overview of the DevMod architecture. You can
 ---
 
 ### System: Endurance Quest
+
 **Package**: `com.frenkvs.devmod.endurance`
 **Description**: A roguelike-inspired wave combat system.
 
 **Sub-systems**:
+
 - `WaveManager`
 - `PerkSystem`
 - `ComboSystem`
@@ -62,10 +71,12 @@ This document provides a high-level overview of the DevMod architecture. You can
 ---
 
 ### System: Arena Template
+
 **Package**: `com.devmod.arena`
 **Description**: System for deterministic arena builds using templates and policies.
 
 **Key Components**:
+
 - `ArenaTemplateRegistry`
 - `PolicyResolver`
 - `TemplateArenaBuilder`
@@ -74,10 +85,12 @@ This document provides a high-level overview of the DevMod architecture. You can
 ---
 
 ### System: Party
+
 **Package**: `com.frenkvs.devmod.party`
 **Description**: Multiplayer coordination for synchronized quest starts.
 
 **Key Components**:
+
 - `PartyData` (State)
 - `PartyActionPayload` (Network)
 - `PartyScreen` (UI)
@@ -85,10 +98,12 @@ This document provides a high-level overview of the DevMod architecture. You can
 ---
 
 ### System: Instance
+
 **Package**: `com.frenkvs.devmod.instance`
 **Description**: Dynamic dimension management for isolated quest instances.
 
 **Key Components**:
+
 - `InstanceArenaManager`
 - `DynamicDimensionManager`
 - `RecoverySystem`
@@ -96,10 +111,12 @@ This document provides a high-level overview of the DevMod architecture. You can
 ---
 
 ### System: Telemetry
+
 **Package**: `com.frenkvs.devmod.telemetry`
 **Description**: Data collection for level design analysis. Exports to NDJSON.
 
 **Services**:
+
 - `DamageTrackingService`
 - `FightSessionService`
 - `SpatialMetricsService`
@@ -111,6 +128,7 @@ This document provides a high-level overview of the DevMod architecture. You can
 ## Client Layer
 
 ### UI & HUD
+
 - **HUD Overlays**: `com.frenkvs.devmod.hud`
   - `ImpactHudOverlay`
   - `ComboDecayOverlay`
@@ -126,13 +144,16 @@ This document provides a high-level overview of the DevMod architecture. You can
 ## Rendering & Shaders
 
 ### Custom Shader System
+
 **Packages**:
+
 - `com.frenkvs.devmod.rendering.shader`
 - `com.frenkvs.devmod.rendering.shield`
 
 **Asset Path**: `assets/devmod/shaders/core/`
 
 **Key Components**:
+
 - `ShieldShaderRegistry`
 - `EnergyShieldRenderer`
 - `ShaderPipeline`
@@ -143,10 +164,12 @@ This document provides a high-level overview of the DevMod architecture. You can
 ## Network Layer
 
 ### Payloads
+
 **Package**: `com.frenkvs.devmod.network`
 **Description**: NeoForge's payload system for client-server communication.
 
 **Key Payloads**:
+
 - `PartyActionPayload` (C2S)
 - `PartySyncPayload` (S2C)
 - `QuestSyncPayload` (S2C)
@@ -164,4 +187,3 @@ This document provides a high-level overview of the DevMod architecture. You can
 - `com.frenkvs.devmod.effects`
 - `com.frenkvs.devmod.quest`
 - `com.frenkvs.devmod.mixin`
-
