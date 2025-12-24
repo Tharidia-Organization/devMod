@@ -131,7 +131,7 @@
 **File da creare**: `src/main/java/com/frenkvs/devmod/hud/HeadshotFlashEffect.java`
 
 ```java
-package com.frenkvs.devmod.hud;
+package com.devmod.hud;
 
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -223,13 +223,13 @@ HeadshotFlashEffect.render(graphics, screenWidth, screenHeight);
 
 **Implementazione BossAlertPayload.java**:
 ```java
-package com.frenkvs.devmod.endurance;
+package com.devmod.endurance;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import com.frenkvs.devmod.DevMod;
+import com.devmod.DevMod;
 
 public record BossAlertPayload(long alertDurationMs, String bossType) implements CustomPacketPayload {
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "boss_alert");
@@ -487,7 +487,7 @@ private static final long LIFETIME_MS = 4000;
 **File da creare**: `src/main/java/com/frenkvs/devmod/hud/BadgePopupOverlay.java`
 
 ```java
-package com.frenkvs.devmod.hud;
+package com.devmod.hud;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.Font;
@@ -596,7 +596,7 @@ public void awardBadge(ServerPlayer player, Badge badge) {
 **File da creare**: `src/main/java/com/frenkvs/devmod/hud/TokenGainOverlay.java`
 
 ```java
-package com.frenkvs.devmod.hud;
+package com.devmod.hud;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.Font;
@@ -695,7 +695,7 @@ TokenGainOverlay.show(payload.amount());
 **File da creare**: `src/main/java/com/frenkvs/devmod/hud/RecordBannerOverlay.java`
 
 ```java
-package com.frenkvs.devmod.hud;
+package com.devmod.hud;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.Font;

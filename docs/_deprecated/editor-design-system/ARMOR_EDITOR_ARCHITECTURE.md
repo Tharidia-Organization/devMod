@@ -30,7 +30,7 @@ This document outlines the complete architecture for implementing the ArmorEdito
 
 ### 2.1 ArmorStats.java
 ```java
-package com.frenkvs.devmod;
+package com.devmod;
 
 import net.minecraft.nbt.CompoundTag;
 

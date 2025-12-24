@@ -36,7 +36,7 @@ The Endurance System implements a roguelike wave-based quest mode with:
 
 ### Core (12 classes)
 ```
-com.frenkvs.devmod.endurance/
+com.devmod.endurance/
 ├── EnduranceQuestManager.java     # Orchestrator (1809+ lines)
 ├── EnduranceQuest.java            # Quest model (301 lines)
 ├── EnduranceQuestState.java       # State enum (19 lines)

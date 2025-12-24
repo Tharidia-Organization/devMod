@@ -31,7 +31,7 @@ The DevMod telemetry system is a comprehensive data collection framework for tra
 ### Basic Usage
 
 ```java
-import com.frenkvs.devmod.telemetry.TelemetryService;
+import com.devmod.telemetry.TelemetryService;
 
 // Log a combat hit
 TelemetryService.INSTANCE.logHit(
@@ -88,7 +88,7 @@ List<String> densityReport = TelemetryService.INSTANCE.getEntityDensityReport();
 
 ### 2.1 TelemetryService (Central Coordinator)
 
-**Location:** `com.frenkvs.devmod.telemetry.TelemetryService`
+**Location:** `com.devmod.telemetry.TelemetryService`
 
 The central hub that coordinates all telemetry operations. Use this as the primary entry point.
 
@@ -172,7 +172,7 @@ The central hub that coordinates all telemetry operations. Use this as the prima
 
 ### 2.2 DamageTrackingService
 
-**Location:** `com.frenkvs.devmod.telemetry.damage.DamageTrackingService`
+**Location:** `com.devmod.telemetry.damage.DamageTrackingService`
 
 Aggregates weapon and room-level damage statistics with persistence.
 
@@ -222,7 +222,7 @@ record RoomAggregate(
 
 ### 2.3 FightSessionService
 
-**Location:** `com.frenkvs.devmod.telemetry.combat.FightSessionService`
+**Location:** `com.devmod.telemetry.combat.FightSessionService`
 
 Tracks individual fight sessions with participants, kills, TTK, and burst damage.
 
@@ -281,7 +281,7 @@ record TTKAggregate(
 
 ### 2.4 SkillTrackingService
 
-**Location:** `com.frenkvs.devmod.telemetry.skills.SkillTrackingService`
+**Location:** `com.devmod.telemetry.skills.SkillTrackingService`
 
 Tracks skill casts and detects whiffs (casts without hits within 2s).
 
@@ -329,7 +329,7 @@ class SkillStats {
 
 ### 2.5 EntityTrackingService
 
-**Location:** `com.frenkvs.devmod.telemetry.entity.EntityTrackingService`
+**Location:** `com.devmod.telemetry.entity.EntityTrackingService`
 
 Detects stuck entities, aggro drops, camping, kiting, and minion waves.
 
@@ -369,7 +369,7 @@ EntityTrackingService.INSTANCE.setCampingTimeThresholdMs(10000); // 10s default
 
 ### 2.6 EconomyMetricsService
 
-**Location:** `com.frenkvs.devmod.telemetry.economy.EconomyMetricsService`
+**Location:** `com.devmod.telemetry.economy.EconomyMetricsService`
 
 Tracks loot distribution, item acquisition, drop rates, and resource scarcity.
 
@@ -448,7 +448,7 @@ record SessionEconomyStats(
 
 ### 2.7 DungeonSessionService
 
-**Location:** `com.frenkvs.devmod.telemetry.dungeon.DungeonSessionService`
+**Location:** `com.devmod.telemetry.dungeon.DungeonSessionService`
 
 Tracks dungeon runs with outcomes, room sequences, and combat statistics.
 
@@ -497,7 +497,7 @@ record SessionResult(
 
 ### 2.8 HeatmapService
 
-**Location:** `com.frenkvs.devmod.telemetry.spatial.HeatmapService`
+**Location:** `com.devmod.telemetry.spatial.HeatmapService`
 
 Aggregates spatial position frequency data for 9 heatmap types.
 
@@ -531,7 +531,7 @@ HeatmapStats stats = HeatmapService.INSTANCE.getStatsForRoom(room);
 
 ### 2.9 SpatialMetricsService
 
-**Location:** `com.frenkvs.devmod.telemetry.spatial.SpatialMetricsService`
+**Location:** `com.devmod.telemetry.spatial.SpatialMetricsService`
 
 Tracks choke points, entity density, invisible collisions, and parkour falls.
 
@@ -565,7 +565,7 @@ List<String> report = SpatialMetricsService.INSTANCE.getEntityDensityReport();
 
 ### 2.10 BossPhaseService
 
-**Location:** `com.frenkvs.devmod.telemetry.boss.BossPhaseService`
+**Location:** `com.devmod.telemetry.boss.BossPhaseService`
 
 Tracks boss phase transitions with duration and room context.
 
@@ -599,7 +599,7 @@ record PhaseResult(
 
 ### 2.11 PlayerTrackingService
 
-**Location:** `com.frenkvs.devmod.telemetry.player.PlayerTrackingService`
+**Location:** `com.devmod.telemetry.player.PlayerTrackingService`
 
 Tracks player room transitions, movement sampling, and backtracking.
 
@@ -623,7 +623,7 @@ IdleResult idle = PlayerTrackingService.INSTANCE.updateIdleTracking(playerId, po
 
 ### 2.12 MinionService
 
-**Location:** `com.frenkvs.devmod.telemetry.entity.MinionService`
+**Location:** `com.devmod.telemetry.entity.MinionService`
 
 Tracks minion wave metrics per room.
 
@@ -654,7 +654,7 @@ List<String> allStats = MinionService.INSTANCE.getAllStats();
 
 ### 2.13 PlayerProgressionService (NEW)
 
-**Location:** `com.frenkvs.devmod.telemetry.progression.PlayerProgressionService`
+**Location:** `com.devmod.telemetry.progression.PlayerProgressionService`
 
 Tracks player progression metrics: blocks, XP, advancements, dimensions, combat details, trades, and fishing.
 
@@ -733,7 +733,7 @@ int trades = PlayerProgressionService.INSTANCE.getTotalTrades();
 
 ### 2.14 EnduranceTelemetryService (NEW)
 
-**Location:** `com.frenkvs.devmod.telemetry.endurance.EnduranceTelemetryService`
+**Location:** `com.devmod.telemetry.endurance.EnduranceTelemetryService`
 
 Centralized telemetry service for all Endurance Quest systems including waves, combos, perks, mutators, rewards, parties, bosses, and gamification.
 
@@ -917,7 +917,7 @@ EnduranceTelemetryService.INSTANCE.recordLeaderboardChange(
 
 ### 2.15 PlayerAttributeTelemetryService (NEW)
 
-**Location:** `com.frenkvs.devmod.telemetry.player.PlayerAttributeTelemetryService`
+**Location:** `com.devmod.telemetry.player.PlayerAttributeTelemetryService`
 
 Comprehensive player attribute tracking with periodic snapshots and event-based recording. Integrates with PerkSystem, MutatorSystem, ComboSystem, StaminaSystem, DashAbilitySystem, DodgeAbilitySystem, and Pehkui.
 
@@ -1015,7 +1015,7 @@ class PlayerAttributeSnapshot {
 
 ### 2.16 AbilityTelemetryService (NEW)
 
-**Location:** `com.frenkvs.devmod.telemetry.player.AbilityTelemetryService`
+**Location:** `com.devmod.telemetry.player.AbilityTelemetryService`
 
 Tracks ability usage for Dash, Dodge, and Stamina systems with session-based aggregation.
 
@@ -1672,23 +1672,23 @@ Use this checklist to ensure your systems are properly integrated:
 
 | Service | Package |
 |---------|---------|
-| TelemetryService | `com.frenkvs.devmod.telemetry` |
-| DamageTrackingService | `com.frenkvs.devmod.telemetry.damage` |
-| FightSessionService | `com.frenkvs.devmod.telemetry.combat` |
-| SkillTrackingService | `com.frenkvs.devmod.telemetry.skills` |
-| EntityTrackingService | `com.frenkvs.devmod.telemetry.entity` |
-| MinionService | `com.frenkvs.devmod.telemetry.entity` |
-| PlayerTrackingService | `com.frenkvs.devmod.telemetry.player` |
-| BossPhaseService | `com.frenkvs.devmod.telemetry.boss` |
-| DungeonSessionService | `com.frenkvs.devmod.telemetry.dungeon` |
-| HeatmapService | `com.frenkvs.devmod.telemetry.spatial` |
-| SpatialMetricsService | `com.frenkvs.devmod.telemetry.spatial` |
-| EconomyMetricsService | `com.frenkvs.devmod.telemetry.economy` |
-| RoomService | `com.frenkvs.devmod.telemetry.room` |
-| PlayerProgressionService | `com.frenkvs.devmod.telemetry.progression` |
-| EnduranceTelemetryService | `com.frenkvs.devmod.telemetry.endurance` |
-| PlayerAttributeTelemetryService | `com.frenkvs.devmod.telemetry.player` |
-| AbilityTelemetryService | `com.frenkvs.devmod.telemetry.player` |
+| TelemetryService | `com.devmod.telemetry` |
+| DamageTrackingService | `com.devmod.telemetry.damage` |
+| FightSessionService | `com.devmod.telemetry.combat` |
+| SkillTrackingService | `com.devmod.telemetry.skills` |
+| EntityTrackingService | `com.devmod.telemetry.entity` |
+| MinionService | `com.devmod.telemetry.entity` |
+| PlayerTrackingService | `com.devmod.telemetry.player` |
+| BossPhaseService | `com.devmod.telemetry.boss` |
+| DungeonSessionService | `com.devmod.telemetry.dungeon` |
+| HeatmapService | `com.devmod.telemetry.spatial` |
+| SpatialMetricsService | `com.devmod.telemetry.spatial` |
+| EconomyMetricsService | `com.devmod.telemetry.economy` |
+| RoomService | `com.devmod.telemetry.room` |
+| PlayerProgressionService | `com.devmod.telemetry.progression` |
+| EnduranceTelemetryService | `com.devmod.telemetry.endurance` |
+| PlayerAttributeTelemetryService | `com.devmod.telemetry.player` |
+| AbilityTelemetryService | `com.devmod.telemetry.player` |
 
 ---
 
@@ -1803,7 +1803,7 @@ ceiling_collision = (flags & 0x08) != 0
 La classe `BitPackedFlags` fornisce metodi per il decoding:
 
 ```java
-import com.frenkvs.devmod.telemetry.util.BitPackedFlags;
+import com.devmod.telemetry.util.BitPackedFlags;
 
 // Controlla un singolo flag
 boolean isSprinting = BitPackedFlags.isSet(movementFlags, BitPackedFlags.FLAG_SPRINTING);

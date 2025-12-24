@@ -45,7 +45,7 @@
 
 ---
 
-## Package: com.frenkvs.devmod (Root - 28 files)
+## Package: com.devmod (Root - 28 files)
 
 | # | File | Status | NeoForge | Quality | Security | Notes |
 |---|------|--------|----------|---------|----------|-------|
@@ -80,7 +80,7 @@
 
 ---
 
-## Package: com.frenkvs.devmod.attributes (5 files)
+## Package: com.devmod.attributes (5 files)
 
 | # | File | Status | NeoForge | Quality | Security | Notes |
 |---|------|--------|----------|---------|----------|-------|
@@ -92,7 +92,7 @@
 
 ---
 
-## Package: com.frenkvs.devmod.client (1 file)
+## Package: com.devmod.client (1 file)
 
 | # | File | Status | NeoForge | Quality | Security | Notes |
 |---|------|--------|----------|---------|----------|-------|
@@ -100,7 +100,7 @@
 
 ---
 
-## Package: com.frenkvs.devmod.gametest (3 files)
+## Package: com.devmod.gametest (3 files)
 
 | # | File | Status | NeoForge | Quality | Security | Notes |
 |---|------|--------|----------|---------|----------|-------|
@@ -110,7 +110,7 @@
 
 ---
 
-## Package: com.frenkvs.devmod.hud (7 files)
+## Package: com.devmod.hud (7 files)
 
 | # | File | Status | NeoForge | Quality | Security | Notes |
 |---|------|--------|----------|---------|----------|-------|
@@ -124,7 +124,7 @@
 
 ---
 
-## Package: com.frenkvs.devmod.integration (3 files)
+## Package: com.devmod.integration (3 files)
 
 | # | File | Status | NeoForge | Quality | Security | Notes |
 |---|------|--------|----------|---------|----------|-------|
@@ -134,7 +134,7 @@
 
 ---
 
-## Package: com.frenkvs.devmod.network (1 file)
+## Package: com.devmod.network (1 file)
 
 | # | File | Status | NeoForge | Quality | Security | Notes |
 |---|------|--------|----------|---------|----------|-------|
@@ -142,7 +142,7 @@
 
 ---
 
-## Package: com.frenkvs.devmod.panels (14 files)
+## Package: com.devmod.panels (14 files)
 
 | # | File | Status | NeoForge | Quality | Security | Notes |
 |---|------|--------|----------|---------|----------|-------|
@@ -163,7 +163,7 @@
 
 ---
 
-## Package: com.frenkvs.devmod.rendering (15 files)
+## Package: com.devmod.rendering (15 files)
 
 | # | File | Status | NeoForge | Quality | Security | Notes |
 |---|------|--------|----------|---------|----------|-------|
@@ -184,7 +184,7 @@
 
 ---
 
-## Package: com.frenkvs.devmod.telemetry (14 files - root)
+## Package: com.devmod.telemetry (14 files - root)
 
 | # | File | Status | NeoForge | Quality | Security | Notes |
 |---|------|--------|----------|---------|----------|-------|
@@ -205,7 +205,7 @@
 
 ---
 
-## Package: com.frenkvs.devmod.telemetry/* (sub-packages - 13 files)
+## Package: com.devmod.telemetry/* (sub-packages - 13 files)
 
 | # | File | Status | NeoForge | Quality | Security | Notes |
 |---|------|--------|----------|---------|----------|-------|
@@ -225,7 +225,7 @@
 
 ---
 
-## Package: com.frenkvs.devmod.testing (11 files - root)
+## Package: com.devmod.testing (11 files - root)
 
 | # | File | Status | NeoForge | Quality | Security | Notes |
 |---|------|--------|----------|---------|----------|-------|
@@ -243,7 +243,7 @@
 
 ---
 
-## Package: com.frenkvs.devmod.testing/stats (11 files)
+## Package: com.devmod.testing/stats (11 files)
 
 | # | File | Status | NeoForge | Quality | Security | Notes |
 |---|------|--------|----------|---------|----------|-------|
@@ -261,7 +261,7 @@
 
 ---
 
-## Package: com.frenkvs.devmod.ui (3 files - root)
+## Package: com.devmod.ui (3 files - root)
 
 | # | File | Status | NeoForge | Quality | Security | Notes |
 |---|------|--------|----------|---------|----------|-------|
@@ -271,7 +271,7 @@
 
 ---
 
-## Package: com.frenkvs.devmod.ui/components (1 file)
+## Package: com.devmod.ui/components (1 file)
 
 | # | File | Status | NeoForge | Quality | Security | Notes |
 |---|------|--------|----------|---------|----------|-------|
@@ -279,7 +279,7 @@
 
 ---
 
-## Package: com.frenkvs.devmod.ui/hub (10 files)
+## Package: com.devmod.ui/hub (10 files)
 
 | # | File | Status | NeoForge | Quality | Security | Notes |
 |---|------|--------|----------|---------|----------|-------|
@@ -296,7 +296,7 @@
 
 ---
 
-## Package: com.frenkvs.devmod.ui/unified (12 files)
+## Package: com.devmod.ui/unified (12 files)
 
 | # | File | Status | NeoForge | Quality | Security | Notes |
 |---|------|--------|----------|---------|----------|-------|
@@ -315,7 +315,7 @@
 
 ---
 
-## Package: com.frenkvs.devmod.util (1 file)
+## Package: com.devmod.util (1 file)
 
 | # | File | Status | NeoForge | Quality | Security | Notes |
 |---|------|--------|----------|---------|----------|-------|

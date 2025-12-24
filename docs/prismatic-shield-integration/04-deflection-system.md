@@ -44,7 +44,7 @@ Formula: `R = V - 2(V·N)N`
 ### Implementazione
 
 ```java
-package com.frenkvs.devmod.combat;
+package com.devmod.combat;
 
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.Projectile;
@@ -215,8 +215,8 @@ public class ShieldDeflector {
 ```java
 // DamageHandler.java - sostituire logica esistente
 
-import com.frenkvs.devmod.combat.ShieldDeflector;
-import com.frenkvs.devmod.combat.ShieldDeflector.DeflectionResult;
+import com.devmod.combat.ShieldDeflector;
+import com.devmod.combat.ShieldDeflector.DeflectionResult;
 
 private static void applyShieldBlock(Player player, ArmorStats stats,
                                      DamageSource source, float damage) {

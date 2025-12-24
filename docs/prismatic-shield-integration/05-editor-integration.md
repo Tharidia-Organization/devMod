@@ -215,7 +215,7 @@ Se non esiste già un color picker, implementarlo:
 ```java
 // Nuovo file: EditorColorPicker.java
 
-package com.frenkvs.devmod.ui.editor.components;
+package com.devmod.ui.editor.components;
 
 import net.minecraft.client.gui.GuiGraphics;
 import java.util.function.Consumer;

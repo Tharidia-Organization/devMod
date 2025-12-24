@@ -28,12 +28,12 @@ DevMod uses a **Progressive Testing Methodology** (L0-L5) to ensure comprehensiv
 
 ### Specific Test Class
 ```bash
-./gradlew test --tests "com.frenkvs.devmod.endurance.PerkSystemTest"
+./gradlew test --tests "com.devmod.endurance.PerkSystemTest"
 ```
 
 ### Specific Test Package
 ```bash
-./gradlew test --tests "com.frenkvs.devmod.endurance.*"
+./gradlew test --tests "com.devmod.endurance.*"
 ```
 
 ### By Level

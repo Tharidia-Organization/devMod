@@ -33,7 +33,7 @@ The Instance System manages dynamic dimension creation for quest instances:
 
 ### Core (4 classes)
 ```
-com.frenkvs.devmod.instance/
+com.devmod.instance/
 ├── InstanceManager.java           # Orchestrator (650 lines)
 ├── InstanceRegistry.java          # Persistence (487 lines)
 ├── InstanceState.java             # Instance state enum

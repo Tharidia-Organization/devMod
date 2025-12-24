@@ -303,7 +303,7 @@ graph TD
 
 | File | Package |
 |------|---------|
-| `devmod.mixins.json` | `com.frenkvs.devmod.mixin` |
+| `devmod.mixins.json` | `com.devmod.mixin` |
 
 ### Mixin Classes
 

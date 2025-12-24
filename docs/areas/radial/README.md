@@ -35,7 +35,7 @@ The Radial Menu system provides:
 
 ### Radial Menu UI
 ```
-com.frenkvs.devmod.ui.radial/
+com.devmod.ui.radial/
 ├── RadialMenuScreenV3.java        # Main screen (1330 lines)
 ├── RadialCategory.java            # Category container (231 lines)
 ├── RadialMenuItem.java            # Menu item (254 lines)
@@ -47,7 +47,7 @@ com.frenkvs.devmod.ui.radial/
 
 ### Action System
 ```
-com.frenkvs.devmod.actions/
+com.devmod.actions/
 ├── RadialAction.java              # Action builder (309 lines)
 ├── ActionRegistry.java            # Registry (178 lines)
 ├── ActionContext.java             # Execution context (360 lines)
@@ -60,7 +60,7 @@ com.frenkvs.devmod.actions/
 
 ### Input Handling
 ```
-com.frenkvs.devmod.client.input/
+com.devmod.client.input/
 └── KeyInputHandler.java           # 32+ keybinds (418 lines)
 ```
 

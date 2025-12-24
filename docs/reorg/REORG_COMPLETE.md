@@ -16,7 +16,7 @@
 - Build verificato passante
 
 ### Fase 1: Unificazione Namespace
-- **COMPLETATO**: Migrato `com.frenkvs.devmod.*` → `com.devmod.*`
+- **COMPLETATO**: Migrato `com.devmod.*` → `com.devmod.*`
 - Aggiornate tutte le 674 classi
 - Aggiornato `mods.toml`
 - Aggiornato `devmod.mixins.json`
@@ -321,8 +321,8 @@ Se codice esterno dipende da questo mod, aggiornare gli import:
 
 ```java
 // VECCHIO
-import com.frenkvs.devmod.Config;
-import com.frenkvs.devmod.WeaponStats;
+import com.devmod.Config;
+import com.devmod.WeaponStats;
 import com.devmod.ui.UIConstants;
 
 // NUOVO
@@ -335,7 +335,7 @@ import com.devmod.ui.editor.core.UIConstants;
 
 | Vecchia Posizione | Nuova Posizione |
 |-------------------|-----------------|
-| `com.frenkvs.devmod.*` | `com.devmod.*` |
+| `com.devmod.*` | `com.devmod.*` |
 | `com.devmod.Config` | `com.devmod.config.Config` |
 | `com.devmod.*Stats` | `com.devmod.stats.*Stats` |
 | `com.devmod.*Components` | `com.devmod.components.*Components` |

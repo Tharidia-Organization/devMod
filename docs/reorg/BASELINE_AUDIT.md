@@ -11,7 +11,7 @@
 
 | Root Package | Classes | Status |
 |--------------|---------|--------|
-| `com.frenkvs.devmod` | 674 | DA ELIMINARE |
+| `com.devmod` | 674 | DA ELIMINARE |
 | `com.devmod.arena` | 188 | DA MANTENERE |
 
 **Target**: Tutto sotto `com.devmod.*`
@@ -20,7 +20,7 @@
 
 ## 2. Root Package Bloat
 
-**Location**: `com.frenkvs.devmod/` (52 classi nel root - MAX CONSENTITO: 3)
+**Location**: `com.devmod/` (52 classi nel root - MAX CONSENTITO: 3)
 
 | File | Target Package |
 |------|----------------|
@@ -127,7 +127,7 @@ Line 85: @Deprecated(forRemoval = true)
 
 ## 5. Package Distribution
 
-### com.frenkvs.devmod/ Subpackages
+### com.devmod/ Subpackages
 
 | Package | Classes | Notes |
 |---------|---------|-------|
@@ -197,7 +197,7 @@ Arena has many single-class packages that should be consolidated:
 ## 7. Migration Checklist
 
 ### Phase 1: Namespace (P0)
-- [ ] Rename com.frenkvs.devmod → com.devmod
+- [ ] Rename com.devmod → com.devmod
 - [ ] Update all 674 imports
 - [ ] Update mods.toml entrypoints
 - [ ] Update devmod.mixins.json

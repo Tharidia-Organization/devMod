@@ -307,7 +307,7 @@ public void load() {
    - JSON summary per dashboard web
 
 **Implementazione:**
-- Nuovo package: `com.frenkvs.devmod.telemetry.export`
+- Nuovo package: `com.devmod.telemetry.export`
 - Classes:
   - `TelemetryExporter` - Parser NDJSON
   - `AggregateCalculator` - Medie, percentili, distribuzione
@@ -885,7 +885,7 @@ if (isNearChunkBoundary(pos)) {
 
 ### Task 4.1: Sistema Base Rendering Debug
 
-**Nuovo package:** `com.frenkvs.devmod.rendering`
+**Nuovo package:** `com.devmod.rendering`
 
 **Classi:**
 - `DebugRenderer` - Manager rendering overlay

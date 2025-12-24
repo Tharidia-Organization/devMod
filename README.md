@@ -160,8 +160,8 @@ The mod includes **2172 automated tests** covering all major systems:
 ./gradlew test
 
 # Run specific test suites
-./gradlew test --tests "com.frenkvs.devmod.endurance.*"
-./gradlew test --tests "com.frenkvs.devmod.party.*"
+./gradlew test --tests "com.devmod.endurance.*"
+./gradlew test --tests "com.devmod.party.*"
 ```
 
 ### Test Coverage by System

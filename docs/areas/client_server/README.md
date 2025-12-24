@@ -142,7 +142,7 @@ public class ClientConfigFeedback {
 **File**: `EnduranceNetworkHandler.java:6`
 
 ```java
-import com.frenkvs.devmod.actions.client.ClientActionContexts;
+import com.devmod.actions.client.ClientActionContexts;
 ```
 
 **Risk**: ClassNotFoundException when handler class loads on server

@@ -34,7 +34,7 @@ I file testing usano `Paths.get("run/config/devmod/...")` che:
 Creare `ConfigPaths.java` che centralizza tutti i path:
 
 ```java
-package com.frenkvs.devmod.util;
+package com.devmod.util;
 
 import net.neoforged.fml.loading.FMLPaths;
 import java.nio.file.Path;
@@ -124,7 +124,7 @@ private static final String CONFIG_DIR = "config/devmod";
 Path configDir = Path.of(CONFIG_DIR);
 
 // DOPO
-import com.frenkvs.devmod.util.ConfigPaths;
+import com.devmod.util.ConfigPaths;
 Path configPath = ConfigPaths.getSettingsFile();
 ```
 

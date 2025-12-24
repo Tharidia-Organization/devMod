@@ -86,7 +86,7 @@ graph TD
 
 ---
 
-### com.frenkvs.devmod (Main Package)
+### com.devmod (Main Package)
 
 #### Root Level (52 classes)
 
@@ -202,7 +202,7 @@ parchment_mappings_version=2024.11.17
 ### devmod.mixins.json
 ```json
 {
-  "package": "com.frenkvs.devmod.mixin",
+  "package": "com.devmod.mixin",
   "mixins": ["MinecraftServerAccessor", "RecipeManagerMixin"],
   "client": ["GameRendererMixin", "CameraShakeMixin",
              "ModelPartTransformMixin", "LivingEntityRendererMixin"]

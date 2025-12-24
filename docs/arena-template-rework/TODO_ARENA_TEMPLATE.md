@@ -780,7 +780,7 @@ public record ArenaTemplateSnapshot(
 public record ErrorContext(
     String type,           // "BuildTimeoutException"
     String message,        // "Timeout: 5000ms > 5000ms"
-    List<String> stack,    // ["at com.frenkvs...Builder.build(Builder.java:123)", ...]
+    List<String> stack,    // ["at com.devmod...Builder.build(Builder.java:123)", ...]
     @Nullable String cause
 ) {
     public static ErrorContext from(Throwable t) {

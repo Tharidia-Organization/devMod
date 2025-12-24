@@ -108,7 +108,7 @@ Tracking file per l'implementazione del sistema Editor basato su EDITOR_DESIGN_S
 **EditorCache.java** - No corrections needed, implementation is correct.
 
 **WeaponStats.java / ArmorStats.java** - No corrections needed, but note:
-   - Files are in root package `com.frenkvs.devmod` instead of `ui/editor/data/`
+   - Files are in root package `com.devmod` instead of `ui/editor/data/`
    - This is acceptable for backward compatibility with existing code
 
 ---

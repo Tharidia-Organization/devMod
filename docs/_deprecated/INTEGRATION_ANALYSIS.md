@@ -25,7 +25,7 @@ The current codebase at `/Users/erik/Downloads/devMod` represents a **production
 ### Package Structure (COMPLETE ✅)
 
 ```
-com.frenkvs.devmod/
+com.devmod/
 ├── Core (2 files)
 │   ├── devmod.java ✅
 │   └── devmodClient.java ✅

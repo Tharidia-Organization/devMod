@@ -27,7 +27,7 @@
 
 ### Filosofia Architetturale
 
-DevMod segue un'architettura a **layer separati** dove ogni modulo ha responsabilità ben definite. La riorganizzazione ha eliminato il namespace legacy `com.frenkvs.devmod` consolidando tutto sotto `com.devmod.*`.
+DevMod segue un'architettura a **layer separati** dove ogni modulo ha responsabilità ben definite. La riorganizzazione ha eliminato il namespace legacy `com.devmod` consolidando tutto sotto `com.devmod.*`.
 
 ### Principi Guida
 

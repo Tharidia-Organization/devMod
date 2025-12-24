@@ -31,7 +31,7 @@ Consolidare tutte le schermate di configurazione in un unico sistema unificato, 
 
 ### Struttura Finale
 ```
-com.frenkvs.devmod.ui.unified/
+com.devmod.ui.unified/
 ├── UnifiedSettingsScreen.java      # Screen principale con sidebar
 ├── SettingsCategory.java           # Enum categorie
 ├── SettingsPage.java               # Interfaccia per pagine

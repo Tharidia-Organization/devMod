@@ -490,7 +490,7 @@ public final class AmmoSystem {
 - [x] Runtime override via `RangedStats` components (lettura in `RangedWeaponModule.getStats()`)
 - [x] Salvataggio via `RangedWeaponModule.applyStats()` + `RangedComponents`
 - [x] Aggiungere support per infinity override (`infinityOverride` field)
-- [x] Creare `AmmoSystem` utility class per custom ammo filtering (`com.frenkvs.devmod.ammo.AmmoSystem`)
+- [x] Creare `AmmoSystem` utility class per custom ammo filtering (`com.devmod.ammo.AmmoSystem`)
 
 ### P3 - Advanced Features
 - [x] Implementare TRIDENT-specific tabs e properties (`RangedModule.createTridentComponents()`, `getTridentSections()`)

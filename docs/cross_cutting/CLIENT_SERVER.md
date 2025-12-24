@@ -115,19 +115,19 @@ public class SharedHandler {
 ### Client-Only Packages
 
 ```
-com.frenkvs.devmod.client/       - Bridge, input
-com.frenkvs.devmod.ui/           - All screens
-com.frenkvs.devmod.hud/          - HUD overlays
-com.frenkvs.devmod.rendering/    - Debug rendering
-com.frenkvs.devmod.mixin/ (client mixins)
+com.devmod.client/       - Bridge, input
+com.devmod.ui/           - All screens
+com.devmod.hud/          - HUD overlays
+com.devmod.rendering/    - Debug rendering
+com.devmod.mixin/ (client mixins)
 ```
 
 ### Shared Packages
 
 ```
-com.frenkvs.devmod.network/      - Handlers (careful!)
-com.frenkvs.devmod.actions/      - Action definitions
-com.frenkvs.devmod.telemetry/    - Telemetry (server writes)
+com.devmod.network/      - Handlers (careful!)
+com.devmod.actions/      - Action definitions
+com.devmod.telemetry/    - Telemetry (server writes)
 ```
 
 ---

@@ -239,7 +239,7 @@ public void testCoreFlow(GameTestHelper helper) {
 ### 3.2 GameTest Structure
 
 ```java
-package com.frenkvs.devmod.gametest;
+package com.devmod.gametest;
 
 import net.minecraft.gametest.framework.*;
 import net.minecraft.server.level.ServerPlayer;
@@ -474,7 +474,7 @@ void testBugXXXRegression() {
 
 ### 6.1 Unit Test
 
-- [ ] Tutti i test `com.frenkvs.devmod.instance.*` passano
+- [ ] Tutti i test `com.devmod.instance.*` passano
 - [ ] Coverage >80% su classi core
 - [ ] No test @Disabled senza issue ticket
 
@@ -521,7 +521,7 @@ void testBugXXXRegression() {
 
 ```bash
 # Esegui tutti i test instance
-./gradlew test --tests "com.frenkvs.devmod.instance.*"
+./gradlew test --tests "com.devmod.instance.*"
 
 # Esegui solo test specifico
 ./gradlew test --tests "InstanceFlowValidationTest"

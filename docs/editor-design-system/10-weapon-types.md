@@ -167,7 +167,7 @@ public final class WeaponTypeDetector {
 ```java
 /**
  * DevMod item tags for weapon detection.
- * Located in: com.frenkvs.devmod.tags.ModTags
+ * Located in: com.devmod.tags.ModTags
  */
 public final class ModTags {
     public static final class Items {

@@ -9,7 +9,7 @@ This document tracks all naming changes during the project standardization.
 
 | Old | New | Status | Notes |
 |-----|-----|--------|-------|
-| `com.frenkvs.devmod.*` | `com.devmod.*` | **DONE** | Java sources clean |
+| `com.devmod.*` | `com.devmod.*` | **DONE** | Java sources clean |
 | `com.devmod.transport` | `com.devmod.network` | **DONE** | Package + classes renamed |
 
 ---

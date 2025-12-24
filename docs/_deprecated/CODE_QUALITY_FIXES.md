@@ -14,7 +14,7 @@ Successfully resolved all 128 code quality problems reported by the IDE and buil
 
 **Fix:** Added missing import
 ```java
-import com.frenkvs.devmod.UpdateWeaponPayload;
+import com.devmod.UpdateWeaponPayload;
 ```
 
 **Impact:** Critical error - prevented compilation

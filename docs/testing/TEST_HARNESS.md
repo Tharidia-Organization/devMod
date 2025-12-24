@@ -65,7 +65,7 @@ src/test/java/com/devmod/arena/
 ./gradlew test
 
 # Specific package
-./gradlew test --tests "com.frenkvs.devmod.instance.*"
+./gradlew test --tests "com.devmod.instance.*"
 
 # Specific test class
 ./gradlew test --tests "InstanceFlowValidationTest"
@@ -165,7 +165,7 @@ src/main/resources/data/devmod/structure/
 ### JUnit Test Template
 
 ```java
-package com.frenkvs.devmod.instance;
+package com.devmod.instance;
 
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -202,9 +202,9 @@ class FeatureNameTest {
 ### GameTest Template
 
 ```java
-package com.frenkvs.devmod.gametest;
+package com.devmod.gametest;
 
-import com.frenkvs.devmod.DevMod;
+import com.devmod.DevMod;
 import net.minecraft.gametest.framework.*;
 import net.minecraft.server.level.ServerLevel;
 import net.neoforged.neoforge.gametest.GameTestHolder;

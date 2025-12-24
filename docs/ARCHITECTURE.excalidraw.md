@@ -35,13 +35,13 @@ This document provides a high-level overview of the DevMod architecture. You can
 ### Primary Packages
 
 - `com.devmod.arena`
-- `com.frenkvs.devmod`
+- `com.devmod`
 
 ---
 
 ### System: Combat
 
-**Package**: `com.frenkvs.devmod.combat`
+**Package**: `com.devmod.combat`
 **Description**: Handles damage calculation, body part detection, and weapon mechanics.
 
 **Key Classes**:
@@ -55,7 +55,7 @@ This document provides a high-level overview of the DevMod architecture. You can
 
 ### System: Endurance Quest
 
-**Package**: `com.frenkvs.devmod.endurance`
+**Package**: `com.devmod.endurance`
 **Description**: A roguelike-inspired wave combat system.
 
 **Sub-systems**:
@@ -86,7 +86,7 @@ This document provides a high-level overview of the DevMod architecture. You can
 
 ### System: Party
 
-**Package**: `com.frenkvs.devmod.party`
+**Package**: `com.devmod.party`
 **Description**: Multiplayer coordination for synchronized quest starts.
 
 **Key Components**:
@@ -99,7 +99,7 @@ This document provides a high-level overview of the DevMod architecture. You can
 
 ### System: Instance
 
-**Package**: `com.frenkvs.devmod.instance`
+**Package**: `com.devmod.instance`
 **Description**: Dynamic dimension management for isolated quest instances.
 
 **Key Components**:
@@ -112,7 +112,7 @@ This document provides a high-level overview of the DevMod architecture. You can
 
 ### System: Telemetry
 
-**Package**: `com.frenkvs.devmod.telemetry`
+**Package**: `com.devmod.telemetry`
 **Description**: Data collection for level design analysis. Exports to NDJSON.
 
 **Services**:
@@ -129,13 +129,13 @@ This document provides a high-level overview of the DevMod architecture. You can
 
 ### UI & HUD
 
-- **HUD Overlays**: `com.frenkvs.devmod.hud`
+- **HUD Overlays**: `com.devmod.hud`
   - `ImpactHudOverlay`
   - `ComboDecayOverlay`
   - `EnduranceQuestOverlay`
-- **Screens (UI)**: `com.frenkvs.devmod.ui`
+- **Screens (UI)**: `com.devmod.ui`
   - `UnifiedSettingsScreen`
-- **Debug Rendering**: `com.frenkvs.devmod.rendering`
+- **Debug Rendering**: `com.devmod.rendering`
   - `BodyPartRenderer`
   - `HeatmapVisualizer`
 
@@ -147,8 +147,8 @@ This document provides a high-level overview of the DevMod architecture. You can
 
 **Packages**:
 
-- `com.frenkvs.devmod.rendering.shader`
-- `com.frenkvs.devmod.rendering.shield`
+- `com.devmod.rendering.shader`
+- `com.devmod.rendering.shield`
 
 **Asset Path**: `assets/devmod/shaders/core/`
 
@@ -165,7 +165,7 @@ This document provides a high-level overview of the DevMod architecture. You can
 
 ### Payloads
 
-**Package**: `com.frenkvs.devmod.network`
+**Package**: `com.devmod.network`
 **Description**: NeoForge's payload system for client-server communication.
 
 **Key Payloads**:
@@ -180,10 +180,10 @@ This document provides a high-level overview of the DevMod architecture. You can
 
 ## Other Key Packages
 
-- `com.frenkvs.devmod.abilities`
-- `com.frenkvs.devmod.attributes`
-- `com.frenkvs.devmod.damage`
-- `com.frenkvs.devmod.debug`
-- `com.frenkvs.devmod.effects`
-- `com.frenkvs.devmod.quest`
-- `com.frenkvs.devmod.mixin`
+- `com.devmod.abilities`
+- `com.devmod.attributes`
+- `com.devmod.damage`
+- `com.devmod.debug`
+- `com.devmod.effects`
+- `com.devmod.quest`
+- `com.devmod.mixin`

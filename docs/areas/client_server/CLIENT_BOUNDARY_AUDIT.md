@@ -23,41 +23,41 @@ These files define client-only classes (KeyMapping, Screen) but are NOT in clien
 ### 1. KeyInputHandler - CRITICAL
 | File | Problem | Impact | Fix |
 |------|---------|--------|-----|
-| `com.frenkvs.devmod.KeyInputHandler` | Defines 49 KeyMapping fields | Server crash on class load | Move to `client.input` |
+| `com.devmod.KeyInputHandler` | Defines 49 KeyMapping fields | Server crash on class load | Move to `client.input` |
 
 ### 2. Screen Classes - CRITICAL
 | File | Problem | Impact | Fix |
 |------|---------|--------|-----|
 | `com.devmod.arena.ui.QuickTestWizard` | extends Screen | Server crash | Move to `arena.client.ui` |
-| `com.frenkvs.devmod.ui.WelcomeScreen` | extends Screen | Server crash | Move to `client.ui` |
-| `com.frenkvs.devmod.ui.ModScreen` | extends Screen | Server crash | Move to `client.ui` |
-| `com.frenkvs.devmod.ui.OpenExternalConfirmScreen` | extends Screen | Server crash | Move to `client.ui` |
-| `com.frenkvs.devmod.ui.RoomBoundsEditorScreen` | extends Screen | Server crash | Move to `client.ui` |
-| `com.frenkvs.devmod.ui.unified.UnifiedSettingsScreen` | extends Screen | Server crash | Move to `client.ui.unified` |
-| `com.frenkvs.devmod.ui.radial.RadialMenuScreenV3` | extends Screen | Server crash | Move to `client.ui.radial` |
-| `com.frenkvs.devmod.ui.radial.RadialActionDetailScreen` | extends Screen | Server crash | Move to `client.ui.radial` |
-| `com.frenkvs.devmod.ui.testing.VoxelLabScreen` | extends Screen | Server crash | Move to `client.ui.testing` |
-| `com.frenkvs.devmod.ui.testing.VoxelLabUiTestScreen` | extends Screen | Server crash | Move to `client.ui.testing` |
-| `com.frenkvs.devmod.ui.hub.TestingHub` | extends Screen | Server crash | Move to `client.ui.hub` |
-| `com.frenkvs.devmod.ui.wizard.QuickTestWizard` | extends Screen | Server crash | Move to `client.ui.wizard` |
-| `com.frenkvs.devmod.ui.editor.ItemEditorScreen` | extends Screen | Server crash | Move to `client.ui.editor` |
-| `com.frenkvs.devmod.ui.editor.StaminaSystemEditor` | extends Screen | Server crash | Move to `client.ui.editor` |
-| `com.frenkvs.devmod.testing.QATestingScreen` | extends Screen | Server crash | Move to `client.testing` |
-| `com.frenkvs.devmod.testing.BadgeTestScreen` | extends Screen | Server crash | Move to `client.testing` |
-| `com.frenkvs.devmod.TelemetryDashboardScreen` | extends Screen | Server crash | Move to `client.ui` |
-| `com.frenkvs.devmod.MobConfigScreen` | extends Screen | Server crash | Move to `client.ui` |
-| `com.frenkvs.devmod.MobEquipmentScreen` | extends Screen | Server crash | Move to `client.ui` |
-| `com.frenkvs.devmod.party.PartyScreen` | extends Screen | Server crash | Move to `client.party` |
-| `com.frenkvs.devmod.party.InvitePopupScreen` | extends Screen | Server crash | Move to `client.party` |
-| `com.frenkvs.devmod.endurance.EnduranceQuestScreen` | extends Screen | Server crash | Move to `client.endurance` |
-| `com.frenkvs.devmod.endurance.KitSelectionScreen` | extends Screen | Server crash | Move to `client.endurance` |
-| `com.frenkvs.devmod.endurance.PerkSelectionScreen` | extends Screen | Server crash | Move to `client.endurance` |
-| `com.frenkvs.devmod.endurance.WaveDirectiveScreen` | extends Screen | Server crash | Move to `client.endurance` |
-| `com.frenkvs.devmod.endurance.QuestCompletionScreen` | extends Screen | Server crash | Move to `client.endurance` |
-| `com.frenkvs.devmod.endurance.EnduranceShopScreen` | extends Screen | Server crash | Move to `client.endurance` |
-| `com.frenkvs.devmod.endurance.QuestExitConfirmScreen` | extends Screen | Server crash | Move to `client.endurance` |
-| `com.frenkvs.devmod.endurance.WaveCheckpointScreen` | extends Screen | Server crash | Move to `client.endurance` |
-| `com.frenkvs.devmod.endurance.QuestDeathScreen` | extends Screen | Server crash | Move to `client.endurance` |
+| `com.devmod.ui.WelcomeScreen` | extends Screen | Server crash | Move to `client.ui` |
+| `com.devmod.ui.ModScreen` | extends Screen | Server crash | Move to `client.ui` |
+| `com.devmod.ui.OpenExternalConfirmScreen` | extends Screen | Server crash | Move to `client.ui` |
+| `com.devmod.ui.RoomBoundsEditorScreen` | extends Screen | Server crash | Move to `client.ui` |
+| `com.devmod.ui.unified.UnifiedSettingsScreen` | extends Screen | Server crash | Move to `client.ui.unified` |
+| `com.devmod.ui.radial.RadialMenuScreenV3` | extends Screen | Server crash | Move to `client.ui.radial` |
+| `com.devmod.ui.radial.RadialActionDetailScreen` | extends Screen | Server crash | Move to `client.ui.radial` |
+| `com.devmod.ui.testing.VoxelLabScreen` | extends Screen | Server crash | Move to `client.ui.testing` |
+| `com.devmod.ui.testing.VoxelLabUiTestScreen` | extends Screen | Server crash | Move to `client.ui.testing` |
+| `com.devmod.ui.hub.TestingHub` | extends Screen | Server crash | Move to `client.ui.hub` |
+| `com.devmod.ui.wizard.QuickTestWizard` | extends Screen | Server crash | Move to `client.ui.wizard` |
+| `com.devmod.ui.editor.ItemEditorScreen` | extends Screen | Server crash | Move to `client.ui.editor` |
+| `com.devmod.ui.editor.StaminaSystemEditor` | extends Screen | Server crash | Move to `client.ui.editor` |
+| `com.devmod.testing.QATestingScreen` | extends Screen | Server crash | Move to `client.testing` |
+| `com.devmod.testing.BadgeTestScreen` | extends Screen | Server crash | Move to `client.testing` |
+| `com.devmod.TelemetryDashboardScreen` | extends Screen | Server crash | Move to `client.ui` |
+| `com.devmod.MobConfigScreen` | extends Screen | Server crash | Move to `client.ui` |
+| `com.devmod.MobEquipmentScreen` | extends Screen | Server crash | Move to `client.ui` |
+| `com.devmod.party.PartyScreen` | extends Screen | Server crash | Move to `client.party` |
+| `com.devmod.party.InvitePopupScreen` | extends Screen | Server crash | Move to `client.party` |
+| `com.devmod.endurance.EnduranceQuestScreen` | extends Screen | Server crash | Move to `client.endurance` |
+| `com.devmod.endurance.KitSelectionScreen` | extends Screen | Server crash | Move to `client.endurance` |
+| `com.devmod.endurance.PerkSelectionScreen` | extends Screen | Server crash | Move to `client.endurance` |
+| `com.devmod.endurance.WaveDirectiveScreen` | extends Screen | Server crash | Move to `client.endurance` |
+| `com.devmod.endurance.QuestCompletionScreen` | extends Screen | Server crash | Move to `client.endurance` |
+| `com.devmod.endurance.EnduranceShopScreen` | extends Screen | Server crash | Move to `client.endurance` |
+| `com.devmod.endurance.QuestExitConfirmScreen` | extends Screen | Server crash | Move to `client.endurance` |
+| `com.devmod.endurance.WaveCheckpointScreen` | extends Screen | Server crash | Move to `client.endurance` |
+| `com.devmod.endurance.QuestDeathScreen` | extends Screen | Server crash | Move to `client.endurance` |
 
 ---
 
@@ -266,7 +266,7 @@ All require client-side rendering APIs:
 ## Recommended Package Structure
 
 ```
-com.frenkvs.devmod/
+com.devmod/
 ├── client/                       # All client-only code
 │   ├── input/                    # KeyInputHandler
 │   ├── ui/                       # All screens
@@ -309,6 +309,6 @@ com.frenkvs.devmod/
 
 ## Notes
 
-- Files in `com.devmod.arena.*` (not `com.frenkvs.devmod`) also need attention
+- Files in `com.devmod.arena.*` (not `com.devmod`) also need attention
 - Mixin classes in `mixin/` are already properly separated in mixins.json
 - Some classes like `DevModClient` are correctly using `@Mod(dist=Dist.CLIENT)`

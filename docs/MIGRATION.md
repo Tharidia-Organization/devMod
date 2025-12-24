@@ -48,11 +48,11 @@ import com.devmod.network.handlers.*;
 
 ### Namespace Consolidation (Pre-December 2024)
 
-The original namespace `com.frenkvs.devmod` was migrated to `com.devmod`.
+The original namespace `com.devmod` was migrated to `com.devmod`.
 
 | Old | New |
 |-----|-----|
-| `com.frenkvs.devmod.*` | `com.devmod.*` |
+| `com.devmod.*` | `com.devmod.*` |
 
 **Note:** This migration is complete. No `com.frenkvs` references should exist in Java sources.
 

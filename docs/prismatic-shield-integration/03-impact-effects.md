@@ -17,7 +17,7 @@ Implementare effetti visivi per quando lo scudo:
 ### Implementazione
 
 ```java
-package com.frenkvs.devmod.client.vfx;
+package com.devmod.client.vfx;
 
 import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
@@ -167,7 +167,7 @@ EnergyShieldShader.bind(
 ### Implementazione
 
 ```java
-package com.frenkvs.devmod.client.vfx;
+package com.devmod.client.vfx;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;

@@ -10,7 +10,7 @@ Questo audit è stato completato e verificato tramite analisi statica del codice
 ## Componente di Riferimento
 
 Il componente standard da adottare è:
-`com.frenkvs.devmod.ui.editor.components.EditorButton`
+`com.devmod.ui.editor.components.EditorButton`
 
 ## Pattern di Implementazione da Sostituire
 
@@ -22,7 +22,7 @@ Sono stati identificati tre pattern principali di implementazione non standard:
 
 ## Come Sostituire
 - Istanziare `EditorButton` con `id` e `label`. Configurare `style`, `tooltip`, `enabled`, e `playSound` secondo necessità.
-- Il path completo del componente è `com.frenkvs.devmod.ui.editor.components.EditorButton`.
+- Il path completo del componente è `com.devmod.ui.editor.components.EditorButton`.
 - In `render` del contenitore: chiama `button.render(graphics, mouseX, mouseY, partialTick)`. I bounds sono gestiti internamente.
 - In `mouseClicked`/`mouseReleased` del contenitore: propagare l'evento al `button` e consumare l'evento se il metodo restituisce `true`.
 - Replicare funzionalità custom (es. hotkey, bordi speciali) usando le API di `EditorButton` o, se necessario, un componente layout che lo contenga.

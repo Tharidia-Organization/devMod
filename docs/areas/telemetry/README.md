@@ -34,7 +34,7 @@ The Telemetry System provides comprehensive analytics and data collection:
 
 ### Core (3 classes)
 ```
-com.frenkvs.devmod.telemetry/
+com.devmod.telemetry/
 ├── TelemetryService.java          # Orchestrator (987 lines)
 ├── TelemetryEvents.java           # Event handlers (334 lines)
 └── TelemetryLogHandlers.java      # Logging delegates (526 lines)

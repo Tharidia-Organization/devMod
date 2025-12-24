@@ -177,7 +177,7 @@ telemetry/
 **Esempio di separazione per HeatmapService:**
 
 ```java
-package com.frenkvs.devmod.telemetry.spatial;
+package com.devmod.telemetry.spatial;
 
 public class HeatmapService {
     public static final HeatmapService INSTANCE = new HeatmapService();
@@ -282,7 +282,7 @@ public class NetworkHandler {
 Creare una classe base per tutte le screen della mod:
 
 ```java
-package com.frenkvs.devmod.ui;
+package com.devmod.ui;
 
 public abstract class ModScreen extends Screen {
     protected final Screen parent;
@@ -327,7 +327,7 @@ public abstract class ModScreen extends Screen {
 ### 3.2 Validazione Input Centralizzata
 
 ```java
-package com.frenkvs.devmod.ui;
+package com.devmod.ui;
 
 public class InputValidator {
     public static Optional<Double> parseDouble(String input, double min, double max) {

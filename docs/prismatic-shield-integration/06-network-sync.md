@@ -37,7 +37,7 @@ Sincronizzare lo stato dello scudo energetico tra server e client in multiplayer
 Sincronizza lo stato base dello scudo.
 
 ```java
-package com.frenkvs.devmod.network;
+package com.devmod.network;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -93,7 +93,7 @@ public record ShieldStatePacket(
 Notifica un impatto per triggerare VFX su tutti i client.
 
 ```java
-package com.frenkvs.devmod.network;
+package com.devmod.network;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -157,7 +157,7 @@ public record ShieldImpactPacket(
 Notifica che uno scudo si è rotto.
 
 ```java
-package com.frenkvs.devmod.network;
+package com.devmod.network;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -214,7 +214,7 @@ public record ShieldShatterPacket(
 ## Packet Registration
 
 ```java
-package com.frenkvs.devmod.network;
+package com.devmod.network;
 
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -277,7 +277,7 @@ public class ShieldNetworkHandler {
                 net.minecraft.world.phys.Vec3 hitPoint = packet.getHitPoint();
                 net.minecraft.world.phys.Vec3 localHit = hitPoint.subtract(entity.position());
 
-                com.frenkvs.devmod.client.vfx.ShieldImpactManager.registerImpact(
+                com.devmod.client.vfx.ShieldImpactManager.registerImpact(
                     packet.entityId(),
                     localHit,
                     packet.damageBlocked()
@@ -303,7 +303,7 @@ public class ShieldNetworkHandler {
             if (mc.level == null) return;
 
             // Trigger shatter VFX
-            com.frenkvs.devmod.client.vfx.ShieldShatterEffect.trigger(
+            com.devmod.client.vfx.ShieldShatterEffect.trigger(
                 packet.entityId(),
                 new net.minecraft.world.phys.Vec3(packet.centerX(), packet.centerY(), packet.centerZ()),
                 packet.radius(),
@@ -327,9 +327,9 @@ public class ShieldNetworkHandler {
 Per rendere lo scudo senza aspettare il server ogni frame:
 
 ```java
-package com.frenkvs.devmod.client;
+package com.devmod.client;
 
-import com.frenkvs.devmod.network.ShieldStatePacket;
+import com.devmod.network.ShieldStatePacket;
 import net.minecraft.world.entity.LivingEntity;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -398,7 +398,7 @@ public class ClientShieldStateCache {
 Chiamare dal DamageHandler quando lo scudo cambia stato:
 
 ```java
-package com.frenkvs.devmod.network;
+package com.devmod.network;
 
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;

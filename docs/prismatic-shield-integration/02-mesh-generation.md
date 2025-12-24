@@ -28,7 +28,7 @@ Subdivision 3: 1280 triangoli (raccomandato)
 ### Nuovo File: `HexagonalShieldMesh.java`
 
 ```java
-package com.frenkvs.devmod.client.render;
+package com.devmod.client.render;
 
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -234,7 +234,7 @@ public class HexagonalShieldMesh {
 Per performance, usare mesh diverse in base alla distanza dalla camera:
 
 ```java
-package com.frenkvs.devmod.client.render;
+package com.devmod.client.render;
 
 /**
  * Manages LOD meshes for shield rendering.

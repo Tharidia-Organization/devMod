@@ -150,7 +150,7 @@ src/main/resources/assets/devmod/shaders/core/
 ```java
 // Nuovo file: src/main/java/com/frenkvs/devmod/client/render/EnergyShieldShader.java
 
-package com.frenkvs.devmod.client.render;
+package com.devmod.client.render;
 
 import com.mojang.blaze3d.shaders.ShaderInstance;
 import net.minecraft.client.renderer.ShaderInstance;

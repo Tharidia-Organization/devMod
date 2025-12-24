@@ -104,9 +104,9 @@ LivingIncomingDamageEvent
 
 ### 3.1 ImpactData.java
 ```java
-package com.frenkvs.devmod.hud;
+package com.devmod.hud;
 
-import com.frenkvs.devmod.HitHelper.BodyPart;
+import com.devmod.HitHelper.BodyPart;
 import net.minecraft.world.entity.LivingEntity;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -175,7 +175,7 @@ public class ImpactData {
 
 ### 3.2 DamageBreakdown.java
 ```java
-package com.frenkvs.devmod.hud;
+package com.devmod.hud;
 
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantments;
@@ -290,9 +290,9 @@ public class DamageBreakdown {
 
 ### 4.1 ImpactHudOverlay.java
 ```java
-package com.frenkvs.devmod.hud;
+package com.devmod.hud;
 
-import com.frenkvs.devmod.HitHelper.BodyPart;
+import com.devmod.HitHelper.BodyPart;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.LayeredDraw;
@@ -487,7 +487,7 @@ public class ImpactHudOverlay {
 
 ### 5.1 ModIntegrationManager.java
 ```java
-package com.frenkvs.devmod.integration;
+package com.devmod.integration;
 
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.fml.ModList;
@@ -525,7 +525,7 @@ public class ModIntegrationManager {
 
 ### 5.2 PehkuiIntegration.java
 ```java
-package com.frenkvs.devmod.integration;
+package com.devmod.integration;
 
 import net.minecraft.world.entity.LivingEntity;
 
@@ -720,11 +720,11 @@ public static void onDamage(LivingIncomingDamageEvent event) {
 
 ### 8.1 ImpactDataPayload.java
 ```java
-package com.frenkvs.devmod.network;
+package com.devmod.network;
 
-import com.frenkvs.devmod.HitHelper.BodyPart;
-import com.frenkvs.devmod.hud.DamageBreakdown;
-import com.frenkvs.devmod.hud.ImpactData;
+import com.devmod.HitHelper.BodyPart;
+import com.devmod.hud.DamageBreakdown;
+import com.devmod.hud.ImpactData;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
