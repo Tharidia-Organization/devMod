@@ -1,6 +1,6 @@
 package com.devmod.client;
 
-import com.devmod.overlay.ImpactData;
+import com.devmod.client.overlay.ImpactData;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;

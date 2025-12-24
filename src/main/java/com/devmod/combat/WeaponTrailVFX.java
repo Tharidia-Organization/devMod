@@ -3,8 +3,8 @@ import com.devmod.*;
 import com.devmod.*;
 
 import com.devmod.DevMod;
-import com.devmod.rendering.TrigCache;
-import com.devmod.rendering.shader.VFXShaderRegistry;
+import com.devmod.client.rendering.TrigCache;
+import com.devmod.client.rendering.shader.VFXShaderRegistry;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;

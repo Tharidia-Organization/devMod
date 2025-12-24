@@ -1,7 +1,7 @@
 package com.devmod.ui.testing;
 
-import com.devmod.overlay.Impact3DPanelManager;
-import com.devmod.overlay.ImpactHudOverlay;
+import com.devmod.client.overlay.Impact3DPanelManager;
+import com.devmod.client.overlay.ImpactHudOverlay;
 import com.devmod.config.Config;
 import com.devmod.ui.editor.components.EditorButton;
 import com.devmod.ui.editor.core.UIConstants;

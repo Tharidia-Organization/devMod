@@ -62,13 +62,27 @@ public class ModIntegrationManager {
      */
     private static void initCompatModules() {
         // Register all compat modules here
+
+        // P1 - UI/Input/HUD
         CompatRegistry.register(new com.devmod.compat.mods.clothconfig.ClothConfigCompat());
+        CompatRegistry.register(new com.devmod.compat.mods.controlling.ControllingCompat());
+        CompatRegistry.register(new com.devmod.compat.mods.journeymap.JourneyMapCompat());
+
+        // P3 - Combat/Attributes
         CompatRegistry.register(new com.devmod.compat.mods.curios.CuriosCompat());
+        CompatRegistry.register(new com.devmod.compat.mods.accessories.AccessoriesCompat());
         CompatRegistry.register(new com.devmod.compat.mods.ironsspellbooks.IronsSpellbooksCompat());
-        CompatRegistry.register(new com.devmod.compat.mods.spark.SparkCompat());
         CompatRegistry.register(new com.devmod.compat.mods.spellengine.SpellEngineCompat());
         CompatRegistry.register(new com.devmod.compat.mods.spellpower.SpellPowerCompat());
         CompatRegistry.register(new com.devmod.compat.mods.rangedweaponapi.RangedWeaponApiCompat());
+        CompatRegistry.register(new com.devmod.compat.mods.apothicattributes.ApothicAttributesCompat());
+
+        // P4 - Telemetry/Performance
+        CompatRegistry.register(new com.devmod.compat.mods.spark.SparkCompat());
+
+        // P5 - QoL/Testing
+        CompatRegistry.register(new com.devmod.compat.mods.easynpc.EasyNpcCompat());
+        CompatRegistry.register(new com.devmod.compat.mods.playeranimator.PlayerAnimatorCompat());
 
         // Initialize common (server+client) functionality
         CompatRegistry.initCommon();

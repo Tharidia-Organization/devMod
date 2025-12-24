@@ -5,7 +5,7 @@ import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.rendering.*;
+import com.devmod.client.rendering.*;
 import com.devmod.ui.editor.components.EditorButton;
 import com.devmod.ui.testing.VoxelLabTab;
 import com.devmod.ui.testing.panel.*;

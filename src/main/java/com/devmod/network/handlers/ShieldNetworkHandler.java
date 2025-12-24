@@ -3,7 +3,7 @@ package com.devmod.network.handlers;
 import com.devmod.network.ShieldImpactPayload;
 import com.devmod.network.ShieldShatterPayload;
 import com.devmod.network.ShieldStatePayload;
-import com.devmod.rendering.shield.EnergyShieldRenderer;
+import com.devmod.client.rendering.shield.EnergyShieldRenderer;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 

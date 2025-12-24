@@ -2,7 +2,7 @@ package com.devmod.combat;
 import com.devmod.*;
 import com.devmod.*;
 
-import com.devmod.rendering.shield.EnergyShieldRenderer;
+import com.devmod.client.rendering.shield.EnergyShieldRenderer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.Projectile;

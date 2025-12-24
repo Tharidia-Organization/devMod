@@ -34,7 +34,7 @@ public class ClientQuestCache {
         if (!payload.hasActiveQuest()) {
             lastWave = 0;
             wasActive = false;
-            com.devmod.overlay.QuestSequenceOverlay.INSTANCE.clear();
+            com.devmod.client.overlay.QuestSequenceOverlay.INSTANCE.clear();
         }
 
         // Sync with IntegratedTestSession
@@ -86,7 +86,7 @@ public class ClientQuestCache {
     public static void clear() {
         cachedData = null;
         lastUpdateTime = 0;
-        com.devmod.overlay.QuestSequenceOverlay.INSTANCE.clear();
+        com.devmod.client.overlay.QuestSequenceOverlay.INSTANCE.clear();
         EnduranceUiCache.clear();
     }
 

@@ -86,7 +86,7 @@ public class ClientUiBridgeImpl implements ClientUiBridge {
 
     @Override
     public void toggleQuickHelp() {
-        com.devmod.overlay.QuickHelpOverlay.toggle();
+        com.devmod.client.overlay.QuickHelpOverlay.toggle();
     }
 
     @Override

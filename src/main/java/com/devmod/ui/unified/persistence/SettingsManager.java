@@ -2,15 +2,15 @@ package com.devmod.ui.unified.persistence;
 
 import com.devmod.ModConfig;
 import com.devmod.util.ConfigPaths;
-import com.devmod.overlay.BossPhaseOverlay;
-import com.devmod.overlay.EntityDensityOverlay;
-import com.devmod.rendering.DebugRenderer;
-import com.devmod.rendering.HeatmapVisualizer;
-import com.devmod.rendering.HeatmapVisualizer.HeatmapType;
-import com.devmod.rendering.LightLevelOverlay;
-import com.devmod.rendering.LineOfSightVisualizer;
-import com.devmod.rendering.PathfindingDebugger;
-import com.devmod.rendering.RoomBoundsVisualizer;
+import com.devmod.client.overlay.BossPhaseOverlay;
+import com.devmod.client.overlay.EntityDensityOverlay;
+import com.devmod.client.rendering.DebugRenderer;
+import com.devmod.client.rendering.HeatmapVisualizer;
+import com.devmod.client.rendering.HeatmapVisualizer.HeatmapType;
+import com.devmod.client.rendering.LightLevelOverlay;
+import com.devmod.client.rendering.LineOfSightVisualizer;
+import com.devmod.client.rendering.PathfindingDebugger;
+import com.devmod.client.rendering.RoomBoundsVisualizer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mojang.logging.LogUtils;
@@ -179,8 +179,8 @@ public class SettingsManager {
         RoomBoundsVisualizer.INSTANCE.setEnabled(currentSettings.debug.roomBounds);
         BossPhaseOverlay.setEnabled(currentSettings.debug.bossPhaseOverlay);
         EntityDensityOverlay.setEnabled(currentSettings.debug.entityDensityOverlay);
-        com.devmod.overlay.SkillEfficacyOverlay.setEnabled(currentSettings.debug.skillEfficacyOverlay);
-        com.devmod.rendering.SpawnabilityOverlay.INSTANCE.setEnabled(currentSettings.debug.spawnabilityOverlay);
+        com.devmod.client.overlay.SkillEfficacyOverlay.setEnabled(currentSettings.debug.skillEfficacyOverlay);
+        com.devmod.client.rendering.SpawnabilityOverlay.INSTANCE.setEnabled(currentSettings.debug.spawnabilityOverlay);
 
         // === Visualizers (Heatmaps) ===
         for (HeatmapType type : HeatmapType.values()) {
@@ -209,8 +209,8 @@ public class SettingsManager {
         currentSettings.debug.roomBounds = RoomBoundsVisualizer.INSTANCE.isEnabled();
         currentSettings.debug.bossPhaseOverlay = BossPhaseOverlay.isEnabled();
         currentSettings.debug.entityDensityOverlay = EntityDensityOverlay.isEnabled();
-        currentSettings.debug.skillEfficacyOverlay = com.devmod.overlay.SkillEfficacyOverlay.isEnabled();
-        currentSettings.debug.spawnabilityOverlay = com.devmod.rendering.SpawnabilityOverlay.INSTANCE.isEnabled();
+        currentSettings.debug.skillEfficacyOverlay = com.devmod.client.overlay.SkillEfficacyOverlay.isEnabled();
+        currentSettings.debug.spawnabilityOverlay = com.devmod.client.rendering.SpawnabilityOverlay.INSTANCE.isEnabled();
 
         // === Visualizers (Heatmaps) ===
         for (HeatmapType type : HeatmapType.values()) {

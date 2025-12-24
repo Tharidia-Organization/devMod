@@ -1,10 +1,10 @@
 package com.devmod.ui.unified.pages;
 
-import com.devmod.rendering.HeatmapVisualizer;
-import com.devmod.rendering.HeatmapVisualizer.HeatmapType;
-import com.devmod.rendering.LightLevelOverlay;
-import com.devmod.rendering.SafeSpotVisualizer;
-import com.devmod.rendering.VerticalLevelsVisualizer;
+import com.devmod.client.rendering.HeatmapVisualizer;
+import com.devmod.client.rendering.HeatmapVisualizer.HeatmapType;
+import com.devmod.client.rendering.LightLevelOverlay;
+import com.devmod.client.rendering.SafeSpotVisualizer;
+import com.devmod.client.rendering.VerticalLevelsVisualizer;
 import com.devmod.ui.AxiomRenderer;
 import com.devmod.ui.editor.core.UIConstants;
 import com.devmod.actions.ActionIds;

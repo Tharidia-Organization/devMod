@@ -6,7 +6,7 @@ import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.rendering.RoomBoundsVisualizer;
+import com.devmod.client.rendering.RoomBoundsVisualizer;
 import com.devmod.telemetry.RoomDefinition;
 import com.devmod.telemetry.TelemetryConfig;
 import com.devmod.ui.editor.components.EditorButton;

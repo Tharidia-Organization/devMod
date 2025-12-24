@@ -868,10 +868,10 @@ public class QuickTestWizard extends Screen {
             com.devmod.ModConfig.showBodyPartBoxes = true;
         }
         if (enableBossPhase) {
-            com.devmod.overlay.BossPhaseOverlay.setEnabled(true);
+            com.devmod.client.overlay.BossPhaseOverlay.setEnabled(true);
         }
         if (enableEntityDensity) {
-            com.devmod.overlay.EntityDensityOverlay.setEnabled(true);
+            com.devmod.client.overlay.EntityDensityOverlay.setEnabled(true);
         }
 
         // Start integrated session (handles telemetry, overlays, and tracking)
@@ -883,7 +883,7 @@ public class QuickTestWizard extends Screen {
         );
 
         // Enable the integrated test HUD
-        com.devmod.overlay.IntegratedTestOverlay.setEnabled(true);
+        com.devmod.client.overlay.IntegratedTestOverlay.setEnabled(true);
 
         // Close wizard and open endurance quest screen with pre-selection
         mc.setScreen(new com.devmod.endurance.EnduranceQuestScreen(

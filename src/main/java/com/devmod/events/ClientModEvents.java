@@ -5,7 +5,7 @@ import com.devmod.ModConfig;
 
 import com.devmod.combat.HitHelper;
 import static com.devmod.DevMod.MODID;
-import com.devmod.overlay.Impact3DPanelManager;
+import com.devmod.client.overlay.Impact3DPanelManager;
 import com.devmod.quest.QuestManager;
 import com.devmod.util.I18n;
 import com.devmod.testing.QAEventTracker;
@@ -268,10 +268,10 @@ public class ClientModEvents {
         // Clear Endurance Quest client caches
         com.devmod.endurance.ClientQuestCache.clear();
         com.devmod.endurance.ClientShopCache.clear();
-        com.devmod.overlay.EnduranceQuestOverlay.resetStateWatcher();
+        com.devmod.client.overlay.EnduranceQuestOverlay.resetStateWatcher();
 
         // Clear ImpactData cache (MULTIPLAYER-SAFE: clears all player entries)
-        com.devmod.overlay.ImpactData.clearAll();
+        com.devmod.client.overlay.ImpactData.clearAll();
 
         LOGGER.debug("Caches cleared successfully");
     }

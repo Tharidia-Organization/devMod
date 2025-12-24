@@ -134,7 +134,7 @@ public class EnduranceQuestScreen extends Screen {
         super.init();
 
         // Notify onboarding overlay that Endurance Quest was opened
-        com.devmod.overlay.OnboardingOverlay.onEnduranceQuestOpened();
+        com.devmod.client.overlay.OnboardingOverlay.onEnduranceQuestOpened();
 
         // Request personal records from server
         net.neoforged.neoforge.network.PacketDistributor.sendToServer(new RequestPersonalRecordsPayload());

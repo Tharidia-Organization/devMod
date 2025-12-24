@@ -87,6 +87,30 @@ else
     echo -e "${GREEN}PASS${NC}"
 fi
 
+# Check 7: Client-only code in client/ package
+echo -n "Checking client-side packages location... "
+CLIENT_MISPLACED=0
+if [ -d "src/main/java/com/devmod/overlay" ]; then
+    echo -e "${RED}FAIL${NC}"
+    echo "  overlay/ should be under client/overlay/"
+    CLIENT_MISPLACED=1
+fi
+if [ -d "src/main/java/com/devmod/rendering" ]; then
+    echo -e "${RED}FAIL${NC}"
+    echo "  rendering/ should be under client/rendering/"
+    CLIENT_MISPLACED=1
+fi
+if [ -d "src/main/java/com/devmod/panels" ]; then
+    echo -e "${RED}FAIL${NC}"
+    echo "  panels/ should be under client/panels/"
+    CLIENT_MISPLACED=1
+fi
+if [ "$CLIENT_MISPLACED" -gt 0 ]; then
+    ERRORS=$((ERRORS + 1))
+else
+    echo -e "${GREEN}PASS${NC}"
+fi
+
 echo ""
 echo "================================================"
 echo "Summary"

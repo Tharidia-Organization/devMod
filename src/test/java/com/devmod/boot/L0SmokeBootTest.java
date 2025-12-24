@@ -504,7 +504,8 @@ public class L0SmokeBootTest {
                 "quest",
                 "network",
                 "ui",
-                "rendering",
+                "client/rendering",
+                "client/overlay",
                 "telemetry",
                 "util"
             };

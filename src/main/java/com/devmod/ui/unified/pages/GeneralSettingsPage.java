@@ -1,7 +1,7 @@
 package com.devmod.ui.unified.pages;
 
 import com.devmod.ModConfig;
-import com.devmod.overlay.OnboardingOverlay;
+import com.devmod.client.overlay.OnboardingOverlay;
 import com.devmod.ui.AxiomRenderer;
 import com.devmod.ui.editor.core.UIConstants;
 import com.devmod.ui.unified.SettingsCategory;

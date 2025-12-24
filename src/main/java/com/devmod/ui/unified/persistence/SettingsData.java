@@ -1,6 +1,6 @@
 package com.devmod.ui.unified.persistence;
 
-import com.devmod.rendering.HeatmapVisualizer.HeatmapType;
+import com.devmod.client.rendering.HeatmapVisualizer.HeatmapType;
 import java.util.Map;
 
 /**

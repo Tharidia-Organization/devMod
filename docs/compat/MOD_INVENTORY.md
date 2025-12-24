@@ -6,7 +6,7 @@
 ## Summary
 
 - **Total Mods Detected**: 227+
-- **Integration DONE**: 10 (CompatModule pattern)
+- **Integration DONE**: 16 (CompatModule pattern)
 - **Integration PARTIAL**: 1 (GeckoLib)
 - **Priority Categories**: 6
 
@@ -40,17 +40,17 @@ The standardized compat layer is fully implemented:
 |----------|-------|---------|--------|--------|-------|
 | Better Combat | `bettercombat` | 2.2.5+1.21.1 | run/mods | **DONE** | Combat animations, extended reach |
 | Cloth Config | `cloth-config` | 15.0.140 | run/mods | **DONE** | Config screen API |
-| Controlling | `controlling` | 19.0.5 | run/mods | TODO | Keybind management |
+| Controlling | `controlling` | 19.0.5 | run/mods | **DONE** | Keybind conflict detection |
 | EMI | `emi` | 1.1.22+1.21.1 | run/mods | TODO | Item/recipe lookup |
 | FancyMenu | `fancymenu` | 3.7.0 | run/mods | TODO | Menu customization |
 | InvMove | `invmove` | 0.9.1 | run/mods | TODO | Movement in inventory |
-| JourneyMap | `journeymap` | 6.0.0-beta.52 | run/mods | TODO | Minimap/waypoints |
+| JourneyMap | `journeymap` | 6.0.0-beta.52 | run/mods | **DONE** | Waypoint API for Arena |
 | MouseTweaks | `mousetweaks` | 2.26.1 | run/mods | TODO | Inventory mouse controls |
 | Not Enough Animations | `notenoughanimations` | 1.10.6 | run/mods | TODO | Player animations |
-| Player Animation Lib | `playeranimator` | 2.0.1+1.21.1 | run/mods | TODO | Animation framework |
+| Player Animation Lib | `playeranimator` | 2.0.1+1.21.1 | run/mods | **DONE** | Animation state tracking |
 | Yet Another Config Lib | `yacl` | 3.8.0+1.21.1 | run/mods | TODO | Config screen framework |
 | Curios | `curios` | 9.5.1+1.21.1 | run/mods | **DONE** | Equipment slots API |
-| Accessories | `accessories` | 1.1.0-beta.52 | run/mods | TODO | Equipment system |
+| Accessories | `accessories` | 1.1.0-beta.52 | run/mods | **DONE** | Modern equipment slots |
 | Emotecraft | `emotecraft` | 2.4.12 | run/mods | TODO | Player emotes |
 | First Person | `firstperson` | 2.5.0 | run/mods | TODO | First-person model |
 
@@ -82,7 +82,7 @@ The standardized compat layer is fully implemented:
 | GeckoLib | `geckolib` | 4.8.2 | run/mods | **PARTIAL** | Animation library |
 | AzureLib | `azurelib` | 3.1.1 | run/mods | TODO | Animation library |
 | More RPG Library | `more_rpg_library` | 2.5.1+1.21.1 | run/mods | TODO | RPG attributes |
-| Apothic Attributes | `apothicattributes` | 2.9.0 | run/mods | TODO | Attribute system |
+| Apothic Attributes | `apothicattributes` | 2.9.0 | run/mods | **DONE** | Extended attributes (crit, lifesteal) |
 | SmartBrainLib | `smartbrainlib` | 1.16.11 | run/mods | TODO | Mob AI |
 | Epic Knights | `epic_knights` | 9.30 | run/mods | TODO | Medieval weapons |
 | Archers | `archers` | 2.6.8+1.21.1 | run/mods | TODO | Archery system |
@@ -136,7 +136,7 @@ The standardized compat layer is fully implemented:
 | Mod Name | ModID | Version | Source | Status | Notes |
 |----------|-------|---------|--------|--------|-------|
 | Crash Assistant | `crashassistant` | 1.10.19 | run/mods | TODO | Crash reports |
-| Easy NPC | `easy_npc` | 6.0.21 | run/mods | TODO | NPC creation |
+| Easy NPC | `easy_npc` | 6.0.21 | run/mods | **DONE** | Arena NPC spawning |
 | Dummmmmmy | `dummmmmmy` | 2.0.9 | run/mods | TODO | Test dummies |
 | Default Options | `defaultoptions` | 21.1.5 | run/mods | TODO | Default settings |
 | NBT Copy | `nbtcopy` | 1.0.4 | run/mods | TODO | NBT utilities |

@@ -2,7 +2,7 @@ package com.devmod.events;
 
 import com.devmod.DevMod;
 
-import com.devmod.panels.context.ContextDetector;
+import com.devmod.client.panels.context.ContextDetector;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.LivingEntity;

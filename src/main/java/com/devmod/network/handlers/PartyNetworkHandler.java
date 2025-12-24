@@ -5,7 +5,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.party.*;
-import com.devmod.overlay.QuestSequenceOverlay;
+import com.devmod.client.overlay.QuestSequenceOverlay;
 import com.devmod.util.I18n;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;

@@ -4,7 +4,7 @@ import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionResult;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.overlay.OnboardingOverlay;
+import com.devmod.client.overlay.OnboardingOverlay;
 import com.devmod.ui.radial.animation.RadialAnimator;
 import com.devmod.ui.radial.config.RadialMenuConstants;
 import com.devmod.ui.radial.input.RadialSearchHandler;

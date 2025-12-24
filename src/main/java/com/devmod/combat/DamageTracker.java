@@ -2,8 +2,8 @@ package com.devmod.combat;
 import com.devmod.DevMod;
 
 import static com.devmod.DevMod.MODID;
-import com.devmod.overlay.ImpactData;
-import com.devmod.overlay.ImpactDpsTracker;
+import com.devmod.client.overlay.ImpactData;
+import com.devmod.client.overlay.ImpactDpsTracker;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;

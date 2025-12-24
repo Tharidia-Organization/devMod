@@ -213,9 +213,11 @@ public final class Compat {
         public static final String IRONS_SPELLBOOKS = "irons_spellbooks";
         public static final String SPELL_ENGINE = "spell_engine";
         public static final String SPELL_POWER = "spell_power";
+        public static final String RANGED_WEAPON_API = "ranged_weapon_api";
         public static final String GECKOLIB = "geckolib";
         public static final String AZURELIB = "azurelib";
         public static final String APOTHIC_ATTRIBUTES = "apothicattributes";
+        public static final String PLAYER_ANIMATOR = "playeranimator";
 
         // P4 - Performance
         public static final String SPARK = "spark";
@@ -228,6 +230,7 @@ public final class Compat {
         // P5 - QoL
         public static final String EASY_NPC = "easy_npc";
         public static final String DUMMMMMMY = "dummmmmmy";
+        public static final String MOWZIES_MOBS = "mowziesmobs";
 
         private Mods() {}
     }

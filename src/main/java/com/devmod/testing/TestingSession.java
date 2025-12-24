@@ -1,13 +1,13 @@
 package com.devmod.testing;
 
-import com.devmod.rendering.DebugRenderer;
-import com.devmod.rendering.LightLevelOverlay;
-import com.devmod.rendering.LineOfSightVisualizer;
-import com.devmod.rendering.PathfindingDebugger;
-import com.devmod.rendering.RoomBoundsVisualizer;
-import com.devmod.rendering.SafeSpotVisualizer;
-import com.devmod.overlay.ImpactData;
-import com.devmod.overlay.ImpactHudOverlay;
+import com.devmod.client.rendering.DebugRenderer;
+import com.devmod.client.rendering.LightLevelOverlay;
+import com.devmod.client.rendering.LineOfSightVisualizer;
+import com.devmod.client.rendering.PathfindingDebugger;
+import com.devmod.client.rendering.RoomBoundsVisualizer;
+import com.devmod.client.rendering.SafeSpotVisualizer;
+import com.devmod.client.overlay.ImpactData;
+import com.devmod.client.overlay.ImpactHudOverlay;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;

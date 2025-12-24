@@ -5,7 +5,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.endurance.*;
-import com.devmod.overlay.InstanceLoadingOverlay;
+import com.devmod.client.overlay.InstanceLoadingOverlay;
 import com.devmod.network.PacketValidator;
 import com.devmod.network.PacketValidator.ValidationResult;
 import com.devmod.util.I18n;

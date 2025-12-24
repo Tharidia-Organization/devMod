@@ -1,7 +1,7 @@
 package com.devmod.testing;
 
 import com.devmod.endurance.EnduranceQuestRegistry;
-import com.devmod.overlay.*;
+import com.devmod.client.overlay.*;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
