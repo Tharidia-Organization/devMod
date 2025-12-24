@@ -1,7 +1,7 @@
 package com.devmod.ui.editor.modules;
 
 import com.devmod.ammo.AmmoSystem;
-import com.devmod.transport.RangedWeaponStatsPayload;
+import com.devmod.network.RangedWeaponStatsPayload;
 import com.devmod.ui.editor.AbstractEditorModule;
 import com.devmod.ui.editor.EditorSection;
 import com.devmod.ui.editor.ModuleTab;

@@ -326,7 +326,7 @@ public class BossWaveSystem {
      * Should be called when transitioning to a boss wave.
      */
     public void triggerBossAlert(net.minecraft.server.level.ServerPlayer player, String bossType) {
-        com.devmod.transport.TransportHandler.sendBossAlert(player, BOSS_ALERT_DURATION_MS, bossType);
+        com.devmod.network.NetworkHandler.sendBossAlert(player, BOSS_ALERT_DURATION_MS, bossType);
     }
 
     /**

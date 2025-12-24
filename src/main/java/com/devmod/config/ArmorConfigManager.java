@@ -7,7 +7,7 @@ import com.devmod.components.ArmorComponents;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import com.devmod.transport.PacketValidator;
+import com.devmod.network.PacketValidator;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -586,7 +586,7 @@ public class ArmorConfigManager {
                 return;
             }
 
-            var payload = com.devmod.transport.GlobalConfigSyncPayload.fromCurrentConfigs();
+            var payload = com.devmod.network.GlobalConfigSyncPayload.fromCurrentConfigs();
 
             for (net.minecraft.server.level.ServerPlayer player : server.getPlayerList().getPlayers()) {
                 net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(

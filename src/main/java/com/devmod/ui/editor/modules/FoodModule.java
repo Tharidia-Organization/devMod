@@ -168,7 +168,7 @@ public class FoodModule extends AbstractEditorModule {
         statsTag.put("FoodModStats", Objects.requireNonNull(foodStats.copy()));
         statsTag.put("food_stats_component", Objects.requireNonNull(foodStats));
 
-        return new com.devmod.transport.FoodStatsPayload(
+        return new com.devmod.network.FoodStatsPayload(
             Objects.requireNonNull(item, "item cannot be null"), statsTag, isGlobal);
     }
 

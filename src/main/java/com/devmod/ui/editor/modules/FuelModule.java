@@ -167,7 +167,7 @@ public class FuelModule extends AbstractEditorModule {
         statsTag.put("FuelModStats", Objects.requireNonNull(fuelStats.copy()));
         statsTag.put("fuel_stats_component", Objects.requireNonNull(fuelStats));
 
-        return new com.devmod.transport.FuelStatsPayload(
+        return new com.devmod.network.FuelStatsPayload(
             Objects.requireNonNull(item, "item cannot be null"), statsTag, isGlobal);
     }
 

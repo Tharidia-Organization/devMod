@@ -45,8 +45,8 @@ import com.devmod.ui.editor.systems.TemplateOverlay;
 import com.devmod.ui.editor.systems.PresetSelectorOverlay;
 import com.devmod.ui.editor.systems.DebugPanel;
 import com.devmod.ui.editor.debug.DebugOverlay;
-import com.devmod.transport.ArmorStatsPayloadV2;
-import com.devmod.transport.EditorApplyConfirmPayload;
+import com.devmod.network.ArmorStatsPayloadV2;
+import com.devmod.network.EditorApplyConfirmPayload;
 import com.devmod.util.DatapackIO;
 import com.devmod.integration.PufferfishCompat;
 import net.neoforged.fml.ModList;
@@ -254,6 +254,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private boolean showMultiEditPanel = false;
     private TemplateOverlay templateOverlay;
     private PresetSelectorOverlay presetSelectorOverlay;
+
+    // Keyboard state for F3+D combo
+    private boolean f3Held = false;
 
     // ═══════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -560,7 +563,8 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         }
     }
 
-    private void handleModeChange(ModeBadge.Mode mode) {
+    @Override
+    public void handleModeChange(ModeBadge.Mode mode) {
         boolean preview = mode == ModeBadge.Mode.PREVIEW;
         if (preview == isPreviewMode()) {
             return;
@@ -687,7 +691,8 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         }
     }
 
-    private void closeOverlay() {
+    @Override
+    public void closeOverlay() {
         overlayController.close();
     }
 
@@ -940,7 +945,8 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         }
     }
 
-    private void refreshMultiEditSelection() {
+    @Override
+    public void refreshMultiEditSelection() {
         if (multiEditManager == null) return;
         multiEditManager.clearSelection();
         var mc = Minecraft.getInstance();
@@ -1035,7 +1041,8 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             clearY + HISTORY_PANEL_CLEAR_TEXT_OFFSET_Y, clearColor, false);
     }
 
-    private boolean handleHistoryClick(double mouseX, double mouseY) {
+    @Override
+    public boolean handleHistoryClick(double mouseX, double mouseY) {
         ResponsiveLayout.Rect historyBounds = getHistoryPanelBounds();
         int panelWidth = historyBounds.width();
         int panelHeight = historyBounds.height();
@@ -1073,6 +1080,12 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         int x = layout.getEditorX() + layout.getEditorWidth() - HISTORY_PANEL_WIDTH - HISTORY_PANEL_MARGIN_RIGHT;
         int y = layout.getEditorY() + UIConstants.Size.HEADER_HEIGHT + HISTORY_PANEL_MARGIN_TOP;
         return new ResponsiveLayout.Rect(x, y, HISTORY_PANEL_WIDTH, HISTORY_PANEL_HEIGHT);
+    }
+
+    @Override
+    public void scrollHistory(int delta) {
+        historyScrollOffset += delta * HISTORY_PANEL_LINE_HEIGHT;
+        historyScrollOffset = Math.max(0, historyScrollOffset);
     }
 
     private void renderTooltip(GuiGraphics graphics, String text, int x, int y) {
@@ -1170,7 +1183,8 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
      * Minimal hotbar interaction while the editor screen is open.
      * Left-click to pick up / place items using the carried stack semantics.
      */
-    private boolean handleHotbarClick(double mouseX, double mouseY, int button) {
+    @Override
+    public boolean handleHotbarClick(double mouseX, double mouseY, int button) {
         return handleHotbarClick(mouseX, mouseY, button, false);
     }
 
@@ -1490,7 +1504,8 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     // ACTIONS
     // ═══════════════════════════════════════════════════════════════
 
-    private void applyChanges() {
+    @Override
+    public void applyChanges() {
         if (activeModule == null) return;
 
         if (!activeModule.hasUnsavedChanges()) {
@@ -1582,7 +1597,8 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         showStatus(statusMsg, payload.success() ? UIConstants.Accent.GREEN() : UIConstants.Accent.RED());
     }
 
-    private void handleCloseRequest() {
+    @Override
+    public void handleCloseRequest() {
         if (!isPreviewMode() && activeModule != null && activeModule.hasUnsavedChanges()) {
             activeDialog = ConfirmDialog.unsavedChanges(
                 activeModule.getPendingChanges().size(),
@@ -2032,7 +2048,8 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         return value == null ? fallback : value;
     }
 
-    private boolean handleFavoritesClick(double mouseX, double mouseY) {
+    @Override
+    public boolean handleFavoritesClick(double mouseX, double mouseY) {
         ResponsiveLayout.Rect leftPanel = layout.getFavoritesPanelArea();
         if (leftPanel.isEmpty()) return false;
         if (mouseX < leftPanel.x() || mouseX > leftPanel.right() || mouseY < leftPanel.y() || mouseY > leftPanel.bottom()) {
@@ -2111,7 +2128,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 fullTag.put(WEAPON_STATS_KEY, Objects.requireNonNull(statsTag.copy()));
                 ItemStack itemCopy = Objects.requireNonNull(item.copy());
                 PacketDistributor.sendToServer(
-                    new com.devmod.transport.WeaponStatsPayloadV2(itemCopy, fullTag, isGlobalMode())
+                    new com.devmod.network.WeaponStatsPayloadV2(itemCopy, fullTag, isGlobalMode())
                 );
             } else if (tag.contains(ARMOR_STATS_KEY) || tag.contains(ARMOR_STATS_COMPONENT_KEY)) {
                 // Prefer armor_stats_component if available, fallback to ArmorModStats
@@ -2142,10 +2159,125 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     // UTILITY
     // ═══════════════════════════════════════════════════════════════
 
-    private void showStatus(String message, int color) {
+    @Override
+    public void showStatus(String message, int color) {
         this.statusMessage = message;
         this.statusColor = color;
         this.statusTicks = STATUS_TICKS_DURATION; // 3 seconds at 20 TPS
+    }
+
+    @Override
+    public void clearTooltip() {
+        this.tooltipText = null;
+    }
+
+    @Override
+    public boolean showDevPanel() {
+        return this.showDevPanel;
+    }
+
+    @Override
+    public void toggleDevPanel() {
+        this.showDevPanel = !this.showDevPanel;
+    }
+
+    @Override
+    public void toggleMultiEditPanel() {
+        this.showMultiEditPanel = !this.showMultiEditPanel;
+    }
+
+    @Override
+    public boolean showMultiEditPanel() {
+        return this.showMultiEditPanel;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // INPUT CONTEXT INTERFACE IMPLEMENTATION
+    // ═══════════════════════════════════════════════════════════════
+
+    @Override
+    public int screenWidth() {
+        return this.width;
+    }
+
+    @Override
+    public int screenHeight() {
+        return this.height;
+    }
+
+    @Override
+    public HeaderComponent header() {
+        return this.header;
+    }
+
+    @Override
+    public FooterComponent footer() {
+        return this.footer;
+    }
+
+    @Override
+    public LeftColumnComponent leftColumn() {
+        return this.leftColumn;
+    }
+
+    @Override
+    public ScrollableContentArea scrollArea() {
+        return this.scrollArea;
+    }
+
+    @Override
+    public HelpOverlay helpOverlay() {
+        return this.helpOverlay;
+    }
+
+    @Override
+    public LowConfidenceDetector lowConfidenceDetector() {
+        return this.lowConfidenceDetector;
+    }
+
+    @Override
+    public ConfirmDialog activeDialog() {
+        return this.activeDialog;
+    }
+
+    @Override
+    public TemplateOverlay templateOverlay() {
+        return this.templateOverlay;
+    }
+
+    @Override
+    public PresetSelectorOverlay presetSelectorOverlay() {
+        return this.presetSelectorOverlay;
+    }
+
+    @Override
+    public CraftingInfoPanel craftingPanel() {
+        return this.craftingPanel;
+    }
+
+    @Override
+    public DebugPanel debugPanel() {
+        return this.debugPanel;
+    }
+
+    @Override
+    public OverlayController overlayController() {
+        return this.overlayController;
+    }
+
+    @Override
+    public EditorModule activeModule() {
+        return this.activeModule;
+    }
+
+    @Override
+    public MultiEditManager multiEditManager() {
+        return this.multiEditManager;
+    }
+
+    @Override
+    public MultiEditPanel multiEditPanel() {
+        return this.multiEditPanel;
     }
 
     private void playSound(net.minecraft.sounds.SoundEvent sound) {

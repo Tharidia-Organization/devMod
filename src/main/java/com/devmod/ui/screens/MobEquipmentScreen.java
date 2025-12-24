@@ -1,6 +1,6 @@
 package com.devmod.ui.screens;
 
-import com.devmod.transport.EquipMobPayload;
+import com.devmod.network.EquipMobPayload;
 import com.devmod.ui.AxiomRenderer;
 import com.devmod.ui.editor.core.UIConstants;
 import com.devmod.ui.editor.components.EditorButton;

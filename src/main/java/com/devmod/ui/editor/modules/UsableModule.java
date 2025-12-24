@@ -189,7 +189,7 @@ public class UsableModule extends AbstractEditorModule {
         statsTag.put("UsableModStats", Objects.requireNonNull(usableStats.copy()));
         statsTag.put("usable_stats_component", Objects.requireNonNull(usableStats));
 
-        return new com.devmod.transport.UsableStatsPayload(
+        return new com.devmod.network.UsableStatsPayload(
             Objects.requireNonNull(item, "item cannot be null"), statsTag, isGlobal);
     }
 

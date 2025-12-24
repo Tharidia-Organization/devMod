@@ -30,7 +30,7 @@ import net.minecraft.world.level.block.Block;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.devmod.integration.PufferfishCompat;
-import com.devmod.transport.PacketValidator;
+import com.devmod.network.PacketValidator;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -705,7 +705,7 @@ public class WeaponConfigManager {
                 return;
             }
 
-            var payload = com.devmod.transport.GlobalConfigSyncPayload.fromCurrentConfigs();
+            var payload = com.devmod.network.GlobalConfigSyncPayload.fromCurrentConfigs();
 
             for (net.minecraft.server.level.ServerPlayer player : server.getPlayerList().getPlayers()) {
                 net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(Objects.requireNonNull(player), Objects.requireNonNull(payload));

@@ -121,7 +121,7 @@ public class EnduranceEventCombat {
                         int prevRank = rankChange != null ? rankChange[0].ordinal() : comboSession.getCurrentRank().ordinal();
                         int newRank = rankChange != null ? rankChange[1].ordinal() : comboSession.getCurrentRank().ordinal();
 
-                        com.devmod.transport.TransportHandler.sendComboDecay(player, lostCombo, prevRank, newRank);
+                        com.devmod.network.NetworkHandler.sendComboDecay(player, lostCombo, prevRank, newRank);
                     }
                 }
             }

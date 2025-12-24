@@ -258,12 +258,12 @@ public class L0SmokeBootTest {
         @Order(6)
         @DisplayName("Transport files exist")
         void transportFilesExist() {
-            // Check for actual transport files in the codebase
-            String[] transportFiles = {
-                "transport/PacketValidator.java"
+            // Check for actual network files in the codebase
+            String[] networkFiles = {
+                "network/PacketValidator.java"
             };
 
-            for (String file : transportFiles) {
+            for (String file : networkFiles) {
                 assertTrue(sourceFileExists(file),
                     "Should exist: " + file);
             }
@@ -502,7 +502,7 @@ public class L0SmokeBootTest {
                 "runtime",
                 "endurance",
                 "quest",
-                "transport",
+                "network",
                 "ui",
                 "rendering",
                 "telemetry",

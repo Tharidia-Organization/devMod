@@ -1884,7 +1884,7 @@ public class EnduranceQuestManager {
             return;
         }
 
-        com.devmod.transport.TransportHandler.sendInstanceLoadingShow(player, "Creating template instance...");
+        com.devmod.network.NetworkHandler.sendInstanceLoadingShow(player, "Creating template instance...");
         player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Creating instance dimension...")
             .withStyle(ChatFormatting.YELLOW)));
 
@@ -1942,7 +1942,7 @@ public class EnduranceQuestManager {
         if (instanceId == null) {
             LOGGER.error("[EnduranceQuest] Template instance creation failed for player {}", playerId);
             activeSessions.remove(playerId);
-            com.devmod.transport.TransportHandler.sendInstanceLoadingHide(player);
+            com.devmod.network.NetworkHandler.sendInstanceLoadingHide(player);
             sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.CANCELLED, 0);
             player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Failed to create instance")
                 .withStyle(ChatFormatting.RED)));
@@ -1953,7 +1953,7 @@ public class EnduranceQuestManager {
         if (instanceOpt.isEmpty()) {
             InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
             activeSessions.remove(playerId);
-            com.devmod.transport.TransportHandler.sendInstanceLoadingHide(player);
+            com.devmod.network.NetworkHandler.sendInstanceLoadingHide(player);
             sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.CANCELLED, 0);
             player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Instance not found")
                 .withStyle(ChatFormatting.RED)));
@@ -1965,7 +1965,7 @@ public class EnduranceQuestManager {
         if (dimensionKey == null) {
             InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
             activeSessions.remove(playerId);
-            com.devmod.transport.TransportHandler.sendInstanceLoadingHide(player);
+            com.devmod.network.NetworkHandler.sendInstanceLoadingHide(player);
             sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.CANCELLED, 0);
             player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Instance dimension not ready")
                 .withStyle(ChatFormatting.RED)));
@@ -1976,7 +1976,7 @@ public class EnduranceQuestManager {
         if (instanceLevel == null) {
             InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
             activeSessions.remove(playerId);
-            com.devmod.transport.TransportHandler.sendInstanceLoadingHide(player);
+            com.devmod.network.NetworkHandler.sendInstanceLoadingHide(player);
             sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.CANCELLED, 0);
             player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Instance level not found")
                 .withStyle(ChatFormatting.RED)));
@@ -2120,7 +2120,7 @@ public class EnduranceQuestManager {
             activeSessions.remove(pendingSession.getPlayerId());
         }
         if (player != null) {
-            com.devmod.transport.TransportHandler.sendInstanceLoadingHide(player);
+            com.devmod.network.NetworkHandler.sendInstanceLoadingHide(player);
             if (pendingSession != null) {
                 sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.CANCELLED, 0);
             }
@@ -2150,7 +2150,7 @@ public class EnduranceQuestManager {
         ArenaContext arena = createArenaAdapter(instanceLevel, handle);
         updateInstanceArenaMetadata(instance, template, handle, origin);
 
-        com.devmod.transport.TransportHandler.sendInstanceLoadingHide(player);
+        com.devmod.network.NetworkHandler.sendInstanceLoadingHide(player);
 
         // Ensure player is positioned at template-defined spawn
         if (teleportPlayersToArena(java.util.List.of(player), arena, handle).isEmpty()) {

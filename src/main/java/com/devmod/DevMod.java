@@ -34,7 +34,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.slf4j.Logger;
 import java.util.Objects;
-import com.devmod.debug.DebugTransportHandler;
+import com.devmod.debug.DebugNetworkHandler;
 
 @Mod("devmod")
 public class DevMod {
@@ -107,7 +107,7 @@ public class DevMod {
         DevModActions.registerCommon();
 
         // Network payload registration (mod bus)
-        eventBus.addListener(DebugTransportHandler::registerPayloads);
+        eventBus.addListener(DebugNetworkHandler::registerPayloads);
 
         // NOTE: Keybinds are now registered in DevModClient (client-only class)
 

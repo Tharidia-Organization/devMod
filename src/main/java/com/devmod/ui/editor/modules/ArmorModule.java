@@ -3,7 +3,7 @@ package com.devmod.ui.editor.modules;
 import com.devmod.stats.ArmorStats;
 import com.devmod.config.ArmorConfigManager;
 import com.devmod.DevMod;
-import com.devmod.transport.ArmorStatsPayloadV2;
+import com.devmod.network.ArmorStatsPayloadV2;
 import com.devmod.ui.editor.AbstractEditorModule;
 import com.devmod.ui.editor.EditorSection;
 import com.devmod.ui.editor.ModuleTab;

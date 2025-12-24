@@ -1,7 +1,7 @@
 package com.devmod.ui.screens;
 
 import com.devmod.config.MobPresetManager;
-import com.devmod.transport.UpdateMobStatsPayload;
+import com.devmod.network.UpdateMobStatsPayload;
 import com.devmod.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;

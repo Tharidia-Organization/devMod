@@ -1,6 +1,6 @@
 package com.devmod.abilities;
 
-import com.devmod.transport.TransportHandler;
+import com.devmod.network.NetworkHandler;
 import com.mojang.logging.LogUtils;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -209,7 +209,7 @@ public class StaminaSystem {
      */
     private void syncToClient(ServerPlayer player, StaminaData data) {
         // Send packet to client with stamina data
-        TransportHandler.sendStaminaSync(player, data.currentStamina, getMaxStamina(player.getUUID()));
+        NetworkHandler.sendStaminaSync(player, data.currentStamina, getMaxStamina(player.getUUID()));
     }
 
     /**

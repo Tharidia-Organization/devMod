@@ -140,12 +140,12 @@ public class EnduranceEventHandler {
 
         // Send completion screen to client (only if quest completed or exited at checkpoint)
         if (rewards != null) {
-            com.devmod.transport.TransportHandler.sendQuestCompletionScreen(
+            com.devmod.network.NetworkHandler.sendQuestCompletionScreen(
                 player, session, rewards, comboSession, maxCombo);
 
             // Send token gain overlay animation
             if (rewards.tokensEarned > 0) {
-                com.devmod.transport.TransportHandler.sendTokenGain(player, rewards.tokensEarned);
+                com.devmod.network.NetworkHandler.sendTokenGain(player, rewards.tokensEarned);
             }
         }
 
@@ -175,17 +175,17 @@ public class EnduranceEventHandler {
 
             // Send badge unlock notifications for newly earned badges
             for (GamificationManager.Badge badge : gamificationResult.newBadges) {
-                com.devmod.transport.TransportHandler.sendBadgeUnlock(
+                com.devmod.network.NetworkHandler.sendBadgeUnlock(
                     player, badge.name, badge.rarity.displayName);
             }
 
             // Send record banner for new personal records
             if (gamificationResult.isNewWaveRecord) {
-                com.devmod.transport.TransportHandler.sendRecordBanner(
+                com.devmod.network.NetworkHandler.sendRecordBanner(
                     player, "BEST WAVE", "Wave " + session.getQuest().getCurrentWave());
             }
             if (gamificationResult.isNewHighScore) {
-                com.devmod.transport.TransportHandler.sendRecordBanner(
+                com.devmod.network.NetworkHandler.sendRecordBanner(
                     player, "HIGH SCORE", String.format("%,d pts", session.getQuest().getPointsEarnedThisSession()));
             }
         }
@@ -379,7 +379,7 @@ public class EnduranceEventHandler {
                 perkChoices.size(), player.getName().getString(),
                 perkChoices.stream().map(p -> p.name).toList());
             // Send perk choices to client for UI display
-            com.devmod.transport.TransportHandler.sendPerkChoices(player, waveNumber, perkChoices);
+            com.devmod.network.NetworkHandler.sendPerkChoices(player, waveNumber, perkChoices);
         }
 
         // === WAVE DIRECTIVES - Risk/Reward choices for next wave ===
@@ -387,7 +387,7 @@ public class EnduranceEventHandler {
             int nextWave = waveNumber + 1;
             List<WaveDirective> directives = WaveDirector.INSTANCE.rollDirectiveChoices(nextWave);
             session.setPendingDirectives(directives, nextWave);
-            com.devmod.transport.TransportHandler.sendWaveDirectiveChoices(player, nextWave, directives);
+            com.devmod.network.NetworkHandler.sendWaveDirectiveChoices(player, nextWave, directives);
         }
 
         // === NOTIFY PLAYER ===

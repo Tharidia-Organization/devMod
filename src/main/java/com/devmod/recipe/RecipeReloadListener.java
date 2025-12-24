@@ -1,7 +1,7 @@
 package com.devmod.recipe;
 
 import com.devmod.DevMod;
-import com.devmod.transport.RecipeClientSyncPayload;
+import com.devmod.network.RecipeClientSyncPayload;
 import com.devmod.util.ConfigPaths;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;

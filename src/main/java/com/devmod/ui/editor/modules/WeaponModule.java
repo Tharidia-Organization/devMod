@@ -221,7 +221,7 @@ public class WeaponModule extends AbstractEditorModule {
         statsTag.put(WeaponModuleCore.NBT_KEY, Objects.requireNonNull(weaponStats.copy()));
         statsTag.put("weapon_stats_component", Objects.requireNonNull(weaponStats));
 
-        return new com.devmod.transport.WeaponStatsPayloadV2(Objects.requireNonNull(item, "item cannot be null"), statsTag, isGlobal);
+        return new com.devmod.network.WeaponStatsPayloadV2(Objects.requireNonNull(item, "item cannot be null"), statsTag, isGlobal);
     }
 
     @Override

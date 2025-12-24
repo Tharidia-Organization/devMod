@@ -21,22 +21,22 @@ import java.util.Objects;
  * - DebugTogglePayload: client -> server (player requests to toggle a feature)
  * - DebugSyncPayload: server -> client (tells client to enable/disable renderer)
  */
-public class DebugTransportHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DebugTransportHandler.class);
+public class DebugNetworkHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DebugNetworkHandler.class);
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
         // Debug Toggle (client to server) - player requests to toggle a feature
         event.registrar("debug").playToServer(
             Objects.requireNonNull(DebugTogglePayload.TYPE),
             Objects.requireNonNull(DebugTogglePayload.STREAM_CODEC),
-            DebugTransportHandler::handleDebugToggle
+            DebugNetworkHandler::handleDebugToggle
         );
 
         // Debug Sync (server to client) - sync enabled state to client
         event.registrar("debug").playToClient(
             Objects.requireNonNull(DebugSyncPayload.TYPE),
             Objects.requireNonNull(DebugSyncPayload.STREAM_CODEC),
-            DebugTransportHandler::handleDebugSync
+            DebugNetworkHandler::handleDebugSync
         );
 
         LOGGER.info("[DevMod] Debug network packets registered");

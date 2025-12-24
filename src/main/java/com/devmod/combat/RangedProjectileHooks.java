@@ -2,7 +2,7 @@ package com.devmod.combat;
 
 import com.devmod.DevMod;
 
-import com.devmod.transport.PacketValidator;
+import com.devmod.network.PacketValidator;
 import com.devmod.ui.editor.RangedWeaponModule;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.AbstractArrow;

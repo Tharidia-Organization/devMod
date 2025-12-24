@@ -123,7 +123,7 @@ public class EnduranceSessionHandler {
             session.setAwaitingRespawnChoice(true);
 
             // Send death screen to client (primary UI)
-            com.devmod.transport.TransportHandler.sendQuestDeathScreen(
+            com.devmod.network.NetworkHandler.sendQuestDeathScreen(
                 player,
                 session.getQuest().getCurrentWave(),
                 session.getQuest().getTotalWaves(),

@@ -1,6 +1,6 @@
 package com.devmod.ui.editor.modules;
 
-import com.devmod.transport.RecipeSyncPayload;
+import com.devmod.network.RecipeSyncPayload;
 import com.devmod.recipe.*;
 import com.devmod.ui.editor.*;
 import com.devmod.ui.editor.components.EditorSlider;
