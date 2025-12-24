@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the final target package structure for DevMod after the December 2024 reorganization.
+This document describes the final package structure for DevMod after the December 2024 reorganization to NeoForge standards.
 
 ## Package Tree
 
@@ -33,9 +33,9 @@ com.devmod/
 │   ├── fallback/            # Fallback strategies
 │   ├── gate/                # Entry gates
 │   ├── health/              # Health monitoring
-│   ├── hud/                 # Arena debug HUD
+│   ├── hud/                 # Arena debug HUD (domain-specific)
 │   ├── identity/            # Arena identity
-│   ├── instance/            # Arena instances
+│   ├── instance/            # Arena instances (domain-specific)
 │   ├── integration/         # External integrations
 │   ├── leaderboard/         # Leaderboards
 │   ├── logging/             # Logging
@@ -59,8 +59,23 @@ com.devmod/
 ├── attributes/              # Custom attributes
 ├── bridge/                  # Integration bridges
 │
-├── client/                  # Client-only code
-│   └── input/               # Input handling
+├── client/                  # CLIENT-ONLY CODE (NeoForge standard)
+│   ├── input/               # Input handling
+│   ├── overlay/             # HUD overlays (29 files)
+│   │   ├── ImpactHudOverlay.java
+│   │   ├── StaminaHudOverlay.java
+│   │   ├── PartyHudOverlay.java
+│   │   ├── QuestSequenceOverlay.java
+│   │   └── ... (etc)
+│   ├── panels/              # Floating panels system (14 files)
+│   │   ├── context/
+│   │   ├── core/
+│   │   ├── tracking/
+│   │   ├── types/
+│   │   └── ui/
+│   └── rendering/           # Rendering system (27 files)
+│       ├── shader/          # Shader pipeline
+│       └── shield/          # Shield rendering
 │
 ├── collision/               # Collision system
 │   ├── bodypart/            # Body part detection
@@ -78,9 +93,15 @@ com.devmod/
 │
 ├── compat/                  # Mod compatibility
 │   └── mods/                # Per-mod compat
+│       ├── accessories/
+│       ├── apothicattributes/
 │       ├── clothconfig/
+│       ├── controlling/
 │       ├── curios/
+│       ├── easynpc/
 │       ├── ironsspellbooks/
+│       ├── journeymap/
+│       ├── playeranimator/
 │       ├── rangedweaponapi/
 │       ├── spark/
 │       ├── spellengine/
@@ -91,7 +112,7 @@ com.devmod/
 ├── damage/                  # Damage system
 │
 ├── debug/                   # Debug utilities
-│   └── client/              # Client debug
+│   └── client/              # Client debug (feature-local)
 │
 ├── effects/                 # Mob effects
 ├── endurance/               # Endurance quest system
@@ -103,25 +124,12 @@ com.devmod/
 ├── migration/               # Data migration
 ├── mixin/                   # Mixins
 │
-├── network/                 # Network packets (was: transport)
+├── network/                 # Network packets (NeoForge standard)
 │   └── handlers/            # Packet handlers
-│
-├── overlay/                 # HUD overlays
-├── panels/                  # Debug panels
-│   ├── context/
-│   ├── core/
-│   ├── tracking/
-│   ├── types/
-│   └── ui/
 │
 ├── party/                   # Party system
 ├── quest/                   # Quest system
 ├── recipe/                  # Recipe system
-│
-├── rendering/               # Rendering
-│   ├── shader/              # Shaders
-│   └── shield/              # Shield rendering
-│
 ├── runtime/                 # Runtime utilities
 ├── stats/                   # Statistics
 ├── tags/                    # Item/block tags
@@ -150,7 +158,7 @@ com.devmod/
 │   ├── config/
 │   └── stats/
 │
-├── ui/                      # User interface
+├── ui/                      # User interface screens
 │   ├── components/          # Shared components
 │   ├── editor/              # Item editor
 │   │   ├── components/
@@ -188,6 +196,7 @@ com.devmod/
 ## Module Boundaries
 
 ### Core Modules (Server + Client)
+
 - `abilities/` - Stamina, dash, dodge
 - `arena/` - Full arena system
 - `combat/` - Combat calculations
@@ -196,13 +205,22 @@ com.devmod/
 - `party/` - Party system
 - `telemetry/` - Data collection
 
-### Client-Only Modules
-- `client/` - Client bootstrap
-- `overlay/` - HUD overlays
-- `rendering/` - Visual effects
-- `ui/` - All screens and UI
+### Client-Only Modules (under client/)
+
+- `client/input/` - Input handling
+- `client/overlay/` - HUD overlays (ImpactHud, StaminaHud, etc.)
+- `client/rendering/` - Visual effects, shaders, debug rendering
+- `client/panels/` - Floating panel system
+
+### Feature-Local Client Code
+
+Some features have local client subpackages:
+
+- `actions/client/` - Client action contexts
+- `debug/client/` - Client debug rendering
 
 ### Infrastructure
+
 - `config/` - Configuration
 - `events/` - Event handlers
 - `util/` - Utilities
@@ -217,12 +235,23 @@ com.devmod/
 | Screen classes | `*Screen` |
 | Event handlers | `*EventHandler` |
 | Services | `*Service` |
+| Overlays | `*Overlay`, `*HudOverlay` |
 
-## Files Excluded from Packages
+## Files in Root Package
 
-The root package `com.devmod/` should contain only:
+The root package `com.devmod/` contains only:
+
 1. `DevMod.java` - Main entrypoint
 2. `DevModClient.java` - Client entrypoint
-3. `ModConfig.java` - Root config (if needed)
+3. `ModConfig.java` - Root config
 
-All other code should be in subpackages.
+All other code is in subpackages.
+
+## Guardrails
+
+Automated checks (`./tools/check-naming.sh`) verify:
+
+- No `com.frenkvs` references
+- No legacy `transport` package
+- Client code in `client/` (overlay, rendering, panels)
+- Root package file limit

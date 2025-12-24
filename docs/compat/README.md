@@ -18,12 +18,19 @@ com.devmod.compat/
 ├── CompatModule.java        # Interface for mod integrations
 ├── CompatRegistry.java      # Module registration & lifecycle
 └── mods/
-    ├── clothconfig/         # Cloth Config integration
-    ├── curios/              # Curios API integration
-    ├── irons_spellbooks/    # Iron's Spells integration
-    ├── spell_engine/        # Spell Engine integration
-    ├── spark/               # Spark Profiler integration
-    └── ...
+    ├── accessories/         # Accessories API (modern Curios)
+    ├── apothicattributes/   # Apothic Attributes (crit, lifesteal)
+    ├── clothconfig/         # Cloth Config screen API
+    ├── controlling/         # Keybind conflict detection
+    ├── curios/              # Curios equipment slots
+    ├── easynpc/             # Easy NPC for Arena
+    ├── ironsspellbooks/     # Iron's Spellbooks magic system
+    ├── journeymap/          # JourneyMap waypoints for Arena
+    ├── playeranimator/      # Player Animation Library
+    ├── rangedweaponapi/     # Ranged Weapon API
+    ├── spark/               # Spark profiler TPS/MSPT
+    ├── spellengine/         # Spell Engine framework
+    └── spellpower/          # Spell Power attributes
 ```
 
 ## Quick Reference
@@ -100,6 +107,7 @@ See existing integrations for examples.
 
 ## Changelog
 
-| Date | Changes |
-|------|---------|
-| 2024-12-24 | Initial inventory and infrastructure |
+| Date       | Changes                                                                                                         |
+|------------|----------------------------------------------------------------------------------------------------------------|
+| 2024-12-24 | Added: Controlling, JourneyMap, Apothic Attributes, Easy NPC, Accessories, Player Animation Lib compat modules |
+| 2024-12-24 | Initial inventory and infrastructure                                                                            |
