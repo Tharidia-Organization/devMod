@@ -256,9 +256,9 @@ public class L0SmokeBootTest {
 
         @Test
         @Order(6)
-        @DisplayName("Transport files exist")
-        void transportFilesExist() {
-            // Check for actual network files in the codebase
+        @DisplayName("Network files exist")
+        void networkFilesExist() {
+            // Check for network handler files
             String[] networkFiles = {
                 "network/PacketValidator.java"
             };

@@ -1,7 +1,7 @@
 # DevMod Architecture
 
 > **Ultimo Aggiornamento**: 24 Dicembre 2024
-> **Namespace**: `com.devmod.*` (unificato da `com.frenkvs.devmod`)
+> **Namespace**: `com.devmod.*`
 > **Build Status**: PASS - 2740 test superati
 
 Questo documento fornisce una panoramica dell'architettura DevMod, descrivendo i sistemi principali e le loro interazioni.
@@ -348,11 +348,11 @@ run/config/devmod/
 
 ## Riorganizzazione Dicembre 2024
 
-### Cambiamenti Namespace
+### Cambiamenti Namespace (Completati)
 
 | Vecchio | Nuovo |
 |---------|-------|
-| `com.frenkvs.devmod.*` | `com.devmod.*` |
+| `com.devmod.transport.*` | `com.devmod.network.*` |
 | `com.devmod.ui.UIConstants` | `com.devmod.ui.editor.core.UIConstants` |
 | `com.devmod.combat.ArrowEvents` | `com.devmod.events.ArrowEvents` |
 | `com.devmod.combat.CombatEvents` | `com.devmod.events.CombatEvents` |
