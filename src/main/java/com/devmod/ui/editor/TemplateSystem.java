@@ -3,7 +3,7 @@ package com.devmod.ui.editor;
 import net.minecraft.world.item.ItemStack;
 import java.util.*;
 
-public class TemplateSystemV15 {
+public class TemplateSystem {
     public enum TemplateType { WEAPON, ARMOR, ENCHANT, ATTRIBUTE, HYBRID }
     
     public static class Template {
@@ -62,8 +62,8 @@ public class TemplateSystemV15 {
     }
     
     // Built-in templates
-    public static TemplateSystemV15 createDefault() {
-        var system = new TemplateSystemV15();
+    public static TemplateSystem createDefault() {
+        var system = new TemplateSystem();
         
         system.register(new Template("sword_basic", "Basic Sword", TemplateType.WEAPON)
             .tag("melee", "common").priority(1)

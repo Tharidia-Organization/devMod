@@ -69,8 +69,8 @@ public class NetworkHandler {
         );
         // Channel 17: Weapon Stats Payload v2 (typed)
         event.registrar("17").playToServer(
-                nn(WeaponStatsPayloadV2.TYPE),
-                nn(WeaponStatsPayloadV2.STREAM_CODEC),
+                nn(WeaponStatsPayload.TYPE),
+                nn(WeaponStatsPayload.STREAM_CODEC),
                 MobItemNetworkHandler::handleWeaponStatsDataV2
         );
         // Channel 3: Monster Equipment
@@ -99,8 +99,8 @@ public class NetworkHandler {
         );
         // Channel 37: Armor Stats Payload v2
         event.registrar("37").playToServer(
-                nn(ArmorStatsPayloadV2.TYPE),
-                nn(ArmorStatsPayloadV2.STREAM_CODEC),
+                nn(ArmorStatsPayload.TYPE),
+                nn(ArmorStatsPayload.STREAM_CODEC),
                 MobItemNetworkHandler::handleArmorStatsDataV2
         );
         // Channel 44: Usable Stats Payload

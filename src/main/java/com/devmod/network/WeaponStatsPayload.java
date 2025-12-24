@@ -12,10 +12,8 @@ import javax.annotation.Nonnull;
 import java.util.Objects;
 
 /**
- * Client-to-server payload for weapon stats changes.
- * Sends weapon stat modifications to the server for application.
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 4.2
+ * Typed weapon stats payload (v2) carrying the serialized stats tag.
+ * Keeps legacy compatibility by still using a CompoundTag, but with a distinct packet id.
  */
 public record WeaponStatsPayload(
     @Nonnull ItemStack item,
@@ -24,7 +22,7 @@ public record WeaponStatsPayload(
 ) implements CustomPacketPayload {
 
     public static final Type<WeaponStatsPayload> TYPE = new Type<>(
-        Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "weapon_stats"))
+        Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "weapon_stats_v2"))
     );
 
     public static final StreamCodec<RegistryFriendlyByteBuf, WeaponStatsPayload> STREAM_CODEC = StreamCodec.of(

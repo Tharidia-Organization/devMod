@@ -219,6 +219,11 @@ public final class Compat {
         public static final String APOTHIC_ATTRIBUTES = "apothicattributes";
         public static final String PLAYER_ANIMATOR = "playeranimator";
 
+        // P3 - Combat (continued)
+        public static final String SMART_BRAIN_LIB = "smartbrainlib";
+        public static final String RELICS = "relics";
+        public static final String EMOTECRAFT = "emotecraft";
+
         // P4 - Performance
         public static final String SPARK = "spark";
         public static final String MODERNFIX = "modernfix";
@@ -226,11 +231,15 @@ public final class Compat {
         public static final String LITHIUM = "lithium";
         public static final String SODIUM = "sodium";
         public static final String ENTITY_CULLING = "entityculling";
+        public static final String IRIS = "iris";
 
         // P5 - QoL
         public static final String EASY_NPC = "easy_npc";
         public static final String DUMMMMMMY = "dummmmmmy";
         public static final String MOWZIES_MOBS = "mowziesmobs";
+
+        // P1 - Config (additional)
+        public static final String YACL = "yet_another_config_lib_v3";
 
         private Mods() {}
     }

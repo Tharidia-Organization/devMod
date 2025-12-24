@@ -19,7 +19,7 @@ import javax.annotation.Nonnull;
  * Registry for radial menu category definitions.
  *
  * This class centralizes all 24 category definitions (6 per macro-category)
- * to keep RadialMenuScreenV3 focused on UI logic.
+ * to keep RadialMenuScreen focused on UI logic.
  *
  * Structure:
  * - ANALYZE (3): Debug, Spatial, Performance

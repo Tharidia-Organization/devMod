@@ -274,7 +274,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
         });
     }
 
-    public static void handleWeaponStatsDataV2(com.devmod.network.WeaponStatsPayloadV2 payload, IPayloadContext context) {
+    public static void handleWeaponStatsDataV2(com.devmod.network.WeaponStatsPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) return;
 
@@ -470,7 +470,7 @@ public final class MobItemNetworkHandler extends NetworkHandlerBase {
         });
     }
 
-    public static void handleArmorStatsDataV2(com.devmod.network.ArmorStatsPayloadV2 payload, IPayloadContext context) {
+    public static void handleArmorStatsDataV2(com.devmod.network.ArmorStatsPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) return;
 

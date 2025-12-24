@@ -12,19 +12,18 @@ import javax.annotation.Nonnull;
 import java.util.Objects;
 
 /**
- * Client-to-server payload for armor stats changes.
- * Sends armor stat modifications to the server for application.
- *
- * @see EDITOR_DESIGN_SYSTEM.md Section 4.2
+ * Typed armor stats payload (v2) that mirrors WeaponStatsPayload.
+ * Carries the serialized stats tag plus the target slot for specific applications.
  */
 public record ArmorStatsPayload(
     @Nonnull ItemStack item,
     @Nonnull CompoundTag statsTag,
-    boolean isGlobal
+    boolean isGlobal,
+    int slot // -1 when global or unspecified; 0-3 for HEAD/CHEST/LEGS/FEET
 ) implements CustomPacketPayload {
 
     public static final Type<ArmorStatsPayload> TYPE = new Type<>(
-        Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "armor_stats"))
+        Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "armor_stats_v2"))
     );
 
     public static final StreamCodec<RegistryFriendlyByteBuf, ArmorStatsPayload> STREAM_CODEC = StreamCodec.of(
@@ -32,11 +31,13 @@ public record ArmorStatsPayload(
             ItemStack.STREAM_CODEC.encode(buffer, val.item());
             ByteBufCodecs.COMPOUND_TAG.encode(buffer, val.statsTag());
             ByteBufCodecs.BOOL.encode(buffer, val.isGlobal());
+            buffer.writeVarInt(val.slot());
         },
         buffer -> new ArmorStatsPayload(
             Objects.requireNonNull(ItemStack.STREAM_CODEC.decode(buffer)),
             Objects.requireNonNull(ByteBufCodecs.COMPOUND_TAG.decode(buffer)),
-            ByteBufCodecs.BOOL.decode(buffer)
+            ByteBufCodecs.BOOL.decode(buffer),
+            buffer.readVarInt()
         )
     );
 

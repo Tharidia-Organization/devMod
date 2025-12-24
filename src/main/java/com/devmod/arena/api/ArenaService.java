@@ -19,7 +19,7 @@ import java.util.concurrent.CompletableFuture;
  *   <li>Async operations with CompletableFuture</li>
  * </ul>
  */
-public interface ArenaServiceV2 {
+public interface ArenaService {
 
     // ========================================
     // V2 API - New Methods (DD14)

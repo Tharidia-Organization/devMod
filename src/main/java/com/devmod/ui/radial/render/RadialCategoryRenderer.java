@@ -289,7 +289,7 @@ public final class RadialCategoryRenderer {
         Objects.requireNonNull(categories, "categories cannot be null");
         Objects.requireNonNull(config, "config cannot be null");
 
-        // Use getVisibleItems() so indices match selectedItemIndex from RadialMenuScreenV3
+        // Use getVisibleItems() so indices match selectedItemIndex from RadialMenuScreen
         List<RadialMenuItem> visibleItems = category.getVisibleItems();
         int numItems = visibleItems.size();
         if (numItems == 0) return;

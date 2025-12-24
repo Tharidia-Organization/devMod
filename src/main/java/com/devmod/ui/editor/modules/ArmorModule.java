@@ -3,7 +3,7 @@ package com.devmod.ui.editor.modules;
 import com.devmod.stats.ArmorStats;
 import com.devmod.config.ArmorConfigManager;
 import com.devmod.DevMod;
-import com.devmod.network.ArmorStatsPayloadV2;
+import com.devmod.network.ArmorStatsPayload;
 import com.devmod.ui.editor.AbstractEditorModule;
 import com.devmod.ui.editor.EditorSection;
 import com.devmod.ui.editor.ModuleTab;
@@ -213,7 +213,7 @@ public class ArmorModule extends AbstractEditorModule {
         statsTag.put("armor_stats_component", Objects.requireNonNull(armorStats));
 
         // Slot is filled by ItemEditorScreen when sending; default to -1 here
-        return new ArmorStatsPayloadV2(Objects.requireNonNull(item, "item cannot be null"), statsTag, isGlobal, -1);
+        return new ArmorStatsPayload(Objects.requireNonNull(item, "item cannot be null"), statsTag, isGlobal, -1);
     }
 
     @Override

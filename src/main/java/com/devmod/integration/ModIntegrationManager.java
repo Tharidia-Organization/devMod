@@ -87,13 +87,24 @@ public class ModIntegrationManager {
         // P3 - Combat/Attributes (Mobs)
         CompatRegistry.register(new com.devmod.compat.mods.mowziesmobs.MowziesMobsCompat());
 
+        // P3 - Combat/Attributes (Mob AI)
+        CompatRegistry.register(new com.devmod.compat.mods.smartbrainlib.SmartBrainLibCompat());
+
+        // P3 - Combat/Attributes (Artifacts)
+        CompatRegistry.register(new com.devmod.compat.mods.relics.RelicsCompat());
+
         // P4 - Telemetry/Performance
         CompatRegistry.register(new com.devmod.compat.mods.spark.SparkCompat());
+        CompatRegistry.register(new com.devmod.compat.mods.iris.IrisCompat());
 
         // P5 - QoL/Testing
         CompatRegistry.register(new com.devmod.compat.mods.easynpc.EasyNpcCompat());
         CompatRegistry.register(new com.devmod.compat.mods.playeranimator.PlayerAnimatorCompat());
         CompatRegistry.register(new com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat());
+        CompatRegistry.register(new com.devmod.compat.mods.emotecraft.EmotecraftCompat());
+
+        // P1 - UI/Config (additional frameworks)
+        CompatRegistry.register(new com.devmod.compat.mods.yacl.YaclCompat());
 
         // Initialize common (server+client) functionality
         CompatRegistry.initCommon();

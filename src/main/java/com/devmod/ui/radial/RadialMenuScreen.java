@@ -53,7 +53,7 @@ import java.util.*;
  * - Keyboard shortcuts for power users
  */
 @OnlyIn(Dist.CLIENT)
-public final class RadialMenuScreenV3 extends Screen {
+public final class RadialMenuScreen extends Screen {
 
     // ================================================================
     // MACRO-CATEGORY SYSTEM
@@ -123,7 +123,7 @@ public final class RadialMenuScreenV3 extends Screen {
     @Nullable
     private net.minecraft.world.entity.Entity cachedTargetEntity = null;
 
-    public RadialMenuScreenV3() {
+    public RadialMenuScreen() {
         super(java.util.Objects.requireNonNull(Component.translatable("devmod.radial.title"), "title"));
         loadConfig();
         initializeCategories();
@@ -339,7 +339,7 @@ public final class RadialMenuScreenV3 extends Screen {
 
         String line = "{\"ts\":\"" + java.time.Instant.now() + "\"," +
             "\"type\":\"radial_menu_opened\"," +
-            "\"screenId\":\"RadialMenuScreenV3\"," +
+            "\"screenId\":\"RadialMenuScreen\"," +
             "\"macroCategory\":\"" + selectedMacro.name() + "\"," +
             "\"player\":\"" + com.devmod.telemetry.TelemetryJson.escape(playerName) + "\"}";
 
@@ -352,7 +352,7 @@ public final class RadialMenuScreenV3 extends Screen {
 
         String line = "{\"ts\":\"" + java.time.Instant.now() + "\"," +
             "\"type\":\"radial_time_to_first_action\"," +
-            "\"screenId\":\"RadialMenuScreenV3\"," +
+            "\"screenId\":\"RadialMenuScreen\"," +
             "\"timeMs\":" + timeMs + "," +
             "\"player\":\"" + com.devmod.telemetry.TelemetryJson.escape(playerName) + "\"}";
 
@@ -366,7 +366,7 @@ public final class RadialMenuScreenV3 extends Screen {
 
         String line = "{\"ts\":\"" + java.time.Instant.now() + "\"," +
             "\"type\":\"radial_menu_closed\"," +
-            "\"screenId\":\"RadialMenuScreenV3\"," +
+            "\"screenId\":\"RadialMenuScreen\"," +
             "\"actionsExecuted\":" + actionsExecutedCount + "," +
             "\"durationMs\":" + durationMs + "," +
             "\"player\":\"" + com.devmod.telemetry.TelemetryJson.escape(playerName) + "\"}";

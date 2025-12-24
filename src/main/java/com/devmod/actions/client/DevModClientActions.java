@@ -161,7 +161,7 @@ public final class DevModClientActions {
             .menuPath("Root/Home")
             .icon(Items.COMPASS)
             .precondition(ActionPreconditions.clientOnly().and(ActionPreconditions.screenClosed()))
-            .handler(context -> Minecraft.getInstance().setScreen(new com.devmod.ui.radial.RadialMenuScreenV3()))
+            .handler(context -> Minecraft.getInstance().setScreen(new com.devmod.ui.radial.RadialMenuScreen()))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_SETTINGS_OPEN)

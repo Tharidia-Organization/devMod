@@ -10,7 +10,7 @@ import java.util.regex.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Comprehensive test suite for the RadialMenuScreenV3 Macro-Category System.
+ * Comprehensive test suite for the RadialMenuScreen Macro-Category System.
  *
  * Tests are organized incrementally:
  * - L0: Smoke tests (enum exists, basic structure)
@@ -34,7 +34,7 @@ class RadialMenuMacroCategoryTest {
     private static String animatorSourceCode;
     private static String registrySourceCode;
     private static final Path SCREEN_SOURCE_PATH = Paths.get(
-        "src/main/java/com/devmod/ui/radial/RadialMenuScreenV3.java");
+        "src/main/java/com/devmod/ui/radial/RadialMenuScreen.java");
     private static final Path MACRO_CATEGORY_SOURCE_PATH = Paths.get(
         "src/main/java/com/devmod/ui/radial/model/MacroCategory.java");
     private static final Path HUB_RENDERER_SOURCE_PATH = Paths.get(
@@ -105,7 +105,7 @@ class RadialMenuMacroCategoryTest {
         }
 
         @Test
-        @DisplayName("L0-04: RadialMenuScreenV3 has macroCategoryMap field")
+        @DisplayName("L0-04: RadialMenuScreen has macroCategoryMap field")
         void hasMacroCategoryMapField() {
             assertTrue(screenSourceCode.contains("macroCategoryMap"),
                 "macroCategoryMap field should exist");
@@ -114,7 +114,7 @@ class RadialMenuMacroCategoryTest {
         }
 
         @Test
-        @DisplayName("L0-05: RadialMenuScreenV3 has selectedMacro static field")
+        @DisplayName("L0-05: RadialMenuScreen has selectedMacro static field")
         void hasSelectedMacroField() {
             Pattern pattern = Pattern.compile("private\\s+static\\s+MacroCategory\\s+selectedMacro");
             assertTrue(pattern.matcher(screenSourceCode).find(),
@@ -250,7 +250,7 @@ class RadialMenuMacroCategoryTest {
     class L2DistributionTests {
 
         @Test
-        @DisplayName("L2-01: RadialMenuScreenV3 has macroHubRadius field")
+        @DisplayName("L2-01: RadialMenuScreen has macroHubRadius field")
         void hasMacroHubRadiusField() {
             assertTrue(screenSourceCode.contains("macroHubRadius"),
                 "macroHubRadius field should exist for center hub sizing");
@@ -259,7 +259,7 @@ class RadialMenuMacroCategoryTest {
         }
 
         @Test
-        @DisplayName("L2-02: RadialMenuScreenV3 has hoveredMacro field")
+        @DisplayName("L2-02: RadialMenuScreen has hoveredMacro field")
         void hasHoveredMacroField() {
             assertTrue(screenSourceCode.contains("MacroCategory hoveredMacro"),
                 "hoveredMacro field should exist for hover detection");
@@ -280,7 +280,7 @@ class RadialMenuMacroCategoryTest {
         }
 
         @Test
-        @DisplayName("L2-05: RadialMenuScreenV3 has getActiveCategories method")
+        @DisplayName("L2-05: RadialMenuScreen has getActiveCategories method")
         void hasGetActiveCategoriesMethod() {
             assertTrue(screenSourceCode.contains("private List<RadialCategory> getActiveCategories()"),
                 "getActiveCategories method should exist");

@@ -45,7 +45,7 @@ import com.devmod.ui.editor.systems.TemplateOverlay;
 import com.devmod.ui.editor.systems.PresetSelectorOverlay;
 import com.devmod.ui.editor.systems.DebugPanel;
 import com.devmod.ui.editor.debug.DebugOverlay;
-import com.devmod.network.ArmorStatsPayloadV2;
+import com.devmod.network.ArmorStatsPayload;
 import com.devmod.network.EditorApplyConfirmPayload;
 import com.devmod.util.DatapackIO;
 import com.devmod.integration.PufferfishCompat;
@@ -1539,7 +1539,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                     };
                 }
                 ItemStack armorItem = Objects.requireNonNull(armorModule.getItem(), "armor item");
-                payload = new ArmorStatsPayloadV2(Objects.requireNonNull(armorItem.copy()), statsTag, isGlobalMode(), slotIndex);
+                payload = new ArmorStatsPayload(Objects.requireNonNull(armorItem.copy()), statsTag, isGlobalMode(), slotIndex);
             } else {
                 payload = activeModule.buildPayload(isGlobalMode());
             }
@@ -2122,26 +2122,26 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             var tag = Objects.requireNonNull(custom.copyTag(), CUSTOM_TAG_MISSING);
             if (tag.contains(WEAPON_STATS_KEY)) {
                 CompoundTag statsTag = Objects.requireNonNull(tag.getCompound(WEAPON_STATS_KEY), WEAPON_STATS_MISSING);
-                // Use WeaponStatsPayloadV2 for proper server-side handling
-                // Note: WeaponStatsPayloadV2 doesn't have slot parameter, item is matched by type
+                // Use WeaponStatsPayload for proper server-side handling
+                // Note: WeaponStatsPayload doesn't have slot parameter, item is matched by type
                 CompoundTag fullTag = new CompoundTag();
                 fullTag.put(WEAPON_STATS_KEY, Objects.requireNonNull(statsTag.copy()));
                 ItemStack itemCopy = Objects.requireNonNull(item.copy());
                 PacketDistributor.sendToServer(
-                    new com.devmod.network.WeaponStatsPayloadV2(itemCopy, fullTag, isGlobalMode())
+                    new com.devmod.network.WeaponStatsPayload(itemCopy, fullTag, isGlobalMode())
                 );
             } else if (tag.contains(ARMOR_STATS_KEY) || tag.contains(ARMOR_STATS_COMPONENT_KEY)) {
                 // Prefer armor_stats_component if available, fallback to ArmorModStats
                 CompoundTag statsTag = tag.contains(ARMOR_STATS_COMPONENT_KEY)
                     ? Objects.requireNonNull(tag.getCompound(ARMOR_STATS_COMPONENT_KEY), ARMOR_STATS_MISSING)
                     : Objects.requireNonNull(tag.getCompound(ARMOR_STATS_KEY), ARMOR_STATS_MISSING);
-                // Use ArmorStatsPayloadV2 with slot info for proper server-side handling
+                // Use ArmorStatsPayload with slot info for proper server-side handling
                 CompoundTag fullTag = new CompoundTag();
                 fullTag.put(ARMOR_STATS_KEY, Objects.requireNonNull(statsTag.copy()));
                 fullTag.put(ARMOR_STATS_COMPONENT_KEY, Objects.requireNonNull(statsTag.copy()));
                 ItemStack itemCopy = Objects.requireNonNull(item.copy());
                 PacketDistributor.sendToServer(
-                    new ArmorStatsPayloadV2(itemCopy, fullTag, isGlobalMode(), slot)
+                    new ArmorStatsPayload(itemCopy, fullTag, isGlobalMode(), slot)
                 );
             }
             if (debugPanel != null) {

@@ -36,7 +36,7 @@ public class ClientUiBridgeImpl implements ClientUiBridge {
 
     @Override
     public void openRadialMenu() {
-        mc().setScreen(new com.devmod.ui.radial.RadialMenuScreenV3());
+        mc().setScreen(new com.devmod.ui.radial.RadialMenuScreen());
     }
 
     @Override
