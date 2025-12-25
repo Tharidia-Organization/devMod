@@ -1,14 +1,5 @@
 package com.devmod.runtime;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtIo;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.GameType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,6 +7,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.GameType;
 
 /**
  * Complete snapshot of a player's state before entering an instance.
@@ -30,6 +31,7 @@ public class PlayerInstanceSnapshot {
 
     // === Identifiers ===
     private final UUID playerId;
+    @Nullable
     private UUID instanceId;  // May be null during PREPARING state
     private final long createdAt;
     private long lastUpdated;
@@ -38,6 +40,7 @@ public class PlayerInstanceSnapshot {
     private PlayerInstanceState state;
 
     // === Original Position (for return) ===
+    @Nullable
     private ResourceLocation originalDimension;
     private double originalX;
     private double originalY;
@@ -46,21 +49,27 @@ public class PlayerInstanceSnapshot {
     private float originalPitch;
 
     // === Complete Player State ===
+    @Nullable
     private CompoundTag inventoryNBT;
+    @Nullable
     private CompoundTag enderChestNBT;
+    @Nullable
     private GameType originalGameMode;
     private float originalHealth;
     private float originalMaxHealth;
     private int originalFoodLevel;
     private float originalSaturation;
     private float originalExhaustion;
+    @Nullable
     private CompoundTag potionEffectsNBT;
     private int originalExperienceLevel;
     private float originalExperienceProgress;
     private int originalTotalExperience;
 
     // === Quest Metadata ===
+    @Nullable
     private String questType;
+    @Nullable
     private ResourceLocation mobId;
     private int targetWaves;
     private boolean endlessMode;
@@ -380,8 +389,9 @@ public class PlayerInstanceSnapshot {
 
         // Identifiers
         tag.putUUID("playerId", Objects.requireNonNull(playerId, "playerId"));
-        if (instanceId != null) {
-            tag.putUUID("instanceId", instanceId);
+        UUID currentInstanceId = instanceId;
+        if (currentInstanceId != null) {
+            tag.putUUID("instanceId", currentInstanceId);
         }
         tag.putLong("createdAt", createdAt);
         tag.putLong("lastUpdated", lastUpdated);
@@ -390,8 +400,9 @@ public class PlayerInstanceSnapshot {
         tag.putString("state", Objects.requireNonNull(state.name(), "state"));
 
         // Position
-        if (originalDimension != null) {
-            tag.putString("dimension", Objects.requireNonNull(originalDimension.toString(), "dimension"));
+        ResourceLocation dimension = originalDimension;
+        if (dimension != null) {
+            tag.putString("dimension", Objects.requireNonNull(dimension.toString(), "dimension"));
         }
         tag.putDouble("x", originalX);
         tag.putDouble("y", originalY);
@@ -400,16 +411,19 @@ public class PlayerInstanceSnapshot {
         tag.putFloat("pitch", originalPitch);
 
         // Inventory
-        if (inventoryNBT != null) {
-            tag.put("inventory", inventoryNBT);
+        CompoundTag inventory = inventoryNBT;
+        if (inventory != null) {
+            tag.put("inventory", inventory);
         }
-        if (enderChestNBT != null) {
-            tag.put("enderChest", enderChestNBT);
+        CompoundTag enderChest = enderChestNBT;
+        if (enderChest != null) {
+            tag.put("enderChest", enderChest);
         }
 
         // Stats
-        if (originalGameMode != null) {
-            tag.putString("gameMode", Objects.requireNonNull(originalGameMode.name(), "gameMode"));
+        GameType gameMode = originalGameMode;
+        if (gameMode != null) {
+            tag.putString("gameMode", Objects.requireNonNull(gameMode.name(), "gameMode"));
         }
         tag.putFloat("health", originalHealth);
         tag.putFloat("maxHealth", originalMaxHealth);
@@ -417,8 +431,9 @@ public class PlayerInstanceSnapshot {
         tag.putFloat("saturation", originalSaturation);
         tag.putFloat("exhaustion", originalExhaustion);
 
-        if (potionEffectsNBT != null) {
-            tag.put("effects", potionEffectsNBT);
+        CompoundTag effects = potionEffectsNBT;
+        if (effects != null) {
+            tag.put("effects", effects);
         }
 
         tag.putInt("xpLevel", originalExperienceLevel);
@@ -426,18 +441,21 @@ public class PlayerInstanceSnapshot {
         tag.putInt("xpTotal", originalTotalExperience);
 
         // Quest
-        if (questType != null) {
-            tag.putString("questType", questType);
+        String currentQuestType = questType;
+        if (currentQuestType != null) {
+            tag.putString("questType", currentQuestType);
         }
-        if (mobId != null) {
-            tag.putString("mobId", Objects.requireNonNull(mobId.toString(), "mobId"));
+        ResourceLocation currentMobId = mobId;
+        if (currentMobId != null) {
+            tag.putString("mobId", Objects.requireNonNull(currentMobId.toString(), "mobId"));
         }
         tag.putInt("targetWaves", targetWaves);
         tag.putBoolean("endlessMode", endlessMode);
 
         // Party
-        if (partyLeaderId != null) {
-            tag.putUUID("partyLeader", partyLeaderId);
+        UUID leaderId = partyLeaderId;
+        if (leaderId != null) {
+            tag.putUUID("partyLeader", leaderId);
         }
         if (!partyMembers.isEmpty()) {
             ListTag memberList = new ListTag();
@@ -450,12 +468,14 @@ public class PlayerInstanceSnapshot {
         }
 
         // Arena Template Recovery (Fase 1)
-        if (templateId != null) {
-            tag.putString("templateId", templateId);
+        String currentTemplateId = templateId;
+        if (currentTemplateId != null) {
+            tag.putString("templateId", currentTemplateId);
         }
         tag.putInt("templateVersion", templateVersion);
-        if (policyId != null) {
-            tag.putString("policyId", policyId);
+        String currentPolicyId = policyId;
+        if (currentPolicyId != null) {
+            tag.putString("policyId", currentPolicyId);
         }
         tag.putInt("policyVersion", policyVersion);
 
@@ -592,6 +612,9 @@ public class PlayerInstanceSnapshot {
 
     @Override
     public String toString() {
+        UUID leaderId = partyLeaderId;
+        String currentTemplateId = templateId;
+        String currentPolicyId = policyId;
         return "PlayerInstanceSnapshot{" +
             "playerId=" + playerId +
             ", instanceId=" + instanceId +
@@ -599,9 +622,9 @@ public class PlayerInstanceSnapshot {
             ", dimension=" + originalDimension +
             ", pos=(" + originalX + ", " + originalY + ", " + originalZ + ")" +
             ", quest=" + questType +
-            ", party=" + (partyLeaderId != null ? "yes" : "no") +
-            ", template=" + (templateId != null ? templateId + "v" + templateVersion : "none") +
-            ", policy=" + (policyId != null ? policyId + "v" + policyVersion : "none") +
+            ", party=" + (leaderId != null ? "yes" : "no") +
+            ", template=" + (currentTemplateId != null ? currentTemplateId + "v" + templateVersion : "none") +
+            ", policy=" + (currentPolicyId != null ? currentPolicyId + "v" + policyVersion : "none") +
             '}';
     }
 }

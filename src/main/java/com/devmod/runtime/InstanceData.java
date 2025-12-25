@@ -1,16 +1,25 @@
 package com.devmod.runtime;
 
-import com.devmod.endurance.QuestType;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import com.devmod.endurance.QuestType;
 
 /**
  * Data for a single instance dimension.
@@ -21,6 +30,7 @@ public class InstanceData {
 
     // === Identifiers ===
     private final UUID instanceId;
+    @Nullable
     private ResourceKey<Level> dimensionKey;
     private final long createdAt;
 
@@ -33,8 +43,10 @@ public class InstanceData {
     private final UUID ownerId;  // Player who created the instance
 
     // === Arena ===
+    @Nullable
     private BlockPos arenaCenter;
     private int arenaRadius;
+    @Nullable
     private String arenaTemplate;
     private int arenaTemplateVersion;
     @Nullable
@@ -42,6 +54,7 @@ public class InstanceData {
     private int arenaPolicyVersion;
 
     // === Quest State ===
+    @Nullable
     private ResourceLocation questMobId;
     private int currentWave;
     private int totalWaves;
@@ -251,7 +264,7 @@ public class InstanceData {
         return dimensionKey;
     }
 
-    public void setDimensionKey(ResourceKey<Level> key) {
+    public void setDimensionKey(@Nullable ResourceKey<Level> key) {
         this.dimensionKey = key;
     }
 
@@ -372,8 +385,9 @@ public class InstanceData {
         map.put("createdAt", createdAt);
         map.put("state", state.name());
 
-        if (dimensionKey != null) {
-            map.put("dimension", dimensionKey.location().toString());
+        ResourceKey<Level> key = dimensionKey;
+        if (key != null) {
+            map.put("dimension", key.location().toString());
         }
 
         List<String> playerIds = new ArrayList<>();
@@ -382,27 +396,31 @@ public class InstanceData {
         }
         map.put("players", playerIds);
 
-        if (arenaCenter != null) {
-            map.put("arenaX", arenaCenter.getX());
-            map.put("arenaY", arenaCenter.getY());
-            map.put("arenaZ", arenaCenter.getZ());
+        BlockPos center = arenaCenter;
+        if (center != null) {
+            map.put("arenaX", center.getX());
+            map.put("arenaY", center.getY());
+            map.put("arenaZ", center.getZ());
             map.put("arenaRadius", arenaRadius);
         }
-        if (arenaTemplate != null) {
-            map.put("arenaTemplate", arenaTemplate);
+        String template = arenaTemplate;
+        if (template != null) {
+            map.put("arenaTemplate", template);
         }
         if (arenaTemplateVersion > 0) {
             map.put("arenaTemplateVersion", arenaTemplateVersion);
         }
-        if (arenaPolicyId != null) {
-            map.put("arenaPolicyId", arenaPolicyId);
+        String policyId = arenaPolicyId;
+        if (policyId != null) {
+            map.put("arenaPolicyId", policyId);
         }
         if (arenaPolicyVersion > 0) {
             map.put("arenaPolicyVersion", arenaPolicyVersion);
         }
 
-        if (questMobId != null) {
-            map.put("questMob", questMobId.toString());
+        ResourceLocation mobId = questMobId;
+        if (mobId != null) {
+            map.put("questMob", mobId.toString());
             map.put("currentWave", currentWave);
             map.put("totalWaves", totalWaves);
             map.put("questStartTime", questStartTime);
