@@ -48,14 +48,13 @@ public class DevModClient {
 
     @SubscribeEvent
     static void onClientSetup(FMLClientSetupEvent event) {
-        // Some client setup code
         DevMod.LOGGER.info("HELLO FROM CLIENT SETUP");
         DevMod.LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
 
         // Initialize client-side mod compatibility modules
         ModIntegrationManager.initClient();
 
-        // Load persistent settings
+        // Load persistent settings on the client thread to avoid race conditions during startup.
         event.enqueueWork(() -> {
             SettingsManager.INSTANCE.load();
             DevMod.LOGGER.info("[DevMod] Settings loaded from disk");

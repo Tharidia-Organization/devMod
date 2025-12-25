@@ -13,3 +13,7 @@
 ## Batch 3 - Logging Standardization
 - Added errorId and common context IDs to console alert payloads for traceable logs.
 - Touched files: src/main/java/com/devmod/arena/alert/ConsoleAlertChannel.java.
+
+## Batch 4 - Comment Cleanup + Invariants
+- Removed a redundant comment and replaced it with a rationale about client-thread execution.
+- Touched files: src/main/java/com/devmod/client/DevModClient.java.
