@@ -1,6 +1,9 @@
 package com.devmod.arena.alert;
 
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -41,8 +44,10 @@ public class ConsoleAlertChannel implements AlertRouter.AlertChannel {
         String timestamp = context.timestamp() != null ? TS_FORMAT.format(context.timestamp()) : "unknown";
         String message = context.message() != null ? context.message() : "";
         String component = context.component() != null ? context.component() : "unknown";
-        String payload = String.format("[%s][%s][%s] %s",
-            timestamp, context.severity(), component, message);
+        String errorId = context.errorId() != null ? context.errorId().toString() : "unknown";
+        String contextIds = formatContextIds(context.metadata());
+        String payload = String.format("[%s][%s][%s][%s] %s%s",
+            timestamp, context.severity(), errorId, component, message, contextIds);
 
         if (context.severity() == ErrorContext.Severity.ERROR
             || context.severity() == ErrorContext.Severity.CRITICAL) {
@@ -56,5 +61,34 @@ public class ConsoleAlertChannel implements AlertRouter.AlertChannel {
         }
 
         return true;
+    }
+
+    private static String formatContextIds(Map<String, Object> metadata) {
+        if (metadata == null || metadata.isEmpty()) {
+            return "";
+        }
+
+        List<String> parts = new ArrayList<>();
+        Object templateId = metadata.get("templateId");
+        if (templateId != null) {
+            parts.add("templateId=" + templateId);
+        }
+        Object instanceId = metadata.get("instanceId");
+        if (instanceId != null) {
+            parts.add("instanceId=" + instanceId);
+        }
+        Object playerId = metadata.get("playerId");
+        if (playerId != null) {
+            parts.add("playerId=" + playerId);
+        }
+        Object arenaId = metadata.get("arenaId");
+        if (arenaId != null) {
+            parts.add("arenaId=" + arenaId);
+        }
+
+        if (parts.isEmpty()) {
+            return "";
+        }
+        return " (" + String.join(", ", parts) + ")";
     }
 }

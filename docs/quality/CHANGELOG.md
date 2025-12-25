@@ -9,3 +9,7 @@
 - Annotated nullable fields and tightened nullable contracts where getters already return @Nullable.
 - Copied @Nullable fields into locals before checks during serialization to avoid inconsistent reads.
 - Touched files: src/main/java/com/devmod/runtime/InstanceData.java, src/main/java/com/devmod/runtime/PlayerInstanceSnapshot.java.
+
+## Batch 3 - Logging Standardization
+- Added errorId and common context IDs to console alert payloads for traceable logs.
+- Touched files: src/main/java/com/devmod/arena/alert/ConsoleAlertChannel.java.
