@@ -79,8 +79,9 @@ public class InstanceRegistry {
         instances.put(instance.getInstanceId(), instance);
 
         // Index by dimension if set
-        if (instance.getDimensionKey() != null) {
-            dimensionToInstance.put(instance.getDimensionKey(), instance.getInstanceId());
+        ResourceKey<Level> dimensionKey = instance.getDimensionKey();
+        if (dimensionKey != null) {
+            dimensionToInstance.put(dimensionKey, instance.getInstanceId());
         }
 
         dirty = true;
@@ -101,8 +102,9 @@ public class InstanceRegistry {
         InstanceData instance = instances.remove(instanceId);
         if (instance != null) {
             // Remove from indices
-            if (instance.getDimensionKey() != null) {
-                dimensionToInstance.remove(instance.getDimensionKey());
+            ResourceKey<Level> dimensionKey = instance.getDimensionKey();
+            if (dimensionKey != null) {
+                dimensionToInstance.remove(dimensionKey);
             }
 
             // Remove all player mappings
@@ -141,8 +143,9 @@ public class InstanceRegistry {
         InstanceData instance = instances.get(instanceId);
         if (instance != null) {
             // Remove old mapping if exists
-            if (instance.getDimensionKey() != null) {
-                dimensionToInstance.remove(instance.getDimensionKey());
+            ResourceKey<Level> existingKey = instance.getDimensionKey();
+            if (existingKey != null) {
+                dimensionToInstance.remove(existingKey);
             }
 
             instance.setDimensionKey(dimensionKey);

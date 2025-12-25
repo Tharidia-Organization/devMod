@@ -510,7 +510,8 @@ public class PartyData {
      * @return The selected mob ID, or minecraft:zombie if none selected
      */
     public ResourceLocation getEffectiveMobId() {
-        return selectedMobId != null ? selectedMobId : ResourceLocation.withDefaultNamespace("zombie");
+        ResourceLocation mobId = selectedMobId;
+        return mobId != null ? mobId : ResourceLocation.withDefaultNamespace("zombie");
     }
 
     public PartyState getState() {

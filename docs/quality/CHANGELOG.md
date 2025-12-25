@@ -38,3 +38,7 @@
 ## Batch 8 - Imports / Order / Unused (Round 2)
 - Reordered imports to match project grouping rules and replaced wildcard imports with explicit lists.
 - Touched files: src/main/java/com/devmod/party/PartyManager.java, src/main/java/com/devmod/party/PartyData.java, src/main/java/com/devmod/runtime/InstanceRegistry.java, src/main/java/com/devmod/config/GameplayOverridesManager.java, src/main/java/com/devmod/network/RecipeSyncPayload.java, src/main/java/com/devmod/network/RecipeClientSyncPayload.java, src/main/java/com/devmod/recipe/RecipeConfigManager.java, src/main/java/com/devmod/collision/bodypart/BodyPartHierarchy.java.
+
+## Batch 9 - Null-safety (Round 2)
+- Cached nullable reads before checks to avoid inconsistent access.
+- Touched files: src/main/java/com/devmod/party/PartyData.java, src/main/java/com/devmod/runtime/InstanceRegistry.java.
