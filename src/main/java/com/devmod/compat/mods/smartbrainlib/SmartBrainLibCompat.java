@@ -159,6 +159,7 @@ public class SmartBrainLibCompat implements CompatModule {
      * @param entity The entity
      * @return Map of AI state info
      */
+    @SuppressWarnings("deprecation") // Brain.getRunningBehaviors/getMemories - no replacement available
     public static Map<String, Object> getAiStatus(LivingEntity entity) {
         Map<String, Object> status = new LinkedHashMap<>();
 

@@ -1,6 +1,7 @@
 package com.devmod.endurance;
 
 import com.devmod.arena.policy.ArenaPolicy;
+import com.devmod.endurance.config.EnduranceConfigManager;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,7 +12,17 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
@@ -31,6 +42,22 @@ public class PerkSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(PerkSystem.class);
 
     public static final PerkSystem INSTANCE = new PerkSystem();
+
+    // Config manager reference
+    private final EnduranceConfigManager config = EnduranceConfigManager.INSTANCE;
+
+    /**
+     * Get tier weight from config for a specific quest.
+     */
+    private int getTierWeight(PerkTier tier, UUID questId) {
+        return switch (tier) {
+            case COMMON -> config.getPerkCommonWeight(questId);
+            case UNCOMMON -> config.getPerkUncommonWeight(questId);
+            case RARE -> config.getPerkRareWeight(questId);
+            case EPIC -> config.getPerkEpicWeight(questId);
+            case LEGENDARY -> config.getPerkLegendaryWeight(questId);
+        };
+    }
 
     // All available perks
     private final Map<String, Perk> allPerks = new LinkedHashMap<>();
@@ -531,6 +558,102 @@ public class PerkSystem {
             },
             null, null, null, null));
 
+        // ═══════════════════════════════════════════════════════════════
+        // TRANSFORMATIVE PERKS - Fundamentally change playstyle
+        // ═══════════════════════════════════════════════════════════════
+
+        // 1. ECHO STRIKE - Attacks create a delayed echo that hits again
+        registerPerk(new Perk("echo_strike", "Echo Strike",
+            "Your attacks create an echo that repeats 50% damage after 0.5s",
+            PerkTier.EPIC, PerkCategory.OFFENSE, null, false, 1,
+            Set.of(), Set.of("glass_cannon"),
+            null, // Applied via combat system
+            null, null, null, null));
+
+        // 2. BULLET TIME - Time slows when you're in danger
+        registerPerk(new Perk("bullet_time", "Bullet Time",
+            "Below 30% HP: nearby enemies move 50% slower",
+            PerkTier.RARE, PerkCategory.DEFENSE, null, false, 1,
+            Set.of(), Set.of(),
+            null, // Applied via tick processing
+            null, null, null, null));
+
+        // 3. UNSTOPPABLE FORCE - Become an immovable object
+        registerPerk(new Perk("unstoppable_force", "Unstoppable Force",
+            "Immune to knockback. Charging through enemies damages them",
+            PerkTier.RARE, PerkCategory.DEFENSE, null, false, 1,
+            Set.of(), Set.of(),
+            ctx -> {
+                // Remove knockback vulnerability
+                var attr = ctx.player.getAttribute(Attributes.KNOCKBACK_RESISTANCE);
+                if (attr != null) {
+                    ResourceLocation modId = ResourceLocation.fromNamespaceAndPath("devmod", "unstoppable_force");
+                    AttributeModifier modifier = new AttributeModifier(modId, 1.0, AttributeModifier.Operation.ADD_VALUE);
+                    attr.addTransientModifier(modifier);
+                    ctx.session.addAppliedModifier(modifier);
+                }
+            },
+            null, null, null, null));
+
+        // 4. CHAIN REACTION - Kills create explosions after a delay
+        registerPerk(new Perk("chain_reaction", "Chain Reaction",
+            "Killed enemies explode after 1s, damaging nearby foes",
+            PerkTier.EPIC, PerkCategory.OFFENSE, null, false, 1,
+            Set.of(), Set.of(),
+            null, // Applied via kill processing
+            null, null, null, null));
+
+        // 5. BLOOD PACT - Link your fate to allies
+        registerPerk(new Perk("blood_pact", "Blood Pact",
+            "Damage is split with nearby party members. Healing is shared",
+            PerkTier.LEGENDARY, PerkCategory.DEFENSE, null, false, 1,
+            Set.of(), Set.of("glass_cannon"),
+            null, // Applied via damage/heal events
+            null, null, null, null));
+
+        // 6. PHANTOM SHIFT - Periodically become intangible
+        registerPerk(new Perk("phantom_shift", "Phantom Shift",
+            "Every 10s, become invulnerable for 2s. Can't attack during",
+            PerkTier.EPIC, PerkCategory.DEFENSE, null, false, 1,
+            Set.of(), Set.of(),
+            null, // Applied via tick processing
+            null, null, null, null));
+
+        // 7. SOUL HARVEST - Kills empower your next attack
+        registerPerk(new Perk("soul_harvest", "Soul Harvest",
+            "Each kill stores a soul (max 10). Use all for massive attack",
+            PerkTier.LEGENDARY, PerkCategory.OFFENSE, null, false, 1,
+            Set.of(), Set.of(),
+            null, // Tracked via kill counter
+            null, null, null, null));
+
+        // 8. REVENGE - Taking damage makes you stronger
+        registerPerk(new Perk("revenge", "Revenge",
+            "Each hit taken grants +20% damage for 5s (stacks 5x)",
+            PerkTier.RARE, PerkCategory.OFFENSE, null, false, 1,
+            Set.of(), Set.of(),
+            null, // Applied via damage taken event
+            null, null, null,
+            ctx -> {
+                // Add revenge buff (handled by combat system)
+            }));
+
+        // 9. EXECUTIONER'S WRATH - Low HP enemies take massive damage
+        registerPerk(new Perk("executioners_wrath", "Executioner's Wrath",
+            "Enemies below 25% HP take 3x damage from you",
+            PerkTier.EPIC, PerkCategory.OFFENSE, null, false, 1,
+            Set.of(), Set.of(),
+            null, // Applied via damage calculation
+            null, null, null, null));
+
+        // 10. ADRENALINE SURGE - Near-death grants temporary god mode
+        registerPerk(new Perk("adrenaline_surge", "Adrenaline Surge",
+            "Dropping below 10% HP: 3s invincibility + full heal over time",
+            PerkTier.LEGENDARY, PerkCategory.DEFENSE, null, false, 1,
+            Set.of(), Set.of("ultimate_curse"),
+            null, // Synergizes with ComebackSystem
+            null, null, null, null));
+
         LOGGER.info("[PerkSystem] Registered {} perks", allPerks.size());
     }
 
@@ -758,11 +881,15 @@ public class PerkSystem {
     private Perk selectWeightedPerk(List<Perk> perks, int waveNumber, @javax.annotation.Nullable PerkSession session) {
         if (perks.isEmpty()) return null;
 
+        // Get quest ID for config lookup
+        UUID questId = session != null ? session.getQuestId() : null;
+
         // Calculate total weight
         int totalWeight = 0;
         for (Perk perk : perks) {
             // Higher waves increase rare perk chances
-            int weight = perk.tier.weight;
+            // Use config-aware weight if quest context available, otherwise fall back to enum default
+            int weight = questId != null ? getTierWeight(perk.tier, questId) : perk.tier.weight;
             if (waveNumber >= 5) weight *= (perk.tier.ordinal() + 1);
             if (session != null && session.isSuggested(perk.id)) {
                 weight = (int) Math.ceil(weight * 1.5);
@@ -774,7 +901,7 @@ public class PerkSystem {
         int roll = random.nextInt(totalWeight);
         int cumulative = 0;
         for (Perk perk : perks) {
-            int weight = perk.tier.weight;
+            int weight = questId != null ? getTierWeight(perk.tier, questId) : perk.tier.weight;
             if (waveNumber >= 5) weight *= (perk.tier.ordinal() + 1);
             if (session != null && session.isSuggested(perk.id)) {
                 weight = (int) Math.ceil(weight * 1.5);

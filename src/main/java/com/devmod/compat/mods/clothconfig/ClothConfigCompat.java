@@ -62,6 +62,12 @@ public class ClothConfigCompat implements CompatModule {
         if (initialized) return;
         initialized = true;
 
+        if (FMLEnvironment.dist != Dist.CLIENT) {
+            available = false;
+            LOGGER.debug("[Compat:cloth_config] Skipping server dist initialization");
+            return;
+        }
+
         try {
             // Try to load Cloth Config classes via reflection
             configBuilderClass = Class.forName("me.shedaniel.clothconfig2.api.ConfigBuilder");

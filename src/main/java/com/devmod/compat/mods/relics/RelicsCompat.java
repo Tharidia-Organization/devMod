@@ -7,9 +7,11 @@ import net.minecraft.world.item.ItemStack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Compatibility module for Relics mod.
@@ -39,11 +41,7 @@ public class RelicsCompat implements CompatModule {
 
     // Cached reflection references
     private static Class<?> relicItemClass;
-    private static Class<?> relicDataClass;
-    private static Class<?> levelingDataClass;
     private static Method getRelicDataMethod;
-    private static Method getLevelMethod;
-    private static Method getExperienceMethod;
 
     @Override
     public String modId() {
@@ -97,22 +95,6 @@ public class RelicsCompat implements CompatModule {
                     break;
                 } catch (ClassNotFoundException ignored) {}
             }
-
-            // Try to find data classes
-            try {
-                relicDataClass = Class.forName(
-                    "it.hurts.sskirillss.relics.items.relics.base.data.RelicData");
-            } catch (ClassNotFoundException ignored) {
-                try {
-                    relicDataClass = Class.forName(
-                        "it.hurts.sskirillss.relics.api.data.RelicData");
-                } catch (ClassNotFoundException ignored2) {}
-            }
-
-            try {
-                levelingDataClass = Class.forName(
-                    "it.hurts.sskirillss.relics.items.relics.base.data.leveling.LevelingData");
-            } catch (ClassNotFoundException ignored) {}
 
             // Get methods
             if (relicItemClass != null) {
