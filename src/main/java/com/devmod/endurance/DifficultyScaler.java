@@ -26,7 +26,6 @@ public class DifficultyScaler {
     private static final float MAX_BOSS_HP_SCALE = 10.0f;  // Cap at 10x HP
 
     private DifficultyScaler() {
-        // Singleton
     }
 
     // === Mob Count Scaling ===

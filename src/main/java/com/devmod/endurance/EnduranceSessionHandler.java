@@ -1,5 +1,6 @@
 package com.devmod.endurance;
 
+import com.devmod.endurance.config.EnduranceConfigManager;
 import com.devmod.runtime.DynamicDimensionManager;
 import com.devmod.runtime.RecoverySystem;
 import com.devmod.party.QuestSequencePayload;
@@ -21,6 +22,8 @@ import java.util.UUID;
 /**
  * Handles active quest session lifecycle events.
  * Manages abandoning, death handling, respawn choices, and wave completion.
+ *
+ * Invariant: execute on the server thread; cleanup order matters because arena systems must stop before teleport.
  */
 public class EnduranceSessionHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceSessionHandler.class);
@@ -62,6 +65,10 @@ public class EnduranceSessionHandler {
             }
 
             session.getQuest().fail(true);
+
+            // Cleanup config overrides for this quest
+            EnduranceConfigManager.INSTANCE.cleanupQuest(session.getQuest().getQuestId());
+
             if (session.isRespawnCountdownActive()) {
                 EnduranceTelemetryService.INSTANCE.recordGiveupDuringRespawn(session.getQuest().getQuestId());
             }
@@ -176,6 +183,10 @@ public class EnduranceSessionHandler {
             } else {
                 // End quest
                 activeSessions.remove(playerId);
+
+                // Cleanup config overrides for this quest
+                EnduranceConfigManager.INSTANCE.cleanupQuest(session.getQuest().getQuestId());
+
                 if (session.isRespawnCountdownActive()) {
                     EnduranceTelemetryService.INSTANCE.recordGiveupDuringRespawn(session.getQuest().getQuestId());
                 }
@@ -320,6 +331,9 @@ public class EnduranceSessionHandler {
                 // Quest fully completed!
                 activeSessions.remove(player.getUUID());
 
+                // Cleanup config overrides for this quest
+                EnduranceConfigManager.INSTANCE.cleanupQuest(session.getQuest().getQuestId());
+
                 // Cleanup wave state and boss fight systems FIRST
                 EndurancePlayerStateManager.INSTANCE.cleanupQuestSystems(session);
 
@@ -369,6 +383,9 @@ public class EnduranceSessionHandler {
         EnduranceQuestManager.ActiveQuestSession session = activeSessions.remove(playerId);
 
         if (session != null && session.getQuest().getState() == EnduranceQuestState.WAVE_COMPLETE) {
+            // Cleanup config overrides for this quest
+            EnduranceConfigManager.INSTANCE.cleanupQuest(session.getQuest().getQuestId());
+
             // Cleanup wave state and boss fight systems FIRST
             EndurancePlayerStateManager.INSTANCE.cleanupQuestSystems(session);
 

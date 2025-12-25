@@ -42,7 +42,6 @@ public class PartyManager {
     private final List<PartyEventListener> listeners = new ArrayList<>();
 
     private PartyManager() {
-        // Singleton
     }
 
     // === Party Creation ===

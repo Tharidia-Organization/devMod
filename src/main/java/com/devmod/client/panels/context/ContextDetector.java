@@ -42,7 +42,6 @@ public class ContextDetector {
     private final List<Consumer<ContextMode>> modeChangeListeners = new ArrayList<>();
 
     private ContextDetector() {
-        // Singleton
     }
 
     /**

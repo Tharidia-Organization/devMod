@@ -237,11 +237,50 @@
 
 ---
 
+## Batch 11: Final Wildcard Cleanup (2025-12-25)
+
+### Endurance Season & Tide
+- `SeasonPassSystem.java` - `java.util.*;` → 7 explicit imports
+- `TideManager.java` - `java.util.*;` → 4 explicit imports
+
+### Client Radial Menu
+- `RadialMenuScreen.java` - `java.util.*;` → 8 explicit imports (includes EnumMap, Stack)
+- `RadialMenuRegistry.java` - `java.util.*;` → 5 explicit imports
+
+### Client Editor
+- `VisualTesting.java` - `java.util.*;` → 2 explicit imports
+- `TemplateSystem.java` - `java.util.*;` → 6 explicit imports
+- `PresetRegistry.java` - `java.util.*;` → 8 explicit imports
+- `PresetBridge.java` - `java.util.*;` → 5 explicit imports
+
+### Endurance Core
+- `CombatTracker.java` - `java.util.*;` → 8 explicit imports
+- `DirectiveChainManager.java` - `java.util.*;` → 7 explicit imports
+- `PrestigeResetSystem.java` - `java.util.*;` → 6 explicit imports
+
+### Batch 11 Results
+- **11 additional files** cleaned
+- **15 remaining** wildcard imports (all acceptable)
+  - 10x `static PanelConstants.*;` (static constant imports)
+  - 2x `net.minecraft.world.item.crafting.*;` (external API)
+  - 2x `com.mojang.blaze3d.vertex.*;` (external API)
+  - 1x `com.devmod.arena.policy.ArenaPolicy.*;` (static enum values)
+- **Total reduction: 149 → 15 (90%)**
+- Build successful
+
+---
+
+## Batch 12: Comment Cleanup + Invariants (2025-12-25)
+
+### Files Modified
+- `EnduranceSessionHandler.java` - Added server-thread invariant note to class Javadoc
+- `PartyManager.java` - Removed trivial singleton constructor comment
+- `DifficultyScaler.java` - Removed trivial singleton constructor comment
+- `ContextDetector.java` - Removed trivial singleton constructor comment
+
+---
+
 ## Pending Batches
 
-### Batch 11: Comments (Pending)
-- Review TODO/FIXME comments
-- Add invariant comments to critical sections
-
-### Batch 12: Micro-refactor (Pending)
+### Batch 13: Micro-refactor (Pending)
 - Extract helpers only where significantly improves clarity
