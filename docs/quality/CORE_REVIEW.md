@@ -39,6 +39,11 @@ synchronized (this) {
 
 ## Analysis Notes
 
+## Additional Fixes Applied
+- EnduranceEventHandler: per-wave deaths for directive chains, cumulative totals for Perk Synergy Web discoveries, Devil's Bargain multiplier in wave rewards
+- EnduranceEventCombat: critical-kill tracking for daily challenges
+- RewardSystem: Devil's Bargain multiplier in quest rewards
+
 Several items flagged during initial analysis were confirmed as **false positives**:
 
 | Issue | Reason Not A Problem |
