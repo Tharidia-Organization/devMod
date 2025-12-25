@@ -62,3 +62,7 @@
 ## Batch 14 - Imports / Order / Unused (Fixups)
 - Added missing explicit imports after wildcard removal to restore compilation.
 - Touched files: src/main/java/com/devmod/config/GameplayOverridesManager.java, src/main/java/com/devmod/recipe/RecipeConfigManager.java, src/main/java/com/devmod/runtime/InstanceRegistry.java, src/main/java/com/devmod/collision/bodypart/BodyPartHierarchy.java.
+
+## Batch 15 - TideManager API Migration
+- Passed questId to TideManager hooks to remove deprecated calls.
+- Touched files: src/main/java/com/devmod/endurance/EnduranceEventCombat.java, src/main/java/com/devmod/endurance/EnduranceEventHandler.java.

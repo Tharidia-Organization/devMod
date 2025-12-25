@@ -1,6 +1,8 @@
 package com.devmod.endurance;
 
 import com.devmod.arena.api.ArenaHandle;
+import com.devmod.combat.signature.SoulImprintManager;
+import com.devmod.endurance.challenges.DailyChallengeManager;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -56,6 +58,14 @@ public class EnduranceEventCombat {
                 // Record in quest manager
                 EnduranceQuestManager.INSTANCE.recordDamageDealt(player, damage);
 
+                // Record damage for signature weapon imprint
+                SoulImprintManager.INSTANCE.recordDamage(player, damage);
+
+                // Check for headshot
+                if ("HEAD".equals(bodyPart)) {
+                    SoulImprintManager.INSTANCE.recordHeadshot(player);
+                }
+
                 // Process combo system - record hit
                 ComboSystem.ComboSession comboSession = comboSessions.get(playerId);
                 if (comboSession != null) {
@@ -69,6 +79,38 @@ public class EnduranceEventCombat {
                         actionType = ComboSystem.ActionType.LIGHT_ATTACK;
                     }
                     comboSession.registerAction(actionType, damage);
+
+                    // Update tension system with combo progress
+                    if (target instanceof Mob mob) {
+                        CompoundTag mobData = mob.getPersistentData();
+                        if (mobData.contains("endurance_quest_id")) {
+                            UUID questId = mobData.getUUID("endurance_quest_id");
+                            TensionSystem.INSTANCE.onComboUpdate(questId, comboSession.getCurrentCombo(), comboSession.getCurrentRank());
+                        }
+                    }
+                }
+
+                // Process resonance chain system (party combo synergy)
+                if (target instanceof Mob mob) {
+                    CompoundTag mobData = mob.getPersistentData();
+                    UUID resonanceQuestId = mobData.contains("endurance_quest_id") ?
+                        mobData.getUUID("endurance_quest_id") : null;
+
+                    if (resonanceQuestId != null) {
+                        var resonanceResult = com.devmod.endurance.resonance.ResonanceChainSystem.INSTANCE
+                            .recordHit(player, target, damage, resonanceQuestId);
+
+                        // Apply damage multiplier if resonance triggered
+                        if (resonanceResult.triggered()) {
+                            // Additional damage is applied as bonus hit
+                            float bonusDamage = damage * (resonanceResult.damageMultiplier() - 1.0f);
+                            if (bonusDamage > 0) {
+                                target.hurt(source, bonusDamage);
+                            }
+                            // Resonance chains reduce global tide
+                            com.devmod.endurance.tide.TideManager.INSTANCE.onResonance(playerId, resonanceQuestId);
+                        }
+                    }
                 }
 
                 // Process mutator effects
@@ -104,10 +146,26 @@ public class EnduranceEventCombat {
             if (session.isPresent()) {
                 UUID playerId = player.getUUID();
 
+                // Check if player is currently executing - interrupt it
+                if (com.devmod.combat.ExecutionSystem.INSTANCE.isExecuting(player)) {
+                    com.devmod.combat.ExecutionSystem.INSTANCE.interruptExecution(player);
+                }
+
                 // Note: damage reduction from perks should be applied in LivingDamageEvent.Pre
                 // Here we just track it for statistics
                 CombatTracker.INSTANCE.onPlayerTakesDamage(player, damage, source);
                 EnduranceQuestManager.INSTANCE.recordDamageTaken(player, damage);
+
+                // Check for Phoenix Rising comeback trigger
+                float currentHealth = player.getHealth();
+                float maxHealth = player.getMaxHealth();
+                float newHealthPercent = currentHealth / maxHealth;
+                float previousHealthPercent = (currentHealth + damage) / maxHealth;
+                ComebackSystem.INSTANCE.checkAndTrigger(player, newHealthPercent, previousHealthPercent);
+
+                // Notify tension system that player was hit (affects no-hit bonus)
+                UUID questId = session.get().getQuest().getQuestId();
+                TensionSystem.INSTANCE.onPlayerDamaged(questId);
 
                 // Combo penalty on getting hit
                 ComboSystem.ComboSession comboSession = comboSessions.get(playerId);
@@ -136,8 +194,18 @@ public class EnduranceEventCombat {
             EnduranceQuestManager.INSTANCE.getActiveSession(player);
 
         if (session.isPresent()) {
+            float damage = originalDamage;
+
+            // Apply execution vulnerability if interrupted recently
+            float vulnerabilityMult = com.devmod.combat.ExecutionSystem.getVulnerabilityMultiplier(player);
+            if (vulnerabilityMult > 1.0f) {
+                damage *= vulnerabilityMult;
+                LOGGER.debug("[Combat] Execution vulnerability: {} -> {} ({}x)",
+                    originalDamage, damage, vulnerabilityMult);
+            }
+
             // Apply perk damage reduction
-            return PerkSystem.INSTANCE.processDamageTaken(player, originalDamage);
+            return PerkSystem.INSTANCE.processDamageTaken(player, damage);
         }
         return originalDamage;
     }
@@ -152,6 +220,9 @@ public class EnduranceEventCombat {
     public static void handleCriticalHit(ServerPlayer player, Entity target, float damage) {
         if (isQuestMob(target)) {
             CombatTracker.INSTANCE.onCriticalHit(player, damage);
+
+            // Record for signature weapon imprint
+            SoulImprintManager.INSTANCE.recordCriticalHit(player);
 
             // Bonus combo points for critical hits
             UUID playerId = player.getUUID();
@@ -190,10 +261,44 @@ public class EnduranceEventCombat {
             // Record in combat tracker
             CombatTracker.INSTANCE.onMobKilled(player, entity);
 
+            // Check if this is a boss kill
+            boolean isBoss = data.getBoolean("endurance_is_boss");
+
+            // === NEMESIS EVOLUTION - Record boss defeat for player profile ===
+            if (isBoss && entity instanceof Mob) {
+                com.devmod.endurance.nemesis.NemesisEvolutionManager.INSTANCE.recordBossDefeat(entity.getUUID());
+                // Also reduce global tide when boss is killed
+                com.devmod.endurance.tide.TideManager.INSTANCE.onBossKilled(entity.getUUID(), questId);
+            }
+
+            // Record kill for signature weapon imprint
+            SoulImprintManager.INSTANCE.recordKill(player, entity, isBoss);
+
+            // Check for execute kill (target was below 10% health)
+            float targetHealthPercent = entity.getHealth() / entity.getMaxHealth();
+            if (targetHealthPercent <= 0.10f) {
+                SoulImprintManager.INSTANCE.recordExecuteKill(player);
+            }
+
             // Record kill in combo system
             ComboSystem.ComboSession comboSession = comboSessions.get(playerId);
             if (comboSession != null) {
                 comboSession.registerKill(false, 0); // Basic kill
+            }
+
+            // Process momentum gain from kill
+            MomentumTracker.MomentumResult momentumResult = MomentumTracker.INSTANCE.onPlayerKill(playerId);
+            if (momentumResult != null && momentumResult.stateChanged()) {
+                // State changed - could trigger sound/visual effects here
+                LOGGER.debug("[Momentum] Player {} state changed to {}", playerId, momentumResult.state());
+            }
+
+            // Track kill during Phoenix Rising for bonus rewards
+            ComebackSystem.INSTANCE.recordKill(playerId);
+
+            // Track kill for tension system (rapid kill streaks)
+            if (questId != null) {
+                TensionSystem.INSTANCE.onMobKill(questId);
             }
 
             // Record wave kill telemetry
@@ -216,6 +321,13 @@ public class EnduranceEventCombat {
 
             // Process perk on-kill effects (lifesteal, blood frenzy, etc.)
             PerkSystem.INSTANCE.processKill(player);
+
+            // Track daily challenge progress
+            boolean isCritical = source.is(net.minecraft.tags.DamageTypeTags.ALWAYS_KILLS_ARMOR_STANDS); // Approximate critical detection
+            DailyChallengeManager.INSTANCE.onMobKill(playerId, isCritical, isBoss);
+
+            // Track weekly challenge progress
+            com.devmod.endurance.challenges.WeeklyChallengeManager.INSTANCE.onMobKill(playerId, isBoss);
 
             // Notify wave manager
             if (arenaId != null) {
@@ -244,16 +356,25 @@ public class EnduranceEventCombat {
             EnduranceQuestManager.INSTANCE.getActiveSession(player);
 
         if (session.isPresent()) {
-            ArenaHandle handle = session.get().getArenaHandle();
+            EnduranceQuestManager.ActiveQuestSession activeSession = session.get();
+            UUID questId = activeSession.getQuest().getQuestId();
+            ArenaHandle handle = activeSession.getArenaHandle();
             if (handle != null) {
                 EnduranceTelemetryService.INSTANCE.recordDeathHeatmap(
-                    session.get().getQuest().getQuestId(),
+                    questId,
                     handle,
                     player.blockPosition(),
                     player.getUUID()
                 );
             }
             CombatTracker.INSTANCE.onPlayerDeath(player);
+
+            // Cleanup Phoenix Rising state
+            ComebackSystem.INSTANCE.onPlayerDeath(player.getUUID());
+
+            // === THE TIDE - Record player death for global threat level ===
+            com.devmod.endurance.tide.TideManager.INSTANCE.onPlayerDeath(player.getUUID(), questId);
+
             EnduranceQuestManager.INSTANCE.handlePlayerDeath(player);
         }
     }

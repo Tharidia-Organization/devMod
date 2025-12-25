@@ -71,6 +71,9 @@ public class EnduranceEventHandler {
         ComboSystem.ComboSession comboSession = ComboSystem.INSTANCE.startSession(playerId, questId);
         EnduranceEventCombat.putComboSession(playerId, comboSession);
 
+        // Create momentum session for pacing enforcement
+        MomentumTracker.INSTANCE.startSession(playerId);
+
         // Create mutator session with random mutators
         MutatorSystem.MutatorSession mutatorSession = MutatorSystem.INSTANCE.createSession(questId, 3, 1, policy);
         EnduranceEventCombat.putMutatorSession(questId, mutatorSession);
@@ -81,8 +84,30 @@ public class EnduranceEventHandler {
         // Create combat tracking session
         CombatTracker.INSTANCE.startTracking(questId, playerId, session.getQuest().getMobConfig().mobId);
 
+        // Start tension system for dynamic boss spawning
+        TensionSystem.INSTANCE.startSession(questId);
+
+        // Reset comeback cooldown for fresh quest
+        ComebackSystem.INSTANCE.resetCooldown(playerId);
+
         // Start live analytics session for real-time feedback hooks
         LiveAnalyticsHookManager.INSTANCE.onQuestStart(questId, playerId);
+
+        // Start Devil's Bargain curse session for mid-run risk/reward
+        com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.startSession(questId);
+
+        // Load Perk Synergy Web discoveries for hidden perk tracking
+        com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.onPlayerJoin(player);
+
+        // Start Arena Hazard session for dynamic environmental effects
+        net.minecraft.core.BlockPos arenaCenter = player.blockPosition();
+        int arenaRadius = 30; // Default radius
+        ArenaContext arena = session.getArena();
+        if (arena != null) {
+            arenaCenter = arena.getCenter();
+            arenaRadius = arena.getSize() / 2;
+        }
+        com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.startSession(questId, arenaCenter, arenaRadius);
 
         // Record telemetry for quest start
         int playerCount = session.getPlayerCount();
@@ -152,6 +177,9 @@ public class EnduranceEventHandler {
         // Cleanup combo system
         ComboSystem.INSTANCE.endSession(playerId);
 
+        // Cleanup momentum system
+        MomentumTracker.INSTANCE.endSession(playerId);
+
         // Cleanup mutator system
         MutatorSystem.INSTANCE.endSession(questId);
 
@@ -161,6 +189,43 @@ public class EnduranceEventHandler {
         // Finalize and stop combat tracking
         CombatTracker.QuestCombatSession combatSessionData = CombatTracker.INSTANCE.getSession(questId).orElse(null);
         CombatTracker.INSTANCE.stopTracking(questId);
+
+        // End tension system session
+        TensionSystem.INSTANCE.endSession(questId);
+
+        // End Devil's Bargain session and get final reward multiplier
+        var bargainSession = com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.endSession(questId);
+        if (bargainSession != null && bargainSession.getCurseCount() > 0) {
+            LOGGER.info("[EnduranceQuest] Bargain session ended: {} curses, {}x reward multiplier",
+                bargainSession.getCurseCount(), bargainSession.getTotalRewardMultiplier());
+        }
+
+        // Cleanup execution system state
+        com.devmod.combat.ExecutionSystem.INSTANCE.onPlayerLeave(playerId);
+
+        // Save Perk Synergy Web discoveries and cleanup
+        com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.onPlayerLeave(player);
+
+        // End Arena Hazard session
+        com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.endSession(questId);
+
+        // Cleanup comeback system state
+        ComebackSystem.INSTANCE.onQuestEnd(playerId);
+
+        // Process chain rewards if chain was completed
+        DirectiveChainManager.INSTANCE.getActiveChain(questId).ifPresent(chainProgress -> {
+            if (chainProgress.isCompleted()) {
+                DirectiveChainManager.ChainRewards chainRewards = DirectiveChainManager.INSTANCE.calculateChainRewards(chainProgress);
+                RewardSystem.INSTANCE.getWallet(playerId).addCurrency(RewardSystem.Currency.TOKENS, chainRewards.bonusTokens());
+                RewardSystem.INSTANCE.getWallet(playerId).addCurrency(RewardSystem.Currency.PRESTIGE, chainRewards.bonusPrestige());
+                LOGGER.info("[EnduranceQuest] Chain '{}' rewards awarded to {}: {} tokens, {} prestige",
+                    chainProgress.getChain().name(), player.getName().getString(),
+                    chainRewards.bonusTokens(), chainRewards.bonusPrestige());
+            }
+        });
+
+        // Cleanup directive chain tracking
+        DirectiveChainManager.INSTANCE.endChain(questId);
 
         // Record gamification stats (leaderboards, badges, challenges)
         if (completed && combatSessionData != null && EnduranceQuestManager.INSTANCE.isGamificationEnabled()) {
@@ -189,6 +254,18 @@ public class EnduranceEventHandler {
                     player, "HIGH SCORE", String.format("%,d pts", session.getQuest().getPointsEarnedThisSession()));
             }
         }
+
+        // Submit to global leaderboard system
+        String arenaId = session.getTemplateId();
+        LeaderboardSystem.INSTANCE.submitQuestResult(player, session.getQuest(), comboSession, arenaId);
+
+        // Update weekly challenge progress for quest completion
+        int bossesKilledThisRun = combatSessionData != null ?
+            (int) combatSessionData.getWaveStats().stream()
+                .filter(w -> BossWaveSystem.INSTANCE.isBossWave(w.waveNumber, questId))
+                .count() : 0;
+        com.devmod.endurance.challenges.WeeklyChallengeManager.INSTANCE.onQuestComplete(
+            playerId, session.getQuest(), bossesKilledThisRun);
 
         // Record analytics session for detailed tracking
         if (combatSessionData != null) {
@@ -226,6 +303,17 @@ public class EnduranceEventHandler {
             session.getQuest().getDamageTakenThisSession()
         );
 
+        // === THE TIDE - Record quest outcome for global threat level ===
+        int waveReached = session.getQuest().getCurrentWave();
+        boolean perfect = session.getQuest().getDeathsThisSession() == 0 &&
+                          session.getQuest().getDamageTakenThisSession() == 0;
+        if (completed) {
+            com.devmod.endurance.tide.TideManager.INSTANCE.onQuestCompleted(questId, perfect);
+        } else if (waveReached < 5) {
+            // Early failure (before wave 5) increases tide more
+            com.devmod.endurance.tide.TideManager.INSTANCE.onQuestFailedEarly(questId);
+        }
+
         // Trigger player attribute snapshot on quest end
         PlayerAttributeTelemetryService.INSTANCE.recordSnapshot(player, "quest_end");
 
@@ -251,8 +339,19 @@ public class EnduranceEventHandler {
             comboSession.startNewWave();
         }
 
-        // Check if this is a boss wave
-        boolean isBossWave = BossWaveSystem.INSTANCE.isBossWave(waveNumber);
+        // === BLOOD CONTRACTS - Signal wave start for violation tracking ===
+        UUID questId = quest.getQuestId();
+        com.devmod.endurance.contracts.ActiveContractManager.INSTANCE.onWaveStart(questId);
+
+        // Sync contracts to client for HUD
+        com.devmod.endurance.contracts.ActiveContractManager.INSTANCE.getSession(questId, playerId)
+            .ifPresent(contractSession -> {
+                var payload = com.devmod.endurance.contracts.ContractSyncPayload.forSession(contractSession);
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+            });
+
+        // Check if this is a boss wave (using tension system)
+        boolean isBossWave = BossWaveSystem.INSTANCE.isBossWave(waveNumber, questId);
 
         if (isBossWave) {
             // Special boss wave announcement
@@ -338,6 +437,38 @@ public class EnduranceEventHandler {
         int waveKills = waveStats != null ? waveStats.kills : 0;
         float waveDamageTaken = waveStats != null ? waveStats.damageTaken : 0;
 
+        // === SIGNATURE WEAPONS - Track exceptional wave performance ===
+        if ("SSS".equals(styleRank)) {
+            com.devmod.combat.signature.SoulImprintManager.INSTANCE.recordSSSWave(player);
+            com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.recordSSSRank(player);
+            LOGGER.debug("[EnduranceQuest] Recorded SSS wave for signature weapon tracking");
+        }
+        if (waveDamageTaken == 0 && waveKills > 0) {
+            com.devmod.combat.signature.SoulImprintManager.INSTANCE.recordNoHitWave(player);
+            LOGGER.debug("[EnduranceQuest] Recorded no-hit wave for signature weapon tracking");
+        }
+
+        // === PERK SYNERGY WEB - Record wave stats for discovery tracking ===
+        com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.recordWaveComplete(player, waveNumber);
+        com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.recordKills(player, waveKills);
+
+        // === THE TIDE - Global threat reduction for exceptional play ===
+        if ("SSS".equals(styleRank)) {
+            com.devmod.endurance.tide.TideManager.INSTANCE.onSSSWave(playerId, questId);
+        }
+        if (waveDamageTaken == 0 && waveKills > 0) {
+            com.devmod.endurance.tide.TideManager.INSTANCE.onNoHitWave(playerId, questId);
+        }
+
+        // === ARENA HAZARDS - Check for new hazards on wave transition ===
+        int upcomingWave = waveNumber + 1;
+        List<com.devmod.endurance.hazard.ArenaHazardSystem.HazardType> triggeredHazards =
+            com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.checkWaveHazards(questId, upcomingWave);
+        if (!triggeredHazards.isEmpty()) {
+            LOGGER.info("[EnduranceQuest] Arena hazards triggered for wave {}: {}",
+                upcomingWave, triggeredHazards);
+        }
+
         // === DETAILED LOGGING ===
         LOGGER.info("[EnduranceQuest] Wave {} completed for quest {} by player {}",
             waveNumber, questId, player.getName().getString());
@@ -353,6 +484,24 @@ public class EnduranceEventHandler {
             // Finalize current wave stats and prepare for next wave
             combatSession.startNewWave(waveNumber + 1);
             LOGGER.debug("[EnduranceQuest] Combat tracker advanced to wave {}", waveNumber + 1);
+        }
+
+        // === TENSION SYSTEM - Dynamic boss spawning ===
+        boolean nextWaveIsBoss = TensionSystem.INSTANCE.onWaveComplete(questId, waveNumber);
+        TensionSystem.TensionInfo tensionInfo = TensionSystem.INSTANCE.getTensionInfo(questId);
+        LOGGER.info("[EnduranceQuest]   Tension: {}% (level {}), Boss pending: {}",
+            (int)(tensionInfo.percent() * 100), tensionInfo.level(), nextWaveIsBoss);
+
+        // Send tension info to client for HUD display
+        com.devmod.network.NetworkHandler.sendTensionUpdate(player, tensionInfo.percent(), tensionInfo.level(), nextWaveIsBoss);
+
+        // Update weekly challenge progress for wave completion
+        com.devmod.endurance.challenges.WeeklyChallengeManager.INSTANCE.onWaveComplete(
+            playerId, waveNumber, quest.isEndlessMode());
+
+        // If boss wave is coming, send alert
+        if (nextWaveIsBoss && (quest.getCurrentWave() < quest.getTotalWaves() || quest.isEndlessMode())) {
+            BossWaveSystem.INSTANCE.triggerBossAlert(player, "Champion");
         }
 
         // === LIVE ANALYTICS - Notify hooks of wave transition ===
@@ -372,6 +521,12 @@ public class EnduranceEventHandler {
             }
         }
 
+        // === DEVIL'S BARGAIN - Spawn altar every 3 waves for curse selection ===
+        if (com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.shouldSpawnAltar(waveNumber)) {
+            com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.spawnAltar(player, questId, waveNumber);
+            LOGGER.info("[EnduranceQuest] Devil's Bargain altar spawned at wave {}", waveNumber);
+        }
+
         // === PERK SYSTEM - Generate perk choices for player ===
         List<PerkSystem.Perk> perkChoices = PerkSystem.INSTANCE.generatePerkChoices(player, waveNumber);
         if (!perkChoices.isEmpty()) {
@@ -382,12 +537,101 @@ public class EnduranceEventHandler {
             com.devmod.network.NetworkHandler.sendPerkChoices(player, waveNumber, perkChoices);
         }
 
+        // === PERK SYNERGY WEB - Check for new hidden perk discoveries ===
+        PerkSystem.PerkSession perkSession = PerkSystem.INSTANCE.getSession(playerId).orElse(null);
+        if (perkSession != null) {
+            var discoveryContext = new com.devmod.endurance.perk.PerkSynergyWeb.DiscoveryContext(
+                playerId,
+                perkSession.getAcquiredPerkIds(),
+                com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.getDiscoveries(player).getDiscoveredPerks(),
+                waveNumber,
+                waveKills,
+                waveNumber,
+                styleRank,
+                Map.of()
+            );
+            List<String> newDiscoveries = com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.checkDiscoveries(player, discoveryContext);
+            if (!newDiscoveries.isEmpty()) {
+                LOGGER.info("[EnduranceQuest] Player {} discovered {} hidden perks: {}",
+                    player.getName().getString(), newDiscoveries.size(), newDiscoveries);
+            }
+        }
+
+        // === DIRECTIVE CHAINS - Multi-wave narrative arcs ===
+        // Check if we should advance an active chain or offer new chains
+        boolean chainActive = DirectiveChainManager.INSTANCE.hasActiveChain(questId);
+        if (chainActive) {
+            // Advance the active chain
+            int waveDeaths = quest.getDeathsThisSession() > 0 ? 1 : 0; // Simplified
+            float damageTakenThisWave = waveStats != null ? waveStats.damageTaken : 0;
+            boolean tookDamage = damageTakenThisWave > 0;
+            int styleOrdinal = comboSession != null ? comboSession.getCurrentRank().ordinal() : 0;
+
+            DirectiveChainManager.ChainAdvanceResult chainResult = DirectiveChainManager.INSTANCE.advanceChain(
+                questId, waveKills, maxCombo, waveDeaths > 0, tookDamage, styleOrdinal);
+
+            if (chainResult == DirectiveChainManager.ChainAdvanceResult.CHAIN_COMPLETED) {
+                // Chain completed! Show celebration
+                DirectiveChainManager.INSTANCE.getActiveChain(questId).ifPresent(progress -> {
+                    DirectiveChainManager.ChainRewards rewards = DirectiveChainManager.INSTANCE.calculateChainRewards(progress);
+                    player.sendSystemMessage(Objects.requireNonNull(Component.literal("=== CHAIN COMPLETE: " + progress.getChain().name() + " ===")
+                        .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)));
+                    player.sendSystemMessage(Objects.requireNonNull(Component.literal("Bonus: +" + rewards.bonusTokens() + " tokens, +" + rewards.bonusPrestige() + " prestige!")
+                        .withStyle(ChatFormatting.YELLOW)));
+                    player.playSound(Objects.requireNonNull(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE), 1.0f, 1.0f);
+                });
+            } else if (chainResult == DirectiveChainManager.ChainAdvanceResult.CONDITION_FAILED) {
+                // Chain failed condition
+                player.sendSystemMessage(Objects.requireNonNull(Component.literal("Chain condition not met. Chain abandoned.")
+                    .withStyle(ChatFormatting.RED)));
+            } else if (chainResult == DirectiveChainManager.ChainAdvanceResult.STEP_COMPLETED) {
+                // Show chain progress
+                DirectiveChainManager.INSTANCE.getActiveChain(questId).ifPresent(progress -> {
+                    DirectiveChain.ChainStep nextStep = progress.getCurrentChainStep();
+                    if (nextStep != null) {
+                        player.sendSystemMessage(Objects.requireNonNull(Component.literal("--- Chain: " + progress.getChain().name() + " ---")
+                            .withStyle(ChatFormatting.LIGHT_PURPLE)));
+                        player.sendSystemMessage(Objects.requireNonNull(Component.literal("Step " + (progress.getCurrentStep() + 1) + "/" + progress.getTotalSteps() + ": " + nextStep.title())
+                            .withStyle(ChatFormatting.WHITE)));
+                        player.sendSystemMessage(Objects.requireNonNull(Component.literal(nextStep.narrative())
+                            .withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)));
+                    }
+                });
+            }
+        }
+
         // === WAVE DIRECTIVES - Risk/Reward choices for next wave ===
         if (quest.getCurrentWave() < quest.getTotalWaves() || quest.isEndlessMode()) {
             int nextWave = waveNumber + 1;
-            List<WaveDirective> directives = WaveDirector.INSTANCE.rollDirectiveChoices(nextWave);
-            session.setPendingDirectives(directives, nextWave);
-            com.devmod.network.NetworkHandler.sendWaveDirectiveChoices(player, nextWave, directives);
+
+            // If chain is active, use chain directive; otherwise offer choices
+            if (DirectiveChainManager.INSTANCE.hasActiveChain(questId)) {
+                DirectiveChainManager.INSTANCE.getCurrentChainDirective(questId).ifPresent(chainDirective -> {
+                    session.setPendingDirectives(List.of(chainDirective), nextWave);
+                    // Don't send choices UI - chain directive is automatic
+                });
+            } else {
+                // Offer regular directives and potentially a chain
+                List<WaveDirective> directives = WaveDirector.INSTANCE.rollDirectiveChoices(nextWave);
+                session.setPendingDirectives(directives, nextWave);
+                com.devmod.network.NetworkHandler.sendWaveDirectiveChoices(player, nextWave, directives);
+
+                // Offer chain choice periodically (every 3 waves after wave 3, if no active chain)
+                if (nextWave >= 3 && nextWave % 3 == 0) {
+                    List<DirectiveChain> chainChoices = DirectiveChainManager.INSTANCE.rollChainChoices(nextWave, 2);
+                    if (!chainChoices.isEmpty()) {
+                        // Send chain offer notification
+                        player.sendSystemMessage(Objects.requireNonNull(Component.literal("--- Directive Chain Available! ---")
+                            .withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD)));
+                        for (DirectiveChain chain : chainChoices) {
+                            player.sendSystemMessage(Objects.requireNonNull(Component.literal("  • " + chain.name() + " (" + chain.steps().size() + " waves) - " + chain.description())
+                                .withStyle(ChatFormatting.WHITE)));
+                        }
+                        player.sendSystemMessage(Objects.requireNonNull(Component.literal("Use /endurance chain <name> to start a chain")
+                            .withStyle(ChatFormatting.GRAY)));
+                    }
+                }
+            }
         }
 
         // === NOTIFY PLAYER ===
@@ -418,8 +662,21 @@ public class EnduranceEventHandler {
                 .map(WaveManager.WaveState::getRewardMultiplier)
                 .orElse(1.0f);
         }
+
+        // === BLOOD CONTRACTS - Check violations and apply reward multiplier ===
+        float contractMultiplier = 1.0f;
+        var contractManager = com.devmod.endurance.contracts.ActiveContractManager.INSTANCE;
+        contractManager.checkViolations(questId, player);
+        contractMultiplier = contractManager.getRewardMultiplier(questId, playerId);
+        if (contractMultiplier > 1.0f) {
+            LOGGER.info("[EnduranceQuest]   Contract Multiplier: x{}", String.format("%.1f", contractMultiplier));
+        }
+
+        // Apply contract multiplier to directive multiplier for final reward
+        float totalMultiplier = directiveMultiplier * contractMultiplier;
+
         RewardSystem.WaveReward waveReward = RewardSystem.INSTANCE.calculateWaveReward(
-            waveNumber, quest, comboSession, mutatorSession, directiveMultiplier);
+            waveNumber, quest, comboSession, mutatorSession, totalMultiplier);
         String rewardLine = String.format(
             "Reward: +%d tokens (base %d, style x%.1f, mutator x%.1f, directive x%.1f, bonus %d)",
             waveReward.tokensEarned(),
