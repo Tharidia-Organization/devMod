@@ -17,8 +17,10 @@ import com.devmod.actions.client.DevModClientActions;
 import com.devmod.client.overlay.ComboDecayOverlay;
 import com.devmod.client.overlay.RecordBannerOverlay;
 import com.devmod.client.input.KeyInputHandler;
+import com.devmod.client.network.ClientNetworkPayloadHooks;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.integration.ModIntegrationManager;
+import com.devmod.network.NetworkHandler;
 
 // This class will not load on dedicated servers. Accessing client side code from here is safe.
 @Mod(value = DevMod.MODID, dist = Dist.CLIENT)
@@ -30,6 +32,7 @@ public class DevModClient {
 
         // Initialize client UI bridge (allows common code to request UI operations)
         ClientUiBridgeImpl.init();
+        NetworkHandler.setClientPayloadHooks(new ClientNetworkPayloadHooks());
 
         // Allows NeoForge to create a config screen for this mod's configs.
         // The config screen is accessed by going to the Mods screen > clicking on your mod > clicking on config.

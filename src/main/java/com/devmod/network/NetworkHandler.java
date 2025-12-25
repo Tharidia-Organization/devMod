@@ -2,6 +2,7 @@ package com.devmod.network;
 
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
 
@@ -42,6 +43,9 @@ import com.devmod.endurance.TokenGainPayload;
 import com.devmod.endurance.WaveDirective;
 import com.devmod.endurance.WaveDirectiveChoicesPayload;
 import com.devmod.endurance.WaveDirectiveSelectionPayload;
+import com.devmod.endurance.challenges.ChallengeSyncPayload;
+import com.devmod.endurance.contracts.ContractSyncPayload;
+import com.devmod.endurance.resonance.ResonanceNotificationPayload;
 import com.devmod.network.handlers.AbilityNetworkHandler;
 import com.devmod.network.handlers.ConfigNetworkHandler;
 import com.devmod.network.handlers.EnduranceNetworkHandler;
@@ -131,6 +135,49 @@ import static com.devmod.network.ChannelId.WEAPON_STATS_V2;
  */
 @EventBusSubscriber(modid = MODID)
 public class NetworkHandler {
+    /**
+     * Client-side payload handlers registered from client initialization.
+     */
+    public interface ClientPayloadHooks {
+        void handleEditorApplyConfirm(EditorApplyConfirmPayload payload);
+
+        void handleResonanceTriggered(ResonanceNotificationPayload payload);
+
+        void handleContractSync(ContractSyncPayload payload);
+
+        void handleMobConfigConfirm(MobConfigConfirmPayload payload);
+
+        void handleBossAlert(BossAlertPayload payload);
+
+        void handleBadgeUnlock(BadgeUnlockPayload payload);
+
+        void handleTokenGain(TokenGainPayload payload);
+
+        void handleRecordBanner(RecordBannerPayload payload);
+
+        void handleComboDecay(ComboDecayPayload payload);
+
+        void handleTensionUpdate(TensionUpdatePayload payload);
+
+        void handleStaminaSync(StaminaSyncPayload payload);
+
+        void handleBuildProgress(BuildProgressPayload payload);
+
+        void handleChallengeSync(ChallengeSyncPayload payload);
+    }
+
+    private static volatile ClientPayloadHooks clientPayloadHooks;
+
+    public static void setClientPayloadHooks(@Nonnull ClientPayloadHooks hooks) {
+        clientPayloadHooks = Objects.requireNonNull(hooks, "hooks");
+    }
+
+    private static void withClientHooks(Consumer<ClientPayloadHooks> action) {
+        ClientPayloadHooks hooks = clientPayloadHooks;
+        if (hooks != null) {
+            action.accept(hooks);
+        }
+    }
 
     @SubscribeEvent
     public static void register(RegisterPayloadHandlersEvent event) {
@@ -234,7 +281,7 @@ public class NetworkHandler {
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
                         context.enqueueWork(() ->
-                            com.devmod.client.network.ClientConfigFeedbackPayload.handleEditorApplyConfirm(payload));
+                            withClientHooks(hooks -> hooks.handleEditorApplyConfirm(payload)));
                     }
                 }
         );
@@ -244,7 +291,7 @@ public class NetworkHandler {
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
                         context.enqueueWork(() ->
-                            com.devmod.client.network.ClientOverlayHandlers.handleResonanceTriggered(payload));
+                            withClientHooks(hooks -> hooks.handleResonanceTriggered(payload)));
                     }
                 }
         );
@@ -254,7 +301,7 @@ public class NetworkHandler {
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
                         context.enqueueWork(() ->
-                            com.devmod.client.network.ClientOverlayHandlers.handleContractSync(payload));
+                            withClientHooks(hooks -> hooks.handleContractSync(payload)));
                     }
                 }
         );
@@ -324,7 +371,7 @@ public class NetworkHandler {
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
                         context.enqueueWork(() ->
-                            com.devmod.client.network.ClientConfigFeedbackPayload.handleMobConfigConfirm(payload));
+                            withClientHooks(hooks -> hooks.handleMobConfigConfirm(payload)));
                     }
                 }
         );
@@ -364,8 +411,7 @@ public class NetworkHandler {
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
                         context.enqueueWork(() ->
-                            com.devmod.client.network.ClientOverlayHandlers.handleBossAlert(
-                                payload.alertDurationMs(), payload.bossType()));
+                            withClientHooks(hooks -> hooks.handleBossAlert(payload)));
                     }
                 }
         );
@@ -375,8 +421,7 @@ public class NetworkHandler {
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
                         context.enqueueWork(() ->
-                            com.devmod.client.network.ClientOverlayHandlers.handleBadgeUnlock(
-                                payload.badgeName(), payload.rarity()));
+                            withClientHooks(hooks -> hooks.handleBadgeUnlock(payload)));
                     }
                 }
         );
@@ -386,7 +431,7 @@ public class NetworkHandler {
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
                         context.enqueueWork(() ->
-                            com.devmod.client.network.ClientOverlayHandlers.handleTokenGain(payload.amount()));
+                            withClientHooks(hooks -> hooks.handleTokenGain(payload)));
                     }
                 }
         );
@@ -396,8 +441,7 @@ public class NetworkHandler {
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
                         context.enqueueWork(() ->
-                            com.devmod.client.network.ClientOverlayHandlers.handleRecordBanner(
-                                payload.recordType(), payload.recordValue()));
+                            withClientHooks(hooks -> hooks.handleRecordBanner(payload)));
                     }
                 }
         );
@@ -407,8 +451,7 @@ public class NetworkHandler {
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
                         context.enqueueWork(() ->
-                            com.devmod.client.network.ClientOverlayHandlers.handleComboDecay(
-                                payload.lostCombo(), payload.previousRankOrdinal(), payload.newRankOrdinal()));
+                            withClientHooks(hooks -> hooks.handleComboDecay(payload)));
                     }
                 }
         );
@@ -418,8 +461,7 @@ public class NetworkHandler {
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
                         context.enqueueWork(() ->
-                            com.devmod.client.network.ClientOverlayHandlers.handleTensionUpdate(
-                                payload.tensionPercent(), payload.tensionLevel(), payload.bossImminent()));
+                            withClientHooks(hooks -> hooks.handleTensionUpdate(payload)));
                     }
                 }
         );
@@ -514,8 +556,7 @@ public class NetworkHandler {
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
                         context.enqueueWork(() ->
-                            com.devmod.client.network.ClientOverlayHandlers.handleStaminaSync(
-                                payload.currentStamina(), payload.maxStamina()));
+                            withClientHooks(hooks -> hooks.handleStaminaSync(payload)));
                     }
                 }
         );
@@ -535,7 +576,7 @@ public class NetworkHandler {
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
                         context.enqueueWork(() ->
-                            com.devmod.client.arena.hud.BuildProgressHud.getInstance().handlePayload(payload));
+                            withClientHooks(hooks -> hooks.handleBuildProgress(payload)));
                     }
                 }
         );
@@ -550,7 +591,7 @@ public class NetworkHandler {
                 (payload, context) -> {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
                         context.enqueueWork(() ->
-                            com.devmod.client.network.ClientEnduranceHandlers.handleChallengeSync(payload));
+                            withClientHooks(hooks -> hooks.handleChallengeSync(payload)));
                     }
                 }
         );

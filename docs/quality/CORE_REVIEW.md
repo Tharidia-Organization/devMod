@@ -10,9 +10,9 @@
 - Fixes applied: None in this review.
 
 ## Network Handlers + Validators
-- P1: NetworkHandler references client-only classes inside Dist.CLIENT checks; consider isolating client handlers into a client-only registrar to reduce classloading risk on dedicated server.
+- P1 (addressed): NetworkHandler referenced client-only classes inside Dist.CLIENT checks; now routed through client payload hooks to reduce classloading risk on dedicated servers.
 - P2: PacketValidator uses string-concatenated keys for rate limits; ensure packetType cardinality is bounded to avoid unbounded growth between cleanups.
-- Fixes applied: Import hygiene in NetworkHandler (batch 1).
+- Fixes applied: Client payload hooks in NetworkHandler (batch 6).
 
 ## Telemetry Persistence + DuckDB
 - P2: DuckDBBatchWriter and DuckDBSchemaManager contain >80-line methods (flushTableUnlocked/migrateSchema); defer refactor to avoid behavior changes in this pass.
@@ -23,6 +23,6 @@
 - Fixes applied: None in this review.
 
 ## Client/Server Boundary Bridge
-- P1: ClothConfigCompat (common package) reflects client-only Screen class; recommend moving to client package or guarding with DistExecutor to avoid accidental class loading.
+- P1 (addressed): ClothConfigCompat (common package) reflects client-only Screen class; now guarded by Dist.CLIENT before reflection.
 - P2: ClientUiBridgeImpl.openEnduranceQuestScreen ignores templateId parameter; verify whether template selection should be forwarded.
-- Fixes applied: None in this review.
+- Fixes applied: Dist guard for ClothConfigCompat.setParentScreen (batch 6).

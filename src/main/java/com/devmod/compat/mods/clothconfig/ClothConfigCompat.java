@@ -1,14 +1,18 @@
 package com.devmod.compat.mods.clothconfig;
 
-import com.devmod.compat.Compat;
-import com.devmod.compat.CompatModule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 import java.lang.reflect.Method;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
+
+import com.devmod.compat.Compat;
+import com.devmod.compat.CompatModule;
 /**
  * Compatibility module for Cloth Config API.
  *
@@ -337,6 +341,9 @@ public class ClothConfigCompat implements CompatModule {
      */
     public static void setParentScreen(Object configBuilder, Object parentScreen) {
         if (configBuilder == null) return;
+        if (FMLEnvironment.dist != Dist.CLIENT) {
+            return;
+        }
 
         try {
             Class<?> screenClass = Class.forName("net.minecraft.client.gui.screens.Screen");
