@@ -1,22 +1,31 @@
-package com.devmod.quest;
+package com.devmod.client.quest;
 
-import com.devmod.endurance.EnduranceQuestRegistry;
-import com.devmod.endurance.StartQuestPayload;
-import com.devmod.ui.ModScreen;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.editor.components.EditorButton;
-import com.devmod.util.I18n;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nonnull;
+
+import org.lwjgl.glfw.GLFW;
+
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.Objects;
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.devmod.client.ui.ModScreen;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.endurance.EnduranceQuestRegistry;
+import com.devmod.endurance.StartQuestPayload;
+import com.devmod.quest.QuestData;
+import com.devmod.quest.QuestManager;
+import com.devmod.quest.QuestTask;
+import com.devmod.util.I18n;
 
 /**
  * Extended UI for managing quests.
@@ -28,6 +37,7 @@ import java.util.stream.Collectors;
  * - Quest creation/deletion
  * - Synchronization with QuestHudOverlay
  */
+@OnlyIn(Dist.CLIENT)
 public class QuestEditorScreen extends ModScreen {
 
     // Layout constants
@@ -552,6 +562,15 @@ public class QuestEditorScreen extends ModScreen {
         }
 
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (showEnduranceModal && keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            closeEnduranceModal();
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     // === Actions ===

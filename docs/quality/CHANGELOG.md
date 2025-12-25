@@ -27,3 +27,10 @@
 - Guarded ClothConfigCompat parent screen reflection with a Dist.CLIENT check.
 - Replaced GameDesignConfigManager's client-only path lookup with ConfigPaths for server safety.
 - Touched files: src/main/java/com/devmod/network/NetworkHandler.java, src/main/java/com/devmod/client/DevModClient.java, src/main/java/com/devmod/client/network/ClientNetworkPayloadHooks.java, src/main/java/com/devmod/compat/mods/clothconfig/ClothConfigCompat.java, src/main/java/com/devmod/config/gamedesign/GameDesignConfigManager.java.
+
+## Batch 7 - Client/Server Boundary (Handlers)
+- Routed client-side handling in Config/Endurance/Party/Shield network handlers through client payload hooks.
+- Removed direct client references while keeping dist guards intact.
+- Routed GameMechanicsSyncPayload client application through client payload hooks to avoid client singleton references.
+- Added @OnlyIn(Dist.CLIENT) to QuestEditorScreen for client screen annotation enforcement.
+- Touched files: src/main/java/com/devmod/network/NetworkHandler.java, src/main/java/com/devmod/client/network/ClientNetworkPayloadHooks.java, src/main/java/com/devmod/network/handlers/ConfigNetworkHandler.java, src/main/java/com/devmod/network/handlers/EnduranceNetworkHandler.java, src/main/java/com/devmod/network/handlers/PartyNetworkHandler.java, src/main/java/com/devmod/network/handlers/ShieldNetworkHandler.java, src/main/java/com/devmod/network/GameMechanicsSyncPayload.java, src/main/java/com/devmod/client/quest/QuestEditorScreen.java.

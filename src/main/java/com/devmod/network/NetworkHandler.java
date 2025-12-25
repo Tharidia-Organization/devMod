@@ -77,6 +77,7 @@ import static com.devmod.network.ChannelId.EDITOR_APPLY_CONFIRM;
 import static com.devmod.network.ChannelId.EQUIP_MOB;
 import static com.devmod.network.ChannelId.FOOD_STATS;
 import static com.devmod.network.ChannelId.FUEL_STATS;
+import static com.devmod.network.ChannelId.GAME_MECHANICS_SYNC;
 import static com.devmod.network.ChannelId.GLOBAL_CONFIG_SYNC;
 import static com.devmod.network.ChannelId.INSTANCE_LOADING;
 import static com.devmod.network.ChannelId.INVITE_RESPONSE;
@@ -139,13 +140,51 @@ public class NetworkHandler {
      * Client-side payload handlers registered from client initialization.
      */
     public interface ClientPayloadHooks {
+        void handleGlobalConfigSync(GlobalConfigSyncPayload payload);
+
+        void handleRecipeClientSync(RecipeClientSyncPayload payload);
+
+        void handleGameMechanicsSync(GameMechanicsSyncPayload payload);
+
         void handleEditorApplyConfirm(EditorApplyConfirmPayload payload);
+
+        void handleConfigEditorApplyConfirm(EditorApplyConfirmPayload payload);
 
         void handleResonanceTriggered(ResonanceNotificationPayload payload);
 
         void handleContractSync(ContractSyncPayload payload);
 
         void handleMobConfigConfirm(MobConfigConfirmPayload payload);
+
+        void handleConfigMobConfigConfirm(MobConfigConfirmPayload payload);
+
+        void handleQuestSync(QuestSyncPayload payload);
+
+        void handleShopSync(ShopSyncPayload payload);
+
+        void handleQuestDeath(QuestDeathPayload payload);
+
+        void handlePerkChoices(PerkChoicesPayload payload);
+
+        void handleWaveDirectiveChoices(WaveDirectiveChoicesPayload payload);
+
+        void handleQuestCompletion(QuestCompletionPayload payload);
+
+        void handleInstanceLoading(InstanceLoadingPayload payload);
+
+        void handlePersonalRecordsSync(PersonalRecordsSyncPayload payload);
+
+        void handlePartyNotification(PartyNotificationPayload payload);
+
+        void handlePartySync(PartySyncPayload payload);
+
+        void handleQuestSequence(QuestSequencePayload payload);
+
+        void handleShieldState(ShieldStatePayload payload);
+
+        void handleShieldImpact(ShieldImpactPayload payload);
+
+        void handleShieldShatter(ShieldShatterPayload payload);
 
         void handleBossAlert(BossAlertPayload payload);
 
@@ -172,7 +211,7 @@ public class NetworkHandler {
         clientPayloadHooks = Objects.requireNonNull(hooks, "hooks");
     }
 
-    private static void withClientHooks(Consumer<ClientPayloadHooks> action) {
+    public static void withClientHooks(Consumer<ClientPayloadHooks> action) {
         ClientPayloadHooks hooks = clientPayloadHooks;
         if (hooks != null) {
             action.accept(hooks);
@@ -302,6 +341,15 @@ public class NetworkHandler {
                     if (FMLEnvironment.dist == Dist.CLIENT) {
                         context.enqueueWork(() ->
                             withClientHooks(hooks -> hooks.handleContractSync(payload)));
+                    }
+                }
+        );
+        event.registrar(GAME_MECHANICS_SYNC.asString()).playToClient(
+                nn(GameMechanicsSyncPayload.TYPE),
+                nn(GameMechanicsSyncPayload.STREAM_CODEC),
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        context.enqueueWork(payload::applyToClient);
                     }
                 }
         );

@@ -1,22 +1,50 @@
 package com.devmod.network.handlers;
 
-import com.devmod.actions.ActionIds;
-import com.devmod.actions.ActionOrigin;
-import com.devmod.actions.ActionRegistry;
-import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.endurance.*;
-import com.devmod.client.overlay.InstanceLoadingOverlay;
-import com.devmod.network.PacketValidator;
-import com.devmod.network.PacketValidator.ValidationResult;
-import com.devmod.util.I18n;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+
+import com.devmod.endurance.BadgeUnlockPayload;
+import com.devmod.endurance.BossAlertPayload;
+import com.devmod.endurance.ComboDecayPayload;
+import com.devmod.endurance.ComboSystem;
+import com.devmod.endurance.EnduranceQuest;
+import com.devmod.endurance.EnduranceQuestManager;
+import com.devmod.endurance.EnduranceQuestState;
+import com.devmod.endurance.InstanceLoadingPayload;
+import com.devmod.endurance.PerkChoicesPayload;
+import com.devmod.endurance.PerkSelectionPayload;
+import com.devmod.endurance.PerkSynergySystem;
+import com.devmod.endurance.PerkSystem;
+import com.devmod.endurance.PersonalRecordsSyncPayload;
+import com.devmod.endurance.QuestActionPayload;
+import com.devmod.endurance.QuestCompletionPayload;
+import com.devmod.endurance.QuestDeathPayload;
+import com.devmod.endurance.QuestSyncPayload;
+import com.devmod.endurance.RecordBannerPayload;
+import com.devmod.endurance.RequestPersonalRecordsPayload;
+import com.devmod.endurance.RequestShopSyncPayload;
+import com.devmod.endurance.RewardSystem;
+import com.devmod.endurance.ShopPurchasePayload;
+import com.devmod.endurance.ShopSyncPayload;
+import com.devmod.endurance.StartQuestPayload;
+import com.devmod.endurance.TensionUpdatePayload;
+import com.devmod.endurance.TokenGainPayload;
+import com.devmod.endurance.WaveDirective;
+import com.devmod.endurance.WaveDirectiveChoicesPayload;
+import com.devmod.endurance.WaveDirectiveSelectionPayload;
+import com.devmod.network.NetworkHandler;
+import com.devmod.network.PacketValidator;
+import com.devmod.network.PacketValidator.ValidationResult;
+import com.devmod.util.I18n;
 
 /**
  * Network handler for Endurance Quest system packets.
@@ -25,6 +53,9 @@ import java.util.Map;
 public final class EnduranceNetworkHandler extends NetworkHandlerBase {
 
     private EnduranceNetworkHandler() {}
+
+    private static final long PERK_SELECTION_TIMEOUT_MS = 20_000L;
+    private static final long DIRECTIVE_SELECTION_TIMEOUT_MS = 15_000L;
 
     // =================================================================================
     // START ENDURANCE QUEST
@@ -81,68 +112,77 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handleQuestAction(QuestActionPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
-            if (context.player() instanceof ServerPlayer player) {
-                QuestActionPayload.Action action = payload.action();
+            if (!(context.player() instanceof ServerPlayer player)) {
+                return; // Fail closed: invalid context
+            }
 
-                var sessionOpt = EnduranceQuestManager.INSTANCE.getActiveSession(player);
-                if (sessionOpt.isEmpty()) {
-                    player.sendSystemMessage(I18n.translate("devmod.network.no_active_quest"));
-                    return;
-                }
-                var session = sessionOpt.get();
-                boolean awaitingRespawn = session.isAwaitingRespawnChoice();
-                boolean atCheckpoint = session.getQuest().getState() == EnduranceQuestState.WAVE_COMPLETE;
+            // Rate limit check
+            var validation = security().validatePacket(player, "quest_action", false);
+            if (!validation.isSuccess()) {
+                security().recordRateLimitHit("quest_action", player.getName().getString());
+                return; // Fail closed: rate limited
+            }
 
-                try {
-                    switch (action) {
-                        case CONTINUE_AFTER_DEATH -> {
-                            if (awaitingRespawn) {
-                                EnduranceQuestManager.INSTANCE.handleRespawnChoice(player, true);
-                                LOGGER.info("[EnduranceQuest] Player {} respawning after death",
-                                    player.getName().getString());
-                            } else if (atCheckpoint) {
-                                EnduranceQuestManager.INSTANCE.continueToNextWave(player);
-                                LOGGER.info("[EnduranceQuest] Player {} continuing to next wave",
-                                    player.getName().getString());
-                            } else {
-                                player.sendSystemMessage(I18n.translate("devmod.network.cannot_continue"));
-                            }
-                        }
-                        case GIVE_UP_AFTER_DEATH -> {
-                            if (awaitingRespawn) {
-                                EnduranceQuestManager.INSTANCE.handleRespawnChoice(player, false);
-                                LOGGER.info("[EnduranceQuest] Player {} gave up after death",
-                                    player.getName().getString());
-                            } else if (atCheckpoint) {
-                                EnduranceQuestManager.INSTANCE.exitAtCheckpoint(player);
-                                LOGGER.info("[EnduranceQuest] Player {} exited at checkpoint",
-                                    player.getName().getString());
-                            } else {
-                                EnduranceQuestManager.INSTANCE.abandonQuest(player);
-                                LOGGER.info("[EnduranceQuest] Player {} abandoned quest",
-                                    player.getName().getString());
-                            }
-                        }
-                        case CONTINUE_TO_NEXT_WAVE -> {
+            QuestActionPayload.Action action = payload.action();
+
+            var sessionOpt = EnduranceQuestManager.INSTANCE.getActiveSession(player);
+            if (sessionOpt.isEmpty()) {
+                player.sendSystemMessage(I18n.translate("devmod.network.no_active_quest"));
+                return;
+            }
+            var session = sessionOpt.get();
+            boolean awaitingRespawn = session.isAwaitingRespawnChoice();
+            boolean atCheckpoint = session.getQuest().getState() == EnduranceQuestState.WAVE_COMPLETE;
+
+            try {
+                switch (action) {
+                    case CONTINUE_AFTER_DEATH -> {
+                        if (awaitingRespawn) {
+                            EnduranceQuestManager.INSTANCE.handleRespawnChoice(player, true);
+                            LOGGER.info("[EnduranceQuest] Player {} respawning after death",
+                                player.getName().getString());
+                        } else if (atCheckpoint) {
                             EnduranceQuestManager.INSTANCE.continueToNextWave(player);
                             LOGGER.info("[EnduranceQuest] Player {} continuing to next wave",
                                 player.getName().getString());
+                        } else {
+                            player.sendSystemMessage(I18n.translate("devmod.network.cannot_continue"));
                         }
-                        case EXIT_AT_CHECKPOINT -> {
+                    }
+                    case GIVE_UP_AFTER_DEATH -> {
+                        if (awaitingRespawn) {
+                            EnduranceQuestManager.INSTANCE.handleRespawnChoice(player, false);
+                            LOGGER.info("[EnduranceQuest] Player {} gave up after death",
+                                player.getName().getString());
+                        } else if (atCheckpoint) {
                             EnduranceQuestManager.INSTANCE.exitAtCheckpoint(player);
                             LOGGER.info("[EnduranceQuest] Player {} exited at checkpoint",
                                 player.getName().getString());
-                        }
-                        case ABANDON_QUEST -> {
+                        } else {
                             EnduranceQuestManager.INSTANCE.abandonQuest(player);
                             LOGGER.info("[EnduranceQuest] Player {} abandoned quest",
                                 player.getName().getString());
                         }
                     }
-                } catch (Exception e) {
-                    player.sendSystemMessage(I18n.translate("devmod.network.quest_action_failed", e.getMessage()));
-                    LOGGER.error("[EnduranceQuest] Quest action failed", e);
+                    case CONTINUE_TO_NEXT_WAVE -> {
+                        EnduranceQuestManager.INSTANCE.continueToNextWave(player);
+                        LOGGER.info("[EnduranceQuest] Player {} continuing to next wave",
+                            player.getName().getString());
+                    }
+                    case EXIT_AT_CHECKPOINT -> {
+                        EnduranceQuestManager.INSTANCE.exitAtCheckpoint(player);
+                        LOGGER.info("[EnduranceQuest] Player {} exited at checkpoint",
+                            player.getName().getString());
+                    }
+                    case ABANDON_QUEST -> {
+                        EnduranceQuestManager.INSTANCE.abandonQuest(player);
+                        LOGGER.info("[EnduranceQuest] Player {} abandoned quest",
+                            player.getName().getString());
+                    }
                 }
+            } catch (Exception e) {
+                player.sendSystemMessage(I18n.translate("devmod.network.quest_action_failed", e.getMessage()));
+                LOGGER.error("[EnduranceQuest] Quest action failed", e);
             }
         });
     }
@@ -151,7 +191,10 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // QUEST SYNC (client-side)
     // =================================================================================
     public static void handleQuestSync(QuestSyncPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> ClientQuestCache.update(payload));
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            context.enqueueWork(() ->
+                NetworkHandler.withClientHooks(hooks -> hooks.handleQuestSync(payload)));
+        }
     }
 
     // =================================================================================
@@ -159,25 +202,34 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handleShopPurchase(ShopPurchasePayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
-            if (context.player() instanceof ServerPlayer player) {
-                String itemId = payload.itemId();
-
-                if (itemId == null || itemId.isEmpty()) {
-                    player.sendSystemMessage(I18n.translate("devmod.network.invalid_item"));
-                    return;
-                }
-
-                RewardSystem.PurchaseResult result = RewardSystem.INSTANCE.purchaseItem(player, itemId);
-
-                if (!result.success()) {
-                    player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", result.message()));
-                }
-
-                sendShopSync(player);
-
-                LOGGER.info("[Shop] Player {} attempted purchase of {}: {}",
-                    player.getName().getString(), itemId, result.success() ? "SUCCESS" : result.message());
+            if (!(context.player() instanceof ServerPlayer player)) {
+                return; // Fail closed: invalid context
             }
+
+            // Rate limit check
+            var validation = security().validatePacket(player, "shop_purchase", false);
+            if (!validation.isSuccess()) {
+                security().recordRateLimitHit("shop_purchase", player.getName().getString());
+                return; // Fail closed: rate limited
+            }
+
+            String itemId = payload.itemId();
+
+            if (itemId == null || itemId.isEmpty()) {
+                player.sendSystemMessage(I18n.translate("devmod.network.invalid_item"));
+                return;
+            }
+
+            RewardSystem.PurchaseResult result = RewardSystem.INSTANCE.purchaseItem(player, itemId);
+
+            if (!result.success()) {
+                player.sendSystemMessage(I18n.errorWithDetails("devmod.ui.error", result.message()));
+            }
+
+            sendShopSync(player);
+
+            LOGGER.info("[Shop] Player {} attempted purchase of {}: {}",
+                player.getName().getString(), itemId, result.success() ? "SUCCESS" : result.message());
         });
     }
 
@@ -185,7 +237,10 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // SHOP SYNC (client-side)
     // =================================================================================
     public static void handleShopSync(ShopSyncPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> ClientShopCache.update(payload));
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            context.enqueueWork(() ->
+                NetworkHandler.withClientHooks(hooks -> hooks.handleShopSync(payload)));
+        }
     }
 
     public static void sendShopSync(ServerPlayer player) {
@@ -209,10 +264,10 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // QUEST DEATH SCREEN (client-side)
     // =================================================================================
     public static void handleQuestDeath(QuestDeathPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            ActionRegistry.invoke(ActionIds.UI_QUEST_DEATH_OPEN,
-                ClientActionContexts.forClient(ActionOrigin.EVENT));
-        });
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            context.enqueueWork(() ->
+                NetworkHandler.withClientHooks(hooks -> hooks.handleQuestDeath(payload)));
+        }
     }
 
     public static void sendQuestDeathScreen(ServerPlayer player, int currentWave, int totalWaves,
@@ -226,25 +281,36 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // PERK CHOICES (client-side)
     // =================================================================================
     public static void handlePerkChoices(PerkChoicesPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            EnduranceUiCache.setLastPerkChoices(payload);
-            ActionRegistry.invoke(ActionIds.UI_PERK_SELECTION_OPEN,
-                ClientActionContexts.forClient(ActionOrigin.EVENT, payload));
-        });
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            context.enqueueWork(() ->
+                NetworkHandler.withClientHooks(hooks -> hooks.handlePerkChoices(payload)));
+        }
     }
 
     public static void sendPerkChoices(ServerPlayer player, int waveNumber, List<PerkSystem.Perk> perks) {
         List<PerkChoicesPayload.PerkChoice> choices = new ArrayList<>();
         var sessionOpt = PerkSystem.INSTANCE.getSession(player.getUUID());
 
+        // Get owned perks for synergy analysis
+        Set<String> ownedPerks = sessionOpt
+            .map(PerkSystem.PerkSession::getAcquiredPerkIds)
+            .orElse(Set.of());
+
         for (PerkSystem.Perk perk : perks) {
             int currentStacks = sessionOpt.map(s -> s.getPerkStacks(perk.id)).orElse(0);
             boolean suggested = sessionOpt.map(s -> s.isSuggested(perk.id)).orElse(false);
             boolean required = sessionOpt.map(s -> s.isRequired(perk.id) && !s.hasPerk(perk.id)).orElse(false);
-            choices.add(PerkChoicesPayload.PerkChoice.from(perk, currentStacks, suggested, required));
+
+            // Analyze synergies for this perk
+            PerkSynergySystem.SynergyPreview synergyPreview =
+                PerkSynergySystem.INSTANCE.analyzePerk(perk.id, ownedPerks);
+
+            choices.add(PerkChoicesPayload.PerkChoice.fromWithSynergy(
+                perk, currentStacks, suggested, required, synergyPreview));
         }
 
-        PerkChoicesPayload payload = new PerkChoicesPayload(waveNumber, choices);
+        long expiresAt = System.currentTimeMillis() + PERK_SELECTION_TIMEOUT_MS;
+        PerkChoicesPayload payload = new PerkChoicesPayload(waveNumber, expiresAt, choices);
         sendPacket(player, payload);
     }
 
@@ -252,14 +318,25 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // WAVE DIRECTIVES (risk/reward choices)
     // =================================================================================
     public static void handleWaveDirectiveChoices(WaveDirectiveChoicesPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> EnduranceUiCache.setLastDirectiveChoices(payload));
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            context.enqueueWork(() ->
+                NetworkHandler.withClientHooks(hooks -> hooks.handleWaveDirectiveChoices(payload)));
+        }
     }
 
     public static void handleWaveDirectiveSelection(WaveDirectiveSelectionPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) {
-                return;
+                return; // Fail closed: invalid context
             }
+
+            // Rate limit check
+            var validation = security().validatePacket(player, "wave_directive", false);
+            if (!validation.isSuccess()) {
+                security().recordRateLimitHit("wave_directive", player.getName().getString());
+                return; // Fail closed: rate limited
+            }
+
             var sessionOpt = EnduranceQuestManager.INSTANCE.getActiveSession(player);
             if (sessionOpt.isEmpty()) {
                 return;
@@ -279,7 +356,8 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
         for (WaveDirective directive : directives) {
             choices.add(WaveDirectiveChoicesPayload.DirectiveChoice.from(directive));
         }
-        sendPacket(player, new WaveDirectiveChoicesPayload(waveNumber, choices));
+        long expiresAt = System.currentTimeMillis() + DIRECTIVE_SELECTION_TIMEOUT_MS;
+        sendPacket(player, new WaveDirectiveChoicesPayload(waveNumber, expiresAt, choices));
     }
 
     // =================================================================================
@@ -287,53 +365,62 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // =================================================================================
     public static void handlePerkSelection(PerkSelectionPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
-            if (context.player() instanceof ServerPlayer player) {
-                String perkId = payload.perkId();
+            if (!(context.player() instanceof ServerPlayer player)) {
+                return; // Fail closed: invalid context
+            }
 
-                if (payload.isSkip()) {
-                    var sessionOpt = PerkSystem.INSTANCE.getSession(player.getUUID());
-                    if (sessionOpt.isPresent() && sessionOpt.get().hasRequiredPending()) {
-                        player.sendSystemMessage(nn(net.minecraft.network.chat.Component.literal(
-                            "[DevMod] Required perk must be selected before skipping")
-                            .withStyle(net.minecraft.ChatFormatting.RED)));
-                        return;
+            // Rate limit check
+            var validation = security().validatePacket(player, "perk_selection", false);
+            if (!validation.isSuccess()) {
+                security().recordRateLimitHit("perk_selection", player.getName().getString());
+                return; // Fail closed: rate limited
+            }
+
+            String perkId = payload.perkId();
+
+            if (payload.isSkip()) {
+                var sessionOpt = PerkSystem.INSTANCE.getSession(player.getUUID());
+                if (sessionOpt.isPresent() && sessionOpt.get().hasRequiredPending()) {
+                    player.sendSystemMessage(nn(net.minecraft.network.chat.Component.literal(
+                        "[DevMod] Required perk must be selected before skipping")
+                        .withStyle(net.minecraft.ChatFormatting.RED)));
+                    return;
+                }
+                player.sendSystemMessage(nn(I18n.translate("devmod.network.perk_skipped")
+                    .withStyle(net.minecraft.ChatFormatting.GRAY)));
+                LOGGER.info("[Perk] Player {} skipped perk selection", player.getName().getString());
+
+                PerkSystem.INSTANCE.getSession(player.getUUID())
+                    .ifPresent(PerkSystem.PerkSession::clearPendingChoices);
+            } else {
+                var sessionOpt = PerkSystem.INSTANCE.getSession(player.getUUID());
+                if (sessionOpt.isEmpty()) {
+                    player.sendSystemMessage(I18n.translate("devmod.network.no_perk_session"));
+                    return;
+                }
+
+                PerkSystem.PerkSession session = sessionOpt.get();
+                List<PerkSystem.Perk> pendingChoices = session.getPendingChoices();
+
+                int choiceIndex = -1;
+                for (int i = 0; i < pendingChoices.size(); i++) {
+                    if (pendingChoices.get(i).id.equals(perkId)) {
+                        choiceIndex = i;
+                        break;
                     }
-                    player.sendSystemMessage(nn(I18n.translate("devmod.network.perk_skipped")
-                        .withStyle(net.minecraft.ChatFormatting.GRAY)));
-                    LOGGER.info("[Perk] Player {} skipped perk selection", player.getName().getString());
+                }
 
-                    PerkSystem.INSTANCE.getSession(player.getUUID())
-                        .ifPresent(PerkSystem.PerkSession::clearPendingChoices);
-                } else {
-                    var sessionOpt = PerkSystem.INSTANCE.getSession(player.getUUID());
-                    if (sessionOpt.isEmpty()) {
-                        player.sendSystemMessage(I18n.translate("devmod.network.no_perk_session"));
-                        return;
-                    }
-
-                    PerkSystem.PerkSession session = sessionOpt.get();
-                    List<PerkSystem.Perk> pendingChoices = session.getPendingChoices();
-
-                    int choiceIndex = -1;
-                    for (int i = 0; i < pendingChoices.size(); i++) {
-                        if (pendingChoices.get(i).id.equals(perkId)) {
-                            choiceIndex = i;
-                            break;
-                        }
-                    }
-
-                    if (choiceIndex >= 0) {
-                        boolean success = PerkSystem.INSTANCE.selectPerk(player, choiceIndex);
-                        if (success) {
-                            LOGGER.info("[Perk] Player {} selected perk: {}", player.getName().getString(), perkId);
-                        } else {
-                            player.sendSystemMessage(I18n.translate("devmod.network.perk_failed", perkId));
-                            LOGGER.warn("[Perk] Failed to apply perk {} for player {}", perkId, player.getName().getString());
-                        }
+                if (choiceIndex >= 0) {
+                    boolean success = PerkSystem.INSTANCE.selectPerk(player, choiceIndex);
+                    if (success) {
+                        LOGGER.info("[Perk] Player {} selected perk: {}", player.getName().getString(), perkId);
                     } else {
-                        player.sendSystemMessage(I18n.translate("devmod.network.perk_invalid", perkId));
-                        LOGGER.warn("[Perk] Perk {} not found in pending choices for player {}", perkId, player.getName().getString());
+                        player.sendSystemMessage(I18n.translate("devmod.network.perk_failed", perkId));
+                        LOGGER.warn("[Perk] Failed to apply perk {} for player {}", perkId, player.getName().getString());
                     }
+                } else {
+                    player.sendSystemMessage(I18n.translate("devmod.network.perk_invalid", perkId));
+                    LOGGER.warn("[Perk] Perk {} not found in pending choices for player {}", perkId, player.getName().getString());
                 }
             }
         });
@@ -343,11 +430,10 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // QUEST COMPLETION (client-side)
     // =================================================================================
     public static void handleQuestCompletion(QuestCompletionPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            EnduranceUiCache.setLastQuestCompletion(payload);
-            ActionRegistry.invoke(ActionIds.UI_QUEST_COMPLETION_OPEN,
-                ClientActionContexts.forClient(ActionOrigin.EVENT, payload));
-        });
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            context.enqueueWork(() ->
+                NetworkHandler.withClientHooks(hooks -> hooks.handleQuestCompletion(payload)));
+        }
     }
 
     public static void sendQuestCompletionScreen(ServerPlayer player,
@@ -414,14 +500,10 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // INSTANCE LOADING OVERLAY (client-side)
     // =================================================================================
     public static void handleInstanceLoading(InstanceLoadingPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            if (payload.show()) {
-                String translatedStatus = I18n.translate(payload.status()).getString();
-                InstanceLoadingOverlay.show(translatedStatus);
-            } else {
-                InstanceLoadingOverlay.hide();
-            }
-        });
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            context.enqueueWork(() ->
+                NetworkHandler.withClientHooks(hooks -> hooks.handleInstanceLoading(payload)));
+        }
     }
 
     public static void sendInstanceLoadingShow(ServerPlayer player, String status) {
@@ -438,7 +520,10 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
     // PERSONAL RECORDS (client-side)
     // =================================================================================
     public static void handlePersonalRecordsSync(PersonalRecordsSyncPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> ClientPersonalRecordsCache.update(payload));
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            context.enqueueWork(() ->
+                NetworkHandler.withClientHooks(hooks -> hooks.handlePersonalRecordsSync(payload)));
+        }
     }
 
     public static void handleRequestPersonalRecords(RequestPersonalRecordsPayload payload, IPayloadContext context) {
@@ -515,5 +600,13 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase {
             ComboDecayPayload payload = new ComboDecayPayload(lostCombo, previousRank, newRank);
             sendPacket(player, payload);
         }
+    }
+
+    // =================================================================================
+    // TENSION SYSTEM UPDATE
+    // =================================================================================
+    public static void sendTensionUpdate(ServerPlayer player, float tensionPercent, int tensionLevel, boolean bossImminent) {
+        TensionUpdatePayload payload = new TensionUpdatePayload(tensionPercent, tensionLevel, bossImminent);
+        sendPacket(player, payload);
     }
 }

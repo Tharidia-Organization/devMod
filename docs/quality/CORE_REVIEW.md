@@ -10,9 +10,9 @@
 - Fixes applied: None in this review.
 
 ## Network Handlers + Validators
-- P1 (addressed): NetworkHandler referenced client-only classes inside Dist.CLIENT checks; now routed through client payload hooks to reduce classloading risk on dedicated servers.
+- P1 (addressed): NetworkHandler and related handlers referenced client-only classes inside Dist.CLIENT checks; now routed through client payload hooks to reduce classloading risk on dedicated servers.
 - P2: PacketValidator uses string-concatenated keys for rate limits; ensure packetType cardinality is bounded to avoid unbounded growth between cleanups.
-- Fixes applied: Client payload hooks in NetworkHandler (batch 6).
+- Fixes applied: Client payload hooks extended across Config/Party/Shield/Endurance handlers and GameMechanicsSyncPayload (batch 7).
 
 ## Telemetry Persistence + DuckDB
 - P2: DuckDBBatchWriter and DuckDBSchemaManager contain >80-line methods (flushTableUnlocked/migrateSchema); defer refactor to avoid behavior changes in this pass.

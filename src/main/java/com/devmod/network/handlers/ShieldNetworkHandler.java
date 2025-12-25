@@ -1,11 +1,13 @@
 package com.devmod.network.handlers;
 
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+
+import com.devmod.network.NetworkHandler;
 import com.devmod.network.ShieldImpactPayload;
 import com.devmod.network.ShieldShatterPayload;
 import com.devmod.network.ShieldStatePayload;
-import com.devmod.client.rendering.shield.EnergyShieldRenderer;
-import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * Network handler for shield visual effect packets.
@@ -19,34 +21,35 @@ public final class ShieldNetworkHandler extends NetworkHandlerBase {
     // SHIELD STATE SYNC (client-side)
     // =================================================================================
     public static void handleShieldState(ShieldStatePayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            if (payload.isShattered()) {
-                EnergyShieldRenderer.triggerShatter(new Vec3(0, 0, 0));
-            } else if (!payload.isActive()) {
-                EnergyShieldRenderer.clearEffects();
-            }
-        });
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            context.enqueueWork(() ->
+                NetworkHandler.withClientHooks(hooks -> hooks.handleShieldState(payload)));
+        }
     }
 
     // =================================================================================
     // SHIELD IMPACT (client-side)
     // =================================================================================
     public static void handleShieldImpact(ShieldImpactPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            Vec3 impactPoint = new Vec3(payload.impactX(), payload.impactY(), payload.impactZ());
-            EnergyShieldRenderer.recordImpact(impactPoint, payload.damage());
-            LOGGER.debug("Shield impact at {} (deflection={})", impactPoint, payload.wasDeflection());
-        });
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            context.enqueueWork(() -> {
+                NetworkHandler.withClientHooks(hooks -> hooks.handleShieldImpact(payload));
+                LOGGER.debug("Shield impact at ({}, {}, {}) (deflection={})",
+                    payload.impactX(), payload.impactY(), payload.impactZ(), payload.wasDeflection());
+            });
+        }
     }
 
     // =================================================================================
     // SHIELD SHATTER (client-side)
     // =================================================================================
     public static void handleShieldShatter(ShieldShatterPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            Vec3 center = new Vec3(payload.centerX(), payload.centerY(), payload.centerZ());
-            EnergyShieldRenderer.triggerShatter(center);
-            LOGGER.debug("Shield shattered at {} (damage={})", center, payload.finalDamage());
-        });
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            context.enqueueWork(() -> {
+                NetworkHandler.withClientHooks(hooks -> hooks.handleShieldShatter(payload));
+                LOGGER.debug("Shield shattered at ({}, {}, {}) (damage={})",
+                    payload.centerX(), payload.centerY(), payload.centerZ(), payload.finalDamage());
+            });
+        }
     }
 }

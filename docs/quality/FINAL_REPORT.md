@@ -15,11 +15,12 @@
 - Logging: console alerts now include errorId + common context IDs.
 - Comment cleanup: removed redundant note and added rationale for client-thread execution.
 - Micro-refactor: extracted optional NBT helpers to reduce duplication.
-- Client/server boundary: NetworkHandler routes client payloads through client-installed hooks; ClothConfigCompat parent screen reflection is Dist.CLIENT-guarded; GameDesignConfigManager now uses ConfigPaths instead of Minecraft.getInstance.
+- Client/server boundary: NetworkHandler and Config/Party/Shield/Endurance handlers route client payloads through client-installed hooks; GameMechanicsSyncPayload now uses client hooks; ClothConfigCompat parent screen reflection is Dist.CLIENT-guarded; GameDesignConfigManager now uses ConfigPaths instead of Minecraft.getInstance; QuestEditorScreen is annotated with @OnlyIn(Dist.CLIENT).
 
 ## Remaining Warnings
 - [ArmorComponents] Using fallback armor_stats component (test-mode only).
 - StatusConsoleListener: Advanced terminal features are not available in this environment.
+- Deprecated TideManager hooks referenced in EnduranceEventCombat/EnduranceEventHandler (onResonance/onBossKilled/onPlayerDeath/onSSSWave/onNoHitWave).
 
 ## Recommendations (Future)
 1) Refactor long methods in EnduranceEventHandler and NetworkHandler for readability.
