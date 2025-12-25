@@ -230,11 +230,18 @@
 
 ---
 
+## Batch 10: Test Stability (2025-12-25)
+
+### Files Modified
+- `DuckDBPureIntegrationTest.java` - Make insert latency threshold configurable (default 1.0ms) to reduce environment flakiness
+
+---
+
 ## Pending Batches
 
-### Batch 10: Comments (Pending)
+### Batch 11: Comments (Pending)
 - Review TODO/FIXME comments
 - Add invariant comments to critical sections
 
-### Batch 11: Micro-refactor (Pending)
+### Batch 12: Micro-refactor (Pending)
 - Extract helpers only where significantly improves clarity
