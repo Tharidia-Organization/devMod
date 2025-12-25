@@ -1,5 +1,31 @@
 package com.devmod;
 
+import java.util.Objects;
+
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
+
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.item.Item;
+
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.config.ModConfigEvent;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredRegister;
+
+import com.devmod.actions.DevModActions;
+import com.devmod.arena.config.ArenaTemplateConfig;
+import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.arena.registry.TemplateRegistryBootstrap;
+import com.devmod.arena.telemetry.ArenaTelemetry;
 import com.devmod.attributes.ModAttributes;
 import com.devmod.components.ArmorComponents;
 import com.devmod.components.FoodComponents;
@@ -9,32 +35,11 @@ import com.devmod.components.UsableComponents;
 import com.devmod.components.WeaponComponents;
 import com.devmod.config.Config;
 import com.devmod.config.EditorClientConfig;
-import com.devmod.actions.DevModActions;
-import com.devmod.integration.ModIntegrationManager;
-import com.devmod.arena.registry.TemplateRegistryBootstrap;
-import com.devmod.arena.registry.ArenaTemplateRegistry;
-import com.devmod.arena.config.ArenaTemplateConfig;
-import com.devmod.arena.telemetry.ArenaTelemetry;
-import com.devmod.endurance.EnduranceQuestManager;
-import com.devmod.ui.editor.core.EditorConfig;
-import com.devmod.ui.editor.systems.PresetRegistry;
-import com.mojang.logging.LogUtils;
-import net.neoforged.fml.event.config.ModConfigEvent;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.ai.attributes.Attribute;
-import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.CreativeModeTabs;
-import net.minecraft.world.item.Item;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.config.ModConfig;
-import net.neoforged.neoforge.registries.DeferredHolder;
-import net.neoforged.neoforge.registries.DeferredRegister;
-import org.slf4j.Logger;
-import java.util.Objects;
+import com.devmod.config.GameMechanicsConfig;
+import com.devmod.config.GameplayOverridesManager;
 import com.devmod.debug.DebugNetworkHandler;
+import com.devmod.endurance.EnduranceQuestManager;
+import com.devmod.integration.ModIntegrationManager;
 
 @Mod("devmod")
 public class DevMod {
@@ -92,6 +97,7 @@ public class DevMod {
 
         // Register configuration
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        modContainer.registerConfig(ModConfig.Type.COMMON, GameMechanicsConfig.SPEC, "devmod-mechanics.toml");
         modContainer.registerConfig(ModConfig.Type.CLIENT, EditorClientConfig.SPEC);
 
         // Register config reload listener for runtime updates
@@ -101,8 +107,10 @@ public class DevMod {
         // Initialize external mod integration (Pehkui, Better Combat, etc.)
         ModIntegrationManager.init();
 
-        // Initialize PresetRegistry (hierarchical preset system)
-        PresetRegistry.INSTANCE.loadFromConfig();
+        // Initialize PresetRegistry (hierarchical preset system) - client only
+        if (FMLEnvironment.dist.isClient()) {
+            initClientSideRegistries();
+        }
 
         DevModActions.registerCommon();
 
@@ -114,6 +122,9 @@ public class DevMod {
         // Arena Template bootstrap (L1 registry)
         initArenaTemplateRegistry();
 
+        // Initialize gameplay overrides manager (JSON-based per-instance config)
+        GameplayOverridesManager.INSTANCE.initialize();
+
         LOGGER.info("DevMod loaded successfully!");
     }
 
@@ -122,9 +133,9 @@ public class DevMod {
      * Called when config is first loaded.
      */
     private static void onConfigLoading(ModConfigEvent.Loading event) {
-        if (event.getConfig().getSpec() == EditorClientConfig.SPEC) {
+        if (event.getConfig().getSpec() == EditorClientConfig.SPEC && FMLEnvironment.dist.isClient()) {
             LOGGER.debug("[DevMod] Client config loaded, initializing EditorConfig cache...");
-            EditorConfig.initCache();
+            initEditorConfigCache();
         }
     }
 
@@ -134,9 +145,9 @@ public class DevMod {
      */
     private static void onConfigReload(ModConfigEvent.Reloading event) {
         // Only handle our client config for editor settings
-        if (event.getConfig().getSpec() == EditorClientConfig.SPEC) {
+        if (event.getConfig().getSpec() == EditorClientConfig.SPEC && FMLEnvironment.dist.isClient()) {
             LOGGER.debug("[DevMod] Client config reloaded, checking for changes...");
-            EditorConfig.onConfigReload();
+            reloadEditorConfig();
         }
         // Refresh arena template config snapshot on common config reloads
         if (event.getConfig().getSpec() == Config.SPEC && ARENA_BOOTSTRAP != null) {
@@ -145,6 +156,12 @@ public class DevMod {
             EnduranceQuestManager.INSTANCE.applyArenaConfig(newConfig);
             LOGGER.info("[DevMod] ArenaTemplateConfig reloaded and applied");
             com.devmod.arena.ArenaCommandEvents.onArenaConfigReload(newConfig);
+        }
+        // Reload game mechanics config
+        if (event.getConfig().getSpec() == GameMechanicsConfig.SPEC) {
+            LOGGER.info("[DevMod] GameMechanicsConfig reloaded");
+            // Reload JSON overrides as well
+            GameplayOverridesManager.INSTANCE.reload();
         }
     }
 
@@ -176,5 +193,44 @@ public class DevMod {
      */
     public static TemplateRegistryBootstrap getArenaTemplateBootstrap() {
         return ARENA_BOOTSTRAP;
+    }
+
+    // ========== Client-safe initialization helpers ==========
+
+    /**
+     * Initializes client-side registries using reflection to avoid class loading on server.
+     */
+    private static void initClientSideRegistries() {
+        try {
+            Class<?> presetRegistryClass = Class.forName("com.devmod.client.ui.editor.systems.PresetRegistry");
+            Object instance = presetRegistryClass.getField("INSTANCE").get(null);
+            presetRegistryClass.getMethod("loadFromConfig").invoke(instance);
+        } catch (Exception e) {
+            LOGGER.debug("Could not initialize client-side registries: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Initializes EditorConfig cache using reflection.
+     */
+    private static void initEditorConfigCache() {
+        try {
+            Class<?> editorConfigClass = Class.forName("com.devmod.client.ui.editor.core.EditorConfig");
+            editorConfigClass.getMethod("initCache").invoke(null);
+        } catch (Exception e) {
+            LOGGER.debug("Could not initialize EditorConfig cache: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Reloads EditorConfig using reflection.
+     */
+    private static void reloadEditorConfig() {
+        try {
+            Class<?> editorConfigClass = Class.forName("com.devmod.client.ui.editor.core.EditorConfig");
+            editorConfigClass.getMethod("onConfigReload").invoke(null);
+        } catch (Exception e) {
+            LOGGER.debug("Could not reload EditorConfig: {}", e.getMessage());
+        }
     }
 }

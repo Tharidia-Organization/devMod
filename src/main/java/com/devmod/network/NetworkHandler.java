@@ -1,30 +1,119 @@
 package com.devmod.network;
-import com.devmod.DevMod;
 
-import static com.devmod.DevMod.MODID;
-
-import com.devmod.endurance.*;
-import com.devmod.abilities.AbilityActionPayload;
-import com.devmod.abilities.StaminaSyncPayload;
-import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload;
-import com.devmod.party.*;
-import com.devmod.client.overlay.EnduranceQuestOverlay;
-import com.devmod.client.overlay.BadgePopupOverlay;
-import com.devmod.client.overlay.TokenGainOverlay;
-import com.devmod.client.overlay.RecordBannerOverlay;
-import com.devmod.client.overlay.ComboDecayOverlay;
-import com.devmod.network.*;
-import com.devmod.network.handlers.*;
-import com.devmod.abilities.ClientStaminaCache;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-
-import javax.annotation.Nonnull;
 import java.util.Objects;
 import java.util.UUID;
+
+import javax.annotation.Nonnull;
+
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+
+import com.devmod.abilities.AbilityActionPayload;
+import com.devmod.abilities.StaminaSyncPayload;
+import com.devmod.arena.network.BuildProgressPayload;
+import com.devmod.endurance.BadgeUnlockPayload;
+import com.devmod.endurance.BossAlertPayload;
+import com.devmod.endurance.ComboDecayPayload;
+import com.devmod.endurance.ComboSystem;
+import com.devmod.endurance.EnduranceQuestManager;
+import com.devmod.endurance.InstanceLoadingPayload;
+import com.devmod.endurance.PerkChoicesPayload;
+import com.devmod.endurance.PerkSelectionPayload;
+import com.devmod.endurance.PerkSystem;
+import com.devmod.endurance.PersonalRecordsSyncPayload;
+import com.devmod.endurance.QuestActionPayload;
+import com.devmod.endurance.QuestCompletionPayload;
+import com.devmod.endurance.QuestDeathPayload;
+import com.devmod.endurance.QuestSyncPayload;
+import com.devmod.endurance.RecordBannerPayload;
+import com.devmod.endurance.RequestPersonalRecordsPayload;
+import com.devmod.endurance.RequestShopSyncPayload;
+import com.devmod.endurance.RewardSystem;
+import com.devmod.endurance.ShopPurchasePayload;
+import com.devmod.endurance.ShopSyncPayload;
+import com.devmod.endurance.StartQuestPayload;
+import com.devmod.endurance.TensionUpdatePayload;
+import com.devmod.endurance.TokenGainPayload;
+import com.devmod.endurance.WaveDirective;
+import com.devmod.endurance.WaveDirectiveChoicesPayload;
+import com.devmod.endurance.WaveDirectiveSelectionPayload;
+import com.devmod.network.handlers.AbilityNetworkHandler;
+import com.devmod.network.handlers.ConfigNetworkHandler;
+import com.devmod.network.handlers.EnduranceNetworkHandler;
+import com.devmod.network.handlers.MobItemNetworkHandler;
+import com.devmod.network.handlers.PartyNetworkHandler;
+import com.devmod.network.handlers.ShieldNetworkHandler;
+import com.devmod.party.ArrivalConfirmPayload;
+import com.devmod.party.CancelSequencePayload;
+import com.devmod.party.InviteResponsePayload;
+import com.devmod.party.NamedInvitePayload;
+import com.devmod.party.PartyActionPayload;
+import com.devmod.party.PartyNotificationPayload;
+import com.devmod.party.PartySyncPayload;
+import com.devmod.party.QuestSequencePayload;
+import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload;
+
+import static com.devmod.DevMod.MODID;
+import static com.devmod.network.ChannelId.ABILITY_ACTION;
+import static com.devmod.network.ChannelId.ARMOR_STATS;
+import static com.devmod.network.ChannelId.ARRIVAL_CONFIRM;
+import static com.devmod.network.ChannelId.BADGE_UNLOCK;
+import static com.devmod.network.ChannelId.BOSS_ALERT;
+import static com.devmod.network.ChannelId.BUILD_PROGRESS;
+import static com.devmod.network.ChannelId.CANCEL_SEQUENCE;
+import static com.devmod.network.ChannelId.CHALLENGE_SYNC;
+import static com.devmod.network.ChannelId.COMBO_DECAY;
+import static com.devmod.network.ChannelId.CONTRACT_SYNC;
+import static com.devmod.network.ChannelId.EDITOR_APPLY_CONFIRM;
+import static com.devmod.network.ChannelId.EQUIP_MOB;
+import static com.devmod.network.ChannelId.FOOD_STATS;
+import static com.devmod.network.ChannelId.FUEL_STATS;
+import static com.devmod.network.ChannelId.GLOBAL_CONFIG_SYNC;
+import static com.devmod.network.ChannelId.INSTANCE_LOADING;
+import static com.devmod.network.ChannelId.INVITE_RESPONSE;
+import static com.devmod.network.ChannelId.MOB_CONFIG_CONFIRM;
+import static com.devmod.network.ChannelId.MOB_STATS;
+import static com.devmod.network.ChannelId.MODIFY_ITEM;
+import static com.devmod.network.ChannelId.NAMED_INVITE;
+import static com.devmod.network.ChannelId.PARTY_ACTION;
+import static com.devmod.network.ChannelId.PARTY_NOTIFICATION;
+import static com.devmod.network.ChannelId.PARTY_SYNC;
+import static com.devmod.network.ChannelId.PERK_CHOICES;
+import static com.devmod.network.ChannelId.PERK_SELECTION;
+import static com.devmod.network.ChannelId.PERSONAL_RECORDS_SYNC;
+import static com.devmod.network.ChannelId.QUEST_ACTION;
+import static com.devmod.network.ChannelId.QUEST_COMPLETION;
+import static com.devmod.network.ChannelId.QUEST_DEATH;
+import static com.devmod.network.ChannelId.QUEST_SEQUENCE;
+import static com.devmod.network.ChannelId.QUEST_SYNC;
+import static com.devmod.network.ChannelId.RANGED_WEAPON_STATS;
+import static com.devmod.network.ChannelId.RECIPE_CLIENT_SYNC;
+import static com.devmod.network.ChannelId.RECIPE_SYNC;
+import static com.devmod.network.ChannelId.RECORD_BANNER;
+import static com.devmod.network.ChannelId.REQUEST_PERSONAL_RECORDS;
+import static com.devmod.network.ChannelId.REQUEST_SHOP_SYNC;
+import static com.devmod.network.ChannelId.RESONANCE_NOTIFICATION;
+import static com.devmod.network.ChannelId.SHIELD_IMPACT;
+import static com.devmod.network.ChannelId.SHIELD_SHATTER;
+import static com.devmod.network.ChannelId.SHIELD_STATE;
+import static com.devmod.network.ChannelId.SHOP_PURCHASE;
+import static com.devmod.network.ChannelId.SHOP_SYNC;
+import static com.devmod.network.ChannelId.STAMINA_SYNC;
+import static com.devmod.network.ChannelId.START_QUEST;
+import static com.devmod.network.ChannelId.TELEMETRY_BATCH;
+import static com.devmod.network.ChannelId.TENSION_UPDATE;
+import static com.devmod.network.ChannelId.TOKEN_GAIN;
+import static com.devmod.network.ChannelId.UPDATE_ARMOR;
+import static com.devmod.network.ChannelId.USABLE_STATS;
+import static com.devmod.network.ChannelId.WAVE_DIRECTIVE_CHOICES;
+import static com.devmod.network.ChannelId.WAVE_DIRECTIVE_SELECTION;
+import static com.devmod.network.ChannelId.WEAPON_LEGACY;
+import static com.devmod.network.ChannelId.WEAPON_STATS_V2;
 
 /**
  * Network packet registration and routing.
@@ -45,346 +134,425 @@ public class NetworkHandler {
 
     @SubscribeEvent
     public static void register(RegisterPayloadHandlersEvent event) {
+        // Validate channel IDs at registration time (fail-fast)
+        ChannelId.validateNoCollisions();
+
         // ===================================================================
-        // MOB/ITEM/ARMOR/USABLE CHANNELS (1-4, 7, 17, 34, 36-37, 44)
+        // MOB/ITEM CHANNELS (1-4, 7) - see ChannelId enum
         // ===================================================================
 
-        // Channel 1: Monster Statistics
-        event.registrar("1").playToServer(
+        event.registrar(MOB_STATS.asString()).playToServer(
                 nn(UpdateMobStatsPayload.TYPE),
                 nn(UpdateMobStatsPayload.STREAM_CODEC),
                 MobItemNetworkHandler::handleMobData
         );
-        // Channel 2: Weapon Statistics (legacy)
-        event.registrar("2").playToServer(
+        event.registrar(WEAPON_LEGACY.asString()).playToServer(
                 nn(UpdateWeaponPayload.TYPE),
                 nn(UpdateWeaponPayload.STREAM_CODEC),
                 MobItemNetworkHandler::handleWeaponData
         );
-        // Channel 7: Weapon Stats Payload (NBT-based)
-        event.registrar("7").playToServer(
-                nn(WeaponStatsPayload.TYPE),
-                nn(WeaponStatsPayload.STREAM_CODEC),
-                MobItemNetworkHandler::handleWeaponStatsData
-        );
-        // Channel 17: Weapon Stats Payload v2 (typed)
-        event.registrar("17").playToServer(
-                nn(WeaponStatsPayload.TYPE),
-                nn(WeaponStatsPayload.STREAM_CODEC),
-                MobItemNetworkHandler::handleWeaponStatsDataV2
-        );
-        // Channel 3: Monster Equipment
-        event.registrar("3").playToServer(
+        event.registrar(EQUIP_MOB.asString()).playToServer(
                 nn(EquipMobPayload.TYPE),
                 nn(EquipMobPayload.STREAM_CODEC),
                 MobItemNetworkHandler::handleEquipData
         );
-        // Channel 4: Complete Item Modification
-        event.registrar("4").playToServer(
+        event.registrar(MODIFY_ITEM.asString()).playToServer(
                 nn(ModifyItemPayload.TYPE),
                 nn(ModifyItemPayload.STREAM_CODEC),
                 MobItemNetworkHandler::handleItemModification
         );
-        // Channel 34: Armor Statistics
-        event.registrar("34").playToServer(
+        // WEAPON_STATS_NBT removed - uses same payload type as WEAPON_STATS_V2
+        // Use WEAPON_STATS_V2 channel for all weapon stats communication
+
+        // ===================================================================
+        // CONFIG/TELEMETRY CHANNELS (36-43) - see ChannelId enum
+        // ===================================================================
+
+        event.registrar(UPDATE_ARMOR.asString()).playToServer(
                 nn(UpdateArmorPayload.TYPE),
                 nn(UpdateArmorPayload.STREAM_CODEC),
                 MobItemNetworkHandler::handleArmorData
         );
-        // Channel 36: Ranged weapon stats
-        event.registrar("36").playToServer(
+        event.registrar(RANGED_WEAPON_STATS.asString()).playToServer(
                 nn(RangedWeaponStatsPayload.TYPE),
                 nn(RangedWeaponStatsPayload.STREAM_CODEC),
                 MobItemNetworkHandler::handleRangedWeaponData
         );
-        // Channel 37: Armor Stats Payload v2
-        event.registrar("37").playToServer(
+        event.registrar(ARMOR_STATS.asString()).playToServer(
                 nn(ArmorStatsPayload.TYPE),
                 nn(ArmorStatsPayload.STREAM_CODEC),
                 MobItemNetworkHandler::handleArmorStatsDataV2
         );
-        // Channel 44: Usable Stats Payload
-        event.registrar("44").playToServer(
+        event.registrar(GLOBAL_CONFIG_SYNC.asString()).playToClient(
+                nn(GlobalConfigSyncPayload.TYPE),
+                nn(GlobalConfigSyncPayload.STREAM_CODEC),
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        context.enqueueWork(payload::applyToClientConfigs);
+                    }
+                }
+        );
+        event.registrar(RECIPE_SYNC.asString()).playToServer(
+                nn(RecipeSyncPayload.TYPE),
+                nn(RecipeSyncPayload.STREAM_CODEC),
+                ConfigNetworkHandler::handleRecipeSync
+        );
+        event.registrar(RECIPE_CLIENT_SYNC.asString()).playToClient(
+                nn(RecipeClientSyncPayload.TYPE),
+                nn(RecipeClientSyncPayload.STREAM_CODEC),
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        context.enqueueWork(() -> {
+                            var operation = payload.operation();
+                            var recipes = payload.recipes();
+                            boolean firstSyncAll = true;
+                            for (var recipe : recipes) {
+                                switch (operation) {
+                                    case ADD -> com.devmod.recipe.RecipeConfigManager.addRecipeClientOnly(recipe);
+                                    case DELETE -> com.devmod.recipe.RecipeConfigManager.removeRecipeClientOnly(recipe.id());
+                                    case SYNC_ALL -> {
+                                        if (firstSyncAll) {
+                                            com.devmod.recipe.RecipeConfigManager.clearClientRecipes();
+                                            firstSyncAll = false;
+                                        }
+                                        com.devmod.recipe.RecipeConfigManager.addRecipeClientOnly(recipe);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+        );
+        event.registrar(TELEMETRY_BATCH.asString()).playToServer(
+                nn(TelemetryBatchPayload.TYPE),
+                nn(TelemetryBatchPayload.STREAM_CODEC),
+                ConfigNetworkHandler::handleTelemetryBatch
+        );
+        event.registrar(EDITOR_APPLY_CONFIRM.asString()).playToClient(
+                nn(EditorApplyConfirmPayload.TYPE),
+                nn(EditorApplyConfirmPayload.STREAM_CODEC),
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        context.enqueueWork(() ->
+                            com.devmod.client.network.ClientConfigFeedbackPayload.handleEditorApplyConfirm(payload));
+                    }
+                }
+        );
+        event.registrar(RESONANCE_NOTIFICATION.asString()).playToClient(
+                nn(com.devmod.endurance.resonance.ResonanceNotificationPayload.TYPE),
+                nn(com.devmod.endurance.resonance.ResonanceNotificationPayload.STREAM_CODEC),
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        context.enqueueWork(() ->
+                            com.devmod.client.network.ClientOverlayHandlers.handleResonanceTriggered(payload));
+                    }
+                }
+        );
+        event.registrar(CONTRACT_SYNC.asString()).playToClient(
+                nn(com.devmod.endurance.contracts.ContractSyncPayload.TYPE),
+                nn(com.devmod.endurance.contracts.ContractSyncPayload.STREAM_CODEC),
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        context.enqueueWork(() ->
+                            com.devmod.client.network.ClientOverlayHandlers.handleContractSync(payload));
+                    }
+                }
+        );
+
+        // ===================================================================
+        // ITEM STATS CHANNELS (46-49) - see ChannelId enum
+        // ===================================================================
+
+        event.registrar(USABLE_STATS.asString()).playToServer(
                 nn(UsableStatsPayload.TYPE),
                 nn(UsableStatsPayload.STREAM_CODEC),
                 MobItemNetworkHandler::handleUsableStatsData
         );
-        // Channel 45: Food Stats Payload
-        event.registrar("45").playToServer(
+        event.registrar(FOOD_STATS.asString()).playToServer(
                 nn(FoodStatsPayload.TYPE),
                 nn(FoodStatsPayload.STREAM_CODEC),
                 MobItemNetworkHandler::handleFoodStatsData
         );
-        // Channel 46: Fuel Stats Payload
-        event.registrar("46").playToServer(
+        event.registrar(FUEL_STATS.asString()).playToServer(
                 nn(FuelStatsPayload.TYPE),
                 nn(FuelStatsPayload.STREAM_CODEC),
                 MobItemNetworkHandler::handleFuelStatsData
         );
+        event.registrar(WEAPON_STATS_V2.asString()).playToServer(
+                nn(WeaponStatsPayload.TYPE),
+                nn(WeaponStatsPayload.STREAM_CODEC),
+                MobItemNetworkHandler::handleWeaponStatsDataV2
+        );
 
         // ===================================================================
-        // ENDURANCE QUEST CHANNELS (5-23)
+        // ENDURANCE QUEST CHANNELS (5-25) - see ChannelId enum
         // ===================================================================
 
-        // Channel 5: Start Quest
-        event.registrar("5").playToServer(
+        event.registrar(START_QUEST.asString()).playToServer(
                 nn(StartQuestPayload.TYPE),
                 nn(StartQuestPayload.STREAM_CODEC),
                 EnduranceNetworkHandler::handleStartEnduranceQuest
         );
-        // Channel 6: Quest Actions
-        event.registrar("6").playToServer(
+        event.registrar(QUEST_ACTION.asString()).playToServer(
                 nn(QuestActionPayload.TYPE),
                 nn(QuestActionPayload.STREAM_CODEC),
                 EnduranceNetworkHandler::handleQuestAction
         );
-        // Channel 7: Quest Sync (server to client)
-        event.registrar("7").playToClient(
+        event.registrar(QUEST_SYNC.asString()).playToClient(
                 nn(QuestSyncPayload.TYPE),
                 nn(QuestSyncPayload.STREAM_CODEC),
                 EnduranceNetworkHandler::handleQuestSync
         );
-        // Channel 8: Shop Purchase
-        event.registrar("8").playToServer(
+        event.registrar(SHOP_PURCHASE.asString()).playToServer(
                 nn(ShopPurchasePayload.TYPE),
                 nn(ShopPurchasePayload.STREAM_CODEC),
                 EnduranceNetworkHandler::handleShopPurchase
         );
-        // Channel 9: Shop Sync
-        event.registrar("9").playToClient(
+        event.registrar(SHOP_SYNC.asString()).playToClient(
                 nn(ShopSyncPayload.TYPE),
                 nn(ShopSyncPayload.STREAM_CODEC),
                 EnduranceNetworkHandler::handleShopSync
         );
-        // Channel 10: Request Shop Sync
-        event.registrar("10").playToServer(
+        event.registrar(REQUEST_SHOP_SYNC.asString()).playToServer(
                 nn(RequestShopSyncPayload.TYPE),
                 nn(RequestShopSyncPayload.STREAM_CODEC),
                 EnduranceNetworkHandler::handleRequestShopSync
         );
-        // Channel 12: Quest Death Screen
-        event.registrar("12").playToClient(
+        event.registrar(MOB_CONFIG_CONFIRM.asString()).playToClient(
+                nn(MobConfigConfirmPayload.TYPE),
+                nn(MobConfigConfirmPayload.STREAM_CODEC),
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        context.enqueueWork(() ->
+                            com.devmod.client.network.ClientConfigFeedbackPayload.handleMobConfigConfirm(payload));
+                    }
+                }
+        );
+        event.registrar(QUEST_DEATH.asString()).playToClient(
                 nn(QuestDeathPayload.TYPE),
                 nn(QuestDeathPayload.STREAM_CODEC),
                 EnduranceNetworkHandler::handleQuestDeath
         );
-        // Channel 13: Perk Choices
-        event.registrar("13").playToClient(
+        event.registrar(PERK_CHOICES.asString()).playToClient(
                 nn(PerkChoicesPayload.TYPE),
                 nn(PerkChoicesPayload.STREAM_CODEC),
                 EnduranceNetworkHandler::handlePerkChoices
         );
-        // Channel 14: Perk Selection
-        event.registrar("14").playToServer(
+        event.registrar(PERK_SELECTION.asString()).playToServer(
                 nn(PerkSelectionPayload.TYPE),
                 nn(PerkSelectionPayload.STREAM_CODEC),
                 EnduranceNetworkHandler::handlePerkSelection
         );
-        // Channel 15: Quest Completion
-        event.registrar("15").playToClient(
+        event.registrar(QUEST_COMPLETION.asString()).playToClient(
                 nn(QuestCompletionPayload.TYPE),
                 nn(QuestCompletionPayload.STREAM_CODEC),
                 EnduranceNetworkHandler::handleQuestCompletion
         );
-        // Channel 16: Personal Records Sync
-        event.registrar("16").playToClient(
+        event.registrar(PERSONAL_RECORDS_SYNC.asString()).playToClient(
                 nn(PersonalRecordsSyncPayload.TYPE),
                 nn(PersonalRecordsSyncPayload.STREAM_CODEC),
                 EnduranceNetworkHandler::handlePersonalRecordsSync
         );
-        // Channel 17: Request Personal Records
-        event.registrar("17").playToServer(
+        event.registrar(REQUEST_PERSONAL_RECORDS.asString()).playToServer(
                 nn(RequestPersonalRecordsPayload.TYPE),
                 nn(RequestPersonalRecordsPayload.STREAM_CODEC),
                 EnduranceNetworkHandler::handleRequestPersonalRecords
         );
-        // Channel 18: Boss Alert
-        event.registrar("18").playToClient(
+        event.registrar(BOSS_ALERT.asString()).playToClient(
                 nn(BossAlertPayload.TYPE),
                 nn(BossAlertPayload.STREAM_CODEC),
-                (payload, context) -> context.enqueueWork(() ->
-                    EnduranceQuestOverlay.onBossAlert(payload.alertDurationMs(), payload.bossType()))
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        context.enqueueWork(() ->
+                            com.devmod.client.network.ClientOverlayHandlers.handleBossAlert(
+                                payload.alertDurationMs(), payload.bossType()));
+                    }
+                }
         );
-        // Channel 19: Badge Unlock
-        event.registrar("19").playToClient(
+        event.registrar(BADGE_UNLOCK.asString()).playToClient(
                 nn(BadgeUnlockPayload.TYPE),
                 nn(BadgeUnlockPayload.STREAM_CODEC),
-                (payload, context) -> context.enqueueWork(() ->
-                    BadgePopupOverlay.showBadge(payload.badgeName(), payload.rarity()))
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        context.enqueueWork(() ->
+                            com.devmod.client.network.ClientOverlayHandlers.handleBadgeUnlock(
+                                payload.badgeName(), payload.rarity()));
+                    }
+                }
         );
-        // Channel 20: Token Gain Animation
-        event.registrar("20").playToClient(
+        event.registrar(TOKEN_GAIN.asString()).playToClient(
                 nn(TokenGainPayload.TYPE),
                 nn(TokenGainPayload.STREAM_CODEC),
-                (payload, context) -> context.enqueueWork(() ->
-                    TokenGainOverlay.show(payload.amount()))
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        context.enqueueWork(() ->
+                            com.devmod.client.network.ClientOverlayHandlers.handleTokenGain(payload.amount()));
+                    }
+                }
         );
-        // Channel 21: Record Banner
-        event.registrar("21").playToClient(
+        event.registrar(RECORD_BANNER.asString()).playToClient(
                 nn(RecordBannerPayload.TYPE),
                 nn(RecordBannerPayload.STREAM_CODEC),
-                (payload, context) -> context.enqueueWork(() ->
-                    RecordBannerOverlay.showRecord(payload.recordType(), payload.recordValue()))
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        context.enqueueWork(() ->
+                            com.devmod.client.network.ClientOverlayHandlers.handleRecordBanner(
+                                payload.recordType(), payload.recordValue()));
+                    }
+                }
         );
-        // Channel 22: Combo Decay Feedback
-        event.registrar("22").playToClient(
+        event.registrar(COMBO_DECAY.asString()).playToClient(
                 nn(ComboDecayPayload.TYPE),
                 nn(ComboDecayPayload.STREAM_CODEC),
-                (payload, context) -> context.enqueueWork(() ->
-                    ComboDecayOverlay.show(payload.lostCombo(), payload.previousRankOrdinal(), payload.newRankOrdinal()))
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        context.enqueueWork(() ->
+                            com.devmod.client.network.ClientOverlayHandlers.handleComboDecay(
+                                payload.lostCombo(), payload.previousRankOrdinal(), payload.newRankOrdinal()));
+                    }
+                }
         );
-        // Channel 23: Instance Loading Overlay
-        event.registrar("23").playToClient(
+        event.registrar(TENSION_UPDATE.asString()).playToClient(
+                nn(TensionUpdatePayload.TYPE),
+                nn(TensionUpdatePayload.STREAM_CODEC),
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        context.enqueueWork(() ->
+                            com.devmod.client.network.ClientOverlayHandlers.handleTensionUpdate(
+                                payload.tensionPercent(), payload.tensionLevel(), payload.bossImminent()));
+                    }
+                }
+        );
+        event.registrar(INSTANCE_LOADING.asString()).playToClient(
                 nn(InstanceLoadingPayload.TYPE),
                 nn(InstanceLoadingPayload.STREAM_CODEC),
                 EnduranceNetworkHandler::handleInstanceLoading
         );
-        // Channel 24: Wave Directive Choices
-        event.registrar("24").playToClient(
+        event.registrar(WAVE_DIRECTIVE_CHOICES.asString()).playToClient(
                 nn(WaveDirectiveChoicesPayload.TYPE),
                 nn(WaveDirectiveChoicesPayload.STREAM_CODEC),
                 EnduranceNetworkHandler::handleWaveDirectiveChoices
         );
-        // Channel 25: Wave Directive Selection
-        event.registrar("25").playToServer(
+        event.registrar(WAVE_DIRECTIVE_SELECTION.asString()).playToServer(
                 nn(WaveDirectiveSelectionPayload.TYPE),
                 nn(WaveDirectiveSelectionPayload.STREAM_CODEC),
                 EnduranceNetworkHandler::handleWaveDirectiveSelection
         );
 
         // ===================================================================
-        // PARTY SYSTEM CHANNELS (24-30)
+        // PARTY SYSTEM CHANNELS (26-33) - see ChannelId enum
         // ===================================================================
 
-        // Channel 24: Party Action
-        event.registrar("24").playToServer(
+        event.registrar(PARTY_ACTION.asString()).playToServer(
                 nn(PartyActionPayload.TYPE),
                 nn(PartyActionPayload.STREAM_CODEC),
                 PartyNetworkHandler::handlePartyAction
         );
-        // Channel 25: Invite Response
-        event.registrar("25").playToServer(
-                nn(InviteResponsePayload.TYPE),
-                nn(InviteResponsePayload.STREAM_CODEC),
-                PartyNetworkHandler::handleInviteResponse
-        );
-        // Channel 26: Party Notification
-        event.registrar("26").playToClient(
+        event.registrar(PARTY_NOTIFICATION.asString()).playToClient(
                 nn(PartyNotificationPayload.TYPE),
                 nn(PartyNotificationPayload.STREAM_CODEC),
                 PartyNetworkHandler::handlePartyNotification
         );
-        // Channel 27: Party Sync
-        event.registrar("27").playToClient(
+        event.registrar(PARTY_SYNC.asString()).playToClient(
                 nn(PartySyncPayload.TYPE),
                 nn(PartySyncPayload.STREAM_CODEC),
                 PartyNetworkHandler::handlePartySync
         );
-        // Channel 28: Quest Sequence Status (server -> client)
-        event.registrar("28").playToClient(
+        event.registrar(QUEST_SEQUENCE.asString()).playToClient(
                 nn(QuestSequencePayload.TYPE),
                 nn(QuestSequencePayload.STREAM_CODEC),
                 PartyNetworkHandler::handleQuestSequence
         );
-        // Channel 28: Named Invite (client -> server)
-        event.registrar("28").playToServer(
+        event.registrar(NAMED_INVITE.asString()).playToServer(
                 nn(NamedInvitePayload.TYPE),
                 nn(NamedInvitePayload.STREAM_CODEC),
                 PartyNetworkHandler::handleNamedInvite
         );
-        // Channel 29: Arrival Confirm
-        event.registrar("29").playToServer(
+        event.registrar(ARRIVAL_CONFIRM.asString()).playToServer(
                 nn(ArrivalConfirmPayload.TYPE),
                 nn(ArrivalConfirmPayload.STREAM_CODEC),
                 PartyNetworkHandler::handleArrivalConfirm
         );
-        // Channel 30: Cancel Sequence
-        event.registrar("30").playToServer(
+        event.registrar(CANCEL_SEQUENCE.asString()).playToServer(
                 nn(CancelSequencePayload.TYPE),
                 nn(CancelSequencePayload.STREAM_CODEC),
                 PartyNetworkHandler::handleCancelSequence
         );
+        event.registrar(INVITE_RESPONSE.asString()).playToServer(
+                nn(InviteResponsePayload.TYPE),
+                nn(InviteResponsePayload.STREAM_CODEC),
+                PartyNetworkHandler::handleInviteResponse
+        );
 
         // ===================================================================
-        // ABILITY SYSTEM CHANNELS (31-32)
+        // SHIELD VISUAL EFFECTS CHANNELS (56-58) - see ChannelId enum
         // ===================================================================
 
-        // Channel 31: Stamina Sync
-        event.registrar("31").playToClient(
+        event.registrar(SHIELD_STATE.asString()).playToClient(
+                nn(ShieldStatePayload.TYPE),
+                nn(ShieldStatePayload.STREAM_CODEC),
+                ShieldNetworkHandler::handleShieldState
+        );
+        event.registrar(SHIELD_IMPACT.asString()).playToClient(
+                nn(ShieldImpactPayload.TYPE),
+                nn(ShieldImpactPayload.STREAM_CODEC),
+                ShieldNetworkHandler::handleShieldImpact
+        );
+        event.registrar(SHIELD_SHATTER.asString()).playToClient(
+                nn(ShieldShatterPayload.TYPE),
+                nn(ShieldShatterPayload.STREAM_CODEC),
+                ShieldNetworkHandler::handleShieldShatter
+        );
+
+        // ===================================================================
+        // ABILITY SYSTEM CHANNELS (66-67) - see ChannelId enum
+        // ===================================================================
+
+        event.registrar(STAMINA_SYNC.asString()).playToClient(
                 nn(StaminaSyncPayload.TYPE),
                 nn(StaminaSyncPayload.STREAM_CODEC),
-                (payload, context) -> context.enqueueWork(() ->
-                    ClientStaminaCache.update(payload.currentStamina(), payload.maxStamina()))
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        context.enqueueWork(() ->
+                            com.devmod.client.network.ClientOverlayHandlers.handleStaminaSync(
+                                payload.currentStamina(), payload.maxStamina()));
+                    }
+                }
         );
-        // Channel 32: Ability Action
-        event.registrar("32").playToServer(
+        event.registrar(ABILITY_ACTION.asString()).playToServer(
                 nn(AbilityActionPayload.TYPE),
                 nn(AbilityActionPayload.STREAM_CODEC),
                 AbilityNetworkHandler::handleAbilityAction
         );
 
         // ===================================================================
-        // CONFIG/TELEMETRY CHANNELS (11, 33, 35, 38-39, 43)
+        // ARENA CHANNELS (76-85) - see ChannelId enum
         // ===================================================================
 
-        // Channel 11: Mob Config Confirmation
-        event.registrar("11").playToClient(
-                nn(MobConfigConfirmPayload.TYPE),
-                nn(MobConfigConfirmPayload.STREAM_CODEC),
-                ConfigNetworkHandler::handleMobConfigConfirm
-        );
-        // Channel 33: Telemetry Batch
-        event.registrar("33").playToServer(
-                nn(TelemetryBatchPayload.TYPE),
-                nn(TelemetryBatchPayload.STREAM_CODEC),
-                ConfigNetworkHandler::handleTelemetryBatch
-        );
-        // Channel 35: Editor apply confirmation
-        event.registrar("35").playToClient(
-                nn(EditorApplyConfirmPayload.TYPE),
-                nn(EditorApplyConfirmPayload.STREAM_CODEC),
-                ConfigNetworkHandler::handleEditorApplyConfirm
-        );
-        // Channel 38: Global Config Sync
-        event.registrar("38").playToClient(
-                nn(GlobalConfigSyncPayload.TYPE),
-                nn(GlobalConfigSyncPayload.STREAM_CODEC),
-                ConfigNetworkHandler::handleGlobalConfigSync
-        );
-        // Channel 39: Recipe Sync
-        event.registrar("39").playToServer(
-                nn(RecipeSyncPayload.TYPE),
-                nn(RecipeSyncPayload.STREAM_CODEC),
-                ConfigNetworkHandler::handleRecipeSync
-        );
-        // Channel 43: Recipe Sync (server to client)
-        event.registrar("43").playToClient(
-                nn(RecipeClientSyncPayload.TYPE),
-                nn(RecipeClientSyncPayload.STREAM_CODEC),
-                ConfigNetworkHandler::handleRecipeClientSync
+        event.registrar(BUILD_PROGRESS.asString()).playToClient(
+                nn(BuildProgressPayload.TYPE),
+                nn(BuildProgressPayload.STREAM_CODEC),
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        context.enqueueWork(() ->
+                            com.devmod.client.arena.hud.BuildProgressHud.getInstance().handlePayload(payload));
+                    }
+                }
         );
 
         // ===================================================================
-        // SHIELD VISUAL EFFECTS CHANNELS (40-42)
+        // CHALLENGES CHANNELS (86-89) - see ChannelId enum
         // ===================================================================
 
-        // Channel 40: Shield State Sync
-        event.registrar("40").playToClient(
-                nn(ShieldStatePayload.TYPE),
-                nn(ShieldStatePayload.STREAM_CODEC),
-                ShieldNetworkHandler::handleShieldState
-        );
-        // Channel 41: Shield Impact Effect
-        event.registrar("41").playToClient(
-                nn(ShieldImpactPayload.TYPE),
-                nn(ShieldImpactPayload.STREAM_CODEC),
-                ShieldNetworkHandler::handleShieldImpact
-        );
-        // Channel 42: Shield Shatter Effect
-        event.registrar("42").playToClient(
-                nn(ShieldShatterPayload.TYPE),
-                nn(ShieldShatterPayload.STREAM_CODEC),
-                ShieldNetworkHandler::handleShieldShatter
+        event.registrar(CHALLENGE_SYNC.asString()).playToClient(
+                nn(com.devmod.endurance.challenges.ChallengeSyncPayload.TYPE),
+                nn(com.devmod.endurance.challenges.ChallengeSyncPayload.STREAM_CODEC),
+                (payload, context) -> {
+                    if (FMLEnvironment.dist == Dist.CLIENT) {
+                        context.enqueueWork(() ->
+                            com.devmod.client.network.ClientEnduranceHandlers.handleChallengeSync(payload));
+                    }
+                }
         );
     }
 
@@ -471,6 +639,13 @@ public class NetworkHandler {
      */
     public static void sendComboDecay(ServerPlayer player, int lostCombo, int previousRank, int newRank) {
         EnduranceNetworkHandler.sendComboDecay(player, lostCombo, previousRank, newRank);
+    }
+
+    /**
+     * Send tension system update to a player for HUD display.
+     */
+    public static void sendTensionUpdate(ServerPlayer player, float tensionPercent, int tensionLevel, boolean bossImminent) {
+        EnduranceNetworkHandler.sendTensionUpdate(player, tensionPercent, tensionLevel, bossImminent);
     }
 
     /**

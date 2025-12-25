@@ -1,7 +1,7 @@
-package com.devmod;
-import com.devmod.DevMod;
+package com.devmod.client;
 
 import net.minecraft.client.Minecraft;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -11,12 +11,13 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
-import com.devmod.ui.unified.persistence.SettingsManager;
+
+import com.devmod.DevMod;
+import com.devmod.actions.client.DevModClientActions;
 import com.devmod.client.overlay.ComboDecayOverlay;
 import com.devmod.client.overlay.RecordBannerOverlay;
-import com.devmod.actions.client.DevModClientActions;
-import com.devmod.client.ClientUiBridgeImpl;
 import com.devmod.client.input.KeyInputHandler;
+import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.integration.ModIntegrationManager;
 
 // This class will not load on dedicated servers. Accessing client side code from here is safe.

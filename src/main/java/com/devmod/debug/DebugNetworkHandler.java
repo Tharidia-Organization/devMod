@@ -1,14 +1,19 @@
 package com.devmod.debug;
 
-import com.devmod.debug.client.DebugRenderBools;
-import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import java.util.Objects;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Objects;
+import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+
+import static com.devmod.network.ChannelId.DEBUG_SYNC;
+import static com.devmod.network.ChannelId.DEBUG_TOGGLE;
 
 /**
  * Handles registration and processing of debug network packets.
@@ -26,20 +31,21 @@ public class DebugNetworkHandler {
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
         // Debug Toggle (client to server) - player requests to toggle a feature
-        event.registrar("debug").playToServer(
+        event.registrar(DEBUG_TOGGLE.asString()).playToServer(
             Objects.requireNonNull(DebugTogglePayload.TYPE),
             Objects.requireNonNull(DebugTogglePayload.STREAM_CODEC),
             DebugNetworkHandler::handleDebugToggle
         );
 
         // Debug Sync (server to client) - sync enabled state to client
-        event.registrar("debug").playToClient(
+        event.registrar(DEBUG_SYNC.asString()).playToClient(
             Objects.requireNonNull(DebugSyncPayload.TYPE),
             Objects.requireNonNull(DebugSyncPayload.STREAM_CODEC),
             DebugNetworkHandler::handleDebugSync
         );
 
-        LOGGER.info("[DevMod] Debug network packets registered");
+        LOGGER.info("[DevMod] Debug network packets registered (channels {}, {})",
+            DEBUG_TOGGLE.asString(), DEBUG_SYNC.asString());
     }
 
     // ========== Server-side Handlers ==========
@@ -76,35 +82,10 @@ public class DebugNetworkHandler {
     // ========== Client-side Handlers ==========
 
     private static void handleDebugSync(DebugSyncPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            DebugFeature feature = payload.getFeature();
-            if (feature == null) {
-                LOGGER.warn("Unknown debug feature in sync: {}", payload.featureId());
-                return;
-            }
-
-            // Update the client-side render booleans
-            switch (feature) {
-                case ENTITY_PATHING -> DebugRenderBools.ENTITY_PATHING = payload.enabled();
-                case ENTITY_GOALS -> DebugRenderBools.ENTITY_GOALS = payload.enabled();
-                case ENTITY_BRAINS -> DebugRenderBools.ENTITY_BRAINS = payload.enabled();
-                case POI -> DebugRenderBools.POI = payload.enabled();
-                case BLOCK_UPDATES -> DebugRenderBools.BLOCK_UPDATES = payload.enabled();
-                case STRUCTURE_GENERATIONS -> DebugRenderBools.STRUCTURES = payload.enabled();
-                case RAIDS -> DebugRenderBools.RAIDS = payload.enabled();
-                case GAME_EVENTS -> DebugRenderBools.GAME_EVENTS = payload.enabled();
-                case BEE_HIVES -> DebugRenderBools.BEE_HIVES = payload.enabled();
-                case BEES -> DebugRenderBools.BEES = payload.enabled();
-                case WATER -> DebugRenderBools.WATER = payload.enabled();
-                case HEIGHTMAP -> DebugRenderBools.HEIGHTMAP = payload.enabled();
-                case COLLISION -> DebugRenderBools.COLLISION = payload.enabled();
-                case LIGHT -> DebugRenderBools.LIGHT = payload.enabled();
-                case SOLID_FACES -> DebugRenderBools.SOLID_FACES = payload.enabled();
-                case CHUNK -> DebugRenderBools.CHUNK = payload.enabled();
-                case SPAWN_CHUNKS -> {} // No specific renderer for this
-            }
-
-            LOGGER.debug("[Debug] Client synced {} = {}", feature.getDisplayName(), payload.enabled());
-        });
+        if (FMLEnvironment.dist != Dist.CLIENT) {
+            return;
+        }
+        context.enqueueWork(() ->
+            com.devmod.client.debug.DebugNetworkClientHandler.handleDebugSync(payload));
     }
 }
