@@ -46,3 +46,7 @@
 ## Batch 10 - Logging Standardization (Round 2)
 - Normalized party lifecycle logs to include partyId and playerId context.
 - Touched files: src/main/java/com/devmod/party/PartyManager.java.
+
+## Batch 11 - Comment Cleanup + Invariants (Round 2)
+- Removed redundant telemetry comments and added a why comment for listener error handling.
+- Touched files: src/main/java/com/devmod/party/PartyManager.java.
