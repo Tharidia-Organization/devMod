@@ -179,6 +179,9 @@ public class RewardSystem {
             rewards.activeMutators = mutatorSession.getActiveMutatorCount();
         }
 
+        float bargainMultiplier = com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE
+            .getRewardMultiplier(quest.getQuestId());
+
         // Wave completion bonus
         int waveBonus = quest.getCurrentWave() * 50;
 
@@ -228,7 +231,7 @@ public class RewardSystem {
                 Math.max(MIN_TEMPLATE_DIFFICULTY_MULTIPLIER, policy.weight()));
         }
 
-        double totalMultiplier = styleMultiplier * mutatorMultiplier * noHitMultiplier * speedMultiplier;
+        double totalMultiplier = styleMultiplier * mutatorMultiplier * noHitMultiplier * speedMultiplier * bargainMultiplier;
         totalMultiplier *= policyMultiplier * difficultyMultiplier;
         totalMultiplier = Math.min(MAX_TOTAL_REWARD_MULTIPLIER, Math.max(0.25, totalMultiplier));
 
@@ -261,8 +264,18 @@ public class RewardSystem {
             if (quest.isEndlessMode() && quest.getCurrentWave() >= 20) {
                 prestigeEarned += quest.getCurrentWave() / 10;
             }
-            wallet.addCurrency(Currency.PRESTIGE, prestigeEarned);
+
+            // Award prestige and check for milestone unlocks
+            List<String> newMilestoneIds = wallet.addCurrency(Currency.PRESTIGE, prestigeEarned);
             rewards.prestigeEarned = prestigeEarned;
+
+            // Notify player of newly unlocked milestones
+            for (String milestoneId : newMilestoneIds) {
+                PrestigeMilestone.getAllMilestones().stream()
+                    .filter(m -> m.getId().equals(milestoneId))
+                    .findFirst()
+                    .ifPresent(milestone -> notifyMilestoneUnlock(player, milestone));
+            }
 
             // Telemetry: record prestige earned
             EnduranceTelemetryService.INSTANCE.recordCurrencyEarned(
@@ -742,6 +755,13 @@ public class RewardSystem {
     }
 
     /**
+     * Save a specific player's wallet (triggers full save).
+     */
+    public void savePlayerWallet(PlayerWallet wallet) {
+        savePlayerWallets();
+    }
+
+    /**
      * Reset all reward system data. Called during full player reset.
      */
     public void resetAll() {
@@ -811,6 +831,31 @@ public class RewardSystem {
         }
     }
 
+    /**
+     * Notify player of a milestone unlock with special fanfare.
+     */
+    private void notifyMilestoneUnlock(ServerPlayer player, PrestigeMilestone milestone) {
+        // Header message
+        player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.milestone.unlocked")
+            .withStyle(style -> style.withColor(0xFFD700).withBold(true))));
+
+        // Milestone name and description
+        player.sendSystemMessage(Objects.requireNonNull(I18n.translate(milestone.getNameKey())
+            .withStyle(style -> style.withColor(milestone.getType().color))));
+
+        player.sendSystemMessage(Objects.requireNonNull(I18n.translate(milestone.getDescriptionKey())
+            .withStyle(style -> style.withColor(0xAAAAAA).withItalic(true))));
+
+        // Play special sound
+        Objects.requireNonNull(player.level()).playSound(null,
+            player.getX(), player.getY(), player.getZ(),
+            SoundEvents.UI_TOAST_CHALLENGE_COMPLETE,
+            SoundSource.PLAYERS, 1.0f, 1.2f);
+
+        LOGGER.info("[RewardSystem] Player {} unlocked prestige milestone: {} ({})",
+            player.getName().getString(), milestone.getId(), milestone.getType());
+    }
+
     // ========== Query Methods ==========
 
     public List<ShopItem> getShopItems() {
@@ -848,6 +893,15 @@ public class RewardSystem {
         private int completionStreak = 0;
         private long lastCompletionDay = -1;
 
+        // Track lifetime prestige for milestone system
+        private int totalPrestigeEarned = 0;
+        private final Set<String> unlockedMilestones = new HashSet<>();
+
+        // Ascension (New Game+) system
+        private int ascensionLevel = 0;
+        private String ascensionTitle = null;
+        private final Set<String> unlockedAscensionPerks = new HashSet<>();
+
         public PlayerWallet(UUID playerId) {
             this.playerId = playerId;
             // Initialize currencies
@@ -860,8 +914,32 @@ public class RewardSystem {
             return currencies.getOrDefault(currency.key, 0);
         }
 
-        public void addCurrency(Currency currency, int amount) {
+        /**
+         * Add currency. For prestige, also tracks lifetime total.
+         * @return List of newly unlocked milestone IDs (empty if none)
+         */
+        public java.util.List<String> addCurrency(Currency currency, int amount) {
             currencies.merge(currency.key, amount, (a, b) -> a + b);
+
+            // Track lifetime prestige for milestone system
+            if (currency == Currency.PRESTIGE && amount > 0) {
+                int previousTotal = totalPrestigeEarned;
+                totalPrestigeEarned += amount;
+
+                // Check for newly unlocked milestones
+                java.util.List<PrestigeMilestone> newMilestones =
+                    PrestigeMilestone.getNewlyUnlockedMilestones(previousTotal, totalPrestigeEarned);
+
+                java.util.List<String> newMilestoneIds = new java.util.ArrayList<>();
+                for (PrestigeMilestone milestone : newMilestones) {
+                    if (!unlockedMilestones.contains(milestone.getId())) {
+                        unlockedMilestones.add(milestone.getId());
+                        newMilestoneIds.add(milestone.getId());
+                    }
+                }
+                return newMilestoneIds;
+            }
+            return java.util.Collections.emptyList();
         }
 
         public void removeCurrency(Currency currency, int amount) {
@@ -918,6 +996,40 @@ public class RewardSystem {
         public Map<String, Integer> getPurchases() { return purchases; }
         public Set<String> getAchievements() { return achievements; }
         public Map<String, Integer> getTemplateCompletions() { return templateCompletions; }
+
+        // Prestige milestone accessors
+        public int getTotalPrestigeEarned() { return totalPrestigeEarned; }
+        public Set<String> getUnlockedMilestones() { return unlockedMilestones; }
+        public boolean hasMilestone(String milestoneId) { return unlockedMilestones.contains(milestoneId); }
+
+        /**
+         * Get extra perk slots from prestige milestones.
+         */
+        public int getExtraPerkSlots() {
+            return PrestigeMilestone.getExtraPerkSlots(totalPrestigeEarned);
+        }
+
+        /**
+         * Get token multiplier from prestige milestones.
+         */
+        public float getTokenMultiplier() {
+            return PrestigeMilestone.getTokenMultiplier(totalPrestigeEarned);
+        }
+
+        // Ascension (New Game+) accessors
+        public int getAscensionLevel() { return ascensionLevel; }
+        public void setAscensionLevel(int level) { this.ascensionLevel = level; }
+
+        public String getAscensionTitle() { return ascensionTitle; }
+        public void setAscensionTitle(String title) { this.ascensionTitle = title; }
+
+        public Set<String> getUnlockedAscensionPerks() { return unlockedAscensionPerks; }
+        public boolean hasAscensionPerk(String perkId) { return unlockedAscensionPerks.contains(perkId); }
+        public void unlockAscensionPerk(String perkId) { unlockedAscensionPerks.add(perkId); }
+
+        public java.util.List<String> getUnlockedAscensionPerksList() {
+            return new java.util.ArrayList<>(unlockedAscensionPerks);
+        }
     }
 
     /**

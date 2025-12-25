@@ -35,6 +35,9 @@ public class EnduranceEventCombat {
     // Track mutator sessions per quest (shared with EnduranceEventHandler)
     static final Map<UUID, MutatorSystem.MutatorSession> mutatorSessions = new ConcurrentHashMap<>();
 
+    private static final long CRITICAL_KILL_WINDOW_MS = 3000L;
+    private static final Map<UUID, CriticalHitMarker> lastCriticalHits = new ConcurrentHashMap<>();
+
     // ═══════════════════════════════════════════════════════════════
     // DAMAGE HANDLING
     // ═══════════════════════════════════════════════════════════════
@@ -219,13 +222,15 @@ public class EnduranceEventCombat {
      */
     public static void handleCriticalHit(ServerPlayer player, Entity target, float damage) {
         if (isQuestMob(target)) {
+            UUID playerId = player.getUUID();
             CombatTracker.INSTANCE.onCriticalHit(player, damage);
 
             // Record for signature weapon imprint
             SoulImprintManager.INSTANCE.recordCriticalHit(player);
 
+            lastCriticalHits.put(playerId, new CriticalHitMarker(target.getId(), System.currentTimeMillis()));
+
             // Bonus combo points for critical hits
-            UUID playerId = player.getUUID();
             ComboSystem.ComboSession comboSession = comboSessions.get(playerId);
             if (comboSession != null) {
                 comboSession.registerAction(ComboSystem.ActionType.CRITICAL_HIT, damage);
@@ -323,7 +328,7 @@ public class EnduranceEventCombat {
             PerkSystem.INSTANCE.processKill(player);
 
             // Track daily challenge progress
-            boolean isCritical = source.is(net.minecraft.tags.DamageTypeTags.ALWAYS_KILLS_ARMOR_STANDS); // Approximate critical detection
+            boolean isCritical = isRecentCriticalKill(playerId, entity.getId());
             DailyChallengeManager.INSTANCE.onMobKill(playerId, isCritical, isBoss);
 
             // Track weekly challenge progress
@@ -420,6 +425,24 @@ public class EnduranceEventCombat {
         return "BODY"; // Default fallback
     }
 
+    private static boolean isRecentCriticalKill(UUID playerId, int entityId) {
+        CriticalHitMarker marker = lastCriticalHits.get(playerId);
+        if (marker == null) {
+            return false;
+        }
+
+        long now = System.currentTimeMillis();
+        if (now - marker.timestamp > CRITICAL_KILL_WINDOW_MS) {
+            lastCriticalHits.remove(playerId);
+            return false;
+        }
+        if (marker.targetId == entityId) {
+            lastCriticalHits.remove(playerId);
+            return true;
+        }
+        return false;
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // SESSION ACCESSORS
     // ═══════════════════════════════════════════════════════════════
@@ -447,4 +470,6 @@ public class EnduranceEventCombat {
     static MutatorSystem.MutatorSession removeMutatorSession(UUID questId) {
         return mutatorSessions.remove(questId);
     }
+
+    private record CriticalHitMarker(int targetId, long timestamp) {}
 }

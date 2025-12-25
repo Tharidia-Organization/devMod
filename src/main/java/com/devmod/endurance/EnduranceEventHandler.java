@@ -437,10 +437,12 @@ public class EnduranceEventHandler {
         int waveKills = waveStats != null ? waveStats.kills : 0;
         float waveDamageTaken = waveStats != null ? waveStats.damageTaken : 0;
 
+        var perkSynergyWeb = com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE;
+
         // === SIGNATURE WEAPONS - Track exceptional wave performance ===
         if ("SSS".equals(styleRank)) {
             com.devmod.combat.signature.SoulImprintManager.INSTANCE.recordSSSWave(player);
-            com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.recordSSSRank(player);
+            perkSynergyWeb.recordSSSRank(player);
             LOGGER.debug("[EnduranceQuest] Recorded SSS wave for signature weapon tracking");
         }
         if (waveDamageTaken == 0 && waveKills > 0) {
@@ -449,8 +451,8 @@ public class EnduranceEventHandler {
         }
 
         // === PERK SYNERGY WEB - Record wave stats for discovery tracking ===
-        com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.recordWaveComplete(player, waveNumber);
-        com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.recordKills(player, waveKills);
+        perkSynergyWeb.recordWaveComplete(player, waveNumber);
+        perkSynergyWeb.recordKills(player, waveKills);
 
         // === THE TIDE - Global threat reduction for exceptional play ===
         if ("SSS".equals(styleRank)) {
@@ -540,17 +542,18 @@ public class EnduranceEventHandler {
         // === PERK SYNERGY WEB - Check for new hidden perk discoveries ===
         PerkSystem.PerkSession perkSession = PerkSystem.INSTANCE.getSession(playerId).orElse(null);
         if (perkSession != null) {
+            var discoveries = perkSynergyWeb.getDiscoveries(player);
             var discoveryContext = new com.devmod.endurance.perk.PerkSynergyWeb.DiscoveryContext(
                 playerId,
                 perkSession.getAcquiredPerkIds(),
-                com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.getDiscoveries(player).getDiscoveredPerks(),
+                discoveries.getDiscoveredPerks(),
                 waveNumber,
-                waveKills,
-                waveNumber,
+                discoveries.getTotalKills(),
+                discoveries.getTotalWavesCompleted(),
                 styleRank,
                 Map.of()
             );
-            List<String> newDiscoveries = com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.checkDiscoveries(player, discoveryContext);
+            List<String> newDiscoveries = perkSynergyWeb.checkDiscoveries(player, discoveryContext);
             if (!newDiscoveries.isEmpty()) {
                 LOGGER.info("[EnduranceQuest] Player {} discovered {} hidden perks: {}",
                     player.getName().getString(), newDiscoveries.size(), newDiscoveries);
@@ -562,7 +565,7 @@ public class EnduranceEventHandler {
         boolean chainActive = DirectiveChainManager.INSTANCE.hasActiveChain(questId);
         if (chainActive) {
             // Advance the active chain
-            int waveDeaths = quest.getDeathsThisSession() > 0 ? 1 : 0; // Simplified
+            int waveDeaths = waveStats != null ? waveStats.deaths : 0;
             float damageTakenThisWave = waveStats != null ? waveStats.damageTaken : 0;
             boolean tookDamage = damageTakenThisWave > 0;
             int styleOrdinal = comboSession != null ? comboSession.getCurrentRank().ordinal() : 0;
@@ -672,8 +675,13 @@ public class EnduranceEventHandler {
             LOGGER.info("[EnduranceQuest]   Contract Multiplier: x{}", String.format("%.1f", contractMultiplier));
         }
 
-        // Apply contract multiplier to directive multiplier for final reward
-        float totalMultiplier = directiveMultiplier * contractMultiplier;
+        float bargainMultiplier = com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.getRewardMultiplier(questId);
+        if (bargainMultiplier > 1.0f) {
+            LOGGER.info("[EnduranceQuest]   Bargain Multiplier: x{}", String.format("%.1f", bargainMultiplier));
+        }
+
+        // Apply contract/bargain multipliers to directive multiplier for final reward
+        float totalMultiplier = directiveMultiplier * contractMultiplier * bargainMultiplier;
 
         RewardSystem.WaveReward waveReward = RewardSystem.INSTANCE.calculateWaveReward(
             waveNumber, quest, comboSession, mutatorSession, totalMultiplier);
