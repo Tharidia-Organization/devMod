@@ -10,10 +10,7 @@
 
 ```
 ⚠️ ./gradlew build: FAILED (could not write XML test results under build/test-results/test)
-✅ ./gradlew test: SUCCESS
-⚠️ Warnings:
-   - StatusConsoleListener: Advanced terminal features are not available in this environment.
-   - [ArmorComponents] Using fallback armor_stats component (test-mode only).
+⚠️ ./gradlew test: FAILED (compile errors in IntegratedTestSession/TestingSession: missing TestSessionType, ModDiscoveryService)
 ```
 
 ---
