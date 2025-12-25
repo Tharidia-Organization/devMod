@@ -56,17 +56,17 @@ public class InstanceRegistry {
      * Create and register a new instance.
      */
     public InstanceData createInstance(String arenaId, UUID ownerId) {
-        InstanceData instance = InstanceData.createSolo(ownerId);
-        instance.setArena(null, 25, arenaId);  // Default arena settings
-        register(instance);
-        return instance;
+        return registerInstance(InstanceData.createSolo(ownerId), arenaId);
     }
 
     /**
      * Create and register a new party instance.
      */
     public InstanceData createPartyInstance(String arenaId, UUID ownerId, int maxPlayers) {
-        InstanceData instance = InstanceData.createParty(ownerId, maxPlayers);
+        return registerInstance(InstanceData.createParty(ownerId, maxPlayers), arenaId);
+    }
+
+    private InstanceData registerInstance(InstanceData instance, String arenaId) {
         instance.setArena(null, 25, arenaId);
         register(instance);
         return instance;

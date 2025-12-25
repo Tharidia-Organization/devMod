@@ -50,3 +50,7 @@
 ## Batch 11 - Comment Cleanup + Invariants (Round 2)
 - Removed redundant telemetry comments and added a why comment for listener error handling.
 - Touched files: src/main/java/com/devmod/party/PartyManager.java.
+
+## Batch 12 - Micro-refactor (Round 2)
+- Extracted shared instance registration helper to reduce duplication.
+- Touched files: src/main/java/com/devmod/runtime/InstanceRegistry.java.
