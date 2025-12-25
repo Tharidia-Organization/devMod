@@ -280,7 +280,30 @@
 
 ---
 
+## Batch 13: Class Documentation (2025-12-26)
+
+### Files Modified
+- `DevModClientActions.java` - Added class-level Javadoc documenting action categories and registration
+
+### Documentation Review
+Reviewed 10+ largest files (>1000 LOC) for documentation status:
+- `EnduranceQuestManager.java` (3038 LOC) - ✓ Has class doc
+- `ItemEditorScreen.java` (2470 LOC) - ✓ Has class doc
+- `DuckDBBatchWriter.java` (1496 LOC) - ✓ Has class doc
+- `ArenaBuilder.java` (1480 LOC) - ✓ Has class doc
+- `RadialMenuScreen.java` (1351 LOC) - ✓ Has class doc
+- `DuckDBQueryAPI.java` (1392 LOC) - ✓ Has class doc
+- `EnduranceTelemetryService.java` (1375 LOC) - ✓ Has class doc
+
+---
+
+## Batch 14: Micro-Refactor (2025-12-26)
+
+### Files Modified
+- `PartyScreen.java` - Extracted UI init blocks into helpers to shorten init()
+
+---
+
 ## Pending Batches
 
-### Batch 13: Micro-refactor (Pending)
-- Extract helpers only where significantly improves clarity
+None (Step 2 complete)

@@ -196,7 +196,15 @@ public class PartyScreen extends Screen {
         refreshFromCache();
 
         // === Create UI Components ===
+        initInviteSection();
+        initMobSearchBox();
+        initActionButtons();
 
+        updateButtonStates();
+        updatePreviewEntity();
+    }
+
+    private void initInviteSection() {
         // Use same coordinates as renderMembersPanel for invite section
         // Members panel: panelLeft = panelX + 15, panelTop = panelY + 80, panelH = 200
         int membersPanelLeft = panelX + 15;
@@ -221,7 +229,9 @@ public class PartyScreen extends Screen {
             .onClick(this::onInviteClicked)
             .build();
         inviteButtonBounds = new ButtonArea(inviteButtonX, inviteSectionY + 12, 50, 20);
+    }
 
+    private void initMobSearchBox() {
         // Mob search box - inside mob selection panel after header
         // Mob panel: panelLeft = panelX + 225, panelTop = panelY + 80
         // Search background at: (panelLeft + 5, panelTop + 28) with size (panelW - 10) x 20
@@ -235,7 +245,9 @@ public class PartyScreen extends Screen {
         mobSearchBox.setBordered(false);
         mobSearchBox.setResponder(this::onMobSearchChanged);
         addRenderableWidget(mobSearchBox);
+    }
 
+    private void initActionButtons() {
         // Bottom action buttons
         int buttonY = panelY + PANEL_HEIGHT - 45;
         int centerX = panelX + PANEL_WIDTH / 2;
@@ -277,9 +289,6 @@ public class PartyScreen extends Screen {
             .onClick(this::onCreatePartyClicked)
             .build();
         createPartyButtonBounds = new ButtonArea(centerX - 80, panelY + PANEL_HEIGHT / 2 + 20, 160, 30);
-
-        updateButtonStates();
-        updatePreviewEntity();
     }
 
     private void loadAvailableMobs() {
