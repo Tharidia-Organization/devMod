@@ -9,8 +9,8 @@
 ## Build Status
 
 ```
-⚠️ ./gradlew build: FAILED (could not write XML test results under build/test-results/test)
-⚠️ ./gradlew test: FAILED (compile errors in IntegratedTestSession/TestingSession: missing TestSessionType, ModDiscoveryService)
+✅ ./gradlew build --no-configuration-cache: SUCCESS (warnings: StatusConsoleListener advanced terminal features not available; [ArmorComponents] Using fallback armor_stats component (test-mode only))
+✅ ./gradlew test --no-configuration-cache: SUCCESS (warnings: StatusConsoleListener advanced terminal features not available; [ArmorComponents] Using fallback armor_stats component (test-mode only))
 ```
 
 ---
@@ -137,12 +137,12 @@ These are in lower-priority files and mostly use standard patterns:
 
 ```bash
 # Verify build
-./gradlew build
+./gradlew build --no-configuration-cache
 
 # Run all tests
-./gradlew test
+./gradlew test --no-configuration-cache
 
-# Check for warnings
-./gradlew compileJava --rerun-tasks 2>&1 | grep -c warning
-# Expected: 0
+# Check for compiler warnings
+./gradlew compileJava --rerun-tasks --no-configuration-cache 2>&1 | grep -i warning
+# Expected: no compiler warnings; Gradle may emit a terminal capability warning.
 ```
