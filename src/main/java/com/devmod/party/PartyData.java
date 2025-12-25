@@ -1,14 +1,22 @@
 package com.devmod.party;
 
-import com.devmod.endurance.QuestType;
-import net.minecraft.resources.ResourceLocation;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.endurance.QuestType;
 /**
  * Represents a party of players preparing for or participating in an Endurance Quest.
  * Thread-safe for concurrent access.

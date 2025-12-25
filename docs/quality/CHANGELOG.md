@@ -34,3 +34,7 @@
 - Routed GameMechanicsSyncPayload client application through client payload hooks to avoid client singleton references.
 - Added @OnlyIn(Dist.CLIENT) to QuestEditorScreen for client screen annotation enforcement.
 - Touched files: src/main/java/com/devmod/network/NetworkHandler.java, src/main/java/com/devmod/client/network/ClientNetworkPayloadHooks.java, src/main/java/com/devmod/network/handlers/ConfigNetworkHandler.java, src/main/java/com/devmod/network/handlers/EnduranceNetworkHandler.java, src/main/java/com/devmod/network/handlers/PartyNetworkHandler.java, src/main/java/com/devmod/network/handlers/ShieldNetworkHandler.java, src/main/java/com/devmod/network/GameMechanicsSyncPayload.java, src/main/java/com/devmod/client/quest/QuestEditorScreen.java.
+
+## Batch 8 - Imports / Order / Unused (Round 2)
+- Reordered imports to match project grouping rules and replaced wildcard imports with explicit lists.
+- Touched files: src/main/java/com/devmod/party/PartyManager.java, src/main/java/com/devmod/party/PartyData.java, src/main/java/com/devmod/runtime/InstanceRegistry.java, src/main/java/com/devmod/config/GameplayOverridesManager.java, src/main/java/com/devmod/network/RecipeSyncPayload.java, src/main/java/com/devmod/network/RecipeClientSyncPayload.java, src/main/java/com/devmod/recipe/RecipeConfigManager.java, src/main/java/com/devmod/collision/bodypart/BodyPartHierarchy.java.

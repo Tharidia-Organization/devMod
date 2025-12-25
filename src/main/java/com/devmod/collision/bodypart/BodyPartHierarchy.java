@@ -1,12 +1,24 @@
 package com.devmod.collision.bodypart;
 
-import com.devmod.combat.HitHelper;
-import com.devmod.collision.transform.AnimationSnapshot;
-import org.joml.Matrix4f;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.*;
+
+import org.joml.Matrix4f;
+
+import com.devmod.collision.transform.AnimationSnapshot;
+import com.devmod.combat.HitHelper;
 
 /**
  * Manages the parent-child relationships between body parts.
