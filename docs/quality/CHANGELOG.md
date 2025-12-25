@@ -58,3 +58,7 @@
 ## Batch 13 - Client/Server Boundary (Round 3)
 - Removed direct client-only references from common handlers using reflection guards.
 - Touched files: src/main/java/com/devmod/combat/DamageHandler.java, src/main/java/com/devmod/debug/DebugNetworkHandler.java, src/main/java/com/devmod/telemetry/dashboard/DashboardCommand.java.
+
+## Batch 14 - Imports / Order / Unused (Fixups)
+- Added missing explicit imports after wildcard removal to restore compilation.
+- Touched files: src/main/java/com/devmod/config/GameplayOverridesManager.java, src/main/java/com/devmod/recipe/RecipeConfigManager.java, src/main/java/com/devmod/runtime/InstanceRegistry.java, src/main/java/com/devmod/collision/bodypart/BodyPartHierarchy.java.
