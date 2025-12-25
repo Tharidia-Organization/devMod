@@ -1,16 +1,22 @@
-package com.devmod.ui.editor.core;
+package com.devmod.client.ui.editor.core;
 
-import com.devmod.ui.editor.EditorSection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.client.ui.editor.EditorSection;
 
 /**
  * Centralized layout calculator for editor panel bounds.
  * Follows EDITOR_DESIGN_SYSTEM.md Section 1.3 and 12.
  */
 public class EditorLayout {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(EditorLayout.class);
 
     private Bounds panelBounds = Bounds.EMPTY;
     private Bounds headerBounds = Bounds.EMPTY;
@@ -132,7 +138,7 @@ public class EditorLayout {
 
     private void validateGridAlignment(int value, String context) {
         if (value % 4 != 0) {
-            System.err.println("Layout Validation Warning: " + context + " value (" + value + ") is not aligned to 4px grid.");
+            LOGGER.debug("[EditorLayout] Grid alignment warning: {} value ({}) is not aligned to 4px grid", context, value);
         }
     }
 

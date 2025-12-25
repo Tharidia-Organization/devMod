@@ -1,68 +1,54 @@
-# Quality Changelog
+# Quality Pass Changelog
 
-## Batch 1 - Imports / Order / Unused
-- Reordered imports to match project grouping rules and removed unused imports.
-- Replaced wildcard imports in core files and narrowed static imports.
-- Touched files: src/main/java/com/devmod/DevMod.java, src/main/java/com/devmod/client/DevModClient.java, src/main/java/com/devmod/arena/alert/DiscordAlertChannel.java, src/main/java/com/devmod/debug/DebugManager.java, src/main/java/com/devmod/debug/DebugNetworkHandler.java, src/main/java/com/devmod/endurance/LeaderboardSystem.java, src/main/java/com/devmod/network/NetworkHandler.java.
+## Batch 1: Imports & Utility Classes (2025-12-25)
 
-## Batch 2 - Null-safety
-- Annotated nullable fields and tightened nullable contracts where getters already return @Nullable.
-- Copied @Nullable fields into locals before checks during serialization to avoid inconsistent reads.
-- Touched files: src/main/java/com/devmod/runtime/InstanceData.java, src/main/java/com/devmod/runtime/PlayerInstanceSnapshot.java.
+### Files Modified
 
-## Batch 3 - Logging Standardization
-- Added errorId and common context IDs to console alert payloads for traceable logs.
-- Touched files: src/main/java/com/devmod/arena/alert/ConsoleAlertChannel.java.
+#### Import Cleanup & Reordering
+- `HitHelper.java` - Removed duplicate wildcard imports, added final + private ctor, reordered imports
+- `ClientVFXHelper.java` - Added final + private ctor, reordered imports
+- `CompatRegistry.java` - Replaced `java.util.*` with specific imports, reordered
+- `ExecutionSystem.java` - Replaced `java.util.*` with specific imports, reordered
+- `WeaponTraitRegistry.java` - Replaced `java.util.*` with specific imports, reordered
+- `SoulImprint.java` - Replaced `java.util.*` with specific imports, reordered
+- `SoulImprintManager.java` - Replaced `java.util.*` with specific imports, reordered
 
-## Batch 4 - Comment Cleanup + Invariants
-- Removed a redundant comment and replaced it with a rationale about client-thread execution.
-- Touched files: src/main/java/com/devmod/client/DevModClient.java.
+### Import Order Standard Applied
+1. `java.*`
+2. `javax.*`
+3. External libraries (`org.slf4j.*`, `com.google.*`, etc.)
+4. `net.minecraft.*`
+5. `net.neoforged.*`
+6. `com.devmod.*`
 
-## Batch 5 - Micro-refactor
-- Extracted small helpers for optional NBT fields to reduce duplication without behavior change.
-- Touched files: src/main/java/com/devmod/runtime/PlayerInstanceSnapshot.java.
+---
 
-## Batch 6 - Client/Server Boundary
-- Routed client-only NetworkHandler payloads through client-installed hooks to avoid common/client coupling.
-- Guarded ClothConfigCompat parent screen reflection with a Dist.CLIENT check.
-- Replaced GameDesignConfigManager's client-only path lookup with ConfigPaths for server safety.
-- Touched files: src/main/java/com/devmod/network/NetworkHandler.java, src/main/java/com/devmod/client/DevModClient.java, src/main/java/com/devmod/client/network/ClientNetworkPayloadHooks.java, src/main/java/com/devmod/compat/mods/clothconfig/ClothConfigCompat.java, src/main/java/com/devmod/config/gamedesign/GameDesignConfigManager.java.
+## Batch 2: Logging Standardization (2025-12-25)
 
-## Batch 7 - Client/Server Boundary (Handlers)
-- Routed client-side handling in Config/Endurance/Party/Shield network handlers through client payload hooks.
-- Removed direct client references while keeping dist guards intact.
-- Routed GameMechanicsSyncPayload client application through client payload hooks to avoid client singleton references.
-- Added @OnlyIn(Dist.CLIENT) to QuestEditorScreen for client screen annotation enforcement.
-- Touched files: src/main/java/com/devmod/network/NetworkHandler.java, src/main/java/com/devmod/client/network/ClientNetworkPayloadHooks.java, src/main/java/com/devmod/network/handlers/ConfigNetworkHandler.java, src/main/java/com/devmod/network/handlers/EnduranceNetworkHandler.java, src/main/java/com/devmod/network/handlers/PartyNetworkHandler.java, src/main/java/com/devmod/network/handlers/ShieldNetworkHandler.java, src/main/java/com/devmod/network/GameMechanicsSyncPayload.java, src/main/java/com/devmod/client/quest/QuestEditorScreen.java.
+### Files Modified
 
-## Batch 8 - Imports / Order / Unused (Round 2)
-- Reordered imports to match project grouping rules and replaced wildcard imports with explicit lists.
-- Touched files: src/main/java/com/devmod/party/PartyManager.java, src/main/java/com/devmod/party/PartyData.java, src/main/java/com/devmod/runtime/InstanceRegistry.java, src/main/java/com/devmod/config/GameplayOverridesManager.java, src/main/java/com/devmod/network/RecipeSyncPayload.java, src/main/java/com/devmod/network/RecipeClientSyncPayload.java, src/main/java/com/devmod/recipe/RecipeConfigManager.java, src/main/java/com/devmod/collision/bodypart/BodyPartHierarchy.java.
+#### System.out/err → LOGGER Conversion
+- `RadialAction.java` - Added LOGGER, converted System.err to LOGGER.error
+- `RadialMenuConfig.java` - Added LOGGER, converted 6x System.err to LOGGER.warn
+- `GridValidator.java` - Added LOGGER, converted 2x System.out to LOGGER.debug
+- `EditorLayout.java` - Added LOGGER, converted System.err to LOGGER.debug
+- `StaminaSystemEditor.java` - Added LOGGER, converted System.out to LOGGER.info
 
-## Batch 9 - Null-safety (Round 2)
-- Cached nullable reads before checks to avoid inconsistent access.
-- Touched files: src/main/java/com/devmod/party/PartyData.java, src/main/java/com/devmod/runtime/InstanceRegistry.java.
+### Files Intentionally Unchanged
+- `ConsoleAlertChannel.java` - Uses System.out/err by design (console alerting)
+- `LegacyCallCheck.java` - CLI tool, System.out/err appropriate for CLI output
 
-## Batch 10 - Logging Standardization (Round 2)
-- Normalized party lifecycle logs to include partyId and playerId context.
-- Touched files: src/main/java/com/devmod/party/PartyManager.java.
+---
 
-## Batch 11 - Comment Cleanup + Invariants (Round 2)
-- Removed redundant telemetry comments and added a why comment for listener error handling.
-- Touched files: src/main/java/com/devmod/party/PartyManager.java.
+## Pending Batches
 
-## Batch 12 - Micro-refactor (Round 2)
-- Extracted shared instance registration helper to reduce duplication.
-- Touched files: src/main/java/com/devmod/runtime/InstanceRegistry.java.
+### Batch 3: Null-safety (Pending)
+- Review @Nullable field access patterns
+- Add local variable copies where needed
 
-## Batch 13 - Client/Server Boundary (Round 3)
-- Removed direct client-only references from common handlers using reflection guards.
-- Touched files: src/main/java/com/devmod/combat/DamageHandler.java, src/main/java/com/devmod/debug/DebugNetworkHandler.java, src/main/java/com/devmod/telemetry/dashboard/DashboardCommand.java.
+### Batch 4: Comments (Pending)
+- Review TODO/FIXME comments
+- Add invariant comments to critical sections
 
-## Batch 14 - Imports / Order / Unused (Fixups)
-- Added missing explicit imports after wildcard removal to restore compilation.
-- Touched files: src/main/java/com/devmod/config/GameplayOverridesManager.java, src/main/java/com/devmod/recipe/RecipeConfigManager.java, src/main/java/com/devmod/runtime/InstanceRegistry.java, src/main/java/com/devmod/collision/bodypart/BodyPartHierarchy.java.
-
-## Batch 15 - TideManager API Migration
-- Passed questId to TideManager hooks to remove deprecated calls.
-- Touched files: src/main/java/com/devmod/endurance/EnduranceEventCombat.java, src/main/java/com/devmod/endurance/EnduranceEventHandler.java.
+### Batch 5: Micro-refactor (Pending)
+- Extract helpers only where significantly improves clarity

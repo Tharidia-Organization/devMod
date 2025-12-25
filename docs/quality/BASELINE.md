@@ -1,15 +1,40 @@
-# Baseline
+# Quality Pass Baseline
 
-## Commands
-- ./gradlew build (FAILED: test result XML write errors)
-- ./gradlew test (FAILED: test result XML write errors)
+**Date**: 2025-12-25
+**Branch**: Banastaff
 
-## Test Failures
-- Gradle test reporting failed to write XML results under `build/test-results/test` for multiple test classes.
+## Build Status
 
-## Recurring Warnings
-- [ArmorComponents] Using fallback armor_stats component (test-mode only)
-- StatusConsoleListener: Advanced terminal features are not available in this environment
+```
+BUILD SUCCESSFUL
+Tests: 2800 passed, 0 failed, 2 skipped
+```
 
-## Problem Areas (Initial)
-- Test result XML write failures block reliable test reporting; investigate filesystem permissions or concurrent runner issues under `build/test-results/test`.
+## Compiler Warnings (15 total)
+
+| File | Warning Type | Count |
+|------|--------------|-------|
+| `SmartBrainLibCompat.java` | deprecation (Brain.getRunningBehaviors, getMemories) | 2 |
+| `SoulImprintManager.java` | deprecation (WeaponTraitRegistry.getCombinedEffect) | 10 |
+| `ItemEditorScreen.java:271` | this-escape | 1 |
+| `ContractHudOverlay.java:92` | lossy-conversions (double→float) | 1 |
+| `Guild.java:56` | this-escape | 1 |
+
+## Areas of Concern (Initial Assessment)
+
+1. **Deprecation Usage**: SoulImprintManager uses deprecated API heavily (10 calls)
+2. **This-escape Warnings**: Two classes have potential initialization order issues
+3. **Type Conversion**: ContractHudOverlay has implicit lossy cast
+
+## Test Health
+
+- All 2800 tests passing
+- No flaky tests detected in this run
+- Test coverage via JaCoCo enabled
+
+## Next Steps
+
+1. Generate full quality inventory
+2. Fix issues by category (imports, null-safety, logging, comments, micro-refactor)
+3. Core file review
+4. Final verification

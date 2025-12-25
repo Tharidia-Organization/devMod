@@ -1,22 +1,29 @@
 package com.devmod.combat;
 
-import com.devmod.config.Config;
-import com.devmod.*;
-import com.devmod.*;
-
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+
 import javax.annotation.Nonnull;
 
-public class HitHelper {
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+
+import com.devmod.config.Config;
+
+/**
+ * Utility class for precise body part hit detection.
+ * All methods are static; this class should not be instantiated.
+ */
+public final class HitHelper {
+
+    private HitHelper() {
+        // Utility class - prevent instantiation
+    }
 
     public enum BodyPart { HEAD, BODY, ARMS, LEGS }
 

@@ -1,23 +1,30 @@
-package com.devmod.ui.radial;
+package com.devmod.client.ui.radial;
 
-import com.devmod.actions.ActionRegistry;
-import com.devmod.actions.client.ActionKeybindRegistry;
-import com.devmod.actions.client.ClientActionContexts;
+import java.util.Objects;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-import javax.annotation.Nullable;
-import java.util.Objects;
-import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.actions.ActionRegistry;
+import com.devmod.actions.client.ActionKeybindRegistry;
+import com.devmod.actions.client.ClientActionContexts;
 
 /**
  * Modular action system for radial menu items.
  * Supports commands, key bindings, item usage, screen navigation, and custom actions.
  */
 public abstract class RadialAction {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RadialAction.class);
 
     public abstract void execute();
     public abstract Component getLabel();
@@ -127,9 +134,10 @@ public abstract class RadialAction {
      * Create a command action.
      * @deprecated Use {@link #registry(String)} with an action registered in ActionRegistry instead.
      *             CommandAction sends commands directly via chat which bypasses the action system.
+     *             Package-private to prevent new external usages.
      */
     @Deprecated
-    public static RadialAction command(String name, String description, String emoji, String command) {
+    static RadialAction command(String name, String description, String emoji, String command) {
         return command(name, description, emoji, null, command);
     }
 
@@ -137,9 +145,10 @@ public abstract class RadialAction {
      * Create a command action with ItemStack icon.
      * @deprecated Use {@link #registry(String)} with an action registered in ActionRegistry instead.
      *             CommandAction sends commands directly via chat which bypasses the action system.
+     *             Package-private to prevent new external usages.
      */
     @Deprecated
-    public static RadialAction command(String name, String description, String emoji,
+    static RadialAction command(String name, String description, String emoji,
                                         @Nullable ItemStack icon, String command) {
         return new CommandAction(name, description, emoji, icon, command);
     }
@@ -180,9 +189,10 @@ public abstract class RadialAction {
      * Create a custom runnable action.
      * @deprecated Use {@link #registry(String)} with an action registered in ActionRegistry instead.
      *             CustomAction uses opaque Runnables which bypass telemetry and precondition checks.
+     *             Package-private to prevent new external usages.
      */
     @Deprecated
-    public static RadialAction custom(String name, String description, String emoji, Runnable action) {
+    static RadialAction custom(String name, String description, String emoji, Runnable action) {
         return custom(name, description, emoji, null, action);
     }
 
@@ -190,9 +200,10 @@ public abstract class RadialAction {
      * Create a custom runnable action with ItemStack icon.
      * @deprecated Use {@link #registry(String)} with an action registered in ActionRegistry instead.
      *             CustomAction uses opaque Runnables which bypass telemetry and precondition checks.
+     *             Package-private to prevent new external usages.
      */
     @Deprecated
-    public static RadialAction custom(String name, String description, String emoji,
+    static RadialAction custom(String name, String description, String emoji,
                                        @Nullable ItemStack icon, Runnable action) {
         return new CustomAction(name, description, emoji, icon, action);
     }
@@ -358,7 +369,7 @@ public abstract class RadialAction {
                 try {
                     Minecraft.getInstance().setScreen(screenFactory.get());
                 } catch (Exception e) {
-                    System.err.println("[DevMod] Failed to open screen: " + e.getMessage());
+                    LOGGER.error("[RadialAction] Failed to open screen: {}", e.getMessage());
                     Minecraft.getInstance().setScreen(null);
                 }
             });

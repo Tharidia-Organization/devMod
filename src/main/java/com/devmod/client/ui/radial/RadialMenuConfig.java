@@ -1,12 +1,7 @@
-package com.devmod.ui.radial;
+package com.devmod.client.ui.radial;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.devmod.ui.radial.config.RadialMenuConstants;
-import net.minecraft.client.Minecraft;
-import org.lwjgl.glfw.GLFW;
-
-import java.io.*;
+import java.io.Reader;
+import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -14,11 +9,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.minecraft.client.Minecraft;
+
+import org.lwjgl.glfw.GLFW;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import com.devmod.client.ui.radial.config.RadialMenuConstants;
+
 /**
  * Configuration system for the Radial Menu.
  * Supports customizable colors, behavior options, and theme presets.
  */
 public class RadialMenuConfig {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RadialMenuConfig.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final String CONFIG_FILE = "config/devmod/radial_menu.json";
     private static final InputBindings DEFAULT_INPUT = new InputBindings();
@@ -243,7 +250,7 @@ public class RadialMenuConfig {
                 }
             }
         } catch (Exception e) {
-            System.err.println("[DevMod] Failed to load radial menu config: " + e.getMessage());
+            LOGGER.warn("[RadialMenuConfig] Failed to load config: {}", e.getMessage());
         }
     }
 
@@ -258,7 +265,7 @@ public class RadialMenuConfig {
                 GSON.toJson(this, writer);
             }
         } catch (Exception e) {
-            System.err.println("[DevMod] Failed to save radial menu config: " + e.getMessage());
+            LOGGER.warn("[RadialMenuConfig] Failed to save config: {}", e.getMessage());
         }
     }
 
@@ -330,7 +337,7 @@ public class RadialMenuConfig {
 
     private int sanitizeKey(int value, int fallback, String name) {
         if (value <= 0) {
-            System.err.println("[DevMod] Invalid key binding for " + name + ", resetting to default.");
+            LOGGER.warn("[RadialMenuConfig] Invalid key binding for {}, resetting to default", name);
             return fallback;
         }
         return value;
@@ -358,8 +365,8 @@ public class RadialMenuConfig {
         for (Map.Entry<Integer, List<String>> entry : owners.entrySet()) {
             List<String> values = entry.getValue();
             if (values.size() > 1) {
-                System.err.println("[DevMod] Radial menu key binding conflict for key " + entry.getKey() +
-                    " assigned to: " + String.join(", ", values));
+                LOGGER.warn("[RadialMenuConfig] Key binding conflict for key {} assigned to: {}",
+                    entry.getKey(), String.join(", ", values));
             }
         }
     }
@@ -387,15 +394,15 @@ public class RadialMenuConfig {
         }
 
         if (candidate.length != fallback.length) {
-            System.err.println("[DevMod] Key binding array " + name + " has length " + candidate.length +
-                " (expected " + fallback.length + "). Truncating/expanding with defaults.");
+            LOGGER.warn("[RadialMenuConfig] Key binding array {} has length {} (expected {}). Truncating/expanding with defaults",
+                name, candidate.length, fallback.length);
         }
 
         int[] normalized = new int[fallback.length];
         for (int i = 0; i < normalized.length; i++) {
             int value = (i < candidate.length) ? candidate[i] : 0;
             if (value <= 0) {
-                System.err.println("[DevMod] Invalid key binding for " + name + "[" + i + "], resetting to default.");
+                LOGGER.warn("[RadialMenuConfig] Invalid key binding for {}[{}], resetting to default", name, i);
                 normalized[i] = fallback[i];
             } else {
                 normalized[i] = value;

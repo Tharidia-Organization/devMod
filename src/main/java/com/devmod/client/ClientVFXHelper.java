@@ -1,24 +1,29 @@
 package com.devmod.client;
 
-import com.devmod.combat.HitHelper.BodyPart;
-import com.devmod.effects.ShakeEffect;
-import com.devmod.effects.ShakeManager;
-import com.devmod.damage.DamageBreakdown;
-import com.devmod.client.overlay.HeadshotFlashVFX;
-import com.devmod.client.overlay.Impact3DPanelManager;
-import com.devmod.client.overlay.ImpactData;
-import com.devmod.client.overlay.ImpactVFX;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
+
+import com.devmod.client.effects.ShakeEffect;
+import com.devmod.client.effects.ShakeManager;
+import com.devmod.client.overlay.HeadshotFlashVFX;
+import com.devmod.client.overlay.Impact3DPanelManager;
+import com.devmod.client.overlay.ImpactData;
+import com.devmod.client.overlay.ImpactVFX;
+import com.devmod.combat.HitHelper.BodyPart;
+import com.devmod.damage.DamageBreakdown;
 
 /**
  * Client-only helper for VFX operations.
  * This class is only loaded on the client side and contains all Minecraft.getInstance() calls.
  * Called via DistExecutor from common code.
  */
-public class ClientVFXHelper {
+public final class ClientVFXHelper {
+
+    private ClientVFXHelper() {
+        // Utility class - prevent instantiation
+    }
 
     /**
      * Spawns an evasion panel for arrow attacks on client.

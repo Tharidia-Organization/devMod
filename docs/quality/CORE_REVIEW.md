@@ -1,32 +1,69 @@
-# Core Review
+# Core Critical Files Review
 
-## Endurance Core Flow
-- P2: EnduranceEventHandler has very long lifecycle methods (onWaveComplete/onQuestEnd); readability and testability would improve with helper extraction in a future pass.
-- P2: ArenaHazardSystem falls back to player position when no arena context is present; verify this is intended for non-instanced quests to avoid misplaced hazard bounds.
-- Fixes applied: Migrated TideManager hook usage to the questId-aware API (batch 15).
+**Date**: 2025-12-25
+**Reviewer**: Quality Pass Automation
 
-## Arena Registry / Builder / Policy
-- P2: ArenaBuilder, ArenaTemplateRegistry, and ArenaPolicyRegistry exceed 600 LOC; safe refactors deferred per scope limits.
-- P2: ArenaPolicy core method spans >600 LOC; break into validation helpers when scope allows.
-- Fixes applied: None in this review.
+## Summary
 
-## Network Handlers + Validators
-- P1 (addressed): NetworkHandler and related handlers referenced client-only classes inside Dist.CLIENT checks; now routed through client payload hooks to reduce classloading risk on dedicated servers.
-- P2: PacketValidator uses string-concatenated keys for rate limits; ensure packetType cardinality is bounded to avoid unbounded growth between cleanups.
-- Fixes applied: Client payload hooks extended across Config/Party/Shield/Endurance handlers and GameMechanicsSyncPayload (batch 7).
+| Severity | Count | Status |
+|----------|-------|--------|
+| P0 | 1 | FIXED |
+| P1 | 0 | N/A (false positives on analysis) |
 
-## Telemetry Persistence + DuckDB
-- P2: DuckDBBatchWriter and DuckDBSchemaManager contain >80-line methods (flushTableUnlocked/migrateSchema); defer refactor to avoid behavior changes in this pass.
-- Fixes applied: None in this review.
+---
 
-## Radial Action Executor / Registry
-- P2: ActionRegistry builds telemetry payloads manually; ensure any new fields continue to use TelemetryJson.escape to avoid malformed JSON.
-- Fixes applied: None in this review.
+## P0 Issues (Critical)
 
-## Client/Server Boundary Bridge
-- P1 (addressed): ClothConfigCompat (common package) reflects client-only Screen class; now guarded by Dist.CLIENT before reflection.
-- P1 (addressed): DamageHandler direct client-only RangedWeaponModule usage; now resolved via reflection with server-safe fallback.
-- P1 (addressed): DebugNetworkHandler and DashboardCommand client-only handlers now invoked via reflection guards.
-- P2: ClientUiBridgeImpl.openEnduranceQuestScreen ignores templateId parameter; verify whether template selection should be forwarded.
-- P2: TestHarnessCommands still reference client-only delegates directly; consider reflection/Dist guard to avoid dedicated server classloading.
-- Fixes applied: Dist guard for ClothConfigCompat.setParentScreen (batch 6); reflection guards for client-only handlers (batch 13).
+### 1. Race Condition on pressureLevel Update
+**File**: `DuckDBBatchWriter.java:903-911`
+
+**Issue**: `pressureLevel` is volatile but the compound check-then-set operation is not atomic. Multiple threads could race, causing inconsistent backpressure decisions.
+
+**Status**: ✅ FIXED - Added synchronized block around check-set sequence.
+
+```java
+// Before (race condition):
+if (totalPending >= PRESSURE_THRESHOLD_CRITICAL) {
+    pressureLevel = 2;
+} else if ...
+
+// After (synchronized):
+synchronized (this) {
+    if (totalPending >= PRESSURE_THRESHOLD_CRITICAL) {
+        pressureLevel = 2;
+    } else if ...
+}
+```
+
+---
+
+## Analysis Notes
+
+Several items flagged during initial analysis were confirmed as **false positives**:
+
+| Issue | Reason Not A Problem |
+|-------|---------------------|
+| Resource leak on early return (DuckDBBatchWriter) | `finally` block always executes, closing connection |
+| Null wallet access (EnduranceNetworkHandler) | `getWallet()` uses `computeIfAbsent()`, never returns null |
+| Null quest dereference (EnduranceQuestManager) | `quest` field is `final` and always initialized in constructor |
+| Null recipes iteration (ConfigNetworkHandler) | Payload record guarantees non-null list |
+
+---
+
+## Files Reviewed
+
+| File | LOC | Real Issues Found |
+|------|-----|-------------------|
+| EnduranceQuestManager.java | 3027 | 0 |
+| ArenaBuilder.java | 1474 | 0 |
+| DuckDBBatchWriter.java | 1473 | 1 (P0 - fixed) |
+| EnduranceNetworkHandler.java | ~400 | 0 |
+| ConfigNetworkHandler.java | ~100 | 0 |
+
+---
+
+## Recommendations
+
+1. **Add @Nonnull annotations** to methods like `getWallet()` to document guarantees
+2. **Consider AtomicInteger** for `pressureLevel` instead of synchronized block
+3. **Add thread-safety documentation** to DuckDBBatchWriter Javadoc

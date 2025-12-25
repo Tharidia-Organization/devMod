@@ -1,12 +1,17 @@
-package com.devmod.ui.editor.core;
+package com.devmod.client.ui.editor.core;
 
 import java.util.Arrays;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Simple runtime grid validation helper (4px grid).
  * Logs when bounds are off-grid to aid debugging (guarded by EditorSpacing.ENABLE_GRID_VALIDATION).
  */
 public final class GridValidator {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(GridValidator.class);
 
     private GridValidator() {}
 
@@ -18,8 +23,8 @@ public final class GridValidator {
             boolean ok = EditorSpacing.isOnGrid(b.x()) && EditorSpacing.isOnGrid(b.y())
                 && EditorSpacing.isOnGrid(b.width()) && EditorSpacing.isOnGrid(b.height());
             if (!ok) {
-                System.out.println("[DevMod][GridValidator] Off-grid bounds for " + label + ": "
-                    + b.x() + "," + b.y() + " " + b.width() + "x" + b.height());
+                LOGGER.debug("[GridValidator] Off-grid bounds for {}: {},{} {}x{}",
+                    label, b.x(), b.y(), b.width(), b.height());
             }
         }
     }
@@ -29,7 +34,7 @@ public final class GridValidator {
         if (values == null) return;
         boolean ok = Arrays.stream(values).allMatch(EditorSpacing::isOnGrid);
         if (!ok) {
-            System.out.println("[DevMod][GridValidator] Off-grid values for " + label + ": " + Arrays.toString(values));
+            LOGGER.debug("[GridValidator] Off-grid values for {}: {}", label, Arrays.toString(values));
         }
     }
 }

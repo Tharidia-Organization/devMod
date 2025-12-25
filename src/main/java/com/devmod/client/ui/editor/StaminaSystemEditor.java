@@ -1,17 +1,25 @@
-package com.devmod.ui.editor;
+package com.devmod.client.ui.editor;
 
-import com.devmod.abilities.StaminaSystem;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+
 import org.lwjgl.glfw.GLFW;
-import javax.annotation.Nonnull;
-import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.abilities.StaminaSystem;
 
 @OnlyIn(Dist.CLIENT)
 public class StaminaSystemEditor extends Screen {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StaminaSystemEditor.class);
     private static final int DEFAULT_SELECTED_FIELD = 0;
     private static final int PANEL_WIDTH = 300;
     private static final int PANEL_HEIGHT = 200;
@@ -131,9 +139,7 @@ public class StaminaSystemEditor extends Screen {
     
     private void saveConfiguration() {
         // In real implementation, save to config or send to server
-        System.out.println("Stamina config saved: " + 
-            "max=" + data.maxStamina + 
-            ", regen=" + data.regenRate + 
-            ", delay=" + data.regenDelay);
+        LOGGER.info("[StaminaEditor] Config saved: max={}, regen={}, delay={}",
+            data.maxStamina, data.regenRate, data.regenDelay);
     }
 }
