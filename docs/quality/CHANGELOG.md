@@ -17,3 +17,7 @@
 ## Batch 4 - Comment Cleanup + Invariants
 - Removed a redundant comment and replaced it with a rationale about client-thread execution.
 - Touched files: src/main/java/com/devmod/client/DevModClient.java.
+
+## Batch 5 - Micro-refactor
+- Extracted small helpers for optional NBT fields to reduce duplication without behavior change.
+- Touched files: src/main/java/com/devmod/runtime/PlayerInstanceSnapshot.java.

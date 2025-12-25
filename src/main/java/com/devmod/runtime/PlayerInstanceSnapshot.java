@@ -389,10 +389,7 @@ public class PlayerInstanceSnapshot {
 
         // Identifiers
         tag.putUUID("playerId", Objects.requireNonNull(playerId, "playerId"));
-        UUID currentInstanceId = instanceId;
-        if (currentInstanceId != null) {
-            tag.putUUID("instanceId", currentInstanceId);
-        }
+        putOptionalUuid(tag, "instanceId", instanceId);
         tag.putLong("createdAt", createdAt);
         tag.putLong("lastUpdated", lastUpdated);
 
@@ -441,10 +438,7 @@ public class PlayerInstanceSnapshot {
         tag.putInt("xpTotal", originalTotalExperience);
 
         // Quest
-        String currentQuestType = questType;
-        if (currentQuestType != null) {
-            tag.putString("questType", currentQuestType);
-        }
+        putOptionalString(tag, "questType", questType);
         ResourceLocation currentMobId = mobId;
         if (currentMobId != null) {
             tag.putString("mobId", Objects.requireNonNull(currentMobId.toString(), "mobId"));
@@ -453,10 +447,7 @@ public class PlayerInstanceSnapshot {
         tag.putBoolean("endlessMode", endlessMode);
 
         // Party
-        UUID leaderId = partyLeaderId;
-        if (leaderId != null) {
-            tag.putUUID("partyLeader", leaderId);
-        }
+        putOptionalUuid(tag, "partyLeader", partyLeaderId);
         if (!partyMembers.isEmpty()) {
             ListTag memberList = new ListTag();
             for (UUID member : partyMembers) {
@@ -468,18 +459,24 @@ public class PlayerInstanceSnapshot {
         }
 
         // Arena Template Recovery (Fase 1)
-        String currentTemplateId = templateId;
-        if (currentTemplateId != null) {
-            tag.putString("templateId", currentTemplateId);
-        }
+        putOptionalString(tag, "templateId", templateId);
         tag.putInt("templateVersion", templateVersion);
-        String currentPolicyId = policyId;
-        if (currentPolicyId != null) {
-            tag.putString("policyId", currentPolicyId);
-        }
+        putOptionalString(tag, "policyId", policyId);
         tag.putInt("policyVersion", policyVersion);
 
         return tag;
+    }
+
+    private static void putOptionalString(CompoundTag tag, String key, @Nullable String value) {
+        if (value != null) {
+            tag.putString(key, value);
+        }
+    }
+
+    private static void putOptionalUuid(CompoundTag tag, String key, @Nullable UUID value) {
+        if (value != null) {
+            tag.putUUID(key, value);
+        }
     }
 
     /**
