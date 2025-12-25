@@ -1,7 +1,11 @@
 package com.devmod.arena.registry;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Hazard validation according to TODO_ARENA_TEMPLATE v2.23 (DD8).

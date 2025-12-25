@@ -14,7 +14,15 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -810,6 +818,13 @@ public class ArenaPolicyRegistry {
                     );
                 }
 
+                // GameplayOverrides parsing - null for now, can be extended later
+                ArenaPolicy.GameplayOverrides gameplayOverrides = null;
+                if (obj.has("gameplayOverrides") && obj.get("gameplayOverrides").isJsonObject()) {
+                    // Full parsing can be added here - for now use null (use global config)
+                    gameplayOverrides = null;
+                }
+
                 return Optional.of(new ArenaPolicy(
                     id,
                     version,
@@ -828,6 +843,7 @@ public class ArenaPolicyRegistry {
                     mut,
                     rewards,
                     balance,
+                    gameplayOverrides,
                     enabled,
                     description
                 ));

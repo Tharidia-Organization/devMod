@@ -1,11 +1,13 @@
 package com.devmod.arena.network;
 
-import com.devmod.arena.ui.BuildProgressOverlay.BuildPhase;
-import com.devmod.arena.ui.BuildProgressOverlay.ProgressFlags;
+import com.devmod.arena.BuildPhase;
+import com.devmod.arena.ProgressFlags;
+import com.mojang.logging.LogUtils;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+import org.slf4j.Logger;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
@@ -36,6 +38,43 @@ public record BuildProgressPayload(
     int totalBlocks,
     int flags
 ) implements CustomPacketPayload {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
+
+    /** Maximum valid progress in basis points (100.00%) */
+    public static final int MAX_PROGRESS_BPS = 10000;
+
+    /** Maximum allowed total blocks (prevents overflow attacks) */
+    public static final int MAX_BLOCKS = 10_000_000;
+
+    /** Maximum valid flags value (8-bit) */
+    public static final int MAX_FLAGS = 0xFF;
+
+    /**
+     * Compact constructor with bounds validation and clamping.
+     * Ensures all values are within safe ranges to prevent overflow attacks.
+     */
+    public BuildProgressPayload {
+        Objects.requireNonNull(arenaId, "arenaId cannot be null");
+        Objects.requireNonNull(phase, "phase cannot be null");
+
+        // Clamp progressBps to valid range [0, 10000]
+        progressBps = Math.max(0, Math.min(progressBps, MAX_PROGRESS_BPS));
+
+        // Clamp blocksPlaced to valid range [0, MAX_BLOCKS]
+        blocksPlaced = Math.max(0, Math.min(blocksPlaced, MAX_BLOCKS));
+
+        // Clamp totalBlocks to valid range [0, MAX_BLOCKS]
+        totalBlocks = Math.max(0, Math.min(totalBlocks, MAX_BLOCKS));
+
+        // Ensure blocksPlaced doesn't exceed totalBlocks
+        if (blocksPlaced > totalBlocks) {
+            blocksPlaced = totalBlocks;
+        }
+
+        // Clamp flags to valid range [0, 255]
+        flags = flags & MAX_FLAGS;
+    }
 
     /** Packet type identifier */
     public static final Type<BuildProgressPayload> TYPE = new Type<>(
@@ -172,7 +211,20 @@ public record BuildProgressPayload(
         // Flags (1 byte)
         int flags = buffer.readByte() & 0xFF;
 
+        if (!isWithinBounds(progressBps, blocksPlaced, totalBlocks, flags)) {
+            LOGGER.warn("[BuildProgressPayload] Out-of-range payload received: progress={}, placed={}, total={}, flags={}",
+                progressBps, blocksPlaced, totalBlocks, flags);
+        }
+
         return new BuildProgressPayload(arenaId, phase, progressBps, blocksPlaced, totalBlocks, flags);
+    }
+
+    private static boolean isWithinBounds(int progressBps, int blocksPlaced, int totalBlocks, int flags) {
+        if (progressBps < 0 || progressBps > MAX_PROGRESS_BPS) return false;
+        if (blocksPlaced < 0 || blocksPlaced > MAX_BLOCKS) return false;
+        if (totalBlocks < 0 || totalBlocks > MAX_BLOCKS) return false;
+        if (blocksPlaced > totalBlocks) return false;
+        return (flags & ~MAX_FLAGS) == 0;
     }
 
     /**

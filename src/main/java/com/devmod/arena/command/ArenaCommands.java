@@ -7,8 +7,7 @@ import com.devmod.arena.alert.AlertRouterRegistry;
 import com.devmod.arena.builder.ArenaBuilder;
 import com.devmod.arena.builder.AsyncArenaBuilder;
 import com.devmod.arena.builder.TemplateArenaBuilder;
-import com.devmod.arena.hud.ArenaDebugHud;
-import com.devmod.arena.hud.ArenaDebugState;
+import com.devmod.arena.ArenaDebugState;
 import com.devmod.arena.override.ForceTemplateCapability;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
@@ -1163,7 +1162,7 @@ public class ArenaCommands {
         if (hasPermission && isEnabled && globalEnabled) {
             src.sendSuccess(() -> Component.literal("§a✓ HUD is visible"), false);
         } else if (!hasPermission) {
-            src.sendSuccess(() -> Component.literal("§c✗ Missing permission: " + ArenaDebugHud.PERMISSION_VIEW_HUD), false);
+            src.sendSuccess(() -> Component.literal("§c✗ Missing permission: " + ArenaDebugState.PERMISSION_VIEW_HUD), false);
         } else if (!globalEnabled) {
             src.sendSuccess(() -> Component.literal("§c✗ HUD globally disabled"), false);
         } else {
