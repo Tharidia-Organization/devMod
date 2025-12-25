@@ -1,8 +1,8 @@
 # Final Report
 
 ## Summary
-- Quality passes completed in ordered batches (imports, null-safety, logging, comments, micro-refactor, boundary).
-- Core critical files reviewed; P1 client/server boundary items addressed.
+- Quality passes completed in ordered batches (imports, null-safety, logging, comments, micro-refactor, boundary) with fixups.
+- Core critical files reviewed; additional client/server boundary risks addressed via reflection guards.
 - Build and tests now pass.
 
 ## Test Results
@@ -10,12 +10,12 @@
 - ./gradlew test: SUCCESS
 
 ## Improvements Applied
-- Import hygiene: explicit imports, ordered groups, reduced wildcard/static wildcard usage.
-- Null-safety: clarified @Nullable contracts and stabilized nullable reads during serialization.
-- Logging: console alerts now include errorId + common context IDs.
-- Comment cleanup: removed redundant note and added rationale for client-thread execution.
-- Micro-refactor: extracted optional NBT helpers to reduce duplication.
-- Client/server boundary: NetworkHandler and Config/Party/Shield/Endurance handlers route client payloads through client-installed hooks; GameMechanicsSyncPayload now uses client hooks; ClothConfigCompat parent screen reflection is Dist.CLIENT-guarded; GameDesignConfigManager now uses ConfigPaths instead of Minecraft.getInstance; QuestEditorScreen is annotated with @OnlyIn(Dist.CLIENT).
+- Import hygiene: explicit imports and ordering applied across config/party/recipe/runtime/collision files; fixups added for missing imports.
+- Null-safety: cached nullable reads in party/runtime flows to avoid inconsistent access.
+- Logging: party lifecycle logs now include partyId/playerId context for traceability.
+- Comment cleanup: removed redundant telemetry comments and documented listener failure handling.
+- Micro-refactor: extracted shared instance registration helper.
+- Client/server boundary: reflection guards added for ranged stats, debug sync, and dashboard confirmation; existing payload hook routing retained.
 
 ## Remaining Warnings
 - [ArmorComponents] Using fallback armor_stats component (test-mode only).
@@ -23,9 +23,10 @@
 - Deprecated TideManager hooks referenced in EnduranceEventCombat/EnduranceEventHandler (onResonance/onBossKilled/onPlayerDeath/onSSSWave/onNoHitWave).
 
 ## Recommendations (Future)
-1) Refactor long methods in EnduranceEventHandler and NetworkHandler for readability.
-2) Reduce wildcard imports in tests incrementally as files are touched.
-3) Add static analysis (SpotBugs/NullAway) for @Nullable contract enforcement.
-4) Document UI package migration in dev docs to keep tests aligned.
-5) Centralize alert context ID formatting across channels for consistency.
-6) Audit DuckDBSchemaManager/DuckDBBatchWriter for helper extraction without behavior changes.
+1) Replace deprecated TideManager hooks in EnduranceEventCombat/EnduranceEventHandler.
+2) Refactor long methods in EnduranceEventHandler and NetworkHandler for readability.
+3) Reduce wildcard imports in tests incrementally as files are touched.
+4) Audit TestHarnessCommands client-only delegates for server-safe guards.
+5) Add static analysis (SpotBugs/NullAway) for @Nullable contract enforcement.
+6) Centralize alert context ID formatting across channels for consistency.
+7) Audit DuckDBSchemaManager/DuckDBBatchWriter for helper extraction without behavior changes.
