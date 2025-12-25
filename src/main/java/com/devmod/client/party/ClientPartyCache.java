@@ -1,7 +1,13 @@
-package com.devmod.party;
+package com.devmod.client.party;
+
+import java.util.UUID;
 
 import javax.annotation.Nullable;
-import java.util.UUID;
+
+import com.devmod.party.OnlinePlayersPayload;
+import com.devmod.party.PartyData;
+import com.devmod.party.PartyNotificationPayload;
+import com.devmod.party.PartySyncPayload;
 
 /**
  * Client-side cache for party state.
@@ -9,7 +15,9 @@ import java.util.UUID;
  */
 public final class ClientPartyCache {
 
+    @Nullable
     private static volatile PartySyncPayload currentParty = null;
+    @Nullable
     private static volatile PartyNotificationPayload lastNotification = null;
     private static volatile long lastNotificationTime = 0;
 
@@ -47,7 +55,8 @@ public final class ClientPartyCache {
      * Check if player is currently in a party.
      */
     public static boolean hasParty() {
-        return currentParty != null && currentParty.hasParty();
+        PartySyncPayload party = currentParty;
+        return party != null && party.hasParty();
     }
 
     /**
@@ -63,14 +72,16 @@ public final class ClientPartyCache {
      */
     @Nullable
     public static UUID getPartyId() {
-        return currentParty != null ? currentParty.partyId() : null;
+        PartySyncPayload party = currentParty;
+        return party != null ? party.partyId() : null;
     }
 
     /**
      * Check if the local player is the party leader.
      */
     public static boolean isLeader(UUID localPlayerId) {
-        return currentParty != null && currentParty.isLeader(localPlayerId);
+        PartySyncPayload party = currentParty;
+        return party != null && party.isLeader(localPlayerId);
     }
 
     /**
@@ -78,7 +89,8 @@ public final class ClientPartyCache {
      */
     @Nullable
     public static com.devmod.endurance.QuestType getQuestType() {
-        return currentParty != null ? currentParty.getQuestType() : null;
+        PartySyncPayload party = currentParty;
+        return party != null ? party.getQuestType() : null;
     }
 
     /**
@@ -86,14 +98,16 @@ public final class ClientPartyCache {
      */
     @Nullable
     public static PartyData.PartyState getState() {
-        return currentParty != null ? currentParty.getState() : null;
+        PartySyncPayload party = currentParty;
+        return party != null ? party.getState() : null;
     }
 
     /**
      * Get member count.
      */
     public static int getMemberCount() {
-        return currentParty != null ? currentParty.members().size() : 0;
+        PartySyncPayload party = currentParty;
+        return party != null ? party.members().size() : 0;
     }
 
     /**
@@ -102,7 +116,8 @@ public final class ClientPartyCache {
      */
     @Nullable
     public static net.minecraft.resources.ResourceLocation getSelectedMobId() {
-        return currentParty != null ? currentParty.getSelectedMobResourceLocation() : null;
+        PartySyncPayload party = currentParty;
+        return party != null ? party.getSelectedMobResourceLocation() : null;
     }
 
     /**
@@ -110,7 +125,8 @@ public final class ClientPartyCache {
      * Returns "Zombie" (default) if no party or no mob selected.
      */
     public static String getSelectedMobDisplayName() {
-        return currentParty != null ? currentParty.getSelectedMobDisplayName() : "Zombie";
+        PartySyncPayload party = currentParty;
+        return party != null ? party.getSelectedMobDisplayName() : "Zombie";
     }
 
     /**
@@ -118,11 +134,12 @@ public final class ClientPartyCache {
      */
     @Nullable
     public static PartyNotificationPayload getDisplayableNotification() {
-        if (lastNotification == null) return null;
+        PartyNotificationPayload notification = lastNotification;
+        if (notification == null) return null;
         if (System.currentTimeMillis() - lastNotificationTime > NOTIFICATION_DISPLAY_MS) {
             return null;
         }
-        return lastNotification;
+        return notification;
     }
 
     /**
@@ -158,14 +175,16 @@ public final class ClientPartyCache {
      */
     @Nullable
     public static UUID getLeaderId() {
-        return currentParty != null ? currentParty.leaderId() : null;
+        PartySyncPayload party = currentParty;
+        return party != null ? party.leaderId() : null;
     }
 
     /**
      * Get the party members list.
      */
     public static java.util.List<PartySyncPayload.PartyMemberInfo> getMembers() {
-        return currentParty != null ? currentParty.members() : java.util.List.of();
+        PartySyncPayload party = currentParty;
+        return party != null ? party.members() : java.util.List.of();
     }
 
     /**
@@ -173,7 +192,8 @@ public final class ClientPartyCache {
      */
     @Nullable
     public static PartyData.PartyState getPartyState() {
-        return currentParty != null ? currentParty.getState() : null;
+        PartySyncPayload party = currentParty;
+        return party != null ? party.getState() : null;
     }
 
     /**

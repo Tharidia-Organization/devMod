@@ -1,13 +1,15 @@
 package com.devmod.client.panels.context;
 
-import com.devmod.testing.TestingSession;
-import net.minecraft.client.Minecraft;
-import net.minecraft.world.entity.LivingEntity;
-
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+
+import javax.annotation.Nullable;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.LivingEntity;
+
+import com.devmod.client.testing.TestingSession;
 
 /**
  * Rileva automaticamente il contesto di gioco e notifica i listener.
@@ -24,6 +26,7 @@ public class ContextDetector {
 
     // === State ===
     private ContextMode currentMode = ContextMode.EXPLORE;
+    @Nullable
     private ContextMode forcedMode = null; // Override manuale
 
     // === Combat Detection ===
@@ -46,10 +49,11 @@ public class ContextDetector {
      * Aggiorna il detector ogni tick client.
      */
     public void tick() {
-        if (forcedMode != null) {
+        ContextMode forced = forcedMode;
+        if (forced != null) {
             // Modo forzato - non cambiare automaticamente
-            if (currentMode != forcedMode) {
-                setMode(forcedMode);
+            if (currentMode != forced) {
+                setMode(forced);
             }
             return;
         }
@@ -134,7 +138,8 @@ public class ContextDetector {
      */
     public void onDamageReceived(LivingEntity attacker, float damage) {
         onCombatEvent();
-        if (currentTarget == null) {
+        LivingEntity target = currentTarget;
+        if (target == null) {
             updateTarget(attacker);
         }
     }
@@ -154,10 +159,12 @@ public class ContextDetector {
      */
     @Nullable
     public LivingEntity getCurrentTarget() {
-        if (currentTarget != null && !currentTarget.isAlive()) {
+        LivingEntity target = currentTarget;
+        if (target != null && !target.isAlive()) {
             currentTarget = null;
+            return null;
         }
-        return currentTarget;
+        return target;
     }
 
     /**
@@ -250,11 +257,13 @@ public class ContextDetector {
      * Debug info.
      */
     public String getDebugInfo() {
+        ContextMode forced = forcedMode;
+        LivingEntity target = currentTarget;
         return String.format("Context: %s%s | Combat: %dms ago | Target: %s",
             currentMode.getDisplayName(),
-            forcedMode != null ? " (forced)" : "",
+            forced != null ? " (forced)" : "",
             getTimeSinceLastCombat(),
-            currentTarget != null ? currentTarget.getName().getString() : "none"
+            target != null ? target.getName().getString() : "none"
         );
     }
 
