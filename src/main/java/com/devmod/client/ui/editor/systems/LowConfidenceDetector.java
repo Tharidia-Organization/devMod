@@ -1,16 +1,16 @@
-package com.devmod.ui.editor.systems;
+package com.devmod.client.ui.editor.systems;
 
 import com.devmod.DevMod;
 import com.devmod.config.EditorClientConfig;
-import com.devmod.ui.editor.EditorModule;
-import com.devmod.ui.editor.EditorStartTab;
-import com.devmod.ui.editor.WeaponTypeDetector;
-import com.devmod.ui.editor.core.BaseOverlay;
-import com.devmod.ui.editor.core.EditorSpacing;
-import com.devmod.ui.editor.core.ResponsiveLayout;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.editor.modules.RangedModule;
-import com.devmod.ui.editor.modules.WeaponModule;
+import com.devmod.client.ui.editor.EditorModule;
+import com.devmod.client.ui.editor.EditorStartTab;
+import com.devmod.client.ui.editor.WeaponTypeDetector;
+import com.devmod.client.ui.editor.core.BaseOverlay;
+import com.devmod.client.ui.editor.core.EditorSpacing;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.modules.RangedModule;
+import com.devmod.client.ui.editor.modules.WeaponModule;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -136,7 +136,7 @@ public final class LowConfidenceDetector extends BaseOverlay {
         pendingDetection = null;
         statusMessage = null;
         currentItem = null;
-        hide();
+        hideImmediate();
     }
 
     // =========================================================================

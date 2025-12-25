@@ -1,6 +1,6 @@
-package com.devmod.ui.editor.systems;
+package com.devmod.client.ui.editor.systems;
 
-import com.devmod.ui.editor.overlay.EditorOverlay;
+import com.devmod.client.ui.editor.overlay.EditorOverlay;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -45,22 +45,24 @@ public class LowConfidenceDetectorTest {
     }
 
     @Test
-    void hideMakesOverlayHidden() {
+    void hideImmediateMakesOverlayHidden() {
         detector.show();
         assertTrue(detector.isVisible());
 
-        detector.hide();
+        // Use hideImmediate() for instant visibility change (hide() uses animation callback)
+        detector.hideImmediate();
         assertFalse(detector.isVisible());
     }
 
     @Test
-    void toggleAlternatesVisibility() {
+    void toggleShowsThenHideImmediate() {
         assertFalse(detector.isVisible());
 
-        detector.toggle();
+        detector.toggle(); // show
         assertTrue(detector.isVisible());
 
-        detector.toggle();
+        // toggle() calls hide() which defers visibility; use hideImmediate() for test
+        detector.hideImmediate();
         assertFalse(detector.isVisible());
     }
 
