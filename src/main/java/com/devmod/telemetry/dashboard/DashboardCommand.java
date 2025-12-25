@@ -1,5 +1,15 @@
 package com.devmod.telemetry.dashboard;
 
+import java.util.Objects;
+
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.context.CommandContext;
+
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Items;
+
 import com.devmod.actions.ActionCategory;
 import com.devmod.actions.ActionCommandInvoker;
 import com.devmod.actions.ActionContext;
@@ -8,14 +18,6 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionPreconditions;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
-import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.context.CommandContext;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.Items;
-
-import java.util.Objects;
 
 /**
  * Command to control the telemetry dashboard.
@@ -122,13 +124,7 @@ public class DashboardCommand {
 
             if (server.isRunning()) {
                 String url = server.getDashboardUrl();
-                net.minecraft.client.Minecraft.getInstance().tell(() -> {
-                    com.devmod.ui.OpenExternalConfirmScreen.openWithConfirmation(
-                        null,
-                        url,
-                        "Open Telemetry Dashboard?"
-                    );
-                });
+                openDashboardConfirmationClientSafe(url);
             } else {
                 // Server failed to start - show error
                 context.sendFailure(Component.translatable("devmod.dashboard.start_failed"));
@@ -142,6 +138,18 @@ public class DashboardCommand {
     @FunctionalInterface
     private interface CommandHandler {
         void run(CommandContext<CommandSourceStack> context);
+    }
+
+    private static void openDashboardConfirmationClientSafe(String url) {
+        try {
+            Class<?> delegateClass = Class.forName("com.devmod.client.telemetry.TelemetryClientDelegate");
+            java.lang.reflect.Method method = delegateClass.getMethod("openDashboardConfirmation", String.class);
+            method.invoke(null, url);
+        } catch (ClassNotFoundException e) {
+            // Client delegate not available on dedicated servers.
+        } catch (Exception e) {
+            // Avoid spamming logs for client-only UI failures.
+        }
     }
 
     private static int openDashboard(CommandContext<CommandSourceStack> context) {

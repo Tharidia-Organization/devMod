@@ -54,3 +54,7 @@
 ## Batch 12 - Micro-refactor (Round 2)
 - Extracted shared instance registration helper to reduce duplication.
 - Touched files: src/main/java/com/devmod/runtime/InstanceRegistry.java.
+
+## Batch 13 - Client/Server Boundary (Round 3)
+- Removed direct client-only references from common handlers using reflection guards.
+- Touched files: src/main/java/com/devmod/combat/DamageHandler.java, src/main/java/com/devmod/debug/DebugNetworkHandler.java, src/main/java/com/devmod/telemetry/dashboard/DashboardCommand.java.

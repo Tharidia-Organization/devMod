@@ -85,7 +85,18 @@ public class DebugNetworkHandler {
         if (FMLEnvironment.dist != Dist.CLIENT) {
             return;
         }
-        context.enqueueWork(() ->
-            com.devmod.client.debug.DebugNetworkClientHandler.handleDebugSync(payload));
+        context.enqueueWork(() -> invokeClientDebugSync(payload));
+    }
+
+    private static void invokeClientDebugSync(DebugSyncPayload payload) {
+        try {
+            Class<?> handlerClass = Class.forName("com.devmod.client.debug.DebugNetworkClientHandler");
+            java.lang.reflect.Method method = handlerClass.getMethod("handleDebugSync", DebugSyncPayload.class);
+            method.invoke(null, payload);
+        } catch (ClassNotFoundException e) {
+            // Client handler not available on dedicated servers.
+        } catch (Exception e) {
+            LOGGER.debug("[Debug] Client debug sync unavailable: {}", e.getMessage());
+        }
     }
 }
