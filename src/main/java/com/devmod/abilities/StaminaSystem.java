@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nonnull;
+
 /**
  * Stamina System - Manages player stamina for abilities like dash and dodge.
  *
@@ -40,6 +42,7 @@ public class StaminaSystem {
     /**
      * Get or create stamina data for a player.
      */
+    @Nonnull
     public StaminaData getStaminaData(UUID playerId) {
         return playerStamina.computeIfAbsent(playerId, id -> new StaminaData());
     }

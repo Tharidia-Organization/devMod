@@ -14,6 +14,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nonnull;
+
 /**
  * Dash Ability System - Quick burst of speed in movement direction.
  *
@@ -44,6 +46,7 @@ public class DashAbilitySystem {
     /**
      * Get or create dash data for a player.
      */
+    @Nonnull
     public DashData getDashData(UUID playerId) {
         return playerDash.computeIfAbsent(playerId, id -> new DashData());
     }

@@ -34,6 +34,8 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nonnull;
+
 /**
  * Advanced Reward System for Endurance Quests.
  *
@@ -664,6 +666,7 @@ public class RewardSystem {
 
     // ========== Player Data ==========
 
+    @Nonnull
     public PlayerWallet getWallet(UUID playerId) {
         return playerWallets.computeIfAbsent(playerId, id -> new PlayerWallet(id));
     }

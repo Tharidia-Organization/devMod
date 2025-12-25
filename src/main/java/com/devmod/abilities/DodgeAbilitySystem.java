@@ -14,6 +14,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nonnull;
+
 /**
  * Dodge Ability System - Quick evasive movement with invincibility frames.
  *
@@ -48,6 +50,7 @@ public class DodgeAbilitySystem {
     /**
      * Get or create dodge data for a player.
      */
+    @Nonnull
     public DodgeData getDodgeData(UUID playerId) {
         return playerDodge.computeIfAbsent(playerId, id -> new DodgeData());
     }
