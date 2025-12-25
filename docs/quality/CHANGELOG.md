@@ -42,3 +42,7 @@
 ## Batch 9 - Null-safety (Round 2)
 - Cached nullable reads before checks to avoid inconsistent access.
 - Touched files: src/main/java/com/devmod/party/PartyData.java, src/main/java/com/devmod/runtime/InstanceRegistry.java.
+
+## Batch 10 - Logging Standardization (Round 2)
+- Normalized party lifecycle logs to include partyId and playerId context.
+- Touched files: src/main/java/com/devmod/party/PartyManager.java.
