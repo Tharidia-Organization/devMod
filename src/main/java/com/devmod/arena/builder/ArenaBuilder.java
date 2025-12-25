@@ -22,6 +22,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,7 +90,7 @@ public class ArenaBuilder {
     private PerformanceBudgetEnforcer performanceEnforcer;
     @Nullable
     private Supplier<Double> msptSupplier;
-    private long nextPerformanceCheckAt = 0;
+    private final AtomicLong nextPerformanceCheckAt = new AtomicLong(0);
 
     private static void ensureLockManagerStarted() {
         if (LOCK_MANAGER_STARTED.compareAndSet(false, true)) {
@@ -995,7 +996,7 @@ public class ArenaBuilder {
         performanceEnforcer = enforcer;
         enforcer.captureBaseline();
         enforcer.beginBuild();
-        nextPerformanceCheckAt = 0;
+        nextPerformanceCheckAt.set(0);
     }
 
     private void finalizePerformanceMonitoring(ArenaTemplate template, UUID arenaId) {
@@ -1023,7 +1024,7 @@ public class ArenaBuilder {
         msptMonitor = null;
         performanceEnforcer = null;
         msptSupplier = null;
-        nextPerformanceCheckAt = 0;
+        nextPerformanceCheckAt.set(0);
     }
 
     private void maybeCheckPerformance(BuildTransaction tx) {
@@ -1034,10 +1035,15 @@ public class ArenaBuilder {
             return;
         }
         long placements = tx.getTotalBlockPlacements();
-        if (placements < nextPerformanceCheckAt) {
+        // Atomic check-then-update to prevent race conditions
+        long currentThreshold = nextPerformanceCheckAt.get();
+        if (placements < currentThreshold) {
             return;
         }
-        nextPerformanceCheckAt = placements + PERFORMANCE_CHECK_INTERVAL_BLOCKS;
+        // Only update if we're the first thread to pass the threshold
+        if (!nextPerformanceCheckAt.compareAndSet(currentThreshold, placements + PERFORMANCE_CHECK_INTERVAL_BLOCKS)) {
+            return; // Another thread already updated, skip this check
+        }
 
         double mspt = supplier.get();
         monitor.recordSample(mspt);

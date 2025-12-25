@@ -32,6 +32,8 @@ import com.devmod.runtime.RecoverySystem;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
+import com.devmod.endurance.config.EnduranceConfigManager;
+import com.devmod.network.GameMechanicsSyncPayload;
 import com.devmod.util.I18n;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -80,7 +82,7 @@ public class EnduranceQuestManager {
 
     // Delegate classes
     private final EnduranceQuestPersistence persistence = new EnduranceQuestPersistence();
-    private EnduranceSessionHandler sessionHandler;
+    private volatile EnduranceSessionHandler sessionHandler;
 
 
     // Data directory
@@ -1711,6 +1713,9 @@ public class EnduranceQuestManager {
             session.setKitId(settings.kitId);
             activeSessions.put(playerId, session); // Replaces placeholder
 
+            // Apply arena policy config overrides and sync to client
+            applyAndSyncArenaOverrides(player, session);
+
             // Prepare player (save state, give kit - NO TELEPORT, already done)
             EndurancePlayerStateManager.INSTANCE.preparePlayerForQuest(player, session);
 
@@ -2180,6 +2185,9 @@ public class EnduranceQuestManager {
         }
         activeSessions.put(effectivePlayerId, session);
 
+        // Apply arena policy config overrides and sync to client
+        applyAndSyncArenaOverrides(player, session);
+
         EndurancePlayerStateManager.INSTANCE.preparePlayerForQuest(player, session);
 
         EnduranceEventHandler.onQuestStart(player, session);
@@ -2231,6 +2239,83 @@ public class EnduranceQuestManager {
             return null;
         }
         return arenaPolicyRegistry.get(policyId).orElse(null);
+    }
+
+    /**
+     * Apply arena policy config overrides and sync to client.
+     * Called when a quest starts to apply per-arena config adjustments.
+     */
+    private void applyAndSyncArenaOverrides(ServerPlayer player, ActiveQuestSession session) {
+        try {
+            ArenaPolicy policy = getPolicyForSession(session);
+            if (policy != null && policy.gameplayOverrides() != null) {
+                UUID questId = session.getQuest().getQuestId();
+
+                // Apply override to server-side config manager
+                EnduranceConfigManager.INSTANCE.setArenaOverride(questId, policy.gameplayOverrides());
+
+                // Sync override to client
+                net.minecraft.nbt.CompoundTag overrideTag = serializeGameplayOverrides(policy.gameplayOverrides());
+                GameMechanicsSyncPayload payload = GameMechanicsSyncPayload.forQuest(questId, overrideTag);
+                PacketDistributor.sendToPlayer(player, payload);
+
+                LOGGER.debug("[EnduranceQuest] Applied arena config overrides for quest {} to player {}",
+                    questId, player.getName().getString());
+            }
+        } catch (Exception e) {
+            LOGGER.warn("[EnduranceQuest] Failed to apply arena config overrides: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Serialize GameplayOverrides to CompoundTag for network sync.
+     */
+    private net.minecraft.nbt.CompoundTag serializeGameplayOverrides(ArenaPolicy.GameplayOverrides overrides) {
+        net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
+
+        // Serialize each section if present
+        if (overrides.combo() != null) {
+            net.minecraft.nbt.CompoundTag combo = new net.minecraft.nbt.CompoundTag();
+            if (overrides.combo().timeoutTicks() != null) combo.putInt("timeoutTicks", overrides.combo().timeoutTicks());
+            if (overrides.combo().basePoints() != null) combo.putInt("basePoints", overrides.combo().basePoints());
+            if (overrides.combo().multiplierIncrement() != null) combo.putDouble("multiplierIncrement", overrides.combo().multiplierIncrement());
+            if (overrides.combo().maxMultiplier() != null) combo.putDouble("maxMultiplier", overrides.combo().maxMultiplier());
+            tag.put("combo", combo);
+        }
+
+        if (overrides.tension() != null) {
+            net.minecraft.nbt.CompoundTag tension = new net.minecraft.nbt.CompoundTag();
+            if (overrides.tension().baseWaveGain() != null) tension.putDouble("baseWaveGain", overrides.tension().baseWaveGain());
+            if (overrides.tension().noHitBonus() != null) tension.putDouble("noHitBonus", overrides.tension().noHitBonus());
+            if (overrides.tension().minThreshold() != null) tension.putDouble("minThreshold", overrides.tension().minThreshold());
+            if (overrides.tension().maxThreshold() != null) tension.putDouble("maxThreshold", overrides.tension().maxThreshold());
+            if (overrides.tension().minWavesBeforeBoss() != null) tension.putInt("minWavesBeforeBoss", overrides.tension().minWavesBeforeBoss());
+            if (overrides.tension().maxWavesWithoutBoss() != null) tension.putInt("maxWavesWithoutBoss", overrides.tension().maxWavesWithoutBoss());
+            tag.put("tension", tension);
+        }
+
+        if (overrides.waves() != null) {
+            net.minecraft.nbt.CompoundTag waves = new net.minecraft.nbt.CompoundTag();
+            if (overrides.waves().baseMobCount() != null) waves.putInt("baseMobCount", overrides.waves().baseMobCount());
+            if (overrides.waves().mobScaling() != null) waves.putDouble("mobScaling", overrides.waves().mobScaling());
+            if (overrides.waves().intermissionTicks() != null) waves.putInt("intermissionTicks", overrides.waves().intermissionTicks());
+            if (overrides.waves().bossInterval() != null) waves.putInt("bossInterval", overrides.waves().bossInterval());
+            tag.put("waves", waves);
+        }
+
+        if (overrides.perkRarity() != null) {
+            net.minecraft.nbt.CompoundTag perkRarity = new net.minecraft.nbt.CompoundTag();
+            if (overrides.perkRarity().commonWeight() != null) perkRarity.putInt("commonWeight", overrides.perkRarity().commonWeight());
+            if (overrides.perkRarity().uncommonWeight() != null) perkRarity.putInt("uncommonWeight", overrides.perkRarity().uncommonWeight());
+            if (overrides.perkRarity().rareWeight() != null) perkRarity.putInt("rareWeight", overrides.perkRarity().rareWeight());
+            if (overrides.perkRarity().epicWeight() != null) perkRarity.putInt("epicWeight", overrides.perkRarity().epicWeight());
+            if (overrides.perkRarity().legendaryWeight() != null) perkRarity.putInt("legendaryWeight", overrides.perkRarity().legendaryWeight());
+            tag.put("perkRarity", perkRarity);
+        }
+
+        // Add more sections as needed...
+
+        return tag;
     }
 
     /**
@@ -2400,6 +2485,9 @@ public class EnduranceQuestManager {
             EnduranceQuest quest = session.quest;
             UUID questId = quest.getQuestId();
             UUID playerId = session.getPlayerId();
+
+            // Cleanup config overrides for this quest
+            EnduranceConfigManager.INSTANCE.cleanupQuest(questId);
 
             // Record end-of-session telemetry and stats (abandoned outcome)
             EnduranceTelemetryService.INSTANCE.recordQuestEnd(

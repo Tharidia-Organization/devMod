@@ -900,14 +900,16 @@ public class DuckDBBatchWriter {
     private void queueInsert(String tableName, Object[] values) {
         if (!running) return;
 
-        // Update pressure level based on total queue size
+        // Update pressure level based on total queue size (synchronized to prevent race)
         int totalPending = getPendingInserts();
-        if (totalPending >= PRESSURE_THRESHOLD_CRITICAL) {
-            pressureLevel = 2;
-        } else if (totalPending >= PRESSURE_THRESHOLD_ELEVATED) {
-            pressureLevel = 1;
-        } else {
-            pressureLevel = 0;
+        synchronized (this) {
+            if (totalPending >= PRESSURE_THRESHOLD_CRITICAL) {
+                pressureLevel = 2;
+            } else if (totalPending >= PRESSURE_THRESHOLD_ELEVATED) {
+                pressureLevel = 1;
+            } else {
+                pressureLevel = 0;
+            }
         }
 
         // Backpressure: check if this event should be dropped
@@ -1074,7 +1076,13 @@ public class DuckDBBatchWriter {
                 try {
                     conn.rollback();
                 } catch (SQLException rollbackEx) {
-                    LOGGER.error("[DuckDB] Rollback failed: {}", rollbackEx.getMessage());
+                    LOGGER.error("[DuckDB] Rollback failed, forcing reconnect: {}", rollbackEx.getMessage());
+                    // Connection may be in inconsistent state; force reconnect
+                    try {
+                        connectionManager.reconnect();
+                    } catch (SQLException reconnectEx) {
+                        LOGGER.error("[DuckDB] Reconnect failed: {}", reconnectEx.getMessage());
+                    }
                 }
             }
 

@@ -1,4 +1,8 @@
-package com.devmod.endurance;
+package com.devmod.client.endurance;
+
+import com.devmod.endurance.CustomKit;
+import com.devmod.endurance.KitManager;
+import com.devmod.endurance.KitPersistence;
 
 import com.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
@@ -13,7 +17,20 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.*;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.AxeItem;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.BowItem;
+import net.minecraft.world.item.CrossbowItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.MaceItem;
+import net.minecraft.world.item.PotionItem;
+import net.minecraft.world.item.ShieldItem;
+import net.minecraft.world.item.SwordItem;
+import net.minecraft.world.item.TieredItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.TridentItem;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -22,7 +39,16 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -1079,7 +1105,7 @@ public class KitSelectionScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (showNameDialog && kitNameBox != null && kitNameBox.isFocused()) {
+        if (showNameDialog) {
             if (keyCode == 256) { // Escape
                 closeNameDialog();
                 return true;
@@ -1088,7 +1114,10 @@ public class KitSelectionScreen extends Screen {
                 saveKitWithName();
                 return true;
             }
-            return kitNameBox.keyPressed(keyCode, scanCode, modifiers);
+            if (kitNameBox != null) {
+                return kitNameBox.keyPressed(keyCode, scanCode, modifiers);
+            }
+            return true;
         }
 
         if (keyCode == 256 && showEnchantPopup) {

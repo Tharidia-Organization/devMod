@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Security service for network packet validation and rate limiting.
@@ -27,6 +28,12 @@ public class PacketValidator {
     private static final int DEFAULT_RATE_LIMIT = 10; // packets per window
     private static final long RATE_WINDOW_MS = 1000; // 1 second window
     private static final long CLEANUP_INTERVAL_MS = 60_000; // cleanup every minute
+    private static final Map<String, Integer> RATE_LIMIT_OVERRIDES = Map.of(
+        "ability_action", 5,
+        "shop_purchase", 5,
+        "recipe_sync", 3,
+        "telemetry_batch", 20
+    );
 
     // Validation bounds
     public static final double MIN_ATTRIBUTE_VALUE = 0.0;
@@ -71,7 +78,15 @@ public class PacketValidator {
 
     // Rate limiting state
     private final Map<String, RateLimitEntry> rateLimits = new ConcurrentHashMap<>();
-    private long lastCleanup = System.currentTimeMillis();
+    private volatile long lastCleanup = System.currentTimeMillis();
+
+    // Telemetry counters for security monitoring
+    private final Map<String, AtomicLong> rejectionCounters = new ConcurrentHashMap<>();
+    private final Map<String, AtomicLong> rateLimitCounters = new ConcurrentHashMap<>();
+
+    // Rate limiting for failed operator checks (to prevent log spam)
+    private static final long OP_FAIL_LOG_INTERVAL_MS = 60_000; // Log at most once per minute per player
+    private final Map<String, Long> lastOpFailLogTime = new ConcurrentHashMap<>();
 
     private PacketValidator() {}
 
@@ -104,8 +119,15 @@ public class PacketValidator {
 
         // Permission check
         if (requiresOp && !isOperator(player)) {
-            LOGGER.warn("Non-operator {} attempted to send privileged packet: {}",
-                player.getName().getString(), packetType);
+            // Rate-limit logging to prevent log spam from malicious clients
+            String playerKey = player.getUUID().toString();
+            long now = System.currentTimeMillis();
+            Long lastLog = lastOpFailLogTime.get(playerKey);
+            if (lastLog == null || now - lastLog >= OP_FAIL_LOG_INTERVAL_MS) {
+                lastOpFailLogTime.put(playerKey, now);
+                LOGGER.warn("Non-operator {} attempted to send privileged packet: {}",
+                    player.getName().getString(), packetType);
+            }
             return ValidationResult.fail("Operation requires operator permissions");
         }
 
@@ -326,6 +348,7 @@ public class PacketValidator {
     private boolean checkRateLimit(UUID playerId, String packetType) {
         maybeCleanup();
 
+        int limit = RATE_LIMIT_OVERRIDES.getOrDefault(packetType, DEFAULT_RATE_LIMIT);
         String key = playerId.toString() + ":" + packetType;
         long now = System.currentTimeMillis();
 
@@ -344,7 +367,7 @@ public class PacketValidator {
         });
 
         int count = entry.count.incrementAndGet();
-        return count <= DEFAULT_RATE_LIMIT;
+        return count <= limit;
     }
 
     /**
@@ -361,6 +384,11 @@ public class PacketValidator {
 
         rateLimits.entrySet().removeIf(entry ->
             entry.getValue().windowStart < threshold);
+
+        // Also cleanup stale op fail log entries
+        long opFailThreshold = now - OP_FAIL_LOG_INTERVAL_MS * 2;
+        lastOpFailLogTime.entrySet().removeIf(entry ->
+            entry.getValue() < opFailThreshold);
     }
 
     /**
@@ -368,6 +396,92 @@ public class PacketValidator {
      */
     public void clearRateLimits() {
         rateLimits.clear();
+    }
+
+    // ===== Telemetry =====
+
+    /**
+     * Record a packet rejection for telemetry.
+     *
+     * @param packetType The type of packet that was rejected
+     * @param reason The rejection reason (for logging)
+     */
+    public void recordRejection(String packetType, String reason) {
+        rejectionCounters.computeIfAbsent(packetType, k -> new AtomicLong(0)).incrementAndGet();
+        LOGGER.warn("[Security] Packet rejected - type: {}, reason: {}", packetType, reason);
+    }
+
+    /**
+     * Record a rate limit hit for telemetry.
+     *
+     * @param packetType The type of packet that hit the limit
+     * @param playerName The player who hit the limit
+     */
+    public void recordRateLimitHit(String packetType, String playerName) {
+        rateLimitCounters.computeIfAbsent(packetType, k -> new AtomicLong(0)).incrementAndGet();
+        LOGGER.warn("[Security] Rate limit hit - type: {}, player: {}", packetType, playerName);
+    }
+
+    /**
+     * Get rejection count for a packet type (for monitoring).
+     */
+    public long getRejectionCount(String packetType) {
+        AtomicLong counter = rejectionCounters.get(packetType);
+        return counter != null ? counter.get() : 0;
+    }
+
+    /**
+     * Get rate limit hit count for a packet type (for monitoring).
+     */
+    public long getRateLimitCount(String packetType) {
+        AtomicLong counter = rateLimitCounters.get(packetType);
+        return counter != null ? counter.get() : 0;
+    }
+
+    /**
+     * Get total rejections across all packet types.
+     */
+    public long getTotalRejections() {
+        return rejectionCounters.values().stream().mapToLong(AtomicLong::get).sum();
+    }
+
+    /**
+     * Get total rate limit hits across all packet types.
+     */
+    public long getTotalRateLimitHits() {
+        return rateLimitCounters.values().stream().mapToLong(AtomicLong::get).sum();
+    }
+
+    /**
+     * Reset all telemetry counters (for testing or periodic reset).
+     */
+    public void resetTelemetry() {
+        rejectionCounters.clear();
+        rateLimitCounters.clear();
+    }
+
+    /**
+     * Get a summary of security telemetry for logging/monitoring.
+     */
+    public String getTelemetrySummary() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("=== Security Telemetry ===\n");
+        sb.append(String.format("Total rejections: %d%n", getTotalRejections()));
+        sb.append(String.format("Total rate limit hits: %d%n", getTotalRateLimitHits()));
+
+        if (!rejectionCounters.isEmpty()) {
+            sb.append("Rejections by type:\n");
+            rejectionCounters.forEach((type, count) ->
+                sb.append(String.format("  %s: %d%n", type, count.get())));
+        }
+
+        if (!rateLimitCounters.isEmpty()) {
+            sb.append("Rate limits by type:\n");
+            rateLimitCounters.forEach((type, count) ->
+                sb.append(String.format("  %s: %d%n", type, count.get())));
+        }
+
+        return sb.toString();
     }
 
     // ===== Utility =====
