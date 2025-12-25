@@ -1,8 +1,8 @@
-package com.devmod.ui.testing.pages;
+package com.devmod.client.ui.testing.pages;
 
-import com.devmod.ui.testing.VoxelLabPage;
-import com.devmod.ui.testing.VoxelLabTab;
-import com.devmod.ui.testing.panel.PanelContainer;
+import com.devmod.client.ui.testing.VoxelLabPage;
+import com.devmod.client.ui.testing.VoxelLabTab;
+import com.devmod.client.ui.testing.panel.PanelContainer;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**

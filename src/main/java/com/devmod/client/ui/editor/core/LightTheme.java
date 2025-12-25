@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.core;
+package com.devmod.client.ui.editor.core;
 
 /**
  * Light theme implementation with inverted colors.

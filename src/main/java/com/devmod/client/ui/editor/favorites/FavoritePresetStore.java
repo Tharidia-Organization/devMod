@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.favorites;
+package com.devmod.client.ui.editor.favorites;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;

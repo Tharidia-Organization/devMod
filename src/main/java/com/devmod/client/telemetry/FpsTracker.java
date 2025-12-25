@@ -1,4 +1,4 @@
-package com.devmod.telemetry;
+package com.devmod.client.telemetry;
 
 import com.devmod.DevMod;
 import net.minecraft.client.DeltaTracker;

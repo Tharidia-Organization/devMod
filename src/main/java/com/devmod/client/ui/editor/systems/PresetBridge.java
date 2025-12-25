@@ -1,9 +1,13 @@
-package com.devmod.ui.editor.systems;
+package com.devmod.client.ui.editor.systems;
 
-import com.devmod.ui.editor.ItemEditorDataManager;
+import com.devmod.client.ui.editor.ItemEditorDataManager;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Bridge utilities for converting between PresetRegistry.RegistryPreset and ItemEditorDataManager.PresetData.

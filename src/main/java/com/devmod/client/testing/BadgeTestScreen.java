@@ -1,9 +1,8 @@
-package com.devmod.testing;
-
+package com.devmod.client.testing;
 import com.devmod.endurance.GamificationManager.BadgeRarity;
 import com.devmod.client.overlay.BadgePopupOverlay;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.components.EditorButton;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;

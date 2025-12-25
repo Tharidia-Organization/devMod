@@ -1,4 +1,4 @@
-package com.devmod.ui.unified.persistence;
+package com.devmod.client.ui.unified.persistence;
 
 import com.devmod.ModConfig;
 import com.devmod.util.ConfigPaths;
@@ -256,7 +256,7 @@ public class SettingsManager {
 
         // Reset TutorialManager
         try {
-            com.devmod.testing.TutorialManager.INSTANCE.reset();
+            com.devmod.client.testing.TutorialManager.INSTANCE.reset();
             LOGGER.debug("[DevMod] TutorialManager reset");
         } catch (Exception e) {
             LOGGER.warn("[DevMod] Could not reset TutorialManager: {}", e.getMessage());
@@ -272,7 +272,7 @@ public class SettingsManager {
 
         // Reset ItemEditorDataManager (presets, favorites, history)
         try {
-            com.devmod.ui.editor.ItemEditorDataManager.INSTANCE.resetAll();
+            com.devmod.client.ui.editor.ItemEditorDataManager.INSTANCE.resetAll();
             LOGGER.debug("[DevMod] ItemEditorDataManager reset");
         } catch (Exception e) {
             LOGGER.warn("[DevMod] Could not reset ItemEditorDataManager: {}", e.getMessage());
@@ -288,7 +288,7 @@ public class SettingsManager {
 
         // Reset TestingSession (QA testing quests)
         try {
-            com.devmod.testing.TestingSession.INSTANCE.resetSession();
+            com.devmod.client.testing.TestingSession.INSTANCE.resetSession();
             LOGGER.debug("[DevMod] TestingSession reset");
         } catch (Exception e) {
             LOGGER.warn("[DevMod] Could not reset TestingSession: {}", e.getMessage());

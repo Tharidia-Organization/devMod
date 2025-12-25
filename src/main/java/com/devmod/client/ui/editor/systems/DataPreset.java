@@ -1,6 +1,6 @@
-package com.devmod.ui.editor.systems;
+package com.devmod.client.ui.editor.systems;
 
-import com.devmod.ui.editor.ItemEditorDataManager;
+import com.devmod.client.ui.editor.ItemEditorDataManager;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;

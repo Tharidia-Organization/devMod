@@ -1,7 +1,8 @@
-package com.devmod.ui.editor.core;
+package com.devmod.client.ui.editor.core;
 
-import com.devmod.ui.AxiomRenderer;
-import com.devmod.ui.editor.overlay.EditorOverlay;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.animation.UiAnimation;
+import com.devmod.client.ui.editor.overlay.EditorOverlay;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import org.lwjgl.glfw.GLFW;
@@ -18,18 +19,30 @@ public abstract class BaseOverlay implements EditorOverlay {
 
     protected boolean visible = false;
 
+    /** Animation for show/hide transitions */
+    protected final UiAnimation animation = UiAnimation.fadeSlideUp(150);
+
     /**
-     * Show the overlay.
+     * Show the overlay with animation.
      */
     public void show() {
         visible = true;
+        animation.start();
     }
 
     /**
-     * Hide the overlay.
+     * Hide the overlay with animation.
      */
     public void hide() {
+        animation.reverse(() -> visible = false);
+    }
+
+    /**
+     * Hide immediately without animation.
+     */
+    public void hideImmediate() {
         visible = false;
+        animation.reset();
     }
 
     /**
@@ -44,10 +57,17 @@ public abstract class BaseOverlay implements EditorOverlay {
     }
 
     /**
-     * Check if the overlay is currently visible.
+     * Check if the overlay is currently visible (including during animations).
      */
     public boolean isVisible() {
-        return visible;
+        return visible || animation.isAnimating();
+    }
+
+    /**
+     * Check if the overlay is fully visible (animation complete).
+     */
+    public boolean isFullyVisible() {
+        return visible && animation.isComplete();
     }
 
     /**
@@ -63,9 +83,12 @@ public abstract class BaseOverlay implements EditorOverlay {
      */
     public final void render(GuiGraphics graphics, Font font, int screenWidth, int screenHeight,
                              int mouseX, int mouseY) {
-        if (!visible) return;
+        if (!visible && !animation.isAnimating()) return;
 
-        // Render dark backdrop
+        // Update animation state
+        animation.update();
+
+        // Render dark backdrop with animated alpha
         renderBackdrop(graphics, screenWidth, screenHeight);
 
         // Calculate centered panel position (support dynamic height)
@@ -76,6 +99,10 @@ public abstract class BaseOverlay implements EditorOverlay {
         int x = (screenWidth - panelW) / 2;
         int y = (screenHeight - panelH) / 2;
 
+        // Apply animation offset
+        int offsetY = animation.getSlideOffset(20);
+        y += offsetY;
+
         // Render panel background and border
         renderPanel(graphics, x, y, panelW, panelH);
 
@@ -85,10 +112,12 @@ public abstract class BaseOverlay implements EditorOverlay {
 
     /**
      * Render the dark backdrop that covers the screen behind the overlay.
+     * Uses animation alpha for smooth fade effect.
      * Subclasses can override to customize.
      */
     protected void renderBackdrop(GuiGraphics graphics, int screenWidth, int screenHeight) {
-        graphics.fill(0, 0, screenWidth, screenHeight, UIConstants.Background.OVERLAY());
+        int backdropColor = animation.applyToBackdrop(UIConstants.Background.OVERLAY());
+        graphics.fill(0, 0, screenWidth, screenHeight, backdropColor);
     }
 
     /**

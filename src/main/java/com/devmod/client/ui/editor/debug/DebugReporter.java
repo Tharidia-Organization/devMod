@@ -1,6 +1,6 @@
-package com.devmod.ui.editor.debug;
+package com.devmod.client.ui.editor.debug;
 
-import com.devmod.ui.editor.core.Bounds;
+import com.devmod.client.ui.editor.core.Bounds;
 
 import java.util.List;
 

@@ -1,10 +1,10 @@
 package com.devmod.client.overlay;
 
 import com.devmod.DevMod;
-import com.devmod.party.ClientPartyCache;
+import com.devmod.client.party.ClientPartyCache;
 import com.devmod.party.PartyData;
 import com.devmod.party.PartySyncPayload;
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.UIConstants;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;

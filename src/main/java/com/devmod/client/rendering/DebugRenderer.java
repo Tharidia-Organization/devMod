@@ -12,7 +12,7 @@ import org.joml.Matrix4f;
 import java.util.Objects;
 
 import com.devmod.config.Config;
-import com.devmod.ui.unified.persistence.SettingsManager;
+import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 

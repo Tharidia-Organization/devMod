@@ -1,11 +1,11 @@
-package com.devmod.ui.testing.panel;
+package com.devmod.client.ui.testing.panel;
 
-import com.devmod.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.components.EditorButton;
 import net.minecraft.client.gui.GuiGraphics;
 
 import java.util.List;
 
-import static com.devmod.ui.testing.panel.PanelConstants.*;
+import static com.devmod.client.ui.testing.panel.PanelConstants.*;
 
 /**
  * Sealed interface for button row layouts within SectionPanel.

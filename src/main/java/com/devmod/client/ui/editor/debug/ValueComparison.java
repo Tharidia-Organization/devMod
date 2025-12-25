@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.debug;
+package com.devmod.client.ui.editor.debug;
 
 /**
  * Represents an attribute comparison row for the debug viewer.

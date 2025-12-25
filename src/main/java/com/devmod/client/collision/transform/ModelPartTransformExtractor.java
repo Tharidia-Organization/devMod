@@ -1,12 +1,15 @@
-package com.devmod.collision.transform;
+package com.devmod.client.collision.transform;
 
+import com.devmod.collision.transform.AnimationSnapshot;
 import com.devmod.collision.compat.GeckoLibCompat;
+import com.mojang.logging.LogUtils;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
+import org.slf4j.Logger;
 
 import javax.annotation.Nonnull;
 import java.util.HashMap;
@@ -29,6 +32,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class ModelPartTransformExtractor {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private ModelPartTransformExtractor() {} // Utility class
 
     // ==================== Transform Cache ====================
@@ -39,6 +44,13 @@ public final class ModelPartTransformExtractor {
      * Value: AnimationSnapshot with transforms
      */
     private static final Map<Integer, AnimationSnapshot> TRANSFORM_CACHE = new ConcurrentHashMap<>();
+
+    // Maximum cache size to prevent unbounded growth
+    private static final int MAX_CACHE_SIZE = 256;
+
+    // Cleanup tracking
+    private static volatile long lastCleanupTick = 0;
+    private static final long CLEANUP_INTERVAL_TICKS = 100; // 5 seconds at 20 TPS
 
     // ==================== Public API ====================
 
@@ -57,6 +69,17 @@ public final class ModelPartTransformExtractor {
                                                       long currentTick) {
         int entityId = Objects.requireNonNull(entity).getId();
 
+        // Periodic cleanup to prevent memory leaks
+        if (currentTick - lastCleanupTick > CLEANUP_INTERVAL_TICKS) {
+            lastCleanupTick = currentTick;
+            cleanupCache(currentTick);
+        }
+
+        // Enforce max cache size
+        if (TRANSFORM_CACHE.size() >= MAX_CACHE_SIZE) {
+            evictOldestEntries(currentTick);
+        }
+
         // Check cache first
         AnimationSnapshot cached = TRANSFORM_CACHE.get(entityId);
         if (cached != null && !cached.isStale(currentTick)) {
@@ -70,6 +93,20 @@ public final class ModelPartTransformExtractor {
         TRANSFORM_CACHE.put(entityId, snapshot);
 
         return snapshot;
+    }
+
+    /**
+     * Evicts the oldest entries when cache is full.
+     */
+    private static void evictOldestEntries(long currentTick) {
+        int toRemove = TRANSFORM_CACHE.size() - MAX_CACHE_SIZE + 16;
+
+        TRANSFORM_CACHE.entrySet().stream()
+            .filter(e -> e.getValue().isStale(currentTick))
+            .limit(Math.max(1, toRemove))
+            .map(Map.Entry::getKey)
+            .toList()
+            .forEach(TRANSFORM_CACHE::remove);
     }
 
     /**
@@ -320,7 +357,15 @@ public final class ModelPartTransformExtractor {
      * Call periodically to prevent memory leaks.
      */
     public static void cleanupCache(long currentTick) {
+        int sizeBefore = TRANSFORM_CACHE.size();
         TRANSFORM_CACHE.entrySet().removeIf(entry -> entry.getValue().isStale(currentTick));
+        int sizeAfter = TRANSFORM_CACHE.size();
+
+        // Log cache cleanup metrics periodically (every 1000 ticks = ~50 seconds)
+        if (currentTick % 1000 == 0 && sizeAfter > 0) {
+            LOGGER.debug("[ModelPartTransformExtractor] Cache cleanup: {} -> {} entries (evicted {})",
+                sizeBefore, sizeAfter, sizeBefore - sizeAfter);
+        }
     }
 
     /**

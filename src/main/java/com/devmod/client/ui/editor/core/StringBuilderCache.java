@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.core;
+package com.devmod.client.ui.editor.core;
 
 /**
  * Thread-local StringBuilder cache to reduce string allocations in render loops.

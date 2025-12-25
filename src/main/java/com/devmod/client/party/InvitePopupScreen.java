@@ -1,8 +1,13 @@
-package com.devmod.party;
+package com.devmod.client.party;
+
+import com.devmod.party.InviteResponsePayload;
+import com.devmod.party.PartyInvite;
+import com.devmod.party.PartyNotificationPayload;
 
 import com.devmod.endurance.QuestType;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.editor.components.EditorButton;
+import com.devmod.client.ui.components.CountdownTimer;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.components.EditorButton;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -12,6 +17,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.devmod.util.I18n;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
@@ -43,9 +49,6 @@ public class InvitePopupScreen extends Screen {
     private static final int COLOR_TEXT = UIConstants.Text.PRIMARY();
     private static final int COLOR_TEXT_DIM = UIConstants.Text.SECONDARY();
     private static final int COLOR_ACCENT = UIConstants.Accent.CYAN();
-    private static final int COLOR_TIMER_OK = UIConstants.Accent.GREEN();
-    private static final int COLOR_TIMER_WARN = UIConstants.Accent.GOLD();
-    private static final int COLOR_TIMER_URGENT = UIConstants.Accent.RED();
     private static final int COLOR_BORDER = UIConstants.Border.DEFAULT();
 
     // Invite data
@@ -53,6 +56,7 @@ public class InvitePopupScreen extends Screen {
     private final String senderName;
     private final QuestType questType;
     private final long expiresAt;
+    private final CountdownTimer countdown;
 
     // UI state
     private int popupX;
@@ -70,6 +74,7 @@ public class InvitePopupScreen extends Screen {
         this.senderName = senderName;
         this.questType = questType;
         this.expiresAt = expiresAt;
+        this.countdown = new CountdownTimer(expiresAt, 15, 5, 5);
     }
 
     /**
@@ -138,11 +143,14 @@ public class InvitePopupScreen extends Screen {
         graphics.drawCenteredString(Objects.requireNonNull(font, "font"), description, popupX + POPUP_WIDTH / 2, popupY + 65, COLOR_TEXT_DIM);
 
         // Timer
-        long remainingMs = expiresAt - System.currentTimeMillis();
-        int remainingSeconds = (int) Math.max(0, remainingMs / 1000);
+        long remainingMs = countdown.getRemainingMs();
+        int remainingSeconds = countdown.getRemainingSeconds();
+        if (remainingSeconds < 0) {
+            remainingSeconds = 0;
+        }
 
-        String timerText = Objects.requireNonNull(String.format("Expires in: %ds", remainingSeconds), "timerText");
-        int timerColor = getTimerColor(remainingSeconds);
+        String timerText = Objects.requireNonNull(I18n.translate("devmod.party.invite_expires", remainingSeconds).getString(), "timerText");
+        int timerColor = countdown.getColor();
         graphics.drawCenteredString(Objects.requireNonNull(font, "font"), timerText, popupX + POPUP_WIDTH / 2, popupY + POPUP_HEIGHT - 55, timerColor);
 
         // Timer bar
@@ -164,14 +172,8 @@ public class InvitePopupScreen extends Screen {
         float progress = Math.max(0, Math.min(1, remainingMs / (float) PartyInvite.TIMEOUT_MS));
         int progressWidth = (int) (barWidth * progress);
 
-        int progressColor = getTimerColor((int) (remainingMs / 1000));
+        int progressColor = countdown.getColor();
         graphics.fill(barX, barY, barX + progressWidth, barY + barHeight, progressColor);
-    }
-
-    private int getTimerColor(int seconds) {
-        if (seconds > 15) return COLOR_TIMER_OK;
-        if (seconds > 5) return COLOR_TIMER_WARN;
-        return COLOR_TIMER_URGENT;
     }
 
     private int getQuestTypeColor(QuestType type) {
@@ -206,6 +208,7 @@ public class InvitePopupScreen extends Screen {
     @Override
     public void tick() {
         super.tick();
+        countdown.tick();
 
         // Check for timeout
         if (System.currentTimeMillis() >= expiresAt && !responded) {

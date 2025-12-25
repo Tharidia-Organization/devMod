@@ -1,9 +1,9 @@
-package com.devmod.ui.editor.controller;
+package com.devmod.client.ui.editor.controller;
 
 import com.devmod.config.EditorClientConfig;
-import com.devmod.ui.editor.EditorModule;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.editor.state.ItemEditorState;
+import com.devmod.client.ui.editor.EditorModule;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.state.ItemEditorState;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 

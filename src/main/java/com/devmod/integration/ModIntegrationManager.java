@@ -2,6 +2,8 @@ package com.devmod.integration;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatRegistry;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import javax.annotation.Nullable;
@@ -65,7 +67,6 @@ public class ModIntegrationManager {
 
         // P1 - UI/Input/HUD
         CompatRegistry.register(new com.devmod.compat.mods.clothconfig.ClothConfigCompat());
-        CompatRegistry.register(new com.devmod.compat.mods.controlling.ControllingCompat());
         CompatRegistry.register(new com.devmod.compat.mods.journeymap.JourneyMapCompat());
         CompatRegistry.register(new com.devmod.compat.mods.emi.EmiCompat());
 
@@ -97,14 +98,34 @@ public class ModIntegrationManager {
         CompatRegistry.register(new com.devmod.compat.mods.spark.SparkCompat());
         CompatRegistry.register(new com.devmod.compat.mods.iris.IrisCompat());
 
+        // P3 - Combat/Attributes (Progression)
+        CompatRegistry.register(new com.devmod.compat.mods.puffishskills.PuffishSkillsCompat());
+
+        // P3 - Combat/Attributes (Class Systems)
+        CompatRegistry.register(new com.devmod.compat.mods.rpgseries.RpgSeriesCompat());
+        CompatRegistry.register(new com.devmod.compat.mods.shieldapi.ShieldApiCompat());
+
         // P5 - QoL/Testing
         CompatRegistry.register(new com.devmod.compat.mods.easynpc.EasyNpcCompat());
         CompatRegistry.register(new com.devmod.compat.mods.playeranimator.PlayerAnimatorCompat());
         CompatRegistry.register(new com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat());
         CompatRegistry.register(new com.devmod.compat.mods.emotecraft.EmotecraftCompat());
 
-        // P1 - UI/Config (additional frameworks)
-        CompatRegistry.register(new com.devmod.compat.mods.yacl.YaclCompat());
+        // Client-only compat modules (safe to register only on client)
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            com.devmod.client.compat.ClientCompatRegistrar.registerClientModules();
+        }
+
+        // P2 - Dimension/World
+        CompatRegistry.register(new com.devmod.compat.mods.terrablender.TerraBlenderCompat());
+        CompatRegistry.register(new com.devmod.compat.mods.c2me.C2MECompat());
+
+        // P4 - Performance
+        CompatRegistry.register(new com.devmod.compat.mods.modernfix.ModernFixCompat());
+        CompatRegistry.register(new com.devmod.compat.mods.ferritecore.FerriteCoreCompat());
+        CompatRegistry.register(new com.devmod.compat.mods.lithium.LithiumCompat());
+        CompatRegistry.register(new com.devmod.compat.mods.sodium.SodiumCompat());
+        CompatRegistry.register(new com.devmod.compat.mods.entityculling.EntityCullingCompat());
 
         // Initialize common (server+client) functionality
         CompatRegistry.initCommon();

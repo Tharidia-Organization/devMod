@@ -1,4 +1,4 @@
-package com.devmod.events;
+package com.devmod.client.events;
 
 import com.devmod.DevMod;
 

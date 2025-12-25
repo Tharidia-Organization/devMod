@@ -26,12 +26,26 @@ import net.minecraft.world.item.Items;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.Reader;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
@@ -668,7 +682,8 @@ public class RewardSystem {
 
     @Nonnull
     public PlayerWallet getWallet(UUID playerId) {
-        return playerWallets.computeIfAbsent(playerId, id -> new PlayerWallet(id));
+        // computeIfAbsent guaranteed non-null here since PlayerWallet constructor never returns null
+        return Objects.requireNonNull(playerWallets.computeIfAbsent(playerId, id -> new PlayerWallet(id)));
     }
 
     public int getPlayerCurrency(UUID playerId, Currency currency) {
@@ -852,7 +867,7 @@ public class RewardSystem {
         // Play special sound
         Objects.requireNonNull(player.level()).playSound(null,
             player.getX(), player.getY(), player.getZ(),
-            SoundEvents.UI_TOAST_CHALLENGE_COMPLETE,
+            Objects.requireNonNull(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE),
             SoundSource.PLAYERS, 1.0f, 1.2f);
 
         LOGGER.info("[RewardSystem] Player {} unlocked prestige milestone: {} ({})",

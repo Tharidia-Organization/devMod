@@ -3,6 +3,7 @@ package com.devmod.testing;
 import com.devmod.testing.ModDiscoveryService.ModInfo;
 import com.devmod.testing.TestCase.TestPriority;
 import net.minecraft.resources.ResourceLocation;
+import net.neoforged.fml.loading.FMLEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,8 +106,10 @@ public class DynamicTestGenerator {
             // Add all DevMod armor test cases
             tests.addAll(DevModArmorTestCases.generateTestCases());
 
-            // Add all DevMod preset system test cases
-            tests.addAll(DevModPresetTestCases.generateTestCases());
+            // Add all DevMod preset system test cases (client-only due to PresetRegistry dependency)
+            if (FMLEnvironment.dist.isClient()) {
+                tests.addAll(loadPresetTestCasesClientSafe());
+            }
 
             LOGGER.info("[DevModCoreTestTemplate] Generated {} DevMod core tests", tests.size());
             return tests;
@@ -1037,6 +1040,25 @@ public class DynamicTestGenerator {
                     return interactions >= 10 ? 1.0f : interactions / 10.0f;
                 }
             ));
+        }
+    }
+
+    // ========== Client-safe helper ==========
+
+    /**
+     * Loads DevModPresetTestCases via reflection to avoid class loading on dedicated server.
+     * DevModPresetTestCases imports client-only classes (PresetRegistry, PresetBridge, etc.).
+     */
+    @SuppressWarnings("unchecked")
+    private static List<TestCase> loadPresetTestCasesClientSafe() {
+        try {
+            Class<?> presetTestCasesClass = Class.forName("com.devmod.client.testing.DevModPresetTestCases");
+            java.lang.reflect.Method generateMethod = presetTestCasesClass.getMethod("generateTestCases");
+            Object result = generateMethod.invoke(null);
+            return (List<TestCase>) result;
+        } catch (Exception e) {
+            LOGGER.debug("Could not load DevModPresetTestCases: {}", e.getMessage());
+            return Collections.emptyList();
         }
     }
 }

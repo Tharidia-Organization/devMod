@@ -1,7 +1,7 @@
 package com.devmod.client.overlay;
 
 import com.devmod.DevMod;
-import com.devmod.abilities.ClientStaminaCache;
+import com.devmod.client.abilities.ClientStaminaCache;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;

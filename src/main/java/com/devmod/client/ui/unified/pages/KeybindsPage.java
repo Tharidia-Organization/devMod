@@ -1,17 +1,20 @@
-package com.devmod.ui.unified.pages;
+package com.devmod.client.ui.unified.pages;
 
 import com.devmod.client.input.KeyInputHandler;
-import com.devmod.ui.AxiomRenderer;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.unified.SettingsCategory;
-import com.devmod.ui.unified.SettingsPage;
+import com.devmod.client.input.KeybindConflictDetector;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.unified.SettingsCategory;
+import com.devmod.client.ui.unified.SettingsPage;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Keybinds settings page - displays all mod keybindings.
@@ -27,8 +30,12 @@ public class KeybindsPage implements SettingsPage {
     private static final int HINT_HEIGHT = 24; // Reserved space for bottom hint
 
     // Keybind entries organized by category
-    private record KeybindEntry(@Nonnull String name, @Nonnull String key, @Nonnull String description) {}
+    private record KeybindEntry(@Nonnull String name, @Nonnull String key, @Nonnull String description,
+                                 @Nonnull KeyMapping keyMapping) {}
     private record KeybindSection(String title, List<KeybindEntry> entries) {}
+
+    // Conflict cache (refreshed on init)
+    private Map<KeyMapping, List<KeyMapping>> conflictCache = new HashMap<>();
 
     private final List<KeybindSection> sections = new ArrayList<>();
 
@@ -57,70 +64,81 @@ public class KeybindsPage implements SettingsPage {
         sections.clear();
         scrollOffset = 0; // Reset scroll on init
 
+        // Build conflict cache
+        conflictCache.clear();
+        for (KeybindConflictDetector.KeybindConflict conflict : KeybindConflictDetector.detectConflicts()) {
+            conflictCache.computeIfAbsent(conflict.devModKey(), k -> new ArrayList<>()).add(conflict.otherKey());
+        }
+
         // Core Controls
         List<KeybindEntry> core = new ArrayList<>();
-        core.add(new KeybindEntry("Settings Panel", getKeyName(KeyInputHandler.OPEN_SETTINGS_KEY), "Open this settings menu"));
-        core.add(new KeybindEntry("Weapon Editor", getKeyName(KeyInputHandler.OPEN_WEAPON_EDITOR_KEY), "Edit held weapon stats"));
-        core.add(new KeybindEntry("Telemetry Dashboard", getKeyName(KeyInputHandler.OPEN_DASHBOARD_KEY), "View analytics and stats"));
-        core.add(new KeybindEntry("QA Testing", getKeyName(KeyInputHandler.OPEN_QA_TESTING_KEY), "Open QA testing screen"));
-        core.add(new KeybindEntry("Testing Hub", getKeyName(KeyInputHandler.OPEN_TESTING_HUB_KEY), "Open unified testing hub"));
+        core.add(entry("Settings Panel", KeyInputHandler.OPEN_SETTINGS_KEY, "Open this settings menu"));
+        core.add(entry("Weapon Editor", KeyInputHandler.OPEN_WEAPON_EDITOR_KEY, "Edit held weapon stats"));
+        core.add(entry("Telemetry Dashboard", KeyInputHandler.OPEN_DASHBOARD_KEY, "View analytics and stats"));
+        core.add(entry("QA Testing", KeyInputHandler.OPEN_QA_TESTING_KEY, "Open QA testing screen"));
+        core.add(entry("Testing Hub", KeyInputHandler.OPEN_TESTING_HUB_KEY, "Open unified testing hub"));
         sections.add(new KeybindSection("Core Controls", core));
 
         // Debug Overlays
         List<KeybindEntry> debug = new ArrayList<>();
-        debug.add(new KeybindEntry("Debug Renderer", getKeyName(KeyInputHandler.TOGGLE_DEBUG_OVERLAY_KEY), "Toggle debug (Shift: Body Parts)"));
-        debug.add(new KeybindEntry("Light Levels", getKeyName(KeyInputHandler.TOGGLE_LIGHT_OVERLAY_KEY), "Show spawn-safe light levels"));
-        debug.add(new KeybindEntry("Heatmaps", getKeyName(KeyInputHandler.TOGGLE_HEATMAP_KEY), "Cycle (Ctrl: Clear, Shift: Clear All)"));
-        debug.add(new KeybindEntry("Chunk Performance", getKeyName(KeyInputHandler.TOGGLE_CHUNK_PERF_KEY), "Toggle chunk performance view"));
+        debug.add(entry("Debug Renderer", KeyInputHandler.TOGGLE_DEBUG_OVERLAY_KEY, "Toggle debug (Shift: Body Parts)"));
+        debug.add(entry("Light Levels", KeyInputHandler.TOGGLE_LIGHT_OVERLAY_KEY, "Show spawn-safe light levels"));
+        debug.add(entry("Heatmaps", KeyInputHandler.TOGGLE_HEATMAP_KEY, "Cycle (Ctrl: Clear, Shift: Clear All)"));
+        debug.add(entry("Chunk Performance", KeyInputHandler.TOGGLE_CHUNK_PERF_KEY, "Toggle chunk performance view"));
         sections.add(new KeybindSection("Debug Overlays", debug));
 
         // Spatial Analysis
         List<KeybindEntry> spatial = new ArrayList<>();
-        spatial.add(new KeybindEntry("Room Bounds", getKeyName(KeyInputHandler.TOGGLE_ROOM_BOUNDS_KEY), "(Shift: Editor, Ctrl: Reload)"));
-        spatial.add(new KeybindEntry("Vertical Levels", getKeyName(KeyInputHandler.TOGGLE_VERTICAL_LEVELS_KEY), "Display height zone analysis"));
-        spatial.add(new KeybindEntry("Safe Spots", getKeyName(KeyInputHandler.TOGGLE_SAFE_SPOT_KEY), "Highlight camping positions"));
-        spatial.add(new KeybindEntry("Spawnability Map", getKeyName(KeyInputHandler.TOGGLE_SPAWNABILITY_KEY), "Show hostile spawn zones"));
+        spatial.add(entry("Room Bounds", KeyInputHandler.TOGGLE_ROOM_BOUNDS_KEY, "(Shift: Editor, Ctrl: Reload)"));
+        spatial.add(entry("Vertical Levels", KeyInputHandler.TOGGLE_VERTICAL_LEVELS_KEY, "Display height zone analysis"));
+        spatial.add(entry("Safe Spots", KeyInputHandler.TOGGLE_SAFE_SPOT_KEY, "Highlight camping positions"));
+        spatial.add(entry("Spawnability Map", KeyInputHandler.TOGGLE_SPAWNABILITY_KEY, "Show hostile spawn zones"));
         sections.add(new KeybindSection("Spatial Analysis", spatial));
 
         // AI & Pathfinding
         List<KeybindEntry> ai = new ArrayList<>();
-        ai.add(new KeybindEntry("Line of Sight", getKeyName(KeyInputHandler.TOGGLE_LOS_KEY), "Visualize mob vision rays"));
-        ai.add(new KeybindEntry("Pathfinding", getKeyName(KeyInputHandler.TOGGLE_PATHFINDING_KEY), "Show AI navigation paths"));
+        ai.add(entry("Line of Sight", KeyInputHandler.TOGGLE_LOS_KEY, "Visualize mob vision rays"));
+        ai.add(entry("Pathfinding", KeyInputHandler.TOGGLE_PATHFINDING_KEY, "Show AI navigation paths"));
         sections.add(new KeybindSection("AI & Pathfinding", ai));
 
         // Performance
         List<KeybindEntry> perf = new ArrayList<>();
-        perf.add(new KeybindEntry("Attribute Monitor", getKeyName(KeyInputHandler.TOGGLE_ATTRIBUTE_MONITOR_KEY), "Monitor entity attributes"));
-        perf.add(new KeybindEntry("FPS Tracker", getKeyName(KeyInputHandler.TOGGLE_FPS_TRACKER_KEY), "Toggle FPS graph overlay"));
-        perf.add(new KeybindEntry("Profiler", getKeyName(KeyInputHandler.TOGGLE_PROFILER_KEY), "Advanced performance profiler"));
+        perf.add(entry("Attribute Monitor", KeyInputHandler.TOGGLE_ATTRIBUTE_MONITOR_KEY, "Monitor entity attributes"));
+        perf.add(entry("FPS Tracker", KeyInputHandler.TOGGLE_FPS_TRACKER_KEY, "Toggle FPS graph overlay"));
+        perf.add(entry("Profiler", KeyInputHandler.TOGGLE_PROFILER_KEY, "Advanced performance profiler"));
         sections.add(new KeybindSection("Performance", perf));
 
         // Combat & Boss
         List<KeybindEntry> combat = new ArrayList<>();
-        combat.add(new KeybindEntry("Boss Phase", getKeyName(KeyInputHandler.TOGGLE_BOSS_PHASE_KEY), "Show boss phase overlay"));
-        combat.add(new KeybindEntry("Entity Density", getKeyName(KeyInputHandler.TOGGLE_ENTITY_DENSITY_KEY), "Toggle entity density map"));
-        combat.add(new KeybindEntry("Skill Efficacy", getKeyName(KeyInputHandler.TOGGLE_SKILL_EFFICACY_KEY), "Show skill effectiveness"));
+        combat.add(entry("Boss Phase", KeyInputHandler.TOGGLE_BOSS_PHASE_KEY, "Show boss phase overlay"));
+        combat.add(entry("Entity Density", KeyInputHandler.TOGGLE_ENTITY_DENSITY_KEY, "Toggle entity density map"));
+        combat.add(entry("Skill Efficacy", KeyInputHandler.TOGGLE_SKILL_EFFICACY_KEY, "Show skill effectiveness"));
         sections.add(new KeybindSection("Combat & Boss", combat));
 
         // Quest System
         List<KeybindEntry> quest = new ArrayList<>();
-        quest.add(new KeybindEntry("Quest HUD", getKeyName(KeyInputHandler.TOGGLE_QUEST_HUD_KEY), "Toggle quest progress HUD"));
-        quest.add(new KeybindEntry("Quest Editor", getKeyName(KeyInputHandler.OPEN_QUEST_EDITOR_KEY), "Open quest editor screen"));
-        quest.add(new KeybindEntry("Complete Task", getKeyName(KeyInputHandler.QUEST_COMPLETE_TASK_KEY), "Mark current task complete"));
-        quest.add(new KeybindEntry("Endurance Quest", getKeyName(KeyInputHandler.OPEN_ENDURANCE_QUEST_KEY), "(Shift: HUD, Ctrl: Details)"));
-        quest.add(new KeybindEntry("Quest Continue", getKeyName(KeyInputHandler.QUEST_CONTINUE_KEY), "Continue after death"));
-        quest.add(new KeybindEntry("Quest Exit", getKeyName(KeyInputHandler.QUEST_EXIT_KEY), "Exit/give up quest"));
+        quest.add(entry("Quest HUD", KeyInputHandler.TOGGLE_QUEST_HUD_KEY, "Toggle quest progress HUD"));
+        quest.add(entry("Quest Editor", KeyInputHandler.OPEN_QUEST_EDITOR_KEY, "Open quest editor screen"));
+        quest.add(entry("Complete Task", KeyInputHandler.QUEST_COMPLETE_TASK_KEY, "Mark current task complete"));
+        quest.add(entry("Endurance Quest", KeyInputHandler.OPEN_ENDURANCE_QUEST_KEY, "(Shift: HUD, Ctrl: Details)"));
+        quest.add(entry("Quest Continue", KeyInputHandler.QUEST_CONTINUE_KEY, "Continue after death"));
+        quest.add(entry("Quest Exit", KeyInputHandler.QUEST_EXIT_KEY, "Exit/give up quest"));
         sections.add(new KeybindSection("Quest System", quest));
 
         // Economy
         List<KeybindEntry> economy = new ArrayList<>();
-        economy.add(new KeybindEntry("Economy Overlay", getKeyName(KeyInputHandler.TOGGLE_ECONOMY_KEY), "(Shift: View, Ctrl: Sort)"));
+        economy.add(entry("Economy Overlay", KeyInputHandler.TOGGLE_ECONOMY_KEY, "(Shift: View, Ctrl: Sort)"));
         sections.add(new KeybindSection("Economy", economy));
 
         // Help
         List<KeybindEntry> help = new ArrayList<>();
-        help.add(new KeybindEntry("Quick Help", getKeyName(KeyInputHandler.TOGGLE_HELP_KEY), "Show this quick reference"));
+        help.add(entry("Quick Help", KeyInputHandler.TOGGLE_HELP_KEY, "Show this quick reference"));
         sections.add(new KeybindSection("Help", help));
+    }
+
+    /** Helper to create KeybindEntry with KeyMapping reference */
+    private KeybindEntry entry(String name, KeyMapping keyMapping, String description) {
+        return new KeybindEntry(name, getKeyName(keyMapping), description, keyMapping);
     }
 
     @Nonnull
@@ -228,9 +246,16 @@ public class KeybindsPage implements SettingsPage {
         int rowWidth = width - 10;
         boolean hovered = mouseX >= x && mouseX < x + rowWidth && mouseY >= y && mouseY < y + ROW_HEIGHT;
 
-        // Hover background
+        // Check for conflicts
+        List<KeyMapping> conflicts = conflictCache.get(entry.keyMapping());
+        boolean hasConflict = conflicts != null && !conflicts.isEmpty();
+
+        // Hover background (tinted red if conflict)
         if (hovered) {
-            graphics.fill(x - 4, y - 1, x + rowWidth + 4, y + ROW_HEIGHT - 3, UIConstants.Background.HOVER());
+            int bgColor = hasConflict ? 0x30FF4444 : UIConstants.Background.HOVER();
+            graphics.fill(x - 4, y - 1, x + rowWidth + 4, y + ROW_HEIGHT - 3, bgColor);
+        } else if (hasConflict) {
+            graphics.fill(x - 4, y - 1, x + rowWidth + 4, y + ROW_HEIGHT - 3, 0x18FF4444);
         }
 
         // Key badge
@@ -240,14 +265,22 @@ public class KeybindsPage implements SettingsPage {
         int textWidth = font.width(entry.key);
         int actualBadgeWidth = Math.max(KEY_BADGE_WIDTH, textWidth + 8);
 
+        int badgeBorderColor = hasConflict ? 0xFFFF6666 : UIConstants.Border.ACCENT();
         graphics.fill(badgeX, badgeY, badgeX + actualBadgeWidth, badgeY + badgeHeight, UIConstants.Background.INPUT());
-        AxiomRenderer.drawBorder(graphics, badgeX, badgeY, actualBadgeWidth, badgeHeight, UIConstants.Border.ACCENT());
+        AxiomRenderer.drawBorder(graphics, badgeX, badgeY, actualBadgeWidth, badgeHeight, badgeBorderColor);
 
         int keyTextX = badgeX + (actualBadgeWidth - textWidth) / 2;
-        graphics.drawString(font, entry.key, keyTextX, badgeY + (badgeHeight - 8) / 2, UIConstants.Text.TITLE(), false);
+        int keyTextColor = hasConflict ? 0xFFFF8888 : UIConstants.Text.TITLE();
+        graphics.drawString(font, entry.key, keyTextX, badgeY + (badgeHeight - 8) / 2, keyTextColor, false);
+
+        // Conflict warning icon
+        int nameX = badgeX + actualBadgeWidth + 10;
+        if (hasConflict) {
+            graphics.drawString(font, "⚠", nameX - 2, y + 2, 0xFFFF6666, false);
+            nameX += 12;
+        }
 
         // Action name
-        int nameX = badgeX + actualBadgeWidth + 10;
         graphics.drawString(font, entry.name, nameX, y + 2, UIConstants.Text.PRIMARY(), false);
 
         // Description (muted, to the right) - only if space allows

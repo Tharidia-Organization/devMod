@@ -1,10 +1,10 @@
-package com.devmod.ui.wizard;
+package com.devmod.client.ui.wizard;
 
 import com.devmod.endurance.EnduranceQuestRegistry;
-import com.devmod.testing.IntegratedTestSession;
-import com.devmod.ui.AxiomRenderer;
-import com.devmod.ui.ConfirmDialog;
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.testing.IntegratedTestSession;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.ConfirmDialog;
+import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -13,6 +13,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import org.lwjgl.glfw.GLFW;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -81,10 +82,10 @@ public class QuickTestWizard extends Screen {
     private ConfirmDialog exitDialog;
 
     // Navigation buttons (shared component adapters)
-    private com.devmod.ui.editor.components.EditorButton backButton;
-    private com.devmod.ui.editor.components.EditorButton nextButton;
-    private com.devmod.ui.editor.components.EditorButton cancelButton;
-    private com.devmod.ui.editor.components.EditorButton startButton;
+    private com.devmod.client.ui.editor.components.EditorButton backButton;
+    private com.devmod.client.ui.editor.components.EditorButton nextButton;
+    private com.devmod.client.ui.editor.components.EditorButton cancelButton;
+    private com.devmod.client.ui.editor.components.EditorButton startButton;
 
     public QuickTestWizard() {
         super(I18n.screenTitle("quick_test_wizard"));
@@ -115,9 +116,9 @@ public class QuickTestWizard extends Screen {
     protected void init() {
         clearWidgets();
 
-        backButton = new com.devmod.ui.editor.components.EditorButton("wizard-back", "← Back")
-            .style(com.devmod.ui.editor.components.EditorButton.Style.NORMAL)
-            .size(com.devmod.ui.editor.components.EditorButton.Size.MEDIUM)
+        backButton = new com.devmod.client.ui.editor.components.EditorButton("wizard-back", "← Back")
+            .style(com.devmod.client.ui.editor.components.EditorButton.Style.NORMAL)
+            .size(com.devmod.client.ui.editor.components.EditorButton.Size.MEDIUM)
             .onClick(() -> {
                 if (currentStep > 0) {
                     currentStep--;
@@ -125,9 +126,9 @@ public class QuickTestWizard extends Screen {
                 }
             });
 
-        nextButton = new com.devmod.ui.editor.components.EditorButton("wizard-next", "Next →")
-            .style(com.devmod.ui.editor.components.EditorButton.Style.PRIMARY)
-            .size(com.devmod.ui.editor.components.EditorButton.Size.MEDIUM)
+        nextButton = new com.devmod.client.ui.editor.components.EditorButton("wizard-next", "Next →")
+            .style(com.devmod.client.ui.editor.components.EditorButton.Style.PRIMARY)
+            .size(com.devmod.client.ui.editor.components.EditorButton.Size.MEDIUM)
             .onClick(() -> {
                 if (currentStep < TOTAL_STEPS - 1) {
                     currentStep++;
@@ -135,14 +136,14 @@ public class QuickTestWizard extends Screen {
                 }
             });
 
-        startButton = new com.devmod.ui.editor.components.EditorButton("wizard-start", "Start ⚡")
-            .style(com.devmod.ui.editor.components.EditorButton.Style.PRIMARY)
-            .size(com.devmod.ui.editor.components.EditorButton.Size.MEDIUM)
+        startButton = new com.devmod.client.ui.editor.components.EditorButton("wizard-start", "Start ⚡")
+            .style(com.devmod.client.ui.editor.components.EditorButton.Style.PRIMARY)
+            .size(com.devmod.client.ui.editor.components.EditorButton.Size.MEDIUM)
             .onClick(this::startTest);
 
-        cancelButton = new com.devmod.ui.editor.components.EditorButton("wizard-cancel", "Cancel")
-            .style(com.devmod.ui.editor.components.EditorButton.Style.GHOST)
-            .size(com.devmod.ui.editor.components.EditorButton.Size.MEDIUM)
+        cancelButton = new com.devmod.client.ui.editor.components.EditorButton("wizard-cancel", "Cancel")
+            .style(com.devmod.client.ui.editor.components.EditorButton.Style.GHOST)
+            .size(com.devmod.client.ui.editor.components.EditorButton.Size.MEDIUM)
             .onClick(() -> {
                 if (exitDialog != null) {
                     exitDialog.show();
@@ -886,7 +887,7 @@ public class QuickTestWizard extends Screen {
         com.devmod.client.overlay.IntegratedTestOverlay.setEnabled(true);
 
         // Close wizard and open endurance quest screen with pre-selection
-        mc.setScreen(new com.devmod.endurance.EnduranceQuestScreen(
+        mc.setScreen(new com.devmod.client.endurance.EnduranceQuestScreen(
             selectedMob,
             endlessMode ? 0 : waveCount
         ));
@@ -973,6 +974,12 @@ public class QuickTestWizard extends Screen {
         }
         if (exitDialog != null && exitDialog.isVisible()) {
             return true;
+        }
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            if (exitDialog != null) {
+                exitDialog.show();
+                return true;
+            }
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }

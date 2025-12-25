@@ -3,7 +3,7 @@ package com.devmod.combat;
 import com.devmod.DevMod;
 
 import com.devmod.network.PacketValidator;
-import com.devmod.ui.editor.RangedWeaponModule;
+import com.devmod.stats.RangedWeaponStats;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.ThrownTrident;
@@ -42,7 +42,7 @@ public final class RangedProjectileHooks {
             return;
         }
 
-        var stats = RangedWeaponModule.getStats(weapon);
+        var stats = RangedWeaponStats.getStats(weapon);
         PacketValidator security = PacketValidator.INSTANCE;
 
         float speed = (float) security.validateRangedSpeed(stats.projectileSpeed);
@@ -89,7 +89,7 @@ public final class RangedProjectileHooks {
             return;
         }
 
-        RangedWeaponModule.RangedStats stats = RangedWeaponModule.getStats(weapon);
+        RangedWeaponStats stats = RangedWeaponStats.getStats(weapon);
         PacketValidator security = PacketValidator.INSTANCE;
 
         float speed = (float) security.validateRangedSpeed(stats.projectileSpeed);

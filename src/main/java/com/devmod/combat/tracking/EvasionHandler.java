@@ -1,13 +1,14 @@
 package com.devmod.combat.tracking;
 
-import com.devmod.client.ClientVFXProxy;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.fml.loading.FMLEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -132,11 +133,40 @@ public final class EvasionHandler {
                 Long hitTime = confirmedHits.remove(targetId);
                 if (hitTime == null || hitTime < attackTime) {
                     LOGGER.debug("EVASION DETECTED at {}", attackData.targetPosition);
-                    ClientVFXProxy.spawnMeleeEvasionPanel(player, target, attackData.targetPosition, attackData.lookDir);
+                    spawnMeleeEvasionPanelClientSafe(player, target, attackData.targetPosition, attackData.lookDir);
                 } else {
                     LOGGER.debug("Attack confirmed, no evasion");
                 }
             }
         }, 150, TimeUnit.MILLISECONDS);
+    }
+
+    // ========== Client-safe VFX helpers ==========
+
+    private static Method spawnMeleeEvasionMethod;
+    private static boolean vfxMethodInitialized = false;
+
+    /**
+     * Spawns evasion VFX panel (client-only, server-safe).
+     * Uses reflection to avoid loading client classes on dedicated server.
+     */
+    private static void spawnMeleeEvasionPanelClientSafe(Player player, LivingEntity target, Vec3 position, Vec3 lookDir) {
+        if (!FMLEnvironment.dist.isClient()) {
+            return; // No-op on server
+        }
+
+        try {
+            if (!vfxMethodInitialized) {
+                vfxMethodInitialized = true;
+                Class<?> proxyClass = Class.forName("com.devmod.client.ClientVFXProxy");
+                spawnMeleeEvasionMethod = proxyClass.getMethod("spawnMeleeEvasionPanel",
+                    Player.class, LivingEntity.class, Vec3.class, Vec3.class);
+            }
+            if (spawnMeleeEvasionMethod != null) {
+                spawnMeleeEvasionMethod.invoke(null, player, target, position, lookDir);
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Could not spawn evasion VFX: {}", e.getMessage());
+        }
     }
 }

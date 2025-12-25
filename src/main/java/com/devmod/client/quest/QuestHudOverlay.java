@@ -1,7 +1,11 @@
-package com.devmod.quest;
+package com.devmod.client.quest;
+
+import com.devmod.quest.QuestData;
+import com.devmod.quest.QuestManager;
+import com.devmod.quest.QuestTask;
 
 import com.devmod.DevMod;
-import com.devmod.endurance.ClientQuestCache;
+import com.devmod.client.endurance.ClientQuestCache;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;

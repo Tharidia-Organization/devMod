@@ -1,9 +1,9 @@
-package com.devmod.ui.editor.modules;
+package com.devmod.client.ui.editor.modules;
 
 import com.devmod.DevMod;
 import com.devmod.stats.FoodStats;
 import com.devmod.config.FoodConfigManager;
-import com.devmod.ui.editor.components.SourceBadge;
+import com.devmod.client.ui.editor.components.SourceBadge;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.ItemStack;

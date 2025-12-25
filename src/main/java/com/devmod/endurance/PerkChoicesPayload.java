@@ -14,10 +14,11 @@ import javax.annotation.Nonnull;
 
 /**
  * Network payload sent from server to client with perk choices after wave completion.
- * Contains serialized perk data for display in PerkSelectionScreen.
+ * Contains serialized perk data plus an expiry timestamp for countdown UI.
  */
 public record PerkChoicesPayload(
     int waveNumber,
+    long expiresAt,
     List<PerkChoice> choices
 ) implements CustomPacketPayload {
 
@@ -43,7 +44,13 @@ public record PerkChoicesPayload(
         int currentStacks,
         int maxStacks,
         boolean suggested,
-        boolean required
+        boolean required,
+        // Synergy preview data
+        int synergyScore,        // Total synergy value (0-10+)
+        String synergyHint,      // Short description of best synergy
+        int newSynergyCount,     // Number of synergies this would complete
+        int potentialCount,      // Number of synergies this advances
+        boolean isRecommended    // True if completing a near-active synergy
     ) {
         public static PerkChoice from(PerkSystem.Perk perk, int currentStacks, boolean suggested, boolean required) {
             return new PerkChoice(
@@ -58,8 +65,53 @@ public record PerkChoicesPayload(
                 currentStacks,
                 perk.maxStacks,
                 suggested,
-                required
+                required,
+                0, "", 0, 0, false  // Default synergy values
             );
+        }
+
+        /**
+         * Create a PerkChoice with synergy preview data.
+         */
+        public static PerkChoice fromWithSynergy(PerkSystem.Perk perk, int currentStacks,
+                boolean suggested, boolean required, PerkSynergySystem.SynergyPreview preview) {
+            String hint = "";
+            if (!preview.newSynergies().isEmpty()) {
+                hint = "Completes: " + preview.newSynergies().get(0).synergy().name;
+            } else if (!preview.potentialSynergies().isEmpty()) {
+                var potential = preview.potentialSynergies().get(0);
+                int missing = potential.missingPerks().size();
+                hint = potential.synergy().name + " (" + missing + " away)";
+            } else if (!preview.activeSynergies().isEmpty()) {
+                hint = "Enhances: " + preview.activeSynergies().get(0).synergy().name;
+            }
+
+            return new PerkChoice(
+                perk.id,
+                perk.name,
+                perk.description,
+                perk.tier.displayName,
+                perk.tier.color,
+                perk.category.displayName,
+                perk.category.color,
+                perk.stackable,
+                currentStacks,
+                perk.maxStacks,
+                suggested,
+                required,
+                preview.totalSynergyScore(),
+                hint,
+                preview.newSynergies().size(),
+                preview.potentialSynergies().size(),
+                !preview.newSynergies().isEmpty()
+            );
+        }
+
+        /**
+         * Check if this perk has synergy data.
+         */
+        public boolean hasSynergyInfo() {
+            return synergyScore > 0 || !synergyHint.isEmpty() || newSynergyCount > 0 || potentialCount > 0;
         }
     }
 
@@ -67,6 +119,7 @@ public record PerkChoicesPayload(
         @Override
         public PerkChoicesPayload decode(@Nonnull ByteBuf buf) {
             int waveNumber = buf.readInt();
+            long expiresAt = buf.readLong();
             int choiceCount = Math.min(buf.readInt(), MAX_CHOICES);
 
             List<PerkChoice> choices = new ArrayList<>();
@@ -74,12 +127,13 @@ public record PerkChoicesPayload(
                 choices.add(decodePerkChoice(buf));
             }
 
-            return new PerkChoicesPayload(waveNumber, choices);
+            return new PerkChoicesPayload(waveNumber, expiresAt, choices);
         }
 
         @Override
         public void encode(@Nonnull ByteBuf buf, @Nonnull PerkChoicesPayload payload) {
             buf.writeInt(payload.waveNumber);
+            buf.writeLong(payload.expiresAt);
             buf.writeInt(Math.min(payload.choices.size(), MAX_CHOICES));
 
             for (int i = 0; i < Math.min(payload.choices.size(), MAX_CHOICES); i++) {
@@ -100,9 +154,16 @@ public record PerkChoicesPayload(
             int maxStacks = buf.readInt();
             boolean suggested = buf.readBoolean();
             boolean required = buf.readBoolean();
+            // Synergy data
+            int synergyScore = buf.readInt();
+            String synergyHint = readString(buf);
+            int newSynergyCount = buf.readInt();
+            int potentialCount = buf.readInt();
+            boolean isRecommended = buf.readBoolean();
 
             return new PerkChoice(id, name, description, tierName, tierColor,
-                categoryName, categoryColor, stackable, currentStacks, maxStacks, suggested, required);
+                categoryName, categoryColor, stackable, currentStacks, maxStacks, suggested, required,
+                synergyScore, synergyHint, newSynergyCount, potentialCount, isRecommended);
         }
 
         private void encodePerkChoice(ByteBuf buf, PerkChoice choice) {
@@ -118,6 +179,12 @@ public record PerkChoicesPayload(
             buf.writeInt(choice.maxStacks);
             buf.writeBoolean(choice.suggested);
             buf.writeBoolean(choice.required);
+            // Synergy data
+            buf.writeInt(choice.synergyScore);
+            writeString(buf, choice.synergyHint);
+            buf.writeInt(choice.newSynergyCount);
+            buf.writeInt(choice.potentialCount);
+            buf.writeBoolean(choice.isRecommended);
         }
 
         private String readString(ByteBuf buf) {

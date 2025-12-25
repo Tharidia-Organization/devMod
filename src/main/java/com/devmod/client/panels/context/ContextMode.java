@@ -1,6 +1,6 @@
 package com.devmod.client.panels.context;
 
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.UIConstants;
 
 /**
  * Context modes that determine which panels to show automatically.

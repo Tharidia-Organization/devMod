@@ -2,16 +2,19 @@
   "required": true,
   "minVersion": "0.8",
   "package": "com.devmod.mixin",
+  "refmap": "devmod.refmap.json",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "MinecraftServerAccessor",
-    "RecipeManagerMixin"
+    "RecipeManagerMixin",
+    "DebugPacketsMixin"
   ],
   "client": [
-    "GameRendererMixin",
-    "CameraShakeMixin",
-    "ModelPartTransformMixin",
-    "LivingEntityRendererMixin"
+    "client.GameRendererMixin",
+    "client.CameraShakeMixin",
+    "client.ModelPartTransformMixin",
+    "client.LivingEntityRendererMixin",
+    "client.DebugRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

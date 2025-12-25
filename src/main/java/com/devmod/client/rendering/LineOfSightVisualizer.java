@@ -1,6 +1,6 @@
 package com.devmod.client.rendering;
 
-import com.devmod.ui.unified.persistence.SettingsManager;
+import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;

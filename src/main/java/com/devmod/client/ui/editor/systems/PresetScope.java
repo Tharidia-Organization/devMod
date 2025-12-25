@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.systems;
+package com.devmod.client.ui.editor.systems;
 
 /**
  * Sealed interface representing the scope/priority level of a preset.

@@ -1,21 +1,21 @@
-package com.devmod.ui.unified.pages;
+package com.devmod.client.ui.unified.pages;
 
 import com.devmod.client.rendering.HeatmapVisualizer;
 import com.devmod.client.rendering.HeatmapVisualizer.HeatmapType;
 import com.devmod.client.rendering.LightLevelOverlay;
 import com.devmod.client.rendering.SafeSpotVisualizer;
 import com.devmod.client.rendering.VerticalLevelsVisualizer;
-import com.devmod.ui.AxiomRenderer;
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.ui.editor.components.EditorButton;
-import com.devmod.ui.unified.SettingsCategory;
-import com.devmod.ui.unified.SettingsPage;
-import com.devmod.ui.unified.persistence.SettingsData;
-import com.devmod.ui.unified.persistence.SettingsManager;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.unified.SettingsCategory;
+import com.devmod.client.ui.unified.SettingsPage;
+import com.devmod.client.ui.unified.persistence.SettingsData;
+import com.devmod.client.ui.unified.persistence.SettingsManager;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 

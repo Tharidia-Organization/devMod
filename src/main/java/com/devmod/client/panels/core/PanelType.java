@@ -1,6 +1,6 @@
 package com.devmod.client.panels.core;
 
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.UIConstants;
 
 /**
  * Types of floating panels available in the system.

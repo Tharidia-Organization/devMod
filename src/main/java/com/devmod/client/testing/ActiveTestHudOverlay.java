@@ -1,5 +1,6 @@
-package com.devmod.testing;
+package com.devmod.client.testing;
 
+import com.devmod.testing.TestCase;
 import com.devmod.DevMod;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;

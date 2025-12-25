@@ -1,4 +1,4 @@
-package com.devmod.ui;
+package com.devmod.client.ui;
 
 import com.devmod.DevMod;
 import net.minecraft.client.Minecraft;

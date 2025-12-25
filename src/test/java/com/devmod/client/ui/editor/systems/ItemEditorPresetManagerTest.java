@@ -1,6 +1,6 @@
-package com.devmod.ui.editor.systems;
+package com.devmod.client.ui.editor.systems;
 
-import com.devmod.ui.editor.ItemEditorDataManager;
+import com.devmod.client.ui.editor.ItemEditorDataManager;
 import com.devmod.TestBootstrap;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;

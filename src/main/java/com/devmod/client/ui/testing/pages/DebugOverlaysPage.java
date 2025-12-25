@@ -1,15 +1,30 @@
-package com.devmod.ui.testing.pages;
+package com.devmod.client.ui.testing.pages;
 
 import com.devmod.ModConfig;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.client.rendering.*;
-import com.devmod.ui.editor.components.EditorButton;
-import com.devmod.ui.testing.VoxelLabTab;
-import com.devmod.ui.testing.panel.*;
-import com.devmod.ui.unified.persistence.SettingsManager;
+import com.devmod.client.rendering.AggroRangeVisualizer;
+import com.devmod.client.rendering.ChunkPerformanceVisualizer;
+import com.devmod.client.rendering.DebugRenderer;
+import com.devmod.client.rendering.HeatmapVisualizer;
+import com.devmod.client.rendering.LightLevelOverlay;
+import com.devmod.client.rendering.LineOfSightVisualizer;
+import com.devmod.client.rendering.RoomBoundsVisualizer;
+import com.devmod.client.rendering.SafeSpotVisualizer;
+import com.devmod.client.rendering.SpawnabilityOverlay;
+import com.devmod.client.rendering.VerticalLevelsVisualizer;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.testing.VoxelLabTab;
+import com.devmod.client.ui.testing.panel.CollapsiblePanel;
+import com.devmod.client.ui.testing.panel.GridPanel;
+import com.devmod.client.ui.testing.panel.HeaderPanel;
+import com.devmod.client.ui.testing.panel.SectionPanel;
+import com.devmod.client.ui.testing.panel.SliderPanel;
+import com.devmod.client.ui.testing.panel.SpacerPanel;
+import com.devmod.client.ui.testing.panel.StatusPanel;
+import com.devmod.client.ui.unified.persistence.SettingsManager;
 
 import java.util.ArrayList;
 import java.util.List;

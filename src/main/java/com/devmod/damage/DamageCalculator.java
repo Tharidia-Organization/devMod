@@ -4,6 +4,7 @@ import com.devmod.config.ArmorConfigManager;
 import com.devmod.stats.ArmorStats;
 import com.devmod.config.Config;
 import com.devmod.combat.HitHelper;
+import com.devmod.combat.signature.SoulImprintManager;
 import com.devmod.stats.WeaponStats;
 // DamageBreakdown is now in the same package
 import net.minecraft.tags.DamageTypeTags;
@@ -125,6 +126,91 @@ public final class DamageCalculator {
         }
 
         return new CalculationResult(damage, armorPenBonus, trueDamagePortion, armorReduction, bodyPartMultiplier);
+    }
+
+    /**
+     * Applies signature weapon trait effects to damage.
+     *
+     * @param baseDamage The calculated damage before trait effects
+     * @param weapon The weapon being used
+     * @param isHeadshot Whether this is a headshot
+     * @param isBoss Whether target is a boss mob
+     * @param targetHealthPercent Target's current health percentage (0.0-1.0)
+     * @return Modified damage with trait effects applied
+     */
+    public static float applySignatureTraitEffects(
+            float baseDamage,
+            ItemStack weapon,
+            boolean isHeadshot,
+            boolean isBoss,
+            float targetHealthPercent) {
+
+        if (weapon == null || weapon.isEmpty()) {
+            return baseDamage;
+        }
+
+        SoulImprintManager.TraitEffects effects = SoulImprintManager.INSTANCE.getTraitEffects(weapon);
+        if (!effects.hasEffects()) {
+            return baseDamage;
+        }
+
+        float damage = baseDamage;
+
+        // Base damage percent bonus
+        if (effects.damagePercent() > 0) {
+            damage *= (1f + effects.damagePercent());
+        }
+
+        // Headshot bonus
+        if (isHeadshot && effects.headshotBonus() > 0) {
+            damage *= (1f + effects.headshotBonus());
+        }
+
+        // Boss damage bonus
+        if (isBoss && effects.bossDamage() > 0) {
+            damage *= (1f + effects.bossDamage());
+        }
+
+        // Execute threshold - massive damage to low health targets
+        if (effects.executeThreshold() > 0 && targetHealthPercent <= effects.executeThreshold()) {
+            damage *= 10f; // Execute effect
+        }
+
+        return damage;
+    }
+
+    /**
+     * Get lifesteal amount from signature weapon traits.
+     */
+    public static float getTraitLifesteal(ItemStack weapon, float damageDealt) {
+        if (weapon == null || weapon.isEmpty()) {
+            return 0f;
+        }
+
+        SoulImprintManager.TraitEffects effects = SoulImprintManager.INSTANCE.getTraitEffects(weapon);
+        return damageDealt * effects.lifesteal();
+    }
+
+    /**
+     * Get crit chance bonus from signature weapon traits.
+     */
+    public static float getTraitCritChanceBonus(ItemStack weapon) {
+        if (weapon == null || weapon.isEmpty()) {
+            return 0f;
+        }
+
+        return SoulImprintManager.INSTANCE.getTraitEffects(weapon).critChance();
+    }
+
+    /**
+     * Get damage reduction from signature weapon traits (for defensive traits).
+     */
+    public static float getTraitDamageReduction(ItemStack weapon) {
+        if (weapon == null || weapon.isEmpty()) {
+            return 0f;
+        }
+
+        return SoulImprintManager.INSTANCE.getTraitEffects(weapon).damageReduction();
     }
 
     /**

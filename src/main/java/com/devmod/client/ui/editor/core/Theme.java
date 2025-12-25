@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.core;
+package com.devmod.client.ui.editor.core;
 
 /**
  * Interface defining a color theme for the editor UI.

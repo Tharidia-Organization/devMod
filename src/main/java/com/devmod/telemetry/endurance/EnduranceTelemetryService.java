@@ -1,7 +1,14 @@
 package com.devmod.telemetry.endurance;
 
 import com.devmod.arena.api.ArenaHandle;
-import com.devmod.endurance.*;
+import com.devmod.endurance.CombatTracker;
+import com.devmod.endurance.ComboSystem;
+import com.devmod.endurance.EnduranceQuestState;
+import com.devmod.endurance.MutatorSystem;
+import com.devmod.endurance.PerkSystem;
+import com.devmod.endurance.QuestType;
+import com.devmod.endurance.RewardSystem;
+import com.devmod.endurance.WaveManager;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.duckdb.DuckDBConfig;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
@@ -10,7 +17,11 @@ import net.minecraft.core.BlockPos;
 import org.slf4j.Logger;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -386,6 +397,68 @@ public class EnduranceTelemetryService {
         if (DuckDBConfig.NDJSON_FALLBACK || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
         }
+    }
+
+    /**
+     * Record resonance chain event (party combo synergy).
+     */
+    public void recordResonanceChain(UUID questId, String tierName, int playerCount,
+                                      long timeSpanMs, int targetEntityId) {
+        QuestSessionStats stats = questStats.get(questId);
+        StringBuilder json = new StringBuilder(200);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"resonance_chain\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"tier\":\"").append(tierName).append("\",");
+        json.append("\"playerCount\":").append(playerCount).append(",");
+        json.append("\"timeSpanMs\":").append(timeSpanMs).append(",");
+        json.append("\"targetEntity\":").append(targetEntityId);
+        appendContext(json, stats);
+        json.append("}");
+
+        // Log to NDJSON (resonance events are always logged for analysis)
+        TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
+
+        LOGGER.debug("[Endurance] Resonance {} triggered by {} players ({}ms)", tierName, playerCount, timeSpanMs);
+    }
+
+    // ===== CONTRACT EVENTS =====
+
+    /**
+     * Record blood contract signed.
+     */
+    public void recordContractSigned(UUID questId, UUID playerId, String contractId, float multiplier) {
+        QuestSessionStats stats = questStats.get(questId);
+        StringBuilder json = new StringBuilder(200);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"contract_signed\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"player\":\"").append(playerId).append("\",");
+        json.append("\"contractId\":\"").append(escape(contractId)).append("\",");
+        json.append("\"multiplier\":").append(multiplier);
+        appendContext(json, stats);
+        json.append("}");
+
+        TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
+        LOGGER.debug("[Endurance] Contract {} signed by player {} ({}x)", contractId, playerId, multiplier);
+    }
+
+    /**
+     * Record blood contract violated.
+     */
+    public void recordContractViolated(UUID questId, UUID playerId, String contractId) {
+        QuestSessionStats stats = questStats.get(questId);
+        StringBuilder json = new StringBuilder(180);
+        json.append("{\"ts\":\"").append(Instant.now()).append("\",");
+        json.append("\"type\":\"contract_violated\",");
+        json.append("\"questId\":\"").append(questId).append("\",");
+        json.append("\"player\":\"").append(playerId).append("\",");
+        json.append("\"contractId\":\"").append(escape(contractId)).append("\"");
+        appendContext(json, stats);
+        json.append("}");
+
+        TelemetryService.INSTANCE.appendEnduranceLine(json.toString());
+        LOGGER.debug("[Endurance] Contract {} violated by player {}", contractId, playerId);
     }
 
     // ===== PERK EVENTS =====

@@ -1,4 +1,4 @@
-package com.devmod.ui.unified;
+package com.devmod.client.ui.unified;
 
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;

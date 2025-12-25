@@ -1,4 +1,4 @@
-package com.devmod.ui.unified.persistence;
+package com.devmod.client.ui.unified.persistence;
 
 import com.devmod.client.rendering.HeatmapVisualizer.HeatmapType;
 import java.util.Map;
@@ -44,6 +44,7 @@ public class SettingsData {
      * Debug overlay toggle states.
      */
     public static class DebugSettings {
+        public boolean developerMode = false;
         public boolean debugRenderer = false;
         public boolean lightLevels = false;
         public boolean lineOfSight = false;
@@ -53,6 +54,8 @@ public class SettingsData {
         public boolean entityDensityOverlay = false;
         public boolean skillEfficacyOverlay = false;
         public boolean spawnabilityOverlay = false;
+        public boolean lightOverlayPerfWarned = false;
+        public boolean spawnabilityOverlayPerfWarned = false;
     }
 
     /**
@@ -160,6 +163,7 @@ public class SettingsData {
         copy.general.followRangeColor = this.general.followRangeColor;
 
         // Debug
+        copy.debug.developerMode = this.debug.developerMode;
         copy.debug.debugRenderer = this.debug.debugRenderer;
         copy.debug.lightLevels = this.debug.lightLevels;
         copy.debug.lineOfSight = this.debug.lineOfSight;
@@ -169,6 +173,8 @@ public class SettingsData {
         copy.debug.entityDensityOverlay = this.debug.entityDensityOverlay;
         copy.debug.skillEfficacyOverlay = this.debug.skillEfficacyOverlay;
         copy.debug.spawnabilityOverlay = this.debug.spawnabilityOverlay;
+        copy.debug.lightOverlayPerfWarned = this.debug.lightOverlayPerfWarned;
+        copy.debug.spawnabilityOverlayPerfWarned = this.debug.spawnabilityOverlayPerfWarned;
 
         // Visualizers
         copy.visualizers.heatmaps.putAll(this.visualizers.heatmaps);

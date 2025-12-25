@@ -1,4 +1,4 @@
-package com.devmod.ui.radial.animation;
+package com.devmod.client.ui.radial.animation;
 
 import java.util.Objects;
 

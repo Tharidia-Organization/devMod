@@ -1,4 +1,4 @@
-package com.devmod.ui.testing.panel;
+package com.devmod.client.ui.testing.panel;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -9,7 +9,7 @@ import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
-import static com.devmod.ui.testing.panel.PanelConstants.*;
+import static com.devmod.client.ui.testing.panel.PanelConstants.*;
 
 /**
  * Status indicators panel showing multiple boolean states and optional message.

@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.core;
+package com.devmod.client.ui.editor.core;
 
 /**
  * Scaled spacing values for use in render code.

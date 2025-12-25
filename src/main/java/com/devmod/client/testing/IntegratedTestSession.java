@@ -1,7 +1,11 @@
-package com.devmod.testing;
+package com.devmod.client.testing;
 
+import com.devmod.testing.TestCase;
 import com.devmod.endurance.EnduranceQuestRegistry;
-import com.devmod.client.overlay.*;
+import com.devmod.client.overlay.BossPhaseOverlay;
+import com.devmod.client.overlay.EnduranceQuestOverlay;
+import com.devmod.client.overlay.EntityDensityOverlay;
+import com.devmod.client.overlay.TelemetryStatusOverlay;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
@@ -12,7 +16,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Unified service that integrates:

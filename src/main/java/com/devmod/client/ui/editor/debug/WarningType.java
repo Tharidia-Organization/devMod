@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.debug;
+package com.devmod.client.ui.editor.debug;
 
 /**
  * Types of debug warnings that can be detected.

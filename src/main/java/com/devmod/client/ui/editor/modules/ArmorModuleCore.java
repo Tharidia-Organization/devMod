@@ -1,10 +1,10 @@
-package com.devmod.ui.editor.modules;
+package com.devmod.client.ui.editor.modules;
 
 import com.devmod.stats.ArmorStats;
 import com.devmod.config.ArmorConfigManager;
 import com.devmod.components.ArmorComponents;
 import com.devmod.DevMod;
-import com.devmod.ui.editor.components.SourceBadge;
+import com.devmod.client.ui.editor.components.SourceBadge;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;

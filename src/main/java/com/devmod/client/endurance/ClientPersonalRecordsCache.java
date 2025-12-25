@@ -1,4 +1,6 @@
-package com.devmod.endurance;
+package com.devmod.client.endurance;
+
+import com.devmod.endurance.PersonalRecordsSyncPayload;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;

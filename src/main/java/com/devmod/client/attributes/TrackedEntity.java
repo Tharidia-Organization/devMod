@@ -1,4 +1,4 @@
-package com.devmod.attributes;
+package com.devmod.client.attributes;
 
 import com.devmod.integration.ModIntegrationManager;
 import net.minecraft.client.Minecraft;

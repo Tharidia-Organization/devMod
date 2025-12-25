@@ -1,4 +1,4 @@
-package com.devmod.ui.editor;
+package com.devmod.client.ui.editor;
 
 /**
  * Enum for specifying which editor mode to start with.

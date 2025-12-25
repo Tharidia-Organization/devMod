@@ -1,8 +1,8 @@
-package com.devmod.ui.radial.input;
+package com.devmod.client.ui.radial.input;
 
-import com.devmod.ui.radial.RadialCategory;
-import com.devmod.ui.radial.RadialMenuItem;
-import com.devmod.ui.radial.config.RadialMenuConstants;
+import com.devmod.client.ui.radial.RadialCategory;
+import com.devmod.client.ui.radial.RadialMenuItem;
+import com.devmod.client.ui.radial.config.RadialMenuConstants;
 
 import java.util.ArrayList;
 import java.util.Collection;

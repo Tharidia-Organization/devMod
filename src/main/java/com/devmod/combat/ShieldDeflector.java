@@ -1,14 +1,14 @@
 package com.devmod.combat;
-import com.devmod.*;
-import com.devmod.*;
 
-import com.devmod.client.rendering.shield.EnergyShieldRenderer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.fml.loading.FMLEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.Method;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -108,9 +108,9 @@ public class ShieldDeflector {
             projectile.setOwner(null);
         }
 
-        // Trigger visual feedback
+        // Trigger visual feedback (client-only)
         float damage = estimateProjectileDamage(projectile);
-        EnergyShieldRenderer.recordImpact(impactPointNonNull, damage);
+        recordImpactClientSafe(impactPointNonNull, damage);
 
         LOGGER.debug("Deflected {} at angle {}, speed {}->{}",
             projectile.getType().getDescriptionId(),
@@ -337,5 +337,33 @@ public class ShieldDeflector {
 
         // Projectile is moving toward target if dot product is positive
         return toTarget.dot(velocity) > 0;
+    }
+
+    // ========== Client-safe helpers ==========
+
+    private static Method recordImpactMethod;
+    private static boolean recordImpactMethodInitialized = false;
+
+    /**
+     * Records shield impact for visual feedback (client-only, server-safe).
+     * Uses reflection to avoid loading client classes on dedicated server.
+     */
+    private static void recordImpactClientSafe(Vec3 impactPoint, float damage) {
+        if (!FMLEnvironment.dist.isClient()) {
+            return; // No-op on server
+        }
+
+        try {
+            if (!recordImpactMethodInitialized) {
+                recordImpactMethodInitialized = true;
+                Class<?> rendererClass = Class.forName("com.devmod.client.rendering.shield.EnergyShieldRenderer");
+                recordImpactMethod = rendererClass.getMethod("recordImpact", Vec3.class, float.class);
+            }
+            if (recordImpactMethod != null) {
+                recordImpactMethod.invoke(null, impactPoint, damage);
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Could not record shield impact VFX: {}", e.getMessage());
+        }
     }
 }

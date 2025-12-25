@@ -1,9 +1,9 @@
-package com.devmod.ui.screens;
+package com.devmod.client.ui.screens;
 
 import com.devmod.network.EquipMobPayload;
-import com.devmod.ui.AxiomRenderer;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.editor.components.EditorButton;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;

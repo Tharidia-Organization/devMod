@@ -1,18 +1,19 @@
-package com.devmod.ui.unified;
+package com.devmod.client.ui.unified;
 
-import com.devmod.ui.AxiomRenderer;
-import com.devmod.ui.ConfirmDialog;
-import com.devmod.ui.editor.components.EditorButton;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.unified.pages.CombatSettingsPage;
-import com.devmod.ui.unified.pages.DebugOverlaysPage;
-import com.devmod.ui.unified.pages.EditorSettingsPage;
-import com.devmod.ui.unified.pages.GeneralSettingsPage;
-import com.devmod.ui.unified.pages.KeybindsPage;
-import com.devmod.ui.unified.pages.MobConfigPage;
-import com.devmod.ui.unified.pages.TelemetryPage;
-import com.devmod.ui.unified.pages.VisualizersPage;
-import com.devmod.ui.unified.persistence.SettingsManager;
+import com.devmod.client.telemetry.UiTelemetry;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.ConfirmDialog;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.unified.pages.CombatSettingsPage;
+import com.devmod.client.ui.unified.pages.DebugOverlaysPage;
+import com.devmod.client.ui.unified.pages.EditorSettingsPage;
+import com.devmod.client.ui.unified.pages.GeneralSettingsPage;
+import com.devmod.client.ui.unified.pages.KeybindsPage;
+import com.devmod.client.ui.unified.pages.MobConfigPage;
+import com.devmod.client.ui.unified.pages.TelemetryPage;
+import com.devmod.client.ui.unified.pages.VisualizersPage;
+import com.devmod.client.ui.unified.persistence.SettingsManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.Font;
@@ -135,6 +136,9 @@ public class UnifiedSettingsScreen extends Screen {
     @Override
     protected void init() {
         super.init();
+
+        // Track screen open for telemetry
+        UiTelemetry.screenOpened("settings", "unified_settings");
 
         initDialogs();
 
@@ -288,7 +292,7 @@ public class UnifiedSettingsScreen extends Screen {
 
     private void performFactoryReset() {
         // Call the global reset
-        com.devmod.ui.unified.persistence.SettingsManager.INSTANCE.resetAll();
+        com.devmod.client.ui.unified.persistence.SettingsManager.INSTANCE.resetAll();
 
         // Show feedback to user
         Minecraft mc = Minecraft.getInstance();
@@ -305,7 +309,7 @@ public class UnifiedSettingsScreen extends Screen {
     private void performPlayerProgressReset() {
         // Reset ItemEditorDataManager
         try {
-            com.devmod.ui.editor.ItemEditorDataManager.INSTANCE.resetAll();
+            com.devmod.client.ui.editor.ItemEditorDataManager.INSTANCE.resetAll();
         } catch (Exception e) {
             // Ignore - may not be initialized
         }
@@ -566,9 +570,18 @@ public class UnifiedSettingsScreen extends Screen {
         footerApplyBtn.render(graphics, rightButtonX, buttonY, 80, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
         // Hint at center
-        String hint = "Press ESC or K to close";
+        SettingsPage currentPage = pages.get(currentCategory);
+        boolean currentDirty = currentPage != null && currentPage.hasUnsavedChanges();
+        boolean otherDirty = hasUnsavedChangesInOtherPages();
+        String hint = "ESC/K to close";
+        if (currentDirty) {
+            hint = "Unsaved changes - " + hint;
+        } else if (otherDirty) {
+            hint = "Unsaved changes in other pages - " + hint;
+        }
         int hintWidth = safeFont.width(hint);
-        graphics.drawString(safeFont, hint, (width - hintWidth) / 2, buttonY + 5, UIConstants.Text.MUTED(), false);
+        int hintColor = (currentDirty || otherDirty) ? UIConstants.Text.WARNING() : UIConstants.Text.MUTED();
+        graphics.drawString(safeFont, hint, (width - hintWidth) / 2, buttonY + 5, hintColor, false);
     }
 
     // === Input Handling ===
@@ -853,8 +866,24 @@ public class UnifiedSettingsScreen extends Screen {
         }
     }
 
+    private boolean hasUnsavedChangesInOtherPages() {
+        for (Map.Entry<SettingsCategory, SettingsPage> entry : pages.entrySet()) {
+            if (entry.getKey() == currentCategory) {
+                continue;
+            }
+            SettingsPage page = entry.getValue();
+            if (page != null && page.hasUnsavedChanges()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     public void onClose() {
+        // Track screen close for telemetry
+        UiTelemetry.screenClosed("settings", "unified_settings");
+
         // Restore original blur setting
         Minecraft mc = Minecraft.getInstance();
         if (mc.options != null) {

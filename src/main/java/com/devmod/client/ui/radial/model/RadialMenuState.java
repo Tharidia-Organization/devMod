@@ -1,6 +1,6 @@
-package com.devmod.ui.radial.model;
+package com.devmod.client.ui.radial.model;
 
-import com.devmod.ui.radial.config.RadialMenuConstants;
+import com.devmod.client.ui.radial.config.RadialMenuConstants;
 
 import javax.annotation.Nullable;
 import java.util.Objects;

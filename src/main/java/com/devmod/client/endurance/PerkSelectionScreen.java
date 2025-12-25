@@ -1,7 +1,11 @@
-package com.devmod.endurance;
+package com.devmod.client.endurance;
 
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.editor.components.EditorButton;
+import com.devmod.endurance.PerkChoicesPayload;
+import com.devmod.endurance.PerkSelectionPayload;
+
+import com.devmod.client.ui.components.CountdownTimer;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.util.I18n;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -50,12 +54,19 @@ public class PerkSelectionScreen extends Screen {
     private static final long FADE_IN_DURATION = 400;
     private static final long CARD_STAGGER = 150;
 
+    // === Countdown ===
+    private static final int COUNTDOWN_WARN_SECONDS = 10;
+    private static final int COUNTDOWN_URGENT_SECONDS = 5;
+    private static final int COUNTDOWN_AUDIO_SECONDS = 5;
+    private static final int COUNTDOWN_MARGIN = 16;
+
     // === Data ===
     private final int waveNumber;
     private final List<PerkChoicesPayload.PerkChoice> choices;
     private int selectedIndex = -1;
     private int hoveredIndex = -1;  // For comparison panel
     private final boolean skipAllowed;
+    private final CountdownTimer countdown;
 
     // === State ===
     private long openTime;
@@ -65,10 +76,15 @@ public class PerkSelectionScreen extends Screen {
     private boolean showComparisonPanel = true;  // Show side comparison
 
     public PerkSelectionScreen(int waveNumber, List<PerkChoicesPayload.PerkChoice> choices) {
+        this(waveNumber, choices, 0L);
+    }
+
+    public PerkSelectionScreen(int waveNumber, List<PerkChoicesPayload.PerkChoice> choices, long expiresAt) {
         super(I18n.ui("perk.choose_perk"));
         this.waveNumber = waveNumber;
         this.choices = choices;
         this.skipAllowed = choices == null || choices.stream().noneMatch(PerkChoicesPayload.PerkChoice::required);
+        this.countdown = new CountdownTimer(expiresAt, COUNTDOWN_WARN_SECONDS, COUNTDOWN_URGENT_SECONDS, COUNTDOWN_AUDIO_SECONDS);
     }
 
     @Override
@@ -149,6 +165,8 @@ public class PerkSelectionScreen extends Screen {
     public void tick() {
         super.tick();
 
+        countdown.tick();
+
         // Button visibility handled during render based on elapsed time
     }
 
@@ -174,6 +192,8 @@ public class PerkSelectionScreen extends Screen {
             int titleColor = applyAlpha(COLOR_ACCENT, titleAlpha);
             graphics.drawCenteredString(Objects.requireNonNull(font), title, width / 2, 40, titleColor);
         }
+
+        renderCountdown(graphics, fadeProgress);
 
         // Perk cards
         int totalWidth = choices.size() * cardWidth + (choices.size() - 1) * cardSpacing;
@@ -291,15 +311,57 @@ public class PerkSelectionScreen extends Screen {
             linesRendered++;
         }
 
-        // === BOTTOM AREA: Stack info (above button) ===
+        // === BOTTOM AREA: Stack info + Synergy info (above button) ===
         int bottomInfoY = cardY + cardH - buttonAreaHeight - 14;
         if (perk.stackable()) {
             String stackText = "Stacks: " + perk.currentStacks() + "/" + perk.maxStacks();
             g.drawString(safeFont, stackText, cardX + contentPadding, bottomInfoY, applyAlpha(COLOR_ACCENT, alpha));
+            bottomInfoY -= 12;
+        }
+
+        // === SYNERGY INDICATOR ===
+        if (perk.hasSynergyInfo()) {
+            int synergyColor = getSynergyColor(perk);
+
+            // Show synergy badge if completing a synergy
+            if (perk.newSynergyCount() > 0) {
+                // Completing a synergy - highlight!
+                String synergyBadge = "\u2605 SYNERGY!"; // ★ SYNERGY!
+                g.drawString(safeFont, synergyBadge, cardX + contentPadding, bottomInfoY, applyAlpha(0xFFFF55, alpha));
+                bottomInfoY -= 11;
+            } else if (perk.isRecommended()) {
+                String recBadge = "\u2192 Recommended"; // → Recommended
+                g.drawString(safeFont, recBadge, cardX + contentPadding, bottomInfoY, applyAlpha(UIConstants.Accent.GREEN(), alpha));
+                bottomInfoY -= 11;
+            }
+
+            // Show synergy hint on hover
+            if (hovered && !perk.synergyHint().isEmpty()) {
+                String hint = perk.synergyHint();
+                if (safeFont.width(hint) > cardW - contentPadding * 2) {
+                    hint = truncateText(hint, cardW - contentPadding * 2);
+                }
+                g.drawString(safeFont, hint, cardX + contentPadding, bottomInfoY, applyAlpha(synergyColor, alpha));
+            }
         } else if (hovered && !perk.description().isEmpty()) {
             // Show stat hint only if not stackable (to avoid overlap)
             String hintText = "\u2191 " + getCompactStatHint(perk); // ↑ prefix
             g.drawString(safeFont, hintText, cardX + contentPadding, bottomInfoY, applyAlpha(UIConstants.Accent.GREEN(), alpha));
+        }
+    }
+
+    /**
+     * Get color based on synergy strength.
+     */
+    private int getSynergyColor(PerkChoicesPayload.PerkChoice perk) {
+        if (perk.newSynergyCount() > 0) {
+            return 0xFFFF55; // Yellow/gold for completing synergies
+        } else if (perk.synergyScore() >= 6) {
+            return 0xFFA500; // Orange for strong synergy potential
+        } else if (perk.synergyScore() >= 3) {
+            return 0xFFFF7F; // Light yellow for moderate
+        } else {
+            return 0x7FFF7F; // Light green for minor
         }
     }
 
@@ -357,16 +419,22 @@ public class PerkSelectionScreen extends Screen {
                 g.fill(panelX + 4, lineY - 2, panelX + panelW - 4, lineY + 16, applyAlpha(UIConstants.Background.HOVER(), alpha));
             }
 
-            // Tier indicator (colored dot)
-            int dotColor = applyAlpha(perk.tierColor() | 0xFF000000, alpha);
-            g.fill(panelX + 8, lineY + 3, panelX + 14, lineY + 9, dotColor);
+            // Synergy indicator (star if completing synergy, dot otherwise)
+            if (perk.newSynergyCount() > 0) {
+                // Gold star for synergy completion
+                g.drawString(safeFont, "\u2605", panelX + 6, lineY, applyAlpha(0xFFFF55, alpha));
+            } else {
+                // Tier indicator (colored dot)
+                int dotColor = applyAlpha(perk.tierColor() | 0xFF000000, alpha);
+                g.fill(panelX + 8, lineY + 3, panelX + 14, lineY + 9, dotColor);
+            }
 
             // Perk name (truncated - keep at least 6 chars for readability)
             String name = Objects.requireNonNull(perk.name());
-            if (safeFont.width(name) > 100) {
+            if (safeFont.width(name) > 90) {
                 String ellipsis = "...";
                 int minChars = Math.min(6, name.length());
-                while (safeFont.width(name + ellipsis) > 100 && name.length() > minChars) {
+                while (safeFont.width(name + ellipsis) > 90 && name.length() > minChars) {
                     name = name.substring(0, name.length() - 1);
                 }
                 name += ellipsis;
@@ -374,17 +442,22 @@ public class PerkSelectionScreen extends Screen {
             int nameColor = isHovered ? applyAlpha(COLOR_TEXT, alpha) : applyAlpha(COLOR_TEXT_DIM, alpha);
             g.drawString(safeFont, name, panelX + 18, lineY, nameColor);
 
+            // Synergy score indicator (if any)
+            if (perk.synergyScore() > 0) {
+                String synergyStr = "S:" + perk.synergyScore();
+                int synergyColor = applyAlpha(getSynergyColor(perk), alpha);
+                g.drawString(safeFont, synergyStr, panelX + 115, lineY, synergyColor);
+            } else if (perk.stackable() && perk.currentStacks() > 0) {
+                // Stack indicator if applicable (only if no synergy score)
+                String stackStr = "x" + perk.currentStacks();
+                g.drawString(safeFont, stackStr, panelX + 115, lineY, applyAlpha(UIConstants.Accent.GREEN(), alpha));
+            }
+
             // Key stat hint (right-aligned)
             String statHint = Objects.requireNonNull(getCompactStatHint(perk));
             int statColor = applyAlpha(getCategoryStatColor(perk), alpha);
             int statX = panelX + panelW - safeFont.width(statHint) - 10;
             g.drawString(safeFont, statHint, statX, lineY, statColor);
-
-            // Stack indicator if applicable
-            if (perk.stackable() && perk.currentStacks() > 0) {
-                String stackStr = "x" + perk.currentStacks();
-                g.drawString(safeFont, stackStr, panelX + 120, lineY, applyAlpha(UIConstants.Accent.GREEN(), alpha));
-            }
 
             lineY += 20;
         }
@@ -446,6 +519,28 @@ public class PerkSelectionScreen extends Screen {
         int a = (int) (((color >> 24) & 0xFF) * alpha);
         if (a <= 0) a = (int) (255 * alpha);
         return (a << 24) | (color & 0x00FFFFFF);
+    }
+
+    private void renderCountdown(GuiGraphics graphics, float fadeProgress) {
+        if (!countdown.isActive()) {
+            return;
+        }
+        int remaining = countdown.getRemainingSeconds();
+        if (remaining < 0) {
+            return;
+        }
+        String text = I18n.ui("selection_time_remaining", remaining).getString();
+        var safeFont = Objects.requireNonNull(font, "font");
+        int textWidth = safeFont.width(text);
+        int x = width - textWidth - COUNTDOWN_MARGIN;
+        int y = COUNTDOWN_MARGIN;
+
+        int bgColor = applyAlpha(UIConstants.Background.PANEL(), fadeProgress * 0.6f);
+        graphics.fill(x - 6, y - 4, x + textWidth + 6, y + safeFont.lineHeight + 4, bgColor);
+
+        float pulse = countdown.getPulse();
+        int textColor = applyAlpha(countdown.getColor(), fadeProgress * pulse);
+        graphics.drawString(safeFont, text, x, y, textColor, false);
     }
 
     private void renderPerkButtons(GuiGraphics graphics, int mouseX, int mouseY, long elapsed) {

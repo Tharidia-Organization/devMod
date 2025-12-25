@@ -1,13 +1,13 @@
-package com.devmod.ui.editor.systems;
+package com.devmod.client.ui.editor.systems;
 
 import com.devmod.DevMod;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
-import com.devmod.ui.editor.EditorModule;
-import com.devmod.ui.editor.ItemEditorDataManager;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.editor.modules.ArmorModule;
-import com.devmod.ui.editor.modules.WeaponModule;
+import com.devmod.client.ui.editor.EditorModule;
+import com.devmod.client.ui.editor.ItemEditorDataManager;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.modules.ArmorModule;
+import com.devmod.client.ui.editor.modules.WeaponModule;
 import com.devmod.util.DatapackIO;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Holder;

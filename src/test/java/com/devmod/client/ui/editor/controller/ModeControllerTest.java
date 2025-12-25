@@ -1,6 +1,6 @@
-package com.devmod.ui.editor.controller;
+package com.devmod.client.ui.editor.controller;
 
-import com.devmod.ui.editor.state.ItemEditorState;
+import com.devmod.client.ui.editor.state.ItemEditorState;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.junit.jupiter.api.BeforeEach;

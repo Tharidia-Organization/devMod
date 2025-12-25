@@ -52,6 +52,12 @@ public class EnduranceEventTick {
         // Update combo decay every tick
         EnduranceEventCombat.comboSessions.values().forEach(ComboSystem.ComboSession::tick);
 
+        // Update momentum decay every tick
+        MomentumTracker.INSTANCE.tick();
+
+        // Tick execution system
+        com.devmod.combat.ExecutionSystem.INSTANCE.tick();
+
         // Tick live analytics hooks (throttled internally to 1/sec)
         LiveAnalyticsHookManager.INSTANCE.tick();
 
@@ -79,6 +85,18 @@ public class EnduranceEventTick {
                 if (player != null) {
                     PerkSystem.INSTANCE.tick(player);
                     WaveManager.INSTANCE.tickWave(session, player);
+
+                    // Tick execution system for this player
+                    com.devmod.combat.ExecutionSystem.INSTANCE.tickPlayer(player);
+
+                    // Tick Devil's Bargain curse effects
+                    UUID questId = session.getQuest().getQuestId();
+                    com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.tickPlayer(player, questId);
+
+                    // Tick Arena Hazards (environmental effects)
+                    if (player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                        com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.tick(serverLevel, questId, player);
+                    }
 
                     // Check arena boundaries every 10 ticks (0.5 seconds)
                     if (tickCounter % 10 == 0) {
@@ -298,7 +316,8 @@ public class EnduranceEventTick {
             if (ticksRemaining <= 0) {
                 session.clearPendingWaveStart();
                 session.setRespawnCountdownActive(false);
-                if (BossWaveSystem.INSTANCE.isBossWave(session.getQuest().getCurrentWave())) {
+                UUID questId = session.getQuest().getQuestId();
+                if (BossWaveSystem.INSTANCE.isBossWave(session.getQuest().getCurrentWave(), questId)) {
                     session.scheduleBossIntro(EnduranceQuestManager.BOSS_INTRO_TICKS);
                     session.setLastBossIntroSeconds(-1);
                     BossWaveSystem.INSTANCE.triggerBossAlert(player, session.getQuest().getDisplayName());
@@ -355,6 +374,19 @@ public class EnduranceEventTick {
             int maxCombo = comboSession != null ? comboSession.getMaxCombo() : 0;
             int styleScore = comboSession != null ? comboSession.getStyleScore() : 0;
             int styleRankOrdinal = comboSession != null ? comboSession.getCurrentRank().ordinal() : 0;
+
+            // Get flow state data
+            int flowStateOrdinal = comboSession != null ? comboSession.getFlowState().ordinal() : 1; // NEUTRAL = 1
+            float virtuosoProgress = comboSession != null ? comboSession.getVirtuosoProgress() : 0f;
+            float staleRisk = comboSession != null ? comboSession.getStaleRisk() : 0f;
+            int uniqueActionCount = comboSession != null ? comboSession.getUniqueActionCount() : 0;
+
+            // Get momentum data
+            MomentumTracker.MomentumSession momentumSession = MomentumTracker.INSTANCE.getSession(playerId);
+            int momentumPercent = momentumSession != null ? momentumSession.getMomentumPercent() : 50;
+            int momentumStateOrdinal = momentumSession != null ? momentumSession.getState().ordinal() : 1; // BUILDING = 1
+            boolean isOverdrive = momentumSession != null && momentumSession.isInOverdrive();
+            long overdriveRemaining = momentumSession != null ? momentumSession.getOverdriveRemaining() : 0;
 
             // Get wave progress
             int mobsKilledInWave = waveStateOpt.map(WaveManager.WaveState::getKilled).orElse(0);
@@ -415,7 +447,15 @@ public class EnduranceEventTick {
                 currentCombo,
                 maxCombo,
                 styleScore,
-                styleRankOrdinal
+                styleRankOrdinal,
+                flowStateOrdinal,
+                virtuosoProgress,
+                staleRisk,
+                uniqueActionCount,
+                momentumPercent,
+                momentumStateOrdinal,
+                isOverdrive,
+                overdriveRemaining
             );
 
             // Send to player

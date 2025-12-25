@@ -1,14 +1,14 @@
-package com.devmod.ui.editor;
+package com.devmod.client.ui.editor;
 
 import com.devmod.stats.ArmorStats;
 import com.devmod.DevMod;
-import com.devmod.ui.editor.ItemEditorDataManager;
+import com.devmod.client.ui.editor.ItemEditorDataManager;
 import com.devmod.stats.WeaponStats;
 import com.devmod.integration.PufferfishCompat;
-import com.devmod.ui.editor.core.EditorCache;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.editor.modules.ArmorModule;
-import com.devmod.ui.editor.modules.WeaponModule;
+import com.devmod.client.ui.editor.core.EditorCache;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.modules.ArmorModule;
+import com.devmod.client.ui.editor.modules.WeaponModule;
 import com.devmod.util.DatapackIO;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Holder;

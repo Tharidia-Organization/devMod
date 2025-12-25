@@ -114,7 +114,12 @@ public record TelemetryBatchPayload(
         ENDURANCE_REWARD(35),
 
         // Performance (50-59)
-        PERFORMANCE_SAMPLE(50);
+        PERFORMANCE_SAMPLE(50),
+
+        // UI (60-69)
+        UI_SCREEN_OPEN(60),
+        UI_SCREEN_CLOSE(61),
+        UI_ACTION(62);
 
         public final byte id;
 

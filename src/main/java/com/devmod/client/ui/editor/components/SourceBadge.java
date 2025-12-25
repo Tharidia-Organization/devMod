@@ -1,8 +1,8 @@
-package com.devmod.ui.editor.components;
+package com.devmod.client.ui.editor.components;
 
-import com.devmod.ui.editor.core.ScaledCoord;
-import com.devmod.ui.editor.core.Typography;
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.ScaledCoord;
+import com.devmod.client.ui.editor.core.Typography;
+import com.devmod.client.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 

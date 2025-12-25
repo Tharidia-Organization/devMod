@@ -1,5 +1,6 @@
-package com.devmod.ui;
-import com.devmod.ui.editor.core.UIConstants;
+package com.devmod.client.ui;
+import com.devmod.client.telemetry.UiTelemetry;
+import com.devmod.client.ui.editor.core.UIConstants;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -9,6 +10,7 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import javax.annotation.Nonnull;
 import java.util.Objects;
 
 /**
@@ -41,6 +43,31 @@ public abstract class ModScreen extends Screen {
         this(title, null);
     }
 
+    @Override
+    protected void init() {
+        super.init();
+        // Track screen open for telemetry
+        UiTelemetry.screenOpened(getTelemetryCategory(), getTelemetryScreen());
+    }
+
+    /**
+     * Get the telemetry category for this screen (e.g., "editor", "settings").
+     * Override to customize.
+     */
+    @Nonnull
+    protected String getTelemetryCategory() {
+        return "mod";
+    }
+
+    /**
+     * Get the telemetry screen identifier (e.g., "item_editor", "mob_config").
+     * Default uses simple class name.
+     */
+    @Nonnull
+    protected String getTelemetryScreen() {
+        return Objects.requireNonNull(getClass().getSimpleName().toLowerCase().replace("screen", ""));
+    }
+
     /**
      * Called when Apply button is pressed.
      * Override to save changes.
@@ -65,6 +92,9 @@ public abstract class ModScreen extends Screen {
 
     @Override
     public void onClose() {
+        // Track screen close for telemetry
+        UiTelemetry.screenClosed(getTelemetryCategory(), getTelemetryScreen());
+
         if (parent != null && minecraft != null) {
             minecraft.setScreen(parent);
         } else {
@@ -80,27 +110,27 @@ public abstract class ModScreen extends Screen {
         int buttonY = height - BOTTOM_MARGIN;
 
         // Apply button
-        var apply = new com.devmod.ui.editor.components.EditorButton("apply", Component.translatable("devmod.ui.apply").getString())
-            .style(com.devmod.ui.editor.components.EditorButton.Style.PRIMARY)
+        var apply = new com.devmod.client.ui.editor.components.EditorButton("apply", Component.translatable("devmod.ui.apply").getString())
+            .style(com.devmod.client.ui.editor.components.EditorButton.Style.PRIMARY)
             .onClick(() -> {
                 onApply();
                 onClose();
             });
-        this.addRenderableWidget(new com.devmod.ui.editor.components.EditorButtonWidget(apply,
+        this.addRenderableWidget(new com.devmod.client.ui.editor.components.EditorButtonWidget(apply,
             centerX - BUTTON_WIDTH - BUTTON_SPACING - BUTTON_WIDTH / 2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT));
 
         // Cancel button
-        var cancel = new com.devmod.ui.editor.components.EditorButton("cancel", Component.translatable("devmod.ui.cancel").getString())
-            .style(com.devmod.ui.editor.components.EditorButton.Style.NORMAL)
+        var cancel = new com.devmod.client.ui.editor.components.EditorButton("cancel", Component.translatable("devmod.ui.cancel").getString())
+            .style(com.devmod.client.ui.editor.components.EditorButton.Style.NORMAL)
             .onClick(this::onCancel);
-        this.addRenderableWidget(new com.devmod.ui.editor.components.EditorButtonWidget(cancel,
+        this.addRenderableWidget(new com.devmod.client.ui.editor.components.EditorButtonWidget(cancel,
             centerX - BUTTON_WIDTH / 2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT));
 
         // Reset button (dangerous)
-        var reset = new com.devmod.ui.editor.components.EditorButton("reset", Component.translatable("devmod.ui.reset").getString())
-            .style(com.devmod.ui.editor.components.EditorButton.Style.DANGER)
+        var reset = new com.devmod.client.ui.editor.components.EditorButton("reset", Component.translatable("devmod.ui.reset").getString())
+            .style(com.devmod.client.ui.editor.components.EditorButton.Style.DANGER)
             .onClick(this::onReset);
-        this.addRenderableWidget(new com.devmod.ui.editor.components.EditorButtonWidget(reset,
+        this.addRenderableWidget(new com.devmod.client.ui.editor.components.EditorButtonWidget(reset,
             centerX + BUTTON_SPACING + BUTTON_WIDTH / 2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT));
     }
 
@@ -112,20 +142,20 @@ public abstract class ModScreen extends Screen {
         int buttonY = height - BOTTOM_MARGIN;
 
         // Apply button
-        var apply = new com.devmod.ui.editor.components.EditorButton("apply", Component.translatable("devmod.ui.apply").getString())
-            .style(com.devmod.ui.editor.components.EditorButton.Style.PRIMARY)
+        var apply = new com.devmod.client.ui.editor.components.EditorButton("apply", Component.translatable("devmod.ui.apply").getString())
+            .style(com.devmod.client.ui.editor.components.EditorButton.Style.PRIMARY)
             .onClick(() -> {
                 onApply();
                 onClose();
             });
-        this.addRenderableWidget(new com.devmod.ui.editor.components.EditorButtonWidget(apply,
+        this.addRenderableWidget(new com.devmod.client.ui.editor.components.EditorButtonWidget(apply,
             centerX - BUTTON_WIDTH - BUTTON_SPACING / 2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT));
 
         // Cancel button
-        var cancel = new com.devmod.ui.editor.components.EditorButton("cancel", Component.translatable("devmod.ui.cancel").getString())
-            .style(com.devmod.ui.editor.components.EditorButton.Style.NORMAL)
+        var cancel = new com.devmod.client.ui.editor.components.EditorButton("cancel", Component.translatable("devmod.ui.cancel").getString())
+            .style(com.devmod.client.ui.editor.components.EditorButton.Style.NORMAL)
             .onClick(this::onCancel);
-        this.addRenderableWidget(new com.devmod.ui.editor.components.EditorButtonWidget(cancel,
+        this.addRenderableWidget(new com.devmod.client.ui.editor.components.EditorButtonWidget(cancel,
             centerX + BUTTON_SPACING / 2, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT));
     }
 

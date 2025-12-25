@@ -1,7 +1,7 @@
-package com.devmod.ui.editor.systems;
+package com.devmod.client.ui.editor.systems;
 
 import com.devmod.config.ArmorConfigManager;
-import com.devmod.ui.editor.ItemEditorDataManager;
+import com.devmod.client.ui.editor.ItemEditorDataManager;
 import com.devmod.config.WeaponConfigManager;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;

@@ -1,12 +1,13 @@
-package com.devmod.ui.editor.systems;
+package com.devmod.client.ui.editor.systems;
 
-import com.devmod.ui.editor.components.EditorButton;
-import com.devmod.ui.editor.core.ResponsiveLayout;
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.ConfirmDialog;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.UIConstants;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
-import com.devmod.ui.editor.ItemEditorDataManager;
+import com.devmod.client.ui.editor.ItemEditorDataManager;
 import net.minecraft.client.Minecraft;
 
 import java.util.ArrayList;

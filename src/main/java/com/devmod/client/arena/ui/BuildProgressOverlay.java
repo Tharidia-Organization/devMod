@@ -1,4 +1,7 @@
-package com.devmod.arena.ui;
+package com.devmod.client.arena.ui;
+
+import com.devmod.arena.BuildPhase;
+import com.devmod.arena.ProgressFlags;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,19 +136,6 @@ public class BuildProgressOverlay {
     }
 
     /**
-     * Build phases.
-     */
-    public enum BuildPhase {
-        INITIALIZING,
-        LOADING_CHUNKS,
-        PLACING_BLOCKS,
-        SPAWNING_ENTITIES,
-        FINALIZING,
-        COMPLETE,
-        FAILED
-    }
-
-    /**
      * Progress update to send to client.
      */
     public record ProgressUpdate(
@@ -200,16 +190,5 @@ public class BuildProgressOverlay {
 
             return bytes;
         }
-    }
-
-    /**
-     * Flag constants for progress updates.
-     */
-    public static class ProgressFlags {
-        public static final int NONE = 0;
-        public static final int PHASE_CHANGED = 1;
-        public static final int COMPLETE = 2;
-        public static final int FAILED = 4;
-        public static final int PAUSED = 8;
     }
 }

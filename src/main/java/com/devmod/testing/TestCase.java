@@ -1,11 +1,10 @@
 package com.devmod.testing;
 
 import java.time.Instant;
-import java.util.EnumSet;
+import java.util.Collections;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import com.devmod.ui.hub.ToolType;
 
 /**
  * Represents a single test case in the QA Testing Framework.
@@ -211,9 +210,12 @@ public class TestCase {
      * Get the required tools for this test case.
      * Override in subclasses or use the builder to specify required tools.
      * Default: no tools required.
+     *
+     * Note: Returns Set<?> to avoid client class dependency (ToolType).
+     * Client code should cast appropriately.
      */
-    public Set<ToolType> getRequiredTools() {
-        return EnumSet.noneOf(ToolType.class);
+    public Set<?> getRequiredTools() {
+        return Collections.emptySet();
     }
 
     /**

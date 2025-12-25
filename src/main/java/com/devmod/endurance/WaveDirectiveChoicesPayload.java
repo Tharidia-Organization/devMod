@@ -13,10 +13,11 @@ import java.util.Objects;
 
 /**
  * Network payload sent from server to client with wave directive choices.
- * Directives are risk/reward modifiers applied to the next wave.
+ * Directives are risk/reward modifiers applied to the next wave, with an expiry timestamp for countdown UI.
  */
 public record WaveDirectiveChoicesPayload(
     int waveNumber,
+    long expiresAt,
     List<DirectiveChoice> choices
 ) implements CustomPacketPayload {
 
@@ -47,6 +48,7 @@ public record WaveDirectiveChoicesPayload(
         @Override
         public WaveDirectiveChoicesPayload decode(@Nonnull ByteBuf buf) {
             int waveNumber = buf.readInt();
+            long expiresAt = buf.readLong();
             int choiceCount = Math.min(buf.readInt(), MAX_CHOICES);
 
             List<DirectiveChoice> choices = new ArrayList<>();
@@ -54,12 +56,13 @@ public record WaveDirectiveChoicesPayload(
                 choices.add(decodeChoice(buf));
             }
 
-            return new WaveDirectiveChoicesPayload(waveNumber, choices);
+            return new WaveDirectiveChoicesPayload(waveNumber, expiresAt, choices);
         }
 
         @Override
         public void encode(@Nonnull ByteBuf buf, @Nonnull WaveDirectiveChoicesPayload payload) {
             buf.writeInt(payload.waveNumber);
+            buf.writeLong(payload.expiresAt);
             buf.writeInt(Math.min(payload.choices.size(), MAX_CHOICES));
 
             for (int i = 0; i < Math.min(payload.choices.size(), MAX_CHOICES); i++) {

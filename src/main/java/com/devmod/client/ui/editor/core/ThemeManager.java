@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.core;
+package com.devmod.client.ui.editor.core;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,13 +62,48 @@ public final class ThemeManager {
 
     /**
      * Toggle between dark and light themes.
+     * Note: Does not include high-contrast. Use {@link #cycleTheme()} for all themes.
      */
     public void toggle() {
-        if (currentTheme.isDark()) {
+        if (currentTheme == LightTheme.INSTANCE) {
+            setTheme(DarkTheme.INSTANCE);
+        } else if (currentTheme == DarkTheme.INSTANCE) {
             setTheme(LightTheme.INSTANCE);
+        }
+        // High-contrast stays as-is when toggle is called
+    }
+
+    /**
+     * Cycle through all available themes: Dark -> Light -> High Contrast -> Dark
+     */
+    public void cycleTheme() {
+        if (currentTheme == DarkTheme.INSTANCE) {
+            setTheme(LightTheme.INSTANCE);
+        } else if (currentTheme == LightTheme.INSTANCE) {
+            setTheme(HighContrastTheme.INSTANCE);
         } else {
             setTheme(DarkTheme.INSTANCE);
         }
+    }
+
+    /**
+     * Enable or disable high-contrast mode.
+     *
+     * @param enabled true to enable high-contrast, false to return to dark theme
+     */
+    public void setHighContrast(boolean enabled) {
+        if (enabled) {
+            setTheme(HighContrastTheme.INSTANCE);
+        } else if (currentTheme == HighContrastTheme.INSTANCE) {
+            setTheme(DarkTheme.INSTANCE);
+        }
+    }
+
+    /**
+     * Check if high-contrast mode is active.
+     */
+    public boolean isHighContrast() {
+        return currentTheme == HighContrastTheme.INSTANCE;
     }
 
     /**

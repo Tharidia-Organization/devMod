@@ -62,12 +62,15 @@
 
 ## Remaining Items (Not Fixed)
 
-### Wildcard Imports (70 remaining)
+### Wildcard Imports ✅ COMPLETED
 
-These are in lower-priority files and mostly use standard patterns:
-- `java.util.*` (allowed per scope)
-- `static import ...Constants.*` (common pattern for UI)
-- Test files with gametest framework imports
+All `java.util.*` wildcard imports have been replaced with explicit imports across the entire codebase.
+
+**Fixed in subsequent sessions:**
+
+- 73 files total fixed (arena, compat, endurance, recipe, testing, client/ui modules)
+- Standard import ordering applied: java → javax → external → minecraft → neoforged → devmod
+- Build verified after each batch
 
 ### Large Files (>600 LOC)
 
@@ -95,9 +98,9 @@ These are in lower-priority files and mostly use standard patterns:
 
 1. **Add @Nonnull annotations** to public API methods that never return null (e.g., `getWallet()`)
 
-2. **Consider AtomicInteger** for `pressureLevel` in DuckDBBatchWriter instead of synchronized block
+2. ~~**Consider AtomicInteger** for `pressureLevel` in DuckDBBatchWriter~~ ✅ Already implemented
 
-3. **Add thread-safety Javadoc** to concurrent classes like DuckDBBatchWriter
+3. ~~**Add thread-safety Javadoc** to concurrent classes like DuckDBBatchWriter~~ ✅ Already documented
 
 4. **Create import ordering Checkstyle rule** to enforce:
    - java.*
@@ -107,7 +110,7 @@ These are in lower-priority files and mostly use standard patterns:
    - net.neoforged.*
    - com.devmod.*
 
-5. **Eliminate remaining wildcard imports** in future PRs (70 remaining)
+5. ~~**Eliminate remaining wildcard imports**~~ ✅ COMPLETED (73 files fixed)
 
 6. **Add null-safety static analysis** via NullAway or Checker Framework
 

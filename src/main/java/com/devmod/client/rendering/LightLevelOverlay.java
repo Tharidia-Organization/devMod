@@ -11,6 +11,9 @@ import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
 import java.util.Objects;
 
 /**
@@ -29,11 +32,14 @@ import java.util.Objects;
  */
 // Minecraft API methods are not annotated but never return null in practice
 
+@OnlyIn(Dist.CLIENT)
 public class LightLevelOverlay {
     public static final LightLevelOverlay INSTANCE = new LightLevelOverlay();
 
     private boolean enabled = false;
     private int radius = 16; // Blocchi intorno al player
+    private static final int MIN_DYNAMIC_RADIUS = 4;
+    private int dynamicRadius = radius;
     private boolean showNumbers = true;
     private boolean onlySpawnableSurfaces = true;
 
@@ -67,10 +73,19 @@ public class LightLevelOverlay {
 
     public void setRadius(int radius) {
         this.radius = Math.max(4, Math.min(32, radius));
+        if (dynamicRadius <= 0) {
+            dynamicRadius = this.radius;
+        } else if (dynamicRadius > this.radius) {
+            dynamicRadius = this.radius;
+        }
     }
 
     public int getRadius() {
         return radius;
+    }
+
+    public int getDynamicRadius() {
+        return dynamicRadius <= 0 ? radius : dynamicRadius;
     }
 
     public void setShowNumbers(boolean show) {
@@ -111,7 +126,7 @@ public class LightLevelOverlay {
         }
 
         if (needsCacheUpdate) {
-            updateLightCache(level, playerPos);
+            updateLightCache(level, playerPos, resolveDynamicRadius());
             lastPlayerPos = playerPos;
         }
 
@@ -159,13 +174,13 @@ public class LightLevelOverlay {
     /**
      * Updates the light data cache (called every N ticks)
      */
-    private void updateLightCache(ClientLevel level, BlockPos playerPos) {
+    private void updateLightCache(ClientLevel level, BlockPos playerPos, int activeRadius) {
         cachedLightData.clear();
 
-        for (int x = -radius; x <= radius; x++) {
-            for (int z = -radius; z <= radius; z++) {
+        for (int x = -activeRadius; x <= activeRadius; x++) {
+            for (int z = -activeRadius; z <= activeRadius; z++) {
                 // Skip if too far (circular optimization)
-                if (x*x + z*z > radius*radius) continue;
+                if (x*x + z*z > activeRadius*activeRadius) continue;
 
                 for (int y = -4; y <= 4; y++) {
                     BlockPos checkPos = Objects.requireNonNull(playerPos.offset(x, y, z));
@@ -253,5 +268,31 @@ public class LightLevelOverlay {
                 net.minecraft.client.gui.Font.DisplayMode.NORMAL, 0x40000000, 15728880);
 
         poseStack.popPose();
+    }
+
+    private int resolveDynamicRadius() {
+        int fps = Minecraft.getInstance().getFps();
+        float scale = 1.0f;
+        if (fps > 0) {
+            if (fps < 20) {
+                scale = 0.5f;
+            } else if (fps < 30) {
+                scale = 0.65f;
+            } else if (fps < 45) {
+                scale = 0.8f;
+            }
+        }
+
+        int target = Math.max(MIN_DYNAMIC_RADIUS, Math.round(radius * scale));
+        if (dynamicRadius == 0) {
+            dynamicRadius = target;
+            return dynamicRadius;
+        }
+        if (dynamicRadius < target) {
+            dynamicRadius = Math.min(target, dynamicRadius + 1);
+        } else if (dynamicRadius > target) {
+            dynamicRadius = Math.max(target, dynamicRadius - 1);
+        }
+        return dynamicRadius;
     }
 }

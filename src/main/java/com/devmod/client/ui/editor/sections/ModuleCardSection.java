@@ -1,9 +1,9 @@
-package com.devmod.ui.editor.sections;
+package com.devmod.client.ui.editor.sections;
 
-import com.devmod.ui.editor.EditorSection;
-import com.devmod.ui.editor.EditorStartTab;
-import com.devmod.ui.editor.core.ResponsiveLayout;
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.EditorSection;
+import com.devmod.client.ui.editor.EditorStartTab;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;

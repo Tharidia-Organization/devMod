@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.controller;
+package com.devmod.client.ui.editor.controller;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

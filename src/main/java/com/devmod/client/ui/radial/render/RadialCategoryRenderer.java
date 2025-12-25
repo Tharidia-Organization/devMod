@@ -1,9 +1,9 @@
-package com.devmod.ui.radial.render;
+package com.devmod.client.ui.radial.render;
 
-import com.devmod.ui.radial.RadialCategory;
-import com.devmod.ui.radial.RadialMenuConfig;
-import com.devmod.ui.radial.RadialMenuItem;
-import com.devmod.ui.radial.config.RadialMenuConstants;
+import com.devmod.client.ui.radial.RadialCategory;
+import com.devmod.client.ui.radial.RadialMenuConfig;
+import com.devmod.client.ui.radial.RadialMenuItem;
+import com.devmod.client.ui.radial.config.RadialMenuConstants;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;

@@ -1,4 +1,4 @@
-package com.devmod.ui;
+package com.devmod.client.ui;
 
 import java.util.Optional;
 import java.util.function.Predicate;

@@ -1,6 +1,6 @@
-package com.devmod.ui.unified;
+package com.devmod.client.ui.unified;
 
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.UIConstants;
 
 /**
  * Available categories in the unified settings panel.

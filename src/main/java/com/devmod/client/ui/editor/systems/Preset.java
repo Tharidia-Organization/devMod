@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.systems;
+package com.devmod.client.ui.editor.systems;
 
 import net.minecraft.world.item.ItemStack;
 import java.util.function.Predicate;

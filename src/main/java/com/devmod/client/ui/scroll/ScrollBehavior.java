@@ -1,4 +1,4 @@
-package com.devmod.ui.scroll;
+package com.devmod.client.ui.scroll;
 
 /**
  * Interface for scroll behavior implementations.

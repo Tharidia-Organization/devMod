@@ -1,9 +1,9 @@
-package com.devmod.ui.editor;
+package com.devmod.client.ui.editor;
 
-import com.devmod.ui.editor.core.EditorCache;
-import com.devmod.ui.editor.core.EditorConstants;
-import com.devmod.ui.editor.core.ResponsiveLayout;
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.EditorCache;
+import com.devmod.client.ui.editor.core.EditorConstants;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.nbt.CompoundTag;

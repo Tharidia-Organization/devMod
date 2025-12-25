@@ -1,5 +1,5 @@
-package com.devmod.ui;
-import com.devmod.ui.editor.core.UIConstants;
+package com.devmod.client.ui;
+import com.devmod.client.ui.editor.core.UIConstants;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.Font;

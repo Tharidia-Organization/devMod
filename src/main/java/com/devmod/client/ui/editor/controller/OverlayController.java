@@ -1,15 +1,18 @@
-package com.devmod.ui.editor.controller;
+package com.devmod.client.ui.editor.controller;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.function.Consumer;
 
 /**
  * Controller for managing overlay visibility state in ItemEditorScreen.
  * Client-only.
- * Implements a simple state machine for overlay switching with support for
- * returning to the previous overlay when one is closed.
+ * Implements a simple overlay stack for switching with support for returning
+ * to previously opened overlays when the top is closed.
  *
  * <p>This controller is decoupled from the actual overlay implementations -
  * it only manages the state and notifies listeners when state changes.
@@ -32,8 +35,7 @@ public final class OverlayController {
     // STATE
     // ═══════════════════════════════════════════════════════════════
 
-    private OverlayType activeOverlay = OverlayType.NONE;
-    private OverlayType previousOverlay = OverlayType.NONE;
+    private final Deque<OverlayType> overlayStack = new ArrayDeque<>();
 
     // ═══════════════════════════════════════════════════════════════
     // CALLBACKS
@@ -69,19 +71,21 @@ public final class OverlayController {
      * @param type The overlay type to toggle
      */
     public void toggle(OverlayType type) {
-        if (type == null) {
-            type = OverlayType.NONE;
+        OverlayType normalized = type == null ? OverlayType.NONE : type;
+        OverlayType active = getActive();
+
+        if (normalized == OverlayType.NONE) {
+            closeAll();
+            return;
         }
 
-        if (activeOverlay == type) {
-            // Close current overlay, return to previous
+        if (active == normalized) {
             close();
             return;
         }
 
-        // Save current as previous (unless switching to NONE)
-        previousOverlay = (type == OverlayType.NONE) ? OverlayType.NONE : activeOverlay;
-        activeOverlay = type;
+        removeAll(normalized);
+        overlayStack.addLast(normalized);
         notifyChange();
     }
 
@@ -89,8 +93,9 @@ public final class OverlayController {
      * Close the current overlay, returning to the previous overlay.
      */
     public void close() {
-        activeOverlay = previousOverlay;
-        previousOverlay = OverlayType.NONE;
+        if (!overlayStack.isEmpty()) {
+            overlayStack.removeLast();
+        }
         notifyChange();
     }
 
@@ -98,8 +103,7 @@ public final class OverlayController {
      * Close all overlays (reset to NONE).
      */
     public void closeAll() {
-        activeOverlay = OverlayType.NONE;
-        previousOverlay = OverlayType.NONE;
+        overlayStack.clear();
         notifyChange();
     }
 
@@ -109,15 +113,17 @@ public final class OverlayController {
      * @param type The overlay to open
      */
     public void open(OverlayType type) {
-        if (type == null || type == OverlayType.NONE) {
+        OverlayType normalized = type == null ? OverlayType.NONE : type;
+        if (normalized == OverlayType.NONE) {
             closeAll();
             return;
         }
-        if (activeOverlay != type) {
-            previousOverlay = activeOverlay;
-            activeOverlay = type;
-            notifyChange();
+        if (getActive() == normalized) {
+            return;
         }
+        removeAll(normalized);
+        overlayStack.addLast(normalized);
+        notifyChange();
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -128,14 +134,20 @@ public final class OverlayController {
      * Get the currently active overlay.
      */
     public OverlayType getActive() {
-        return activeOverlay;
+        OverlayType active = overlayStack.peekLast();
+        return active == null ? OverlayType.NONE : active;
     }
 
     /**
      * Get the previous overlay (for returning to after close).
      */
     public OverlayType getPrevious() {
-        return previousOverlay;
+        if (overlayStack.size() < 2) {
+            return OverlayType.NONE;
+        }
+        Iterator<OverlayType> it = overlayStack.descendingIterator();
+        it.next();
+        return it.hasNext() ? it.next() : OverlayType.NONE;
     }
 
     /**
@@ -145,42 +157,42 @@ public final class OverlayController {
      * @return true if the specified overlay is active
      */
     public boolean isActive(OverlayType type) {
-        return activeOverlay == type;
+        return getActive() == type;
     }
 
     /**
      * Check if any overlay is currently shown.
      */
     public boolean hasActiveOverlay() {
-        return activeOverlay != OverlayType.NONE;
+        return !overlayStack.isEmpty();
     }
 
     /**
      * Check if history panel should be shown.
      */
     public boolean isHistoryVisible() {
-        return activeOverlay == OverlayType.HISTORY;
+        return getActive() == OverlayType.HISTORY;
     }
 
     /**
      * Check if presets panel should be shown.
      */
     public boolean isPresetsVisible() {
-        return activeOverlay == OverlayType.PRESETS;
+        return getActive() == OverlayType.PRESETS;
     }
 
     /**
      * Check if templates panel should be shown.
      */
     public boolean isTemplatesVisible() {
-        return activeOverlay == OverlayType.TEMPLATES;
+        return getActive() == OverlayType.TEMPLATES;
     }
 
     /**
      * Check if crafting panel should be shown.
      */
     public boolean isCraftingVisible() {
-        return activeOverlay == OverlayType.CRAFTING;
+        return getActive() == OverlayType.CRAFTING;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -188,6 +200,10 @@ public final class OverlayController {
     // ═══════════════════════════════════════════════════════════════
 
     private void notifyChange() {
-        onOverlayChanged.accept(activeOverlay);
+        onOverlayChanged.accept(getActive());
+    }
+
+    private void removeAll(OverlayType type) {
+        overlayStack.removeIf(entry -> entry == type);
     }
 }

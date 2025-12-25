@@ -1,4 +1,4 @@
-package com.devmod.ui.radial.model;
+package com.devmod.client.ui.radial.model;
 
 import java.util.Objects;
 

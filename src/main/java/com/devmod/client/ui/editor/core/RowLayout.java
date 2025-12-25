@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.core;
+package com.devmod.client.ui.editor.core;
 
 /**
  * Helper for laying out components in a row with consistent spacing.

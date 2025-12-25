@@ -159,9 +159,19 @@ public class DevMod {
         }
         // Reload game mechanics config
         if (event.getConfig().getSpec() == GameMechanicsConfig.SPEC) {
-            LOGGER.info("[DevMod] GameMechanicsConfig reloaded");
+            LOGGER.info("[DevMod] GameMechanicsConfig reloaded, syncing to clients...");
             // Reload JSON overrides as well
             GameplayOverridesManager.INSTANCE.reload();
+
+            // Sync updated config to all connected clients
+            net.minecraft.server.MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+            if (server != null) {
+                com.devmod.network.GameMechanicsSyncPayload payload = com.devmod.network.GameMechanicsSyncPayload.fromGlobalConfig();
+                for (net.minecraft.server.level.ServerPlayer player : server.getPlayerList().getPlayers()) {
+                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+                }
+                LOGGER.info("[DevMod] Synced game mechanics config to {} clients", server.getPlayerList().getPlayerCount());
+            }
         }
     }
 

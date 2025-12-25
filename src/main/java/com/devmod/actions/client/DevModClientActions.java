@@ -13,24 +13,24 @@ import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
 import com.devmod.abilities.AbilityActionPayload;
 import com.devmod.abilities.DodgeAbilitySystem;
-import com.devmod.attributes.AttributeMonitoringSystem;
+import com.devmod.client.attributes.AttributeMonitoringSystem;
 import com.devmod.debug.DebugFeature;
 import com.devmod.debug.DebugTogglePayload;
 import com.devmod.debug.client.DebugRenderBools;
 import com.devmod.client.overlay.EnduranceQuestOverlay;
-import com.devmod.endurance.ClientQuestCache;
-import com.devmod.endurance.EnduranceShopScreen;
-import com.devmod.endurance.EnduranceQuestScreen;
-import com.devmod.endurance.EnduranceUiCache;
+import com.devmod.client.endurance.ClientQuestCache;
+import com.devmod.client.endurance.EnduranceShopScreen;
+import com.devmod.client.endurance.EnduranceQuestScreen;
+import com.devmod.client.endurance.EnduranceUiCache;
 import com.devmod.endurance.PerkChoicesPayload;
-import com.devmod.endurance.PerkSelectionScreen;
+import com.devmod.client.endurance.PerkSelectionScreen;
 import com.devmod.endurance.QuestCompletionPayload;
-import com.devmod.endurance.QuestCompletionScreen;
-import com.devmod.endurance.QuestDeathScreen;
+import com.devmod.client.endurance.QuestCompletionScreen;
+import com.devmod.client.endurance.QuestDeathScreen;
 import com.devmod.endurance.QuestActionPayload;
-import com.devmod.endurance.QuestExitConfirmScreen;
+import com.devmod.client.endurance.QuestExitConfirmScreen;
 import com.devmod.endurance.StartQuestPayload;
-import com.devmod.endurance.WaveCheckpointScreen;
+import com.devmod.client.endurance.WaveCheckpointScreen;
 import com.devmod.client.overlay.BossPhaseOverlay;
 import com.devmod.client.overlay.EconomyOverlay;
 import com.devmod.client.overlay.EntityDensityOverlay;
@@ -43,12 +43,12 @@ import com.devmod.client.overlay.OnboardingOverlay;
 import com.devmod.client.overlay.QuickHelpOverlay;
 import com.devmod.client.overlay.SkillEfficacyOverlay;
 import com.devmod.client.panels.context.ContextDetector;
-import com.devmod.party.PartyScreen;
-import com.devmod.party.InvitePopupScreen;
+import com.devmod.client.party.PartyScreen;
+import com.devmod.client.party.InvitePopupScreen;
 import com.devmod.party.PartyNotificationPayload;
-import com.devmod.party.PartyUiCache;
-import com.devmod.quest.QuestEditorScreen;
-import com.devmod.quest.QuestHudOverlay;
+import com.devmod.client.party.PartyUiCache;
+import com.devmod.client.quest.QuestEditorScreen;
+import com.devmod.client.quest.QuestHudOverlay;
 import com.devmod.quest.QuestManager;
 import com.devmod.quest.QuestTask;
 import com.devmod.client.rendering.AggroRangeVisualizer;
@@ -62,26 +62,26 @@ import com.devmod.client.rendering.RoomBoundsVisualizer;
 import com.devmod.client.rendering.SafeSpotVisualizer;
 import com.devmod.client.rendering.SpawnabilityOverlay;
 import com.devmod.client.rendering.VerticalLevelsVisualizer;
-import com.devmod.telemetry.FpsTracker;
-import com.devmod.telemetry.PerformanceProfiler;
+import com.devmod.client.telemetry.FpsTracker;
+import com.devmod.client.telemetry.PerformanceProfiler;
 import com.devmod.telemetry.TelemetryService;
-import com.devmod.ui.screens.MobConfigScreen;
-import com.devmod.ui.screens.MobEquipmentScreen;
-import com.devmod.ui.RoomBoundsEditorScreen;
-import com.devmod.ui.WelcomeScreen;
-import com.devmod.ui.editor.EditorStartTab;
-import com.devmod.ui.editor.ItemEditorScreen;
-import com.devmod.ui.editor.StaminaSystemEditor;
-import com.devmod.ui.hub.TestingHub;
-import com.devmod.ui.hub.TestingHubState;
-import com.devmod.testing.QATestingScreen;
-import com.devmod.testing.TestingSession;
-import com.devmod.testing.TutorialManager;
-import com.devmod.ui.testing.VoxelLabScreen;
-import com.devmod.ui.testing.VoxelLabUiTestScreen;
-import com.devmod.ui.unified.UnifiedSettingsScreen;
-import com.devmod.ui.unified.persistence.SettingsManager;
-import com.devmod.ui.wizard.QuickTestWizard;
+import com.devmod.client.ui.screens.MobConfigScreen;
+import com.devmod.client.ui.screens.MobEquipmentScreen;
+import com.devmod.client.ui.RoomBoundsEditorScreen;
+import com.devmod.client.ui.WelcomeScreen;
+import com.devmod.client.ui.editor.EditorStartTab;
+import com.devmod.client.ui.editor.ItemEditorScreen;
+import com.devmod.client.ui.editor.StaminaSystemEditor;
+import com.devmod.client.ui.hub.TestingHub;
+import com.devmod.client.ui.hub.TestingHubState;
+import com.devmod.client.testing.QATestingScreen;
+import com.devmod.client.testing.TestingSession;
+import com.devmod.client.testing.TutorialManager;
+import com.devmod.client.ui.testing.VoxelLabScreen;
+import com.devmod.client.ui.testing.VoxelLabUiTestScreen;
+import com.devmod.client.ui.unified.UnifiedSettingsScreen;
+import com.devmod.client.ui.unified.persistence.SettingsManager;
+import com.devmod.client.ui.wizard.QuickTestWizard;
 import com.devmod.arena.command.ArenaActionRegistry;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.util.I18n;
@@ -136,6 +136,14 @@ public final class DevModClientActions {
             ));
     }
 
+    private static ActionPrecondition developerModePrecondition() {
+        return screenPrecondition()
+            .and(ActionPreconditions.withMessage(
+                context -> SettingsManager.INSTANCE.getSettings().debug.developerMode,
+                "devmod.action.requires_developer_mode"
+            ));
+    }
+
     private static ActionPrecondition qaSessionExistsPrecondition() {
         return ActionPreconditions.clientOnly()
             .and(ActionPreconditions.withMessage(
@@ -161,7 +169,7 @@ public final class DevModClientActions {
             .menuPath("Root/Home")
             .icon(Items.COMPASS)
             .precondition(ActionPreconditions.clientOnly().and(ActionPreconditions.screenClosed()))
-            .handler(context -> Minecraft.getInstance().setScreen(new com.devmod.ui.radial.RadialMenuScreen()))
+            .handler(context -> Minecraft.getInstance().setScreen(new com.devmod.client.ui.radial.RadialMenuScreen()))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_SETTINGS_OPEN)
@@ -292,7 +300,7 @@ public final class DevModClientActions {
             .handler(context -> {
                 net.minecraft.client.gui.screens.Screen parent =
                     context.getPayload(net.minecraft.client.gui.screens.Screen.class);
-                Minecraft.getInstance().setScreen(new com.devmod.ui.screens.TelemetryDashboardScreen(parent));
+                Minecraft.getInstance().setScreen(new com.devmod.client.ui.screens.TelemetryDashboardScreen(parent));
             })
             .build());
 
@@ -497,16 +505,16 @@ public final class DevModClientActions {
             .menuPath("Root/Testing/Badge Tests")
             .icon(Items.NETHER_STAR)
             .precondition(screenPrecondition())
-            .handler(context -> Minecraft.getInstance().setScreen(new com.devmod.testing.BadgeTestScreen()))
+            .handler(context -> Minecraft.getInstance().setScreen(new com.devmod.client.testing.BadgeTestScreen()))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_VOXELLAB_UI_TESTS_OPEN)
             .labelKey("devmod.action.voxellab_ui_tests")
             .descriptionKey("devmod.action.voxellab_ui_tests.desc")
             .category(ActionCategory.TESTING)
-            .menuPath("Root/Testing/VoxelLab UI")
+            .menuPath("Root/Developer/VoxelLab UI")
             .icon(Items.GLOW_ITEM_FRAME)
-            .precondition(screenPrecondition())
+            .precondition(developerModePrecondition())
             .handler(context -> Minecraft.getInstance().setScreen(new VoxelLabUiTestScreen()))
             .build());
 
@@ -514,9 +522,9 @@ public final class DevModClientActions {
             .labelKey("devmod.action.voxellab")
             .descriptionKey("devmod.action.voxellab.desc")
             .category(ActionCategory.TESTING)
-            .menuPath("Root/Testing/VoxelLab")
+            .menuPath("Root/Developer/VoxelLab")
             .icon(Items.PINK_CONCRETE)
-            .precondition(screenPrecondition())
+            .precondition(developerModePrecondition())
             .handler(context -> Minecraft.getInstance().setScreen(new VoxelLabScreen()))
             .build());
 
@@ -906,6 +914,17 @@ public final class DevModClientActions {
             .toggle(context -> LightLevelOverlay.INSTANCE.isEnabled())
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
+                boolean enabled = LightLevelOverlay.INSTANCE.isEnabled();
+                var settings = SettingsManager.INSTANCE.getSettings();
+                if (!enabled && !settings.debug.lightOverlayPerfWarned) {
+                    settings.debug.lightOverlayPerfWarned = true;
+                    SettingsManager.INSTANCE.markDirty();
+                    Component overlayName = I18n.translate("devmod.radial.item.light_levels");
+                    Component warning = I18n.translate("devmod.render.overlay_perf_warning", overlayName)
+                        .withStyle(style -> style.withColor(0xFFAA00));
+                    context.sendSuccess(warning, true);
+                    return;
+                }
                 LightLevelOverlay.INSTANCE.toggle();
                 SettingsManager.INSTANCE.markDirty();
                 String status = LightLevelOverlay.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
@@ -1262,6 +1281,17 @@ public final class DevModClientActions {
             .toggle(context -> SpawnabilityOverlay.INSTANCE.isEnabled())
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
+                boolean enabled = SpawnabilityOverlay.INSTANCE.isEnabled();
+                var settings = SettingsManager.INSTANCE.getSettings();
+                if (!enabled && !settings.debug.spawnabilityOverlayPerfWarned) {
+                    settings.debug.spawnabilityOverlayPerfWarned = true;
+                    SettingsManager.INSTANCE.markDirty();
+                    Component overlayName = I18n.translate("devmod.radial.item.spawnability");
+                    Component warning = I18n.translate("devmod.render.overlay_perf_warning", overlayName)
+                        .withStyle(style -> style.withColor(0xFFAA00));
+                    context.sendSuccess(warning, true);
+                    return;
+                }
                 SpawnabilityOverlay.INSTANCE.toggle();
                 SettingsManager.INSTANCE.markDirty();
                 String status = SpawnabilityOverlay.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
@@ -1358,11 +1388,11 @@ public final class DevModClientActions {
                 if (player == null) {
                     return;
                 }
-                com.devmod.effects.ShakeEffect testShake =
-                    com.devmod.effects.ShakeManager.createMediumHit(player.position());
-                com.devmod.effects.ShakeManager.INSTANCE.addShake(testShake);
+                com.devmod.client.effects.ShakeEffect testShake =
+                    com.devmod.client.effects.ShakeManager.createMediumHit(player.position());
+                com.devmod.client.effects.ShakeManager.INSTANCE.addShake(testShake);
                 context.sendSuccess(Component.literal("§e[DevMod] §fScreen shake test triggered! Active shakes: §a" +
-                    com.devmod.effects.ShakeManager.INSTANCE.getActiveCount()), true);
+                    com.devmod.client.effects.ShakeManager.INSTANCE.getActiveCount()), true);
             })
             .build());
 
@@ -1777,6 +1807,218 @@ public final class DevModClientActions {
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> Config.BADGE_POPUP_ENABLED.set(!Config.BADGE_POPUP_ENABLED.get()))
             .build());
+
+        // ========== Game Design Config Actions ==========
+        registerGameDesignConfigActions();
+    }
+
+    private static void registerGameDesignConfigActions() {
+        var configMgr = com.devmod.config.gamedesign.GameDesignConfigManager.INSTANCE;
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.CONFIG_GAMEDESIGN_RELOAD)
+            .labelKey("devmod.gamedesign.reload")
+            .descriptionKey("devmod.gamedesign.reload.desc")
+            .category(ActionCategory.CONFIG)
+            .menuPath("Root/Config/Game Design/Reload")
+            .icon(Items.COMPASS)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                configMgr.reload();
+                context.sendSuccess(I18n.translate("devmod.gamedesign.reloaded"), true);
+            })
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.CONFIG_GAMEDESIGN_SAVE)
+            .labelKey("devmod.gamedesign.save")
+            .descriptionKey("devmod.gamedesign.save.desc")
+            .category(ActionCategory.CONFIG)
+            .menuPath("Root/Config/Game Design/Save")
+            .icon(Items.WRITABLE_BOOK)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                configMgr.save();
+                context.sendSuccess(I18n.translate("devmod.gamedesign.saved"), true);
+            })
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.CONFIG_GAMEDESIGN_RESET)
+            .labelKey("devmod.gamedesign.reset")
+            .descriptionKey("devmod.gamedesign.reset.desc")
+            .category(ActionCategory.CONFIG)
+            .menuPath("Root/Config/Game Design/Reset")
+            .icon(Items.BARRIER)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                configMgr.resetToDefaults();
+                context.sendSuccess(I18n.translate("devmod.gamedesign.reset_done"), true);
+            })
+            .build());
+
+        // Resonance Chain Toggle
+        ActionRegistry.register(RadialAction.builder(ActionIds.CONFIG_RESONANCE_TOGGLE)
+            .labelKey("devmod.gamedesign.resonance.toggle")
+            .descriptionKey("devmod.gamedesign.resonance.toggle.desc")
+            .category(ActionCategory.CONFIG)
+            .menuPath("Root/Config/Game Design/Systems/Resonance")
+            .icon(Items.LIGHTNING_ROD)
+            .toggle(context -> configMgr.getGlobalConfig().resonance.enabled)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                var config = configMgr.getGlobalConfig();
+                config.resonance.enabled = !config.resonance.enabled;
+                configMgr.markDirty();
+                String status = config.resonance.enabled ? "enabled" : "disabled";
+                context.sendSuccess(I18n.translate("devmod.gamedesign.resonance." + status), true);
+            })
+            .build());
+
+        // Blood Contracts Toggle
+        ActionRegistry.register(RadialAction.builder(ActionIds.CONFIG_CONTRACTS_TOGGLE)
+            .labelKey("devmod.gamedesign.contracts.toggle")
+            .descriptionKey("devmod.gamedesign.contracts.toggle.desc")
+            .category(ActionCategory.CONFIG)
+            .menuPath("Root/Config/Game Design/Systems/Contracts")
+            .icon(Items.PAPER)
+            .toggle(context -> configMgr.getGlobalConfig().contracts.enabled)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                var config = configMgr.getGlobalConfig();
+                config.contracts.enabled = !config.contracts.enabled;
+                configMgr.markDirty();
+                String status = config.contracts.enabled ? "enabled" : "disabled";
+                context.sendSuccess(I18n.translate("devmod.gamedesign.contracts." + status), true);
+            })
+            .build());
+
+        // Signature Weapons Toggle
+        ActionRegistry.register(RadialAction.builder(ActionIds.CONFIG_SIGNATURE_WEAPONS_TOGGLE)
+            .labelKey("devmod.gamedesign.signature_weapons.toggle")
+            .descriptionKey("devmod.gamedesign.signature_weapons.toggle.desc")
+            .category(ActionCategory.CONFIG)
+            .menuPath("Root/Config/Game Design/Systems/Signature Weapons")
+            .icon(Items.DIAMOND_SWORD)
+            .toggle(context -> configMgr.getGlobalConfig().signatureWeapons.enabled)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                var config = configMgr.getGlobalConfig();
+                config.signatureWeapons.enabled = !config.signatureWeapons.enabled;
+                configMgr.markDirty();
+                String status = config.signatureWeapons.enabled ? "enabled" : "disabled";
+                context.sendSuccess(I18n.translate("devmod.gamedesign.signature_weapons." + status), true);
+            })
+            .build());
+
+        // Nemesis Evolution Toggle
+        ActionRegistry.register(RadialAction.builder(ActionIds.CONFIG_NEMESIS_TOGGLE)
+            .labelKey("devmod.gamedesign.nemesis.toggle")
+            .descriptionKey("devmod.gamedesign.nemesis.toggle.desc")
+            .category(ActionCategory.CONFIG)
+            .menuPath("Root/Config/Game Design/Systems/Nemesis")
+            .icon(Items.WITHER_SKELETON_SKULL)
+            .toggle(context -> configMgr.getGlobalConfig().nemesis.enabled)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                var config = configMgr.getGlobalConfig();
+                config.nemesis.enabled = !config.nemesis.enabled;
+                configMgr.markDirty();
+                String status = config.nemesis.enabled ? "enabled" : "disabled";
+                context.sendSuccess(I18n.translate("devmod.gamedesign.nemesis." + status), true);
+            })
+            .build());
+
+        // The Tide Toggle
+        ActionRegistry.register(RadialAction.builder(ActionIds.CONFIG_TIDE_TOGGLE)
+            .labelKey("devmod.gamedesign.tide.toggle")
+            .descriptionKey("devmod.gamedesign.tide.toggle.desc")
+            .category(ActionCategory.CONFIG)
+            .menuPath("Root/Config/Game Design/Systems/Tide")
+            .icon(Items.PRISMARINE_SHARD)
+            .toggle(context -> configMgr.getGlobalConfig().tide.enabled)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                var config = configMgr.getGlobalConfig();
+                config.tide.enabled = !config.tide.enabled;
+                configMgr.markDirty();
+                String status = config.tide.enabled ? "enabled" : "disabled";
+                context.sendSuccess(I18n.translate("devmod.gamedesign.tide." + status), true);
+            })
+            .build());
+
+        // ========== Presets ==========
+        ActionRegistry.register(RadialAction.builder(ActionIds.CONFIG_GAMEDESIGN_PRESET_EASY)
+            .labelKey("devmod.gamedesign.preset.easy")
+            .descriptionKey("devmod.gamedesign.preset.easy.desc")
+            .category(ActionCategory.CONFIG)
+            .menuPath("Root/Config/Game Design/Presets/Easy")
+            .icon(Items.GOLDEN_APPLE)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                var override = com.devmod.config.gamedesign.InstanceOverride.fromPreset("easy");
+                configMgr.setGlobalConfig(override.applyTo(configMgr.getGlobalConfig().copy()));
+                configMgr.markDirty();
+                context.sendSuccess(I18n.translate("devmod.gamedesign.preset_applied", "Easy"), true);
+            })
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.CONFIG_GAMEDESIGN_PRESET_HARD)
+            .labelKey("devmod.gamedesign.preset.hard")
+            .descriptionKey("devmod.gamedesign.preset.hard.desc")
+            .category(ActionCategory.CONFIG)
+            .menuPath("Root/Config/Game Design/Presets/Hard")
+            .icon(Items.NETHERITE_SWORD)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                var override = com.devmod.config.gamedesign.InstanceOverride.fromPreset("hard");
+                configMgr.setGlobalConfig(override.applyTo(configMgr.getGlobalConfig().copy()));
+                configMgr.markDirty();
+                context.sendSuccess(I18n.translate("devmod.gamedesign.preset_applied", "Hard"), true);
+            })
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.CONFIG_GAMEDESIGN_PRESET_CHAOS)
+            .labelKey("devmod.gamedesign.preset.chaos")
+            .descriptionKey("devmod.gamedesign.preset.chaos.desc")
+            .category(ActionCategory.CONFIG)
+            .menuPath("Root/Config/Game Design/Presets/Chaos")
+            .icon(Items.TNT)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                var override = com.devmod.config.gamedesign.InstanceOverride.fromPreset("chaos");
+                configMgr.setGlobalConfig(override.applyTo(configMgr.getGlobalConfig().copy()));
+                configMgr.markDirty();
+                context.sendSuccess(I18n.translate("devmod.gamedesign.preset_applied", "Chaos"), true);
+            })
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.CONFIG_GAMEDESIGN_PRESET_TUTORIAL)
+            .labelKey("devmod.gamedesign.preset.tutorial")
+            .descriptionKey("devmod.gamedesign.preset.tutorial.desc")
+            .category(ActionCategory.CONFIG)
+            .menuPath("Root/Config/Game Design/Presets/Tutorial")
+            .icon(Items.BOOK)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                var override = com.devmod.config.gamedesign.InstanceOverride.fromPreset("tutorial");
+                configMgr.setGlobalConfig(override.applyTo(configMgr.getGlobalConfig().copy()));
+                configMgr.markDirty();
+                context.sendSuccess(I18n.translate("devmod.gamedesign.preset_applied", "Tutorial"), true);
+            })
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.CONFIG_GAMEDESIGN_PRESET_SPEEDRUN)
+            .labelKey("devmod.gamedesign.preset.speedrun")
+            .descriptionKey("devmod.gamedesign.preset.speedrun.desc")
+            .category(ActionCategory.CONFIG)
+            .menuPath("Root/Config/Game Design/Presets/Speedrun")
+            .icon(Items.CLOCK)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                var override = com.devmod.config.gamedesign.InstanceOverride.fromPreset("speedrun");
+                configMgr.setGlobalConfig(override.applyTo(configMgr.getGlobalConfig().copy()));
+                configMgr.markDirty();
+                context.sendSuccess(I18n.translate("devmod.gamedesign.preset_applied", "Speedrun"), true);
+            })
+            .build());
     }
 
     private static void registerTelemetryActions() {
@@ -2158,7 +2400,8 @@ public final class DevModClientActions {
             context.sendFailure(Component.translatable("devmod.action.perk_selection.missing"));
             return;
         }
-        Minecraft.getInstance().setScreen(new PerkSelectionScreen(payload.waveNumber(), payload.choices()));
+        Minecraft.getInstance().setScreen(new PerkSelectionScreen(
+            payload.waveNumber(), payload.choices(), payload.expiresAt()));
     }
 
     private static void openQuestCompletion(ActionContext context) {
@@ -2191,7 +2434,7 @@ public final class DevModClientActions {
             context.sendFailure(Component.translatable("devmod.action.arena.quick_test_wizard.missing_registry"));
             return;
         }
-        com.devmod.arena.ui.ArenaTestWizard.open(registry, config -> {
+        com.devmod.client.arena.ui.ArenaTestWizard.open(registry, config -> {
             if (config.playerCountOverride() != null && config.playerCountOverride() > 0) {
                 context.sendSuccess(Component.translatable("devmod.action.arena.quick_test_wizard.player_count_ignored"), true);
             }

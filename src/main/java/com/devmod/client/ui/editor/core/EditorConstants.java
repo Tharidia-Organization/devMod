@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.core;
+package com.devmod.client.ui.editor.core;
 
 /**
  * Central editor constants derived from EDITOR_DESIGN_SYSTEM.md (Appendice A).

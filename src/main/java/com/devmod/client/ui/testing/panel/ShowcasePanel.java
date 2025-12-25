@@ -1,7 +1,7 @@
-package com.devmod.ui.testing.panel;
+package com.devmod.client.ui.testing.panel;
 
-import com.devmod.ui.editor.components.EditorButton;
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static com.devmod.ui.testing.panel.PanelConstants.*;
+import static com.devmod.client.ui.testing.panel.PanelConstants.*;
 
 /**
  * Showcase panel for demonstrating UI components with descriptions.

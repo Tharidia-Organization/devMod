@@ -1,5 +1,5 @@
-package com.devmod.ui;
-import com.devmod.ui.editor.core.UIConstants;
+package com.devmod.client.ui;
+import com.devmod.client.ui.editor.core.UIConstants;
 
 import com.devmod.actions.ActionContext;
 import com.devmod.actions.ActionIds;
@@ -9,7 +9,7 @@ import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.rendering.RoomBoundsVisualizer;
 import com.devmod.telemetry.RoomDefinition;
 import com.devmod.telemetry.TelemetryConfig;
-import com.devmod.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.util.ConfigPaths;
 import com.devmod.util.I18n;
 import com.google.gson.Gson;

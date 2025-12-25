@@ -1,5 +1,6 @@
-package com.devmod.party;
+package com.devmod.client.party;
 
+import com.devmod.party.PartyNotificationPayload;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 

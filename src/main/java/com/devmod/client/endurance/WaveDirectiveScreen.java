@@ -1,7 +1,11 @@
-package com.devmod.endurance;
+package com.devmod.client.endurance;
 
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.editor.components.EditorButton;
+import com.devmod.endurance.WaveDirectiveChoicesPayload;
+import com.devmod.endurance.WaveDirectiveSelectionPayload;
+
+import com.devmod.client.ui.components.CountdownTimer;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.util.I18n;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -26,13 +30,31 @@ public class WaveDirectiveScreen extends Screen {
     private static final int CARD_GAP = 10;
     private static final int PANEL_PADDING = 16;
 
+    private static final int COUNTDOWN_WARN_SECONDS = 10;
+    private static final int COUNTDOWN_URGENT_SECONDS = 5;
+    private static final int COUNTDOWN_AUDIO_SECONDS = 5;
+    private static final int COUNTDOWN_PADDING = 10;
+
     private final WaveDirectiveChoicesPayload payload;
     private final List<EditorButton> selectButtons = new ArrayList<>();
     private boolean selectionSent = false;
+    private final CountdownTimer countdown;
 
     public WaveDirectiveScreen() {
+        this(EnduranceUiCache.getLastDirectiveChoices());
+    }
+
+    public WaveDirectiveScreen(WaveDirectiveChoicesPayload payload) {
         super(java.util.Objects.requireNonNull(Component.literal("Wave Directives"), "title"));
-        this.payload = EnduranceUiCache.getLastDirectiveChoices();
+        this.payload = payload;
+        long expiresAt = payload != null ? payload.expiresAt() : 0L;
+        this.countdown = new CountdownTimer(expiresAt, COUNTDOWN_WARN_SECONDS, COUNTDOWN_URGENT_SECONDS, COUNTDOWN_AUDIO_SECONDS);
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        countdown.tick();
     }
 
     @Override
@@ -77,6 +99,7 @@ public class WaveDirectiveScreen extends Screen {
 
         graphics.drawCenteredString(font, "Choose Your Directive", width / 2, panelY + 6,
             UIConstants.Text.PRIMARY());
+        renderCountdown(graphics, font, panelX, panelY, PANEL_WIDTH);
 
         int cardWidth = PANEL_WIDTH - PANEL_PADDING * 2;
         int cardX = panelX + PANEL_PADDING;
@@ -199,5 +222,26 @@ public class WaveDirectiveScreen extends Screen {
         int b = (int) (b1 + (b2 - b1) * t);
 
         return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    private void renderCountdown(GuiGraphics graphics, Font font, int panelX, int panelY, int panelWidth) {
+        if (!countdown.isActive()) {
+            return;
+        }
+        int remaining = countdown.getRemainingSeconds();
+        if (remaining < 0) {
+            return;
+        }
+        String text = I18n.ui("selection_time_remaining", remaining).getString();
+        int textWidth = font.width(text);
+        int x = panelX + panelWidth - textWidth - COUNTDOWN_PADDING;
+        int y = panelY + 6;
+
+        int bgColor = UIConstants.setAlpha(UIConstants.Background.INPUT(), 160);
+        graphics.fill(x - 4, y - 2, x + textWidth + 4, y + font.lineHeight + 2, bgColor);
+
+        float pulse = countdown.getPulse();
+        int textColor = UIConstants.setAlpha(countdown.getColor(), (int) (255 * pulse));
+        graphics.drawString(font, text, x, y, textColor, false);
     }
 }

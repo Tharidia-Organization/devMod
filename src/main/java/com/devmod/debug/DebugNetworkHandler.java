@@ -30,22 +30,26 @@ public class DebugNetworkHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(DebugNetworkHandler.class);
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        // Debug Toggle (client to server) - player requests to toggle a feature
-        event.registrar(DEBUG_TOGGLE.asString()).playToServer(
-            Objects.requireNonNull(DebugTogglePayload.TYPE),
-            Objects.requireNonNull(DebugTogglePayload.STREAM_CODEC),
-            DebugNetworkHandler::handleDebugToggle
-        );
+        try {
+            // Debug Toggle (client to server) - player requests to toggle a feature
+            event.registrar(DEBUG_TOGGLE.asString()).playToServer(
+                Objects.requireNonNull(DebugTogglePayload.TYPE),
+                Objects.requireNonNull(DebugTogglePayload.STREAM_CODEC),
+                DebugNetworkHandler::handleDebugToggle
+            );
 
-        // Debug Sync (server to client) - sync enabled state to client
-        event.registrar(DEBUG_SYNC.asString()).playToClient(
-            Objects.requireNonNull(DebugSyncPayload.TYPE),
-            Objects.requireNonNull(DebugSyncPayload.STREAM_CODEC),
-            DebugNetworkHandler::handleDebugSync
-        );
+            // Debug Sync (server to client) - sync enabled state to client
+            event.registrar(DEBUG_SYNC.asString()).playToClient(
+                Objects.requireNonNull(DebugSyncPayload.TYPE),
+                Objects.requireNonNull(DebugSyncPayload.STREAM_CODEC),
+                DebugNetworkHandler::handleDebugSync
+            );
 
-        LOGGER.info("[DevMod] Debug network packets registered (channels {}, {})",
-            DEBUG_TOGGLE.asString(), DEBUG_SYNC.asString());
+            LOGGER.info("[DevMod] Debug network packets registered (channels {}, {})",
+                DEBUG_TOGGLE.asString(), DEBUG_SYNC.asString());
+        } catch (NoClassDefFoundError e) {
+            LOGGER.error("[DevMod] Debug payload classes missing; debug networking disabled", e);
+        }
     }
 
     // ========== Server-side Handlers ==========

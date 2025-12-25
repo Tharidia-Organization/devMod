@@ -1,16 +1,19 @@
-package com.devmod.ui.radial;
+package com.devmod.client.ui.radial;
 
 import com.devmod.config.ArmorConfigManager;
 import com.devmod.actions.ActionIds;
-import com.devmod.ui.editor.WeaponTypeDetector;
-import com.devmod.ui.radial.model.MacroCategory;
+import com.devmod.client.ui.editor.WeaponTypeDetector;
+import com.devmod.client.ui.radial.model.MacroCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.RecipeType;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
@@ -530,6 +533,35 @@ public final class RadialMenuRegistry {
             stack(Items.TARGET));
         combatConfig.addItems(
             RadialMenuItem.registry(ActionIds.CONFIG_BODY_PART_DETECTION_TOGGLE)
+        );
+
+        // Game Design Config subcategory
+        RadialCategory gameDesign = settings.addSubcategory("config_gamedesign", "Game Design", 0xFFAA55FF,
+            stack(Items.ENDER_CHEST));
+        gameDesign.addItems(
+            RadialMenuItem.registry(ActionIds.CONFIG_GAMEDESIGN_RELOAD),
+            RadialMenuItem.registry(ActionIds.CONFIG_GAMEDESIGN_SAVE),
+            RadialMenuItem.registry(ActionIds.CONFIG_GAMEDESIGN_RESET)
+        );
+
+        RadialCategory gameDesignSystems = gameDesign.addSubcategory("gamedesign_systems", "Systems", 0xFFAA55FF,
+            stack(Items.REDSTONE));
+        gameDesignSystems.addItems(
+            RadialMenuItem.registry(ActionIds.CONFIG_RESONANCE_TOGGLE),
+            RadialMenuItem.registry(ActionIds.CONFIG_CONTRACTS_TOGGLE),
+            RadialMenuItem.registry(ActionIds.CONFIG_SIGNATURE_WEAPONS_TOGGLE),
+            RadialMenuItem.registry(ActionIds.CONFIG_NEMESIS_TOGGLE),
+            RadialMenuItem.registry(ActionIds.CONFIG_TIDE_TOGGLE)
+        );
+
+        RadialCategory gameDesignPresets = gameDesign.addSubcategory("gamedesign_presets", "Presets", 0xFFAA55FF,
+            stack(Items.ENCHANTED_BOOK));
+        gameDesignPresets.addItems(
+            RadialMenuItem.registry(ActionIds.CONFIG_GAMEDESIGN_PRESET_EASY),
+            RadialMenuItem.registry(ActionIds.CONFIG_GAMEDESIGN_PRESET_HARD),
+            RadialMenuItem.registry(ActionIds.CONFIG_GAMEDESIGN_PRESET_CHAOS),
+            RadialMenuItem.registry(ActionIds.CONFIG_GAMEDESIGN_PRESET_TUTORIAL),
+            RadialMenuItem.registry(ActionIds.CONFIG_GAMEDESIGN_PRESET_SPEEDRUN)
         );
 
         categories.add(settings);

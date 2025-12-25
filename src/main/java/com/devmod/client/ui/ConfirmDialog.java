@@ -1,10 +1,10 @@
-package com.devmod.ui;
-import com.devmod.ui.editor.core.UIConstants;
+package com.devmod.client.ui;
+import com.devmod.client.ui.editor.core.UIConstants;
 
-import com.devmod.ui.editor.components.EditorButton;
-import com.devmod.ui.editor.core.BaseOverlay;
-import com.devmod.ui.editor.core.ScaledCoord;
-import com.devmod.ui.editor.core.Typography;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.BaseOverlay;
+import com.devmod.client.ui.editor.core.ScaledCoord;
+import com.devmod.client.ui.editor.core.Typography;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import org.lwjgl.glfw.GLFW;
@@ -113,6 +113,89 @@ public final class ConfirmDialog extends BaseOverlay {
         );
     }
 
+    public static ConfirmDialog unsavedChanges(int changeCount,
+                                               Runnable onDiscard,
+                                               Runnable onCancel) {
+        return create(
+            "Unsaved Changes",
+            "Discard",
+            "Cancel",
+            Style.DANGER,
+            onDiscard,
+            onCancel,
+            "You have " + changeCount + " unsaved changes.",
+            "Discard and close?"
+        );
+    }
+
+    public static ConfirmDialog resetToDefault(Runnable onReset, Runnable onCancel) {
+        return create(
+            "Reset to Default",
+            "Reset",
+            "Cancel",
+            Style.WARNING,
+            onReset,
+            onCancel,
+            "This will reset all values to their defaults.",
+            "This cannot be undone."
+        );
+    }
+
+    public static ConfirmDialog switchSlot(String slotName, int changeCount,
+                                           Runnable onSwitch, Runnable onCancel) {
+        return create(
+            "Switch Slot",
+            "Discard & Switch",
+            "Cancel",
+            Style.WARNING,
+            onSwitch,
+            onCancel,
+            "Discard " + changeCount + " changes to " + slotName + "?"
+        );
+    }
+
+    public static ConfirmDialog deletePreset(String presetName,
+                                             Runnable onDelete, Runnable onCancel) {
+        return create(
+            "Delete Preset",
+            "Delete",
+            "Cancel",
+            Style.DANGER,
+            onDelete,
+            onCancel,
+            "Delete preset '" + presetName + "'?",
+            "This cannot be undone."
+        );
+    }
+
+    public static ConfirmDialog switchModeToPreview(int changeCount,
+                                                    Runnable onDiscard,
+                                                    Runnable onCancel) {
+        return create(
+            "Switch to Preview",
+            "Discard",
+            "Cancel",
+            Style.WARNING,
+            onDiscard,
+            onCancel,
+            "Discard " + changeCount + " unsaved changes and switch to PREVIEW mode?"
+        );
+    }
+
+    public static ConfirmDialog batchApply(int itemCount, String presetName,
+                                           Runnable onApply, Runnable onCancel) {
+        return create(
+            "Batch Apply",
+            "Apply",
+            "Cancel",
+            Style.WARNING,
+            onApply,
+            onCancel,
+            "Apply preset '" + presetName + "' to " + itemCount + " items?",
+            "This may take a moment."
+        );
+    }
+
     @Override
     protected int getPanelWidth() {
         return PANEL_WIDTH;
@@ -141,7 +224,7 @@ public final class ConfirmDialog extends BaseOverlay {
                                  int mouseX, int mouseY) {
         float titleScale = Typography.withUiScale(Typography.BODY);
         float bodyScale = Typography.withUiScale(Typography.VALUE);
-        int padding = ScaledCoord.scaleDim(com.devmod.ui.editor.core.UIConstants.Spacing.XL);
+        int padding = ScaledCoord.scaleDim(com.devmod.client.ui.editor.core.UIConstants.Spacing.XL);
 
         // Title
         Typography.drawText(
@@ -150,7 +233,7 @@ public final class ConfirmDialog extends BaseOverlay {
             title,
             x + padding,
             y + padding,
-            com.devmod.ui.editor.core.UIConstants.Text.TITLE(),
+            com.devmod.client.ui.editor.core.UIConstants.Text.TITLE(),
             titleScale
         );
 
@@ -163,7 +246,7 @@ public final class ConfirmDialog extends BaseOverlay {
                 line,
                 x + padding,
                 lineY,
-                com.devmod.ui.editor.core.UIConstants.Text.PRIMARY(),
+                com.devmod.client.ui.editor.core.UIConstants.Text.PRIMARY(),
                 bodyScale
             );
             lineY += ScaledCoord.scaleDim(LINE_HEIGHT);
@@ -172,7 +255,7 @@ public final class ConfirmDialog extends BaseOverlay {
         // Buttons
         btnWidth = ScaledCoord.scaleDim(BUTTON_WIDTH);
         btnHeight = ScaledCoord.scaleDim(BUTTON_HEIGHT);
-        int gap = ScaledCoord.scaleDim(com.devmod.ui.editor.core.UIConstants.Spacing.MD);
+        int gap = ScaledCoord.scaleDim(com.devmod.client.ui.editor.core.UIConstants.Spacing.MD);
         btnY = y + height - btnHeight - padding;
         confirmX = x + width / 2 - btnWidth - gap;
         cancelX = x + width / 2 + gap;
@@ -227,17 +310,17 @@ public final class ConfirmDialog extends BaseOverlay {
         int minHeight = BASE_HEIGHT;
         int linesHeight = LINE_HEIGHT * Math.max(1, messageLines.size());
         int bodySpace = 60 + linesHeight;
-        int buttonsSpace = BUTTON_HEIGHT + com.devmod.ui.editor.core.UIConstants.Spacing.XL;
+        int buttonsSpace = BUTTON_HEIGHT + com.devmod.client.ui.editor.core.UIConstants.Spacing.XL;
         int total = ScaledCoord.alignTo4(bodySpace + buttonsSpace);
         return Math.max(minHeight, total);
     }
 
     private int getAccentColor() {
         return switch (style) {
-            case PRIMARY -> com.devmod.ui.editor.core.UIConstants.Accent.CYAN();
-            case WARNING -> com.devmod.ui.editor.core.UIConstants.Accent.ORANGE();
-            case DANGER -> com.devmod.ui.editor.core.UIConstants.Accent.RED();
-            case SUCCESS -> com.devmod.ui.editor.core.UIConstants.Accent.GREEN();
+            case PRIMARY -> com.devmod.client.ui.editor.core.UIConstants.Accent.CYAN();
+            case WARNING -> com.devmod.client.ui.editor.core.UIConstants.Accent.ORANGE();
+            case DANGER -> com.devmod.client.ui.editor.core.UIConstants.Accent.RED();
+            case SUCCESS -> com.devmod.client.ui.editor.core.UIConstants.Accent.GREEN();
         };
     }
 

@@ -1,4 +1,4 @@
-package com.devmod.abilities;
+package com.devmod.client.abilities;
 
 /**
  * Client-side cache for stamina data synced from server.

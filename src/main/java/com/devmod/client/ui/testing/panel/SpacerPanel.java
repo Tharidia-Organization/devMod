@@ -1,4 +1,4 @@
-package com.devmod.ui.testing.panel;
+package com.devmod.client.ui.testing.panel;
 
 import net.minecraft.client.gui.GuiGraphics;
 

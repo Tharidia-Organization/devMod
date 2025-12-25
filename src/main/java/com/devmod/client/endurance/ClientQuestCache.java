@@ -1,4 +1,9 @@
-package com.devmod.endurance;
+package com.devmod.client.endurance;
+
+import com.devmod.endurance.ComboSystem;
+import com.devmod.endurance.EnduranceQuestState;
+import com.devmod.endurance.QuestSyncPayload;
+import com.devmod.endurance.WaveObjectiveState;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -45,7 +50,7 @@ public class ClientQuestCache {
      * Synchronize quest events with IntegratedTestSession for unified tracking.
      */
     private static void syncWithIntegratedSession(QuestSyncPayload oldData, QuestSyncPayload newData) {
-        var session = com.devmod.testing.IntegratedTestSession.INSTANCE;
+        var session = com.devmod.client.testing.IntegratedTestSession.INSTANCE;
         if (!session.isSessionActive()) return;
 
         // Detect wave completion
@@ -63,9 +68,9 @@ public class ClientQuestCache {
             // Quest ended - determine outcome from state
             EnduranceQuestState state = newData.getState();
             var outcome = switch (state) {
-                case COMPLETED -> com.devmod.testing.IntegratedTestSession.SessionOutcome.COMPLETED;
-                case FAILED -> com.devmod.testing.IntegratedTestSession.SessionOutcome.DEATH;
-                default -> com.devmod.testing.IntegratedTestSession.SessionOutcome.ABANDONED;
+                case COMPLETED -> com.devmod.client.testing.IntegratedTestSession.SessionOutcome.COMPLETED;
+                case FAILED -> com.devmod.client.testing.IntegratedTestSession.SessionOutcome.DEATH;
+                default -> com.devmod.client.testing.IntegratedTestSession.SessionOutcome.ABANDONED;
             };
             session.endSession(outcome);
         }

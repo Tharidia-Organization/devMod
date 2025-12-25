@@ -1,5 +1,6 @@
-package com.devmod.testing;
+package com.devmod.client.testing;
 
+import com.devmod.testing.TestCase;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;

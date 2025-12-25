@@ -8,7 +8,7 @@ import com.devmod.collision.obb.OBBRaycast;
 import com.devmod.collision.obb.OrientedBoundingBox;
 import com.devmod.collision.registry.BodyPartRegistry;
 import com.devmod.collision.transform.AnimationSnapshot;
-import com.devmod.collision.transform.ModelPartTransformExtractor;
+import com.devmod.collision.transform.TransformProviderRegistry;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 
@@ -103,9 +103,9 @@ public final class OBBHitHelper {
         BodyPartRegistry.INSTANCE.initialize(); // Ensure initialized
         BodyPartHierarchy hierarchy = BodyPartRegistry.INSTANCE.getHierarchy(target);
 
-        // 2. Get current animation snapshot
+        // 2. Get current animation snapshot (uses appropriate provider for client/server)
         long currentTick = target.level().getGameTime();
-        AnimationSnapshot snapshot = ModelPartTransformExtractor.extractTransforms(
+        AnimationSnapshot snapshot = TransformProviderRegistry.getProvider().extractTransforms(
             target, 1.0f, currentTick);
 
         // 3. Compute world-space OBBs for all parts
@@ -253,7 +253,7 @@ public final class OBBHitHelper {
         BodyPartHierarchy hierarchy = BodyPartRegistry.INSTANCE.getHierarchy(entity);
 
         long currentTick = entity.level().getGameTime();
-        AnimationSnapshot snapshot = ModelPartTransformExtractor.extractTransforms(
+        AnimationSnapshot snapshot = TransformProviderRegistry.getProvider().extractTransforms(
             entity, 1.0f, currentTick);
 
         return hierarchy.computeWorldTransforms(snapshot);

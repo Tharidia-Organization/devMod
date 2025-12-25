@@ -1,6 +1,6 @@
-package com.devmod.ui.editor.core;
+package com.devmod.client.ui.editor.core;
 
-import com.devmod.ui.AxiomRenderer;
+import com.devmod.client.ui.AxiomRenderer;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**

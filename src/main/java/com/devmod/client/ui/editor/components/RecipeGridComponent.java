@@ -1,10 +1,10 @@
-package com.devmod.ui.editor.components;
+package com.devmod.client.ui.editor.components;
 
 import com.devmod.recipe.CraftingRecipeData;
 import com.devmod.recipe.CraftingType;
 import com.devmod.recipe.IngredientData;
-import com.devmod.ui.editor.core.ScaledCoord;
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.ScaledCoord;
+import com.devmod.client.ui.editor.core.UIConstants;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;

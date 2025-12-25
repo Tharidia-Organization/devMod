@@ -1,4 +1,4 @@
-package com.devmod.ui.editor;
+package com.devmod.client.ui.editor;
 
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;

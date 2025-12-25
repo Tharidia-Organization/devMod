@@ -1,9 +1,9 @@
-package com.devmod.ui.hub;
+package com.devmod.client.ui.hub;
 
 import com.devmod.testing.TestCase;
-import com.devmod.testing.TestingSession;
-import com.devmod.testing.TutorialManager;
-import com.devmod.testing.ActiveTestHudOverlay;
+import com.devmod.client.testing.TestingSession;
+import com.devmod.client.testing.TutorialManager;
+import com.devmod.client.testing.ActiveTestHudOverlay;
 
 import java.util.EnumSet;
 import java.util.List;

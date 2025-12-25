@@ -1,4 +1,4 @@
-package com.devmod.ui.radial;
+package com.devmod.client.ui.radial;
 
 import net.minecraft.world.item.ItemStack;
 
@@ -177,10 +177,11 @@ public class RadialMenuItem {
 
     /**
      * Create an action item (one-shot, not toggle)
-     * @deprecated Use {@link #registry(String)} with ActionRegistry instead
+     * @deprecated Use {@link #registry(String)} with ActionRegistry instead.
+     *             Package-private to prevent new external usages.
      */
     @Deprecated
-    public static RadialMenuItem action(String name, String emoji, Runnable action, String description) {
+    static RadialMenuItem action(String name, String emoji, Runnable action, String description) {
         return new RadialMenuItem(name,
             RadialAction.custom(name, description, emoji, action),
             emoji, null);
@@ -188,10 +189,11 @@ public class RadialMenuItem {
 
     /**
      * Create an action item with ItemStack icon
-     * @deprecated Use {@link #registry(String)} with ActionRegistry instead
+     * @deprecated Use {@link #registry(String)} with ActionRegistry instead.
+     *             Package-private to prevent new external usages.
      */
     @Deprecated
-    public static RadialMenuItem action(String name, String emoji, ItemStack icon,
+    static RadialMenuItem action(String name, String emoji, ItemStack icon,
                                          Runnable action, String description) {
         return new RadialMenuItem(name,
             RadialAction.custom(name, description, emoji, icon, action),
@@ -200,10 +202,11 @@ public class RadialMenuItem {
 
     /**
      * Create a command item
-     * @deprecated Use {@link #registry(String)} with ActionRegistry instead
+     * @deprecated Use {@link #registry(String)} with ActionRegistry instead.
+     *             Package-private to prevent new external usages.
      */
     @Deprecated
-    public static RadialMenuItem command(String name, String emoji, String command, String description) {
+    static RadialMenuItem command(String name, String emoji, String command, String description) {
         return new RadialMenuItem(name,
             RadialAction.command(name, description, emoji, command),
             emoji, null);
@@ -211,10 +214,11 @@ public class RadialMenuItem {
 
     /**
      * Create a command item with ItemStack icon
-     * @deprecated Use {@link #registry(String)} with ActionRegistry instead
+     * @deprecated Use {@link #registry(String)} with ActionRegistry instead.
+     *             Package-private to prevent new external usages.
      */
     @Deprecated
-    public static RadialMenuItem command(String name, String emoji, ItemStack icon, String command, String description) {
+    static RadialMenuItem command(String name, String emoji, ItemStack icon, String command, String description) {
         return new RadialMenuItem(name,
             RadialAction.command(name, description, emoji, icon, command),
             emoji, icon);

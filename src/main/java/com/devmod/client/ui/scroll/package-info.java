@@ -6,10 +6,10 @@
  *
  * <h2>Key Classes</h2>
  * <ul>
- *   <li>{@link com.devmod.ui.scroll.ScrollManager} - Main entry point</li>
- *   <li>{@link com.devmod.ui.scroll.ScrollMode} - INSTANT or SMOOTH modes</li>
- *   <li>{@link com.devmod.ui.scroll.ScrollMetrics} - Scrollbar rendering data</li>
- *   <li>{@link com.devmod.ui.scroll.ScrollBehavior} - Interface for custom behaviors</li>
+ *   <li>{@link com.devmod.client.ui.scroll.ScrollManager} - Main entry point</li>
+ *   <li>{@link com.devmod.client.ui.scroll.ScrollMode} - INSTANT or SMOOTH modes</li>
+ *   <li>{@link com.devmod.client.ui.scroll.ScrollMetrics} - Scrollbar rendering data</li>
+ *   <li>{@link com.devmod.client.ui.scroll.ScrollBehavior} - Interface for custom behaviors</li>
  * </ul>
  *
  * <h2>Features</h2>
@@ -20,7 +20,7 @@
  *   <li>Safe scissoring - try/finally pattern prevents leaks</li>
  * </ul>
  *
- * @see com.devmod.ui.scroll.ScrollManager
+ * @see com.devmod.client.ui.scroll.ScrollManager
  */
 @javax.annotation.ParametersAreNonnullByDefault
-package com.devmod.ui.scroll;
+package com.devmod.client.ui.scroll;

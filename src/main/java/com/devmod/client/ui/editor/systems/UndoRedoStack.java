@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.systems;
+package com.devmod.client.ui.editor.systems;
 
 import javax.annotation.Nullable;
 import java.util.ArrayDeque;

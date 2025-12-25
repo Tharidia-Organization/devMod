@@ -1,5 +1,6 @@
-package com.devmod.arena.hud;
+package com.devmod.client.arena.hud;
 
+import com.devmod.arena.ArenaDebugState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
@@ -14,13 +15,13 @@ import java.util.UUID;
  *
  * Debug HUD overlay for arena instances.
  * Only renders if player has permission AND has explicitly enabled the toggle.
+ *
+ * <p>NOTE: Permission constant and state are now in {@link ArenaDebugState}
+ * in the common package for dedicated server compatibility.</p>
  */
 public class ArenaDebugHud {
 
     private static final ArenaDebugHud INSTANCE = new ArenaDebugHud();
-
-    /** Permission required to see the debug HUD */
-    public static final String PERMISSION_VIEW_HUD = "devmod.arena.debug.hud";
 
     /** HUD position constants */
     private static final int HUD_X = 5;

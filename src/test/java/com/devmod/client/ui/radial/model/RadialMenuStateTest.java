@@ -1,6 +1,6 @@
-package com.devmod.ui.radial.model;
+package com.devmod.client.ui.radial.model;
 
-import com.devmod.ui.radial.config.RadialMenuConstants;
+import com.devmod.client.ui.radial.config.RadialMenuConstants;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

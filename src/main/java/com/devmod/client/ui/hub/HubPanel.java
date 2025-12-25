@@ -1,4 +1,4 @@
-package com.devmod.ui.hub;
+package com.devmod.client.ui.hub;
 
 import net.minecraft.client.gui.GuiGraphics;
 

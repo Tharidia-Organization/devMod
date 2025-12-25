@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.debug;
+package com.devmod.client.ui.editor.debug;
 
 /**
  * Represents a debug warning for rendering issues.
@@ -23,7 +23,7 @@ public record DebugWarning(
      * Create a warning with bounds from a Bounds record.
      */
     public static DebugWarning of(WarningType type, String component, String message,
-                                   com.devmod.ui.editor.core.Bounds bounds) {
+                                   com.devmod.client.ui.editor.core.Bounds bounds) {
         return new DebugWarning(type, component, message,
             bounds.x(), bounds.y(), bounds.width(), bounds.height());
     }

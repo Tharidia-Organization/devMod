@@ -1,4 +1,6 @@
-package com.devmod.arena.hud;
+package com.devmod.client.arena.hud;
+
+import com.devmod.arena.ArenaDebugState;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;

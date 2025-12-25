@@ -13,6 +13,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -33,12 +36,14 @@ import java.util.Objects;
  *
  * Toggle: S key (configurable)
  */
-
+@OnlyIn(Dist.CLIENT)
 public class SpawnabilityOverlay {
     public static final SpawnabilityOverlay INSTANCE = new SpawnabilityOverlay();
 
     private boolean enabled = false;
     private int radius = 16;
+    private static final int MIN_DYNAMIC_RADIUS = 4;
+    private int dynamicRadius = radius;
     private boolean showOnlySafeBlocks = false; // If true, show only safe blocks (green)
     private boolean showOnlyDangerBlocks = true; // If true, show only danger blocks (red/orange)
 
@@ -79,10 +84,19 @@ public class SpawnabilityOverlay {
 
     public void setRadius(int radius) {
         this.radius = Math.max(4, Math.min(32, radius));
+        if (dynamicRadius <= 0) {
+            dynamicRadius = this.radius;
+        } else if (dynamicRadius > this.radius) {
+            dynamicRadius = this.radius;
+        }
     }
 
     public int getRadius() {
         return radius;
+    }
+
+    public int getDynamicRadius() {
+        return dynamicRadius <= 0 ? radius : dynamicRadius;
     }
 
     public void setShowOnlySafeBlocks(boolean value) {
@@ -127,7 +141,7 @@ public class SpawnabilityOverlay {
         }
 
         if (needsCacheUpdate) {
-            updateSpawnCache(level, playerPos);
+            updateSpawnCache(level, playerPos, resolveDynamicRadius());
             lastPlayerPos = playerPos;
         }
 
@@ -182,16 +196,16 @@ public class SpawnabilityOverlay {
     /**
      * Updates the spawn cache (called periodically).
      */
-    private void updateSpawnCache(ClientLevel level, BlockPos playerPos) {
+    private void updateSpawnCache(ClientLevel level, BlockPos playerPos, int activeRadius) {
         cachedSpawnData.clear();
 
         // Check if difficulty allows spawning
         boolean peacefulMode = level.getDifficulty() == Difficulty.PEACEFUL;
 
-        for (int x = -radius; x <= radius; x++) {
-            for (int z = -radius; z <= radius; z++) {
+        for (int x = -activeRadius; x <= activeRadius; x++) {
+            for (int z = -activeRadius; z <= activeRadius; z++) {
                 // Circular optimization
-                if (x * x + z * z > radius * radius) continue;
+                if (x * x + z * z > activeRadius * activeRadius) continue;
 
                 for (int y = -4; y <= 4; y++) {
                     BlockPos surfacePos = Objects.requireNonNull(playerPos.offset(x, y, z));
@@ -369,5 +383,31 @@ public class SpawnabilityOverlay {
         public int totalDangerBlocks() {
             return hostileSpawnBlocks + conditionalSpawnBlocks;
         }
+    }
+
+    private int resolveDynamicRadius() {
+        int fps = Minecraft.getInstance().getFps();
+        float scale = 1.0f;
+        if (fps > 0) {
+            if (fps < 20) {
+                scale = 0.5f;
+            } else if (fps < 30) {
+                scale = 0.65f;
+            } else if (fps < 45) {
+                scale = 0.8f;
+            }
+        }
+
+        int target = Math.max(MIN_DYNAMIC_RADIUS, Math.round(radius * scale));
+        if (dynamicRadius == 0) {
+            dynamicRadius = target;
+            return dynamicRadius;
+        }
+        if (dynamicRadius < target) {
+            dynamicRadius = Math.min(target, dynamicRadius + 1);
+        } else if (dynamicRadius > target) {
+            dynamicRadius = Math.max(target, dynamicRadius - 1);
+        }
+        return dynamicRadius;
     }
 }

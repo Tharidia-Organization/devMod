@@ -11,17 +11,12 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionPreconditions;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
-import com.devmod.client.overlay.Impact3DPanelManager;
-import com.devmod.client.overlay.ImpactHudOverlay;
-import com.devmod.client.overlay.ImpactHudPresets;
-import com.devmod.client.rendering.DebugRenderer;
-import com.devmod.ui.hub.TestingHub;
+import java.lang.reflect.Method;
 import com.devmod.util.I18n;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
-import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.world.item.Items;
@@ -438,86 +433,146 @@ public class TestHarnessCommands {
     }
 
     private static int setHudOn(CommandContext<CommandSourceStack> ctx) {
-        ImpactHudOverlay.setEnabled(true);
+        if (!FMLEnvironment.dist.isClient()) {
+            ctx.getSource().sendFailure(I18n.translate("devmod.testing.client_only"));
+            return 0;
+        }
+        com.devmod.client.gametest.TestHarnessClientDelegate.setHudEnabled(true);
         ctx.getSource().sendSuccess(() -> I18n.translate("devmod.testing.impact_hud_enabled"), false);
         return 1;
     }
 
     private static int setHudOff(CommandContext<CommandSourceStack> ctx) {
-        ImpactHudOverlay.setEnabled(false);
+        if (!FMLEnvironment.dist.isClient()) {
+            ctx.getSource().sendFailure(I18n.translate("devmod.testing.client_only"));
+            return 0;
+        }
+        com.devmod.client.gametest.TestHarnessClientDelegate.setHudEnabled(false);
         ctx.getSource().sendSuccess(() -> I18n.translate("devmod.testing.impact_hud_disabled"), false);
         return 1;
     }
 
     private static int toggleHud(CommandContext<CommandSourceStack> ctx) {
-        ImpactHudOverlay.toggle();
-        boolean enabled = ImpactHudOverlay.isEnabled();
+        if (!FMLEnvironment.dist.isClient()) {
+            ctx.getSource().sendFailure(I18n.translate("devmod.testing.client_only"));
+            return 0;
+        }
+        com.devmod.client.gametest.TestHarnessClientDelegate.toggleHud();
+        boolean enabled = com.devmod.client.gametest.TestHarnessClientDelegate.isHudEnabled();
         ctx.getSource().sendSuccess(() -> I18n.translate(
             enabled ? "devmod.testing.impact_hud_enabled" : "devmod.testing.impact_hud_disabled"), false);
         return 1;
     }
 
     private static int exportHudPreset(CommandContext<CommandSourceStack> ctx) {
-        Path path = ImpactHudPresets.getDefaultPresetFile();
-        boolean exported = ImpactHudPresets.exportToFile(path);
-        if (exported) {
-            ctx.getSource().sendSuccess(() -> I18n.translate(
-                "devmod.testing.impact_hud_preset_exported", path.toString()), false);
-            return 1;
+        if (!FMLEnvironment.dist.isClient()) {
+            ctx.getSource().sendFailure(I18n.translate("devmod.testing.client_only"));
+            return 0;
         }
-        ctx.getSource().sendFailure(I18n.translate(
-            "devmod.testing.impact_hud_preset_export_failed", path.toString()));
+        try {
+            Path path = getDefaultPresetFileClientSafe();
+            if (path == null) {
+                ctx.getSource().sendFailure(I18n.translate("devmod.testing.impact_hud_preset_export_failed", "unknown"));
+                return 0;
+            }
+            boolean exported = exportToFileClientSafe(path);
+            if (exported) {
+                ctx.getSource().sendSuccess(() -> I18n.translate(
+                    "devmod.testing.impact_hud_preset_exported", path.toString()), false);
+                return 1;
+            }
+            ctx.getSource().sendFailure(I18n.translate(
+                "devmod.testing.impact_hud_preset_export_failed", path.toString()));
+        } catch (Exception e) {
+            ctx.getSource().sendFailure(I18n.translate("devmod.testing.impact_hud_preset_export_failed", e.getMessage()));
+        }
         return 0;
     }
 
     private static int importHudPreset(CommandContext<CommandSourceStack> ctx) {
-        Path path = ImpactHudPresets.getDefaultPresetFile();
-        boolean imported = ImpactHudPresets.importFromFile(path);
-        if (imported) {
-            ctx.getSource().sendSuccess(() -> I18n.translate(
-                "devmod.testing.impact_hud_preset_imported", path.toString()), false);
-            return 1;
+        if (!FMLEnvironment.dist.isClient()) {
+            ctx.getSource().sendFailure(I18n.translate("devmod.testing.client_only"));
+            return 0;
         }
-        ctx.getSource().sendFailure(I18n.translate(
-            "devmod.testing.impact_hud_preset_import_failed", path.toString()));
+        try {
+            Path path = getDefaultPresetFileClientSafe();
+            if (path == null) {
+                ctx.getSource().sendFailure(I18n.translate("devmod.testing.impact_hud_preset_import_failed", "unknown"));
+                return 0;
+            }
+            boolean imported = importFromFileClientSafe(path);
+            if (imported) {
+                ctx.getSource().sendSuccess(() -> I18n.translate(
+                    "devmod.testing.impact_hud_preset_imported", path.toString()), false);
+                return 1;
+            }
+            ctx.getSource().sendFailure(I18n.translate(
+                "devmod.testing.impact_hud_preset_import_failed", path.toString()));
+        } catch (Exception e) {
+            ctx.getSource().sendFailure(I18n.translate("devmod.testing.impact_hud_preset_import_failed", e.getMessage()));
+        }
         return 0;
     }
 
     private static int setPanelOn(CommandContext<CommandSourceStack> ctx) {
-        Impact3DPanelManager.INSTANCE.setEnabled(true);
+        if (!FMLEnvironment.dist.isClient()) {
+            ctx.getSource().sendFailure(I18n.translate("devmod.testing.client_only"));
+            return 0;
+        }
+        com.devmod.client.gametest.TestHarnessClientDelegate.setPanelEnabled(true);
         ctx.getSource().sendSuccess(() -> I18n.translate("devmod.testing.panels_3d_enabled"), false);
         return 1;
     }
 
     private static int setPanelOff(CommandContext<CommandSourceStack> ctx) {
-        Impact3DPanelManager.INSTANCE.setEnabled(false);
+        if (!FMLEnvironment.dist.isClient()) {
+            ctx.getSource().sendFailure(I18n.translate("devmod.testing.client_only"));
+            return 0;
+        }
+        com.devmod.client.gametest.TestHarnessClientDelegate.setPanelEnabled(false);
         ctx.getSource().sendSuccess(() -> I18n.translate("devmod.testing.panels_3d_disabled"), false);
         return 1;
     }
 
     private static int togglePanel(CommandContext<CommandSourceStack> ctx) {
-        Impact3DPanelManager.INSTANCE.toggle();
-        boolean enabled = Impact3DPanelManager.INSTANCE.isEnabled();
+        if (!FMLEnvironment.dist.isClient()) {
+            ctx.getSource().sendFailure(I18n.translate("devmod.testing.client_only"));
+            return 0;
+        }
+        com.devmod.client.gametest.TestHarnessClientDelegate.togglePanel();
+        boolean enabled = com.devmod.client.gametest.TestHarnessClientDelegate.isPanelEnabled();
         ctx.getSource().sendSuccess(() -> I18n.translate(
             enabled ? "devmod.testing.panels_3d_enabled" : "devmod.testing.panels_3d_disabled"), false);
         return 1;
     }
 
     private static int setDebugOn(CommandContext<CommandSourceStack> ctx) {
-        DebugRenderer.INSTANCE.enable();
+        if (!FMLEnvironment.dist.isClient()) {
+            ctx.getSource().sendFailure(I18n.translate("devmod.testing.client_only"));
+            return 0;
+        }
+        com.devmod.client.gametest.TestHarnessClientDelegate.setDebugEnabled(true);
         ctx.getSource().sendSuccess(() -> I18n.translate("devmod.testing.debug_renderer_enabled"), false);
         return 1;
     }
 
     private static int setDebugOff(CommandContext<CommandSourceStack> ctx) {
-        DebugRenderer.INSTANCE.disable();
+        if (!FMLEnvironment.dist.isClient()) {
+            ctx.getSource().sendFailure(I18n.translate("devmod.testing.client_only"));
+            return 0;
+        }
+        com.devmod.client.gametest.TestHarnessClientDelegate.setDebugEnabled(false);
         ctx.getSource().sendSuccess(() -> I18n.translate("devmod.testing.debug_renderer_disabled"), false);
         return 1;
     }
 
     private static int toggleDebug(CommandContext<CommandSourceStack> ctx) {
-        DebugRenderer.INSTANCE.toggle();
-        boolean enabled = DebugRenderer.INSTANCE.isEnabled();
+        if (!FMLEnvironment.dist.isClient()) {
+            ctx.getSource().sendFailure(I18n.translate("devmod.testing.client_only"));
+            return 0;
+        }
+        com.devmod.client.gametest.TestHarnessClientDelegate.toggleDebug();
+        boolean enabled = com.devmod.client.gametest.TestHarnessClientDelegate.isDebugEnabled();
         ctx.getSource().sendSuccess(() -> I18n.translate(
             enabled ? "devmod.testing.debug_renderer_enabled" : "devmod.testing.debug_renderer_disabled"), false);
         return 1;
@@ -548,6 +603,10 @@ public class TestHarnessCommands {
     }
 
     private static int debugBoxFromContext(CommandContext<CommandSourceStack> ctx) {
+        if (!FMLEnvironment.dist.isClient()) {
+            ctx.getSource().sendFailure(I18n.translate("devmod.testing.client_only"));
+            return 0;
+        }
         float size = FloatArgumentType.getFloat(ctx, "size");
         Vec3 pos = ctx.getSource().getPosition();
 
@@ -555,7 +614,7 @@ public class TestHarnessCommands {
             pos.x - size / 2, pos.y, pos.z - size / 2,
             pos.x + size / 2, pos.y + size, pos.z + size / 2
         );
-        DebugRenderer.INSTANCE.addBox(box, 0xFF00FF00, true, 10000L);
+        com.devmod.client.gametest.TestHarnessClientDelegate.addDebugBox(box, 0xFF00FF00, true, 10000L);
 
         ctx.getSource().sendSuccess(() -> I18n.translate("devmod.testing.added_debug_box",
             String.format("%.1f, %.1f, %.1f", pos.x, pos.y, pos.z)), false);
@@ -563,39 +622,48 @@ public class TestHarnessCommands {
     }
 
     private static int debugClear(CommandContext<CommandSourceStack> ctx) {
-        DebugRenderer.INSTANCE.clear();
+        if (!FMLEnvironment.dist.isClient()) {
+            ctx.getSource().sendFailure(I18n.translate("devmod.testing.client_only"));
+            return 0;
+        }
+        com.devmod.client.gametest.TestHarnessClientDelegate.clearDebugShapes();
         ctx.getSource().sendSuccess(() -> I18n.translate("devmod.testing.cleared_shapes"), false);
         return 1;
     }
 
     private static int panelClear(CommandContext<CommandSourceStack> ctx) {
-        Impact3DPanelManager.INSTANCE.clear();
+        if (!FMLEnvironment.dist.isClient()) {
+            ctx.getSource().sendFailure(I18n.translate("devmod.testing.client_only"));
+            return 0;
+        }
+        com.devmod.client.gametest.TestHarnessClientDelegate.clearPanels();
         ctx.getSource().sendSuccess(() -> I18n.translate("devmod.testing.cleared_panels"), false);
         return 1;
     }
 
     private static int info(CommandContext<CommandSourceStack> ctx) {
-        boolean hudEnabled = ImpactHudOverlay.isEnabled();
-        boolean panelEnabled = Impact3DPanelManager.INSTANCE.isEnabled();
-        boolean debugEnabled = DebugRenderer.INSTANCE.isEnabled();
-        int panelCount = Impact3DPanelManager.INSTANCE.getPanelCount();
+        if (!FMLEnvironment.dist.isClient()) {
+            ctx.getSource().sendFailure(I18n.translate("devmod.testing.client_only"));
+            return 0;
+        }
+        String[] status = com.devmod.client.gametest.TestHarnessClientDelegate.getSystemStatus();
 
         ctx.getSource().sendSuccess(() -> I18n.translate("devmod.testing.status_info",
-            hudEnabled ? "ON" : "OFF",
-            panelEnabled ? "ON" : "OFF",
-            panelCount,
-            debugEnabled ? "ON" : "OFF"
+            status[0], // hudEnabled
+            status[1], // panelEnabled
+            Integer.parseInt(status[2]), // panelCount
+            status[3] // debugEnabled
         ), false);
         return 1;
     }
 
     private static int qaOpen(CommandContext<CommandSourceStack> ctx) {
-        if (FMLEnvironment.dist.isClient()) {
-            Minecraft.getInstance().execute(() -> Minecraft.getInstance().setScreen(new TestingHub()));
-            ctx.getSource().sendSuccess(() -> I18n.translate("devmod.testing.opening_hub"), false);
-        } else {
+        if (!FMLEnvironment.dist.isClient()) {
             ctx.getSource().sendFailure(I18n.translate("devmod.testing.client_only"));
+            return 0;
         }
+        com.devmod.client.gametest.TestHarnessClientDelegate.openTestingHub();
+        ctx.getSource().sendSuccess(() -> I18n.translate("devmod.testing.opening_hub"), false);
         return 1;
     }
 
@@ -769,5 +837,63 @@ public class TestHarnessCommands {
 
         source.sendSuccess(() -> net.minecraft.network.chat.Component.literal("Endurance auto-smoke run executed"), false);
         return 1;
+    }
+
+    // ========== Client-safe ImpactHudPresets helpers ==========
+
+    private static Method getDefaultPresetFileMethod;
+    private static Method exportToFileMethod;
+    private static Method importFromFileMethod;
+    private static boolean hudPresetsMethodsInitialized = false;
+
+    private static void initHudPresetsMethods() {
+        hudPresetsMethodsInitialized = true;
+        try {
+            Class<?> presetsClass = Class.forName("com.devmod.client.overlay.ImpactHudPresets");
+            getDefaultPresetFileMethod = presetsClass.getMethod("getDefaultPresetFile");
+            exportToFileMethod = presetsClass.getMethod("exportToFile", Path.class);
+            importFromFileMethod = presetsClass.getMethod("importFromFile", Path.class);
+        } catch (Exception ignored) {
+            // Client classes not available
+        }
+    }
+
+    private static Path getDefaultPresetFileClientSafe() {
+        try {
+            if (!hudPresetsMethodsInitialized) {
+                initHudPresetsMethods();
+            }
+            if (getDefaultPresetFileMethod != null) {
+                return (Path) getDefaultPresetFileMethod.invoke(null);
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
+    private static boolean exportToFileClientSafe(Path path) {
+        try {
+            if (!hudPresetsMethodsInitialized) {
+                initHudPresetsMethods();
+            }
+            if (exportToFileMethod != null) {
+                return (Boolean) exportToFileMethod.invoke(null, path);
+            }
+        } catch (Exception ignored) {
+        }
+        return false;
+    }
+
+    private static boolean importFromFileClientSafe(Path path) {
+        try {
+            if (!hudPresetsMethodsInitialized) {
+                initHudPresetsMethods();
+            }
+            if (importFromFileMethod != null) {
+                return (Boolean) importFromFileMethod.invoke(null, path);
+            }
+        } catch (Exception ignored) {
+        }
+        return false;
     }
 }

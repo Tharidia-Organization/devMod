@@ -1,6 +1,5 @@
 package com.devmod.collision.compat;
 
-import com.devmod.collision.transform.ModelPartTransformCapture;
 import net.minecraft.world.entity.LivingEntity;
 import org.joml.Matrix4f;
 import org.slf4j.Logger;
@@ -141,10 +140,6 @@ public final class GeckoLibCompat {
                 Matrix4f transform = extractBoneTransform(bone);
                 if (transform != null) {
                     transforms.put(boneName, transform);
-
-                    // Also store in ModelPartTransformCapture for unified access (placeholder)
-                    new ModelPartTransformCapture.CapturedTransform(
-                        transform, 0, 0, 0, System.currentTimeMillis());
                 }
             }
 

@@ -5,14 +5,16 @@ import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.endurance.ClientQuestCache;
+import com.devmod.client.endurance.ClientQuestCache;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceQuestState;
-import com.devmod.endurance.EnduranceUiCache;
-import com.devmod.endurance.PerkSelectionScreen;
+import com.devmod.endurance.FlowStateTracker;
+import com.devmod.endurance.MomentumTracker;
+import com.devmod.client.endurance.EnduranceUiCache;
+import com.devmod.client.endurance.PerkSelectionScreen;
 import com.devmod.endurance.QuestSyncPayload;
-import com.devmod.endurance.WaveCheckpointScreen;
-import com.devmod.endurance.WaveDirectiveScreen;
+import com.devmod.client.endurance.WaveCheckpointScreen;
+import com.devmod.client.endurance.WaveDirectiveScreen;
 import com.devmod.endurance.WaveObjectiveState;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -262,8 +264,91 @@ public class EnduranceQuestOverlay {
             ComboSystem.StyleRank rank = data.getStyleRank();
             String comboText = "Combo: " + data.currentCombo() + " | " + rank.displayName;
             g.drawString(font, comboText, textX, textY, rank.color, false);
-            textY += LINE_HEIGHT + 2;
+            textY += LINE_HEIGHT;
+
+            // === Flow State Indicator ===
+            FlowStateTracker.FlowState flowState = data.getFlowState();
+            if (flowState != FlowStateTracker.FlowState.NEUTRAL) {
+                // Show flow state with color
+                String flowText = flowState.displayName;
+                if (!flowText.isEmpty()) {
+                    g.drawString(font, flowText, textX, textY, flowState.color, false);
+                    textY += LINE_HEIGHT;
+                }
+            }
+
+            // Show virtuoso progress bar if making progress
+            if (data.virtuosoProgress() > 0 && data.virtuosoProgress() < 1.0f) {
+                String virtuosoLabel = "Virtuoso: ";
+                g.drawString(font, virtuosoLabel, textX, textY, TEXT_DIM, false);
+                int barX = textX + font.width(virtuosoLabel);
+                int barWidth = 60;
+                int barHeight = 4;
+                // Background
+                g.fill(barX, textY + 2, barX + barWidth, textY + 2 + barHeight, PROGRESS_BG);
+                // Fill (golden for virtuoso progress)
+                int fillWidth = (int) (barWidth * data.virtuosoProgress());
+                g.fill(barX, textY + 2, barX + fillWidth, textY + 2 + barHeight, 0xFFFFAA00);
+                textY += LINE_HEIGHT;
+            }
+
+            // Show stale risk warning
+            if (data.staleRisk() >= 0.66f && flowState != FlowStateTracker.FlowState.STALE) {
+                String warning = "⚠ Vary attacks!";
+                g.drawString(font, warning, textX, textY, 0xFFFFAA00, false);
+                textY += LINE_HEIGHT;
+            }
+
+            textY += 2;
         }
+
+        // === Momentum Bar ===
+        MomentumTracker.MomentumState momentumState = data.getMomentumState();
+        int momentumPercent = data.momentumPercent();
+
+        // Draw momentum label
+        String momentumLabel = "Momentum: ";
+        g.drawString(font, momentumLabel, textX, textY, TEXT_DIM, false);
+        int barX = textX + font.width(momentumLabel);
+        int barWidth = 80;
+        int barHeight = 6;
+
+        // Background
+        g.fill(barX, textY + 1, barX + barWidth, textY + 1 + barHeight, PROGRESS_BG);
+
+        // Fill color based on state
+        int fillColor = switch (momentumState) {
+            case STAGNANT -> 0xFFFF4444;  // Red
+            case HEATED -> 0xFFFFAA00;    // Orange
+            case OVERDRIVE -> 0xFFFF00FF; // Magenta
+            default -> 0xFF66FF66;        // Green
+        };
+
+        int fillWidth = (int) (barWidth * (momentumPercent / 100f));
+        g.fill(barX, textY + 1, barX + fillWidth, textY + 1 + barHeight, fillColor);
+
+        // Percentage text
+        String percentText = momentumPercent + "%";
+        g.drawString(font, percentText, barX + barWidth + 4, textY, TEXT_NORMAL, false);
+
+        // State indicator
+        if (momentumState != MomentumTracker.MomentumState.BUILDING) {
+            String stateText = momentumState.displayName;
+            if (!stateText.isEmpty()) {
+                int stateX = barX + barWidth + 4 + font.width(percentText) + 4;
+                g.drawString(font, stateText, stateX, textY, momentumState.color, false);
+            }
+        }
+
+        // Overdrive timer
+        if (data.isOverdrive() && data.overdriveRemaining() > 0) {
+            textY += LINE_HEIGHT;
+            long seconds = data.overdriveRemaining() / 1000;
+            String timerText = "⚡ OVERDRIVE: " + seconds + "s";
+            g.drawString(font, timerText, textX, textY, 0xFFFF00FF, false);
+        }
+
+        textY += LINE_HEIGHT + 2;
 
         // === Wave Modifiers ===
         List<String> modifiers = data.waveModifiers();
@@ -506,7 +591,33 @@ public class EnduranceQuestOverlay {
 
         // Combo/style (if active)
         if (data.currentCombo() > 0 || data.styleScore() > 0) {
-            height += LINE_HEIGHT + 2;
+            height += LINE_HEIGHT; // Combo line
+
+            // Flow state indicator
+            FlowStateTracker.FlowState flowState = data.getFlowState();
+            if (flowState != FlowStateTracker.FlowState.NEUTRAL) {
+                height += LINE_HEIGHT;
+            }
+
+            // Virtuoso progress bar
+            if (data.virtuosoProgress() > 0 && data.virtuosoProgress() < 1.0f) {
+                height += LINE_HEIGHT;
+            }
+
+            // Stale risk warning
+            if (data.staleRisk() >= 0.66f && flowState != FlowStateTracker.FlowState.STALE) {
+                height += LINE_HEIGHT;
+            }
+
+            height += 2;
+        }
+
+        // Momentum bar (always shown during quest)
+        height += LINE_HEIGHT + 2; // Momentum bar line
+
+        // Overdrive timer
+        if (data.isOverdrive() && data.overdriveRemaining() > 0) {
+            height += LINE_HEIGHT;
         }
 
         // Modifiers - calculate actual line count based on text width

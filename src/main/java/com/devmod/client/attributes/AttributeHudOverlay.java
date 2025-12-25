@@ -1,4 +1,7 @@
-package com.devmod.attributes;
+package com.devmod.client.attributes;
+
+import com.devmod.attributes.AttributeLogEntry;
+import com.devmod.util.I18n;
 
 import com.devmod.DevMod;
 import net.minecraft.client.DeltaTracker;
@@ -95,7 +98,7 @@ public class AttributeHudOverlay {
         int contentWidth = PANEL_WIDTH - PADDING * 2;
 
         // TITLE
-        graphics.drawString(font, "§b§lAttribute Monitoring", textX, y, TITLE_COLOR, false);
+        graphics.drawString(font, I18n.translate("devmod.attribute_monitor.title").getString(), textX, y, TITLE_COLOR, false);
         y += LINE_HEIGHT + 2;
 
         // Separator line
@@ -107,7 +110,7 @@ public class AttributeHudOverlay {
         if (target != null && target.isValid()) {
             y = renderTargetSection(graphics, font, textX, y, contentWidth, target);
         } else {
-            graphics.drawString(font, "§7No target selected", textX, y, TEXT_GRAY, false);
+            graphics.drawString(font, I18n.translate("devmod.attribute_monitor.no_target").getString(), textX, y, TEXT_GRAY, false);
             y += LINE_HEIGHT + SECTION_GAP;
         }
 
@@ -154,19 +157,18 @@ public class AttributeHudOverlay {
     private static int renderTargetSection(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, TrackedEntity target) {
         // Target name
         String nameStr = "§f" + target.getEntityName();
-        if (target.hasLineOfSight()) {
-            nameStr += " §a[LoS]";
-        } else {
-            nameStr += " §c[BLOCKED]";
-        }
+        String losTag = target.hasLineOfSight()
+            ? I18n.translate("devmod.attribute_monitor.los").getString()
+            : I18n.translate("devmod.attribute_monitor.blocked").getString();
+        nameStr += " " + losTag;
         graphics.drawString(font, nameStr, x, y, TEXT_WHITE, false);
         y += LINE_HEIGHT;
 
         // Health bar
         float healthPercent = target.getHealthPercent();
         int healthColor = healthPercent > 50 ? TEXT_GREEN : (healthPercent > 25 ? TEXT_YELLOW : TEXT_RED);
-        String healthStr = String.format("HP: %.1f/%.1f (%.0f%%)",
-            target.getCurrentHealth(), target.getMaxHealth(), healthPercent);
+        String healthStr = I18n.translate("devmod.attribute_monitor.health",
+            target.getCurrentHealth(), target.getMaxHealth(), healthPercent).getString();
         graphics.drawString(font, healthStr, x, y, healthColor, false);
         y += LINE_HEIGHT;
 
@@ -180,33 +182,33 @@ public class AttributeHudOverlay {
         y += barHeight + 4;
 
         // Armor
-        String armorStr = String.format("Armor: %.1f (Tough: %.1f)",
-            target.getArmorValue(), target.getArmorToughness());
+        String armorStr = I18n.translate("devmod.attribute_monitor.armor",
+            target.getArmorValue(), target.getArmorToughness()).getString();
         graphics.drawString(font, armorStr, x, y, TEXT_GRAY, false);
         y += LINE_HEIGHT;
 
         // Attack stats
-        String attackStr = String.format("ATK: %.1f | SPD: %.2f",
-            target.getAttackDamage(), target.getAttackSpeed());
+        String attackStr = I18n.translate("devmod.attribute_monitor.attack",
+            target.getAttackDamage(), target.getAttackSpeed()).getString();
         graphics.drawString(font, attackStr, x, y, TEXT_ORANGE, false);
         y += LINE_HEIGHT;
 
         // Movement
-        String moveStr = String.format("Move: %.3f | KB Res: %.0f%%",
-            target.getMovementSpeed(), target.getKnockbackResistance() * 100);
+        String moveStr = I18n.translate("devmod.attribute_monitor.movement",
+            target.getMovementSpeed(), target.getKnockbackResistance() * 100).getString();
         graphics.drawString(font, moveStr, x, y, TEXT_GRAY, false);
         y += LINE_HEIGHT;
 
         // Distance
         double dist = target.getDistanceToPlayer();
-        String distStr = String.format("Distance: %.1f blocks", dist);
+        String distStr = I18n.translate("devmod.attribute_monitor.distance", dist).getString();
         graphics.drawString(font, distStr, x, y, TEXT_GRAY, false);
         y += LINE_HEIGHT;
 
         // Pehkui (if present)
         if (target.hasPehkuiModification()) {
             Float scale = target.getPehkuiScale();
-            String scaleStr = String.format("§dPehkui Scale: %.2fx", scale != null ? scale : 1f);
+            String scaleStr = I18n.translate("devmod.attribute_monitor.pehkui_scale", scale != null ? scale : 1f).getString();
             graphics.drawString(font, scaleStr, x, y, 0xFFFF55FF, false);
             y += LINE_HEIGHT;
         }
@@ -214,9 +216,10 @@ public class AttributeHudOverlay {
         // Health delta
         float delta = target.getHealthDelta();
         if (Math.abs(delta) > 0.1f) {
-            String deltaStr = delta > 0 ?
-                String.format("§a+%.1f HP", delta) :
-                String.format("§c%.1f HP", delta);
+            String deltaKey = delta > 0
+                ? "devmod.attribute_monitor.health_delta.positive"
+                : "devmod.attribute_monitor.health_delta.negative";
+            String deltaStr = I18n.translate(deltaKey, delta).getString();
             graphics.drawString(font, deltaStr, x, y, delta > 0 ? TEXT_GREEN : TEXT_RED, false);
             y += LINE_HEIGHT;
         }
@@ -227,12 +230,12 @@ public class AttributeHudOverlay {
     private static int renderTrackedListSection(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width) {
         List<TrackedEntity> tracked = AttributeMonitoringSystem.INSTANCE.getTrackedEntities();
 
-        String header = String.format("§eTracked Entities (%d)", tracked.size());
+        String header = I18n.translate("devmod.attribute_monitor.tracked_entities", tracked.size()).getString();
         graphics.drawString(font, header, x, y, TEXT_YELLOW, false);
         y += LINE_HEIGHT;
 
         if (tracked.isEmpty()) {
-            graphics.drawString(font, "§7None", x + 4, y, TEXT_GRAY, false);
+            graphics.drawString(font, I18n.translate("devmod.attribute_monitor.none").getString(), x + 4, y, TEXT_GRAY, false);
             y += LINE_HEIGHT;
         } else {
             TrackedEntity primary = AttributeMonitoringSystem.INSTANCE.getPrimaryTarget();
@@ -252,7 +255,9 @@ public class AttributeHudOverlay {
             }
 
             if (tracked.size() > 5) {
-                graphics.drawString(font, "§7  ... +" + (tracked.size() - 5) + " more", x, y, TEXT_GRAY, false);
+                graphics.drawString(font,
+                    I18n.translate("devmod.attribute_monitor.more", tracked.size() - 5).getString(),
+                    x, y, TEXT_GRAY, false);
                 y += LINE_HEIGHT;
             }
         }
@@ -263,11 +268,11 @@ public class AttributeHudOverlay {
     private static void renderLogSection(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width) {
         List<AttributeLogEntry> logs = AttributeMonitoringSystem.INSTANCE.getLogHistory();
 
-        graphics.drawString(font, "§7Log History", x, y, TEXT_GRAY, false);
+        graphics.drawString(font, I18n.translate("devmod.attribute_monitor.log_history").getString(), x, y, TEXT_GRAY, false);
         y += LINE_HEIGHT;
 
         if (logs.isEmpty()) {
-            graphics.drawString(font, "§8No events", x + 4, y, 0xFF555555, false);
+            graphics.drawString(font, I18n.translate("devmod.attribute_monitor.log.none").getString(), x + 4, y, 0xFF555555, false);
         } else {
             int shown = 0;
             for (AttributeLogEntry log : logs) {
@@ -278,7 +283,7 @@ public class AttributeHudOverlay {
                 if (alpha < 0.1f) continue;
 
                 int color = applyAlpha(log.type().getColor(), alpha);
-                String timeStr = "§8[" + log.getFormattedAge() + "] ";
+                String timeStr = I18n.translate("devmod.attribute_monitor.log.age", log.getFormattedAge()).getString();
                 String fullStr = timeStr + log.getFormattedMessage();
 
                 // Truncate if too long

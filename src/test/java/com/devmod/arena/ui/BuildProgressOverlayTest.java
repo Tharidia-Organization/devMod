@@ -1,8 +1,9 @@
 package com.devmod.arena.ui;
 
-import com.devmod.arena.ui.BuildProgressOverlay.BuildPhase;
-import com.devmod.arena.ui.BuildProgressOverlay.ProgressFlags;
-import com.devmod.arena.ui.BuildProgressOverlay.ProgressUpdate;
+import com.devmod.arena.BuildPhase;
+import com.devmod.arena.ProgressFlags;
+import com.devmod.client.arena.ui.BuildProgressOverlay;
+import com.devmod.client.arena.ui.BuildProgressOverlay.ProgressUpdate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

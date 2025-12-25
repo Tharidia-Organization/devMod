@@ -1,11 +1,14 @@
-package com.devmod.party;
+package com.devmod.client.party;
+
+import com.devmod.party.PartyData;
+import com.devmod.party.PartySyncPayload;
 
 import com.devmod.endurance.EnduranceQuestRegistry;
 import com.devmod.endurance.EnduranceQuestRegistry.MobDifficultyPreset;
 import com.devmod.endurance.EnduranceQuestRegistry.MobTier;
 import com.devmod.endurance.QuestType;
-import com.devmod.ui.AxiomRenderer;
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;

@@ -1,4 +1,4 @@
-package com.devmod.attributes;
+package com.devmod.client.attributes;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;

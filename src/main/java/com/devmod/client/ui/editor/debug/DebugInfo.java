@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.debug;
+package com.devmod.client.ui.editor.debug;
 
 import java.util.List;
 

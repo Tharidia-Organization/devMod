@@ -9,6 +9,7 @@ import com.devmod.components.WeaponComponents;
 import com.devmod.components.ArmorComponents;
 
 import com.devmod.DevMod;
+import com.devmod.network.GameMechanicsSyncPayload;
 
 import static com.devmod.DevMod.MODID;
 
@@ -16,7 +17,7 @@ import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.testing.stats.HazardTypeRegistry;
 import com.devmod.util.ConfigPaths;
 import com.devmod.util.DamageTypeConfig;
-import com.devmod.ui.editor.WeaponTypeDetector;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.EntityType;
@@ -24,6 +25,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.storage.LevelResource;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityAttributeModificationEvent;
@@ -143,11 +145,37 @@ public class CommonModEvents {
             LOGGER.error("[DevMod] Failed to initialize FuelConfigManager", e);
         }
 
-        // Reload weapon detection lists (whitelist/blacklist) to pick up server config changes
+        // NOTE: WeaponTypeDetector.reloadWeaponLists() is called client-side only
+        // in ClientModEvents.onPlayerLogin() to avoid dedicated server crashes
+
+        // Initialize DailyChallengeManager for daily challenge rotation
         try {
-            WeaponTypeDetector.reloadWeaponLists();
+            var serverDataDir = event.getServer()
+                .getWorldPath(java.util.Objects.requireNonNull(LevelResource.ROOT));
+            com.devmod.endurance.challenges.DailyChallengeManager.INSTANCE.initialize(serverDataDir);
+            LOGGER.info("[DevMod] DailyChallengeManager initialized successfully");
         } catch (Exception e) {
-            LOGGER.warn("[DevMod] Failed to reload weapon lists: {}", e.getMessage());
+            LOGGER.error("[DevMod] Failed to initialize DailyChallengeManager", e);
+        }
+
+        // Initialize WeeklyChallengeManager for weekly challenge rotation
+        try {
+            var serverDataDir = event.getServer()
+                .getWorldPath(java.util.Objects.requireNonNull(LevelResource.ROOT));
+            com.devmod.endurance.challenges.WeeklyChallengeManager.INSTANCE.initialize(serverDataDir);
+            LOGGER.info("[DevMod] WeeklyChallengeManager initialized successfully");
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Failed to initialize WeeklyChallengeManager", e);
+        }
+
+        // Initialize LeaderboardSystem for global rankings
+        try {
+            var serverDataDir = event.getServer()
+                .getWorldPath(java.util.Objects.requireNonNull(LevelResource.ROOT));
+            com.devmod.endurance.LeaderboardSystem.INSTANCE.initialize(serverDataDir);
+            LOGGER.info("[DevMod] LeaderboardSystem initialized successfully");
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Failed to initialize LeaderboardSystem", e);
         }
     }
 
@@ -163,6 +191,32 @@ public class CommonModEvents {
             LOGGER.info("[DevMod] EnduranceQuestManager shutdown complete");
         } catch (Exception e) {
             LOGGER.error("[DevMod] Error during EnduranceQuestManager shutdown", e);
+        }
+
+        // Save leaderboard data
+        try {
+            com.devmod.endurance.LeaderboardSystem.INSTANCE.saveAll();
+            LOGGER.info("[DevMod] LeaderboardSystem saved successfully");
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Error saving LeaderboardSystem", e);
+        }
+    }
+
+    /**
+     * Sync GameMechanicsConfig to client on login.
+     */
+    @SubscribeEvent
+    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            // Sync global mechanics config
+            try {
+                GameMechanicsSyncPayload payload = GameMechanicsSyncPayload.fromGlobalConfig();
+                PacketDistributor.sendToPlayer(player, payload);
+                LOGGER.debug("[DevMod] Synced game mechanics config to {}", player.getName().getString());
+            } catch (Exception e) {
+                LOGGER.warn("[DevMod] Failed to sync game mechanics config to {}: {}",
+                    player.getName().getString(), e.getMessage());
+            }
         }
     }
 

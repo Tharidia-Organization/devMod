@@ -1,5 +1,7 @@
 package com.devmod.endurance;
 
+import com.devmod.endurance.challenges.DailyChallengeManager;
+import com.devmod.endurance.config.EnduranceConfigManager;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -8,7 +10,14 @@ import net.minecraft.world.entity.LivingEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -100,6 +109,9 @@ public class ComboSystem {
         COMBO_50("50 Hit Combo!", 500, 1000),
         COMBO_100("100 Hit Combo!", 1000, 2000),
 
+        // Finishers
+        EXECUTION("EXECUTED!", 200, 500),
+
         // Special
         NO_DAMAGE_WAVE("Untouchable!", 500, 1000),
         SPEED_CLEAR("Speed Demon!", 300, 600),
@@ -123,11 +135,15 @@ public class ComboSystem {
         private final UUID playerId;
         private final UUID questId;
 
+        // Config manager reference
+        private static final EnduranceConfigManager config = EnduranceConfigManager.INSTANCE;
+
         // Combo tracking
         private int currentCombo = 0;
         private int maxCombo = 0;
         private long lastHitTime = 0;
-        private static final long COMBO_TIMEOUT_MS = 3000; // 3 seconds to continue combo
+        // Default: 60 ticks = 3 seconds (1000ms * 3)
+        private static final long DEFAULT_COMBO_TIMEOUT_MS = 3000;
 
         // Style tracking
         private int styleScore = 0;
@@ -137,12 +153,41 @@ public class ComboSystem {
 
         // Style decay
         private long lastStyleGainTime = 0;
-        private static final long STYLE_DECAY_INTERVAL_MS = 1000; // Check every second
-        private static final int STYLE_DECAY_RATE = 50; // Points lost per second when idle
+        // Default: Check every second (20 ticks = 1000ms)
+        private static final long DEFAULT_STYLE_DECAY_INTERVAL_MS = 1000;
+        private static final int DEFAULT_STYLE_DECAY_RATE = 50; // Points lost per second when idle
+
+        // Config-aware getters
+        private long getComboTimeoutMs() {
+            if (questId != null) {
+                // Convert ticks to ms (20 ticks = 1000ms)
+                return config.getComboTimeoutTicks(questId) * 50L;
+            }
+            return DEFAULT_COMBO_TIMEOUT_MS;
+        }
+
+        private long getStyleDecayIntervalMs() {
+            if (questId != null) {
+                // Convert ticks to ms (20 ticks = 1000ms)
+                return config.getStyleDecayDelayTicks(questId) * 50L;
+            }
+            return DEFAULT_STYLE_DECAY_INTERVAL_MS;
+        }
+
+        private int getStyleDecayRate() {
+            if (questId != null) {
+                return (int) config.getStyleDecayRate(questId);
+            }
+            return DEFAULT_STYLE_DECAY_RATE;
+        }
 
         // Variety tracking (rewards different attack types)
         private final Set<ActionType> actionsUsedThisCombo = new HashSet<>();
         private int varietyBonus = 0;
+
+        // Flow State tracking (STALE/FRESH/VIRTUOSO)
+        private final FlowStateTracker flowState = new FlowStateTracker();
+        private FlowStateTracker.FlowState lastFlowState = FlowStateTracker.FlowState.NEUTRAL;
 
         // Combat stats
         private int totalHits = 0;
@@ -211,7 +256,7 @@ public class ComboSystem {
             long now = System.currentTimeMillis();
 
             // Check for combo timeout
-            if (now - lastHitTime > COMBO_TIMEOUT_MS && currentCombo > 0) {
+            if (now - lastHitTime > getComboTimeoutMs() && currentCombo > 0) {
                 endCombo();
             }
 
@@ -228,13 +273,18 @@ public class ComboSystem {
                 varietyBonus += 25;
             }
 
-            // Calculate points with multipliers
+            // Process flow state BEFORE calculating points
+            FlowStateTracker.FlowResult flowResult = flowState.processAction(action);
+            lastFlowState = flowResult.state();
+
+            // Calculate points with multipliers (including flow state)
             float comboMultiplier = 1.0f + (currentCombo * 0.02f); // +2% per combo hit
             float varietyMultiplier = 1.0f + (varietyBonus * 0.01f);
             float rankMultiplier = currentRank.multiplier;
+            float flowMultiplier = flowResult.styleMultiplier();
 
             int basePoints = (int) (action.basePoints * comboMultiplier * varietyMultiplier * rankMultiplier);
-            int styleGain = (int) (action.stylePoints * varietyMultiplier);
+            int styleGain = (int) (action.stylePoints * varietyMultiplier * flowMultiplier);
 
             // Add style
             styleScore += styleGain;
@@ -249,6 +299,14 @@ public class ComboSystem {
             if (newRank.ordinal() > highestRank.ordinal()) {
                 highestRank = newRank;
             }
+
+            // Track daily challenge progress (style rank and combo)
+            DailyChallengeManager.INSTANCE.onStyleRankUpdate(playerId, newRank);
+            DailyChallengeManager.INSTANCE.onComboUpdate(playerId, currentCombo);
+
+            // Track weekly challenge progress (style rank and combo)
+            com.devmod.endurance.challenges.WeeklyChallengeManager.INSTANCE.onStyleRankAchieved(playerId, newRank);
+            com.devmod.endurance.challenges.WeeklyChallengeManager.INSTANCE.onComboUpdate(playerId, currentCombo);
 
             // Telemetry: record rank change
             if (rankUp && questId != null) {
@@ -385,10 +443,11 @@ public class ComboSystem {
             long now = System.currentTimeMillis();
 
             // Style decay when not attacking
-            if (now - lastStyleGainTime > STYLE_DECAY_INTERVAL_MS) {
-                int decayAmount = (int) ((now - lastStyleGainTime) / STYLE_DECAY_INTERVAL_MS * STYLE_DECAY_RATE);
+            long decayInterval = getStyleDecayIntervalMs();
+            if (now - lastStyleGainTime > decayInterval) {
+                int decayAmount = (int) ((now - lastStyleGainTime) / decayInterval * getStyleDecayRate());
                 styleScore = Math.max(0, styleScore - decayAmount);
-                lastStyleGainTime = now - (now - lastStyleGainTime) % STYLE_DECAY_INTERVAL_MS;
+                lastStyleGainTime = now - (now - lastStyleGainTime) % decayInterval;
 
                 // Update rank after decay
                 currentRank = StyleRank.fromScore(styleScore);
@@ -429,6 +488,8 @@ public class ComboSystem {
             currentCombo = 0;
             actionsUsedThisCombo.clear();
             varietyBonus = 0;
+            flowState.onComboEnd();
+            lastFlowState = FlowStateTracker.FlowState.NEUTRAL;
         }
 
         /**
@@ -507,6 +568,14 @@ public class ComboSystem {
         public int getParries() { return parries; }
         public int getCounterAttacks() { return counterAttacks; }
         public List<ActionAnnouncement> getRecentAnnouncements() { return recentAnnouncements; }
+
+        // Flow State getters (for HUD display)
+        public FlowStateTracker.FlowState getFlowState() { return lastFlowState; }
+        public boolean isVirtuoso() { return flowState.isVirtuoso(); }
+        public boolean isStale() { return flowState.isStale(); }
+        public float getVirtuosoProgress() { return flowState.getVirtuosoProgress(); }
+        public float getStaleRisk() { return flowState.getStaleRisk(); }
+        public int getUniqueActionCount() { return flowState.getUniqueActionCount(); }
 
         /**
          * Get final score with all multipliers.

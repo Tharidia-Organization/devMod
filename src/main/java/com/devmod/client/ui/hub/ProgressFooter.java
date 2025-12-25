@@ -1,9 +1,9 @@
-package com.devmod.ui.hub;
+package com.devmod.client.ui.hub;
 
-import com.devmod.testing.TestingSession;
-import com.devmod.ui.AxiomRenderer;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.editor.components.EditorButton;
+import com.devmod.client.testing.TestingSession;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.components.EditorButton;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 

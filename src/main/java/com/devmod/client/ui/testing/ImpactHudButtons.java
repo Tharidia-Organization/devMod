@@ -1,4 +1,4 @@
-package com.devmod.ui.testing;
+package com.devmod.client.ui.testing;
 
 import com.devmod.config.Config;
 import com.devmod.actions.ActionIds;
@@ -7,7 +7,7 @@ import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.overlay.Impact3DPanelManager;
 import com.devmod.client.overlay.ImpactHudOverlay;
-import com.devmod.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.components.EditorButton;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 import java.util.ArrayList;

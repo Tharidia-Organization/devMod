@@ -1,7 +1,7 @@
-package com.devmod.ui.radial.render;
+package com.devmod.client.ui.radial.render;
 
-import com.devmod.ui.radial.config.RadialMenuConstants;
-import com.devmod.ui.radial.model.MacroCategory;
+import com.devmod.client.ui.radial.config.RadialMenuConstants;
+import com.devmod.client.ui.radial.model.MacroCategory;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;

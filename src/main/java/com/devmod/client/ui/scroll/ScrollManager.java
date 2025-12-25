@@ -1,8 +1,8 @@
-package com.devmod.ui.scroll;
+package com.devmod.client.ui.scroll;
 
-import com.devmod.ui.editor.core.ResponsiveLayout.Rect;
-import com.devmod.ui.scroll.impl.InstantScrollBehavior;
-import com.devmod.ui.scroll.impl.SmoothScrollBehavior;
+import com.devmod.client.ui.editor.core.ResponsiveLayout.Rect;
+import com.devmod.client.ui.scroll.impl.InstantScrollBehavior;
+import com.devmod.client.ui.scroll.impl.SmoothScrollBehavior;
 import net.minecraft.client.gui.GuiGraphics;
 import org.lwjgl.glfw.GLFW;
 

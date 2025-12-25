@@ -2,7 +2,7 @@ package com.devmod.boot;
 
 import com.devmod.runtime.InstanceState;
 import com.devmod.runtime.PlayerInstanceState;
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.UIConstants;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -283,9 +283,9 @@ public class L0SmokeBootTest {
         @DisplayName("UI system files exist")
         void uiSystemFilesExist() {
             String[] uiFiles = {
-                "ui/editor/core/UIConstants.java",
-                "ui/AxiomRenderer.java",
-                "ui/unified/UnifiedSettingsScreen.java"
+                "client/ui/editor/core/UIConstants.java",
+                "client/ui/AxiomRenderer.java",
+                "client/ui/unified/UnifiedSettingsScreen.java"
             };
 
             for (String file : uiFiles) {
@@ -340,7 +340,7 @@ public class L0SmokeBootTest {
         @Order(3)
         @DisplayName("UI Constants are compiled")
         void uiConstantsCompiled() {
-            assertTrue(classFileExists("ui/editor/core/UIConstants.class"),
+            assertTrue(classFileExists("client/ui/editor/core/UIConstants.class"),
                 "UIConstants should be compiled");
         }
 
@@ -503,7 +503,7 @@ public class L0SmokeBootTest {
                 "endurance",
                 "quest",
                 "network",
-                "ui",
+                "client/ui",
                 "client/rendering",
                 "client/overlay",
                 "telemetry",

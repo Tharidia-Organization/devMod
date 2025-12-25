@@ -1,7 +1,7 @@
 package com.devmod.settings;
 
-import com.devmod.ui.unified.persistence.SettingsData;
-import com.devmod.ui.unified.persistence.SettingsData.*;
+import com.devmod.client.ui.unified.persistence.SettingsData;
+import com.devmod.client.ui.unified.persistence.SettingsData.*;
 import org.junit.jupiter.api.*;
 
 import static org.junit.jupiter.api.Assertions.*;

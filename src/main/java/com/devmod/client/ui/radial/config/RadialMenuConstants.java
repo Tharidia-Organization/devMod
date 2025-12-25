@@ -1,4 +1,4 @@
-package com.devmod.ui.radial.config;
+package com.devmod.client.ui.radial.config;
 
 /**
  * Named constants for the Radial Menu system.

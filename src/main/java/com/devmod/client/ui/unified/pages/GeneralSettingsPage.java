@@ -1,12 +1,13 @@
-package com.devmod.ui.unified.pages;
+package com.devmod.client.ui.unified.pages;
 
 import com.devmod.ModConfig;
 import com.devmod.client.overlay.OnboardingOverlay;
-import com.devmod.ui.AxiomRenderer;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.unified.SettingsCategory;
-import com.devmod.ui.unified.SettingsPage;
-import com.devmod.ui.unified.persistence.SettingsManager;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.ThemeManager;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.unified.SettingsCategory;
+import com.devmod.client.ui.unified.SettingsPage;
+import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -168,6 +169,27 @@ public class GeneralSettingsPage implements SettingsPage {
         graphics.drawString(font, "Restart the interactive guide", x + btnWidth + 12, currentY + 6, UIConstants.Text.MUTED(), false);
         currentY += ROW_HEIGHT + 8;
 
+        // Separator
+        AxiomRenderer.drawSeparator(graphics, x, currentY, width);
+        currentY += 16;
+
+        // === SECTION: Accessibility ===
+        AxiomRenderer.drawSectionHeader(graphics, font, x, currentY, "Accessibility");
+        currentY += ROW_HEIGHT;
+
+        // High Contrast toggle
+        boolean highContrast = ThemeManager.INSTANCE.isHighContrast();
+        renderToggleRow(graphics, font, x, currentY, width, "High Contrast Mode",
+                "Maximum visibility with bright colors", highContrast, mouseX, mouseY);
+        currentY += ROW_HEIGHT;
+
+        // Theme cycle button
+        btnHovered = isMouseOver(mouseX, mouseY, x, currentY, btnWidth, btnHeight);
+        String themeName = ThemeManager.INSTANCE.current().getName();
+        drawActionButton(graphics, font, x, currentY, btnWidth, btnHeight, "Theme: " + themeName, btnHovered, UIConstants.Accent.INFO());
+        graphics.drawString(font, "Cycle: Dark → Light → High Contrast", x + btnWidth + 12, currentY + 6, UIConstants.Text.MUTED(), false);
+        currentY += ROW_HEIGHT + 8;
+
         // Hint
         AxiomRenderer.drawHint(graphics, font, x, currentY, "Changes are applied immediately. Press K to close.");
     }
@@ -286,6 +308,23 @@ public class GeneralSettingsPage implements SettingsPage {
             replayTutorial();
             return true;
         }
+        currentY += ROW_HEIGHT + 8;
+
+        // Separator + Accessibility section header
+        currentY += 16 + ROW_HEIGHT;
+
+        // High Contrast toggle - click anywhere on the row
+        if (isMouseOver((int) mouseX, (int) mouseY, contentX, currentY, contentWidth, ROW_HEIGHT)) {
+            ThemeManager.INSTANCE.setHighContrast(!ThemeManager.INSTANCE.isHighContrast());
+            return true;
+        }
+        currentY += ROW_HEIGHT;
+
+        // Theme cycle button
+        if (isMouseOver((int) mouseX, (int) mouseY, contentX, currentY, btnWidth, btnHeight)) {
+            ThemeManager.INSTANCE.cycleTheme();
+            return true;
+        }
 
         return false;
     }
@@ -349,7 +388,7 @@ public class GeneralSettingsPage implements SettingsPage {
 
     @Override
     public int getContentHeight() {
-        return 360; // Increased to accommodate Tutorial section
+        return 440; // Includes Visibility, Render Mode, Colors, Tutorial, and Accessibility sections
     }
 
     private boolean isMouseOver(int mouseX, int mouseY, int x, int y, int width, int height) {

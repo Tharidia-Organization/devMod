@@ -82,6 +82,14 @@ public final class I18n {
     }
 
     /**
+     * Create a UI element component with arguments.
+     */
+    @Nonnull
+    public static MutableComponent ui(String key, Object... args) {
+        return Objects.requireNonNull(Component.translatable("devmod.ui." + key, Objects.requireNonNull(args)));
+    }
+
+    /**
      * Create an error message.
      */
     @Nonnull

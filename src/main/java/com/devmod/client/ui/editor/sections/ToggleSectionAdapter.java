@@ -1,8 +1,8 @@
-package com.devmod.ui.editor.sections;
+package com.devmod.client.ui.editor.sections;
 
-import com.devmod.ui.editor.EditorSection;
-import com.devmod.ui.editor.components.EditorToggle;
-import com.devmod.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.EditorSection;
+import com.devmod.client.ui.editor.components.EditorToggle;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import net.minecraft.client.gui.GuiGraphics;
 
 public final class ToggleSectionAdapter implements EditorSection.ToggleSection {

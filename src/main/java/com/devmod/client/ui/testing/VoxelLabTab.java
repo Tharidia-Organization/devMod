@@ -1,4 +1,4 @@
-package com.devmod.ui.testing;
+package com.devmod.client.ui.testing;
 
 /**
  * Enum representing the available tabs in the VoxelLab screen.

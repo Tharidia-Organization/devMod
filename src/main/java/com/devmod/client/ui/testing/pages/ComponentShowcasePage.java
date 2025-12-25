@@ -1,8 +1,11 @@
-package com.devmod.ui.testing.pages;
+package com.devmod.client.ui.testing.pages;
 
-import com.devmod.ui.editor.components.EditorButton;
-import com.devmod.ui.testing.VoxelLabTab;
-import com.devmod.ui.testing.panel.*;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.testing.VoxelLabTab;
+import com.devmod.client.ui.testing.panel.HeaderPanel;
+import com.devmod.client.ui.testing.panel.ShowcasePanel;
+import com.devmod.client.ui.testing.panel.SpacerPanel;
+import com.devmod.client.ui.testing.panel.StatusPanel;
 
 /**
  * Component Showcase Page - Demonstrates all UI components.

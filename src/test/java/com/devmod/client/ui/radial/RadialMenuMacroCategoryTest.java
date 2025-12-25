@@ -1,4 +1,4 @@
-package com.devmod.ui.radial;
+package com.devmod.client.ui.radial;
 
 import org.junit.jupiter.api.*;
 
@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * - L6: Integration (method existence)
  *
  * Note: These tests analyze source code directly since the classes depend on Minecraft runtime.
- * MacroCategory has been extracted to its own file: com.devmod.ui.radial.model.MacroCategory
+ * MacroCategory has been extracted to its own file: com.devmod.client.ui.radial.model.MacroCategory
  */
 @DisplayName("Radial Menu Macro-Category System")
 class RadialMenuMacroCategoryTest {
@@ -34,17 +34,17 @@ class RadialMenuMacroCategoryTest {
     private static String animatorSourceCode;
     private static String registrySourceCode;
     private static final Path SCREEN_SOURCE_PATH = Paths.get(
-        "src/main/java/com/devmod/ui/radial/RadialMenuScreen.java");
+        "src/main/java/com/devmod/client/ui/radial/RadialMenuScreen.java");
     private static final Path MACRO_CATEGORY_SOURCE_PATH = Paths.get(
-        "src/main/java/com/devmod/ui/radial/model/MacroCategory.java");
+        "src/main/java/com/devmod/client/ui/radial/model/MacroCategory.java");
     private static final Path HUB_RENDERER_SOURCE_PATH = Paths.get(
-        "src/main/java/com/devmod/ui/radial/render/RadialHubRenderer.java");
+        "src/main/java/com/devmod/client/ui/radial/render/RadialHubRenderer.java");
     private static final Path TOOLTIP_RENDERER_SOURCE_PATH = Paths.get(
-        "src/main/java/com/devmod/ui/radial/render/RadialTooltipRenderer.java");
+        "src/main/java/com/devmod/client/ui/radial/render/RadialTooltipRenderer.java");
     private static final Path ANIMATOR_SOURCE_PATH = Paths.get(
-        "src/main/java/com/devmod/ui/radial/animation/RadialAnimator.java");
+        "src/main/java/com/devmod/client/ui/radial/animation/RadialAnimator.java");
     private static final Path REGISTRY_SOURCE_PATH = Paths.get(
-        "src/main/java/com/devmod/ui/radial/RadialMenuRegistry.java");
+        "src/main/java/com/devmod/client/ui/radial/RadialMenuRegistry.java");
 
     @BeforeAll
     static void loadSourceCode() throws IOException {

@@ -1,4 +1,6 @@
-package com.devmod.effects;
+package com.devmod.client.effects;
+
+import com.devmod.effects.TrailEffect;
 
 import com.devmod.config.Config;
 import com.mojang.blaze3d.vertex.PoseStack;

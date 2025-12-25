@@ -1,4 +1,8 @@
-package com.devmod.network;
+package com.devmod.client.network;
+
+import com.devmod.network.MobConfigConfirmPayload;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -11,6 +15,7 @@ import java.util.Objects;
  * Client-side handler for configuration confirmation feedback.
  * Shows visual/audio feedback when server confirms config changes.
  */
+@OnlyIn(Dist.CLIENT)
 public class ClientConfigFeedbackPayload {
 
     private static long lastConfirmTime = 0;
@@ -66,4 +71,14 @@ public class ClientConfigFeedbackPayload {
     }
 
     public record ConfirmState(String message, boolean success, float fade) {}
+
+    /**
+     * Handle editor apply confirmation from server.
+     */
+    public static void handleEditorApplyConfirm(com.devmod.network.EditorApplyConfirmPayload payload) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc != null && mc.screen instanceof com.devmod.client.ui.editor.ItemEditorScreen screen) {
+            screen.onServerConfirm(payload);
+        }
+    }
 }

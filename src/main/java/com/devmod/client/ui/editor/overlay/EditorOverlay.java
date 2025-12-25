@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.overlay;
+package com.devmod.client.ui.editor.overlay;
 
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -17,7 +17,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  *   <li>Decoupling of overlays from the main screen</li>
  * </ul>
  *
- * @see com.devmod.ui.editor.core.BaseOverlay for the abstract base implementation
+ * @see com.devmod.client.ui.editor.core.BaseOverlay for the abstract base implementation
  */
 @OnlyIn(Dist.CLIENT)
 public interface EditorOverlay {

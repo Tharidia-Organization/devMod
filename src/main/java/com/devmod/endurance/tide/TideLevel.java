@@ -1,0 +1,118 @@
+package com.devmod.endurance.tide;
+
+/**
+ * Tide Level - Global threat severity stages.
+ *
+ * The Tide is a server-wide threat system that rises with player failures
+ * and falls with successes, creating dynamic difficulty and community events.
+ */
+public enum TideLevel {
+
+    /**
+     * Normal gameplay, no threat modifiers.
+     * Tide: 0-99
+     */
+    CALM(0, 100, 0x55FF55, "Calm", 0f, false, false, 0),
+
+    /**
+     * Tension building, mobs slightly stronger.
+     * Tide: 100-299
+     */
+    RISING(100, 300, 0xFFFF55, "Rising", 0.10f, false, false, 0),
+
+    /**
+     * Dangerous conditions, curse mutators appear.
+     * Tide: 300-499
+     */
+    HIGH(300, 500, 0xFFAA00, "High", 0.20f, true, false, 0),
+
+    /**
+     * Storm conditions, boss every 3 waves.
+     * Tide: 500-799
+     */
+    STORM(500, 800, 0xFF5555, "Storm", 0.30f, true, true, 3),
+
+    /**
+     * Apocalypse - Tide Boss event imminent.
+     * Tide: 800-1000
+     */
+    APOCALYPSE(800, 1000, 0xAA0000, "Apocalypse", 0.50f, true, true, 2);
+
+    public final int minTide;
+    public final int maxTide;
+    public final int color;
+    public final String displayName;
+    public final float statBonus;         // Mob stat multiplier
+    public final boolean curseMutators;   // Enable curse mutators
+    public final boolean forcedBosses;    // Force boss spawns
+    public final int bossWaveInterval;    // Spawn boss every N waves (0 = disabled)
+
+    TideLevel(int minTide, int maxTide, int color, String displayName,
+              float statBonus, boolean curseMutators, boolean forcedBosses, int bossWaveInterval) {
+        this.minTide = minTide;
+        this.maxTide = maxTide;
+        this.color = color;
+        this.displayName = displayName;
+        this.statBonus = statBonus;
+        this.curseMutators = curseMutators;
+        this.forcedBosses = forcedBosses;
+        this.bossWaveInterval = bossWaveInterval;
+    }
+
+    /**
+     * Get the TideLevel for a given tide value.
+     */
+    public static TideLevel fromTide(int tide) {
+        for (TideLevel level : values()) {
+            if (tide >= level.minTide && tide < level.maxTide) {
+                return level;
+            }
+        }
+        // At max tide
+        return APOCALYPSE;
+    }
+
+    /**
+     * Get progress through this level (0.0 to 1.0).
+     */
+    public float getProgress(int tide) {
+        if (tide < minTide) return 0f;
+        if (tide >= maxTide) return 1f;
+        return (float) (tide - minTide) / (maxTide - minTide);
+    }
+
+    /**
+     * Check if at the Tide Boss threshold.
+     */
+    public static boolean isTideBossThreshold(int tide) {
+        return tide >= 1000;
+    }
+
+    /**
+     * Get the next level, or null if at max.
+     */
+    public TideLevel getNext() {
+        int nextOrdinal = ordinal() + 1;
+        if (nextOrdinal >= values().length) {
+            return null;
+        }
+        return values()[nextOrdinal];
+    }
+
+    /**
+     * Get display string with color formatting.
+     */
+    public String getFormattedName() {
+        return "\u00A7" + getColorCode() + displayName + "\u00A7r";
+    }
+
+    private char getColorCode() {
+        return switch (this) {
+            case CALM -> 'a';      // Green
+            case RISING -> 'e';    // Yellow
+            case HIGH -> '6';      // Gold
+            case STORM -> 'c';     // Red
+            case APOCALYPSE -> '4'; // Dark Red
+        };
+    }
+}

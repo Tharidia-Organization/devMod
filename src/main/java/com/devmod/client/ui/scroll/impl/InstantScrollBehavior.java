@@ -1,6 +1,6 @@
-package com.devmod.ui.scroll.impl;
+package com.devmod.client.ui.scroll.impl;
 
-import com.devmod.ui.scroll.ScrollBehavior;
+import com.devmod.client.ui.scroll.ScrollBehavior;
 
 /**
  * Instant scroll behavior - no animation, immediate response.

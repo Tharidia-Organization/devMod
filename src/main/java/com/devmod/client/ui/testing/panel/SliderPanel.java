@@ -1,6 +1,6 @@
-package com.devmod.ui.testing.panel;
+package com.devmod.client.ui.testing.panel;
 
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;
@@ -9,7 +9,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static com.devmod.ui.testing.panel.PanelConstants.*;
+import static com.devmod.client.ui.testing.panel.PanelConstants.*;
 
 /**
  * Slider panel for numeric value editing with drag support.

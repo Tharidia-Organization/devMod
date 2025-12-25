@@ -1,7 +1,8 @@
-package com.devmod.ui.testing;
+package com.devmod.client.ui.testing;
 
-import com.devmod.ui.editor.components.EditorButton;
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.telemetry.UiTelemetry;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -47,6 +48,9 @@ public class VoxelLabScreen extends Screen {
 
     @Override
     protected void init() {
+        // Track screen open for telemetry
+        UiTelemetry.screenOpened("testing", "voxel_lab");
+
         // Create tab buttons
         createTabButtons();
 
@@ -76,6 +80,13 @@ public class VoxelLabScreen extends Screen {
         }
     }
 
+    @Override
+    public void onClose() {
+        // Track screen close for telemetry
+        UiTelemetry.screenClosed("testing", "voxel_lab");
+        super.onClose();
+    }
+
     private void createTabButtons() {
         tabButtons.clear();
 
@@ -92,13 +103,13 @@ public class VoxelLabScreen extends Screen {
         pages.clear();
 
         // Register all pages
-        registerPage(new com.devmod.ui.testing.pages.OverviewPage());
-        registerPage(new com.devmod.ui.testing.pages.DebugOverlaysPage());
-        registerPage(new com.devmod.ui.testing.pages.HudSystemsPage());
-        registerPage(new com.devmod.ui.testing.pages.TelemetryPage());
-        registerPage(new com.devmod.ui.testing.pages.EffectsPage());
-        registerPage(new com.devmod.ui.testing.pages.CombatPage());
-        registerPage(new com.devmod.ui.testing.pages.ComponentShowcasePage());
+        registerPage(new com.devmod.client.ui.testing.pages.OverviewPage());
+        registerPage(new com.devmod.client.ui.testing.pages.DebugOverlaysPage());
+        registerPage(new com.devmod.client.ui.testing.pages.HudSystemsPage());
+        registerPage(new com.devmod.client.ui.testing.pages.TelemetryPage());
+        registerPage(new com.devmod.client.ui.testing.pages.EffectsPage());
+        registerPage(new com.devmod.client.ui.testing.pages.CombatPage());
+        registerPage(new com.devmod.client.ui.testing.pages.ComponentShowcasePage());
     }
 
     private void registerPage(VoxelLabPage page) {

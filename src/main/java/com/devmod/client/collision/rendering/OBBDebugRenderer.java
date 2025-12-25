@@ -1,4 +1,4 @@
-package com.devmod.collision.rendering;
+package com.devmod.client.collision.rendering;
 
 import com.devmod.config.Config;
 import com.devmod.collision.bodypart.BodyPartInstance;

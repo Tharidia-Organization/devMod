@@ -1,0 +1,39 @@
+package com.devmod.client.combat;
+
+import com.devmod.DevMod;
+import com.devmod.combat.signature.SoulImprint;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
+
+import java.util.List;
+
+/**
+ * Client-side event handlers for Signature Weapon system.
+ * Handles tooltip rendering and name display modifications.
+ */
+@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
+public class SignatureWeaponEvents {
+
+    /**
+     * Add Soul Imprint information to weapon tooltips.
+     */
+    @SubscribeEvent
+    public static void onItemTooltip(ItemTooltipEvent event) {
+        ItemStack stack = event.getItemStack();
+
+        // Check if this item has a Soul Imprint
+        if (!SoulImprint.hasImprint(stack)) {
+            return;
+        }
+
+        // Build and add tooltip lines
+        List<Component> imprintTooltip = SignatureWeaponTooltip.buildTooltip(stack);
+        if (!imprintTooltip.isEmpty()) {
+            event.getToolTip().addAll(imprintTooltip);
+        }
+    }
+}

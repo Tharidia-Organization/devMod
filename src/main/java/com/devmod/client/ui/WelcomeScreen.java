@@ -1,4 +1,4 @@
-package com.devmod.ui;
+package com.devmod.client.ui;
 
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
@@ -6,11 +6,11 @@ import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.actions.client.OnboardingActionPayload;
 import com.devmod.util.I18n;
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import com.devmod.ui.editor.components.EditorButton;
-import com.devmod.ui.editor.components.EditorToggle;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.components.EditorToggle;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Checkbox;

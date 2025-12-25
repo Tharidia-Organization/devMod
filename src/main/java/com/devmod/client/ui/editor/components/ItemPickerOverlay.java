@@ -1,9 +1,9 @@
-package com.devmod.ui.editor.components;
+package com.devmod.client.ui.editor.components;
 
-import com.devmod.ui.AxiomRenderer;
-import com.devmod.ui.editor.core.BaseOverlay;
-import com.devmod.ui.editor.core.ScaledCoord;
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.BaseOverlay;
+import com.devmod.client.ui.editor.core.ScaledCoord;
+import com.devmod.client.ui.editor.core.UIConstants;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.registries.BuiltInRegistries;

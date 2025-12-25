@@ -1,11 +1,11 @@
-package com.devmod.ui.editor.modules;
+package com.devmod.client.ui.editor.modules;
 
 import com.devmod.stats.WeaponStats;
 import com.devmod.DevMod;
-import com.devmod.ui.editor.AbstractEditorModule;
-import com.devmod.ui.editor.EditorSection;
-import com.devmod.ui.editor.ModuleTab;
-import com.devmod.ui.editor.core.EditorCache;
+import com.devmod.client.ui.editor.AbstractEditorModule;
+import com.devmod.client.ui.editor.EditorSection;
+import com.devmod.client.ui.editor.ModuleTab;
+import com.devmod.client.ui.editor.core.EditorCache;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.item.ItemStack;

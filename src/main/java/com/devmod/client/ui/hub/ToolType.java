@@ -1,4 +1,4 @@
-package com.devmod.ui.hub;
+package com.devmod.client.ui.hub;
 
 import com.devmod.actions.ActionContext;
 import com.devmod.actions.ActionIds;

@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.core;
+package com.devmod.client.ui.editor.core;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

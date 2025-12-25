@@ -1,4 +1,4 @@
-package com.devmod.compat.mods.yacl;
+package com.devmod.client.compat.mods.yacl;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;

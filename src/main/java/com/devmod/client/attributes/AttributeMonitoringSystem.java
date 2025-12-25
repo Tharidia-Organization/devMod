@@ -1,4 +1,6 @@
-package com.devmod.attributes;
+package com.devmod.client.attributes;
+
+import com.devmod.attributes.AttributeLogEntry;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;

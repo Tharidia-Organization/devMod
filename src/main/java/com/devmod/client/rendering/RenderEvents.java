@@ -9,10 +9,10 @@ import com.devmod.actions.ActionContext;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.attributes.AttributeMonitoringSystem;
-import com.devmod.attributes.AttributeRayVisualizer;
-import com.devmod.collision.rendering.OBBDebugRenderer;
-import com.devmod.effects.TrailManager;
+import com.devmod.client.attributes.AttributeMonitoringSystem;
+import com.devmod.client.attributes.AttributeRayVisualizer;
+import com.devmod.client.collision.rendering.OBBDebugRenderer;
+import com.devmod.client.effects.TrailManager;
 import com.devmod.client.overlay.Impact3DPanelManager;
 import com.devmod.client.overlay.ImpactData;
 import com.devmod.client.overlay.ImpactVFX;
@@ -20,11 +20,11 @@ import com.devmod.client.panels.context.ContextDetector;
 import com.devmod.client.panels.core.FloatingPanelManager;
 import com.devmod.client.panels.ui.PanelInteractionHandler;
 import com.devmod.client.rendering.shield.EnergyShieldRenderer;
-import com.devmod.telemetry.PerformanceProfiler;
-import com.devmod.testing.TestingSession;
-import com.devmod.ui.unified.persistence.SettingsManager;
+import com.devmod.client.telemetry.PerformanceProfiler;
+import com.devmod.client.testing.TestingSession;
+import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.util.I18n;
-import com.devmod.combat.WeaponTrailVFX;
+import com.devmod.client.combat.WeaponTrailVFX;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
@@ -421,6 +421,7 @@ public class RenderEvents {
         profiler.endTiming("PanelManager.tick", t0);
 
         ImpactData.clientTickCleanup();
+        com.devmod.client.collision.transform.ModelPartTransformCapture.clientTick();
 
         // PHASE 7: Update the attribute monitoring system
         long t1 = profiler.startTiming("AttrMonitor.tick");

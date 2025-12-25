@@ -1,6 +1,4 @@
-package com.devmod.combat;
-import com.devmod.*;
-import com.devmod.*;
+package com.devmod.client.combat;
 
 import com.devmod.DevMod;
 import com.devmod.client.rendering.TrigCache;

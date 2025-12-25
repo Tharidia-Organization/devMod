@@ -1,11 +1,13 @@
-package com.devmod.endurance;
+package com.devmod.client.endurance;
+
+import com.devmod.endurance.QuestActionPayload;
 
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.ui.ConfirmDialog;
-import com.devmod.ui.ConfirmDialog.Style;
+import com.devmod.client.ui.ConfirmDialog;
+import com.devmod.client.ui.ConfirmDialog.Style;
 import com.devmod.util.I18n;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;

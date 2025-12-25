@@ -1,50 +1,51 @@
-package com.devmod.ui.editor;
+package com.devmod.client.ui.editor;
 
+import com.devmod.client.telemetry.UiTelemetry;
 import com.devmod.config.ArmorConfigManager;
 import com.devmod.stats.ArmorStats;
 import com.devmod.config.EditorClientConfig;
 import com.devmod.DevMod;
-import com.devmod.ui.editor.ItemEditorDataManager;
+import com.devmod.client.ui.editor.ItemEditorDataManager;
 import com.devmod.config.WeaponConfigManager;
 import com.devmod.stats.WeaponStats;
-import com.devmod.ui.AxiomRenderer;
-import com.devmod.ui.editor.core.EditorCache;
-import com.devmod.ui.editor.core.EditorConfig;
-import com.devmod.ui.editor.core.EditorLayout;
-import com.devmod.ui.editor.core.EditorScaleCalculator;
-import com.devmod.ui.editor.core.EditorSpacing;
-import com.devmod.ui.editor.core.ResponsiveLayout;
-import com.devmod.ui.editor.core.GridValidator;
-import com.devmod.ui.editor.core.ScaledCoord;
-import com.devmod.ui.editor.core.Typography;
-import com.devmod.ui.editor.components.FooterComponent;
-import com.devmod.ui.editor.components.HeaderComponent;
-import com.devmod.ui.editor.components.LeftColumnComponent;
-import com.devmod.ui.editor.components.ModeBadge;
-import com.devmod.ui.editor.components.ScrollableContentArea;
-import com.devmod.ui.editor.components.SlotSelector;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.editor.favorites.FavoritePresetStore;
-import com.devmod.ui.editor.modules.ArmorModule;
-import com.devmod.ui.editor.modules.FoodModule;
-import com.devmod.ui.editor.modules.FuelModule;
-import com.devmod.ui.editor.modules.RangedModule;
-import com.devmod.ui.editor.modules.UsableModule;
-import com.devmod.ui.editor.modules.WeaponModule;
-import com.devmod.ui.editor.state.ItemEditorState;
-import com.devmod.ui.editor.controller.InputRouter;
-import com.devmod.ui.editor.controller.ModeController;
-import com.devmod.ui.editor.controller.OverlayController;
-import com.devmod.ui.editor.systems.ConfirmDialog;
-import com.devmod.ui.editor.systems.HelpOverlay;
-import com.devmod.ui.editor.systems.CraftingInfoPanel;
-import com.devmod.ui.editor.systems.LowConfidenceDetector;
-import com.devmod.ui.editor.systems.MultiEditManager;
-import com.devmod.ui.editor.systems.MultiEditPanel;
-import com.devmod.ui.editor.systems.TemplateOverlay;
-import com.devmod.ui.editor.systems.PresetSelectorOverlay;
-import com.devmod.ui.editor.systems.DebugPanel;
-import com.devmod.ui.editor.debug.DebugOverlay;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.EditorCache;
+import com.devmod.client.ui.editor.core.EditorConfig;
+import com.devmod.client.ui.editor.core.EditorLayout;
+import com.devmod.client.ui.editor.core.EditorScaleCalculator;
+import com.devmod.client.ui.editor.core.EditorSpacing;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.GridValidator;
+import com.devmod.client.ui.editor.core.ScaledCoord;
+import com.devmod.client.ui.editor.core.Typography;
+import com.devmod.client.ui.editor.components.FooterComponent;
+import com.devmod.client.ui.editor.components.HeaderComponent;
+import com.devmod.client.ui.editor.components.LeftColumnComponent;
+import com.devmod.client.ui.editor.components.ModeBadge;
+import com.devmod.client.ui.editor.components.ScrollableContentArea;
+import com.devmod.client.ui.editor.components.SlotSelector;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.favorites.FavoritePresetStore;
+import com.devmod.client.ui.editor.modules.ArmorModule;
+import com.devmod.client.ui.editor.modules.FoodModule;
+import com.devmod.client.ui.editor.modules.FuelModule;
+import com.devmod.client.ui.editor.modules.RangedModule;
+import com.devmod.client.ui.editor.modules.UsableModule;
+import com.devmod.client.ui.editor.modules.WeaponModule;
+import com.devmod.client.ui.editor.state.ItemEditorState;
+import com.devmod.client.ui.editor.controller.InputRouter;
+import com.devmod.client.ui.editor.controller.ModeController;
+import com.devmod.client.ui.editor.controller.OverlayController;
+import com.devmod.client.ui.ConfirmDialog;
+import com.devmod.client.ui.editor.systems.HelpOverlay;
+import com.devmod.client.ui.editor.systems.CraftingInfoPanel;
+import com.devmod.client.ui.editor.systems.LowConfidenceDetector;
+import com.devmod.client.ui.editor.systems.MultiEditManager;
+import com.devmod.client.ui.editor.systems.MultiEditPanel;
+import com.devmod.client.ui.editor.systems.TemplateOverlay;
+import com.devmod.client.ui.editor.systems.PresetSelectorOverlay;
+import com.devmod.client.ui.editor.systems.DebugPanel;
+import com.devmod.client.ui.editor.debug.DebugOverlay;
 import com.devmod.network.ArmorStatsPayload;
 import com.devmod.network.EditorApplyConfirmPayload;
 import com.devmod.util.DatapackIO;
@@ -262,6 +263,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════
 
+    @SuppressWarnings("this-escape") // Callback registration in constructor is intentional
     public ItemEditorScreen(ItemStack item, EditorStartTab startTab) {
         super(java.util.Objects.requireNonNull(Component.literal("Item Editor"), "title"));
         this.item = item.copy();
@@ -282,6 +284,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     @Override
     protected void init() {
+        // Track screen open for telemetry
+        UiTelemetry.screenOpened("editor", "item_editor");
+
         // Resolve UI scale (discrete) and apply to coordinate helper
         float uiScale = EditorScaleCalculator.getEffectiveScale(width, height, EditorConfig.getUiScaleSetting());
         ScaledCoord.setScale(uiScale);
@@ -352,14 +357,14 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 var detection = WeaponTypeDetector.detectDetailed(stack);
                 if (WeaponTypeDetector.isRanged(detection.type())) {
                     yield new RangedModule(detection.type() == WeaponTypeDetector.WeaponType.CROSSBOW
-                        ? com.devmod.ui.editor.modules.RangedModule.RangedVariant.CROSSBOW
-                        : com.devmod.ui.editor.modules.RangedModule.RangedVariant.BOW);
+                        ? com.devmod.client.ui.editor.modules.RangedModule.RangedVariant.CROSSBOW
+                        : com.devmod.client.ui.editor.modules.RangedModule.RangedVariant.BOW);
                 }
                 if (detection.type() == WeaponTypeDetector.WeaponType.TRIDENT) {
-                    yield new WeaponModule(com.devmod.ui.editor.modules.WeaponModule.WeaponVariant.TRIDENT);
+                    yield new WeaponModule(com.devmod.client.ui.editor.modules.WeaponModule.WeaponVariant.TRIDENT);
                 }
                 if (detection.type() == WeaponTypeDetector.WeaponType.MACE) {
-                    yield new WeaponModule(com.devmod.ui.editor.modules.WeaponModule.WeaponVariant.MACE);
+                    yield new WeaponModule(com.devmod.client.ui.editor.modules.WeaponModule.WeaponVariant.MACE);
                 }
                 yield new WeaponModule();
             }
@@ -374,22 +379,22 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 if (WeaponTypeDetector.isRanged(detailed.type())) {
                     DevMod.LOGGER.warn("[ItemEditor] Requested GENERAL but item is ranged weapon; falling back to RANGED module.");
                     yield new RangedModule(detailed.type() == WeaponTypeDetector.WeaponType.CROSSBOW
-                        ? com.devmod.ui.editor.modules.RangedModule.RangedVariant.CROSSBOW
-                        : com.devmod.ui.editor.modules.RangedModule.RangedVariant.BOW);
+                        ? com.devmod.client.ui.editor.modules.RangedModule.RangedVariant.CROSSBOW
+                        : com.devmod.client.ui.editor.modules.RangedModule.RangedVariant.BOW);
                 }
                 if (WeaponTypeDetector.isMelee(detailed.type())) {
                     DevMod.LOGGER.warn("[ItemEditor] Requested GENERAL but item is melee weapon; falling back to WEAPON module.");
                     if (detailed.type() == WeaponTypeDetector.WeaponType.TRIDENT) {
-                        yield new WeaponModule(com.devmod.ui.editor.modules.WeaponModule.WeaponVariant.TRIDENT);
+                        yield new WeaponModule(com.devmod.client.ui.editor.modules.WeaponModule.WeaponVariant.TRIDENT);
                     }
                     if (detailed.type() == WeaponTypeDetector.WeaponType.MACE) {
-                        yield new WeaponModule(com.devmod.ui.editor.modules.WeaponModule.WeaponVariant.MACE);
+                        yield new WeaponModule(com.devmod.client.ui.editor.modules.WeaponModule.WeaponVariant.MACE);
                     }
                     yield new WeaponModule();
                 }
                 yield new PlaceholderModule("general", "Item Editor");
             }
-            case RECIPE -> new com.devmod.ui.editor.modules.RecipeModule();
+            case RECIPE -> new com.devmod.client.ui.editor.modules.RecipeModule();
             case USABLE -> new UsableModule(detectUsableVariant(stack));
             case FOOD -> new FoodModule();
             case FUEL -> new FuelModule();
@@ -700,11 +705,21 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
      * Called when overlay state changes - syncs UI components.
      */
     private void onOverlayChanged(OverlayController.OverlayType newOverlay) {
-        // Reset search on overlays that are being closed
-        if (newOverlay != OverlayController.OverlayType.TEMPLATES && templateOverlay != null) {
-            templateOverlay.resetSearch();
+        if (templateOverlay != null) {
+            if (newOverlay == OverlayController.OverlayType.TEMPLATES) {
+                if (!templateOverlay.isVisible()) {
+                    templateOverlay.show();
+                }
+            } else {
+                templateOverlay.resetSearch();
+                templateOverlay.hide();
+            }
         }
-        if (newOverlay != OverlayController.OverlayType.CRAFTING) {
+        if (newOverlay == OverlayController.OverlayType.CRAFTING) {
+            if (!craftingPanel.isVisible()) {
+                craftingPanel.show(item);
+            }
+        } else {
             craftingPanel.hide();
         }
         // Manage PresetSelectorOverlay visibility
@@ -1298,6 +1313,12 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             return true;
         }
 
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE && (modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
+            if (forceCloseAllOverlays()) {
+                return true;
+            }
+        }
+
         // Handle help overlay first
         if (helpOverlay.isVisible()) {
             return helpOverlay.keyPressed(keyCode);
@@ -1470,6 +1491,52 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
+    private boolean forceCloseAllOverlays() {
+        boolean closed = false;
+
+        if (activeModule != null && activeModule.hasActiveOverlay()) {
+            activeModule.overlayKeyPressed(GLFW.GLFW_KEY_ESCAPE);
+            closed = true;
+        }
+
+        if (overlayController.hasActiveOverlay()) {
+            overlayController.closeAll();
+            closed = true;
+        }
+
+        if (templateOverlay != null && templateOverlay.isVisible()) {
+            templateOverlay.hide();
+            closed = true;
+        }
+
+        if (presetSelectorOverlay != null && presetSelectorOverlay.isVisible()) {
+            presetSelectorOverlay.hide();
+            closed = true;
+        }
+
+        if (craftingPanel.isVisible()) {
+            craftingPanel.hide();
+            closed = true;
+        }
+
+        if (activeDialog != null && activeDialog.isVisible()) {
+            activeDialog.hide();
+            closed = true;
+        }
+
+        if (helpOverlay.isVisible()) {
+            helpOverlay.hide();
+            closed = true;
+        }
+
+        if (lowConfidenceDetector.isVisible()) {
+            lowConfidenceDetector.reset();
+            closed = true;
+        }
+
+        return closed;
+    }
+
     @Override
     public boolean charTyped(char chr, int modifiers) {
         // Block input when low-confidence dialog is visible
@@ -1520,7 +1587,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             }
             // Build and send payload
             CustomPacketPayload payload;
-            if (activeModule instanceof com.devmod.ui.editor.modules.ArmorModule armorModule) {
+            if (activeModule instanceof com.devmod.client.ui.editor.modules.ArmorModule armorModule) {
                 ArmorStats stats = armorModule.getStats().copy();
                 CompoundTag statsTag = new CompoundTag();
                 CompoundTag armorStats = new CompoundTag();
@@ -2070,14 +2137,14 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                     showStatus("Favorite applied: " + preset.name, UIConstants.Accent.BLUE());
                 };
                 if (activeModule != null && activeModule.hasUnsavedChanges()) {
-                    activeDialog = new ConfirmDialog(
+                    activeDialog = ConfirmDialog.create(
                         "Apply favorite",
-                        "Overwrite current changes with favorite '" + preset.name + "'?",
                         "Apply",
                         "Cancel",
-                        UIConstants.Accent.ORANGE(),
+                        ConfirmDialog.Style.WARNING,
                         loadAction,
-                        () -> {}
+                        () -> {},
+                        "Overwrite current changes with favorite '" + preset.name + "'?"
                     );
                     activeDialog.show();
                 } else {
@@ -2302,6 +2369,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     @Override
     public void onClose() {
+        // Track screen close for telemetry
+        UiTelemetry.screenClosed("editor", "item_editor");
+
         if (activeModule != null) {
             activeModule.onClose();
         }

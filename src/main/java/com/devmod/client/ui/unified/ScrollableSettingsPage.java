@@ -1,10 +1,10 @@
-package com.devmod.ui.unified;
+package com.devmod.client.ui.unified;
 
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.editor.core.ResponsiveLayout.Rect;
-import com.devmod.ui.scroll.ScrollManager;
-import com.devmod.ui.scroll.ScrollMetrics;
-import com.devmod.ui.scroll.ScrollMode;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.ResponsiveLayout.Rect;
+import com.devmod.client.ui.scroll.ScrollManager;
+import com.devmod.client.ui.scroll.ScrollMetrics;
+import com.devmod.client.ui.scroll.ScrollMode;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 

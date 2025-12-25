@@ -251,4 +251,31 @@ public final class ActionIds {
     public static final String QA_TEST_FAIL = "devmod.testing.test.fail";
     public static final String QA_TEST_SKIP = "devmod.testing.test.skip";
     public static final String QA_TEST_AUTO = "devmod.testing.test.auto";
+
+    // Game Design Config
+    public static final String CONFIG_GAMEDESIGN_RELOAD = "devmod.gamedesign.reload";
+    public static final String CONFIG_GAMEDESIGN_SAVE = "devmod.gamedesign.save";
+    public static final String CONFIG_GAMEDESIGN_RESET = "devmod.gamedesign.reset";
+
+    // Resonance Chain
+    public static final String CONFIG_RESONANCE_TOGGLE = "devmod.gamedesign.resonance.toggle";
+
+    // Blood Contracts
+    public static final String CONFIG_CONTRACTS_TOGGLE = "devmod.gamedesign.contracts.toggle";
+
+    // Signature Weapons
+    public static final String CONFIG_SIGNATURE_WEAPONS_TOGGLE = "devmod.gamedesign.signature_weapons.toggle";
+
+    // Nemesis Evolution
+    public static final String CONFIG_NEMESIS_TOGGLE = "devmod.gamedesign.nemesis.toggle";
+
+    // The Tide
+    public static final String CONFIG_TIDE_TOGGLE = "devmod.gamedesign.tide.toggle";
+
+    // Presets
+    public static final String CONFIG_GAMEDESIGN_PRESET_EASY = "devmod.gamedesign.preset.easy";
+    public static final String CONFIG_GAMEDESIGN_PRESET_HARD = "devmod.gamedesign.preset.hard";
+    public static final String CONFIG_GAMEDESIGN_PRESET_CHAOS = "devmod.gamedesign.preset.chaos";
+    public static final String CONFIG_GAMEDESIGN_PRESET_TUTORIAL = "devmod.gamedesign.preset.tutorial";
+    public static final String CONFIG_GAMEDESIGN_PRESET_SPEEDRUN = "devmod.gamedesign.preset.speedrun";
 }

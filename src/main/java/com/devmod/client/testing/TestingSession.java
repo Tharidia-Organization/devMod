@@ -1,5 +1,8 @@
-package com.devmod.testing;
+package com.devmod.client.testing;
 
+import com.devmod.testing.DynamicTestGenerator;
+import com.devmod.testing.ModDiscoveryService;
+import com.devmod.testing.TestCase;
 import com.devmod.client.rendering.DebugRenderer;
 import com.devmod.client.rendering.LightLevelOverlay;
 import com.devmod.client.rendering.LineOfSightVisualizer;

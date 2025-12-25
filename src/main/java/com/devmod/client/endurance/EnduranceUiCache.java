@@ -1,4 +1,8 @@
-package com.devmod.endurance;
+package com.devmod.client.endurance;
+
+import com.devmod.endurance.PerkChoicesPayload;
+import com.devmod.endurance.QuestCompletionPayload;
+import com.devmod.endurance.WaveDirectiveChoicesPayload;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;

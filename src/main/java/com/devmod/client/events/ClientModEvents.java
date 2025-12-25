@@ -1,18 +1,18 @@
-package com.devmod.events;
+package com.devmod.client.events;
 
-import com.devmod.DevMod;
 import com.devmod.ModConfig;
+import com.devmod.util.I18n;
 
 import com.devmod.combat.HitHelper;
 import static com.devmod.DevMod.MODID;
 import com.devmod.client.overlay.Impact3DPanelManager;
+import com.devmod.client.overlay.WelcomeToastOverlay;
 import com.devmod.quest.QuestManager;
-import com.devmod.util.I18n;
-import com.devmod.testing.QAEventTracker;
-import com.devmod.testing.QANotificationSystem;
+import com.devmod.client.testing.QAEventTracker;
+import com.devmod.client.testing.QANotificationSystem;
 import com.devmod.testing.TesterProfile;
-import com.devmod.testing.TestingSession;
-import com.devmod.testing.TutorialManager;
+import com.devmod.client.testing.TestingSession;
+import com.devmod.client.testing.TutorialManager;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -28,6 +28,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +42,7 @@ import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.ui.unified.persistence.SettingsManager;
+import com.devmod.client.ui.unified.persistence.SettingsManager;
 
 @EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
 public class ClientModEvents {
@@ -50,6 +51,8 @@ public class ClientModEvents {
     private static final DecimalFormat df = new DecimalFormat("#.##");
     private static final ResourceLocation MOB_STATS_ID = Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "mob_stats"));
     private static final ResourceLocation QA_NOTIFICATIONS_ID = Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "qa_notifications"));
+    private static final ResourceLocation RESONANCE_HUD_ID = Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "resonance_hud"));
+    private static final ResourceLocation CONTRACT_HUD_ID = Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "contract_hud"));
 
     // Track if profile listener is registered
     private static boolean profileListenerRegistered = false;
@@ -59,6 +62,8 @@ public class ClientModEvents {
         Objects.requireNonNull(event, "RegisterGuiLayersEvent");
         event.registerAboveAll(Objects.requireNonNull(MOB_STATS_ID), new MobStatsLayer());
         event.registerAboveAll(Objects.requireNonNull(QA_NOTIFICATIONS_ID), new QANotificationsLayer());
+        event.registerAboveAll(Objects.requireNonNull(RESONANCE_HUD_ID), com.devmod.client.overlay.ResonanceHudOverlay.INSTANCE);
+        event.registerAboveAll(Objects.requireNonNull(CONTRACT_HUD_ID), com.devmod.client.overlay.ContractHudOverlay.INSTANCE);
 
         // Register profile listener for notifications (once)
         if (!profileListenerRegistered) {
@@ -120,6 +125,14 @@ public class ClientModEvents {
         // Load damage statistics from disk
         com.devmod.testing.stats.DamageStatistics.INSTANCE.load();
 
+        // Reload weapon detection lists (whitelist/blacklist) - client-only
+        try {
+            com.devmod.client.ui.editor.WeaponTypeDetector.reloadWeaponLists();
+            LOGGER.debug("WeaponTypeDetector lists reloaded successfully");
+        } catch (Exception e) {
+            LOGGER.warn("Failed to reload weapon lists: {}", e.getMessage());
+        }
+
         // Run async to avoid blocking main thread during world load
         CompletableFuture.runAsync(() -> {
             try {
@@ -149,7 +162,7 @@ public class ClientModEvents {
     // === Welcome Screen Retry System ===
     private static final int WELCOME_INITIAL_DELAY_MS = 3000;  // Initial delay before first attempt
     private static final int WELCOME_RETRY_DELAY_MS = 2000;    // Delay between retry attempts
-    private static final int WELCOME_MAX_RETRIES = 10;         // Max retry attempts (20 seconds total)
+    private static final int WELCOME_MAX_RETRIES = 4;          // Max retry attempts (~11 seconds total)
     private static volatile boolean welcomeScreenShown = false;
 
     /**
@@ -210,26 +223,12 @@ public class ClientModEvents {
     }
 
     /**
-     * Shows a chat notification as fallback when welcome screen couldn't be displayed.
-     * This ensures first-time users still learn about the mod.
+     * Shows a toast notification as fallback when welcome screen couldn't be displayed.
+     * This ensures first-time users still learn about the mod with a proper UI overlay.
      */
     private static void showWelcomeFallbackNotification(Minecraft mc) {
-        var player = mc.player;
-        if (player == null) {
-            return;
-        }
-
-        player.displayClientMessage(
-            I18n.translate("devmod.onboarding.welcome_fallback"),
-            false  // Show in chat, not action bar
-        );
-        player.displayClientMessage(
-            I18n.translate("devmod.onboarding.welcome_tip"),
-            false
-        );
-        // Mark as seen so we don't keep trying
-        SettingsManager.INSTANCE.getSettings().onboarding.hasSeenWelcome = true;
-        SettingsManager.INSTANCE.markDirty();
+        // Use proper toast overlay instead of chat messages (CRITICAL UI fix)
+        WelcomeToastOverlay.show();
     }
 
     /**
@@ -266,14 +265,36 @@ public class ClientModEvents {
         QAEventTracker.resetWorldState();
 
         // Clear Endurance Quest client caches
-        com.devmod.endurance.ClientQuestCache.clear();
+        com.devmod.client.endurance.ClientQuestCache.clear();
         com.devmod.endurance.ClientShopCache.clear();
         com.devmod.client.overlay.EnduranceQuestOverlay.resetStateWatcher();
 
         // Clear ImpactData cache (MULTIPLAYER-SAFE: clears all player entries)
         com.devmod.client.overlay.ImpactData.clearAll();
 
+        // Reset UI telemetry open timestamps
+        com.devmod.client.telemetry.UiTelemetry.reset();
+
+        // Clear transform capture caches (OBB collision system)
+        com.devmod.client.collision.transform.ModelPartTransformCapture.clearAll();
+        com.devmod.client.collision.transform.ModelPartTransformExtractor.clearAllCaches();
+        com.devmod.collision.transform.TransformProviderRegistry.clearAllCaches();
+
         LOGGER.debug("Caches cleared successfully");
+    }
+
+    /**
+     * Cleanup per-entity caches when entities leave the client level.
+     */
+    @SubscribeEvent
+    public static void onEntityLeave(EntityLeaveLevelEvent event) {
+        if (!event.getLevel().isClientSide()) return;
+        if (!(event.getEntity() instanceof LivingEntity entity)) return;
+
+        int entityId = entity.getId();
+        com.devmod.client.collision.transform.ModelPartTransformCapture.removeEntity(entityId);
+        com.devmod.client.collision.transform.ModelPartTransformExtractor.clearCache(entityId);
+        com.devmod.collision.transform.TransformProviderRegistry.clearCache(entityId);
     }
 
     public static class MobStatsLayer implements LayeredDraw.Layer {
@@ -321,55 +342,55 @@ public class ClientModEvents {
 
             if (rawReach > 0) {
                 // If > 0, we modified it
-                reachText = "Reach (MOD): " + df.format(rawReach);
+                reachText = I18n.translate("devmod.debug.entity.reach.modified", df.format(rawReach)).getString();
                 reachColor = 0xFFFF00; // Yellow
             } else {
                 // If 0, it's vanilla value. Calculate it to show user.
                 double estimated = entity.getBbWidth() * 2.0 + 1.0;
-                reachText = "Reach (Vanilla): " + df.format(estimated);
+                reachText = I18n.translate("devmod.debug.entity.reach.vanilla", df.format(estimated)).getString();
                 reachColor = 0xAAAAAA; // Gray
             }
 
             // --- DRAWING ---
-            gui.drawString(font, "Nome: " + entity.getName().getString(), x, y, 0xFFFF00);
+            gui.drawString(font, I18n.translate("devmod.debug.entity.name", entity.getName().getString()).getString(), x, y, 0xFFFF00);
             y += lineHeight;
 
-            gui.drawString(font, "HP: " + df.format(hp) + " / " + df.format(maxHp), x, y, 0xFF5555);
+            gui.drawString(font, I18n.translate("devmod.debug.entity.hp", df.format(hp), df.format(maxHp)).getString(), x, y, 0xFF5555);
             y += lineHeight;
 
             // Armor
             float damageReduction = armor * 4.0f;
             if (damageReduction > 80.0f) damageReduction = 80.0f;
-            gui.drawString(font, "Armor: " + armor + " (-" + (int)damageReduction + "%)", x, y, 0x5555FF);
+            gui.drawString(font, I18n.translate("devmod.debug.entity.armor", armor, (int)damageReduction).getString(), x, y, 0x5555FF);
             y += lineHeight;
 
-            // Danno
+            // Damage
             double dmg = 0;
             var dmgAttr = entity.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
             if (dmgAttr != null) dmg = dmgAttr.getValue();
             if (dmg > 0) {
-                gui.drawString(font, "Danno: " + df.format(dmg) + " (" + df.format(dmg/2.0) + " Cuori)", x, y, 0xFFAAAA);
+                gui.drawString(font, I18n.translate("devmod.debug.entity.damage", df.format(dmg), df.format(dmg/2.0)).getString(), x, y, 0xFFAAAA);
                 y += lineHeight;
             }
 
-            // Vista (Follow Range)
+            // Follow Range
             double follow = 0;
             var followAttr = entity.getAttribute(Objects.requireNonNull(Attributes.FOLLOW_RANGE));
             if (followAttr != null) follow = followAttr.getValue();
-            gui.drawString(font, "Vista: " + df.format(follow), x, y, 0x00FF00);
+            gui.drawString(font, I18n.translate("devmod.debug.entity.follow_range", df.format(follow)).getString(), x, y, 0x00FF00);
             y += lineHeight;
 
-            // REACH (Finalmente visibile!)
+            // REACH
             gui.drawString(font, reachText, x, y, reachColor);
             y += lineHeight;
 
             // Target
-            String target = "Nessuno";
+            String target = I18n.translate("devmod.debug.entity.target.none").getString();
             if (entity instanceof Mob mob) {
                 var tgt = mob.getTarget();
                 if (tgt != null) target = tgt.getName().getString();
             }
-            gui.drawString(font, "Target: " + target, x, y, 0xFFA500);
+            gui.drawString(font, I18n.translate("devmod.debug.entity.target", target).getString(), x, y, 0xFFA500);
         }
     }
 }

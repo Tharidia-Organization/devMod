@@ -1,6 +1,6 @@
-package com.devmod.ui.editor;
+package com.devmod.client.ui.editor;
 
-import com.devmod.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;

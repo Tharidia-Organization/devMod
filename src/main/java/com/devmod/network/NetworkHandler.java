@@ -224,7 +224,7 @@ public class NetworkHandler {
         ChannelId.validateNoCollisions();
 
         // ===================================================================
-        // MOB/ITEM CHANNELS (1-4, 7) - see ChannelId enum
+        // MOB/ITEM CHANNELS (1-4) - see ChannelId enum
         // ===================================================================
 
         event.registrar(MOB_STATS.asString()).playToServer(
@@ -251,7 +251,7 @@ public class NetworkHandler {
         // Use WEAPON_STATS_V2 channel for all weapon stats communication
 
         // ===================================================================
-        // CONFIG/TELEMETRY CHANNELS (36-43) - see ChannelId enum
+        // CONFIG/TELEMETRY CHANNELS (36-45) - see ChannelId enum
         // ===================================================================
 
         event.registrar(UPDATE_ARMOR.asString()).playToServer(
@@ -355,7 +355,7 @@ public class NetworkHandler {
         );
 
         // ===================================================================
-        // ITEM STATS CHANNELS (46-49) - see ChannelId enum
+        // ITEM STATS CHANNELS (46-55) - see ChannelId enum
         // ===================================================================
 
         event.registrar(USABLE_STATS.asString()).playToServer(

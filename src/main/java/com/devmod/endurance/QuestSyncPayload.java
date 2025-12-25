@@ -48,7 +48,17 @@ public record QuestSyncPayload(
     int currentCombo,
     int maxCombo,
     int styleScore,
-    int styleRankOrdinal
+    int styleRankOrdinal,
+    // Flow State data (STALE/FRESH/VIRTUOSO)
+    int flowStateOrdinal,
+    float virtuosoProgress,
+    float staleRisk,
+    int uniqueActionCount,
+    // Momentum data (pacing enforcement)
+    int momentumPercent,
+    int momentumStateOrdinal,
+    boolean isOverdrive,
+    long overdriveRemaining
 ) implements CustomPacketPayload {
 
     public static final Type<QuestSyncPayload> TYPE = new Type<>(
@@ -101,6 +111,14 @@ public record QuestSyncPayload(
         buf.writeVarInt(payload.maxCombo);
         buf.writeVarInt(payload.styleScore);
         buf.writeVarInt(payload.styleRankOrdinal);
+        buf.writeVarInt(payload.flowStateOrdinal);
+        buf.writeFloat(payload.virtuosoProgress);
+        buf.writeFloat(payload.staleRisk);
+        buf.writeVarInt(payload.uniqueActionCount);
+        buf.writeVarInt(payload.momentumPercent);
+        buf.writeVarInt(payload.momentumStateOrdinal);
+        buf.writeBoolean(payload.isOverdrive);
+        buf.writeLong(payload.overdriveRemaining);
     }
 
     // Security limits to prevent DoS attacks
@@ -157,6 +175,14 @@ public record QuestSyncPayload(
         int maxCombo = buf.readVarInt();
         int styleScore = buf.readVarInt();
         int styleRankOrdinal = buf.readVarInt();
+        int flowStateOrdinal = buf.readVarInt();
+        float virtuosoProgress = buf.readFloat();
+        float staleRisk = buf.readFloat();
+        int uniqueActionCount = buf.readVarInt();
+        int momentumPercent = buf.readVarInt();
+        int momentumStateOrdinal = buf.readVarInt();
+        boolean isOverdrive = buf.readBoolean();
+        long overdriveRemaining = buf.readLong();
 
         return new QuestSyncPayload(
             hasActiveQuest, questName, templateId, templateVersion, policyId, policyVersion,
@@ -166,7 +192,9 @@ public record QuestSyncPayload(
             damageDealt, damageTaken, deaths, sessionDurationMs, stateOrdinal,
             objectiveTypeOrdinal, objectiveTitle, objectiveDescription,
             objectiveProgress, objectiveTarget, objectiveComplete, objectiveFailed,
-            modifiers, currentCombo, maxCombo, styleScore, styleRankOrdinal
+            modifiers, currentCombo, maxCombo, styleScore, styleRankOrdinal,
+            flowStateOrdinal, virtuosoProgress, staleRisk, uniqueActionCount,
+            momentumPercent, momentumStateOrdinal, isOverdrive, overdriveRemaining
         );
     }
 
@@ -183,7 +211,9 @@ public record QuestSyncPayload(
             false, "", "", 0, "", 0, "", "", "", "",
             0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, "", "", 0, 0, false, false,
-            List.of(), 0, 0, 0, 0
+            List.of(), 0, 0, 0, 0,
+            1, 0f, 0f, 0,  // Flow state: NEUTRAL (ordinal 1), no progress
+            50, 1, false, 0  // Momentum: 50%, BUILDING (ordinal 1), no overdrive
         );
     }
 
@@ -207,6 +237,28 @@ public record QuestSyncPayload(
             return values[styleRankOrdinal];
         }
         return ComboSystem.StyleRank.D;
+    }
+
+    /**
+     * Get the flow state enum value.
+     */
+    public FlowStateTracker.FlowState getFlowState() {
+        FlowStateTracker.FlowState[] values = FlowStateTracker.FlowState.values();
+        if (flowStateOrdinal >= 0 && flowStateOrdinal < values.length) {
+            return values[flowStateOrdinal];
+        }
+        return FlowStateTracker.FlowState.NEUTRAL;
+    }
+
+    /**
+     * Get the momentum state enum value.
+     */
+    public MomentumTracker.MomentumState getMomentumState() {
+        MomentumTracker.MomentumState[] values = MomentumTracker.MomentumState.values();
+        if (momentumStateOrdinal >= 0 && momentumStateOrdinal < values.length) {
+            return values[momentumStateOrdinal];
+        }
+        return MomentumTracker.MomentumState.BUILDING;
     }
 
     public WaveObjectiveState.Type getObjectiveType() {

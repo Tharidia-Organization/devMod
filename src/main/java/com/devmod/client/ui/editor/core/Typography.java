@@ -1,12 +1,12 @@
-package com.devmod.ui.editor.core;
+package com.devmod.client.ui.editor.core;
 
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import java.util.Objects;
 
-import static com.devmod.ui.editor.core.StringBuilderCache.acquire;
-import static com.devmod.ui.editor.core.StringBuilderCache.release;
+import static com.devmod.client.ui.editor.core.StringBuilderCache.acquire;
+import static com.devmod.client.ui.editor.core.StringBuilderCache.release;
 
 /**
  * Typography constants and text rendering utilities for the editor.

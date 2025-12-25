@@ -1,6 +1,6 @@
-package com.devmod.ui.radial.animation;
+package com.devmod.client.ui.radial.animation;
 
-import com.devmod.ui.radial.config.RadialMenuConstants;
+import com.devmod.client.ui.radial.config.RadialMenuConstants;
 import net.minecraft.util.Mth;
 
 import java.util.Arrays;

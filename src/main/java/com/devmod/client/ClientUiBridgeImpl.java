@@ -1,8 +1,8 @@
 package com.devmod.client;
 
 import com.devmod.bridge.ClientUiBridge;
-import com.devmod.ui.editor.EditorStartTab;
-import com.devmod.ui.editor.ItemEditorScreen;
+import com.devmod.client.ui.editor.EditorStartTab;
+import com.devmod.client.ui.editor.ItemEditorScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
@@ -31,17 +31,17 @@ public class ClientUiBridgeImpl implements ClientUiBridge {
 
     @Override
     public void openSettings() {
-        mc().setScreen(new com.devmod.ui.unified.UnifiedSettingsScreen(null));
+        mc().setScreen(new com.devmod.client.ui.unified.UnifiedSettingsScreen(null));
     }
 
     @Override
     public void openRadialMenu() {
-        mc().setScreen(new com.devmod.ui.radial.RadialMenuScreen());
+        mc().setScreen(new com.devmod.client.ui.radial.RadialMenuScreen());
     }
 
     @Override
     public void openTestingHub() {
-        mc().setScreen(new com.devmod.ui.hub.TestingHub());
+        mc().setScreen(new com.devmod.client.ui.hub.TestingHub());
     }
 
     @Override
@@ -56,32 +56,32 @@ public class ClientUiBridgeImpl implements ClientUiBridge {
 
     @Override
     public void openMobConfig() {
-        mc().setScreen(new com.devmod.ui.screens.MobConfigScreen(null));
+        mc().setScreen(new com.devmod.client.ui.screens.MobConfigScreen(null));
     }
 
     @Override
     public void openTelemetryDashboard() {
-        mc().setScreen(new com.devmod.ui.screens.TelemetryDashboardScreen(null));
+        mc().setScreen(new com.devmod.client.ui.screens.TelemetryDashboardScreen(null));
     }
 
     @Override
     public void openWelcomeScreen() {
-        mc().setScreen(new com.devmod.ui.WelcomeScreen());
+        mc().setScreen(new com.devmod.client.ui.WelcomeScreen());
     }
 
     @Override
     public void openArenaQuickTestWizard() {
-        mc().setScreen(new com.devmod.ui.wizard.QuickTestWizard());
+        mc().setScreen(new com.devmod.client.ui.wizard.QuickTestWizard());
     }
 
     @Override
     public void openEnduranceQuestScreen(String templateId) {
-        mc().setScreen(new com.devmod.endurance.EnduranceQuestScreen());
+        mc().setScreen(new com.devmod.client.endurance.EnduranceQuestScreen());
     }
 
     @Override
     public void openPartyScreen() {
-        mc().setScreen(new com.devmod.party.PartyScreen());
+        mc().setScreen(new com.devmod.client.party.PartyScreen());
     }
 
     @Override
@@ -92,7 +92,7 @@ public class ClientUiBridgeImpl implements ClientUiBridge {
     @Override
     public void toggleDebugOverlay() {
         // Debug overlay mode cycling not implemented
-        // TODO: Implement via com.devmod.ui.editor.debug.DebugOverlay when needed
+        // TODO: Implement via com.devmod.client.ui.editor.debug.DebugOverlay when needed
     }
 
     @Override

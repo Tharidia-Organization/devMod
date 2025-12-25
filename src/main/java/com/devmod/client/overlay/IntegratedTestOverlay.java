@@ -1,7 +1,7 @@
 package com.devmod.client.overlay;
 
 import com.devmod.DevMod;
-import com.devmod.testing.IntegratedTestSession;
+import com.devmod.client.testing.IntegratedTestSession;
 import com.devmod.testing.TestCase;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;

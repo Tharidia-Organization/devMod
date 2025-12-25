@@ -1,4 +1,4 @@
-package com.devmod.ui.radial;
+package com.devmod.client.ui.radial;
 
 import com.devmod.actions.ActionContext;
 import com.devmod.actions.ActionIds;

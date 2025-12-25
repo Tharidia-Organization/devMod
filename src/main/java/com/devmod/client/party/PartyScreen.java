@@ -1,10 +1,15 @@
-package com.devmod.party;
+package com.devmod.client.party;
+
+import com.devmod.party.NamedInvitePayload;
+import com.devmod.party.PartyActionPayload;
+import com.devmod.party.PartyData;
+import com.devmod.party.PartySyncPayload;
 
 import com.devmod.endurance.EnduranceQuestRegistry;
 import com.devmod.endurance.EnduranceQuestRegistry.MobTier;
 import com.devmod.endurance.QuestType;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.components.EditorButton;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.GuiGraphics;

@@ -1,9 +1,9 @@
-package com.devmod.ui.editor.modules;
+package com.devmod.client.ui.editor.modules;
 
-import com.devmod.ui.editor.components.EditorSlider;
-import com.devmod.ui.editor.components.EditorToggle;
-import com.devmod.ui.editor.components.SourceBadge;
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.components.EditorSlider;
+import com.devmod.client.ui.editor.components.EditorToggle;
+import com.devmod.client.ui.editor.components.SourceBadge;
+import com.devmod.client.ui.editor.core.UIConstants;
 import net.minecraft.nbt.CompoundTag;
 
 /**

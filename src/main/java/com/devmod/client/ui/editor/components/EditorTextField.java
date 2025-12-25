@@ -1,8 +1,8 @@
-package com.devmod.ui.editor.components;
+package com.devmod.client.ui.editor.components;
 
-import com.devmod.ui.AxiomRenderer;
-import com.devmod.ui.editor.core.ResponsiveLayout;
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;

@@ -240,6 +240,15 @@ public final class Compat {
 
         // P1 - Config (additional)
         public static final String YACL = "yet_another_config_lib_v3";
+        public static final String FANCY_MENU = "fancymenu";
+
+        // P3 - Combat (additional)
+        public static final String PUFFISH_SKILLS = "puffish_skills";
+        public static final String ARCHERS = "archers";
+        public static final String PALADINS = "paladins";
+        public static final String WIZARDS = "wizards";
+        public static final String RUNES = "runes";
+        public static final String SHIELD_API = "shield_api";
 
         private Mods() {}
     }

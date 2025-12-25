@@ -1,13 +1,13 @@
-package com.devmod.ui.unified.pages;
+package com.devmod.client.ui.unified.pages;
 
 import com.devmod.config.EditorClientConfig;
-import com.devmod.ui.AxiomRenderer;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.editor.core.EditorConstants;
-import com.devmod.ui.editor.core.EditorScaleCalculator;
-import com.devmod.ui.editor.core.ScaledCoord;
-import com.devmod.ui.unified.SettingsCategory;
-import com.devmod.ui.unified.SettingsPage;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.EditorConstants;
+import com.devmod.client.ui.editor.core.EditorScaleCalculator;
+import com.devmod.client.ui.editor.core.ScaledCoord;
+import com.devmod.client.ui.unified.SettingsCategory;
+import com.devmod.client.ui.unified.SettingsPage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;

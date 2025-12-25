@@ -3,7 +3,7 @@ package com.devmod.client.overlay;
 import com.devmod.DevMod;
 import com.devmod.party.ArrivalConfirmPayload;
 import com.devmod.party.QuestSequencePayload;
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.UIConstants;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;

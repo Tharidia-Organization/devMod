@@ -19,7 +19,9 @@ import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import net.neoforged.fml.loading.FMLPaths;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;

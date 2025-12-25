@@ -1,4 +1,4 @@
-package com.devmod.ui.editor;
+package com.devmod.client.ui.editor;
 
 import com.devmod.config.EditorClientConfig;
 import com.devmod.DevMod;

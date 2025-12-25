@@ -1,11 +1,11 @@
-package com.devmod.ui.unified.pages;
+package com.devmod.client.ui.unified.pages;
 
 import com.devmod.config.MobConfigManager;
-import com.devmod.ui.AxiomRenderer;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.editor.components.EditorButton;
-import com.devmod.ui.unified.SettingsCategory;
-import com.devmod.ui.unified.SettingsPage;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.unified.SettingsCategory;
+import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;

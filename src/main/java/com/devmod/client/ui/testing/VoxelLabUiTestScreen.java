@@ -1,11 +1,18 @@
-package com.devmod.ui.testing;
+package com.devmod.client.ui.testing;
 
 import com.devmod.client.overlay.Impact3DPanelManager;
 import com.devmod.client.overlay.ImpactHudOverlay;
 import com.devmod.config.Config;
-import com.devmod.ui.editor.components.EditorButton;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.testing.panel.*;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.testing.panel.CollapsiblePanel;
+import com.devmod.client.ui.testing.panel.GridPanel;
+import com.devmod.client.ui.testing.panel.HeaderPanel;
+import com.devmod.client.ui.testing.panel.PanelConstants;
+import com.devmod.client.ui.testing.panel.PanelContainer;
+import com.devmod.client.ui.testing.panel.SectionPanel;
+import com.devmod.client.ui.testing.panel.StatusPanel;
+import com.devmod.client.ui.testing.panel.UIPanel;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;

@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.state;
+package com.devmod.client.ui.editor.state;
 
 import net.minecraft.world.item.ItemStack;
 import org.junit.jupiter.api.BeforeEach;

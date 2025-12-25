@@ -1,6 +1,6 @@
-package com.devmod.ui.radial.render;
+package com.devmod.client.ui.radial.render;
 
-import com.devmod.ui.radial.config.RadialMenuConstants;
+import com.devmod.client.ui.radial.config.RadialMenuConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.gui.GuiGraphics;

@@ -1,6 +1,6 @@
-package com.devmod.ui;
+package com.devmod.client.ui;
 
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.UIConstants;
 import org.junit.jupiter.api.*;
 
 import java.util.*;

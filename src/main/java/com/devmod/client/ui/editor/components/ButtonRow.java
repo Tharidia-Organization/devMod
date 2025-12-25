@@ -1,7 +1,7 @@
-package com.devmod.ui.editor.components;
+package com.devmod.client.ui.editor.components;
 
-import com.devmod.ui.editor.core.EditorSpacing;
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.EditorSpacing;
+import com.devmod.client.ui.editor.core.UIConstants;
 import net.minecraft.client.gui.GuiGraphics;
 
 import java.util.ArrayList;

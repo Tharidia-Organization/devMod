@@ -1,7 +1,7 @@
-package com.devmod.ui.editor.state;
+package com.devmod.client.ui.editor.state;
 
-import com.devmod.ui.editor.EditorModule;
-import com.devmod.ui.editor.components.SlotSelector;
+import com.devmod.client.ui.editor.EditorModule;
+import com.devmod.client.ui.editor.components.SlotSelector;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;

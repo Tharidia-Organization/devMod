@@ -1,12 +1,13 @@
 # DevMod - Mod Compatibility Inventory
 
 > Last Updated: 2024-12-24
-> Source: `run/mods/` + `build.gradle` dependencies
+> Source: local modpack snapshot (`run/mods/`) + `build.gradle` dependencies.
+> This inventory is for compatibility tracking only and does not imply a required pack layout.
 
 ## Summary
 
 - **Total Mods Detected**: 227+
-- **Integration DONE**: 21 (CompatModule pattern)
+- **Integration DONE**: 37 (CompatModule pattern)
 - **Integration PARTIAL**: 0
 - **Priority Categories**: 6
 
@@ -42,16 +43,16 @@ The standardized compat layer is fully implemented:
 | Cloth Config | `cloth-config` | 15.0.140 | run/mods | **DONE** | Config screen API |
 | Controlling | `controlling` | 19.0.5 | run/mods | **DONE** | Keybind conflict detection |
 | EMI | `emi` | 1.1.22+1.21.1 | run/mods | **DONE** | Recipe/item lookup integration |
-| FancyMenu | `fancymenu` | 3.7.0 | run/mods | TODO | Menu customization |
+| FancyMenu | `fancymenu` | 3.7.0 | run/mods | **DONE** | Menu customization, layout detection |
 | InvMove | `invmove` | 0.9.1 | run/mods | TODO | Movement in inventory |
 | JourneyMap | `journeymap` | 6.0.0-beta.52 | run/mods | **DONE** | Waypoint API for Arena |
 | MouseTweaks | `mousetweaks` | 2.26.1 | run/mods | TODO | Inventory mouse controls |
 | Not Enough Animations | `notenoughanimations` | 1.10.6 | run/mods | TODO | Player animations |
 | Player Animation Lib | `playeranimator` | 2.0.1+1.21.1 | run/mods | **DONE** | Animation state tracking |
-| Yet Another Config Lib | `yacl` | 3.8.0+1.21.1 | run/mods | TODO | Config screen framework |
+| Yet Another Config Lib | `yacl` | 3.8.0+1.21.1 | run/mods | **DONE** | Config screen framework |
 | Curios | `curios` | 9.5.1+1.21.1 | run/mods | **DONE** | Equipment slots API |
 | Accessories | `accessories` | 1.1.0-beta.52 | run/mods | **DONE** | Modern equipment slots |
-| Emotecraft | `emotecraft` | 2.4.12 | run/mods | TODO | Player emotes |
+| Emotecraft | `emotecraft` | 2.4.12 | run/mods | **DONE** | Player emotes, animation tracking |
 | First Person | `firstperson` | 2.5.0 | run/mods | TODO | First-person model |
 
 ---
@@ -61,9 +62,9 @@ The standardized compat layer is fully implemented:
 | Mod Name | ModID | Version | Source | Status | Notes |
 |----------|-------|---------|--------|--------|-------|
 | Distant Horizons | `distanthorizons` | 2.3.0-b | build.gradle | **DONE** | LOD rendering |
-| C2ME | `c2me` | 0.3.0+alpha.0.87 | run/mods | TODO | Chunk loading optimization |
+| C2ME | `c2me` | 0.3.0+alpha.0.87 | run/mods | **DONE** | Chunk threading, async serialization |
 | Chunk Loaders | `chunkloaders` | 1.2.8 | run/mods | TODO | Keep chunks loaded |
-| TerraBlender | `terrablender` | 4.1.0.8 | run/mods | TODO | Biome API |
+| TerraBlender | `terrablender` | 4.1.0.8 | run/mods | **DONE** | Biome region detection, worldgen info |
 | Terralith | `terralith` | 2.5.8 | run/mods | TODO | World generation |
 | Structurify | `structurify` | 2.0.4a | run/mods | TODO | Structure control |
 | YUNG's API | `yungsapi` | 5.1.6 | run/mods | TODO | Structure API |
@@ -83,16 +84,16 @@ The standardized compat layer is fully implemented:
 | AzureLib | `azurelib` | 3.1.1 | run/mods | **DONE** | Animation library, bone transforms |
 | More RPG Library | `more_rpg_library` | 2.5.1+1.21.1 | run/mods | TODO | RPG attributes |
 | Apothic Attributes | `apothicattributes` | 2.9.0 | run/mods | **DONE** | Extended attributes (crit, lifesteal) |
-| SmartBrainLib | `smartbrainlib` | 1.16.11 | run/mods | TODO | Mob AI |
+| SmartBrainLib | `smartbrainlib` | 1.16.11 | run/mods | **DONE** | Mob AI detection, behavior tracking |
 | Epic Knights | `epic_knights` | 9.30 | run/mods | TODO | Medieval weapons |
-| Archers | `archers` | 2.6.8+1.21.1 | run/mods | TODO | Archery system |
-| Paladins | `paladins` | 2.6.3+1.21.1 | run/mods | TODO | Paladin class |
-| Wizards | `wizards` | 2.6.4+1.21.1 | run/mods | TODO | Wizard class |
-| Runes | `runes` | 1.2.0+1.21.1 | run/mods | TODO | Rune system |
+| Archers | `archers` | 2.6.8+1.21.1 | run/mods | **DONE** | Archery system (RpgSeries) |
+| Paladins | `paladins` | 2.6.3+1.21.1 | run/mods | **DONE** | Paladin class (RpgSeries) |
+| Wizards | `wizards` | 2.6.4+1.21.1 | run/mods | **DONE** | Wizard class (RpgSeries) |
+| Runes | `runes` | 1.2.0+1.21.1 | run/mods | **DONE** | Rune system (RpgSeries) |
 | Arsenal | `arsenal` | 1.3.2+1.21.1 | run/mods | TODO | Weapons |
 | Armory | `armory` | 1.2.9+1.21.1 | run/mods | TODO | Armor |
 | Ranged Weapon API | `ranged_weapon_api` | 2.3.2+1.21.1 | run/mods | **DONE** | Ranged weapons |
-| Shield API | `shield_api` | 2.2.0 | run/mods | TODO | Shield mechanics |
+| Shield API | `shield_api` | 2.2.0 | run/mods | **DONE** | Shield mechanics, blocking detection |
 | Mowzie's Mobs | `mowziesmobs` | 1.7.5 | run/mods | **DONE** | Boss detection, ability tracking |
 | Rotten Creatures | `rottencreatures` | 1.1.2 | run/mods | TODO | Undead mobs |
 | Bosses Rise | `bossesrise` | 1.0.9 | run/mods | TODO | Boss encounters |
@@ -101,14 +102,14 @@ The standardized compat layer is fully implemented:
 | Swashbucklers | `swashbucklers` | 2.6.6C | run/mods | TODO | Pirate combat |
 | Musket Mod | `musketmod` | 1.5.4 | run/mods | TODO | Firearms |
 | Knight Quest | `knightquest` | 1.9.0 | run/mods | TODO | Knight abilities |
-| Relics | `relics` | 1.2.1+1.21.1 | run/mods | TODO | Artifact system |
+| Relics | `relics` | 1.2.1+1.21.1 | run/mods | **DONE** | Artifact system, level tracking |
 | Elixirum | `elixirum` | 0.2.2 | run/mods | TODO | Potions |
 | Toxony | `toxony` | 0.10.5 | run/mods | TODO | Poison system |
 | Hexalia | `hexalia` | 1.2.81 | run/mods | TODO | Magic |
 | Walkers | `walkers` | 5.7 | run/mods | TODO | Mob morphing |
 | Revive Me | `revive_me` | 5.4.6 | run/mods | TODO | Player revival |
 | PVP Flagging | `pvp_flagging` | 1.1.2 | run/mods | TODO | PVP control |
-| Puffish Skills | `puffish_skills` | 0.16.8 | run/mods | TODO | Skill tree |
+| Puffish Skills | `puffish_skills` | 0.16.8 | run/mods | **DONE** | Skill tree, progression tracking |
 
 ---
 
@@ -117,17 +118,17 @@ The standardized compat layer is fully implemented:
 | Mod Name | ModID | Version | Source | Status | Notes |
 |----------|-------|---------|--------|--------|-------|
 | Spark | `spark` | 1.10.124 | run/mods | **DONE** | Profiler |
-| ModernFix | `modernfix` | 5.25.1 | run/mods | TODO | Performance patches |
-| FerriteCore | `ferritecore` | 7.0.2 | run/mods | TODO | Memory optimization |
-| Lithium | `lithium` | 0.15.0 | run/mods | TODO | Game optimization |
-| Sodium | `sodium` | 0.6.13 | run/mods | TODO | Rendering optimization |
-| EntityCulling | `entityculling` | 1.9.3 | run/mods | TODO | Entity optimization |
+| ModernFix | `modernfix` | 5.25.1 | run/mods | **DONE** | Memory/startup optimization |
+| FerriteCore | `ferritecore` | 7.0.2 | run/mods | **DONE** | Memory optimization, BlockState dedup |
+| Lithium | `lithium` | 0.15.0 | run/mods | **DONE** | Game logic optimization |
+| Sodium | `sodium` | 0.6.13 | run/mods | **DONE** | Rendering optimization |
+| EntityCulling | `entityculling` | 1.9.3 | run/mods | **DONE** | Entity occlusion culling |
 | MoreCulling | `moreculling` | 1.0.6 | run/mods | TODO | Culling optimization |
 | Dynamic FPS | `dynamic_fps` | 3.9.5 | run/mods | TODO | FPS management |
 | Saturn | `saturn` | 0.1.5 | run/mods | TODO | Memory optimization |
 | GPU Tape | `gputape` | 1.0.3 | run/mods | TODO | GPU monitoring |
 | Scalable Lux | `scalablelux` | 0.1.0.1 | run/mods | TODO | Lighting optimization |
-| Iris | `iris` | 1.8.8 | run/mods | TODO | Shader support |
+| Iris | `iris` | 1.8.8 | run/mods | **DONE** | Shader detection, pack info |
 
 ---
 
@@ -284,60 +285,83 @@ The standardized compat layer is fully implemented:
 
 | Status | Count | Percentage |
 |--------|-------|------------|
-| **DONE** | 10 | ~4.4% |
-| **PARTIAL** | 1 | ~0.4% |
-| **TODO** | 217+ | ~95.6% |
+| **DONE** | 37 | ~16.3% |
+| **PARTIAL** | 0 | 0% |
+| **TODO** | 190+ | ~83.7% |
 
 ---
 
-## Existing Integrations (from code)
+## All Implemented Integrations
 
-### Already Implemented
-1. **Better Combat** (`bettercombat`) - `BetterCombatIntegration.java`
-   - Attack name detection
-   - Extended reach
-   - Combo state/count
+### Legacy Integrations (pre-CompatModule)
+1. **Better Combat** - Attack detection, extended reach, combo tracking
+2. **Pehkui** - Visual/hitbox scaling
+3. **Distant Horizons** - LOD rendering, dimension registration
 
-2. **Pehkui** (`pehkui`) - `PehkuiIntegration.java`
-   - Visual scale
-   - Hitbox scale
+### CompatModule Integrations (37 total)
 
-3. **Distant Horizons** (`distanthorizons`) - `DistantHorizonsIntegration.java`
-   - Dynamic dimension registration
-   - LOD skip for instances
+#### P1 - UI/Input/HUD
+- **Cloth Config** - Config screen builder API
+- **Controlling** - Keybind conflict detection
+- **EMI** - Recipe/item lookup integration
+- **FancyMenu** - Menu customization, layout detection
+- **JourneyMap** - Waypoint API for Arena
+- **Player Animation Lib** - Animation state tracking
+- **Yet Another Config Lib (YACL)** - Alternative config framework
+- **Curios** - Equipment slot detection
+- **Accessories** - Modern equipment slots
+- **Emotecraft** - Player emotes, animation tracking
 
-4. **GeckoLib** (`geckolib`) - `GeckoLibCompat.java` (partial)
-   - Animation compatibility
+#### P2 - Dimension/World
 
-5. **Cloth Config** (`cloth-config`) - `ClothConfigCompat.java`
-   - Config screen builder API
-   - Category and option creation
-   - Save callbacks
+- **TerraBlender** - Biome region detection, worldgen info
+- **C2ME** - Chunk threading, async serialization
 
-6. **Curios** (`curios`) - `CuriosCompat.java`
-   - Equipment slot detection
-   - Curio item enumeration
-   - Ring/necklace convenience methods
+#### P3 - Combat/Mob Attributes
 
-7. **Iron's Spellbooks** (`irons_spellbooks`) - `IronsSpellbooksCompat.java`
-   - Mana tracking (current/max)
-   - Casting state detection
-   - Magic status display
+- **GeckoLib** - Animation library, bone transforms
+- **AzureLib** - Animation library, bone transforms
+- **Iron's Spellbooks** - Mana tracking, spell casting
+- **Spell Engine** - Spell framework integration
+- **Spell Power** - Spell attributes
+- **Ranged Weapon API** - Ranged weapon detection
+- **Apothic Attributes** - Extended attributes (crit, lifesteal)
+- **SmartBrainLib** - Mob AI detection, behavior tracking
+- **Mowzie's Mobs** - Boss detection, ability tracking
+- **Archers** - Archery system (RpgSeries)
+- **Paladins** - Paladin class (RpgSeries)
+- **Wizards** - Wizard class (RpgSeries)
+- **Runes** - Rune system (RpgSeries)
+- **Shield API** - Shield mechanics, blocking detection
+- **Relics** - Artifact system, level tracking
+- **Puffish Skills** - Skill tree, progression tracking
 
-8. **Spark** (`spark`) - `SparkCompat.java`
-   - TPS monitoring (10s/1m/5m/15m windows)
-   - MSPT tracking
-   - Health status checks
+#### P4 - Telemetry/Performance
+
+- **Spark** - TPS/MSPT monitoring, health status
+- **Iris** - Shader detection, pack info
+- **ModernFix** - Memory/startup optimization
+- **FerriteCore** - Memory optimization, BlockState dedup
+- **Lithium** - Game logic optimization
+- **Sodium** - Rendering optimization
+- **EntityCulling** - Entity occlusion culling
+
+#### P5 - QoL/Testing
+
+- **Easy NPC** - NPC spawning for Arena
+- **Dummmmmmy** - Training dummies, DPS tracking
 
 ---
 
 ## Next Steps
 
-1. Create standardized `CompatModule` interface
-2. Process P1 mods (UI/Input) first
-3. Process P2 mods (Dimension) for Arena system
-4. Process P3 mods (Combat) for damage/stats
-5. Generate individual `docs/compat/<modid>.md` files
+1. ~~Create standardized `CompatModule` interface~~ ✅ DONE
+2. ~~Process P1 mods (UI/Input) first~~ ✅ DONE (10 modules)
+3. ~~Process P2 mods (Dimension) for Arena system~~ ✅ DONE (2 modules)
+4. ~~Process P3 mods (Combat) for damage/stats~~ ✅ DONE (16 modules)
+5. ~~Process P4 mods (Performance)~~ ✅ DONE (7 modules)
+6. Continue with remaining P5/P6 mods
+7. Generate individual `docs/compat/<modid>.md` files
 
 ---
 

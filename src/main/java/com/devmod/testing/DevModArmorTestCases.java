@@ -390,7 +390,7 @@ public final class DevModArmorTestCases {
                 // Validate SourceBadge class exists and has expected sources
                 try {
                     Class<?> sourceBadge = Class.forName(
-                        "com.devmod.ui.editor.components.SourceBadge$Source");
+                        "com.devmod.client.ui.editor.components.SourceBadge$Source");
                     return sourceBadge.isEnum() &&
                            sourceBadge.getEnumConstants().length >= 4; // DEV, NBT, VANILLA, MODIFIED
                 } catch (Exception e) {

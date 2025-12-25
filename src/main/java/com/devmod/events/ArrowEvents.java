@@ -3,8 +3,9 @@ package com.devmod.events;
 import com.devmod.DevMod;
 
 import com.devmod.combat.HitHelper;
-import com.devmod.client.ClientVFXProxy;
 import com.devmod.collision.integration.OBBHitHelper;
+import net.neoforged.fml.loading.FMLEnvironment;
+import java.lang.reflect.Method;
 import com.devmod.util.I18n;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -163,10 +164,34 @@ public class ArrowEvents {
 
             LOGGER.debug("Enderman moved {} blocks, evaded={}", String.format("%.1f", distMoved), probablyEvaded);
 
-            // Spawn evasion panel (proxy handles dist check)
-            if (probablyEvaded) {
-                ClientVFXProxy.spawnArrowEvasionPanel(pending.shooter, target, pending.hitPos, pending.targetPos);
+            // Spawn evasion panel (client-only)
+            if (probablyEvaded && FMLEnvironment.dist.isClient()) {
+                spawnArrowEvasionPanelClientSafe(pending.shooter, target, pending.hitPos, pending.targetPos);
             }
         }, 150, TimeUnit.MILLISECONDS);
+    }
+
+    // ========== Client-safe VFX helpers ==========
+
+    private static Method spawnArrowEvasionMethod;
+    private static boolean vfxMethodInitialized = false;
+
+    /**
+     * Spawns arrow evasion VFX panel (client-only, server-safe).
+     */
+    private static void spawnArrowEvasionPanelClientSafe(LivingEntity shooter, LivingEntity target, Vec3 hitPos, Vec3 targetPos) {
+        try {
+            if (!vfxMethodInitialized) {
+                vfxMethodInitialized = true;
+                Class<?> proxyClass = Class.forName("com.devmod.client.ClientVFXProxy");
+                spawnArrowEvasionMethod = proxyClass.getMethod("spawnArrowEvasionPanel",
+                    LivingEntity.class, LivingEntity.class, Vec3.class, Vec3.class);
+            }
+            if (spawnArrowEvasionMethod != null) {
+                spawnArrowEvasionMethod.invoke(null, shooter, target, hitPos, targetPos);
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Could not spawn arrow evasion VFX: {}", e.getMessage());
+        }
     }
 }

@@ -1,14 +1,14 @@
-package com.devmod.ui.editor.components;
+package com.devmod.client.ui.editor.components;
 
-import com.devmod.ui.AxiomRenderer;
-import com.devmod.ui.editor.core.DirtyRegionTracker;
-import com.devmod.ui.editor.core.EditorDimensions;
-import com.devmod.ui.editor.core.EditorSpacing;
-import com.devmod.ui.editor.core.ResponsiveLayout;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.scroll.ScrollManager;
-import com.devmod.ui.scroll.ScrollMetrics;
-import com.devmod.ui.scroll.ScrollMode;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.DirtyRegionTracker;
+import com.devmod.client.ui.editor.core.EditorDimensions;
+import com.devmod.client.ui.editor.core.EditorSpacing;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.scroll.ScrollManager;
+import com.devmod.client.ui.scroll.ScrollMetrics;
+import com.devmod.client.ui.scroll.ScrollMode;
 import net.minecraft.client.gui.GuiGraphics;
 
 import java.util.Objects;

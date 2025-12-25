@@ -1,4 +1,4 @@
-package com.devmod.effects;
+package com.devmod.client.effects;
 
 import com.devmod.config.Config;
 import net.minecraft.client.Minecraft;

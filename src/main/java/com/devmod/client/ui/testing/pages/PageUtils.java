@@ -1,4 +1,4 @@
-package com.devmod.ui.testing.pages;
+package com.devmod.client.ui.testing.pages;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
 

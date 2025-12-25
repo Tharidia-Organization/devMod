@@ -3,7 +3,7 @@ package com.devmod.client.panels.types;
 import com.devmod.client.panels.core.FloatingPanel;
 import com.devmod.client.panels.core.PanelType;
 import com.devmod.client.panels.tracking.EntityTracker;
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.UIConstants;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;

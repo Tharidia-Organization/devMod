@@ -1,14 +1,15 @@
-package com.devmod.testing;
+package com.devmod.client.testing;
 
-import com.devmod.testing.TutorialManager.TutorialStep;
+import com.devmod.testing.TestCase;
+import com.devmod.client.testing.TutorialManager.TutorialStep;
 import com.devmod.actions.ActionContext;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.ui.AxiomRenderer;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.editor.components.EditorButton;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;

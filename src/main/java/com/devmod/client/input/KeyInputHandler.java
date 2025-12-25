@@ -35,7 +35,7 @@ import java.util.Objects;
  * <p><b>Defaults:</b> Only the Radial Menu is bound by default. All other keybinds ship
  * unassigned; the keys documented below are suggested mappings.</p>
  *
- * @see com.devmod.ui.radial.RadialMenuScreen
+ * @see com.devmod.client.ui.radial.RadialMenuScreen
  */
 @OnlyIn(Dist.CLIENT)
 public class KeyInputHandler {

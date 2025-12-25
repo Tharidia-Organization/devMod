@@ -1,8 +1,10 @@
-package com.devmod.collision.transform;
+package com.devmod.client.collision.transform;
 
+import com.mojang.logging.LogUtils;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.world.entity.LivingEntity;
 import org.joml.Matrix4f;
+import org.slf4j.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -34,6 +36,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class ModelPartTransformCapture {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private ModelPartTransformCapture() {} // Utility class
 
     /**
@@ -64,6 +68,13 @@ public final class ModelPartTransformCapture {
     // Cache TTL in milliseconds (transforms older than this are stale)
     private static final long TRANSFORM_TTL_MS = 100; // 5 ticks at 20 TPS
 
+    // Maximum number of entities to cache (prevents unbounded growth)
+    private static final int MAX_CACHED_ENTITIES = 256;
+
+    // Cleanup tracking
+    private static volatile long lastCleanupTime = 0;
+    private static final long CLEANUP_INTERVAL_MS = 5000; // 5 seconds
+
     // ==================== Capture Control ====================
 
     /**
@@ -77,8 +88,37 @@ public final class ModelPartTransformCapture {
         currentEntity.set(entity);
         capturing.set(true);
 
+        // Periodic cleanup to prevent memory leaks
+        maybeCleanup();
+
+        // Enforce max cache size - evict oldest entries if needed
+        if (entityTransforms.size() >= MAX_CACHED_ENTITIES) {
+            evictOldestEntries();
+        }
+
         // Clear old transforms for this entity
         entityTransforms.computeIfAbsent(entity.getId(), k -> new ConcurrentHashMap<>()).clear();
+    }
+
+    /**
+     * Evicts the oldest (stalest) entries when cache is full.
+     */
+    private static void evictOldestEntries() {
+        int toRemove = entityTransforms.size() - MAX_CACHED_ENTITIES + 16; // Remove 16 extra to avoid thrashing
+
+        entityTransforms.entrySet().stream()
+            .sorted((a, b) -> {
+                // Find oldest capture time for each entity
+                long aMax = a.getValue().values().stream()
+                    .mapToLong(t -> t.captureTime).max().orElse(0);
+                long bMax = b.getValue().values().stream()
+                    .mapToLong(t -> t.captureTime).max().orElse(0);
+                return Long.compare(aMax, bMax);
+            })
+            .limit(Math.max(1, toRemove))
+            .map(Map.Entry::getKey)
+            .toList()
+            .forEach(entityTransforms::remove);
     }
 
     /**
@@ -96,6 +136,13 @@ public final class ModelPartTransformCapture {
      */
     public static boolean isCapturing() {
         return Boolean.TRUE.equals(capturing.get());
+    }
+
+    /**
+     * Periodic cleanup hook (call from client tick).
+     */
+    public static void clientTick() {
+        maybeCleanup();
     }
 
     /**
@@ -213,10 +260,35 @@ public final class ModelPartTransformCapture {
     // ==================== Cleanup ====================
 
     /**
+     * Remove cached transforms for a specific entity (called on unload/death).
+     */
+    public static void removeEntity(int entityId) {
+        entityTransforms.remove(entityId);
+    }
+
+    /**
+     * Remove cached transforms for a specific entity (called on unload/death).
+     */
+    public static void removeEntity(@Nullable LivingEntity entity) {
+        if (entity != null) {
+            removeEntity(entity.getId());
+        }
+    }
+
+    private static void maybeCleanup() {
+        long now = System.currentTimeMillis();
+        if (now - lastCleanupTime > CLEANUP_INTERVAL_MS) {
+            lastCleanupTime = now;
+            cleanup();
+        }
+    }
+
+    /**
      * Removes stale transforms for entities that no longer exist or haven't been updated.
      * Call periodically (e.g., every second) to prevent memory leaks.
      */
     public static void cleanup() {
+        int sizeBefore = entityTransforms.size();
         long now = System.currentTimeMillis();
         entityTransforms.entrySet().removeIf(entry -> {
             Map<String, CapturedTransform> transforms = entry.getValue();
@@ -227,6 +299,13 @@ public final class ModelPartTransformCapture {
                 .allMatch(t -> now - t.captureTime > TRANSFORM_TTL_MS * 10);
             return allStale;
         });
+        int sizeAfter = entityTransforms.size();
+
+        // Log cache cleanup metrics periodically (every ~5 seconds based on cleanup interval)
+        if (sizeBefore != sizeAfter || sizeAfter > 100) {
+            LOGGER.debug("[ModelPartTransformCapture] Cache: {} entities, {} transforms (evicted {} entities)",
+                sizeAfter, getTotalTransformCount(), sizeBefore - sizeAfter);
+        }
     }
 
     /**

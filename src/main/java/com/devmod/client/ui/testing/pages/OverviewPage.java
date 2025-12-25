@@ -1,4 +1,4 @@
-package com.devmod.ui.testing.pages;
+package com.devmod.client.ui.testing.pages;
 
 import com.devmod.config.Config;
 import com.devmod.actions.ActionIds;
@@ -8,16 +8,19 @@ import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.overlay.Impact3DPanelManager;
 import com.devmod.client.overlay.ImpactHudOverlay;
 import com.devmod.client.rendering.DebugRenderer;
-import com.devmod.ui.editor.components.EditorButton;
-import com.devmod.ui.testing.VoxelLabTab;
-import com.devmod.ui.testing.panel.*;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.testing.VoxelLabTab;
+import com.devmod.client.ui.testing.panel.HeaderPanel;
+import com.devmod.client.ui.testing.panel.SectionPanel;
+import com.devmod.client.ui.testing.panel.SpacerPanel;
+import com.devmod.client.ui.testing.panel.StatusPanel;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
-import static com.devmod.ui.testing.pages.PageUtils.safeGetBool;
+import static com.devmod.client.ui.testing.pages.PageUtils.safeGetBool;
 
 /**
  * Overview Page - Dashboard with system status and quick toggles.

@@ -1,15 +1,16 @@
-package com.devmod.ui.hub;
+package com.devmod.client.ui.hub;
 
+import com.devmod.client.telemetry.UiTelemetry;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.testing.ActiveTestHudOverlay;
+import com.devmod.client.testing.ActiveTestHudOverlay;
 import com.devmod.testing.TestCase;
-import com.devmod.testing.TestingSession;
-import com.devmod.ui.AxiomRenderer;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.editor.components.EditorButton;
+import com.devmod.client.testing.TestingSession;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -87,6 +88,9 @@ public class TestingHub extends Screen {
 
     @Override
     protected void init() {
+        // Track screen open for telemetry
+        UiTelemetry.screenOpened("testing", "testing_hub");
+
         // Calculate responsive dimensions
         hubWidth = calculateHubWidth();
         hubHeight = calculateHubHeight();
@@ -108,6 +112,13 @@ public class TestingHub extends Screen {
 
         headerCloseButton.onClick(this::onClose);
         headerMinimizeButton.onClick(this::minimizeToHud);
+    }
+
+    @Override
+    public void onClose() {
+        // Track screen close for telemetry
+        UiTelemetry.screenClosed("testing", "testing_hub");
+        super.onClose();
     }
 
     private void initSessionStartUI() {

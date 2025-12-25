@@ -1,16 +1,16 @@
-package com.devmod.ui.editor.modules;
+package com.devmod.client.ui.editor.modules;
 
 import com.devmod.stats.FuelStats;
 import com.devmod.config.FuelConfigManager;
-import com.devmod.ui.editor.EditorSection;
-import com.devmod.ui.editor.components.EditorSlider;
-import com.devmod.ui.editor.components.EditorToggle;
-import com.devmod.ui.editor.components.SourceBadge;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.editor.sections.SimpleHeaderSection;
-import com.devmod.ui.editor.sections.SliderSectionAdapter;
-import com.devmod.ui.editor.sections.TextNoteSection;
-import com.devmod.ui.editor.sections.ToggleSectionAdapter;
+import com.devmod.client.ui.editor.EditorSection;
+import com.devmod.client.ui.editor.components.EditorSlider;
+import com.devmod.client.ui.editor.components.EditorToggle;
+import com.devmod.client.ui.editor.components.SourceBadge;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.sections.SimpleHeaderSection;
+import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
+import com.devmod.client.ui.editor.sections.TextNoteSection;
+import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
 

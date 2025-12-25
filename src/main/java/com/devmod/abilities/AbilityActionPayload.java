@@ -21,14 +21,17 @@ public record AbilityActionPayload(AbilityType ability, int direction) implement
         StreamCodec.of(AbilityActionPayload::write, AbilityActionPayload::read);
 
     private static AbilityActionPayload read(RegistryFriendlyByteBuf buf) {
-        return new AbilityActionPayload(
-            AbilityType.values()[buf.readVarInt()],
-            buf.readVarInt()
-        );
+        int abilityOrdinal = buf.readVarInt();
+        AbilityType[] values = AbilityType.values();
+        AbilityType ability = (abilityOrdinal >= 0 && abilityOrdinal < values.length)
+            ? values[abilityOrdinal]
+            : null;
+        int direction = buf.readVarInt();
+        return new AbilityActionPayload(ability, direction);
     }
 
     private static void write(RegistryFriendlyByteBuf buf, AbilityActionPayload payload) {
-        buf.writeVarInt(payload.ability.ordinal());
+        buf.writeVarInt(payload.ability != null ? payload.ability.ordinal() : 0);
         buf.writeVarInt(payload.direction);
     }
 

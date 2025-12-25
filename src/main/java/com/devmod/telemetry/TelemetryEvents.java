@@ -1,7 +1,5 @@
 package com.devmod.telemetry;
 
-import com.devmod.combat.HitData;
-
 import com.devmod.config.Config;
 import com.devmod.DevMod;
 import com.devmod.telemetry.player.PlayerAttributeTelemetryService;
@@ -62,6 +60,9 @@ public class TelemetryEvents {
         // PERFORMANCE FIX: Gracefully shutdown async telemetry writer
         // Ensures all pending writes are flushed before server shutdown
         TelemetryService.INSTANCE.shutdown();
+
+        // Clear transform caches on server shutdown to prevent memory leaks
+        com.devmod.collision.transform.TransformProviderRegistry.clearAllCaches();
     }
 
     @SubscribeEvent
@@ -248,6 +249,10 @@ public class TelemetryEvents {
         // Without this, trackers accumulate indefinitely for despawned/killed entities
         UUID entityId = event.getEntity().getUUID();
         TelemetryService.INSTANCE.cleanupEntity(entityId);
+
+        // Clear transform cache for this entity (OBB collision system)
+        int numericId = event.getEntity().getId();
+        com.devmod.collision.transform.TransformProviderRegistry.clearCache(numericId);
     }
 
     @SubscribeEvent

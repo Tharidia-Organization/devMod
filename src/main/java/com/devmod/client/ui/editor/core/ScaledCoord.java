@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.core;
+package com.devmod.client.ui.editor.core;
 
 /**
  * Represents a 2D coordinate that has been scaled and aligned to the 4px grid.

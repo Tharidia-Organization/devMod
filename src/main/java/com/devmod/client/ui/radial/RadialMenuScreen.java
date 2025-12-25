@@ -1,19 +1,20 @@
-package com.devmod.ui.radial;
+package com.devmod.client.ui.radial;
 
+import com.devmod.client.telemetry.UiTelemetry;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionResult;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.overlay.OnboardingOverlay;
-import com.devmod.ui.radial.animation.RadialAnimator;
-import com.devmod.ui.radial.config.RadialMenuConstants;
-import com.devmod.ui.radial.input.RadialSearchHandler;
-import com.devmod.ui.radial.model.MacroCategory;
-import com.devmod.ui.radial.render.RadialCategoryRenderer;
-import com.devmod.ui.radial.render.RadialGeometry;
-import com.devmod.ui.radial.render.RadialHubRenderer;
-import com.devmod.ui.radial.render.RadialTooltipRenderer;
-import com.devmod.ui.unified.persistence.SettingsManager;
+import com.devmod.client.ui.radial.animation.RadialAnimator;
+import com.devmod.client.ui.radial.config.RadialMenuConstants;
+import com.devmod.client.ui.radial.input.RadialSearchHandler;
+import com.devmod.client.ui.radial.model.MacroCategory;
+import com.devmod.client.ui.radial.render.RadialCategoryRenderer;
+import com.devmod.client.ui.radial.render.RadialGeometry;
+import com.devmod.client.ui.radial.render.RadialHubRenderer;
+import com.devmod.client.ui.radial.render.RadialTooltipRenderer;
+import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.util.I18n;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -32,7 +33,14 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Stack;
 
 /**
  * RADIAL MENU V3 - MACRO-CATEGORY EDITION
@@ -59,7 +67,7 @@ public final class RadialMenuScreen extends Screen {
     // MACRO-CATEGORY SYSTEM
     // ================================================================
 
-    // MacroCategory enum extracted to com.devmod.ui.radial.model.MacroCategory
+    // MacroCategory enum extracted to com.devmod.client.ui.radial.model.MacroCategory
 
     // === Macro-Category State ===
     private static MacroCategory selectedMacro = MacroCategory.ANALYZE; // Persisted across opens
@@ -291,20 +299,7 @@ public final class RadialMenuScreen extends Screen {
 
     private RadialMenuItem createMobEditorItem() {
         ItemStack leadStack = Objects.requireNonNull(Items.LEAD, "lead").getDefaultInstance();
-        return new RadialMenuItem("Mob Editor",
-            RadialAction.registry(ActionIds.UI_MOB_CONFIG_OPEN),
-            "",
-            leadStack.copy()) {
-            @Override
-            public boolean isActive() {
-                return cachedTargetEntity instanceof net.minecraft.world.entity.Mob;
-            }
-
-            @Override
-            public String getDescription() {
-                return getMobEditorDescription();
-            }
-        };
+        return new MobEditorItem(this, leadStack.copy());
     }
 
     private String getMobEditorDescription() {
@@ -314,12 +309,37 @@ public final class RadialMenuScreen extends Screen {
         return "§cLook at a mob first, then open menu";
     }
 
+    private static final class MobEditorItem extends RadialMenuItem {
+        private final RadialMenuScreen screen;
+
+        private MobEditorItem(RadialMenuScreen screen, ItemStack iconStack) {
+            super("Mob Editor",
+                RadialAction.registry(ActionIds.UI_MOB_CONFIG_OPEN),
+                "",
+                iconStack);
+            this.screen = Objects.requireNonNull(screen, "screen");
+        }
+
+        @Override
+        public boolean isActive() {
+            return screen.cachedTargetEntity instanceof net.minecraft.world.entity.Mob;
+        }
+
+        @Override
+        public String getDescription() {
+            return screen.getMobEditorDescription();
+        }
+    }
+
     // ================================================================
     // SCREEN LIFECYCLE
     // ================================================================
 
     @Override
     protected void init() {
+        // Track screen open for telemetry
+        UiTelemetry.screenOpened("radial", "radial_menu");
+
         centerX = width / 2;
         centerY = height / 2;
         OnboardingOverlay.onRadialMenuOpened();
@@ -1300,6 +1320,8 @@ public final class RadialMenuScreen extends Screen {
 
     @Override
     public void onClose() {
+        // Track screen close for telemetry
+        UiTelemetry.screenClosed("radial", "radial_menu");
         logMenuClosed();
         super.onClose();
     }

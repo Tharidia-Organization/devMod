@@ -1,13 +1,13 @@
-package com.devmod.ui.testing.panel;
+package com.devmod.client.ui.testing.panel;
 
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.UIConstants;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.devmod.ui.testing.panel.PanelConstants.*;
+import static com.devmod.client.ui.testing.panel.PanelConstants.*;
 
 /**
  * Container that manages a list of UIPanel instances with automatic layout,

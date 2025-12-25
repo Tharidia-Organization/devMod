@@ -1,6 +1,6 @@
-package com.devmod.ui.components;
+package com.devmod.client.ui.components;
 
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.core.UIConstants;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**

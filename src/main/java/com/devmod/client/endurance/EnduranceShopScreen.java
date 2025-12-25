@@ -1,11 +1,16 @@
-package com.devmod.endurance;
+package com.devmod.client.endurance;
+
+import com.devmod.endurance.ClientShopCache;
+import com.devmod.endurance.RequestShopSyncPayload;
+import com.devmod.endurance.RewardSystem;
+import com.devmod.endurance.ShopPurchasePayload;
 
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.ui.AxiomRenderer;
-import com.devmod.ui.editor.core.UIConstants;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.util.I18n;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -13,7 +18,10 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
@@ -69,7 +77,7 @@ public class EnduranceShopScreen extends Screen {
     private Map<String, Integer> playerPurchases = new HashMap<>();
 
     public EnduranceShopScreen() {
-        super(I18n.ui("endurance.shop_title"));
+        super(I18n.endurance("shop_title"));
     }
 
     @Override
@@ -186,7 +194,7 @@ public class EnduranceShopScreen extends Screen {
             boolean isHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, catBtnX, catY, catBtnW, catBtnH);
             int catColor = CATEGORY_COLORS.get(category);
 
-            String catName = I18n.translate("devmod.shop.category." + category.name().toLowerCase()).getString();
+            String catName = getCategoryLabel(category);
             renderButton(graphics, catBtnX, catY, catBtnW, catBtnH, catName, isHovered, isSelected ? catColor : UIConstants.Border.DEFAULT());
 
             catY += catBtnH + UIConstants.Spacing.GAP_SMALL;
@@ -248,16 +256,16 @@ public class EnduranceShopScreen extends Screen {
 
         // Item name (truncated to prevent overflow)
         int nameColor = maxedOut ? COLOR_TEXT_DIM : COLOR_TEXT;
-        String displayName = truncateText(item.displayName, width - 100); // Leave room for owned count
+        String displayName = truncateText(getItemName(item), width - 100); // Leave room for owned count
         graphics.drawString(Objects.requireNonNull(font), displayName, x + 10, y + 5, nameColor);
 
         // Description (truncated to prevent overflow)
-        String description = truncateText(item.description, width - 20);
+        String description = truncateText(getItemDescription(item), width - 20);
         graphics.drawString(Objects.requireNonNull(font), description, x + 10, y + 18, COLOR_TEXT_DIM);
 
         // Price
         int currencyColor = CURRENCY_COLORS.get(item.currency);
-        String priceText = item.price + " " + item.currency.displayName;
+        String priceText = item.price + " " + getCurrencyLabel(item.currency);
         int priceColor = canAfford ? currencyColor : COLOR_ERROR;
         graphics.drawString(Objects.requireNonNull(font), priceText, x + 10, y + 35, priceColor);
 
@@ -286,12 +294,12 @@ public class EnduranceShopScreen extends Screen {
         int y = panelY + 10;
 
         // Item name
-        graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(selectedItem.displayName), panelX + panelWidth / 2, y, COLOR_TEXT);
+        graphics.drawCenteredString(Objects.requireNonNull(font), getItemName(selectedItem), panelX + panelWidth / 2, y, COLOR_TEXT);
         y += 20;
 
         // Category
         int catColor = CATEGORY_COLORS.get(selectedItem.category);
-        graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(selectedItem.category.displayName), panelX + panelWidth / 2, y, catColor);
+        graphics.drawCenteredString(Objects.requireNonNull(font), getCategoryLabel(selectedItem.category), panelX + panelWidth / 2, y, catColor);
         y += 25;
 
         // Divider
@@ -299,7 +307,7 @@ public class EnduranceShopScreen extends Screen {
         y += 10;
 
         // Description (word wrap)
-        String desc = selectedItem.description;
+        String desc = getItemDescription(selectedItem);
         int maxWidth = panelWidth - 20;
         List<String> lines = wrapText(desc, maxWidth);
         for (String line : lines) {
@@ -312,7 +320,7 @@ public class EnduranceShopScreen extends Screen {
         graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.ui.price").getString()) + ":", panelX + 10, y, COLOR_ACCENT);
         y += 12;
         int currencyColor = CURRENCY_COLORS.get(selectedItem.currency);
-        graphics.drawString(Objects.requireNonNull(font), "  " + selectedItem.price + " " + selectedItem.currency.displayName,
+        graphics.drawString(Objects.requireNonNull(font), "  " + selectedItem.price + " " + getCurrencyLabel(selectedItem.currency),
             panelX + 10, y, currencyColor);
         y += 20;
 
@@ -360,6 +368,22 @@ public class EnduranceShopScreen extends Screen {
         int textX = x + (w - Objects.requireNonNull(font).width(Objects.requireNonNull(text))) / 2;
         int textY = y + (h - 8) / 2;
         graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(text), textX, textY, hovered ? UIConstants.Text.WHITE() : color, false);
+    }
+
+    private String getCategoryLabel(RewardSystem.ShopCategory category) {
+        return Objects.requireNonNull(I18n.translate("devmod.shop.category." + category.name().toLowerCase()).getString());
+    }
+
+    private String getCurrencyLabel(RewardSystem.Currency currency) {
+        return Objects.requireNonNull(I18n.translate("devmod.currency." + currency.key).getString());
+    }
+
+    private String getItemName(RewardSystem.ShopItem item) {
+        return Objects.requireNonNull(I18n.translate("devmod.shop." + item.id).getString());
+    }
+
+    private String getItemDescription(RewardSystem.ShopItem item) {
+        return Objects.requireNonNull(I18n.translate("devmod.shop." + item.id + ".desc").getString());
     }
 
     private List<String> wrapText(String text, int maxWidth) {

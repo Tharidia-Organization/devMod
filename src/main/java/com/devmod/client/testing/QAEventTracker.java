@@ -1,5 +1,8 @@
-package com.devmod.testing;
+package com.devmod.client.testing;
 
+import com.devmod.testing.TestCase;
+import com.devmod.testing.TesterProfile;
+import com.devmod.testing.TesterProgress;
 import com.devmod.DevMod;
 import com.devmod.combat.HitHelper;
 import com.devmod.client.overlay.ImpactHudOverlay;

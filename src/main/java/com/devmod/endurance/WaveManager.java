@@ -23,8 +23,17 @@ import net.minecraft.world.item.Items;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Manages wave spawning, mob buffs, and wave progression for Endurance Quests.
@@ -280,8 +289,9 @@ public class WaveManager {
         LOGGER.debug("[EnduranceQuest] Starting wave {} with playerCount={}, questType={}",
             waveNumber, playerCount, questType);
 
-        // Check if this is a boss wave (every 5 waves)
-        if (BossWaveSystem.INSTANCE.isBossWave(waveNumber)) {
+        // Check if this is a boss wave (using dynamic tension system)
+        UUID questId = quest.getQuestId();
+        if (BossWaveSystem.INSTANCE.isBossWave(waveNumber, questId)) {
             // Start boss wave instead of normal wave
             BossWaveSystem.BossFight bossFight = BossWaveSystem.INSTANCE.startBossWave(session, waveNumber);
             if (bossFight != null && bossFight.getBossEntity() != null) {
@@ -1203,13 +1213,17 @@ public class WaveManager {
         if (waveState != null && waveState.spawnedMobs.contains(mobId)) {
             waveState.recordKill(mobId);
 
-            // Check if this was a boss wave
-            if (BossWaveSystem.INSTANCE.isBossWave(waveState.waveNumber)) {
+            // Check if this was a boss wave (using dynamic tension system)
+            UUID questId = waveState.quest.getQuestId();
+            if (BossWaveSystem.INSTANCE.isBossWave(waveState.waveNumber, questId)) {
                 // End the boss fight and award bonus points
                 BossWaveSystem.BossFight bossFight = BossWaveSystem.INSTANCE.endBossFight(arenaId, true);
                 if (bossFight != null) {
                     // Increment boss waves completed in quest
                     waveState.quest.incrementBossWavesCompleted();
+
+                    // Reset tension system after boss defeat
+                    TensionSystem.INSTANCE.onBossDefeated(questId);
 
                     LOGGER.info("[EnduranceQuest] BOSS wave {} complete! Bonus points: {}",
                         waveState.waveNumber, bossFight.getBonusPoints());

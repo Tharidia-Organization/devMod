@@ -1,4 +1,4 @@
-package com.devmod.ui.radial.animation;
+package com.devmod.client.ui.radial.animation;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

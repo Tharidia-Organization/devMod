@@ -1,5 +1,7 @@
-package com.devmod.testing;
+package com.devmod.client.testing;
 
+import com.devmod.testing.TestCase;
+import com.devmod.testing.TesterProfile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;

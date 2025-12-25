@@ -1,4 +1,4 @@
-package com.devmod.ui.screens;
+package com.devmod.client.ui.screens;
 
 import com.devmod.client.input.KeyInputHandler;
 import com.devmod.actions.ActionContext;
@@ -17,9 +17,9 @@ import com.devmod.client.rendering.VerticalLevelsVisualizer;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.testing.stats.EnvironmentalDamageStats;
 import com.devmod.testing.stats.HazardTypeRegistry.HazardType;
-import com.devmod.ui.AxiomRenderer;
-import com.devmod.ui.editor.core.UIConstants;
-import com.devmod.ui.editor.components.EditorButton;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.util.I18n;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -726,6 +726,10 @@ public class TelemetryDashboardScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == 256 && showClearConfirmation) { // Escape
+            showClearConfirmation = false;
+            return true;
+        }
         // Keyboard navigation for stats tab
         if (currentTab == DashboardTab.STATS && cachedStats.size() > 10) {
             // Arrow Up / Page Up

@@ -1,7 +1,7 @@
-package com.devmod.arena.hud;
+package com.devmod.client.arena.hud;
 
+import com.devmod.arena.BuildPhase;
 import com.devmod.arena.network.BuildProgressPayload;
-import com.devmod.arena.ui.BuildProgressOverlay.BuildPhase;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 

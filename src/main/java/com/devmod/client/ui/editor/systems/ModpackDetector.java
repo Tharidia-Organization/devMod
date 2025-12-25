@@ -1,4 +1,4 @@
-package com.devmod.ui.editor.systems;
+package com.devmod.client.ui.editor.systems;
 
 import com.devmod.DevMod;
 import com.google.gson.JsonObject;

@@ -28,7 +28,19 @@ import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import com.devmod.endurance.boss.BossDNAMixer;
+import com.devmod.endurance.boss.BossDNAMixer.MixedBossData;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -140,6 +152,10 @@ public class BossWaveSystem {
         private final int waveNumber;
         private final ResourceLocation baseMobType;
 
+        // DNA Mixing data
+        private MixedBossData mixedData;
+        private BossArchetype currentArchetype; // For EVOLVING variant
+
         // Boss entity
         private UUID bossEntityId;
         private Mob bossEntity;
@@ -174,6 +190,7 @@ public class BossWaveSystem {
             this.bossId = bossId;
             this.arenaId = arenaId;
             this.archetype = archetype;
+            this.currentArchetype = archetype;
             this.waveNumber = waveNumber;
             this.baseMobType = baseMobType;
 
@@ -183,9 +200,53 @@ public class BossWaveSystem {
             }
         }
 
-        /** Returns abilities for this boss's archetype. */
+        /** Set mixed boss data from DNA mixer. */
+        public void setMixedData(MixedBossData data) {
+            this.mixedData = data;
+            this.currentArchetype = data.primaryArchetype();
+            // Re-initialize cooldowns with mixed abilities
+            abilityCooldowns.clear();
+            for (BossAbility ability : data.abilities()) {
+                abilityCooldowns.put(ability, 0);
+            }
+        }
+
+        /** Get mixed boss data (may be null for legacy bosses). */
+        public MixedBossData getMixedData() {
+            return mixedData;
+        }
+
+        /** Check if this is a mixed boss. */
+        public boolean isMixedBoss() {
+            return mixedData != null;
+        }
+
+        /** Returns abilities for this boss (mixed if available, otherwise archetype). */
         public List<BossAbility> getArchetypeAbilities() {
+            if (mixedData != null) {
+                return mixedData.abilities();
+            }
             return getAbilitiesForArchetype(archetype);
+        }
+
+        /** Get current archetype (may change for EVOLVING variant). */
+        public BossArchetype getCurrentArchetype() {
+            return currentArchetype;
+        }
+
+        /** Handle phase transition for EVOLVING variant. */
+        public void onEvolvingPhaseTransition(int phase) {
+            if (mixedData != null && mixedData.isEvolving()) {
+                BossArchetype newArchetype = BossDNAMixer.INSTANCE.getEvolvingNextArchetype(
+                    currentArchetype, phase, bossId.getMostSignificantBits());
+                this.currentArchetype = newArchetype;
+                // Add new archetype abilities
+                for (BossAbility ability : getAbilitiesForArchetype(newArchetype)) {
+                    if (!abilityCooldowns.containsKey(ability)) {
+                        abilityCooldowns.put(ability, 0);
+                    }
+                }
+            }
         }
 
         /** Static helper to get abilities for an archetype (avoids this-escape in constructor). */
@@ -274,6 +335,9 @@ public class BossWaveSystem {
         private void onPhaseTransition(BossPhase newPhase) {
             bonusPoints += 500 * newPhase.ordinal();
             LOGGER.info("[BossWave] Boss {} entered {}", bossId, newPhase);
+
+            // Handle EVOLVING variant phase transitions
+            onEvolvingPhaseTransition(newPhase.ordinal());
         }
 
         public boolean canUseAbility(BossAbility ability) {
@@ -316,7 +380,29 @@ public class BossWaveSystem {
 
     /**
      * Check if a wave should be a boss wave.
+     * Now integrates with TensionSystem for dynamic boss spawning.
+     *
+     * @param waveNumber The wave number to check
+     * @param questId The quest UUID (optional - if null, uses legacy fixed check)
+     * @return true if this should be a boss wave
      */
+    public boolean isBossWave(int waveNumber, UUID questId) {
+        // Check TensionSystem if questId is provided
+        if (questId != null) {
+            TensionSystem.TensionState state = TensionSystem.INSTANCE.getState(questId);
+            if (state != null) {
+                return state.isBossWavePending();
+            }
+        }
+        // Fallback to legacy fixed interval (every 5 waves)
+        return waveNumber > 0 && waveNumber % 5 == 0;
+    }
+
+    /**
+     * Legacy check for boss wave (backwards compatibility).
+     * @deprecated Use {@link #isBossWave(int, UUID)} instead
+     */
+    @Deprecated
     public boolean isBossWave(int waveNumber) {
         return waveNumber > 0 && waveNumber % 5 == 0;
     }
@@ -343,16 +429,19 @@ public class BossWaveSystem {
         int playerCount = session.getPlayerCount();
         QuestType questType = session.getQuestType();
 
-        // Select random archetype
-        BossArchetype archetype = selectArchetype(waveNumber);
+        // Generate mixed boss using DNA Mixer
+        long seed = quest.getQuestId().getMostSignificantBits() + waveNumber;
+        MixedBossData mixedData = BossDNAMixer.INSTANCE.generateMixedBoss(waveNumber, seed);
 
-        // Create boss fight
+        // Create boss fight with primary archetype
         UUID bossId = UUID.randomUUID();
-        BossFight fight = new BossFight(bossId, arena.getId(), archetype, waveNumber, quest.getMobId());
+        BossFight fight = new BossFight(bossId, arena.getId(), mixedData.primaryArchetype(), waveNumber, quest.getMobId());
+        fight.setMixedData(mixedData);
 
-        // Spawn boss with multiplayer scaling
+        // Spawn boss with mixed stats
         BlockPos spawnPos = resolveBossSpawnPosition(arena, handle, quest.getQuestId(), waveNumber);
-        Mob boss = spawnBoss(arena, spawnPos, quest.getMobConfig(), archetype, waveNumber, quest.getQuestId(), playerCount, questType, handle);
+        Mob boss = spawnMixedBoss(arena, spawnPos, quest.getMobConfig(), mixedData, waveNumber,
+            quest.getQuestId(), playerCount, questType, handle, session.getPlayerId());
         if (boss != null) {
             fight.setBossEntity(boss);
             fight.setMaxHealth(boss.getMaxHealth());
@@ -362,16 +451,19 @@ public class BossWaveSystem {
                     quest.getQuestId(), handle, spawnPos);
             }
 
-            // Announce boss
-            announceBoss(level, spawnPos != null ? spawnPos : center, archetype, waveNumber);
+            // Announce mixed boss
+            announceMixedBoss(level, spawnPos != null ? spawnPos : center, mixedData, waveNumber);
 
-            // Telemetry: record boss wave start
+            // Telemetry: record boss wave start with variant info
+            String bossType = mixedData.isRareVariant()
+                ? mixedData.variant().name() + "_" + mixedData.primaryArchetype().name()
+                : mixedData.primaryArchetype().name() + "_" + mixedData.secondaryArchetype().name();
             EnduranceTelemetryService.INSTANCE.recordBossWaveStart(
-                quest.getQuestId(), waveNumber, archetype.name(), boss.getMaxHealth(), playerCount
+                quest.getQuestId(), waveNumber, bossType, boss.getMaxHealth(), playerCount
             );
 
-            LOGGER.info("[BossWave] Started boss wave {} with {} archetype (players={}, type={})",
-                waveNumber, archetype, playerCount, questType);
+            LOGGER.info("[BossWave] Started boss wave {} with {} (variant={}, players={}, type={})",
+                waveNumber, mixedData.generatedName(), mixedData.variant(), playerCount, questType);
         }
 
         return fight;
@@ -480,6 +572,184 @@ public class BossWaveSystem {
         }
 
         return mob;
+    }
+
+    /**
+     * Spawn a mixed boss with DNA-blended stats and abilities.
+     */
+    private Mob spawnMixedBoss(ArenaContext arena,
+                               @javax.annotation.Nullable BlockPos spawnPos,
+                               EnduranceQuestRegistry.MobQuestConfig mobConfig,
+                               MixedBossData mixedData, int waveNumber, UUID questId,
+                               int playerCount, QuestType questType,
+                               @javax.annotation.Nullable ArenaHandle handle,
+                               UUID primaryPlayerId) {
+        ServerLevel level = Objects.requireNonNull(arena.getLevel());
+        BlockPos center = Objects.requireNonNull(arena.getCenter());
+        UUID arenaId = Objects.requireNonNull(arena.getId());
+        UUID safeQuestId = Objects.requireNonNull(questId);
+
+        Entity entity = mobConfig.entityType.create(level);
+        if (!(entity instanceof Mob mob)) return null;
+
+        // Position at spawn point
+        BlockPos resolvedPos = spawnPos != null ? spawnPos : center;
+        mob.setPos(resolvedPos.getX() + 0.5, resolvedPos.getY(), resolvedPos.getZ() + 0.5);
+
+        // Calculate base stats from mixed data
+        float waveScaling = 1.0f + (waveNumber * 0.1f);
+        float healthMult = mixedData.healthMultiplier();
+        float damageMult = mixedData.damageMultiplier();
+        float speedMult = mixedData.speedMultiplier();
+
+        // Handle MIRROR variant - copy player stats
+        if (mixedData.isMirror() && primaryPlayerId != null) {
+            ServerPlayer player = level.getServer() != null
+                ? level.getServer().getPlayerList().getPlayer(primaryPlayerId)
+                : null;
+            if (player != null) {
+                BossDNAMixer.MirrorStats mirrorStats = BossDNAMixer.INSTANCE.calculateMirrorStats(player);
+                healthMult *= mirrorStats.healthMult();
+                damageMult *= mirrorStats.damageMult();
+                speedMult *= mirrorStats.speedMult();
+            }
+        }
+
+        // Apply health
+        var healthAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
+        if (healthAttr != null) {
+            double baseHealth = healthAttr.getBaseValue();
+            double bossHealth = baseHealth * healthMult * waveScaling * 5; // 5x base for boss
+
+            // Apply multiplayer HP scaling
+            float scaledHealth = DifficultyScaler.INSTANCE.scaleBossHealth((float) bossHealth, playerCount, questType);
+
+            // Apply variant modifier
+            scaledHealth *= mixedData.variant().healthMod;
+
+            healthAttr.setBaseValue(scaledHealth);
+            mob.setHealth(scaledHealth);
+
+            LOGGER.debug("[BossWave] Mixed Boss HP: {} (variant={}, players={})",
+                scaledHealth, mixedData.variant(), playerCount);
+        }
+
+        // Apply damage
+        var damageAttr = mob.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
+        if (damageAttr != null) {
+            double baseDamage = damageAttr.getBaseValue() * damageMult * waveScaling;
+
+            // Apply multiplayer damage scaling
+            float scaledDamage = DifficultyScaler.INSTANCE.scaleBossDamage((float) baseDamage, playerCount, questType);
+
+            // Apply variant modifier
+            scaledDamage *= mixedData.variant().damageMod;
+
+            damageAttr.setBaseValue(scaledDamage);
+        }
+
+        // Apply speed
+        var speedAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MOVEMENT_SPEED));
+        if (speedAttr != null) {
+            speedAttr.setBaseValue(speedAttr.getBaseValue() * speedMult);
+        }
+
+        // Visual indicators with blended color
+        mob.setGlowingTag(true);
+        String colorCode = getColorCode(mixedData.blendedColor());
+        String variantPrefix = mixedData.isRareVariant() ? "§d§l" : "§c§l";
+        mob.setCustomName(Component.literal(variantPrefix + mixedData.generatedName() + colorCode));
+        mob.setCustomNameVisible(true);
+
+        // Tag as boss with DNA mixing data
+        CompoundTag tag = mob.getPersistentData();
+        tag.putBoolean("endurance_boss", true);
+        tag.putBoolean("endurance_mixed_boss", true);
+        tag.putString("endurance_archetype", mixedData.primaryArchetype().name());
+        tag.putString("endurance_secondary_archetype", mixedData.secondaryArchetype().name());
+        if (mixedData.tertiaryArchetype() != null) {
+            tag.putString("endurance_tertiary_archetype", mixedData.tertiaryArchetype().name());
+        }
+        tag.putString("endurance_variant", mixedData.variant().name());
+        tag.putString("endurance_boss_name", mixedData.generatedName());
+        tag.putUUID("endurance_arena_id", arenaId);
+        tag.putUUID("endurance_quest_id", safeQuestId);
+
+        if (handle != null) {
+            String templateId = handle.templateId();
+            if (templateId != null) {
+                tag.putString("endurance_template_id", templateId);
+            }
+            tag.putInt("endurance_template_version", handle.templateVersion());
+            String policyId = handle.policyId();
+            if (policyId != null) {
+                tag.putString("endurance_policy_id", policyId);
+            }
+            tag.putInt("endurance_policy_version", handle.policyVersion());
+        }
+
+        // Add spawn effects with variant-specific particles
+        level.addFreshEntity(mob);
+
+        // Spawn particles based on variant
+        net.minecraft.core.particles.ParticleOptions particle = switch (mixedData.variant()) {
+            case CHIMERA -> ParticleTypes.DRAGON_BREATH;
+            case MIRROR -> ParticleTypes.END_ROD;
+            case EVOLVING -> ParticleTypes.PORTAL;
+            default -> ParticleTypes.FLAME;
+        };
+
+        for (int i = 0; i < 50; i++) {
+            double x = resolvedPos.getX() + random.nextGaussian() * 2;
+            double y = resolvedPos.getY() + random.nextDouble() * 3;
+            double z = resolvedPos.getZ() + random.nextGaussian() * 2;
+            level.sendParticles(Objects.requireNonNull(particle), x, y, z, 1, 0, 0.1, 0, 0.05);
+        }
+
+        return mob;
+    }
+
+    /**
+     * Convert RGB color to Minecraft color code approximation.
+     */
+    private String getColorCode(int rgb) {
+        int r = (rgb >> 16) & 0xFF;
+        int g = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+
+        // Simple mapping to Minecraft color codes
+        if (r > 200 && g < 100 && b < 100) return "§c"; // Red
+        if (r < 100 && g > 200 && b < 100) return "§a"; // Green
+        if (r < 100 && g < 100 && b > 200) return "§9"; // Blue
+        if (r > 200 && g > 200 && b < 100) return "§e"; // Yellow
+        if (r > 200 && g < 100 && b > 200) return "§d"; // Magenta
+        if (r < 100 && g > 200 && b > 200) return "§b"; // Cyan
+        if (r > 200 && g > 100 && b < 100) return "§6"; // Orange
+        return "§f"; // White default
+    }
+
+    /**
+     * Announce mixed boss spawn to players.
+     */
+    private void announceMixedBoss(ServerLevel level, BlockPos pos, MixedBossData mixedData, int waveNumber) {
+        BlockPos safePos = Objects.requireNonNull(pos);
+
+        // Different sound for rare variants
+        net.minecraft.sounds.SoundEvent sound = switch (mixedData.variant()) {
+            case CHIMERA -> SoundEvents.ENDER_DRAGON_GROWL;
+            case MIRROR -> SoundEvents.WITHER_SPAWN;
+            case EVOLVING -> SoundEvents.ELDER_GUARDIAN_CURSE;
+            default -> SoundEvents.ENDER_DRAGON_GROWL;
+        };
+
+        level.playSound(null, safePos, Objects.requireNonNull(sound), SoundSource.HOSTILE, 1.0f, 0.5f);
+
+        String variantInfo = mixedData.isRareVariant()
+            ? " [" + mixedData.variant().titlePrefix + "]"
+            : " (" + mixedData.secondaryArchetype().displayName + " hybrid)";
+
+        LOGGER.info("[BossWave] BOSS WAVE {} - {} has appeared!{}",
+            waveNumber, mixedData.generatedName(), variantInfo);
     }
 
     private BlockPos resolveBossSpawnPosition(ArenaContext arena,

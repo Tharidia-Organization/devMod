@@ -91,22 +91,22 @@ public class KitSelectionScreen extends Screen {
 
     // Categories with icons
     private enum Category {
-        ALL("All Items", "◆", 0xFFE6EDF3, stack -> true),
-        ARMOR("Armor", "🛡", 0xFF58A6FF, stack -> stack.getItem() instanceof ArmorItem),
-        WEAPONS("Weapons", "⚔", 0xFFF85149, stack -> stack.getItem() instanceof SwordItem ||
+        ALL("devmod.kit.category.all", "devmod.kit.category.all.tab", "◆", 0xFFE6EDF3, stack -> true),
+        ARMOR("devmod.kit.category.armor", "devmod.kit.category.armor.tab", "🛡", 0xFF58A6FF, stack -> stack.getItem() instanceof ArmorItem),
+        WEAPONS("devmod.kit.category.weapons", "devmod.kit.category.weapons.tab", "⚔", 0xFFF85149, stack -> stack.getItem() instanceof SwordItem ||
                                           stack.getItem() instanceof AxeItem ||
                                           stack.getItem() instanceof BowItem ||
                                           stack.getItem() instanceof CrossbowItem ||
                                           stack.getItem() instanceof TridentItem ||
                                           stack.getItem() instanceof MaceItem),
-        TOOLS("Tools", "⛏", 0xFFD29922, stack -> (stack.getItem() instanceof TieredItem) &&
+        TOOLS("devmod.kit.category.tools", "devmod.kit.category.tools.tab", "⛏", 0xFFD29922, stack -> (stack.getItem() instanceof TieredItem) &&
                                        !(stack.getItem() instanceof SwordItem) &&
                                        !(stack.getItem() instanceof AxeItem)),
-        POTIONS("Potions", "🧪", 0xFFA371F7, stack -> stack.getItem() instanceof PotionItem ||
+        POTIONS("devmod.kit.category.potions", "devmod.kit.category.potions.tab", "🧪", 0xFFA371F7, stack -> stack.getItem() instanceof PotionItem ||
                                           stack.getItem() == Items.SPLASH_POTION ||
                                           stack.getItem() == Items.LINGERING_POTION),
-        FOOD("Food", "🍖", 0xFF3FB950, stack -> stack.has(Objects.requireNonNull(net.minecraft.core.component.DataComponents.FOOD))),
-        COMBAT("Combat", "🏹", 0xFFFF7B72, stack -> stack.getItem() instanceof ShieldItem ||
+        FOOD("devmod.kit.category.food", "devmod.kit.category.food.tab", "🍖", 0xFF3FB950, stack -> stack.has(Objects.requireNonNull(net.minecraft.core.component.DataComponents.FOOD))),
+        COMBAT("devmod.kit.category.combat", "devmod.kit.category.combat.tab", "🏹", 0xFFFF7B72, stack -> stack.getItem() instanceof ShieldItem ||
                                          stack.getItem() == Items.ARROW ||
                                          stack.getItem() == Items.SPECTRAL_ARROW ||
                                          stack.getItem() == Items.TIPPED_ARROW ||
@@ -115,18 +115,28 @@ public class KitSelectionScreen extends Screen {
                                          stack.getItem() == Items.ENCHANTED_GOLDEN_APPLE ||
                                          stack.getItem() == Items.ENDER_PEARL ||
                                          stack.getItem() == Items.FIREWORK_ROCKET),
-        BLOCKS("Blocks", "▣", 0xFF79C0FF, stack -> stack.getItem() instanceof BlockItem);
+        BLOCKS("devmod.kit.category.blocks", "devmod.kit.category.blocks.tab", "▣", 0xFF79C0FF, stack -> stack.getItem() instanceof BlockItem);
 
-        final String name;
+        final String nameKey;
+        final String tabKey;
         final String icon;
         final int color;
         final Predicate<ItemStack> filter;
 
-        Category(String name, String icon, int color, Predicate<ItemStack> filter) {
-            this.name = name;
+        Category(String nameKey, String tabKey, String icon, int color, Predicate<ItemStack> filter) {
+            this.nameKey = nameKey;
+            this.tabKey = tabKey;
             this.icon = icon;
             this.color = color;
             this.filter = filter;
+        }
+
+        String displayName() {
+            return I18n.translate(nameKey).getString();
+        }
+
+        String tabLabel() {
+            return icon + " " + I18n.translate(tabKey).getString();
         }
     }
 
@@ -151,10 +161,6 @@ public class KitSelectionScreen extends Screen {
     private EditBox kitNameBox;
 
     // Slot configuration
-    private static final String[] SLOT_NAMES = {
-        "Helmet", "Chestplate", "Leggings", "Boots", "Offhand",
-        "1", "2", "3", "4", "5", "6", "7", "8", "9"
-    };
     private static final String[] SLOT_ICONS = {
         "⛑", "🛡", "👖", "👢", "🤚",
         "①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨"
@@ -314,7 +320,7 @@ public class KitSelectionScreen extends Screen {
         graphics.fill(0, TAB_HEIGHT - 1, width, TAB_HEIGHT, COLOR_BORDER);
 
         // Title
-        graphics.drawString(safeFont, "§l⚔ Kit Builder", PANEL_PADDING, 10, COLOR_TEXT);
+        graphics.drawString(safeFont, I18n.translate("devmod.kit.header.title").getString(), PANEL_PADDING, 10, COLOR_TEXT);
 
         // Category tabs
         int tabX = 120;
@@ -331,7 +337,7 @@ public class KitSelectionScreen extends Screen {
                 graphics.fill(tabX, TAB_HEIGHT - 4, tabX + tabW, TAB_HEIGHT - 2, cat.color);
             }
 
-            String label = cat.icon + " " + cat.name.split(" ")[0];
+            String label = cat.tabLabel();
             int textX = tabX + (tabW - safeFont.width(label)) / 2;
             graphics.drawString(safeFont, label, textX, 10, selected ? 0xFF000000 : COLOR_TEXT);
 
@@ -353,7 +359,8 @@ public class KitSelectionScreen extends Screen {
 
         // Panel header
         graphics.fill(panelX, panelY, panelX + panelW, panelY + 28, COLOR_PANEL_HEADER);
-        String headerText = String.format("§l%s §r§7• %d items", selectedCategory.name, filteredItems.size());
+        String headerText = I18n.translate("devmod.kit.header.items",
+            selectedCategory.displayName(), filteredItems.size()).getString();
         graphics.drawString(safeFont, headerText, panelX + 10, panelY + 10, selectedCategory.color);
 
         // Item grid
@@ -420,7 +427,7 @@ public class KitSelectionScreen extends Screen {
         // Panel header
         graphics.fill(panelX, panelY, panelX + panelW, panelY + 28, COLOR_PANEL_HEADER);
         int itemCount = (int) kitSlots.values().stream().filter(s -> !s.isEmpty()).count();
-        String headerText = String.format("§l⚙ Your Kit §r§7• %d items", itemCount);
+        String headerText = I18n.translate("devmod.kit.header.kit", itemCount).getString();
         graphics.drawString(safeFont, headerText, panelX + 10, panelY + 10, COLOR_ACCENT_ORANGE);
 
         int contentX = panelX + 12;
@@ -432,7 +439,7 @@ public class KitSelectionScreen extends Screen {
         renderCharacterPreview(graphics, previewX, previewY, mouseX, mouseY, partialTick);
 
         // === EQUIPMENT SLOTS ===
-        graphics.drawString(safeFont, "§7Equipment", contentX, y, COLOR_TEXT_DIM);
+        graphics.drawString(safeFont, I18n.translate("devmod.kit.section.equipment").getString(), contentX, y, COLOR_TEXT_DIM);
         y += 14;
 
         // Armor slots (vertical)
@@ -445,7 +452,7 @@ public class KitSelectionScreen extends Screen {
         y += SLOT_SIZE + 16;
 
         // === HOTBAR SLOTS ===
-        graphics.drawString(safeFont, "§7Hotbar", contentX, y, COLOR_TEXT_DIM);
+        graphics.drawString(safeFont, I18n.translate("devmod.kit.section.hotbar").getString(), contentX, y, COLOR_TEXT_DIM);
         y += 14;
 
         for (int i = 0; i < 9; i++) {
@@ -458,15 +465,10 @@ public class KitSelectionScreen extends Screen {
         graphics.fill(contentX - 4, y, panelX + panelW - 12, y + 1, COLOR_BORDER);
         y += 12;
 
-        graphics.drawString(safeFont, "§7Quick Presets", contentX, y, COLOR_TEXT_DIM);
+        graphics.drawString(safeFont, I18n.translate("devmod.kit.section.quick_presets").getString(), contentX, y, COLOR_TEXT_DIM);
         y += 14;
 
-        String[][] presets = {
-            {"§7Iron Set", "🛡"},
-            {"§bDiamond Set", "💎"},
-            {"§5Netherite Set", "🔥"},
-            {"§6Max Enchanted", "✨"}
-        };
+        String[][] presets = getQuickPresets();
 
         int px = contentX;
         for (int i = 0; i < presets.length; i++) {
@@ -487,12 +489,7 @@ public class KitSelectionScreen extends Screen {
         graphics.fill(contentX - 4, y, panelX + panelW - 12, y + 1, COLOR_BORDER);
         y += 12;
 
-        String[] instructions = {
-            "§8◦ Left-click item → Add to kit",
-            "§8◦ Right-click slot → Remove item",
-            "§8◦ Shift+click → Stack of 64",
-            "§8◦ Click slot first → Add to specific slot"
-        };
+        String[] instructions = getInstructionLines();
 
         for (String instr : instructions) {
             graphics.drawString(safeFont, instr, contentX, y, COLOR_TEXT_DIM);
@@ -506,7 +503,8 @@ public class KitSelectionScreen extends Screen {
         Player player = mc.player;
 
         if (player == null) {
-            graphics.drawString(safeFont, "§8[Preview]", x - 20, y - 40, COLOR_TEXT_DIM);
+            graphics.drawString(safeFont, I18n.translate("devmod.kit.preview.unavailable").getString(),
+                x - 20, y - 40, COLOR_TEXT_DIM);
             return;
         }
 
@@ -585,11 +583,13 @@ public class KitSelectionScreen extends Screen {
         int btnH = 28;
 
         // Back button
-        renderButton(graphics, PANEL_PADDING, btnY, 90, btnH, "§7← Back", COLOR_PANEL,
+        renderButton(graphics, PANEL_PADDING, btnY, 90, btnH,
+            I18n.translate("devmod.kit.button.back").getString(), COLOR_PANEL,
             mouseX, mouseY, this::goBack);
 
         // Clear button
-        renderButton(graphics, PANEL_PADDING + 100, btnY, 90, btnH, "§c✖ Clear", COLOR_PANEL,
+        renderButton(graphics, PANEL_PADDING + 100, btnY, 90, btnH,
+            I18n.translate("devmod.kit.button.clear").getString(), COLOR_PANEL,
             mouseX, mouseY, this::clearKit);
 
         // Right side buttons
@@ -600,7 +600,7 @@ public class KitSelectionScreen extends Screen {
         boolean useHover = mouseX >= rx - useW && mouseX < rx && mouseY >= btnY && mouseY < btnY + btnH;
         graphics.fill(rx - useW, btnY, rx, btnY + btnH, useHover ? 0xFF2EA043 : COLOR_ACCENT_GREEN);
         renderBorder(graphics, rx - useW, btnY, useW, btnH, useHover ? 0xFF3FB950 : 0xFF238636);
-        String useText = "§l▶ Use Kit";
+        String useText = I18n.translate("devmod.kit.button.use").getString();
         graphics.drawString(safeFont, useText, rx - useW + (useW - safeFont.width(useText)) / 2, btnY + 10, 0xFFFFFFFF);
 
         // Save button
@@ -608,7 +608,7 @@ public class KitSelectionScreen extends Screen {
         boolean saveHover = mouseX >= rx - useW - saveW - 10 && mouseX < rx - useW - 10 && mouseY >= btnY && mouseY < btnY + btnH;
         graphics.fill(rx - useW - saveW - 10, btnY, rx - useW - 10, btnY + btnH, saveHover ? COLOR_ITEM_HOVER : COLOR_PANEL);
         renderBorder(graphics, rx - useW - saveW - 10, btnY, saveW, btnH, saveHover ? COLOR_ACCENT : COLOR_BORDER);
-        String saveText = "§e💾 Save Preset";
+        String saveText = I18n.translate("devmod.kit.button.save_preset").getString();
         graphics.drawString(safeFont, saveText, rx - useW - saveW - 10 + (saveW - safeFont.width(saveText)) / 2, btnY + 10, COLOR_TEXT);
     }
 
@@ -653,7 +653,8 @@ public class KitSelectionScreen extends Screen {
 
         // Header
         graphics.fill(popupX, popupY, popupX + popupW, popupY + 30, COLOR_PANEL_HEADER);
-        graphics.drawString(safeFont, "§d§l✨ Add Enchantment", popupX + 10, popupY + 11, COLOR_TEXT);
+        graphics.drawString(safeFont, I18n.translate("devmod.kit.popup.enchant_title").getString(),
+            popupX + 10, popupY + 11, COLOR_TEXT);
 
         // Close button
         int closeX = popupX + popupW - 22;
@@ -701,7 +702,8 @@ public class KitSelectionScreen extends Screen {
                              mouseY >= btnY && mouseY < btnY + 24;
         graphics.fill(popupX + popupW/2 - 40, btnY, popupX + popupW/2 + 40, btnY + 24, cancelHover ? COLOR_ITEM_HOVER : COLOR_PANEL);
         renderBorder(graphics, popupX + popupW/2 - 40, btnY, 80, 24, cancelHover ? COLOR_ACCENT : COLOR_BORDER);
-        graphics.drawString(safeFont, "Cancel", popupX + popupW/2 - safeFont.width("Cancel")/2, btnY + 8, COLOR_TEXT);
+        String cancelLabel = I18n.ui("cancel").getString();
+        graphics.drawString(safeFont, cancelLabel, popupX + popupW/2 - safeFont.width(cancelLabel) / 2, btnY + 8, COLOR_TEXT);
     }
 
     private void renderNameDialog(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -721,7 +723,8 @@ public class KitSelectionScreen extends Screen {
 
         // Header
         graphics.fill(dialogX, dialogY, dialogX + dialogW, dialogY + 30, COLOR_PANEL_HEADER);
-        graphics.drawString(safeFont, "§6§l💾 Save Kit As...", dialogX + 10, dialogY + 11, COLOR_TEXT);
+        graphics.drawString(safeFont, I18n.translate("devmod.kit.dialog.save_title").getString(),
+            dialogX + 10, dialogY + 11, COLOR_TEXT);
 
         // Name input field
         if (kitNameBox == null) {
@@ -740,7 +743,9 @@ public class KitSelectionScreen extends Screen {
         boolean cancelHover = mouseX >= dialogX + 20 && mouseX < dialogX + 100 && mouseY >= btnY && mouseY < btnY + 26;
         graphics.fill(dialogX + 20, btnY, dialogX + 100, btnY + 26, cancelHover ? COLOR_ITEM_HOVER : COLOR_PANEL);
         renderBorder(graphics, dialogX + 20, btnY, 80, 26, cancelHover ? COLOR_ACCENT : COLOR_BORDER);
-        graphics.drawString(safeFont, "Cancel", dialogX + 20 + (80 - safeFont.width("Cancel"))/2, btnY + 9, COLOR_TEXT);
+        String cancelLabel = I18n.ui("cancel").getString();
+        graphics.drawString(safeFont, cancelLabel,
+            dialogX + 20 + (80 - safeFont.width(cancelLabel)) / 2, btnY + 9, COLOR_TEXT);
 
         // Save
         boolean saveHover = mouseX >= dialogX + dialogW - 100 && mouseX < dialogX + dialogW - 20 &&
@@ -748,7 +753,9 @@ public class KitSelectionScreen extends Screen {
         graphics.fill(dialogX + dialogW - 100, btnY, dialogX + dialogW - 20, btnY + 26,
             saveHover ? 0xFF2EA043 : COLOR_ACCENT_GREEN);
         renderBorder(graphics, dialogX + dialogW - 100, btnY, 80, 26, saveHover ? 0xFF3FB950 : 0xFF238636);
-        graphics.drawString(safeFont, "§lSave", dialogX + dialogW - 100 + (80 - safeFont.width("§lSave"))/2, btnY + 9, 0xFFFFFFFF);
+        String saveLabel = "§l" + I18n.ui("save").getString();
+        graphics.drawString(safeFont, saveLabel,
+            dialogX + dialogW - 100 + (80 - safeFont.width(saveLabel)) / 2, btnY + 9, 0xFFFFFFFF);
     }
 
     private void renderTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -791,7 +798,7 @@ public class KitSelectionScreen extends Screen {
                     graphics.renderTooltip(Objects.requireNonNull(font), stack, mouseX, mouseY);
                 } else {
                     List<net.minecraft.network.chat.Component> tooltip = Objects.requireNonNull(List.of(
-                        net.minecraft.network.chat.Component.literal("§7" + Objects.requireNonNull(SLOT_NAMES[slot]))));
+                        net.minecraft.network.chat.Component.literal("§7" + getSlotName(slot))));
                     graphics.renderTooltip(Objects.requireNonNull(font), tooltip, Objects.requireNonNull(Optional.empty()), mouseX, mouseY);
                 }
                 return;
@@ -810,12 +817,41 @@ public class KitSelectionScreen extends Screen {
                     graphics.renderTooltip(Objects.requireNonNull(font), stack, mouseX, mouseY);
                 } else {
                     List<net.minecraft.network.chat.Component> tooltip = Objects.requireNonNull(List.of(
-                        net.minecraft.network.chat.Component.literal("§7Slot " + (i + 1))));
+                        net.minecraft.network.chat.Component.literal("§7" + getSlotName(5 + i))));
                     graphics.renderTooltip(Objects.requireNonNull(font), tooltip, Objects.requireNonNull(Optional.empty()), mouseX, mouseY);
                 }
                 return;
             }
         }
+    }
+
+    private String getSlotName(int slot) {
+        return switch (slot) {
+            case 0 -> I18n.translate("devmod.kit.slot.helmet").getString();
+            case 1 -> I18n.translate("devmod.kit.slot.chestplate").getString();
+            case 2 -> I18n.translate("devmod.kit.slot.leggings").getString();
+            case 3 -> I18n.translate("devmod.kit.slot.boots").getString();
+            case 4 -> I18n.translate("devmod.kit.slot.offhand").getString();
+            default -> I18n.translate("devmod.kit.slot.hotbar", slot - 4).getString();
+        };
+    }
+
+    private String[][] getQuickPresets() {
+        return new String[][] {
+            {I18n.translate("devmod.kit.preset.iron").getString(), "🛡"},
+            {I18n.translate("devmod.kit.preset.diamond").getString(), "💎"},
+            {I18n.translate("devmod.kit.preset.netherite").getString(), "🔥"},
+            {I18n.translate("devmod.kit.preset.max_enchanted").getString(), "✨"}
+        };
+    }
+
+    private String[] getInstructionLines() {
+        return new String[] {
+            I18n.translate("devmod.kit.instructions.add").getString(),
+            I18n.translate("devmod.kit.instructions.remove").getString(),
+            I18n.translate("devmod.kit.instructions.stack").getString(),
+            I18n.translate("devmod.kit.instructions.slot").getString()
+        };
     }
 
     @Override
@@ -991,12 +1027,7 @@ public class KitSelectionScreen extends Screen {
         int panelX = width / 2 + PANEL_PADDING + 12;
         int y = TAB_HEIGHT + PANEL_PADDING + 54 + SLOT_SIZE + 16 + 14 + SLOT_SIZE + 20 + 12 + 14;
 
-        String[][] presets = {
-            {"§7Iron Set", "🛡"},
-            {"§bDiamond Set", "💎"},
-            {"§5Netherite Set", "🔥"},
-            {"§6Max Enchanted", "✨"}
-        };
+        String[][] presets = getQuickPresets();
 
         int px = panelX;
         for (int i = 0; i < presets.length; i++) {
@@ -1226,7 +1257,7 @@ public class KitSelectionScreen extends Screen {
             if (enchant.definition().supportedItems().contains(itemHolder)) {
                 String name = safeHolder.unwrapKey()
                     .map(key -> formatEnchantmentName(Objects.requireNonNull(key.location().getPath())))
-                    .orElse("Unknown");
+                    .orElse(I18n.translate("devmod.kit.enchantment.unknown").getString());
                 availableEnchants.add(new EnchantmentOption(safeHolder, name, enchant.getMaxLevel()));
             }
         }
@@ -1242,6 +1273,14 @@ public class KitSelectionScreen extends Screen {
             .orElse(path);
     }
 
+    private String getDefaultKitNameWithIndex() {
+        return I18n.translate("devmod.kit.default_name", KitPersistence.getKitCount() + 1).getString();
+    }
+
+    private String getDefaultKitNameSimple() {
+        return I18n.translate("devmod.kit.default_name.simple").getString();
+    }
+
     private void applyEnchantment(EnchantmentOption opt, int level) {
         ItemStack stack = kitSlots.get(enchantSlot);
         if (stack == null || stack.isEmpty()) return;
@@ -1254,7 +1293,7 @@ public class KitSelectionScreen extends Screen {
     private void openNameDialog() {
         showNameDialog = true;
         if (kitNameInput.isEmpty()) {
-            kitNameInput = "Custom Kit " + (KitPersistence.getKitCount() + 1);
+            kitNameInput = getDefaultKitNameWithIndex();
         }
         kitNameBox = null; // Will be recreated in render
         playClickSound();
@@ -1274,7 +1313,7 @@ public class KitSelectionScreen extends Screen {
             kitNameInput = kitNameBox.getValue().trim();
         }
         if (kitNameInput.isEmpty()) {
-            kitNameInput = "Custom Kit " + (KitPersistence.getKitCount() + 1);
+            kitNameInput = getDefaultKitNameWithIndex();
         }
 
         CustomKit kit = editingKit != null ? editingKit : new CustomKit(kitNameInput);
@@ -1314,7 +1353,7 @@ public class KitSelectionScreen extends Screen {
 
         if (items.isEmpty()) return;
 
-        String name = kitNameInput.isEmpty() ? "Custom Kit" : kitNameInput;
+        String name = kitNameInput.isEmpty() ? getDefaultKitNameSimple() : kitNameInput;
         KitManager.INSTANCE.setTemporaryKit(items, name);
 
         if (onKitSelected != null) {
