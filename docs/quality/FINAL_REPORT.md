@@ -9,10 +9,8 @@ Duration: multi-session (2025-12-25 to 2025-12-26)
 ## Build Status
 
 ```
-OK ./gradlew build --no-daemon --no-parallel --max-workers=1: SUCCESS (full test suite executed)
-OK ./gradlew test --no-daemon --no-parallel --max-workers=1: SUCCESS (jacoco report generated)
-OK ./gradlew compileJava --no-daemon --no-parallel --max-workers=1 --rerun-tasks: SUCCESS (100 warnings)
-OK ./gradlew compileTestJava --no-daemon --no-parallel --max-workers=1 --rerun-tasks: SUCCESS (45 warnings)
+FAIL ./gradlew build: 2879 tests completed, 8 failed (NoClassDefFoundError in telemetry/LVC/testcase tests)
+FAIL ./gradlew test: 2942 tests completed, 32 failed (could not write XML results under build/test-results/test)
 ```
 
 ---
@@ -20,23 +18,28 @@ OK ./gradlew compileTestJava --no-daemon --no-parallel --max-workers=1 --rerun-t
 ## Improvements Made
 
 1. Import ordering standardized across main sources to the project rule (java -> javax -> external -> net.minecraft -> net.neoforged -> com.devmod).
-2. Checkstyle import grouping fix and XML report enabled to enforce ordering in CI.
-3. Unused imports removed in targeted compat/ui/config classes and explicit static imports in StatusPanel.
-4. Null-safety cleanup in EnduranceQuestManager (local copy for @Nullable capability).
-5. Network validation error messages normalized to non-null values in handler flows.
-6. Telemetry dashboard query params normalized to empty strings; recipe data annotations aligned to javax @Nullable; mixin-only init/unused warnings suppressed where appropriate.
-7. Client UI/editor nullability annotations and override markers to reduce NullAway/MissingOverride noise.
-8. Debug panel NBT helpers now accept nullable tags to avoid NullAway parameter warnings.
-9. Editor overlays: nullable UI state/overlay fields annotated and dialog/template access guarded without behavior changes.
-10. Editor module UIs: nullable component fields annotated and section assembly guarded to avoid null captures.
+2. Import ordering and wildcard removals applied in test sources, including `RadialMenuMacroCategoryTest`, plus follow-up ordering fixes in network/overlay classes.
+3. Checkstyle import grouping fix and XML report enabled to enforce ordering in CI.
+4. Unused imports removed in targeted compat/ui/config classes and explicit static imports in StatusPanel.
+5. Null-safety cleanup in EnduranceQuestManager (local copy for @Nullable capability).
+6. Network validation error messages normalized to non-null values in handler flows.
+7. Telemetry dashboard query params normalized to empty strings; recipe data annotations aligned to javax @Nullable; mixin-only init/unused warnings suppressed where appropriate.
+8. Client UI/editor nullability annotations and override markers to reduce NullAway/MissingOverride noise.
+9. Debug panel NBT helpers now accept nullable tags to avoid NullAway parameter warnings.
+10. DuckDB migration/schema logs now preserve exception stack traces for troubleshooting.
 
 See `docs/quality/CHANGELOG.md` for batch-by-batch details.
 
 ---
 
-## Remaining Warnings
+## Build/Test Failures (Final Pass)
 
-Compiler warnings remain (ErrorProne/NullAway), observed in the rerun builds and final build:
+- `./gradlew build`: 8 tests failed with `NoClassDefFoundError` (telemetry aggregation/LVC/testcase classes). This aligns with the unstaged aggregation/LVC sources; a clean rebuild after staging is recommended.
+- `./gradlew test`: Gradle could not write XML test results under `build/test-results/test` for many tests (32 failures reported), which blocks accurate pass/fail counts.
+
+## Compiler Warnings (Last Known)
+
+Compiler warnings remain (ErrorProne/NullAway), observed in earlier compile reruns and not refreshed during the failed final pass:
 
 - 100 warnings in `compileJava` (NullAway, JdkObsolete, NarrowCalculation, MissingOverride, IntLongMath, MutablePublicArray, InlineFormatString, HidingField).
 - 45 warnings in `compileTestJava` (NullAway, UnnecessaryAsync, ThreadPriorityCheck, ReturnValueIgnored, ModifiedButNotUsed, UnnecessaryParentheses).
@@ -66,9 +69,12 @@ See `build/reports/problems/problems-report.html` for the full list.
 ### Long Methods (>80 lines)
 22 methods remain over 80 lines, primarily in telemetry, challenge/wave managers, and UI render paths. No refactor applied to avoid behavioral risk.
 
+### Test Reporting Failures
+Gradle intermittently fails to write XML test results under `build/test-results/test` during full suite runs. Investigation needed (filesystem permissions/locks, disk space, or test worker shutdown).
+
 ---
 
-## Future Recommendations (Top 8)
+## Future Recommendations (Top 9)
 
 1. Triage NullAway warnings in telemetry/duckdb and recipe pipelines; formalize @Nullable/@Nonnull contracts.
 2. Normalize NullAway suppressions for mixin-only methods that are never called directly.
@@ -76,8 +82,9 @@ See `build/reports/problems/problems-report.html` for the full list.
 4. Add small smoke tests around packet validation and recipe injection with explicit null cases.
 5. Document large manager classes with ADRs to justify scope.
 6. Add logging guidelines for high-frequency loops to avoid debug spam.
-7. Consider splitting EnduranceQuestManager into focused subsystems when behavior refactor is allowed.
-8. Keep Checkstyle import ordering rules in CI and treat violations as errors.
+7. Investigate Gradle test XML write failures (permissions/locks/temp dir saturation) and stabilize test reporting.
+8. Consider splitting EnduranceQuestManager into focused subsystems when behavior refactor is allowed.
+9. Keep Checkstyle import ordering rules in CI and treat violations as errors.
 
 ---
 
@@ -96,8 +103,6 @@ See `build/reports/problems/problems-report.html` for the full list.
 ## Verification Commands
 
 ```bash
-./gradlew build --no-daemon --no-parallel --max-workers=1
-./gradlew test --no-daemon --no-parallel --max-workers=1
-./gradlew compileJava --no-daemon --no-parallel --max-workers=1 --rerun-tasks
-./gradlew compileTestJava --no-daemon --no-parallel --max-workers=1 --rerun-tasks
+./gradlew build
+./gradlew test
 ```
