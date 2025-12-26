@@ -9,10 +9,10 @@ Duration: multi-session (2025-12-25 to 2025-12-26)
 ## Build Status
 
 ```
-OK ./gradlew build: SUCCESS (configuration cache reused; full test suite executed)
-OK ./gradlew test: SUCCESS (jacoco report generated)
+OK ./gradlew build --no-daemon --no-parallel --max-workers=1: SUCCESS (full test suite executed)
+OK ./gradlew test --no-daemon --no-parallel --max-workers=1: SUCCESS (jacoco report generated)
 OK ./gradlew compileJava --rerun-tasks: SUCCESS (100 warnings)
-OK ./gradlew compileTestJava --rerun-tasks: SUCCESS (59 warnings)
+OK ./gradlew compileTestJava --rerun-tasks: SUCCESS (46 warnings)
 ```
 
 ---
@@ -26,6 +26,7 @@ OK ./gradlew compileTestJava --rerun-tasks: SUCCESS (59 warnings)
 5. Network validation error messages normalized to non-null values in handler flows.
 6. Telemetry dashboard query params normalized to empty strings; recipe data annotations aligned to javax @Nullable; mixin-only init/unused warnings suppressed where appropriate.
 7. Client UI/editor nullability annotations and override markers to reduce NullAway/MissingOverride noise.
+8. Debug panel NBT helpers now accept nullable tags to avoid NullAway parameter warnings.
 
 See `docs/quality/CHANGELOG.md` for batch-by-batch details.
 
@@ -36,7 +37,7 @@ See `docs/quality/CHANGELOG.md` for batch-by-batch details.
 Compiler warnings remain (ErrorProne/NullAway), observed in the rerun builds and final build:
 
 - 100 warnings in `compileJava` (NullAway, JdkObsolete, NarrowCalculation, MissingOverride, IntLongMath, MutablePublicArray, InlineFormatString, HidingField).
-- 59 warnings in `compileTestJava` (NullAway, UnnecessaryAsync, ThreadPriorityCheck, ReturnValueIgnored, ModifiedButNotUsed, UnnecessaryParentheses).
+- 46 warnings in `compileTestJava` (NullAway, UnnecessaryAsync, ThreadPriorityCheck, ReturnValueIgnored, ModifiedButNotUsed, UnnecessaryParentheses).
 
 Primary hotspots:
 - `src/main/java/com/devmod/telemetry/duckdb/DuckDBMigrationService.java`

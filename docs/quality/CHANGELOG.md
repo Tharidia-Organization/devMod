@@ -419,3 +419,16 @@ None (Quality pass complete)
 
 ### Results
 - Reduced NullAway/MissingOverride warnings in client UI/editor and radial menu paths
+
+---
+
+## Batch 21: Debug Panel Null-Safety (2025-12-26)
+
+### Scope
+- Allow nullable NBT tags for debug rendering and clipboard payload generation
+
+### Files Modified
+- `DebugPanel.java` - Annotated nullable NBT parameters for payload/summary helpers
+
+### Results
+- Cleared nullable parameter warnings in DebugPanel without behavior change

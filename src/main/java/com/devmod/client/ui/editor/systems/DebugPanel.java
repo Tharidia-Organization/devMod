@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -77,8 +79,10 @@ public class DebugPanel {
     private final List<String> entries = new ArrayList<>();
     private List<String> statSources = List.of();
     private List<StatDiff> statDiffs = List.of();
+    @Nullable
     private ResponsiveLayout.Rect nbtToggleRect;
     private boolean showFullNbt = false;
+    @Nullable
     private String lastItemDataPayload = null;
 
     /**
@@ -95,8 +99,11 @@ public class DebugPanel {
     }
 
     // Buttons using EditorButton component (lazy init to avoid this-escape)
+    @Nullable
     private EditorButton copyButton;
+    @Nullable
     private EditorButton exportButton;
+    @Nullable
     private EditorButton copyItemButton;
     private boolean buttonsInitialized = false;
 
@@ -118,6 +125,21 @@ public class DebugPanel {
                 .onClick(this::copyItemDataToClipboard);
             buttonsInitialized = true;
         }
+    }
+
+    private EditorButton requireCopyButton() {
+        ensureButtons();
+        return Objects.requireNonNull(copyButton, "copyButton");
+    }
+
+    private EditorButton requireExportButton() {
+        ensureButtons();
+        return Objects.requireNonNull(exportButton, "exportButton");
+    }
+
+    private EditorButton requireCopyItemButton() {
+        ensureButtons();
+        return Objects.requireNonNull(copyItemButton, "copyItemButton");
     }
 
     public void log(String entry) {
@@ -187,7 +209,9 @@ public class DebugPanel {
     }
 
     public int render(GuiGraphics graphics, Font font, int x, int y, int width, int height, int mouseX, int mouseY, ItemStack current) {
-        ensureButtons();
+        EditorButton copyButton = requireCopyButton();
+        EditorButton exportButton = requireExportButton();
+        EditorButton copyItemButton = requireCopyItemButton();
         Objects.requireNonNull(font, "font cannot be null");
         nbtToggleRect = null;
         lastItemDataPayload = null;
@@ -345,6 +369,10 @@ public class DebugPanel {
     }
 
     public boolean handleClick(double mouseX, double mouseY) {
+        EditorButton copyButton = requireCopyButton();
+        EditorButton exportButton = requireExportButton();
+        EditorButton copyItemButton = requireCopyItemButton();
+
         // Delegate to EditorButton components
         if (copyButton.mouseClicked(mouseX, mouseY, ACTION_BUTTON_MOUSE_BUTTON)) {
             copyButton.mouseReleased(mouseX, mouseY, ACTION_BUTTON_MOUSE_BUTTON);
@@ -431,7 +459,7 @@ public class DebugPanel {
         }
     }
 
-    private void populateItemPayload(CompoundTag tag) {
+    private void populateItemPayload(@Nullable CompoundTag tag) {
         if (tag == null) {
             lastItemDataPayload = null;
             return;
@@ -453,7 +481,7 @@ public class DebugPanel {
         lastItemDataPayload = sb.toString();
     }
 
-    private String buildNbtSummary(CompoundTag tag) {
+    private String buildNbtSummary(@Nullable CompoundTag tag) {
         if (tag == null) return NBT_NONE_TEXT;
         String s = tag.toString();
         if (s.length() > NBT_TRUNCATE_LIMIT) {
