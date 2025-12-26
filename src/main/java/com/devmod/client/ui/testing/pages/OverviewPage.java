@@ -21,6 +21,7 @@ import com.devmod.client.ui.testing.panel.SectionPanel;
 import com.devmod.client.ui.testing.panel.SpacerPanel;
 import com.devmod.client.ui.testing.panel.StatusPanel;
 import com.devmod.config.Config;
+import com.devmod.util.I18n;
 
 import static com.devmod.client.ui.testing.pages.PageUtils.safeGetBool;
 
@@ -47,36 +48,41 @@ public class OverviewPage extends AbstractVoxelLabPage {
         createButtons();
 
         // Header
-        panelContainer.addPanel(new HeaderPanel("SYSTEM DASHBOARD"));
+        panelContainer.addPanel(new HeaderPanel(
+            I18n.translate("devmod.testing.voxel_lab.overview.header").getString()));
 
         // Debug Systems Section
         panelContainer.addPanel(
-            SectionPanel.builder("section-debug", "Debug Systems")
-                .description("Debug rendering and overlays")
+            SectionPanel.builder("section-debug",
+                I18n.translate("devmod.testing.voxel_lab.overview.section.debug").getString())
+                .description(I18n.translate("devmod.testing.voxel_lab.overview.section.debug_desc").getString())
                 .addButton(debugToggle)
                 .build()
         );
 
         // HUD Systems Section
         panelContainer.addPanel(
-            SectionPanel.builder("section-hud", "HUD Systems")
-                .description("On-screen displays and overlays")
+            SectionPanel.builder("section-hud",
+                I18n.translate("devmod.testing.voxel_lab.overview.section.hud").getString())
+                .description(I18n.translate("devmod.testing.voxel_lab.overview.section.hud_desc").getString())
                 .addRow(impactHudToggle, impact3dToggle)
                 .build()
         );
 
         // VFX Systems Section
         panelContainer.addPanel(
-            SectionPanel.builder("section-vfx", "Visual Effects")
-                .description("Impact effects and screen effects")
+            SectionPanel.builder("section-vfx",
+                I18n.translate("devmod.testing.voxel_lab.overview.section.vfx").getString())
+                .description(I18n.translate("devmod.testing.voxel_lab.overview.section.vfx_desc").getString())
                 .addRow(vfxToggle, screenShakeToggle)
                 .build()
         );
 
         // Telemetry Section
         panelContainer.addPanel(
-            SectionPanel.builder("section-telemetry", "Telemetry")
-                .description("Data collection and analytics")
+            SectionPanel.builder("section-telemetry",
+                I18n.translate("devmod.testing.voxel_lab.overview.section.telemetry").getString())
+                .description(I18n.translate("devmod.testing.voxel_lab.overview.section.telemetry_desc").getString())
                 .addButton(telemetryToggle)
                 .build()
         );
@@ -85,18 +91,24 @@ public class OverviewPage extends AbstractVoxelLabPage {
         panelContainer.addPanel(new SpacerPanel("spacer-stats", 8));
         panelContainer.addPanel(
             StatusPanel.builder("status-overview")
-                .addStatus("Debug", () -> DebugRenderer.INSTANCE.isEnabled())
-                .addStatus("HUD 2D", ImpactHudOverlay::isEnabled)
-                .addStatus("HUD 3D", () -> Impact3DPanelManager.INSTANCE.isEnabled())
-                .addStatus("VFX", () -> safeGetBool(Config.IMPACT_VFX_ENABLED))
-                .addStatus("Telemetry", () -> safeGetBool(Config.TELEMETRY_ENABLED))
+                .addStatus(I18n.translate("devmod.testing.voxel_lab.overview.status.debug").getString(),
+                    () -> DebugRenderer.INSTANCE.isEnabled())
+                .addStatus(I18n.translate("devmod.testing.voxel_lab.overview.status.hud_2d").getString(),
+                    ImpactHudOverlay::isEnabled)
+                .addStatus(I18n.translate("devmod.testing.voxel_lab.overview.status.hud_3d").getString(),
+                    () -> Impact3DPanelManager.INSTANCE.isEnabled())
+                .addStatus(I18n.translate("devmod.testing.voxel_lab.overview.status.vfx").getString(),
+                    () -> safeGetBool(Config.IMPACT_VFX_ENABLED))
+                .addStatus(I18n.translate("devmod.testing.voxel_lab.overview.status.telemetry").getString(),
+                    () -> safeGetBool(Config.TELEMETRY_ENABLED))
                 .messageSupplier(this::getSystemStats)
                 .build()
         );
     }
 
     private void createButtons() {
-        debugToggle = new EditorButton("toggle-debug", "Debug Overlay")
+        debugToggle = new EditorButton("toggle-debug",
+            I18n.translate("devmod.testing.voxel_lab.overview.toggle.debug_overlay").getString())
             .toggleable(true)
             .toggled(DebugRenderer.INSTANCE.isEnabled())
             .style(EditorButton.Style.PRIMARY)
@@ -104,7 +116,8 @@ public class OverviewPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_OVERLAY_TOGGLE,
                 Boolean.TRUE.equals(v), DebugRenderer.INSTANCE.isEnabled()));
 
-        impactHudToggle = new EditorButton("toggle-impact-hud", "Impact HUD 2D")
+        impactHudToggle = new EditorButton("toggle-impact-hud",
+            I18n.translate("devmod.testing.voxel_lab.overview.toggle.hud_2d").getString())
             .toggleable(true)
             .toggled(ImpactHudOverlay.isEnabled())
             .style(EditorButton.Style.SUCCESS)
@@ -112,7 +125,8 @@ public class OverviewPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.HUD_IMPACT_TOGGLE,
                 Boolean.TRUE.equals(v), ImpactHudOverlay.isEnabled()));
 
-        impact3dToggle = new EditorButton("toggle-impact-3d", "Impact HUD 3D")
+        impact3dToggle = new EditorButton("toggle-impact-3d",
+            I18n.translate("devmod.testing.voxel_lab.overview.toggle.hud_3d").getString())
             .toggleable(true)
             .toggled(Impact3DPanelManager.INSTANCE.isEnabled())
             .style(EditorButton.Style.SUCCESS)
@@ -120,7 +134,8 @@ public class OverviewPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.HUD_IMPACT_3D_TOGGLE,
                 Boolean.TRUE.equals(v), Impact3DPanelManager.INSTANCE.isEnabled()));
 
-        vfxToggle = new EditorButton("toggle-vfx", "Impact VFX")
+        vfxToggle = new EditorButton("toggle-vfx",
+            I18n.translate("devmod.testing.voxel_lab.overview.toggle.vfx").getString())
             .toggleable(true)
             .toggled(safeGetBool(Config.IMPACT_VFX_ENABLED))
             .style(EditorButton.Style.PRIMARY)
@@ -128,7 +143,8 @@ public class OverviewPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_VFX_TOGGLE,
                 Boolean.TRUE.equals(v), safeGetBool(Config.IMPACT_VFX_ENABLED)));
 
-        screenShakeToggle = new EditorButton("toggle-shake", "Screen Shake")
+        screenShakeToggle = new EditorButton("toggle-shake",
+            I18n.translate("devmod.testing.voxel_lab.overview.toggle.screen_shake").getString())
             .toggleable(true)
             .toggled(safeGetBool(Config.SCREEN_SHAKE_ENABLED))
             .style(EditorButton.Style.PRIMARY)
@@ -136,7 +152,8 @@ public class OverviewPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_SCREEN_SHAKE_TOGGLE,
                 Boolean.TRUE.equals(v), safeGetBool(Config.SCREEN_SHAKE_ENABLED)));
 
-        telemetryToggle = new EditorButton("toggle-telemetry", "Recording")
+        telemetryToggle = new EditorButton("toggle-telemetry",
+            I18n.translate("devmod.testing.voxel_lab.overview.toggle.recording").getString())
             .toggleable(true)
             .toggled(safeGetBool(Config.TELEMETRY_ENABLED))
             .style(EditorButton.Style.DANGER)
@@ -183,6 +200,6 @@ public class OverviewPage extends AbstractVoxelLabPage {
         long usedMb = (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024);
         long maxMb = runtime.maxMemory() / (1024 * 1024);
 
-        return String.format("FPS: %d | Entities: %d | Memory: %dMB/%dMB", fps, entities, usedMb, maxMb);
+        return I18n.translate("devmod.testing.voxel_lab.overview.stats", fps, entities, usedMb, maxMb).getString();
     }
 }

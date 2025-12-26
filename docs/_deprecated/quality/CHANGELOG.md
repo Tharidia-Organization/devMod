@@ -386,3 +386,14 @@ None (Quality pass complete)
 - `src/main/java/com/devmod/actions/client/DevModClientActions.java` - Added class-level Javadoc to clarify role and categories
 - `src/main/java/com/devmod/telemetry/TelemetryEvents.java` - Comment cleanup for event handling note
 - `src/main/java/com/devmod/damage/DamageCalculator.java` - Clarified inline comment placement
+
+---
+
+## Batch 20: Micro-Refactor + UI Localization (2025-12-26)
+
+### Files Modified
+- `src/main/java/com/devmod/client/ui/testing/pages/OverviewPage.java` - Localized section titles, toggle labels, status strings
+- `src/main/java/com/devmod/client/ui/testing/pages/DebugOverlaysPage.java` - Localized headers, sections, heatmap labels
+- `src/main/java/com/devmod/client/ui/testing/pages/ComponentShowcasePage.java` - Localized showcase labels/descriptions
+- `src/main/resources/assets/devmod/lang/en_us.json` - Added VoxelLab page strings
+- `docs/ui/UI_LOCALIZATION_TODO.md` - Marked VoxelLab page strings complete

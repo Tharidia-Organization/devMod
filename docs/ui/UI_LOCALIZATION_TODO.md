@@ -1,6 +1,6 @@
 # UI Localization TODO
 
-Last updated: 2025-12-25  
+Last updated: 2025-12-26  
 Scope: Remaining UI string literals in client UI screens/components.
 
 ## Completed
@@ -26,6 +26,7 @@ Scope: Remaining UI string literals in client UI screens/components.
 - [ ] `src/main/java/com/devmod/client/testing/BadgeTestScreen.java` - title, buttons, queue status, hints
 - [ ] `src/main/java/com/devmod/client/testing/QATestingScreen.java` - button labels, default names, status messages
 - [ ] `src/main/java/com/devmod/client/ui/hub/TestingHub.java` - panel titles, hints, notifications, action labels
+- [x] `src/main/java/com/devmod/client/ui/testing/pages/*.java` - VoxelLab page titles, section headers, button labels
 - [ ] `src/main/java/com/devmod/client/ui/testing/VoxelLabScreen.java` - title/subtitle/tab labels
 - [ ] `src/main/java/com/devmod/client/ui/testing/VoxelLabUiTestScreen.java` - showcase labels, section headers
 - [ ] `src/main/java/com/devmod/client/ui/wizard/QuickTestWizard.java` - presets, steps, labels, hints, overlay names
