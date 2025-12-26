@@ -368,3 +368,12 @@ None (Quality pass complete)
 - `build.gradle` - Enable Checkstyle (warning mode), Error Prone + NullAway (warning mode)
 - `config/checkstyle/checkstyle.xml` - Import order, wildcard, unused import checks
 - `config/checkstyle/suppressions.xml` - Suppress mixins/generated/package-info
+
+---
+
+## Batch 18: Logging & Telemetry Context (2025-12-26)
+
+### Files Modified
+- `src/main/java/com/devmod/arena/builder/ArenaBuilder.java` - Add `templateVersion` to build performance telemetry context
+- `src/main/java/com/devmod/arena/logging/DuckDbDestination.java` - Require template identifiers; use event timestamps; log skips with context
+- `docs/_deprecated/quality/quality/LOGGING_GUIDELINES.md` - Logging levels, context IDs, tick noise rules

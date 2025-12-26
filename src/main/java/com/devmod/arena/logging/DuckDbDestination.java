@@ -1,19 +1,21 @@
 package com.devmod.arena.logging;
 
-import com.devmod.telemetry.duckdb.ArenaRecords;
-import com.devmod.telemetry.duckdb.DuckDBBatchWriter;
-import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
-import com.devmod.arena.logging.LogAggregationPipeline.LogDestination;
-import com.devmod.arena.logging.LogAggregationPipeline.LogEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.arena.logging.LogAggregationPipeline.LogDestination;
+import com.devmod.arena.logging.LogAggregationPipeline.LogEvent;
+import com.devmod.telemetry.duckdb.ArenaRecords;
+import com.devmod.telemetry.duckdb.DuckDBBatchWriter;
+import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 
 /**
  * DuckDB destination for arena.build.* telemetry events.
@@ -178,7 +180,11 @@ public class DuckDbDestination implements LogDestination {
         }
         Map<String, Object> data = event.data();
         UUID arenaId = asUuid(data.get("arenaId"));
-        if (arenaId == null) {
+        String templateId = asString(data.get("templateId"));
+        Integer templateVersion = asInteger(data.get("templateVersion"));
+        if (arenaId == null || templateId == null || templateId.isBlank() || templateVersion == null) {
+            LOGGER.debug("Skipping build performance summary without template identifiers: arenaId={}, templateId={}, templateVersion={}",
+                arenaId, templateId, templateVersion);
             return;
         }
 
@@ -186,8 +192,8 @@ public class DuckDbDestination implements LogDestination {
         // Queue a new build event with performance data
         ArenaRecords.BuildEventRecord record = new ArenaRecords.BuildEventRecord(
             arenaId,
-            null, null, null, null,
-            Instant.now(), Instant.now(),
+            templateId, templateVersion, null, null,
+            event.timestamp(), event.timestamp(),
             null, null, null, null,
             true, null, null, null,
             null, null, null, null,

@@ -1,36 +1,39 @@
 package com.devmod.arena.builder;
 
-import com.devmod.arena.config.ArenaTemplateConfig;
-import com.devmod.arena.config.InstanceLimitConfig;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.world.phys.AABB;
+
 import com.devmod.arena.concurrency.ArenaBuildRateLimiter;
 import com.devmod.arena.concurrency.BuildPermit;
 import com.devmod.arena.concurrency.TemplateLockManager;
+import com.devmod.arena.config.ArenaTemplateConfig;
+import com.devmod.arena.config.InstanceLimitConfig;
+import com.devmod.arena.gate.InstanceOnlyGate;
+import com.devmod.arena.integration.MinecraftBlockPlacer;
 import com.devmod.arena.metrics.MetricsCompatibilityLayer;
 import com.devmod.arena.monitor.MsptMonitor;
 import com.devmod.arena.monitoring.BuildOutcomeMonitor;
 import com.devmod.arena.performance.PerformanceBudgetEnforcer;
 import com.devmod.arena.performance.PerformanceBudgetEnforcer.PerformanceAction;
 import com.devmod.arena.registry.ArenaTemplate;
-import com.devmod.arena.integration.MinecraftBlockPlacer;
 import com.devmod.arena.registry.GoldenReference;
 import com.devmod.arena.registry.InstanceSettingsValidator;
 import com.devmod.arena.registry.TemplateValidator;
 import com.devmod.arena.registry.ValidationResult;
-import com.devmod.arena.gate.InstanceOnlyGate;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Supplier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
-import java.util.Map;
-import java.util.UUID;
-import net.minecraft.world.phys.AABB;
 
 /**
  * Transactional arena builder with full rollback capability (DD7-10).
@@ -1005,17 +1008,18 @@ public class ArenaBuilder {
             return;
         }
         PerformanceBudgetEnforcer.BuildPerformanceReport report = enforcer.endBuild();
-        telemetry.emit("arena.build.performance_summary", Map.of(
-            "templateId", template.id(),
-            "arenaId", arenaId.toString(),
-            "baselineMspt", report.baseline(),
-            "averageMspt", report.averageMspt(),
-            "peakMspt", report.peakMspt(),
-            "maxBuildImpactMs", report.maxBuildImpact(),
-            "pauseCount", report.pauseCount(),
-            "throttleCount", report.throttleCount(),
-            "aborted", report.wasAborted(),
-            "durationMs", report.buildDuration().toMillis()
+        telemetry.emit("arena.build.performance_summary", Map.ofEntries(
+            Map.entry("templateId", template.id()),
+            Map.entry("templateVersion", template.version()),
+            Map.entry("arenaId", arenaId.toString()),
+            Map.entry("baselineMspt", report.baseline()),
+            Map.entry("averageMspt", report.averageMspt()),
+            Map.entry("peakMspt", report.peakMspt()),
+            Map.entry("maxBuildImpactMs", report.maxBuildImpact()),
+            Map.entry("pauseCount", report.pauseCount()),
+            Map.entry("throttleCount", report.throttleCount()),
+            Map.entry("aborted", report.wasAborted()),
+            Map.entry("durationMs", report.buildDuration().toMillis())
         ));
         resetPerformanceMonitoring();
     }
