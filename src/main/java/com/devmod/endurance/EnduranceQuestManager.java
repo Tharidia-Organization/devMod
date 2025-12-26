@@ -82,7 +82,6 @@ import com.devmod.util.I18n;
  * - EndurancePlayerStateManager: Player state management during quests
  * - EnduranceSessionHandler: Session lifecycle events
  */
-
 public class EnduranceQuestManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestManager.class);
 
@@ -400,8 +399,9 @@ public class EnduranceQuestManager {
             .difficulty(difficulty)
             .playerCount(settings.getPlayerCount())
             .tags(tags);
-        if (forceTemplateCapability != null) {
-            forceTemplateCapability.getForcedTemplate(playerId)
+        ForceTemplateCapability capability = forceTemplateCapability;
+        if (capability != null) {
+            capability.getForcedTemplate(playerId)
                 .ifPresent(templateId -> {
                     LOGGER.info("[EnduranceQuest] Force template override active for {}: {}",
                         playerId, templateId);

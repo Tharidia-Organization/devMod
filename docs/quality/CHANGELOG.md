@@ -351,3 +351,13 @@ None (Quality pass complete)
 ### Results
 - **Main wildcard imports**: 0
 - **Test wildcard imports (non-static)**: 126 → 0
+
+---
+
+## Batch 17: Core Review Null-Safety Follow-up (2025-12-26)
+
+### Files Modified
+- `EnduranceQuestManager.java` - Copy @Nullable `forceTemplateCapability` to a local before null checks
+
+### Results
+- Minor null-safety cleanup in core flow; no behavior change
