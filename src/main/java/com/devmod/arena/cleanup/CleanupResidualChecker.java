@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.config.ArenaTemplateConfig.AlertThresholds;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+
 public class CleanupResidualChecker {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CleanupResidualChecker.class);

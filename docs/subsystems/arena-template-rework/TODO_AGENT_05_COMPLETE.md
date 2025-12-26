@@ -62,7 +62,7 @@ Most tasks for Agent 05 (Observability & Persistence) have been implemented acco
 - Compression format: .gz
 - Rotation check interval: 1 hour
 
-#### 7. DuckDbRepository (`src/main/java/com/devmod/arena/persistence/DuckDbRepository.java`) - ❌ NOT IMPLEMENTED
+#### 7. DuckDbRepository (src/main/java/com/devmod/arena/persistence/DuckDbRepository.java) - ❌ NOT IMPLEMENTED
 - **DD21 Implementation**: DuckDB tables and indices
 - ⚠️ **STATUS**: File Java NON ESISTE - solo lo schema SQL è stato creato
 - **TODO**: Implementare o rimuovere riferimenti
@@ -129,7 +129,7 @@ Most tasks for Agent 05 (Observability & Persistence) have been implemented acco
 - Compression on close
 - JSON serialization tests
 
-#### 4. DuckDbRepositoryTest (`src/test/java/com/devmod/arena/persistence/DuckDbRepositoryTest.java`)
+#### 4. DuckDbRepositoryTest (src/test/java/com/devmod/arena/persistence/DuckDbRepositoryTest.java)
 - Build record CRUD
 - Usage record CRUD
 - Error record with context

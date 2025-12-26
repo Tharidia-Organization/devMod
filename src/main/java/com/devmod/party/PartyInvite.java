@@ -3,6 +3,7 @@ package com.devmod.party;
 import java.util.UUID;
 
 import com.devmod.endurance.QuestType;
+
 public class PartyInvite {
 
     /** Timeout for invites in milliseconds (30 seconds) */

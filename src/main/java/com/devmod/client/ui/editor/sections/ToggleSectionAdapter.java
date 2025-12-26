@@ -5,6 +5,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.components.EditorToggle;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
+
 public final class ToggleSectionAdapter implements EditorSection.ToggleSection {
     private final EditorToggle toggle;
     private final int height;

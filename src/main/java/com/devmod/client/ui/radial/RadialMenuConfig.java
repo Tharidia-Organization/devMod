@@ -19,6 +19,7 @@ import com.google.gson.GsonBuilder;
 import net.minecraft.client.Minecraft;
 
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
+
 public class RadialMenuConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(RadialMenuConfig.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

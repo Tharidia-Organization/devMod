@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import com.devmod.arena.fallback.CircuitBreaker;
 import com.devmod.arena.pool.PrebuildPoolManager;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
+
 public class HealthCheckEndpoint {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HealthCheckEndpoint.class);

@@ -32,6 +32,7 @@ import com.devmod.client.ui.editor.systems.PresetSelectorOverlay;
 import com.devmod.client.ui.editor.systems.TemplateOverlay;
 import com.devmod.config.ArmorConfigManager;
 import com.devmod.config.WeaponConfigManager;
+
 public class ItemEditorRenderer {
 
     // Constants for rendering

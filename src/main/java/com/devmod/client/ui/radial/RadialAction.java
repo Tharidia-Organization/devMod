@@ -17,6 +17,7 @@ import net.minecraft.world.item.Items;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ActionKeybindRegistry;
 import com.devmod.actions.client.ClientActionContexts;
+
 public abstract class RadialAction {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RadialAction.class);

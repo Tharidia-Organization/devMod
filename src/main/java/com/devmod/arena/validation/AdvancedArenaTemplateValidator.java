@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.registry.ValidationResult;
+
 public class AdvancedArenaTemplateValidator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AdvancedArenaTemplateValidator.class);

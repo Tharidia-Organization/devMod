@@ -24,6 +24,7 @@ import com.devmod.config.Config;
 import com.devmod.util.I18n;
 
 import static com.devmod.client.ui.testing.pages.PageUtils.safeGetBool;
+
 public class OverviewPage extends AbstractVoxelLabPage {
 
     // Quick toggle buttons
@@ -36,12 +37,17 @@ public class OverviewPage extends AbstractVoxelLabPage {
 
     public OverviewPage() {
         super(VoxelLabTab.OVERVIEW);
+        Buttons buttons = createButtons();
+        debugToggle = buttons.debugToggle;
+        impactHudToggle = buttons.impactHudToggle;
+        impact3dToggle = buttons.impact3dToggle;
+        vfxToggle = buttons.vfxToggle;
+        telemetryToggle = buttons.telemetryToggle;
+        screenShakeToggle = buttons.screenShakeToggle;
     }
 
     @Override
     protected void buildPanels() {
-        createButtons();
-
         // Header
         panelContainer.addPanel(new HeaderPanel(
             I18n.translate("devmod.testing.voxel_lab.overview.header").getString()));
@@ -101,8 +107,8 @@ public class OverviewPage extends AbstractVoxelLabPage {
         );
     }
 
-    private void createButtons() {
-        debugToggle = new EditorButton("toggle-debug",
+    private Buttons createButtons() {
+        EditorButton debugToggle = new EditorButton("toggle-debug",
             I18n.translate("devmod.testing.voxel_lab.overview.toggle.debug_overlay").getString())
             .toggleable(true)
             .toggled(DebugRenderer.INSTANCE.isEnabled())
@@ -111,7 +117,7 @@ public class OverviewPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_OVERLAY_TOGGLE,
                 Boolean.TRUE.equals(v), DebugRenderer.INSTANCE.isEnabled()));
 
-        impactHudToggle = new EditorButton("toggle-impact-hud",
+        EditorButton impactHudToggle = new EditorButton("toggle-impact-hud",
             I18n.translate("devmod.testing.voxel_lab.overview.toggle.hud_2d").getString())
             .toggleable(true)
             .toggled(ImpactHudOverlay.isEnabled())
@@ -120,7 +126,7 @@ public class OverviewPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.HUD_IMPACT_TOGGLE,
                 Boolean.TRUE.equals(v), ImpactHudOverlay.isEnabled()));
 
-        impact3dToggle = new EditorButton("toggle-impact-3d",
+        EditorButton impact3dToggle = new EditorButton("toggle-impact-3d",
             I18n.translate("devmod.testing.voxel_lab.overview.toggle.hud_3d").getString())
             .toggleable(true)
             .toggled(Impact3DPanelManager.INSTANCE.isEnabled())
@@ -129,7 +135,7 @@ public class OverviewPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.HUD_IMPACT_3D_TOGGLE,
                 Boolean.TRUE.equals(v), Impact3DPanelManager.INSTANCE.isEnabled()));
 
-        vfxToggle = new EditorButton("toggle-vfx",
+        EditorButton vfxToggle = new EditorButton("toggle-vfx",
             I18n.translate("devmod.testing.voxel_lab.overview.toggle.vfx").getString())
             .toggleable(true)
             .toggled(safeGetBool(Config.IMPACT_VFX_ENABLED))
@@ -138,7 +144,7 @@ public class OverviewPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_VFX_TOGGLE,
                 Boolean.TRUE.equals(v), safeGetBool(Config.IMPACT_VFX_ENABLED)));
 
-        screenShakeToggle = new EditorButton("toggle-shake",
+        EditorButton screenShakeToggle = new EditorButton("toggle-shake",
             I18n.translate("devmod.testing.voxel_lab.overview.toggle.screen_shake").getString())
             .toggleable(true)
             .toggled(safeGetBool(Config.SCREEN_SHAKE_ENABLED))
@@ -147,7 +153,7 @@ public class OverviewPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_SCREEN_SHAKE_TOGGLE,
                 Boolean.TRUE.equals(v), safeGetBool(Config.SCREEN_SHAKE_ENABLED)));
 
-        telemetryToggle = new EditorButton("toggle-telemetry",
+        EditorButton telemetryToggle = new EditorButton("toggle-telemetry",
             I18n.translate("devmod.testing.voxel_lab.overview.toggle.recording").getString())
             .toggleable(true)
             .toggled(safeGetBool(Config.TELEMETRY_ENABLED))
@@ -155,6 +161,40 @@ public class OverviewPage extends AbstractVoxelLabPage {
             .icon("\u25CF")
             .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_TELEMETRY_TOGGLE,
                 Boolean.TRUE.equals(v), safeGetBool(Config.TELEMETRY_ENABLED)));
+
+        return new Buttons(
+            debugToggle,
+            impactHudToggle,
+            impact3dToggle,
+            vfxToggle,
+            telemetryToggle,
+            screenShakeToggle
+        );
+    }
+
+    private static final class Buttons {
+        private final EditorButton debugToggle;
+        private final EditorButton impactHudToggle;
+        private final EditorButton impact3dToggle;
+        private final EditorButton vfxToggle;
+        private final EditorButton telemetryToggle;
+        private final EditorButton screenShakeToggle;
+
+        private Buttons(
+            EditorButton debugToggle,
+            EditorButton impactHudToggle,
+            EditorButton impact3dToggle,
+            EditorButton vfxToggle,
+            EditorButton telemetryToggle,
+            EditorButton screenShakeToggle
+        ) {
+            this.debugToggle = debugToggle;
+            this.impactHudToggle = impactHudToggle;
+            this.impact3dToggle = impact3dToggle;
+            this.vfxToggle = vfxToggle;
+            this.telemetryToggle = telemetryToggle;
+            this.screenShakeToggle = screenShakeToggle;
+        }
     }
 
     @Override

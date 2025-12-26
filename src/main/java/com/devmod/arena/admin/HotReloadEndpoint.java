@@ -18,6 +18,7 @@ import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.security.ArenaCommandAudit;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+
 public class HotReloadEndpoint {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HotReloadEndpoint.class);

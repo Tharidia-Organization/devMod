@@ -1,12 +1,14 @@
 package com.devmod.telemetry.spatial;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
+
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 
@@ -15,6 +17,7 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
+
 public class HeatmapService {
     public static final HeatmapService INSTANCE = new HeatmapService();
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -271,21 +274,21 @@ public class HeatmapService {
             return;
         }
 
-        AtomicInteger totalFlushed = new AtomicInteger(0);
+        int totalFlushed = 0;
 
         // Flush each heatmap type
-        totalFlushed.addAndGet(flushHeatmapType("stuck", stuckHeatmap));
-        totalFlushed.addAndGet(flushHeatmapType("aggro_drop", aggroDropHeatmap));
-        totalFlushed.addAndGet(flushHeatmapType("kiting", kitingHeatmap));
-        totalFlushed.addAndGet(flushHeatmapType("death", deathHeatmap));
-        totalFlushed.addAndGet(flushHeatmapType("movement", movementHeatmap));
-        totalFlushed.addAndGet(flushHeatmapType("camping", campingHeatmap));
-        totalFlushed.addAndGet(flushHeatmapType("choke_point", chokePointHeatmap));
-        totalFlushed.addAndGet(flushHeatmapType("invisible_collision", invisibleCollisionHeatmap));
-        totalFlushed.addAndGet(flushHeatmapType("parkour_fall", parkourFallHeatmap));
+        totalFlushed += flushHeatmapType("stuck", stuckHeatmap);
+        totalFlushed += flushHeatmapType("aggro_drop", aggroDropHeatmap);
+        totalFlushed += flushHeatmapType("kiting", kitingHeatmap);
+        totalFlushed += flushHeatmapType("death", deathHeatmap);
+        totalFlushed += flushHeatmapType("movement", movementHeatmap);
+        totalFlushed += flushHeatmapType("camping", campingHeatmap);
+        totalFlushed += flushHeatmapType("choke_point", chokePointHeatmap);
+        totalFlushed += flushHeatmapType("invisible_collision", invisibleCollisionHeatmap);
+        totalFlushed += flushHeatmapType("parkour_fall", parkourFallHeatmap);
 
-        if (totalFlushed.get() > 0) {
-            LOGGER.debug("[HeatmapService] Flushed {} heatmap buckets to DuckDB", totalFlushed.get());
+        if (totalFlushed > 0) {
+            LOGGER.debug("[HeatmapService] Flushed {} heatmap buckets to DuckDB", totalFlushed);
         }
     }
 
@@ -303,19 +306,21 @@ public class HeatmapService {
             return 0;
         }
 
-        AtomicInteger flushed = new AtomicInteger(0);
+        int flushed = 0;
 
         // Snapshot and clear to avoid concurrent modification
-        heatmap.forEach((room, posMap) -> {
-            // Create a snapshot of positions
-            Map<BlockPos, Integer> snapshot = new ConcurrentHashMap<>(posMap);
+        for (Map.Entry<String, Map<BlockPos, Integer>> roomEntry : heatmap.entrySet()) {
+            String room = roomEntry.getKey();
+            Map<BlockPos, Integer> posMap = roomEntry.getValue();
+            Map<BlockPos, Integer> snapshot = new HashMap<>(posMap);
             posMap.clear(); // Clear after snapshot
 
-            snapshot.forEach((pos, count) -> {
-                // Sanity check coordinates
+            for (Map.Entry<BlockPos, Integer> posEntry : snapshot.entrySet()) {
+                BlockPos pos = posEntry.getKey();
+                Integer count = posEntry.getValue();
                 if (pos.getY() < -64 || pos.getY() > 320) {
                     LOGGER.debug("[HeatmapService] Skipping invalid Y coordinate: {}", pos.getY());
-                    return;
+                    continue;
                 }
 
                 // HARDENING: Wrap DuckDB write in try-catch to prevent tick crash
@@ -328,15 +333,15 @@ public class HeatmapService {
                         pos.getZ(),
                         count
                     );
-                    flushed.incrementAndGet();
+                    flushed++;
                 } catch (Exception e) {
                     // Log but don't crash - data is already cleared from memory
                     LOGGER.debug("[HeatmapService] Failed to write heatmap bucket: {}", e.getMessage());
                 }
-            });
-        });
+            }
+        }
 
-        return flushed.get();
+        return flushed;
     }
 
     /**
@@ -397,7 +402,7 @@ public class HeatmapService {
                                chokePointCount, invisibleCollisionCount, parkourFallCount);
     }
 
-    private int countEntries(Map<BlockPos, Integer> posMap) {
+    private int countEntries(@Nullable Map<BlockPos, Integer> posMap) {
         if (posMap == null) return 0;
         return posMap.values().stream().mapToInt(Integer::intValue).sum();
     }

@@ -8,6 +8,7 @@ import org.joml.Vector3f;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
+
 public class ShakeEffect {
 
     private final UUID uuid;

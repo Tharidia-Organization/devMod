@@ -34,7 +34,7 @@ Implementato il sistema di pool (deferred), migration audit, monitoring, release
   - Check methods per ogni metrica
 
 ### Validation Package
-- `src/main/java/com/devmod/arena/validation/DashboardValidationJob.java`
+- `src/main/java/com/devmod/arena/monitoring/DashboardValidationJob.java`
   - DD69: Scheduled daily 02:00
   - Row count, aggregate, temporal, freshness checks
   - Alert integration

@@ -16,6 +16,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
 import net.minecraft.resources.ResourceKey;
+
 public final class DamageTypeConfig {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("DevMod/DamageTypeConfig");

@@ -5,6 +5,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 import net.minecraft.nbt.CompoundTag;
+
 public class UsableStats {
     // ═══════════════════════════════════════════════════════════════
     // USE PROPERTIES

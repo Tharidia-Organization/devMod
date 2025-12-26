@@ -14,16 +14,6 @@ import com.devmod.client.ui.unified.persistence.SettingsData.VisualizerSettings;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L1 Settings Persistence Validation Tests.
- *
- * Validates:
- * - SettingsData structure and defaults
- * - Deep copy functionality
- * - Reset operations
- * - Render distance validation
- * - Heatmap settings management
- */
 @DisplayName("L1: Settings Persistence Validation")
 class SettingsPersistenceValidationTest {
 

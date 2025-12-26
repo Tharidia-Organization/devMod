@@ -25,6 +25,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import com.devmod.util.ConfigPaths;
+
 public class TesterProfile {
     private static final Logger LOGGER = LoggerFactory.getLogger(TesterProfile.class);
     // Lazy initialization to avoid NPE during class loading (FMLPaths not ready yet)

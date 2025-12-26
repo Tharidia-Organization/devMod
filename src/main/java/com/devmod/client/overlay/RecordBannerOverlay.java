@@ -11,6 +11,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+
 public class RecordBannerOverlay {
 
     private static final long DISPLAY_DURATION_MS = 4000;

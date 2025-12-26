@@ -1,6 +1,7 @@
 package com.devmod.arena.fallback;
 
 import java.util.concurrent.atomic.AtomicLong;
+
 public class FallbackMetrics {
 
     public enum MetricType {

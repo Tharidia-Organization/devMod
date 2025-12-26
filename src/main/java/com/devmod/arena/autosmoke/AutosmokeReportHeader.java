@@ -12,6 +12,7 @@ import java.util.Properties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 public class AutosmokeReportHeader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AutosmokeReportHeader.class);

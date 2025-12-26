@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -20,6 +19,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.telemetry.TelemetryService;
+
 public class BacktrackingService {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final BacktrackingService INSTANCE = new BacktrackingService();
@@ -200,8 +200,8 @@ public class BacktrackingService {
      */
     private static class PlayerMovementHistory {
         private final int maxSize;
-        private final LinkedList<BlockPos> positions = new LinkedList<>();
-        private final LinkedList<String> rooms = new LinkedList<>();
+        private final List<BlockPos> positions = new ArrayList<>();
+        private final List<String> rooms = new ArrayList<>();
         private final Set<BlockPos> visitedPositions = new HashSet<>();
 
         PlayerMovementHistory(int maxSize) {
@@ -209,14 +209,14 @@ public class BacktrackingService {
         }
 
         void addPosition(BlockPos pos, String room) {
-            positions.addLast(pos);
-            rooms.addLast(room);
+            positions.add(pos);
+            rooms.add(room);
             visitedPositions.add(pos);
 
             if (positions.size() > maxSize) {
-                BlockPos removed = positions.removeFirst();
+                BlockPos removed = positions.remove(0);
                 com.mojang.logging.LogUtils.getLogger().debug("[BacktrackingService] Removed old position from history: {}", removed);
-                rooms.removeFirst();
+                rooms.remove(0);
                 // Don't remove from visitedPositions - we want to track all visited
             }
         }

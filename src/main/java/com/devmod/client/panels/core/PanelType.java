@@ -1,6 +1,7 @@
 package com.devmod.client.panels.core;
 
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public enum PanelType {
     /** Entity info panel - shows target mob/player stats */
     ENTITY_INFO("Entity Info", 180, 120, 8000, true, UIConstants.Status.INFO()),

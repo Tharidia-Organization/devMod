@@ -3,6 +3,7 @@ package com.devmod.util;
 import java.nio.file.Path;
 
 import net.neoforged.fml.loading.FMLPaths;
+
 public final class ConfigPaths {
 
     private ConfigPaths() {}

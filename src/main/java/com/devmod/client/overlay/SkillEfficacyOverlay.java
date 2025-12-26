@@ -17,6 +17,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.telemetry.skills.SkillTrackingService;
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class SkillEfficacyOverlay {

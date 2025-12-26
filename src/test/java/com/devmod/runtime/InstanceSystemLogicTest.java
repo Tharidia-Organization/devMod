@@ -1,30 +1,18 @@
 package com.devmod.runtime;
 
-import org.junit.jupiter.api.Test;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-
-import java.util.UUID;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.Map;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Test suite for Instance Dimension System logic.
- *
- * Tests the core state machine logic, data structures, and edge cases
- * without requiring a running Minecraft server.
- *
- * Focus areas:
- * 1. InstanceData state transitions
- * 2. PlayerInstanceState transitions
- * 3. Data mapping consistency (bidirectional maps)
- * 4. Edge cases and error handling
- */
 public class InstanceSystemLogicTest {
 
     // ============================================================
@@ -188,8 +176,8 @@ public class InstanceSystemLogicTest {
 
         @BeforeEach
         void setUp() {
-            arenaToInstance = new ConcurrentHashMap<>();
-            instanceToArena = new ConcurrentHashMap<>();
+            arenaToInstance = new HashMap<>();
+            instanceToArena = new HashMap<>();
         }
 
         @Test
@@ -314,8 +302,8 @@ public class InstanceSystemLogicTest {
         @Test
         @DisplayName("Handling null instance ID in cleanup")
         void testNullInstanceIdInCleanup() {
-            Map<UUID, UUID> instanceToArena = new ConcurrentHashMap<>();
-            Map<UUID, UUID> arenaToInstance = new ConcurrentHashMap<>();
+            Map<UUID, UUID> instanceToArena = new HashMap<>();
+            Map<UUID, UUID> arenaToInstance = new HashMap<>();
 
             // Try to end a non-existent instance
             UUID nonExistentInstanceId = UUID.randomUUID();
@@ -345,7 +333,7 @@ public class InstanceSystemLogicTest {
         @Test
         @DisplayName("Concurrent modification safety")
         void testConcurrentModificationSafety() throws InterruptedException {
-            Map<UUID, UUID> map = new ConcurrentHashMap<>();
+            Map<UUID, UUID> map = new HashMap<>();
 
             // Add some initial data
             for (int i = 0; i < 100; i++) {
@@ -380,7 +368,7 @@ public class InstanceSystemLogicTest {
         @DisplayName("Player mapping consistency after instance destruction")
         void testPlayerMappingAfterDestruction() {
             // Simulating the scenario where instance is destroyed but player mapping might linger
-            Map<UUID, UUID> playerToInstance = new ConcurrentHashMap<>();
+            Map<UUID, UUID> playerToInstance = new HashMap<>();
             Set<UUID> destroyedInstances = new HashSet<>();
 
             UUID playerId = UUID.randomUUID();

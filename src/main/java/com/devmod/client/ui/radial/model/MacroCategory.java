@@ -1,6 +1,7 @@
 package com.devmod.client.ui.radial.model;
 
 import java.util.Objects;
+
 public enum MacroCategory {
     /**
      * Debug, spatial analysis, and visualization tools.

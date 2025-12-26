@@ -6,6 +6,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public final class HubSectionHeader {
     private HubSectionHeader() {}
 

@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Splitter;
+
 public class ArenaTemplateConfig {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaTemplateConfig.class);

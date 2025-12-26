@@ -5,6 +5,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
+
 public final class PageUtils {
 
     private PageUtils() {

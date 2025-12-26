@@ -26,6 +26,7 @@ import com.devmod.arena.override.TemplateOverride;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+
 public class PolicyResolver implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(PolicyResolver.class);
 

@@ -27,6 +27,7 @@ import com.devmod.client.ui.testing.panel.SectionPanel;
 import com.devmod.client.ui.testing.panel.StatusPanel;
 import com.devmod.client.ui.testing.panel.UIPanel;
 import com.devmod.config.Config;
+
 @OnlyIn(Dist.CLIENT)
 public class VoxelLabUiTestScreen extends Screen {
 

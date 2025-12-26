@@ -21,6 +21,7 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.endurance.WaveDirectiveChoicesPayload;
 import com.devmod.endurance.WaveDirectiveSelectionPayload;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public class WaveDirectiveScreen extends Screen {
     private static final int PANEL_WIDTH = 360;

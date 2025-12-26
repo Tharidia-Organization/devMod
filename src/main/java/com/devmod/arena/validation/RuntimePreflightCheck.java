@@ -12,6 +12,7 @@ import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 public class RuntimePreflightCheck {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RuntimePreflightCheck.class);
@@ -235,7 +236,10 @@ public class RuntimePreflightCheck {
             long timeoutMs = chunkLoadTimeout.toMillis();
 
             // Trigger chunk loading
-            loadChunks.get();
+            boolean loadTriggered = loadChunks.get();
+            if (!loadTriggered) {
+                return verifyChunksLoaded(context);
+            }
 
             // Poll for chunks loaded
             while (System.currentTimeMillis() - startTime < timeoutMs) {

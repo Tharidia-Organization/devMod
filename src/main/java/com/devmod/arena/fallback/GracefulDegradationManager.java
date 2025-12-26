@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 public class GracefulDegradationManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GracefulDegradationManager.class);

@@ -6,6 +6,7 @@ import java.util.Locale;
 import java.util.Set;
 
 import javax.annotation.Nullable;
+
 public class TemplateValidator {
 
     private static final int MAX_SIZE = 256;

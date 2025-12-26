@@ -25,6 +25,7 @@ import com.devmod.DevMod;
 import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class WelcomeToastOverlay {

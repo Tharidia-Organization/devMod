@@ -3,6 +3,7 @@ package com.devmod.client.ui.components;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public class ScrollableArea {
 
     // Configuration

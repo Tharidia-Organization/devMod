@@ -28,6 +28,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
 import com.devmod.DevMod;
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class ChunkPerformanceVisualizer {
     public static final ChunkPerformanceVisualizer INSTANCE = new ChunkPerformanceVisualizer();

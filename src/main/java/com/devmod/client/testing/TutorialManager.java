@@ -13,6 +13,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +28,7 @@ import net.minecraft.client.Minecraft;
 import com.devmod.testing.TestCase;
 import com.devmod.util.ConfigPaths;
 import com.devmod.util.I18n;
+
 public class TutorialManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(TutorialManager.class);
     public static final TutorialManager INSTANCE = new TutorialManager();
@@ -299,6 +302,7 @@ public class TutorialManager {
     /**
      * Get current tutorial step, or null if phase has no more steps.
      */
+    @Nullable
     public TutorialStep getCurrentStep() {
         TutorialStep[] phaseSteps = TUTORIAL_STEPS[currentPhase.ordinal()];
         int step = currentStep.get();
@@ -499,6 +503,7 @@ public class TutorialManager {
     /**
      * Get suggested next test based on current progress.
      */
+    @Nullable
     public TestCase getSuggestedTest() {
         // Priority order:
         // 1. In-progress tests

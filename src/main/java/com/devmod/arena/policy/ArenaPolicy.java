@@ -3,6 +3,7 @@ package com.devmod.arena.policy;
 import java.util.Set;
 
 import javax.annotation.Nullable;
+
 public record ArenaPolicy(
     /** Unique policy identifier */
     String id,

@@ -2,6 +2,7 @@ package com.devmod.arena.registry;
 
 import java.util.Map;
 import java.util.Set;
+
 public record StructureManifest(
     Map<String, Entry> structures,
     Set<String> allowedNamespaces,

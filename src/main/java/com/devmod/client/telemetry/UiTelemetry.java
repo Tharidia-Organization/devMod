@@ -13,6 +13,7 @@ import com.mojang.logging.LogUtils;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+
 @OnlyIn(Dist.CLIENT)
 public final class UiTelemetry {
     private static final Logger LOGGER = LogUtils.getLogger();

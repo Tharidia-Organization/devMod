@@ -4,7 +4,7 @@
 
 Libreria componenti UI condivisi tra Editor System e Panel System.
 
-**Location:** `src/main/java/com/frenkvs/devmod/ui/editor/components/`
+**Location:** `src/main/java/com/devmod/client/ui/editor/components/`
 
 ---
 

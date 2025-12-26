@@ -19,6 +19,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import com.devmod.DevMod;
 import com.devmod.client.testing.IntegratedTestSession;
 import com.devmod.testing.TestCase;
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class IntegratedTestOverlay {
 
@@ -119,8 +120,10 @@ public class IntegratedTestOverlay {
         textY += 4;
 
         // Session type
-        String typeName = session.getCurrentType() != null ?
-            Objects.requireNonNullElse(session.getCurrentType().getDisplayName(), "Unknown") : "Unknown";
+        IntegratedTestSession.TestSessionType currentType = session.getCurrentType();
+        String typeName = currentType != null
+            ? Objects.requireNonNullElse(currentType.getDisplayName(), "Unknown")
+            : "Unknown";
         graphics.drawString(font, typeName, textX, textY, TEXT_NORMAL, false);
         textY += LINE_HEIGHT;
 
@@ -214,9 +217,10 @@ public class IntegratedTestOverlay {
     }
 
     private static int getSessionColor(IntegratedTestSession session) {
-        if (session.getCurrentType() == null) return PANEL_BORDER;
+        IntegratedTestSession.TestSessionType currentType = session.getCurrentType();
+        if (currentType == null) return PANEL_BORDER;
 
-        return switch (session.getCurrentType()) {
+        return switch (currentType) {
             case COMBAT_BASIC, COMBAT_ADVANCED -> 0xFFFF6644;
             case BOSS_FIGHT -> 0xFFAA44FF;
             case SURVIVAL_WAVES -> 0xFF44FF88;

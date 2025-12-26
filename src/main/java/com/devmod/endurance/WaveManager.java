@@ -36,6 +36,7 @@ import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateSpawnValidator;
 import com.devmod.arena.spawn.SpawnOccupancyTracker;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
+
 public class WaveManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(WaveManager.class);
 

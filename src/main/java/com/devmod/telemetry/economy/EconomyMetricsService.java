@@ -8,6 +8,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -15,6 +17,7 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.telemetry.TelemetryJson;
 import com.devmod.telemetry.room.RoomService;
+
 public class EconomyMetricsService {
     public static final EconomyMetricsService INSTANCE = new EconomyMetricsService();
 
@@ -106,6 +109,7 @@ public class EconomyMetricsService {
      * @param pos Position where item was picked up
      * @return ItemPickupRecord for telemetry logging
      */
+    @Nullable
     public ItemPickupRecord recordItemPickup(ServerPlayer player, ItemStack item, BlockPos pos) {
         if (item.isEmpty()) return null;
 
@@ -152,6 +156,7 @@ public class EconomyMetricsService {
      * @param pos Position of drop
      * @return MobDropRecord for telemetry logging
      */
+    @Nullable
     public MobDropRecord recordMobDrop(ServerLevel level, String mobType, ItemStack item, BlockPos pos) {
         if (item.isEmpty()) return null;
 
@@ -230,6 +235,7 @@ public class EconomyMetricsService {
      * @param mobType Mob type identifier
      * @return MobLootStats or null if not tracked
      */
+    @Nullable
     public MobLootStats getMobLootStats(String mobType) {
         return mobLootStats.get(mobType);
     }
@@ -326,6 +332,7 @@ public class EconomyMetricsService {
      * @param item Item used
      * @return ItemUsedRecord for telemetry logging
      */
+    @Nullable
     public ItemUsedRecord recordItemUsed(ServerPlayer player, ItemStack item) {
         if (item.isEmpty()) return null;
 
@@ -358,6 +365,7 @@ public class EconomyMetricsService {
      * @param item Item discarded
      * @return ItemDiscardRecord for telemetry logging
      */
+    @Nullable
     public ItemDiscardRecord recordItemDiscarded(ServerPlayer player, ItemStack item) {
         if (item.isEmpty()) return null;
 
@@ -384,6 +392,7 @@ public class EconomyMetricsService {
      * @param itemId Item identifier
      * @return ResourceFlowStats or null if not tracked
      */
+    @Nullable
     public ResourceFlowStats getResourceFlow(String itemId) {
         return resourceFlows.get(itemId);
     }
@@ -547,6 +556,7 @@ public class EconomyMetricsService {
      */
     public static class ChestStats {
         public int openCount = 0;
+        @Nullable
         public UUID lastOpenedBy = null;
         public long lastOpenedTime = 0;
         public Map<String, Integer> itemsFound = new ConcurrentHashMap<>();

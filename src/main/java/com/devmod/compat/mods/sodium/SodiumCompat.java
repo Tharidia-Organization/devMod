@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class SodiumCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(SodiumCompat.class);
     public static final String MOD_ID = "sodium";

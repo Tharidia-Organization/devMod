@@ -16,6 +16,7 @@ import com.devmod.config.ArmorConfigManager;
 import com.devmod.config.Config;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
+
 public final class DamageCalculator {
 
     private DamageCalculator() {} // Utility class

@@ -3,6 +3,7 @@ package com.devmod.stats;
 import java.util.Objects;
 
 import net.minecraft.nbt.CompoundTag;
+
 public class FuelStats {
 
     // ═══════════════════════════════════════════════════════════════

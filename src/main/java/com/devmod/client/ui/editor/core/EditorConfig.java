@@ -6,6 +6,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.devmod.DevMod;
 import com.devmod.config.EditorClientConfig;
+
 public final class EditorConfig {
 
     private EditorConfig() {}

@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -18,6 +19,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import com.devmod.client.telemetry.UiTelemetry;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 @OnlyIn(Dist.CLIENT)
 public class VoxelLabScreen extends Screen {
 
@@ -32,6 +34,7 @@ public class VoxelLabScreen extends Screen {
     private VoxelLabTab activeTab = VoxelLabTab.OVERVIEW;
 
     // Close button
+    @Nullable
     private EditorButton closeButton;
 
     public VoxelLabScreen() {
@@ -51,10 +54,7 @@ public class VoxelLabScreen extends Screen {
         createTabButtons();
 
         // Create close button
-        closeButton = new EditorButton("close", "\u2715")
-            .style(EditorButton.Style.GHOST)
-            .size(EditorButton.Size.SMALL)
-            .onClick(() -> onClose());
+        getCloseButton();
 
         // Register pages
         registerPages();
@@ -197,6 +197,7 @@ public class VoxelLabScreen extends Screen {
         // Close button
         int closeX = width - PADDING - 24;
         int closeY = PADDING;
+        EditorButton closeButton = getCloseButton();
         closeButton.render(graphics, closeX, closeY, 24, 24, mouseX, mouseY);
     }
 
@@ -227,6 +228,16 @@ public class VoxelLabScreen extends Screen {
         return safeFont.width(label) + 16;
     }
 
+    private EditorButton getCloseButton() {
+        if (closeButton == null) {
+            closeButton = new EditorButton("close", "\u2715")
+                .style(EditorButton.Style.GHOST)
+                .size(EditorButton.Size.SMALL)
+                .onClick(this::onClose);
+        }
+        return closeButton;
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // INPUT HANDLING
     // ═══════════════════════════════════════════════════════════════
@@ -234,6 +245,7 @@ public class VoxelLabScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         // Close button
+        EditorButton closeButton = getCloseButton();
         if (closeButton.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
@@ -267,6 +279,7 @@ public class VoxelLabScreen extends Screen {
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         // Close button
+        EditorButton closeButton = getCloseButton();
         if (closeButton.mouseReleased(mouseX, mouseY, button)) {
             return true;
         }

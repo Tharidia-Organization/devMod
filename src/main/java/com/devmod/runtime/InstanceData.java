@@ -21,6 +21,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 
 import com.devmod.endurance.QuestType;
+
 public class InstanceData {
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceData.class);
 

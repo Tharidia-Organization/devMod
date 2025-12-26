@@ -3,6 +3,7 @@ package com.devmod.stats;
 import net.minecraft.nbt.CompoundTag;
 
 import com.devmod.config.Config;
+
 public class WeaponStats {
     // ═══════════════════════════════════════════════════════════════
     // HIT LOCATION MULTIPLIERS

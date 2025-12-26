@@ -10,6 +10,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.endurance.QuestType;
+
 public record PartyInvitePayload(
     UUID targetPlayerId,
     int questTypeOrdinal

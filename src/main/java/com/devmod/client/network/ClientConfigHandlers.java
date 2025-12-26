@@ -15,6 +15,7 @@ import com.devmod.network.MobConfigConfirmPayload;
 import com.devmod.network.RecipeClientSyncPayload;
 import com.devmod.recipe.RecipeConfigManager;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public final class ClientConfigHandlers {
 

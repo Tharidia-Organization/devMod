@@ -1,6 +1,7 @@
 package com.devmod.client.ui.radial.animation;
 
 import java.util.Objects;
+
 @FunctionalInterface
 interface FloatFunction {
     float apply(float value);

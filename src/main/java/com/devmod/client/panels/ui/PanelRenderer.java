@@ -20,6 +20,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.panels.core.FloatingPanel;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public class PanelRenderer {
 
     public static final PanelRenderer INSTANCE = new PanelRenderer();

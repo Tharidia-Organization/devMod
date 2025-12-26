@@ -11,6 +11,7 @@ import org.joml.Matrix4f;
 
 import com.devmod.collision.obb.OrientedBoundingBox;
 import com.devmod.combat.HitHelper;
+
 public final class BodyPartInstance {
 
     // ==================== Object Pool ====================

@@ -3,6 +3,7 @@ package com.devmod.network.handlers;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 
@@ -17,6 +18,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.network.EditorApplyConfirmPayload;
 import com.devmod.network.PacketValidator;
+
 public abstract class NetworkHandlerBase {
     protected static final Logger LOGGER = LogUtils.getLogger();
 
@@ -59,7 +61,7 @@ public abstract class NetworkHandlerBase {
      * Send editor confirmation to player.
      */
     protected static void sendEditorConfirm(ServerPlayer player, boolean success, boolean global,
-            String scope, String itemId, String message) {
+            @Nullable String scope, @Nullable String itemId, @Nullable String message) {
         try {
             EditorApplyConfirmPayload payload = new EditorApplyConfirmPayload(success, global,
                 scope == null ? "<unknown>" : scope,

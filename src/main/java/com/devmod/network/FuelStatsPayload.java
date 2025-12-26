@@ -11,6 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
 import com.devmod.DevMod;
+
 public record FuelStatsPayload(
     ItemStack item,
     CompoundTag statsTag,

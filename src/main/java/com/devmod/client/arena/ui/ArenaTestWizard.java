@@ -25,6 +25,7 @@ import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 @OnlyIn(Dist.CLIENT)
 public class ArenaTestWizard extends Screen {
 

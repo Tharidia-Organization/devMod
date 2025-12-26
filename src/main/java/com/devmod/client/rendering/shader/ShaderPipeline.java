@@ -15,6 +15,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.client.event.RegisterShadersEvent;
+
 @OnlyIn(Dist.CLIENT)
 public final class ShaderPipeline {
     private final String name;

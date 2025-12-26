@@ -6,6 +6,7 @@ import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorToggle;
 import com.devmod.client.ui.editor.components.SourceBadge;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public class WeaponModuleVariants {
 
     // ═══════════════════════════════════════════════════════════════

@@ -20,6 +20,7 @@ import com.devmod.telemetry.spatial.BacktrackingService;
 import com.devmod.telemetry.spatial.DesireLinesService;
 import com.devmod.telemetry.spatial.HeatmapService;
 import com.devmod.util.ConfigPaths;
+
 public class CsvExporter {
     private static final Logger LOGGER = LogUtils.getLogger();
 

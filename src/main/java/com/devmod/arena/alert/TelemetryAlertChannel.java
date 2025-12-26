@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.devmod.arena.telemetry.ArenaTelemetry;
+
 public class TelemetryAlertChannel implements AlertRouter.AlertChannel {
 
     private final ArenaTelemetry telemetry;

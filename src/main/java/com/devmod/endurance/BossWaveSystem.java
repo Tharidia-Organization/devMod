@@ -42,6 +42,7 @@ import com.devmod.arena.registry.TemplateSpawnValidator;
 import com.devmod.endurance.boss.BossDNAMixer;
 import com.devmod.endurance.boss.BossDNAMixer.MixedBossData;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
+
 public class BossWaveSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(BossWaveSystem.class);
 
@@ -453,111 +454,6 @@ public class BossWaveSystem {
     }
 
     /**
-     * Select archetype based on wave number and randomness.
-     */
-    private BossArchetype selectArchetype(int waveNumber) {
-        BossArchetype[] archetypes = BossArchetype.values();
-
-        // Higher waves can have any archetype, lower waves are simpler
-        int maxIndex = Math.min(archetypes.length, 1 + waveNumber / 5);
-        return archetypes[random.nextInt(maxIndex)];
-    }
-
-    /**
-     * Spawn the boss mob with enhanced stats and multiplayer scaling.
-     */
-    private Mob spawnBoss(ArenaContext arena,
-                          @javax.annotation.Nullable BlockPos spawnPos,
-                          EnduranceQuestRegistry.MobQuestConfig mobConfig,
-                          BossArchetype archetype, int waveNumber, UUID questId,
-                          int playerCount, QuestType questType,
-                          @javax.annotation.Nullable ArenaHandle handle) {
-        ServerLevel level = Objects.requireNonNull(arena.getLevel());
-        BlockPos center = Objects.requireNonNull(arena.getCenter());
-        BossArchetype safeArchetype = Objects.requireNonNull(archetype);
-        UUID arenaId = Objects.requireNonNull(arena.getId());
-        UUID safeQuestId = Objects.requireNonNull(questId);
-
-        Entity entity = mobConfig.entityType.create(level);
-        if (!(entity instanceof Mob mob)) return null;
-
-        // Position at center
-        BlockPos resolvedPos = spawnPos != null ? spawnPos : center;
-        mob.setPos(resolvedPos.getX() + 0.5, resolvedPos.getY(), resolvedPos.getZ() + 0.5);
-
-        // Apply boss stats with multiplayer scaling
-        float waveScaling = 1.0f + (waveNumber * 0.1f);
-
-        var healthAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
-        if (healthAttr != null) {
-            double baseHealth = healthAttr.getBaseValue();
-            double bossHealth = baseHealth * archetype.healthMultiplier * waveScaling * 5; // 5x base for boss
-
-            // Apply multiplayer HP scaling using DifficultyScaler
-            float scaledHealth = DifficultyScaler.INSTANCE.scaleBossHealth((float) bossHealth, playerCount, questType);
-            healthAttr.setBaseValue(scaledHealth);
-            mob.setHealth(scaledHealth);
-
-            LOGGER.debug("[BossWave] Boss HP: {} -> {} (players={}, type={})",
-                bossHealth, scaledHealth, playerCount, questType);
-        }
-
-        var damageAttr = mob.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
-        if (damageAttr != null) {
-            double baseDamage = damageAttr.getBaseValue() * archetype.damageMultiplier * waveScaling;
-
-            // Apply multiplayer damage scaling using DifficultyScaler
-            float scaledDamage = DifficultyScaler.INSTANCE.scaleBossDamage((float) baseDamage, playerCount, questType);
-            damageAttr.setBaseValue(scaledDamage);
-
-            LOGGER.debug("[BossWave] Boss DMG: {} -> {} (players={}, type={})",
-                baseDamage, scaledDamage, playerCount, questType);
-        }
-
-        var speedAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MOVEMENT_SPEED));
-        if (speedAttr != null) {
-            speedAttr.setBaseValue(speedAttr.getBaseValue() * archetype.speedMultiplier);
-        }
-
-        // Visual indicators
-        mob.setGlowingTag(true);
-        mob.setCustomName(Component.literal("§c§l" + Objects.requireNonNull(safeArchetype.displayName) + " " + Objects.requireNonNull(mobConfig.displayName)));
-        mob.setCustomNameVisible(true);
-
-        // Tag as boss (include endurance_quest_id so isQuestMob() detects it)
-        CompoundTag tag = mob.getPersistentData();
-        tag.putBoolean("endurance_boss", true);
-        tag.putString("endurance_archetype", Objects.requireNonNull(safeArchetype.name()));
-        tag.putUUID("endurance_arena_id", arenaId);
-        tag.putUUID("endurance_quest_id", safeQuestId);
-        if (handle != null) {
-            String templateId = handle.templateId();
-            if (templateId != null) {
-                tag.putString("endurance_template_id", templateId);
-            }
-            tag.putInt("endurance_template_version", handle.templateVersion());
-            String policyId = handle.policyId();
-            if (policyId != null) {
-                tag.putString("endurance_policy_id", policyId);
-            }
-            tag.putInt("endurance_policy_version", handle.policyVersion());
-        }
-
-        // Add spawn effects
-        level.addFreshEntity(mob);
-
-        // Spawn particles
-        for (int i = 0; i < 50; i++) {
-            double x = resolvedPos.getX() + random.nextGaussian() * 2;
-            double y = resolvedPos.getY() + random.nextDouble() * 3;
-            double z = resolvedPos.getZ() + random.nextGaussian() * 2;
-            level.sendParticles(Objects.requireNonNull(ParticleTypes.FLAME), x, y, z, 1, 0, 0.1, 0, 0.05);
-        }
-
-        return mob;
-    }
-
-    /**
      * Spawn a mixed boss with DNA-blended stats and abilities.
      */
     private Mob spawnMixedBoss(ArenaContext arena,
@@ -834,18 +730,6 @@ public class BossWaveSystem {
     }
 
     /**
-     * Announce boss spawn to players.
-     */
-    private void announceBoss(ServerLevel level, BlockPos pos, BossArchetype archetype, int waveNumber) {
-        // Sound effect
-        BlockPos safePos = Objects.requireNonNull(pos);
-        level.playSound(null, safePos, Objects.requireNonNull(SoundEvents.ENDER_DRAGON_GROWL), SoundSource.HOSTILE, 1.0f, 0.5f);
-
-        // Title announcement (would need client-side packet)
-        LOGGER.info("[BossWave] BOSS WAVE {} - {} has appeared!", waveNumber, Objects.requireNonNull(archetype.displayName));
-    }
-
-    /**
      * Get active boss fight for an arena.
      */
     public Optional<BossFight> getBossFight(UUID arenaId) {
@@ -1064,7 +948,7 @@ public class BossWaveSystem {
                 var healthAttr = minionMob.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
                 if (healthAttr != null) {
                     healthAttr.setBaseValue(healthAttr.getBaseValue() * 0.3);
-                    minionMob.setHealth((float) (healthAttr.getBaseValue()));
+                    minionMob.setHealth((float) healthAttr.getBaseValue());
                 }
 
                 // Tag as minion

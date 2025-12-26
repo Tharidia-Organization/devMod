@@ -9,6 +9,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.arena.api.ArenaHandle;
+
 public final class ArenaContext {
 
     private final ServerLevel level;

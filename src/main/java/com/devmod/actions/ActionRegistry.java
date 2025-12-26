@@ -17,6 +17,7 @@ import net.minecraft.network.chat.Component;
 import com.devmod.DevMod;
 import com.devmod.telemetry.TelemetryJson;
 import com.devmod.telemetry.TelemetryService;
+
 public final class ActionRegistry {
     private static final Map<String, RadialAction> ACTIONS = new ConcurrentHashMap<>();
 

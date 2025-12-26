@@ -1,5 +1,13 @@
 package com.devmod.arena.integration;
 
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+
+import org.junit.jupiter.api.Test;
+
 import com.devmod.arena.builder.ArenaBuilder;
 import com.devmod.arena.builder.AsyncArenaBuilder;
 import com.devmod.arena.policy.ArenaPolicy;
@@ -9,13 +17,6 @@ import com.devmod.arena.policy.ResolvedArena;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;

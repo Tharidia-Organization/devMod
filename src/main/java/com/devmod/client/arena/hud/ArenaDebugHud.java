@@ -10,6 +10,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.arena.ArenaDebugState;
+
 public class ArenaDebugHud {
 
     private static final ArenaDebugHud INSTANCE = new ArenaDebugHud();

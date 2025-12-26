@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,7 @@ import com.devmod.testing.DynamicTestGenerator;
 import com.devmod.testing.ModDiscoveryService;
 import com.devmod.testing.TestCase;
 import com.devmod.util.ConfigPaths;
+
 public class TestingSession {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestingSession.class);
     public static final TestingSession INSTANCE = new TestingSession();
@@ -64,6 +66,7 @@ public class TestingSession {
     private final List<TestCase> testCases = new CopyOnWriteArrayList<>();
     private final Map<String, List<TestCase>> categorizedTests = new ConcurrentHashMap<>();
     private volatile String testerName = "Anonymous";
+    @Nullable
     private volatile Instant sessionStarted;
     private volatile String modVersion = "1.0.0"; // Updated from gradle.properties
     private final List<String> capturedLogs = new CopyOnWriteArrayList<>();
@@ -548,6 +551,7 @@ public class TestingSession {
         return new ArrayList<>(categorizedTests.keySet());
     }
 
+    @Nullable
     public TestCase getTest(String id) {
         return testCases.stream()
             .filter(t -> t.getId().equals(id))
@@ -555,6 +559,7 @@ public class TestingSession {
             .orElse(null);
     }
 
+    @Nullable
     public TestCase getNextPendingTest() {
         return testCases.stream()
             .filter(t -> t.getStatus() == TestCase.TestStatus.PENDING)
@@ -806,7 +811,14 @@ public class TestingSession {
     }
 
     // Immutable snapshot for async save
-    private record TestSnapshot(String id, String status, String comment, String completedAt, String errorLog, boolean autoValidated) {}
+    private record TestSnapshot(
+        String id,
+        String status,
+        String comment,
+        @Nullable String completedAt,
+        @Nullable String errorLog,
+        boolean autoValidated
+    ) {}
 
     /**
      * Load session state from file.
@@ -943,6 +955,7 @@ public class TestingSession {
     // === Getters ===
 
     public String getTesterName() { return testerName; }
+    @Nullable
     public Instant getSessionStarted() { return sessionStarted; }
     public List<String> getCapturedLogs() { return Collections.unmodifiableList(capturedLogs); }
 }

@@ -1,4 +1,5 @@
 package com.devmod.events;
+
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -18,6 +19,7 @@ import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 import com.devmod.DevMod;
 import com.devmod.config.UsableConfigManager;
 import com.devmod.stats.UsableStats;
+
 @EventBusSubscriber(modid = DevMod.MODID)
 public class UsableEvents {
     private static final Logger LOGGER = LogUtils.getLogger();

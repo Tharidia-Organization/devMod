@@ -7,6 +7,7 @@ import com.devmod.client.overlay.Impact3DPanelManager;
 import com.devmod.client.overlay.ImpactHudOverlay;
 import com.devmod.client.rendering.DebugRenderer;
 import com.devmod.client.ui.hub.TestingHub;
+
 public final class TestHarnessClientDelegate {
 
     private TestHarnessClientDelegate() {} // Utility class

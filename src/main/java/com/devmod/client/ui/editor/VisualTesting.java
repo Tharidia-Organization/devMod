@@ -2,6 +2,7 @@ package com.devmod.client.ui.editor;
 
 import java.util.ArrayList;
 import java.util.List;
+
 public class VisualTesting {
     public static class TestCase {
         public String name;

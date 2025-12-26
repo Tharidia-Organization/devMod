@@ -2,6 +2,7 @@ package com.devmod.bridge;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 public interface ClientUiBridge {
 
     Logger LOGGER = LoggerFactory.getLogger(ClientUiBridge.class);

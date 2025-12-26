@@ -20,6 +20,7 @@ import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.TextNoteSection;
 import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
 import com.devmod.stats.FoodStats;
+
 public class FoodModuleUI {
 
     private final FoodModule module;

@@ -1,23 +1,20 @@
 package com.devmod.arena.ui;
 
-import com.devmod.arena.BuildPhase;
-import com.devmod.arena.ProgressFlags;
-import com.devmod.client.arena.ui.BuildProgressOverlay;
-import com.devmod.client.arena.ui.BuildProgressOverlay.ProgressUpdate;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import com.devmod.arena.BuildPhase;
+import com.devmod.arena.ProgressFlags;
+import com.devmod.client.arena.ui.BuildProgressOverlay;
+import com.devmod.client.arena.ui.BuildProgressOverlay.ProgressUpdate;
+
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for BuildProgressOverlay.
- * DD39: Verifies rate limiting (4Hz) and delta threshold (1%).
- */
 class BuildProgressOverlayTest {
 
     private BuildProgressOverlay overlay;

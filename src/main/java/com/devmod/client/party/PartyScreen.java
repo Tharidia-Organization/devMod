@@ -38,6 +38,7 @@ import com.devmod.party.NamedInvitePayload;
 import com.devmod.party.PartyActionPayload;
 import com.devmod.party.PartyData;
 import com.devmod.party.PartySyncPayload;
+
 @OnlyIn(Dist.CLIENT)
 public class PartyScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyScreen.class);
@@ -54,6 +55,7 @@ public class PartyScreen extends Screen {
 
     // Party State
     private List<PartySyncPayload.PartyMemberInfo> members = new ArrayList<>();
+    @Nullable
     private UUID leaderId = null;
     private QuestType questType = QuestType.PVE_COOP;
     private PartyData.PartyState partyState = PartyData.PartyState.FORMING;
@@ -90,21 +92,21 @@ public class PartyScreen extends Screen {
     private static final long SYNC_INTERVAL_MS = 500;
 
     // UI Components
-    private EditBox inviteBox;
-    private EditBox mobSearchBox;
-    private EditorButton createPartyButton;
-    private EditorButton readyButton;
-    private EditorButton startButton;
-    private EditorButton leaveButton;
-    private EditorButton disbandButton;
-    private EditorButton inviteButton;
+    @Nullable private EditBox inviteBox;
+    @Nullable private EditBox mobSearchBox;
+    @Nullable private EditorButton createPartyButton;
+    @Nullable private EditorButton readyButton;
+    @Nullable private EditorButton startButton;
+    @Nullable private EditorButton leaveButton;
+    @Nullable private EditorButton disbandButton;
+    @Nullable private EditorButton inviteButton;
 
-    private ButtonArea inviteButtonBounds;
-    private ButtonArea readyButtonBounds;
-    private ButtonArea startButtonBounds;
-    private ButtonArea leaveButtonBounds;
-    private ButtonArea disbandButtonBounds;
-    private ButtonArea createPartyButtonBounds;
+    @Nullable private ButtonArea inviteButtonBounds;
+    @Nullable private ButtonArea readyButtonBounds;
+    @Nullable private ButtonArea startButtonBounds;
+    @Nullable private ButtonArea leaveButtonBounds;
+    @Nullable private ButtonArea disbandButtonBounds;
+    @Nullable private ButtonArea createPartyButtonBounds;
 
     private int hoveredMemberIndex = -1;
     private int hoveredMobIndex = -1;
@@ -114,7 +116,7 @@ public class PartyScreen extends Screen {
     private int originalBlurValue = 0;
 
     // Renderer delegate
-    private PartyScreenRenderer renderer;
+    @Nullable private PartyScreenRenderer renderer;
 
     public PartyScreen() {
         super(Objects.requireNonNull(Component.translatable("devmod.party.title")));
@@ -484,16 +486,20 @@ public class PartyScreen extends Screen {
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
         // Delegate all rendering to renderer
-        renderer.renderMainPanel(graphics);
+        PartyScreenRenderer safeRenderer = renderer;
+        if (safeRenderer == null) {
+            return;
+        }
+        safeRenderer.renderMainPanel(graphics);
 
         if (isInParty) {
-            hoveredQuestTab = renderer.renderQuestTypeTabs(graphics, mouseX, mouseY);
-            hoveredMemberIndex = renderer.renderMembersPanel(graphics, mouseX, mouseY);
-            hoveredMobIndex = renderer.renderMobSelectionPanel(graphics, mouseX, mouseY);
-            renderer.renderMobPreviewPanel(graphics, mouseX, mouseY);
-            renderer.renderWaveStatsBar(graphics, mouseX, mouseY);
+            hoveredQuestTab = safeRenderer.renderQuestTypeTabs(graphics, mouseX, mouseY);
+            hoveredMemberIndex = safeRenderer.renderMembersPanel(graphics, mouseX, mouseY);
+            hoveredMobIndex = safeRenderer.renderMobSelectionPanel(graphics, mouseX, mouseY);
+            safeRenderer.renderMobPreviewPanel(graphics, mouseX, mouseY);
+            safeRenderer.renderWaveStatsBar(graphics, mouseX, mouseY);
         } else {
-            renderer.renderNoPartyState(graphics);
+            safeRenderer.renderNoPartyState(graphics);
         }
 
         super.render(graphics, mouseX, mouseY, partialTick);
@@ -503,6 +509,9 @@ public class PartyScreen extends Screen {
     // === EVENT HANDLERS ===
 
     private void onInviteClicked() {
+        if (inviteBox == null) {
+            return;
+        }
         String playerName = inviteBox.getValue().trim();
         if (playerName.isEmpty()) return;
 

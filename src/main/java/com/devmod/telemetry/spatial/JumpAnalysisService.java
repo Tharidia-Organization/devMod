@@ -17,6 +17,7 @@ import net.minecraft.world.phys.Vec3;
 import com.devmod.telemetry.TelemetryJson;
 import com.devmod.telemetry.room.RoomService;
 import com.devmod.telemetry.util.BitPackedFlags;
+
 public class JumpAnalysisService {
     public static final JumpAnalysisService INSTANCE = new JumpAnalysisService();
 

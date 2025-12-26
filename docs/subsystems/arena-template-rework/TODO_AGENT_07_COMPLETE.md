@@ -32,13 +32,13 @@ All tasks for Agent 07 have been implemented. This agent focused on security, pe
   - copyOnDeath() for override survival
 
 ### Debug HUD (DD30)
-- `src/main/java/com/devmod/arena/hud/ArenaDebugHud.java`
+- `src/main/java/com/devmod/client/arena/hud/ArenaDebugHud.java`
   - Permission check before rendering
   - Toggle check (default OFF)
   - Debug info display with template, state, players, duration
   - Builder pattern for ArenaDebugInfo
 
-- `src/main/java/com/devmod/arena/hud/ArenaDebugState.java`
+- `src/main/java/com/devmod/arena/ArenaDebugState.java`
   - Per-player HUD enabled state
   - Global HUD toggle
   - Default OFF behavior

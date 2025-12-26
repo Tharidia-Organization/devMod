@@ -14,6 +14,7 @@ import com.devmod.client.overlay.Impact3DPanelManager;
 import com.devmod.client.overlay.ImpactHudOverlay;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.config.Config;
+
 public final class ImpactHudButtons {
 
     // ═══════════════════════════════════════════════════════════════

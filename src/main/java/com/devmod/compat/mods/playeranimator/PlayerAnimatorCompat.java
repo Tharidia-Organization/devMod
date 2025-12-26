@@ -13,6 +13,7 @@ import net.minecraft.world.entity.player.Player;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class PlayerAnimatorCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(PlayerAnimatorCompat.class);
     public static final String MOD_ID = "playeranimator";

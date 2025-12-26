@@ -17,6 +17,7 @@ import com.google.gson.reflect.TypeToken;
 import com.mojang.logging.LogUtils;
 
 import com.devmod.util.ConfigPaths;
+
 public class MobPresetManager {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

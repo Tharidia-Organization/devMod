@@ -21,6 +21,7 @@ import net.minecraft.world.phys.Vec3;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+
 @OnlyIn(Dist.CLIENT)
 public class SpawnabilityOverlay {
     public static final SpawnabilityOverlay INSTANCE = new SpawnabilityOverlay();

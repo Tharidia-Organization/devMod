@@ -27,6 +27,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import com.devmod.arena.policy.ArenaPolicy;
 import com.devmod.endurance.config.EnduranceConfigManager;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
+
 public class PerkSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(PerkSystem.class);
 

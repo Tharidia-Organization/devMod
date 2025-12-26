@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import net.minecraft.world.item.ItemStack;
+
 public class BatchUndoSnapshot {
     private final List<ItemStack> originalStacks;
     private final List<Integer> slots;

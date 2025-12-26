@@ -18,6 +18,7 @@ import com.devmod.collision.bodypart.BodyPartInstance;
 import com.devmod.collision.integration.OBBHitHelper;
 import com.devmod.collision.obb.OrientedBoundingBox;
 import com.devmod.config.Config;
+
 public final class OBBDebugRenderer {
 
     private OBBDebugRenderer() {} // Utility class

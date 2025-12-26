@@ -19,6 +19,7 @@ import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
+
 public class DebugPanel {
 
     private static final int MAX_ENTRIES = 64;

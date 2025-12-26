@@ -16,6 +16,7 @@ import com.devmod.client.ui.radial.RadialMenuConfig;
 import com.devmod.client.ui.radial.RadialMenuItem;
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
 import com.devmod.client.ui.radial.model.MacroCategory;
+
 public final class RadialTooltipRenderer {
 
     private RadialTooltipRenderer() {
@@ -99,7 +100,8 @@ public final class RadialTooltipRenderer {
      * @param editMode             whether edit mode is active
      * @return tooltip text or null if no tooltip should be shown
      */
-    public static String generateTooltip(MacroCategory hoveredMacro,
+    @Nullable
+    public static String generateTooltip(@Nullable MacroCategory hoveredMacro,
                                           MacroCategory selectedMacro,
                                           int selectedFavoriteIndex,
                                           List<FavoriteRef> favorites,
@@ -218,7 +220,7 @@ public final class RadialTooltipRenderer {
      */
     public static void renderBreadcrumb(GuiGraphics graphics, Font font,
                                          List<RadialCategory> navigationStack,
-                                         RadialCategory currentCategory) {
+                                         @Nullable RadialCategory currentCategory) {
         Objects.requireNonNull(graphics, "graphics cannot be null");
         Objects.requireNonNull(font, "font cannot be null");
         Objects.requireNonNull(navigationStack, "navigationStack cannot be null");

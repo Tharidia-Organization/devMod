@@ -26,6 +26,7 @@ import com.devmod.config.gamedesign.GameDesignConfig;
 import com.devmod.config.gamedesign.GameDesignConfigManager;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
+
 public final class ResonanceChainSystem {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ResonanceChainSystem.class);

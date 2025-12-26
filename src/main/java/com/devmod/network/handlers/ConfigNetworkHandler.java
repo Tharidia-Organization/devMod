@@ -16,6 +16,7 @@ import com.devmod.network.RecipeClientSyncPayload;
 import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload;
 import com.devmod.telemetry.duckdb.packets.TelemetryPacketHandler;
 import com.devmod.util.I18n;
+
 public final class ConfigNetworkHandler extends NetworkHandlerBase {
 
     private ConfigNetworkHandler() {}

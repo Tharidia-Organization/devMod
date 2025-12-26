@@ -23,23 +23,6 @@ import com.devmod.runtime.PlayerInstanceState;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L0 - Smoke/Boot Tests
- *
- * PURPOSE: Validate that the mod's core pure-Java components are correctly defined
- * and can initialize without errors. These tests run WITHOUT Minecraft/NeoForge runtime.
- *
- * GATING CRITERIA (Must pass 100% before advancing to L1):
- * - Core enums are properly defined
- * - UIConstants are present and correct
- * - Source files exist for critical classes
- * - No compilation errors in pure-Java components
- *
- * NOTE: Classes that depend on Minecraft/NeoForge (KeyMapping, BlockPos, etc.) cannot
- * be class-loaded in unit tests. Their existence is verified via source file checks.
- *
- * PASS CONDITION: ALL tests GREEN
- */
 @DisplayName("L0: Smoke/Boot Tests")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Execution(ExecutionMode.CONCURRENT)

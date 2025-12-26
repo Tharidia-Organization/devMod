@@ -7,6 +7,7 @@ import java.sql.Statement;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 public final class DuckDBSchemaManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DuckDBSchemaManager.class);
 

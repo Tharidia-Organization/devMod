@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 public class RetentionJob implements AutoCloseable {
 
     // DD23: Separate logger for retention audit

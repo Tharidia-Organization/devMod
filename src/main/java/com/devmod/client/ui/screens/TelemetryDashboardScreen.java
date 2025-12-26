@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -37,6 +38,7 @@ import com.devmod.telemetry.TelemetryService;
 import com.devmod.testing.stats.EnvironmentalDamageStats;
 import com.devmod.testing.stats.HazardTypeRegistry.HazardType;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public class TelemetryDashboardScreen extends Screen {
 
@@ -45,6 +47,7 @@ public class TelemetryDashboardScreen extends Screen {
     private static final int TAB_HEIGHT = 22;
     private static final int ROW_HEIGHT = 26;
 
+    @Nullable
     private final Screen parent;
     private DashboardTab currentTab = DashboardTab.OVERLAYS;
 
@@ -82,7 +85,7 @@ public class TelemetryDashboardScreen extends Screen {
         }
     }
 
-    public TelemetryDashboardScreen(Screen parent) {
+    public TelemetryDashboardScreen(@Nullable Screen parent) {
         super(I18n.screenTitle("telemetry_dashboard"));
         this.parent = parent;
 

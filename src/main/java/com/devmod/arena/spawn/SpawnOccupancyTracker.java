@@ -4,6 +4,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.core.BlockPos;
+
 public class SpawnOccupancyTracker {
 
     private final Set<Long> occupied = ConcurrentHashMap.newKeySet();

@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 public class HeatmapCollector {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HeatmapCollector.class);

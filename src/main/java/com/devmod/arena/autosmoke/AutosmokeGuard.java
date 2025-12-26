@@ -6,6 +6,7 @@ import java.nio.file.Paths;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 public class AutosmokeGuard {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AutosmokeGuard.class);

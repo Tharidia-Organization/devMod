@@ -484,5 +484,5 @@ List<TestCase> armorTests = DynamicTestGenerator.INSTANCE.getTestsForMod("devmod
 
 **Riferimenti:**
 - [15-weapon-properties.md](15-weapon-properties.md) - Weapon properties (reference architecture)
-- [06-persistence-storage.md](06-persistence-storage.md) - Storage patterns
-- [10-unified-architecture.md](10-unified-architecture.md) - ArmorModule integration
+- [06-persistence.md](06-persistence.md) - Storage patterns
+- [08-unified-architecture.md](08-unified-architecture.md) - ArmorModule integration

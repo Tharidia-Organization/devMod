@@ -1,6 +1,7 @@
 package com.devmod.client.ui.testing.panel;
 
 import net.minecraft.client.gui.GuiGraphics;
+
 public record SpacerPanel(
     String id,
     int height

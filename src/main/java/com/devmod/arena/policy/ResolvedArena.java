@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.devmod.arena.registry.ArenaTemplate;
+
 public record ResolvedArena(
     /** The resolved arena template */
     ArenaTemplate template,

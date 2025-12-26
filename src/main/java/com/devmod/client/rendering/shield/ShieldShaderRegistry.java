@@ -22,6 +22,7 @@ import com.devmod.DevMod;
 import com.devmod.client.rendering.shader.ShaderPipeline;
 import com.devmod.client.rendering.shader.ShaderPipelineDiagnostics;
 import com.devmod.client.rendering.shader.ShaderRenderTypeConfig;
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class ShieldShaderRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShieldShaderRegistry.class);

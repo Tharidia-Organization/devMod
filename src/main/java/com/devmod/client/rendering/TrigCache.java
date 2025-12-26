@@ -2,6 +2,7 @@ package com.devmod.client.rendering;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+
 @OnlyIn(Dist.CLIENT)
 public final class TrigCache {
 

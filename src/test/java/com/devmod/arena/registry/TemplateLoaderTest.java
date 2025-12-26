@@ -1,16 +1,18 @@
 package com.devmod.arena.registry;
 
-import com.devmod.arena.telemetry.ArenaTelemetry;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import com.devmod.arena.telemetry.ArenaTelemetry;
 
 import static org.junit.jupiter.api.Assertions.*;
 

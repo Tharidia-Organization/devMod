@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -20,6 +22,7 @@ import com.devmod.telemetry.spatial.BacktrackingService;
 import com.devmod.telemetry.spatial.DesireLinesService;
 import com.devmod.telemetry.spatial.HeatmapService;
 import com.devmod.util.ConfigPaths;
+
 public class JsonReportExporter {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String VERSION = "1.0.0";
@@ -28,7 +31,7 @@ public class JsonReportExporter {
      * Exports a complete JSON report.
      * @return Path to the exported file, or null on failure
      */
-    public static String exportReport() {
+    public static @Nullable String exportReport() {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
         Path exportDir = getExportDir();
 

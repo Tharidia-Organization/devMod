@@ -24,6 +24,7 @@ import com.devmod.client.rendering.LineOfSightVisualizer;
 import com.devmod.client.rendering.PathfindingDebugger;
 import com.devmod.client.rendering.RoomBoundsVisualizer;
 import com.devmod.util.ConfigPaths;
+
 public class SettingsManager {
     public static final SettingsManager INSTANCE = new SettingsManager();
     private static final Logger LOGGER = LogUtils.getLogger();

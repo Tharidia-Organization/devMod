@@ -6,6 +6,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nullable;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
@@ -20,18 +22,6 @@ import com.devmod.endurance.QuestType;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L2 Integration Tests: Party → Mob Selection → Quest Flow
- *
- * Tests the integration between:
- * 1. Party mob selection logic
- * 2. MobDifficultyPreset assignment
- * 3. Quest type compatibility
- * 4. Scaling formula integration
- *
- * NOTE: Uses simulation classes to avoid Minecraft dependencies (ResourceLocation, etc.)
- * This tests the logical flow and data integrity, not the actual Minecraft integration.
- */
 @DisplayName("L2: Party Mob Selection Integration")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -90,9 +80,9 @@ public class PartyMobSelectionIntegrationTest {
         private final Map<UUID, String> memberNames = new ConcurrentHashMap<>();
         private final Map<UUID, Boolean> memberReady = new ConcurrentHashMap<>();
         private volatile QuestType questType;
-        private volatile SimResourceLocation selectedMobId;
+        private volatile @Nullable SimResourceLocation selectedMobId;
         private volatile PartyState state = PartyState.FORMING;
-        private volatile UUID instanceId;
+        private volatile @Nullable UUID instanceId;
 
         SimPartyData(UUID leaderId, String leaderName, QuestType questType) {
             this.partyId = UUID.randomUUID();
@@ -130,14 +120,14 @@ public class PartyMobSelectionIntegrationTest {
             return true;
         }
 
-        boolean setSelectedMobId(UUID requesterId, SimResourceLocation mobId) {
+        boolean setSelectedMobId(UUID requesterId, @Nullable SimResourceLocation mobId) {
             if (!requesterId.equals(leaderId)) return false;
             if (state != PartyState.FORMING) return false;
             this.selectedMobId = mobId;
             return true;
         }
 
-        SimResourceLocation getSelectedMobId() {
+        @Nullable SimResourceLocation getSelectedMobId() {
             return selectedMobId;
         }
 
@@ -184,7 +174,7 @@ public class PartyMobSelectionIntegrationTest {
             if (!members.contains(newLeaderId)) return false;
             if (newLeaderId.equals(leaderId)) return false;
             this.leaderId = newLeaderId;
-            this.leaderName = memberNames.get(newLeaderId);
+            this.leaderName = Objects.requireNonNullElse(memberNames.get(newLeaderId), this.leaderName);
             memberReady.put(newLeaderId, true);
             return true;
         }
@@ -212,7 +202,7 @@ public class PartyMobSelectionIntegrationTest {
         int getMemberCount() { return members.size(); }
         QuestType getQuestType() { return questType; }
         PartyState getState() { return state; }
-        UUID getInstanceId() { return instanceId; }
+        @Nullable UUID getInstanceId() { return instanceId; }
     }
 
     // =========================================================================

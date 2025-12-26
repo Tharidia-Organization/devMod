@@ -21,6 +21,7 @@ import com.devmod.config.Config;
 import com.devmod.util.I18n;
 
 import static com.devmod.client.ui.testing.pages.PageUtils.safeGetBool;
+
 public class HudSystemsPage extends AbstractVoxelLabPage {
 
     // 2D HUD toggles

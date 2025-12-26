@@ -20,6 +20,7 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import com.devmod.DevMod;
+
 @EventBusSubscriber(modid = DevMod.MODID)
 public class InstanceEventHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceEventHandler.class);

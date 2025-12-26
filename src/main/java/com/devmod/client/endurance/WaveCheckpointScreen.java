@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.Random;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.lwjgl.glfw.GLFW;
 
@@ -26,6 +27,7 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.QuestActionPayload;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 
 public class WaveCheckpointScreen extends Screen {
@@ -73,7 +75,9 @@ public class WaveCheckpointScreen extends Screen {
     private final Random random = new Random();
 
     // === Buttons (custom for fade) ===
+    @Nullable
     private EditorButton continueButton;
+    @Nullable
     private EditorButton exitButton;
 
     public WaveCheckpointScreen() {

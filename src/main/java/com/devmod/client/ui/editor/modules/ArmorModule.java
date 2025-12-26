@@ -15,6 +15,7 @@ import com.devmod.client.ui.editor.core.EditorCache;
 import com.devmod.config.ArmorConfigManager;
 import com.devmod.network.ArmorStatsPayload;
 import com.devmod.stats.ArmorStats;
+
 public class ArmorModule extends AbstractEditorModule {
 
     private static final String NBT_KEY = "ArmorModStats";

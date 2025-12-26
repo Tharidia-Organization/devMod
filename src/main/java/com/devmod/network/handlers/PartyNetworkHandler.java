@@ -28,6 +28,7 @@ import com.devmod.party.PartySyncPayload;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.party.QuestStartSequence;
 import com.devmod.util.I18n;
+
 public final class PartyNetworkHandler extends NetworkHandlerBase {
 
     private PartyNetworkHandler() {}

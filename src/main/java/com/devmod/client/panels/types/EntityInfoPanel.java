@@ -22,6 +22,7 @@ import com.devmod.client.panels.core.FloatingPanel;
 import com.devmod.client.panels.core.PanelType;
 import com.devmod.client.panels.tracking.EntityTracker;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public class EntityInfoPanel extends FloatingPanel {
 
     // Data cache to avoid lookups every frame

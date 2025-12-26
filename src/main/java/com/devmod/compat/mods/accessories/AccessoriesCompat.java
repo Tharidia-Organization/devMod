@@ -19,6 +19,7 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class AccessoriesCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(AccessoriesCompat.class);
     public static final String MOD_ID = "accessories";

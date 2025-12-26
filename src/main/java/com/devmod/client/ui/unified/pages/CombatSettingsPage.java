@@ -20,6 +20,7 @@ import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.config.WeaponConfigManager;
 import com.devmod.stats.WeaponStats;
+
 public class CombatSettingsPage implements SettingsPage {
 
     private static final int ROW_HEIGHT = 20;

@@ -10,6 +10,7 @@ import net.minecraft.resources.ResourceLocation;
 import com.devmod.DevMod;
 
 import io.netty.buffer.ByteBuf;
+
 public record ChallengeSyncPayload(
         List<ChallengeData> challenges
 ) implements CustomPacketPayload {

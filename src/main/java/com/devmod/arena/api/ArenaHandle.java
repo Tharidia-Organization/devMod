@@ -3,6 +3,7 @@ package com.devmod.arena.api;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+
 public record ArenaHandle(
     UUID arenaId,
     UUID instanceId,

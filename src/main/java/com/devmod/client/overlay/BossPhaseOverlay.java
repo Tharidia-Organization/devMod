@@ -23,6 +23,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import com.devmod.DevMod;
 import com.devmod.telemetry.boss.BossPhaseService;
 import com.devmod.telemetry.boss.UnifiedBossDetector;
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class BossPhaseOverlay {

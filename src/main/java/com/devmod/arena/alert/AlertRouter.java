@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 public class AlertRouter implements AutoCloseable {
 
     private static final Logger LOGGER = Logger.getLogger(AlertRouter.class.getName());

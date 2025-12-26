@@ -11,6 +11,7 @@ import static com.devmod.client.ui.testing.panel.PanelConstants.ANIMATION_SPEED;
 import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_HEADER_ACCENT;
 import static com.devmod.client.ui.testing.panel.PanelConstants.CONTENT_PADDING;
 import static com.devmod.client.ui.testing.panel.PanelConstants.HEADER_HEIGHT;
+
 public final class CollapsiblePanel implements UIPanel {
 
     private final String id;

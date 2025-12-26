@@ -4,7 +4,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nullable;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,10 +19,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for weapon configuration system.
- * Tests load/save JSON, default stats, and persistence.
- */
 public class WeaponConfigTest {
 
     /**
@@ -76,7 +75,7 @@ public class WeaponConfigTest {
      */
     static class MockWeaponConfigManager {
         private final Map<String, MockWeaponStats> weaponStats = new ConcurrentHashMap<>();
-        private Path configPath;
+        @Nullable private Path configPath;
 
         public void setConfigPath(Path path) {
             this.configPath = path;
@@ -188,7 +187,7 @@ public class WeaponConfigTest {
     }
 
     @TempDir
-    Path tempDir;
+    @Nullable Path tempDir;
 
     private MockWeaponConfigManager configManager;
 
@@ -417,7 +416,7 @@ public class WeaponConfigTest {
         @Test
         @DisplayName("Save to file should create file")
         void testSaveCreatesFile() throws IOException {
-            Path configFile = tempDir.resolve("weapons.json");
+            Path configFile = Objects.requireNonNull(tempDir).resolve("weapons.json");
             configManager.setConfigPath(configFile);
 
             MockWeaponStats stats = new MockWeaponStats();
@@ -432,7 +431,7 @@ public class WeaponConfigTest {
         @Test
         @DisplayName("Load from file should restore stats")
         void testLoadFromFile() throws IOException {
-            Path configFile = tempDir.resolve("weapons.json");
+            Path configFile = Objects.requireNonNull(tempDir).resolve("weapons.json");
 
             String json = """
                 {
@@ -461,7 +460,7 @@ public class WeaponConfigTest {
         @Test
         @DisplayName("Save and load round-trip")
         void testSaveLoadRoundTrip() throws IOException {
-            Path configFile = tempDir.resolve("weapons.json");
+            Path configFile = Objects.requireNonNull(tempDir).resolve("weapons.json");
             configManager.setConfigPath(configFile);
 
             MockWeaponStats stats = new MockWeaponStats();
@@ -486,7 +485,7 @@ public class WeaponConfigTest {
         @Test
         @DisplayName("Load from non-existent file should not fail")
         void testLoadNonExistentFile() throws IOException {
-            Path configFile = tempDir.resolve("nonexistent.json");
+            Path configFile = Objects.requireNonNull(tempDir).resolve("nonexistent.json");
             configManager.setConfigPath(configFile);
 
             assertDoesNotThrow(() -> configManager.loadFromFile());
@@ -496,7 +495,7 @@ public class WeaponConfigTest {
         @Test
         @DisplayName("Multiple saves should overwrite")
         void testMultipleSaves() throws IOException {
-            Path configFile = tempDir.resolve("weapons.json");
+            Path configFile = Objects.requireNonNull(tempDir).resolve("weapons.json");
             configManager.setConfigPath(configFile);
 
             // First save
@@ -622,8 +621,8 @@ public class WeaponConfigTest {
         @DisplayName("Floating point precision")
         void testFloatingPointPrecision() {
             MockWeaponStats stats = new MockWeaponStats();
-            stats.baseDamageBonus = 0.123456789f;
-            stats.headMult = 2.987654321f;
+            stats.baseDamageBonus = 0.12345679f;
+            stats.headMult = 2.9876542f;
 
             configManager.setStatsFor("precise:weapon", stats);
 
@@ -632,8 +631,8 @@ public class WeaponConfigTest {
             configManager.fromJson(json);
 
             MockWeaponStats loaded = configManager.getStatsFor("precise:weapon");
-            assertEquals(0.123456789f, loaded.baseDamageBonus, 0.0001f);
-            assertEquals(2.987654321f, loaded.headMult, 0.0001f);
+            assertEquals(0.12345679f, loaded.baseDamageBonus, 0.0001f);
+            assertEquals(2.9876542f, loaded.headMult, 0.0001f);
         }
 
         @Test

@@ -7,6 +7,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 
 import com.google.gson.Gson;
@@ -19,6 +21,7 @@ import net.minecraft.server.level.ServerPlayer;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload.CompressedEvent;
 import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload.EventType;
+
 public class TelemetryPacketHandler {
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -130,6 +133,10 @@ public class TelemetryPacketHandler {
                 // Performance samples from clients are logged but not stored
                 // Server has its own authoritative performance metrics
                 LOGGER.trace("[TelemetryPacket] Client performance sample received (ignored)");
+            }
+            case UI_SCREEN_OPEN, UI_SCREEN_CLOSE, UI_ACTION -> {
+                // UI events are client-only; ignore on server.
+                LOGGER.trace("[TelemetryPacket] UI event received (ignored)");
             }
         }
     }
@@ -630,19 +637,19 @@ public class TelemetryPacketHandler {
     // JSON HELPER METHODS
     // ============================================
 
-    private static String getStringOrNull(JsonObject json, String key) {
+    private static @Nullable String getStringOrNull(JsonObject json, String key) {
         return json.has(key) && !json.get(key).isJsonNull() ? json.get(key).getAsString() : null;
     }
 
-    private static Double getDoubleOrNull(JsonObject json, String key) {
+    private static @Nullable Double getDoubleOrNull(JsonObject json, String key) {
         return json.has(key) && !json.get(key).isJsonNull() ? json.get(key).getAsDouble() : null;
     }
 
-    private static Long getLongOrNull(JsonObject json, String key) {
+    private static @Nullable Long getLongOrNull(JsonObject json, String key) {
         return json.has(key) && !json.get(key).isJsonNull() ? json.get(key).getAsLong() : null;
     }
 
-    private static UUID getUuidOrNull(JsonObject json, String key) {
+    private static @Nullable UUID getUuidOrNull(JsonObject json, String key) {
         return json.has(key) && !json.get(key).isJsonNull()
             ? UUID.fromString(json.get(key).getAsString())
             : null;
@@ -666,12 +673,12 @@ public class TelemetryPacketHandler {
     }
 
     private record EnduranceContext(
-        String templateId,
-        Integer templateVersion,
-        String policyId,
-        Integer policyVersion,
-        UUID arenaId,
-        UUID sessionId
+        @Nullable String templateId,
+        @Nullable Integer templateVersion,
+        @Nullable String policyId,
+        @Nullable Integer policyVersion,
+        @Nullable UUID arenaId,
+        @Nullable UUID sessionId
     ) {}
 
     // ============================================

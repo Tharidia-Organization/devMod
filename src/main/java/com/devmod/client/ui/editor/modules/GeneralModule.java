@@ -37,6 +37,7 @@ import com.devmod.client.ui.editor.sections.ModuleCardSection;
 import com.devmod.client.ui.editor.sections.ModuleSummarySection;
 import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
+
 public class GeneralModule extends AbstractEditorModule {
 
     // ═══════════════════════════════════════════════════════════════

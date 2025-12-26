@@ -21,6 +21,7 @@ import com.devmod.runtime.RecoverySystem;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.util.I18n;
+
 public class EnduranceSessionHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceSessionHandler.class);
 

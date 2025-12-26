@@ -20,6 +20,7 @@ import net.minecraft.world.entity.LivingEntity;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class MowziesMobsCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(MowziesMobsCompat.class);
     public static final String MOD_ID = "mowziesmobs";

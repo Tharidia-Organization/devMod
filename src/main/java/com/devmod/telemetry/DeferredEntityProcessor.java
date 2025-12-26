@@ -17,6 +17,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
 import com.devmod.config.MobConfigManager;
+
 public class DeferredEntityProcessor {
     private static final Logger LOGGER = LogUtils.getLogger();
 

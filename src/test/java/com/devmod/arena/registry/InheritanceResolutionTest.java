@@ -1,10 +1,12 @@
 package com.devmod.arena.registry;
 
-import com.devmod.arena.telemetry.ArenaTelemetry;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-import java.util.Set;
+import com.devmod.arena.telemetry.ArenaTelemetry;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -24,7 +26,7 @@ class InheritanceResolutionTest {
             ArenaTemplateRegistry.ReloadResult result = registry.hotReload(List.of(t0, t1, t2, t3, t4));
 
             assertFalse(result.success(), "Reload should fail when inheritance depth exceeds limit");
-            assertTrue(result.errors().stream().anyMatch(e -> e.toLowerCase().contains("depth")),
+            assertTrue(result.errors().stream().anyMatch(e -> e.toLowerCase(Locale.ROOT).contains("depth")),
                 "Expected depth exceeded error");
         }
     }
@@ -41,7 +43,7 @@ class InheritanceResolutionTest {
             ArenaTemplateRegistry.ReloadResult result = registry.hotReload(List.of(a, b, c));
 
             assertFalse(result.success(), "Reload should fail for diamond inheritance");
-            assertTrue(result.errors().stream().anyMatch(e -> e.toLowerCase().contains("diamond")),
+            assertTrue(result.errors().stream().anyMatch(e -> e.toLowerCase(Locale.ROOT).contains("diamond")),
                 "Expected diamond inheritance error");
         }
     }

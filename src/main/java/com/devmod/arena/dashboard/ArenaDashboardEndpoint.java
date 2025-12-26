@@ -24,6 +24,7 @@ import com.devmod.arena.security.ArenaCommandAudit;
 import com.devmod.telemetry.duckdb.ArenaRecords;
 import com.devmod.telemetry.duckdb.DuckDBQueryAPI;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
+
 public class ArenaDashboardEndpoint implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaDashboardEndpoint.class);

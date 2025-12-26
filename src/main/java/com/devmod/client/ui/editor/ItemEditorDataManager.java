@@ -25,6 +25,7 @@ import com.google.gson.JsonParseException;
 
 import com.devmod.DevMod;
 import com.devmod.util.ConfigPaths;
+
 public class ItemEditorDataManager {
 
     public static final ItemEditorDataManager INSTANCE = new ItemEditorDataManager();

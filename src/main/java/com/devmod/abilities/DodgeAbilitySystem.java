@@ -19,6 +19,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.endurance.ComboSystem;
 import com.devmod.telemetry.player.AbilityTelemetryService;
+
 public class DodgeAbilitySystem {
     private static final Logger LOGGER = LogUtils.getLogger();
 

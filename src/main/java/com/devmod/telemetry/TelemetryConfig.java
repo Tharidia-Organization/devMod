@@ -18,6 +18,7 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 
 import com.devmod.util.ConfigPaths;
+
 public class TelemetryConfig {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Gson GSON = new Gson();

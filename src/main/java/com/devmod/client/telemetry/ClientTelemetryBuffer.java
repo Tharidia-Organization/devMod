@@ -13,6 +13,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload;
 import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload.CompressedEvent;
 import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload.EventType;
+
 public class ClientTelemetryBuffer {
     private static final Logger LOGGER = LogUtils.getLogger();
 

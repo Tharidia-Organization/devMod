@@ -1,18 +1,16 @@
 package com.devmod.client.ui.editor.controller;
 
-import com.devmod.client.ui.editor.state.ItemEditorState;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.atomic.AtomicReference;
+import net.minecraft.world.item.ItemStack;
+
+import com.devmod.client.ui.editor.state.ItemEditorState;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for {@link ModeController}.
- */
 public class ModeControllerTest {
 
     private ItemEditorState state;

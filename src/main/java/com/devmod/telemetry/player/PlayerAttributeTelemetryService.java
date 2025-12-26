@@ -6,6 +6,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -24,13 +26,14 @@ import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.duckdb.DuckDBConfig;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.devmod.telemetry.util.BitPackedFlags;
+
 public class PlayerAttributeTelemetryService {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public static final PlayerAttributeTelemetryService INSTANCE = new PlayerAttributeTelemetryService();
 
     // PERFORMANCE: Cached reflection field for exhaustion (avoid repeated lookups)
-    private static final java.lang.reflect.Field EXHAUSTION_FIELD;
+    private static final @Nullable java.lang.reflect.Field EXHAUSTION_FIELD;
     static {
         java.lang.reflect.Field field = null;
         try {
@@ -490,7 +493,7 @@ public class PlayerAttributeTelemetryService {
     /**
      * Get previous snapshot for comparison.
      */
-    public PlayerAttributeSnapshot getPreviousSnapshot(UUID playerId) {
+    public @Nullable PlayerAttributeSnapshot getPreviousSnapshot(UUID playerId) {
         return previousSnapshots.get(playerId);
     }
 
@@ -532,7 +535,7 @@ public class PlayerAttributeTelemetryService {
     }
 
     /** Append nullable Float with 2 decimal places, or "null" if null */
-    private static void appendNullableFloat2(StringBuilder sb, Float value) {
+    private static void appendNullableFloat2(StringBuilder sb, @Nullable Float value) {
         if (value == null) {
             sb.append("null");
         } else {
@@ -598,8 +601,8 @@ public class PlayerAttributeTelemetryService {
         public double reach;
         public float hitboxWidth;
         public float hitboxHeight;
-        public Float pehkuiScale;
-        public Float pehkuiHitboxScale;
+        public @Nullable Float pehkuiScale;
+        public @Nullable Float pehkuiHitboxScale;
 
         // Abilities (from StaminaSystem, DashAbilitySystem, DodgeAbilitySystem)
         public float stamina;
@@ -620,7 +623,7 @@ public class PlayerAttributeTelemetryService {
 
         // Combat state
         public int currentCombo;
-        public String styleRank;
+        public @Nullable String styleRank;
         public int styleScore;
     }
 }

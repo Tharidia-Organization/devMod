@@ -14,6 +14,7 @@ import net.minecraft.client.Minecraft;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
 
 import com.devmod.arena.ArenaDebugState;
+
 public class ArenaHudKeyBinding {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaHudKeyBinding.class);

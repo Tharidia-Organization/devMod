@@ -26,6 +26,7 @@ import com.devmod.runtime.InstanceState;
 import com.devmod.runtime.PlayerInstanceSnapshot;
 import com.devmod.runtime.PlayerInstanceState;
 import com.devmod.runtime.RecoverySystem;
+
 @GameTestHolder(DevMod.MODID)
 @PrefixGameTestTemplate(false)
 public class InstanceSystemGameTests {

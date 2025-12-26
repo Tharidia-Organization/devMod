@@ -3,6 +3,7 @@ package com.devmod.client.endurance;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.lwjgl.glfw.GLFW;
 
@@ -22,6 +23,7 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.endurance.QuestActionPayload;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public class QuestDeathScreen extends Screen {
 
@@ -55,7 +57,9 @@ public class QuestDeathScreen extends Screen {
     // === State ===
     private long openTime;
     private boolean soundPlayed = false;
+    @Nullable
     private EditorButton respawnButton;
+    @Nullable
     private EditorButton giveUpButton;
 
     public QuestDeathScreen() {

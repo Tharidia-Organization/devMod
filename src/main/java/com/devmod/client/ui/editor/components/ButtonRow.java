@@ -7,6 +7,7 @@ import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.core.EditorSpacing;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public class ButtonRow {
 
     /**

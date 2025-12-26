@@ -3,6 +3,7 @@ package com.devmod.client.ui.editor.core;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
+
 public final class FocusRing {
     private FocusRing() {}
 

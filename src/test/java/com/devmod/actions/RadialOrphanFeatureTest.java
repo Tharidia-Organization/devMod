@@ -1,23 +1,25 @@
 package com.devmod.actions;
 
-import com.devmod.client.input.KeyInputHandler;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import net.minecraft.client.KeyMapping;
+
 import com.devmod.TestBootstrap;
 import com.devmod.actions.client.ActionKeybindRegistry;
 import com.devmod.actions.client.DevModClientActions;
+import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.ui.radial.RadialCategory;
 import com.devmod.client.ui.radial.RadialMenuItem;
 import com.devmod.client.ui.radial.RadialMenuRegistry;
 import com.devmod.client.ui.radial.model.MacroCategory;
-import net.minecraft.client.KeyMapping;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
-import java.util.HashSet;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;

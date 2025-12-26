@@ -150,7 +150,7 @@ This document provides a high-level overview of the DevMod architecture. You can
 - `com.devmod.rendering.shader`
 - `com.devmod.rendering.shield`
 
-**Asset Path**: `assets/devmod/shaders/core/`
+**Asset Path**: `src/main/resources/assets/devmod/shaders/core/`
 
 **Key Components**:
 

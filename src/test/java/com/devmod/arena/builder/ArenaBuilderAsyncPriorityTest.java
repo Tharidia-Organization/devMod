@@ -1,13 +1,15 @@
 package com.devmod.arena.builder;
 
+import java.util.Objects;
+import java.util.UUID;
+
+import javax.annotation.Nonnull;
+
+import org.junit.jupiter.api.Test;
+
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.InstanceSettingsValidator;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-import org.junit.jupiter.api.Test;
-
-import java.util.Objects;
-import java.util.UUID;
-import javax.annotation.Nonnull;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

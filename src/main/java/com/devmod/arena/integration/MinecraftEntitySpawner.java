@@ -19,6 +19,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
 
 import com.devmod.arena.builder.ArenaBuilder;
+
 public class MinecraftEntitySpawner implements ArenaBuilder.EntitySpawner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MinecraftEntitySpawner.class);

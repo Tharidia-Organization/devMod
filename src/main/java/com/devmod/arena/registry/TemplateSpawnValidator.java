@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.telemetry.ArenaTelemetry;
+
 public class TemplateSpawnValidator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateSpawnValidator.class);

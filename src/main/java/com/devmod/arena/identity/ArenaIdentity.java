@@ -3,6 +3,7 @@ package com.devmod.arena.identity;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
+
 public record ArenaIdentity(
     UUID arenaId,
     String templateId,

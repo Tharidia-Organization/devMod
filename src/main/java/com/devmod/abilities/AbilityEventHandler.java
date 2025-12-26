@@ -15,6 +15,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import com.devmod.DevMod;
 import com.devmod.telemetry.player.AbilityTelemetryService;
+
 @EventBusSubscriber(modid = DevMod.MODID)
 public class AbilityEventHandler {
     private static final Logger LOGGER = LogUtils.getLogger();

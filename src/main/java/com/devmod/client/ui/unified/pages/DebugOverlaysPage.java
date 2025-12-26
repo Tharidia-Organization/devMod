@@ -22,6 +22,7 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.debug.client.DebugRenderBools;
+
 public class DebugOverlaysPage implements SettingsPage {
 
     private static final int ROW_HEIGHT = 24;
@@ -330,7 +331,7 @@ public class DebugOverlaysPage implements SettingsPage {
                 int trackHeight = lastContentHeight - thumbHeight;
                 if (trackHeight > 0) {
                     // Center thumb on click position
-                    float clickRatio = (float)(mouseY - contentY - thumbHeight / 2) / trackHeight;
+                    float clickRatio = (float)(mouseY - contentY - thumbHeight / 2.0) / trackHeight;
                     clickRatio = Math.max(0, Math.min(1, clickRatio));
                     scrollOffset = (int)(maxScrollOffset * clickRatio);
                 }
@@ -511,7 +512,7 @@ public class DebugOverlaysPage implements SettingsPage {
             int trackHeight = lastContentHeight - thumbHeight;
             if (trackHeight > 0) {
                 // Center thumb on mouse position during drag
-                float dragRatio = (float)(mouseY - lastContentY - thumbHeight / 2) / trackHeight;
+                float dragRatio = (float)(mouseY - lastContentY - thumbHeight / 2.0) / trackHeight;
                 dragRatio = Math.max(0, Math.min(1, dragRatio));
                 scrollOffset = (int)(maxScrollOffset * dragRatio);
             }

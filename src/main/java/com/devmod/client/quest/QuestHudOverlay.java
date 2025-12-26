@@ -19,6 +19,7 @@ import com.devmod.client.endurance.ClientQuestCache;
 import com.devmod.quest.QuestData;
 import com.devmod.quest.QuestManager;
 import com.devmod.quest.QuestTask;
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class QuestHudOverlay {

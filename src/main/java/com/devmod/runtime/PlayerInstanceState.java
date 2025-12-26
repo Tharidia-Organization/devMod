@@ -1,6 +1,7 @@
 package com.devmod.runtime;
 
 import java.util.Set;
+
 public enum PlayerInstanceState {
     /**
      * Player is in the normal world, not involved with any instance.

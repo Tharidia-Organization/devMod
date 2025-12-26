@@ -73,15 +73,6 @@ import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.util.I18n;
 
-/**
- * Central manager for all Endurance Quest operations.
- * Handles quest creation, player sessions, persistence, and coordination.
- *
- * Delegates to:
- * - EnduranceQuestPersistence: Player stats loading/saving
- * - EndurancePlayerStateManager: Player state management during quests
- * - EnduranceSessionHandler: Session lifecycle events
- */
 public class EnduranceQuestManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestManager.class);
 

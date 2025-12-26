@@ -19,6 +19,7 @@ import com.devmod.actions.ActionIds;
 import com.devmod.client.ui.editor.WeaponTypeDetector;
 import com.devmod.client.ui.radial.model.MacroCategory;
 import com.devmod.config.ArmorConfigManager;
+
 public final class RadialMenuRegistry {
 
     private RadialMenuRegistry() {} // Utility class

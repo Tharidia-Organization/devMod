@@ -3,6 +3,7 @@ package com.devmod.arena.logging;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Objects;
+
 public record LogRotationConfig(
     Path logDirectory,
     String logPrefix,

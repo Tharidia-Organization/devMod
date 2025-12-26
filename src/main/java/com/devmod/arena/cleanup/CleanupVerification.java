@@ -2,6 +2,7 @@ package com.devmod.arena.cleanup;
 
 import java.util.ArrayList;
 import java.util.List;
+
 public record CleanupVerification(
     boolean entitiesClean,
     boolean blockEntitiesClean,

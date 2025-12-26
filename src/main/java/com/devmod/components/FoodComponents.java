@@ -1,5 +1,8 @@
 package com.devmod.components;
+
 import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
@@ -12,6 +15,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
+
 public final class FoodComponents {
     private FoodComponents() {}
 
@@ -35,6 +39,7 @@ public final class FoodComponents {
             .build());
 
     // Fallback instance for test environments where Neo registries are not bound.
+    @Nullable
     private static DataComponentType<CompoundTag> fallbackFoodStats;
 
     /**
@@ -42,6 +47,7 @@ public final class FoodComponents {
      * fallback instance so JVM tests can still store/read data without registry binding.
      * Returns null if component is not bound and fallback is not enabled.
      */
+    @Nullable
     public static DataComponentType<CompoundTag> foodStatsComponent() {
         try {
             if (FOOD_STATS.isBound()) {

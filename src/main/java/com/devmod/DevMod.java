@@ -43,6 +43,7 @@ import com.devmod.config.GameplayOverridesManager;
 import com.devmod.debug.DebugNetworkHandler;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.integration.ModIntegrationManager;
+
 @Mod("devmod")
 public class DevMod {
 

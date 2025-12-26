@@ -12,6 +12,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+
 public record POIPayload(List<POIInfo> pois) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<POIPayload> TYPE =

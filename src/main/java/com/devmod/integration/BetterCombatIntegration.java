@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.world.entity.player.Player;
+
 public class BetterCombatIntegration {
     private static final Logger LOGGER = LoggerFactory.getLogger(BetterCombatIntegration.class);
     private static boolean initialized = false;

@@ -18,16 +18,6 @@ import com.devmod.runtime.PlayerInstanceState;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L4 Test: Integration Scenario Validation
- *
- * Tests integration between subsystems without Minecraft dependencies.
- * Validates:
- * - Quest-Instance lifecycle coordination
- * - State machine interactions
- * - Multi-system workflows
- * - Data flow between components
- */
 @DisplayName("L4: Integration Scenario Validation")
 class IntegrationScenarioValidationTest {
 

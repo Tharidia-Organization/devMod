@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
+
 public class ArenaCommandPermissions {
 
     private static final ArenaCommandPermissions INSTANCE = new ArenaCommandPermissions();

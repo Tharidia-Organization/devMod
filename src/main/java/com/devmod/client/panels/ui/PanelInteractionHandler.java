@@ -12,6 +12,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.panels.core.FloatingPanel;
 import com.devmod.client.panels.core.FloatingPanelManager;
+
 public class PanelInteractionHandler {
 
     public static final PanelInteractionHandler INSTANCE = new PanelInteractionHandler();

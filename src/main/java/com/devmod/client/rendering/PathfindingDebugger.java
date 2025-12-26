@@ -28,6 +28,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.rendering.shader.VFXShaderRegistry;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
+
 public class PathfindingDebugger {
     public static final PathfindingDebugger INSTANCE = new PathfindingDebugger();
 

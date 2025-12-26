@@ -4,7 +4,7 @@
 
 Il Panel System è progettato per settings screens, dashboard views e config toggles. È più semplice dell'Editor System e non richiede undo/redo o payload building.
 
-**Location:** `src/main/java/com/frenkvs/devmod/ui/testing/panel/`
+**Location:** `src/main/java/com/devmod/client/ui/testing/panel/`
 
 ---
 

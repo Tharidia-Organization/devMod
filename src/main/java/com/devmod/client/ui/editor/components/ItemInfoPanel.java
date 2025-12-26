@@ -15,6 +15,7 @@ import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.StringBuilderCache;
 import com.devmod.client.ui.editor.core.Typography;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public class ItemInfoPanel {
 
     // ═══════════════════════════════════════════════════════════════

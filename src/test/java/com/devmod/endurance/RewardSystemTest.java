@@ -30,10 +30,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Comprehensive L1-L5 tests for the RewardSystem.
- * Tests currency, loot tiers, shop system, achievements, and wallet management.
- */
 @DisplayName("RewardSystem Tests")
 class RewardSystemTest {
 

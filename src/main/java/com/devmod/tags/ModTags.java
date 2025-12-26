@@ -6,6 +6,7 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 
 import com.devmod.DevMod;
+
 public final class ModTags {
     private ModTags() {}
 

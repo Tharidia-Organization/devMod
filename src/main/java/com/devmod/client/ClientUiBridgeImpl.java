@@ -2,6 +2,9 @@ package com.devmod.client;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.phys.EntityHitResult;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -9,6 +12,8 @@ import net.neoforged.api.distmarker.OnlyIn;
 import com.devmod.bridge.ClientUiBridge;
 import com.devmod.client.ui.editor.EditorStartTab;
 import com.devmod.client.ui.editor.ItemEditorScreen;
+import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public class ClientUiBridgeImpl implements ClientUiBridge {
 
@@ -51,12 +56,23 @@ public class ClientUiBridgeImpl implements ClientUiBridge {
 
     @Override
     public void openMobConfig() {
-        mc().setScreen(new com.devmod.client.ui.screens.MobConfigScreen(null));
+        Minecraft mc = mc();
+        if (mc.hitResult instanceof EntityHitResult entityHit) {
+            Entity entity = entityHit.getEntity();
+            if (entity instanceof Mob mob) {
+                mc.setScreen(new com.devmod.client.ui.screens.MobConfigScreen(mob));
+                return;
+            }
+        }
+        var player = mc.player;
+        if (player != null) {
+            player.displayClientMessage(I18n.translate("devmod.network.target_not_found"), true);
+        }
     }
 
     @Override
     public void openTelemetryDashboard() {
-        mc().setScreen(new com.devmod.client.ui.screens.TelemetryDashboardScreen(null));
+        mc().setScreen(new com.devmod.client.ui.screens.TelemetryDashboardScreen(mc().screen));
     }
 
     @Override

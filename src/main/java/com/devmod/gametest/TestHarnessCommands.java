@@ -37,6 +37,7 @@ import com.devmod.telemetry.duckdb.DuckDBQueryAPI;
 import com.devmod.telemetry.duckdb.DuckDBQueryAPI.EnduranceStats;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.devmod.util.I18n;
+
 @EventBusSubscriber(modid = DevMod.MODID)
 public class TestHarnessCommands {
 

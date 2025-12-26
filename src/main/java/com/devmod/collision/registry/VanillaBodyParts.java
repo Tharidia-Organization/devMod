@@ -7,6 +7,7 @@ import net.minecraft.world.entity.EntityType;
 import com.devmod.collision.bodypart.BodyPartDefinition;
 import com.devmod.collision.bodypart.BodyPartHierarchy;
 import com.devmod.combat.HitHelper;
+
 public final class VanillaBodyParts {
 
     private VanillaBodyParts() {} // Utility class

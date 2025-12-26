@@ -29,6 +29,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionPreconditions;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
+
 public class DungeonCommand {
     private static final Logger LOGGER = LogUtils.getLogger();
 

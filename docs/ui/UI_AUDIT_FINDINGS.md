@@ -32,7 +32,7 @@
 
 #### 1. [CRITICAL] Chat-as-UI Fallback Pattern
 
-**Location**: [ClientModEvents.java:227-244](src/main/java/com/devmod/client/events/ClientModEvents.java#L227)
+**Location**: [ClientModEvents.java:227-244](../../src/main/java/com/devmod/client/events/ClientModEvents.java#L227)
 
 **Description**: The `showWelcomeFallbackNotification()` method uses `player.displayClientMessage()` as a fallback UI mechanism when the WelcomeScreen cannot be displayed. This bypasses the proper screen system and uses chat as UI.
 
@@ -59,7 +59,7 @@ player.displayClientMessage(
 
 #### 2. [CRITICAL] Deprecated Action Patterns Still in Use
 
-**Location**: [RadialAction.java:131-198](src/main/java/com/devmod/client/ui/radial/RadialAction.java#L131)
+**Location**: [RadialAction.java:131-198](../../src/main/java/com/devmod/client/ui/radial/RadialAction.java#L131)
 
 **Description**: The `CommandAction` and `CustomAction` classes are marked `@Deprecated` but the factory methods `command()` and `custom()` are still public and may be in use. These bypass the ActionRegistry system.
 
@@ -120,8 +120,8 @@ player.displayClientMessage(
 #### 5. [HIGH] Performance Impact Overlays Without Warning
 
 **Location**:
-- [LightLevelOverlay.java](src/main/java/com/devmod/client/rendering/LightLevelOverlay.java)
-- [SpawnabilityOverlay.java](src/main/java/com/devmod/client/rendering/SpawnabilityOverlay.java)
+- [LightLevelOverlay.java](../../src/main/java/com/devmod/client/rendering/LightLevelOverlay.java)
+- [SpawnabilityOverlay.java](../../src/main/java/com/devmod/client/rendering/SpawnabilityOverlay.java)
 
 **Description**: These overlays render on every block in view range and can cause significant FPS drops on large render distances.
 
@@ -164,7 +164,7 @@ player.displayClientMessage(
 
 #### 7. [HIGH] Editor Overlay Z-Order Conflicts
 
-**Location**: [OverlayController.java](src/main/java/com/devmod/client/ui/editor/controller/OverlayController.java)
+**Location**: [OverlayController.java](../../src/main/java/com/devmod/client/ui/editor/controller/OverlayController.java)
 
 **Description**: Multiple editor overlays can potentially be opened simultaneously, leading to z-order conflicts and input handling issues.
 
@@ -185,8 +185,8 @@ player.displayClientMessage(
 #### 8. [MEDIUM] Duplicate Confirm Dialog Classes
 
 **Location**:
-- [ConfirmDialog.java](src/main/java/com/devmod/client/ui/ConfirmDialog.java)
-- [ConfirmDialog.java](src/main/java/com/devmod/client/ui/editor/systems/ConfirmDialog.java)
+- [ConfirmDialog.java](../../src/main/java/com/devmod/client/ui/ConfirmDialog.java)
+- Legacy duplicate removed (previously under client/ui/editor/systems/)
 
 **Description**: Two separate `ConfirmDialog` classes exist with potentially different implementations.
 
@@ -208,7 +208,7 @@ player.displayClientMessage(
 
 **Description**: Some UI elements contain hardcoded English strings instead of using the I18n translation system.
 
-**Example**: [ClientModEvents.java:350](src/main/java/com/devmod/client/events/ClientModEvents.java#L350)
+**Example**: [ClientModEvents.java:350](../../src/main/java/com/devmod/client/events/ClientModEvents.java#L350)
 ```java
 gui.drawString(font, "Nome: " + entity.getName().getString(), x, y, 0xFFFF00);
 ```
@@ -261,7 +261,7 @@ gui.drawString(font, "Nome: " + entity.getName().getString(), x, y, 0xFFFF00);
 
 #### 12. [MEDIUM] Large Screen Class Complexity
 
-**Location**: [ItemEditorScreen.java](src/main/java/com/devmod/client/ui/editor/ItemEditorScreen.java)
+**Location**: [ItemEditorScreen.java](../../src/main/java/com/devmod/client/ui/editor/ItemEditorScreen.java)
 
 **Description**: The ItemEditorScreen is a complex screen with many modules, overlays, and state management. This increases maintenance burden and potential for bugs.
 
@@ -297,7 +297,7 @@ gui.drawString(font, "Nome: " + entity.getName().getString(), x, y, 0xFFFF00);
 
 #### 14. [MEDIUM] Inconsistent Icon System
 
-**Location**: [RadialAction.java](src/main/java/com/devmod/client/ui/radial/RadialAction.java)
+**Location**: [RadialAction.java](../../src/main/java/com/devmod/client/ui/radial/RadialAction.java)
 
 **Description**: Actions can have ItemStack icons OR emoji fallbacks, leading to inconsistent visual style.
 
@@ -314,7 +314,7 @@ gui.drawString(font, "Nome: " + entity.getName().getString(), x, y, 0xFFFF00);
 
 #### 15. [MEDIUM] Panel Position Not Saved
 
-**Location**: [FloatingPanel.java](src/main/java/com/devmod/client/panels/core/FloatingPanel.java)
+**Location**: [FloatingPanel.java](../../src/main/java/com/devmod/client/panels/core/FloatingPanel.java)
 
 **Description**: Draggable floating panels don't save their positions between sessions.
 
@@ -368,7 +368,7 @@ gui.drawString(font, "Nome: " + entity.getName().getString(), x, y, 0xFFFF00);
 
 #### 18. [LOW] VoxelLab Testing Tools Exposed to Users
 
-**Location**: [VoxelLabScreen.java](src/main/java/com/devmod/client/ui/testing/VoxelLabScreen.java)
+**Location**: [VoxelLabScreen.java](../../src/main/java/com/devmod/client/ui/testing/VoxelLabScreen.java)
 
 **Description**: VoxelLab is a developer testing tool but is accessible through the radial menu to all users.
 
@@ -386,7 +386,7 @@ gui.drawString(font, "Nome: " + entity.getName().getString(), x, y, 0xFFFF00);
 
 #### 19. [LOW] Keybind Conflicts Not Detected
 
-**Location**: [KeyInputHandler.java](src/main/java/com/devmod/client/input/KeyInputHandler.java)
+**Location**: [KeyInputHandler.java](../../src/main/java/com/devmod/client/input/KeyInputHandler.java)
 
 **Description**: When users bind keys that conflict with Minecraft defaults or other mods, no warning is shown.
 
@@ -404,7 +404,7 @@ gui.drawString(font, "Nome: " + entity.getName().getString(), x, y, 0xFFFF00);
 
 #### 20. [LOW] Welcome Screen Retry Logic May Annoy Users
 
-**Location**: [ClientModEvents.java:173-221](src/main/java/com/devmod/client/events/ClientModEvents.java#L173)
+**Location**: [ClientModEvents.java:173-221](../../src/main/java/com/devmod/client/events/ClientModEvents.java#L173)
 
 **Description**: The welcome screen has aggressive retry logic (10 retries over 20 seconds) which may repeatedly try to interrupt user actions.
 
@@ -454,7 +454,7 @@ gui.drawString(font, "Nome: " + entity.getName().getString(), x, y, 0xFFFF00);
 - [x] ~~Implement an overlay stack with deterministic z-order and a force-close escape in `src/main/java/com/devmod/client/ui/editor/controller/OverlayController.java`.~~ **VERIFIED**: `OverlayController` already implements proper stack-based z-ordering with `Deque<OverlayType>`. Only top overlay is active. `closeAll()` provides force-close.
 
 ### MEDIUM
-- [x] ~~Consolidate the duplicate ConfirmDialog implementations into a single reusable component and deprecate the duplicate class in `src/main/java/com/devmod/client/ui/editor/systems/ConfirmDialog.java`.~~ **VERIFIED**: Only one `ConfirmDialog.java` exists in `client/ui/` with full builder pattern and factory methods.
+- [x] ~~Consolidate the duplicate ConfirmDialog implementations into a single reusable component and deprecate the duplicate class under client/ui/editor/systems/.~~ **VERIFIED**: Only one `ConfirmDialog.java` exists in `client/ui/` with full builder pattern and factory methods.
 - [x] ~~Replace hardcoded UI strings with `I18n.translate()` keys and update `src/main/resources/assets/devmod/lang/en_us.json`.~~ **FIXED**: Added 30+ translation keys for debug overlay, testing UI, and common strings. Updated `ClientModEvents.java` to use I18n for entity info overlay (was Italian hardcoded).
 - [x] ~~Add baseline accessibility features: keyboard navigation, high-contrast mode, and narration hooks for primary screens.~~ **FIXED**: Created `HighContrastTheme.java` with WCAG-compliant colors (pure black/white, bright accents). Updated `ThemeManager` with `setHighContrast()`, `cycleTheme()`, `isHighContrast()`. Added Accessibility section to `GeneralSettingsPage` with high-contrast toggle and theme cycle button. Keyboard navigation already implemented via `FocusManager` and `FocusRing`.
 - [x] ~~Persist overlay visibility state in SettingsManager with an optional "Remember overlay states" toggle and per-world profiles.~~ **VERIFIED**: `SettingsManager` already syncs overlay states (lightLevels, lineOfSight, pathfinding, roomBounds, bossPhaseOverlay, entityDensity, etc.) to/from `SettingsData` on load/save.

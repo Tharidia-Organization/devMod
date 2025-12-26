@@ -29,6 +29,7 @@ import com.devmod.client.ui.testing.panel.SpacerPanel;
 import com.devmod.client.ui.testing.panel.StatusPanel;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.util.I18n;
+
 public class DebugOverlaysPage extends AbstractVoxelLabPage {
 
     // Core toggles
@@ -52,12 +53,22 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
 
     public DebugOverlaysPage() {
         super(VoxelLabTab.DEBUG_OVERLAYS);
+        Buttons buttons = createButtons();
+        debugMasterToggle = buttons.debugMasterToggle;
+        lightLevelToggle = buttons.lightLevelToggle;
+        bodyPartBoxToggle = buttons.bodyPartBoxToggle;
+        lineOfSightToggle = buttons.lineOfSightToggle;
+        aggroRangeToggle = buttons.aggroRangeToggle;
+        safeSpotToggle = buttons.safeSpotToggle;
+        roomBoundsToggle = buttons.roomBoundsToggle;
+        verticalLevelsToggle = buttons.verticalLevelsToggle;
+        spawnabilityToggle = buttons.spawnabilityToggle;
+        chunkPerfToggle = buttons.chunkPerfToggle;
+        heatmapButtons.addAll(buttons.heatmapButtons);
     }
 
     @Override
     protected void buildPanels() {
-        createButtons();
-
         // Header
         panelContainer.addPanel(new HeaderPanel(
             I18n.translate("devmod.testing.voxel_lab.debug.header").getString()));
@@ -131,9 +142,9 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
         );
     }
 
-    private void createButtons() {
+    private Buttons createButtons() {
         // Core toggles
-        debugMasterToggle = new EditorButton("toggle-debug-master",
+        EditorButton debugMasterToggle = new EditorButton("toggle-debug-master",
             I18n.translate("devmod.testing.voxel_lab.debug.toggle.master").getString())
             .toggleable(true)
             .toggled(DebugRenderer.INSTANCE.isEnabled())
@@ -143,7 +154,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_OVERLAY_TOGGLE,
                 Boolean.TRUE.equals(v), DebugRenderer.INSTANCE.isEnabled()));
 
-        lightLevelToggle = new EditorButton("toggle-light",
+        EditorButton lightLevelToggle = new EditorButton("toggle-light",
             I18n.translate("devmod.testing.voxel_lab.debug.toggle.light_levels").getString())
             .toggleable(true)
             .toggled(LightLevelOverlay.INSTANCE.isEnabled())
@@ -153,7 +164,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_LIGHT_OVERLAY_TOGGLE,
                 Boolean.TRUE.equals(v), LightLevelOverlay.INSTANCE.isEnabled()));
 
-        bodyPartBoxToggle = new EditorButton("toggle-bodypart",
+        EditorButton bodyPartBoxToggle = new EditorButton("toggle-bodypart",
             I18n.translate("devmod.testing.voxel_lab.debug.toggle.body_part_boxes").getString())
             .toggleable(true)
             .toggled(ModConfig.showBodyPartBoxes)
@@ -164,7 +175,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
                 Boolean.TRUE.equals(v), ModConfig.showBodyPartBoxes));
 
         // Entity debug
-        lineOfSightToggle = new EditorButton("toggle-los",
+        EditorButton lineOfSightToggle = new EditorButton("toggle-los",
             I18n.translate("devmod.testing.voxel_lab.debug.toggle.line_of_sight").getString())
             .toggleable(true)
             .toggled(LineOfSightVisualizer.INSTANCE.isEnabled())
@@ -173,7 +184,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_LOS_TOGGLE,
                 Boolean.TRUE.equals(v), LineOfSightVisualizer.INSTANCE.isEnabled()));
 
-        aggroRangeToggle = new EditorButton("toggle-aggro",
+        EditorButton aggroRangeToggle = new EditorButton("toggle-aggro",
             I18n.translate("devmod.testing.voxel_lab.debug.toggle.aggro_range").getString())
             .toggleable(true)
             .toggled(AggroRangeVisualizer.INSTANCE.isEnabled())
@@ -182,7 +193,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_AGGRO_RANGE_TOGGLE,
                 Boolean.TRUE.equals(v), AggroRangeVisualizer.INSTANCE.isEnabled()));
 
-        safeSpotToggle = new EditorButton("toggle-safe",
+        EditorButton safeSpotToggle = new EditorButton("toggle-safe",
             I18n.translate("devmod.testing.voxel_lab.debug.toggle.safe_spots").getString())
             .toggleable(true)
             .toggled(SafeSpotVisualizer.INSTANCE.isEnabled())
@@ -192,7 +203,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
                 Boolean.TRUE.equals(v), SafeSpotVisualizer.INSTANCE.isEnabled()));
 
         // Spatial debug
-        roomBoundsToggle = new EditorButton("toggle-room",
+        EditorButton roomBoundsToggle = new EditorButton("toggle-room",
             I18n.translate("devmod.testing.voxel_lab.debug.toggle.room_bounds").getString())
             .toggleable(true)
             .toggled(RoomBoundsVisualizer.INSTANCE.isEnabled())
@@ -201,7 +212,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_ROOM_BOUNDS_TOGGLE,
                 Boolean.TRUE.equals(v), RoomBoundsVisualizer.INSTANCE.isEnabled()));
 
-        verticalLevelsToggle = new EditorButton("toggle-vertical",
+        EditorButton verticalLevelsToggle = new EditorButton("toggle-vertical",
             I18n.translate("devmod.testing.voxel_lab.debug.toggle.vertical_levels").getString())
             .toggleable(true)
             .toggled(VerticalLevelsVisualizer.INSTANCE.isEnabled())
@@ -210,7 +221,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_VERTICAL_LEVELS_TOGGLE,
                 Boolean.TRUE.equals(v), VerticalLevelsVisualizer.INSTANCE.isEnabled()));
 
-        spawnabilityToggle = new EditorButton("toggle-spawn",
+        EditorButton spawnabilityToggle = new EditorButton("toggle-spawn",
             I18n.translate("devmod.testing.voxel_lab.debug.toggle.spawnability").getString())
             .toggleable(true)
             .toggled(SpawnabilityOverlay.INSTANCE.isEnabled())
@@ -219,7 +230,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.DEBUG_SPAWNABILITY_TOGGLE,
                 Boolean.TRUE.equals(v), SpawnabilityOverlay.INSTANCE.isEnabled()));
 
-        chunkPerfToggle = new EditorButton("toggle-chunk",
+        EditorButton chunkPerfToggle = new EditorButton("toggle-chunk",
             I18n.translate("devmod.testing.voxel_lab.debug.toggle.chunk_perf").getString())
             .toggleable(true)
             .toggled(ChunkPerformanceVisualizer.INSTANCE.isEnabled())
@@ -229,7 +240,7 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
                 Boolean.TRUE.equals(v), ChunkPerformanceVisualizer.INSTANCE.isEnabled()));
 
         // Heatmap buttons
-        heatmapButtons.clear();
+        List<EditorButton> heatmapButtons = new ArrayList<>();
         for (HeatmapVisualizer.HeatmapType type : HeatmapVisualizer.HeatmapType.values()) {
             EditorButton btn = new EditorButton("heatmap-" + type.name().toLowerCase(), heatmapLabel(type))
                 .toggleable(true)
@@ -238,6 +249,60 @@ public class DebugOverlaysPage extends AbstractVoxelLabPage {
                 .size(EditorButton.Size.SMALL)
                 .onToggle(v -> invokeHeatmapAction(type, Boolean.TRUE.equals(v)));
             heatmapButtons.add(btn);
+        }
+
+        return new Buttons(
+            debugMasterToggle,
+            lightLevelToggle,
+            bodyPartBoxToggle,
+            lineOfSightToggle,
+            aggroRangeToggle,
+            safeSpotToggle,
+            roomBoundsToggle,
+            verticalLevelsToggle,
+            spawnabilityToggle,
+            chunkPerfToggle,
+            heatmapButtons
+        );
+    }
+
+    private static final class Buttons {
+        private final EditorButton debugMasterToggle;
+        private final EditorButton lightLevelToggle;
+        private final EditorButton bodyPartBoxToggle;
+        private final EditorButton lineOfSightToggle;
+        private final EditorButton aggroRangeToggle;
+        private final EditorButton safeSpotToggle;
+        private final EditorButton roomBoundsToggle;
+        private final EditorButton verticalLevelsToggle;
+        private final EditorButton spawnabilityToggle;
+        private final EditorButton chunkPerfToggle;
+        private final List<EditorButton> heatmapButtons;
+
+        private Buttons(
+            EditorButton debugMasterToggle,
+            EditorButton lightLevelToggle,
+            EditorButton bodyPartBoxToggle,
+            EditorButton lineOfSightToggle,
+            EditorButton aggroRangeToggle,
+            EditorButton safeSpotToggle,
+            EditorButton roomBoundsToggle,
+            EditorButton verticalLevelsToggle,
+            EditorButton spawnabilityToggle,
+            EditorButton chunkPerfToggle,
+            List<EditorButton> heatmapButtons
+        ) {
+            this.debugMasterToggle = debugMasterToggle;
+            this.lightLevelToggle = lightLevelToggle;
+            this.bodyPartBoxToggle = bodyPartBoxToggle;
+            this.lineOfSightToggle = lineOfSightToggle;
+            this.aggroRangeToggle = aggroRangeToggle;
+            this.safeSpotToggle = safeSpotToggle;
+            this.roomBoundsToggle = roomBoundsToggle;
+            this.verticalLevelsToggle = verticalLevelsToggle;
+            this.spawnabilityToggle = spawnabilityToggle;
+            this.chunkPerfToggle = chunkPerfToggle;
+            this.heatmapButtons = heatmapButtons;
         }
     }
 

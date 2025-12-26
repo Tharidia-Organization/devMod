@@ -8,41 +8,41 @@
 
 | File | Path | Milestone | LOC Est. |
 |------|------|-----------|----------|
-| RecipeData.java | `src/main/java/com/frenkvs/devmod/recipe/RecipeData.java` | M1 | 50 |
-| CraftingRecipeData.java | `src/main/java/com/frenkvs/devmod/recipe/CraftingRecipeData.java` | M1 | 150 |
-| SmeltingRecipeData.java | `src/main/java/com/frenkvs/devmod/recipe/SmeltingRecipeData.java` | M2 | 100 |
-| SmithingRecipeData.java | `src/main/java/com/frenkvs/devmod/recipe/SmithingRecipeData.java` | M3 | 100 |
-| StonecuttingRecipeData.java | `src/main/java/com/frenkvs/devmod/recipe/StonecuttingRecipeData.java` | M3 | 60 |
-| IngredientData.java | `src/main/java/com/frenkvs/devmod/recipe/IngredientData.java` | M1 | 120 |
-| ResultData.java | `src/main/java/com/frenkvs/devmod/recipe/ResultData.java` | M1 | 80 |
-| RecipeConfigManager.java | `src/main/java/com/frenkvs/devmod/recipe/RecipeConfigManager.java` | M1 | 200 |
-| RecipeSerializer.java | `src/main/java/com/frenkvs/devmod/recipe/RecipeSerializer.java` | M1 | 150 |
-| RecipeValidator.java | `src/main/java/com/frenkvs/devmod/recipe/RecipeValidator.java` | M1 | 100 |
-| RecipeDataCodec.java | `src/main/java/com/frenkvs/devmod/recipe/RecipeDataCodec.java` | M1 | 200 |
+| RecipeData.java | `src/main/java/com/devmod/recipe/RecipeData.java` | M1 | 50 |
+| CraftingRecipeData.java | `src/main/java/com/devmod/recipe/CraftingRecipeData.java` | M1 | 150 |
+| SmeltingRecipeData.java | `src/main/java/com/devmod/recipe/SmeltingRecipeData.java` | M2 | 100 |
+| SmithingRecipeData.java | `src/main/java/com/devmod/recipe/SmithingRecipeData.java` | M3 | 100 |
+| StonecuttingRecipeData.java | `src/main/java/com/devmod/recipe/StonecuttingRecipeData.java` | M3 | 60 |
+| IngredientData.java | `src/main/java/com/devmod/recipe/IngredientData.java` | M1 | 120 |
+| ResultData.java | `src/main/java/com/devmod/recipe/ResultData.java` | M1 | 80 |
+| RecipeConfigManager.java | `src/main/java/com/devmod/recipe/RecipeConfigManager.java` | M1 | 200 |
+| RecipeSerializer.java | `src/main/java/com/devmod/recipe/RecipeSerializer.java` | M1 | 150 |
+| RecipeValidator.java | `src/main/java/com/devmod/recipe/RecipeValidator.java` | M1 | 100 |
+| RecipeDataCodec.java | `src/main/java/com/devmod/recipe/RecipeDataCodec.java` | M1 | 200 |
 
 ### UI Components (`ui/editor/components/`)
 
 | File | Path | Milestone | LOC Est. |
 |------|------|-----------|----------|
-| RecipeGridComponent.java | `src/main/java/com/frenkvs/devmod/ui/editor/components/RecipeGridComponent.java` | M1 | 250 |
-| IngredientSlotComponent.java | `src/main/java/com/frenkvs/devmod/ui/editor/components/IngredientSlotComponent.java` | M1 | 100 |
-| RecipeResultSlot.java | `src/main/java/com/frenkvs/devmod/ui/editor/components/RecipeResultSlot.java` | M1 | 80 |
-| TagSelectorPopup.java | `src/main/java/com/frenkvs/devmod/ui/editor/components/TagSelectorPopup.java` | M4 | 150 |
+| RecipeGridComponent.java | `src/main/java/com/devmod/client/ui/editor/components/RecipeGridComponent.java` | M1 | 250 |
+| IngredientSlotComponent.java | `src/main/java/com/devmod/client/ui/editor/components/IngredientSlotComponent.java` | M1 | 100 |
+| RecipeResultSlot.java | `src/main/java/com/devmod/client/ui/editor/components/RecipeResultSlot.java` | M1 | 80 |
+| TagSelectorPopup.java | `src/main/java/com/devmod/client/ui/editor/components/TagSelectorPopup.java` | M4 | 150 |
 
 ### Editor Modules (`ui/editor/modules/`)
 
 | File | Path | Milestone | LOC Est. |
 |------|------|-----------|----------|
-| CraftingEditorModule.java | `src/main/java/com/frenkvs/devmod/ui/editor/modules/CraftingEditorModule.java` | M1 | 300 |
-| SmeltingEditorModule.java | `src/main/java/com/frenkvs/devmod/ui/editor/modules/SmeltingEditorModule.java` | M2 | 150 |
-| SmithingEditorModule.java | `src/main/java/com/frenkvs/devmod/ui/editor/modules/SmithingEditorModule.java` | M3 | 150 |
-| StonecuttingEditorModule.java | `src/main/java/com/frenkvs/devmod/ui/editor/modules/StonecuttingEditorModule.java` | M3 | 100 |
+| CraftingEditorModule.java | `src/main/java/com/devmod/client/ui/editor/modules/CraftingEditorModule.java` | M1 | 300 |
+| SmeltingEditorModule.java | `src/main/java/com/devmod/client/ui/editor/modules/SmeltingEditorModule.java` | M2 | 150 |
+| SmithingEditorModule.java | `src/main/java/com/devmod/client/ui/editor/modules/SmithingEditorModule.java` | M3 | 150 |
+| StonecuttingEditorModule.java | `src/main/java/com/devmod/client/ui/editor/modules/StonecuttingEditorModule.java` | M3 | 100 |
 
 ### Network (`network/`)
 
 | File | Path | Milestone | LOC Est. |
 |------|------|-----------|----------|
-| RecipeSyncPayload.java | `src/main/java/com/frenkvs/devmod/network/RecipeSyncPayload.java` | M1 | 150 |
+| RecipeSyncPayload.java | `src/main/java/com/devmod/network/RecipeSyncPayload.java` | M1 | 150 |
 
 ---
 
@@ -52,26 +52,26 @@
 
 | File | Path | Modifiche |
 |------|------|-----------|
-| DevMod.java | `src/main/java/com/frenkvs/devmod/DevMod.java` | `+RecipeConfigManager.initializeServer()` in server setup |
-| CommonModEvents.java | `src/main/java/com/frenkvs/devmod/CommonModEvents.java` | `+OnDatapackSyncEvent` handler |
+| DevMod.java | `src/main/java/com/devmod/DevMod.java` | `+RecipeConfigManager.initializeServer()` in server setup |
+| CommonModEvents.java | `src/main/java/com/devmod/CommonModEvents.java` | `+OnDatapackSyncEvent` handler |
 
 ### Network
 
 | File | Path | Modifiche |
 |------|------|-----------|
-| NetworkHandler.java | `src/main/java/com/frenkvs/devmod/NetworkHandler.java` | `+RecipeSyncPayload` registration (playToServer + playToClient) |
+| NetworkHandler.java | `src/main/java/com/devmod/NetworkHandler.java` | `+RecipeSyncPayload` registration (playToServer + playToClient) |
 
 ### Persistence
 
 | File | Path | Modifiche |
 |------|------|-----------|
-| DatapackIO.java | `src/main/java/com/frenkvs/devmod/util/DatapackIO.java` | `+exportRecipes()`, `+importRecipes()` methods |
+| DatapackIO.java | `src/main/java/com/devmod/util/DatapackIO.java` | `+exportRecipes()`, `+importRecipes()` methods |
 
 ### UI Integration
 
 | File | Path | Modifiche |
 |------|------|-----------|
-| ItemEditorScreen.java | `src/main/java/com/frenkvs/devmod/ui/editor/ItemEditorScreen.java` | `+RecipeModule` instantiation, `+canEditRecipes()` permission check |
+| ItemEditorScreen.java | `src/main/java/com/devmod/client/ui/editor/ItemEditorScreen.java` | `+RecipeModule` instantiation, `+canEditRecipes()` permission check |
 
 ### Localization
 
@@ -85,7 +85,7 @@
 ## Struttura Directory
 
 ```
-src/main/java/com/frenkvs/devmod/
+src/main/java/com/devmod/
 ├── recipe/                              # NEW PACKAGE
 │   ├── RecipeData.java                  # Sealed interface
 │   ├── CraftingRecipeData.java          # Crafting record

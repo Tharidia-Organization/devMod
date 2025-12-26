@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 public class ArenaCleanupExecutor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaCleanupExecutor.class);

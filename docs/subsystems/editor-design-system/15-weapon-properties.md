@@ -753,5 +753,5 @@ logDetectionResults = true
 
 **Riferimenti:**
 - [16-ranged-weapons.md](16-ranged-weapons.md) - Proprietà armi a distanza
-- [06-persistence-storage.md](06-persistence-storage.md) - Storage per weapon stats
-- [10-unified-architecture.md](10-unified-architecture.md) - WeaponModule integration
+- [06-persistence.md](06-persistence.md) - Storage per weapon stats
+- [08-unified-architecture.md](08-unified-architecture.md) - WeaponModule integration

@@ -24,6 +24,7 @@ import com.devmod.arena.performance.PerformanceBudgetEnforcer;
 import com.devmod.arena.performance.PerformanceBudgetEnforcer.PerformanceAction;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+
 public class AsyncArenaBuilder {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AsyncArenaBuilder.class);

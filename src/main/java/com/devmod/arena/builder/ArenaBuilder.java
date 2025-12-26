@@ -34,6 +34,7 @@ import com.devmod.arena.registry.InstanceSettingsValidator;
 import com.devmod.arena.registry.TemplateValidator;
 import com.devmod.arena.registry.ValidationResult;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+
 public class ArenaBuilder {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaBuilder.class);

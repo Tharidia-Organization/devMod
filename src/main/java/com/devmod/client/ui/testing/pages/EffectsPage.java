@@ -20,6 +20,7 @@ import com.devmod.util.I18n;
 import static com.devmod.client.ui.testing.pages.PageUtils.nonNullDouble;
 import static com.devmod.client.ui.testing.pages.PageUtils.safeGetBool;
 import static com.devmod.client.ui.testing.pages.PageUtils.safeGetDouble;
+
 public class EffectsPage extends AbstractVoxelLabPage {
 
     // VFX Master toggle

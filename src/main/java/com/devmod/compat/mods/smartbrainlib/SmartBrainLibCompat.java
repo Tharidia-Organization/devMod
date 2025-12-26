@@ -5,15 +5,19 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class SmartBrainLibCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(SmartBrainLibCompat.class);
     public static final String MOD_ID = "smartbrainlib";
@@ -26,7 +30,6 @@ public class SmartBrainLibCompat implements CompatModule {
     private static Class<?> smartBrainOwnerClass;
     private static Class<?> smartBrainProviderClass;
     private static Class<?> brainActivityGroupClass;
-    private static Method getBrainMethod;
 
     @Override
     public String modId() {
@@ -91,6 +94,15 @@ public class SmartBrainLibCompat implements CompatModule {
                     "net.tslat.smartbrainlib.api.core.BrainActivityGroup");
             } catch (ClassNotFoundException ignored) {}
 
+            if (smartBrainProviderClass != null) {
+                LOGGER.debug("[Compat:smartbrainlib] Found SmartBrainProvider at {}",
+                    smartBrainProviderClass.getName());
+            }
+            if (brainActivityGroupClass != null) {
+                LOGGER.debug("[Compat:smartbrainlib] Found BrainActivityGroup at {}",
+                    brainActivityGroupClass.getName());
+            }
+
             if (smartBrainOwnerClass != null) {
                 apiAvailable = true;
                 LOGGER.info("[Compat:smartbrainlib] SmartBrainLib API loaded");
@@ -145,7 +157,6 @@ public class SmartBrainLibCompat implements CompatModule {
      * @param entity The entity
      * @return Map of AI state info
      */
-    @SuppressWarnings("deprecation") // Brain.getRunningBehaviors/getMemories - no replacement available
     public static Map<String, Object> getAiStatus(LivingEntity entity) {
         Map<String, Object> status = new LinkedHashMap<>();
 
@@ -160,12 +171,18 @@ public class SmartBrainLibCompat implements CompatModule {
             // Get the brain
             var brain = entity.getBrain();
             if (brain != null) {
-                // Get active behaviors from vanilla Brain
-                var runningBehaviors = brain.getRunningBehaviors();
+                // Use reflection to avoid deprecated Brain APIs.
+                Object runningBehaviorsObj = brain.getClass()
+                    .getMethod("getRunningBehaviors")
+                    .invoke(brain);
                 List<String> behaviorNames = new ArrayList<>();
 
-                for (var behavior : runningBehaviors) {
-                    behaviorNames.add(behavior.getClass().getSimpleName());
+                if (runningBehaviorsObj instanceof Iterable<?> runningBehaviors) {
+                    for (Object behavior : runningBehaviors) {
+                        if (behavior != null) {
+                            behaviorNames.add(behavior.getClass().getSimpleName());
+                        }
+                    }
                 }
 
                 if (!behaviorNames.isEmpty()) {
@@ -173,19 +190,22 @@ public class SmartBrainLibCompat implements CompatModule {
                     status.put("behaviorCount", behaviorNames.size());
                 }
 
-                // Get memories
-                var memories = brain.getMemories();
-                status.put("memoryCount", memories.size());
+                Object memoriesObj = brain.getClass()
+                    .getMethod("getMemories")
+                    .invoke(brain);
+                if (memoriesObj instanceof Map<?, ?> memories) {
+                    status.put("memoryCount", memories.size());
 
-                List<String> activeMemories = new ArrayList<>();
-                memories.forEach((memoryType, optional) -> {
-                    if (optional.isPresent()) {
-                        activeMemories.add(memoryType.toString());
+                    List<String> activeMemories = new ArrayList<>();
+                    memories.forEach((memoryType, optional) -> {
+                        if (optional instanceof Optional<?> opt && opt.isPresent()) {
+                            activeMemories.add(String.valueOf(memoryType));
+                        }
+                    });
+
+                    if (!activeMemories.isEmpty() && activeMemories.size() <= 10) {
+                        status.put("activeMemories", activeMemories);
                     }
-                });
-
-                if (!activeMemories.isEmpty() && activeMemories.size() <= 10) {
-                    status.put("activeMemories", activeMemories);
                 }
             }
 
@@ -210,7 +230,6 @@ public class SmartBrainLibCompat implements CompatModule {
         try {
             var brain = entity.getBrain();
             if (brain != null) {
-                var schedule = brain.getSchedule();
                 // Try to get active activity through reflection
                 Method getActiveNonCoreActivityMethod = brain.getClass()
                     .getDeclaredMethod("getActiveNonCoreActivity");
@@ -240,8 +259,9 @@ public class SmartBrainLibCompat implements CompatModule {
             var brain = entity.getBrain();
             if (brain != null) {
                 // Check for attack target memory
-                var attackTarget = brain.getMemory(
-                    net.minecraft.world.entity.ai.memory.MemoryModuleType.ATTACK_TARGET);
+                var attackTargetType = Objects.requireNonNull(
+                    MemoryModuleType.ATTACK_TARGET, "ATTACK_TARGET");
+                var attackTarget = brain.getMemory(attackTargetType);
                 return attackTarget.isPresent();
             }
         } catch (Exception e) {
@@ -270,8 +290,9 @@ public class SmartBrainLibCompat implements CompatModule {
         try {
             var brain = entity.getBrain();
             if (brain != null) {
-                var attackTargetOpt = brain.getMemory(
-                    net.minecraft.world.entity.ai.memory.MemoryModuleType.ATTACK_TARGET);
+                var attackTargetType = Objects.requireNonNull(
+                    MemoryModuleType.ATTACK_TARGET, "ATTACK_TARGET");
+                var attackTargetOpt = brain.getMemory(attackTargetType);
 
                 if (attackTargetOpt.isPresent()) {
                     LivingEntity target = attackTargetOpt.get();
@@ -283,12 +304,14 @@ public class SmartBrainLibCompat implements CompatModule {
             }
         } catch (Exception e) {
             // Fallback to vanilla
-            if (entity instanceof Mob mob && mob.getTarget() != null) {
+            if (entity instanceof Mob mob) {
                 LivingEntity target = mob.getTarget();
-                info.put("hasTarget", true);
-                info.put("targetType", target.getType().toShortString());
-                info.put("targetHealth", target.getHealth());
-                info.put("targetDistance", entity.distanceTo(target));
+                if (target != null) {
+                    info.put("hasTarget", true);
+                    info.put("targetType", target.getType().toShortString());
+                    info.put("targetHealth", target.getHealth());
+                    info.put("targetDistance", entity.distanceTo(target));
+                }
             }
         }
 

@@ -23,6 +23,7 @@ import com.devmod.endurance.EnduranceQuestRegistry.MobTier;
 import com.devmod.endurance.QuestType;
 import com.devmod.party.PartyData;
 import com.devmod.party.PartySyncPayload;
+
 public class PartyScreenRenderer {
 
     // Colors

@@ -28,6 +28,7 @@ import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceQuest;
 import com.devmod.endurance.RewardSystem;
 import com.devmod.endurance.config.EnduranceConfigManager;
+
 public class DailyChallengeManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DailyChallengeManager.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

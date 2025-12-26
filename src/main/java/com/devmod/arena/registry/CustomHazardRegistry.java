@@ -3,6 +3,7 @@ package com.devmod.arena.registry;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+
 public final class CustomHazardRegistry {
 
     private static final CustomHazardRegistry INSTANCE = new CustomHazardRegistry();

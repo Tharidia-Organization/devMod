@@ -21,6 +21,7 @@ import com.devmod.endurance.EnduranceQuestRegistry;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.testing.TestCase;
 import com.devmod.util.I18n;
+
 public class IntegratedTestSession {
     private static final Logger LOGGER = LoggerFactory.getLogger(IntegratedTestSession.class);
 
@@ -28,12 +29,12 @@ public class IntegratedTestSession {
 
     // Session state
     private boolean sessionActive = false;
-    private TestSessionType currentType = null;
-    private String sessionId = null;
-    private Instant sessionStart = null;
+    private @Nullable TestSessionType currentType = null;
+    private @Nullable String sessionId = null;
+    private @Nullable Instant sessionStart = null;
 
     // Quest tracking
-    private ResourceLocation currentMob = null;
+    private @Nullable ResourceLocation currentMob = null;
     private int targetWaves = 0;
     private int completedWaves = 0;
 
@@ -356,17 +357,17 @@ public class IntegratedTestSession {
 
     public boolean isSessionActive() { return sessionActive; }
 
-    public TestSessionType getCurrentType() { return currentType; }
+    public @Nullable TestSessionType getCurrentType() { return currentType; }
 
-    public ResourceLocation getCurrentMob() { return currentMob; }
+    public @Nullable ResourceLocation getCurrentMob() { return currentMob; }
 
     public int getTargetWaves() { return targetWaves; }
 
     public int getCompletedWaves() { return completedWaves; }
 
-    public String getSessionId() { return sessionId; }
+    public @Nullable String getSessionId() { return sessionId; }
 
-    public Instant getSessionStart() { return sessionStart; }
+    public @Nullable Instant getSessionStart() { return sessionStart; }
 
     public SessionResults getResults() { return results; }
 
@@ -404,7 +405,7 @@ public class IntegratedTestSession {
     }
 
     public static class SessionResults {
-        public SessionOutcome outcome = null;
+        public @Nullable SessionOutcome outcome = null;
         public java.time.Duration duration = java.time.Duration.ZERO;
         public int wavesCompleted = 0;
         public int totalKills = 0;

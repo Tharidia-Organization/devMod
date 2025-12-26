@@ -2,6 +2,7 @@ package com.devmod.client.ui.editor.core;
 
 import java.util.HashSet;
 import java.util.Set;
+
 public final class DirtyRegionTracker {
 
     /**

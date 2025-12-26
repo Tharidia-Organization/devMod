@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.lwjgl.glfw.GLFW;
 
@@ -23,6 +24,7 @@ import com.devmod.client.ui.ConfirmDialog;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.endurance.EnduranceQuestRegistry;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public class QuickTestWizard extends Screen {
 
@@ -38,7 +40,7 @@ public class QuickTestWizard extends Screen {
     private TestType selectedTestType = TestType.COMBAT;
 
     // Step 2: Configuration
-    private ResourceLocation selectedMob = null;
+    private @Nullable ResourceLocation selectedMob = null;
     private int waveCount = 5;
     private boolean endlessMode = false;
     private int arenaSize = 64;
@@ -59,7 +61,7 @@ public class QuickTestWizard extends Screen {
         new PresetScenario("Stress 20", "High-load run", 20, false, 80)
     );
     private final List<PresetHitbox> presetHitboxes = new ArrayList<>();
-    private PresetScenario selectedPreset = null;
+    private @Nullable PresetScenario selectedPreset = null;
 
     // Available mobs
     private List<EnduranceQuestRegistry.MobQuestConfig> availableMobs = new ArrayList<>();
@@ -67,13 +69,13 @@ public class QuickTestWizard extends Screen {
     private int mobListScroll = 0;
 
     // Modal overlay for cancel/exit confirmation
-    private ConfirmDialog exitDialog;
+    private @Nullable ConfirmDialog exitDialog;
 
     // Navigation buttons (shared component adapters)
-    private com.devmod.client.ui.editor.components.EditorButton backButton;
-    private com.devmod.client.ui.editor.components.EditorButton nextButton;
-    private com.devmod.client.ui.editor.components.EditorButton cancelButton;
-    private com.devmod.client.ui.editor.components.EditorButton startButton;
+    private @Nullable com.devmod.client.ui.editor.components.EditorButton backButton;
+    private @Nullable com.devmod.client.ui.editor.components.EditorButton nextButton;
+    private @Nullable com.devmod.client.ui.editor.components.EditorButton cancelButton;
+    private @Nullable com.devmod.client.ui.editor.components.EditorButton startButton;
 
     public QuickTestWizard() {
         super(I18n.screenTitle("quick_test_wizard"));
@@ -575,6 +577,9 @@ public class QuickTestWizard extends Screen {
         }
 
         if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
+        if (backButton == null || nextButton == null || cancelButton == null || startButton == null) {
+            return super.mouseClicked(mouseX, mouseY, button);
+        }
 
         int mx = (int) mouseX;
         int my = (int) mouseY;
@@ -640,6 +645,9 @@ public class QuickTestWizard extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (backButton == null || nextButton == null || cancelButton == null || startButton == null) {
+            return super.mouseReleased(mouseX, mouseY, button);
+        }
         boolean handled = false;
         handled |= backButton.mouseReleased(mouseX, mouseY, button);
         handled |= nextButton.mouseReleased(mouseX, mouseY, button);
@@ -761,6 +769,9 @@ public class QuickTestWizard extends Screen {
     }
 
     private void renderNavButtons(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (backButton == null || nextButton == null || cancelButton == null || startButton == null) {
+            return;
+        }
         int panelWidth = Math.min(PANEL_WIDTH, width - 20);
         int panelHeight = Math.min(PANEL_HEIGHT, height - 20);
         int panelX = (width - panelWidth) / 2;
@@ -782,6 +793,9 @@ public class QuickTestWizard extends Screen {
     private void updateNavButtonsVisibility() {
         boolean atFirstStep = currentStep == 0;
         boolean atLastStep = currentStep == TOTAL_STEPS - 1;
+        if (backButton == null || nextButton == null || startButton == null) {
+            return;
+        }
         backButton.setEnabled(!atFirstStep);
         nextButton.setEnabled(!atLastStep);
         startButton.setEnabled(atLastStep);

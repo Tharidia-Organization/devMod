@@ -16,6 +16,7 @@ import net.neoforged.fml.loading.FMLEnvironment;
 import com.devmod.client.ClientVFXProxy;
 import com.devmod.combat.HitHelper;
 import com.devmod.damage.DamageBreakdown;
+
 public final class ImpactHudService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ImpactHudService.class);
 

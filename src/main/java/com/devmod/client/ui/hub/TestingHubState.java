@@ -5,16 +5,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import com.devmod.client.testing.ActiveTestHudOverlay;
 import com.devmod.client.testing.TestingSession;
 import com.devmod.client.testing.TutorialManager;
 import com.devmod.testing.TestCase;
+
 public class TestingHubState {
 
     public static final TestingHubState INSTANCE = new TestingHubState();
 
     // Current state
+    @Nullable
     private TestCase currentTest = null;
+    @Nullable
     private String selectedCategory = null;
     private boolean isMinimized = false;
     private Set<ToolType> activeTools = EnumSet.noneOf(ToolType.class);
@@ -37,11 +42,12 @@ public class TestingHubState {
 
     // === TEST MANAGEMENT ===
 
+    @Nullable
     public TestCase getCurrentTest() {
         return currentTest;
     }
 
-    public void setCurrentTest(TestCase test) {
+    public void setCurrentTest(@Nullable TestCase test) {
         this.currentTest = test;
         if (test != null) {
             this.selectedCategory = test.getCategory();
@@ -72,6 +78,7 @@ public class TestingHubState {
         }
     }
 
+    @Nullable
     private TestCase findNextPendingTest() {
         Map<String, List<TestCase>> categories = TestingSession.INSTANCE.getCategorizedTests();
 
@@ -118,6 +125,7 @@ public class TestingHubState {
 
     // === CATEGORY MANAGEMENT ===
 
+    @Nullable
     public String getSelectedCategory() {
         return selectedCategory;
     }

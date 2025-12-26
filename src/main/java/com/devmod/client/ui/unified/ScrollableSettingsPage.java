@@ -12,6 +12,7 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.scroll.ScrollManager;
 import com.devmod.client.ui.scroll.ScrollMetrics;
 import com.devmod.client.ui.scroll.ScrollMode;
+
 public abstract class ScrollableSettingsPage implements SettingsPage {
 
     protected static final int SCROLLBAR_WIDTH = 6;

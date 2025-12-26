@@ -1,6 +1,7 @@
 package com.devmod.runtime;
 
 import java.util.Set;
+
 public enum InstanceState {
     /**
      * Dimension is being created and arena is being generated.

@@ -26,6 +26,7 @@ import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
 
 import net.neoforged.neoforge.network.PacketDistributor;
+
 public class DebugDataCollector {
     private static final Logger LOGGER = LoggerFactory.getLogger(DebugDataCollector.class);
 

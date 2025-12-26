@@ -11,6 +11,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public class HistoryPanel {
 
     // ═══════════════════════════════════════════════════════════════

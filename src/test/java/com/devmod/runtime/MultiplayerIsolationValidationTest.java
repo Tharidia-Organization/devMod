@@ -20,17 +20,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L3 Test: Multiplayer Data Isolation Validation
- *
- * Tests multiplayer isolation rules without Minecraft dependencies.
- * Validates:
- * - Player data isolation between instances
- * - Party management rules
- * - Instance ownership rules
- * - Registry lookup isolation
- * - Concurrent player operations
- */
 @DisplayName("L3: Multiplayer Data Isolation Validation")
 class MultiplayerIsolationValidationTest {
 

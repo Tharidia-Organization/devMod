@@ -1,19 +1,21 @@
 package com.devmod.endurance;
 
-import com.devmod.arena.config.ArenaTemplateConfig;
-import com.devmod.arena.telemetry.ArenaTelemetry;
-import net.minecraft.resources.ResourceLocation;
-import org.junit.jupiter.api.Test;
-
 import java.lang.reflect.Field;
-import java.util.UUID;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
+import org.junit.jupiter.api.Test;
+
+import net.minecraft.resources.ResourceLocation;
+
+import com.devmod.arena.config.ArenaTemplateConfig;
+import com.devmod.arena.telemetry.ArenaTelemetry;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class EnduranceSmokeTests {
 

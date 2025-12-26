@@ -9,6 +9,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.collision.obb.OrientedBoundingBox;
 import com.devmod.combat.HitHelper;
+
 public record BodyPartDefinition(
     @Nonnull String id,                          // Unique identifier (e.g., "head", "left_arm")
     @Nonnull HitHelper.BodyPart bodyPartType,    // Maps to existing enum for compatibility

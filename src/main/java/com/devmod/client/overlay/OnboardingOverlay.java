@@ -2,6 +2,8 @@ package com.devmod.client.overlay;
 
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +27,7 @@ import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.util.I18n;
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class OnboardingOverlay {
@@ -107,11 +110,12 @@ public class OnboardingOverlay {
         final String title;
         final String description;
         final String instruction;
+        @Nullable
         final KeyMapping keyHint;
         final TutorialAction requiredAction;
 
         TutorialStep(String title, String description, String instruction,
-                     KeyMapping keyHint, TutorialAction requiredAction) {
+                     @Nullable KeyMapping keyHint, TutorialAction requiredAction) {
             this.title = title;
             this.description = description;
             this.instruction = instruction;

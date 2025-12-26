@@ -2,6 +2,7 @@ package com.devmod.endurance;
 
 import java.util.List;
 import java.util.UUID;
+
 public record DirectiveChain(
     String id,
     String name,

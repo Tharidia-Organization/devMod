@@ -253,7 +253,7 @@ $ ls src/main/java/com/devmod/combat/*Events.java 2>/dev/null
 # (vuoto - PASS)
 
 # UIConstants unificato
-$ ls src/main/java/com/devmod/ui/UIConstants.java 2>/dev/null
+$ ls src/main/java/com/devmod/client/ui/UIConstants.java 2>/dev/null
 # (vuoto - PASS, rimosso)
 
 # Verifica build

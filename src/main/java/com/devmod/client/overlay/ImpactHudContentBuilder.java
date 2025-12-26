@@ -11,6 +11,7 @@ import net.minecraft.network.chat.Component;
 import com.devmod.config.Config;
 import com.devmod.damage.DamageBreakdown;
 import com.devmod.util.I18n;
+
 public final class ImpactHudContentBuilder {
     private ImpactHudContentBuilder() {}
 

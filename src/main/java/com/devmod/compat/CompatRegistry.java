@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.actions.ActionRegistry;
+
 public final class CompatRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(CompatRegistry.class);
 

@@ -1,15 +1,12 @@
 package com.devmod.client.ui.editor.controller;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for {@link OverlayController}.
- */
 public class OverlayControllerTest {
 
     private OverlayController controller;

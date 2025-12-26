@@ -16,6 +16,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.telemetry.TelemetryService;
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class TelemetryStatusOverlay {
 

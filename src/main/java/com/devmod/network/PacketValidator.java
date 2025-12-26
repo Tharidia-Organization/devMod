@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.server.level.ServerPlayer;
+
 public class PacketValidator {
     private static final Logger LOGGER = LoggerFactory.getLogger(PacketValidator.class);
     public static final PacketValidator INSTANCE = new PacketValidator();
@@ -506,7 +507,7 @@ public class PacketValidator {
         @Nullable
         private final String errorMessage;
 
-        private ValidationResult(boolean success, String errorMessage) {
+        private ValidationResult(boolean success, @Nullable String errorMessage) {
             this.success = success;
             this.errorMessage = errorMessage;
         }

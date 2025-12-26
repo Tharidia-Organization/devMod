@@ -13,6 +13,7 @@ import net.minecraft.network.chat.Component;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class YaclCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(YaclCompat.class);
     public static final String MOD_ID = "yet_another_config_lib_v3";

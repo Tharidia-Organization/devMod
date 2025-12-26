@@ -7,6 +7,7 @@ import com.devmod.client.ui.testing.panel.ShowcasePanel;
 import com.devmod.client.ui.testing.panel.SpacerPanel;
 import com.devmod.client.ui.testing.panel.StatusPanel;
 import com.devmod.util.I18n;
+
 public class ComponentShowcasePage extends AbstractVoxelLabPage {
 
     public ComponentShowcasePage() {

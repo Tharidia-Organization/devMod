@@ -15,6 +15,7 @@ import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.registries.DeferredHolder;
 
 import com.devmod.DevMod;
+
 public final class PufferfishCompat {
     private static final String MODID = "puffish_attributes";
     private static final boolean LOADED = isLoadedSafe();

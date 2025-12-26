@@ -8,6 +8,7 @@ import net.minecraft.client.gui.GuiGraphics;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+
 @OnlyIn(Dist.CLIENT)
 public class UiAnimation {
 

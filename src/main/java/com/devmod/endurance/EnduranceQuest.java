@@ -3,6 +3,7 @@ package com.devmod.endurance;
 import java.util.UUID;
 
 import net.minecraft.resources.ResourceLocation;
+
 public class EnduranceQuest {
 
     private final UUID questId;

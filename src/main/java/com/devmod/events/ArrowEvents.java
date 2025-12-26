@@ -33,6 +33,7 @@ import com.devmod.DevMod;
 import com.devmod.collision.integration.OBBHitHelper;
 import com.devmod.combat.HitHelper;
 import com.devmod.util.I18n;
+
 @EventBusSubscriber(modid = DevMod.MODID)
 public class ArrowEvents {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArrowEvents.class);

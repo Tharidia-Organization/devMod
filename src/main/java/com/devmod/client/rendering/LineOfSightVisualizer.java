@@ -24,6 +24,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.ui.unified.persistence.SettingsManager;
+
 public class LineOfSightVisualizer {
     public static final LineOfSightVisualizer INSTANCE = new LineOfSightVisualizer();
 

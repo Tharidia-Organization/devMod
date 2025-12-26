@@ -34,6 +34,7 @@ import net.minecraft.world.item.component.CustomData;
 
 import com.devmod.components.UsableComponents;
 import com.devmod.stats.UsableStats;
+
 public class UsableConfigManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UsableConfigManager.class);

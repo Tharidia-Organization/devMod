@@ -24,6 +24,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+
 public class DevilsBargainManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DevilsBargainManager.class);
 

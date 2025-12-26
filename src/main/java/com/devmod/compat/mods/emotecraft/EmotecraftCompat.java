@@ -16,6 +16,7 @@ import net.minecraft.world.entity.player.Player;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class EmotecraftCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(EmotecraftCompat.class);
     public static final String MOD_ID = "emotecraft";

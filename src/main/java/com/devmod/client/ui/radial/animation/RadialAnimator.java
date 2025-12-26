@@ -6,6 +6,7 @@ import java.util.Objects;
 import net.minecraft.util.Mth;
 
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
+
 public final class RadialAnimator {
 
     // ================================================================

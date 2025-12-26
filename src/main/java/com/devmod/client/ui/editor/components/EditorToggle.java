@@ -13,6 +13,7 @@ import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.EditorSounds;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public class EditorToggle {
 
     // Dimensions (from EDITOR_DESIGN_SYSTEM.md Section 4.3)

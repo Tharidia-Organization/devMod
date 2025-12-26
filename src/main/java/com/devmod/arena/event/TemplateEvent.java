@@ -6,6 +6,7 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 import com.devmod.arena.registry.TemplateType;
+
 public sealed interface TemplateEvent
     permits TemplateEvent.TemplateRegistered,
             TemplateEvent.TemplateUnregistered,

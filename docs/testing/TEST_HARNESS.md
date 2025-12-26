@@ -32,7 +32,7 @@ test {
 ### Test Location
 
 ```
-src/test/java/com/frenkvs/devmod/
+src/test/java/com/devmod/
 ├── instance/
 │   ├── InstanceSystemLogicTest.java       # State machines
 │   ├── InstanceFlowValidationTest.java    # Flow validation
@@ -92,7 +92,7 @@ runs {
 ### GameTest Location
 
 ```
-src/main/java/com/frenkvs/devmod/gametest/
+src/main/java/com/devmod/gametest/
 ├── DevModGameTests.java           # Core mod tests (18 tests)
 └── InstanceSystemGameTests.java   # Instance system tests (18 tests)
 ```

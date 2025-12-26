@@ -14,6 +14,7 @@ import net.minecraft.world.level.LightLayer;
 import com.devmod.telemetry.RoomDefinition;
 import com.devmod.telemetry.TelemetryJson;
 import com.devmod.telemetry.room.RoomService;
+
 public class LightAnalysisService {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final LightAnalysisService INSTANCE = new LightAnalysisService();

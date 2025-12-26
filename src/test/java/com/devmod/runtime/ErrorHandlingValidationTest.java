@@ -1,5 +1,6 @@
 package com.devmod.runtime;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -17,16 +18,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L3 Test: Error Handling Validation
- *
- * Tests error handling rules without Minecraft dependencies.
- * Validates:
- * - Graceful degradation patterns
- * - Fallback behavior rules
- * - Exception handling strategies
- * - Null safety patterns
- */
 @DisplayName("L3: Error Handling Validation")
 class ErrorHandlingValidationTest {
 
@@ -394,29 +385,26 @@ class ErrorHandlingValidationTest {
 
         @Test
         @DisplayName("ConcurrentHashMap used for thread-safe access")
-        void concurrentHashMapUsedForThreadSafeAccess() {
+        void concurrentHashMapUsedForThreadSafeAccess() throws Exception {
             // InstanceRegistry uses ConcurrentHashMap
-            Map<UUID, String> concurrentMap = new java.util.concurrent.ConcurrentHashMap<>();
+            Field instancesField = InstanceRegistry.class.getDeclaredField("instances");
+            instancesField.setAccessible(true);
+            Object instancesMap = instancesField.get(InstanceRegistry.INSTANCE);
 
-            UUID id1 = UUID.randomUUID();
-            UUID id2 = UUID.randomUUID();
-
-            concurrentMap.put(id1, "value1");
-            concurrentMap.put(id2, "value2");
-
-            assertEquals(2, concurrentMap.size());
+            assertNotNull(instancesMap);
+            assertTrue(instancesMap instanceof java.util.concurrent.ConcurrentHashMap);
         }
 
         @Test
         @DisplayName("ConcurrentHashMap.newKeySet for thread-safe sets")
-        void concurrentHashMapNewKeySetForThreadSafeSets() {
+        void concurrentHashMapNewKeySetForThreadSafeSets() throws Exception {
             // InstanceData uses ConcurrentHashMap.newKeySet()
-            Set<UUID> concurrentSet = java.util.concurrent.ConcurrentHashMap.newKeySet();
+            Field pendingField = InstanceRegistry.class.getDeclaredField("pendingDestruction");
+            pendingField.setAccessible(true);
+            Object pendingSet = pendingField.get(InstanceRegistry.INSTANCE);
 
-            concurrentSet.add(UUID.randomUUID());
-            concurrentSet.add(UUID.randomUUID());
-
-            assertEquals(2, concurrentSet.size());
+            assertNotNull(pendingSet);
+            assertTrue(pendingSet instanceof java.util.concurrent.ConcurrentHashMap.KeySetView);
         }
 
         @Test
@@ -485,9 +473,7 @@ class ErrorHandlingValidationTest {
             int optionalFailures = 0;
 
             // All required succeed
-            for (@SuppressWarnings("unused") String comp : requiredComponents) {
-                requiredSuccesses++;
-            }
+            requiredSuccesses = requiredComponents.size();
 
             // Some optional fail
             for (String comp : optionalComponents) {

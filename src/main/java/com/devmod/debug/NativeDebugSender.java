@@ -23,6 +23,7 @@ import net.minecraft.world.entity.raid.Raid;
 import net.minecraft.world.entity.raid.Raids;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
+
 @SuppressWarnings("unused") // Native debug sending is temporarily disabled; keep code for future use
 public class NativeDebugSender {
     private static final Logger LOGGER = LoggerFactory.getLogger(NativeDebugSender.class);

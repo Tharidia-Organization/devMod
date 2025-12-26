@@ -13,6 +13,7 @@ import net.minecraft.world.entity.Mob;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.config.MobPresetManager;
+
 public class MobConfigScreenRenderer {
 
     // Layout constants

@@ -1,13 +1,14 @@
 package com.devmod.client.ui.radial;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Stack;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -44,6 +45,7 @@ import com.devmod.client.ui.radial.render.RadialHubRenderer;
 import com.devmod.client.ui.radial.render.RadialTooltipRenderer;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public final class RadialMenuScreen extends Screen {
 
@@ -55,8 +57,10 @@ public final class RadialMenuScreen extends Screen {
 
     // === Macro-Category State ===
     private static MacroCategory selectedMacro = MacroCategory.ANALYZE; // Persisted across opens
+    @Nullable
     private MacroCategory hoveredMacro = null;
     private final Map<MacroCategory, List<RadialCategory>> macroCategoryMap = new EnumMap<>(MacroCategory.class);
+    @Nullable
     private MacroCategory transitionFromMacro = null; // Previous macro during transition for cross-fade effect
 
     // === Configuration ===
@@ -72,7 +76,8 @@ public final class RadialMenuScreen extends Screen {
 
     // === Menu Structure ===
     private final List<RadialCategory> rootCategories = new ArrayList<>();
-    private final Stack<RadialCategory> navigationStack = new Stack<>();
+    private final Deque<RadialCategory> navigationStack = new ArrayDeque<>();
+    @Nullable
     private RadialCategory currentCategory = null;
 
     // === Selection State ===
@@ -564,7 +569,10 @@ public final class RadialMenuScreen extends Screen {
         return getVisibleCategoriesForMacro(selectedMacro);
     }
 
-    private List<RadialCategory> getVisibleCategoriesForMacro(MacroCategory macro) {
+    private List<RadialCategory> getVisibleCategoriesForMacro(@Nullable MacroCategory macro) {
+        if (macro == null) {
+            return Collections.emptyList();
+        }
         List<RadialCategory> categories = macroCategoryMap.getOrDefault(macro, Collections.emptyList());
         if (categories.isEmpty()) {
             return categories;
@@ -1235,7 +1243,7 @@ public final class RadialMenuScreen extends Screen {
 
     private void navigateTo(RadialCategory category) {
         if (currentCategory != null) {
-            navigationStack.push(currentCategory);
+            navigationStack.addFirst(currentCategory);
         }
         currentCategory = category;
         selectedItemIndex = RadialMenuConstants.NO_SELECTION;
@@ -1248,7 +1256,7 @@ public final class RadialMenuScreen extends Screen {
 
     private void navigateBack() {
         if (!navigationStack.isEmpty()) {
-            currentCategory = navigationStack.pop();
+            currentCategory = navigationStack.removeFirst();
         } else {
             currentCategory = null;
         }

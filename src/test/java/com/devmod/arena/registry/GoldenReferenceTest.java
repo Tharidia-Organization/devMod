@@ -1,6 +1,7 @@
 package com.devmod.arena.registry;
 
 import org.junit.jupiter.api.Test;
+
 import com.devmod.arena.builder.BuildDryRunCalculator;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;

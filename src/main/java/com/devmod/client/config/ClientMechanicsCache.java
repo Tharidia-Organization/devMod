@@ -10,6 +10,7 @@ import net.minecraft.nbt.CompoundTag;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+
 @OnlyIn(Dist.CLIENT)
 public final class ClientMechanicsCache {
     public static final ClientMechanicsCache INSTANCE = new ClientMechanicsCache();

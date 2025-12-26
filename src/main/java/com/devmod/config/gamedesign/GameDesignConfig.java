@@ -1,6 +1,7 @@
 package com.devmod.config.gamedesign;
 
 import com.google.gson.annotations.SerializedName;
+
 public class GameDesignConfig {
 
     @SerializedName("version")

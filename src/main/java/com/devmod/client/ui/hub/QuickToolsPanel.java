@@ -24,6 +24,7 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.endurance.EnduranceQuestState;
 import com.devmod.endurance.QuestActionPayload;
+
 public class QuickToolsPanel implements HubPanel {
 
     private final int x, y, width, height;

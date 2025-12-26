@@ -1,18 +1,14 @@
 package com.devmod.arena.cleanup;
 
+import java.util.Set;
+import java.util.UUID;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.Set;
-import java.util.UUID;
-
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for ArenaCleanupExecutor.
- * DD37: Verifies 4-phase cleanup order and result tracking.
- */
 class ArenaCleanupExecutorTest {
 
     private MockLevelAccess mockLevel;

@@ -1,17 +1,13 @@
 package com.devmod.arena.fallback;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for FallbackBuildStrategy.
- * DD45: Max 1 retry.
- */
 @DisplayName("FallbackBuildStrategy Tests")
 class FallbackBuildStrategyTest {
 

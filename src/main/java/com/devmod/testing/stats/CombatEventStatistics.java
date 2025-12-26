@@ -1,6 +1,7 @@
 package com.devmod.testing.stats;
 
 import com.google.gson.JsonObject;
+
 public class CombatEventStatistics {
     public static final CombatEventStatistics INSTANCE = new CombatEventStatistics();
 

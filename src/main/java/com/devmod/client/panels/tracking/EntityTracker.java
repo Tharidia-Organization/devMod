@@ -7,6 +7,7 @@ import javax.annotation.Nullable;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
+
 public class EntityTracker {
 
     private final WeakReference<Entity> entityRef;

@@ -27,6 +27,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
+
 public class ArenaHazardSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaHazardSystem.class);
 

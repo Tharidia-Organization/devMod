@@ -11,6 +11,7 @@ import javax.annotation.Nullable;
 import org.joml.Matrix4f;
 
 import net.minecraft.world.phys.Vec3;
+
 public record AnimationSnapshot(
     int entityId,
     long tickCaptured,

@@ -23,6 +23,7 @@ import com.devmod.recipe.RecipeData;
 import com.devmod.recipe.SmeltingRecipeData;
 import com.devmod.recipe.SmithingRecipeData;
 import com.devmod.recipe.StonecuttingRecipeData;
+
 public record RecipeSyncPayload(
     @Nonnull List<RecipeData> recipes,
     boolean isGlobal,

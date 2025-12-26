@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.BuildPhase;
 import com.devmod.arena.ProgressFlags;
+
 public class BuildProgressOverlay {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BuildProgressOverlay.class);

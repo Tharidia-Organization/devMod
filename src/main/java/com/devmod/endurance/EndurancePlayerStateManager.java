@@ -13,6 +13,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
+
 public class EndurancePlayerStateManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(EndurancePlayerStateManager.class);
 
@@ -240,7 +241,6 @@ public class EndurancePlayerStateManager {
      * Otherwise, destroys the legacy overworld arena.
      *
      * @param session The quest session to cleanup
-     * @param arenaManager The arena manager for legacy mode cleanup
      * @param success Whether the quest was completed successfully
      */
     public void cleanupArenaOrInstance(EnduranceQuestManager.ActiveQuestSession session, boolean success) {

@@ -42,17 +42,6 @@ import com.devmod.runtime.InstanceState;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L5 Test: Concurrent Operation Stress Testing
- *
- * Tests thread safety and concurrent access patterns without Minecraft dependencies.
- * Validates:
- * - ConcurrentHashMap operations under load
- * - Atomic operations correctness
- * - Race condition detection patterns
- * - Lock-free algorithm validation
- * - Thread pool stress scenarios
- */
 @DisplayName("L5: Concurrent Operation Stress Tests")
 class ConcurrentOperationStressTest {
 

@@ -4,6 +4,7 @@ import javax.annotation.Nonnull;
 
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+
 public interface SettingsPage {
 
     /**

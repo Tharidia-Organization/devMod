@@ -12,6 +12,7 @@ import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 
 import static com.devmod.DevMod.MODID;
+
 @EventBusSubscriber(modid = MODID)
 public class DamageTracker {
 

@@ -1,11 +1,12 @@
 package com.devmod.arena.builder;
 
-import com.devmod.arena.registry.ArenaTemplate;
-import com.devmod.arena.telemetry.ArenaTelemetry;
-import org.junit.jupiter.api.Test;
-
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.junit.jupiter.api.Test;
+
+import com.devmod.arena.registry.ArenaTemplate;
+import com.devmod.arena.telemetry.ArenaTelemetry;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

@@ -29,6 +29,7 @@ import com.devmod.client.ui.editor.modules.WeaponModule;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
 import com.devmod.util.DatapackIO;
+
 public final class ItemEditorDataService {
 
     private static final String DEFAULT_DATAPACK_NAME = "devmod_balance_auto";

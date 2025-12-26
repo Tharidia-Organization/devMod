@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
+
 public class SpawnSlotResolver {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SpawnSlotResolver.class);

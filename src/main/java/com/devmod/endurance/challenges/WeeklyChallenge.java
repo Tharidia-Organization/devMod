@@ -4,6 +4,7 @@ import java.util.UUID;
 import java.util.function.BiPredicate;
 
 import net.minecraft.network.chat.Component;
+
 public class WeeklyChallenge {
 
     private final String id;

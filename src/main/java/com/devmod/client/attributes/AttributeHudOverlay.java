@@ -20,6 +20,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import com.devmod.DevMod;
 import com.devmod.attributes.AttributeLogEntry;
 import com.devmod.util.I18n;
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class AttributeHudOverlay {

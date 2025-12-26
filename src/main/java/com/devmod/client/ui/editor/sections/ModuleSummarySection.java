@@ -11,6 +11,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public final class ModuleSummarySection implements EditorSection.CustomSection {
 
     private static final int HEADER_HEIGHT = 20;

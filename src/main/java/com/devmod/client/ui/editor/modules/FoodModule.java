@@ -13,6 +13,7 @@ import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.ModuleTab;
 import com.devmod.client.ui.editor.core.EditorCache;
 import com.devmod.stats.FoodStats;
+
 public class FoodModule extends AbstractEditorModule {
 
     // Delegate classes (lazy initialized to avoid this-escape)

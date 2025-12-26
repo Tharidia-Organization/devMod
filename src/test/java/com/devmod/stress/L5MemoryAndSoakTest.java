@@ -26,23 +26,6 @@ import org.junit.jupiter.api.Timeout;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L5 - Stress, Performance, and Soak Tests
- *
- * PURPOSE: Validate stability under extended load and verify memory cleanup
- *
- * Test Categories:
- * 1. Memory Leak Detection - Verify cleanup services prevent unbounded growth
- * 2. Soak Tests - Extended operation simulation
- * 3. Resource Exhaustion - System behavior at limits
- * 4. Cleanup Verification - Manager shutdown correctness
- *
- * PASS CRITERIA:
- * - No unbounded memory growth after cleanup cycles
- * - All cleanup operations remove tracked data
- * - Shutdown methods release all resources
- * - No stale references after cleanup
- */
 @DisplayName("L5: Stress, Performance & Soak Tests")
 public class L5MemoryAndSoakTest {
 

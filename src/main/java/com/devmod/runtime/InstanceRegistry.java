@@ -30,6 +30,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 
 import com.devmod.util.ConfigPaths;
+
 public class InstanceRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceRegistry.class);
     public static final InstanceRegistry INSTANCE = new InstanceRegistry();

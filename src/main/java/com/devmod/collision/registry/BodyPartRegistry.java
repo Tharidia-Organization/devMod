@@ -15,6 +15,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 
 import com.devmod.collision.bodypart.BodyPartHierarchy;
+
 public final class BodyPartRegistry {
 
     /**

@@ -10,10 +10,14 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.annotation.Nullable;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -26,35 +30,23 @@ import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Pure DuckDB Migration Validation Test Suite.
- *
- * This test does NOT depend on Minecraft classes (LogUtils, etc.) to run in CI.
- * Uses raw JDBC connections and inline schema for isolation.
- *
- * Tests:
- * 1. Runtime smoke test - all table types
- * 2. Invariant validation - data integrity
- * 3. Backpressure - concurrent write handling
- * 4. Circuit breaker - error recovery patterns
- * 5. Shutdown flush - data persistence
- */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("DuckDB Migration Validation")
 class DuckDBMigrationValidationTest {
 
     @TempDir
-    static Path tempDir;
+    @Nullable static Path tempDir;
 
-    private static Connection testConnection;
+    @Nullable private static Connection testConnection;
 
     @BeforeAll
     static void setupDatabase() throws SQLException {
-        Path dbPath = tempDir.resolve("migration_validation.duckdb");
-        testConnection = DriverManager.getConnection("jdbc:duckdb:" + dbPath);
+        Path dbPath = Objects.requireNonNull(tempDir).resolve("migration_validation.duckdb");
+        Connection connection = DriverManager.getConnection("jdbc:duckdb:" + dbPath);
+        testConnection = connection;
 
         // Create schema inline (mirrors DuckDBSchemaManager)
-        createTestSchema(testConnection);
+        createTestSchema(connection);
     }
 
     @AfterAll
@@ -309,6 +301,10 @@ class DuckDBMigrationValidationTest {
         }
     }
 
+    private static Connection requireConnection() {
+        return Objects.requireNonNull(testConnection, "Test connection not initialized");
+    }
+
     // ============================================
     // DELIVERABLE 2: RUNTIME SMOKE TEST
     // ============================================
@@ -320,7 +316,7 @@ class DuckDBMigrationValidationTest {
         Instant now = Instant.now();
 
         // Insert combat hits
-        try (PreparedStatement pstmt = testConnection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO combat_hits (id, ts, room, world, attacker_name, attacker_type, target_name, target_type, damage, damage_type, hp_before, hp_after, body_part, distance) " +
             "VALUES (nextval('seq_combat_hits'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
             for (int i = 0; i < 10; i++) {
@@ -343,7 +339,7 @@ class DuckDBMigrationValidationTest {
         }
 
         // Insert combat deaths
-        try (PreparedStatement pstmt = testConnection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO combat_deaths (id, ts, room, world, target_name, target_type, cause, ttk_first_hit_ms, ttk_spawn_ms) " +
             "VALUES (nextval('seq_combat_deaths'), ?, ?, ?, ?, ?, ?, ?, ?)")) {
             for (int i = 0; i < 3; i++) {
@@ -361,7 +357,7 @@ class DuckDBMigrationValidationTest {
         }
 
         // Insert combat heals
-        try (PreparedStatement pstmt = testConnection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO combat_heals (id, ts, room, world, target_name, target_type, heal_amount, hp_before, hp_after, source) " +
             "VALUES (nextval('seq_combat_heals'), ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
             for (int i = 0; i < 10; i++) {
@@ -380,7 +376,7 @@ class DuckDBMigrationValidationTest {
         }
 
         // Insert combat spawns
-        try (PreparedStatement pstmt = testConnection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO combat_spawns (id, ts, room, world, entity_name, entity_type, reason, spawn_fail, x, y, z) " +
             "VALUES (nextval('seq_combat_spawns'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
             for (int i = 0; i < 10; i++) {
@@ -417,7 +413,7 @@ class DuckDBMigrationValidationTest {
         Instant now = Instant.now();
 
         // Wave events
-        try (PreparedStatement pstmt = testConnection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO endurance_waves (id, ts, session_id, wave_number, event_type, mob_count, mobs_killed, duration_ms, no_damage, kills_per_second) " +
             "VALUES (nextval('seq_endurance_waves'), ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
             for (int wave = 1; wave <= 5; wave++) {
@@ -449,7 +445,7 @@ class DuckDBMigrationValidationTest {
         }
 
         // Wave kills
-        try (PreparedStatement pstmt = testConnection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO endurance_wave_kills (id, ts, session_id, wave_number, mob_type, is_elite, killer_weapon, damage_dealt) " +
             "VALUES (nextval('seq_endurance_wave_kills'), ?, ?, ?, ?, ?, ?, ?)")) {
             for (int wave = 1; wave <= 5; wave++) {
@@ -468,7 +464,7 @@ class DuckDBMigrationValidationTest {
         }
 
         // Combo events
-        try (PreparedStatement pstmt = testConnection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO endurance_combos (id, ts, player_id, session_id, event_type, old_rank, new_rank, style_score, current_combo) " +
             "VALUES (nextval('seq_endurance_combos'), ?, ?, ?, ?, ?, ?, ?, ?)")) {
             pstmt.setTimestamp(1, Timestamp.from(now));
@@ -494,7 +490,7 @@ class DuckDBMigrationValidationTest {
         }
 
         // Perk events
-        try (PreparedStatement pstmt = testConnection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO endurance_perks (id, ts, player_id, session_id, event_type, perk_id, perk_name, tier, category) " +
             "VALUES (nextval('seq_endurance_perks'), ?, ?, ?, ?, ?, ?, ?, ?)")) {
             pstmt.setTimestamp(1, Timestamp.from(now));
@@ -509,7 +505,7 @@ class DuckDBMigrationValidationTest {
         }
 
         // Reward events
-        try (PreparedStatement pstmt = testConnection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO endurance_rewards (id, ts, player_id, session_id, event_type, currency, amount, source) " +
             "VALUES (nextval('seq_endurance_rewards'), ?, ?, ?, ?, ?, ?, ?)")) {
             pstmt.setTimestamp(1, Timestamp.from(now));
@@ -540,7 +536,7 @@ class DuckDBMigrationValidationTest {
         Instant now = Instant.now();
 
         // Player snapshots
-        try (PreparedStatement pstmt = testConnection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO player_snapshots (id, ts, player_id, player_name, trigger_type, health_hp, max_health_hp) " +
             "VALUES (nextval('seq_player_snapshots'), ?, ?, ?, ?, ?, ?)")) {
             for (int i = 0; i < 5; i++) {
@@ -556,7 +552,7 @@ class DuckDBMigrationValidationTest {
         }
 
         // Ability events
-        try (PreparedStatement pstmt = testConnection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO player_abilities (id, ts, player_id, ability_type, success, stamina_before, stamina_after, stamina_cost) " +
             "VALUES (nextval('seq_player_abilities'), ?, ?, ?, ?, ?, ?, ?)")) {
             String[] abilities = {"dash", "dodge", "perfect_dodge", "exhaustion", "stamina_full"};
@@ -587,7 +583,7 @@ class DuckDBMigrationValidationTest {
         Instant now = Instant.now();
 
         // Heatmap events
-        try (PreparedStatement pstmt = testConnection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO spatial_heatmaps (id, ts, heatmap_type, room, x, y, z, count) " +
             "VALUES (nextval('seq_spatial_heatmaps'), ?, ?, ?, ?, ?, ?, ?)")) {
             String[] types = {"death", "stuck", "camping", "kiting"};
@@ -605,7 +601,7 @@ class DuckDBMigrationValidationTest {
         }
 
         // Alert events
-        try (PreparedStatement pstmt = testConnection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO spatial_alerts (id, ts, alert_type, player_name, entity_name, entity_type, room, x, y, z, extra_data) " +
             "VALUES (nextval('seq_spatial_alerts'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
             pstmt.setTimestamp(1, Timestamp.from(now));
@@ -622,7 +618,7 @@ class DuckDBMigrationValidationTest {
         }
 
         // Room transitions
-        try (PreparedStatement pstmt = testConnection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO spatial_room_transitions (id, ts, player_id, player_name, room) " +
             "VALUES (nextval('seq_spatial_room_transitions'), ?, ?, ?, ?)")) {
             pstmt.setTimestamp(1, Timestamp.from(now));
@@ -652,7 +648,7 @@ class DuckDBMigrationValidationTest {
     void smokeTestPerformance() throws Exception {
         Instant now = Instant.now();
 
-        try (PreparedStatement pstmt = testConnection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO performance_samples (id, ts, mspt, tps) " +
             "VALUES (nextval('seq_performance_samples'), ?, ?, ?)")) {
             for (int i = 0; i < 10; i++) {
@@ -689,7 +685,7 @@ class DuckDBMigrationValidationTest {
             HAVING COUNT(*) > 0
             """;
 
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery(query)) {
             assertFalse(rs.next(), "Timestamp monotonicity violation found in endurance_waves");
         }
@@ -712,7 +708,7 @@ class DuckDBMigrationValidationTest {
             WHERE wave_number != expected_wave
             """;
 
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery(query)) {
             int violations = 0;
             while (rs.next()) {
@@ -735,7 +731,7 @@ class DuckDBMigrationValidationTest {
             WHERE damage < 0 OR damage > 10000
             """;
 
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery(query)) {
             assertTrue(rs.next());
             assertEquals(0, rs.getInt("violations"), "Damage range violations found");
@@ -754,7 +750,7 @@ class DuckDBMigrationValidationTest {
                OR (stamina_after IS NOT NULL AND (stamina_after < 0 OR stamina_after > 150))
             """;
 
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery(query)) {
             assertTrue(rs.next());
             assertEquals(0, rs.getInt("violations"), "Stamina range violations found");
@@ -777,6 +773,8 @@ class DuckDBMigrationValidationTest {
         CountDownLatch doneLatch = new CountDownLatch(threadCount);
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger errorCount = new AtomicInteger(0);
+        AtomicReference<Throwable> firstError = new AtomicReference<>();
+        Connection connection = requireConnection();
 
         for (int t = 0; t < threadCount; t++) {
             final int threadId = t;
@@ -785,8 +783,8 @@ class DuckDBMigrationValidationTest {
                     startLatch.await();
 
                     // Synchronized access to shared connection (DuckDB serializes writes)
-                    synchronized (testConnection) {
-                        try (PreparedStatement pstmt = testConnection.prepareStatement(
+                    synchronized (connection) {
+                        try (PreparedStatement pstmt = connection.prepareStatement(
                             "INSERT INTO combat_hits (id, ts, room, damage, damage_type, attacker_name, target_name) " +
                             "VALUES (nextval('seq_combat_hits'), ?, ?, ?, ?, ?, ?)")) {
 
@@ -804,7 +802,7 @@ class DuckDBMigrationValidationTest {
                     }
                 } catch (Exception e) {
                     errorCount.incrementAndGet();
-                    e.printStackTrace();
+                    firstError.compareAndSet(null, e);
                 } finally {
                     doneLatch.countDown();
                 }
@@ -817,9 +815,10 @@ class DuckDBMigrationValidationTest {
         int expectedTotal = threadCount * insertsPerThread;
         assertEquals(expectedTotal, successCount.get(), "All inserts should succeed");
         assertEquals(0, errorCount.get(), "No errors should occur");
+        assertNull(firstError.get(), "Unexpected error during concurrent writes: " + firstError.get());
 
         // Verify data
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM combat_hits WHERE room = 'concurrent_test'")) {
             assertTrue(rs.next());
             assertEquals(expectedTotal, rs.getInt(1), "All concurrent writes should be persisted");
@@ -839,7 +838,7 @@ class DuckDBMigrationValidationTest {
         int batchSize = 100;
         int batches = 10;
 
-        try (PreparedStatement pstmt = testConnection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO performance_samples (id, ts, mspt, tps) " +
             "VALUES (nextval('seq_performance_samples'), ?, ?, ?)")) {
 
@@ -875,7 +874,7 @@ class DuckDBMigrationValidationTest {
     @Order(40)
     @DisplayName("Persistence: Data survives connection close/reopen")
     void testDataPersistence() throws Exception {
-        Path dbPath = tempDir.resolve("persistence_test.duckdb");
+        Path dbPath = Objects.requireNonNull(tempDir).resolve("persistence_test.duckdb");
 
         int eventsToWrite = 50;
         Instant now = Instant.now();
@@ -921,12 +920,12 @@ class DuckDBMigrationValidationTest {
     // QUERY HELPERS
     // ============================================
 
-    private void assertTableCountAtLeast(String table, int minCount, String whereClause) throws SQLException {
+    private void assertTableCountAtLeast(String table, int minCount, @Nullable String whereClause) throws SQLException {
         String query = whereClause != null
             ? "SELECT COUNT(*) FROM " + table + " WHERE " + whereClause
             : "SELECT COUNT(*) FROM " + table;
 
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery(query)) {
             assertTrue(rs.next());
             int actual = rs.getInt(1);
@@ -968,7 +967,7 @@ class DuckDBMigrationValidationTest {
         System.out.println("TABLE ROW COUNTS:");
         System.out.println("-----------------");
         for (String query : queries) {
-            try (Statement stmt = testConnection.createStatement();
+            try (Statement stmt = requireConnection().createStatement();
                  ResultSet rs = stmt.executeQuery(query)) {
                 if (rs.next()) {
                     System.out.printf("%-30s: %d rows%n", rs.getString("tbl"), rs.getInt("cnt"));

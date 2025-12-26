@@ -6,6 +6,7 @@ import java.util.List;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+
 public class CompactBlockTracker {
 
     // DD8: Hard cap at 150k blocks

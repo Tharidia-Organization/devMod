@@ -1,6 +1,7 @@
 package com.devmod.actions;
 
 import net.minecraft.network.chat.Component;
+
 @FunctionalInterface
 public interface ActionPrecondition {
     boolean test(ActionContext context);

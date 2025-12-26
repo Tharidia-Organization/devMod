@@ -9,6 +9,7 @@ import net.minecraft.world.entity.boss.wither.WitherBoss;
 
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.TelemetrySettings;
+
 public class UnifiedBossDetector {
 
     public static final UnifiedBossDetector INSTANCE = new UnifiedBossDetector();

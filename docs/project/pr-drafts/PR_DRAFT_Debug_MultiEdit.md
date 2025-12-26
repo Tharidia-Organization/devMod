@@ -6,14 +6,14 @@ Hardening of the Debug tab and MultiEdit flow. Debug now shows original vs confi
 
 Files changed (summary)
 
-- Added: `src/main/java/com/frenkvs/devmod/ui/editor/systems/DebugPanel.java`
-- Modified: `src/main/java/com/frenkvs/devmod/ui/editor/ItemEditorScreen.java`
+- Added: `src/main/java/com/devmod/client/ui/editor/systems/DebugPanel.java`
+- Modified: `src/main/java/com/devmod/client/ui/editor/ItemEditorScreen.java`
   - initialized `DebugPanel`, delegated dev-panel rendering to it, logged MultiEdit results to the debug panel, and handled the Copy button click to show a status message.
-- Modified: `src/main/java/com/frenkvs/devmod/ui/editor/systems/MultiEditPanel.java` (existing behavior wired earlier)
-- Added: `src/test/java/com/frenkvs/devmod/ui/editor/systems/DebugPanelTest.java`
- - Added: `src/test/java/com/frenkvs/devmod/ui/editor/systems/DebugPanelTest.java`
- - Added: `src/test/java/com/frenkvs/devmod/ui/editor/systems/MultiEditPreviewApplyRegressionTest.java` (preview vs apply regression)
-- Updated: `docs/editor-design-system/EDITOR_DESIGN_SYSTEM.md` to document Dual-mode semantics (preview vs apply) and data key usage.
+- Modified: `src/main/java/com/devmod/client/ui/editor/systems/MultiEditPanel.java` (existing behavior wired earlier)
+- Added: `src/test/java/com/devmod/client/ui/editor/systems/DebugPanelTest.java`
+ - Added: `src/test/java/com/devmod/client/ui/editor/systems/DebugPanelTest.java`
+ - Added: `src/test/java/com/devmod/client/ui/editor/systems/MultiEditPreviewApplyRegressionTest.java` (preview vs apply regression)
+- Updated: `docs/subsystems/editor-design-system/05-dual-mode-system.md` to document Dual-mode semantics (preview vs apply) and data key usage.
 
 Design / rationale
 
@@ -69,10 +69,10 @@ gh pr create --base Banastaff --head debug-multiedit --title "Debug Panel + Mult
 
 Files changed (high level)
 
-- `src/main/java/com/frenkvs/devmod/ui/editor/debug/DebugInfoSection.java`, `.../modules/WeaponModule.java`, `.../modules/ArmorModule.java` (baseline logic, comparisons, clipboard/NBT)
-- `src/main/java/com/frenkvs/devmod/ui/editor/systems/DebugPanel.java` (dev overlay)
-- `src/main/java/com/frenkvs/devmod/ui/editor/systems/MultiEditPanel.java`, `MultiEditManager.java`, `ItemEditorScreen.java` (preset filtering, persistence hook, failure logging)
-- `src/main/java/com/frenkvs/devmod/ui/editor/systems/DataPreset.java` (ResourceLocation parsing fix)
-- Test stubs & tests: `src/test/java/net/minecraft/...`, `DebugPanelTest`, `MultiEditManagerPersistTest`
+- `src/main/java/com/devmod/client/ui/editor/debug/DebugInfoSection.java`, `.../modules/WeaponModule.java`, `.../modules/ArmorModule.java` (baseline logic, comparisons, clipboard/NBT)
+- `src/main/java/com/devmod/client/ui/editor/systems/DebugPanel.java` (dev overlay)
+- `src/main/java/com/devmod/client/ui/editor/systems/MultiEditPanel.java`, `MultiEditManager.java`, `ItemEditorScreen.java` (preset filtering, persistence hook, failure logging)
+- `src/main/java/com/devmod/client/ui/editor/systems/DataPreset.java` (ResourceLocation parsing fix)
+- Test stubs & tests: `DebugPanelTest`, `MultiEditManagerPersistTest`
 
 If you want, I can attempt to push/create the PR from this environment — say "go" — but this environment may open an interactive pager or require credentials; pushing from your local shell is the most reliable approach.

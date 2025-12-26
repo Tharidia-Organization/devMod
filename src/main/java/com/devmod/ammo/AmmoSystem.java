@@ -6,6 +6,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +23,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 import com.devmod.components.RangedComponents;
+
 public final class AmmoSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(AmmoSystem.class);
 
@@ -66,6 +69,7 @@ public final class AmmoSystem {
      * @param weapon The weapon to check
      * @return The ammo tag filter ResourceLocation, or null if not set
      */
+    @Nullable
     public static ResourceLocation getAmmoFilter(ItemStack weapon) {
         if (weapon.isEmpty()) {
             return null;
@@ -88,7 +92,7 @@ public final class AmmoSystem {
      * @param weapon The weapon to modify
      * @param tagId The tag ResourceLocation (e.g., "minecraft:arrows")
      */
-    public static void setAmmoFilter(ItemStack weapon, ResourceLocation tagId) {
+    public static void setAmmoFilter(ItemStack weapon, @Nullable ResourceLocation tagId) {
         if (weapon.isEmpty()) {
             return;
         }
@@ -325,6 +329,7 @@ public final class AmmoSystem {
         /**
          * Get the ResourceLocation for this suggestion.
          */
+        @Nullable
         public ResourceLocation toResourceLocation() {
             if (value == null || value.isBlank()) {
                 return null;

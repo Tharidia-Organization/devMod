@@ -9,6 +9,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.devmod.client.ui.editor.core.ResponsiveLayout.Rect;
 import com.devmod.client.ui.scroll.impl.InstantScrollBehavior;
 import com.devmod.client.ui.scroll.impl.SmoothScrollBehavior;
+
 public class ScrollManager {
 
     // ═══════════════════════════════════════════════════════════════

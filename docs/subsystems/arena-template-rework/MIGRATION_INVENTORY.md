@@ -11,7 +11,7 @@
 **Risultato**: nessuna call-site diretta (solo definizione metodo deprecato).
 
 ## Adapter / Legacy Residui
-- `src/main/java/com/frenkvs/devmod/endurance/ArenaManager.java` resta deprecato (no call-site attive).
+- Legacy `ArenaManager` adapter removed; no class remains in current code.
 
 ## Next Milestones
 1) Rimuovere definitivamente `ArenaManager` quando non serve piu' per compatibilita' storica.

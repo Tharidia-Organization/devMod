@@ -12,6 +12,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+
 public record RaidsPayload(List<RaidInfo> raids) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<RaidsPayload> TYPE =

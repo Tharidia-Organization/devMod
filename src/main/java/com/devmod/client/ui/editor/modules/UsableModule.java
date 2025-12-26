@@ -13,6 +13,7 @@ import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.ModuleTab;
 import com.devmod.client.ui.editor.core.EditorCache;
 import com.devmod.stats.UsableStats;
+
 public class UsableModule extends AbstractEditorModule {
 
     public enum UsableVariant { STANDARD, THROWABLE, CHARGEABLE, BLOCKABLE }

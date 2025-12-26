@@ -11,18 +11,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Progressive Test Suite 2: Complete Quest Lifecycle Simulation
- *
- * Simulates the complete user experience from quest acceptance to completion/failure.
- * Tests all possible paths through the quest lifecycle including edge cases.
- *
- * Focus areas:
- * 1. Happy path: Quest start -> waves -> completion
- * 2. Failure paths: Death, disconnect, abandonment
- * 3. Wave progression logic
- * 4. State consistency through all transitions
- */
 public class QuestLifecycleSimulationTest {
 
     // ============================================================

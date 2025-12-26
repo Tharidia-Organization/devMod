@@ -5,10 +5,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
 import net.minecraft.world.item.ItemStack;
+
 public class TemplateSystem {
     public enum TemplateType { WEAPON, ARMOR, ENCHANT, ATTRIBUTE, HYBRID }
     
@@ -20,7 +22,10 @@ public class TemplateSystem {
         public int priority = 0;
         
         public Template(String id, String name, TemplateType type) {
-            this.id = id; this.name = name; this.type = type;
+            this.id = id;
+            this.name = name;
+            this.type = type;
+            this.category = type.name().toLowerCase(Locale.ROOT);
         }
         
         public Template tag(String... tags) { 
@@ -46,7 +51,7 @@ public class TemplateSystem {
     
     public List<Template> getForItem(ItemStack item) {
         var type = WeaponTypeDetector.detect(item);
-        String category = type.name().toLowerCase();
+        String category = type.name().toLowerCase(Locale.ROOT);
         
         return categoryIndex.getOrDefault(category, Collections.emptyList())
             .stream()
@@ -57,8 +62,8 @@ public class TemplateSystem {
     public List<Template> search(String query, String category) {
         return templates.values().stream()
             .filter(t -> category == null || category.equals(t.category))
-            .filter(t -> t.name.toLowerCase().contains(query.toLowerCase()) || 
-                        t.tags.stream().anyMatch(tag -> tag.toLowerCase().contains(query.toLowerCase())))
+            .filter(t -> t.name.toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT)) ||
+                        t.tags.stream().anyMatch(tag -> tag.toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT))))
             .sorted((a, b) -> Integer.compare(b.priority, a.priority))
             .toList();
     }

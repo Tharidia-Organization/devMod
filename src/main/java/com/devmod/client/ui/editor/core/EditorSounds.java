@@ -6,6 +6,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 
 import com.devmod.config.EditorClientConfig;
+
 public final class EditorSounds {
     private EditorSounds() {}
 

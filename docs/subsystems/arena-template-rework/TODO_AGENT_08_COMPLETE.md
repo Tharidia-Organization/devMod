@@ -34,8 +34,8 @@ Agent 08 has successfully implemented all tasks related to **Cleanup & Migration
 
 | File | Description |
 |------|-------------|
-| `src/main/java/com/devmod/arena/ui/BuildProgressOverlay.java` | Server-side overlay with 4Hz rate limit and 1% delta threshold |
-| `src/main/java/com/devmod/arena/hud/BuildProgressHud.java` | Client-side HUD renderer with animated progress bar |
+| `src/main/java/com/devmod/client/arena/ui/BuildProgressOverlay.java` | Server-side overlay with 4Hz rate limit and 1% delta threshold |
+| `src/main/java/com/devmod/client/arena/hud/BuildProgressHud.java` | Client-side HUD renderer with animated progress bar |
 | `src/main/java/com/devmod/arena/network/BuildProgressPayload.java` | 28-byte network payload with phase, progress, and flags |
 
 ### Testing (DD40-41)
@@ -53,7 +53,7 @@ Agent 08 has successfully implemented all tasks related to **Cleanup & Migration
 
 | File | Description |
 |------|-------------|
-| `src/main/java/com/frenkvs/devmod/endurance/ArenaManager.java` | Manager with @Deprecated `createArena()` and runtime telemetry |
+| Legacy ArenaManager removed | Deprecated `createArena()` no longer present in code |
 | `docs/subsystems/arena-template-rework/MIGRATION_INVENTORY.md` | 12 call-site inventory and 6 PR migration plan |
 | `.github/workflows/legacy-check.yml` | CI workflow for legacy API detection |
 

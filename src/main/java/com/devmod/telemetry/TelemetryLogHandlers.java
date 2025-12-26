@@ -35,6 +35,7 @@ import com.devmod.telemetry.entity.EntityTrackingService;
 import com.devmod.telemetry.entity.MinionService;
 import com.devmod.telemetry.skills.SkillTrackingService;
 import com.devmod.telemetry.spatial.HeatmapService;
+
 public class TelemetryLogHandlers {
 
     private final TelemetryService service;

@@ -9,6 +9,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import com.devmod.debug.DebugFeature;
 import com.devmod.debug.DebugSyncPayload;
 import com.devmod.debug.client.DebugRenderBools;
+
 @OnlyIn(Dist.CLIENT)
 public final class DebugNetworkClientHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(DebugNetworkClientHandler.class);

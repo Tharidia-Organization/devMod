@@ -10,6 +10,7 @@ import com.devmod.client.ui.editor.systems.PresetBridge;
 import com.devmod.client.ui.editor.systems.PresetRegistry;
 import com.devmod.client.ui.editor.systems.PresetScope;
 import com.devmod.testing.TestCase;
+
 public class DevModPresetTestCases {
 
     private static final String CATEGORY = "Preset System";

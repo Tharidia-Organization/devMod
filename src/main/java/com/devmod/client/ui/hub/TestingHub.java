@@ -30,6 +30,7 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.testing.TestCase;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public class TestingHub extends Screen {
 
@@ -48,12 +49,17 @@ public class TestingHub extends Screen {
     private final TestingHubState state;
 
     // === PANELS ===
+    @Nullable
     private CategoryPanel categoryPanel;
+    @Nullable
     private TestDetailPanel detailPanel;
+    @Nullable
     private QuickToolsPanel toolsPanel;
+    @Nullable
     private ProgressFooter footer;
 
     // === SESSION INPUT ===
+    @Nullable
     private EditBox testerNameField;
     private boolean showSessionStart = false;
     private final EditorButton startButton = new EditorButton("hub-start", "Start New").style(EditorButton.Style.PRIMARY);

@@ -1,17 +1,19 @@
 package com.devmod.client.ui.editor.systems;
 
-import com.devmod.client.ui.editor.ItemEditorDataManager;
-import com.devmod.TestBootstrap;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeAll;
-
 import java.util.ArrayList;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+
+import com.devmod.TestBootstrap;
+import com.devmod.client.ui.editor.ItemEditorDataManager;
+
 import static java.util.Objects.requireNonNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ItemEditorPresetManagerTest {
     

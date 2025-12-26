@@ -19,6 +19,7 @@ import com.devmod.ModConfig;
 import com.devmod.combat.HitHelper;
 import com.devmod.config.WeaponConfigManager;
 import com.devmod.stats.WeaponStats;
+
 public class BodyPartRenderer {
 
     // Color definitions (ARGB format)

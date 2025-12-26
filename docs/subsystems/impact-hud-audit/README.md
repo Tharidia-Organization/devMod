@@ -29,7 +29,7 @@ L'Impact HUD fornisce feedback visivo in tempo reale durante il combattimento, m
 ## File Sorgente Principali (AGGIORNATO 2024-12-23)
 
 ```
-src/main/java/com/frenkvs/devmod/
+src/main/java/com/devmod/
 ├── DamageHandler.java              # Entry point, gestione eventi danno
 ├── HitHelper.java                  # Rilevamento body part
 ├── damage/

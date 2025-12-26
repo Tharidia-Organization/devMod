@@ -14,6 +14,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.fml.loading.FMLEnvironment;
 
 import com.devmod.client.overlay.ImpactData;
+
 public final class ClientVFXProxy {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientVFXProxy.class);

@@ -16,6 +16,7 @@ import com.devmod.collision.transform.AnimationSnapshot;
 import com.devmod.collision.transform.TransformProviderRegistry;
 import com.devmod.combat.HitHelper;
 import com.devmod.config.Config;
+
 public final class OBBHitHelper {
 
     private OBBHitHelper() {} // Utility class

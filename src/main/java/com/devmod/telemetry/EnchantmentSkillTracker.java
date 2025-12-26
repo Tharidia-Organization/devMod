@@ -13,6 +13,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 import com.devmod.DevMod;
+
 @EventBusSubscriber(modid = DevMod.MODID)
 public class EnchantmentSkillTracker {
 

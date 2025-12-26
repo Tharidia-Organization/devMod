@@ -12,6 +12,7 @@ import com.devmod.client.ui.editor.core.EditorConstants;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public class LeftColumnComponent {
 
     // ═══════════════════════════════════════════════════════════════

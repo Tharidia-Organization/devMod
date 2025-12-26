@@ -8,6 +8,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.animation.UiAnimation;
 import com.devmod.client.ui.editor.overlay.EditorOverlay;
+
 public abstract class BaseOverlay implements EditorOverlay {
 
     protected boolean visible = false;

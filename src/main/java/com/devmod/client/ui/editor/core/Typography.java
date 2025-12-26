@@ -7,6 +7,7 @@ import net.minecraft.client.gui.GuiGraphics;
 
 import static com.devmod.client.ui.editor.core.StringBuilderCache.acquire;
 import static com.devmod.client.ui.editor.core.StringBuilderCache.release;
+
 public final class Typography {
     private Typography() {}
 

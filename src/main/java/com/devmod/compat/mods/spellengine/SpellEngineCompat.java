@@ -14,6 +14,7 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class SpellEngineCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(SpellEngineCompat.class);
     public static final String MOD_ID = "spell_engine";

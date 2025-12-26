@@ -1,6 +1,7 @@
 package com.devmod.endurance.analytics;
 
 import java.util.Map;
+
 public record CombatMetrics(
         // === Time metrics ===
         /** Session duration in milliseconds */

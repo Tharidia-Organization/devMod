@@ -39,6 +39,7 @@ import com.devmod.DevMod;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
+
 public class GamificationManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(GamificationManager.class);
 

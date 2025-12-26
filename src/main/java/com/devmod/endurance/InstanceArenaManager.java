@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.runtime.InstanceManager;
 import com.devmod.runtime.InstanceRegistry;
+
 public class InstanceArenaManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceArenaManager.class);
     public static final InstanceArenaManager INSTANCE = new InstanceArenaManager();

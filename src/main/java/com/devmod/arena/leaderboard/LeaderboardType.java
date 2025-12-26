@@ -1,6 +1,7 @@
 package com.devmod.arena.leaderboard;
 
 import java.time.Duration;
+
 public enum LeaderboardType {
 
     /**

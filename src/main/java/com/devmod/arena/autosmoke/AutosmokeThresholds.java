@@ -3,6 +3,7 @@ package com.devmod.arena.autosmoke;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+
 public record AutosmokeThresholds(
     /** Maximum players allowed in test arena */
     int maxPlayers,

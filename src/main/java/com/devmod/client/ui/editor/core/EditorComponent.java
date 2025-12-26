@@ -1,6 +1,7 @@
 package com.devmod.client.ui.editor.core;
 
 import net.minecraft.client.gui.GuiGraphics;
+
 public interface EditorComponent {
 
     // ═══════════════════════════════════════════════════════════════

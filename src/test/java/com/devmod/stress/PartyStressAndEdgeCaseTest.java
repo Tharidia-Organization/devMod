@@ -26,20 +26,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L5: Stress & Edge Case Tests
- *
- * Tests system robustness under stress, concurrent access, and edge cases.
- *
- * Coverage:
- * 1. Concurrent party operations (thread safety)
- * 2. Rapid state transitions
- * 3. Maximum capacity scenarios
- * 4. Edge values in scaling formulas
- * 5. Memory stability under repeated operations
- * 6. Invalid input handling
- * 7. Race conditions in ready state
- */
 public class PartyStressAndEdgeCaseTest {
 
     // ============================================

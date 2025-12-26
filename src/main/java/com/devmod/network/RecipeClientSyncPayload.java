@@ -22,6 +22,7 @@ import com.devmod.recipe.RecipeData;
 import com.devmod.recipe.SmeltingRecipeData;
 import com.devmod.recipe.SmithingRecipeData;
 import com.devmod.recipe.StonecuttingRecipeData;
+
 public record RecipeClientSyncPayload(
     @Nonnull List<RecipeData> recipes,
     @Nonnull SyncOperation operation

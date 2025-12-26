@@ -22,6 +22,7 @@ import com.devmod.actions.ActionPreconditions;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
 import com.devmod.util.I18n;
+
 public class TelemetryReloadCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
@@ -409,7 +410,7 @@ public class TelemetryReloadCommand {
     }
 
     private static int exportJsonReport(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-        String path = com.devmod.telemetry.export.JsonReportExporter.exportReport();
+        @javax.annotation.Nullable String path = com.devmod.telemetry.export.JsonReportExporter.exportReport();
         if (path != null) {
             ctx.getSource().sendSuccess(() -> I18n.translate("devmod.telemetry.exported_json", path), true);
         } else {

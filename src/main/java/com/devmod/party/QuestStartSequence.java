@@ -24,6 +24,7 @@ import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.endurance.InstanceArenaManager;
 import com.devmod.endurance.QuestType;
 import com.devmod.util.I18n;
+
 public class QuestStartSequence {
     private static final Logger LOGGER = LoggerFactory.getLogger(QuestStartSequence.class);
 

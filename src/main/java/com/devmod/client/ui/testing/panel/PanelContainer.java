@@ -15,6 +15,7 @@ import static com.devmod.client.ui.testing.panel.PanelConstants.PANEL_SPACING;
 import static com.devmod.client.ui.testing.panel.PanelConstants.SCROLLBAR_PADDING;
 import static com.devmod.client.ui.testing.panel.PanelConstants.SCROLLBAR_THUMB_MIN_HEIGHT;
 import static com.devmod.client.ui.testing.panel.PanelConstants.SCROLLBAR_WIDTH;
+
 public final class PanelContainer {
 
     private final List<UIPanel> panels = new ArrayList<>();

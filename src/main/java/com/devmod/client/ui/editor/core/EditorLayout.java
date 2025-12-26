@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.client.ui.editor.EditorSection;
+
 public class EditorLayout {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EditorLayout.class);

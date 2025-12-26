@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 public final class StructureValidationInitializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StructureValidationInitializer.class);

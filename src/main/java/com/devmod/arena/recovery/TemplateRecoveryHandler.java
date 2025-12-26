@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.registry.ArenaTemplate;
+
 public class TemplateRecoveryHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateRecoveryHandler.class);

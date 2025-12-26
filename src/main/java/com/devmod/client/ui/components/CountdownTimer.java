@@ -8,6 +8,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.ui.editor.core.UIConstants;
+
 @OnlyIn(Dist.CLIENT)
 public final class CountdownTimer {
 

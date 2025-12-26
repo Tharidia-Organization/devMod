@@ -25,6 +25,7 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.network.EquipMobPayload;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public class MobEquipmentScreen extends Screen {
 

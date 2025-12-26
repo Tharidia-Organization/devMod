@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+
 public class PehkuiIntegration {
     private static final Logger LOGGER = LoggerFactory.getLogger(PehkuiIntegration.class);
 

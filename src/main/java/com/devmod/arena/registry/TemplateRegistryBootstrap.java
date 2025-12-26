@@ -16,6 +16,7 @@ import com.devmod.arena.config.FeatureFlagManager;
 import com.devmod.arena.config.FeatureFlagRegistry;
 import com.devmod.arena.config.InstanceLimitConfig;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+
 public class TemplateRegistryBootstrap implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateRegistryBootstrap.class);

@@ -3,6 +3,7 @@ package com.devmod.client.ui.editor;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
+
 public sealed interface EditorSection permits
     EditorSection.SliderSection,
     EditorSection.ToggleSection,

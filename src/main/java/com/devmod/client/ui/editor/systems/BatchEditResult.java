@@ -2,6 +2,7 @@ package com.devmod.client.ui.editor.systems;
 
 import java.util.ArrayList;
 import java.util.List;
+
 public class BatchEditResult {
     public static class FailureDetail {
         public final String itemName;

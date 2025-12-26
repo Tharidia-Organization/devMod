@@ -1,8 +1,5 @@
 package com.devmod.analysis;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -15,11 +12,11 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.fail;
 
-/**
- * Static analysis test to enforce @OnlyIn(Dist.CLIENT) on client Screen classes.
- */
 public class ClientScreenAnnotationTest {
 
     private static final Path SOURCE_ROOT = Paths.get("src/main/java/com/devmod/client");

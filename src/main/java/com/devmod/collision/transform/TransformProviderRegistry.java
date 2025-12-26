@@ -5,6 +5,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 import net.neoforged.fml.loading.FMLEnvironment;
+
 public final class TransformProviderRegistry {
 
     private TransformProviderRegistry() {} // Utility class

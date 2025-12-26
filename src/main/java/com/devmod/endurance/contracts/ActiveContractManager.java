@@ -23,6 +23,7 @@ import net.minecraft.sounds.SoundSource;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceEventCombat;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
+
 public final class ActiveContractManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ActiveContractManager.class);

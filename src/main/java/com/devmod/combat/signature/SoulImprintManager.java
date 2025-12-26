@@ -19,6 +19,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 
 import static java.util.Objects.requireNonNull;
+
 public class SoulImprintManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SoulImprintManager.class);

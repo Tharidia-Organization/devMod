@@ -30,6 +30,7 @@ import net.minecraft.world.level.Level;
 
 import com.devmod.DevMod;
 import com.devmod.util.ConfigPaths;
+
 public class RecoverySystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(RecoverySystem.class);
     public static final RecoverySystem INSTANCE = new RecoverySystem();

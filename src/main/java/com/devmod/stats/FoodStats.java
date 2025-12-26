@@ -7,6 +7,7 @@ import java.util.Objects;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+
 public class FoodStats {
 
     // ═══════════════════════════════════════════════════════════════

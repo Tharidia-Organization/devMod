@@ -3,12 +3,15 @@ package com.devmod.telemetry.room;
 import java.util.List;
 import java.util.Optional;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 
 import com.devmod.telemetry.RoomDefinition;
 import com.devmod.telemetry.TelemetryConfig;
+
 public class RoomService {
     public static final RoomService INSTANCE = new RoomService();
 
@@ -81,6 +84,7 @@ public class RoomService {
      * @param pos Block position
      * @return RoomDefinition if found, null otherwise
      */
+    @Nullable
     public RoomDefinition findRoom(ServerLevel level, BlockPos pos) {
         for (RoomDefinition def : rooms) {
             if (def.contains(level, pos)) {

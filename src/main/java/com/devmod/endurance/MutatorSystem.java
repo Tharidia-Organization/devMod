@@ -22,6 +22,7 @@ import net.minecraft.world.level.Level;
 
 import com.devmod.arena.policy.ArenaPolicy;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
+
 public class MutatorSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(MutatorSystem.class);
 

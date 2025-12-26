@@ -23,6 +23,7 @@ import com.devmod.DevMod;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.party.ArrivalConfirmPayload;
 import com.devmod.party.QuestSequencePayload;
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class QuestSequenceOverlay {
 

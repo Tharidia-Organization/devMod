@@ -20,6 +20,7 @@ import com.devmod.client.ui.editor.core.EditorCache;
 import com.devmod.client.ui.editor.core.EditorConstants;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public abstract class AbstractEditorModule implements EditorModule {
 
     // ═══════════════════════════════════════════════════════════════

@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
+import javax.annotation.Nullable;
 import javax.imageio.ImageIO;
 
 import org.slf4j.Logger;
@@ -22,6 +23,7 @@ import net.minecraft.core.BlockPos;
 
 import com.devmod.telemetry.spatial.HeatmapService;
 import com.devmod.util.ConfigPaths;
+
 public class HeatmapExporter {
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -91,7 +93,7 @@ public class HeatmapExporter {
 
             if (data.isEmpty()) continue;
 
-            BufferedImage image = renderHeatmap(name, room, data);
+            @Nullable BufferedImage image = renderHeatmap(name, room, data);
             if (image == null) continue;
 
             // Sanitize room name for filename
@@ -114,7 +116,7 @@ public class HeatmapExporter {
     /**
      * Renders a heatmap to a BufferedImage.
      */
-    private static BufferedImage renderHeatmap(String name, String room, Map<BlockPos, Integer> data) {
+    private static @Nullable BufferedImage renderHeatmap(String name, String room, Map<BlockPos, Integer> data) {
         if (data.isEmpty()) return null;
 
         // Find bounds

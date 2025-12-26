@@ -18,6 +18,7 @@ import com.devmod.client.panels.core.FloatingPanel;
 import com.devmod.client.panels.core.PanelType;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.hub.ToolType;
+
 public class ToolStatusPanel extends FloatingPanel {
 
     // Tool states cache

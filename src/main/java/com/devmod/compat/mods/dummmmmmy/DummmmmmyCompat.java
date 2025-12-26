@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -24,6 +26,7 @@ import net.minecraft.world.entity.LivingEntity;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class DummmmmmyCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(DummmmmmyCompat.class);
     public static final String MOD_ID = "dummmmmmy";
@@ -41,6 +44,8 @@ public class DummmmmmyCompat implements CompatModule {
     // Track spawned dummies for Arena
     private static final Map<String, UUID> spawnedDummies = new HashMap<>();
     private static final String DEVMOD_TAG = "devmod_arena_dummy";
+    private static final ResourceLocation DUMMY_ENTITY_ID =
+        ResourceLocation.fromNamespaceAndPath(MOD_ID, "dummy");
 
     @Override
     public String modId() {
@@ -182,16 +187,15 @@ public class DummmmmmyCompat implements CompatModule {
      */
     @Nullable
     public static UUID spawnDummy(ServerLevel level, BlockPos pos, String dummyId) {
-        if (!available || level == null || pos == null) {
+        if (!available || level == null || pos == null || dummyId == null || dummyId.isBlank()) {
             return null;
         }
 
         try {
             // Find dummy entity type
-            ResourceLocation dummyTypeRl = ResourceLocation.parse("dummmmmmy:dummy");
             Optional<EntityType<?>> entityTypeOpt = level.registryAccess()
-                .registryOrThrow(net.minecraft.core.registries.Registries.ENTITY_TYPE)
-                .getOptional(dummyTypeRl);
+                .registryOrThrow(Objects.requireNonNull(Registries.ENTITY_TYPE, "Registries.ENTITY_TYPE"))
+                .getOptional(DUMMY_ENTITY_ID);
 
             if (entityTypeOpt.isEmpty()) {
                 LOGGER.debug("[Compat:dummmmmmy] Could not find dummy entity type");
@@ -212,7 +216,7 @@ public class DummmmmmyCompat implements CompatModule {
 
             // Spawn the entity
             if (level.addFreshEntity(dummy)) {
-                UUID uuid = dummy.getUUID();
+                UUID uuid = Objects.requireNonNull(dummy.getUUID(), "dummy uuid");
                 spawnedDummies.put(dummyId, uuid);
                 LOGGER.debug("[Compat:dummmmmmy] Spawned dummy at {} with UUID {}", pos, uuid);
                 return uuid;
@@ -300,6 +304,9 @@ public class DummmmmmyCompat implements CompatModule {
      * @return true if removed
      */
     public static boolean removeDummy(ServerLevel level, String dummyId) {
+        if (dummyId == null || dummyId.isBlank()) {
+            return false;
+        }
         UUID uuid = spawnedDummies.remove(dummyId);
         if (uuid == null || level == null) {
             return false;
@@ -328,11 +335,16 @@ public class DummmmmmyCompat implements CompatModule {
         if (level != null) {
             for (UUID uuid : spawnedDummies.values()) {
                 try {
+                    if (uuid == null) {
+                        continue;
+                    }
                     Entity entity = level.getEntity(uuid);
                     if (entity != null) {
                         entity.discard();
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception e) {
+                    LOGGER.debug("[Compat:dummmmmmy] Error removing dummy: {}", e.getMessage());
+                }
             }
         }
 

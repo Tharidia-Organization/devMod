@@ -1,9 +1,11 @@
 package com.devmod.client.testing;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -17,6 +19,7 @@ import com.devmod.client.overlay.BadgePopupOverlay;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.endurance.GamificationManager.BadgeRarity;
+
 @OnlyIn(Dist.CLIENT)
 public class BadgeTestScreen extends Screen {
 
@@ -43,7 +46,7 @@ public class BadgeTestScreen extends Screen {
     @Nonnull
     private static PositionedButton createButton(String id, Component text, Runnable onPress,
                                        int x, int y, int width, int height,
-                                       EditorButton.Style style, Integer accent) {
+                                       EditorButton.Style style, @Nullable Integer accent) {
         EditorButton.Builder builder = EditorButton.builder(id, Objects.requireNonNull(text).getString())
             .style(style)
             .size(EditorButton.Size.LARGE)

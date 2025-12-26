@@ -28,6 +28,7 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.BaseOverlay;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public class CraftingInfoPanel extends BaseOverlay {
 
     public record IngredientValue(ItemStack item, int count, RarityTier rarity, int value) {}

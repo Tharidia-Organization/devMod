@@ -15,6 +15,7 @@ import net.minecraft.world.level.Level;
 
 import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+
 public class InstanceOnlyGate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceOnlyGate.class);

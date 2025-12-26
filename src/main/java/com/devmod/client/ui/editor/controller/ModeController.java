@@ -9,6 +9,7 @@ import com.devmod.client.ui.editor.EditorModule;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.editor.state.ItemEditorState;
 import com.devmod.config.EditorClientConfig;
+
 @OnlyIn(Dist.CLIENT)
 public final class ModeController {
 

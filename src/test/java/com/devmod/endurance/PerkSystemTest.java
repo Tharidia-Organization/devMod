@@ -29,19 +29,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L1-L5 Progressive Test Suite for PerkSystem
- *
- * Tests the roguelike perk system for Endurance Quests.
- * Simulates actual perk mechanics without Minecraft dependencies.
- *
- * Test coverage:
- * L1: PerkTier, PerkCategory, Perk structure
- * L2: PerkSession management, stat modifiers
- * L3: Perk selection, weighted randomness, synergies
- * L4: Stacking mechanics, curse system
- * L5: Stress testing, concurrency
- */
 public class PerkSystemTest {
 
     // ============================================

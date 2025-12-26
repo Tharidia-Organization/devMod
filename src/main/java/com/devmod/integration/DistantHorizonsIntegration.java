@@ -12,6 +12,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 
 import net.neoforged.fml.ModList;
+
 public class DistantHorizonsIntegration {
     private static final Logger LOGGER = LoggerFactory.getLogger(DistantHorizonsIntegration.class);
 

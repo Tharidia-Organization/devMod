@@ -15,6 +15,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.combat.signature.SoulImprint;
 import com.devmod.combat.signature.WeaponTrait;
+
 @OnlyIn(Dist.CLIENT)
 public class SignatureWeaponTooltip {
 

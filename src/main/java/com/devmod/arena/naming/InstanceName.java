@@ -2,6 +2,7 @@ package com.devmod.arena.naming;
 
 import java.util.Random;
 import java.util.regex.Pattern;
+
 public record InstanceName(String value) {
 
     private static final int MIN_LENGTH = 3;  // DD26: minimum length

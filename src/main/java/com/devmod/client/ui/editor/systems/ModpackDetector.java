@@ -18,6 +18,7 @@ import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforgespi.language.IModInfo;
 
 import com.devmod.DevMod;
+
 public final class ModpackDetector {
 
     // Known modpack signatures: modpack ID -> required mod IDs

@@ -11,6 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
+
 public record GlobalConfigSyncPayload(
     CompoundTag armorConfigs,
     CompoundTag weaponConfigs

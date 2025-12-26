@@ -11,6 +11,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 import com.devmod.client.ui.editor.ItemEditorDataManager;
+
 public class DataPreset implements Preset {
     private final ItemEditorDataManager.PresetData data;
 

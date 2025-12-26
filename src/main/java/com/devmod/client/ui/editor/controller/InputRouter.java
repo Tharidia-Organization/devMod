@@ -25,6 +25,7 @@ import com.devmod.client.ui.editor.systems.MultiEditManager;
 import com.devmod.client.ui.editor.systems.MultiEditPanel;
 import com.devmod.client.ui.editor.systems.PresetSelectorOverlay;
 import com.devmod.client.ui.editor.systems.TemplateOverlay;
+
 @OnlyIn(Dist.CLIENT)
 public final class InputRouter {
 

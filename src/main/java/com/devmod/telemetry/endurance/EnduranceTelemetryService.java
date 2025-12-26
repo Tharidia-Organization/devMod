@@ -28,6 +28,7 @@ import com.devmod.endurance.WaveManager;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.duckdb.DuckDBConfig;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
+
 public class EnduranceTelemetryService {
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -220,7 +221,7 @@ public class EnduranceTelemetryService {
     }
 
     private void recordArenaSpatialEvent(String eventType, UUID questId, ArenaHandle handle,
-                                         BlockPos pos, UUID playerId) {
+                                         BlockPos pos, @javax.annotation.Nullable UUID playerId) {
         if (handle == null || pos == null || handle.bounds() == null) {
             return;
         }
@@ -1141,9 +1142,10 @@ public class EnduranceTelemetryService {
         );
 
         // DuckDB: Primary storage
-        if (stats != null && stats.startTs != null) {
+        if (stats != null && stats.startTs != null && stats.playerId != null) {
+            UUID playerId = stats.playerId;
             DuckDBTelemetryService.INSTANCE.logSessionEnd(
-                trackedQuestId, stats.playerId, null,
+                trackedQuestId, playerId, null,
                 stats.questName, stats.questType, stats.totalWaves,
                 stats.isEndless, stats.playerCount, stats.startTs,
                 outcome.name(), trackedWaves, totalKills,
@@ -1209,7 +1211,7 @@ public class EnduranceTelemetryService {
         return questStats.computeIfAbsent(questId, id -> new QuestSessionStats(id, null));
     }
 
-    private static void appendContext(StringBuilder json, QuestSessionStats stats) {
+    private static void appendContext(StringBuilder json, @javax.annotation.Nullable QuestSessionStats stats) {
         json.append(",\"templateId\":\"").append(escape(stats != null ? stats.templateId : null)).append("\"");
         Integer templateVersion = stats != null ? stats.templateVersion : null;
         json.append(",\"templateVersion\":").append(templateVersion != null ? templateVersion.intValue() : 0);
@@ -1227,7 +1229,7 @@ public class EnduranceTelemetryService {
      */
     private static class QuestSessionStats {
         final UUID questId;
-        final UUID playerId;
+        final @javax.annotation.Nullable UUID playerId;
         int wavesCompleted = 0;
         int noDamageWaves = 0;
         final Map<PerkSystem.PerkTier, Integer> perksByTier = new EnumMap<>(PerkSystem.PerkTier.class);
@@ -1243,20 +1245,20 @@ public class EnduranceTelemetryService {
         int waveBlockedDetected = 0;
 
         // Additional fields for DuckDB session end tracking
-        String questName;
-        String questType;
+        @javax.annotation.Nullable String questName;
+        @javax.annotation.Nullable String questType;
         int totalWaves;
         boolean isEndless;
         int playerCount;
-        Instant startTs;
-        String templateId;
-        Integer templateVersion;
-        String policyId;
-        Integer policyVersion;
-        UUID instanceId;
-        UUID arenaId;
+        @javax.annotation.Nullable Instant startTs;
+        @javax.annotation.Nullable String templateId;
+        @javax.annotation.Nullable Integer templateVersion;
+        @javax.annotation.Nullable String policyId;
+        @javax.annotation.Nullable Integer policyVersion;
+        @javax.annotation.Nullable UUID instanceId;
+        @javax.annotation.Nullable UUID arenaId;
 
-        QuestSessionStats(UUID questId, UUID playerId) {
+        QuestSessionStats(UUID questId, @javax.annotation.Nullable UUID playerId) {
             this.questId = questId;
             this.playerId = playerId;
         }
@@ -1330,7 +1332,7 @@ public class EnduranceTelemetryService {
 
     // ===== UTILITIES =====
 
-    private static String escape(String s) {
+    private static String escape(@javax.annotation.Nullable String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\")
                 .replace("\"", "\\\"")

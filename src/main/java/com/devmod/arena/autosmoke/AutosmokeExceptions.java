@@ -3,6 +3,7 @@ package com.devmod.arena.autosmoke;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
 public class AutosmokeExceptions {
 
     private static final AutosmokeExceptions INSTANCE = new AutosmokeExceptions();

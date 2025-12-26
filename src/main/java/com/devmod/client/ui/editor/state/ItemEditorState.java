@@ -13,6 +13,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.ui.editor.EditorModule;
 import com.devmod.client.ui.editor.components.SlotSelector;
+
 @OnlyIn(Dist.CLIENT)
 public final class ItemEditorState {
 

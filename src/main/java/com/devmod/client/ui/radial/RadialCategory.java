@@ -6,6 +6,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import net.minecraft.world.item.ItemStack;
+
 public class RadialCategory {
     private final String id;
     private final String name;

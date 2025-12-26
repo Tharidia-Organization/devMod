@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
+
 public final class ArenaRecords {
 
     private ArenaRecords() {}

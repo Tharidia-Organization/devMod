@@ -10,6 +10,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.stats.ArmorStats;
+
 public record UpdateArmorPayload(
     boolean isGlobal,           // true = global config, false = specific item
     int slot,                   // Equipment slot index (0=HEAD, 1=CHEST, 2=LEGS, 3=FEET)

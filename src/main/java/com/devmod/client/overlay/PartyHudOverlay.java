@@ -20,6 +20,7 @@ import com.devmod.client.party.ClientPartyCache;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.party.PartyData;
 import com.devmod.party.PartySyncPayload;
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class PartyHudOverlay {

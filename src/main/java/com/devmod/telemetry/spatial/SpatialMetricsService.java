@@ -16,6 +16,7 @@ import net.minecraft.world.entity.LivingEntity;
 import com.devmod.telemetry.RoomDefinition;
 import com.devmod.telemetry.TelemetryJson;
 import com.devmod.telemetry.room.RoomService;
+
 public class SpatialMetricsService {
     public static final SpatialMetricsService INSTANCE = new SpatialMetricsService();
 

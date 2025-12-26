@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -13,6 +14,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.annotation.Nullable;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,10 +27,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for the Recipe System.
- * Tests RecipeData types, validation, serialization, and thread safety.
- */
 public class RecipeSystemTest {
 
     // ═══════════════════════════════════════════════════════════════
@@ -78,9 +77,9 @@ public class RecipeSystemTest {
      * Mock IngredientData for testing.
      */
     record MockIngredientData(
-        MockResourceLocation item,
-        String tag,
-        List<MockResourceLocation> alternatives,
+        @Nullable MockResourceLocation item,
+        @Nullable String tag,
+        @Nullable List<MockResourceLocation> alternatives,
         int count
     ) {
         public static MockIngredientData empty() {
@@ -200,7 +199,7 @@ public class RecipeSystemTest {
             assertFalse(item.isEmpty());
             assertTrue(item.isItem());
             assertFalse(item.isTag());
-            assertEquals("minecraft:diamond", item.item().toString());
+            assertEquals("minecraft:diamond", Objects.requireNonNull(item.item()).toString());
         }
 
         @Test
@@ -310,7 +309,7 @@ public class RecipeSystemTest {
         @DisplayName("All recipe categories should be valid")
         void testAllCategories(RecipeCategory category) {
             MockCraftingRecipeData recipe = new MockCraftingRecipeData(
-                MockResourceLocation.parse("devmod:test_" + category.name().toLowerCase()),
+                MockResourceLocation.parse("devmod:test_" + category.name().toLowerCase(Locale.ROOT)),
                 CraftingType.SHAPED,
                 List.of(MockIngredientData.ofItem("minecraft:stone")),
                 MockResultData.of("minecraft:cobblestone"),

@@ -16,6 +16,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
 
 import com.devmod.config.GameMechanicsConfig;
+
 public record GameMechanicsSyncPayload(
     CompoundTag mechanicsConfig,
     @Nullable UUID questId,

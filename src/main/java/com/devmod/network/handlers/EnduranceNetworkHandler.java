@@ -46,6 +46,7 @@ import com.devmod.network.NetworkHandler;
 import com.devmod.network.PacketValidator;
 import com.devmod.network.PacketValidator.ValidationResult;
 import com.devmod.util.I18n;
+
 public final class EnduranceNetworkHandler extends NetworkHandlerBase {
 
     private EnduranceNetworkHandler() {}

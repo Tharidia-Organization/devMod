@@ -17,6 +17,7 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.config.GameMechanicsConfig;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public class EnduranceSettingsScreen extends Screen {
 

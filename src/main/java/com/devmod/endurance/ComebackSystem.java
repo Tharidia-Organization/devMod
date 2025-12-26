@@ -12,6 +12,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+
 public class ComebackSystem {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ComebackSystem.class);

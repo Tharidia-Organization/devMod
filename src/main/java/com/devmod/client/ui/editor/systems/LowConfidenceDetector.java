@@ -19,6 +19,7 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.editor.modules.RangedModule;
 import com.devmod.client.ui.editor.modules.WeaponModule;
 import com.devmod.config.EditorClientConfig;
+
 public final class LowConfidenceDetector extends BaseOverlay {
 
     // Dialog dimensions

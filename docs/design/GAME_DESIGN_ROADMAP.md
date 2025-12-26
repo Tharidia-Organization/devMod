@@ -19,15 +19,15 @@
 - [x] Implement STALE detection (3+ same action = -50% style)
 - [x] Implement FRESH bonus (+25% for new actions)
 - [x] Implement VIRTUOSO state (5+ unique = 2x multiplier)
-- [x] Integrate with existing `ComboSession`
+- [x] Integrate with existing `ComboSystem.ComboSession`
 - [x] Add HUD indicator for Flow State
 - [ ] Add config options for thresholds
 
 **Files to modify**:
-- `src/main/java/com/devmod/combat/combo/ComboSession.java`
-- `src/main/java/com/devmod/combat/combo/ActionType.java`
-- NEW: `src/main/java/com/devmod/combat/combo/FlowStateTracker.java`
-- `src/main/java/com/devmod/client/overlay/ComboHudOverlay.java`
+- `src/main/java/com/devmod/endurance/ComboSystem.java` (inner `ComboSession`)
+- `src/main/java/com/devmod/actions/ActionType.java`
+- NEW: `src/main/java/com/devmod/endurance/FlowStateTracker.java`
+- `src/main/java/com/devmod/client/overlay/ComboDecayOverlay.java`
 
 ---
 
@@ -46,7 +46,7 @@
 - [ ] Add sound/visual cues for state changes
 
 **Files to modify**:
-- NEW: `src/main/java/com/devmod/combat/MomentumTracker.java`
+- NEW: `src/main/java/com/devmod/endurance/MomentumTracker.java`
 - `src/main/java/com/devmod/endurance/EnduranceEventHandler.java`
 - `src/main/java/com/devmod/client/overlay/EnduranceQuestOverlay.java`
 

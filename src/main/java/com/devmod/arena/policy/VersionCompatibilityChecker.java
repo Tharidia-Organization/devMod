@@ -1,6 +1,7 @@
 package com.devmod.arena.policy;
 
 import com.devmod.arena.registry.ArenaTemplate;
+
 public class VersionCompatibilityChecker {
 
     public record VersionCheck(boolean compatible, String reason) {

@@ -11,9 +11,12 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+
 public class FightSessionService {
     public static final FightSessionService INSTANCE = new FightSessionService();
 
@@ -219,11 +222,17 @@ public class FightSessionService {
         int hits;
         int mobKills;
         int playerDeaths;
+        @Nullable
         String templateId;
+        @Nullable
         Integer templateVersion;
+        @Nullable
         String policyId;
+        @Nullable
         Integer policyVersion;
+        @Nullable
         UUID arenaId;
+        @Nullable
         UUID sessionId;
         final Set<String> players = new HashSet<>();
         final Map<String, Integer> mobKillsByType = new HashMap<>();
@@ -277,12 +286,12 @@ public class FightSessionService {
      * Optional arena context attached to combat events.
      */
     public record CombatContext(
-        String templateId,
-        Integer templateVersion,
-        String policyId,
-        Integer policyVersion,
-        UUID arenaId,
-        UUID sessionId
+        @Nullable String templateId,
+        @Nullable Integer templateVersion,
+        @Nullable String policyId,
+        @Nullable Integer policyVersion,
+        @Nullable UUID arenaId,
+        @Nullable UUID sessionId
     ) {}
 
     /**
@@ -311,12 +320,12 @@ public class FightSessionService {
     public record FightSessionResult(
         String room,
         String worldId,
-        String templateId,
-        Integer templateVersion,
-        String policyId,
-        Integer policyVersion,
-        UUID arenaId,
-        UUID sessionId,
+        @Nullable String templateId,
+        @Nullable Integer templateVersion,
+        @Nullable String policyId,
+        @Nullable Integer policyVersion,
+        @Nullable UUID arenaId,
+        @Nullable UUID sessionId,
         long startMs,
         long endMs,
         int hits,

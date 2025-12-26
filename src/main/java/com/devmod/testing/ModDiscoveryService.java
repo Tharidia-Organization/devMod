@@ -18,6 +18,7 @@ import net.minecraft.world.item.Item;
 
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforgespi.language.IModInfo;
+
 public class ModDiscoveryService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModDiscoveryService.class);
 

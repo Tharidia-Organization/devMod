@@ -24,6 +24,7 @@ import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public final class EnchantmentListSection implements EditorSection.CustomSection {
 
     private static final int HEADER_HEIGHT = EditorDimensions.SECTION_HEADER_HEIGHT;

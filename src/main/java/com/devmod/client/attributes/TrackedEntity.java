@@ -17,6 +17,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.integration.ModIntegrationManager;
+
 @OnlyIn(Dist.CLIENT)
 public class TrackedEntity {
 

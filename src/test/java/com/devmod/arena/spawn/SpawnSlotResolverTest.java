@@ -1,19 +1,15 @@
 package com.devmod.arena.spawn;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for SpawnSlotResolver.
- * DD47: LOS check, forbidden zone rejection.
- */
 @DisplayName("SpawnSlotResolver Tests")
 class SpawnSlotResolverTest {
 

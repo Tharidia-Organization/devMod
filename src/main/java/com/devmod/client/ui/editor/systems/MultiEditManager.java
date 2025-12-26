@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.item.ItemStack;
+
 public class MultiEditManager {
 
     private static final long BATCH_TIMEOUT_MS = 5000; // 5 seconds max for batch operations

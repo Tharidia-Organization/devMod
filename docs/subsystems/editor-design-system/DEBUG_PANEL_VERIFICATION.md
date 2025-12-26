@@ -2,7 +2,7 @@
 
 This document verifies that the implementation of the Debug Panel aligns with the specifications laid out in `04-debug-system.md` and `17-implementation-guide.md`.
 
-The primary implementation is located in `src/main/java/com/frenkvs/devmod/ui/editor/debug/DebugInfoSection.java`.
+The primary implementation is located in `src/main/java/com/devmod/client/ui/editor/debug/DebugInfoSection.java`.
 
 ---
 

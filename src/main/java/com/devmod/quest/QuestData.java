@@ -2,6 +2,9 @@ package com.devmod.quest;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.annotation.Nullable;
+
 public class QuestData {
 
     /**
@@ -20,6 +23,7 @@ public class QuestData {
 
     // Endurance quest specific fields
     private QuestType questType = QuestType.MANUAL;
+    @Nullable
     private String targetMobId;        // For endurance quests: the mob to fight
     private int totalWaves;            // Total waves configured
     private int currentWave;           // Current wave (0-based)
@@ -66,6 +70,7 @@ public class QuestData {
     /**
      * Returns the current task (next to complete).
      */
+    @Nullable
     public QuestTask getCurrentTask() {
         if (tasks.isEmpty() || currentTaskIndex >= tasks.size()) {
             return null;
@@ -190,6 +195,7 @@ public class QuestData {
         return questType == QuestType.ENDURANCE;
     }
 
+    @Nullable
     public String getTargetMobId() {
         return targetMobId;
     }

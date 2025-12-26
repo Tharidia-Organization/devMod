@@ -1,4 +1,5 @@
 package com.devmod.client.ui;
+
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
@@ -8,6 +9,7 @@ import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +40,7 @@ import com.devmod.telemetry.RoomDefinition;
 import com.devmod.telemetry.TelemetryConfig;
 import com.devmod.util.ConfigPaths;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public class RoomBoundsEditorScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomBoundsEditorScreen.class);
@@ -62,24 +65,36 @@ public class RoomBoundsEditorScreen extends Screen {
     // 1. Aprire schermata → Set Point A → Chiudere
     // 2. Camminare all'altro angolo
     // 3. Riaprire schermata → Set Point B → Salvare
+    @Nullable
     private static BlockPos pointA = null;
+    @Nullable
     private static BlockPos pointB = null;
     private static String pendingRoomName = "new_room";
     private String currentDimension = "minecraft:overworld";
     private List<RoomDefinition> existingRooms = new ArrayList<>();
 
     // === Widgets ===
+    @Nullable
     private EditBox roomNameBox;
+    @Nullable
     private EditorButton setPointAButton;
+    @Nullable
     private EditorButton setPointBButton;
+    @Nullable
     private EditorButton saveButton;
+    @Nullable
     private EditorButton cancelButton;
+    @Nullable
     private EditorButton deleteLastButton;
 
     // Modal overlays
+    @Nullable
     private ConfirmDialog deleteDialog;
+    @Nullable
     private ConfirmDialog overwriteDialog;
+    @Nullable
     private RoomDefinition pendingDeleteRoom;
+    @Nullable
     private RoomDefinition pendingSaveRoom;
 
     // === Messages ===
@@ -225,6 +240,10 @@ public class RoomBoundsEditorScreen extends Screen {
         existingRooms = new ArrayList<>(config.loadRooms());
     }
 
+    private EditBox requireRoomNameBox() {
+        return Objects.requireNonNull(roomNameBox, "roomNameBox");
+    }
+
     private void setPointA() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
@@ -256,6 +275,7 @@ public class RoomBoundsEditorScreen extends Screen {
     private void updateVisualizerPreview() {
         if (pointA != null && pointB != null) {
             // Add preview room to visualizer
+            EditBox roomNameBox = requireRoomNameBox();
             String previewId = "_preview_" + roomNameBox.getValue();
             RoomBoundsVisualizer.INSTANCE.addRoom(previewId, pointA, pointB);
 
@@ -267,6 +287,7 @@ public class RoomBoundsEditorScreen extends Screen {
     }
 
     private void saveRoom() {
+        EditBox roomNameBox = requireRoomNameBox();
         String roomName = roomNameBox.getValue().trim();
 
         // Validation
@@ -306,6 +327,7 @@ public class RoomBoundsEditorScreen extends Screen {
 
         if (existing != null) {
             pendingSaveRoom = newRoom;
+            ConfirmDialog overwriteDialog = Objects.requireNonNull(this.overwriteDialog, "overwriteDialog");
             overwriteDialog.configure(
                 "Overwrite room '" + roomName + "'?",
                 List.of(
@@ -327,6 +349,7 @@ public class RoomBoundsEditorScreen extends Screen {
         }
 
         pendingDeleteRoom = existingRooms.get(existingRooms.size() - 1);
+        ConfirmDialog deleteDialog = Objects.requireNonNull(this.deleteDialog, "deleteDialog");
         deleteDialog.configure(
             "Delete room '" + pendingDeleteRoom.id() + "'?",
             List.of(
@@ -512,6 +535,7 @@ public class RoomBoundsEditorScreen extends Screen {
             return deleteLastRoomWithoutScreen(context);
         }
 
+        @Nullable
         private static RoomBoundsEditorScreen getOpenScreen() {
             Screen screen = Minecraft.getInstance().screen;
             if (screen instanceof RoomBoundsEditorScreen editor) {

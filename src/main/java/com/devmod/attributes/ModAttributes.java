@@ -8,6 +8,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
+
 public final class ModAttributes {
     private ModAttributes() {}
 

@@ -1,23 +1,19 @@
 package com.devmod;
 
-import org.junit.jupiter.api.Test;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Nullable;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for tutorial and progression system.
- * Tests XP system, level progression, and achievements.
- */
 public class TutorialManagerTest {
 
     /**
@@ -134,8 +130,8 @@ public class TutorialManagerTest {
         private final List<MockTutorialStep> steps = new ArrayList<>();
         private final List<MockAchievement> achievements = new ArrayList<>();
         private final MockXPSystem xpSystem = new MockXPSystem();
-        private final AtomicInteger currentStepIndex = new AtomicInteger(0);
-        private final AtomicBoolean tutorialActive = new AtomicBoolean(true);
+        private int currentStepIndex = 0;
+        private boolean tutorialActive = true;
 
         public void addStep(MockTutorialStep step) {
             steps.add(step);
@@ -145,8 +141,8 @@ public class TutorialManagerTest {
             achievements.add(achievement);
         }
 
-        public MockTutorialStep getCurrentStep() {
-            int index = currentStepIndex.get();
+        public @Nullable MockTutorialStep getCurrentStep() {
+            int index = currentStepIndex;
             if (index >= 0 && index < steps.size()) {
                 return steps.get(index);
             }
@@ -157,9 +153,9 @@ public class TutorialManagerTest {
             MockTutorialStep current = getCurrentStep();
             if (current != null) {
                 current.complete();
-                int nextIndex = currentStepIndex.incrementAndGet();
+                int nextIndex = ++currentStepIndex;
                 if (nextIndex >= steps.size()) {
-                    tutorialActive.set(false);
+                    tutorialActive = false;
                     return false;
                 }
                 return true;
@@ -170,7 +166,7 @@ public class TutorialManagerTest {
         public boolean skipToStep(String stepId) {
             for (int i = 0; i < steps.size(); i++) {
                 if (steps.get(i).getId().equals(stepId)) {
-                    currentStepIndex.set(i);
+                    currentStepIndex = i;
                     return true;
                 }
             }
@@ -178,8 +174,8 @@ public class TutorialManagerTest {
         }
 
         public void reset() {
-            currentStepIndex.set(0);
-            tutorialActive.set(true);
+            currentStepIndex = 0;
+            tutorialActive = true;
             steps.forEach(MockTutorialStep::reset);
             achievements.forEach(MockAchievement::reset);
         }
@@ -209,7 +205,7 @@ public class TutorialManagerTest {
         }
 
         public boolean isTutorialComplete() {
-            return !tutorialActive.get() || currentStepIndex.get() >= steps.size();
+            return !tutorialActive || currentStepIndex >= steps.size();
         }
 
         public MockXPSystem getXPSystem() { return xpSystem; }
@@ -326,14 +322,18 @@ public class TutorialManagerTest {
         @Test
         @DisplayName("Start at first step")
         void testStartAtFirstStep() {
-            assertEquals("intro", tutorialManager.getCurrentStep().getId());
+            MockTutorialStep current = tutorialManager.getCurrentStep();
+            assertNotNull(current);
+            assertEquals("intro", current.getId());
         }
 
         @Test
         @DisplayName("Advance to next step")
         void testAdvanceStep() {
             tutorialManager.advanceStep();
-            assertEquals("combat", tutorialManager.getCurrentStep().getId());
+            MockTutorialStep current = tutorialManager.getCurrentStep();
+            assertNotNull(current);
+            assertEquals("combat", current.getId());
         }
 
         @Test
@@ -357,7 +357,9 @@ public class TutorialManagerTest {
         @DisplayName("Skip to specific step")
         void testSkipToStep() {
             assertTrue(tutorialManager.skipToStep("advanced"));
-            assertEquals("advanced", tutorialManager.getCurrentStep().getId());
+            MockTutorialStep current = tutorialManager.getCurrentStep();
+            assertNotNull(current);
+            assertEquals("advanced", current.getId());
         }
 
         @Test
@@ -385,7 +387,9 @@ public class TutorialManagerTest {
             tutorialManager.advanceStep();
             tutorialManager.reset();
 
-            assertEquals("intro", tutorialManager.getCurrentStep().getId());
+            MockTutorialStep current = tutorialManager.getCurrentStep();
+            assertNotNull(current);
+            assertEquals("intro", current.getId());
             assertEquals(0, tutorialManager.getCompletedStepsCount());
         }
     }

@@ -3,6 +3,7 @@ package com.devmod.client.ui.editor.debug;
 import java.util.List;
 
 import com.devmod.client.ui.editor.core.Bounds;
+
 public interface DebugReporter {
 
     /**

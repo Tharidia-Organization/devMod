@@ -8,6 +8,7 @@ import com.devmod.network.NetworkHandler;
 import com.devmod.network.ShieldImpactPayload;
 import com.devmod.network.ShieldShatterPayload;
 import com.devmod.network.ShieldStatePayload;
+
 public final class ShieldNetworkHandler extends NetworkHandlerBase {
 
     private ShieldNetworkHandler() {}

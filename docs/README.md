@@ -17,6 +17,7 @@
 - [[DOCUMENTATION_STATUS]] - Status by area and cleanup backlog
 - [[DOCS_GUIDE]] - Where docs live and how to update them
 - [[DOCS_VERIFICATION_REPORT]] - Automated link/path checks
+- [[DOCS_BEHAVIOR_MATRIX]] - Behavior-to-test alignment tracking
 
 ## Area Dossiers (core systems)
 - [[areas/arena/README]] - Arena templates and lifecycle

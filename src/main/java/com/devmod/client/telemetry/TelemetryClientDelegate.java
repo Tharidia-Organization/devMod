@@ -1,6 +1,7 @@
 package com.devmod.client.telemetry;
 
 import net.minecraft.client.Minecraft;
+
 public final class TelemetryClientDelegate {
 
     private TelemetryClientDelegate() {}

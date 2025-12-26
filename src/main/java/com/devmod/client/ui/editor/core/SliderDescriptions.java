@@ -3,6 +3,7 @@ package com.devmod.client.ui.editor.core;
 import java.util.Objects;
 
 import net.minecraft.client.resources.language.I18n;
+
 public final class SliderDescriptions {
 
     private SliderDescriptions() {} // Utility class

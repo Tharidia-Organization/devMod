@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.junit.jupiter.api.DisplayName;
@@ -13,16 +14,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L1 Keybind System Validation Tests.
- *
- * Validates:
- * - All keybinds are properly defined
- * - No duplicate key assignments (conflicts)
- * - Key categories are organized correctly
- * - Keybind naming conventions followed
- * - All expected keybinds are present
- */
 @DisplayName("L1: Keybind System Validation")
 class KeybindSystemValidationTest {
 
@@ -119,6 +110,11 @@ class KeybindSystemValidationTest {
 
         // Effects
         EXPECTED_KEYBINDS.put("TEST_SCREEN_SHAKE_KEY", GLFW_KEY_0);
+    }
+
+    private static int requireKey(String keyName) {
+        Integer key = EXPECTED_KEYBINDS.get(keyName);
+        return Objects.requireNonNull(key, "Missing keybind: " + keyName);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -327,12 +323,12 @@ class KeybindSystemValidationTest {
         void questSystemUsesContiguousKeys() {
             // Quest keys should be grouped together
             List<Integer> questKeys = List.of(
-                EXPECTED_KEYBINDS.get("TOGGLE_QUEST_HUD_KEY"),
-                EXPECTED_KEYBINDS.get("QUEST_COMPLETE_TASK_KEY"),
-                EXPECTED_KEYBINDS.get("OPEN_QUEST_EDITOR_KEY"),
-                EXPECTED_KEYBINDS.get("OPEN_ENDURANCE_QUEST_KEY"),
-                EXPECTED_KEYBINDS.get("QUEST_CONTINUE_KEY"),
-                EXPECTED_KEYBINDS.get("QUEST_EXIT_KEY")
+                requireKey("TOGGLE_QUEST_HUD_KEY"),
+                requireKey("QUEST_COMPLETE_TASK_KEY"),
+                requireKey("OPEN_QUEST_EDITOR_KEY"),
+                requireKey("OPEN_ENDURANCE_QUEST_KEY"),
+                requireKey("QUEST_CONTINUE_KEY"),
+                requireKey("QUEST_EXIT_KEY")
             );
 
             // Should contain bracket keys and F10-F12
@@ -379,7 +375,7 @@ class KeybindSystemValidationTest {
 
             for (Map.Entry<String, Character> entry : mnemonics.entrySet()) {
                 int expectedKey = entry.getValue() - 'A' + 65; // Convert to GLFW key code
-                int actualKey = EXPECTED_KEYBINDS.get(entry.getKey());
+                int actualKey = requireKey(entry.getKey());
                 assertEquals(expectedKey, actualKey,
                     "Keybind '" + entry.getKey() + "' should use key '" + entry.getValue() + "'");
             }
@@ -436,7 +432,7 @@ class KeybindSystemValidationTest {
             );
 
             String radialKey = "OPEN_RADIAL_MENU_KEY";
-            assertTrue(leftSideKeys.contains(EXPECTED_KEYBINDS.get(radialKey)),
+            assertTrue(leftSideKeys.contains(requireKey(radialKey)),
                 "Radial menu (primary access) should be on left side of keyboard");
         }
 
@@ -453,7 +449,7 @@ class KeybindSystemValidationTest {
             );
 
             for (String bind : lessFrequent) {
-                int key = EXPECTED_KEYBINDS.get(bind);
+                int key = requireKey(bind);
                 assertTrue(key >= 290 && key <= 301, // F1-F12 range
                     "Less frequent keybind '" + bind + "' should use F-key");
             }

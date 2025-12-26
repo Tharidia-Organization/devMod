@@ -18,6 +18,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
 
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
+
 public final class RadialGeometry {
 
     private RadialGeometry() {

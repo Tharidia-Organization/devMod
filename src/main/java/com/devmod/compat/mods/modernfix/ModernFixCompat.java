@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class ModernFixCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModernFixCompat.class);
     public static final String MOD_ID = "modernfix";

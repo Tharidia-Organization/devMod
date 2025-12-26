@@ -9,7 +9,7 @@ Il sistema Impact HUD è organizzato in tre layer principali con responsabilità
 Questo layer intercetta gli eventi di danno e raccoglie le informazioni necessarie.
 
 #### DamageHandler.java
-**Path:** `src/main/java/com/frenkvs/devmod/DamageHandler.java`
+**Path:** `src/main/java/com/devmod/combat/DamageHandler.java`
 
 **Responsabilità:**
 - Intercetta `LivingIncomingDamageEvent` (priority HIGH)
@@ -38,7 +38,7 @@ public static void onEnvironmentalDamage(LivingIncomingDamageEvent event)
 - `ClientVFXProxy` - Trigger VFX
 
 #### HitHelper.java
-**Path:** `src/main/java/com/frenkvs/devmod/HitHelper.java`
+**Path:** `src/main/java/com/devmod/combat/HitHelper.java`
 
 **Responsabilità:**
 - Rilevamento body part tramite raycast AABB
@@ -75,8 +75,8 @@ public static void onEnvironmentalDamage(LivingIncomingDamageEvent event)
   0% └─────────────┘
 ```
 
-#### ActualDamageTracker.java
-**Path:** `src/main/java/com/frenkvs/devmod/ActualDamageTracker.java`
+#### DamageTracker.java
+**Path:** `src/main/java/com/devmod/combat/DamageTracker.java`
 
 **Responsabilità:**
 - Intercetta `LivingDamageEvent.Post` (priority LOWEST)
@@ -89,13 +89,13 @@ LivingIncomingDamageEvent (DamageHandler) → Calcola danno teorico
                           ↓
             Minecraft applica riduzioni
                           ↓
-LivingDamageEvent.Post (ActualDamageTracker) → Cattura danno reale
+LivingDamageEvent.Post (DamageTracker) → Cattura danno reale
 ```
 
 ### 1.2 Layer di Storage
 
 #### ImpactData.java
-**Path:** `src/main/java/com/frenkvs/devmod/hud/ImpactData.java`
+**Path:** `src/main/java/com/devmod/client/overlay/ImpactData.java`
 
 **Responsabilità:**
 - Container immutabile per dati impatto
@@ -181,7 +181,7 @@ private static void maybeCleanup() {
 **Nota:** Il timeout massimo di 30 secondi (MAX_OBSERVATION_TIME_MS) previene che l'HUD rimanga bloccato indefinitamente (BUG-005 FIXED).
 
 #### DamageBreakdown.java
-**Path:** `src/main/java/com/frenkvs/devmod/damage/DamageBreakdown.java`
+**Path:** `src/main/java/com/devmod/damage/DamageBreakdown.java`
 
 **Responsabilità:**
 - Calcolo dettagliato componenti danno
@@ -205,7 +205,7 @@ public class DamageBreakdown {
 
 #### ImpactHudContentBuilder.java (NEW)
 
-**Path:** `src/main/java/com/frenkvs/devmod/hud/ImpactHudContentBuilder.java`
+**Path:** `src/main/java/com/devmod/client/overlay/ImpactHudContentBuilder.java`
 
 **Responsabilità:**
 
@@ -215,7 +215,7 @@ public class DamageBreakdown {
 
 #### DamageCalculator.java (NEW)
 
-**Path:** `src/main/java/com/frenkvs/devmod/damage/DamageCalculator.java`
+**Path:** `src/main/java/com/devmod/damage/DamageCalculator.java`
 
 **Responsabilità:**
 
@@ -225,7 +225,7 @@ public class DamageBreakdown {
 ### 1.3 Layer di Rendering
 
 #### ImpactHudOverlay.java (2D)
-**Path:** `src/main/java/com/frenkvs/devmod/hud/ImpactHudOverlay.java`
+**Path:** `src/main/java/com/devmod/client/overlay/ImpactHudOverlay.java`
 
 **Responsabilità:**
 - Rendering overlay 2D sopra crosshair
@@ -268,7 +268,7 @@ Screen
 ```
 
 #### Impact3DPanelManager.java
-**Path:** `src/main/java/com/frenkvs/devmod/hud/Impact3DPanelManager.java`
+**Path:** `src/main/java/com/devmod/client/overlay/Impact3DPanelManager.java`
 
 **Responsabilità:**
 - Gestione pool pannelli 3D (max 12)
@@ -282,7 +282,7 @@ private static final double MAX_RENDER_DISTANCE = 64.0;
 ```
 
 #### Impact3DPanel.java
-**Path:** `src/main/java/com/frenkvs/devmod/hud/Impact3DPanel.java`
+**Path:** `src/main/java/com/devmod/client/overlay/Impact3DPanel.java`
 
 **Responsabilità:**
 - Singola istanza pannello nel mondo
@@ -300,7 +300,7 @@ private static final double MAX_RENDER_DISTANCE = 64.0;
 ```
 
 #### Impact3DRenderer.java
-**Path:** `src/main/java/com/frenkvs/devmod/hud/Impact3DRenderer.java`
+**Path:** `src/main/java/com/devmod/client/overlay/Impact3DRenderer.java`
 
 **Responsabilità:**
 - Rendering geometria 3D nel mondo
@@ -320,7 +320,7 @@ private static final double MAX_RENDER_DISTANCE = 64.0;
 ```
 
 #### ImpactVFX.java
-**Path:** `src/main/java/com/frenkvs/devmod/hud/ImpactVFX.java`
+**Path:** `src/main/java/com/devmod/client/overlay/ImpactVFX.java`
 
 **Responsabilità:**
 - Energy Vortex Core (spirale rotante)
@@ -406,7 +406,7 @@ private static final double MAX_RENDER_DISTANCE = 64.0;
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                        LivingDamageEvent.Post                                │
-│                     (ActualDamageTracker.onDamagePost)                       │
+│                     (DamageTracker.onDamagePost)                       │
 │                          PRIORITY: LOWEST                                    │
 │                                                                              │
 │  1. Recupera danno REALE                                                     │

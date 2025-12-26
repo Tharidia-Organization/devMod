@@ -86,6 +86,7 @@ import com.devmod.network.EditorApplyConfirmPayload;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
 import com.devmod.util.DatapackIO;
+
 @OnlyIn(Dist.CLIENT)
 public class ItemEditorScreen extends Screen implements InputRouter.InputContext {
 

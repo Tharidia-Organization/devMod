@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
+
 public class TagValidator {
 
     /** Maximum Levenshtein distance for typo suggestions (DD28). */

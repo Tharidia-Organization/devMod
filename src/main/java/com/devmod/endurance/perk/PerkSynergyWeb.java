@@ -27,6 +27,7 @@ import net.minecraft.world.level.saveddata.SavedData;
 
 import com.devmod.endurance.PerkSynergySystem;
 import com.devmod.endurance.PerkSystem;
+
 public class PerkSynergyWeb {
     private static final Logger LOGGER = LoggerFactory.getLogger(PerkSynergyWeb.class);
 

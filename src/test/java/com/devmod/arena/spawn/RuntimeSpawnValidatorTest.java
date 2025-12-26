@@ -1,20 +1,16 @@
 package com.devmod.arena.spawn;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for RuntimeSpawnValidator.
- * DD48: O(n^2) at load, O(1) runtime.
- */
 @DisplayName("RuntimeSpawnValidator Tests")
 class RuntimeSpawnValidatorTest {
 

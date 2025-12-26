@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -26,6 +27,7 @@ import com.devmod.endurance.RequestShopSyncPayload;
 import com.devmod.endurance.RewardSystem;
 import com.devmod.endurance.ShopPurchasePayload;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public class EnduranceShopScreen extends Screen {
 
@@ -66,6 +68,7 @@ public class EnduranceShopScreen extends Screen {
     private List<RewardSystem.ShopItem> categoryItems = new ArrayList<>();
     private int scrollOffset = 0;
     private int maxScroll = 0;
+    @Nullable
     private RewardSystem.ShopItem selectedItem = null;
 
     // Player data (cached from client cache or loaded via packet)
@@ -142,8 +145,9 @@ public class EnduranceShopScreen extends Screen {
         renderItemList(graphics, mouseX, mouseY);
 
         // Selected item details
-        if (selectedItem != null) {
-            renderItemDetails(graphics);
+        RewardSystem.ShopItem item = selectedItem;
+        if (item != null) {
+            renderItemDetails(graphics, item);
         }
 
         // Custom action buttons (Back, Purchase)
@@ -162,17 +166,17 @@ public class EnduranceShopScreen extends Screen {
 
         // Tokens
         graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.reward.tokens").getString()) + ": " + playerTokens,
-            currencyX, currencyY, CURRENCY_COLORS.get(RewardSystem.Currency.TOKENS));
+            currencyX, currencyY, getCurrencyColor(RewardSystem.Currency.TOKENS));
         currencyY += 12;
 
         // Prestige
         graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.reward.prestige").getString()) + ": " + playerPrestige,
-            currencyX, currencyY, CURRENCY_COLORS.get(RewardSystem.Currency.PRESTIGE));
+            currencyX, currencyY, getCurrencyColor(RewardSystem.Currency.PRESTIGE));
         currencyY += 12;
 
         // Blood Gems
         graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.reward.blood_gems").getString()) + ": " + playerBloodGems,
-            currencyX, currencyY, CURRENCY_COLORS.get(RewardSystem.Currency.BLOOD_GEMS));
+            currencyX, currencyY, getCurrencyColor(RewardSystem.Currency.BLOOD_GEMS));
     }
 
     private void renderCategorySidebar(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -190,7 +194,7 @@ public class EnduranceShopScreen extends Screen {
             int catBtnX = UIConstants.Spacing.PANEL_MARGIN;
             boolean isSelected = category == selectedCategory;
             boolean isHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, catBtnX, catY, catBtnW, catBtnH);
-            int catColor = CATEGORY_COLORS.get(category);
+            int catColor = getCategoryColor(category);
 
             String catName = getCategoryLabel(category);
             renderButton(graphics, catBtnX, catY, catBtnW, catBtnH, catName, isHovered, isSelected ? catColor : UIConstants.Border.DEFAULT());
@@ -249,7 +253,7 @@ public class EnduranceShopScreen extends Screen {
         graphics.fill(x, y, x + width, y + ITEM_HEIGHT, bgColor);
 
         // Category color indicator
-        int catColor = CATEGORY_COLORS.get(item.category);
+        int catColor = getCategoryColor(item.category);
         graphics.fill(x, y, x + 4, y + ITEM_HEIGHT, catColor);
 
         // Item name (truncated to prevent overflow)
@@ -262,7 +266,7 @@ public class EnduranceShopScreen extends Screen {
         graphics.drawString(Objects.requireNonNull(font), description, x + 10, y + 18, COLOR_TEXT_DIM);
 
         // Price
-        int currencyColor = CURRENCY_COLORS.get(item.currency);
+        int currencyColor = getCurrencyColor(item.currency);
         String priceText = item.price + " " + getCurrencyLabel(item.currency);
         int priceColor = canAfford ? currencyColor : COLOR_ERROR;
         graphics.drawString(Objects.requireNonNull(font), priceText, x + 10, y + 35, priceColor);
@@ -281,7 +285,7 @@ public class EnduranceShopScreen extends Screen {
         }
     }
 
-    private void renderItemDetails(GuiGraphics graphics) {
+    private void renderItemDetails(GuiGraphics graphics, RewardSystem.ShopItem item) {
         int panelX = width - 210;
         int panelY = 50;
         int panelWidth = 200;
@@ -292,12 +296,12 @@ public class EnduranceShopScreen extends Screen {
         int y = panelY + 10;
 
         // Item name
-        graphics.drawCenteredString(Objects.requireNonNull(font), getItemName(selectedItem), panelX + panelWidth / 2, y, COLOR_TEXT);
+        graphics.drawCenteredString(Objects.requireNonNull(font), getItemName(item), panelX + panelWidth / 2, y, COLOR_TEXT);
         y += 20;
 
         // Category
-        int catColor = CATEGORY_COLORS.get(selectedItem.category);
-        graphics.drawCenteredString(Objects.requireNonNull(font), getCategoryLabel(selectedItem.category), panelX + panelWidth / 2, y, catColor);
+        int catColor = getCategoryColor(item.category);
+        graphics.drawCenteredString(Objects.requireNonNull(font), getCategoryLabel(item.category), panelX + panelWidth / 2, y, catColor);
         y += 25;
 
         // Divider
@@ -305,7 +309,7 @@ public class EnduranceShopScreen extends Screen {
         y += 10;
 
         // Description (word wrap)
-        String desc = getItemDescription(selectedItem);
+        String desc = getItemDescription(item);
         int maxWidth = panelWidth - 20;
         List<String> lines = wrapText(desc, maxWidth);
         for (String line : lines) {
@@ -317,17 +321,17 @@ public class EnduranceShopScreen extends Screen {
         // Price details
         graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.ui.price").getString()) + ":", panelX + 10, y, COLOR_ACCENT);
         y += 12;
-        int currencyColor = CURRENCY_COLORS.get(selectedItem.currency);
-        graphics.drawString(Objects.requireNonNull(font), "  " + selectedItem.price + " " + getCurrencyLabel(selectedItem.currency),
+        int currencyColor = getCurrencyColor(item.currency);
+        graphics.drawString(Objects.requireNonNull(font), "  " + item.price + " " + getCurrencyLabel(item.currency),
             panelX + 10, y, currencyColor);
         y += 20;
 
         // Purchase info
-        int owned = playerPurchases.getOrDefault(selectedItem.id, 0);
+        int owned = playerPurchases.getOrDefault(item.id, 0);
         graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.shop.purchases").getString()) + ":", panelX + 10, y, COLOR_ACCENT);
         y += 12;
-        graphics.drawString(Objects.requireNonNull(font), "  " + owned + " / " + selectedItem.maxPurchases,
-            panelX + 10, y, owned >= selectedItem.maxPurchases ? COLOR_SUCCESS : COLOR_TEXT_DIM);
+        graphics.drawString(Objects.requireNonNull(font), "  " + owned + " / " + item.maxPurchases,
+            panelX + 10, y, owned >= item.maxPurchases ? COLOR_SUCCESS : COLOR_TEXT_DIM);
     }
 
     /**
@@ -429,6 +433,14 @@ public class EnduranceShopScreen extends Screen {
             case PRESTIGE -> playerPrestige >= item.price;
             case BLOOD_GEMS -> playerBloodGems >= item.price;
         };
+    }
+
+    private static int getCategoryColor(RewardSystem.ShopCategory category) {
+        return Objects.requireNonNull(CATEGORY_COLORS.get(category));
+    }
+
+    private static int getCurrencyColor(RewardSystem.Currency currency) {
+        return Objects.requireNonNull(CURRENCY_COLORS.get(currency));
     }
 
     @Override

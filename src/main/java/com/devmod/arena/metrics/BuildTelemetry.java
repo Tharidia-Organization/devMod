@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.devmod.arena.telemetry.ArenaTelemetry;
+
 public class BuildTelemetry {
 
     private final ArenaTelemetry telemetry;

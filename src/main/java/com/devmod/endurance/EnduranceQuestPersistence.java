@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+
 public class EnduranceQuestPersistence {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestPersistence.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

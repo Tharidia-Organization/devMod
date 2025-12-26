@@ -1,29 +1,14 @@
 package com.devmod.client.ui.radial;
 
-import org.junit.jupiter.api.*;
-
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.regex.*;
 
+import org.junit.jupiter.api.*;
+
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Comprehensive test suite for the RadialMenuScreen Macro-Category System.
- *
- * Tests are organized incrementally:
- * - L0: Smoke tests (enum exists, basic structure)
- * - L1: Data integrity (proper values, no nulls)
- * - L2: Distribution tests (all 24 categories, no duplicates)
- * - L3: Selection logic (state transitions)
- * - L4: Keyboard shortcuts (1-6 for macros)
- * - L5: Persistence (static field for state)
- * - L6: Integration (method existence)
- *
- * Note: These tests analyze source code directly since the classes depend on Minecraft runtime.
- * MacroCategory has been extracted to its own file: com.devmod.client.ui.radial.model.MacroCategory
- */
 @DisplayName("Radial Menu Macro-Category System")
 class RadialMenuMacroCategoryTest {
 
@@ -185,7 +170,7 @@ class RadialMenuMacroCategoryTest {
                     macro + " should have a valid hex color (0xFFxxxxxx format)");
                 String colorHex = matcher.group(1);
                 // Verify it starts with 0xFF (full alpha)
-                assertTrue(colorHex.toUpperCase().startsWith("0XFF"),
+                assertTrue(colorHex.toUpperCase(Locale.ROOT).startsWith("0XFF"),
                     macro + " color should have full alpha (0xFF): " + colorHex);
             }
         }
@@ -199,7 +184,7 @@ class RadialMenuMacroCategoryTest {
                 Pattern pattern = Pattern.compile(macro + "\\s*\\([^)]*,\\s*(0x[0-9A-Fa-f]{8})");
                 Matcher matcher = pattern.matcher(macroCategorySourceCode);
                 if (matcher.find()) {
-                    String color = matcher.group(1).toUpperCase();
+                    String color = matcher.group(1).toUpperCase(Locale.ROOT);
                     assertTrue(colors.add(color),
                         "Each MacroCategory should have unique color. Duplicate: " + color);
                 }

@@ -1,6 +1,7 @@
 package com.devmod.runtime;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -22,19 +23,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Progressive Test Suite 8: Server Restart Simulation
- *
- * Tests recovery scenarios after server crashes or restarts,
- * validating that player state is properly restored.
- *
- * Focus areas:
- * 1. State persistence and recovery
- * 2. Orphaned instance cleanup
- * 3. Player snapshot recovery on login
- * 4. Instance state reconstruction
- * 5. Edge cases during shutdown/startup
- */
 public class ServerRestartSimulationTest {
 
     // ============================================================
@@ -49,8 +37,8 @@ public class ServerRestartSimulationTest {
 
         @BeforeEach
         void setup() {
-            instanceRegistry = new ConcurrentHashMap<>();
-            snapshotStates = new ConcurrentHashMap<>();
+            instanceRegistry = new HashMap<>();
+            snapshotStates = new HashMap<>();
         }
 
         @Test
@@ -75,7 +63,7 @@ public class ServerRestartSimulationTest {
         @Test
         @DisplayName("Player mappings survive restart")
         void testPlayerMappingsSurviveRestart() {
-            Map<UUID, UUID> playerToInstance = new ConcurrentHashMap<>();
+            Map<UUID, UUID> playerToInstance = new HashMap<>();
 
             // Before restart
             UUID player1 = UUID.randomUUID();
@@ -95,7 +83,7 @@ public class ServerRestartSimulationTest {
             }
 
             // Simulate restart - deserialize
-            Map<UUID, UUID> restored = new ConcurrentHashMap<>();
+            Map<UUID, UUID> restored = new HashMap<>();
             for (Map<String, String> mapping : serialized) {
                 UUID playerId = UUID.fromString(mapping.get("player"));
                 UUID instId = UUID.fromString(mapping.get("instance"));
@@ -159,17 +147,17 @@ public class ServerRestartSimulationTest {
         @Test
         @DisplayName("Empty instances are marked for destruction on startup")
         void testEmptyInstancesMarkedForDestruction() {
-            Set<UUID> instancesMarkedForDestruction = ConcurrentHashMap.newKeySet();
-            Map<UUID, Set<UUID>> instancePlayers = new ConcurrentHashMap<>();
+            Set<UUID> instancesMarkedForDestruction = new HashSet<>();
+            Map<UUID, Set<UUID>> instancePlayers = new HashMap<>();
 
             // Create instances - some empty, some with players
             UUID emptyInstance1 = UUID.randomUUID();
             UUID emptyInstance2 = UUID.randomUUID();
             UUID activeInstance = UUID.randomUUID();
 
-            instancePlayers.put(emptyInstance1, ConcurrentHashMap.newKeySet());
-            instancePlayers.put(emptyInstance2, ConcurrentHashMap.newKeySet());
-            instancePlayers.put(activeInstance, ConcurrentHashMap.newKeySet());
+            instancePlayers.put(emptyInstance1, new HashSet<>());
+            instancePlayers.put(emptyInstance2, new HashSet<>());
+            instancePlayers.put(activeInstance, new HashSet<>());
             instancePlayers.get(activeInstance).add(UUID.randomUUID());
 
             // Startup cleanup logic
@@ -187,8 +175,8 @@ public class ServerRestartSimulationTest {
         @Test
         @DisplayName("Instances in DESTROYING state are destroyed on startup")
         void testDestroyingInstancesAreDestroyed() {
-            Map<UUID, InstanceState> instanceStates = new ConcurrentHashMap<>();
-            Set<UUID> toDestroy = ConcurrentHashMap.newKeySet();
+            Map<UUID, InstanceState> instanceStates = new HashMap<>();
+            Set<UUID> toDestroy = new HashSet<>();
 
             // Create instances in various states
             UUID creating = UUID.randomUUID();
@@ -221,9 +209,9 @@ public class ServerRestartSimulationTest {
         @Test
         @DisplayName("CREATING instances without dimension are cleaned up")
         void testCreatingInstancesWithoutDimension() {
-            Map<UUID, Object> instanceDimensions = new ConcurrentHashMap<>();
-            Map<UUID, InstanceState> instanceStates = new ConcurrentHashMap<>();
-            Set<UUID> toCleanup = ConcurrentHashMap.newKeySet();
+            Map<UUID, Object> instanceDimensions = new HashMap<>();
+            Map<UUID, InstanceState> instanceStates = new HashMap<>();
+            Set<UUID> toCleanup = new HashSet<>();
 
             UUID withDimension = UUID.randomUUID();
             UUID withoutDimension = UUID.randomUUID();
@@ -249,9 +237,9 @@ public class ServerRestartSimulationTest {
         @Test
         @DisplayName("Orphaned snapshots trigger recovery on player login")
         void testOrphanedSnapshotsRecovery() {
-            Map<UUID, PlayerInstanceState> snapshots = new ConcurrentHashMap<>();
-            Set<UUID> existingInstances = ConcurrentHashMap.newKeySet();
-            Set<UUID> playersNeedingRecovery = ConcurrentHashMap.newKeySet();
+            Map<UUID, PlayerInstanceState> snapshots = new HashMap<>();
+            Set<UUID> existingInstances = new HashSet<>();
+            Set<UUID> playersNeedingRecovery = new HashSet<>();
 
             // Player with snapshot but instance gone
             UUID orphanedPlayer = UUID.randomUUID();
@@ -333,7 +321,7 @@ public class ServerRestartSimulationTest {
         @Test
         @DisplayName("NORMAL state triggers snapshot cleanup")
         void testNormalStateCleanup() {
-            Map<UUID, PlayerInstanceState> snapshots = new ConcurrentHashMap<>();
+            Map<UUID, PlayerInstanceState> snapshots = new HashMap<>();
             UUID playerId = UUID.randomUUID();
             snapshots.put(playerId, PlayerInstanceState.NORMAL);
 
@@ -348,7 +336,7 @@ public class ServerRestartSimulationTest {
         @Test
         @DisplayName("Recovery removes player from instance mapping")
         void testRecoveryRemovesMapping() {
-            Map<UUID, UUID> playerToInstance = new ConcurrentHashMap<>();
+            Map<UUID, UUID> playerToInstance = new HashMap<>();
             UUID playerId = UUID.randomUUID();
             UUID instanceId = UUID.randomUUID();
 
@@ -363,7 +351,7 @@ public class ServerRestartSimulationTest {
         @Test
         @DisplayName("Recovery deletes snapshot after completion")
         void testRecoveryDeletesSnapshot() {
-            Set<UUID> snapshots = ConcurrentHashMap.newKeySet();
+            Set<UUID> snapshots = new HashSet<>();
             UUID playerId = UUID.randomUUID();
             snapshots.add(playerId);
 
@@ -387,7 +375,7 @@ public class ServerRestartSimulationTest {
         @Test
         @DisplayName("ACTIVE instances are preserved")
         void testActiveInstancesPreserved() {
-            Map<UUID, InstanceState> instances = new ConcurrentHashMap<>();
+            Map<UUID, InstanceState> instances = new HashMap<>();
             UUID activeInstance = UUID.randomUUID();
 
             instances.put(activeInstance, InstanceState.ACTIVE);
@@ -402,9 +390,9 @@ public class ServerRestartSimulationTest {
         @Test
         @DisplayName("READY instances without pending players are destroyed")
         void testReadyInstancesWithoutPlayers() {
-            Map<UUID, InstanceState> states = new ConcurrentHashMap<>();
-            Map<UUID, Set<UUID>> players = new ConcurrentHashMap<>();
-            Set<UUID> toDestroy = ConcurrentHashMap.newKeySet();
+            Map<UUID, InstanceState> states = new HashMap<>();
+            Map<UUID, Set<UUID>> players = new HashMap<>();
+            Set<UUID> toDestroy = new HashSet<>();
 
             UUID readyEmpty = UUID.randomUUID();
             UUID readyWithPlayers = UUID.randomUUID();
@@ -412,8 +400,8 @@ public class ServerRestartSimulationTest {
             states.put(readyEmpty, InstanceState.READY);
             states.put(readyWithPlayers, InstanceState.READY);
 
-            players.put(readyEmpty, ConcurrentHashMap.newKeySet());
-            players.put(readyWithPlayers, ConcurrentHashMap.newKeySet());
+            players.put(readyEmpty, new HashSet<>());
+            players.put(readyWithPlayers, new HashSet<>());
             players.get(readyWithPlayers).add(UUID.randomUUID());
 
             // Startup logic
@@ -431,7 +419,7 @@ public class ServerRestartSimulationTest {
         @Test
         @DisplayName("Quest progress is preserved")
         void testQuestProgressPreserved() {
-            Map<UUID, Integer> instanceWaves = new ConcurrentHashMap<>();
+            Map<UUID, Integer> instanceWaves = new HashMap<>();
             UUID instanceId = UUID.randomUUID();
 
             // Before crash
@@ -446,7 +434,7 @@ public class ServerRestartSimulationTest {
         @Test
         @DisplayName("Instance age is preserved")
         void testInstanceAgePreserved() {
-            Map<UUID, Long> instanceCreatedAt = new ConcurrentHashMap<>();
+            Map<UUID, Long> instanceCreatedAt = new HashMap<>();
             UUID instanceId = UUID.randomUUID();
             long createdTime = System.currentTimeMillis() - 300000; // 5 min ago
 
@@ -469,27 +457,27 @@ public class ServerRestartSimulationTest {
         @Test
         @DisplayName("Graceful shutdown saves all state")
         void testGracefulShutdownSavesState() {
-            AtomicBoolean registrySaved = new AtomicBoolean(false);
-            AtomicBoolean snapshotsSaved = new AtomicBoolean(false);
-            AtomicInteger instancesSaved = new AtomicInteger(0);
+            boolean registrySaved = false;
+            boolean snapshotsSaved = false;
+            int instancesSaved = 0;
 
             int instanceCount = 5;
 
             // Simulate graceful shutdown
             // 1. Save registry
-            registrySaved.set(true);
+            registrySaved = true;
 
             // 2. Save all snapshots
-            snapshotsSaved.set(true);
+            snapshotsSaved = true;
 
             // 3. Save each instance
             for (int i = 0; i < instanceCount; i++) {
-                instancesSaved.incrementAndGet();
+                instancesSaved++;
             }
 
-            assertTrue(registrySaved.get());
-            assertTrue(snapshotsSaved.get());
-            assertEquals(instanceCount, instancesSaved.get());
+            assertTrue(registrySaved);
+            assertTrue(snapshotsSaved);
+            assertEquals(instanceCount, instancesSaved);
         }
 
         @Test
@@ -519,7 +507,7 @@ public class ServerRestartSimulationTest {
             Map<UUID, String> instances = new ConcurrentHashMap<>();
             AtomicBoolean shutdownInProgress = new AtomicBoolean(false);
             AtomicInteger savedCount = new AtomicInteger(0);
-            Set<UUID> savedIds = ConcurrentHashMap.newKeySet();
+            Set<UUID> savedIds = new HashSet<>();
 
             // Pre-populate
             for (int i = 0; i < 10; i++) {
@@ -574,7 +562,7 @@ public class ServerRestartSimulationTest {
         @Test
         @DisplayName("Empty registry loads successfully")
         void testEmptyRegistryLoads() {
-            Map<UUID, Object> registry = new ConcurrentHashMap<>();
+            Map<UUID, Object> registry = new HashMap<>();
 
             // Load empty registry
             assertTrue(registry.isEmpty());
@@ -590,8 +578,8 @@ public class ServerRestartSimulationTest {
         @DisplayName("Corrupted entry is skipped during load")
         void testCorruptedEntrySkipped() {
             List<Map<String, Object>> serializedData = new ArrayList<>();
-            Map<UUID, InstanceState> loadedInstances = new ConcurrentHashMap<>();
-            AtomicInteger skippedCount = new AtomicInteger(0);
+            Map<UUID, InstanceState> loadedInstances = new HashMap<>();
+            int skippedCount = 0;
 
             // Valid entry
             Map<String, Object> valid = new LinkedHashMap<>();
@@ -612,12 +600,12 @@ public class ServerRestartSimulationTest {
                     InstanceState state = InstanceState.valueOf((String) data.get("state"));
                     loadedInstances.put(id, state);
                 } catch (IllegalArgumentException e) {
-                    skippedCount.incrementAndGet();
+                    skippedCount++;
                 }
             }
 
             assertEquals(1, loadedInstances.size());
-            assertEquals(1, skippedCount.get());
+            assertEquals(1, skippedCount);
         }
 
         @Test
@@ -626,14 +614,14 @@ public class ServerRestartSimulationTest {
             int CURRENT_VERSION = 2;
             int loadedVersion = 1;
 
-            AtomicBoolean migrationPerformed = new AtomicBoolean(false);
+            boolean migrationPerformed = false;
 
             if (loadedVersion < CURRENT_VERSION) {
                 // Perform migration
-                migrationPerformed.set(true);
+                migrationPerformed = true;
             }
 
-            assertTrue(migrationPerformed.get());
+            assertTrue(migrationPerformed);
         }
     }
 

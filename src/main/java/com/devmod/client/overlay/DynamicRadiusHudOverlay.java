@@ -21,6 +21,7 @@ import com.devmod.DevMod;
 import com.devmod.client.rendering.LightLevelOverlay;
 import com.devmod.client.rendering.SpawnabilityOverlay;
 import com.devmod.util.I18n;
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public final class DynamicRadiusHudOverlay {
 

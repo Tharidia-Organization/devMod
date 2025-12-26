@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 public class TelemetryAuditJob {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TelemetryAuditJob.class);

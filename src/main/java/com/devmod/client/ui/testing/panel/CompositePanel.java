@@ -6,6 +6,7 @@ import java.util.List;
 import net.minecraft.client.gui.GuiGraphics;
 
 import static com.devmod.client.ui.testing.panel.PanelConstants.PANEL_SPACING;
+
 public record CompositePanel(
     String id,
     String title,

@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
+
 public class AsyncTelemetryWriter {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final int QUEUE_CAPACITY = 1000; // Max 1000 pending writes

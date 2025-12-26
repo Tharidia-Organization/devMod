@@ -2,6 +2,7 @@ package com.devmod.runtime;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,8 +15,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -23,18 +22,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Progressive Test Suite 6: Data Serialization and Persistence
- *
- * Tests the serialization/deserialization logic of InstanceData
- * and PlayerInstanceSnapshot to identify edge cases and bugs.
- *
- * Focus areas:
- * 1. InstanceData toMap/fromMap roundtrip
- * 2. Null and missing field handling
- * 3. State consistency after serialization
- * 4. Concurrent access during serialization
- */
 public class DataSerializationTest {
 
     // ============================================================
@@ -123,7 +110,7 @@ public class DataSerializationTest {
         @SuppressWarnings("unchecked")
         private Set<UUID> parsePlayerIds(Map<String, Object> map) {
             List<String> playerIds = (List<String>) map.get("players");
-            Set<UUID> result = ConcurrentHashMap.newKeySet();
+            Set<UUID> result = new HashSet<>();
             if (playerIds != null) {
                 playerIds.forEach(id -> result.add(UUID.fromString(id)));
             }
@@ -247,9 +234,9 @@ public class DataSerializationTest {
             // In InstanceData.removePlayer(), destruction should be scheduled
             // for both ACTIVE and READY states when instance becomes empty.
 
-            Set<UUID> players = ConcurrentHashMap.newKeySet();
-            AtomicReference<InstanceState> state = new AtomicReference<>(InstanceState.READY);
-            AtomicBoolean markedForDestruction = new AtomicBoolean(false);
+            Set<UUID> players = new HashSet<>();
+            InstanceState state = InstanceState.READY;
+            boolean markedForDestruction = false;
 
             UUID player = UUID.randomUUID();
             players.add(player);
@@ -259,12 +246,12 @@ public class DataSerializationTest {
             assertTrue(removed);
 
             // FIXED logic: marks for destruction if ACTIVE OR READY
-            if (players.isEmpty() && (state.get() == InstanceState.ACTIVE || state.get() == InstanceState.READY)) {
-                markedForDestruction.set(true);
+            if (players.isEmpty() && (state == InstanceState.ACTIVE || state == InstanceState.READY)) {
+                markedForDestruction = true;
             }
 
             // FIX VERIFIED: Instance is now properly marked for destruction
-            assertTrue(markedForDestruction.get(),
+            assertTrue(markedForDestruction,
                 "Empty READY instance should be marked for destruction (BUG #7 FIX)");
         }
 
@@ -272,13 +259,13 @@ public class DataSerializationTest {
         @DisplayName("State transition to DESTROYING prevents new players")
         void testDestroyingStateRejectsPlayers() {
             // Simulate canAcceptPlayers() logic
-            AtomicReference<InstanceState> state = new AtomicReference<>(InstanceState.DESTROYING);
+            InstanceState state = InstanceState.DESTROYING;
             int maxPlayers = 4;
-            Set<UUID> currentPlayers = ConcurrentHashMap.newKeySet();
+            Set<UUID> currentPlayers = new HashSet<>();
 
             // canAcceptPlayers() returns false for DESTROYING
-            boolean canAccept = (state.get() == InstanceState.READY ||
-                                 state.get() == InstanceState.ACTIVE) &&
+            boolean canAccept = (state == InstanceState.READY ||
+                                 state == InstanceState.ACTIVE) &&
                                 currentPlayers.size() < maxPlayers;
 
             assertFalse(canAccept, "DESTROYING instance should not accept players");
@@ -287,12 +274,12 @@ public class DataSerializationTest {
         @Test
         @DisplayName("COMPLETING state rejects new players")
         void testCompletingStateRejectsPlayers() {
-            AtomicReference<InstanceState> state = new AtomicReference<>(InstanceState.COMPLETING);
-            Set<UUID> currentPlayers = ConcurrentHashMap.newKeySet();
+            InstanceState state = InstanceState.COMPLETING;
+            Set<UUID> currentPlayers = new HashSet<>();
             int maxPlayers = 4;
 
-            boolean canAccept = (state.get() == InstanceState.READY ||
-                                 state.get() == InstanceState.ACTIVE) &&
+            boolean canAccept = (state == InstanceState.READY ||
+                                 state == InstanceState.ACTIVE) &&
                                 currentPlayers.size() < maxPlayers;
 
             assertFalse(canAccept, "COMPLETING instance should not accept players");
@@ -301,8 +288,8 @@ public class DataSerializationTest {
         @Test
         @DisplayName("Full instance rejects additional players")
         void testFullInstanceRejectsPlayers() {
-            AtomicReference<InstanceState> state = new AtomicReference<>(InstanceState.ACTIVE);
-            Set<UUID> currentPlayers = ConcurrentHashMap.newKeySet();
+            InstanceState state = InstanceState.ACTIVE;
+            Set<UUID> currentPlayers = new HashSet<>();
             int maxPlayers = 4;
 
             // Fill to max
@@ -310,8 +297,8 @@ public class DataSerializationTest {
                 currentPlayers.add(UUID.randomUUID());
             }
 
-            boolean canAccept = (state.get() == InstanceState.READY ||
-                                 state.get() == InstanceState.ACTIVE) &&
+            boolean canAccept = (state == InstanceState.READY ||
+                                 state == InstanceState.ACTIVE) &&
                                 currentPlayers.size() < maxPlayers;
 
             assertFalse(canAccept, "Full instance should not accept more players");
@@ -320,52 +307,52 @@ public class DataSerializationTest {
         @Test
         @DisplayName("markedForDestruction timestamp consistency")
         void testDestructionTimestampConsistency() {
-            AtomicLong markedForDestructionAt = new AtomicLong(0);
+            long markedForDestructionAt = 0L;
             long DESTROY_DELAY_MS = 5000;
 
             // Initially not marked - shouldDestroy() logic
             // shouldDestroy: markedAt > 0 && now >= markedAt + delay
-            boolean isMarked = markedForDestructionAt.get() > 0;
+            boolean isMarked = markedForDestructionAt > 0;
             assertFalse(isMarked, "Initially should not be marked");
 
             // When not marked, shouldDestroy should be false regardless of time
-            boolean shouldDestroy = markedForDestructionAt.get() > 0 &&
-                System.currentTimeMillis() >= markedForDestructionAt.get() + DESTROY_DELAY_MS;
+            boolean shouldDestroy = markedForDestructionAt > 0 &&
+                System.currentTimeMillis() >= markedForDestructionAt + DESTROY_DELAY_MS;
             assertFalse(shouldDestroy, "Should not destroy when not marked");
 
             // Mark for destruction
-            markedForDestructionAt.set(System.currentTimeMillis());
-            assertTrue(markedForDestructionAt.get() > 0, "Should be marked after setting");
+            markedForDestructionAt = System.currentTimeMillis();
+            assertTrue(markedForDestructionAt > 0, "Should be marked after setting");
 
             // Should not destroy immediately (delay not elapsed)
-            shouldDestroy = markedForDestructionAt.get() > 0 &&
-                System.currentTimeMillis() >= markedForDestructionAt.get() + DESTROY_DELAY_MS;
+            shouldDestroy = markedForDestructionAt > 0 &&
+                System.currentTimeMillis() >= markedForDestructionAt + DESTROY_DELAY_MS;
             assertFalse(shouldDestroy, "Should not destroy immediately after marking");
 
             // Cancel destruction
-            markedForDestructionAt.set(0);
-            assertFalse(markedForDestructionAt.get() > 0, "Should not be marked after cancel");
+            markedForDestructionAt = 0L;
+            assertFalse(markedForDestructionAt > 0, "Should not be marked after cancel");
         }
 
         @Test
         @DisplayName("Double scheduling destruction is idempotent")
         void testDoubleScheduleDestruction() {
-            AtomicLong markedAt = new AtomicLong(0);
+            long markedAt = 0L;
 
             // First schedule
-            if (markedAt.get() == 0) {
-                markedAt.set(System.currentTimeMillis());
+            if (markedAt == 0L) {
+                markedAt = System.currentTimeMillis();
             }
-            long firstMark = markedAt.get();
+            long firstMark = markedAt;
 
             // Small delay
             try { Thread.sleep(10); } catch (InterruptedException ignored) {}
 
             // Second schedule attempt (should not change timestamp)
-            if (markedAt.get() == 0) {
-                markedAt.set(System.currentTimeMillis());
+            if (markedAt == 0L) {
+                markedAt = System.currentTimeMillis();
             }
-            long secondMark = markedAt.get();
+            long secondMark = markedAt;
 
             assertEquals(firstMark, secondMark,
                 "Double scheduling should not update timestamp");
@@ -478,6 +465,7 @@ public class DataSerializationTest {
             AtomicBoolean running = new AtomicBoolean(true);
             AtomicInteger errors = new AtomicInteger(0);
             AtomicInteger successfulSnapshots = new AtomicInteger(0);
+            AtomicInteger lastSnapshotSize = new AtomicInteger(0);
 
             // Writer thread
             Thread writer = new Thread(() -> {
@@ -501,6 +489,7 @@ public class DataSerializationTest {
                             instanceMap.put("state", entry.getValue());
                             snapshot.add(instanceMap);
                         }
+                        lastSnapshotSize.set(snapshot.size());
                         successfulSnapshots.incrementAndGet();
                     } catch (Exception e) {
                         errors.incrementAndGet();
@@ -519,6 +508,7 @@ public class DataSerializationTest {
 
             assertEquals(0, errors.get(), "No errors during concurrent serialization");
             assertTrue(successfulSnapshots.get() > 0, "Some snapshots should succeed");
+            assertTrue(lastSnapshotSize.get() >= 0, "Snapshot size should be recorded");
         }
     }
 

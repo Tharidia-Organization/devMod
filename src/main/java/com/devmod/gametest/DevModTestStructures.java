@@ -11,6 +11,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 
 import com.devmod.DevMod;
+
 @EventBusSubscriber(modid = DevMod.MODID)
 public class DevModTestStructures {
 

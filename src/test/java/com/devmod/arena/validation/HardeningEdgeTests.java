@@ -1,14 +1,5 @@
 package com.devmod.arena.validation;
 
-import com.devmod.arena.cleanup.ArenaCleanupExecutor;
-import com.devmod.arena.cleanup.RobustCleanupManager;
-import com.devmod.arena.monitor.MsptMonitor;
-import com.devmod.arena.performance.PerformanceBudgetEnforcer;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.UUID;
@@ -19,20 +10,18 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+import com.devmod.arena.cleanup.ArenaCleanupExecutor;
+import com.devmod.arena.cleanup.RobustCleanupManager;
+import com.devmod.arena.monitor.MsptMonitor;
+import com.devmod.arena.performance.PerformanceBudgetEnforcer;
+
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * DD40: Edge Test Suite for Fase 3 Hardening.
- *
- * <p>Tests cover:
- * <ul>
- *   <li>Malformed template validation</li>
- *   <li>Chunk loading timeout</li>
- *   <li>Rollback/cleanup invariant</li>
- *   <li>Concurrency stress</li>
- *   <li>Security limits enforcement</li>
- * </ul>
- */
 @DisplayName("Fase 3 Hardening Edge Tests")
 class HardeningEdgeTests {
 

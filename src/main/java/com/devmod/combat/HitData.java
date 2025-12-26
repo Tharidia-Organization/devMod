@@ -5,6 +5,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.world.entity.Entity;
+
 public class HitData {
     private static final Map<UUID, HitInfo> CONTEXT = new ConcurrentHashMap<>();
     private static final long EXPIRATION_MS = 100; // 100ms max lifespan per context entry

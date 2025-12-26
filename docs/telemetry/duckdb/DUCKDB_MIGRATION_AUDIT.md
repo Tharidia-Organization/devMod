@@ -448,7 +448,7 @@ because `DuckDBConnectionManager` uses `com.mojang.logging.LogUtils`.
 3. Extract DuckDB layer to separate module without MC dependencies
 
 The test file is available at:
-`src/test/java/com/frenkvs/devmod/telemetry/duckdb/DuckDBMigrationValidationTest.java`
+`src/test/java/com/devmod/telemetry/duckdb/DuckDBMigrationValidationTest.java`
 
 ---
 
@@ -1116,10 +1116,10 @@ HeatmapService.tick() [every 1s, flush check every 60s]
 ### DuckDB Write Location (grep proof)
 
 ```
-$ grep -n "logHeatmap" src/main/java/com/frenkvs/devmod/telemetry/spatial/HeatmapService.java
+$ grep -n "logHeatmap" src/main/java/com/devmod/telemetry/spatial/HeatmapService.java
 330:                DuckDBTelemetryService.INSTANCE.logHeatmap(
 
-$ grep -n "appendLine" src/main/java/com/frenkvs/devmod/telemetry/spatial/HeatmapService.java
+$ grep -n "appendLine" src/main/java/com/devmod/telemetry/spatial/HeatmapService.java
 (none found - correct: no NDJSON writes)
 ```
 

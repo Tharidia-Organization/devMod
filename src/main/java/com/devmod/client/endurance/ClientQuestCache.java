@@ -2,6 +2,8 @@ package com.devmod.client.endurance;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
@@ -9,10 +11,11 @@ import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceQuestState;
 import com.devmod.endurance.QuestSyncPayload;
 import com.devmod.endurance.WaveObjectiveState;
+
 @OnlyIn(Dist.CLIENT)
 public class ClientQuestCache {
 
-    private static volatile QuestSyncPayload cachedData = null;
+    private static volatile @Nullable QuestSyncPayload cachedData = null;
     private static volatile long lastUpdateTime = 0;
 
     // Track previous state to detect changes
@@ -24,7 +27,7 @@ public class ClientQuestCache {
      * Also synchronizes with IntegratedTestSession if active.
      */
     public static void update(QuestSyncPayload payload) {
-        QuestSyncPayload oldData = cachedData;
+        @Nullable QuestSyncPayload oldData = cachedData;
         cachedData = payload;
         lastUpdateTime = System.currentTimeMillis();
 
@@ -42,7 +45,7 @@ public class ClientQuestCache {
     /**
      * Synchronize quest events with IntegratedTestSession for unified tracking.
      */
-    private static void syncWithIntegratedSession(QuestSyncPayload oldData, QuestSyncPayload newData) {
+    private static void syncWithIntegratedSession(@Nullable QuestSyncPayload oldData, QuestSyncPayload newData) {
         var session = com.devmod.client.testing.IntegratedTestSession.INSTANCE;
         if (!session.isSessionActive()) return;
 
@@ -98,7 +101,7 @@ public class ClientQuestCache {
     /**
      * Get the cached quest data, or null if none.
      */
-    public static QuestSyncPayload getData() {
+    public static @Nullable QuestSyncPayload getData() {
         return cachedData;
     }
 

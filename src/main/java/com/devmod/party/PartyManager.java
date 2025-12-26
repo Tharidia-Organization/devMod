@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.endurance.QuestType;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
+
 public class PartyManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyManager.class);
 

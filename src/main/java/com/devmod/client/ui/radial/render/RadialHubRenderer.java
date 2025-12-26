@@ -8,6 +8,7 @@ import net.minecraft.util.Mth;
 
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
 import com.devmod.client.ui.radial.model.MacroCategory;
+
 public final class RadialHubRenderer {
 
     private RadialHubRenderer() {

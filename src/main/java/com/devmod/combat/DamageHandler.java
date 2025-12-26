@@ -33,6 +33,7 @@ import com.devmod.damage.DamageCalculator;
 import com.devmod.stats.WeaponStats;
 import com.devmod.util.DamageTypeConfig;
 import com.devmod.util.I18n;
+
 @EventBusSubscriber(modid = DevMod.MODID)
 public class DamageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(DamageHandler.class);

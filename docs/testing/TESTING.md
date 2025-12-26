@@ -60,7 +60,7 @@ DevMod uses a **Progressive Testing Methodology** (L0-L5) to ensure comprehensiv
 ## Test Organization
 
 ```
-src/test/java/com/frenkvs/devmod/
+src/test/java/com/devmod/
 ├── boot/
 │   └── L0SmokeBootTest.java           # L0: Mod boot verification
 ├── endurance/
@@ -309,5 +309,5 @@ counter.incrementAndGet();
 ## Related Documents
 
 - [PROGRESSIVE_TEST_PLAN.md](PROGRESSIVE_TEST_PLAN.md) - Detailed test planning
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
-- [testing/](testing/) - Level reports (L0-L5)
+- [ARCHITECTURE.md](../ARCHITECTURE.md) - System architecture
+- [testing-reports](../_deprecated/testing-reports/) - Level reports (historical)

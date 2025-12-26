@@ -3,6 +3,7 @@ package com.devmod.arena.challenge;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+
 public sealed interface AvailabilityResult {
 
     /**

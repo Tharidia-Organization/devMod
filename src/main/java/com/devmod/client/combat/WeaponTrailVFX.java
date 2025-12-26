@@ -27,6 +27,7 @@ import net.neoforged.fml.ModList;
 import com.devmod.DevMod;
 import com.devmod.client.rendering.TrigCache;
 import com.devmod.client.rendering.shader.VFXShaderRegistry;
+
 public class WeaponTrailVFX {
 
     // Singleton instance

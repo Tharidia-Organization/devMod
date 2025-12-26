@@ -6,10 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for MsptMonitor.
- * DD38: Verifies baseline capture, sliding window, and backpressure logic.
- */
 class MsptMonitorTest {
 
     private MsptMonitor monitor;

@@ -18,6 +18,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.GameType;
+
 public class PlayerInstanceSnapshot {
     private static final Logger LOGGER = LoggerFactory.getLogger(PlayerInstanceSnapshot.class);
     private static final int CURRENT_VERSION = 1;

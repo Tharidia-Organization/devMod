@@ -10,6 +10,7 @@ import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.arena.BuildPhase;
 import com.devmod.arena.network.BuildProgressPayload;
+
 public class BuildProgressHud {
 
     private static final BuildProgressHud INSTANCE = new BuildProgressHud();

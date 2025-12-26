@@ -1,20 +1,18 @@
 package com.devmod.client.ui.editor.systems;
 
-import com.devmod.TestBootstrap;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeAll;
-
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static java.util.Objects.requireNonNull;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
-/**
- * Regression tests to ensure preview (no persist) vs apply (persist) behavior
- * for the MultiEdit subsystem.
- */
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+
+import com.devmod.TestBootstrap;
+
+import static java.util.Objects.requireNonNull;
+import static org.junit.jupiter.api.Assertions.*;
+
 public class MultiEditPreviewApplyRegressionTest {
 
     @BeforeAll

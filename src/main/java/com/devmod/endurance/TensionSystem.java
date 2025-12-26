@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.endurance.config.EnduranceConfigManager;
+
 public class TensionSystem {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TensionSystem.class);

@@ -20,6 +20,7 @@ import net.minecraft.world.phys.Vec3;
 import com.devmod.client.rendering.TrigCache;
 import com.devmod.client.rendering.shader.VFXShaderRegistry;
 import com.devmod.config.Config;
+
 public class ImpactVFX {
 
     // Active effects list (thread-safe to avoid ConcurrentModificationException)

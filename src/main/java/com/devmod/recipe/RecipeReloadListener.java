@@ -17,6 +17,7 @@ import com.devmod.network.RecipeClientSyncPayload;
 import com.devmod.util.ConfigPaths;
 
 import static com.devmod.DevMod.MODID;
+
 @EventBusSubscriber(modid = MODID)
 public final class RecipeReloadListener {
 

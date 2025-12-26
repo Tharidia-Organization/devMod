@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.endurance.config.EnduranceConfigManager;
+
 public class SeasonPassSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(SeasonPassSystem.class);
 

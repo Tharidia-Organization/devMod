@@ -25,6 +25,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 
 import com.devmod.config.gamedesign.GameDesignConfig;
 import com.devmod.config.gamedesign.GameDesignConfigManager;
+
 public class NemesisEvolutionManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NemesisEvolutionManager.class);

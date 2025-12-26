@@ -19,6 +19,7 @@ import com.devmod.debug.EntityGoalsPayload;
 import com.devmod.debug.EntityPathingPayload;
 import com.devmod.debug.POIPayload;
 import com.devmod.debug.RaidsPayload;
+
 public class DebugClientRenderer {
     public static final DebugClientRenderer INSTANCE = new DebugClientRenderer();
 

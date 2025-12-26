@@ -30,6 +30,7 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
 import com.devmod.DevMod;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class EntityInfoOverlay {

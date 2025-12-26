@@ -1,6 +1,7 @@
 package com.devmod.client.ui.unified;
 
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public enum SettingsCategory {
     GENERAL("General", "G", UIConstants.Status.INFO(), "General mod settings"),
     EDITOR("Editor", "E", UIConstants.Accent.CYAN(), "Item Editor UI settings"),

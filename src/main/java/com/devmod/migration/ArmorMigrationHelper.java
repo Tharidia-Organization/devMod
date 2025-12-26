@@ -10,6 +10,7 @@ import net.minecraft.world.item.component.CustomData;
 import com.devmod.components.ArmorComponents;
 import com.devmod.config.ArmorConfigManager;
 import com.devmod.stats.ArmorStats;
+
 public final class ArmorMigrationHelper {
     
     private static final String NBT_KEY = "ArmorModStats";

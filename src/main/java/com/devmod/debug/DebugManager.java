@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.server.level.ServerPlayer;
+
 public class DebugManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DebugManager.class);
 

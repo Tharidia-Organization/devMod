@@ -21,6 +21,7 @@ import net.minecraft.world.entity.LivingEntity;
 import com.devmod.endurance.challenges.DailyChallengeManager;
 import com.devmod.endurance.config.EnduranceConfigManager;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
+
 public class ComboSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComboSystem.class);
 

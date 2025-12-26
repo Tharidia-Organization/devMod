@@ -8,6 +8,7 @@ import com.google.gson.JsonObject;
 
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
+
 public class KillStatistics {
     public static final KillStatistics INSTANCE = new KillStatistics();
 

@@ -1,6 +1,7 @@
 package com.devmod.client.ui.testing.panel;
 
 import net.minecraft.client.gui.GuiGraphics;
+
 public sealed interface UIPanel permits
     HeaderPanel,
     SectionPanel,

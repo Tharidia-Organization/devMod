@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.jupiter.api.DisplayName;
@@ -23,16 +24,6 @@ import com.devmod.runtime.PlayerInstanceState;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L4 Test: Edge Case Validation
- *
- * Tests edge cases and boundary conditions without Minecraft dependencies.
- * Validates:
- * - Boundary values
- * - Race conditions
- * - Error recovery scenarios
- * - Unusual state combinations
- */
 @DisplayName("L4: Edge Case Validation")
 class EdgeCaseValidationTest {
 
@@ -232,17 +223,15 @@ class EdgeCaseValidationTest {
         @Test
         @DisplayName("Invalid UUID format throws exception")
         void invalidUUIDFormatThrowsException() {
-            assertThrows(IllegalArgumentException.class, () -> {
-                UUID.fromString("not-a-valid-uuid");
-            });
+            String invalid = UUID.randomUUID().toString().replaceFirst("[0-9a-f]", "g");
+            assertThrows(IllegalArgumentException.class, () -> UUID.fromString(invalid));
         }
 
         @Test
         @DisplayName("UUID without dashes parse fails")
         void uuidWithoutDashesThrowsException() {
-            assertThrows(IllegalArgumentException.class, () -> {
-                UUID.fromString("12345678123412341234123456789abc");
-            });
+            String withoutDashes = UUID.randomUUID().toString().replace("-", "");
+            assertThrows(IllegalArgumentException.class, () -> UUID.fromString(withoutDashes));
         }
     }
 
@@ -357,22 +346,26 @@ class EdgeCaseValidationTest {
         @DisplayName("ConcurrentHashMap handles null values correctly")
         void concurrentHashMapHandlesNullValues() {
             ConcurrentHashMap<String, String> map = new ConcurrentHashMap<>();
+            CompletableFuture<Void> writer = CompletableFuture.runAsync(() -> map.put("safe", "value"));
+            writer.join();
 
             // ConcurrentHashMap does NOT allow null values
-            assertThrows(NullPointerException.class, () -> {
-                map.put("key", null);
-            });
+            assertThrows(NullPointerException.class, () -> map.put("key", null));
+            assertEquals(1, map.size());
+            assertEquals("value", map.get("safe"));
         }
 
         @Test
         @DisplayName("ConcurrentHashMap handles null keys correctly")
         void concurrentHashMapHandlesNullKeys() {
             ConcurrentHashMap<String, String> map = new ConcurrentHashMap<>();
+            CompletableFuture<Void> writer = CompletableFuture.runAsync(() -> map.put("safe", "value"));
+            writer.join();
 
             // ConcurrentHashMap does NOT allow null keys
-            assertThrows(NullPointerException.class, () -> {
-                map.put(null, "value");
-            });
+            assertThrows(NullPointerException.class, () -> map.put(null, "value"));
+            assertEquals(1, map.size());
+            assertEquals("value", map.get("safe"));
         }
 
         @Test
@@ -380,10 +373,14 @@ class EdgeCaseValidationTest {
         void putIfAbsentReturnsNullOnSuccess() {
             ConcurrentHashMap<UUID, String> map = new ConcurrentHashMap<>();
             UUID key = UUID.randomUUID();
+            UUID otherKey = UUID.randomUUID();
+            CompletableFuture<Void> writer = CompletableFuture.runAsync(() -> map.put(otherKey, "other"));
+            writer.join();
 
             String result = map.putIfAbsent(key, "first");
             assertNull(result);
             assertEquals("first", map.get(key));
+            assertEquals("other", map.get(otherKey));
         }
 
         @Test
@@ -391,12 +388,16 @@ class EdgeCaseValidationTest {
         void putIfAbsentReturnsExistingValueOnFailure() {
             ConcurrentHashMap<UUID, String> map = new ConcurrentHashMap<>();
             UUID key = UUID.randomUUID();
+            UUID otherKey = UUID.randomUUID();
 
             map.put(key, "first");
+            CompletableFuture<Void> writer = CompletableFuture.runAsync(() -> map.put(otherKey, "other"));
+            writer.join();
             String result = map.putIfAbsent(key, "second");
 
             assertEquals("first", result);
             assertEquals("first", map.get(key)); // Still first
+            assertEquals("other", map.get(otherKey));
         }
 
         @Test
@@ -404,11 +405,15 @@ class EdgeCaseValidationTest {
         void computeIfAbsentCreatesValueLazily() {
             ConcurrentHashMap<UUID, List<String>> map = new ConcurrentHashMap<>();
             UUID key = UUID.randomUUID();
+            UUID otherKey = UUID.randomUUID();
+            CompletableFuture<Void> writer = CompletableFuture.runAsync(() -> map.put(otherKey, new ArrayList<>()));
+            writer.join();
 
             List<String> list = map.computeIfAbsent(key, k -> new ArrayList<>());
             list.add("item");
 
             assertEquals(1, map.get(key).size());
+            assertNotNull(map.get(otherKey));
         }
     }
 

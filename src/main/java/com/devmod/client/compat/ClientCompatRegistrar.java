@@ -4,6 +4,7 @@ import com.devmod.client.compat.mods.controlling.ControllingCompat;
 import com.devmod.client.compat.mods.fancymenu.FancyMenuCompat;
 import com.devmod.client.compat.mods.yacl.YaclCompat;
 import com.devmod.compat.CompatRegistry;
+
 public final class ClientCompatRegistrar {
 
     private ClientCompatRegistrar() {}

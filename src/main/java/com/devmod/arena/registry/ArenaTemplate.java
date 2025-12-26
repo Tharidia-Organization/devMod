@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import javax.annotation.Nullable;
+
 public record ArenaTemplate(
     String id,
     @Nullable String extendsTemplate,

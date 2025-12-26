@@ -27,6 +27,7 @@ import com.devmod.stats.WeaponStats;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+
 @GameTestHolder(DevMod.MODID)
 @PrefixGameTestTemplate(false)
 public class DevModGameTests {

@@ -6,12 +6,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 public class HotReloadManager<T> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HotReloadManager.class);
@@ -106,7 +108,7 @@ public class HotReloadManager<T> {
     private final DataLoader<T> loader;
     private final Map<String, ReloadListener<T>> listeners = new ConcurrentHashMap<>();
 
-    private volatile long currentVersion = 0;
+    private final AtomicLong currentVersion = new AtomicLong(0);
 
     public HotReloadManager(DataLoader<T> loader) {
         this.loader = loader;
@@ -155,7 +157,7 @@ public class HotReloadManager<T> {
         try {
             long startTime = System.currentTimeMillis();
             Snapshot<T> oldSnapshot = currentSnapshot.get();
-            long previousVersion = currentVersion;
+            long previousVersion = currentVersion.get();
 
             // Notify listeners before reload
             notifyBeforeReload(oldSnapshot);
@@ -165,7 +167,7 @@ public class HotReloadManager<T> {
                 Map<String, T> newData = loader.load();
 
                 // Increment version
-                long newVersion = ++currentVersion;
+                long newVersion = currentVersion.incrementAndGet();
 
                 // Create new immutable snapshot
                 Snapshot<T> newSnapshot = new Snapshot<>(
@@ -228,7 +230,7 @@ public class HotReloadManager<T> {
      * @return current version
      */
     public long getCurrentVersion() {
-        return currentVersion;
+        return currentVersion.get();
     }
 
     /**

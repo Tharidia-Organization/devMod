@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
+
 public class VersionDriftDetector {
 
     private static final Logger LOGGER = Logger.getLogger(VersionDriftDetector.class.getName());

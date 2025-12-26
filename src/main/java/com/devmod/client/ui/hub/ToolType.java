@@ -6,6 +6,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
 import com.devmod.actions.client.ClientActionContexts;
+
 public enum ToolType {
     DEBUG("Debug Overlay", "G", ActionIds.DEBUG_OVERLAY_TOGGLE),
     LIGHT_LEVEL("Light Levels", "L", ActionIds.DEBUG_LIGHT_OVERLAY_TOGGLE),

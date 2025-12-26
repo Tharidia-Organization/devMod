@@ -1,6 +1,7 @@
 package com.devmod.config;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
+
 public class GameMechanicsConfig {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 

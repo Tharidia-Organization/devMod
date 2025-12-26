@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 public class ArenaCommandAudit {
 
     private static final ArenaCommandAudit INSTANCE = new ArenaCommandAudit();

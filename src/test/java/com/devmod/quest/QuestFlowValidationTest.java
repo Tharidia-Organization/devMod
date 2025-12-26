@@ -8,15 +8,6 @@ import com.devmod.endurance.EnduranceQuestState;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L2 Quest Flow Validation Tests.
- *
- * Validates:
- * - Quest state machine transitions
- * - Quest lifecycle (start, wave complete, continue, fail, complete)
- * - State validation guards
- * - Session stats tracking
- */
 @DisplayName("L2: Quest Flow Validation")
 class QuestFlowValidationTest {
 

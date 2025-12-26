@@ -25,6 +25,7 @@ import com.devmod.party.InviteResponsePayload;
 import com.devmod.party.PartyInvite;
 import com.devmod.party.PartyNotificationPayload;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public class InvitePopupScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(InvitePopupScreen.class);

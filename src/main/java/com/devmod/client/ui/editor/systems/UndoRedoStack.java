@@ -5,6 +5,7 @@ import java.util.Deque;
 import java.util.List;
 
 import javax.annotation.Nullable;
+
 public final class UndoRedoStack<T> {
 
     private final Deque<UndoState<T>> undoStack = new ArrayDeque<>();

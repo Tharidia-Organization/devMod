@@ -22,6 +22,7 @@ import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.config.MobPresetManager;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public class MobConfigScreen extends Screen {
 

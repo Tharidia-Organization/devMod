@@ -26,6 +26,7 @@ import com.devmod.party.QuestSequencePayload;
 import com.devmod.party.QuestStartSequence;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.util.I18n;
+
 public class EnduranceEventTick {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceEventTick.class);
 

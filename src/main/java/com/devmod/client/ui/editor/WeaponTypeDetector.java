@@ -33,6 +33,7 @@ import com.devmod.DevMod;
 import com.devmod.config.EditorClientConfig;
 import com.devmod.tags.ModTags;
 import com.devmod.util.ConfigPaths;
+
 public class WeaponTypeDetector {
 
     public record DetectionResult(

@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.devmod.endurance.BossWaveSystem.BossAbility;
 import com.devmod.endurance.BossWaveSystem.BossArchetype;
 import com.devmod.endurance.BossWaveSystem.BossFight;
+
 public class BossDNAMixer {
     private static final Logger LOGGER = LoggerFactory.getLogger(BossDNAMixer.class);
 

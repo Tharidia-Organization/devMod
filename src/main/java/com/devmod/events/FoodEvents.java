@@ -23,6 +23,7 @@ import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 import com.devmod.DevMod;
 import com.devmod.config.FoodConfigManager;
 import com.devmod.stats.FoodStats;
+
 @EventBusSubscriber(modid = DevMod.MODID)
 public class FoodEvents {
 

@@ -8,6 +8,7 @@ import com.devmod.party.OnlinePlayersPayload;
 import com.devmod.party.PartyData;
 import com.devmod.party.PartyNotificationPayload;
 import com.devmod.party.PartySyncPayload;
+
 public final class ClientPartyCache {
 
     @Nullable

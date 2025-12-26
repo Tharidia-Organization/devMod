@@ -15,6 +15,7 @@ import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.util.I18n;
+
 public class GeneralSettingsPage implements SettingsPage {
 
     // Track original values for unsaved changes detection

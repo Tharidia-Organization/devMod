@@ -1,16 +1,14 @@
 package com.devmod.client.ui.editor.state;
 
-import net.minecraft.world.item.ItemStack;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import net.minecraft.world.item.ItemStack;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for {@link ItemEditorState}.
- */
 public class ItemEditorStateTest {
 
     private ItemEditorState state;

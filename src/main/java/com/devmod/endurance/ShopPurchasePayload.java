@@ -9,6 +9,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import io.netty.buffer.ByteBuf;
+
 public record ShopPurchasePayload(String itemId) implements CustomPacketPayload {
 
     // Security limits to prevent DoS attacks

@@ -295,4 +295,4 @@ private static final int VALUE_BASE_HEIGHT = 50;
 
 **Riferimenti:**
 - [03-crafting-analysis.md](03-crafting-analysis.md) - Dettagli analisi crafting
-- [BaseOverlay](../../src/main/java/com/frenkvs/devmod/ui/editor/core/BaseOverlay.java) - Classe base overlay
+- [BaseOverlay](../../../src/main/java/com/devmod/client/ui/editor/core/BaseOverlay.java) - Classe base overlay

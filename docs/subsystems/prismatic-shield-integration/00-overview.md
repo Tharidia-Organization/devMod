@@ -8,7 +8,7 @@ Integrare le tecniche visive e di gameplay del [Prismatic Shield Mod](https://gi
 
 | # | Componente | File Origine | Destinazione DevMod | Priorità |
 |---|------------|--------------|---------------------|----------|
-| 1 | Energy Shield Shader | `energy_shield.fsh/vsh/json` | `assets/devmod/shaders/core/` | ALTA |
+| 1 | Energy Shield Shader | `energy_shield.fsh/vsh/json` | `src/main/resources/assets/devmod/shaders/core/` | ALTA |
 | 2 | Hexagonal Mesh | `HexagonalShieldMesh.java` | `client/render/` | ALTA |
 | 3 | Advanced Renderer (6 layer) | `AdvancedShieldRenderer.java` | `client/render/EnergyShieldRenderer.java` | ALTA |
 | 4 | Particle System (500+ particles) | `ShieldParticleSystem.java` | `client/vfx/` | MEDIA |

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -18,6 +19,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.annotation.Nullable;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
@@ -31,19 +35,6 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L7 - Cross-System Integration & Chaos Engineering Tests
- *
- * Tests complex multi-system interactions with fault injection,
- * timing-critical scenarios, and property-based invariant verification.
- *
- * Categories:
- * 1. Quest Lifecycle Cross-System Integration
- * 2. Timing-Critical Scenarios
- * 3. Cascading Failure Recovery
- * 4. System Invariant Verification
- * 5. Fault Injection & Resilience
- */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class L7CrossSystemIntegrationTest {
 
@@ -137,12 +128,14 @@ public class L7CrossSystemIntegrationTest {
         final QuestSettings settings;
 
         volatile QuestState state = QuestState.INITIALIZING;
-        volatile int currentWave = 0;
+        final AtomicInteger currentWave = new AtomicInteger(0);
         volatile int maxWaves;
         volatile boolean endless;
 
         // Arena/Instance
+        @Nullable
         volatile String arenaId;
+        @Nullable
         volatile String instanceId;
 
         // Combat stats
@@ -262,7 +255,7 @@ public class L7CrossSystemIntegrationTest {
         volatile float damageMultiplier = 1.0f;
         volatile float defenseMultiplier = 1.0f;
         volatile float speedMultiplier = 1.0f;
-        volatile float lifestealPercent = 0f;
+        final AtomicReference<Float> lifestealPercent = new AtomicReference<>(0f);
 
         PerkSession(UUID playerId) {
             this.playerId = playerId;
@@ -277,7 +270,7 @@ public class L7CrossSystemIntegrationTest {
             damageMultiplier *= perk.damageMultiplier;
             defenseMultiplier *= perk.defenseMultiplier;
             speedMultiplier *= perk.speedMultiplier;
-            lifestealPercent += perk.lifestealPercent;
+            lifestealPercent.updateAndGet(value -> value + perk.lifestealPercent);
         }
 
         void reset() {
@@ -285,7 +278,7 @@ public class L7CrossSystemIntegrationTest {
             damageMultiplier = 1.0f;
             defenseMultiplier = 1.0f;
             speedMultiplier = 1.0f;
-            lifestealPercent = 0f;
+            lifestealPercent.set(0f);
         }
     }
 
@@ -456,9 +449,8 @@ public class L7CrossSystemIntegrationTest {
             QuestInstance quest = startQuestInInstance(world, player);
 
             assertNotNull(quest);
-            assertNotNull(quest.instanceId);
-            DimensionInstance dim = world.dimensions.get(quest.instanceId);
-            assertNotNull(dim);
+            String instanceId = Objects.requireNonNull(quest.instanceId, "Quest instance should be created");
+            DimensionInstance dim = Objects.requireNonNull(world.dimensions.get(instanceId), "Dimension should exist");
             assertEquals(DimensionState.IN_USE, dim.state);
 
             // Simulate combat
@@ -489,14 +481,14 @@ public class L7CrossSystemIntegrationTest {
             world.wallets.put(playerId, new Wallet(playerId));
 
             QuestInstance quest = startQuestInInstance(world, player);
-            String instanceId = quest.instanceId;
+            String instanceId = Objects.requireNonNull(quest.instanceId, "Quest instance should exist");
 
             // Add perks
-            PerkSession perks = world.perkSessions.get(playerId);
+            PerkSession perks = Objects.requireNonNull(world.perkSessions.get(playerId), "Perk session should exist");
             perks.addPerk(new Perk("damage_boost", PerkRarity.RARE));
 
             // Build combo
-            ComboSession combo = world.comboSessions.get(playerId);
+            ComboSession combo = Objects.requireNonNull(world.comboSessions.get(playerId), "Combo session should exist");
             for (int i = 0; i < 20; i++) {
                 combo.recordAction(50);
             }
@@ -510,7 +502,8 @@ public class L7CrossSystemIntegrationTest {
             // Verify cleanup
             assertNull(world.perkSessions.get(playerId));
             assertNull(world.comboSessions.get(playerId));
-            assertEquals(DimensionState.DESTROYED, world.dimensions.get(instanceId).state);
+            DimensionInstance cleanedDim = Objects.requireNonNull(world.dimensions.get(instanceId), "Dimension should exist");
+            assertEquals(DimensionState.DESTROYED, cleanedDim.state);
             assertEquals(PlayerState.IDLE, player.state);
         }
 
@@ -529,7 +522,8 @@ public class L7CrossSystemIntegrationTest {
             simulateWave(world, quest, player, 1);
 
             // Record some progress
-            long tokensBeforeDisconnect = world.wallets.get(playerId).tokens.get();
+            Wallet wallet = Objects.requireNonNull(world.wallets.get(playerId), "Wallet should exist");
+            long tokensBeforeDisconnect = wallet.tokens.get();
 
             // Disconnect
             handlePlayerDisconnect(world, player, quest);
@@ -538,7 +532,7 @@ public class L7CrossSystemIntegrationTest {
             assertEquals(QuestState.ABANDONED, quest.state);
 
             // Partial rewards should be given
-            assertTrue(world.wallets.get(playerId).tokens.get() >= tokensBeforeDisconnect);
+            assertTrue(wallet.tokens.get() >= tokensBeforeDisconnect);
         }
 
         @Test
@@ -585,7 +579,8 @@ public class L7CrossSystemIntegrationTest {
 
             assertEquals(4, allRewards.size());
             for (Player p : players) {
-                assertTrue(allRewards.get(p.id).tokens > 0);
+                QuestRewards rewards = Objects.requireNonNull(allRewards.get(p.id), "Rewards missing for player");
+                assertTrue(rewards.tokens > 0);
                 assertEquals(1, p.questsCompleted.get());
             }
         }
@@ -765,21 +760,21 @@ public class L7CrossSystemIntegrationTest {
             world.wallets.put(playerId, new Wallet(playerId));
 
             int cycles = 50;
-            AtomicInteger successfulCycles = new AtomicInteger(0);
+            int successfulCycles = 0;
 
             for (int i = 0; i < cycles; i++) {
                 QuestInstance quest = startQuest(world, player, new QuestSettings());
                 if (quest != null && quest.state == QuestState.ACTIVE) {
                     cancelQuest(world, quest, player);
                     if (quest.state == QuestState.ABANDONED) {
-                        successfulCycles.incrementAndGet();
+                        successfulCycles++;
                     }
                 }
                 // Small delay to avoid overwhelming
                 Thread.sleep(1);
             }
 
-            assertEquals(cycles, successfulCycles.get());
+            assertEquals(cycles, successfulCycles);
 
             // No leaked sessions
             assertNull(world.perkSessions.get(playerId));
@@ -831,10 +826,10 @@ public class L7CrossSystemIntegrationTest {
             world.wallets.put(playerId, new Wallet(playerId));
 
             QuestInstance quest = startQuestInInstance(world, player);
-            String instanceId = quest.instanceId;
+            String instanceId = Objects.requireNonNull(quest.instanceId, "Quest instance should exist");
 
             // Force destroy instance mid-combat
-            DimensionInstance dim = world.dimensions.get(instanceId);
+            DimensionInstance dim = Objects.requireNonNull(world.dimensions.get(instanceId), "Dimension should exist");
             dim.state = DimensionState.DESTROYED;
 
             // Quest should detect and fail gracefully
@@ -862,7 +857,7 @@ public class L7CrossSystemIntegrationTest {
 
             QuestInstance quest = startQuest(world, player, new QuestSettings());
             assertEquals(QuestState.ACTIVE, quest.state);
-            PerkSession perks = world.perkSessions.get(playerId);
+            PerkSession perks = Objects.requireNonNull(world.perkSessions.get(playerId), "Perk session should exist");
 
             // Add perks
             perks.addPerk(new Perk("crash_perk", PerkRarity.LEGENDARY));
@@ -873,8 +868,7 @@ public class L7CrossSystemIntegrationTest {
             // Recovery should recreate session
             recoverPerkSession(world, playerId);
 
-            PerkSession recovered = world.perkSessions.get(playerId);
-            assertNotNull(recovered);
+            PerkSession recovered = Objects.requireNonNull(world.perkSessions.get(playerId), "Perk session should be restored");
             assertEquals(1.0f, recovered.damageMultiplier); // Reset to default
         }
 
@@ -892,7 +886,7 @@ public class L7CrossSystemIntegrationTest {
             QuestInstance quest = startQuest(world, player, new QuestSettings());
 
             // Build significant combo
-            ComboSession combo = world.comboSessions.get(playerId);
+            ComboSession combo = Objects.requireNonNull(world.comboSessions.get(playerId), "Combo session should exist");
             for (int i = 0; i < 100; i++) {
                 combo.recordAction(50);
             }
@@ -1408,7 +1402,7 @@ public class L7CrossSystemIntegrationTest {
     }
 
     private void simulateWave(GameWorld world, QuestInstance quest, Player player, int waveNum) {
-        quest.currentWave = waveNum;
+        quest.currentWave.set(waveNum);
         int mobsToKill = 5 + waveNum;
         quest.mobsSpawned.set(mobsToKill);
         quest.mobsAlive.set(mobsToKill);
@@ -1442,7 +1436,7 @@ public class L7CrossSystemIntegrationTest {
 
     private void completeWave(GameWorld world, QuestInstance quest) {
         quest.mobsAlive.set(0);
-        quest.currentWave++;
+        quest.currentWave.incrementAndGet();
         quest.state = QuestState.WAVE_COMPLETE;
     }
 
@@ -1454,7 +1448,7 @@ public class L7CrossSystemIntegrationTest {
         ComboSession combo = world.comboSessions.get(player.id);
         float styleMultiplier = combo != null ? combo.currentRank.multiplier : 1.0f;
 
-        int baseTokens = Math.max(100, quest.currentWave * 100 + quest.totalKills.get() * 10);
+        int baseTokens = Math.max(100, quest.currentWave.get() * 100 + quest.totalKills.get() * 10);
         int finalTokens = (int) (baseTokens * styleMultiplier);
 
         QuestRewards rewards = new QuestRewards();
@@ -1477,8 +1471,9 @@ public class L7CrossSystemIntegrationTest {
         player.questsCompleted.incrementAndGet();
 
         // Cleanup instance
-        if (quest.instanceId != null) {
-            DimensionInstance dim = world.dimensions.get(quest.instanceId);
+        String instanceId = quest.instanceId;
+        if (instanceId != null) {
+            DimensionInstance dim = world.dimensions.get(instanceId);
             if (dim != null) {
                 dim.state = DimensionState.DESTROYED;
             }
@@ -1503,7 +1498,7 @@ public class L7CrossSystemIntegrationTest {
             ComboSession combo = world.comboSessions.get(player.id);
             float styleMultiplier = combo != null ? combo.currentRank.multiplier : 1.0f;
 
-            int baseTokens = quest.currentWave * 100 + quest.totalKills.get() * 5;
+            int baseTokens = quest.currentWave.get() * 100 + quest.totalKills.get() * 5;
             int finalTokens = (int) (baseTokens * styleMultiplier);
 
             QuestRewards r = new QuestRewards();
@@ -1536,8 +1531,9 @@ public class L7CrossSystemIntegrationTest {
         world.comboSessions.remove(player.id);
         world.activeQuests.remove(quest.questId);
 
-        if (quest.instanceId != null) {
-            DimensionInstance dim = world.dimensions.get(quest.instanceId);
+        String instanceId = quest.instanceId;
+        if (instanceId != null) {
+            DimensionInstance dim = world.dimensions.get(instanceId);
             if (dim != null) {
                 dim.state = DimensionState.DESTROYED;
             }
@@ -1561,7 +1557,7 @@ public class L7CrossSystemIntegrationTest {
         player.state = PlayerState.DISCONNECTED;
 
         // Award partial rewards
-        int partialTokens = quest.currentWave * 50;
+        int partialTokens = quest.currentWave.get() * 50;
         Wallet wallet = world.wallets.get(player.id);
         if (wallet != null) {
             wallet.tokens.addAndGet(partialTokens);
@@ -1580,8 +1576,9 @@ public class L7CrossSystemIntegrationTest {
     }
 
     private boolean detectInstanceFailure(GameWorld world, QuestInstance quest) {
-        if (quest.instanceId == null) return false;
-        DimensionInstance dim = world.dimensions.get(quest.instanceId);
+        String instanceId = quest.instanceId;
+        if (instanceId == null) return false;
+        DimensionInstance dim = world.dimensions.get(instanceId);
         return dim == null || dim.state == DimensionState.DESTROYED;
     }
 

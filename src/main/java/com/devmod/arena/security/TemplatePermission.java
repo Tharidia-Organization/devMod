@@ -2,6 +2,7 @@ package com.devmod.arena.security;
 
 import java.util.EnumSet;
 import java.util.Set;
+
 public enum TemplatePermission {
 
     /**

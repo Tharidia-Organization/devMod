@@ -3,6 +3,7 @@ package com.devmod.arena.fallback;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
 public class CircuitBreaker {
 
     public enum State {

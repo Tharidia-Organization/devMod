@@ -1,15 +1,11 @@
 package com.devmod;
 
-import com.devmod.components.ArmorComponents;
-
 import org.junit.jupiter.api.Test;
+
+import com.devmod.components.ArmorComponents;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-/**
- * Ensures armorStatsComponent does not silently fallback when registry isn't bound
- * unless the explicit test flag is set.
- */
 public class ArmorComponentsBindingTest {
 
     @Test

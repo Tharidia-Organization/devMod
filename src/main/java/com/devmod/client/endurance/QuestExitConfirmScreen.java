@@ -1,6 +1,7 @@
 package com.devmod.client.endurance;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -16,10 +17,12 @@ import com.devmod.client.ui.ConfirmDialog;
 import com.devmod.client.ui.ConfirmDialog.Style;
 import com.devmod.endurance.QuestActionPayload;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public class QuestExitConfirmScreen extends Screen {
 
     private final Screen parentScreen;
+    @Nullable
     private ConfirmDialog exitDialog;
 
     public QuestExitConfirmScreen(Screen parent) {

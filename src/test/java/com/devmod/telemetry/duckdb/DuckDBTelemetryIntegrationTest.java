@@ -7,10 +7,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.annotation.Nullable;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -24,51 +28,51 @@ import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Integration tests for DuckDB telemetry system.
- *
- * Tests cover:
- * - Combat event logging
- * - Endurance event logging
- * - Player attribute logging
- * - Economy event logging
- * - Spatial event logging
- * - Batch writer functionality
- * - Circuit breaker behavior
- * - Graceful shutdown
- */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class DuckDBTelemetryIntegrationTest {
 
     @TempDir
-    static Path tempDir;
+    @Nullable static Path tempDir;
 
-    private static Connection testConnection;
-    private static DuckDBConnectionManager connectionManager;
-    private static DuckDBBatchWriter batchWriter;
+    @Nullable private static Connection testConnection;
+    @Nullable private static DuckDBConnectionManager connectionManager;
+    @Nullable private static DuckDBBatchWriter batchWriter;
 
     @BeforeAll
     static void setupDatabase() throws SQLException {
-        Path dbPath = tempDir.resolve("test_telemetry.duckdb");
+        Path dbPath = Objects.requireNonNull(tempDir).resolve("test_telemetry.duckdb");
         connectionManager = new DuckDBConnectionManager(dbPath);
-        testConnection = connectionManager.getConnection();
+        Connection connection = requireConnectionManager().getConnection();
+        testConnection = connection;
 
         // Create schema
-        DuckDBSchemaManager.ensureSchema(testConnection);
+        DuckDBSchemaManager.ensureSchema(connection);
 
         // Initialize batch writer
-        batchWriter = new DuckDBBatchWriter(connectionManager);
-        batchWriter.start();
+        batchWriter = new DuckDBBatchWriter(requireConnectionManager());
+        requireBatchWriter().start();
     }
 
     @AfterAll
     static void cleanup() {
         if (batchWriter != null) {
-            batchWriter.shutdown();
+            requireBatchWriter().shutdown();
         }
         if (connectionManager != null) {
-            connectionManager.shutdown();
+            requireConnectionManager().shutdown();
         }
+    }
+
+    private static DuckDBConnectionManager requireConnectionManager() {
+        return Objects.requireNonNull(connectionManager, "Connection manager not initialized");
+    }
+
+    private static DuckDBBatchWriter requireBatchWriter() {
+        return Objects.requireNonNull(batchWriter, "Batch writer not initialized");
+    }
+
+    private static Connection requireConnection() {
+        return Objects.requireNonNull(testConnection, "Test connection not initialized");
     }
 
     @BeforeEach
@@ -76,21 +80,21 @@ class DuckDBTelemetryIntegrationTest {
         // Wait for any pending flushes to complete
         waitForPendingWrites();
         // Reset error state and reconnect to ensure clean connection
-        batchWriter.resetForTest();
+        requireBatchWriter().resetForTest();
         // Update testConnection reference after reconnect
-        testConnection = connectionManager.getConnection();
+        testConnection = requireConnectionManager().getConnection();
     }
 
     /**
      * Helper to wait for all pending writes to be flushed.
      */
     private void waitForPendingWrites() throws InterruptedException {
-        batchWriter.forceFlush();
+        requireBatchWriter().forceFlush();
         // Give DuckDB time to complete any pending transactions
         int maxWait = 10;
-        while (batchWriter.getPendingInserts() > 0 && maxWait-- > 0) {
+        while (requireBatchWriter().getPendingInserts() > 0 && maxWait-- > 0) {
             Thread.sleep(100);
-            batchWriter.forceFlush();
+            requireBatchWriter().forceFlush();
         }
         Thread.sleep(50); // Final settle time
     }
@@ -104,7 +108,7 @@ class DuckDBTelemetryIntegrationTest {
     @DisplayName("Combat: Hit event logging")
     void testCombatHitLogging() throws Exception {
         // Queue a hit event
-        batchWriter.queueCombatHit(
+        requireBatchWriter().queueCombatHit(
             Instant.now(),
             "arena_1",
             "minecraft:overworld",
@@ -127,11 +131,11 @@ class DuckDBTelemetryIntegrationTest {
         );
 
         // Force flush
-        batchWriter.forceFlush();
+        requireBatchWriter().forceFlush();
         Thread.sleep(100);
 
         // Verify data
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM combat_hits WHERE room = 'arena_1'")) {
             assertTrue(rs.next());
             assertTrue(rs.getInt(1) >= 1, "At least one hit should be recorded");
@@ -142,7 +146,7 @@ class DuckDBTelemetryIntegrationTest {
     @Order(2)
     @DisplayName("Combat: Death event logging")
     void testCombatDeathLogging() throws Exception {
-        batchWriter.queueCombatDeath(
+        requireBatchWriter().queueCombatDeath(
             Instant.now(),
             "arena_1",
             "minecraft:overworld",
@@ -153,10 +157,10 @@ class DuckDBTelemetryIntegrationTest {
             3000L
         );
 
-        batchWriter.forceFlush();
+        requireBatchWriter().forceFlush();
         Thread.sleep(100);
 
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM combat_deaths WHERE target_type = 'minecraft:zombie'")) {
             assertTrue(rs.next());
             assertTrue(rs.getInt(1) >= 1);
@@ -167,7 +171,7 @@ class DuckDBTelemetryIntegrationTest {
     @Order(3)
     @DisplayName("Combat: Heal event logging")
     void testCombatHealLogging() throws Exception {
-        batchWriter.queueCombatHeal(
+        requireBatchWriter().queueCombatHeal(
             Instant.now(),
             "arena_1",
             "minecraft:overworld",
@@ -179,10 +183,10 @@ class DuckDBTelemetryIntegrationTest {
             "regeneration"
         );
 
-        batchWriter.forceFlush();
+        requireBatchWriter().forceFlush();
         Thread.sleep(100);
 
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM combat_heals WHERE source = 'regeneration'")) {
             assertTrue(rs.next());
             assertTrue(rs.getInt(1) >= 1);
@@ -193,7 +197,7 @@ class DuckDBTelemetryIntegrationTest {
     @Order(4)
     @DisplayName("Combat: Spawn event logging")
     void testCombatSpawnLogging() throws Exception {
-        batchWriter.queueCombatSpawn(
+        requireBatchWriter().queueCombatSpawn(
             Instant.now(),
             "arena_1",
             "minecraft:overworld",
@@ -206,10 +210,10 @@ class DuckDBTelemetryIntegrationTest {
             200.5
         );
 
-        batchWriter.forceFlush();
+        requireBatchWriter().forceFlush();
         Thread.sleep(100);
 
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM combat_spawns WHERE reason = 'wave_spawn'")) {
             assertTrue(rs.next());
             assertTrue(rs.getInt(1) >= 1);
@@ -227,7 +231,7 @@ class DuckDBTelemetryIntegrationTest {
         UUID sessionId = UUID.randomUUID();
 
         // Wave start
-        batchWriter.queueEnduranceWave(
+        requireBatchWriter().queueEnduranceWave(
             Instant.now(),
             sessionId,
             null,
@@ -245,7 +249,7 @@ class DuckDBTelemetryIntegrationTest {
         );
 
         // Wave complete
-        batchWriter.queueEnduranceWave(
+        requireBatchWriter().queueEnduranceWave(
             Instant.now(),
             sessionId,
             null,
@@ -266,11 +270,11 @@ class DuckDBTelemetryIntegrationTest {
         waitForPendingWrites();
 
         // Debug: check total inserts
-        long totalInserts = batchWriter.getTotalInserts();
-        long droppedInserts = batchWriter.getDroppedInserts();
+        long totalInserts = requireBatchWriter().getTotalInserts();
+        long droppedInserts = requireBatchWriter().getDroppedInserts();
 
         // Query using current connection (same as batch writer uses)
-        Connection conn = connectionManager.getConnection();
+        Connection conn = requireConnectionManager().getConnection();
         // Use prepared statement for proper UUID handling
         try (PreparedStatement pstmt = conn.prepareStatement(
                 "SELECT COUNT(*) FROM endurance_waves WHERE session_id = ?")) {
@@ -291,7 +295,7 @@ class DuckDBTelemetryIntegrationTest {
     void testEnduranceWaveKillLogging() throws Exception {
         UUID sessionId = UUID.randomUUID();
 
-        batchWriter.queueEnduranceWaveKill(
+        requireBatchWriter().queueEnduranceWaveKill(
             Instant.now(),
             sessionId,
             null,
@@ -306,10 +310,10 @@ class DuckDBTelemetryIntegrationTest {
             25.5
         );
 
-        batchWriter.forceFlush();
+        requireBatchWriter().forceFlush();
         Thread.sleep(100);
 
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM endurance_wave_kills WHERE mob_type = 'minecraft:zombie'")) {
             assertTrue(rs.next());
             assertTrue(rs.getInt(1) >= 1);
@@ -323,7 +327,7 @@ class DuckDBTelemetryIntegrationTest {
         UUID playerId = UUID.randomUUID();
         UUID sessionId = UUID.randomUUID();
 
-        batchWriter.queueEnduranceCombo(
+        requireBatchWriter().queueEnduranceCombo(
             Instant.now(),
             playerId,
             sessionId,
@@ -340,10 +344,10 @@ class DuckDBTelemetryIntegrationTest {
             null, null, null, null, null, null
         );
 
-        batchWriter.forceFlush();
+        requireBatchWriter().forceFlush();
         Thread.sleep(100);
 
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM endurance_combos WHERE event_type = 'rank_change'")) {
             assertTrue(rs.next());
             assertTrue(rs.getInt(1) >= 1);
@@ -357,7 +361,7 @@ class DuckDBTelemetryIntegrationTest {
         UUID playerId = UUID.randomUUID();
         UUID sessionId = UUID.randomUUID();
 
-        batchWriter.queueEndurancePerk(
+        requireBatchWriter().queueEndurancePerk(
             Instant.now(),
             playerId,
             sessionId,
@@ -377,10 +381,10 @@ class DuckDBTelemetryIntegrationTest {
             null
         );
 
-        batchWriter.forceFlush();
+        requireBatchWriter().forceFlush();
         Thread.sleep(100);
 
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM endurance_perks WHERE perk_id = 'damage_boost'")) {
             assertTrue(rs.next());
             assertTrue(rs.getInt(1) >= 1);
@@ -394,7 +398,7 @@ class DuckDBTelemetryIntegrationTest {
         UUID playerId = UUID.randomUUID();
         UUID sessionId = UUID.randomUUID();
 
-        batchWriter.queueEnduranceReward(
+        requireBatchWriter().queueEnduranceReward(
             Instant.now(),
             playerId,
             sessionId,
@@ -410,10 +414,10 @@ class DuckDBTelemetryIntegrationTest {
             null, null, null, null, null, null, null
         );
 
-        batchWriter.forceFlush();
+        requireBatchWriter().forceFlush();
         Thread.sleep(100);
 
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM endurance_rewards WHERE currency = 'TOKENS'")) {
             assertTrue(rs.next());
             assertTrue(rs.getInt(1) >= 1);
@@ -430,7 +434,7 @@ class DuckDBTelemetryIntegrationTest {
     void testPlayerSnapshotLogging() throws Exception {
         UUID playerId = UUID.randomUUID();
 
-        batchWriter.queuePlayerSnapshot(
+        requireBatchWriter().queuePlayerSnapshot(
             Instant.now(),
             playerId,
             "TestPlayer",
@@ -450,10 +454,10 @@ class DuckDBTelemetryIntegrationTest {
             "minecraft:overworld"
         );
 
-        batchWriter.forceFlush();
+        requireBatchWriter().forceFlush();
         Thread.sleep(100);
 
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM player_snapshots WHERE player_name = 'TestPlayer'")) {
             assertTrue(rs.next());
             assertTrue(rs.getInt(1) >= 1);
@@ -466,7 +470,7 @@ class DuckDBTelemetryIntegrationTest {
     void testPlayerAbilityLogging() throws Exception {
         UUID playerId = UUID.randomUUID();
 
-        batchWriter.queuePlayerAbility(
+        requireBatchWriter().queuePlayerAbility(
             Instant.now(),
             playerId,
             "dash",
@@ -481,10 +485,10 @@ class DuckDBTelemetryIntegrationTest {
             null
         );
 
-        batchWriter.forceFlush();
+        requireBatchWriter().forceFlush();
         Thread.sleep(100);
 
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM player_abilities WHERE ability_type = 'dash'")) {
             assertTrue(rs.next());
             assertTrue(rs.getInt(1) >= 1);
@@ -499,12 +503,12 @@ class DuckDBTelemetryIntegrationTest {
     @Order(30)
     @DisplayName("Performance: Sample logging")
     void testPerformanceLogging() throws Exception {
-        batchWriter.queuePerformanceSample(Instant.now(), 25.5, 19.6);
+        requireBatchWriter().queuePerformanceSample(Instant.now(), 25.5, 19.6);
 
-        batchWriter.forceFlush();
+        requireBatchWriter().forceFlush();
         Thread.sleep(100);
 
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM performance_samples")) {
             assertTrue(rs.next());
             assertTrue(rs.getInt(1) >= 1);
@@ -519,7 +523,7 @@ class DuckDBTelemetryIntegrationTest {
     @Order(40)
     @DisplayName("Spatial: Heatmap logging")
     void testSpatialHeatmapLogging() throws Exception {
-        batchWriter.queueSpatialHeatmap(
+        requireBatchWriter().queueSpatialHeatmap(
             Instant.now(),
             "death",
             "arena_1",
@@ -527,10 +531,10 @@ class DuckDBTelemetryIntegrationTest {
             5
         );
 
-        batchWriter.forceFlush();
+        requireBatchWriter().forceFlush();
         Thread.sleep(100);
 
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM spatial_heatmaps WHERE heatmap_type = 'death'")) {
             assertTrue(rs.next());
             assertTrue(rs.getInt(1) >= 1);
@@ -541,7 +545,7 @@ class DuckDBTelemetryIntegrationTest {
     @Order(41)
     @DisplayName("Spatial: Alert logging")
     void testSpatialAlertLogging() throws Exception {
-        batchWriter.queueSpatialAlert(
+        requireBatchWriter().queueSpatialAlert(
             Instant.now(),
             "stuck",
             "Player1",
@@ -552,10 +556,10 @@ class DuckDBTelemetryIntegrationTest {
             "{\"duration_ms\":5000}"
         );
 
-        batchWriter.forceFlush();
+        requireBatchWriter().forceFlush();
         Thread.sleep(100);
 
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM spatial_alerts WHERE alert_type = 'stuck'")) {
             assertTrue(rs.next());
             assertTrue(rs.getInt(1) >= 1);
@@ -568,17 +572,17 @@ class DuckDBTelemetryIntegrationTest {
     void testRoomTransitionLogging() throws Exception {
         UUID playerId = UUID.randomUUID();
 
-        batchWriter.queueRoomTransition(
+        requireBatchWriter().queueRoomTransition(
             Instant.now(),
             playerId,
             "Player1",
             "arena_2"
         );
 
-        batchWriter.forceFlush();
+        requireBatchWriter().forceFlush();
         Thread.sleep(100);
 
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM spatial_room_transitions WHERE room = 'arena_2'")) {
             assertTrue(rs.next());
             assertTrue(rs.getInt(1) >= 1);
@@ -597,7 +601,7 @@ class DuckDBTelemetryIntegrationTest {
         long startTime = System.nanoTime();
 
         for (int i = 0; i < eventCount; i++) {
-            batchWriter.queueCombatHit(
+            requireBatchWriter().queueCombatHit(
                 Instant.now(),
                 "stress_test",
                 "minecraft:overworld",
@@ -628,10 +632,10 @@ class DuckDBTelemetryIntegrationTest {
             String.format("Queue time %.4f ms/event exceeds 0.1ms target", avgQueueTimeMs));
 
         // Flush and verify
-        batchWriter.forceFlush();
+        requireBatchWriter().forceFlush();
         Thread.sleep(500);
 
-        try (Statement stmt = testConnection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM combat_hits WHERE room = 'stress_test'")) {
             assertTrue(rs.next());
             assertEquals(eventCount, rs.getInt(1), "All events should be written");
@@ -647,6 +651,8 @@ class DuckDBTelemetryIntegrationTest {
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch doneLatch = new CountDownLatch(threadCount);
         AtomicInteger successCount = new AtomicInteger(0);
+        AtomicReference<Throwable> firstError = new AtomicReference<>();
+        DuckDBBatchWriter writer = requireBatchWriter();
 
         for (int t = 0; t < threadCount; t++) {
             final int threadId = t;
@@ -654,7 +660,7 @@ class DuckDBTelemetryIntegrationTest {
                 try {
                     startLatch.await();
                     for (int i = 0; i < eventsPerThread; i++) {
-                        batchWriter.queuePerformanceSample(
+                        writer.queuePerformanceSample(
                             Instant.now(),
                             20.0 + threadId + i * 0.01,
                             19.0 + i * 0.001
@@ -662,7 +668,7 @@ class DuckDBTelemetryIntegrationTest {
                         successCount.incrementAndGet();
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    firstError.compareAndSet(null, e);
                 } finally {
                     doneLatch.countDown();
                 }
@@ -675,13 +681,14 @@ class DuckDBTelemetryIntegrationTest {
         // Primary assertion: all queue operations succeed (thread-safe queueing)
         assertEquals(threadCount * eventsPerThread, successCount.get(),
             "All queue operations should succeed");
+        assertNull(firstError.get(), "Unexpected error during concurrent writes: " + firstError.get());
 
         // Wait for flush to complete
         waitForPendingWrites();
 
         // Verify at least some events were written (DuckDB single-writer may drop under stress)
         // This validates the queue->flush pipeline works, even if not 100% under extreme load
-        long totalWritten = batchWriter.getTotalInserts();
+        long totalWritten = writer.getTotalInserts();
         assertTrue(totalWritten > 0, "Some events should be written to database");
     }
 
@@ -691,19 +698,19 @@ class DuckDBTelemetryIntegrationTest {
     void testFlushTiming() throws Exception {
         // Queue some events
         for (int i = 0; i < 50; i++) {
-            batchWriter.queuePerformanceSample(Instant.now(), 20.0 + i, 19.0);
+            requireBatchWriter().queuePerformanceSample(Instant.now(), 20.0 + i, 19.0);
         }
 
         // Get pending count before flush
-        long pendingBefore = batchWriter.getPendingInserts();
+        long pendingBefore = requireBatchWriter().getPendingInserts();
         assertTrue(pendingBefore > 0, "Should have pending inserts");
 
         // Flush
-        batchWriter.forceFlush();
+        requireBatchWriter().forceFlush();
         Thread.sleep(200);
 
         // Get pending count after flush
-        long pendingAfter = batchWriter.getPendingInserts();
+        long pendingAfter = requireBatchWriter().getPendingInserts();
         assertEquals(0, pendingAfter, "No inserts should be pending after flush");
     }
 
@@ -734,7 +741,7 @@ class DuckDBTelemetryIntegrationTest {
             "spatial_heatmaps", "spatial_alerts", "spatial_room_transitions"
         };
 
-        try (Statement stmt = testConnection.createStatement()) {
+        try (Statement stmt = requireConnection().createStatement()) {
             for (String table : expectedTables) {
                 ResultSet rs = stmt.executeQuery(
                     "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = '" + table + "'"
@@ -765,7 +772,7 @@ class DuckDBTelemetryIntegrationTest {
             "idx_spatial_heatmaps_room"
         };
 
-        try (Statement stmt = testConnection.createStatement()) {
+        try (Statement stmt = requireConnection().createStatement()) {
             ResultSet rs = stmt.executeQuery(
                 "SELECT index_name FROM duckdb_indexes()"
             );
@@ -791,7 +798,7 @@ class DuckDBTelemetryIntegrationTest {
     @DisplayName("Shutdown: Graceful flush on shutdown")
     void testGracefulShutdown() throws Exception {
         // Create a separate batch writer for this test
-        Path shutdownTestDb = tempDir.resolve("shutdown_test.duckdb");
+        Path shutdownTestDb = Objects.requireNonNull(tempDir).resolve("shutdown_test.duckdb");
         DuckDBConnectionManager shutdownConnMgr = new DuckDBConnectionManager(shutdownTestDb);
         DuckDBSchemaManager.ensureSchema(shutdownConnMgr.getConnection());
         DuckDBBatchWriter shutdownWriter = new DuckDBBatchWriter(shutdownConnMgr);

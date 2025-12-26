@@ -3,6 +3,7 @@ package com.devmod.client.ui.unified.persistence;
 import java.util.Map;
 
 import com.devmod.client.rendering.HeatmapVisualizer.HeatmapType;
+
 public class SettingsData {
 
     // Schema version for migration support

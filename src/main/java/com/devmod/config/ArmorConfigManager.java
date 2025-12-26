@@ -1,4 +1,5 @@
 package com.devmod.config;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -42,6 +43,7 @@ import com.devmod.DevMod;
 import com.devmod.components.ArmorComponents;
 import com.devmod.network.PacketValidator;
 import com.devmod.stats.ArmorStats;
+
 public class ArmorConfigManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArmorConfigManager.class);

@@ -13,16 +13,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L3 Test: Recovery System Validation
- *
- * Tests the recovery system rules without Minecraft dependencies.
- * Validates:
- * - PlayerInstanceState state machine
- * - Snapshot lifecycle rules
- * - Recovery decision logic
- * - File path generation rules
- */
 @DisplayName("L3: Recovery System Validation")
 class RecoverySystemValidationTest {
 

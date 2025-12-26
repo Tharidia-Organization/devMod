@@ -14,6 +14,7 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class RelicsCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(RelicsCompat.class);
     public static final String MOD_ID = "relics";

@@ -1,6 +1,7 @@
 package com.devmod.arena.policy;
 
 import java.util.Objects;
+
 public record MutatorBinding(
     String mutatorId,
     BindingType bindingType,

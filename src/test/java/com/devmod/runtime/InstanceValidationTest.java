@@ -12,16 +12,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L2 Instance System Validation Tests.
- *
- * Validates:
- * - Instance state machine transitions
- * - InstanceData player management
- * - Instance destruction scheduling
- * - Solo vs party instance creation
- * - Serialization/deserialization
- */
 @DisplayName("L2: Instance System Validation")
 class InstanceValidationTest {
 

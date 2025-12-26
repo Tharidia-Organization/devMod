@@ -16,6 +16,7 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.recipe.CraftingRecipeData;
 import com.devmod.recipe.CraftingType;
 import com.devmod.recipe.IngredientData;
+
 public class RecipeGridComponent {
 
     // ═══════════════════════════════════════════════════════════════

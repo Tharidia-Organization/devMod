@@ -9,6 +9,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.devmod.config.Config;
+
 public final class ImpactHistory {
     private static final int DEFAULT_MAX_HISTORY = 10;
 

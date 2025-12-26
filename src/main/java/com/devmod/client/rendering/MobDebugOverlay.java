@@ -2,6 +2,8 @@ package com.devmod.client.rendering;
 
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -10,12 +12,14 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.config.MobConfigManager;
+
 public class MobDebugOverlay {
 
     private static final int COLOR_HITBOX = 0x80FFFF00; // Transparent yellow
     private static final int COLOR_LABEL = 0xFFFFFF; // White
 
     // Track current mob for continuous rendering
+    @Nullable
     private static Mob trackedMob = null;
     private static long lastUpdateTime = 0;
     private static final long TRACKING_TIMEOUT = 3000; // 3 seconds without looking = stop tracking
@@ -73,6 +77,7 @@ public class MobDebugOverlay {
     /**
      * Finds the mob the player is looking at using custom raycast
      */
+    @Nullable
     private static Mob findLookedAtMob(Minecraft mc) {
         // Null safety: verify player and level exist
         var player = mc.player;
@@ -103,7 +108,7 @@ public class MobDebugOverlay {
             var clip = box.clip(eye, end);
 
             if (clip.isPresent()) {
-                double distance = eye.distanceTo(Objects.requireNonNull(clip.get()));
+                double distance = eye.distanceTo(clip.get());
                 if (distance < closestDistance) {
                     closestDistance = distance;
                     closestMob = mob;

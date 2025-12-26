@@ -9,10 +9,14 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.annotation.Nullable;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -25,37 +29,26 @@ import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Pure DuckDB integration tests that DO NOT depend on Minecraft classes.
- *
- * These tests verify:
- * 1. DuckDB connection and schema creation
- * 2. Insert performance (<1.0ms per insert)
- * 3. Batch insert functionality
- * 4. Concurrent write safety
- * 5. Data integrity after flush
- *
- * Run with: ./gradlew test --tests "DuckDBPureIntegrationTest"
- */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class DuckDBPureIntegrationTest {
 
     @TempDir
-    static Path tempDir;
+    @Nullable static Path tempDir;
 
-    private static Connection connection;
+    @Nullable private static Connection connection;
     private static final double MAX_INSERT_LATENCY_MS =
         Double.parseDouble(System.getProperty("devmod.duckdb.maxInsertMs", "1.0"));
 
     @BeforeAll
     static void setup() throws SQLException {
-        Path dbPath = tempDir.resolve("test_pure.duckdb");
+        Path dbPath = Objects.requireNonNull(tempDir).resolve("test_pure.duckdb");
         connection = DriverManager.getConnection("jdbc:duckdb:" + dbPath);
 
         // Create minimal schema for testing
-        try (Statement stmt = connection.createStatement()) {
+        try (Statement stmt = requireConnection().createStatement()) {
             // Combat hits table (most common write)
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS combat_hits (
@@ -104,6 +97,10 @@ class DuckDBPureIntegrationTest {
         }
     }
 
+    private static Connection requireConnection() {
+        return Objects.requireNonNull(connection, "DuckDB connection not initialized");
+    }
+
     // ============================================
     // TEST 1: Basic Insert Works
     // ============================================
@@ -112,7 +109,7 @@ class DuckDBPureIntegrationTest {
     @Order(1)
     @DisplayName("Basic: Single insert works")
     void testSingleInsert() throws SQLException {
-        try (PreparedStatement pstmt = connection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO combat_hits (id, ts, room, attacker_name, target_name, damage, damage_type) " +
             "VALUES (nextval('seq_combat_hits'), ?, ?, ?, ?, ?, ?)")) {
 
@@ -125,7 +122,7 @@ class DuckDBPureIntegrationTest {
             pstmt.executeUpdate();
         }
 
-        try (Statement stmt = connection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM combat_hits")) {
             assertTrue(rs.next());
             assertTrue(rs.getInt(1) >= 1, "At least one row should exist");
@@ -142,7 +139,7 @@ class DuckDBPureIntegrationTest {
     void testInsertLatency() throws SQLException {
         int iterations = 1000;
 
-        try (PreparedStatement pstmt = connection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO performance_samples (id, ts, mspt, tps) " +
             "VALUES (nextval('seq_performance_samples'), ?, ?, ?)")) {
 
@@ -166,7 +163,7 @@ class DuckDBPureIntegrationTest {
         }
 
         // Verify all rows written
-        try (Statement stmt = connection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM performance_samples")) {
             assertTrue(rs.next());
             assertEquals(iterations, rs.getInt(1), "All " + iterations + " rows should be written");
@@ -184,7 +181,7 @@ class DuckDBPureIntegrationTest {
         int batchSize = 100;
         int batches = 10;
 
-        try (PreparedStatement pstmt = connection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO combat_hits (id, ts, room, attacker_name, target_name, damage, damage_type) " +
             "VALUES (nextval('seq_combat_hits'), ?, ?, ?, ?, ?, ?)")) {
 
@@ -214,7 +211,7 @@ class DuckDBPureIntegrationTest {
         }
 
         // Verify
-        try (Statement stmt = connection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM combat_hits WHERE room = 'batch_test'")) {
             assertTrue(rs.next());
             assertEquals(batchSize * batches, rs.getInt(1));
@@ -235,6 +232,8 @@ class DuckDBPureIntegrationTest {
         CountDownLatch doneLatch = new CountDownLatch(threadCount);
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger errorCount = new AtomicInteger(0);
+        AtomicReference<Throwable> firstError = new AtomicReference<>();
+        Connection shared = requireConnection();
 
         // Each thread gets its own connection (DuckDB allows concurrent reads, serializes writes)
         for (int t = 0; t < threadCount; t++) {
@@ -244,8 +243,8 @@ class DuckDBPureIntegrationTest {
                     startLatch.await();
 
                     // Use the shared connection with synchronization
-                    synchronized (connection) {
-                        try (PreparedStatement pstmt = connection.prepareStatement(
+                    synchronized (shared) {
+                        try (PreparedStatement pstmt = requireConnection().prepareStatement(
                             "INSERT INTO player_snapshots (id, ts, player_id, player_name, trigger_type, health_hp, max_health_hp) " +
                             "VALUES (nextval('seq_player_snapshots'), ?, ?, ?, ?, ?, ?)")) {
 
@@ -263,7 +262,7 @@ class DuckDBPureIntegrationTest {
                     }
                 } catch (Exception e) {
                     errorCount.incrementAndGet();
-                    e.printStackTrace();
+                    firstError.compareAndSet(null, e);
                 } finally {
                     doneLatch.countDown();
                 }
@@ -276,9 +275,10 @@ class DuckDBPureIntegrationTest {
         int expectedTotal = threadCount * insertsPerThread;
         assertEquals(expectedTotal, successCount.get(), "All inserts should succeed");
         assertEquals(0, errorCount.get(), "No errors should occur");
+        assertNull(firstError.get(), "Unexpected error during concurrent writes: " + firstError.get());
 
         // Verify data
-        try (Statement stmt = connection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM player_snapshots WHERE trigger_type = 'concurrent_test'")) {
             assertTrue(rs.next());
             assertEquals(expectedTotal, rs.getInt(1), "All concurrent writes should be persisted");
@@ -294,7 +294,7 @@ class DuckDBPureIntegrationTest {
     @DisplayName("Query: COUNT and MAX performance")
     void testQueryPerformance() throws SQLException {
         // Insert some data first
-        try (PreparedStatement pstmt = connection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO performance_samples (id, ts, mspt, tps) " +
             "VALUES (nextval('seq_performance_samples'), ?, ?, ?)")) {
             for (int i = 0; i < 100; i++) {
@@ -308,7 +308,7 @@ class DuckDBPureIntegrationTest {
 
         // Test COUNT query
         long startNs = System.nanoTime();
-        try (Statement stmt = connection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM performance_samples")) {
             assertTrue(rs.next());
             int count = rs.getInt(1);
@@ -318,7 +318,7 @@ class DuckDBPureIntegrationTest {
 
         // Test MAX(ts) query
         startNs = System.nanoTime();
-        try (Statement stmt = connection.createStatement();
+        try (Statement stmt = requireConnection().createStatement();
              ResultSet rs = stmt.executeQuery("SELECT MAX(ts) FROM performance_samples")) {
             assertTrue(rs.next());
             assertNotNull(rs.getTimestamp(1), "Should have max timestamp");
@@ -344,7 +344,7 @@ class DuckDBPureIntegrationTest {
         Instant testStart = Instant.now();
 
         // Insert with known timestamp
-        try (PreparedStatement pstmt = connection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "INSERT INTO combat_hits (id, ts, room, attacker_name, target_name, damage, damage_type) " +
             "VALUES (nextval('seq_combat_hits'), ?, ?, ?, ?, ?, ?)")) {
 
@@ -358,7 +358,7 @@ class DuckDBPureIntegrationTest {
         }
 
         // Query recent data
-        try (PreparedStatement pstmt = connection.prepareStatement(
+        try (PreparedStatement pstmt = requireConnection().prepareStatement(
             "SELECT COUNT(*), MAX(damage) FROM combat_hits WHERE room = 'integrity_test' AND ts >= ?")) {
 
             pstmt.setTimestamp(1, Timestamp.from(testStart.minusSeconds(1)));

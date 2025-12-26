@@ -19,6 +19,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.endurance.QuestCompletionPayload;
+
 @OnlyIn(Dist.CLIENT)
 public class QuestCompletionScreen extends Screen {
 

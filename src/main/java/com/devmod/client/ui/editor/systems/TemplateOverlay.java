@@ -20,6 +20,7 @@ import com.devmod.client.ui.editor.core.BaseOverlay;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.Typography;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public class TemplateOverlay extends BaseOverlay {
 
     private static final int PANEL_WIDTH = 340;

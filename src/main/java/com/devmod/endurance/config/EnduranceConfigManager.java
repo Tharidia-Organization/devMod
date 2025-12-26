@@ -18,6 +18,7 @@ import com.devmod.arena.policy.ArenaPolicy.SeasonPassOverrides;
 import com.devmod.arena.policy.ArenaPolicy.StyleRankOverrides;
 import com.devmod.arena.policy.ArenaPolicy.TensionOverrides;
 import com.devmod.config.GameMechanicsConfig;
+
 public class EnduranceConfigManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceConfigManager.class);
 

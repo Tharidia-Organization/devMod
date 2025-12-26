@@ -1,18 +1,16 @@
 package com.devmod;
 
-import org.junit.jupiter.api.Test;
+import javax.annotation.Nullable;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for hit detection system.
- * Tests raycast accuracy, AABB subdivision, and body part detection.
- */
 public class HitDetectionTest {
 
     /**
@@ -123,6 +121,7 @@ public class HitDetectionTest {
     /**
      * Simulates ray-AABB intersection test
      */
+    @Nullable
     static MockVec3 raycastAABB(MockVec3 origin, MockVec3 direction, MockAABB aabb) {
         double tMin = Double.NEGATIVE_INFINITY;
         double tMax = Double.POSITIVE_INFINITY;

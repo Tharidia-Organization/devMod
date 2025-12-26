@@ -54,6 +54,7 @@ import com.devmod.endurance.CustomKit;
 import com.devmod.endurance.KitManager;
 import com.devmod.endurance.KitPersistence;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public class KitSelectionScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(KitSelectionScreen.class);

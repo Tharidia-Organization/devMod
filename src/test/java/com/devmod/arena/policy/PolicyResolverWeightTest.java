@@ -1,24 +1,22 @@
 package com.devmod.arena.policy;
 
-import com.devmod.arena.config.ArenaTemplateConfig;
-import com.devmod.arena.override.OverrideManager;
-import com.devmod.arena.registry.ArenaTemplate;
-import com.devmod.arena.registry.ArenaTemplateRegistry;
-import com.devmod.arena.telemetry.ArenaTelemetry;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.devmod.arena.config.ArenaTemplateConfig;
+import com.devmod.arena.override.OverrideManager;
+import com.devmod.arena.registry.ArenaTemplate;
+import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.arena.telemetry.ArenaTelemetry;
+
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Tests for routing weight handling (clamp + scoring).
- */
 class PolicyResolverWeightTest {
 
     private ArenaTelemetry telemetry;

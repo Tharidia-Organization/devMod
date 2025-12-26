@@ -6,6 +6,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.rendering.shield.EnergyShieldRenderer;
+
 @OnlyIn(Dist.CLIENT)
 public final class ClientShieldHandlers {
 

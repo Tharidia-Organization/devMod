@@ -27,6 +27,7 @@ import com.devmod.quest.QuestData;
 import com.devmod.quest.QuestManager;
 import com.devmod.quest.QuestTask;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public class QuestEditorScreen extends ModScreen {
 

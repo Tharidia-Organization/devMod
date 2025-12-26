@@ -3,6 +3,7 @@ package com.devmod.actions;
 import java.util.Objects;
 
 import javax.annotation.Nullable;
+
 public record ActionResult(
     Status status,
     @Nullable String errorCode,

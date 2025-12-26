@@ -1,6 +1,7 @@
 package com.devmod.arena.monitoring;
 
 import java.time.Duration;
+
 public record AnomalyThresholds(
     // Build metrics - DD57: P50, P95, P99 percentiles
     Duration buildP50Warn,

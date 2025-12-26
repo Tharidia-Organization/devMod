@@ -5,6 +5,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 import net.minecraft.world.phys.Vec3;
+
 public class PositionSmoother {
 
     // === Current State ===

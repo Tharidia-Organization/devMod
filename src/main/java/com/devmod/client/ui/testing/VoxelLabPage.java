@@ -1,6 +1,7 @@
 package com.devmod.client.ui.testing;
 
 import net.minecraft.client.gui.GuiGraphics;
+
 public interface VoxelLabPage {
 
     /**

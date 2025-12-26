@@ -12,6 +12,7 @@ import net.minecraft.client.gui.screens.Screen;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+
 @OnlyIn(Dist.CLIENT)
 public final class EscapeBehavior {
 

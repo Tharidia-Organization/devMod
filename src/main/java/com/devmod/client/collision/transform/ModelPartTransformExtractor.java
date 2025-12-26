@@ -20,6 +20,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.collision.compat.GeckoLibCompat;
 import com.devmod.collision.transform.AnimationSnapshot;
+
 public final class ModelPartTransformExtractor {
 
     private static final Logger LOGGER = LogUtils.getLogger();

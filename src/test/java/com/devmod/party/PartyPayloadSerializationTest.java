@@ -1,34 +1,21 @@
 package com.devmod.party;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.jupiter.params.provider.EnumSource;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
+
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L3: Client/Server Sync Tests for Party System Payloads
- *
- * Tests network serialization and deserialization of party-related payloads.
- * Uses simulated encode/decode to mirror actual PartySyncPayload and PartyActionPayload.
- *
- * Test coverage:
- * - PartySyncPayload encode/decode round-trip
- * - PartyActionPayload encode/decode for all Action types
- * - Mob selection field serialization
- * - Edge cases (null, empty, max values)
- * - Security limits (MAX_MEMBERS, MAX_NAME_LENGTH)
- */
 public class PartyPayloadSerializationTest {
 
     // Security limits matching actual payload

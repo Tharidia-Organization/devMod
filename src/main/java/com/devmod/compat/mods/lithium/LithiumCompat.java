@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class LithiumCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(LithiumCompat.class);
     public static final String MOD_ID = "lithium";

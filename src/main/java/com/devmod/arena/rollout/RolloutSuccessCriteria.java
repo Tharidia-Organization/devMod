@@ -1,6 +1,7 @@
 package com.devmod.arena.rollout;
 
 import java.time.Duration;
+
 public record RolloutSuccessCriteria(
     Duration maxBuildP95,
     double maxRollbackRate,
@@ -35,7 +36,7 @@ public record RolloutSuccessCriteria(
         0.85,
         0.005,
         0.995,
-        Duration.ofHours(48),
+        Duration.ofDays(2),
         500
     );
 
@@ -43,7 +44,7 @@ public record RolloutSuccessCriteria(
      * Lenient criteria for initial phases.
      */
     public static final RolloutSuccessCriteria LENIENT = new RolloutSuccessCriteria(
-        Duration.ofMillis(1000),
+        Duration.ofSeconds(1),
         0.03,
         0.60,
         0.05,

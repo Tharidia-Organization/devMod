@@ -26,24 +26,6 @@ import org.junit.jupiter.api.Timeout;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Progressive Test Suite 10: Arena Generation and Wave Management
- *
- * Tests the arena construction, mob spawning, and wave progression systems.
- * Simulates actual gameplay mechanics to identify edge cases and bugs.
- *
- * Scenarios covered:
- * 1. Arena creation and barrier placement
- * 2. Spawn position validation
- * 3. Wave state transitions
- * 4. Mob spawn verification
- * 5. Wave modifier application
- * 6. Elite mob scaling
- * 7. Boss wave triggers
- * 8. Wave cleanup on quest end
- * 9. Concurrent arena management
- * 10. Arena bounds checking
- */
 public class ArenaWaveManagerTest {
 
     // ============================================================

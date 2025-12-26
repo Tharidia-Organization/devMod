@@ -246,7 +246,7 @@ RecipeSyncPayload implements CustomPacketPayload
 ### Componenti Nuovi
 
 ```
-src/main/java/com/frenkvs/devmod/
+src/main/java/com/devmod/
 ├── recipe/
 │   ├── RecipeConfigManager.java      # Gestione ricette modificate (singleton)
 │   ├── RecipeData.java               # Record per dati ricetta
@@ -1135,32 +1135,32 @@ private static void handleRecipeSyncClient(RecipeSyncPayload payload, IPayloadCo
 
 | File | Path | Milestone |
 |------|------|-----------|
-| RecipeData | `src/main/java/com/frenkvs/devmod/recipe/RecipeData.java` | M1 |
-| CraftingRecipeData | `src/main/java/com/frenkvs/devmod/recipe/CraftingRecipeData.java` | M1 |
-| SmeltingRecipeData | `src/main/java/com/frenkvs/devmod/recipe/SmeltingRecipeData.java` | M2 |
-| SmithingRecipeData | `src/main/java/com/frenkvs/devmod/recipe/SmithingRecipeData.java` | M3 |
-| StonecuttingRecipeData | `src/main/java/com/frenkvs/devmod/recipe/StonecuttingRecipeData.java` | M3 |
-| IngredientData | `src/main/java/com/frenkvs/devmod/recipe/IngredientData.java` | M1 |
-| ResultData | `src/main/java/com/frenkvs/devmod/recipe/ResultData.java` | M1 |
-| RecipeConfigManager | `src/main/java/com/frenkvs/devmod/recipe/RecipeConfigManager.java` | M1 |
-| RecipeSerializer | `src/main/java/com/frenkvs/devmod/recipe/RecipeSerializer.java` | M1 |
-| RecipeValidator | `src/main/java/com/frenkvs/devmod/recipe/RecipeValidator.java` | M1 |
-| RecipeGridComponent | `src/main/java/com/frenkvs/devmod/ui/editor/components/RecipeGridComponent.java` | M1 |
-| IngredientSlotComponent | `src/main/java/com/frenkvs/devmod/ui/editor/components/IngredientSlotComponent.java` | M1 |
-| CraftingEditorModule | `src/main/java/com/frenkvs/devmod/ui/editor/modules/CraftingEditorModule.java` | M1 |
-| SmeltingEditorModule | `src/main/java/com/frenkvs/devmod/ui/editor/modules/SmeltingEditorModule.java` | M2 |
-| SmithingEditorModule | `src/main/java/com/frenkvs/devmod/ui/editor/modules/SmithingEditorModule.java` | M3 |
-| StonecuttingEditorModule | `src/main/java/com/frenkvs/devmod/ui/editor/modules/StonecuttingEditorModule.java` | M3 |
-| RecipeSyncPayload | `src/main/java/com/frenkvs/devmod/network/RecipeSyncPayload.java` | M1 |
+| RecipeData | `src/main/java/com/devmod/recipe/RecipeData.java` | M1 |
+| CraftingRecipeData | `src/main/java/com/devmod/recipe/CraftingRecipeData.java` | M1 |
+| SmeltingRecipeData | `src/main/java/com/devmod/recipe/SmeltingRecipeData.java` | M2 |
+| SmithingRecipeData | `src/main/java/com/devmod/recipe/SmithingRecipeData.java` | M3 |
+| StonecuttingRecipeData | `src/main/java/com/devmod/recipe/StonecuttingRecipeData.java` | M3 |
+| IngredientData | `src/main/java/com/devmod/recipe/IngredientData.java` | M1 |
+| ResultData | `src/main/java/com/devmod/recipe/ResultData.java` | M1 |
+| RecipeConfigManager | `src/main/java/com/devmod/recipe/RecipeConfigManager.java` | M1 |
+| RecipeSerializer | `src/main/java/com/devmod/recipe/RecipeSerializer.java` | M1 |
+| RecipeValidator | `src/main/java/com/devmod/recipe/RecipeValidator.java` | M1 |
+| RecipeGridComponent | `src/main/java/com/devmod/client/ui/editor/components/RecipeGridComponent.java` | M1 |
+| IngredientSlotComponent | `src/main/java/com/devmod/client/ui/editor/components/IngredientSlotComponent.java` | M1 |
+| CraftingEditorModule | `src/main/java/com/devmod/client/ui/editor/modules/CraftingEditorModule.java` | M1 |
+| SmeltingEditorModule | `src/main/java/com/devmod/client/ui/editor/modules/SmeltingEditorModule.java` | M2 |
+| SmithingEditorModule | `src/main/java/com/devmod/client/ui/editor/modules/SmithingEditorModule.java` | M3 |
+| StonecuttingEditorModule | `src/main/java/com/devmod/client/ui/editor/modules/StonecuttingEditorModule.java` | M3 |
+| RecipeSyncPayload | `src/main/java/com/devmod/network/RecipeSyncPayload.java` | M1 |
 
 ### File da Modificare
 
 | File | Path | Modifiche |
 |------|------|-----------|
-| DatapackIO | `src/main/java/com/frenkvs/devmod/util/DatapackIO.java` | +exportRecipes(), +importRecipes() |
-| NetworkHandler | `src/main/java/com/frenkvs/devmod/NetworkHandler.java` | +RecipeSyncPayload registration |
-| DevMod | `src/main/java/com/frenkvs/devmod/DevMod.java` | +RecipeConfigManager.initialize() |
-| CommonModEvents | `src/main/java/com/frenkvs/devmod/CommonModEvents.java` | +OnDatapackSyncEvent handling |
+| DatapackIO | `src/main/java/com/devmod/util/DatapackIO.java` | +exportRecipes(), +importRecipes() |
+| NetworkHandler | `src/main/java/com/devmod/NetworkHandler.java` | +RecipeSyncPayload registration |
+| DevMod | `src/main/java/com/devmod/DevMod.java` | +RecipeConfigManager.initialize() |
+| CommonModEvents | `src/main/java/com/devmod/CommonModEvents.java` | +OnDatapackSyncEvent handling |
 
 ---
 
@@ -1176,7 +1176,7 @@ private static void handleRecipeSyncClient(RecipeSyncPayload payload, IPayloadCo
 
 **Codice Reference Interno:**
 - [06-persistence.md](06-persistence.md) - Architettura persistenza
-- [CraftingInfoPanel.java](../../src/main/java/com/frenkvs/devmod/ui/editor/systems/CraftingInfoPanel.java) - Grid rendering
-- [AbstractEditorModule.java](../../src/main/java/com/frenkvs/devmod/ui/editor/AbstractEditorModule.java) - Base module
-- [DatapackIO.java](../../src/main/java/com/frenkvs/devmod/util/DatapackIO.java) - Export pattern
-- [GlobalConfigSyncPayload.java](../../src/main/java/com/frenkvs/devmod/network/GlobalConfigSyncPayload.java) - Network pattern
+- [CraftingInfoPanel.java](../../src/main/java/com/devmod/client/ui/editor/systems/CraftingInfoPanel.java) - Grid rendering
+- [AbstractEditorModule.java](../../src/main/java/com/devmod/client/ui/editor/AbstractEditorModule.java) - Base module
+- [DatapackIO.java](../../src/main/java/com/devmod/util/DatapackIO.java) - Export pattern
+- [GlobalConfigSyncPayload.java](../../src/main/java/com/devmod/network/GlobalConfigSyncPayload.java) - Network pattern

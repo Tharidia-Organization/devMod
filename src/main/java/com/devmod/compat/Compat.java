@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLEnvironment;
+
 public final class Compat {
     private static final Logger LOGGER = LoggerFactory.getLogger(Compat.class);
 

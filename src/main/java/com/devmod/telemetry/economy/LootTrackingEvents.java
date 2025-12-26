@@ -33,6 +33,7 @@ import com.devmod.DevMod;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.devmod.telemetry.room.RoomService;
+
 @EventBusSubscriber(modid = DevMod.MODID)
 public class LootTrackingEvents {
     private static final Logger LOGGER = LogUtils.getLogger();

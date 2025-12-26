@@ -6,6 +6,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.party.PartyNotificationPayload;
+
 @OnlyIn(Dist.CLIENT)
 public final class PartyUiCache {
     @Nullable

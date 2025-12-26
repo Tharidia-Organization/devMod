@@ -13,6 +13,7 @@ import net.neoforged.fml.loading.FMLEnvironment;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class ClothConfigCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClothConfigCompat.class);
     public static final String MOD_ID = "cloth_config";

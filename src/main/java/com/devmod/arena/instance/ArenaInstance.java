@@ -12,6 +12,7 @@ import com.devmod.arena.identity.ArenaIdentity;
 import com.devmod.arena.policy.ArenaPolicy;
 import com.devmod.arena.pool.PoolState;
 import com.devmod.arena.registry.ArenaTemplate;
+
 public class ArenaInstance {
 
     private final ArenaIdentity identity;

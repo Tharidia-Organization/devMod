@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -14,6 +16,7 @@ import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.duckdb.DuckDBConfig;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.devmod.telemetry.util.BitPackedFlags;
+
 public class AbilityTelemetryService {
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -257,7 +260,7 @@ public class AbilityTelemetryService {
     /**
      * Get session stats for analytics.
      */
-    public AbilitySessionStats getSessionStats(UUID playerId) {
+    public @Nullable AbilitySessionStats getSessionStats(UUID playerId) {
         return sessionStats.get(playerId);
     }
 

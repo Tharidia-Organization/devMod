@@ -17,6 +17,7 @@ import com.devmod.client.panels.core.PanelType;
 import com.devmod.client.testing.TestingSession;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.testing.TestCase;
+
 public class TestProgressPanel extends FloatingPanel {
 
     // Cache dati sessione

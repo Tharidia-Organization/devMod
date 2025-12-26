@@ -11,6 +11,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.network.MobConfigConfirmPayload;
+
 @OnlyIn(Dist.CLIENT)
 public class ClientConfigFeedbackPayload {
 

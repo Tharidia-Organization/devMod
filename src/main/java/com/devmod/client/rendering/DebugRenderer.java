@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import javax.annotation.Nullable;
+
 import org.joml.Matrix4f;
 import org.slf4j.Logger;
 
@@ -19,6 +21,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.config.Config;
+
 public class DebugRenderer {
     public static final DebugRenderer INSTANCE = new DebugRenderer();
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -293,6 +296,7 @@ public class DebugRenderer {
     public interface DebugShape {
         void render(PoseStack poseStack, MultiBufferSource buffer, Vec3 cameraPos);
         /** Returns the center position for distance culling, or null if always render */
+        @Nullable
         default Vec3 getCenter() { return null; }
     }
 

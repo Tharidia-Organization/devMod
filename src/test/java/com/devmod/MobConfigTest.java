@@ -1,26 +1,25 @@
 package com.devmod;
 
-import org.junit.jupiter.api.Test;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nullable;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for mob configuration system.
- * Tests mob stats load/save, attribute modifiers, and persistence.
- */
 public class MobConfigTest {
 
     /**
@@ -112,7 +111,7 @@ public class MobConfigTest {
      */
     static class MockMobConfigManager {
         private final Map<String, MockMobStats> mobStats = new ConcurrentHashMap<>();
-        private Path configPath;
+        private @Nullable Path configPath;
 
         public void setConfigPath(Path path) {
             this.configPath = path;
@@ -216,7 +215,7 @@ public class MobConfigTest {
     }
 
     @TempDir
-    Path tempDir;
+    @Nullable Path tempDir;
 
     private MockMobConfigManager configManager;
 
@@ -463,7 +462,7 @@ public class MobConfigTest {
         @Test
         @DisplayName("Save to file should create file")
         void testSaveCreatesFile() throws IOException {
-            Path configFile = tempDir.resolve("mobs.json");
+            Path configFile = Objects.requireNonNull(tempDir).resolve("mobs.json");
             configManager.setConfigPath(configFile);
 
             MockMobStats stats = new MockMobStats();
@@ -478,7 +477,7 @@ public class MobConfigTest {
         @Test
         @DisplayName("Load from file should restore stats")
         void testLoadFromFile() throws IOException {
-            Path configFile = tempDir.resolve("mobs.json");
+            Path configFile = Objects.requireNonNull(tempDir).resolve("mobs.json");
 
             String json = """
                 {
@@ -506,7 +505,7 @@ public class MobConfigTest {
         @Test
         @DisplayName("Save and load round-trip")
         void testSaveLoadRoundTrip() throws IOException {
-            Path configFile = tempDir.resolve("mobs.json");
+            Path configFile = Objects.requireNonNull(tempDir).resolve("mobs.json");
             configManager.setConfigPath(configFile);
 
             MockMobStats stats = new MockMobStats();
@@ -530,7 +529,7 @@ public class MobConfigTest {
         @Test
         @DisplayName("Load from non-existent file should not fail")
         void testLoadNonExistentFile() throws IOException {
-            Path configFile = tempDir.resolve("nonexistent.json");
+            Path configFile = Objects.requireNonNull(tempDir).resolve("nonexistent.json");
             configManager.setConfigPath(configFile);
 
             assertDoesNotThrow(() -> configManager.loadFromFile());
@@ -637,7 +636,7 @@ public class MobConfigTest {
         @DisplayName("Floating point precision")
         void testFloatingPointPrecision() {
             MockMobStats stats = new MockMobStats();
-            stats.movementSpeed = 0.23456789f;
+            stats.movementSpeed = 0.2345679f;
             stats.knockbackResistance = 0.12345678f;
 
             configManager.setStatsFor("precise:mob", stats);
@@ -647,7 +646,7 @@ public class MobConfigTest {
             configManager.fromJson(json);
 
             MockMobStats loaded = configManager.getStatsFor("precise:mob");
-            assertEquals(0.23456789f, loaded.movementSpeed, 0.0001f);
+            assertEquals(0.2345679f, loaded.movementSpeed, 0.0001f);
         }
 
         @Test

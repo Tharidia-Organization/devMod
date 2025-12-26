@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -13,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -20,6 +22,7 @@ import net.minecraft.world.entity.EntityType;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class EasyNpcCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(EasyNpcCompat.class);
     public static final String MOD_ID = "easy_npc";
@@ -35,6 +38,8 @@ public class EasyNpcCompat implements CompatModule {
     // Track spawned NPCs for cleanup
     private static final Map<String, UUID> spawnedNpcs = new HashMap<>();
     private static final String DEVMOD_TAG = "devmod_arena";
+    private static final ResourceLocation HUMANOID_NPC_ID =
+        ResourceLocation.fromNamespaceAndPath(MOD_ID, "humanoid");
 
     @Override
     public String modId() {
@@ -158,16 +163,15 @@ public class EasyNpcCompat implements CompatModule {
      */
     @Nullable
     public static UUID spawnNpc(ServerLevel level, BlockPos pos, String npcId, String displayName) {
-        if (!available || level == null || pos == null) {
+        if (!available || level == null || pos == null || npcId == null || npcId.isBlank()) {
             return null;
         }
 
         try {
             // Try to find Easy NPC entity type
-            ResourceLocation npcTypeRl = ResourceLocation.parse("easy_npc:humanoid");
             Optional<EntityType<?>> entityTypeOpt = level.registryAccess()
-                .registryOrThrow(net.minecraft.core.registries.Registries.ENTITY_TYPE)
-                .getOptional(npcTypeRl);
+                .registryOrThrow(Objects.requireNonNull(Registries.ENTITY_TYPE, "Registries.ENTITY_TYPE"))
+                .getOptional(HUMANOID_NPC_ID);
 
             if (entityTypeOpt.isEmpty()) {
                 LOGGER.debug("[Compat:easy_npc] Could not find NPC entity type");
@@ -183,7 +187,7 @@ public class EasyNpcCompat implements CompatModule {
             npc.setPos(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
 
             // Set custom name if provided
-            if (displayName != null && !displayName.isEmpty()) {
+            if (displayName != null && !displayName.isBlank()) {
                 npc.setCustomName(net.minecraft.network.chat.Component.literal(displayName));
                 npc.setCustomNameVisible(true);
             }
@@ -194,7 +198,7 @@ public class EasyNpcCompat implements CompatModule {
 
             // Spawn the entity
             if (level.addFreshEntity(npc)) {
-                UUID uuid = npc.getUUID();
+                UUID uuid = Objects.requireNonNull(npc.getUUID(), "npc uuid");
                 spawnedNpcs.put(npcId, uuid);
                 LOGGER.debug("[Compat:easy_npc] Spawned NPC '{}' at {} with UUID {}",
                     displayName, pos, uuid);
@@ -240,6 +244,9 @@ public class EasyNpcCompat implements CompatModule {
      * @return true if removed
      */
     public static boolean removeNpc(ServerLevel level, String npcId) {
+        if (npcId == null || npcId.isBlank()) {
+            return false;
+        }
         UUID uuid = spawnedNpcs.remove(npcId);
         if (uuid == null || level == null) {
             return false;
@@ -268,6 +275,9 @@ public class EasyNpcCompat implements CompatModule {
         if (level != null) {
             for (UUID uuid : spawnedNpcs.values()) {
                 try {
+                    if (uuid == null) {
+                        continue;
+                    }
                     Entity entity = level.getEntity(uuid);
                     if (entity != null) {
                         entity.discard();
@@ -317,6 +327,9 @@ public class EasyNpcCompat implements CompatModule {
      * @return true if tracked
      */
     public static boolean hasNpc(String npcId) {
+        if (npcId == null || npcId.isBlank()) {
+            return false;
+        }
         return spawnedNpcs.containsKey(npcId);
     }
 
@@ -328,6 +341,9 @@ public class EasyNpcCompat implements CompatModule {
      */
     @Nullable
     public static UUID getNpcUuid(String npcId) {
+        if (npcId == null || npcId.isBlank()) {
+            return null;
+        }
         return spawnedNpcs.get(npcId);
     }
 

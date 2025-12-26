@@ -35,6 +35,7 @@ import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.SchemaValidator;
 import com.devmod.arena.registry.TemplateType;
 import com.devmod.arena.registry.TemplateValidator;
+
 public class TemplateSerializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateSerializer.class);

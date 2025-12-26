@@ -3,7 +3,10 @@ package com.devmod.client.ui;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
+
+import javax.annotation.Nullable;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -13,16 +16,6 @@ import com.devmod.client.ui.editor.core.UIConstants;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L1 - Core UX Entry Tests
- *
- * Validates:
- * - UI constants are consistent
- * - Settings categories are complete
- * - Validation logic works correctly
- *
- * Note: Minecraft-dependent tests (keybinds, screens) are in GameTest.
- */
 @DisplayName("L1: UI System Validation")
 class UISystemValidationTest {
 
@@ -160,7 +153,7 @@ class UISystemValidationTest {
             assertFalse(isValidPercentage("abc"), "Text");
         }
 
-        private boolean isValidNumber(String s) {
+        private boolean isValidNumber(@Nullable String s) {
             if (s == null || s.isEmpty()) return false;
             try {
                 Double.parseDouble(s);
@@ -170,7 +163,7 @@ class UISystemValidationTest {
             }
         }
 
-        private boolean isValidInteger(String s) {
+        private boolean isValidInteger(@Nullable String s) {
             if (s == null || s.isEmpty()) return false;
             try {
                 Integer.parseInt(s);
@@ -180,7 +173,7 @@ class UISystemValidationTest {
             }
         }
 
-        private boolean isValidPercentage(String s) {
+        private boolean isValidPercentage(@Nullable String s) {
             if (!isValidInteger(s)) return false;
             int value = Integer.parseInt(s);
             return value >= 0 && value <= 100;
@@ -435,7 +428,7 @@ class UISystemValidationTest {
         private boolean fuzzyMatch(String source, String query) {
             if (source == null || source.isEmpty()) return false;
             if (query == null || query.isEmpty()) return true;
-            return source.toLowerCase().contains(query.toLowerCase());
+            return source.toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT));
         }
 
         private List<String> filterItems(List<String> items, String query) {

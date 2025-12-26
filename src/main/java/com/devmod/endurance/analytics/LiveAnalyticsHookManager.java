@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.endurance.CombatTracker;
 import com.devmod.endurance.ComboSystem;
+
 public class LiveAnalyticsHookManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(LiveAnalyticsHookManager.class);
 

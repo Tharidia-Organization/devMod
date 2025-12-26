@@ -9,6 +9,7 @@ import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TridentItem;
 import net.minecraft.world.item.component.CustomData;
+
 public class RangedWeaponStats {
     public float drawSpeed = 1.0f;
     public float chargeTime = 1.0f;

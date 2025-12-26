@@ -1,6 +1,7 @@
 package com.devmod.testing.stats;
 
 import com.google.gson.JsonObject;
+
 public class SessionStatistics {
     public static final SessionStatistics INSTANCE = new SessionStatistics();
 

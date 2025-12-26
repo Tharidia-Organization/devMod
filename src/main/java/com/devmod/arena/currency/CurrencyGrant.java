@@ -3,6 +3,7 @@ package com.devmod.arena.currency;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
+
 public record CurrencyGrant(
     UUID id,
     UUID playerId,

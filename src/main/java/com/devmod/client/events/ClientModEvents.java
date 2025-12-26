@@ -46,6 +46,7 @@ import com.devmod.testing.TesterProfile;
 import com.devmod.util.I18n;
 
 import static com.devmod.DevMod.MODID;
+
 @EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
 public class ClientModEvents {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientModEvents.class);

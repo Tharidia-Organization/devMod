@@ -17,6 +17,7 @@ import net.minecraft.world.phys.Vec3;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+
 @OnlyIn(Dist.CLIENT)
 public class LightLevelOverlay {
     public static final LightLevelOverlay INSTANCE = new LightLevelOverlay();

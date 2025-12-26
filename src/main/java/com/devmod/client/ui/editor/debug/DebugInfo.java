@@ -1,6 +1,7 @@
 package com.devmod.client.ui.editor.debug;
 
 import java.util.List;
+
 public record DebugInfo(
     // Layout
     float scale,

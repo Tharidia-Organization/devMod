@@ -1,4 +1,5 @@
 package com.devmod.components;
+
 import java.util.Objects;
 
 import javax.annotation.Nullable;
@@ -14,6 +15,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
+
 public final class UsableComponents {
     private UsableComponents() {}
 
@@ -37,6 +39,7 @@ public final class UsableComponents {
             .build());
 
     // Fallback instance for test environments where Neo registries are not bound.
+    @Nullable
     private static DataComponentType<CompoundTag> fallbackUsableStats;
 
     /**

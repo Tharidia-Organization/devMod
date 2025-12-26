@@ -9,6 +9,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
 
 import com.devmod.arena.builder.BuildTransaction;
+
 public final class MetricsCompatibilityLayer {
 
     private MetricsCompatibilityLayer() {}
@@ -44,8 +45,8 @@ public final class MetricsCompatibilityLayer {
         List<Entity> entities = level.getEntities((Entity) null, Objects.requireNonNull(bounds),
             e -> !e.isRemoved()
                 && !(e instanceof net.minecraft.world.entity.player.Player)
-                && !(e.getType().toShortString().equalsIgnoreCase("marker"))
-                && !(e.getType().toShortString().equalsIgnoreCase("area_effect_cloud")));
+                && !e.getType().toShortString().equalsIgnoreCase("marker")
+                && !e.getType().toShortString().equalsIgnoreCase("area_effect_cloud"));
         return entities.size();
     }
 

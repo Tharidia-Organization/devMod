@@ -16,6 +16,7 @@ import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.phys.Vec3;
 
 import net.neoforged.fml.loading.FMLEnvironment;
+
 public class ShieldDeflector {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShieldDeflector.class);
 

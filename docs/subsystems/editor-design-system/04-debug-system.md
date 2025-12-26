@@ -77,7 +77,7 @@ Un'altra classe, `DebugPanel.java`, esiste ma serve come un overlay di debug pi�
 La classe è una `EditorSection.CustomSection` che riceve i dati di debug nel suo costruttore e li renderizza.
 
 ```java
-// src/main/java/com/frenkvs/devmod/ui/editor/debug/DebugInfoSection.java
+// src/main/java/com/devmod/client/ui/editor/debug/DebugInfoSection.java
 
 public final class DebugInfoSection implements EditorSection.CustomSection {
 
@@ -109,7 +109,7 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
 Il confronto dei valori è implementato nel metodo `renderComparisonBlock`, che formatta e colora le linee in base allo stato (`isModified`, `hasMismatch`).
 
 ```java
-// src/main/java/com/frenkvs/devmod/ui/editor/debug/DebugInfoSection.java
+// src/main/java/com/devmod/client/ui/editor/debug/DebugInfoSection.java
 
 private int renderComparisonBlock(GuiGraphics graphics, Font font, int x, int y) {
     // ...
@@ -131,7 +131,7 @@ private int renderComparisonBlock(GuiGraphics graphics, Font font, int x, int y)
 Il viewer NBT è gestito da `renderNbtBlock` e da un metodo statico `formatNbtLines` che formatta ricorsivamente il `CompoundTag` per la visualizzazione.
 
 ```java
-// src/main/java/com/frenkvs/devmod/ui/editor/debug/DebugInfoSection.java
+// src/main/java/com/devmod/client/ui/editor/debug/DebugInfoSection.java
 
 public static List<String> formatNbtLines(CompoundTag tag, int maxLines) {
     // ...
@@ -158,7 +158,7 @@ private static void formatTag(List<String> lines, CompoundTag tag, String indent
 La funzione di copia è gestita tramite una `Runnable` passata al costruttore, che viene invocata quando il bottone "Copy Debug" viene premuto.
 
 ```java
-// src/main/java/com/frenkvs/devmod/ui/editor/debug/DebugInfoSection.java
+// src/main/java/com/devmod/client/ui/editor/debug/DebugInfoSection.java
 
 @Override
 public boolean mouseClicked(double mouseX, double mouseY, int button) {

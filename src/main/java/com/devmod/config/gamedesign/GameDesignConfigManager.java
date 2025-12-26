@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -20,6 +21,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import com.devmod.util.ConfigPaths;
+
 public class GameDesignConfigManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GameDesignConfigManager.class);
@@ -53,7 +55,7 @@ public class GameDesignConfigManager {
      */
     @Nonnull
     public GameDesignConfig getGlobalConfig() {
-        return globalConfig;
+        return Objects.requireNonNull(globalConfig, "globalConfig");
     }
 
     /**
@@ -61,24 +63,25 @@ public class GameDesignConfigManager {
      */
     @Nonnull
     public GameDesignConfig getEffectiveConfig(@Nullable UUID instanceId) {
+        GameDesignConfig baseConfig = Objects.requireNonNull(globalConfig, "globalConfig");
         if (instanceId == null) {
-            return globalConfig;
+            return baseConfig;
         }
 
         InstanceOverride override = instanceOverrides.get(instanceId);
         if (override == null) {
-            return globalConfig;
+            return baseConfig;
         }
 
         // Apply overrides to a copy of global config
-        return override.applyTo(globalConfig.copy());
+        return Objects.requireNonNull(override.applyTo(baseConfig.copy()), "effectiveConfig");
     }
 
     /**
      * Update global configuration.
      */
-    public void setGlobalConfig(GameDesignConfig config) {
-        this.globalConfig = config;
+    public void setGlobalConfig(@Nonnull GameDesignConfig config) {
+        this.globalConfig = Objects.requireNonNull(config, "config");
         markDirty();
         notifyListeners();
     }

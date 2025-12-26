@@ -9,6 +9,7 @@ import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
+
 public class RangedWeaponModule {
     public enum ValueSource {
         VANILLA_DEFAULT,

@@ -13,6 +13,7 @@ import net.neoforged.fml.loading.FMLEnvironment;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatRegistry;
+
 public class ModIntegrationManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModIntegrationManager.class);
 

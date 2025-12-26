@@ -24,10 +24,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Comprehensive L1-L5 tests for the ComboSystem (DMC-inspired style scoring).
- * Tests style ranks, combo mechanics, action points, session management.
- */
 @DisplayName("ComboSystem Tests")
 class ComboSystemTest {
 

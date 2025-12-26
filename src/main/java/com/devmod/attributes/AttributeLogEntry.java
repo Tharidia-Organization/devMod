@@ -3,6 +3,7 @@ package com.devmod.attributes;
 import javax.annotation.Nullable;
 
 import net.minecraft.world.phys.Vec3;
+
 public record AttributeLogEntry(
     Type type,
     String message,

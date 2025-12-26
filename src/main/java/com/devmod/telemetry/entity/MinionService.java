@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
 public class MinionService {
     public static final MinionService INSTANCE = new MinionService();
 

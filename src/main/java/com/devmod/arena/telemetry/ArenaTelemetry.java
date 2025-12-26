@@ -12,6 +12,7 @@ import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 public class ArenaTelemetry {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaTelemetry.class);
     private static final int BUFFER_SIZE = 10_000;

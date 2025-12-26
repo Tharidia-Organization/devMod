@@ -6,9 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for {@link Easing} functions.
- */
 @DisplayName("Easing Functions")
 class EasingTest {
 

@@ -12,6 +12,7 @@ import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.SliderDescriptions;
 import com.devmod.client.ui.editor.core.TooltipManager;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public final class InfoButton {
 
     // ═══════════════════════════════════════════════════════════════

@@ -22,6 +22,7 @@ import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.BaseOverlay;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public class ItemPickerOverlay extends BaseOverlay {
 
     // ═══════════════════════════════════════════════════════════════

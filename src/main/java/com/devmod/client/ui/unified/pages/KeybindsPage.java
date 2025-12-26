@@ -18,6 +18,7 @@ import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
+
 public class KeybindsPage implements SettingsPage {
 
     private static final int ROW_HEIGHT = 20;

@@ -1,21 +1,15 @@
 package com.devmod.arena.fallback;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * DD44: Rollback Staging Test - scenario obbligatorio pre-deploy.
- *
- * This test class contains 3 mandatory test scenarios for validating
- * the rollback and fallback functionality before deployment.
- */
 @DisplayName("DD44: Rollback Staging Test Scenarios")
 class RollbackTestScenario {
 

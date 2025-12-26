@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.devmod.client.ui.editor.ItemEditorDataManager;
+
 public final class PresetBridge {
 
     private PresetBridge() {}

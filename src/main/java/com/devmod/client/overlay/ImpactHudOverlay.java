@@ -17,6 +17,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.config.Config;
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 // Minecraft API methods are not annotated but never return null in practice
 

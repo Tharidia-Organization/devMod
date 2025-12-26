@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import org.joml.Matrix4f;
 
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -21,6 +23,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.telemetry.RoomDefinition;
 import com.devmod.telemetry.TelemetryConfig;
+
 public class RoomBoundsVisualizer {
     public static final RoomBoundsVisualizer INSTANCE = new RoomBoundsVisualizer();
 
@@ -31,7 +34,9 @@ public class RoomBoundsVisualizer {
     private boolean gapsDirty = false;
 
     // Pending room definition markers (persist even when editor is closed)
+    @Nullable
     private BlockPos pendingPointA = null;
+    @Nullable
     private BlockPos pendingPointB = null;
 
     // Colori per le room (cicla)
@@ -475,6 +480,7 @@ public class RoomBoundsVisualizer {
     /**
      * Get pending Point A.
      */
+    @Nullable
     public BlockPos getPendingPointA() {
         return pendingPointA;
     }
@@ -482,6 +488,7 @@ public class RoomBoundsVisualizer {
     /**
      * Get pending Point B.
      */
+    @Nullable
     public BlockPos getPendingPointB() {
         return pendingPointB;
     }

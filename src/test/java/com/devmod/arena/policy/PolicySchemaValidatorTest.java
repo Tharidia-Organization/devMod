@@ -1,8 +1,10 @@
 package com.devmod.arena.policy;
 
-import com.devmod.arena.registry.TemplateValidator;
-import com.google.gson.JsonObject;
 import org.junit.jupiter.api.Test;
+
+import com.google.gson.JsonObject;
+
+import com.devmod.arena.registry.TemplateValidator;
 
 import static org.junit.jupiter.api.Assertions.*;
 

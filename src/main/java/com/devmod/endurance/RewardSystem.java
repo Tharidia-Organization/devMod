@@ -52,6 +52,7 @@ import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.util.I18n;
+
 public class RewardSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(RewardSystem.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

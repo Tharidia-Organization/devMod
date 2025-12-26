@@ -21,6 +21,7 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.endurance.PerkChoicesPayload;
 import com.devmod.endurance.PerkSelectionPayload;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public class PerkSelectionScreen extends Screen {
 

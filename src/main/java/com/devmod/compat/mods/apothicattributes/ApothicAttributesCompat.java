@@ -1,12 +1,9 @@
 package com.devmod.compat.mods.apothicattributes;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
@@ -23,6 +20,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class ApothicAttributesCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(ApothicAttributesCompat.class);
     public static final String MOD_ID = "apothicattributes";
@@ -31,7 +29,7 @@ public class ApothicAttributesCompat implements CompatModule {
     private static boolean initialized = false;
 
     // Cached attribute holders
-    private static final Map<String, Holder<Attribute>> attributeCache = new HashMap<>();
+    private static final Map<String, Optional<Holder<Attribute>>> attributeCache = new HashMap<>();
 
     // Known Apothic Attributes (ResourceLocation paths)
     public static final String CRIT_CHANCE = "apothicattributes:crit_chance";
@@ -52,7 +50,7 @@ public class ApothicAttributesCompat implements CompatModule {
     public static final String OVERHEAL = "apothicattributes:overheal";
 
     // All tracked attributes for enumeration
-    private static final List<String> ALL_ATTRIBUTES = Arrays.asList(
+    private static final List<String> ALL_ATTRIBUTES = List.of(
         CRIT_CHANCE, CRIT_DAMAGE, LIFE_STEAL, ARMOR_SHRED, ARMOR_PIERCE,
         PROJECTILE_DAMAGE, DRAW_SPEED, DODGE_CHANCE, MINING_SPEED,
         EXPERIENCE_GAIN, HEALING_RECEIVED, GHOST_HEALTH, COLD_DAMAGE,
@@ -126,28 +124,36 @@ public class ApothicAttributesCompat implements CompatModule {
      * @return The attribute holder, or null if not found
      */
     @Nullable
-    public static Holder<Attribute> getAttribute(String attributeId) {
-        if (!available) return null;
+    public static Holder<Attribute> getAttribute(@Nullable String attributeId) {
+        if (!available || attributeId == null || attributeId.isBlank()) {
+            return null;
+        }
 
         // Check cache first
-        if (attributeCache.containsKey(attributeId)) {
-            return attributeCache.get(attributeId);
+        Optional<Holder<Attribute>> cached = attributeCache.get(attributeId);
+        if (cached != null) {
+            return cached.orElse(null);
         }
 
         try {
-            ResourceLocation rl = ResourceLocation.parse(attributeId);
+            ResourceLocation rl = ResourceLocation.tryParse(attributeId);
+            if (rl == null) {
+                attributeCache.put(attributeId, Optional.empty());
+                return null;
+            }
             Optional<Holder.Reference<Attribute>> holder = BuiltInRegistries.ATTRIBUTE.getHolder(rl);
 
             if (holder.isPresent()) {
-                attributeCache.put(attributeId, holder.get());
-                return holder.get();
+                Holder<Attribute> resolved = holder.get();
+                attributeCache.put(attributeId, Optional.of(resolved));
+                return resolved;
             }
         } catch (Exception e) {
             LOGGER.debug("[Compat:apothicattributes] Could not find attribute {}: {}",
                 attributeId, e.getMessage());
         }
 
-        attributeCache.put(attributeId, null); // Cache miss
+        attributeCache.put(attributeId, Optional.empty()); // Cache miss
         return null;
     }
 
@@ -367,30 +373,37 @@ public class ApothicAttributesCompat implements CompatModule {
      * Get list of all known Apothic Attribute IDs.
      */
     public static List<String> getAllAttributeIds() {
-        return Collections.unmodifiableList(ALL_ATTRIBUTES);
+        return ALL_ATTRIBUTES;
     }
 
     /**
      * Get a display name for an attribute ID.
      */
-    public static String getDisplayName(String attributeId) {
+    public static String getDisplayName(@Nullable String attributeId) {
         // Extract the name part and format it
+        if (attributeId == null || attributeId.isBlank()) {
+            return "";
+        }
         String name = attributeId;
-        if (name.contains(":")) {
-            name = name.substring(name.indexOf(':') + 1);
+        int separator = name.indexOf(':');
+        if (separator >= 0 && separator + 1 < name.length()) {
+            name = name.substring(separator + 1);
         }
 
         // Convert snake_case to Title Case
         String[] parts = name.split("_");
         StringBuilder sb = new StringBuilder();
         for (String part : parts) {
+            if (part.isEmpty()) {
+                continue;
+            }
             if (sb.length() > 0) sb.append(" ");
             sb.append(Character.toUpperCase(part.charAt(0)));
             if (part.length() > 1) {
                 sb.append(part.substring(1));
             }
         }
-        return sb.toString();
+        return sb.length() > 0 ? sb.toString() : name;
     }
 
     /**
@@ -400,7 +413,9 @@ public class ApothicAttributesCompat implements CompatModule {
         if (!available) {
             return "Apothic Attributes: not available";
         }
-        int cached = (int) attributeCache.values().stream().filter(Objects::nonNull).count();
+        int cached = (int) attributeCache.values().stream()
+            .filter(Optional::isPresent)
+            .count();
         return String.format("Apothic Attributes: %d attributes cached", cached);
     }
 }

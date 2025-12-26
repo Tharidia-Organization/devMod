@@ -8,6 +8,7 @@ import net.minecraft.world.entity.LivingEntity;
 
 import com.devmod.collision.transform.AnimationSnapshot;
 import com.devmod.collision.transform.TransformProvider;
+
 public final class ClientTransformProvider implements TransformProvider {
 
     public static final ClientTransformProvider INSTANCE = new ClientTransformProvider();

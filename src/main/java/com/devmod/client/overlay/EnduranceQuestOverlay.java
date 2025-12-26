@@ -32,6 +32,7 @@ import com.devmod.endurance.FlowStateTracker;
 import com.devmod.endurance.MomentumTracker;
 import com.devmod.endurance.QuestSyncPayload;
 import com.devmod.endurance.WaveObjectiveState;
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class EnduranceQuestOverlay {

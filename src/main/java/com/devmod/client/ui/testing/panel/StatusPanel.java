@@ -14,6 +14,7 @@ import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_SEPARATOR;
 import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_SUCCESS;
 import static com.devmod.client.ui.testing.panel.PanelConstants.ROW_HEIGHT;
 import static com.devmod.client.ui.testing.panel.PanelConstants.SEPARATOR_HEIGHT;
+
 public record StatusPanel(
     String id,
     List<StatusItem> items,

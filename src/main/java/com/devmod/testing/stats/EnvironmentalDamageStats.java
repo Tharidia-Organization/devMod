@@ -8,6 +8,7 @@ import com.google.gson.JsonObject;
 import net.minecraft.world.damagesource.DamageSource;
 
 import com.devmod.testing.stats.HazardTypeRegistry.HazardType;
+
 public class EnvironmentalDamageStats {
     public static final EnvironmentalDamageStats INSTANCE = new EnvironmentalDamageStats();
 

@@ -9,6 +9,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,12 +18,14 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import com.devmod.util.ConfigPaths;
+
 public class QuestManager {
     public static final QuestManager INSTANCE = new QuestManager();
     private static final Logger LOGGER = LoggerFactory.getLogger(QuestManager.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private final List<QuestData> quests = new ArrayList<>();
+    @Nullable
     private QuestData activeQuest;
     private boolean dirty = false;
 
@@ -57,6 +61,7 @@ public class QuestManager {
     /**
      * Returns the active quest.
      */
+    @Nullable
     public QuestData getActiveQuest() {
         return activeQuest;
     }
@@ -94,6 +99,7 @@ public class QuestManager {
     /**
      * Returns the current task of the active quest.
      */
+    @Nullable
     public QuestTask getCurrentTask() {
         return activeQuest != null ? activeQuest.getCurrentTask() : null;
     }
@@ -256,7 +262,9 @@ public class QuestManager {
     // === Internal class for serialization ===
 
     private static class QuestSaveData {
+        @Nullable
         List<QuestData> quests;
+        @Nullable
         String activeQuestId;
     }
 }

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,19 +24,6 @@ import org.junit.jupiter.api.Timeout;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L6 - End-to-End Flow Testing Suite
- *
- * Simulates complete user journeys through all integrated systems,
- * from quest discovery to completion with full reward processing.
- *
- * Categories:
- * 1. Complete Solo Quest Journey
- * 2. Complete Party Quest Journey
- * 3. Multi-Session Progression
- * 4. Error Recovery Journeys
- * 5. Stress Test Journeys
- */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class L6EndToEndFlowTest {
 
@@ -85,6 +73,21 @@ public class L6EndToEndFlowTest {
 
         Object getPurchaseLock(UUID playerId) {
             return purchaseLocks.computeIfAbsent(playerId, id -> new Object());
+        }
+
+        QuestSession requireSession(UUID playerId) {
+            return Objects.requireNonNull(activeSessions.get(playerId),
+                "Missing quest session for " + playerId);
+        }
+
+        InstanceData requireInstance(UUID instanceId) {
+            return Objects.requireNonNull(instances.get(instanceId),
+                "Missing instance " + instanceId);
+        }
+
+        WalletData requireWallet(UUID playerId) {
+            return Objects.requireNonNull(wallets.get(playerId),
+                "Missing wallet for " + playerId);
         }
     }
 
@@ -214,7 +217,7 @@ public class L6EndToEndFlowTest {
         // Check preconditions
         if (sim.playerToInstance.containsKey(player.id)) {
             sim.log("BLOCKED: " + player.name + " already in quest");
-            return null;
+            throw new IllegalStateException("Player already in quest: " + player.name);
         }
 
         sim.log(player.name + " starting " + (endless ? "endless" : waves + "-wave") + " quest");
@@ -259,8 +262,7 @@ public class L6EndToEndFlowTest {
      * Simulate a wave of combat
      */
     static void simulateWave(GameSimulation sim, PlayerData player, QuestSession session, boolean isBoss) {
-        InstanceData instance = sim.instances.get(session.instanceId);
-        if (instance == null) return;
+        InstanceData instance = sim.requireInstance(session.instanceId);
 
         instance.currentWave++;
         session.currentWave = instance.currentWave;
@@ -329,10 +331,8 @@ public class L6EndToEndFlowTest {
         session.state = QuestState.COMPLETING;
         session.endTime = System.currentTimeMillis();
 
-        InstanceData instance = sim.instances.get(session.instanceId);
-        if (instance != null) {
-            instance.state = InstanceState.COMPLETING;
-        }
+        InstanceData instance = sim.requireInstance(session.instanceId);
+        instance.state = InstanceState.COMPLETING;
 
         // Calculate rewards
         QuestRewards rewards = new QuestRewards();
@@ -350,12 +350,12 @@ public class L6EndToEndFlowTest {
         );
 
         // Award tokens
-        WalletData wallet = sim.wallets.get(player.id);
+        WalletData wallet = sim.requireWallet(player.id);
         wallet.addTokens(rewards.totalTokens);
         sim.totalTokensEarned.addAndGet(rewards.totalTokens);
 
         // Prestige for completing all waves
-        if (instance != null && !instance.endless && session.currentWave >= instance.totalWaves) {
+        if (!instance.endless && session.currentWave >= instance.totalWaves) {
             int prestige = instance.totalWaves / 5;
             wallet.prestige.addAndGet(prestige);
             rewards.prestigeEarned = prestige;
@@ -387,7 +387,7 @@ public class L6EndToEndFlowTest {
 
         // Partial rewards (50% of earned)
         int partialTokens = session.points / 2;
-        WalletData wallet = sim.wallets.get(player.id);
+        WalletData wallet = sim.requireWallet(player.id);
         wallet.addTokens(partialTokens);
         sim.totalTokensEarned.addAndGet(partialTokens);
 
@@ -414,7 +414,7 @@ public class L6EndToEndFlowTest {
         // Remove from instance
         UUID instanceId = sim.playerToInstance.remove(player.id);
         if (instanceId != null) {
-            InstanceData instance = sim.instances.get(instanceId);
+            InstanceData instance = sim.requireInstance(instanceId);
             if (instance != null) {
                 instance.players.remove(player.id);
 
@@ -466,7 +466,7 @@ public class L6EndToEndFlowTest {
             UUID instanceId = startQuest(sim, player, 10, false);
             assertNotNull(instanceId);
 
-            QuestSession session = sim.activeSessions.get(player.id);
+            QuestSession session = sim.requireSession(player.id);
             assertNotNull(session);
 
             // Wave 1-4
@@ -478,7 +478,7 @@ public class L6EndToEndFlowTest {
             // Wave 5 - checkpoint, select perk
             simulateWave(sim, player, session, false);
             selectPerk(sim, player, "DAMAGE_BOOST");
-            assertEquals(1, player.perkStacks.get("DAMAGE_BOOST"));
+            assertEquals(1, Objects.requireNonNull(player.perkStacks.get("DAMAGE_BOOST")));
 
             // Wave 6-9
             for (int i = 0; i < 4; i++) {
@@ -488,7 +488,7 @@ public class L6EndToEndFlowTest {
             // Wave 10 - boss wave, select another perk
             simulateWave(sim, player, session, true);
             selectPerk(sim, player, "DAMAGE_BOOST"); // Stack it
-            assertEquals(2, player.perkStacks.get("DAMAGE_BOOST"));
+            assertEquals(2, Objects.requireNonNull(player.perkStacks.get("DAMAGE_BOOST")));
 
             // Complete
             QuestRewards rewards = completeQuest(sim, player, session);
@@ -517,8 +517,8 @@ public class L6EndToEndFlowTest {
             UUID instanceId = startQuest(sim, player, Integer.MAX_VALUE, true);
             assertNotNull(instanceId);
 
-            QuestSession session = sim.activeSessions.get(player.id);
-            InstanceData instance = sim.instances.get(instanceId);
+            QuestSession session = sim.requireSession(player.id);
+            InstanceData instance = sim.requireInstance(instanceId);
             assertTrue(instance.endless);
 
             // Play 25 waves with bosses every 10
@@ -548,7 +548,7 @@ public class L6EndToEndFlowTest {
             PlayerData player = sim.createPlayer("DeathPlayer");
 
             startQuest(sim, player, 10, false);
-            QuestSession session = sim.activeSessions.get(player.id);
+            QuestSession session = sim.requireSession(player.id);
 
             // Play 3 waves
             for (int i = 0; i < 3; i++) {
@@ -566,7 +566,7 @@ public class L6EndToEndFlowTest {
             assertEquals(1, sim.totalQuestsFailed.get());
 
             // Should have partial rewards
-            assertTrue(sim.wallets.get(player.id).tokens.get() > 0);
+            assertTrue(sim.requireWallet(player.id).tokens.get() > 0);
         }
 
         @Test
@@ -577,7 +577,7 @@ public class L6EndToEndFlowTest {
             PlayerData player = sim.createPlayer("StyleMaster");
 
             startQuest(sim, player, 20, false);
-            QuestSession session = sim.activeSessions.get(player.id);
+            QuestSession session = sim.requireSession(player.id);
 
             // Play many waves to build up style
             for (int wave = 1; wave <= 20; wave++) {
@@ -624,7 +624,7 @@ public class L6EndToEndFlowTest {
             assertNotNull(instanceId);
 
             // Add members to same instance
-            InstanceData instance = sim.instances.get(instanceId);
+            InstanceData instance = sim.requireInstance(instanceId);
 
             for (PlayerData member : List.of(member1, member2, member3)) {
                 // Create session for member
@@ -641,7 +641,7 @@ public class L6EndToEndFlowTest {
             // All players complete waves together
             for (int wave = 1; wave <= 5; wave++) {
                 for (PlayerData p : List.of(leader, member1, member2, member3)) {
-                    QuestSession s = sim.activeSessions.get(p.id);
+                    QuestSession s = sim.requireSession(p.id);
                     simulateWave(sim, p, s, wave == 5);
                 }
             }
@@ -649,7 +649,7 @@ public class L6EndToEndFlowTest {
             // Complete for all
             List<QuestRewards> allRewards = new ArrayList<>();
             for (PlayerData p : List.of(leader, member1, member2, member3)) {
-                QuestSession s = sim.activeSessions.get(p.id);
+                QuestSession s = sim.requireSession(p.id);
                 allRewards.add(completeQuest(sim, p, s));
             }
 
@@ -673,7 +673,7 @@ public class L6EndToEndFlowTest {
             PlayerData member = sim.createPlayer("Member");
 
             UUID instanceId = startQuest(sim, leader, 10, false);
-            InstanceData instance = sim.instances.get(instanceId);
+            InstanceData instance = sim.requireInstance(instanceId);
 
             // Add member
             QuestSession memberSession = new QuestSession(member.id, instanceId);
@@ -684,7 +684,7 @@ public class L6EndToEndFlowTest {
 
             // Play 2 waves
             for (int i = 0; i < 2; i++) {
-                simulateWave(sim, leader, sim.activeSessions.get(leader.id), false);
+                simulateWave(sim, leader, sim.requireSession(leader.id), false);
                 simulateWave(sim, member, memberSession, false);
             }
 
@@ -698,10 +698,10 @@ public class L6EndToEndFlowTest {
 
             // Leader continues and completes
             for (int i = 0; i < 8; i++) {
-                simulateWave(sim, leader, sim.activeSessions.get(leader.id), i == 7);
+                simulateWave(sim, leader, sim.requireSession(leader.id), i == 7);
             }
 
-            completeQuest(sim, leader, sim.activeSessions.get(leader.id));
+            completeQuest(sim, leader, sim.requireSession(leader.id));
 
             assertEquals(1, sim.totalQuestsCompleted.get());
             assertEquals(1, sim.totalQuestsFailed.get());
@@ -728,7 +728,7 @@ public class L6EndToEndFlowTest {
 
             for (int q = 0; q < questCount; q++) {
                 startQuest(sim, player, 5, false);
-                QuestSession session = sim.activeSessions.get(player.id);
+                QuestSession session = sim.requireSession(player.id);
 
                 for (int wave = 1; wave <= 5; wave++) {
                     simulateWave(sim, player, session, wave == 5);
@@ -746,7 +746,7 @@ public class L6EndToEndFlowTest {
 
             // Total tokens should be sum
             long totalTokens = tokenHistory.stream().mapToLong(Long::longValue).sum();
-            assertEquals(totalTokens, sim.wallets.get(player.id).tokens.get());
+            assertEquals(totalTokens, sim.requireWallet(player.id).tokens.get());
 
             sim.log("Progression complete: " + questCount + " quests, " +
                 player.totalKills + " kills, " + totalTokens + " tokens");
@@ -762,37 +762,37 @@ public class L6EndToEndFlowTest {
             // First quest to earn tokens
             UUID instance1 = startQuest(sim, player, 5, false);
             assertNotNull(instance1);
-            QuestSession session1 = sim.activeSessions.get(player.id);
+            QuestSession session1 = sim.requireSession(player.id);
             for (int i = 0; i < 5; i++) {
                 simulateWave(sim, player, session1, i == 4);
             }
             completeQuest(sim, player, session1);
 
-            long balanceAfterQuest = sim.wallets.get(player.id).tokens.get();
+            long balanceAfterQuest = sim.requireWallet(player.id).tokens.get();
             assertTrue(balanceAfterQuest > 0);
 
             // Make a purchase
             long itemCost = balanceAfterQuest / 2;
             synchronized (sim.getPurchaseLock(player.id)) {
-                boolean purchased = sim.wallets.get(player.id).spendTokens(itemCost);
+                boolean purchased = sim.requireWallet(player.id).spendTokens(itemCost);
                 assertTrue(purchased);
                 sim.totalTokensSpent.addAndGet(itemCost);
             }
 
-            long balanceAfterPurchase = sim.wallets.get(player.id).tokens.get();
+            long balanceAfterPurchase = sim.requireWallet(player.id).tokens.get();
             assertEquals(balanceAfterQuest - itemCost, balanceAfterPurchase);
 
             // Second quest
             UUID instance2 = startQuest(sim, player, 5, false);
             assertNotNull(instance2);
-            QuestSession session2 = sim.activeSessions.get(player.id);
+            QuestSession session2 = sim.requireSession(player.id);
             for (int i = 0; i < 5; i++) {
                 simulateWave(sim, player, session2, i == 4);
             }
             completeQuest(sim, player, session2);
 
             // Balance should have increased
-            assertTrue(sim.wallets.get(player.id).tokens.get() > balanceAfterPurchase);
+            assertTrue(sim.requireWallet(player.id).tokens.get() > balanceAfterPurchase);
         }
     }
 
@@ -812,7 +812,7 @@ public class L6EndToEndFlowTest {
             PlayerData player = sim.createPlayer("DisconnectPlayer");
 
             startQuest(sim, player, 10, false);
-            QuestSession session = sim.activeSessions.get(player.id);
+            QuestSession session = sim.requireSession(player.id);
 
             // Play some waves
             for (int i = 0; i < 5; i++) {
@@ -829,7 +829,7 @@ public class L6EndToEndFlowTest {
             assertEquals("minecraft:overworld", player.dimension);
 
             // Partial rewards should be given
-            assertTrue(sim.wallets.get(player.id).tokens.get() > 0);
+            assertTrue(sim.requireWallet(player.id).tokens.get() > 0);
 
             // Stats should include kills before disconnect
             assertEquals(killsBeforeDisconnect, player.totalKills);
@@ -849,7 +849,7 @@ public class L6EndToEndFlowTest {
             // Fail 3 times
             for (int attempt = 1; attempt <= 3; attempt++) {
                 startQuest(sim, player, 10, false);
-                QuestSession session = sim.activeSessions.get(player.id);
+                QuestSession session = sim.requireSession(player.id);
 
                 // Get partway through
                 for (int i = 0; i < attempt + 1; i++) {
@@ -864,7 +864,7 @@ public class L6EndToEndFlowTest {
 
             // Finally succeed
             startQuest(sim, player, 10, false);
-            QuestSession session = sim.activeSessions.get(player.id);
+            QuestSession session = sim.requireSession(player.id);
             for (int i = 0; i < 10; i++) {
                 simulateWave(sim, player, session, i == 9);
             }
@@ -901,13 +901,9 @@ public class L6EndToEndFlowTest {
                     try {
                         PlayerData player = sim.createPlayer("Player" + playerNum);
 
-                        UUID instanceId = startQuest(sim, player, 5, false);
-                        if (instanceId == null) {
-                            errors.incrementAndGet();
-                            return;
-                        }
+                        startQuest(sim, player, 5, false);
 
-                        QuestSession session = sim.activeSessions.get(player.id);
+                        QuestSession session = sim.requireSession(player.id);
                         for (int wave = 0; wave < 5; wave++) {
                             simulateWave(sim, player, session, wave == 4);
                         }
@@ -944,7 +940,7 @@ public class L6EndToEndFlowTest {
                 UUID instanceId = startQuest(sim, player, 2, false);
                 assertNotNull(instanceId, "Cycle " + i + " failed to start");
 
-                QuestSession session = sim.activeSessions.get(player.id);
+                QuestSession session = sim.requireSession(player.id);
                 simulateWave(sim, player, session, false);
                 simulateWave(sim, player, session, true);
 
@@ -970,6 +966,7 @@ public class L6EndToEndFlowTest {
 
             CountDownLatch latch = new CountDownLatch(playerCount);
             ExecutorService executor = Executors.newFixedThreadPool(playerCount);
+            AtomicInteger errors = new AtomicInteger(0);
 
             for (int i = 0; i < playerCount; i++) {
                 final int playerNum = i;
@@ -978,10 +975,9 @@ public class L6EndToEndFlowTest {
                         PlayerData player = sim.createPlayer("EconPlayer" + playerNum);
 
                         for (int q = 0; q < questsPerPlayer; q++) {
-                            UUID instanceId = startQuest(sim, player, 3, false);
-                            if (instanceId == null) continue;
+                            startQuest(sim, player, 3, false);
 
-                            QuestSession session = sim.activeSessions.get(player.id);
+                            QuestSession session = sim.requireSession(player.id);
                             for (int w = 0; w < 3; w++) {
                                 simulateWave(sim, player, session, w == 2);
                             }
@@ -989,7 +985,7 @@ public class L6EndToEndFlowTest {
                             completeQuest(sim, player, session);
 
                             // Spend some tokens
-                            WalletData wallet = sim.wallets.get(player.id);
+                            WalletData wallet = sim.requireWallet(player.id);
                             long balance = wallet.tokens.get();
                             if (balance > 100) {
                                 synchronized (sim.getPurchaseLock(player.id)) {
@@ -1000,7 +996,7 @@ public class L6EndToEndFlowTest {
                             }
                         }
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        errors.incrementAndGet();
                     } finally {
                         latch.countDown();
                     }
@@ -1009,6 +1005,8 @@ public class L6EndToEndFlowTest {
 
             latch.await();
             executor.shutdown();
+
+            assertEquals(0, errors.get(), "No errors during token economy load");
 
             // Verify economy consistency
             long totalWalletTokens = sim.wallets.values().stream()
@@ -1034,7 +1032,7 @@ public class L6EndToEndFlowTest {
             PlayerData player = sim.createPlayer("TelemetryPlayer");
 
             startQuest(sim, player, 5, false);
-            QuestSession session = sim.activeSessions.get(player.id);
+            QuestSession session = sim.requireSession(player.id);
 
             for (int i = 0; i < 5; i++) {
                 simulateWave(sim, player, session, i == 4);

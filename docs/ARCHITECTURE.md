@@ -231,7 +231,7 @@ RegisterShadersEvent ──► ShieldShaderRegistry
 | `ShaderPipeline` | Registrazione shader + creazione RenderType con fallback |
 | `energy_shield.fsh` | Fragment shader con noise, fresnel, effetti onda impatto |
 
-**Posizione File Shader:** `assets/devmod/shaders/core/`
+**Posizione File Shader:** `src/main/resources/assets/devmod/shaders/core/`
 
 Vedi [SHADER_SYSTEM.md](subsystems/editor-design-system/SHADER_SYSTEM.md) per guida implementazione dettagliata.
 

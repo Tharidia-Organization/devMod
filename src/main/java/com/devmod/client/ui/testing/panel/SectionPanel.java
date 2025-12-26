@@ -15,6 +15,7 @@ import static com.devmod.client.ui.testing.panel.PanelConstants.DESCRIPTION_HEIG
 import static com.devmod.client.ui.testing.panel.PanelConstants.ROW_SPACING;
 import static com.devmod.client.ui.testing.panel.PanelConstants.SEPARATOR_HEIGHT;
 import static com.devmod.client.ui.testing.panel.PanelConstants.TITLE_HEIGHT;
+
 public record SectionPanel(
     String id,
     String title,

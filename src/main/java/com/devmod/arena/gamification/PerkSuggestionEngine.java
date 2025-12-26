@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
+
 public final class PerkSuggestionEngine {
 
     /**

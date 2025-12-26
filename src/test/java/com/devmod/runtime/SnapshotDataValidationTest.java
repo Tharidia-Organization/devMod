@@ -13,17 +13,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L3 Test: Snapshot Data Validation
- *
- * Tests the snapshot data structure rules without Minecraft dependencies.
- * Validates:
- * - Snapshot data fields and structure
- * - Builder pattern consistency
- * - State transition validation
- * - Party data handling
- * - Timestamp management
- */
 @DisplayName("L3: Snapshot Data Validation")
 class SnapshotDataValidationTest {
 

@@ -34,6 +34,7 @@ import com.devmod.client.ui.editor.sections.InputSectionAdapter;
 import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
 import com.devmod.network.RangedWeaponStatsPayload;
+
 public class RangedModule extends AbstractEditorModule {
 
     public enum RangedVariant { BOW, CROSSBOW, TRIDENT, GENERIC }

@@ -16,6 +16,7 @@ import com.devmod.client.ui.editor.ItemEditorDataManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public class MultiEditPanel {
     private final MultiEditManager manager;
     private final Supplier<String> activeItemTypeSupplier;

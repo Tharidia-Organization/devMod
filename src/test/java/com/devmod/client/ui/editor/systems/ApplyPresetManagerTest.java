@@ -1,15 +1,17 @@
 package com.devmod.client.ui.editor.systems;
 
-import com.devmod.TestBootstrap;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import java.util.List;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
-import static org.junit.jupiter.api.Assertions.*;
+import com.devmod.TestBootstrap;
+
 import static java.util.Objects.requireNonNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ApplyPresetManagerTest {
 

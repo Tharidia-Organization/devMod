@@ -1,4 +1,5 @@
 package com.devmod.components;
+
 import java.util.Objects;
 
 import javax.annotation.Nullable;
@@ -14,6 +15,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
+
 public final class ArmorComponents {
     private ArmorComponents() {}
 
@@ -37,6 +39,7 @@ public final class ArmorComponents {
             .build());
 
     // Fallback instance for test environments where Neo registries are not bound.
+    @Nullable
     private static DataComponentType<CompoundTag> fallbackArmorStats;
 
     /**
@@ -65,7 +68,6 @@ public final class ArmorComponents {
         }
     }
 
-    @Nullable
     private static synchronized DataComponentType<CompoundTag> fallbackArmorStats() {
         if (fallbackArmorStats == null) {
             fallbackArmorStats = DataComponentType.<CompoundTag>builder()
@@ -73,6 +75,6 @@ public final class ArmorComponents {
                 .networkSynchronized(Objects.requireNonNull(ARMOR_TAG_STREAM_CODEC))
                 .build();
         }
-        return fallbackArmorStats;
+        return Objects.requireNonNull(fallbackArmorStats, "fallbackArmorStats");
     }
 }

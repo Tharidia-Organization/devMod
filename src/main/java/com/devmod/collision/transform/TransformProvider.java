@@ -3,6 +3,7 @@ package com.devmod.collision.transform;
 import javax.annotation.Nonnull;
 
 import net.minecraft.world.entity.LivingEntity;
+
 public interface TransformProvider {
 
     /**

@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 
@@ -13,6 +15,7 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 import com.devmod.DevMod;
 import com.devmod.telemetry.boss.UnifiedBossDetector;
+
 @EventBusSubscriber(modid = DevMod.MODID)
 public class BossPhaseDetector {
     private static final Map<UUID, BossState> bossStates = new HashMap<>();
@@ -75,6 +78,7 @@ public class BossPhaseDetector {
     }
 
     private static class BossState {
+        @Nullable
         String currentPhase = null;
     }
 }

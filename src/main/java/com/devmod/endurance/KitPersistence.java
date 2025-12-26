@@ -19,6 +19,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
 import net.neoforged.fml.loading.FMLPaths;
+
 public final class KitPersistence {
     private static final Logger LOGGER = LoggerFactory.getLogger(KitPersistence.class);
     private static final String KITS_DIR = "devmod/kits";

@@ -1,6 +1,7 @@
 package com.devmod.arena.spawn;
 
 import java.util.UUID;
+
 public record SpawnSlot(
     UUID id,
     double x,

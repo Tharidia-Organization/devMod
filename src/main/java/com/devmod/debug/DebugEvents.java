@@ -9,6 +9,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import com.devmod.DevMod;
+
 @EventBusSubscriber(modid = DevMod.MODID)
 public class DebugEvents {
 

@@ -1,6 +1,7 @@
 package com.devmod.arena.registry;
 
 import java.util.Map;
+
 public final class TemplateMergeRules {
 
     public enum MergeStrategy {

@@ -3,6 +3,7 @@ package com.devmod.actions;
 import com.mojang.brigadier.context.CommandContext;
 
 import net.minecraft.commands.CommandSourceStack;
+
 public final class ActionCommandInvoker {
     private ActionCommandInvoker() {}
 

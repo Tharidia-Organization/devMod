@@ -1,6 +1,8 @@
 package com.devmod.runtime;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -9,9 +11,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -21,18 +23,6 @@ import org.junit.jupiter.api.Timeout;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Progressive Test Suite 5: Edge Cases and Stress Tests
- *
- * Tests unusual scenarios and system limits to identify hidden bugs.
- * Validates system behavior under stress and extreme conditions.
- *
- * Focus areas:
- * 1. Boundary conditions
- * 2. Unusual state combinations
- * 3. Resource limits
- * 4. Stress testing with high load
- */
 public class EdgeCaseStressTest {
 
     // ============================================================
@@ -60,17 +50,14 @@ public class EdgeCaseStressTest {
         @Test
         @DisplayName("Empty player set handling")
         void testEmptyPlayerSet() {
-            Set<UUID> players = ConcurrentHashMap.newKeySet();
+            Set<UUID> players = new HashSet<>();
 
             assertTrue(players.isEmpty());
             assertEquals(0, players.size());
 
-            // Operations on empty set should not throw
-            assertDoesNotThrow(() -> {
-                players.remove(UUID.randomUUID());
-                players.iterator().hasNext();
-                players.stream().count();
-            });
+            players.remove(UUID.randomUUID());
+            assertFalse(players.iterator().hasNext());
+            assertEquals(0, players.stream().count());
         }
 
         @Test
@@ -87,7 +74,7 @@ public class EdgeCaseStressTest {
         @Test
         @DisplayName("UUID collision handling (theoretical)")
         void testUUIDCollisionHandling() {
-            Map<UUID, String> registry = new ConcurrentHashMap<>();
+            Map<UUID, String> registry = new HashMap<>();
 
             // Use same UUID twice (simulates extremely rare collision)
             UUID id = UUID.randomUUID();
@@ -102,24 +89,43 @@ public class EdgeCaseStressTest {
 
         @Test
         @DisplayName("Null key handling in registry")
-        void testNullKeyHandling() {
+        void testNullKeyHandling() throws Exception {
             Map<UUID, String> registry = new ConcurrentHashMap<>();
 
             // ConcurrentHashMap does not allow null keys
-            assertThrows(NullPointerException.class, () -> {
-                registry.put(null, "value");
-            });
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            try {
+                Future<Throwable> putResult = executor.submit(() -> {
+                    try {
+                        registry.put(null, "value");
+                        return null;
+                    } catch (Throwable t) {
+                        return t;
+                    }
+                });
+                Throwable putError = putResult.get(1, TimeUnit.SECONDS);
+                assertTrue(putError instanceof NullPointerException);
 
-            assertThrows(NullPointerException.class, () -> {
-                registry.get(null);
-            });
+                Future<Throwable> getResult = executor.submit(() -> {
+                    try {
+                        registry.get(null);
+                        return null;
+                    } catch (Throwable t) {
+                        return t;
+                    }
+                });
+                Throwable getError = getResult.get(1, TimeUnit.SECONDS);
+                assertTrue(getError instanceof NullPointerException);
+            } finally {
+                executor.shutdown();
+            }
         }
 
         @Test
         @DisplayName("Zero players in instance triggers destruction")
         void testZeroPlayersTriggersDestruction() {
-            Set<UUID> players = ConcurrentHashMap.newKeySet();
-            AtomicBoolean destructionTriggered = new AtomicBoolean(false);
+            Set<UUID> players = new HashSet<>();
+            boolean destructionTriggered = false;
 
             UUID player = UUID.randomUUID();
             players.add(player);
@@ -128,10 +134,10 @@ public class EdgeCaseStressTest {
             players.remove(player);
 
             if (players.isEmpty()) {
-                destructionTriggered.set(true);
+                destructionTriggered = true;
             }
 
-            assertTrue(destructionTriggered.get(),
+            assertTrue(destructionTriggered,
                 "Instance should be marked for destruction when empty");
         }
     }
@@ -185,8 +191,8 @@ public class EdgeCaseStressTest {
         @Test
         @DisplayName("Player has snapshot but instance was already destroyed")
         void testOrphanedSnapshot() {
-            Map<UUID, UUID> snapshots = new ConcurrentHashMap<>();
-            Set<UUID> existingInstances = ConcurrentHashMap.newKeySet();
+            Map<UUID, UUID> snapshots = new HashMap<>();
+            Set<UUID> existingInstances = new HashSet<>();
 
             UUID playerId = UUID.randomUUID();
             UUID instanceId = UUID.randomUUID();
@@ -206,7 +212,7 @@ public class EdgeCaseStressTest {
         @Test
         @DisplayName("Multiple state transitions in same tick")
         void testMultipleTransitionsSameTick() {
-            AtomicReference<InstanceState> state = new AtomicReference<>(InstanceState.READY);
+            InstanceState state = InstanceState.READY;
             List<InstanceState> transitionLog = new ArrayList<>();
 
             // Simulate rapid transitions in same tick
@@ -217,11 +223,11 @@ public class EdgeCaseStressTest {
             };
 
             for (InstanceState next : transitions) {
-                state.set(next);
+                state = next;
                 transitionLog.add(next);
             }
 
-            assertEquals(InstanceState.DESTROYING, state.get());
+            assertEquals(InstanceState.DESTROYING, state);
             assertEquals(3, transitionLog.size());
         }
     }
@@ -236,7 +242,7 @@ public class EdgeCaseStressTest {
         @Test
         @DisplayName("Handle 1000 concurrent instances")
         void testManyInstances() {
-            Map<UUID, String> instances = new ConcurrentHashMap<>();
+            Map<UUID, String> instances = new HashMap<>();
 
             for (int i = 0; i < 1000; i++) {
                 instances.put(UUID.randomUUID(), "ACTIVE");
@@ -252,7 +258,7 @@ public class EdgeCaseStressTest {
         @Test
         @DisplayName("Handle 10000 player mappings")
         void testManyPlayerMappings() {
-            Map<UUID, UUID> playerToInstance = new ConcurrentHashMap<>();
+            Map<UUID, UUID> playerToInstance = new HashMap<>();
 
             for (int i = 0; i < 10000; i++) {
                 playerToInstance.put(UUID.randomUUID(), UUID.randomUUID());
@@ -284,7 +290,7 @@ public class EdgeCaseStressTest {
                 "Inventory data should be large");
 
             // Verify it can be stored
-            Map<UUID, String> snapshots = new ConcurrentHashMap<>();
+            Map<UUID, String> snapshots = new HashMap<>();
             snapshots.put(UUID.randomUUID(), inventoryData);
 
             assertEquals(inventoryData, snapshots.values().iterator().next());
@@ -293,7 +299,7 @@ public class EdgeCaseStressTest {
         @Test
         @DisplayName("Memory cleanup after instance destruction")
         void testMemoryCleanup() {
-            Map<UUID, Object> heavyData = new ConcurrentHashMap<>();
+            Map<UUID, Object> heavyData = new HashMap<>();
 
             // Create "heavy" objects
             for (int i = 0; i < 100; i++) {
@@ -337,9 +343,10 @@ public class EdgeCaseStressTest {
                 executor.submit(() -> {
                     try {
                         // Simulate state transition work
-                        AtomicReference<InstanceState> state =
-                            new AtomicReference<>(InstanceState.CREATING);
-                        state.compareAndSet(InstanceState.CREATING, InstanceState.READY);
+                        InstanceState state = InstanceState.CREATING;
+                        if (state == InstanceState.CREATING) {
+                            state = InstanceState.READY;
+                        }
                         transitionCount.incrementAndGet();
                     } finally {
                         latch.countDown();
@@ -356,7 +363,7 @@ public class EdgeCaseStressTest {
         @RepeatedTest(3)
         @DisplayName("Rapid create-destroy cycle")
         void testRapidCreateDestroy() throws Exception {
-            Map<UUID, String> instances = new ConcurrentHashMap<>();
+            Map<UUID, String> instances = new HashMap<>();
             int cycles = 100;
 
             for (int i = 0; i < cycles; i++) {

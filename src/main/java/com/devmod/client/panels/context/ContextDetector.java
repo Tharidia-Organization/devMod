@@ -10,6 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;
 
 import com.devmod.client.testing.TestingSession;
+
 public class ContextDetector {
 
     public static final ContextDetector INSTANCE = new ContextDetector();

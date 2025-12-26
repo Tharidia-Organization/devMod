@@ -5,6 +5,7 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
+
 public record RadialMenuState(
     // === Macro Selection ===
     MacroCategory selectedMacro,

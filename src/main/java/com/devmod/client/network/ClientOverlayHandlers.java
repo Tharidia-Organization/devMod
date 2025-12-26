@@ -13,6 +13,7 @@ import com.devmod.client.overlay.ResonanceHudOverlay;
 import com.devmod.client.overlay.TokenGainOverlay;
 import com.devmod.endurance.contracts.ContractSyncPayload;
 import com.devmod.endurance.resonance.ResonanceNotificationPayload;
+
 @OnlyIn(Dist.CLIENT)
 public final class ClientOverlayHandlers {
 

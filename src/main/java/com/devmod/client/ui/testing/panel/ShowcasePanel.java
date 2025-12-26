@@ -13,6 +13,7 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import static com.devmod.client.ui.testing.panel.PanelConstants.BUTTON_HEIGHT_MEDIUM;
 import static com.devmod.client.ui.testing.panel.PanelConstants.ROW_SPACING;
 import static com.devmod.client.ui.testing.panel.PanelConstants.TITLE_HEIGHT;
+
 public final class ShowcasePanel implements UIPanel {
 
     private final String id;

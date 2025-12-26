@@ -121,6 +121,7 @@ import static com.devmod.network.ChannelId.WAVE_DIRECTIVE_CHOICES;
 import static com.devmod.network.ChannelId.WAVE_DIRECTIVE_SELECTION;
 import static com.devmod.network.ChannelId.WEAPON_LEGACY;
 import static com.devmod.network.ChannelId.WEAPON_STATS_V2;
+
 @EventBusSubscriber(modid = MODID)
 public class NetworkHandler {
     /**

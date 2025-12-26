@@ -6,6 +6,7 @@ import javax.annotation.Nonnull;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+
 public final class I18n {
     private I18n() {}
 

@@ -1,6 +1,7 @@
 package com.devmod.client.ui.hub;
 
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public enum Verdict {
     PASS("PASS", "1", UIConstants.Status.SUCCESS()),
     FAIL("FAIL", "2", UIConstants.Status.ERROR()),

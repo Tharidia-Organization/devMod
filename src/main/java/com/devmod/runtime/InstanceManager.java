@@ -24,6 +24,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
+
 public class InstanceManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceManager.class);
     public static final InstanceManager INSTANCE = new InstanceManager();

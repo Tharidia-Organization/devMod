@@ -7,9 +7,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for {@link TransitionAnimator}.
- */
 @DisplayName("TransitionAnimator")
 class TransitionAnimatorTest {
 

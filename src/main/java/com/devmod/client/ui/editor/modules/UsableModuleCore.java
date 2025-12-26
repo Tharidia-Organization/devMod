@@ -11,6 +11,7 @@ import net.minecraft.world.item.component.CustomData;
 import com.devmod.DevMod;
 import com.devmod.client.ui.editor.components.SourceBadge;
 import com.devmod.stats.UsableStats;
+
 public class UsableModuleCore {
 
     static final String NBT_KEY = "UsableModStats";

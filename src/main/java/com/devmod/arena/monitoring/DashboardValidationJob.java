@@ -17,6 +17,7 @@ import com.devmod.arena.alert.ErrorContext;
 import com.devmod.telemetry.duckdb.ArenaRecords;
 import com.devmod.telemetry.duckdb.DuckDBQueryAPI;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
+
 public class DashboardValidationJob {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DashboardValidationJob.class);

@@ -29,6 +29,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
 import net.minecraft.resources.ResourceLocation;
+
 public class EnduranceAnalytics {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceAnalytics.class);
     private static final Gson GSON = new GsonBuilder()

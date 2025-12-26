@@ -5,6 +5,7 @@ import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
 import net.minecraft.world.item.ItemStack;
+
 public class RadialMenuItem {
     private final String name;
     private final RadialAction action;

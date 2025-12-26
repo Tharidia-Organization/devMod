@@ -30,6 +30,7 @@ import com.devmod.testing.stats.OverlayUsageTracker;
 import com.devmod.testing.stats.PotionStatistics;
 import com.devmod.testing.stats.SessionStatistics;
 import com.devmod.util.ConfigPaths;
+
 public class TesterProgress {
     private static final Logger LOGGER = LoggerFactory.getLogger(TesterProgress.class);
     // Lazy initialization to avoid NPE during class loading (FMLPaths not ready yet)

@@ -5,6 +5,7 @@ import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 public class FallbackBuildStrategy<T> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FallbackBuildStrategy.class);

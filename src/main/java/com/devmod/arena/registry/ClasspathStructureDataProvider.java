@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.resources.ResourceLocation;
+
 public class ClasspathStructureDataProvider implements TemplateValidator.StructureDataProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClasspathStructureDataProvider.class);

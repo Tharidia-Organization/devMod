@@ -20,6 +20,7 @@ import org.joml.Matrix4f;
 
 import com.devmod.collision.transform.AnimationSnapshot;
 import com.devmod.combat.HitHelper;
+
 public final class BodyPartHierarchy {
 
     private final Map<String, BodyPartDefinition> parts;

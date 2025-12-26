@@ -14,6 +14,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.endurance.ComboSystem.StyleRank;
+
 public class ComboDecayOverlay {
 
     private static final long DISPLAY_DURATION_MS = 1200;

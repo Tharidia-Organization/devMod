@@ -1,26 +1,30 @@
 package com.devmod.arena.command;
 
-import com.devmod.arena.builder.TemplateArenaBuilder;
-import com.devmod.arena.config.ArenaTemplateConfig;
-import com.devmod.arena.registry.ArenaTemplate;
-import com.devmod.arena.registry.ArenaTemplateRegistry;
-import com.devmod.arena.telemetry.ArenaTelemetry;
+import java.nio.file.Path;
+import java.util.Objects;
+
+import org.junit.jupiter.api.Test;
+
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
+
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
-import org.junit.jupiter.api.Test;
 
-import java.nio.file.Path;
-import java.util.Objects;
+import com.devmod.arena.builder.TemplateArenaBuilder;
+import com.devmod.arena.config.ArenaTemplateConfig;
+import com.devmod.arena.registry.ArenaTemplate;
+import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.arena.telemetry.ArenaTelemetry;
+
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.ArgumentMatchers.argThat;
 
 class ArenaCommandGateIntegrationTest {
 

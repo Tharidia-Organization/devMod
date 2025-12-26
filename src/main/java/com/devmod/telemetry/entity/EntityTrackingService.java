@@ -10,6 +10,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
@@ -17,6 +19,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+
 public class EntityTrackingService {
     public static final EntityTrackingService INSTANCE = new EntityTrackingService();
 
@@ -267,6 +270,7 @@ public class EntityTrackingService {
      * Aggiorna il path tracker per un mob e rileva problemi.
      * @return tipo di problema rilevato, o null se nessuno
      */
+    @Nullable
     public String updatePathAndDetectIssue(Mob mob) {
         if (mob.getMaxHealth() < 40) return null; // Only track likely bosses
 
@@ -410,6 +414,7 @@ public class EntityTrackingService {
             }
         }
 
+        @Nullable
         String detectIssue() {
             if (samples.size() < 5) return null;
 

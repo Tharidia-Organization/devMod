@@ -1,4 +1,5 @@
 package com.devmod.config;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -51,6 +52,7 @@ import com.devmod.components.WeaponComponents;
 import com.devmod.integration.PufferfishCompat;
 import com.devmod.network.PacketValidator;
 import com.devmod.stats.WeaponStats;
+
 public class WeaponConfigManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WeaponConfigManager.class);

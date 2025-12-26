@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
 public final class SchemaValidator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SchemaValidator.class);

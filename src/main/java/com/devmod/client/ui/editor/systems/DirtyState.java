@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public final class DirtyState {
 
     private boolean isDirty = false;

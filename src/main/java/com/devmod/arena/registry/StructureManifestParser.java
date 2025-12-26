@@ -13,6 +13,7 @@ import java.util.Set;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
+
 public final class StructureManifestParser {
 
     /**

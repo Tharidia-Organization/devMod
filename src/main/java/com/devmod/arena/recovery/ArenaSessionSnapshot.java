@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
+
 public record ArenaSessionSnapshot(
     // DD25: Schema version for migration
     String schemaVersion,

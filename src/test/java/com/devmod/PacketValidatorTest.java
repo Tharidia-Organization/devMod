@@ -1,21 +1,19 @@
 package com.devmod;
 
-import org.junit.jupiter.api.Test;
+import java.util.Objects;
+
+import javax.annotation.Nullable;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for PacketValidator.
- * Tests value validation, clamping, and input sanitization.
- * Note: Rate limiting tests require mocking ServerPlayer which is complex,
- * so this focuses on the pure validation logic.
- */
 public class PacketValidatorTest {
 
     /**
@@ -62,7 +60,7 @@ public class PacketValidatorTest {
             return entityId >= 0;
         }
 
-        public String validateString(String value, int maxLength) {
+        public @Nullable String validateString(@Nullable String value, int maxLength) {
             if (value == null) return null;
             if (value.length() > maxLength) {
                 value = value.substring(0, maxLength);
@@ -71,7 +69,7 @@ public class PacketValidatorTest {
             return value.replaceAll("[\\p{Cntrl}&&[^\t\n\r]]", "");
         }
 
-        public String validateItemId(String itemId) {
+        public @Nullable String validateItemId(@Nullable String itemId) {
             if (itemId == null || itemId.isEmpty()) return null;
             if (itemId.length() > 256) return null;
             // Must match resource location pattern
@@ -299,7 +297,7 @@ public class PacketValidatorTest {
         @Test
         @DisplayName("String longer than max is truncated")
         void testStringTruncation() {
-            String result = service.validateString("This is a very long string", 10);
+            String result = Objects.requireNonNull(service.validateString("This is a very long string", 10));
             assertEquals("This is a ", result);
             assertEquals(10, result.length());
         }
@@ -308,7 +306,7 @@ public class PacketValidatorTest {
         @DisplayName("Control characters are removed")
         void testControlCharacterRemoval() {
             String input = "Hello\u0000World\u0001Test";
-            String result = service.validateString(input, 100);
+            String result = Objects.requireNonNull(service.validateString(input, 100));
             assertEquals("HelloWorldTest", result);
         }
 
@@ -316,7 +314,7 @@ public class PacketValidatorTest {
         @DisplayName("Common whitespace is preserved")
         void testWhitespacePreserved() {
             String input = "Hello\tWorld\nTest\rLine";
-            String result = service.validateString(input, 100);
+            String result = Objects.requireNonNull(service.validateString(input, 100));
             assertEquals("Hello\tWorld\nTest\rLine", result);
         }
 

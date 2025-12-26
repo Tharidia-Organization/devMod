@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Map;
 import java.util.Properties;
+
 public record ReportHeader(
     /** DD34: Git commit hash (short) */
     String gitCommit,

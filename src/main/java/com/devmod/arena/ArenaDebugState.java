@@ -3,6 +3,7 @@ package com.devmod.arena;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
 public class ArenaDebugState {
 
     private static final ArenaDebugState INSTANCE = new ArenaDebugState();

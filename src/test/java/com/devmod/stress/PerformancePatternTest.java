@@ -31,17 +31,6 @@ import com.devmod.runtime.InstanceState;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L5 Test: Performance Pattern Validation
- *
- * Tests performance patterns and optimization techniques without Minecraft dependencies.
- * Validates:
- * - Collection operation efficiency
- * - Algorithm complexity validation
- * - Lazy initialization patterns
- * - Batch operation patterns
- * - Stream vs loop performance patterns
- */
 @DisplayName("L5: Performance Pattern Tests")
 class PerformancePatternTest {
 

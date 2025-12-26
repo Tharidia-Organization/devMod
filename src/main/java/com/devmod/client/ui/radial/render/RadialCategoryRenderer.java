@@ -13,6 +13,7 @@ import com.devmod.client.ui.radial.RadialCategory;
 import com.devmod.client.ui.radial.RadialMenuConfig;
 import com.devmod.client.ui.radial.RadialMenuItem;
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
+
 public final class RadialCategoryRenderer {
 
     private RadialCategoryRenderer() {

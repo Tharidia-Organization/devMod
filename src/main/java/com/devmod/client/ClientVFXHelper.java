@@ -13,6 +13,7 @@ import com.devmod.client.overlay.ImpactData;
 import com.devmod.client.overlay.ImpactVFX;
 import com.devmod.combat.HitHelper.BodyPart;
 import com.devmod.damage.DamageBreakdown;
+
 public final class ClientVFXHelper {
 
     private ClientVFXHelper() {

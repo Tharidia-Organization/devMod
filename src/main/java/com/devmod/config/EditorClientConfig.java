@@ -1,6 +1,7 @@
 package com.devmod.config;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
+
 public final class EditorClientConfig {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 

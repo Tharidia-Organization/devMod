@@ -5,10 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for MutatorBinding.
- * DD50: Mutator Binding - SUGGESTED soft, EXCLUDED/REQUIRED hard.
- */
 @DisplayName("MutatorBinding Tests")
 class MutatorBindingTest {
 

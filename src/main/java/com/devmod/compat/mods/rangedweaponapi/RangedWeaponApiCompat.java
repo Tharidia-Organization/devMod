@@ -9,6 +9,7 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class RangedWeaponApiCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(RangedWeaponApiCompat.class);
     public static final String MOD_ID = "ranged_weapon_api";

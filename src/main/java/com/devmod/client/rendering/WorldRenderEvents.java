@@ -31,6 +31,7 @@ import com.devmod.ModConfig;
 import com.devmod.config.Config;
 
 import static com.devmod.DevMod.MODID;
+
 @EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
 // Minecraft API methods are not annotated but never return null in practice
 

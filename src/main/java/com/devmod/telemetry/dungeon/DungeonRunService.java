@@ -7,9 +7,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 
@@ -23,6 +26,7 @@ import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.duckdb.DuckDBConfig;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.devmod.telemetry.room.RoomService;
+
 public class DungeonRunService {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final DungeonRunService INSTANCE = new DungeonRunService();
@@ -320,6 +324,7 @@ public class DungeonRunService {
      * Room names starting with "dungeon_" or containing "_dungeon_" are considered dungeon rooms.
      * The dungeon ID is extracted from the room name pattern.
      */
+    @Nullable
     private String getDungeonForRoom(String roomId) {
         if (roomId == null || roomId.equals("unknown")) return null;
 
@@ -456,6 +461,7 @@ public class DungeonRunService {
 
         String currentRoom = "";
         long endTime;
+        @Nullable
         RunOutcome outcome;
         int deaths = 0;
         int kills = 0;
@@ -513,7 +519,7 @@ public class DungeonRunService {
             this.playerId = run.getPlayerId();
             this.playerName = run.playerName;
             this.dungeonId = run.dungeonId;
-            this.outcome = run.outcome;
+            this.outcome = Objects.requireNonNull(run.outcome, "outcome");
             this.durationSeconds = (run.endTime - run.startTime) / 1000;
             this.roomsVisited = run.roomsVisited.size();
             this.deaths = run.deaths;

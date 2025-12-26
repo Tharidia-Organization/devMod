@@ -18,6 +18,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.panels.tracking.EntityTracker;
 import com.devmod.client.panels.ui.PanelRenderer;
+
 public class FloatingPanelManager {
 
     public static final FloatingPanelManager INSTANCE = new FloatingPanelManager();

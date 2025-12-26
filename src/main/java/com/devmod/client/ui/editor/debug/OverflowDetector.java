@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import net.minecraft.client.gui.Font;
+
 public final class OverflowDetector {
 
     private OverflowDetector() {} // Static utility class

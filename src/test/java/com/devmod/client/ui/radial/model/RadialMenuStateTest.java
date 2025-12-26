@@ -1,16 +1,13 @@
 package com.devmod.client.ui.radial.model;
 
-import com.devmod.client.ui.radial.config.RadialMenuConstants;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.devmod.client.ui.radial.config.RadialMenuConstants;
+
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for {@link RadialMenuState} immutable state transitions.
- * These tests verify the correctness of state management without requiring Minecraft runtime.
- */
 @DisplayName("RadialMenuState")
 class RadialMenuStateTest {
 

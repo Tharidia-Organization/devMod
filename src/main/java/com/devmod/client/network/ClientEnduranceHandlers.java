@@ -21,6 +21,7 @@ import com.devmod.endurance.ShopSyncPayload;
 import com.devmod.endurance.WaveDirectiveChoicesPayload;
 import com.devmod.endurance.challenges.ChallengeSyncPayload;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public final class ClientEnduranceHandlers {
 

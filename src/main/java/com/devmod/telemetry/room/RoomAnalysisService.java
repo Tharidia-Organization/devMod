@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 import net.minecraft.core.BlockPos;
+
 public class RoomAnalysisService {
     public static final RoomAnalysisService INSTANCE = new RoomAnalysisService();
 

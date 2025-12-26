@@ -38,6 +38,7 @@ import com.devmod.recipe.RecipeConfigManager;
 import com.devmod.recipe.RecipeValidator;
 import com.devmod.recipe.ResultData;
 import com.devmod.util.I18n;
+
 public class RecipeModule extends AbstractEditorModule {
 
     private static final String TAB_GRID = "grid";

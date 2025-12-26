@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class EntityCullingCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(EntityCullingCompat.class);
     public static final String MOD_ID = "entityculling";

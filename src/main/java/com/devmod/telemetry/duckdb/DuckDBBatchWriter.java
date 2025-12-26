@@ -19,14 +19,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 public class DuckDBBatchWriter {
     private static final Logger LOGGER = LoggerFactory.getLogger(DuckDBBatchWriter.class);
 
     private final DuckDBConnectionManager connectionManager;
     private final ScheduledExecutorService scheduler;
-    private ScheduledFuture<?> flushTask;
+    private @Nullable ScheduledFuture<?> flushTask;
 
     // Per-table queues for efficient batching
     private final Map<String, BlockingQueue<Object[]>> tableQueues = new ConcurrentHashMap<>();
@@ -195,15 +198,15 @@ public class DuckDBBatchWriter {
     /**
      * Queue a combat hit event.
      */
-    public void queueCombatHit(Instant ts, String room, String world,
-                               String attackerName, String attackerType,
-                               String targetName, String targetType,
-                               double damage, String damageType,
-                               Double hpBefore, Double hpAfter,
-                               String bodyPart, Double distance,
-                               Double armorPenBonus, boolean isMiss,
-                               boolean isHazard, String hazardType,
-                               String attackerStateJson, String targetStateJson) {
+    public void queueCombatHit(Instant ts, @Nullable String room, @Nullable String world,
+                               @Nullable String attackerName, @Nullable String attackerType,
+                               @Nullable String targetName, @Nullable String targetType,
+                               double damage, @Nullable String damageType,
+                               @Nullable Double hpBefore, @Nullable Double hpAfter,
+                               @Nullable String bodyPart, @Nullable Double distance,
+                               @Nullable Double armorPenBonus, boolean isMiss,
+                               boolean isHazard, @Nullable String hazardType,
+                               @Nullable String attackerStateJson, @Nullable String targetStateJson) {
         queueCombatHit(ts, room, world, null, null, null, null, null, null,
             attackerName, attackerType, targetName, targetType,
             damage, damageType, hpBefore, hpAfter, bodyPart, distance,
@@ -213,18 +216,18 @@ public class DuckDBBatchWriter {
     /**
      * Queue a combat hit event with arena context.
      */
-    public void queueCombatHit(Instant ts, String room, String world,
-                               String templateId, Integer templateVersion,
-                               String policyId, Integer policyVersion,
-                               UUID arenaId, UUID sessionId,
-                               String attackerName, String attackerType,
-                               String targetName, String targetType,
-                               double damage, String damageType,
-                               Double hpBefore, Double hpAfter,
-                               String bodyPart, Double distance,
-                               Double armorPenBonus, boolean isMiss,
-                               boolean isHazard, String hazardType,
-                               String attackerStateJson, String targetStateJson) {
+    public void queueCombatHit(Instant ts, @Nullable String room, @Nullable String world,
+                               @Nullable String templateId, @Nullable Integer templateVersion,
+                               @Nullable String policyId, @Nullable Integer policyVersion,
+                               @Nullable UUID arenaId, @Nullable UUID sessionId,
+                               @Nullable String attackerName, @Nullable String attackerType,
+                               @Nullable String targetName, @Nullable String targetType,
+                               double damage, @Nullable String damageType,
+                               @Nullable Double hpBefore, @Nullable Double hpAfter,
+                               @Nullable String bodyPart, @Nullable Double distance,
+                               @Nullable Double armorPenBonus, boolean isMiss,
+                               boolean isHazard, @Nullable String hazardType,
+                               @Nullable String attackerStateJson, @Nullable String targetStateJson) {
         queueInsert("combat_hits", new Object[] {
             ts, room, world, templateId, templateVersion, policyId, policyVersion, arenaId, sessionId,
             attackerName, attackerType, targetName, targetType,
@@ -236,9 +239,9 @@ public class DuckDBBatchWriter {
     /**
      * Queue a combat death event.
      */
-    public void queueCombatDeath(Instant ts, String room, String world,
-                                  String targetName, String targetType,
-                                  String cause, Long ttkFirstHitMs, Long ttkSpawnMs) {
+    public void queueCombatDeath(Instant ts, @Nullable String room, @Nullable String world,
+                                  @Nullable String targetName, @Nullable String targetType,
+                                  @Nullable String cause, @Nullable Long ttkFirstHitMs, @Nullable Long ttkSpawnMs) {
         queueCombatDeath(ts, room, world, null, null, null, null, null, null,
             targetName, targetType, cause, ttkFirstHitMs, ttkSpawnMs);
     }
@@ -246,12 +249,12 @@ public class DuckDBBatchWriter {
     /**
      * Queue a combat death event with arena context.
      */
-    public void queueCombatDeath(Instant ts, String room, String world,
-                                  String templateId, Integer templateVersion,
-                                  String policyId, Integer policyVersion,
-                                  UUID arenaId, UUID sessionId,
-                                  String targetName, String targetType,
-                                  String cause, Long ttkFirstHitMs, Long ttkSpawnMs) {
+    public void queueCombatDeath(Instant ts, @Nullable String room, @Nullable String world,
+                                  @Nullable String templateId, @Nullable Integer templateVersion,
+                                  @Nullable String policyId, @Nullable Integer policyVersion,
+                                  @Nullable UUID arenaId, @Nullable UUID sessionId,
+                                  @Nullable String targetName, @Nullable String targetType,
+                                  @Nullable String cause, @Nullable Long ttkFirstHitMs, @Nullable Long ttkSpawnMs) {
         queueInsert("combat_deaths", new Object[] {
             ts, room, world, templateId, templateVersion, policyId, policyVersion, arenaId, sessionId,
             targetName, targetType, cause, ttkFirstHitMs, ttkSpawnMs
@@ -261,10 +264,10 @@ public class DuckDBBatchWriter {
     /**
      * Queue a combat heal event.
      */
-    public void queueCombatHeal(Instant ts, String room, String world,
-                                 String targetName, String targetType,
-                                 double healAmount, Double hpBefore, Double hpAfter,
-                                 String source) {
+    public void queueCombatHeal(Instant ts, @Nullable String room, @Nullable String world,
+                                 @Nullable String targetName, @Nullable String targetType,
+                                 double healAmount, @Nullable Double hpBefore, @Nullable Double hpAfter,
+                                 @Nullable String source) {
         queueCombatHeal(ts, room, world, null, null, null, null, null, null,
             targetName, targetType, healAmount, hpBefore, hpAfter, source);
     }
@@ -272,13 +275,13 @@ public class DuckDBBatchWriter {
     /**
      * Queue a combat heal event with arena context.
      */
-    public void queueCombatHeal(Instant ts, String room, String world,
-                                 String templateId, Integer templateVersion,
-                                 String policyId, Integer policyVersion,
-                                 UUID arenaId, UUID sessionId,
-                                 String targetName, String targetType,
-                                 double healAmount, Double hpBefore, Double hpAfter,
-                                 String source) {
+    public void queueCombatHeal(Instant ts, @Nullable String room, @Nullable String world,
+                                 @Nullable String templateId, @Nullable Integer templateVersion,
+                                 @Nullable String policyId, @Nullable Integer policyVersion,
+                                 @Nullable UUID arenaId, @Nullable UUID sessionId,
+                                 @Nullable String targetName, @Nullable String targetType,
+                                 double healAmount, @Nullable Double hpBefore, @Nullable Double hpAfter,
+                                 @Nullable String source) {
         queueInsert("combat_heals", new Object[] {
             ts, room, world, templateId, templateVersion, policyId, policyVersion, arenaId, sessionId,
             targetName, targetType, healAmount, hpBefore, hpAfter, source
@@ -288,10 +291,10 @@ public class DuckDBBatchWriter {
     /**
      * Queue a combat spawn event.
      */
-    public void queueCombatSpawn(Instant ts, String room, String world,
-                                  String entityName, String entityType,
-                                  String reason, boolean spawnFail,
-                                  Double x, Double y, Double z) {
+    public void queueCombatSpawn(Instant ts, @Nullable String room, @Nullable String world,
+                                  @Nullable String entityName, @Nullable String entityType,
+                                  @Nullable String reason, boolean spawnFail,
+                                  @Nullable Double x, @Nullable Double y, @Nullable Double z) {
         queueCombatSpawn(ts, room, world, null, null, null, null, null, null,
             entityName, entityType, reason, spawnFail, x, y, z);
     }
@@ -299,13 +302,13 @@ public class DuckDBBatchWriter {
     /**
      * Queue a combat spawn event with arena context.
      */
-    public void queueCombatSpawn(Instant ts, String room, String world,
-                                  String templateId, Integer templateVersion,
-                                  String policyId, Integer policyVersion,
-                                  UUID arenaId, UUID sessionId,
-                                  String entityName, String entityType,
-                                  String reason, boolean spawnFail,
-                                  Double x, Double y, Double z) {
+    public void queueCombatSpawn(Instant ts, @Nullable String room, @Nullable String world,
+                                  @Nullable String templateId, @Nullable Integer templateVersion,
+                                  @Nullable String policyId, @Nullable Integer policyVersion,
+                                  @Nullable UUID arenaId, @Nullable UUID sessionId,
+                                  @Nullable String entityName, @Nullable String entityType,
+                                  @Nullable String reason, boolean spawnFail,
+                                  @Nullable Double x, @Nullable Double y, @Nullable Double z) {
         queueInsert("combat_spawns", new Object[] {
             ts, room, world, templateId, templateVersion, policyId, policyVersion, arenaId, sessionId,
             entityName, entityType, reason, spawnFail, x, y, z
@@ -329,10 +332,10 @@ public class DuckDBBatchWriter {
     /**
      * Queue a combat fight session result with arena context.
      */
-    public void queueCombatFight(String room, String world,
-                                  String templateId, Integer templateVersion,
-                                  String policyId, Integer policyVersion,
-                                  UUID arenaId, UUID sessionId,
+    public void queueCombatFight(@Nullable String room, @Nullable String world,
+                                  @Nullable String templateId, @Nullable Integer templateVersion,
+                                  @Nullable String policyId, @Nullable Integer policyVersion,
+                                  @Nullable UUID arenaId, @Nullable UUID sessionId,
                                   Instant startTs, Instant endTs,
                                   long durationMs, int hits, int mobKills, int playerDeaths,
                                   String[] players, String mobKillsByTypeJson,
@@ -350,13 +353,13 @@ public class DuckDBBatchWriter {
      * Queue an endurance wave event.
      */
     public void queueEnduranceWave(Instant ts, UUID sessionId,
-                                    String templateId, Integer templateVersion,
-                                    String policyId, Integer policyVersion,
-                                    UUID arenaId, int waveNumber,
-                                    String eventType, Integer mobCount, Integer playerCount,
-                                    String questType, String[] modifiers,
-                                    Integer mobsKilled, Long durationMs,
-                                    Boolean noDamage, Double killsPerSecond) {
+                                    @Nullable String templateId, @Nullable Integer templateVersion,
+                                    @Nullable String policyId, @Nullable Integer policyVersion,
+                                    @Nullable UUID arenaId, int waveNumber,
+                                    String eventType, @Nullable Integer mobCount, @Nullable Integer playerCount,
+                                    @Nullable String questType, @Nullable String[] modifiers,
+                                    @Nullable Integer mobsKilled, @Nullable Long durationMs,
+                                    @Nullable Boolean noDamage, @Nullable Double killsPerSecond) {
         queueInsert("endurance_waves", new Object[] {
             ts, sessionId, templateId, templateVersion, policyId, policyVersion, arenaId,
             waveNumber, eventType, mobCount, playerCount, questType, modifiers,
@@ -368,11 +371,11 @@ public class DuckDBBatchWriter {
      * Queue an endurance wave kill event.
      */
     public void queueEnduranceWaveKill(Instant ts, UUID sessionId,
-                                        String templateId, Integer templateVersion,
-                                        String policyId, Integer policyVersion,
-                                        UUID arenaId, int waveNumber,
-                                        String mobType, boolean isElite,
-                                        String killerWeapon, double damageDealt) {
+                                        @Nullable String templateId, @Nullable Integer templateVersion,
+                                        @Nullable String policyId, @Nullable Integer policyVersion,
+                                        @Nullable UUID arenaId, int waveNumber,
+                                        @Nullable String mobType, boolean isElite,
+                                        @Nullable String killerWeapon, double damageDealt) {
         queueInsert("endurance_wave_kills", new Object[] {
             ts, sessionId, templateId, templateVersion, policyId, policyVersion, arenaId,
             waveNumber, mobType, isElite, killerWeapon, damageDealt
@@ -383,13 +386,14 @@ public class DuckDBBatchWriter {
      * Queue an endurance combo event.
      */
     public void queueEnduranceCombo(Instant ts, UUID playerId, UUID sessionId,
-                                     String templateId, Integer templateVersion,
-                                     String policyId, Integer policyVersion,
-                                     UUID arenaId, String eventType, String oldRank, String newRank,
-                                     Integer styleScore, Integer currentCombo,
-                                     Integer milestone, Integer comboLost,
-                                     Double damageTaken, String actionType,
-                                     Integer pointsEarned, Integer styleEarned) {
+                                     @Nullable String templateId, @Nullable Integer templateVersion,
+                                     @Nullable String policyId, @Nullable Integer policyVersion,
+                                     @Nullable UUID arenaId, @Nullable String eventType,
+                                     @Nullable String oldRank, @Nullable String newRank,
+                                     @Nullable Integer styleScore, @Nullable Integer currentCombo,
+                                     @Nullable Integer milestone, @Nullable Integer comboLost,
+                                     @Nullable Double damageTaken, @Nullable String actionType,
+                                     @Nullable Integer pointsEarned, @Nullable Integer styleEarned) {
         queueInsert("endurance_combos", new Object[] {
             ts, playerId, sessionId, templateId, templateVersion, policyId, policyVersion, arenaId,
             eventType, oldRank, newRank, styleScore, currentCombo,
@@ -401,11 +405,13 @@ public class DuckDBBatchWriter {
      * Queue an endurance perk event.
      */
     public void queueEndurancePerk(Instant ts, UUID playerId, UUID sessionId,
-                                    String templateId, Integer templateVersion,
-                                    String policyId, Integer policyVersion,
-                                    UUID arenaId, String eventType, String perkId, String perkName,
-                                    String tier, String category, Integer stackCount,
-                                    Integer totalPerks, Integer waveNumber, String choicesJson) {
+                                    @Nullable String templateId, @Nullable Integer templateVersion,
+                                    @Nullable String policyId, @Nullable Integer policyVersion,
+                                    @Nullable UUID arenaId, String eventType,
+                                    @Nullable String perkId, @Nullable String perkName,
+                                    @Nullable String tier, @Nullable String category,
+                                    @Nullable Integer stackCount, @Nullable Integer totalPerks,
+                                    @Nullable Integer waveNumber, @Nullable String choicesJson) {
         queueInsert("endurance_perks", new Object[] {
             ts, playerId, sessionId, templateId, templateVersion, policyId, policyVersion, arenaId,
             eventType, perkId, perkName, tier, category, stackCount, totalPerks, waveNumber, choicesJson
@@ -416,12 +422,12 @@ public class DuckDBBatchWriter {
      * Queue an endurance mutator event.
      */
     public void queueEnduranceMutator(Instant ts, UUID sessionId,
-                                       String templateId, Integer templateVersion,
-                                       String policyId, Integer policyVersion,
-                                       UUID arenaId, String eventType,
-                                       String mutatorId, String mutatorCategory,
-                                       Integer waveNumber, Double rewardMultiplier,
-                                       Integer mutatorCount, String mutatorsJson) {
+                                       @Nullable String templateId, @Nullable Integer templateVersion,
+                                       @Nullable String policyId, @Nullable Integer policyVersion,
+                                       @Nullable UUID arenaId, String eventType,
+                                       @Nullable String mutatorId, @Nullable String mutatorCategory,
+                                       @Nullable Integer waveNumber, @Nullable Double rewardMultiplier,
+                                       @Nullable Integer mutatorCount, @Nullable String mutatorsJson) {
         queueInsert("endurance_mutators", new Object[] {
             ts, sessionId, templateId, templateVersion, policyId, policyVersion, arenaId,
             eventType, mutatorId, mutatorCategory, waveNumber,
@@ -433,12 +439,14 @@ public class DuckDBBatchWriter {
      * Queue an endurance reward event.
      */
     public void queueEnduranceReward(Instant ts, UUID playerId, UUID sessionId,
-                                      String templateId, Integer templateVersion,
-                                      String policyId, Integer policyVersion,
-                                      UUID arenaId, String eventType, String currency, Integer amount,
-                                      String source, String itemId, Integer itemCount,
-                                      String lootTier, String achievementId,
-                                      String achievementName, Integer price, Integer purchaseCount) {
+                                      @Nullable String templateId, @Nullable Integer templateVersion,
+                                      @Nullable String policyId, @Nullable Integer policyVersion,
+                                      @Nullable UUID arenaId, String eventType,
+                                      @Nullable String currency, @Nullable Integer amount,
+                                      @Nullable String source, @Nullable String itemId, @Nullable Integer itemCount,
+                                      @Nullable String lootTier, @Nullable String achievementId,
+                                      @Nullable String achievementName, @Nullable Integer price,
+                                      @Nullable Integer purchaseCount) {
         queueInsert("endurance_rewards", new Object[] {
             ts, playerId, sessionId, templateId, templateVersion, policyId, policyVersion, arenaId,
             eventType, currency, amount, source, itemId, itemCount, lootTier,
@@ -450,20 +458,22 @@ public class DuckDBBatchWriter {
      * Queue an endurance session event (start or end).
      * Note: Sessions use UUID as primary key, not sequence.
      */
-    public void queueEnduranceSession(UUID sessionId, UUID playerId, String playerName,
-                                       String questName, String questType, Integer totalWaves,
-                                       Boolean isEndless, Integer playerCount, Instant startTs,
-                                       Instant endTs, String outcome, Integer wavesCompleted,
-                                       Integer totalKills, Double damageDealt, Double damageTaken,
-                                       Integer tokensEarned, Integer prestigeEarned,
-                                       Integer bloodGemsEarned, Integer noDamageWaves,
-                                       String templateId, Integer templateVersion,
-                                       String policyId, Integer policyVersion,
-                                       UUID instanceId, UUID arenaId,
-                                       Integer countdownStarted, Integer countdownCancelled,
-                                       Integer giveupDuringRespawn,
-                                       Integer inventoryRestoreSuccess, Integer inventoryRestoreFallback,
-                                       Integer externalDeathRespawnCount, Integer waveBlockedDetected) {
+    public void queueEnduranceSession(UUID sessionId, UUID playerId, @Nullable String playerName,
+                                       @Nullable String questName, @Nullable String questType,
+                                       @Nullable Integer totalWaves, @Nullable Boolean isEndless,
+                                       @Nullable Integer playerCount, @Nullable Instant startTs,
+                                       @Nullable Instant endTs, @Nullable String outcome,
+                                       @Nullable Integer wavesCompleted, @Nullable Integer totalKills,
+                                       @Nullable Double damageDealt, @Nullable Double damageTaken,
+                                       @Nullable Integer tokensEarned, @Nullable Integer prestigeEarned,
+                                       @Nullable Integer bloodGemsEarned, @Nullable Integer noDamageWaves,
+                                       @Nullable String templateId, @Nullable Integer templateVersion,
+                                       @Nullable String policyId, @Nullable Integer policyVersion,
+                                       @Nullable UUID instanceId, @Nullable UUID arenaId,
+                                       @Nullable Integer countdownStarted, @Nullable Integer countdownCancelled,
+                                       @Nullable Integer giveupDuringRespawn,
+                                       @Nullable Integer inventoryRestoreSuccess, @Nullable Integer inventoryRestoreFallback,
+                                       @Nullable Integer externalDeathRespawnCount, @Nullable Integer waveBlockedDetected) {
         queueInsert("endurance_sessions", new Object[] {
             sessionId, playerId, playerName, questName, questType, totalWaves,
             isEndless, playerCount, startTs, endTs, outcome, wavesCompleted,
@@ -480,9 +490,10 @@ public class DuckDBBatchWriter {
      * Queue an endurance party event.
      */
     public void queueEnduranceParty(Instant ts, UUID partyId, String eventType,
-                                     UUID leaderId, String leaderName, UUID memberId,
-                                     String memberName, String questType, Integer partySize,
-                                     String reason, Boolean accepted) {
+                                     @Nullable UUID leaderId, @Nullable String leaderName, @Nullable UUID memberId,
+                                     @Nullable String memberName, @Nullable String questType,
+                                     @Nullable Integer partySize, @Nullable String reason,
+                                     @Nullable Boolean accepted) {
         queueInsert("endurance_parties", new Object[] {
             ts, partyId, eventType, leaderId, leaderName, memberId,
             memberName, questType, partySize, reason, accepted
@@ -493,13 +504,13 @@ public class DuckDBBatchWriter {
      * Queue an endurance boss event.
      */
     public void queueEnduranceBoss(Instant ts, UUID sessionId,
-                                    String templateId, Integer templateVersion,
-                                    String policyId, Integer policyVersion,
-                                    UUID arenaId, String eventType,
-                                    Integer waveNumber, String archetype, Double bossMaxHealth,
-                                    Integer playerCount, String abilityName, Integer playersHit,
-                                    Double abilityDamage, Long fightDurationMs,
-                                    Integer bonusPoints, Double damageDealtToBoss) {
+                                    @Nullable String templateId, @Nullable Integer templateVersion,
+                                    @Nullable String policyId, @Nullable Integer policyVersion,
+                                    @Nullable UUID arenaId, String eventType,
+                                    @Nullable Integer waveNumber, @Nullable String archetype, @Nullable Double bossMaxHealth,
+                                    @Nullable Integer playerCount, @Nullable String abilityName, @Nullable Integer playersHit,
+                                    @Nullable Double abilityDamage, @Nullable Long fightDurationMs,
+                                    @Nullable Integer bonusPoints, @Nullable Double damageDealtToBoss) {
         queueInsert("endurance_bosses", new Object[] {
             ts, sessionId, templateId, templateVersion, policyId, policyVersion, arenaId,
             eventType, waveNumber, archetype, bossMaxHealth, playerCount,
@@ -515,9 +526,9 @@ public class DuckDBBatchWriter {
                                            String questType, Long durationMs, Integer wavesCompleted,
                                            Integer kills, Double damageDealt, Double damageTaken,
                                            Double avgTtkMs, Double kps, Double dtps, Double dps,
-                                           String templateId, Integer templateVersion,
-                                           String policyId, Integer policyVersion,
-                                           UUID arenaId) {
+                                           @Nullable String templateId, @Nullable Integer templateVersion,
+                                           @Nullable String policyId, @Nullable Integer policyVersion,
+                                           @Nullable UUID arenaId) {
         queueInsert("endurance_performance", new Object[] {
             ts, sessionId, playerId, questType, durationMs, wavesCompleted, kills,
             damageDealt, damageTaken, avgTtkMs, kps, dtps, dps,
@@ -529,7 +540,7 @@ public class DuckDBBatchWriter {
      * Queue a player snapshot.
      */
     public void queuePlayerSnapshot(Instant ts, UUID playerId, String playerName,
-                                     String triggerType, double healthHp, double maxHealthHp,
+                                     @Nullable String triggerType, double healthHp, double maxHealthHp,
                                      int healthHearts, double absorptionHp,
                                      int hungerLevel, double saturation, double exhaustion,
                                      double movementSpeed, double velocityX, double velocityY, double velocityZ,
@@ -539,11 +550,11 @@ public class DuckDBBatchWriter {
                                      double armorValue, double armorToughness, double knockbackResistance,
                                      double totalDamageReduction, double reach,
                                      double hitboxWidth, double hitboxHeight,
-                                     Double pehkuiScale, Double pehkuiHitboxScale,
+                                     @Nullable Double pehkuiScale, @Nullable Double pehkuiHitboxScale,
                                      double stamina, double maxStamina,
                                      double dashCooldown, double dodgeCooldown, int abilityFlags,
-                                     int currentCombo, String styleRank, int styleScore,
-                                     double x, double y, double z, String dimension) {
+                                     int currentCombo, @Nullable String styleRank, int styleScore,
+                                     double x, double y, double z, @Nullable String dimension) {
         queueInsert("player_snapshots", new Object[] {
             ts, playerId, playerName, triggerType, healthHp, maxHealthHp, healthHearts,
             absorptionHp, hungerLevel, saturation, exhaustion, movementSpeed,
@@ -559,11 +570,12 @@ public class DuckDBBatchWriter {
     /**
      * Queue a player ability event.
      */
-    public void queuePlayerAbility(Instant ts, UUID playerId, String abilityType,
-                                    Boolean success, Integer result,
-                                    Double staminaBefore, Double staminaAfter, Double staminaCost,
-                                    Double damageNegated, String damageSource,
-                                    String context, Long regenTimeMs) {
+    public void queuePlayerAbility(Instant ts, UUID playerId, @Nullable String abilityType,
+                                    @Nullable Boolean success, @Nullable Integer result,
+                                    @Nullable Double staminaBefore, @Nullable Double staminaAfter,
+                                    @Nullable Double staminaCost, @Nullable Double damageNegated,
+                                    @Nullable String damageSource, @Nullable String context,
+                                    @Nullable Long regenTimeMs) {
         queueInsert("player_abilities", new Object[] {
             ts, playerId, abilityType, success, result, staminaBefore, staminaAfter,
             staminaCost, damageNegated, damageSource, context, regenTimeMs
@@ -583,16 +595,17 @@ public class DuckDBBatchWriter {
     /**
      * Queue a spatial heatmap point.
      */
-    public void queueSpatialHeatmap(Instant ts, String heatmapType, String room,
+    public void queueSpatialHeatmap(Instant ts, @Nullable String heatmapType, @Nullable String room,
                                      int x, int y, int z, int count) {
         queueInsert("spatial_heatmaps", new Object[] {
             ts, heatmapType, room, x, y, z, count
         });
     }
 
-    public void queueArenaSpatialEvent(Instant ts, String templateId, Integer templateVersion,
-                                       UUID sessionId, String eventType, int gridX, int gridZ,
-                                       double worldX, double worldY, double worldZ, UUID playerId) {
+    public void queueArenaSpatialEvent(Instant ts, @Nullable String templateId,
+                                       @Nullable Integer templateVersion, @Nullable UUID sessionId,
+                                       String eventType, int gridX, int gridZ,
+                                       double worldX, double worldY, double worldZ, @Nullable UUID playerId) {
         queueInsert("arena_spatial_events", new Object[] {
             ts, templateId, templateVersion, sessionId, eventType,
             gridX, gridZ, worldX, worldY, worldZ, playerId
@@ -602,16 +615,18 @@ public class DuckDBBatchWriter {
     /**
      * Queue an arena template build event.
      */
-    public void queueArenaTemplateBuild(Instant ts, UUID arenaId, String templateId, Integer templateVersion,
-                                         String policyId, Integer policyVersion,
-                                         Integer originX, Integer originY, Integer originZ, String dimension,
-                                         Integer estimatedBlocks, Integer actualBlocks,
-                                         Long estimatedMs, Long actualMs,
-                                         boolean success, String errorMessage,
-                                         Long rollbackMs, Integer blocksReverted,
-                                         Double baselineMspt, Double avgMspt, Double peakMspt,
-                                         Double maxBuildImpactMs, Integer pauseCount,
-                                         Integer throttleCount, Boolean perfAborted) {
+    public void queueArenaTemplateBuild(Instant ts, UUID arenaId, String templateId,
+                                         @Nullable Integer templateVersion,
+                                         @Nullable String policyId, @Nullable Integer policyVersion,
+                                         @Nullable Integer originX, @Nullable Integer originY, @Nullable Integer originZ,
+                                         @Nullable String dimension, @Nullable Integer estimatedBlocks,
+                                         @Nullable Integer actualBlocks, @Nullable Long estimatedMs,
+                                         @Nullable Long actualMs, boolean success,
+                                         @Nullable String errorMessage, @Nullable Long rollbackMs,
+                                         @Nullable Integer blocksReverted, @Nullable Double baselineMspt,
+                                         @Nullable Double avgMspt, @Nullable Double peakMspt,
+                                         @Nullable Double maxBuildImpactMs, @Nullable Integer pauseCount,
+                                         @Nullable Integer throttleCount, @Nullable Boolean perfAborted) {
         queueInsert("arena_template_builds", new Object[] {
             ts, arenaId, templateId, templateVersion, policyId, policyVersion,
             originX, originY, originZ, dimension,
@@ -658,13 +673,14 @@ public class DuckDBBatchWriter {
     /**
      * Queue an arena template usage event.
      */
-    public void queueArenaTemplateUsage(Instant ts, String templateId, Integer templateVersion,
-                                         String policyId, Integer policyVersion,
-                                         UUID playerId, String playerName,
-                                         String questType, String mobId, String difficulty,
-                                         Integer playerCount, UUID sessionId,
-                                         String eventType, Long durationMs,
-                                         Integer wavesCompleted, String outcome) {
+    public void queueArenaTemplateUsage(Instant ts, @Nullable String templateId,
+                                         @Nullable Integer templateVersion,
+                                         @Nullable String policyId, @Nullable Integer policyVersion,
+                                         @Nullable UUID playerId, @Nullable String playerName,
+                                         @Nullable String questType, @Nullable String mobId, @Nullable String difficulty,
+                                         @Nullable Integer playerCount, @Nullable UUID sessionId,
+                                         String eventType, @Nullable Long durationMs,
+                                         @Nullable Integer wavesCompleted, @Nullable String outcome) {
         queueInsert("arena_template_usage", new Object[] {
             ts, templateId, templateVersion, policyId, policyVersion,
             playerId, playerName, questType, mobId, difficulty,
@@ -704,9 +720,10 @@ public class DuckDBBatchWriter {
     /**
      * Queue a spatial alert.
      */
-    public void queueSpatialAlert(Instant ts, String alertType, String playerName,
-                                   String entityName, String entityType, String room,
-                                   double x, double y, double z, String extraDataJson) {
+    public void queueSpatialAlert(Instant ts, String alertType, @Nullable String playerName,
+                                   @Nullable String entityName, @Nullable String entityType,
+                                   @Nullable String room, double x, double y, double z,
+                                   @Nullable String extraDataJson) {
         queueInsert("spatial_alerts", new Object[] {
             ts, alertType, playerName, entityName, entityType, room, x, y, z, extraDataJson
         });
@@ -715,7 +732,8 @@ public class DuckDBBatchWriter {
     /**
      * Queue a room transition.
      */
-    public void queueRoomTransition(Instant ts, UUID playerId, String playerName, String room) {
+    public void queueRoomTransition(Instant ts, UUID playerId,
+                                     @Nullable String playerName, @Nullable String room) {
         queueInsert("spatial_room_transitions", new Object[] {
             ts, playerId, playerName, room
         });

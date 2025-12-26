@@ -24,6 +24,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
 import static java.util.Objects.requireNonNull;
+
 public class SoulImprint {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SoulImprint.class);

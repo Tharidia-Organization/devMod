@@ -1,6 +1,7 @@
 package com.devmod.client.ui.editor.systems;
 
 import net.minecraft.world.item.ItemStack;
+
 public interface PresetManager {
     /**
      * Apply the preset to the provided item in the given slot index.

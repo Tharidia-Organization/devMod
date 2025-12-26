@@ -1,6 +1,7 @@
 package com.devmod.stats;
 
 import net.minecraft.nbt.CompoundTag;
+
 public class ArmorStats {
 
     // Damage type reductions (0.0 = no reduction, 1.0 = 100% reduction)

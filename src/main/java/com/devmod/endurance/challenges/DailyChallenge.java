@@ -6,6 +6,7 @@ import java.util.function.BiPredicate;
 import net.minecraft.network.chat.Component;
 
 import com.devmod.endurance.EnduranceQuest;
+
 public class DailyChallenge {
 
     private final String id;

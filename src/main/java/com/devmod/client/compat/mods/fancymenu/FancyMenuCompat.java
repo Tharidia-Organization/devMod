@@ -14,6 +14,7 @@ import net.minecraft.client.gui.screens.Screen;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class FancyMenuCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(FancyMenuCompat.class);
     public static final String MOD_ID = "fancymenu";

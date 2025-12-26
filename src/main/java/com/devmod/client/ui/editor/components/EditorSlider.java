@@ -15,6 +15,7 @@ import com.devmod.client.ui.editor.core.FocusRing;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.SliderDescriptions;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public class EditorSlider {
 
     // ═══════════════════════════════════════════════════════════════

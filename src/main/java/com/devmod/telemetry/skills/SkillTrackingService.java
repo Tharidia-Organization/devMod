@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+
 public class SkillTrackingService {
     public static final SkillTrackingService INSTANCE = new SkillTrackingService();
 

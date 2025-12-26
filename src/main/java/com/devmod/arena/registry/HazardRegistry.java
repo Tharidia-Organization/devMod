@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+
 public final class HazardRegistry {
 
     /** Global instance limit across all hazard types. */

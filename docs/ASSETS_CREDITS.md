@@ -9,4 +9,4 @@ Author credits per icon:
 - gear-hammer — by Lorc
 - trophy — by Lorc
 
-Used in `assets/devmod/textures/gui/icons/radial/` for radial menu macro icons.
+Used in `src/main/resources/assets/devmod/textures/gui/icons/radial/` for radial menu macro icons.

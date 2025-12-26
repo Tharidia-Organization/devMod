@@ -15,6 +15,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
 import com.devmod.network.NetworkHandler;
+
 public class StaminaSystem {
     private static final Logger LOGGER = LogUtils.getLogger();
 

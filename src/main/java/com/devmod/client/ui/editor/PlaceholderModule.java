@@ -11,6 +11,7 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public class PlaceholderModule implements EditorModule {
 
     private final String id;

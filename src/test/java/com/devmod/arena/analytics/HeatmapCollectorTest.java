@@ -1,19 +1,17 @@
 package com.devmod.arena.analytics;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for HeatmapCollector.
- * DD49: Heatmap Privacy - 5x5 cell, hourly bucket, no player ID.
- */
 @DisplayName("HeatmapCollector Tests")
 class HeatmapCollectorTest {
 
@@ -62,8 +60,8 @@ class HeatmapCollectorTest {
 
         // Hourly bucket should be truncated to hour
         var batch = batches.get(0);
-        assertEquals(0, batch.hourlyBucket().getNano());
-        assertEquals(0, batch.hourlyBucket().getEpochSecond() % 3600);
+        Instant bucket = batch.hourlyBucket();
+        assertEquals(bucket.truncatedTo(ChronoUnit.HOURS), bucket);
     }
 
     @Test

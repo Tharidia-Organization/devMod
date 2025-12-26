@@ -51,6 +51,7 @@ import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.InstanceSettingsValidator;
 import com.devmod.mixin.MinecraftServerAccessor;
+
 public class DynamicDimensionManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DynamicDimensionManager.class);
     public static final DynamicDimensionManager INSTANCE = new DynamicDimensionManager();

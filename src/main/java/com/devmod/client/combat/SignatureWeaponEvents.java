@@ -12,6 +12,7 @@ import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 
 import com.devmod.DevMod;
 import com.devmod.combat.signature.SoulImprint;
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class SignatureWeaponEvents {
 

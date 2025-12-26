@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
+
 public sealed interface ArenaRecoveryResult {
 
     /**

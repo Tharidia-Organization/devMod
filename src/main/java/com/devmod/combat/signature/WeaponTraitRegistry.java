@@ -20,6 +20,7 @@ import net.minecraft.resources.ResourceLocation;
 import com.devmod.DevMod;
 import com.devmod.config.gamedesign.GameDesignConfig;
 import com.devmod.config.gamedesign.GameDesignConfigManager;
+
 public class WeaponTraitRegistry {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WeaponTraitRegistry.class);

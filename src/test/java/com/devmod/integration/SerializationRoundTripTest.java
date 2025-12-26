@@ -21,17 +21,6 @@ import com.devmod.runtime.PlayerInstanceState;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L4 Test: Serialization Round-Trip Validation
- *
- * Tests serialization/deserialization patterns without Minecraft dependencies.
- * Validates:
- * - Map serialization format
- * - UUID string conversion
- * - Enum serialization
- * - List serialization
- * - Nullable field handling
- */
 @DisplayName("L4: Serialization Round-Trip Validation")
 class SerializationRoundTripTest {
 

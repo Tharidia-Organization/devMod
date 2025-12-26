@@ -14,18 +14,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L1 Unit Tests for MobDifficultyPreset and DifficultyScaler formulas.
- *
- * NOTE: DifficultyScaler singleton cannot be directly tested because it uses
- * SLF4J Logger which is not available in unit test environment without Minecraft.
- * These tests verify:
- * 1. MobDifficultyPreset enum values and multipliers
- * 2. QuestType enum values and scaling methods
- * 3. Mathematical correctness of scaling formulas (simulated)
- *
- * GATING CRITERIA: All tests must pass before L2 integration tests.
- */
 @DisplayName("L1: Difficulty Scaling System Tests")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Execution(ExecutionMode.CONCURRENT)

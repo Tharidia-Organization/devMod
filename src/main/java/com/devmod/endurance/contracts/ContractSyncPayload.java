@@ -12,6 +12,7 @@ import net.minecraft.resources.ResourceLocation;
 import com.devmod.DevMod;
 
 import io.netty.buffer.ByteBuf;
+
 public record ContractSyncPayload(
     @Nonnull List<ContractData> contracts,
     float totalMultiplier

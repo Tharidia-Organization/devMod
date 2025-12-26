@@ -1,6 +1,7 @@
 package com.devmod.arena.config;
 
 import com.devmod.arena.registry.InstanceSettingsValidator;
+
 public record InstanceLimitConfig(int maxChunkRadius, int maxTickDistance) {
 
     private static final int DEFAULT_CHUNK_RADIUS = 8;

@@ -3,8 +3,11 @@ package com.devmod.telemetry.dashboard;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
+
 public class TelemetryAnalyticsHandlers {
 
     private final TelemetryDashboardServer server;
@@ -322,8 +325,8 @@ public class TelemetryAnalyticsHandlers {
         return params;
     }
 
-    private String buildArenaFilter(String templateId, String templateVersion,
-                                    String policyId, String policyVersion) {
+    private String buildArenaFilter(@Nullable String templateId, @Nullable String templateVersion,
+                                    @Nullable String policyId, @Nullable String policyVersion) {
         StringBuilder filter = new StringBuilder();
         if (templateId != null && !templateId.isBlank()) {
             filter.append(" AND template_id = '").append(escapeSql(templateId)).append("'");
@@ -714,7 +717,7 @@ public class TelemetryAnalyticsHandlers {
         return gson.toJson(trends);
     }
 
-    private double calculateDelta(Object current, Object previous) {
+    private double calculateDelta(@Nullable Object current, @Nullable Object previous) {
         if (current == null || previous == null) return 0;
         double curr = ((Number) current).doubleValue();
         double prev = ((Number) previous).doubleValue();

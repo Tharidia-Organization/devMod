@@ -302,10 +302,10 @@ If shader fails, logs show:
 
 | File | Purpose |
 |------|---------|
-| [ShieldShaderRegistry.java](../../src/main/java/com/frenkvs/devmod/rendering/shield/ShieldShaderRegistry.java) | Shader registration |
-| [EnergyShieldRenderer.java](../../src/main/java/com/frenkvs/devmod/rendering/shield/EnergyShieldRenderer.java) | Shield rendering |
-| [ShaderPipeline.java](../../src/main/java/com/frenkvs/devmod/rendering/shader/ShaderPipeline.java) | Shader registration + RenderType/fallback |
-| [ShaderRenderTypeConfig.java](../../src/main/java/com/frenkvs/devmod/rendering/shader/ShaderRenderTypeConfig.java) | RenderType description |
-| [energy_shield.json](../../src/main/resources/assets/devmod/shaders/core/energy_shield.json) | Shader definition |
-| [energy_shield.vsh](../../src/main/resources/assets/devmod/shaders/core/energy_shield.vsh) | Vertex shader |
-| [energy_shield.fsh](../../src/main/resources/assets/devmod/shaders/core/energy_shield.fsh) | Fragment shader |
+| [ShieldShaderRegistry.java](../../../src/main/java/com/devmod/client/rendering/shield/ShieldShaderRegistry.java) | Shader registration |
+| [EnergyShieldRenderer.java](../../../src/main/java/com/devmod/client/rendering/shield/EnergyShieldRenderer.java) | Shield rendering |
+| [ShaderPipeline.java](../../../src/main/java/com/devmod/client/rendering/shader/ShaderPipeline.java) | Shader registration + RenderType/fallback |
+| [ShaderRenderTypeConfig.java](../../../src/main/java/com/devmod/client/rendering/shader/ShaderRenderTypeConfig.java) | RenderType description |
+| [energy_shield.json](../../../src/main/resources/assets/devmod/shaders/core/energy_shield.json) | Shader definition |
+| [energy_shield.vsh](../../../src/main/resources/assets/devmod/shaders/core/energy_shield.vsh) | Vertex shader |
+| [energy_shield.fsh](../../../src/main/resources/assets/devmod/shaders/core/energy_shield.fsh) | Fragment shader |

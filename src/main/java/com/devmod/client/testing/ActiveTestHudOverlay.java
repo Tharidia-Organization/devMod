@@ -3,6 +3,7 @@ package com.devmod.client.testing;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -18,6 +19,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.testing.TestCase;
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class ActiveTestHudOverlay {
@@ -50,6 +52,7 @@ public class ActiveTestHudOverlay {
     // === State ===
     private static boolean enabled = true;
     private static boolean minimized = false;
+    @Nullable
     private static TestCase activeTest = null;
     private static long lastUpdateTime = 0;
     private static float animationProgress = 0f;
@@ -342,6 +345,7 @@ public class ActiveTestHudOverlay {
     /**
      * Get the currently active (in-progress) test.
      */
+    @Nullable
     private static TestCase getActiveTest() {
         // First check for explicitly in-progress tests
         for (TestCase test : TestingSession.INSTANCE.getAllTests()) {

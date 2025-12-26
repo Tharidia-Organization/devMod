@@ -12,6 +12,7 @@ import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.ScrollState;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public class VirtualizedList<T> {
 
     private static final int DEFAULT_ROW_HEIGHT = 24;

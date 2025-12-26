@@ -6,10 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for CircuitBreaker.
- * DD45: Fallback Chain Limits - threshold 3, window 5min, cooldown 30s.
- */
 @DisplayName("CircuitBreaker Tests")
 class CircuitBreakerTest {
 

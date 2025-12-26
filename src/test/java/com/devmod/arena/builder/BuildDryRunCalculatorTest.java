@@ -1,7 +1,8 @@
 package com.devmod.arena.builder;
 
-import com.devmod.arena.registry.ArenaTemplate;
 import org.junit.jupiter.api.Test;
+
+import com.devmod.arena.registry.ArenaTemplate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

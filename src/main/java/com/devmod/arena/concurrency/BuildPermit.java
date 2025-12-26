@@ -2,6 +2,7 @@ package com.devmod.arena.concurrency;
 
 import java.time.Duration;
 import java.time.Instant;
+
 public sealed interface BuildPermit permits BuildPermit.Granted, BuildPermit.Rejected {
 
     /**

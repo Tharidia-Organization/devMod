@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+
 public class PooledArena {
 
     private static final Duration UNUSED_THRESHOLD = Duration.ofMinutes(10);

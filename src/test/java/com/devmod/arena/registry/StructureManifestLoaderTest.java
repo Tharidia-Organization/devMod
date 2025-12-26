@@ -1,9 +1,9 @@
 package com.devmod.arena.registry;
 
-import org.junit.jupiter.api.Test;
-
 import java.io.StringReader;
 import java.util.Set;
+
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 

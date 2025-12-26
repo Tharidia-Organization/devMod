@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import net.minecraft.resources.ResourceLocation;
+
 public record ModuleTab(
     String id,
     String label,

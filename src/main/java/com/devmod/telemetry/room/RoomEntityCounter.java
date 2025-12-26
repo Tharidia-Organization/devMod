@@ -19,6 +19,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 
 import com.devmod.telemetry.RoomDefinition;
+
 public class RoomEntityCounter {
     public static final RoomEntityCounter INSTANCE = new RoomEntityCounter();
 
@@ -46,14 +47,14 @@ public class RoomEntityCounter {
      * Entity statistics for a single room.
      */
     public static class RoomEntityStats {
-        public volatile int totalEntities = 0;
-        public volatile int hostileMobs = 0;
-        public volatile int passiveMobs = 0;
-        public volatile int npcs = 0;
-        public volatile int players = 0;
-        public volatile int bosses = 0;
-        public volatile int projectiles = 0;
-        public volatile long lastUpdateMs = 0;
+        public int totalEntities = 0;
+        public int hostileMobs = 0;
+        public int passiveMobs = 0;
+        public int npcs = 0;
+        public int players = 0;
+        public int bosses = 0;
+        public int projectiles = 0;
+        public long lastUpdateMs = 0;
 
         public int getTotalLiving() {
             return hostileMobs + passiveMobs + npcs + players + bosses;
@@ -81,14 +82,14 @@ public class RoomEntityCounter {
      * Global entity statistics across all loaded areas.
      */
     public static class GlobalEntityStats {
-        public volatile int totalEntities = 0;
-        public volatile int totalHostile = 0;
-        public volatile int totalPassive = 0;
-        public volatile int totalPlayers = 0;
-        public volatile int totalNpcs = 0;
-        public volatile int roomsWithEntities = 0;
-        public volatile String busiestRoom = "";
-        public volatile int busiestRoomCount = 0;
+        public int totalEntities = 0;
+        public int totalHostile = 0;
+        public int totalPassive = 0;
+        public int totalPlayers = 0;
+        public int totalNpcs = 0;
+        public int roomsWithEntities = 0;
+        public String busiestRoom = "";
+        public int busiestRoomCount = 0;
 
         public void reset() {
             totalEntities = 0;

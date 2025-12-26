@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
+
 public final class DuckDBMigrationService {
     private static final Logger LOGGER = LogUtils.getLogger();
 

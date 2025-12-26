@@ -5,6 +5,7 @@ import java.util.StringTokenizer;
 import javax.annotation.Nullable;
 
 import com.devmod.actions.ActionRegistry;
+
 public interface CompatModule {
 
     /**

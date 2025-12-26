@@ -8,6 +8,7 @@ import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
+
 public final class WaveObjectiveState {
     public enum Type {
         KILL_ALL,

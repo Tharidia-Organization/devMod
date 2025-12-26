@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.endurance.ComboSystem.ActionType;
+
 public class FlowStateTracker {
     private static final Logger LOGGER = LoggerFactory.getLogger(FlowStateTracker.class);
 

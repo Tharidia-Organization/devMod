@@ -55,15 +55,15 @@ Nota: le task list storiche `docs/_deprecated/arena-template-rework/TODO_AGENT_*
 
 ## Documenti esterni (allineati)
 - `docs/ARCHITECTURE.md` - aggiornato con Arena Template system
-- `docs/INSTANCE_DIMENSION_SYSTEM.md` - allineato (TemplateArenaBuilder)
-- `docs/INSTANCE_SYSTEM_MANUAL_TEST_CHECKLIST.md` - note template + check aggiornato
-- `docs/INSTANCE_SYSTEM_TEST_STRATEGY.md` - pointer ai test template
-- `docs/PROGRESSIVE_TEST_PLAN.md` - flow aggiornato a template-based
+- `docs/areas/instance/INSTANCE_DIMENSION_SYSTEM.md` - allineato (TemplateArenaBuilder)
+- `docs/areas/instance/INSTANCE_SYSTEM_MANUAL_TEST_CHECKLIST.md` - note template + check aggiornato
+- `docs/areas/instance/INSTANCE_SYSTEM_TEST_STRATEGY.md` - pointer ai test template
+- `docs/testing/PROGRESSIVE_TEST_PLAN.md` - flow aggiornato a template-based
 - `docs/testing/TEST_HARNESS.md` - aggiunta suite test arena template
 - `docs/telemetry/TELEMETRY_DOCUMENTATION.md` - sezione Arena Template Telemetry
 
 ## Documenti esterni (contesto, invariati)
-- `docs/ui/radial/RADIAL_CENSUS.md` - comando `/arena` e UI census
+- `docs/areas/radial/RADIAL_CENSUS.md` - comando `/arena` e UI census
 - `docs/GAME_DESIGN_ANALYSIS.md` - game design endurance (non sostituito)
 - `docs/_deprecated/testing-reports/L0_REPORT.md` - report test
-- `docs/BUG_LOG.md` - bug log attuale
+- `docs/project/BUG_LOG.md` - bug log attuale

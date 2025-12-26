@@ -97,6 +97,7 @@ import com.devmod.quest.QuestManager;
 import com.devmod.quest.QuestTask;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.util.I18n;
+
 public final class DevModClientActions {
     private static final HeatmapVisualizer.HeatmapType[] HEATMAP_CYCLE = {
         HeatmapVisualizer.HeatmapType.DEATH,

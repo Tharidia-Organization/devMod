@@ -36,6 +36,7 @@ import com.devmod.network.ShieldStatePayload;
 import com.devmod.party.PartyNotificationPayload;
 import com.devmod.party.PartySyncPayload;
 import com.devmod.party.QuestSequencePayload;
+
 @OnlyIn(Dist.CLIENT)
 public final class ClientNetworkPayloadHooks implements NetworkHandler.ClientPayloadHooks {
 

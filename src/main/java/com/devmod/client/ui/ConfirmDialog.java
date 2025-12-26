@@ -14,6 +14,7 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.BaseOverlay;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.Typography;
+
 public final class ConfirmDialog extends BaseOverlay {
 
     private static final int PANEL_WIDTH = 340;

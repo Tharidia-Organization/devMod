@@ -1,7 +1,7 @@
 package com.devmod.client.overlay;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
@@ -26,6 +26,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import com.devmod.DevMod;
 import com.devmod.config.Config;
 import com.devmod.endurance.GamificationManager.BadgeRarity;
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class BadgePopupOverlay {
 
@@ -131,7 +132,7 @@ public class BadgePopupOverlay {
     private static final Random random = new Random();
     private static final int MAX_PARTICLES = 40;
 
-    private static final Queue<BadgePopup> popupQueue = new LinkedList<>();
+    private static final Queue<BadgePopup> popupQueue = new ArrayDeque<>();
     private static boolean soundPlayed = false;
     private static long flashStartTime = 0;
 
@@ -359,7 +360,7 @@ public class BadgePopupOverlay {
     private static float calculateAlpha(long elapsed, long slideInMs, long fadeOutMs, long popupDuration) {
         if (elapsed < slideInMs / 2) {
             // Quick fade in during first half of slide
-            float t = elapsed / (float) (slideInMs / 2);
+            float t = elapsed / (slideInMs / 2f);
             return t;
         } else if (elapsed > popupDuration - fadeOutMs) {
             // Fade out

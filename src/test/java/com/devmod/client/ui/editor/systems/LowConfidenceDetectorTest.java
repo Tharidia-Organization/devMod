@@ -1,17 +1,14 @@
 package com.devmod.client.ui.editor.systems;
 
-import com.devmod.client.ui.editor.overlay.EditorOverlay;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.atomic.AtomicReference;
+import com.devmod.client.ui.editor.overlay.EditorOverlay;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for {@link LowConfidenceDetector}.
- * Tests the overlay behavior and state management.
- */
 public class LowConfidenceDetectorTest {
 
     private LowConfidenceDetector detector;

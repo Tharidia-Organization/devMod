@@ -23,18 +23,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Progressive Test Suite 4: Multiplayer Concurrency Tests
- *
- * Tests thread-safety and race conditions in multiplayer scenarios.
- * Validates that concurrent operations don't cause data corruption.
- *
- * Focus areas:
- * 1. Concurrent instance creation
- * 2. Party system with multiple players
- * 3. Concurrent state transitions
- * 4. Thread-safe map operations
- */
 public class MultiplayerConcurrencyTest {
 
     // ============================================================
@@ -57,10 +45,8 @@ public class MultiplayerConcurrencyTest {
             CountDownLatch startLatch = new CountDownLatch(1);
             CountDownLatch completionLatch = new CountDownLatch(playerCount);
 
-            List<UUID> playerIds = new ArrayList<>();
             for (int i = 0; i < playerCount; i++) {
                 UUID playerId = UUID.randomUUID();
-                playerIds.add(playerId);
 
                 executor.submit(() -> {
                     try {
@@ -395,8 +381,8 @@ public class MultiplayerConcurrencyTest {
         @Test
         @DisplayName("Sequential state transitions are ordered correctly")
         void testSequentialTransitions() throws Exception {
-            AtomicReference<InstanceState> state = new AtomicReference<>(InstanceState.CREATING);
-            List<InstanceState> transitionLog = Collections.synchronizedList(new ArrayList<>());
+            InstanceState state = InstanceState.CREATING;
+            List<InstanceState> transitionLog = new ArrayList<>();
 
             InstanceState[] expectedOrder = {
                 InstanceState.READY,
@@ -407,11 +393,11 @@ public class MultiplayerConcurrencyTest {
             };
 
             for (InstanceState nextState : expectedOrder) {
-                InstanceState current = state.get();
+                InstanceState current = state;
                 boolean valid = isValidTransition(current, nextState);
                 assertTrue(valid, "Transition " + current + " -> " + nextState + " should be valid");
 
-                state.set(nextState);
+                state = nextState;
                 transitionLog.add(nextState);
             }
 

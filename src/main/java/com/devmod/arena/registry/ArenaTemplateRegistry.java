@@ -29,6 +29,7 @@ import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.config.InstanceLimitConfig;
 import com.devmod.arena.event.TemplateEventDispatcher;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+
 public class ArenaTemplateRegistry implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaTemplateRegistry.class);
     private static final int MAX_INHERITANCE_DEPTH = 3;

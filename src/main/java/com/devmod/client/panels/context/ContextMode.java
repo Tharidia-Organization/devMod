@@ -1,6 +1,7 @@
 package com.devmod.client.panels.context;
 
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public enum ContextMode {
 
     /**

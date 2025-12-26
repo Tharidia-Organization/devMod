@@ -33,6 +33,7 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.loading.FMLPaths;
 
 import com.devmod.DevMod;
+
 public final class PresetRegistry {
 
     // Singleton instance (eager initialization - thread-safe)

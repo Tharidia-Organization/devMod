@@ -1,6 +1,7 @@
 package com.devmod.arena.registry;
 
 import java.util.Set;
+
 public class DiamondInheritanceException extends RuntimeException {
     private static final long serialVersionUID = 1L;
 

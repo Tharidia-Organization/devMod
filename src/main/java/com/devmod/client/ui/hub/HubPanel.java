@@ -1,6 +1,7 @@
 package com.devmod.client.ui.hub;
 
 import net.minecraft.client.gui.GuiGraphics;
+
 public interface HubPanel {
 
     /**

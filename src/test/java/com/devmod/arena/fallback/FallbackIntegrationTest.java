@@ -1,21 +1,17 @@
 package com.devmod.arena.fallback;
 
-import com.devmod.arena.failure.ArenaFailureHandler;
-import com.devmod.arena.failure.FailureType;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import com.devmod.arena.failure.ArenaFailureHandler;
+import com.devmod.arena.failure.FailureType;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Integration tests for the fallback chain.
- * Tests the interaction between FallbackBuildStrategy, CircuitBreaker,
- * FallbackMetrics, and ArenaFailureHandler.
- */
 @DisplayName("Fallback Chain Integration Tests")
 class FallbackIntegrationTest {
 

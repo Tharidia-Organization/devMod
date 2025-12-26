@@ -14,6 +14,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionPreconditions;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
+
 public final class ArenaActionRegistry {
     private ArenaActionRegistry() {}
 
@@ -224,8 +225,10 @@ public final class ArenaActionRegistry {
         if (context.getOrigin() == ActionOrigin.COMMAND && cmd != null) {
             Function<CommandContext<CommandSourceStack>, Integer> handler = ArenaActionBridge.getHandler(actionId);
             if (handler != null) {
-                handler.apply(cmd);
-                return;
+                Integer result = handler.apply(cmd);
+                if (result != null) {
+                    return;
+                }
             }
         }
         context.executeCommand(command);
@@ -236,8 +239,10 @@ public final class ArenaActionRegistry {
         if (context.getOrigin() == ActionOrigin.COMMAND && cmd != null) {
             Function<CommandContext<CommandSourceStack>, Integer> handler = ArenaActionBridge.getHandler(actionId);
             if (handler != null) {
-                handler.apply(cmd);
-                return;
+                Integer result = handler.apply(cmd);
+                if (result != null) {
+                    return;
+                }
             }
         }
         if (!context.openCommandPrompt(command)) {

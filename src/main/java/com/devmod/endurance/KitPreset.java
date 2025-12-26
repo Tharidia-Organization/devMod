@@ -13,6 +13,7 @@ import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
+
 public enum KitPreset {
     STARTER("Starter Kit", "Basic iron gear for beginners", 0xAAAAAA),
     WARRIOR("Warrior Kit", "Full diamond melee build", 0x55FFFF),

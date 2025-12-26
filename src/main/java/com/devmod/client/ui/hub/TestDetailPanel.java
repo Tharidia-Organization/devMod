@@ -12,6 +12,7 @@ import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.testing.TestCase;
+
 public class TestDetailPanel implements HubPanel {
 
     private final int x, y, width, height;

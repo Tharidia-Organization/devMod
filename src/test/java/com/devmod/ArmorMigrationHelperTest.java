@@ -1,24 +1,21 @@
 package com.devmod;
 
-import com.devmod.components.ArmorComponents;
-import com.devmod.config.ArmorConfigManager;
-import com.devmod.migration.ArmorMigrationHelper;
-import com.devmod.stats.ArmorStats;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeAll;
 
-import static org.junit.jupiter.api.Assertions.*;
+import com.devmod.components.ArmorComponents;
+import com.devmod.migration.ArmorMigrationHelper;
+import com.devmod.stats.ArmorStats;
+
 import static java.util.Objects.requireNonNull;
+import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Tests for armor migration helper functionality.
- */
 public class ArmorMigrationHelperTest {
 
     @BeforeAll

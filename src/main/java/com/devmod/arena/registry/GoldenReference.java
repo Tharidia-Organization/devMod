@@ -1,6 +1,7 @@
 package com.devmod.arena.registry;
 
 import java.util.List;
+
 public record GoldenReference(
     Bounds arenaBounds,
     Bounds floorBounds,

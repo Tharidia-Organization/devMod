@@ -18,6 +18,7 @@ import com.devmod.config.ArmorConfigManager;
 import com.devmod.network.ShieldImpactPayload;
 import com.devmod.network.ShieldShatterPayload;
 import com.devmod.stats.ArmorStats;
+
 public final class ShieldBlockHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShieldBlockHandler.class);
     private static final float DEFAULT_SHIELD_RADIUS = 1.2f;

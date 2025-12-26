@@ -10,6 +10,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import io.netty.buffer.ByteBuf;
+
 public record WaveDirectiveSelectionPayload(String directiveId, int waveNumber) implements CustomPacketPayload {
 
     private static final int MAX_STRING_LENGTH = 128;

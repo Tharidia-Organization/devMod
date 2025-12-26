@@ -2,6 +2,7 @@ package com.devmod.runtime;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -13,7 +14,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -24,19 +24,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Progressive Test Suite 7: Party Coordination Tests
- *
- * Tests multiplayer party scenarios to identify coordination bugs
- * and ensure proper synchronization between party members.
- *
- * Focus areas:
- * 1. Party formation and validation
- * 2. Party member state synchronization
- * 3. Party leader vs member behavior
- * 4. Party member disconnect scenarios
- * 5. Party cleanup and edge cases
- */
 public class PartyCoordinationTest {
 
     // ============================================================
@@ -139,7 +126,7 @@ public class PartyCoordinationTest {
         @DisplayName("All party members should have same instance ID")
         void testSameInstanceId() {
             UUID instanceId = UUID.randomUUID();
-            Map<UUID, UUID> playerToInstance = new ConcurrentHashMap<>();
+            Map<UUID, UUID> playerToInstance = new HashMap<>();
 
             UUID leader = UUID.randomUUID();
             UUID member1 = UUID.randomUUID();
@@ -158,7 +145,7 @@ public class PartyCoordinationTest {
         @Test
         @DisplayName("Party members added to instance player set")
         void testPartyMembersInInstanceSet() {
-            Set<UUID> instancePlayers = ConcurrentHashMap.newKeySet();
+            Set<UUID> instancePlayers = new HashSet<>();
 
             UUID leader = UUID.randomUUID();
             UUID member1 = UUID.randomUUID();
@@ -181,7 +168,7 @@ public class PartyCoordinationTest {
             UUID member = UUID.randomUUID();
 
             // Member's snapshot references leader
-            Map<UUID, UUID> snapshotPartyLeader = new ConcurrentHashMap<>();
+            Map<UUID, UUID> snapshotPartyLeader = new HashMap<>();
             snapshotPartyLeader.put(member, leader);
 
             assertEquals(leader, snapshotPartyLeader.get(member));
@@ -198,8 +185,8 @@ public class PartyCoordinationTest {
             // Player is mapped to instance but not in party member list
 
             UUID instanceId = UUID.randomUUID();
-            Map<UUID, UUID> playerToInstance = new ConcurrentHashMap<>();
-            Map<UUID, Set<UUID>> instancePartyMembers = new ConcurrentHashMap<>();
+            Map<UUID, UUID> playerToInstance = new HashMap<>();
+            Map<UUID, Set<UUID>> instancePartyMembers = new HashMap<>();
 
             UUID orphanPlayer = UUID.randomUUID();
 
@@ -207,7 +194,7 @@ public class PartyCoordinationTest {
             playerToInstance.put(orphanPlayer, instanceId);
 
             // But instance has empty party list
-            instancePartyMembers.put(instanceId, ConcurrentHashMap.newKeySet());
+            instancePartyMembers.put(instanceId, new HashSet<>());
 
             // Check for orphan
             boolean isMapped = playerToInstance.containsKey(orphanPlayer);
@@ -236,23 +223,23 @@ public class PartyCoordinationTest {
             UUID member1 = UUID.randomUUID();
             UUID member2 = UUID.randomUUID();
 
-            Set<UUID> partyMembers = ConcurrentHashMap.newKeySet();
+            Set<UUID> partyMembers = new HashSet<>();
             partyMembers.add(leader);
             partyMembers.add(member1);
             partyMembers.add(member2);
 
-            AtomicBoolean questEnded = new AtomicBoolean(false);
+            boolean questEnded = false;
 
             // Simulate leader disconnect
             partyMembers.remove(leader);
 
             // Policy: leader disconnect ends quest
             if (!partyMembers.contains(leader)) {
-                questEnded.set(true);
+                questEnded = true;
                 // Recovery for all remaining members
             }
 
-            assertTrue(questEnded.get());
+            assertTrue(questEnded);
         }
 
         @Test
@@ -262,63 +249,63 @@ public class PartyCoordinationTest {
             UUID member1 = UUID.randomUUID();
             UUID member2 = UUID.randomUUID();
 
-            Set<UUID> partyMembers = ConcurrentHashMap.newKeySet();
+            Set<UUID> partyMembers = new HashSet<>();
             partyMembers.add(leader);
             partyMembers.add(member1);
             partyMembers.add(member2);
 
-            AtomicBoolean questEnded = new AtomicBoolean(false);
+            boolean questEnded = false;
 
             // Simulate member disconnect
             partyMembers.remove(member1);
 
             // Only end if leader disconnects (or all players gone)
             if (!partyMembers.contains(leader) || partyMembers.isEmpty()) {
-                questEnded.set(true);
+                questEnded = true;
             }
 
-            assertFalse(questEnded.get(), "Quest should continue with leader present");
+            assertFalse(questEnded, "Quest should continue with leader present");
             assertEquals(2, partyMembers.size());
         }
 
         @Test
         @DisplayName("Last player leaves ends instance")
         void testLastPlayerEndsInstance() {
-            Set<UUID> partyMembers = ConcurrentHashMap.newKeySet();
+            Set<UUID> partyMembers = new HashSet<>();
             partyMembers.add(UUID.randomUUID());
 
-            AtomicBoolean instanceEnded = new AtomicBoolean(false);
+            boolean instanceEnded = false;
 
             // Last player leaves
             partyMembers.clear();
 
             if (partyMembers.isEmpty()) {
-                instanceEnded.set(true);
+                instanceEnded = true;
             }
 
-            assertTrue(instanceEnded.get());
+            assertTrue(instanceEnded);
         }
 
         @Test
         @DisplayName("Leader death doesn't end quest (can respawn)")
         void testLeaderDeathContinues() {
             UUID leader = UUID.randomUUID();
-            Set<UUID> partyMembers = ConcurrentHashMap.newKeySet();
+            Set<UUID> partyMembers = new HashSet<>();
             partyMembers.add(leader);
             partyMembers.add(UUID.randomUUID());
 
-            AtomicBoolean leaderDead = new AtomicBoolean(true);
-            AtomicBoolean questEnded = new AtomicBoolean(false);
+            boolean leaderDead = true;
+            boolean questEnded = false;
 
             // Leader is dead but still in party
             // Quest continues - leader can choose to continue or give up
 
             if (!partyMembers.contains(leader)) {
-                questEnded.set(true);
+                questEnded = true;
             }
 
-            assertFalse(questEnded.get(), "Quest continues while leader in party");
-            assertTrue(leaderDead.get());
+            assertFalse(questEnded, "Quest continues while leader in party");
+            assertTrue(leaderDead);
         }
     }
 
@@ -332,7 +319,7 @@ public class PartyCoordinationTest {
         @Test
         @DisplayName("Disconnected member has snapshot for recovery")
         void testDisconnectedMemberHasSnapshot() {
-            Map<UUID, PlayerInstanceState> snapshotStates = new ConcurrentHashMap<>();
+            Map<UUID, PlayerInstanceState> snapshotStates = new HashMap<>();
 
             UUID member = UUID.randomUUID();
             snapshotStates.put(member, PlayerInstanceState.IN_INSTANCE);
@@ -380,7 +367,7 @@ public class PartyCoordinationTest {
         @Test
         @DisplayName("Reconnecting member finds preserved snapshot")
         void testReconnectFindsSnapshot() {
-            Map<UUID, PlayerInstanceState> snapshots = new ConcurrentHashMap<>();
+            Map<UUID, PlayerInstanceState> snapshots = new HashMap<>();
 
             UUID member = UUID.randomUUID();
 
@@ -400,7 +387,7 @@ public class PartyCoordinationTest {
         @Test
         @DisplayName("Disconnect during teleport has IN_TRANSIT snapshot")
         void testDisconnectDuringTeleport() {
-            Map<UUID, PlayerInstanceState> snapshots = new ConcurrentHashMap<>();
+            Map<UUID, PlayerInstanceState> snapshots = new HashMap<>();
 
             UUID member = UUID.randomUUID();
             snapshots.put(member, PlayerInstanceState.IN_TRANSIT);
@@ -426,7 +413,7 @@ public class PartyCoordinationTest {
         @Test
         @DisplayName("Quest end clears all party mappings")
         void testQuestEndClearsMappings() {
-            Map<UUID, UUID> playerToInstance = new ConcurrentHashMap<>();
+            Map<UUID, UUID> playerToInstance = new HashMap<>();
             UUID instanceId = UUID.randomUUID();
 
             List<UUID> partyMembers = new ArrayList<>();
@@ -449,7 +436,7 @@ public class PartyCoordinationTest {
         @Test
         @DisplayName("Snapshots deleted after successful quest")
         void testSnapshotsDeletedOnSuccess() {
-            Set<UUID> snapshots = ConcurrentHashMap.newKeySet();
+            Set<UUID> snapshots = new HashSet<>();
 
             List<UUID> partyMembers = new ArrayList<>();
             for (int i = 0; i < 4; i++) {
@@ -471,8 +458,8 @@ public class PartyCoordinationTest {
         @Test
         @DisplayName("Instance marked for destruction after party leaves")
         void testInstanceDestroyedAfterPartyLeaves() {
-            Set<UUID> instancePlayers = ConcurrentHashMap.newKeySet();
-            AtomicBoolean markedForDestruction = new AtomicBoolean(false);
+            Set<UUID> instancePlayers = new HashSet<>();
+            boolean markedForDestruction = false;
 
             // Add party
             for (int i = 0; i < 4; i++) {
@@ -484,17 +471,17 @@ public class PartyCoordinationTest {
 
             // Should mark for destruction
             if (instancePlayers.isEmpty()) {
-                markedForDestruction.set(true);
+                markedForDestruction = true;
             }
 
-            assertTrue(markedForDestruction.get());
+            assertTrue(markedForDestruction);
         }
 
         @Test
         @DisplayName("Partial party leave doesn't destroy instance")
         void testPartialPartyNoDestruction() {
-            Set<UUID> instancePlayers = ConcurrentHashMap.newKeySet();
-            AtomicBoolean markedForDestruction = new AtomicBoolean(false);
+            Set<UUID> instancePlayers = new HashSet<>();
+            boolean markedForDestruction = false;
 
             // Add party
             UUID leader = UUID.randomUUID();
@@ -512,10 +499,10 @@ public class PartyCoordinationTest {
 
             // Should NOT mark for destruction (leader still there)
             if (instancePlayers.isEmpty()) {
-                markedForDestruction.set(true);
+                markedForDestruction = true;
             }
 
-            assertFalse(markedForDestruction.get());
+            assertFalse(markedForDestruction);
             assertEquals(1, instancePlayers.size());
         }
     }
@@ -690,7 +677,7 @@ public class PartyCoordinationTest {
         @DisplayName("Empty party members list")
         void testEmptyPartyMembers() {
             List<UUID> partyMembers = new ArrayList<>();
-            AtomicInteger iterationCount = new AtomicInteger(0);
+            int[] iterationCount = {0};
 
             assertTrue(partyMembers.isEmpty());
             assertEquals(0, partyMembers.size());
@@ -698,18 +685,18 @@ public class PartyCoordinationTest {
             // Safe iteration - verify empty list doesn't throw and doesn't execute body
             assertDoesNotThrow(() -> {
                 for (UUID member : partyMembers) {
-                    iterationCount.incrementAndGet();
+                    iterationCount[0]++;
                     assertNotNull(member, "Member should not be null if iterated");
                 }
             });
-            assertEquals(0, iterationCount.get(), "Should not iterate empty list");
+            assertEquals(0, iterationCount[0], "Should not iterate empty list");
         }
 
         @Test
         @DisplayName("Party leader is only member")
         void testLeaderOnlyMember() {
             UUID leader = UUID.randomUUID();
-            Set<UUID> partyMembers = ConcurrentHashMap.newKeySet();
+            Set<UUID> partyMembers = new HashSet<>();
             partyMembers.add(leader);
 
             assertEquals(1, partyMembers.size());
@@ -737,7 +724,7 @@ public class PartyCoordinationTest {
         @Test
         @DisplayName("Party member offline at quest start")
         void testMemberOfflineAtStart() {
-            Set<UUID> onlinePlayers = ConcurrentHashMap.newKeySet();
+            Set<UUID> onlinePlayers = new HashSet<>();
             onlinePlayers.add(UUID.randomUUID()); // Leader is online
 
             UUID offlineMember = UUID.randomUUID();
@@ -763,7 +750,7 @@ public class PartyCoordinationTest {
         @Test
         @DisplayName("Party member already in another instance")
         void testMemberAlreadyInInstance() {
-            Map<UUID, UUID> playerToInstance = new ConcurrentHashMap<>();
+            Map<UUID, UUID> playerToInstance = new HashMap<>();
 
             UUID busyMember = UUID.randomUUID();
             UUID existingInstance = UUID.randomUUID();

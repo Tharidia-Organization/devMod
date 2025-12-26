@@ -19,6 +19,7 @@ import com.devmod.combat.HitHelper.BodyPart;
 import com.devmod.damage.DamageBreakdown;
 import com.devmod.integration.ModIntegrationManager;
 import com.devmod.util.I18n;
+
 public class ImpactData {
 
     // Thread-safe map: attacker UUID -> last impact for that player

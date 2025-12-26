@@ -3,6 +3,8 @@ package com.devmod.client.testing;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,11 +45,13 @@ import com.devmod.combat.HitHelper;
 import com.devmod.testing.TestCase;
 import com.devmod.testing.TesterProfile;
 import com.devmod.testing.TesterProgress;
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class QAEventTracker {
     private static final Logger LOGGER = LoggerFactory.getLogger(QAEventTracker.class);
 
     // Track last hit info for correlating damage with kills
+    @Nullable
     private static String lastHitBodyPart = null;
     private static boolean lastHitWasCritical = false;
     private static boolean lastHitWasMaceSmash = false;
@@ -446,9 +450,9 @@ public class QAEventTracker {
             case "ui_weapon_editor" -> progress.getScreenOpens("weapon_editor") >= 1 ? 1.0f : 0.0f;
 
             // Performance Tests - require longer play time
-            case "perf_fps_stable" -> Math.min(1.0f, progress.getPlayTimeMs() / (120_000f)); // 2 min
-            case "perf_no_freeze" -> Math.min(1.0f, progress.getPlayTimeMs() / (180_000f)); // 3 min
-            case "perf_memory" -> Math.min(1.0f, progress.getPlayTimeMs() / (600_000f)); // 10 min
+            case "perf_fps_stable" -> Math.min(1.0f, progress.getPlayTimeMs() / 120_000f); // 2 min
+            case "perf_no_freeze" -> Math.min(1.0f, progress.getPlayTimeMs() / 180_000f); // 3 min
+            case "perf_memory" -> Math.min(1.0f, progress.getPlayTimeMs() / 600_000f); // 10 min
 
             // Keybind Tests
             case "key_all_work" -> {

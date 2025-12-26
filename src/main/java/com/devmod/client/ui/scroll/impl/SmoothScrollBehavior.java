@@ -1,6 +1,7 @@
 package com.devmod.client.ui.scroll.impl;
 
 import com.devmod.client.ui.scroll.ScrollBehavior;
+
 public class SmoothScrollBehavior implements ScrollBehavior {
 
     private static final float SMOOTHING = 0.8f;

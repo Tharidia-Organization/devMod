@@ -8,6 +8,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+
 public record ComboDecayPayload(int lostCombo, int previousRankOrdinal, int newRankOrdinal) implements CustomPacketPayload {
 
     public static final ResourceLocation ID = Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "combo_decay"));

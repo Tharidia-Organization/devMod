@@ -9,6 +9,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
+
 public final class TooltipManager {
 
     // ═══════════════════════════════════════════════════════════════

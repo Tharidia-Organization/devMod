@@ -16,6 +16,7 @@ import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.arena.BuildPhase;
 import com.devmod.arena.ProgressFlags;
+
 public record BuildProgressPayload(
     UUID arenaId,
     BuildPhase phase,

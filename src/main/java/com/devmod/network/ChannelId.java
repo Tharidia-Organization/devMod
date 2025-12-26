@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
+
 public enum ChannelId {
 
     // ============================================================================

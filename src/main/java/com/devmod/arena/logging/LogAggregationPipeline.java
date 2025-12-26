@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.telemetry.ArenaTelemetry;
+
 public class LogAggregationPipeline implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LogAggregationPipeline.class);

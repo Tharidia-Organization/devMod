@@ -2,6 +2,7 @@ package com.devmod.client.ui.editor.core;
 
 import java.util.ArrayList;
 import java.util.List;
+
 public final class ThemeManager {
 
     public static final ThemeManager INSTANCE = new ThemeManager();

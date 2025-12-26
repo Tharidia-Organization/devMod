@@ -3,6 +3,7 @@ package com.devmod.arena.override;
 import java.time.Instant;
 
 import javax.annotation.Nullable;
+
 public record TemplateOverride(
     /** Template ID to force */
     String templateId,

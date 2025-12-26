@@ -1,4 +1,5 @@
 package com.devmod.components;
+
 import java.util.Objects;
 
 import com.mojang.serialization.Codec;
@@ -11,6 +12,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
+
 public final class RangedComponents {
     private RangedComponents() {}
 

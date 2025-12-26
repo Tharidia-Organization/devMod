@@ -10,10 +10,10 @@
 - [x] **Aggiunto `withOriginalId()`**: Nuovo metodo in `CraftingRecipeData` per impostare `originalId` e `isModified=true`.
 
 ### File modificati
-- `src/main/java/com/frenkvs/devmod/mixin/RecipeManagerMixin.java` - Aggiunto filtering ricette rimosse
-- `src/main/java/com/frenkvs/devmod/recipe/RecipeInjector.java` - Aggiunto auto-removal originalId e `hasRemovedRecipes()`
-- `src/main/java/com/frenkvs/devmod/recipe/CraftingRecipeData.java` - Aggiunto `withOriginalId()`
-- `src/main/java/com/frenkvs/devmod/ui/editor/modules/RecipeModule.java` - Aggiunto toggle UI, `findVanillaRecipeForItem()`, integrazione in `buildCurrentRecipe()`
+- `src/main/java/com/devmod/mixin/RecipeManagerMixin.java` - Aggiunto filtering ricette rimosse
+- `src/main/java/com/devmod/recipe/RecipeInjector.java` - Aggiunto auto-removal originalId e `hasRemovedRecipes()`
+- `src/main/java/com/devmod/recipe/CraftingRecipeData.java` - Aggiunto `withOriginalId()`
+- `src/main/java/com/devmod/client/ui/editor/modules/RecipeModule.java` - Aggiunto toggle UI, `findVanillaRecipeForItem()`, integrazione in `buildCurrentRecipe()`
 
 ## ✅ Radial Menu - Editor Entries Mancanti (2025-12-20)
 
@@ -24,7 +24,7 @@
 - [x] **Helper methods per detection**: Aggiunti `isFoodItem()`, `isFuelItem()`, `isUsableItem()` per visibility condizionale
 
 ### File modificati
-- `src/main/java/com/frenkvs/devmod/ui/radial/RadialMenuRegistry.java` - Aggiunte 3 nuove voci editor + 3 helper methods
+- `src/main/java/com/devmod/client/ui/radial/RadialMenuRegistry.java` - Aggiunte 3 nuove voci editor + 3 helper methods
 
 ---
 

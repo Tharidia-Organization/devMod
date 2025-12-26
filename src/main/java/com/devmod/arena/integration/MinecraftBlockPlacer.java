@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
 import com.devmod.arena.builder.ArenaBuilder;
+
 public class MinecraftBlockPlacer implements ArenaBuilder.BlockPlacer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MinecraftBlockPlacer.class);

@@ -14,6 +14,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.panels.tracking.EntityTracker;
+
 public abstract class FloatingPanel {
 
     // === Identificazione ===

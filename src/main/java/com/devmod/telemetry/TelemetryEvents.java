@@ -32,6 +32,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import com.devmod.DevMod;
 import com.devmod.config.Config;
 import com.devmod.telemetry.player.PlayerAttributeTelemetryService;
+
 @EventBusSubscriber(modid = DevMod.MODID)
 public class TelemetryEvents {
     private static final Logger LOGGER = LogUtils.getLogger();

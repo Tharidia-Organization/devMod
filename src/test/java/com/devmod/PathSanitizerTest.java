@@ -1,22 +1,21 @@
 package com.devmod;
 
-import org.junit.jupiter.api.Test;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Locale;
+import java.util.Set;
+
+import javax.annotation.Nullable;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Set;
-
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for PathSanitizer.
- * Tests path validation, directory traversal prevention, and file extension filtering.
- */
 public class PathSanitizerTest {
 
     /**
@@ -49,11 +48,13 @@ public class PathSanitizerTest {
         // Maximum path length
         private static final int MAX_PATH_LENGTH = 4096;
 
-        public Path sanitizeForRead(Path path) {
+        @Nullable
+        public Path sanitizeForRead(@Nullable Path path) {
             return sanitize(path, ALLOWED_READ_EXTENSIONS);
         }
 
-        public Path sanitizeForRead(String pathStr) {
+        @Nullable
+        public Path sanitizeForRead(@Nullable String pathStr) {
             if (pathStr == null || pathStr.isEmpty()) return null;
             try {
                 return sanitizeForRead(Paths.get(pathStr));
@@ -62,11 +63,13 @@ public class PathSanitizerTest {
             }
         }
 
-        public Path sanitizeForWrite(Path path) {
+        @Nullable
+        public Path sanitizeForWrite(@Nullable Path path) {
             return sanitize(path, ALLOWED_WRITE_EXTENSIONS);
         }
 
-        public Path sanitizeForWrite(String pathStr) {
+        @Nullable
+        public Path sanitizeForWrite(@Nullable String pathStr) {
             if (pathStr == null || pathStr.isEmpty()) return null;
             try {
                 return sanitizeForWrite(Paths.get(pathStr));
@@ -75,7 +78,8 @@ public class PathSanitizerTest {
             }
         }
 
-        private Path sanitize(Path path, Set<String> allowedExtensions) {
+        @Nullable
+        private Path sanitize(@Nullable Path path, Set<String> allowedExtensions) {
             if (path == null) return null;
 
             try {
@@ -121,7 +125,7 @@ public class PathSanitizerTest {
 
                 // Check file extension
                 if (fileName != null) {
-                    String name = fileName.toString().toLowerCase();
+                    String name = fileName.toString().toLowerCase(Locale.ROOT);
                     boolean hasValidExtension = false;
                     for (String ext : allowedExtensions) {
                         if (name.endsWith(ext)) {
@@ -141,7 +145,8 @@ public class PathSanitizerTest {
             }
         }
 
-        public String sanitizeFilename(String filename) {
+        @Nullable
+        public String sanitizeFilename(@Nullable String filename) {
             if (filename == null || filename.isEmpty()) return null;
 
             if (filename.length() > MAX_FILENAME_LENGTH) {
@@ -168,6 +173,7 @@ public class PathSanitizerTest {
             return filename;
         }
 
+        @Nullable
         public Path buildSafePath(String baseDir, String... subPath) {
             if (!ALLOWED_BASE_DIRS.contains(baseDir)) {
                 return null;

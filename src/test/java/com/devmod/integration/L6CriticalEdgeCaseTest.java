@@ -3,9 +3,11 @@ package com.devmod.integration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -19,8 +21,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+
+import javax.annotation.Nullable;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
@@ -32,20 +35,6 @@ import org.junit.jupiter.api.Timeout;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L6 - Critical Edge Case and Failure Mode Testing
- *
- * This suite tests rare but critical failure scenarios that could cause
- * data corruption, system crashes, or exploits if not handled correctly.
- *
- * Categories:
- * 1. Boundary Value Attacks
- * 2. Temporal Edge Cases (timing-sensitive bugs)
- * 3. Resource Exhaustion Scenarios
- * 4. State Corruption Prevention
- * 5. Recovery Mechanism Validation
- * 6. Exploit Prevention
- */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class L6CriticalEdgeCaseTest {
 
@@ -69,16 +58,16 @@ public class L6CriticalEdgeCaseTest {
      * Simulates timing-sensitive operations
      */
     static class TimingSimulator {
-        final Map<UUID, Long> operationStartTimes = new ConcurrentHashMap<>();
-        final Map<UUID, Long> operationEndTimes = new ConcurrentHashMap<>();
-        final AtomicLong systemTime = new AtomicLong(System.currentTimeMillis());
+        final Map<UUID, Long> operationStartTimes = new HashMap<>();
+        final Map<UUID, Long> operationEndTimes = new HashMap<>();
+        long systemTime = System.currentTimeMillis();
 
         void startOperation(UUID opId) {
-            operationStartTimes.put(opId, systemTime.get());
+            operationStartTimes.put(opId, systemTime);
         }
 
         void endOperation(UUID opId) {
-            operationEndTimes.put(opId, systemTime.get());
+            operationEndTimes.put(opId, systemTime);
         }
 
         long getOperationDuration(UUID opId) {
@@ -89,7 +78,7 @@ public class L6CriticalEdgeCaseTest {
         }
 
         void advanceTime(long millis) {
-            systemTime.addAndGet(millis);
+            systemTime += millis;
         }
     }
 
@@ -112,6 +101,7 @@ public class L6CriticalEdgeCaseTest {
             }
         }
 
+        @Nullable
         PlayerSnapshot getSnapshot(UUID playerId) {
             return snapshots.get(playerId);
         }
@@ -164,14 +154,16 @@ public class L6CriticalEdgeCaseTest {
         @Order(1)
         @DisplayName("Integer overflow in wave counter")
         void testWaveCounterOverflow() {
-            AtomicInteger waveCounter = new AtomicInteger(Integer.MAX_VALUE - 2);
+            int waveCounter = Integer.MAX_VALUE - 2;
 
             // Increment near max
-            assertEquals(Integer.MAX_VALUE - 1, waveCounter.incrementAndGet());
-            assertEquals(Integer.MAX_VALUE, waveCounter.incrementAndGet());
+            waveCounter += 1;
+            assertEquals(Integer.MAX_VALUE - 1, waveCounter);
+            waveCounter += 1;
+            assertEquals(Integer.MAX_VALUE, waveCounter);
 
             // Next increment would overflow to negative - detect and prevent
-            int current = waveCounter.get();
+            int current = waveCounter;
             if (current == Integer.MAX_VALUE) {
                 // Prevent overflow by capping
                 assertTrue(true, "Overflow prevented");
@@ -184,20 +176,20 @@ public class L6CriticalEdgeCaseTest {
         @Order(2)
         @DisplayName("Long overflow in currency system")
         void testCurrencyOverflow() {
-            AtomicLong balance = new AtomicLong(Long.MAX_VALUE - 100);
+            long balance = Long.MAX_VALUE - 100;
 
             // Safe add that checks for overflow
             long toAdd = 200;
-            long current = balance.get();
+            long current = balance;
 
             if (Long.MAX_VALUE - current < toAdd) {
                 // Would overflow - cap at MAX_VALUE
-                balance.set(Long.MAX_VALUE);
+                balance = Long.MAX_VALUE;
             } else {
-                balance.addAndGet(toAdd);
+                balance += toAdd;
             }
 
-            assertEquals(Long.MAX_VALUE, balance.get(), "Balance should be capped at MAX_VALUE");
+            assertEquals(Long.MAX_VALUE, balance, "Balance should be capped at MAX_VALUE");
         }
 
         @Test
@@ -228,12 +220,9 @@ public class L6CriticalEdgeCaseTest {
             Set<UUID> emptySet = Collections.emptySet();
             Map<UUID, String> emptyMap = Collections.emptyMap();
 
-            // Stream operations on empty collections shouldn't throw
-            assertDoesNotThrow(() -> {
-                emptyList.stream().findFirst();
-                emptySet.stream().count();
-                emptyMap.values().stream().toList();
-            });
+            assertTrue(emptyList.stream().findFirst().isEmpty());
+            assertEquals(0, emptySet.stream().count());
+            assertTrue(emptyMap.values().stream().toList().isEmpty());
 
             // Size checks
             assertEquals(0, emptyList.size());
@@ -272,7 +261,7 @@ public class L6CriticalEdgeCaseTest {
             assertEquals("ffffffff-ffff-ffff-ffff-ffffffffffff", maxUUID.toString());
 
             // Both should work in maps
-            Map<UUID, String> map = new ConcurrentHashMap<>();
+            Map<UUID, String> map = new HashMap<>();
             map.put(nilUUID, "nil");
             map.put(maxUUID, "max");
 
@@ -391,26 +380,30 @@ public class L6CriticalEdgeCaseTest {
         @DisplayName("Countdown timer precision")
         void testCountdownTimerPrecision() {
             int totalTicks = 200; // 10 seconds at 20 TPS
-            AtomicInteger ticksRemaining = new AtomicInteger(totalTicks);
-            AtomicInteger ticksProcessed = new AtomicInteger(0);
+            int ticksRemaining = totalTicks;
+            int ticksProcessed = 0;
 
             // Simulate tick processing
-            while (ticksRemaining.get() > 0) {
-                ticksRemaining.decrementAndGet();
-                ticksProcessed.incrementAndGet();
+            while (ticksRemaining > 0) {
+                ticksRemaining -= 1;
+                ticksProcessed += 1;
             }
 
-            assertEquals(0, ticksRemaining.get(), "Countdown should reach exactly 0");
-            assertEquals(totalTicks, ticksProcessed.get(), "Should process exact number of ticks");
+            assertEquals(0, ticksRemaining, "Countdown should reach exactly 0");
+            assertEquals(totalTicks, ticksProcessed, "Should process exact number of ticks");
         }
 
         @Test
         @Order(11)
         @DisplayName("Race between quest end and wave start")
         void testQuestEndWaveStartRace() {
-            AtomicReference<QuestState> questState = new AtomicReference<>(QuestState.ACTIVE);
-            AtomicBoolean waveStarted = new AtomicBoolean(false);
-            AtomicBoolean questEnded = new AtomicBoolean(false);
+            class QuestRaceState {
+                QuestState questState = QuestState.ACTIVE;
+                boolean waveStarted = false;
+                boolean questEnded = false;
+            }
+
+            QuestRaceState raceState = new QuestRaceState();
 
             // Simulate race condition
             Object lock = new Object();
@@ -418,9 +411,9 @@ public class L6CriticalEdgeCaseTest {
             // Quest end thread tries to end quest
             Runnable questEndTask = () -> {
                 synchronized (lock) {
-                    if (questState.get() == QuestState.ACTIVE) {
-                        questState.set(QuestState.COMPLETING);
-                        questEnded.set(true);
+                    if (raceState.questState == QuestState.ACTIVE) {
+                        raceState.questState = QuestState.COMPLETING;
+                        raceState.questEnded = true;
                     }
                 }
             };
@@ -428,8 +421,8 @@ public class L6CriticalEdgeCaseTest {
             // Wave start thread tries to start new wave
             Runnable waveStartTask = () -> {
                 synchronized (lock) {
-                    if (questState.get() == QuestState.ACTIVE) {
-                        waveStarted.set(true);
+                    if (raceState.questState == QuestState.ACTIVE) {
+                        raceState.waveStarted = true;
                     }
                 }
             };
@@ -439,9 +432,9 @@ public class L6CriticalEdgeCaseTest {
             waveStartTask.run();
 
             // Quest end should have succeeded
-            assertTrue(questEnded.get(), "Quest should have ended");
-            assertFalse(waveStarted.get(), "Wave should not have started after quest ended");
-            assertEquals(QuestState.COMPLETING, questState.get());
+            assertTrue(raceState.questEnded, "Quest should have ended");
+            assertFalse(raceState.waveStarted, "Wave should not have started after quest ended");
+            assertEquals(QuestState.COMPLETING, raceState.questState);
         }
 
         @Test
@@ -452,7 +445,7 @@ public class L6CriticalEdgeCaseTest {
             long startTime = System.currentTimeMillis();
 
             AtomicBoolean operationComplete = new AtomicBoolean(false);
-            AtomicBoolean timedOut = new AtomicBoolean(false);
+            boolean timedOut = false;
 
             // Simulate operation that might get stuck
             CompletableFuture<Void> operation = CompletableFuture.runAsync(() -> {
@@ -467,13 +460,13 @@ public class L6CriticalEdgeCaseTest {
             try {
                 operation.get(timeoutMs, TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
-                timedOut.set(true);
+                timedOut = true;
             } catch (Exception e) {
                 fail("Unexpected exception: " + e);
             }
 
             assertTrue(operationComplete.get(), "Operation should complete");
-            assertFalse(timedOut.get(), "Should not have timed out");
+            assertFalse(timedOut, "Should not have timed out");
             assertTrue(System.currentTimeMillis() - startTime < timeoutMs,
                 "Should complete before timeout");
         }
@@ -492,7 +485,7 @@ public class L6CriticalEdgeCaseTest {
         @DisplayName("Map growth limit enforcement")
         void testMapGrowthLimit() {
             int maxEntries = 10000;
-            Map<UUID, String> limitedMap = new ConcurrentHashMap<>();
+            Map<UUID, String> limitedMap = new HashMap<>();
 
             for (int i = 0; i < maxEntries + 100; i++) {
                 if (limitedMap.size() < maxEntries) {
@@ -541,16 +534,16 @@ public class L6CriticalEdgeCaseTest {
         void testQueueOverflow() {
             int queueLimit = 100;
             BlockingQueue<String> boundedQueue = new ArrayBlockingQueue<>(queueLimit);
-            AtomicInteger rejected = new AtomicInteger(0);
+            int rejected = 0;
 
             for (int i = 0; i < queueLimit * 2; i++) {
                 if (!boundedQueue.offer("item_" + i)) {
-                    rejected.incrementAndGet();
+                    rejected += 1;
                 }
             }
 
             assertEquals(queueLimit, boundedQueue.size(), "Queue should be at capacity");
-            assertEquals(queueLimit, rejected.get(), "Half should be rejected");
+            assertEquals(queueLimit, rejected, "Half should be rejected");
         }
 
         @Test
@@ -622,22 +615,42 @@ public class L6CriticalEdgeCaseTest {
                 "All modifications should succeed");
 
             // Snapshot should still be valid
-            PlayerSnapshot snapshot = system.getSnapshot(playerId);
-            assertNotNull(snapshot);
+            PlayerSnapshot snapshot = Objects.requireNonNull(system.getSnapshot(playerId), "Snapshot should exist");
             assertNotNull(snapshot.state);
         }
 
         @Test
         @Order(18)
         @DisplayName("Atomic state transitions")
-        void testAtomicStateTransitions() {
+        void testAtomicStateTransitions() throws Exception {
             AtomicReference<InstanceState> state = new AtomicReference<>(InstanceState.CREATING);
+            ExecutorService executor = Executors.newFixedThreadPool(2);
+            CountDownLatch startLatch = new CountDownLatch(1);
+            CountDownLatch doneLatch = new CountDownLatch(2);
+            AtomicInteger successes = new AtomicInteger(0);
+
+            Runnable transitionTask = () -> {
+                try {
+                    startLatch.await(1, TimeUnit.SECONDS);
+                    if (state.compareAndSet(InstanceState.CREATING, InstanceState.READY)) {
+                        successes.incrementAndGet();
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } finally {
+                    doneLatch.countDown();
+                }
+            };
+
+            executor.submit(transitionTask);
+            executor.submit(transitionTask);
+            startLatch.countDown();
+            doneLatch.await(2, TimeUnit.SECONDS);
+            executor.shutdown();
 
             // CAS ensures atomicity
-            assertTrue(state.compareAndSet(InstanceState.CREATING, InstanceState.READY),
-                "First transition should succeed");
-            assertFalse(state.compareAndSet(InstanceState.CREATING, InstanceState.ACTIVE),
-                "Second transition with old value should fail");
+            assertEquals(1, successes.get(), "Only one transition should succeed");
+            assertEquals(InstanceState.READY, state.get(), "State should be READY after atomic transition");
             assertTrue(state.compareAndSet(InstanceState.READY, InstanceState.ACTIVE),
                 "Transition with correct current state should succeed");
 
@@ -647,16 +660,25 @@ public class L6CriticalEdgeCaseTest {
         @Test
         @Order(19)
         @DisplayName("Map entry atomicity with compute")
-        void testMapEntryAtomicity() {
+        void testMapEntryAtomicity() throws Exception {
             ConcurrentHashMap<UUID, AtomicInteger> counters = new ConcurrentHashMap<>();
             UUID key = UUID.randomUUID();
+            ExecutorService executor = Executors.newFixedThreadPool(3);
+            CountDownLatch latch = new CountDownLatch(3);
 
             // Atomic initialization and increment
-            counters.computeIfAbsent(key, k -> new AtomicInteger(0)).incrementAndGet();
-            counters.computeIfAbsent(key, k -> new AtomicInteger(0)).incrementAndGet();
-            counters.computeIfAbsent(key, k -> new AtomicInteger(0)).incrementAndGet();
+            for (int i = 0; i < 3; i++) {
+                executor.submit(() -> {
+                    counters.computeIfAbsent(key, k -> new AtomicInteger(0)).incrementAndGet();
+                    latch.countDown();
+                });
+            }
 
-            assertEquals(3, counters.get(key).get(),
+            latch.await(2, TimeUnit.SECONDS);
+            executor.shutdown();
+
+            AtomicInteger counter = Objects.requireNonNull(counters.get(key), "Counter should exist");
+            assertEquals(3, counter.get(),
                 "Counter should be exactly 3 after atomic operations");
         }
 
@@ -664,7 +686,7 @@ public class L6CriticalEdgeCaseTest {
         @Order(20)
         @DisplayName("Defensive copy for returned collections")
         void testDefensiveCopy() {
-            Set<String> originalPerks = ConcurrentHashMap.newKeySet();
+            Set<String> originalPerks = new HashSet<>();
             originalPerks.add("PERK_A");
             originalPerks.add("PERK_B");
 
@@ -676,6 +698,8 @@ public class L6CriticalEdgeCaseTest {
             copy.remove("PERK_A");
 
             // Original should be unchanged
+            assertTrue(copy.contains("PERK_C"));
+            assertFalse(copy.contains("PERK_A"));
             assertTrue(originalPerks.contains("PERK_A"));
             assertFalse(originalPerks.contains("PERK_C"));
             assertEquals(2, originalPerks.size());
@@ -711,8 +735,7 @@ public class L6CriticalEdgeCaseTest {
             system.updateSnapshotState(playerId, PlayerState.IN_INSTANCE);
 
             // Simulate crash/disconnect - need recovery
-            PlayerSnapshot snapshot = system.getSnapshot(playerId);
-            assertNotNull(snapshot, "Snapshot should exist for recovery");
+            PlayerSnapshot snapshot = Objects.requireNonNull(system.getSnapshot(playerId), "Snapshot should exist for recovery");
 
             // Verify recovery data
             assertEquals(originalDim, snapshot.originalDimension);
@@ -732,13 +755,13 @@ public class L6CriticalEdgeCaseTest {
         @Order(22)
         @DisplayName("Orphaned instance cleanup")
         void testOrphanedInstanceCleanup() {
-            Map<UUID, InstanceState> instances = new ConcurrentHashMap<>();
-            Map<UUID, Set<UUID>> instancePlayers = new ConcurrentHashMap<>();
+            Map<UUID, InstanceState> instances = new HashMap<>();
+            Map<UUID, Set<UUID>> instancePlayers = new HashMap<>();
 
             // Create instance with players
             UUID instanceId = UUID.randomUUID();
             instances.put(instanceId, InstanceState.ACTIVE);
-            Set<UUID> players = ConcurrentHashMap.newKeySet();
+            Set<UUID> players = new HashSet<>();
             players.add(UUID.randomUUID());
             players.add(UUID.randomUUID());
             instancePlayers.put(instanceId, players);
@@ -776,22 +799,22 @@ public class L6CriticalEdgeCaseTest {
         @Order(23)
         @DisplayName("Partial transaction rollback")
         void testPartialTransactionRollback() {
-            AtomicLong balance = new AtomicLong(1000);
-            AtomicReference<QuestState> questState = new AtomicReference<>(QuestState.NONE);
+            long balance = 1000;
+            QuestState questState = QuestState.NONE;
             UUID instanceId = UUID.randomUUID();
-            Map<UUID, InstanceState> instances = new ConcurrentHashMap<>();
+            Map<UUID, InstanceState> instances = new HashMap<>();
 
             // Transaction: Spend currency to start premium quest
             long cost = 500;
-            long originalBalance = balance.get();
-            QuestState originalState = questState.get();
+            long originalBalance = balance;
+            QuestState originalState = questState;
 
             try {
                 // Step 1: Deduct currency
-                balance.addAndGet(-cost);
+                balance -= cost;
 
                 // Step 2: Start quest
-                questState.set(QuestState.STARTING);
+                questState = QuestState.STARTING;
 
                 // Step 3: Create instance (fails!)
                 if (true) { // Simulated failure
@@ -800,13 +823,13 @@ public class L6CriticalEdgeCaseTest {
 
             } catch (Exception e) {
                 // Rollback
-                balance.set(originalBalance);
-                questState.set(originalState);
+                balance = originalBalance;
+                questState = originalState;
             }
 
             // Verify rollback
-            assertEquals(originalBalance, balance.get(), "Balance should be restored");
-            assertEquals(originalState, questState.get(), "Quest state should be restored");
+            assertEquals(originalBalance, balance, "Balance should be restored");
+            assertEquals(originalState, questState, "Quest state should be restored");
             assertFalse(instances.containsKey(instanceId), "Instance should not exist");
         }
 
@@ -815,7 +838,7 @@ public class L6CriticalEdgeCaseTest {
         @DisplayName("Server restart recovery simulation")
         void testServerRestartRecovery() {
             SnapshotSystem system = new SnapshotSystem();
-            Map<UUID, UUID> playerToInstance = new ConcurrentHashMap<>();
+            Map<UUID, UUID> playerToInstance = new HashMap<>();
 
             // Setup: 3 players in various states
             UUID player1 = UUID.randomUUID();
@@ -865,8 +888,8 @@ public class L6CriticalEdgeCaseTest {
         @Order(25)
         @DisplayName("Duplicate quest reward prevention")
         void testDuplicateRewardPrevention() {
-            Set<UUID> processedQuests = ConcurrentHashMap.newKeySet();
-            AtomicLong totalRewardsGiven = new AtomicLong(0);
+            Set<UUID> processedQuests = new HashSet<>();
+            long totalRewardsGiven = 0;
             long rewardAmount = 1000;
 
             UUID questId = UUID.randomUUID();
@@ -875,11 +898,11 @@ public class L6CriticalEdgeCaseTest {
             for (int i = 0; i < 10; i++) {
                 if (processedQuests.add(questId)) {
                     // First time - give reward
-                    totalRewardsGiven.addAndGet(rewardAmount);
+                    totalRewardsGiven += rewardAmount;
                 }
             }
 
-            assertEquals(rewardAmount, totalRewardsGiven.get(),
+            assertEquals(rewardAmount, totalRewardsGiven,
                 "Reward should only be given once");
             assertEquals(1, processedQuests.size());
         }
@@ -888,11 +911,11 @@ public class L6CriticalEdgeCaseTest {
         @Order(26)
         @DisplayName("Rate limiting for quest starts")
         void testQuestStartRateLimiting() {
-            Map<UUID, Long> lastQuestStart = new ConcurrentHashMap<>();
+            Map<UUID, Long> lastQuestStart = new HashMap<>();
             long cooldownMs = 5000; // 5 second cooldown
             UUID playerId = UUID.randomUUID();
 
-            AtomicInteger successfulStarts = new AtomicInteger(0);
+            int successfulStarts = 0;
             long baseTime = System.currentTimeMillis();
 
             // Attempt rapid starts
@@ -902,12 +925,12 @@ public class L6CriticalEdgeCaseTest {
 
                 if (lastStart == null || attemptTime - lastStart >= cooldownMs) {
                     lastQuestStart.put(playerId, attemptTime);
-                    successfulStarts.incrementAndGet();
+                    successfulStarts += 1;
                 }
             }
 
             // Only 2 should succeed (at 0s and 5s)
-            assertEquals(2, successfulStarts.get(),
+            assertEquals(2, successfulStarts,
                 "Rate limiting should prevent rapid starts");
         }
 
@@ -916,20 +939,21 @@ public class L6CriticalEdgeCaseTest {
         @DisplayName("Perk stack limit enforcement")
         void testPerkStackLimit() {
             int maxStacks = 5;
-            Map<String, AtomicInteger> perkStacks = new ConcurrentHashMap<>();
+            Map<String, Integer> perkStacks = new HashMap<>();
             String perk = "DAMAGE_BOOST";
 
-            perkStacks.put(perk, new AtomicInteger(0));
+            perkStacks.put(perk, 0);
 
             // Attempt to stack beyond limit
             for (int i = 0; i < 10; i++) {
-                AtomicInteger stacks = perkStacks.get(perk);
-                if (stacks.get() < maxStacks) {
-                    stacks.incrementAndGet();
+                int stacks = Objects.requireNonNull(perkStacks.get(perk));
+                if (stacks < maxStacks) {
+                    stacks += 1;
+                    perkStacks.put(perk, stacks);
                 }
             }
 
-            assertEquals(maxStacks, perkStacks.get(perk).get(),
+            assertEquals(maxStacks, Objects.requireNonNull(perkStacks.get(perk)),
                 "Perk stacks should not exceed max");
         }
 
@@ -999,29 +1023,30 @@ public class L6CriticalEdgeCaseTest {
         @Order(30)
         @DisplayName("Time manipulation detection")
         void testTimeManipulationDetection() {
-            AtomicLong serverTime = new AtomicLong(System.currentTimeMillis());
-            Map<UUID, Long> playerLastAction = new ConcurrentHashMap<>();
+            long serverTime = System.currentTimeMillis();
+            Map<UUID, Long> playerLastAction = new HashMap<>();
             UUID playerId = UUID.randomUUID();
 
             // Normal action
-            playerLastAction.put(playerId, serverTime.get());
+            playerLastAction.put(playerId, serverTime);
 
             // Advance server time
-            serverTime.addAndGet(5000);
+            serverTime += 5000;
 
             // Player claims action happened in the future (time manipulation)
-            long claimedTime = serverTime.get() + 10000;
+            long claimedTime = serverTime + 10000;
 
             boolean suspicious = false;
-            long lastAction = playerLastAction.getOrDefault(playerId, 0L);
+            Long lastAction = playerLastAction.get(playerId);
+            long lastActionValue = lastAction != null ? lastAction : 0L;
 
             // Detection: claimed time is in the future relative to server
-            if (claimedTime > serverTime.get()) {
+            if (claimedTime > serverTime) {
                 suspicious = true;
             }
 
             // Detection: claimed time is before last known action (time reversal)
-            if (claimedTime < lastAction) {
+            if (claimedTime < lastActionValue) {
                 suspicious = true;
             }
 

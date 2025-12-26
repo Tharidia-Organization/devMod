@@ -1,6 +1,7 @@
 package com.devmod.testing.stats;
 
 import com.google.gson.JsonObject;
+
 public class OverlayUsageTracker {
     public static final OverlayUsageTracker INSTANCE = new OverlayUsageTracker();
 

@@ -1,16 +1,15 @@
 package com.devmod.runtime;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,18 +18,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Progressive Test Suite 1: Instance Creation Flow Validation
- *
- * Simulates the complete user experience flow from quest start to teleport.
- * Validates all critical checkpoints and identifies potential breakpoints.
- *
- * Focus areas:
- * 1. State machine progression correctness
- * 2. Timing and ordering of operations
- * 3. Data consistency between subsystems
- * 4. Error propagation and handling
- */
 public class InstanceFlowValidationTest {
 
     // ============================================================
@@ -44,11 +31,10 @@ public class InstanceFlowValidationTest {
         /**
          * Simulates the state machine for a mock InstanceData through all stages.
          */
-        @SuppressWarnings("unused") // Mock fields for test simulation
         private static class MockInstanceData {
             UUID instanceId = UUID.randomUUID();
             InstanceState state = InstanceState.CREATING;
-            Set<UUID> players = ConcurrentHashMap.newKeySet();
+            Set<UUID> players = new HashSet<>();
             UUID ownerId;
             String dimensionKey = null;
             long createdAt = System.currentTimeMillis();
@@ -79,7 +65,6 @@ public class InstanceFlowValidationTest {
         /**
          * Simulates the player snapshot state machine.
          */
-        @SuppressWarnings("unused") // Mock fields for test simulation
         private static class MockPlayerSnapshot {
             UUID playerId;
             UUID instanceId;
@@ -368,10 +353,10 @@ public class InstanceFlowValidationTest {
 
         @BeforeEach
         void setUp() {
-            playerToInstance = new ConcurrentHashMap<>();
-            instanceToPlayers = new ConcurrentHashMap<>();
-            instanceToDimension = new ConcurrentHashMap<>();
-            dimensionToInstance = new ConcurrentHashMap<>();
+            playerToInstance = new HashMap<>();
+            instanceToPlayers = new HashMap<>();
+            instanceToDimension = new HashMap<>();
+            dimensionToInstance = new HashMap<>();
         }
 
         @Test
@@ -382,7 +367,7 @@ public class InstanceFlowValidationTest {
 
             // Add player to instance
             playerToInstance.put(playerId, instanceId);
-            instanceToPlayers.computeIfAbsent(instanceId, k -> ConcurrentHashMap.newKeySet()).add(playerId);
+            instanceToPlayers.computeIfAbsent(instanceId, k -> new HashSet<>()).add(playerId);
 
             // Verify bidirectional consistency
             assertEquals(instanceId, playerToInstance.get(playerId));
@@ -438,7 +423,7 @@ public class InstanceFlowValidationTest {
             // Setup full mapping
             playerToInstance.put(player1, instanceId);
             playerToInstance.put(player2, instanceId);
-            instanceToPlayers.put(instanceId, ConcurrentHashMap.newKeySet());
+            instanceToPlayers.put(instanceId, new HashSet<>());
             instanceToPlayers.get(instanceId).add(player1);
             instanceToPlayers.get(instanceId).add(player2);
             instanceToDimension.put(instanceId, dimensionKey);
@@ -467,7 +452,7 @@ public class InstanceFlowValidationTest {
 
             // Setup
             playerToInstance.put(player1, instanceId);
-            instanceToPlayers.put(instanceId, ConcurrentHashMap.newKeySet());
+            instanceToPlayers.put(instanceId, new HashSet<>());
             instanceToPlayers.get(instanceId).add(player1);
             instanceToDimension.put(instanceId, dimensionKey);
             dimensionToInstance.put(dimensionKey, instanceId);
@@ -507,50 +492,50 @@ public class InstanceFlowValidationTest {
         @DisplayName("Dimension creation failure triggers recovery")
         void testDimensionCreationFailureRecovery() {
             // playerId would be used in actual impl to restore player
-            AtomicBoolean snapshotCreated = new AtomicBoolean(false);
-            AtomicBoolean recoveryTriggered = new AtomicBoolean(false);
-            AtomicReference<String> recoveryReason = new AtomicReference<>();
+            boolean snapshotCreated = false;
+            boolean recoveryTriggered = false;
+            String recoveryReason = null;
 
             // Simulate: snapshot created, then dimension fails
-            snapshotCreated.set(true);
+            snapshotCreated = true;
 
             // Dimension creation returns null (failure)
             String dimensionKey = null;
 
-            if (dimensionKey == null && snapshotCreated.get()) {
+            if (dimensionKey == null && snapshotCreated) {
                 // Recovery should be triggered
-                recoveryTriggered.set(true);
-                recoveryReason.set("Instance creation failed");
+                recoveryTriggered = true;
+                recoveryReason = "Instance creation failed";
             }
 
-            assertTrue(recoveryTriggered.get(),
+            assertTrue(recoveryTriggered,
                 "Recovery must be triggered when dimension creation fails");
-            assertEquals("Instance creation failed", recoveryReason.get());
+            assertEquals("Instance creation failed", recoveryReason);
         }
 
         @Test
         @DisplayName("Teleport failure triggers recovery")
         void testTeleportFailureRecovery() {
             // playerId would be used in actual impl to restore player
-            AtomicBoolean snapshotExists = new AtomicBoolean(true);
-            AtomicBoolean teleportSuccess = new AtomicBoolean(false);
-            AtomicBoolean recoveryTriggered = new AtomicBoolean(false);
+            boolean snapshotExists = true;
+            boolean teleportSuccess = false;
+            boolean recoveryTriggered = false;
 
             // Simulate teleport failure
-            teleportSuccess.set(false);
+            teleportSuccess = false;
 
-            if (!teleportSuccess.get() && snapshotExists.get()) {
-                recoveryTriggered.set(true);
+            if (!teleportSuccess && snapshotExists) {
+                recoveryTriggered = true;
             }
 
-            assertTrue(recoveryTriggered.get(),
+            assertTrue(recoveryTriggered,
                 "Recovery must be triggered when teleport fails");
         }
 
         @Test
         @DisplayName("Player disconnect during countdown cancels pending teleport")
         void testDisconnectDuringCountdown() {
-            Map<UUID, Object> pendingTeleports = new ConcurrentHashMap<>();
+            Map<UUID, Object> pendingTeleports = new HashMap<>();
             UUID playerId = UUID.randomUUID();
 
             // Player has pending teleport
@@ -568,33 +553,33 @@ public class InstanceFlowValidationTest {
         @Test
         @DisplayName("Instance destruction waits for all players to exit")
         void testDestructionWaitsForPlayers() {
-            Set<UUID> playersInInstance = ConcurrentHashMap.newKeySet();
+            Set<UUID> playersInInstance = new HashSet<>();
             UUID player1 = UUID.randomUUID();
             UUID player2 = UUID.randomUUID();
 
             playersInInstance.add(player1);
             playersInInstance.add(player2);
 
-            AtomicBoolean destructionStarted = new AtomicBoolean(false);
-            AtomicInteger forcedEjections = new AtomicInteger(0);
+            boolean destructionStarted = false;
+            int forcedEjections = 0;
 
             // Try to destroy while players present
             if (!playersInInstance.isEmpty()) {
                 // Force eject players first
                 for (UUID pid : new ArrayList<>(playersInInstance)) {
-                    forcedEjections.incrementAndGet();
+                    forcedEjections++;
                     playersInInstance.remove(pid);
                 }
             }
 
             // Now safe to destroy
             if (playersInInstance.isEmpty()) {
-                destructionStarted.set(true);
+                destructionStarted = true;
             }
 
-            assertEquals(2, forcedEjections.get(),
+            assertEquals(2, forcedEjections,
                 "All players should be force-ejected before destruction");
-            assertTrue(destructionStarted.get(),
+            assertTrue(destructionStarted,
                 "Destruction should proceed after all players ejected");
         }
     }
@@ -666,29 +651,29 @@ public class InstanceFlowValidationTest {
         @Test
         @DisplayName("Countdown mode: teleport happens asynchronously via tick()")
         void testCountdownModeAsyncTeleport() {
-            AtomicInteger ticksRemaining = new AtomicInteger(200);
-            AtomicBoolean futureReturned = new AtomicBoolean(false);
-            AtomicBoolean teleportExecuted = new AtomicBoolean(false);
+            int ticksRemaining = 200;
+            boolean futureReturned = false;
+            boolean teleportExecuted = false;
 
             // Simulate: future returns instanceId immediately after dimension ready
-            futureReturned.set(true);
+            futureReturned = true;
 
             // But teleport doesn't happen until countdown completes
-            assertFalse(teleportExecuted.get(),
+            assertFalse(teleportExecuted,
                 "In countdown mode, teleport should NOT happen immediately");
 
             // Simulate tick() processing
-            while (ticksRemaining.get() > 0) {
-                ticksRemaining.decrementAndGet();
+            while (ticksRemaining > 0) {
+                ticksRemaining--;
             }
 
             // Now teleport executes
-            if (ticksRemaining.get() <= 0) {
-                teleportExecuted.set(true);
+            if (ticksRemaining <= 0) {
+                teleportExecuted = true;
             }
 
-            assertTrue(teleportExecuted.get());
-            assertTrue(futureReturned.get() && ticksRemaining.get() == 0,
+            assertTrue(teleportExecuted);
+            assertTrue(futureReturned && ticksRemaining == 0,
                 "Teleport should execute when countdown reaches 0");
         }
     }

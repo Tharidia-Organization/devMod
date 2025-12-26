@@ -1,12 +1,13 @@
 package com.devmod.runtime;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -14,18 +15,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Progressive Test Suite 3: Error and Recovery Scenarios
- *
- * Tests all failure modes and validates that the recovery system
- * properly handles each case to restore player state.
- *
- * Focus areas:
- * 1. Snapshot creation and persistence
- * 2. Recovery triggers for each failure mode
- * 3. State restoration correctness
- * 4. Cleanup after recovery
- */
 public class ErrorRecoveryScenarioTest {
 
     // ============================================================
@@ -69,7 +58,7 @@ public class ErrorRecoveryScenarioTest {
      * Simulated recovery system.
      */
     static class MockRecoverySystem {
-        Map<UUID, MockSnapshot> snapshots = new ConcurrentHashMap<>();
+        Map<UUID, MockSnapshot> snapshots = new HashMap<>();
         List<String> recoveryLog = new ArrayList<>();
 
         void saveSnapshot(MockSnapshot snapshot) {
@@ -400,7 +389,7 @@ public class ErrorRecoveryScenarioTest {
         @Test
         @DisplayName("Instance registry mapping cleaned after recovery")
         void testRegistryMappingCleanup() {
-            Map<UUID, UUID> playerToInstance = new ConcurrentHashMap<>();
+            Map<UUID, UUID> playerToInstance = new HashMap<>();
             UUID playerId = UUID.randomUUID();
             UUID instanceId = UUID.randomUUID();
 
@@ -417,7 +406,7 @@ public class ErrorRecoveryScenarioTest {
         @Test
         @DisplayName("Instance scheduled for destruction after all players recovered")
         void testInstanceScheduledForDestruction() {
-            Set<UUID> instancePlayers = ConcurrentHashMap.newKeySet();
+            Set<UUID> instancePlayers = new HashSet<>();
             UUID player1 = UUID.randomUUID();
             UUID player2 = UUID.randomUUID();
             // Instance ID used for identification in real scenarios
@@ -443,7 +432,7 @@ public class ErrorRecoveryScenarioTest {
         @Test
         @DisplayName("Pending teleport cancelled on recovery")
         void testPendingTeleportCancelled() {
-            Map<UUID, String> pendingTeleports = new ConcurrentHashMap<>();
+            Map<UUID, String> pendingTeleports = new HashMap<>();
             UUID playerId = UUID.randomUUID();
 
             // Setup pending teleport

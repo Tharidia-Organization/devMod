@@ -315,7 +315,7 @@ RadialMenuRegistry.register(new RadialMenuItem(
 ### File Structure (attuale + futuro deferito)
 
 ```
-src/main/java/com/frenkvs/devmod/ui/editor/
+src/main/java/com/devmod/client/ui/editor/
 ├── ItemEditorScreen.java          ← Entry point singolo + pannello MultiEdit
 ├── systems/
 │   ├── MultiEditManager.java      ← Stato selezione, apply batch, timeout, cancel, ProgressCallback

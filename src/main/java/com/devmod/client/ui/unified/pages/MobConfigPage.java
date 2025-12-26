@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -23,6 +24,7 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.config.MobConfigManager;
+
 public class MobConfigPage implements SettingsPage {
 
     private static final int ROW_HEIGHT = 24;
@@ -35,7 +37,7 @@ public class MobConfigPage implements SettingsPage {
     private long lastScanTime = 0;
 
     // Status message for user feedback
-    private String statusMessage = null;
+    @Nullable private String statusMessage;
     private long statusMessageTime = 0;
     private int statusMessageColor = UIConstants.Text.MUTED();
     private final EditorButton clearAllBtn = new EditorButton("mob-clear-configs", "Clear All Configs").style(EditorButton.Style.DANGER);

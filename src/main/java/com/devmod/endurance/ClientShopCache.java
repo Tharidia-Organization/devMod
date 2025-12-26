@@ -2,6 +2,7 @@ package com.devmod.endurance;
 
 import java.util.HashMap;
 import java.util.Map;
+
 public class ClientShopCache {
 
     private static int tokens = 0;

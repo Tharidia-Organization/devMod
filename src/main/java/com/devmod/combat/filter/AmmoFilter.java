@@ -14,6 +14,7 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+
 public final class AmmoFilter {
     private static final Logger LOGGER = LoggerFactory.getLogger(AmmoFilter.class);
 

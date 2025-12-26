@@ -1,19 +1,19 @@
 package com.devmod.gametest;
 
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+
 import com.devmod.TestBootstrap;
 import com.devmod.config.WeaponConfigManager;
 import com.devmod.stats.WeaponStats;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.BeforeAll;
-import static org.junit.jupiter.api.Assertions.*;
-import static java.util.Objects.requireNonNull;
 
-/**
- * JUnit tests to ensure weapon_stats component round-trips and tool clear toggle works.
- */
+import static java.util.Objects.requireNonNull;
+import static org.junit.jupiter.api.Assertions.*;
+
 @Disabled("Requires Minecraft data component runtime; stubbed for compilation only")
 public class WeaponStatsComponentTest {
 

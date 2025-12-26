@@ -26,6 +26,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ActionKeybindRegistry;
 import com.devmod.actions.client.ClientActionContexts;
+
 @OnlyIn(Dist.CLIENT)
 public class RadialActionDetailScreen extends Screen {
     private static final int PADDING = 14;

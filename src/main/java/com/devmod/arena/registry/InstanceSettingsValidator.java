@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nullable;
+
 public class InstanceSettingsValidator {
 
     public record Result(boolean valid, List<String> errors, List<String> warnings,

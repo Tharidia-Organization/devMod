@@ -28,6 +28,7 @@ import com.google.gson.JsonObject;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
+
 public final class RecipeConfigManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(RecipeConfigManager.class);
     private static final Gson GSON = new GsonBuilder()

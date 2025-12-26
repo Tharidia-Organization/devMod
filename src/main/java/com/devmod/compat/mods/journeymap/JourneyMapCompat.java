@@ -18,6 +18,7 @@ import net.minecraft.world.level.Level;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class JourneyMapCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(JourneyMapCompat.class);
     public static final String MOD_ID = "journeymap";

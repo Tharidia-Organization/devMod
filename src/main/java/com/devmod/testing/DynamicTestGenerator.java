@@ -17,6 +17,7 @@ import net.neoforged.fml.loading.FMLEnvironment;
 
 import com.devmod.testing.ModDiscoveryService.ModInfo;
 import com.devmod.testing.TestCase.TestPriority;
+
 public class DynamicTestGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(DynamicTestGenerator.class);
 

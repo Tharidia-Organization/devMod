@@ -31,6 +31,7 @@ import net.neoforged.neoforge.event.level.BlockEvent;
 import com.devmod.DevMod;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
+
 @EventBusSubscriber(modid = DevMod.MODID)
 public class ProgressionTrackingEvents {
     private static final Logger LOGGER = LogUtils.getLogger();

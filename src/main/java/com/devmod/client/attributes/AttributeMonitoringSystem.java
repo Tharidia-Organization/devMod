@@ -13,6 +13,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.attributes.AttributeLogEntry;
+
 public class AttributeMonitoringSystem {
     public static final AttributeMonitoringSystem INSTANCE = new AttributeMonitoringSystem();
 

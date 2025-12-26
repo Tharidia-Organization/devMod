@@ -1,6 +1,7 @@
 package com.devmod.client.ui.scroll.impl;
 
 import com.devmod.client.ui.scroll.ScrollBehavior;
+
 public class InstantScrollBehavior implements ScrollBehavior {
 
     private float offset = 0;

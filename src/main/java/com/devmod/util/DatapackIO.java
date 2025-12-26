@@ -23,6 +23,7 @@ import com.devmod.config.ArmorConfigManager;
 import com.devmod.config.WeaponConfigManager;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
+
 public final class DatapackIO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DatapackIO.class);

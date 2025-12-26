@@ -8,6 +8,7 @@ import javax.annotation.Nonnull;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+
 public final class BloodContract {
 
     private final ResourceLocation id;

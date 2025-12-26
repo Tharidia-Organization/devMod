@@ -14,6 +14,7 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 import com.devmod.DevMod;
 import com.devmod.config.Config;
 import com.devmod.util.ConfigPaths;
+
 public final class ImpactHudPresets {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 

@@ -11,31 +11,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Static analysis test to ensure proper client/server separation.
- *
- * This test scans the codebase to detect violations of the client/server
- * separation rules that would cause crashes on dedicated servers.
- *
- * Rules:
- * 1. Common/server packages must NOT import from com.devmod.client.*
- * 2. Common/server packages must NOT reference client singletons like:
- *    - DebugRenderer.INSTANCE
- *    - ShakeManager.INSTANCE
- *    - TrailManager.INSTANCE
- *    - Impact3DPanelManager.INSTANCE
- *    - IntegratedTestSession.INSTANCE
- *    - QANotificationSystem.INSTANCE
- * 3. Mixins under the "client" section in mixin json are allowed
- * 4. Network handlers with proper FMLEnvironment.dist.isClient() guards are allowed
- */
 public class ClientServerSeparationTest {
 
     private static final Path SOURCE_ROOT = Paths.get("src/main/java/com/devmod");

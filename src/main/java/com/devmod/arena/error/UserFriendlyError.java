@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 public record UserFriendlyError(
     /** Unique error ID for correlation in logs */
     UUID errorId,

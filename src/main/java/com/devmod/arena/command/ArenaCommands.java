@@ -52,6 +52,7 @@ import com.devmod.arena.security.ArenaCommandAudit;
 import com.devmod.arena.security.ArenaCommandPermissions;
 import com.devmod.arena.security.ArenaCommandPermissions.CommandCategory;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+
 @SuppressWarnings("null") // Minecraft API null annotations are overly strict
 public class ArenaCommands {
 

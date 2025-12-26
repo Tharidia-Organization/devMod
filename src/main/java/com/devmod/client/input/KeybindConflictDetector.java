@@ -15,6 +15,7 @@ import net.minecraft.client.Options;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+
 @OnlyIn(Dist.CLIENT)
 public final class KeybindConflictDetector {
     private static final Logger LOGGER = LoggerFactory.getLogger(KeybindConflictDetector.class);

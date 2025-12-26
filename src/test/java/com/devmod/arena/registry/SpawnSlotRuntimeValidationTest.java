@@ -1,9 +1,10 @@
 package com.devmod.arena.registry;
 
-import net.minecraft.core.BlockPos;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
+import net.minecraft.core.BlockPos;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 

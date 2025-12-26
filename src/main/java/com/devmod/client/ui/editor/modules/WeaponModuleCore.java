@@ -14,6 +14,7 @@ import com.devmod.client.ui.editor.components.SourceBadge;
 import com.devmod.client.ui.editor.core.EditorCache;
 import com.devmod.config.WeaponConfigManager;
 import com.devmod.stats.WeaponStats;
+
 public class WeaponModuleCore {
 
     static final String NBT_KEY = "WeaponModStats";

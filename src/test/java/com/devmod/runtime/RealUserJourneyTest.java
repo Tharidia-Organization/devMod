@@ -20,22 +20,6 @@ import org.junit.jupiter.api.Timeout;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Progressive Test Suite 9: Real User Journey Simulation
- *
- * Simulates complete user journeys through the mod, from quest start to completion.
- * These tests model actual gameplay scenarios to identify edge cases and bugs
- * that only manifest during real use.
- *
- * Scenarios covered:
- * 1. Solo quest: start -> fight -> complete -> return
- * 2. Solo quest: start -> fight -> die -> give up -> return
- * 3. Solo quest: start -> fight -> disconnect -> reconnect -> recovery
- * 4. Party quest: all members complete successfully
- * 5. Party quest: leader disconnects
- * 6. Race condition: rapid start/stop attempts
- * 7. Edge case: server restart during active quest
- */
 public class RealUserJourneyTest {
 
     // ============================================================
@@ -431,10 +415,6 @@ public class RealUserJourneyTest {
         @Test
         @DisplayName("State transitions follow correct order")
         void testStateTransitionOrder() {
-            // Track state transitions
-            List<PlayerInstanceState> stateHistory = new ArrayList<>();
-            stateHistory.add(PlayerInstanceState.NORMAL);
-
             UUID instanceId = sim.startQuest(player, 3, false);
 
             // Check transitions occurred

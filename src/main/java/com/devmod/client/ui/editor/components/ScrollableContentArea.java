@@ -13,6 +13,7 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.scroll.ScrollManager;
 import com.devmod.client.ui.scroll.ScrollMetrics;
 import com.devmod.client.ui.scroll.ScrollMode;
+
 public class ScrollableContentArea {
 
     // ═══════════════════════════════════════════════════════════════

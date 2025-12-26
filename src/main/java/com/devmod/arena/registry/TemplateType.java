@@ -1,6 +1,7 @@
 package com.devmod.arena.registry;
 
 import javax.annotation.Nullable;
+
 public sealed interface TemplateType
     permits TemplateType.FlatTemplate,
             TemplateType.StructureTemplate,

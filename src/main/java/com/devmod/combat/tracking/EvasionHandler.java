@@ -16,6 +16,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
 import net.neoforged.fml.loading.FMLEnvironment;
+
 public final class EvasionHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(EvasionHandler.class);
 

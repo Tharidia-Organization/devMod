@@ -38,6 +38,7 @@ import com.devmod.util.ConfigPaths;
 import com.devmod.util.DamageTypeConfig;
 
 import static com.devmod.DevMod.MODID;
+
 @EventBusSubscriber(modid = MODID)
 public class CommonModEvents {
 	private static final Logger LOGGER = LogUtils.getLogger();

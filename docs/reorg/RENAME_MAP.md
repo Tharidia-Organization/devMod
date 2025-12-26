@@ -89,7 +89,7 @@ All documentation has been updated to use `com.devmod`:
 | Excalidraw diagrams | DONE |
 | docs/areas/* | DONE |
 | docs/prismatic-shield-integration/* | DONE |
-| docs/editor-design-system/* | DONE |
+| docs/subsystems/editor-design-system/* | DONE |
 
 ---
 

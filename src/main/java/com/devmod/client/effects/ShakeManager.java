@@ -15,6 +15,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.config.Config;
+
 public class ShakeManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ShakeManager.class);

@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.network.chat.Component;
 
 import com.devmod.endurance.challenges.ChallengeSyncPayload;
+
 public class ClientChallengeCache {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientChallengeCache.class);
 

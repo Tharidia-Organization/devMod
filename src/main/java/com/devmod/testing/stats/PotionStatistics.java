@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.gson.JsonObject;
+
 public class PotionStatistics {
     public static final PotionStatistics INSTANCE = new PotionStatistics();
 

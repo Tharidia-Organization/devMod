@@ -13,6 +13,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public class LoadingIndicator {
 

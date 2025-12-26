@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -20,6 +21,7 @@ import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.testing.TestCase;
 import com.devmod.util.I18n;
+
 public class CategoryPanel implements HubPanel {
 
     private final int x, y, width, height;
@@ -29,6 +31,7 @@ public class CategoryPanel implements HubPanel {
     private final Consumer<TestCase> onTestSelected;
 
     // UI State
+    @Nullable
     private String expandedCategory = null;
     private EditBox searchBox;
 

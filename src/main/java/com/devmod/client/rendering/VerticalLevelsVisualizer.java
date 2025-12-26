@@ -17,6 +17,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.ui.unified.persistence.SettingsManager;
+
 public class VerticalLevelsVisualizer {
     public static final VerticalLevelsVisualizer INSTANCE = new VerticalLevelsVisualizer();
 

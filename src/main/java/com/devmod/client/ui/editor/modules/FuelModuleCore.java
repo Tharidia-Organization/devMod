@@ -11,6 +11,7 @@ import com.devmod.DevMod;
 import com.devmod.client.ui.editor.components.SourceBadge;
 import com.devmod.config.FuelConfigManager;
 import com.devmod.stats.FuelStats;
+
 public class FuelModuleCore {
 
     static final String NBT_KEY = "FuelModStats";

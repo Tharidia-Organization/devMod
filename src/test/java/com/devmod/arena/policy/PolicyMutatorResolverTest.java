@@ -1,20 +1,16 @@
 package com.devmod.arena.policy;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for PolicyMutatorResolver.
- * DD50: Mutator Binding - SUGGESTED soft, EXCLUDED/REQUIRED hard.
- */
 @DisplayName("PolicyMutatorResolver Tests")
 class PolicyMutatorResolverTest {
 

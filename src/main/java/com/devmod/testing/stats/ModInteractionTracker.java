@@ -13,6 +13,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
+
 public class ModInteractionTracker {
     public static final ModInteractionTracker INSTANCE = new ModInteractionTracker();
 

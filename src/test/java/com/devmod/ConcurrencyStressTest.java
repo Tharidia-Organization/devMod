@@ -12,6 +12,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,16 +21,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Stress test per verificare la thread-safety della mod con 100+ utenti concorrenti.
- *
- * Simula:
- * - 100 player che eseguono azioni simultanee
- * - Accesso concorrente a WeaponConfigManager
- * - Accesso concorrente a TutorialManager
- * - Accesso concorrente a MobConfigManager
- * - Race conditions su strutture dati condivise
- */
 public class ConcurrencyStressTest {
 
     private static final int PLAYER_COUNT = 100;
@@ -97,7 +88,7 @@ public class ConcurrencyStressTest {
                         }
 
                         if (action % 10 == 0) {
-                            Thread.yield();
+                            LockSupport.parkNanos(1L);
                         }
 
                         successCount.incrementAndGet();
@@ -206,8 +197,11 @@ public class ConcurrencyStressTest {
 
                         MockWeaponStats stats = weaponConfigs.get(weaponId);
                         if (stats != null) {
-                            @SuppressWarnings("unused")
                             float dmg = stats.baseDamageBonus;
+                            if (dmg < 0) {
+                                errorCount.incrementAndGet();
+                                errors.add("Player " + playerId + ": negative baseDamageBonus");
+                            }
                         }
 
                         pendingAttacks.put(targetId, "attack_" + System.nanoTime());
@@ -236,6 +230,8 @@ public class ConcurrencyStressTest {
         assertTrue(completed, "Test timed out");
         assertEquals(0, errorCount.get(), "Errors occurred: " + errors);
         assertTrue(weaponConfigs.size() <= 20, "Should have max 20 unique weapons");
+        assertTrue(pendingAttacks.size() > 0, "Pending attacks should be recorded");
+        assertTrue(confirmedHits.size() > 0, "Confirmed hits should be recorded");
     }
 
     @Test
@@ -269,10 +265,11 @@ public class ConcurrencyStressTest {
                             }
                         }
 
-                        @SuppressWarnings("unused")
-                        int achievementCount = achievements.size();
-                        @SuppressWarnings("unused")
-                        List<String> copy = new ArrayList<>(achievements);
+                        List<String> snapshot = new ArrayList<>(achievements);
+                        if (snapshot.size() > 10) {
+                            errorCount.incrementAndGet();
+                            errors.add("Achievement snapshot exceeded expected size");
+                        }
 
                         successCount.incrementAndGet();
                     }
@@ -330,8 +327,11 @@ public class ConcurrencyStressTest {
                                 weaponConfigs.computeIfAbsent(weaponId, k -> new MockWeaponStats());
                                 MockWeaponStats s = weaponConfigs.get(weaponId);
                                 if (s != null) {
-                                    @SuppressWarnings("unused")
                                     float dmg = s.baseDamageBonus;
+                                    if (dmg < 0) {
+                                        errorCount.incrementAndGet();
+                                        errors.add("Player " + playerId + ": negative baseDamageBonus");
+                                    }
                                 }
                             }
                             case 2 -> {
@@ -349,14 +349,14 @@ public class ConcurrencyStressTest {
                                 }
                             }
                             case 5 -> {
-                                @SuppressWarnings("unused")
                                 int xpVal = totalXP.get();
-                                @SuppressWarnings("unused")
                                 int lvl = level.get();
-                                @SuppressWarnings("unused")
                                 int achievementCount = achievements.size();
-                                @SuppressWarnings("unused")
                                 int pendingCount = pendingAttacks.size();
+                                if (xpVal < 0 || lvl < 0 || achievementCount < 0 || pendingCount < 0) {
+                                    errorCount.incrementAndGet();
+                                    errors.add("Player " + playerId + ": invalid counters");
+                                }
                             }
                         }
 

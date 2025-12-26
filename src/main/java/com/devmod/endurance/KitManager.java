@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
+
 public final class KitManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(KitManager.class);
 

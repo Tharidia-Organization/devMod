@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
@@ -28,6 +29,7 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.testing.TestCase;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public class QATestingScreen extends Screen {
 
@@ -40,7 +42,9 @@ public class QATestingScreen extends Screen {
     private static final int CARD_SPACING = 5;
 
     // State
+    @Nullable
     private String selectedCategory = null;
+    @Nullable
     private TestCase selectedTest = null;
     private int testScrollOffset = 0;
     private int categoryScrollOffset = 0;
@@ -52,15 +56,21 @@ public class QATestingScreen extends Screen {
     private int originalBlurValue = 0;
 
     // UI Components
+    @Nullable
     private EditBox testerNameField;
+    @Nullable
     private EditorButton startSessionButton;
+    @Nullable
     private EditorButton resumeSessionButton;
+    @Nullable
     private EditorButton saveReportButton;
+    @Nullable
     private EditorButton copyReportButton;
     private final EditorButton passButton = new EditorButton("qa-pass", "PASS").style(EditorButton.Style.SUCCESS);
     private final EditorButton failButton = new EditorButton("qa-fail", "FAIL").style(EditorButton.Style.DANGER);
     private final EditorButton skipButton = new EditorButton("qa-skip", "SKIP").style(EditorButton.Style.NORMAL);
     private final EditorButton autoButton = new EditorButton("qa-auto", "AUTO-CHECK").style(EditorButton.Style.PRIMARY);
+    @Nullable
     private EditorButton closeButton;
 
     public QATestingScreen() {
@@ -86,14 +96,15 @@ public class QATestingScreen extends Screen {
         final @Nonnull Font font = safeFont();
 
         // Tester name input (only shown before session starts)
-        this.testerNameField = new EditBox(
+        EditBox nameField = new EditBox(
             font, this.width / 2 - 100, this.height / 2 - 30, 200, 20,
             I18n.translate("devmod.testing.tester_name")
         );
-        this.testerNameField.setMaxLength(50);
-        this.testerNameField.setValue("Tester");
-        this.testerNameField.setVisible(!sessionStarted);
-        this.addRenderableWidget(Objects.requireNonNull(testerNameField, "testerNameField"));
+        nameField.setMaxLength(50);
+        nameField.setValue("Tester");
+        nameField.setVisible(!sessionStarted);
+        this.testerNameField = nameField;
+        this.addRenderableWidget(nameField);
 
         // Start session button (only for new sessions)
         boolean hasExisting = TestingSession.INSTANCE.hasExistingSession() &&
@@ -153,8 +164,13 @@ public class QATestingScreen extends Screen {
         }
     }
 
+    private EditBox requireTesterNameField() {
+        return Objects.requireNonNull(testerNameField, "testerNameField");
+    }
+
     private void startNewSession() {
-        String name = testerNameField.getValue().trim();
+        EditBox nameField = requireTesterNameField();
+        String name = nameField.getValue().trim();
         if (name.isEmpty()) name = "Anonymous";
         TestingSession.INSTANCE.resetSession();
         TestingSession.INSTANCE.startSession(name);
@@ -163,7 +179,8 @@ public class QATestingScreen extends Screen {
     }
 
     private void resumeSession() {
-        String name = testerNameField.getValue().trim();
+        EditBox nameField = requireTesterNameField();
+        String name = nameField.getValue().trim();
         if (name.isEmpty()) name = TestingSession.INSTANCE.getTesterName();
         TestingSession.INSTANCE.resumeSession(name);
         sessionStarted = true;
@@ -171,7 +188,7 @@ public class QATestingScreen extends Screen {
     }
 
     private void updateButtonVisibility() {
-        testerNameField.setVisible(false);
+        requireTesterNameField().setVisible(false);
     }
 
     private void saveReport() {
@@ -671,6 +688,7 @@ public class QATestingScreen extends Screen {
 
     private void renderTestDetails(GuiGraphics graphics, int mouseX, int mouseY) {
         final @Nonnull Font font = safeFont();
+        TestCase test = Objects.requireNonNull(selectedTest, "selectedTest");
         int detailsX = SIDEBAR_WIDTH + (this.width - SIDEBAR_WIDTH) / 2 + PADDING;
         int detailsY = HEADER_HEIGHT + PADDING;
         int detailsWidth = (this.width - SIDEBAR_WIDTH) / 2 - PADDING * 2;
@@ -684,20 +702,20 @@ public class QATestingScreen extends Screen {
 
         // Test name (truncated to fit panel width)
         int maxTextWidth = detailsWidth - PADDING * 2;
-        String detailName = truncateText(selectedTest.getName(), maxTextWidth);
+        String detailName = truncateText(test.getName(), maxTextWidth);
         graphics.drawString(font, detailName, contentX, contentY, UIConstants.Text.WHITE(), false);
         contentY += 15;
 
         // Status and Priority
-        String statusLine = "Status: " + selectedTest.getStatus().name() +
-                           " | Priority: " + selectedTest.getPriority().name();
-        graphics.drawString(font, statusLine, contentX, contentY, selectedTest.getStatus().getColor(), false);
+        String statusLine = "Status: " + test.getStatus().name() +
+                           " | Priority: " + test.getPriority().name();
+        graphics.drawString(font, statusLine, contentX, contentY, test.getStatus().getColor(), false);
         contentY += 20;
 
         // Description (truncated to fit panel width)
         AxiomRenderer.drawSectionHeader(graphics, font, contentX, contentY, "Description:");
         contentY += 12;
-        String detailDesc = truncateText(selectedTest.getDescription(), maxTextWidth);
+        String detailDesc = truncateText(test.getDescription(), maxTextWidth);
         graphics.drawString(font, detailDesc, contentX, contentY, UIConstants.Text.SECONDARY(), false);
         contentY += 20;
 
@@ -705,7 +723,7 @@ public class QATestingScreen extends Screen {
         AxiomRenderer.drawSectionHeader(graphics, font, contentX, contentY, "Instructions:");
         contentY += 12;
 
-        String[] lines = selectedTest.getInstructions().split("\n");
+        String[] lines = test.getInstructions().split("\n");
         for (String line : lines) {
             String truncatedLine = truncateText(line, maxTextWidth);
             graphics.drawString(font, truncatedLine, contentX, contentY, UIConstants.Text.PRIMARY(), false);
@@ -714,10 +732,10 @@ public class QATestingScreen extends Screen {
         contentY += 10;
 
         // Comments if any
-        if (selectedTest.getComments() != null && !selectedTest.getComments().isEmpty()) {
+        if (test.getComments() != null && !test.getComments().isEmpty()) {
             AxiomRenderer.drawSectionHeader(graphics, font, contentX, contentY, "Tester Comments:");
             contentY += 12;
-            graphics.drawString(font, selectedTest.getComments(), contentX, contentY, UIConstants.Text.MUTED(), false);
+            graphics.drawString(font, test.getComments(), contentX, contentY, UIConstants.Text.MUTED(), false);
             contentY += 15;
         }
 
@@ -727,11 +745,11 @@ public class QATestingScreen extends Screen {
         int buttonSpacing = 10;
         int buttonX = contentX;
 
-        boolean enabled = selectedTest != null;
+        boolean enabled = true;
         passButton.enabled(enabled);
         failButton.enabled(enabled);
         skipButton.enabled(enabled);
-        autoButton.enabled(enabled && selectedTest.hasAutoValidator());
+        autoButton.enabled(enabled && test.hasAutoValidator());
 
         passButton.render(graphics, buttonX, buttonY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
         buttonX += buttonWidth + buttonSpacing;
@@ -741,7 +759,7 @@ public class QATestingScreen extends Screen {
 
         skipButton.render(graphics, buttonX, buttonY, buttonWidth, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
 
-        if (selectedTest.hasAutoValidator()) {
+        if (test.hasAutoValidator()) {
             buttonX += buttonWidth + buttonSpacing + 20;
             int autoWidth = buttonWidth + 20;
             autoButton.render(graphics, buttonX, buttonY, autoWidth, UIConstants.Size.BUTTON_HEIGHT, mouseX, mouseY);
@@ -882,7 +900,7 @@ public class QATestingScreen extends Screen {
         return ActionRegistry.invoke(actionId, context);
     }
 
-    private boolean invokeAction(String actionId, String reason, String details) {
+    private boolean invokeAction(String actionId, String reason, @Nullable String details) {
         QaActionRequest request = new QaActionRequest(this, reason, details);
         ActionContext context = ClientActionContexts.forClient(ActionOrigin.UI, request);
         return ActionRegistry.invoke(actionId, context);
@@ -933,7 +951,7 @@ public class QATestingScreen extends Screen {
         }
     }
 
-    private record QaActionRequest(QATestingScreen screen, String reason, String details) {}
+    private record QaActionRequest(QATestingScreen screen, String reason, @Nullable String details) {}
 
     public static final class Actions {
         private Actions() {}
@@ -1062,6 +1080,7 @@ public class QATestingScreen extends Screen {
             }
         }
 
+        @Nullable
         private static QATestingScreen resolveScreen(ActionContext context) {
             QaActionRequest request = context.getPayload(QaActionRequest.class);
             if (request != null && request.screen() != null) {
@@ -1098,6 +1117,7 @@ public class QATestingScreen extends Screen {
             return fallback;
         }
 
+        @Nullable
         private static TestCase resolveTest(ActionContext context) {
             QATestingScreen screen = resolveScreen(context);
             if (screen != null) {

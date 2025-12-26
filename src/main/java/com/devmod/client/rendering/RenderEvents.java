@@ -44,6 +44,7 @@ import com.devmod.config.ArmorConfigManager;
 import com.devmod.config.Config;
 import com.devmod.stats.ArmorStats;
 import com.devmod.util.I18n;
+
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class RenderEvents {
 

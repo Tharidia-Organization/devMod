@@ -16,6 +16,7 @@ import net.minecraft.nbt.CompoundTag;
 
 import com.devmod.config.gamedesign.GameDesignConfig;
 import com.devmod.config.gamedesign.GameDesignConfigManager;
+
 public class TideManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TideManager.class);

@@ -22,10 +22,6 @@ import com.devmod.client.arena.ui.BuildProgressOverlay;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Integration tests verifying cross-package interactions.
- * Tests the full arena lifecycle from build to cleanup.
- */
 class ArenaSystemIntegrationTest {
 
     private MockLevelAccess mockLevel;

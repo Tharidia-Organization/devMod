@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.devmod.arena.metrics.ArenaMetricsContext;
+
 public class ArenaBuildTelemetry {
 
     private static final long CONTENTION_THRESHOLD_MS = 1000;

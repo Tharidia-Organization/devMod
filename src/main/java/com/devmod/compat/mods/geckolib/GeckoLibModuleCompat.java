@@ -15,6 +15,7 @@ import net.minecraft.world.entity.LivingEntity;
 import com.devmod.collision.compat.GeckoLibCompat;
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class GeckoLibModuleCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(GeckoLibModuleCompat.class);
     public static final String MOD_ID = "geckolib";

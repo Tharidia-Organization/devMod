@@ -13,6 +13,7 @@ import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.EditorStartTab;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public final class ModuleCardSection implements EditorSection.CustomSection {
 
     private static final int CARD_HEIGHT = 56;

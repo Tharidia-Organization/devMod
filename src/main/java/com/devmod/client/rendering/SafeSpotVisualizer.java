@@ -19,6 +19,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.telemetry.spatial.HeatmapService;
+
 public class SafeSpotVisualizer {
     public static final SafeSpotVisualizer INSTANCE = new SafeSpotVisualizer();
     private static final Logger LOGGER = LogUtils.getLogger();

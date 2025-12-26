@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.endurance.QuestType;
+
 public class PartyData {
     private static final Logger LOGGER = LoggerFactory.getLogger(PartyData.class);
 

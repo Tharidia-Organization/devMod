@@ -1,18 +1,13 @@
 package com.devmod.client.ui.radial.input;
 
-import com.devmod.client.ui.radial.config.RadialMenuConstants;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.devmod.client.ui.radial.config.RadialMenuConstants;
+
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for {@link RadialSearchHandler} fuzzy search scoring logic.
- *
- * <p>These tests focus on the scoring algorithms without requiring Minecraft runtime.
- * Tests that require RadialMenuItem/RadialCategory are in integration tests.</p>
- */
 @DisplayName("RadialSearchHandler")
 class RadialSearchHandlerTest {
 

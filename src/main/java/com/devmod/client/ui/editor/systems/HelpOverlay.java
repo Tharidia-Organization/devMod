@@ -13,6 +13,7 @@ import com.devmod.client.ui.editor.core.BaseOverlay;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.Typography;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public final class HelpOverlay extends BaseOverlay {
 
     private static final int WIDTH = 400;

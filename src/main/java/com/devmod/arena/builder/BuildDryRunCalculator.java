@@ -1,6 +1,7 @@
 package com.devmod.arena.builder;
 
 import com.devmod.arena.registry.ArenaTemplate;
+
 public final class BuildDryRunCalculator {
 
     private BuildDryRunCalculator() {}

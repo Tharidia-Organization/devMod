@@ -4,14 +4,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Guard test to prevent channel ID collisions.
- *
- * This test uses the centralized {@link ChannelId} enum to verify
- * that no two payloads share the same channel ID in the same direction.
- *
- * If this test fails, you have a channel collision that will break networking!
- */
 class ChannelCollisionGuardTest {
 
     @Test

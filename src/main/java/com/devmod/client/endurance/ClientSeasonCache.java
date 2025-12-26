@@ -6,6 +6,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.endurance.season.SeasonPassPayload;
+
 @OnlyIn(Dist.CLIENT)
 public class ClientSeasonCache {
 

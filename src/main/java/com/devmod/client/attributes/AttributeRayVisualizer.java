@@ -14,6 +14,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
+
 public class AttributeRayVisualizer {
     public static final AttributeRayVisualizer INSTANCE = new AttributeRayVisualizer();
 

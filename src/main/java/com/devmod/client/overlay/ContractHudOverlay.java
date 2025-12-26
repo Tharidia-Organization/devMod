@@ -16,6 +16,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.endurance.contracts.ContractSyncPayload;
+
 @OnlyIn(Dist.CLIENT)
 public class ContractHudOverlay implements LayeredDraw.Layer {
 

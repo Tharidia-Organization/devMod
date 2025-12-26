@@ -1,22 +1,21 @@
 package com.devmod.client.ui.editor.systems;
 
-import com.devmod.client.ui.editor.ItemEditorDataManager;
-import com.devmod.TestBootstrap;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeAll;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.ArrayList;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
-import static org.junit.jupiter.api.Assertions.*;
+import com.devmod.TestBootstrap;
+import com.devmod.client.ui.editor.ItemEditorDataManager;
+
 import static java.util.Objects.requireNonNull;
+import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Integration tests for MultiEdit system with preset application.
- */
 public class MultiEditIntegrationTest {
     
     private MultiEditManager manager;

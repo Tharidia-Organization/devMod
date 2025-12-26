@@ -21,6 +21,7 @@ import com.devmod.client.overlay.RecordBannerOverlay;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.integration.ModIntegrationManager;
 import com.devmod.network.NetworkHandler;
+
 @Mod(value = DevMod.MODID, dist = Dist.CLIENT)
 // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)

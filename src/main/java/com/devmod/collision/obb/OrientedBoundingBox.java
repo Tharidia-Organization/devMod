@@ -11,6 +11,7 @@ import org.joml.Vector3f;
 
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+
 public final class OrientedBoundingBox {
 
     private final Vec3 center;

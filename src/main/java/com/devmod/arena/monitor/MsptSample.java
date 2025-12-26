@@ -1,6 +1,7 @@
 package com.devmod.arena.monitor;
 
 import java.time.Instant;
+
 public record MsptSample(
     double mspt,
     Instant timestamp,

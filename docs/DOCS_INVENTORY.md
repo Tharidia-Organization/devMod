@@ -11,6 +11,7 @@ rg --files docs
 - `docs/MOC.md`
 - `docs/DOCUMENTATION_STATUS.md`
 - `docs/DOCS_GUIDE.md`
+- `docs/DOCS_BEHAVIOR_MATRIX.md`
 - `docs/DOCS_VERIFICATION_REPORT.md`
 - `docs/ARCHITECTURE.md`
 - `docs/PROJECT_TOPOLOGY.md`

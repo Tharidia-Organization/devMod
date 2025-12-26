@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import com.devmod.arena.registry.TemplateValidator;
+
 public final class PolicySchemaValidator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PolicySchemaValidator.class);

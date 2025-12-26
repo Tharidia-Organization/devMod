@@ -34,6 +34,7 @@ import com.devmod.party.QuestStartSequence;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.telemetry.player.PlayerAttributeTelemetryService;
 import com.devmod.util.I18n;
+
 @EventBusSubscriber(modid = "devmod")
 public class EnduranceEventHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceEventHandler.class);

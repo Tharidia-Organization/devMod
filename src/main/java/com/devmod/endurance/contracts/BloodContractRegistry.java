@@ -24,6 +24,7 @@ import com.devmod.DevMod;
 import com.devmod.config.gamedesign.GameDesignConfig;
 import com.devmod.config.gamedesign.GameDesignConfigManager;
 import com.devmod.endurance.ComboSystem;
+
 public final class BloodContractRegistry {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BloodContractRegistry.class);

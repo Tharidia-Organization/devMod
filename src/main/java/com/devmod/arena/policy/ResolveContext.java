@@ -4,6 +4,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
+
 public record ResolveContext(
     /** Player ID making the request */
     UUID playerId,

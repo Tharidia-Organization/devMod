@@ -16,6 +16,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 
 import com.devmod.endurance.config.EnduranceConfigManager;
+
 public class PrestigeResetSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(PrestigeResetSystem.class);
 

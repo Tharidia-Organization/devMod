@@ -18,22 +18,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L4: User Flow Simulation Tests
- *
- * Simulates complete user journeys through the party and quest system.
- * Tests realistic scenarios from party creation to quest completion.
- *
- * Scenarios covered:
- * 1. Solo player creates party and starts quest
- * 2. Leader invites members, all ready up, starts quest
- * 3. Member leaves mid-forming, party continues
- * 4. Leader kicks member before start
- * 5. Mob selection changes during forming phase
- * 6. Quest type changes during forming phase
- * 7. Multi-player quest with different mob presets
- * 8. Error scenarios (full party, invalid actions)
- */
 public class UserFlowSimulationTest {
 
     // ============================================

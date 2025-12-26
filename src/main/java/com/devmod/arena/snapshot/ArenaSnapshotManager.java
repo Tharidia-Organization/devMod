@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.api.ArenaHandle;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+
 public class ArenaSnapshotManager implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaSnapshotManager.class);

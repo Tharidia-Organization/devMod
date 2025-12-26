@@ -7,6 +7,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.endurance.PersonalRecordsSyncPayload;
+
 @OnlyIn(Dist.CLIENT)
 public class ClientPersonalRecordsCache {
 

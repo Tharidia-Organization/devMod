@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -12,6 +14,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 import com.devmod.telemetry.TelemetryJson;
 import com.devmod.telemetry.room.RoomService;
+
 public class PlayerProgressionService {
     public static final PlayerProgressionService INSTANCE = new PlayerProgressionService();
 
@@ -141,13 +144,13 @@ public class PlayerProgressionService {
      * Record advancement earned.
      */
     public AdvancementRecord recordAdvancement(ServerPlayer player, ResourceLocation advancementId, String title) {
-        advancementsEarned.merge(player.getUUID(), 1, (a, b) -> a + b);
+        int totalAdvancements = advancementsEarned.merge(player.getUUID(), 1, Integer::sum);
 
         return new AdvancementRecord(
                 player.getGameProfile().getName(),
                 advancementId.toString(),
                 title,
-                advancementsEarned.get(player.getUUID())
+                totalAdvancements
         );
     }
 
@@ -260,15 +263,15 @@ public class PlayerProgressionService {
     public int getTotalTrades() { return totalTrades; }
     public int getTotalFishCaught() { return totalFishCaught; }
 
-    public BlockStats getPlayerBlockStats(UUID playerId) {
+    public @Nullable BlockStats getPlayerBlockStats(UUID playerId) {
         return playerBlockStats.get(playerId);
     }
 
-    public XpStats getPlayerXpStats(UUID playerId) {
+    public @Nullable XpStats getPlayerXpStats(UUID playerId) {
         return playerXpStats.get(playerId);
     }
 
-    public CombatStats getPlayerCombatStats(UUID playerId) {
+    public @Nullable CombatStats getPlayerCombatStats(UUID playerId) {
         return combatStats.get(playerId);
     }
 

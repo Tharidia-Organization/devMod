@@ -17,6 +17,7 @@ import com.devmod.util.I18n;
 
 import static com.devmod.client.ui.testing.pages.PageUtils.safeGetBool;
 import static com.devmod.client.ui.testing.pages.PageUtils.safeGetInt;
+
 public class TelemetryPage extends AbstractVoxelLabPage {
 
     // Master toggle

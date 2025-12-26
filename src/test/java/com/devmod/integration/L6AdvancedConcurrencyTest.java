@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -22,9 +23,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicStampedReference;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import javax.annotation.Nullable;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
@@ -36,21 +40,6 @@ import org.junit.jupiter.api.Timeout;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L6 - Advanced Concurrency Testing Suite
- *
- * Tests complex race conditions, deadlock prevention, and thread-safety
- * scenarios that require careful coordination between multiple systems.
- *
- * Categories:
- * 1. Deadlock Detection and Prevention
- * 2. Lock Ordering Validation
- * 3. ABA Problem Prevention
- * 4. Lost Update Prevention
- * 5. Read-Modify-Write Atomicity
- * 6. Publication Safety
- * 7. Starvation Prevention
- */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class L6AdvancedConcurrencyTest {
 
@@ -193,8 +182,8 @@ public class L6AdvancedConcurrencyTest {
                 executor.submit(() -> {
                     try {
                         // Always: instance lock first, then player lock
-                        ReentrantLock instanceLock = instanceLocks.get(instanceId);
-                        ReentrantLock playerLock = playerLocks.get(playerId);
+                        ReentrantLock instanceLock = Objects.requireNonNull(instanceLocks.get(instanceId));
+                        ReentrantLock playerLock = Objects.requireNonNull(playerLocks.get(playerId));
 
                         instanceLock.lock();
                         try {
@@ -265,31 +254,31 @@ public class L6AdvancedConcurrencyTest {
         @DisplayName("Version counter prevents state ABA")
         void testVersionCounterPreventsABA() {
             // State with version number
-            AtomicReference<String> state = new AtomicReference<>("ACTIVE");
-            AtomicLong version = new AtomicLong(0);
+            String state = "ACTIVE";
+            long version = 0;
 
             // Read state and version
-            String oldState = state.get();
-            long oldVersion = version.get();
+            String oldState = state;
+            long oldVersion = version;
 
             assertEquals("ACTIVE", oldState);
             assertEquals(0, oldVersion);
 
             // State changes: ACTIVE -> COMPLETING -> ACTIVE (ABA)
-            state.set("COMPLETING");
-            version.incrementAndGet();
-            state.set("ACTIVE");
-            version.incrementAndGet();
+            state = "COMPLETING";
+            version++;
+            state = "ACTIVE";
+            version++;
 
             // Check if state changed
-            String newState = state.get();
-            long newVersion = version.get();
+            String newState = state;
+            long newVersion = version;
 
             assertEquals("ACTIVE", newState); // Same value
             assertNotEquals(oldVersion, newVersion); // But version changed
 
             // Operation should detect the change via version
-            boolean stateUnchanged = oldVersion == version.get();
+            boolean stateUnchanged = oldVersion == version;
             assertFalse(stateUnchanged, "Version should detect intermediate changes");
         }
 
@@ -300,17 +289,13 @@ public class L6AdvancedConcurrencyTest {
             // Using immutable objects for state
             record ImmutableState(String status, int wave, long timestamp) {}
 
-            AtomicReference<ImmutableState> stateRef = new AtomicReference<>(
-                new ImmutableState("ACTIVE", 1, System.nanoTime())
-            );
-
-            ImmutableState original = stateRef.get();
+            ImmutableState state = new ImmutableState("ACTIVE", 1, System.nanoTime());
+            ImmutableState original = state;
 
             // Even if status returns to ACTIVE, the object is different
-            stateRef.set(new ImmutableState("PAUSED", 1, System.nanoTime()));
-            stateRef.set(new ImmutableState("ACTIVE", 1, System.nanoTime()));
-
-            ImmutableState current = stateRef.get();
+            state = new ImmutableState("PAUSED", 1, System.nanoTime());
+            state = new ImmutableState("ACTIVE", 1, System.nanoTime());
+            ImmutableState current = state;
 
             assertEquals(original.status(), current.status());
             assertNotEquals(original.timestamp(), current.timestamp());
@@ -380,7 +365,7 @@ public class L6AdvancedConcurrencyTest {
                         for (int j = 0; j < updatesPerThread; j++) {
                             // CAS loop
                             while (true) {
-                                int[] current = state.get();
+                                int[] current = Objects.requireNonNull(state.get());
                                 int[] updated = current.clone();
                                 updated[threadId % 3]++; // Increment one of three counters
 
@@ -399,7 +384,7 @@ public class L6AdvancedConcurrencyTest {
             latch.await();
             executor.shutdown();
 
-            int[] finalState = state.get();
+            int[] finalState = Objects.requireNonNull(state.get());
             int totalUpdates = finalState[0] + finalState[1] + finalState[2];
             int expected = threadsCount * updatesPerThread;
 
@@ -480,7 +465,7 @@ public class L6AdvancedConcurrencyTest {
 
             assertEquals(1, creations.get(),
                 "Value should only be created once");
-            assertEquals(threadsCount, map.get(key).get(),
+            assertEquals(threadsCount, Objects.requireNonNull(map.get(key)).get(),
                 "All increments should be recorded");
         }
 
@@ -514,7 +499,7 @@ public class L6AdvancedConcurrencyTest {
             executor.shutdown();
 
             long expected = threadsCount * depositAmount;
-            assertEquals(expected, balances.get(playerId),
+            assertEquals(expected, Objects.requireNonNull(balances.get(playerId)),
                 "All deposits should be applied atomically");
         }
 
@@ -570,6 +555,7 @@ public class L6AdvancedConcurrencyTest {
         void testVolatilePublicationVisibility() throws Exception {
             // Holder with volatile reference
             class Holder {
+                @Nullable
                 volatile Object published = null;
             }
 
@@ -599,7 +585,7 @@ public class L6AdvancedConcurrencyTest {
                     } else {
                         sawValue.set(true);
                     }
-                    Thread.yield();
+                    LockSupport.parkNanos(1L);
                 }
                 readerDone.countDown();
             });
@@ -766,7 +752,7 @@ public class L6AdvancedConcurrencyTest {
                         for (int j = 0; j < acquisitionsPerThread; j++) {
                             fairLock.lock();
                             try {
-                                acquisitionCounts.get(threadId).incrementAndGet();
+                                Objects.requireNonNull(acquisitionCounts.get(threadId)).incrementAndGet();
                                 Thread.sleep(1);
                             } finally {
                                 fairLock.unlock();
@@ -918,7 +904,7 @@ public class L6AdvancedConcurrencyTest {
                 playerIds.add(playerId);
                 questStates.put(playerId, "ACTIVE");
                 questScores.put(playerId, new AtomicLong(0));
-                instancePlayers.get(sharedInstanceId).add(playerId);
+                Objects.requireNonNull(instancePlayers.get(sharedInstanceId)).add(playerId);
             }
 
             CountDownLatch latch = new CountDownLatch(playerCount);
@@ -936,7 +922,8 @@ public class L6AdvancedConcurrencyTest {
                             switch (operation) {
                                 case 0 -> {
                                     // Add score
-                                    questScores.get(playerId).addAndGet(random.nextInt(10, 100));
+                                    Objects.requireNonNull(questScores.get(playerId))
+                                        .addAndGet(random.nextInt(10, 100));
                                 }
                                 case 1 -> {
                                     // Read all scores
@@ -947,7 +934,7 @@ public class L6AdvancedConcurrencyTest {
                                 }
                                 case 2 -> {
                                     // Check instance players
-                                    Set<UUID> players = instancePlayers.get(sharedInstanceId);
+                                    Set<UUID> players = Objects.requireNonNull(instancePlayers.get(sharedInstanceId));
                                     int count = players.size();
                                     lastInstanceCount.set(count);
                                 }

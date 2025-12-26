@@ -10,6 +10,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -39,12 +41,15 @@ import com.devmod.telemetry.skills.SkillTrackingService;
 import com.devmod.telemetry.spatial.HeatmapService;
 import com.devmod.telemetry.spatial.LightAnalysisService;
 import com.devmod.telemetry.spatial.SpatialMetricsService;
+
 public class TelemetryService {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final TelemetryService INSTANCE = new TelemetryService();
 
     // Room definitions delegated to RoomService
+    @Nullable
     private Path telemetryDir;
+    @Nullable
     private AsyncTelemetryWriter asyncWriter;
 
     // weaponAggregates, roomAggregates, activeFights -> delegated to services
@@ -59,6 +64,7 @@ public class TelemetryService {
     private volatile boolean duckDbInitFailed = false;
 
     // Delegate for log handlers (logHit, logMiss, logDeath, etc.)
+    @Nullable
     private TelemetryLogHandlers logHandlers;
 
     // Recording state for UI

@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.server.level.ServerPlayer;
 
 import com.devmod.arena.telemetry.ArenaTelemetry;
+
 public class TemplateOverrideService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateOverrideService.class);

@@ -1,4 +1,5 @@
 package com.devmod.config;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,6 +27,7 @@ import net.neoforged.fml.loading.FMLPaths;
 import com.devmod.DevMod;
 import com.devmod.components.FuelComponents;
 import com.devmod.stats.FuelStats;
+
 public final class FuelConfigManager {
     private FuelConfigManager() {}
 

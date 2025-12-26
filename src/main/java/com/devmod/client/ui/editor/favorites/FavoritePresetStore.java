@@ -18,6 +18,7 @@ import com.google.gson.reflect.TypeToken;
 
 import com.devmod.DevMod;
 import com.devmod.util.ConfigPaths;
+
 public final class FavoritePresetStore {
 
     private static final Gson GSON = new Gson();

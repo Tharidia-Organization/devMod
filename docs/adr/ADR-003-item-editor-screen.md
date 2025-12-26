@@ -149,7 +149,7 @@ The size reflects:
 
 ## Related Documents
 
-- [EDITOR_DESIGN_SYSTEM.md](../../subsystems/editor-design-system/EDITOR_DESIGN_SYSTEM.md)
+- [Editor design system](../subsystems/editor-design-system/README.md)
 - [Module interfaces](../../src/main/java/com/devmod/client/ui/editor/EditorModule.java)
 
 ---

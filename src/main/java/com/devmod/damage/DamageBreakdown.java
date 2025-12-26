@@ -12,6 +12,7 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 import com.devmod.integration.ModIntegrationManager;
+
 public class DamageBreakdown {
     public final float baseWeaponDamage;
     public final List<EnchantBonus> enchantBonuses;

@@ -11,6 +11,7 @@ import java.util.Set;
 import com.devmod.client.ui.radial.RadialCategory;
 import com.devmod.client.ui.radial.RadialMenuItem;
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
+
 public final class RadialSearchHandler {
 
     private RadialSearchHandler() {

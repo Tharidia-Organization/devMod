@@ -5,10 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for SpawnSlotConstraints.
- * DD47: SpawnSlots Distance - melee 3-15, ranged 12-30.
- */
 @DisplayName("SpawnSlotConstraints Tests")
 class SpawnSlotConstraintsTest {
 

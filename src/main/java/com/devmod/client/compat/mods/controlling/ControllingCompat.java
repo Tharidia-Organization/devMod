@@ -17,6 +17,7 @@ import net.minecraft.client.KeyMapping;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class ControllingCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(ControllingCompat.class);
     public static final String MOD_ID = "controlling";

@@ -18,6 +18,7 @@ import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 public class AnalyticsService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AnalyticsService.class);
@@ -97,7 +98,7 @@ public class AnalyticsService {
     /**
      * Submits an async export job for large date ranges (> 30 days)
      *
-     * @param params The query parameters (date range validation is skipped)
+     * @param paramsBuilder The query parameters (date range validation is skipped)
      * @param onComplete Callback when export completes
      * @return The export job ID
      */

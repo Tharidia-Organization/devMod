@@ -27,6 +27,7 @@ import com.google.gson.JsonParseException;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageSource;
+
 public class HazardTypeRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(HazardTypeRegistry.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

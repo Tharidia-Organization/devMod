@@ -5,6 +5,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.devmod.client.ui.testing.VoxelLabPage;
 import com.devmod.client.ui.testing.VoxelLabTab;
 import com.devmod.client.ui.testing.panel.PanelContainer;
+
 public abstract class AbstractVoxelLabPage implements VoxelLabPage {
 
     protected final VoxelLabTab tab;

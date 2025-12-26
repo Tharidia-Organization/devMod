@@ -1,18 +1,14 @@
 package com.devmod.arena.failure;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for ArenaFailureHandler.
- * DD46: Default Fail Message - user-friendly, no tech details.
- */
 @DisplayName("ArenaFailureHandler Tests")
 class ArenaFailureHandlerTest {
 

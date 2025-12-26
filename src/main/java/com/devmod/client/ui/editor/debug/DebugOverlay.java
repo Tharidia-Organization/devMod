@@ -12,6 +12,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.devmod.client.ui.editor.core.Bounds;
 import com.devmod.client.ui.editor.core.RenderObjectPool;
 import com.devmod.client.ui.editor.core.StringBuilderCache;
+
 public final class DebugOverlay {
     
     private static boolean enabled = false;

@@ -10,6 +10,7 @@ import com.devmod.arena.policy.ResolvedArena;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.InstanceSettingsValidator;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+
 public class TemplateArenaBuilder extends ArenaBuilder {
 
     public TemplateArenaBuilder(

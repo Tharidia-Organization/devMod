@@ -12,6 +12,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.model.geom.ModelPart;
 
 import com.devmod.client.collision.transform.ModelPartTransformCapture;
+
 @Mixin(ModelPart.class)
 public class ModelPartTransformMixin {
 
@@ -33,7 +34,7 @@ public class ModelPartTransformMixin {
      * This gives us the exact world-space transform for each ModelPart.
      */
     @Inject(method = "translateAndRotate", at = @At("TAIL"))
-    private void devmod$captureTransform(PoseStack poseStack, CallbackInfo ci) {
+    void devmod$captureTransform(PoseStack poseStack, CallbackInfo ci) {
         // Only capture if the system is actively recording
         if (!ModelPartTransformCapture.isCapturing()) {
             return;

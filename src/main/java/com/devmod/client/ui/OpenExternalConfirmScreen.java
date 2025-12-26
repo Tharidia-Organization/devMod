@@ -17,6 +17,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.DevMod;
+
 @OnlyIn(Dist.CLIENT)
 public class OpenExternalConfirmScreen extends Screen {
 
@@ -31,7 +32,7 @@ public class OpenExternalConfirmScreen extends Screen {
     @Nonnull
     private final String url;
     @Nonnull
-    private final String title;
+    private final String dialogTitle;
     @Nullable
     private String statusMessage = null;
     private int statusColor = 0xFFFFFF;
@@ -47,7 +48,7 @@ public class OpenExternalConfirmScreen extends Screen {
         super(Objects.requireNonNull(Component.literal(Objects.requireNonNull(title, "title")), "title component"));
         this.parentScreen = parentScreen;
         this.url = Objects.requireNonNull(url, "url");
-        this.title = title;
+        this.dialogTitle = title;
     }
 
     /**
@@ -117,7 +118,7 @@ public class OpenExternalConfirmScreen extends Screen {
         }
 
         // Title
-        graphics.drawCenteredString(renderFont, title, width / 2, dialogY + 12, 0xFFFFFF);
+        graphics.drawCenteredString(renderFont, dialogTitle, width / 2, dialogY + 12, 0xFFFFFF);
 
         // URL (truncated if too long)
         String displayUrl = url;

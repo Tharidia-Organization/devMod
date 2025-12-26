@@ -17,6 +17,7 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import com.devmod.DevMod;
 import com.devmod.network.PacketValidator;
 import com.devmod.stats.RangedWeaponStats;
+
 @EventBusSubscriber(modid = DevMod.MODID)
 public final class RangedProjectileHooks {
 

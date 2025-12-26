@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,21 +30,6 @@ import org.junit.jupiter.api.Timeout;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L6 - Advanced Integration Testing Suite
- *
- * This suite tests complex multi-system interactions that can only fail
- * when multiple subsystems interact under specific conditions.
- *
- * Categories:
- * 1. Multi-System Cascade Failures
- * 2. State Machine Coherence Under Stress
- * 3. Economic System Invariants
- * 4. Chaos Engineering Scenarios
- * 5. Complex Race Condition Detection
- * 6. Memory Corruption Prevention
- * 7. Data Consistency Under Failure
- */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class L6AdvancedIntegrationTest {
 
@@ -186,17 +172,62 @@ public class L6AdvancedIntegrationTest {
             });
         }
 
+        AtomicLong requireBalance(UUID playerId, Currency currency) {
+            AtomicLong balance = getWallet(playerId).get(currency);
+            return Objects.requireNonNull(balance, "Missing balance for " + playerId + " " + currency);
+        }
+
+        QuestState requireQuestState(UUID playerId) {
+            return Objects.requireNonNull(playerQuestStates.get(playerId),
+                "Missing quest state for " + playerId);
+        }
+
+        int requireWave(UUID playerId) {
+            Integer wave = playerWaves.get(playerId);
+            return Objects.requireNonNull(wave, "Missing wave for " + playerId);
+        }
+
+        int requireKills(UUID playerId) {
+            Integer kills = playerKills.get(playerId);
+            return Objects.requireNonNull(kills, "Missing kills for " + playerId);
+        }
+
+        int requireStyleScore(UUID playerId) {
+            Integer score = playerStyleScores.get(playerId);
+            return Objects.requireNonNull(score, "Missing style score for " + playerId);
+        }
+
+        StyleRank requireStyleRank(UUID playerId) {
+            return Objects.requireNonNull(playerStyleRanks.get(playerId),
+                "Missing style rank for " + playerId);
+        }
+
+        int requireCombo(UUID playerId) {
+            Integer combo = playerCombos.get(playerId);
+            return Objects.requireNonNull(combo, "Missing combo for " + playerId);
+        }
+
+        Set<String> requirePerks(UUID playerId) {
+            return Objects.requireNonNull(playerPerks.get(playerId),
+                "Missing perks for " + playerId);
+        }
+
+        Map<String, Integer> requirePerkStacks(UUID playerId) {
+            return Objects.requireNonNull(perkStacks.get(playerId),
+                "Missing perk stacks for " + playerId);
+        }
+
         void addCurrency(UUID playerId, Currency currency, long amount) {
-            getWallet(playerId).get(currency).addAndGet(amount);
+            requireBalance(playerId, currency).addAndGet(amount);
         }
 
         long getCurrency(UUID playerId, Currency currency) {
-            return getWallet(playerId).get(currency).get();
+            return requireBalance(playerId, currency).get();
         }
 
         boolean spendCurrency(UUID playerId, Currency currency, long amount) {
             synchronized (getPurchaseLock(playerId)) {
-                AtomicLong balance = getWallet(playerId).get(currency);
+                AtomicLong balance = requireBalance(playerId, currency);
                 long current = balance.get();
                 if (current >= amount) {
                     balance.addAndGet(-amount);
@@ -223,7 +254,8 @@ public class L6AdvancedIntegrationTest {
             // Invariant 1: Player in instance must have active quest
             for (UUID playerId : playerToInstance.keySet()) {
                 QuestState questState = playerQuestStates.get(playerId);
-                if (questState != QuestState.ACTIVE && questState != QuestState.WAVE_COMPLETE) {
+                if (questState == null ||
+                    (questState != QuestState.ACTIVE && questState != QuestState.WAVE_COMPLETE)) {
                     reportInvariantViolation("Player " + playerId + " in instance but quest state is " + questState);
                 }
             }
@@ -304,8 +336,8 @@ public class L6AdvancedIntegrationTest {
             sim.totalQuestsStarted.incrementAndGet();
 
             // Simulate quest completion cascade
-            int baseReward = sim.playerKills.get(playerId) * 10 + sim.playerWaves.get(playerId) * 50;
-            float styleMultiplier = sim.playerStyleRanks.get(playerId).multiplier;
+            int baseReward = sim.requireKills(playerId) * 10 + sim.requireWave(playerId) * 50;
+            float styleMultiplier = sim.requireStyleRank(playerId).multiplier;
             int finalReward = (int) (baseReward * styleMultiplier);
 
             // Atomic cascade operations
@@ -314,8 +346,8 @@ public class L6AdvancedIntegrationTest {
             sim.playerStyleScores.put(playerId, 0);
             sim.playerStyleRanks.put(playerId, StyleRank.D);
             sim.playerCombos.put(playerId, 0);
-            sim.playerPerks.get(playerId).clear();
-            sim.perkStacks.get(playerId).clear();
+            sim.requirePerks(playerId).clear();
+            sim.requirePerkStacks(playerId).clear();
             sim.playerToInstance.remove(playerId);
             sim.instances.put(instanceId, InstanceState.COMPLETING);
             sim.instances.put(instanceId, InstanceState.DESTROYING);
@@ -324,14 +356,14 @@ public class L6AdvancedIntegrationTest {
             sim.totalQuestsCompleted.incrementAndGet();
 
             // Verify cascade completed correctly
-            assertEquals(QuestState.COMPLETED, sim.playerQuestStates.get(playerId));
+            assertEquals(QuestState.COMPLETED, sim.requireQuestState(playerId));
             assertEquals(InstanceState.DESTROYED, sim.instances.get(instanceId));
             assertTrue(sim.getCurrency(playerId, Currency.TOKENS) > 0, "Should have earned tokens");
-            assertEquals(0, (int) sim.playerStyleScores.get(playerId), "Style should be reset");
-            assertEquals(StyleRank.D, sim.playerStyleRanks.get(playerId), "Rank should be D");
-            assertEquals(0, (int) sim.playerCombos.get(playerId), "Combo should be reset");
-            assertTrue(sim.playerPerks.get(playerId).isEmpty(), "Perks should be cleared");
-            assertTrue(sim.perkStacks.get(playerId).isEmpty(), "Perk stacks should be cleared");
+            assertEquals(0, sim.requireStyleScore(playerId), "Style should be reset");
+            assertEquals(StyleRank.D, sim.requireStyleRank(playerId), "Rank should be D");
+            assertEquals(0, sim.requireCombo(playerId), "Combo should be reset");
+            assertTrue(sim.requirePerks(playerId).isEmpty(), "Perks should be cleared");
+            assertTrue(sim.requirePerkStacks(playerId).isEmpty(), "Perk stacks should be cleared");
             assertFalse(sim.playerToInstance.containsKey(playerId), "Player-instance mapping should be removed");
 
             sim.checkAllInvariants();
@@ -376,8 +408,8 @@ public class L6AdvancedIntegrationTest {
             sim.instances.put(instanceId, InstanceState.DESTROYED);
 
             // Verify both players recovered
-            assertEquals(QuestState.FAILED, sim.playerQuestStates.get(player1));
-            assertEquals(QuestState.FAILED, sim.playerQuestStates.get(player2));
+            assertEquals(QuestState.FAILED, sim.requireQuestState(player1));
+            assertEquals(QuestState.FAILED, sim.requireQuestState(player2));
             assertFalse(sim.playerToInstance.containsKey(player1));
             assertFalse(sim.playerToInstance.containsKey(player2));
             assertEquals(2, sim.totalQuestsFailed.get());
@@ -400,7 +432,7 @@ public class L6AdvancedIntegrationTest {
             sim.playerKills.put(playerId, 100);
 
             // Capture rank at start of reward calculation
-            StyleRank rankAtCompletion = sim.playerStyleRanks.get(playerId);
+            StyleRank rankAtCompletion = sim.requireStyleRank(playerId);
             float multiplier = rankAtCompletion.multiplier;
 
             // Simulate decay happening during calculation
@@ -408,7 +440,7 @@ public class L6AdvancedIntegrationTest {
             sim.playerStyleRanks.put(playerId, StyleRank.S);
 
             // Calculate reward using captured rank, not current
-            int baseReward = sim.playerKills.get(playerId) * 10 + sim.playerWaves.get(playerId) * 50;
+            int baseReward = sim.requireKills(playerId) * 10 + sim.requireWave(playerId) * 50;
             int finalReward = (int) (baseReward * multiplier);
 
             // Apply reward
@@ -535,17 +567,17 @@ public class L6AdvancedIntegrationTest {
             sim.playerQuestStates.put(playerId, QuestState.COMPLETING);
             sim.playerQuestStates.put(playerId, QuestState.COMPLETED);
 
-            assertEquals(QuestState.COMPLETED, sim.playerQuestStates.get(playerId));
+            assertEquals(QuestState.COMPLETED, sim.requireQuestState(playerId));
 
             // Reset and test failure path
             sim.playerQuestStates.put(playerId, QuestState.ACTIVE);
             sim.playerQuestStates.put(playerId, QuestState.FAILED);
-            assertEquals(QuestState.FAILED, sim.playerQuestStates.get(playerId));
+            assertEquals(QuestState.FAILED, sim.requireQuestState(playerId));
 
             // Reset and test abandon path
             sim.playerQuestStates.put(playerId, QuestState.ACTIVE);
             sim.playerQuestStates.put(playerId, QuestState.ABANDONED);
-            assertEquals(QuestState.ABANDONED, sim.playerQuestStates.get(playerId));
+            assertEquals(QuestState.ABANDONED, sim.requireQuestState(playerId));
         }
     }
 
@@ -739,8 +771,8 @@ public class L6AdvancedIntegrationTest {
             // Verify data integrity of remaining players
             for (int i = playerCount / 2; i < playerCount; i++) {
                 UUID playerId = players.get(i);
-                assertEquals(QuestState.ACTIVE, sim.playerQuestStates.get(playerId));
-                assertEquals(i % 20, (int) sim.playerWaves.get(playerId));
+                assertEquals(QuestState.ACTIVE, sim.requireQuestState(playerId));
+                assertEquals(i % 20, sim.requireWave(playerId));
             }
         }
 
@@ -919,7 +951,7 @@ public class L6AdvancedIntegrationTest {
             // Exactly one should succeed
             assertEquals(1, successCount.get(),
                 "Only one concurrent quest start should succeed");
-            assertEquals(QuestState.STARTING, sim.playerQuestStates.get(playerId));
+            assertEquals(QuestState.STARTING, sim.requireQuestState(playerId));
         }
 
         @Test
@@ -956,7 +988,7 @@ public class L6AdvancedIntegrationTest {
             int expectedScore = incrementCount * incrementValue;
             assertEquals(expectedScore, atomicScore.get(), "Atomic increment should produce exact result");
             sim.playerStyleScores.put(playerId, atomicScore.get());
-            assertEquals(expectedScore, sim.playerStyleScores.get(playerId));
+            assertEquals(expectedScore, sim.requireStyleScore(playerId));
         }
 
         @Test
@@ -983,11 +1015,9 @@ public class L6AdvancedIntegrationTest {
                 executor.submit(() -> {
                     try {
                         // Read perks (wave effect application)
-                        Set<String> currentPerks = sim.playerPerks.get(playerId);
-                        if (currentPerks != null) {
-                            for (String perk : currentPerks) {
-                                sim.perkStacks.get(playerId).get(perk); // Just reading, shouldn't throw
-                            }
+                        Set<String> currentPerks = sim.requirePerks(playerId);
+                        for (String perk : currentPerks) {
+                            sim.requirePerkStacks(playerId).get(perk); // Just reading, shouldn't throw
                         }
                     } catch (ConcurrentModificationException e) {
                         errors.incrementAndGet();
@@ -1003,13 +1033,13 @@ public class L6AdvancedIntegrationTest {
                 executor.submit(() -> {
                     try {
                         String newPerk = "PERK_" + idx;
-                        sim.playerPerks.get(playerId).add(newPerk);
-                        sim.perkStacks.get(playerId).put(newPerk, 1);
+                        sim.requirePerks(playerId).add(newPerk);
+                        sim.requirePerkStacks(playerId).put(newPerk, 1);
 
                         // Sometimes remove
                         if (idx % 3 == 0) {
-                            sim.playerPerks.get(playerId).remove(newPerk);
-                            sim.perkStacks.get(playerId).remove(newPerk);
+                            sim.requirePerks(playerId).remove(newPerk);
+                            sim.requirePerkStacks(playerId).remove(newPerk);
                         }
                     } catch (Exception e) {
                         errors.incrementAndGet();
@@ -1055,7 +1085,9 @@ public class L6AdvancedIntegrationTest {
             // Getting wallet for non-existent player should create one
             Map<Currency, AtomicLong> wallet = sim.getWallet(nonExistentPlayer);
             assertNotNull(wallet);
-            assertEquals(0, wallet.get(Currency.TOKENS).get());
+            AtomicLong tokens = Objects.requireNonNull(wallet.get(Currency.TOKENS),
+                "Wallet should include tokens balance");
+            assertEquals(0, tokens.get());
         }
 
         @Test
@@ -1076,7 +1108,7 @@ public class L6AdvancedIntegrationTest {
 
             // Original data preserved
             assertEquals(1000, sim.getCurrency(sharedId, Currency.TOKENS));
-            assertEquals(QuestState.COMPLETED, sim.playerQuestStates.get(sharedId));
+            assertEquals(QuestState.COMPLETED, sim.requireQuestState(sharedId));
         }
 
         @Test
@@ -1145,10 +1177,10 @@ public class L6AdvancedIntegrationTest {
             }
 
             // State should be recoverable
-            assertEquals(QuestState.ACTIVE, sim.playerQuestStates.get(playerId));
+            assertEquals(QuestState.ACTIVE, sim.requireQuestState(playerId));
             assertEquals(500, sim.getCurrency(playerId, Currency.TOKENS),
                 "Currency should not have changed");
-            assertEquals(5, (int) sim.playerWaves.get(playerId),
+            assertEquals(5, sim.requireWave(playerId),
                 "Wave count should not have changed");
         }
 
@@ -1184,7 +1216,7 @@ public class L6AdvancedIntegrationTest {
 
             // Verify cleanup
             assertFalse(sim.playerToInstance.containsKey(playerId));
-            assertEquals(QuestState.FAILED, sim.playerQuestStates.get(playerId));
+            assertEquals(QuestState.FAILED, sim.requireQuestState(playerId));
             assertNull(sim.playerWaves.get(playerId));
         }
 
@@ -1205,7 +1237,7 @@ public class L6AdvancedIntegrationTest {
 
             // "Begin transaction"
             long originalBalance = sim.getCurrency(playerId, Currency.TOKENS);
-            QuestState originalState = sim.playerQuestStates.get(playerId);
+            QuestState originalState = sim.requireQuestState(playerId);
 
             try {
                 // Step 1: Spend currency
@@ -1237,7 +1269,7 @@ public class L6AdvancedIntegrationTest {
             // Verify transaction completed
             assertTrue(success);
             assertEquals(originalBalance - cost, sim.getCurrency(playerId, Currency.TOKENS)); // 1000 - 500
-            assertEquals(QuestState.ACTIVE, sim.playerQuestStates.get(playerId));
+            assertEquals(QuestState.ACTIVE, sim.requireQuestState(playerId));
         }
 
         @Test

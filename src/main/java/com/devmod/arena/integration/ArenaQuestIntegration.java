@@ -40,6 +40,7 @@ import com.devmod.arena.policy.ResolvedArena;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+
 @SuppressWarnings("unused") // templateRegistry and policyRegistry reserved for future query APIs
 public class ArenaQuestIntegration {
 

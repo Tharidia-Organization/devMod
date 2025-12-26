@@ -12,6 +12,7 @@ import javax.annotation.Nullable;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+
 public class TemplateOverrideManager {
 
     private static final TemplateOverrideManager INSTANCE = new TemplateOverrideManager();

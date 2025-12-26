@@ -18,6 +18,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
+
 public class NemesisProfile {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NemesisProfile.class);

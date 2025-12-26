@@ -32,6 +32,7 @@ import com.devmod.client.ui.unified.pages.TelemetryPage;
 import com.devmod.client.ui.unified.pages.VisualizersPage;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.util.I18n;
+
 @OnlyIn(Dist.CLIENT)
 public class UnifiedSettingsScreen extends Screen {
 
@@ -48,8 +49,11 @@ public class UnifiedSettingsScreen extends Screen {
     private int mouseX, mouseY;
 
     // Confirmation dialogs (reusable overlay component)
+    @Nullable
     private ConfirmDialog resetDialog;
+    @Nullable
     private ConfirmDialog factoryResetDialog;
+    @Nullable
     private ConfirmDialog progressResetDialog;
     // Footer buttons
     private final EditorButton footerResetPageBtn = new EditorButton("footer-reset-page", "Reset Page");
@@ -90,55 +94,13 @@ public class UnifiedSettingsScreen extends Screen {
         }
     }
 
-    private void initDialogs() {
-        this.resetDialog = ConfirmDialog.create(
-            "Reset Settings?",
-            "Reset",
-            "Cancel",
-            ConfirmDialog.Style.WARNING,
-            this::resetCurrentPage,
-            () -> {},
-            "This will reset the current category to defaults."
-        );
-
-        this.factoryResetDialog = ConfirmDialog.create(
-            "!! FACTORY RESET !!",
-            "RESET ALL",
-            "Cancel",
-            ConfirmDialog.Style.DANGER,
-            this::performFactoryReset,
-            () -> {},
-            "This will permanently reset:",
-            "- All settings to defaults",
-            "- Tutorial/Onboarding progress",
-            "- Quest data & achievements",
-            "Restart may be required."
-        );
-
-        this.progressResetDialog = ConfirmDialog.create(
-            "Reset Player Progress",
-            "Reset Progress",
-            "Cancel",
-            ConfirmDialog.Style.WARNING,
-            this::performPlayerProgressReset,
-            () -> {},
-            "This will reset ALL player progress:",
-            "- Endurance Quest stats & records",
-            "- Tokens, rewards & achievements",
-            "- Item Editor presets & favorites",
-            "- Leaderboard rankings",
-            "Settings will NOT be affected."
-        );
-    }
-
     @Override
     protected void init() {
         super.init();
+        initDialogs();
 
         // Track screen open for telemetry
         UiTelemetry.screenOpened("settings", "unified_settings");
-
-        initDialogs();
 
         // Initialize pages
         pages.put(SettingsCategory.GENERAL, new GeneralSettingsPage());
@@ -155,6 +117,50 @@ public class UnifiedSettingsScreen extends Screen {
         if (currentPage != null) {
             currentPage.init();
         }
+    }
+
+    private void initDialogs() {
+        if (resetDialog != null && factoryResetDialog != null && progressResetDialog != null) {
+            return;
+        }
+        resetDialog = ConfirmDialog.create(
+            "Reset Settings?",
+            "Reset",
+            "Cancel",
+            ConfirmDialog.Style.WARNING,
+            this::resetCurrentPage,
+            () -> {},
+            "This will reset the current category to defaults."
+        );
+
+        factoryResetDialog = ConfirmDialog.create(
+            "!! FACTORY RESET !!",
+            "RESET ALL",
+            "Cancel",
+            ConfirmDialog.Style.DANGER,
+            this::performFactoryReset,
+            () -> {},
+            "This will permanently reset:",
+            "- All settings to defaults",
+            "- Tutorial/Onboarding progress",
+            "- Quest data & achievements",
+            "Restart may be required."
+        );
+
+        progressResetDialog = ConfirmDialog.create(
+            "Reset Player Progress",
+            "Reset Progress",
+            "Cancel",
+            ConfirmDialog.Style.WARNING,
+            this::performPlayerProgressReset,
+            () -> {},
+            "This will reset ALL player progress:",
+            "- Endurance Quest stats & records",
+            "- Tokens, rewards & achievements",
+            "- Item Editor presets & favorites",
+            "- Leaderboard rankings",
+            "Settings will NOT be affected."
+        );
     }
 
     @Override
@@ -515,6 +521,10 @@ public class UnifiedSettingsScreen extends Screen {
 
     private void renderFooter(GuiGraphics graphics, int mouseX, int mouseY) {
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
+        initDialogs();
+        ConfirmDialog resetDialog = Objects.requireNonNull(this.resetDialog, "resetDialog");
+        ConfirmDialog progressResetDialog = Objects.requireNonNull(this.progressResetDialog, "progressResetDialog");
+        ConfirmDialog factoryResetDialog = Objects.requireNonNull(this.factoryResetDialog, "factoryResetDialog");
         int footerY = height - FOOTER_HEIGHT;
 
         // Background

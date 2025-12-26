@@ -27,6 +27,7 @@ import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateValidator;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+
 public class ArenaPolicyRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaPolicyRegistry.class);
 

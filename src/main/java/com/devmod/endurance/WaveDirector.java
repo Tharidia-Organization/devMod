@@ -7,6 +7,7 @@ import java.util.Random;
 import net.minecraft.core.BlockPos;
 
 import com.devmod.arena.api.ArenaHandle;
+
 public final class WaveDirector {
     public static final WaveDirector INSTANCE = new WaveDirector();
 

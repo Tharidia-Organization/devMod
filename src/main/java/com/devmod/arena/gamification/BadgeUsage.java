@@ -3,6 +3,7 @@ package com.devmod.arena.gamification;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+
 public final class BadgeUsage {
 
     /**

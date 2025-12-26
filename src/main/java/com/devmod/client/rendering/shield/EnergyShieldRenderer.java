@@ -30,6 +30,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.rendering.TrigCache;
+
 @OnlyIn(Dist.CLIENT)
 
 public class EnergyShieldRenderer {

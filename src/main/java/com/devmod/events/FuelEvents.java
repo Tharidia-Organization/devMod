@@ -1,4 +1,5 @@
 package com.devmod.events;
+
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -12,6 +13,7 @@ import net.neoforged.neoforge.event.furnace.FurnaceFuelBurnTimeEvent;
 import com.devmod.DevMod;
 import com.devmod.config.FuelConfigManager;
 import com.devmod.stats.FuelStats;
+
 @EventBusSubscriber(modid = DevMod.MODID)
 public class FuelEvents {
 

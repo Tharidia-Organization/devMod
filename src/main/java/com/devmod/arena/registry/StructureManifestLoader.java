@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.gson.Gson;
+
 public class StructureManifestLoader {
 
     private static final Gson GSON = new Gson();

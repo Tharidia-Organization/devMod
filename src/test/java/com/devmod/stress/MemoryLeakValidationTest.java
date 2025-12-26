@@ -36,17 +36,6 @@ import com.devmod.runtime.InstanceState;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * L5 Test: Memory Leak Validation
- *
- * Tests memory management patterns without Minecraft dependencies.
- * Validates:
- * - Proper cleanup of instance references
- * - WeakReference behavior for caches
- * - SoftReference behavior for optional data
- * - Resource cleanup patterns
- * - Collection memory management
- */
 @DisplayName("L5: Memory Leak Validation Tests")
 class MemoryLeakValidationTest {
 

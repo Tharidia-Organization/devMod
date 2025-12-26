@@ -8,6 +8,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.Typography;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 public class SourceBadge {
 
     /**

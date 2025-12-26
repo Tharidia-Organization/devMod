@@ -3,6 +3,7 @@ package com.devmod.endurance;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
 public class PrestigeMilestone {
 
     private final int requiredPrestige;

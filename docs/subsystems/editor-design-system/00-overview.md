@@ -6,7 +6,7 @@
 ---
 
 ## Implementation Status
-- **Implementation:** MultiEdit subsystem (manager + panel) added and wired into the editor UI (`src/main/java/com/frenkvs/devmod/ui/editor/systems/MultiEditManager.java`, `MultiEditPanel.java`).
+- **Implementation:** MultiEdit subsystem (manager + panel) added and wired into the editor UI (`src/main/java/com/devmod/client/ui/editor/systems/MultiEditManager.java`, `MultiEditPanel.java`).
 - **Preset adapter:** `ItemEditorPresetManager` added to map `ItemEditorDataManager.PresetData` into `WeaponStats` / `ArmorStats` and persist via existing config managers.
 - **Preset wrapper:** `DataPreset` provides a `Preset` facade over `ItemEditorDataManager.PresetData`.
 - **UI:** `MultiEditPanel` shows selection, items, remove, preset selector (dropdown scrollabile), e `[Apply to all]` / `[Clear All]` actions. Default expanded; header toggles collapse; empty-state note quando zero match; Apply disabilitato in Preview.

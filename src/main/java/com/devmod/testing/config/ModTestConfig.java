@@ -16,6 +16,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import com.devmod.util.ConfigPaths;
+
 public class ModTestConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModTestConfig.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

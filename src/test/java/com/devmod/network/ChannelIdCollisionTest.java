@@ -1,17 +1,13 @@
 package com.devmod.network;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
-
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Critical test to detect channel ID collisions in the network layer.
- * This test MUST pass before any release to prevent packet routing failures.
- */
 class ChannelIdCollisionTest {
 
     @Test

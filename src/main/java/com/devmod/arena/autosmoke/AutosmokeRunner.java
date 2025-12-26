@@ -23,6 +23,7 @@ import com.devmod.arena.cleanup.CleanupResult;
 import com.devmod.arena.override.ForceTemplateCapability;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
+
 public class AutosmokeRunner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AutosmokeRunner.class);

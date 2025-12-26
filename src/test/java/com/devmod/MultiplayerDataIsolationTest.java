@@ -1,10 +1,5 @@
 package com.devmod;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,17 +9,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.Nullable;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Multiplayer data isolation regression tests.
- *
- * These tests verify that per-player data (like ImpactData) is correctly
- * isolated between different players in a multiplayer environment.
- *
- * The actual ImpactData class uses ConcurrentHashMap<UUID, ImpactData> for
- * player isolation. These tests verify the pattern works correctly.
- */
 public class MultiplayerDataIsolationTest {
 
     /**
@@ -35,12 +28,12 @@ public class MultiplayerDataIsolationTest {
         private static final Map<UUID, MockImpactData> IMPACTS_BY_PLAYER = new ConcurrentHashMap<>();
         private static final long EXPIRE_MS = 3000;
 
-        public static void store(UUID playerUUID, MockImpactData data) {
+        public static void store(@Nullable UUID playerUUID, @Nullable MockImpactData data) {
             if (playerUUID == null || data == null) return;
             IMPACTS_BY_PLAYER.put(playerUUID, data);
         }
 
-        public static MockImpactData get(UUID playerUUID) {
+        public static @Nullable MockImpactData get(@Nullable UUID playerUUID) {
             if (playerUUID == null) return null;
             MockImpactData data = IMPACTS_BY_PLAYER.get(playerUUID);
             if (data != null && data.isExpired()) {
@@ -50,7 +43,7 @@ public class MultiplayerDataIsolationTest {
             return data;
         }
 
-        public static void clearForPlayer(UUID playerUUID) {
+        public static void clearForPlayer(@Nullable UUID playerUUID) {
             if (playerUUID != null) {
                 IMPACTS_BY_PLAYER.remove(playerUUID);
             }

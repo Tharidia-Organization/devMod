@@ -1,6 +1,5 @@
 package com.devmod.events;
 
-
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 
@@ -11,6 +10,7 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import com.devmod.telemetry.DeferredEntityProcessor;
 
 import static com.devmod.DevMod.MODID;
+
 @EventBusSubscriber(modid = MODID)
 public class GlobalMobEvents {
 

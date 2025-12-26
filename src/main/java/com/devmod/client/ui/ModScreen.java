@@ -1,4 +1,5 @@
 package com.devmod.client.ui;
+
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -14,6 +15,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.telemetry.UiTelemetry;
 import com.devmod.client.ui.editor.core.UIConstants;
+
 @OnlyIn(Dist.CLIENT)
 public abstract class ModScreen extends Screen {
 

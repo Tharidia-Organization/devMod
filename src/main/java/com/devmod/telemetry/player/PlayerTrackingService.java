@@ -20,6 +20,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.telemetry.RoomDefinition;
 import com.devmod.telemetry.room.RoomService;
+
 public class PlayerTrackingService {
     public static final PlayerTrackingService INSTANCE = new PlayerTrackingService();
 

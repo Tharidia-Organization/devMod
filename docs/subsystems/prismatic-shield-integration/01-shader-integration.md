@@ -148,7 +148,7 @@ src/main/resources/assets/devmod/shaders/core/
 ### Java Shader Loader
 
 ```java
-// Nuovo file: src/main/java/com/frenkvs/devmod/client/render/EnergyShieldShader.java
+// Nuovo file: src/main/java/com/devmod/client/render/EnergyShieldShader.java
 
 package com.devmod.client.render;
 

@@ -12,6 +12,7 @@ import net.minecraft.world.entity.player.Player;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 public class IronsSpellbooksCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(IronsSpellbooksCompat.class);
     public static final String MOD_ID = "irons_spellbooks";

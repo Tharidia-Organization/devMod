@@ -1,6 +1,7 @@
 package com.devmod.testing.stats;
 
 import com.google.gson.JsonObject;
+
 public class ExplosionStatistics {
     public static final ExplosionStatistics INSTANCE = new ExplosionStatistics();
 

@@ -501,5 +501,5 @@ public final class AmmoSystem {
 
 **Riferimenti:**
 - [15-weapon-properties.md](15-weapon-properties.md) - Weapon properties base
-- [06-persistence-storage.md](06-persistence-storage.md) - Storage per ranged stats
-- [10-unified-architecture.md](10-unified-architecture.md) - RangedModule integration
+- [06-persistence.md](06-persistence.md) - Storage per ranged stats
+- [08-unified-architecture.md](08-unified-architecture.md) - RangedModule integration

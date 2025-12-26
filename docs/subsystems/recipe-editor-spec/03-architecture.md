@@ -5,7 +5,7 @@
 ## Overview Architettura
 
 ```
-src/main/java/com/frenkvs/devmod/
+src/main/java/com/devmod/
 ├── recipe/
 │   ├── RecipeData.java              # Sealed interface base
 │   ├── CraftingRecipeData.java      # Record crafting

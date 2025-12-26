@@ -11,6 +11,7 @@ import com.devmod.config.ArmorConfigManager;
 import com.devmod.config.WeaponConfigManager;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
+
 public class ItemEditorPresetManager implements PresetManager {
 
     public static final ItemEditorPresetManager INSTANCE = new ItemEditorPresetManager();

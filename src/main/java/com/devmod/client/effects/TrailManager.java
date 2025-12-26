@@ -34,6 +34,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.config.Config;
 import com.devmod.effects.TrailEffect;
+
 public class TrailManager {
 
     public static final TrailManager INSTANCE = new TrailManager();

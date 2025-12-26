@@ -27,40 +27,40 @@ Inventario completo dei punti in cui i pulsanti non usano `EditorButton` e richi
 ## Checklist per file
 
 ### Vanilla `net.minecraft.client.gui.components.Button`
-- ✅ `src/main/java/com/frenkvs/devmod/ui/RoomBoundsEditorScreen.java`: 5 pulsanti (`setPointAButton`, `setPointBButton`, `saveButton`, `cancelButton`, `deleteLastButton`) - **PRIORITÀ ALTA**
-- ✅ `src/main/java/com/frenkvs/devmod/ui/ModScreen.java`: metodi `addStandardButtons()` e `addApplyCancelButtons()` creano Button vanilla - **PRIORITÀ ALTA** (base class)
-- ✅ `src/main/java/com/frenkvs/devmod/ui/WelcomeScreen.java`: `tutorialButton`, `skipButton` - **PRIORITÀ MEDIA**
+- ✅ `src/main/java/com/devmod/client/ui/RoomBoundsEditorScreen.java`: 5 pulsanti (`setPointAButton`, `setPointBButton`, `saveButton`, `cancelButton`, `deleteLastButton`) - **PRIORITÀ ALTA**
+- ✅ `src/main/java/com/devmod/client/ui/ModScreen.java`: metodi `addStandardButtons()` e `addApplyCancelButtons()` creano Button vanilla - **PRIORITÀ ALTA** (base class)
+- ✅ `src/main/java/com/devmod/client/ui/WelcomeScreen.java`: `tutorialButton`, `skipButton` - **PRIORITÀ MEDIA**
 
 ### Hub / Wizard (pulsanti disegnati a mano)
-- ✅ `src/main/java/com/frenkvs/devmod/ui/hub/QuickToolsPanel.java`: toggle overlay e launcher editor ora con `EditorButton` (toggleable + hotkey hint), rimosso fill/hit-test manuale - **PRIORITÀ ALTA**
-- ✅ `src/main/java/com/frenkvs/devmod/ui/hub/TestingHub.java`: "Start New", "Resume" in session start e header buttons (X, -) ora `EditorButton` (ghost/danger) - **PRIORITÀ ALTA**
-- ✅ `src/main/java/com/frenkvs/devmod/ui/hub/TestDetailPanel.java`: pulsanti verdict (Pass/Fail/Skip) con hotkey hint - **PRIORITÀ MEDIA**
-- ✅ `src/main/java/com/frenkvs/devmod/ui/hub/ProgressFooter.java`: "Save Report", "Minimize" - **PRIORITÀ MEDIA**
-- ✅ `src/main/java/com/frenkvs/devmod/ui/wizard/QuickTestWizard.java`: navigation buttons (Back/Next/Cancel/Start) - **PRIORITÀ MEDIA**
+- ✅ `src/main/java/com/devmod/client/ui/hub/QuickToolsPanel.java`: toggle overlay e launcher editor ora con `EditorButton` (toggleable + hotkey hint), rimosso fill/hit-test manuale - **PRIORITÀ ALTA**
+- ✅ `src/main/java/com/devmod/client/ui/hub/TestingHub.java`: "Start New", "Resume" in session start e header buttons (X, -) ora `EditorButton` (ghost/danger) - **PRIORITÀ ALTA**
+- ✅ `src/main/java/com/devmod/client/ui/hub/TestDetailPanel.java`: pulsanti verdict (Pass/Fail/Skip) con hotkey hint - **PRIORITÀ MEDIA**
+- ✅ `src/main/java/com/devmod/client/ui/hub/ProgressFooter.java`: "Save Report", "Minimize" - **PRIORITÀ MEDIA**
+- ✅ `src/main/java/com/devmod/client/ui/wizard/QuickTestWizard.java`: navigation buttons (Back/Next/Cancel/Start) - **PRIORITÀ MEDIA**
 
 ### Componenti editor (custom)
-- ✅ `src/main/java/com/frenkvs/devmod/ui/editor/components/FooterComponent.java`: 8+ pulsanti azione (History/Export/Import/Presets/Templates/Recipe/Reset/Cancel/Apply) - **PRIORITÀ ALTA**
-- ✅ `src/main/java/com/frenkvs/devmod/ui/editor/components/HeaderComponent.java`: pulsante Close (X) con hover + suono - **PRIORITÀ ALTA**
-- ⚠️ `src/main/java/com/frenkvs/devmod/ui/editor/components/ModeBadge.java`: toggle scope/mode - **VALUTARE** se wrappare con EditorButton.GHOST o lasciare custom
-- ✅ `src/main/java/com/frenkvs/devmod/ui/editor/debug/DebugInfoSection.java`: pulsante "Copy" - **PRIORITÀ MEDIA**
-- ✅ `src/main/java/com/frenkvs/devmod/ui/editor/ItemEditorScreen.java`: numerosi pulsanti (rename/delete/clear/save/preset sort) - **PRIORITÀ ALTA**
-- ✅ `src/main/java/com/frenkvs/devmod/ui/editor/systems/TemplateOverlay.java`: "Cancel" e "Apply Template" - **PRIORITÀ MEDIA**
-- ✅ `src/main/java/com/frenkvs/devmod/ui/editor/systems/ConfirmDialog.java`: "Confirm/Cancel" con custom rendering - **PRIORITÀ ALTA** (usa `renderButton` helper)
+- ✅ `src/main/java/com/devmod/client/ui/editor/components/FooterComponent.java`: 8+ pulsanti azione (History/Export/Import/Presets/Templates/Recipe/Reset/Cancel/Apply) - **PRIORITÀ ALTA**
+- ✅ `src/main/java/com/devmod/client/ui/editor/components/HeaderComponent.java`: pulsante Close (X) con hover + suono - **PRIORITÀ ALTA**
+- ⚠️ `src/main/java/com/devmod/client/ui/editor/components/ModeBadge.java`: toggle scope/mode - **VALUTARE** se wrappare con EditorButton.GHOST o lasciare custom
+- ✅ `src/main/java/com/devmod/client/ui/editor/debug/DebugInfoSection.java`: pulsante "Copy" - **PRIORITÀ MEDIA**
+- ✅ `src/main/java/com/devmod/client/ui/editor/ItemEditorScreen.java`: numerosi pulsanti (rename/delete/clear/save/preset sort) - **PRIORITÀ ALTA**
+- ✅ `src/main/java/com/devmod/client/ui/editor/systems/TemplateOverlay.java`: "Cancel" e "Apply Template" - **PRIORITÀ MEDIA**
+- ✅ `src/main/java/com/devmod/client/ui/ConfirmDialog.java`: "Confirm/Cancel" con custom rendering - **PRIORITÀ ALTA** (usa `renderButton` helper)
 
 ### Unified Settings e pagine
-- ✅ `src/main/java/com/frenkvs/devmod/ui/unified/UnifiedSettingsScreen.java`: footer buttons (Apply/Close/Reset Page/Reset Progress/Factory Reset) + dialog buttons - **PRIORITÀ ALTA**
-- ✅ `src/main/java/com/frenkvs/devmod/ui/unified/pages/TelemetryPage.java`: 6 export buttons ("Death Heatmap", "Movement Map", "Camping Spots", "Stuck Points", "Aggro Drops", "Kiting Paths") + "Open Full Dashboard" - **PRIORITÀ ALTA**
-- ✅ `src/main/java/com/frenkvs/devmod/ui/unified/pages/VisualizersPage.java`: increment/decrement ("-", "+"), "Clear All", slider controls - **PRIORITÀ MEDIA**
-- ✅ `src/main/java/com/frenkvs/devmod/ui/unified/pages/MobConfigPage.java`: pulsanti configurazione mob - **PRIORITÀ MEDIA**
-- ✅ `src/main/java/com/frenkvs/devmod/ui/unified/pages/CombatSettingsPage.java`: pulsanti configurazione combattimento - **PRIORITÀ MEDIA**
-- ✅ `src/main/java/com/frenkvs/devmod/ui/unified/pages/DebugOverlaysPage.java`: toggle buttons per overlay debug - **PRIORITÀ MEDIA**
-- ✅ `src/main/java/com/frenkvs/devmod/ui/unified/pages/GeneralSettingsPage.java`: "Replay Tutorial" e altri - **PRIORITÀ MEDIA**
+- ✅ `src/main/java/com/devmod/client/ui/unified/UnifiedSettingsScreen.java`: footer buttons (Apply/Close/Reset Page/Reset Progress/Factory Reset) + dialog buttons - **PRIORITÀ ALTA**
+- ✅ `src/main/java/com/devmod/client/ui/unified/pages/TelemetryPage.java`: 6 export buttons ("Death Heatmap", "Movement Map", "Camping Spots", "Stuck Points", "Aggro Drops", "Kiting Paths") + "Open Full Dashboard" - **PRIORITÀ ALTA**
+- ✅ `src/main/java/com/devmod/client/ui/unified/pages/VisualizersPage.java`: increment/decrement ("-", "+"), "Clear All", slider controls - **PRIORITÀ MEDIA**
+- ✅ `src/main/java/com/devmod/client/ui/unified/pages/MobConfigPage.java`: pulsanti configurazione mob - **PRIORITÀ MEDIA**
+- ✅ `src/main/java/com/devmod/client/ui/unified/pages/CombatSettingsPage.java`: pulsanti configurazione combattimento - **PRIORITÀ MEDIA**
+- ✅ `src/main/java/com/devmod/client/ui/unified/pages/DebugOverlaysPage.java`: toggle buttons per overlay debug - **PRIORITÀ MEDIA**
+- ✅ `src/main/java/com/devmod/client/ui/unified/pages/GeneralSettingsPage.java`: "Replay Tutorial" e altri - **PRIORITÀ MEDIA**
 
 ### Helper e casi particolari
-- ✅ `src/main/java/com/frenkvs/devmod/ui/AxiomRenderer.java`: metodo `drawButton()` usato in 15+ classi - **DEPRECARE** dopo migrazione o mantenere per compatibilità
+- ✅ `src/main/java/com/devmod/client/ui/AxiomRenderer.java`: metodo `drawButton()` usato in 15+ classi - **DEPRECARE** dopo migrazione o mantenere per compatibilità
 - ✅ Hit-test manuale con `AxiomRenderer.isMouseOver()`: sostituire con `EditorButton.getBounds().contains()` dove possibile
 - ❌ **ESCLUSI** (restano custom): 
-  - `src/main/java/com/frenkvs/devmod/ui/radial/*`: menu radiale con pulsanti circolari
+  - `src/main/java/com/devmod/client/ui/radial/*`: menu radiale con pulsanti circolari
   - Badge/icone non rettangolari dove `EditorButton` non è appropriato
   - Controlli altamente specializzati (es. color picker, sliders complessi)
 
