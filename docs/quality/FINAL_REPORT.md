@@ -9,8 +9,8 @@ Duration: multi-session (2025-12-25 to 2025-12-26)
 ## Build Status
 
 ```
-OK ./gradlew build: SUCCESS (configuration cache reused; tasks mostly up-to-date)
-OK ./gradlew test: SUCCESS (configuration cache reused; tasks mostly up-to-date)
+OK ./gradlew build: SUCCESS (ErrorProne/NullAway warnings; full test suite executed)
+OK ./gradlew test: SUCCESS (configuration cache reused; tasks up-to-date)
 OK ./gradlew compileJava --rerun-tasks: SUCCESS (100 warnings)
 OK ./gradlew compileTestJava --rerun-tasks: SUCCESS (100 warnings)
 ```
@@ -30,18 +30,18 @@ See `docs/quality/CHANGELOG.md` for batch-by-batch details.
 
 ## Remaining Warnings
 
-Compiler warnings remain (ErrorProne/NullAway), observed in the rerun builds:
+Compiler warnings remain (ErrorProne/NullAway), observed in the rerun builds and final build:
 
 - 100 warnings in `compileJava` (NullAway, LongDoubleConversion, InvalidParam, UnusedMethod).
 - 100 warnings in `compileTestJava` (NullAway plus UnnecessaryAsync, CatchAndPrintStackTrace, ThreadPriorityCheck, ReturnValueIgnored, ModifiedButNotUsed).
 
 Primary hotspots:
+- `src/main/java/com/devmod/network/PacketValidator.java` and `src/main/java/com/devmod/network/handlers/MobItemNetworkHandler.java`
+- `src/main/java/com/devmod/telemetry/dashboard/TelemetryDashboardServer.java` and `src/main/java/com/devmod/telemetry/dungeon/DungeonRunService.java`
 - `src/main/java/com/devmod/telemetry/duckdb/DuckDBQueryAPI.java` and `src/main/java/com/devmod/telemetry/duckdb/ArenaRecords.java`
 - `src/main/java/com/devmod/recipe/RecipeConfigManager.java` and `src/main/java/com/devmod/recipe/RecipeInjector.java`
 - `src/main/java/com/devmod/integration/PehkuiIntegration.java` and `src/main/java/com/devmod/integration/PufferfishCompat.java`
-- `src/main/java/com/devmod/network/PacketValidator.java`
-- `src/main/java/com/devmod/mixin/RecipeManagerMixin.java` and client mixins
-- Tests under `src/test/java/com/devmod/integration/` (L6* suites)
+- Mixins under `src/main/java/com/devmod/mixin/` and tests under `src/test/java/com/devmod/integration/` (L6* suites)
 
 See `build/reports/problems/problems-report.html` for the full list.
 
