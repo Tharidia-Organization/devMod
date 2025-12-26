@@ -39,6 +39,7 @@ See `docs/quality/CHANGELOG.md` for batch-by-batch details.
 
 - `./gradlew clean build --no-daemon --no-parallel --max-workers=1 --no-build-cache` failed during test discovery with `NoClassDefFoundError` for nested classes (e.g., `ArenaBuilder$BlockPlacer`, `ArenaCleanupExecutor$LevelAccess`).
 - Earlier `NoClassDefFoundError` failures for telemetry/LVC/testcase tests and XML test-result write errors were not reproducible after full reruns.
+- Repeated clean builds hit a Checkstyle report parse error (`build/reports/checkstyle/main.xml`, line ~925, malformed `<fil` tag), but the report parses cleanly after reruns, suggesting transient file write/parse timing.
 
 ## Compiler Warnings (Last Known)
 
@@ -73,7 +74,7 @@ See `build/reports/problems/problems-report.html` for the full list.
 22 methods remain over 80 lines, primarily in telemetry, challenge/wave managers, and UI render paths. No refactor applied to avoid behavioral risk.
 
 ### Test Execution Flakiness
-`clean build --no-build-cache` shows intermittent `NoClassDefFoundError` during test discovery; reruns with the standard build/test commands succeed. Treat as flaky build/test infrastructure issue.
+`clean build --no-build-cache` shows intermittent `NoClassDefFoundError` during test discovery; separate runs also produced a transient Checkstyle XML parse failure. Reruns with the standard build/test commands succeed. Treat as flaky build/test infrastructure issue.
 
 ---
 
@@ -85,7 +86,7 @@ See `build/reports/problems/problems-report.html` for the full list.
 4. Add small smoke tests around packet validation and recipe injection with explicit null cases.
 5. Document large manager classes with ADRs to justify scope.
 6. Add logging guidelines for high-frequency loops to avoid debug spam.
-7. Investigate intermittent `NoClassDefFoundError` in `clean build --no-build-cache` test discovery (classpath/incremental compilation).
+7. Investigate intermittent `NoClassDefFoundError` in `clean build --no-build-cache` test discovery and transient Checkstyle XML parse failures.
 8. Consider splitting EnduranceQuestManager into focused subsystems when behavior refactor is allowed.
 9. Keep Checkstyle import ordering rules in CI and treat violations as errors.
 
@@ -108,4 +109,5 @@ See `build/reports/problems/problems-report.html` for the full list.
 ```bash
 ./gradlew build --no-daemon --no-parallel --max-workers=1 --rerun-tasks
 ./gradlew test --no-daemon --no-parallel --max-workers=1 --rerun-tasks --stacktrace
+./gradlew clean build --no-daemon --no-parallel --max-workers=1 --no-build-cache --no-configuration-cache
 ```
