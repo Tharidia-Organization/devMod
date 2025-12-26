@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+    "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+    "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<!--
+    DevMod Checkstyle Configuration
+
+    Focus: Import ordering enforcement
+    Standard: java → javax → external → minecraft → neoforged → devmod
+
+    This configuration runs in warning mode (ignoreFailures=true in build.gradle)
+    to report violations without blocking builds.
+-->
+<module name="Checker">
+    <property name="severity" value="warning"/>
+    <property name="fileExtensions" value="java"/>
+
+    <module name="TreeWalker">
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- IMPORT ORDERING                                                   -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <!--
+            Import order groups:
+            1. java.* (standard library)
+            2. javax.* (extensions)
+            3. org.* (external: SLF4J, JUnit, DuckDB, etc.)
+            4. com.* (external: Google Gson, Mojang, etc.) - but NOT com.devmod
+            5. net.minecraft.* (Minecraft)
+            6. net.neoforged.* (NeoForge)
+            7. com.devmod.* (our mod)
+
+            Within each group, imports are sorted alphabetically.
+            Static imports come last.
+        -->
+        <module name="ImportOrder">
+            <property name="groups" value="java,javax,org,/^com\\.(?!devmod)/,net.minecraft,net.neoforged,com.devmod"/>
+            <property name="ordered" value="true"/>
+            <property name="separated" value="true"/>
+            <property name="option" value="bottom"/>
+            <property name="sortStaticImportsAlphabetically" value="true"/>
+        </module>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- WILDCARD IMPORTS                                                  -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <!-- Disallow wildcard imports (e.g., java.util.*) -->
+        <module name="AvoidStarImport">
+            <property name="allowClassImports" value="false"/>
+            <property name="allowStaticMemberImports" value="false"/>
+        </module>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- UNUSED IMPORTS                                                    -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <!-- Flag unused imports -->
+        <module name="UnusedImports"/>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- REDUNDANT IMPORTS                                                 -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <!-- Flag redundant imports (same package, java.lang) -->
+        <module name="RedundantImport"/>
+    </module>
+
+    <!-- Suppressions file for exceptions (e.g., generated code) -->
+    <module name="SuppressionFilter">
+        <property name="file" value="${config_loc}/suppressions.xml"/>
+        <property name="optional" value="true"/>
+    </module>
+</module>

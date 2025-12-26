@@ -1,35 +1,40 @@
 package com.devmod.client.endurance;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
+import com.devmod.actions.ActionIds;
+import com.devmod.actions.ActionOrigin;
+import com.devmod.actions.ActionRegistry;
+import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.endurance.EnduranceQuestRegistry;
 import com.devmod.endurance.KitManager;
 import com.devmod.endurance.KitPreset;
 import com.devmod.endurance.PersonalRecordsSyncPayload;
 import com.devmod.endurance.RequestPersonalRecordsPayload;
 import com.devmod.endurance.StartQuestPayload;
-
-import com.devmod.actions.ActionIds;
-import com.devmod.actions.ActionOrigin;
-import com.devmod.actions.ActionRegistry;
-import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.util.I18n;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.Screen;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Main UI screen for browsing and starting Endurance Quests.
@@ -71,15 +76,18 @@ public class EnduranceQuestScreen extends Screen {
     // State
     private List<EnduranceQuestRegistry.MobQuestConfig> allQuests = new ArrayList<>();
     private List<EnduranceQuestRegistry.MobQuestConfig> filteredQuests = new ArrayList<>();
+    @Nullable
     private EnduranceQuestRegistry.MobQuestConfig selectedQuest = null;
 
     // Filters
     private static final String ALL_NAMESPACE = "all";
     private String searchQuery = "";
     private String selectedNamespace = ALL_NAMESPACE;
+    @Nullable
     private EnduranceQuestRegistry.MobTier selectedTier = null;
 
     // UI Components
+    @Nullable
     private EditBox searchBox;
     private int scrollOffset = 0;
     private int maxScroll = 0;
@@ -87,11 +95,17 @@ public class EnduranceQuestScreen extends Screen {
     // Sidebar scroll state
     private int sidebarScrollOffset = 0;
     private int sidebarMaxScroll = 0;
+    @Nullable
     private EditorButton startButton;
+    @Nullable
     private EditorButton shopButton;
+    @Nullable
     private EditorButton decreaseWaveButton;
+    @Nullable
     private EditorButton increaseWaveButton;
+    @Nullable
     private EditorButton endlessToggleButton;
+    @Nullable
     private EditorButton introDismissButton;
 
     // Quest settings
@@ -100,22 +114,28 @@ public class EnduranceQuestScreen extends Screen {
     private KitPreset selectedKit = KitPreset.STARTER;
 
     // Kit selection buttons
+    @Nullable
     private EditorButton prevKitButton;
+    @Nullable
     private EditorButton nextKitButton;
+    @Nullable
     private EditorButton editKitButton;
 
     // Track if using custom kit
     private boolean usingCustomKit = false;
+    @Nullable
     private String customKitName = null;
 
     // Reset filters button
+    @Nullable
     private EditorButton resetFiltersButton;
 
     // Config button for game mechanics settings
+    @Nullable
     private EditorButton configButton;
 
     // Pre-selection from QuickTestWizard
-    @javax.annotation.Nullable
+    @Nullable
     private net.minecraft.resources.ResourceLocation preselectedMob = null;
     private boolean hasPreselection = false;
 
@@ -123,6 +143,7 @@ public class EnduranceQuestScreen extends Screen {
     private boolean showIntroOverlay = false;
 
     // Error feedback for no selection
+    @Nullable
     private String errorMessage = null;
     private long errorMessageTime = 0;
     private static final long ERROR_DISPLAY_DURATION = 3000; // 3 seconds
@@ -167,8 +188,9 @@ public class EnduranceQuestScreen extends Screen {
         var safeFont = Objects.requireNonNull(font);
         int searchY = height - 28;
         searchBox = new EditBox(safeFont, 10, searchY, SIDEBAR_WIDTH - 20, 18, I18n.ui("search"));
-        searchBox.setHint(Objects.requireNonNull(I18n.translate("devmod.quest.search_mobs")));
-        searchBox.setResponder(query -> {
+        var searchBoxLocal = Objects.requireNonNull(searchBox);
+        searchBoxLocal.setHint(Objects.requireNonNull(I18n.translate("devmod.quest.search_mobs")));
+        searchBoxLocal.setResponder(query -> {
             searchQuery = query;
             applyFilters();
         });
@@ -319,10 +341,11 @@ public class EnduranceQuestScreen extends Screen {
     }
 
     private void applyFilters() {
+        String queryLower = searchQuery.toLowerCase(Locale.ROOT);
         filteredQuests = allQuests.stream()
-            .filter(q -> searchQuery.isEmpty() ||
-                q.displayName.toLowerCase().contains(searchQuery.toLowerCase()) ||
-                q.mobId.toString().toLowerCase().contains(searchQuery.toLowerCase()))
+            .filter(q -> queryLower.isEmpty() ||
+                q.displayName.toLowerCase(Locale.ROOT).contains(queryLower) ||
+                q.mobId.toString().toLowerCase(Locale.ROOT).contains(queryLower))
             .filter(q -> selectedNamespace.equals(ALL_NAMESPACE) || q.namespace.equals(selectedNamespace))
             .filter(q -> selectedTier == null || q.tier == selectedTier)
             .sorted(Comparator.comparing(q -> q.displayName))
@@ -353,7 +376,7 @@ public class EnduranceQuestScreen extends Screen {
         renderSidebar(graphics, mouseX, mouseY);
 
         // Right panel (unified details + settings) - render first to set Y positions
-        renderRightPanel(graphics, mouseX, mouseY);
+        renderRightPanel(graphics);
 
         // Header (center top)
         renderHeader(graphics);
@@ -379,8 +402,9 @@ public class EnduranceQuestScreen extends Screen {
                 int msgWidth = safeFont.width(Objects.requireNonNull(errorMessage));
                 int msgX;
                 int msgY;
-                if (startButton != null && !startButton.getBounds().isEmpty()) {
-                    var bounds = startButton.getBounds();
+                var startBtn = startButton;
+                if (startBtn != null && !startBtn.getBounds().isEmpty()) {
+                    var bounds = startBtn.getBounds();
                     msgX = bounds.centerX() - msgWidth / 2;
                     msgY = bounds.y() - 18;
                 } else {
@@ -421,7 +445,7 @@ public class EnduranceQuestScreen extends Screen {
         int centerX = panelX + panelW / 2;
 
         // Title
-        graphics.drawCenteredString(safeFont, I18n.translate("devmod.endurance.quest.intro.title").getString(),
+        graphics.drawCenteredString(safeFont, Objects.requireNonNull(I18n.translate("devmod.endurance.quest.intro.title").getString()),
             centerX, y, 0xFFFFFFFF);
         y += 25;
 
@@ -472,11 +496,12 @@ public class EnduranceQuestScreen extends Screen {
 
         // Reset button (only show if any filter is active)
         boolean hasActiveFilters = selectedTier != null || !selectedNamespace.equals(ALL_NAMESPACE) || !searchQuery.isEmpty();
-        if (hasActiveFilters && resetFiltersButton != null) {
+        var resetBtn = resetFiltersButton;
+        if (hasActiveFilters && resetBtn != null) {
             int btnW = 40;
             int btnH = 14;
             int btnX = SIDEBAR_WIDTH - btnW - 12;
-            resetFiltersButton.render(graphics, btnX, y - 1, btnW, btnH, mouseX, mouseY);
+            resetBtn.render(graphics, btnX, y - 1, btnW, btnH, mouseX, mouseY);
         }
         y += 20;
 
@@ -584,7 +609,7 @@ public class EnduranceQuestScreen extends Screen {
             boolean isSelected = tier == selectedTier;
             boolean isHovered = mouseX >= 8 && mouseX <= SIDEBAR_WIDTH - 10 && mouseY >= y && mouseY < y + 13;
 
-            int tierColor = TIER_COLORS.get(tier);
+            int tierColor = Objects.requireNonNull(TIER_COLORS.get(tier));
             if (isSelected) {
                 graphics.fill(8, y - 1, SIDEBAR_WIDTH - 14, y + 12, tierColor);
             } else if (isHovered) {
@@ -640,7 +665,7 @@ public class EnduranceQuestScreen extends Screen {
             }
 
             String filterLine = I18n.translate("devmod.endurance.quest.header.filter_line",
-                filteredQuests.size(), allQuests.size(), tags).getString();
+                filteredQuests.size(), allQuests.size(), tags.toString()).getString();
             graphics.drawString(safeFont, filterLine, headerX + 15, filterY, COLOR_TEXT);
         } else {
             String countLine = I18n.translate("devmod.endurance.quest.header.count_line", filteredQuests.size()).getString();
@@ -702,7 +727,7 @@ public class EnduranceQuestScreen extends Screen {
         graphics.fill(x, y, x + width, y + QUEST_CARD_HEIGHT, bgColor);
 
         // Left tier indicator (thicker for selected)
-        int tierColor = TIER_COLORS.get(quest.tier);
+        int tierColor = Objects.requireNonNull(TIER_COLORS.get(quest.tier));
         int indicatorWidth = isSelected ? 5 : 3;
         graphics.fill(x, y, x + indicatorWidth, y + QUEST_CARD_HEIGHT, tierColor);
 
@@ -719,7 +744,7 @@ public class EnduranceQuestScreen extends Screen {
         graphics.drawString(safeFont, quest.displayName, contentX, y + 6, COLOR_TEXT);
 
         // Compact tier badge (pill style)
-        String tierText = getTierShortLabel(quest.tier);
+        String tierText = Objects.requireNonNull(getTierShortLabel(quest.tier));
         int tierWidth = safeFont.width(tierText) + 6;
         int tierBadgeX = x + width - tierWidth - 6;
         graphics.fill(tierBadgeX - 1, y + 4, tierBadgeX + tierWidth + 1, y + 16, tierColor);
@@ -757,7 +782,7 @@ public class EnduranceQuestScreen extends Screen {
      * Renders the unified right panel containing both quest details and settings.
      * This is the main control panel for configuring and starting quests.
      */
-    private void renderRightPanel(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderRightPanel(GuiGraphics graphics) {
         var safeFont = Objects.requireNonNull(font);
         int panelX = width - RIGHT_PANEL_WIDTH;
         int panelY = 0;
@@ -774,9 +799,10 @@ public class EnduranceQuestScreen extends Screen {
         int y = 12;
 
         // === SECTION 1: SELECTED MOB INFO ===
-        if (selectedQuest != null) {
+        var quest = selectedQuest;
+        if (quest != null) {
             // Mob name header
-            String mobName = selectedQuest.displayName;
+            String mobName = quest.displayName;
             if (mobName.length() > 22) {
                 mobName = mobName.substring(0, 20) + "..";
             }
@@ -784,10 +810,10 @@ public class EnduranceQuestScreen extends Screen {
             y += 14;
 
             // Tier badge inline
-            int tierColor = TIER_COLORS.get(selectedQuest.tier);
-            String tierName = getTierDisplayName(selectedQuest.tier);
+            int tierColor = Objects.requireNonNull(TIER_COLORS.get(quest.tier));
+            String tierName = getTierDisplayName(quest.tier);
             String tierLine = I18n.translate("devmod.endurance.quest.details.tier_with_namespace",
-                tierName, selectedQuest.namespace).getString();
+                tierName, quest.namespace).getString();
             graphics.drawString(safeFont, tierLine, contentX, y, tierColor);
             y += 18;
 
@@ -796,7 +822,7 @@ public class EnduranceQuestScreen extends Screen {
             y += 8;
 
             // Mob stats in compact grid format
-            var actualStats = EnduranceQuestRegistry.INSTANCE.getActualStats(selectedQuest.mobId);
+            var actualStats = EnduranceQuestRegistry.INSTANCE.getActualStats(quest.mobId);
             boolean hasActual = actualStats.isPresent() && actualStats.get().isValid();
 
             // Stats row 1: HP and DMG
@@ -810,17 +836,17 @@ public class EnduranceQuestScreen extends Screen {
                     stats.armor()).getString(), contentX + 140, y, COLOR_TEXT);
             } else {
                 graphics.drawString(safeFont, I18n.translate("devmod.endurance.quest.details.stat.health_estimated",
-                    selectedQuest.baseHealth).getString(), contentX, y, COLOR_TEXT);
+                    quest.baseHealth).getString(), contentX, y, COLOR_TEXT);
                 graphics.drawString(safeFont, I18n.translate("devmod.endurance.quest.details.stat.damage_estimated",
-                    selectedQuest.baseDamage).getString(), contentX + 70, y, COLOR_TEXT);
+                    quest.baseDamage).getString(), contentX + 70, y, COLOR_TEXT);
             }
             y += 14;
 
             // Stats row 2: Points and Elite chance
             graphics.drawString(safeFont, I18n.translate("devmod.endurance.quest.details.points_per_kill",
-                selectedQuest.pointsPerKill).getString(), contentX, y, COLOR_TEXT);
+                quest.pointsPerKill).getString(), contentX, y, COLOR_TEXT);
             graphics.drawString(safeFont, I18n.translate("devmod.endurance.quest.details.elite_chance",
-                selectedQuest.eliteChance * 100).getString(), contentX + 100, y, COLOR_TEXT);
+                quest.eliteChance * 100).getString(), contentX + 100, y, COLOR_TEXT);
             y += 20;
 
         } else {
@@ -971,14 +997,15 @@ public class EnduranceQuestScreen extends Screen {
         // === ENDLESS TOGGLE ===
         int toggleW = 100;
         int toggleH = 20;
-        if (endlessToggleButton != null) {
-            endlessToggleButton
+        var endlessBtn = endlessToggleButton;
+        if (endlessBtn != null) {
+            endlessBtn
                 .toggled(endlessMode)
                 .style(endlessMode ? EditorButton.Style.DANGER : EditorButton.Style.NORMAL)
                 .hotkeyHint(endlessMode
                     ? I18n.translate("devmod.overlay.on").getString()
                     : I18n.translate("devmod.overlay.off").getString());
-            endlessToggleButton.render(graphics, controlX, endlessToggleY, toggleW, toggleH, mouseX, mouseY);
+            endlessBtn.render(graphics, controlX, endlessToggleY, toggleW, toggleH, mouseX, mouseY);
         }
 
         // === KIT SELECTION BUTTONS ===
@@ -1000,9 +1027,10 @@ public class EnduranceQuestScreen extends Screen {
         int startW = controlW;
         int startH = 32;
         int startX = controlX;
-        if (startButton != null) {
-            startButton.setEnabled(selectedQuest != null);
-            startButton.render(graphics, startX, startButtonY, startW, startH, mouseX, mouseY);
+        var startBtn2 = startButton;
+        if (startBtn2 != null) {
+            startBtn2.setEnabled(selectedQuest != null);
+            startBtn2.render(graphics, startX, startButtonY, startW, startH, mouseX, mouseY);
         }
 
         // === SHOP BUTTON (bottom of sidebar, above search) ===
@@ -1017,12 +1045,12 @@ public class EnduranceQuestScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        int mx = (int) mouseX;
         int my = (int) mouseY;
 
         if (showIntroOverlay) {
-            if (button == 0 && introDismissButton != null && introDismissButton.mouseClicked(mouseX, mouseY, button)) {
-                introDismissButton.mouseReleased(mouseX, mouseY, button);
+            var dismissBtn = introDismissButton;
+            if (button == 0 && dismissBtn != null && dismissBtn.mouseClicked(mouseX, mouseY, button)) {
+                dismissBtn.mouseReleased(mouseX, mouseY, button);
             }
             return true;
         }
@@ -1048,7 +1076,7 @@ public class EnduranceQuestScreen extends Screen {
                 // Let super handle it so the EditBox can receive focus
                 return super.mouseClicked(mouseX, mouseY, button);
             }
-            handleSidebarClick(mx, my);
+            handleSidebarClick(my);
             return true;
         }
 
@@ -1096,7 +1124,7 @@ public class EnduranceQuestScreen extends Screen {
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
-    private void handleSidebarClick(int mouseX, int mouseY) {
+    private void handleSidebarClick(int mouseY) {
         // Must match renderSidebar() layout exactly
         int bottomReserved = 95;
         int tiersSectionHeight = 120;
@@ -1227,7 +1255,8 @@ public class EnduranceQuestScreen extends Screen {
     }
 
     private void startSelectedQuest() {
-        if (selectedQuest == null) {
+        var currentQuest = selectedQuest;
+        if (currentQuest == null) {
             // Show error feedback
             errorMessage = I18n.translate("devmod.endurance.quest.error.select_mob").getString();
             errorMessageTime = System.currentTimeMillis();
@@ -1248,10 +1277,10 @@ public class EnduranceQuestScreen extends Screen {
             : selectedKit.name();
 
         LOGGER.info("[EnduranceQuest] Starting quest: {} with {} waves, endless={}, kit={}",
-            selectedQuest.displayName, questWaves, endlessMode, kitId);
+            currentQuest.displayName, questWaves, endlessMode, kitId);
 
         StartQuestPayload payload = new StartQuestPayload(
-            selectedQuest.mobId.toString(),
+            currentQuest.mobId.toString(),
             questWaves,
             endlessMode,
             kitId

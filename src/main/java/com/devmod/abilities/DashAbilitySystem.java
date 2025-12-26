@@ -1,20 +1,23 @@
 package com.devmod.abilities;
 
-import com.devmod.endurance.ComboSystem;
-import com.devmod.telemetry.player.AbilityTelemetryService;
-import com.mojang.logging.LogUtils;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.phys.Vec3;
-import org.slf4j.Logger;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
+
+import org.slf4j.Logger;
+
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.phys.Vec3;
+
+import com.devmod.endurance.ComboSystem;
+import com.devmod.telemetry.player.AbilityTelemetryService;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * Dash Ability System - Quick burst of speed in movement direction.
@@ -48,7 +51,7 @@ public class DashAbilitySystem {
      */
     @Nonnull
     public DashData getDashData(UUID playerId) {
-        return playerDash.computeIfAbsent(playerId, id -> new DashData());
+        return Objects.requireNonNull(playerDash.computeIfAbsent(playerId, id -> new DashData()));
     }
 
     /**

@@ -1,16 +1,20 @@
 package com.devmod.abilities;
 
-import com.devmod.network.NetworkHandler;
-import com.mojang.logging.LogUtils;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
-import org.slf4j.Logger;
-
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
+
+import org.slf4j.Logger;
+
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
+
+import com.devmod.network.NetworkHandler;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * Stamina System - Manages player stamina for abilities like dash and dodge.
@@ -44,7 +48,7 @@ public class StaminaSystem {
      */
     @Nonnull
     public StaminaData getStaminaData(UUID playerId) {
-        return playerStamina.computeIfAbsent(playerId, id -> new StaminaData());
+        return Objects.requireNonNull(playerStamina.computeIfAbsent(playerId, id -> new StaminaData()));
     }
 
     /**

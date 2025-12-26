@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<!--
+    DevMod Checkstyle Suppressions
+
+    Suppress checks for:
+    - Generated code
+    - Mixin classes (often have specific import requirements)
+    - Package-info files
+-->
+<suppressions>
+    <!-- Suppress all checks for mixin classes -->
+    <suppress files="[\\/]mixin[\\/]" checks=".*"/>
+
+    <!-- Suppress all checks for package-info.java -->
+    <suppress files="package-info\.java$" checks=".*"/>
+
+    <!-- Suppress all checks for generated resources -->
+    <suppress files="[\\/]generated[\\/]" checks=".*"/>
+</suppressions>
