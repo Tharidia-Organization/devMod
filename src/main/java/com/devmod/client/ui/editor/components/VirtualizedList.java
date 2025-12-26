@@ -1,16 +1,17 @@
 package com.devmod.client.ui.editor.components;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+
+import net.minecraft.client.gui.GuiGraphics;
+
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.ScrollState;
 import com.devmod.client.ui.editor.core.UIConstants;
-import net.minecraft.client.gui.GuiGraphics;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 /**
  * Virtualized list component for efficient rendering of long lists.

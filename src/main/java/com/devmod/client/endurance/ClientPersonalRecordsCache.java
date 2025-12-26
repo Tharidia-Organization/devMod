@@ -1,12 +1,12 @@
 package com.devmod.client.endurance;
 
-import com.devmod.endurance.PersonalRecordsSyncPayload;
+import java.util.HashMap;
+import java.util.Map;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.devmod.endurance.PersonalRecordsSyncPayload;
 
 /**
  * Client-side cache for player's personal quest records.

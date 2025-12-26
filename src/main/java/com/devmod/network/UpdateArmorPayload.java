@@ -1,14 +1,15 @@
 package com.devmod.network;
 
-import com.devmod.stats.ArmorStats;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
 
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
+import com.devmod.stats.ArmorStats;
 
 /**
  * Network payload for updating armor statistics.

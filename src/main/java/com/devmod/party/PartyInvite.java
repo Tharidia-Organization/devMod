@@ -1,8 +1,8 @@
 package com.devmod.party;
 
-import com.devmod.endurance.QuestType;
-
 import java.util.UUID;
+
+import com.devmod.endurance.QuestType;
 
 /**
  * Represents an invitation to join a party for an Endurance Quest.

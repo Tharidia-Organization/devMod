@@ -1,17 +1,19 @@
 package com.devmod.client.overlay;
 
-import com.devmod.config.Config;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import net.neoforged.neoforge.common.ModConfigSpec;
+
 import com.devmod.DevMod;
+import com.devmod.config.Config;
 import com.devmod.util.ConfigPaths;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.neoforged.neoforge.common.ModConfigSpec;
-
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 /**
  * Export/import utility for Impact HUD configuration presets.

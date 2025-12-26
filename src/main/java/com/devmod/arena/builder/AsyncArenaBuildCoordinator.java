@@ -1,20 +1,23 @@
 package com.devmod.arena.builder;
 
-import com.devmod.arena.config.ArenaTemplateConfig;
-import com.devmod.arena.integration.MinecraftBlockPlacer;
-import com.devmod.arena.telemetry.ArenaTelemetry;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.Level;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
+
 import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
+
+import com.devmod.arena.config.ArenaTemplateConfig;
+import com.devmod.arena.integration.MinecraftBlockPlacer;
+import com.devmod.arena.telemetry.ArenaTelemetry;
 
 /**
  * Coordinates async arena builders per level and ticks them from server events.

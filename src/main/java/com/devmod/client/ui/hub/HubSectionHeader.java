@@ -1,10 +1,11 @@
 package com.devmod.client.ui.hub;
 
-import com.devmod.client.ui.editor.core.UIConstants;
+import java.util.Objects;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
-import java.util.Objects;
+import com.devmod.client.ui.editor.core.UIConstants;
 
 public final class HubSectionHeader {
     private HubSectionHeader() {}

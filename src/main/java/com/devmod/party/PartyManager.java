@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import com.devmod.endurance.QuestType;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
+
 /**
  * Singleton manager for all party operations.
  * Handles party creation, invites, member management, and lifecycle.

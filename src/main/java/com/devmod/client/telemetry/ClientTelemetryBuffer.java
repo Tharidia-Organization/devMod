@@ -1,15 +1,18 @@
 package com.devmod.client.telemetry;
 
-import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload;
-import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload.CompressedEvent;
-import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload.EventType;
-import com.mojang.logging.LogUtils;
-import net.neoforged.neoforge.network.PacketDistributor;
-import org.slf4j.Logger;
-
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.slf4j.Logger;
+
+import net.neoforged.neoforge.network.PacketDistributor;
+
+import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload;
+import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload.CompressedEvent;
+import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload.EventType;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * Client-side buffer for telemetry events in multiplayer.

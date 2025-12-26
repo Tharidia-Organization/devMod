@@ -1,12 +1,13 @@
 package com.devmod.combat.signature;
 
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
-
-import javax.annotation.Nonnull;
-import java.util.Objects;
 
 /**
  * Weapon Trait - A permanent bonus unlocked on a signature weapon.

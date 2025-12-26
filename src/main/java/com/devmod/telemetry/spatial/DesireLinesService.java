@@ -1,8 +1,5 @@
 package com.devmod.telemetry.spatial;
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.phys.Vec3;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -13,6 +10,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * VOXEL-LAB M10: Movement Desire Lines

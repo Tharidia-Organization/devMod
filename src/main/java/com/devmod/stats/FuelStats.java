@@ -1,8 +1,8 @@
 package com.devmod.stats;
 
-import net.minecraft.nbt.CompoundTag;
-
 import java.util.Objects;
+
+import net.minecraft.nbt.CompoundTag;
 
 /**
  * Data class holding all modifiable fuel item statistics.

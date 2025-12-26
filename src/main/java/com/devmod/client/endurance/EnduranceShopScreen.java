@@ -1,9 +1,19 @@
 package com.devmod.client.endurance;
 
-import com.devmod.endurance.ClientShopCache;
-import com.devmod.endurance.RequestShopSyncPayload;
-import com.devmod.endurance.RewardSystem;
-import com.devmod.endurance.ShopPurchasePayload;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
@@ -11,19 +21,11 @@ import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.endurance.ClientShopCache;
+import com.devmod.endurance.RequestShopSyncPayload;
+import com.devmod.endurance.RewardSystem;
+import com.devmod.endurance.ShopPurchasePayload;
 import com.devmod.util.I18n;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.network.PacketDistributor;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import javax.annotation.Nonnull;
 
 /**
  * Shop screen for purchasing permanent upgrades with Endurance Tokens.

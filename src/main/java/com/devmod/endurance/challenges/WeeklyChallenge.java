@@ -1,9 +1,9 @@
 package com.devmod.endurance.challenges;
 
-import net.minecraft.network.chat.Component;
-
 import java.util.UUID;
 import java.util.function.BiPredicate;
+
+import net.minecraft.network.chat.Component;
 
 /**
  * Represents a weekly challenge with harder objectives and better rewards.

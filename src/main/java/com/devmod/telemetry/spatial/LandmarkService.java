@@ -1,14 +1,5 @@
 package com.devmod.telemetry.spatial;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-import com.mojang.logging.LogUtils;
-import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.phys.Vec3;
-import org.slf4j.Logger;
-
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
@@ -24,6 +15,17 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+import com.mojang.logging.LogUtils;
 
 /**
  * Service for tracking player observations of landmarks.

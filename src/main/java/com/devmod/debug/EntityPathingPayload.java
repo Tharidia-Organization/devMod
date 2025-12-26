@@ -1,15 +1,17 @@
 package com.devmod.debug;
 
-import com.devmod.DevMod;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import javax.annotation.Nonnull;
+import com.devmod.DevMod;
 
 /**
  * Payload for entity pathing debug data (server to client).

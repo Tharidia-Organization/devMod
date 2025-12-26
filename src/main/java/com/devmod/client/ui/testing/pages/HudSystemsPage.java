@@ -1,6 +1,8 @@
 package com.devmod.client.ui.testing.pages;
 
-import com.devmod.config.Config;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
@@ -15,9 +17,7 @@ import com.devmod.client.ui.testing.panel.HeaderPanel;
 import com.devmod.client.ui.testing.panel.SectionPanel;
 import com.devmod.client.ui.testing.panel.SpacerPanel;
 import com.devmod.client.ui.testing.panel.StatusPanel;
-
-import java.util.ArrayList;
-import java.util.List;
+import com.devmod.config.Config;
 
 import static com.devmod.client.ui.testing.pages.PageUtils.safeGetBool;
 

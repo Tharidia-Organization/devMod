@@ -1,5 +1,34 @@
 package com.devmod.client.ui.editor.modules;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+
+import com.devmod.client.ui.editor.AbstractEditorModule;
+import com.devmod.client.ui.editor.EditorSection;
+import com.devmod.client.ui.editor.ModuleTab;
+import com.devmod.client.ui.editor.components.EditorSlider;
+import com.devmod.client.ui.editor.components.EditorTextField;
+import com.devmod.client.ui.editor.components.EditorToggle;
+import com.devmod.client.ui.editor.components.ItemPickerOverlay;
+import com.devmod.client.ui.editor.components.RecipeGridComponent;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.sections.InputSectionAdapter;
+import com.devmod.client.ui.editor.sections.SimpleHeaderSection;
+import com.devmod.client.ui.editor.sections.SimpleSpacer;
+import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
+import com.devmod.client.ui.editor.sections.TextNoteSection;
+import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
 import com.devmod.network.RecipeSyncPayload;
 import com.devmod.recipe.CraftingRecipeData;
 import com.devmod.recipe.CraftingType;
@@ -8,34 +37,7 @@ import com.devmod.recipe.RecipeCategory;
 import com.devmod.recipe.RecipeConfigManager;
 import com.devmod.recipe.RecipeValidator;
 import com.devmod.recipe.ResultData;
-import com.devmod.client.ui.editor.AbstractEditorModule;
-import com.devmod.client.ui.editor.EditorSection;
-import com.devmod.client.ui.editor.ModuleTab;
-import com.devmod.client.ui.editor.components.EditorSlider;
-import com.devmod.client.ui.editor.components.ItemPickerOverlay;
 import com.devmod.util.I18n;
-import com.devmod.client.ui.editor.components.EditorTextField;
-import com.devmod.client.ui.editor.components.EditorToggle;
-import com.devmod.client.ui.editor.components.RecipeGridComponent;
-import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
-import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
-import com.devmod.client.ui.editor.sections.InputSectionAdapter;
-import com.devmod.client.ui.editor.sections.SimpleHeaderSection;
-import com.devmod.client.ui.editor.sections.SimpleSpacer;
-import com.devmod.client.ui.editor.sections.TextNoteSection;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import javax.annotation.Nonnull;
 
 /**
  * Editor module for crafting recipes.

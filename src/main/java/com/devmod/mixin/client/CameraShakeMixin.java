@@ -1,9 +1,5 @@
 package com.devmod.mixin.client;
 
-import com.devmod.client.effects.ShakeManager;
-import net.minecraft.client.Camera;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.BlockGetter;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.slf4j.Logger;
@@ -13,6 +9,12 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import net.minecraft.client.Camera;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.BlockGetter;
+
+import com.devmod.client.effects.ShakeManager;
 
 /**
  * Mixin to apply screen shake effects to the camera.

@@ -1,5 +1,9 @@
 package com.devmod.client.ui.editor.components;
 
+import java.util.Objects;
+
+import net.minecraft.client.gui.GuiGraphics;
+
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.DirtyRegionTracker;
 import com.devmod.client.ui.editor.core.EditorDimensions;
@@ -9,9 +13,6 @@ import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.scroll.ScrollManager;
 import com.devmod.client.ui.scroll.ScrollMetrics;
 import com.devmod.client.ui.scroll.ScrollMode;
-import net.minecraft.client.gui.GuiGraphics;
-
-import java.util.Objects;
 
 /**
  * Scrollable content area for module content.

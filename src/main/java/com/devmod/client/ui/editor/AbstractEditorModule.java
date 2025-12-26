@@ -1,24 +1,25 @@
 package com.devmod.client.ui.editor;
 
-import com.devmod.client.ui.editor.core.EditorCache;
-import com.devmod.client.ui.editor.core.EditorConstants;
-import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Stack;
+import java.util.function.BiConsumer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtOps;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Stack;
-import java.util.function.BiConsumer;
+import com.devmod.client.ui.editor.core.EditorCache;
+import com.devmod.client.ui.editor.core.EditorConstants;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.UIConstants;
 
 /**
  * Abstract base class for editor modules.

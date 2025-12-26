@@ -1,8 +1,8 @@
 package com.devmod.client.ui.editor.debug;
 
-import com.devmod.client.ui.editor.core.Bounds;
-
 import java.util.List;
+
+import com.devmod.client.ui.editor.core.Bounds;
 
 /**
  * Interface for components that report debug info.

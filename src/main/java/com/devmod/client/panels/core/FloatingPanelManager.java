@@ -1,20 +1,23 @@
 package com.devmod.client.panels.core;
 
-import com.devmod.client.panels.tracking.EntityTracker;
-import com.devmod.client.panels.ui.PanelRenderer;
-import com.mojang.blaze3d.vertex.PoseStack;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Predicate;
+
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 
-import javax.annotation.Nullable;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Predicate;
+import com.devmod.client.panels.tracking.EntityTracker;
+import com.devmod.client.panels.ui.PanelRenderer;
+
+import com.mojang.blaze3d.vertex.PoseStack;
 
 /**
  * Manager singleton for all FloatingPanels in the world.

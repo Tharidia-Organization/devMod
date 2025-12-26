@@ -1,20 +1,23 @@
 package com.devmod.events;
-import com.devmod.stats.UsableStats;
-import com.devmod.config.UsableConfigManager;
-import com.devmod.components.UsableComponents;
+import java.util.Objects;
 
-import com.devmod.DevMod;
+import javax.annotation.Nonnull;
 
-import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
+
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
-import org.slf4j.Logger;
-import javax.annotation.Nonnull;
-import java.util.Objects;
+
+import com.devmod.DevMod;
+import com.devmod.config.UsableConfigManager;
+import com.devmod.stats.UsableStats;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * Event handlers for usable items.

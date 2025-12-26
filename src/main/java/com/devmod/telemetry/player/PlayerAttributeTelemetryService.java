@@ -1,5 +1,16 @@
 package com.devmod.telemetry.player;
 
+import java.time.Instant;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+
 import com.devmod.abilities.DashAbilitySystem;
 import com.devmod.abilities.DodgeAbilitySystem;
 import com.devmod.abilities.StaminaSystem;
@@ -11,16 +22,8 @@ import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.duckdb.DuckDBConfig;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.devmod.telemetry.util.BitPackedFlags;
-import com.mojang.logging.LogUtils;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.ai.attributes.Attributes;
-import org.slf4j.Logger;
 
-import java.time.Instant;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import com.mojang.logging.LogUtils;
 
 /**
  * Telemetry service for tracking comprehensive player attributes.

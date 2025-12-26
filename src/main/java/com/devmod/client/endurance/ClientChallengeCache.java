@@ -1,13 +1,15 @@
 package com.devmod.client.endurance;
 
-import com.devmod.endurance.challenges.ChallengeSyncPayload;
-import net.minecraft.network.chat.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.network.chat.Component;
+
+import com.devmod.endurance.challenges.ChallengeSyncPayload;
 
 /**
  * Client-side cache for daily challenges.

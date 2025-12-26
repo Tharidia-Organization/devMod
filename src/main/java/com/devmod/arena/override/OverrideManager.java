@@ -1,9 +1,5 @@
 package com.devmod.arena.override;
 
-import com.devmod.arena.telemetry.ArenaTelemetry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,6 +7,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.arena.telemetry.ArenaTelemetry;
 
 /**
  * Manager for template overrides with session cleanup hooks.

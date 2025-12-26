@@ -1,12 +1,12 @@
 package com.devmod.stats;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 
 /**
  * Data class holding all modifiable food item statistics.

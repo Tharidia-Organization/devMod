@@ -1,13 +1,13 @@
 package com.devmod.client.ui.editor.systems;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.world.item.ItemStack;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Manages editing multiple items simultaneously.

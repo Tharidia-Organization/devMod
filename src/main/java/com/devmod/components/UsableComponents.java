@@ -1,16 +1,19 @@
 package com.devmod.components;
-import com.devmod.DevMod;
+import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import java.util.Objects;
-import javax.annotation.Nullable;
+
+import com.devmod.DevMod;
 
 /**
  * Data components for usable item persistent data.

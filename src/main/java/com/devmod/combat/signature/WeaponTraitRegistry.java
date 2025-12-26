@@ -12,10 +12,10 @@ import java.util.UUID;
 
 import javax.annotation.Nullable;
 
-import net.minecraft.resources.ResourceLocation;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
 import com.devmod.config.gamedesign.GameDesignConfig;

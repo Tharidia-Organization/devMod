@@ -1,16 +1,18 @@
 package com.devmod.telemetry;
 
-import com.devmod.DevMod;
-import com.devmod.telemetry.boss.UnifiedBossDetector;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
+
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import com.devmod.DevMod;
+import com.devmod.telemetry.boss.UnifiedBossDetector;
 
 /**
  * Auto-detects boss phases based on HP thresholds.

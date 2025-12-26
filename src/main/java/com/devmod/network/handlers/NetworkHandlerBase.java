@@ -1,17 +1,22 @@
 package com.devmod.network.handlers;
 
-import com.devmod.network.EditorApplyConfirmPayload;
-import com.devmod.network.PacketValidator;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
+import org.slf4j.Logger;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
-import org.slf4j.Logger;
-import com.mojang.logging.LogUtils;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
+import net.neoforged.neoforge.network.PacketDistributor;
+
+import com.devmod.network.EditorApplyConfirmPayload;
+import com.devmod.network.PacketValidator;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * Base class with shared utilities for all network handlers.

@@ -1,5 +1,11 @@
 package com.devmod.client.network;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
@@ -11,10 +17,6 @@ import com.devmod.party.PartyNotificationPayload;
 import com.devmod.party.PartySyncPayload;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.util.I18n;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 /**
  * Client-side handlers for Party network packets.

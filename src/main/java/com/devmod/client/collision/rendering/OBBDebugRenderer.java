@@ -1,19 +1,23 @@
 package com.devmod.client.collision.rendering;
 
-import com.devmod.config.Config;
-import com.devmod.collision.bodypart.BodyPartInstance;
-import com.devmod.collision.integration.OBBHitHelper;
-import com.devmod.collision.obb.OrientedBoundingBox;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
+import org.joml.Matrix4f;
+
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
+import com.devmod.collision.bodypart.BodyPartInstance;
+import com.devmod.collision.integration.OBBHitHelper;
+import com.devmod.collision.obb.OrientedBoundingBox;
+import com.devmod.config.Config;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 
 /**
  * Renders OBB hitboxes for debugging.

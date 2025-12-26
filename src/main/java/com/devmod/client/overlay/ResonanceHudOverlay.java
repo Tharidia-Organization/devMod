@@ -1,19 +1,22 @@
 package com.devmod.client.overlay;
 
-import com.devmod.endurance.resonance.ResonanceNotificationPayload;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.LayeredDraw;
 import net.minecraft.sounds.SoundEvents;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import com.devmod.endurance.resonance.ResonanceNotificationPayload;
 
 /**
  * Client-side HUD overlay for Resonance Chain notifications.

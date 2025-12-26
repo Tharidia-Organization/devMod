@@ -1,13 +1,22 @@
 package com.devmod.integration;
 
-import com.devmod.endurance.EnduranceQuestRegistry;
-import com.devmod.endurance.QuestType;
-import org.junit.jupiter.api.*;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import com.devmod.endurance.EnduranceQuestRegistry;
+import com.devmod.endurance.QuestType;
 
 import static org.junit.jupiter.api.Assertions.*;
 

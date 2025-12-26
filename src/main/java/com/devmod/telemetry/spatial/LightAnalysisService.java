@@ -1,16 +1,19 @@
 package com.devmod.telemetry.spatial;
 
-import com.devmod.telemetry.RoomDefinition;
-import com.devmod.telemetry.TelemetryJson;
-import com.devmod.telemetry.room.RoomService;
-import com.mojang.logging.LogUtils;
+import java.util.Objects;
+import java.util.function.BiConsumer;
+
+import org.slf4j.Logger;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.LightLayer;
-import org.slf4j.Logger;
 
-import java.util.Objects;
-import java.util.function.BiConsumer;
+import com.devmod.telemetry.RoomDefinition;
+import com.devmod.telemetry.TelemetryJson;
+import com.devmod.telemetry.room.RoomService;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * Service for light level and spawnability analysis in rooms.

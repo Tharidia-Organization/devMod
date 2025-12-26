@@ -1,10 +1,11 @@
 package com.devmod.client.party;
 
-import com.devmod.party.PartyNotificationPayload;
+import javax.annotation.Nullable;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import javax.annotation.Nullable;
+import com.devmod.party.PartyNotificationPayload;
 
 @OnlyIn(Dist.CLIENT)
 public final class PartyUiCache {

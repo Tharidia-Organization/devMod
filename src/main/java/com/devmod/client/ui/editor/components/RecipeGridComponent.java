@@ -1,20 +1,21 @@
 package com.devmod.client.ui.editor.components;
 
-import com.devmod.recipe.CraftingRecipeData;
-import com.devmod.recipe.CraftingType;
-import com.devmod.recipe.IngredientData;
-import com.devmod.client.ui.editor.core.ScaledCoord;
-import com.devmod.client.ui.editor.core.UIConstants;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.ItemStack;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+
+import com.devmod.client.ui.editor.core.ScaledCoord;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.recipe.CraftingRecipeData;
+import com.devmod.recipe.CraftingType;
+import com.devmod.recipe.IngredientData;
 
 /**
  * Interactive 3x3 grid component for crafting recipe editing.

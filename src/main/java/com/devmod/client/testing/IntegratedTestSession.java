@@ -1,23 +1,26 @@
 package com.devmod.client.testing;
 
-import com.devmod.testing.TestCase;
-import com.devmod.endurance.EnduranceQuestRegistry;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+
 import com.devmod.client.overlay.BossPhaseOverlay;
 import com.devmod.client.overlay.EnduranceQuestOverlay;
 import com.devmod.client.overlay.EntityDensityOverlay;
 import com.devmod.client.overlay.TelemetryStatusOverlay;
+import com.devmod.endurance.EnduranceQuestRegistry;
 import com.devmod.telemetry.TelemetryService;
+import com.devmod.testing.TestCase;
 import com.devmod.util.I18n;
-import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.player.Player;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Unified service that integrates:

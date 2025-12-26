@@ -1,16 +1,18 @@
 package com.devmod.client.ui.screens;
 
-import com.devmod.config.MobPresetManager;
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.UIConstants;
+import java.util.Objects;
+
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.world.entity.Mob;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
 
-import java.util.Objects;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.config.MobPresetManager;
 
 /**
  * Rendering logic for MobConfigScreen.

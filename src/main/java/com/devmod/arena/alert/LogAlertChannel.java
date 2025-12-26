@@ -1,9 +1,9 @@
 package com.devmod.arena.alert;
 
+import java.util.Objects;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Objects;
 
 /**
  * SLF4J-backed alert channel.

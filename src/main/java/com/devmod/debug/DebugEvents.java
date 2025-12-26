@@ -1,12 +1,14 @@
 package com.devmod.debug;
 
-import com.devmod.DevMod;
 import net.minecraft.server.level.ServerLevel;
+
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+
+import com.devmod.DevMod;
 
 /**
  * Event handlers for the debug system.

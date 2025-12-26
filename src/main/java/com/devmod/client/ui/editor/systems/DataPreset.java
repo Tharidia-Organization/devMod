@@ -1,6 +1,8 @@
 package com.devmod.client.ui.editor.systems;
 
-import com.devmod.client.ui.editor.ItemEditorDataManager;
+import java.util.Objects;
+import java.util.function.Predicate;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -8,8 +10,7 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.Objects;
-import java.util.function.Predicate;
+import com.devmod.client.ui.editor.ItemEditorDataManager;
 
 /**
  * Preset wrapper for ItemEditorDataManager.PresetData

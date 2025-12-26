@@ -1,14 +1,16 @@
 package com.devmod.client.rendering;
 
-import com.devmod.combat.HitHelper;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import com.devmod.combat.HitHelper;
 
 /**
  * SINGLE SOURCE OF TRUTH for body part AABB calculation

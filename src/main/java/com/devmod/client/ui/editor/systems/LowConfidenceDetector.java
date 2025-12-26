@@ -1,7 +1,14 @@
 package com.devmod.client.ui.editor.systems;
 
+import java.util.Objects;
+import java.util.function.BiConsumer;
+
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.ItemStack;
+
 import com.devmod.DevMod;
-import com.devmod.config.EditorClientConfig;
 import com.devmod.client.ui.editor.EditorModule;
 import com.devmod.client.ui.editor.EditorStartTab;
 import com.devmod.client.ui.editor.WeaponTypeDetector;
@@ -11,13 +18,7 @@ import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.editor.modules.RangedModule;
 import com.devmod.client.ui.editor.modules.WeaponModule;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.world.item.ItemStack;
-
-import java.util.Objects;
-import java.util.function.BiConsumer;
+import com.devmod.config.EditorClientConfig;
 
 /**
  * Handles low-confidence weapon type detection warnings.

@@ -1,42 +1,5 @@
 package com.devmod.arena.command;
 
-import com.devmod.arena.autosmoke.AutosmokeRunner;
-import com.devmod.arena.autosmoke.AutosmokeScheduler;
-import com.devmod.arena.alert.AlertRouter;
-import com.devmod.arena.alert.AlertRouterRegistry;
-import com.devmod.arena.builder.ArenaBuilder;
-import com.devmod.arena.builder.AsyncArenaBuilder;
-import com.devmod.arena.builder.TemplateArenaBuilder;
-import com.devmod.arena.ArenaDebugState;
-import com.devmod.arena.override.ForceTemplateCapability;
-import com.devmod.arena.registry.ArenaTemplate;
-import com.devmod.arena.registry.ArenaTemplateRegistry;
-import com.devmod.arena.registry.TemplateValidator;
-import com.devmod.arena.registry.ValidationResult;
-import com.devmod.arena.registry.TemplateRegistryBootstrap;
-import com.devmod.arena.security.ArenaCommandAudit;
-import com.devmod.arena.security.ArenaCommandPermissions;
-import com.devmod.arena.security.ArenaCommandPermissions.CommandCategory;
-import com.devmod.arena.gate.InstanceOnlyGate;
-import com.devmod.arena.telemetry.ArenaTelemetry;
-import com.devmod.actions.ActionCommandInvoker;
-import com.devmod.actions.ActionIds;
-import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.suggestion.Suggestions;
-import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.Level;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
@@ -47,7 +10,48 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
 import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
+
+import com.devmod.actions.ActionCommandInvoker;
+import com.devmod.actions.ActionIds;
+import com.devmod.arena.ArenaDebugState;
+import com.devmod.arena.alert.AlertRouter;
+import com.devmod.arena.alert.AlertRouterRegistry;
+import com.devmod.arena.autosmoke.AutosmokeRunner;
+import com.devmod.arena.autosmoke.AutosmokeScheduler;
+import com.devmod.arena.builder.ArenaBuilder;
+import com.devmod.arena.builder.AsyncArenaBuilder;
+import com.devmod.arena.builder.TemplateArenaBuilder;
+import com.devmod.arena.gate.InstanceOnlyGate;
+import com.devmod.arena.override.ForceTemplateCapability;
+import com.devmod.arena.registry.ArenaTemplate;
+import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.arena.registry.TemplateRegistryBootstrap;
+import com.devmod.arena.registry.TemplateValidator;
+import com.devmod.arena.registry.ValidationResult;
+import com.devmod.arena.security.ArenaCommandAudit;
+import com.devmod.arena.security.ArenaCommandPermissions;
+import com.devmod.arena.security.ArenaCommandPermissions.CommandCategory;
+import com.devmod.arena.telemetry.ArenaTelemetry;
+
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
 /**
  * DD30: Arena dev commands for template management and testing.

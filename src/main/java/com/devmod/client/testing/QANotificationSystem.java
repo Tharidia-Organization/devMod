@@ -1,19 +1,21 @@
 package com.devmod.client.testing;
 
-import com.devmod.testing.TestCase;
-import com.devmod.testing.TesterProfile;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
+import com.devmod.testing.TestCase;
+import com.devmod.testing.TesterProfile;
 
 /**
  * Toast notification system for QA testing events.

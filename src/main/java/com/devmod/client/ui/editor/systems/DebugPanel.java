@@ -1,23 +1,24 @@
 package com.devmod.client.ui.editor.systems;
 
-import com.devmod.stats.ArmorStats;
-import com.devmod.stats.WeaponStats;
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.world.item.component.CustomData;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
+
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.stats.ArmorStats;
+import com.devmod.stats.WeaponStats;
 
 /**
  * Lightweight dev-only debug panel used by the editor screen.

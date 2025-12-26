@@ -1,14 +1,17 @@
 package com.devmod.client.ui.testing.panel;
 
-import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-
 import java.util.List;
 import java.util.Objects;
 
-import static com.devmod.client.ui.testing.panel.PanelConstants.*;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+
+import static com.devmod.client.ui.testing.panel.PanelConstants.BUTTON_HEIGHT_SMALL;
+import static com.devmod.client.ui.testing.panel.PanelConstants.ROW_SPACING;
+import static com.devmod.client.ui.testing.panel.PanelConstants.TITLE_HEIGHT;
 
 /**
  * Grid layout panel for displaying buttons in a grid formation.

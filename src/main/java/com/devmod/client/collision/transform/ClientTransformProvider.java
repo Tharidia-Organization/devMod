@@ -1,11 +1,13 @@
 package com.devmod.client.collision.transform;
 
-import com.devmod.collision.transform.AnimationSnapshot;
-import com.devmod.collision.transform.TransformProvider;
-import net.minecraft.world.entity.LivingEntity;
+import java.util.Objects;
 
 import javax.annotation.Nonnull;
-import java.util.Objects;
+
+import net.minecraft.world.entity.LivingEntity;
+
+import com.devmod.collision.transform.AnimationSnapshot;
+import com.devmod.collision.transform.TransformProvider;
 
 /**
  * Client-side transform provider that wraps ModelPartTransformExtractor.

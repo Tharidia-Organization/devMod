@@ -13,12 +13,14 @@ import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.util.ConfigPaths;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 /**
  * Manages Game Design configuration with:
  * - Global defaults (persisted to JSON)

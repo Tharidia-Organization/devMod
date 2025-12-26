@@ -1,15 +1,17 @@
 package com.devmod.combat;
 
-import static com.devmod.DevMod.MODID;
+import java.lang.reflect.Method;
+import java.util.UUID;
+
 import net.minecraft.world.entity.LivingEntity;
+
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 
-import java.lang.reflect.Method;
-import java.util.UUID;
+import static com.devmod.DevMod.MODID;
 
 /**
  * Traccia il danno REALE inflitto ai mob usando l'API NeoForge.

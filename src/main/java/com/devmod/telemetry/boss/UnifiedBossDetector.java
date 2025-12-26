@@ -1,13 +1,14 @@
 package com.devmod.telemetry.boss;
 
-import com.devmod.telemetry.TelemetryService;
-import com.devmod.telemetry.TelemetrySettings;
+import java.util.Objects;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
 
-import java.util.Objects;
+import com.devmod.telemetry.TelemetryService;
+import com.devmod.telemetry.TelemetrySettings;
 
 /**
  * Unified boss detection logic used by both client-side overlay and server-side telemetry.

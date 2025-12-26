@@ -1,15 +1,17 @@
 package com.devmod.client.ui.editor;
 
-import com.devmod.config.EditorClientConfig;
-import com.devmod.DevMod;
-import com.devmod.tags.ModTags;
-import com.devmod.util.ConfigPaths;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Supplier;
+
+import javax.annotation.Nullable;
+
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.AxeItem;
@@ -23,13 +25,14 @@ import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.TridentItem;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 
-import javax.annotation.Nullable;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Supplier;
-import net.minecraft.world.entity.EquipmentSlot;
+import com.devmod.DevMod;
+import com.devmod.config.EditorClientConfig;
+import com.devmod.tags.ModTags;
+import com.devmod.util.ConfigPaths;
+
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 /**
  * Weapon type detection with confidence and explicit detection method.

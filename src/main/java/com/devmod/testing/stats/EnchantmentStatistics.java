@@ -1,9 +1,9 @@
 package com.devmod.testing.stats;
 
-import com.google.gson.JsonObject;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.google.gson.JsonObject;
 
 /**
  * Tracks enchantment-related statistics.

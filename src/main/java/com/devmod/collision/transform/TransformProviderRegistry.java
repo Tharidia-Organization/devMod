@@ -1,8 +1,8 @@
 package com.devmod.collision.transform;
 
-import net.neoforged.fml.loading.FMLEnvironment;
-
 import javax.annotation.Nonnull;
+
+import net.neoforged.fml.loading.FMLEnvironment;
 
 /**
  * Registry for accessing the appropriate TransformProvider for the current side.

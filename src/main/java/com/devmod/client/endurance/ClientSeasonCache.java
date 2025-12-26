@@ -1,10 +1,11 @@
 package com.devmod.client.endurance;
 
-import com.devmod.endurance.season.SeasonPassPayload;
+import java.util.List;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import java.util.List;
+import com.devmod.endurance.season.SeasonPassPayload;
 
 /**
  * Client-side cache for season pass data.

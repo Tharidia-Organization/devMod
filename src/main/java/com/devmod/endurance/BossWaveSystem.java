@@ -1,11 +1,19 @@
 package com.devmod.endurance;
 
-import com.devmod.arena.api.ArenaHandle;
-import com.devmod.arena.registry.ArenaTemplate;
-import com.devmod.arena.registry.ArenaTemplateRegistry;
-import com.devmod.arena.registry.TemplateSpawnValidator;
-import com.devmod.DevMod;
-import com.devmod.telemetry.endurance.EnduranceTelemetryService;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Random;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -25,23 +33,15 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.projectile.SmallFireball;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import com.devmod.DevMod;
+import com.devmod.arena.api.ArenaHandle;
+import com.devmod.arena.registry.ArenaTemplate;
+import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.arena.registry.TemplateSpawnValidator;
 import com.devmod.endurance.boss.BossDNAMixer;
 import com.devmod.endurance.boss.BossDNAMixer.MixedBossData;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 
 /**
  * Boss Wave System - Special waves with unique mechanics.

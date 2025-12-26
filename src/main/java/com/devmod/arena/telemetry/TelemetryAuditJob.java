@@ -1,8 +1,5 @@
 package com.devmod.arena.telemetry;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -14,6 +11,9 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Scheduled job for telemetry audit (DD57).

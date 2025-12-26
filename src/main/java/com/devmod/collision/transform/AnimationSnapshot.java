@@ -1,14 +1,16 @@
 package com.devmod.collision.transform;
 
-import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import org.joml.Matrix4f;
+
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Immutable snapshot of an entity's current pose/animation state.

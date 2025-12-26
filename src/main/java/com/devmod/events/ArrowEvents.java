@@ -1,12 +1,16 @@
 package com.devmod.events;
 
-import com.devmod.DevMod;
-
-import com.devmod.combat.HitHelper;
-import com.devmod.collision.integration.OBBHitHelper;
-import net.neoforged.fml.loading.FMLEnvironment;
 import java.lang.reflect.Method;
-import com.devmod.util.I18n;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -19,18 +23,16 @@ import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import com.devmod.DevMod;
+import com.devmod.collision.integration.OBBHitHelper;
+import com.devmod.combat.HitHelper;
+import com.devmod.util.I18n;
 
 /**
  * Server-side arrow event handler for projectile impacts.

@@ -1,8 +1,9 @@
 package com.devmod.arena.policy;
 
-import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.UUID;
+
+import javax.annotation.Nullable;
 
 /**
  * Context for policy resolution.

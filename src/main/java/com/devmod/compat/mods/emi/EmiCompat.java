@@ -1,15 +1,18 @@
 package com.devmod.compat.mods.emi;
 
-import com.devmod.compat.Compat;
-import com.devmod.compat.CompatModule;
-import net.minecraft.world.item.ItemStack;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.world.item.ItemStack;
+
+import com.devmod.compat.Compat;
+import com.devmod.compat.CompatModule;
 
 /**
  * Compatibility module for EMI (Emi Mod Index).

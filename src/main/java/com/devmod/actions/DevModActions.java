@@ -1,12 +1,13 @@
 package com.devmod.actions;
 
+import net.minecraft.world.item.Items;
+
 import com.devmod.arena.command.ArenaActionRegistry;
 import com.devmod.debug.DebugCommand;
 import com.devmod.gametest.TestHarnessCommands;
 import com.devmod.telemetry.TelemetryReloadCommand;
 import com.devmod.telemetry.dashboard.DashboardCommand;
 import com.devmod.telemetry.dungeon.DungeonCommand;
-import net.minecraft.world.item.Items;
 
 public final class DevModActions {
     private DevModActions() {}

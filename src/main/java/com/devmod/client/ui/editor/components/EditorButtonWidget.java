@@ -1,12 +1,13 @@
 package com.devmod.client.ui.editor.components;
 
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-
-import javax.annotation.Nonnull;
-import java.util.Objects;
 
 /**
  * Adapter widget to use {@link EditorButton} with the vanilla widget system.

@@ -1,8 +1,5 @@
 package com.devmod.arena.registry;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.Files;
@@ -17,6 +14,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Lightweight directory watcher with debounce for template hot reload.

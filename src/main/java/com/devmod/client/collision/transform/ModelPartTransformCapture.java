@@ -1,16 +1,19 @@
 package com.devmod.client.collision.transform;
 
-import com.mojang.logging.LogUtils;
-import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.world.entity.LivingEntity;
-import org.joml.Matrix4f;
-import org.slf4j.Logger;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import org.joml.Matrix4f;
+import org.slf4j.Logger;
+
+import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.world.entity.LivingEntity;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * Captures ModelPart transforms during entity rendering.

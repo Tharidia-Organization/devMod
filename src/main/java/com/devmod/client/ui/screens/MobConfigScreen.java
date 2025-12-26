@@ -1,24 +1,27 @@
 package com.devmod.client.ui.screens;
 
-import com.devmod.config.MobPresetManager;
-import com.devmod.actions.ActionIds;
-import com.devmod.actions.ActionOrigin;
-import com.devmod.actions.ActionRegistry;
-import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.util.I18n;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Mob;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
+import com.devmod.actions.ActionIds;
+import com.devmod.actions.ActionOrigin;
+import com.devmod.actions.ActionRegistry;
+import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.config.MobPresetManager;
+import com.devmod.util.I18n;
 
 /**
  * Advanced Mob Configuration Screen with:

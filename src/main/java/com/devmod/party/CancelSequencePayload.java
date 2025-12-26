@@ -1,13 +1,14 @@
 package com.devmod.party;
 
+import java.util.Objects;
+import java.util.UUID;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-import javax.annotation.Nonnull;
-import java.util.Objects;
-import java.util.UUID;
 
 /**
  * Payload sent from client (leader) to server to cancel the quest start sequence.

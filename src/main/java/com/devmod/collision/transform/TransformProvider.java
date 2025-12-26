@@ -1,8 +1,8 @@
 package com.devmod.collision.transform;
 
-import net.minecraft.world.entity.LivingEntity;
-
 import javax.annotation.Nonnull;
+
+import net.minecraft.world.entity.LivingEntity;
 
 /**
  * Interface for providing animation transforms to the collision system.

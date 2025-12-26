@@ -1,14 +1,15 @@
 package com.devmod.client.arena.hud;
 
-import com.devmod.arena.BuildPhase;
-import com.devmod.arena.network.BuildProgressPayload;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+
+import com.devmod.arena.BuildPhase;
+import com.devmod.arena.network.BuildProgressPayload;
 
 /**
  * DD39: Client-side HUD for displaying build progress.

@@ -1,8 +1,5 @@
 package com.devmod.telemetry.duckdb;
 
-import com.mojang.logging.LogUtils;
-import org.slf4j.Logger;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,6 +8,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 import java.util.stream.Stream;
+
+import org.slf4j.Logger;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * Migration service for importing existing NDJSON telemetry data into DuckDB.

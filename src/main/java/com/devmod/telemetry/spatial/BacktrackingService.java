@@ -1,11 +1,5 @@
 package com.devmod.telemetry.spatial;
 
-import com.devmod.telemetry.TelemetryService;
-import com.mojang.logging.LogUtils;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.phys.Vec3;
-import org.slf4j.Logger;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -17,6 +11,15 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
+
+import com.devmod.telemetry.TelemetryService;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * VOXEL-LAB M47: Backtracking Detection

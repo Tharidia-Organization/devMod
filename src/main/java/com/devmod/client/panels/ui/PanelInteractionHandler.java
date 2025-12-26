@@ -1,15 +1,17 @@
 package com.devmod.client.panels.ui;
 
-import com.devmod.client.panels.core.FloatingPanel;
-import com.devmod.client.panels.core.FloatingPanelManager;
+import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.List;
-import java.util.Objects;
+import com.devmod.client.panels.core.FloatingPanel;
+import com.devmod.client.panels.core.FloatingPanelManager;
 
 /**
  * Handles mouse interactions with floating panels in the 3D world.

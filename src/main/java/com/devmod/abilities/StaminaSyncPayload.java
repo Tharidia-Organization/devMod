@@ -1,12 +1,13 @@
 package com.devmod.abilities;
 
-import com.devmod.DevMod;
+import java.util.Objects;
+
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import java.util.Objects;
+import com.devmod.DevMod;
 
 /**
  * Payload for syncing stamina data from server to client.

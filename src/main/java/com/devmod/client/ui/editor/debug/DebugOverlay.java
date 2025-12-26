@@ -1,12 +1,13 @@
 package com.devmod.client.ui.editor.debug;
 
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.Font;
-import org.lwjgl.glfw.GLFW;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import org.lwjgl.glfw.GLFW;
+
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.core.Bounds;
 import com.devmod.client.ui.editor.core.RenderObjectPool;

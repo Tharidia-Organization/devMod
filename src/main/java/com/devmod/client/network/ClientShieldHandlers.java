@@ -1,9 +1,11 @@
 package com.devmod.client.network;
 
-import com.devmod.client.rendering.shield.EnergyShieldRenderer;
 import net.minecraft.world.phys.Vec3;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+
+import com.devmod.client.rendering.shield.EnergyShieldRenderer;
 
 /**
  * Client-side handlers for Shield network packets.

@@ -1,14 +1,15 @@
 package com.devmod.network;
 
-import io.netty.buffer.ByteBuf;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import io.netty.buffer.ByteBuf;
 
 /**
  * Payload for comprehensive item modification.

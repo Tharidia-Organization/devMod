@@ -1,16 +1,19 @@
 package com.devmod.client.panels.core;
 
-import com.devmod.client.panels.tracking.EntityTracker;
-import com.mojang.blaze3d.vertex.PoseStack;
+import java.util.Objects;
+import java.util.UUID;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.phys.Vec3;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.Objects;
-import java.util.UUID;
+import com.devmod.client.panels.tracking.EntityTracker;
+
+import com.mojang.blaze3d.vertex.PoseStack;
 
 /**
  * Abstract base class for all floating panels in the 3D world.

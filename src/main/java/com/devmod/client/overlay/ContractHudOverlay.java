@@ -1,18 +1,21 @@
 package com.devmod.client.overlay;
 
-import com.devmod.endurance.contracts.ContractSyncPayload;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.LayeredDraw;
 import net.minecraft.network.chat.Component;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.devmod.endurance.contracts.ContractSyncPayload;
 
 /**
  * Client-side HUD overlay for active Blood Contracts.

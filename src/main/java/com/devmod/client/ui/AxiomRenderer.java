@@ -1,10 +1,10 @@
 package com.devmod.client.ui;
-import com.devmod.client.ui.editor.core.UIConstants;
-
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.Font;
-
 import javax.annotation.Nonnull;
+
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+
+import com.devmod.client.ui.editor.core.UIConstants;
 
 /**
  * Utility class for rendering Axiom-style UI elements.

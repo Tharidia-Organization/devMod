@@ -1,10 +1,10 @@
 package com.devmod.client.ui.editor.systems;
 
-import net.minecraft.world.item.ItemStack;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Snapshot of item states before a batch operation.

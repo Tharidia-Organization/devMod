@@ -1,11 +1,13 @@
 package com.devmod.client.ui.animation;
 
-import net.minecraft.client.gui.GuiGraphics;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
+import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
-import java.util.function.Consumer;
+
+import net.minecraft.client.gui.GuiGraphics;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 /**
  * Lightweight UI animation helper for screen transitions and effects.

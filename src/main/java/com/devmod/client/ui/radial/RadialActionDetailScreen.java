@@ -1,11 +1,12 @@
 package com.devmod.client.ui.radial;
 
-import com.devmod.actions.ActionContext;
-import com.devmod.actions.ActionIds;
-import com.devmod.actions.ActionOrigin;
-import com.devmod.actions.ActionRegistry;
-import com.devmod.actions.client.ActionKeybindRegistry;
-import com.devmod.actions.client.ClientActionContexts;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -15,14 +16,16 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import com.devmod.actions.ActionContext;
+import com.devmod.actions.ActionIds;
+import com.devmod.actions.ActionOrigin;
+import com.devmod.actions.ActionRegistry;
+import com.devmod.actions.client.ActionKeybindRegistry;
+import com.devmod.actions.client.ClientActionContexts;
 
 @OnlyIn(Dist.CLIENT)
 public class RadialActionDetailScreen extends Screen {

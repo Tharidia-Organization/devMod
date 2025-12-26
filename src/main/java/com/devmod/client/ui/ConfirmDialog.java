@@ -1,18 +1,19 @@
 package com.devmod.client.ui;
-import com.devmod.client.ui.editor.core.UIConstants;
-
-import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.BaseOverlay;
-import com.devmod.client.ui.editor.core.ScaledCoord;
-import com.devmod.client.ui.editor.core.Typography;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+
+import org.lwjgl.glfw.GLFW;
+
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.BaseOverlay;
+import com.devmod.client.ui.editor.core.ScaledCoord;
+import com.devmod.client.ui.editor.core.Typography;
 
 /**
     * Reusable confirmation dialog overlay that leverages the unified editor primitives

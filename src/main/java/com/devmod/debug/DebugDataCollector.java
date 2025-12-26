@@ -1,5 +1,14 @@
 package com.devmod.debug;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Stream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -15,15 +24,8 @@ import net.minecraft.world.entity.raid.Raids;
 import net.minecraft.world.level.pathfinder.Node;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
-import net.neoforged.neoforge.network.PacketDistributor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.Objects;
-import java.util.stream.Stream;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
  * Server-side collector that gathers debug data from Minecraft's internal systems

@@ -1,15 +1,17 @@
 package com.devmod.compat.mods.shieldapi;
 
-import com.devmod.compat.Compat;
-import com.devmod.compat.CompatModule;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+
+import com.devmod.compat.Compat;
+import com.devmod.compat.CompatModule;
 
 /**
  * Compatibility module for Shield API.

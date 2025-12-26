@@ -1,38 +1,4 @@
 package com.devmod.config;
-import com.devmod.DevMod;
-
-import com.devmod.stats.WeaponStats;
-import com.devmod.components.WeaponComponents;
-import com.devmod.attributes.ModAttributes;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-import net.minecraft.core.Holder;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
-import net.minecraft.world.entity.EquipmentSlotGroup;
-import net.minecraft.world.entity.ai.attributes.Attribute;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.ItemAttributeModifiers;
-import net.minecraft.world.item.component.CustomData;
-import net.minecraft.world.item.component.Tool;
-import net.minecraft.tags.TagKey;
-import net.minecraft.world.level.block.Block;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import com.devmod.integration.PufferfishCompat;
-import com.devmod.network.PacketValidator;
-
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -50,6 +16,41 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.EquipmentSlotGroup;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
+import net.minecraft.world.item.component.Tool;
+import net.minecraft.world.level.block.Block;
+
+import com.devmod.DevMod;
+import com.devmod.attributes.ModAttributes;
+import com.devmod.components.WeaponComponents;
+import com.devmod.integration.PufferfishCompat;
+import com.devmod.network.PacketValidator;
+import com.devmod.stats.WeaponStats;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 
 public class WeaponConfigManager {
 

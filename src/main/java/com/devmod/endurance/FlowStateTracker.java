@@ -1,13 +1,14 @@
 package com.devmod.endurance;
 
-import com.devmod.endurance.ComboSystem.ActionType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.EnumSet;
 import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.endurance.ComboSystem.ActionType;
 
 /**
  * Tracks player action variety to encourage dynamic combat.

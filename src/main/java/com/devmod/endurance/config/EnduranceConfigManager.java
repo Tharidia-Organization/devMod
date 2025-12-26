@@ -1,15 +1,24 @@
 package com.devmod.endurance.config;
 
-import com.devmod.arena.policy.ArenaPolicy;
-import com.devmod.arena.policy.ArenaPolicy.*;
-import com.devmod.config.GameMechanicsConfig;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import com.devmod.arena.policy.ArenaPolicy;
+import com.devmod.arena.policy.ArenaPolicy.AscensionOverrides;
+import com.devmod.arena.policy.ArenaPolicy.ChallengeOverrides;
+import com.devmod.arena.policy.ArenaPolicy.ComboOverrides;
+import com.devmod.arena.policy.ArenaPolicy.GameplayOverrides;
+import com.devmod.arena.policy.ArenaPolicy.GuildOverrides;
+import com.devmod.arena.policy.ArenaPolicy.PerkRarityOverrides;
+import com.devmod.arena.policy.ArenaPolicy.SeasonPassOverrides;
+import com.devmod.arena.policy.ArenaPolicy.StyleRankOverrides;
+import com.devmod.arena.policy.ArenaPolicy.TensionOverrides;
+import com.devmod.config.GameMechanicsConfig;
 
 /**
  * Centralized configuration manager for Endurance Quest systems.

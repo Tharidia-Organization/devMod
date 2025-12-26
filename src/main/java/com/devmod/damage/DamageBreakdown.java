@@ -1,6 +1,9 @@
 package com.devmod.damage;
 
-import com.devmod.integration.ModIntegrationManager;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.entity.LivingEntity;
@@ -8,9 +11,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import com.devmod.integration.ModIntegrationManager;
 
 /**
  * Detailed breakdown of damage calculation for the HUD.

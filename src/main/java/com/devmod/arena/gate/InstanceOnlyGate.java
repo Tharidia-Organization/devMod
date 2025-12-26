@@ -1,18 +1,20 @@
 package com.devmod.arena.gate;
 
-import com.devmod.arena.config.ArenaTemplateConfig;
-import com.devmod.arena.telemetry.ArenaTelemetry;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.Level;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
+
+import com.devmod.arena.config.ArenaTemplateConfig;
+import com.devmod.arena.telemetry.ArenaTelemetry;
 
 /**
  * Enforces instance-only arena creation (spec Fase0).

@@ -1,11 +1,11 @@
 package com.devmod.endurance.challenges;
 
-import com.devmod.endurance.EnduranceQuest;
-import com.devmod.endurance.RewardSystem;
-import net.minecraft.network.chat.Component;
-
 import java.util.UUID;
 import java.util.function.BiPredicate;
+
+import net.minecraft.network.chat.Component;
+
+import com.devmod.endurance.EnduranceQuest;
 
 /**
  * Represents a daily challenge that players can complete for bonus rewards.

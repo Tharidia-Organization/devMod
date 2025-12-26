@@ -1,16 +1,17 @@
 package com.devmod.arena.instance;
 
-import com.devmod.arena.identity.ArenaIdentity;
-import com.devmod.arena.policy.ArenaPolicy;
-import com.devmod.arena.pool.PoolState;
-import com.devmod.arena.registry.ArenaTemplate;
-
-import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+
+import javax.annotation.Nullable;
+
+import com.devmod.arena.identity.ArenaIdentity;
+import com.devmod.arena.policy.ArenaPolicy;
+import com.devmod.arena.pool.PoolState;
+import com.devmod.arena.registry.ArenaTemplate;
 
 /**
  * DD2: Unified Arena Instance (L2 Runtime Layer).

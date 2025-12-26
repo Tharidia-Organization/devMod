@@ -1,21 +1,25 @@
 package com.devmod.client.collision.transform;
 
-import com.devmod.collision.transform.AnimationSnapshot;
-import com.devmod.collision.compat.GeckoLibCompat;
-import com.mojang.logging.LogUtils;
-import net.minecraft.client.model.HumanoidModel;
-import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
-import org.joml.Quaternionf;
-import org.slf4j.Logger;
-
-import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nonnull;
+
+import org.joml.Matrix4f;
+import org.joml.Quaternionf;
+import org.slf4j.Logger;
+
+import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.Vec3;
+
+import com.devmod.collision.compat.GeckoLibCompat;
+import com.devmod.collision.transform.AnimationSnapshot;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * Extracts transformation data from Minecraft's ModelPart system.

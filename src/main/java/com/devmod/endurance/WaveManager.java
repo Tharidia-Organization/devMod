@@ -1,12 +1,20 @@
 package com.devmod.endurance;
 
-import com.devmod.arena.api.ArenaHandle;
-import com.devmod.arena.registry.ArenaTemplate;
-import com.devmod.arena.registry.ArenaTemplateRegistry;
-import com.devmod.arena.registry.TemplateSpawnValidator;
-import com.devmod.arena.spawn.SpawnOccupancyTracker;
-import com.devmod.DevMod;
-import com.devmod.telemetry.endurance.EnduranceTelemetryService;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
@@ -20,20 +28,14 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
-import java.util.UUID;
+import com.devmod.DevMod;
+import com.devmod.arena.api.ArenaHandle;
+import com.devmod.arena.registry.ArenaTemplate;
+import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.arena.registry.TemplateSpawnValidator;
+import com.devmod.arena.spawn.SpawnOccupancyTracker;
+import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 
 /**
  * Manages wave spawning, mob buffs, and wave progression for Endurance Quests.

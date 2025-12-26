@@ -1,8 +1,9 @@
 package com.devmod.arena.registry;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
+
+import javax.annotation.Nullable;
 
 /**
  * Arena Template (L1 - layout fisico) allineato alla spec v2.23.

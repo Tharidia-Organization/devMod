@@ -1,12 +1,5 @@
 package com.devmod.telemetry;
 
-import com.devmod.util.ConfigPaths;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import com.mojang.logging.LogUtils;
-import net.minecraft.core.BlockPos;
-import org.slf4j.Logger;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -15,6 +8,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+
+import org.slf4j.Logger;
+
+import net.minecraft.core.BlockPos;
+
+import com.devmod.util.ConfigPaths;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import com.mojang.logging.LogUtils;
 
 /**
  * Loads room definitions from config/devmod/telemetry_rooms.json.

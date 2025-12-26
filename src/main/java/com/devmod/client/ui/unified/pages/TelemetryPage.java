@@ -1,21 +1,23 @@
 package com.devmod.client.ui.unified.pages;
 
-import com.devmod.telemetry.TelemetryService;
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.unified.SettingsCategory;
-import com.devmod.client.ui.unified.SettingsPage;
+import java.util.List;
+
+import javax.annotation.Nonnull;
+
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.unified.SettingsCategory;
+import com.devmod.client.ui.unified.SettingsPage;
+import com.devmod.telemetry.TelemetryService;
 import com.devmod.util.I18n;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-
-import javax.annotation.Nonnull;
-import java.util.List;
 
 /**
  * Telemetry settings page - analytics export and summaries.

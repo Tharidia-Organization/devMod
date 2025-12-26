@@ -1,10 +1,5 @@
 package com.devmod.arena.cleanup;
 
-import com.devmod.arena.alert.AlertRouter;
-import com.devmod.arena.alert.ErrorContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,6 +12,12 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.arena.alert.AlertRouter;
+import com.devmod.arena.alert.ErrorContext;
 
 /**
  * DD40: Robust Cleanup Manager with zero-residual invariant.

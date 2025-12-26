@@ -1,10 +1,10 @@
 package com.devmod.client.ui.editor.debug;
 
-import net.minecraft.client.gui.Font;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import net.minecraft.client.gui.Font;
 
 /**
  * Utility for detecting rendering issues like overflow, truncation, and misalignment.

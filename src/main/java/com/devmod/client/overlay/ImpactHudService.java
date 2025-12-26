@@ -1,17 +1,21 @@
 package com.devmod.client.overlay;
 
-import com.devmod.combat.HitHelper;
-import com.devmod.client.ClientVFXProxy;
-import com.devmod.damage.DamageBreakdown;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.phys.Vec3;
-import net.neoforged.fml.loading.FMLEnvironment;
+import java.util.UUID;
+
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-import java.util.UUID;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
+
+import net.neoforged.fml.loading.FMLEnvironment;
+
+import com.devmod.client.ClientVFXProxy;
+import com.devmod.combat.HitHelper;
+import com.devmod.damage.DamageBreakdown;
 
 public final class ImpactHudService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ImpactHudService.class);

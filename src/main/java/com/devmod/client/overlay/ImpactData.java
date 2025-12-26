@@ -1,21 +1,24 @@
 package com.devmod.client.overlay;
 
-import com.devmod.combat.HitHelper.BodyPart;
-import com.devmod.damage.DamageBreakdown;
-import com.devmod.integration.ModIntegrationManager;
-import com.devmod.util.I18n;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.phys.Vec3;
-import net.neoforged.fml.loading.FMLEnvironment;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.Vec3;
+
+import net.neoforged.fml.loading.FMLEnvironment;
+
+import com.devmod.combat.HitHelper.BodyPart;
+import com.devmod.damage.DamageBreakdown;
+import com.devmod.integration.ModIntegrationManager;
+import com.devmod.util.I18n;
 
 /**
  * Contains data for the last impact for the HUD.

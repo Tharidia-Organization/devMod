@@ -1,21 +1,24 @@
 package com.devmod.debug.client;
 
-import com.devmod.debug.EntityGoalsPayload;
-import com.devmod.debug.EntityPathingPayload;
-import com.devmod.debug.POIPayload;
-import com.devmod.debug.RaidsPayload;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.joml.Matrix4f;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.world.phys.Vec3;
+
+import com.devmod.debug.EntityGoalsPayload;
+import com.devmod.debug.EntityPathingPayload;
+import com.devmod.debug.POIPayload;
+import com.devmod.debug.RaidsPayload;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 
 /**
  * Client-side renderer for debug data received from server.

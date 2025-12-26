@@ -1,5 +1,14 @@
 package com.devmod.client.ui.radial.render;
 
+import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.ui.radial.RadialCategory;
@@ -7,13 +16,6 @@ import com.devmod.client.ui.radial.RadialMenuConfig;
 import com.devmod.client.ui.radial.RadialMenuItem;
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
 import com.devmod.client.ui.radial.model.MacroCategory;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.List;
-import java.util.Objects;
 
 /**
  * Renders tooltips, help text, and UI indicators for the Radial Menu.

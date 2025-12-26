@@ -1,17 +1,18 @@
 package com.devmod.client.ui.editor.modules;
 
-import com.devmod.stats.UsableStats;
+import java.util.List;
+import java.util.Objects;
+
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.world.item.ItemStack;
+
 import com.devmod.DevMod;
 import com.devmod.client.ui.editor.AbstractEditorModule;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.ModuleTab;
 import com.devmod.client.ui.editor.core.EditorCache;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.world.item.ItemStack;
-
-import java.util.List;
-import java.util.Objects;
+import com.devmod.stats.UsableStats;
 
 /**
  * Editor module for usable item statistics.

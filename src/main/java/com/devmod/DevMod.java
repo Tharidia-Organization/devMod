@@ -2,7 +2,6 @@ package com.devmod;
 
 import java.util.Objects;
 
-import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 
 import net.minecraft.core.registries.Registries;
@@ -40,6 +39,8 @@ import com.devmod.config.GameplayOverridesManager;
 import com.devmod.debug.DebugNetworkHandler;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.integration.ModIntegrationManager;
+
+import com.mojang.logging.LogUtils;
 
 @Mod("devmod")
 public class DevMod {

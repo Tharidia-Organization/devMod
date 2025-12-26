@@ -1,7 +1,8 @@
 package com.devmod.client.ui.editor.core;
 
-import com.devmod.client.ui.AxiomRenderer;
 import net.minecraft.client.gui.GuiGraphics;
+
+import com.devmod.client.ui.AxiomRenderer;
 
 /**
  * Focus ring specification for keyboard navigation.

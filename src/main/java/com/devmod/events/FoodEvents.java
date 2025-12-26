@@ -1,12 +1,10 @@
 package com.devmod.events;
 
-import com.devmod.stats.FoodStats;
-import com.devmod.config.FoodConfigManager;
-import com.devmod.components.FoodComponents;
+import java.util.Objects;
+import java.util.Optional;
 
-import com.devmod.DevMod;
+import org.slf4j.Logger;
 
-import com.mojang.logging.LogUtils;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -15,13 +13,16 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
-import org.slf4j.Logger;
 
-import java.util.Objects;
-import java.util.Optional;
+import com.devmod.DevMod;
+import com.devmod.config.FoodConfigManager;
+import com.devmod.stats.FoodStats;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * Event handlers for food item modifications.

@@ -1,9 +1,5 @@
 package com.devmod.arena.logging;
 
-import com.devmod.arena.telemetry.ArenaTelemetry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -19,6 +15,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.arena.telemetry.ArenaTelemetry;
 
 /**
  * DD59: Unified Log Aggregation Pipeline.

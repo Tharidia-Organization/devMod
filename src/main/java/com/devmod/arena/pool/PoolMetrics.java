@@ -1,9 +1,9 @@
 package com.devmod.arena.pool;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Metrics tracking for arena pool with auto-disable (DD65).

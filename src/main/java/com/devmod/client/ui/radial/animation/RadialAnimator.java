@@ -1,10 +1,11 @@
 package com.devmod.client.ui.radial.animation;
 
-import com.devmod.client.ui.radial.config.RadialMenuConstants;
-import net.minecraft.util.Mth;
-
 import java.util.Arrays;
 import java.util.Objects;
+
+import net.minecraft.util.Mth;
+
+import com.devmod.client.ui.radial.config.RadialMenuConstants;
 
 /**
  * Coordinates all animations for the Radial Menu.

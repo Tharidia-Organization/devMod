@@ -1,7 +1,8 @@
 package com.devmod.arena.policy;
 
-import javax.annotation.Nullable;
 import java.util.Set;
+
+import javax.annotation.Nullable;
 
 /**
  * Arena Policy definition (L2 Gameplay layer).

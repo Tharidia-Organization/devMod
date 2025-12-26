@@ -1,18 +1,20 @@
 package com.devmod.client.combat;
 
-import com.devmod.combat.signature.SoulImprint;
-import com.devmod.combat.signature.WeaponTrait;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.world.item.ItemStack;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import com.devmod.combat.signature.SoulImprint;
+import com.devmod.combat.signature.WeaponTrait;
 
 /**
  * Client-side tooltip renderer for Signature Weapons.

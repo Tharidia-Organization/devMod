@@ -1,10 +1,22 @@
 package com.devmod.client.rendering;
 
-import com.devmod.config.ArmorConfigManager;
-import com.devmod.stats.ArmorStats;
-import com.devmod.config.Config;
+import java.util.Objects;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ShieldItem;
+import net.minecraft.world.phys.AABB;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+
 import com.devmod.DevMod;
-import com.devmod.client.input.KeyInputHandler;
 import com.devmod.actions.ActionContext;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionRegistry;
@@ -12,7 +24,9 @@ import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.attributes.AttributeMonitoringSystem;
 import com.devmod.client.attributes.AttributeRayVisualizer;
 import com.devmod.client.collision.rendering.OBBDebugRenderer;
+import com.devmod.client.combat.WeaponTrailVFX;
 import com.devmod.client.effects.TrailManager;
+import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.overlay.Impact3DPanelManager;
 import com.devmod.client.overlay.ImpactData;
 import com.devmod.client.overlay.ImpactVFX;
@@ -23,25 +37,13 @@ import com.devmod.client.rendering.shield.EnergyShieldRenderer;
 import com.devmod.client.telemetry.PerformanceProfiler;
 import com.devmod.client.testing.TestingSession;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
+import com.devmod.config.ArmorConfigManager;
+import com.devmod.config.Config;
+import com.devmod.stats.ArmorStats;
 import com.devmod.util.I18n;
-import com.devmod.client.combat.WeaponTrailVFX;
+
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.ShieldItem;
-import net.minecraft.world.phys.AABB;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
-
-import java.util.Objects;
-
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class RenderEvents {

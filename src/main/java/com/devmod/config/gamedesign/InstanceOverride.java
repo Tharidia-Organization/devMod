@@ -1,8 +1,9 @@
 package com.devmod.config.gamedesign;
 
-import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.annotation.Nullable;
 
 /**
  * Partial configuration override for a specific instance (quest/arena).

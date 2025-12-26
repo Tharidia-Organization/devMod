@@ -1,8 +1,8 @@
 package com.devmod.stats;
 
-import com.devmod.config.Config;
-
 import net.minecraft.nbt.CompoundTag;
+
+import com.devmod.config.Config;
 
 /**
  * Weapon statistics for damage calculation.

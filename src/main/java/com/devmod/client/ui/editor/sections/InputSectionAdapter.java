@@ -1,9 +1,10 @@
 package com.devmod.client.ui.editor.sections;
 
+import net.minecraft.client.gui.GuiGraphics;
+
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.components.EditorTextField;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import net.minecraft.client.gui.GuiGraphics;
 
 public final class InputSectionAdapter implements EditorSection.InputSection {
     private final EditorTextField field;

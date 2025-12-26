@@ -1,37 +1,37 @@
 package com.devmod.client.ui.editor;
 
-import com.devmod.config.ArmorConfigManager;
-import com.devmod.config.WeaponConfigManager;
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.EditorCache;
-import com.devmod.client.ui.editor.core.EditorLayout;
-import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.ScaledCoord;
-import com.devmod.client.ui.editor.core.Typography;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.client.ui.editor.components.FooterComponent;
-import com.devmod.client.ui.editor.components.HeaderComponent;
-import com.devmod.client.ui.editor.components.LeftColumnComponent;
-import com.devmod.client.ui.editor.components.ScrollableContentArea;
-import com.devmod.client.ui.editor.debug.DebugOverlay;
-import com.devmod.client.ui.ConfirmDialog;
-import com.devmod.client.ui.editor.systems.CraftingInfoPanel;
-import com.devmod.client.ui.editor.systems.DebugPanel;
-import com.devmod.client.ui.editor.systems.HelpOverlay;
-import com.devmod.client.ui.editor.systems.MultiEditPanel;
-import com.devmod.client.ui.editor.systems.PresetSelectorOverlay;
-import com.devmod.client.ui.editor.systems.TemplateOverlay;
-import com.devmod.client.ui.editor.ItemEditorDataManager;
-import com.devmod.client.ui.editor.favorites.FavoritePresetStore;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.ConfirmDialog;
+import com.devmod.client.ui.editor.components.FooterComponent;
+import com.devmod.client.ui.editor.components.HeaderComponent;
+import com.devmod.client.ui.editor.components.LeftColumnComponent;
+import com.devmod.client.ui.editor.components.ScrollableContentArea;
+import com.devmod.client.ui.editor.core.EditorCache;
+import com.devmod.client.ui.editor.core.EditorLayout;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.ScaledCoord;
+import com.devmod.client.ui.editor.core.Typography;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.debug.DebugOverlay;
+import com.devmod.client.ui.editor.favorites.FavoritePresetStore;
+import com.devmod.client.ui.editor.systems.CraftingInfoPanel;
+import com.devmod.client.ui.editor.systems.DebugPanel;
+import com.devmod.client.ui.editor.systems.HelpOverlay;
+import com.devmod.client.ui.editor.systems.MultiEditPanel;
+import com.devmod.client.ui.editor.systems.PresetSelectorOverlay;
+import com.devmod.client.ui.editor.systems.TemplateOverlay;
+import com.devmod.config.ArmorConfigManager;
+import com.devmod.config.WeaponConfigManager;
 
 /**
  * Handles all rendering logic for ItemEditorScreen.

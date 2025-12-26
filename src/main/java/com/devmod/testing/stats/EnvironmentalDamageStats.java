@@ -1,11 +1,13 @@
 package com.devmod.testing.stats;
 
-import com.devmod.testing.stats.HazardTypeRegistry.HazardType;
-import com.google.gson.JsonObject;
-import net.minecraft.world.damagesource.DamageSource;
-
 import java.util.EnumMap;
 import java.util.Map;
+
+import net.minecraft.world.damagesource.DamageSource;
+
+import com.devmod.testing.stats.HazardTypeRegistry.HazardType;
+
+import com.google.gson.JsonObject;
 
 /**
  * Tracks environmental damage taken (fall, fire, lava, etc.).

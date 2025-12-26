@@ -1,12 +1,5 @@
 package com.devmod.config;
 
-import com.devmod.util.ConfigPaths;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-import com.mojang.logging.LogUtils;
-import org.slf4j.Logger;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -15,6 +8,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import org.slf4j.Logger;
+
+import com.devmod.util.ConfigPaths;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+import com.mojang.logging.LogUtils;
 
 /**
  * Manages user-created presets for mob configuration.

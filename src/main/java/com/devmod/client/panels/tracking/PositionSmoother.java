@@ -1,9 +1,10 @@
 package com.devmod.client.panels.tracking;
 
-import net.minecraft.world.phys.Vec3;
+import java.util.Objects;
 
 import javax.annotation.Nonnull;
-import java.util.Objects;
+
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Utility for smoothing 3D positions with various algorithms.

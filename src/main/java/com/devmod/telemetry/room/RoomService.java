@@ -1,13 +1,14 @@
 package com.devmod.telemetry.room;
 
-import com.devmod.telemetry.RoomDefinition;
-import com.devmod.telemetry.TelemetryConfig;
+import java.util.List;
+import java.util.Optional;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 
-import java.util.List;
-import java.util.Optional;
+import com.devmod.telemetry.RoomDefinition;
+import com.devmod.telemetry.TelemetryConfig;
 
 /**
  * Central service for room definition management and resolution.

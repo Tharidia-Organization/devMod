@@ -1,8 +1,5 @@
 package com.devmod.arena.event;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.lang.ref.WeakReference;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +8,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * DD13: Event dispatcher for template lifecycle events.

@@ -1,14 +1,16 @@
 package com.devmod.gametest;
 
-import com.devmod.DevMod;
+import java.util.Objects;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
+
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 
-import java.util.Objects;
+import com.devmod.DevMod;
 
 /**
  * Provides test structure templates for DevMod GameTests.

@@ -1,10 +1,11 @@
 package com.devmod.arena.metrics;
 
-import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import javax.annotation.Nullable;
 
 /**
  * Context for arena metrics and telemetry (DD13).

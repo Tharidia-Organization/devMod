@@ -1,15 +1,20 @@
 package com.devmod.client.ui.testing.panel;
 
-import com.devmod.client.ui.editor.core.UIConstants;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.util.Mth;
-
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static com.devmod.client.ui.testing.panel.PanelConstants.*;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.util.Mth;
+
+import com.devmod.client.ui.editor.core.UIConstants;
+
+import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_CYAN;
+import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_HEADER_ACCENT;
+import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_THUMB_HOVER;
+import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_TRACK;
+import static com.devmod.client.ui.testing.panel.PanelConstants.SLIDER_HEIGHT;
 
 /**
  * Slider panel for numeric value editing with drag support.

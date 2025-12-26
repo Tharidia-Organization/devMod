@@ -1,12 +1,5 @@
 package com.devmod.testing;
 
-import com.devmod.testing.ModDiscoveryService.ModInfo;
-import com.devmod.testing.TestCase.TestPriority;
-import net.minecraft.resources.ResourceLocation;
-import net.neoforged.fml.loading.FMLEnvironment;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -14,6 +7,16 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.resources.ResourceLocation;
+
+import net.neoforged.fml.loading.FMLEnvironment;
+
+import com.devmod.testing.ModDiscoveryService.ModInfo;
+import com.devmod.testing.TestCase.TestPriority;
 
 /**
  * Automatically generates test cases based on discovered mod content.

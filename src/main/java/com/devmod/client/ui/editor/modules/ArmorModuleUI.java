@@ -1,7 +1,16 @@
 package com.devmod.client.ui.editor.modules;
 
-import com.devmod.stats.ArmorStats;
-import com.devmod.config.ArmorConfigManager;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.ItemStack;
+
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorToggle;
@@ -13,16 +22,8 @@ import com.devmod.client.ui.editor.debug.ItemDebugInfo;
 import com.devmod.client.ui.editor.debug.ValueComparison;
 import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.item.ItemStack;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
+import com.devmod.config.ArmorConfigManager;
+import com.devmod.stats.ArmorStats;
 
 /**
  * UI components and section builders for ArmorModule.

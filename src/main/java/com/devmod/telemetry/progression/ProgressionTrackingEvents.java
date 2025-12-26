@@ -1,9 +1,9 @@
 package com.devmod.telemetry.progression;
 
-import com.devmod.DevMod;
-import com.devmod.telemetry.TelemetryService;
-import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
-import com.mojang.logging.LogUtils;
+import java.util.Objects;
+
+import org.slf4j.Logger;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerPlayer;
@@ -14,6 +14,7 @@ import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.level.block.state.BlockState;
+
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
@@ -24,9 +25,12 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerXpEvent;
 import net.neoforged.neoforge.event.entity.player.TradeWithVillagerEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
-import org.slf4j.Logger;
 
-import java.util.Objects;
+import com.devmod.DevMod;
+import com.devmod.telemetry.TelemetryService;
+import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * Event handlers for player progression tracking.

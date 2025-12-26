@@ -1,11 +1,11 @@
 package com.devmod.client.ui.editor.core;
 
-import com.devmod.DevMod;
-import com.devmod.config.EditorClientConfig;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import com.devmod.DevMod;
+import com.devmod.config.EditorClientConfig;
 
 /**
  * Editor config bridge for UI scale and related toggles.

@@ -1,18 +1,13 @@
 package com.devmod.client.testing;
 
-import com.devmod.testing.TestCase;
-import com.devmod.testing.TesterProfile;
-import com.devmod.testing.TesterProgress;
-import com.devmod.DevMod;
-import com.devmod.combat.HitHelper;
-import com.devmod.client.overlay.ImpactHudOverlay;
-import com.devmod.client.rendering.DebugRenderer;
-import com.devmod.client.rendering.LightLevelOverlay;
-import com.devmod.client.rendering.LineOfSightVisualizer;
-import com.devmod.client.rendering.PathfindingDebugger;
-import com.devmod.client.rendering.RoomBoundsVisualizer;
-import com.devmod.client.rendering.SafeSpotVisualizer;
+import java.util.List;
+import java.util.Objects;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -25,7 +20,7 @@ import net.minecraft.world.entity.projectile.Arrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
-import net.minecraft.core.component.DataComponents;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -35,11 +30,19 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
 import net.neoforged.neoforge.event.level.ExplosionEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Objects;
+import com.devmod.DevMod;
+import com.devmod.client.overlay.ImpactHudOverlay;
+import com.devmod.client.rendering.DebugRenderer;
+import com.devmod.client.rendering.LightLevelOverlay;
+import com.devmod.client.rendering.LineOfSightVisualizer;
+import com.devmod.client.rendering.PathfindingDebugger;
+import com.devmod.client.rendering.RoomBoundsVisualizer;
+import com.devmod.client.rendering.SafeSpotVisualizer;
+import com.devmod.combat.HitHelper;
+import com.devmod.testing.TestCase;
+import com.devmod.testing.TesterProfile;
+import com.devmod.testing.TesterProgress;
 
 /**
  * Event tracker that hooks into game events to automatically update TesterProgress.

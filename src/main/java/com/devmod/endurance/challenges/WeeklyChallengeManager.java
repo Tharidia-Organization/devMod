@@ -1,16 +1,5 @@
 package com.devmod.endurance.challenges;
 
-import com.devmod.endurance.ComboSystem;
-import com.devmod.endurance.EnduranceQuest;
-import com.devmod.endurance.RewardSystem;
-import com.devmod.endurance.config.EnduranceConfigManager;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-import net.minecraft.server.level.ServerPlayer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
@@ -23,14 +12,25 @@ import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.server.level.ServerPlayer;
+
+import com.devmod.endurance.ComboSystem;
+import com.devmod.endurance.EnduranceQuest;
+import com.devmod.endurance.RewardSystem;
+import com.devmod.endurance.config.EnduranceConfigManager;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * Manages weekly challenges for the Endurance Quest system.

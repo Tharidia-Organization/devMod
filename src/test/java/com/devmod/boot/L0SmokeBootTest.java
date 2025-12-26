@@ -1,16 +1,25 @@
 package com.devmod.boot;
 
-import com.devmod.runtime.InstanceState;
-import com.devmod.runtime.PlayerInstanceState;
-import com.devmod.client.ui.editor.core.UIConstants;
-import org.junit.jupiter.api.*;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
-import java.io.*;
-import java.nio.file.*;
-import java.util.*;
-import java.util.stream.*;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.runtime.InstanceState;
+import com.devmod.runtime.PlayerInstanceState;
 
 import static org.junit.jupiter.api.Assertions.*;
 

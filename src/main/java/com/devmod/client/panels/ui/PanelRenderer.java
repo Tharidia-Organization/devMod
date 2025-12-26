@@ -1,21 +1,25 @@
 package com.devmod.client.panels.ui;
 
-import com.devmod.client.panels.core.FloatingPanel;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nonnull;
+
+import org.joml.Matrix4f;
+import org.joml.Quaternionf;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
-import org.joml.Quaternionf;
 
-import javax.annotation.Nonnull;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
+import com.devmod.client.panels.core.FloatingPanel;
+import com.devmod.client.ui.editor.core.UIConstants;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 
 /**
  * Renders FloatingPanels in the 3D world.

@@ -1,11 +1,11 @@
 package com.devmod.arena.error;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * User-Friendly Error implementing DD46: Default Fail Message.

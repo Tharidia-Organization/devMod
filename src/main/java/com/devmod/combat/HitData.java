@@ -1,10 +1,10 @@
 package com.devmod.combat;
 
-import com.devmod.combat.HitHelper;
-import net.minecraft.world.entity.Entity;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import net.minecraft.world.entity.Entity;
 
 /**
  * Thread-safe context storage for passing body part information from DamageHandler to Telemetry.

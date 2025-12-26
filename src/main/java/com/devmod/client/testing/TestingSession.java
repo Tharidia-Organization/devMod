@@ -1,30 +1,5 @@
 package com.devmod.client.testing;
 
-import com.devmod.testing.DynamicTestGenerator;
-import com.devmod.testing.ModDiscoveryService;
-import com.devmod.testing.TestCase;
-import com.devmod.client.rendering.DebugRenderer;
-import com.devmod.client.rendering.LightLevelOverlay;
-import com.devmod.client.rendering.LineOfSightVisualizer;
-import com.devmod.client.rendering.PathfindingDebugger;
-import com.devmod.client.rendering.RoomBoundsVisualizer;
-import com.devmod.client.rendering.SafeSpotVisualizer;
-import com.devmod.client.overlay.ImpactData;
-import com.devmod.client.overlay.ImpactHudOverlay;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import net.minecraft.client.Minecraft;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nonnull;
-
-import com.devmod.util.ConfigPaths;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -48,6 +23,33 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import javax.annotation.Nonnull;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.client.Minecraft;
+
+import com.devmod.client.overlay.ImpactData;
+import com.devmod.client.overlay.ImpactHudOverlay;
+import com.devmod.client.rendering.DebugRenderer;
+import com.devmod.client.rendering.LightLevelOverlay;
+import com.devmod.client.rendering.LineOfSightVisualizer;
+import com.devmod.client.rendering.PathfindingDebugger;
+import com.devmod.client.rendering.RoomBoundsVisualizer;
+import com.devmod.client.rendering.SafeSpotVisualizer;
+import com.devmod.testing.DynamicTestGenerator;
+import com.devmod.testing.ModDiscoveryService;
+import com.devmod.testing.TestCase;
+import com.devmod.util.ConfigPaths;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 /**
  * Manages the QA Testing Session with all test cases for DevMod.

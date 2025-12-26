@@ -1,11 +1,12 @@
 package com.devmod.client.ui.editor.components;
 
-import com.devmod.client.ui.editor.core.EditorSpacing;
-import com.devmod.client.ui.editor.core.UIConstants;
-import net.minecraft.client.gui.GuiGraphics;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import net.minecraft.client.gui.GuiGraphics;
+
+import com.devmod.client.ui.editor.core.EditorSpacing;
+import com.devmod.client.ui.editor.core.UIConstants;
 
 /**
  * Horizontal layout component for arranging multiple EditorButtons in a row.

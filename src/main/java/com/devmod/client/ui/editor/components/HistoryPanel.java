@@ -1,15 +1,16 @@
 package com.devmod.client.ui.editor.components;
 
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
+import java.util.List;
+import java.util.function.Supplier;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
-import javax.annotation.Nonnull;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Supplier;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.UIConstants;
 
 /**
  * History panel component showing edit history for the current module.

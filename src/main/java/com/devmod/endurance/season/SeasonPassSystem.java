@@ -1,9 +1,5 @@
 package com.devmod.endurance.season;
 
-import com.devmod.endurance.config.EnduranceConfigManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -13,6 +9,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.endurance.config.EnduranceConfigManager;
 
 /**
  * Season Pass / Battle Pass system for Endurance Quest.

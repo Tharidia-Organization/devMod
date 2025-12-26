@@ -1,8 +1,5 @@
 package com.devmod.arena.registry;
 
-import com.devmod.arena.serialization.TemplateSerializer;
-import com.devmod.arena.telemetry.ArenaTelemetry;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -13,6 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+
+import com.devmod.arena.serialization.TemplateSerializer;
+import com.devmod.arena.telemetry.ArenaTelemetry;
 
 /**
  * Loads templates from disk with schema validation and telemetry hooks.

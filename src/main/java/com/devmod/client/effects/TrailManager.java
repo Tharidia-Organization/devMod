@@ -1,37 +1,39 @@
 package com.devmod.client.effects;
 
-import com.devmod.effects.TrailEffect;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
-import com.devmod.config.Config;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
+import org.joml.Matrix4f;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.projectile.DragonFireball;
+import net.minecraft.world.entity.projectile.EyeOfEnder;
+import net.minecraft.world.entity.projectile.FireworkRocketEntity;
+import net.minecraft.world.entity.projectile.LargeFireball;
+import net.minecraft.world.entity.projectile.ShulkerBullet;
+import net.minecraft.world.entity.projectile.SmallFireball;
 import net.minecraft.world.entity.projectile.ThrowableProjectile;
 import net.minecraft.world.entity.projectile.ThrownPotion;
 import net.minecraft.world.entity.projectile.ThrownTrident;
-import net.minecraft.world.entity.projectile.FireworkRocketEntity;
-import net.minecraft.world.entity.projectile.ShulkerBullet;
 import net.minecraft.world.entity.projectile.WitherSkull;
-import net.minecraft.world.entity.projectile.DragonFireball;
-import net.minecraft.world.entity.projectile.LargeFireball;
-import net.minecraft.world.entity.projectile.SmallFireball;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.ExperienceOrb;
-import net.minecraft.world.entity.projectile.EyeOfEnder;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.Objects;
+import com.devmod.config.Config;
+import com.devmod.effects.TrailEffect;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 
 /**
  * Manages projectile trail effects.

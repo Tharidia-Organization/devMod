@@ -1,9 +1,10 @@
 package com.devmod.client.ui.testing.pages;
 
+import net.minecraft.client.gui.GuiGraphics;
+
 import com.devmod.client.ui.testing.VoxelLabPage;
 import com.devmod.client.ui.testing.VoxelLabTab;
 import com.devmod.client.ui.testing.panel.PanelContainer;
-import net.minecraft.client.gui.GuiGraphics;
 
 /**
  * Abstract base class for VoxelLab pages that use PanelContainer for layout.

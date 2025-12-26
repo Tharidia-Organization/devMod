@@ -1,8 +1,5 @@
 package com.devmod.telemetry;
 
-import com.mojang.logging.LogUtils;
-import org.slf4j.Logger;
-
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,6 +8,10 @@ import java.nio.file.StandardOpenOption;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * PERFORMANCE FIX: Async telemetry I/O writer.

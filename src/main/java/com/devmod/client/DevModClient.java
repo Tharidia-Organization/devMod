@@ -14,10 +14,10 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 
 import com.devmod.DevMod;
 import com.devmod.actions.client.DevModClientActions;
-import com.devmod.client.overlay.ComboDecayOverlay;
-import com.devmod.client.overlay.RecordBannerOverlay;
 import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.network.ClientNetworkPayloadHooks;
+import com.devmod.client.overlay.ComboDecayOverlay;
+import com.devmod.client.overlay.RecordBannerOverlay;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.integration.ModIntegrationManager;
 import com.devmod.network.NetworkHandler;

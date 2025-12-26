@@ -1,12 +1,12 @@
 package com.devmod.party;
 
+import java.util.Objects;
+import java.util.UUID;
+
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-import java.util.Objects;
-import java.util.UUID;
 
 /**
  * Payload sent from client to server to respond to a party invite.

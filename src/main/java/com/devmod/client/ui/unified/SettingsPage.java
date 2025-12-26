@@ -1,9 +1,9 @@
 package com.devmod.client.ui.unified;
 
+import javax.annotation.Nonnull;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-
-import javax.annotation.Nonnull;
 
 /**
  * Base interface for all settings pages.

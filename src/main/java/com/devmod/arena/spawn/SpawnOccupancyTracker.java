@@ -1,9 +1,9 @@
 package com.devmod.arena.spawn;
 
-import net.minecraft.core.BlockPos;
-
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import net.minecraft.core.BlockPos;
 
 /**
  * Session-scoped tracker for spawn slot occupancy.

@@ -1,15 +1,16 @@
 package com.devmod.arena.recovery;
 
-import com.devmod.arena.registry.ArenaTemplate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.arena.registry.ArenaTemplate;
 
 /**
  * Template Recovery Handler implementing DD27: Recovery Template Missing.

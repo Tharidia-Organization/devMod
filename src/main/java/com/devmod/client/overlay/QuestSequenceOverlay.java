@@ -1,14 +1,17 @@
 package com.devmod.client.overlay;
 
-import com.devmod.DevMod;
-import com.devmod.party.ArrivalConfirmPayload;
-import com.devmod.party.QuestSequencePayload;
-import com.devmod.client.ui.editor.core.UIConstants;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+
+import javax.annotation.Nullable;
+
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -16,10 +19,10 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import javax.annotation.Nullable;
-import java.util.List;
-import java.util.UUID;
-import java.util.Objects;
+import com.devmod.DevMod;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.party.ArrivalConfirmPayload;
+import com.devmod.party.QuestSequencePayload;
 
 /**
  * Client-side overlay that shows the quest start sequence countdown.

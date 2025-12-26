@@ -1,9 +1,10 @@
 package com.devmod.client.ui.testing.pages;
 
-import net.neoforged.neoforge.common.ModConfigSpec;
-
 import java.util.Objects;
+
 import javax.annotation.Nonnull;
+
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 /**
  * Shared utility methods for VoxelLab pages.

@@ -1,11 +1,13 @@
 package com.devmod.client.ui.components;
 
-import com.devmod.client.ui.editor.core.UIConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+
+import com.devmod.client.ui.editor.core.UIConstants;
 
 /**
  * Simple countdown helper for timed UI selections.

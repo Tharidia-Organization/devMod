@@ -1,33 +1,17 @@
 package com.devmod.network.handlers;
 
-import com.devmod.config.ArmorConfigManager;
-import com.devmod.stats.ArmorStats;
-import com.devmod.config.Config;
-import com.devmod.DevMod;
-import com.devmod.config.MobConfigManager;
-import com.devmod.config.UsableConfigManager;
-import com.devmod.stats.UsableStats;
-import com.devmod.config.FoodConfigManager;
-import com.devmod.stats.FoodStats;
-import com.devmod.config.FuelConfigManager;
-import com.devmod.stats.FuelStats;
-import com.devmod.config.WeaponConfigManager;
-import com.devmod.stats.WeaponStats;
-import com.devmod.network.EquipMobPayload;
-import com.devmod.network.ModifyItemPayload;
-import com.devmod.network.UpdateArmorPayload;
-import com.devmod.network.UpdateMobStatsPayload;
-import com.devmod.network.UpdateWeaponPayload;
-import com.devmod.network.MobConfigConfirmPayload;
-import com.devmod.network.PacketValidator;
-import com.devmod.network.PacketValidator.ValidationResult;
-import com.devmod.network.RangedWeaponStatsPayload;
-import com.devmod.util.I18n;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundUpdateAttributesPacket;
 import net.minecraft.resources.ResourceLocation;
@@ -42,7 +26,6 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.Item;
@@ -51,12 +34,32 @@ import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
+
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import com.devmod.DevMod;
+import com.devmod.config.ArmorConfigManager;
+import com.devmod.config.Config;
+import com.devmod.config.FoodConfigManager;
+import com.devmod.config.FuelConfigManager;
+import com.devmod.config.MobConfigManager;
+import com.devmod.config.UsableConfigManager;
+import com.devmod.config.WeaponConfigManager;
+import com.devmod.network.EquipMobPayload;
+import com.devmod.network.MobConfigConfirmPayload;
+import com.devmod.network.ModifyItemPayload;
+import com.devmod.network.PacketValidator;
+import com.devmod.network.PacketValidator.ValidationResult;
+import com.devmod.network.RangedWeaponStatsPayload;
+import com.devmod.network.UpdateArmorPayload;
+import com.devmod.network.UpdateMobStatsPayload;
+import com.devmod.network.UpdateWeaponPayload;
+import com.devmod.stats.ArmorStats;
+import com.devmod.stats.FoodStats;
+import com.devmod.stats.FuelStats;
+import com.devmod.stats.UsableStats;
+import com.devmod.stats.WeaponStats;
+import com.devmod.util.I18n;
 
 /**
  * Network handler for mob, weapon, armor, and equipment-related packets.

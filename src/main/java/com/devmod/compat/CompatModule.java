@@ -1,8 +1,8 @@
 package com.devmod.compat;
 
-import com.devmod.actions.ActionRegistry;
-
 import javax.annotation.Nullable;
+
+import com.devmod.actions.ActionRegistry;
 
 /**
  * Interface for mod compatibility modules.

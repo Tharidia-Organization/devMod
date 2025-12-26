@@ -1,14 +1,15 @@
 package com.devmod.client.arena.hud;
 
-import com.devmod.arena.ArenaDebugState;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.ResourceLocation;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
+
+import com.devmod.arena.ArenaDebugState;
 
 /**
  * DD30: HUD Visibility - permission + toggle esplicito

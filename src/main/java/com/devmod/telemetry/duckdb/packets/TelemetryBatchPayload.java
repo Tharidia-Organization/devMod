@@ -1,14 +1,15 @@
 package com.devmod.telemetry.duckdb.packets;
 
-import com.devmod.DevMod;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import com.devmod.DevMod;
 
 /**
  * Network payload for sending batched telemetry events from client to server.

@@ -1,18 +1,19 @@
 package com.devmod.arena.registry;
 
-import com.devmod.arena.config.ArenaTemplateConfig;
-import com.devmod.arena.config.FeatureFlagManager;
-import com.devmod.arena.config.FeatureFlagRegistry;
-import com.devmod.arena.config.InstanceLimitConfig;
-import com.devmod.arena.telemetry.ArenaTelemetry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.arena.config.ArenaTemplateConfig;
+import com.devmod.arena.config.FeatureFlagManager;
+import com.devmod.arena.config.FeatureFlagRegistry;
+import com.devmod.arena.config.InstanceLimitConfig;
+import com.devmod.arena.telemetry.ArenaTelemetry;
 
 /**
  * Bootstrap helper to create and load {@link ArenaTemplateRegistry} with sane defaults.

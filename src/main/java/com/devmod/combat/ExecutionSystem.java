@@ -10,6 +10,9 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -22,9 +25,6 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.ItemStack;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.devmod.arena.policy.ArenaPolicy.ExecutionOverrides;
 import com.devmod.config.GameMechanicsConfig;

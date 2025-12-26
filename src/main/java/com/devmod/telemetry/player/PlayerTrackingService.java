@@ -1,12 +1,5 @@
 package com.devmod.telemetry.player;
 
-import com.devmod.telemetry.RoomDefinition;
-import com.devmod.telemetry.room.RoomService;
-import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.phys.Vec3;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,6 +12,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
+
+import com.devmod.telemetry.RoomDefinition;
+import com.devmod.telemetry.room.RoomService;
 
 /**
  * Service for tracking player positions, room transitions, and movement patterns.

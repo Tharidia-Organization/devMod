@@ -1,11 +1,11 @@
 package com.devmod.arena.builder;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Memory-efficient block change tracker using packed long positions (DD8).

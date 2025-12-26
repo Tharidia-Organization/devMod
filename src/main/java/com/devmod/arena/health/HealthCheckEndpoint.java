@@ -1,11 +1,5 @@
 package com.devmod.arena.health;
 
-import com.devmod.arena.fallback.CircuitBreaker;
-import com.devmod.arena.pool.PrebuildPoolManager;
-import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -13,6 +7,13 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.arena.fallback.CircuitBreaker;
+import com.devmod.arena.pool.PrebuildPoolManager;
+import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 
 /**
  * DD64: Pure health check endpoint for arena subsystem.

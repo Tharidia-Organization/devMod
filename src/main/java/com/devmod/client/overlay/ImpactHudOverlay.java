@@ -1,20 +1,22 @@
 package com.devmod.client.overlay;
 
-import com.devmod.config.Config;
-import com.devmod.DevMod;
+import java.util.List;
+import java.util.Objects;
+
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
-import java.util.List;
-import java.util.Objects;
+import com.devmod.DevMod;
+import com.devmod.config.Config;
 
 /**
  * HUD Overlay to show real-time impact analysis.

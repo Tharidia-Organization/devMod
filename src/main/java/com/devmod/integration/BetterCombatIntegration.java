@@ -1,10 +1,11 @@
 package com.devmod.integration;
 
-import net.minecraft.world.entity.player.Player;
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
+import net.minecraft.world.entity.player.Player;
 
 /**
  * Integration with Better Combat mod.

@@ -1,20 +1,22 @@
 package com.devmod.combat;
 
-import com.devmod.DevMod;
+import java.lang.reflect.Method;
+import java.util.Objects;
 
-import com.devmod.network.PacketValidator;
-import com.devmod.stats.RangedWeaponStats;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.ThrownTrident;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
-import java.lang.reflect.Method;
-import net.minecraft.world.level.Level;
-import java.util.Objects;
+
+import com.devmod.DevMod;
+import com.devmod.network.PacketValidator;
+import com.devmod.stats.RangedWeaponStats;
 
 /**
  * Runtime hooks to apply ranged overrides (doc 16) to arrows when they spawn.

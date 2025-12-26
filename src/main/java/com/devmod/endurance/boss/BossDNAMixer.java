@@ -1,16 +1,17 @@
 package com.devmod.endurance.boss;
 
-import com.devmod.endurance.BossWaveSystem.BossAbility;
-import com.devmod.endurance.BossWaveSystem.BossArchetype;
-import com.devmod.endurance.BossWaveSystem.BossFight;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Random;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.endurance.BossWaveSystem.BossAbility;
+import com.devmod.endurance.BossWaveSystem.BossArchetype;
+import com.devmod.endurance.BossWaveSystem.BossFight;
 
 /**
  * Boss DNA Mixing System - Dynamic Boss Generation.

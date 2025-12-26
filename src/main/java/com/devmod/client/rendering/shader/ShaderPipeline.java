@@ -1,17 +1,20 @@
 package com.devmod.client.rendering.shader;
 
+import java.io.IOException;
+import java.util.Objects;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.resources.ResourceLocation;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.client.event.RegisterShadersEvent;
-import org.slf4j.Logger;
-
-import javax.annotation.Nullable;
-import java.io.IOException;
-import java.util.Objects;
 
 /**
  * Encapsulates shader registration and RenderType creation (custom + fallback).

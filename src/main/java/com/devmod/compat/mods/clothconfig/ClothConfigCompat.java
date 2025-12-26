@@ -13,6 +13,7 @@ import net.neoforged.fml.loading.FMLEnvironment;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
+
 /**
  * Compatibility module for Cloth Config API.
  *

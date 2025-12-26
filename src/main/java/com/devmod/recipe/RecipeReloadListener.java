@@ -1,9 +1,10 @@
 package com.devmod.recipe;
 
-import com.devmod.DevMod;
-import com.devmod.network.RecipeClientSyncPayload;
-import com.devmod.util.ConfigPaths;
+import java.util.List;
+import java.util.Objects;
+
 import net.minecraft.server.level.ServerPlayer;
+
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
@@ -11,8 +12,9 @@ import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import java.util.List;
-import java.util.Objects;
+import com.devmod.DevMod;
+import com.devmod.network.RecipeClientSyncPayload;
+import com.devmod.util.ConfigPaths;
 
 import static com.devmod.DevMod.MODID;
 

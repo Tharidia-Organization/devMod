@@ -1,10 +1,11 @@
 package com.devmod.client.ui.editor.modules;
 
+import net.minecraft.nbt.CompoundTag;
+
 import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorToggle;
 import com.devmod.client.ui.editor.components.SourceBadge;
 import com.devmod.client.ui.editor.core.UIConstants;
-import net.minecraft.nbt.CompoundTag;
 
 /**
  * Manages Mace and Trident variant-specific state for WeaponModule.

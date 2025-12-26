@@ -1,23 +1,26 @@
 package com.devmod.client.ui.editor.components;
 
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.EditorConstants;
-import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.ScaledCoord;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.mojang.blaze3d.platform.Lighting;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
+
+import org.joml.Quaternionf;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
-import org.joml.Quaternionf;
 
-import java.util.Objects;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.function.Consumer;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.EditorConstants;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.ScaledCoord;
+import com.devmod.client.ui.editor.core.UIConstants;
+
+import com.mojang.blaze3d.platform.Lighting;
 
 /**
  * Preview renderer for displaying items or entity models.

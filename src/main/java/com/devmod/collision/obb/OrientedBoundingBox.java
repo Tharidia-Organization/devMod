@@ -1,14 +1,16 @@
 package com.devmod.collision.obb;
 
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.Objects;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Oriented Bounding Box (OBB) that supports arbitrary rotation.

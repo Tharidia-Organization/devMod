@@ -1,15 +1,5 @@
 package com.devmod.telemetry.dashboard;
 
-import com.devmod.arena.dashboard.ArenaDashboardEndpoint;
-import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.mojang.logging.LogUtils;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
-import org.slf4j.Logger;
-
 import java.awt.Desktop;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,6 +20,18 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.slf4j.Logger;
+
+import com.devmod.arena.dashboard.ArenaDashboardEndpoint;
+import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.mojang.logging.LogUtils;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 
 /**
  * Embedded HTTP server for telemetry dashboard.

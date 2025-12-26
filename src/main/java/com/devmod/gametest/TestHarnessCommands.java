@@ -1,8 +1,21 @@
 package com.devmod.gametest;
 
+import java.lang.reflect.Method;
+import java.nio.file.Path;
+import java.util.Objects;
+
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+
 import com.devmod.DevMod;
-import com.devmod.combat.HitHelper;
-import com.devmod.stats.WeaponStats;
 import com.devmod.actions.ActionCategory;
 import com.devmod.actions.ActionCommandInvoker;
 import com.devmod.actions.ActionContext;
@@ -11,30 +24,19 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionPreconditions;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
-import java.lang.reflect.Method;
+import com.devmod.combat.HitHelper;
+import com.devmod.endurance.EnduranceQuestManager;
+import com.devmod.stats.WeaponStats;
+import com.devmod.telemetry.duckdb.DuckDBMigrationService;
+import com.devmod.telemetry.duckdb.DuckDBQueryAPI;
+import com.devmod.telemetry.duckdb.DuckDBQueryAPI.EnduranceStats;
+import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.devmod.util.I18n;
+
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
-
-import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
-import com.devmod.telemetry.duckdb.DuckDBQueryAPI;
-import com.devmod.telemetry.duckdb.DuckDBQueryAPI.EnduranceStats;
-import com.devmod.telemetry.duckdb.DuckDBMigrationService;
-import com.devmod.endurance.EnduranceQuestManager;
-
-import java.nio.file.Path;
-import java.util.Objects;
 
 /**
  * Test harness commands for manual testing of complex UI/HUD features.

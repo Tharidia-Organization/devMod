@@ -1,5 +1,28 @@
 package com.devmod.telemetry;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.slf4j.Logger;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
+
 import com.devmod.telemetry.boss.BossPhaseService;
 import com.devmod.telemetry.combat.FightSessionService;
 import com.devmod.telemetry.damage.DamageTrackingService;
@@ -14,28 +37,8 @@ import com.devmod.telemetry.skills.SkillTrackingService;
 import com.devmod.telemetry.spatial.HeatmapService;
 import com.devmod.telemetry.spatial.LightAnalysisService;
 import com.devmod.telemetry.spatial.SpatialMetricsService;
-import com.mojang.logging.LogUtils;
-import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.Vec3;
-import org.slf4j.Logger;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
+import com.mojang.logging.LogUtils;
 
 /**
  * Central telemetry logger. Keeps light in-memory aggregates and appends NDJSON lines to disk.

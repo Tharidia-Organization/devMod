@@ -1,5 +1,13 @@
 package com.devmod.client.ui.editor.components;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.world.item.ItemStack;
+
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.EditorConstants;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
@@ -7,13 +15,6 @@ import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.StringBuilderCache;
 import com.devmod.client.ui.editor.core.Typography;
 import com.devmod.client.ui.editor.core.UIConstants;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.world.item.ItemStack;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 
 /**
  * Item info panel showing item name, key stats, and dirty indicator.

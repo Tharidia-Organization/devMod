@@ -1,13 +1,20 @@
 package com.devmod.client.ui.testing.panel;
 
-import com.devmod.client.ui.editor.core.UIConstants;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.util.Mth;
-
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.devmod.client.ui.testing.panel.PanelConstants.*;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.util.Mth;
+
+import com.devmod.client.ui.editor.core.UIConstants;
+
+import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_THUMB_HOVER;
+import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_THUMB_NORMAL;
+import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_TRACK;
+import static com.devmod.client.ui.testing.panel.PanelConstants.PANEL_SPACING;
+import static com.devmod.client.ui.testing.panel.PanelConstants.SCROLLBAR_PADDING;
+import static com.devmod.client.ui.testing.panel.PanelConstants.SCROLLBAR_THUMB_MIN_HEIGHT;
+import static com.devmod.client.ui.testing.panel.PanelConstants.SCROLLBAR_WIDTH;
 
 /**
  * Container that manages a list of UIPanel instances with automatic layout,

@@ -1,15 +1,15 @@
 package com.devmod.arena.monitoring;
 
-import com.devmod.arena.alert.AlertRouter;
-import com.devmod.arena.alert.AlertRouterRegistry;
-import com.devmod.arena.alert.ErrorContext;
-import com.devmod.arena.config.ArenaTemplateConfig;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
+
+import com.devmod.arena.alert.AlertRouter;
+import com.devmod.arena.alert.AlertRouterRegistry;
+import com.devmod.arena.alert.ErrorContext;
+import com.devmod.arena.config.ArenaTemplateConfig;
 
 /**
  * Tracks build outcomes over a 24h window and emits alerts on rate thresholds.

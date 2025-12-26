@@ -1,24 +1,28 @@
 package com.devmod.client.ui.wizard;
 
-import com.devmod.endurance.EnduranceQuestRegistry;
-import com.devmod.client.testing.IntegratedTestSession;
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.ConfirmDialog;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.util.I18n;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
+import org.lwjgl.glfw.GLFW;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import org.lwjgl.glfw.GLFW;
 
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import com.devmod.client.testing.IntegratedTestSession;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.ConfirmDialog;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.endurance.EnduranceQuestRegistry;
+import com.devmod.util.I18n;
 
 /**
  * Quick Test Wizard - Guided workflow to start integrated testing.

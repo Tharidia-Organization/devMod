@@ -1,13 +1,14 @@
 package com.devmod.endurance;
 
-import com.devmod.arena.api.ArenaHandle;
+import java.util.Objects;
+import java.util.UUID;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.Objects;
-import java.util.UUID;
+import com.devmod.arena.api.ArenaHandle;
 
 /**
  * Runtime arena context derived from an ArenaHandle plus the active ServerLevel.

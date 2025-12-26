@@ -1,8 +1,8 @@
 package com.devmod.client.ui.editor.core;
 
-import net.minecraft.client.resources.language.I18n;
-
 import java.util.Objects;
+
+import net.minecraft.client.resources.language.I18n;
 
 /**
  * Centralized registry for slider descriptions.

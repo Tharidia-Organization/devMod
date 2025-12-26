@@ -1,8 +1,12 @@
 package com.devmod.client.overlay;
 
-import com.devmod.config.Config;
-import com.devmod.DevMod;
-import com.devmod.endurance.GamificationManager.BadgeRarity;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.Random;
+
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -12,18 +16,16 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Queue;
-import java.util.Random;
+import com.devmod.DevMod;
+import com.devmod.config.Config;
+import com.devmod.endurance.GamificationManager.BadgeRarity;
 
 /**
  * Premium badge unlock popup overlay with advanced animations.

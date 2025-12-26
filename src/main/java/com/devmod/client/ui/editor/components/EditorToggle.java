@@ -1,16 +1,18 @@
 package com.devmod.client.ui.editor.components;
 
+import java.util.Objects;
+import java.util.function.Consumer;
+
+import javax.annotation.Nonnull;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.EditorSounds;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-
-import javax.annotation.Nonnull;
-import java.util.Objects;
-import java.util.function.Consumer;
 
 /**
  * Toggle/switch component for boolean values.

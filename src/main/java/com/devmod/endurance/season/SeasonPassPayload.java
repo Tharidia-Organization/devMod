@@ -1,15 +1,17 @@
 package com.devmod.endurance.season;
 
-import io.netty.buffer.ByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
-
-import javax.annotation.Nonnull;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+
+import io.netty.buffer.ByteBuf;
 
 /**
  * Network payload for syncing season pass data to clients.

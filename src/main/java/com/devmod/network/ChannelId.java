@@ -1,9 +1,10 @@
 package com.devmod.network;
 
-import javax.annotation.Nonnull;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+
+import javax.annotation.Nonnull;
 
 /**
  * Centralized registry of network channel IDs to prevent collisions.

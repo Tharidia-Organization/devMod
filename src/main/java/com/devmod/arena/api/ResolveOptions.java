@@ -1,8 +1,9 @@
 package com.devmod.arena.api;
 
-import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.UUID;
+
+import javax.annotation.Nullable;
 
 /**
  * Options for arena resolution (DD14).

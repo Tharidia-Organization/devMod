@@ -1,12 +1,13 @@
 package com.devmod.endurance.contracts;
 
+import java.util.Objects;
+import java.util.function.BiPredicate;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-
-import javax.annotation.Nonnull;
-import java.util.Objects;
-import java.util.function.BiPredicate;
 
 /**
  * Blood Contract - High-risk, high-reward challenge contract.

@@ -1,5 +1,10 @@
 package com.devmod.arena.command;
 
+import java.util.function.Function;
+
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.world.item.Items;
+
 import com.devmod.actions.ActionCategory;
 import com.devmod.actions.ActionContext;
 import com.devmod.actions.ActionIds;
@@ -7,11 +12,8 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionPreconditions;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
-import com.mojang.brigadier.context.CommandContext;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.world.item.Items;
 
-import java.util.function.Function;
+import com.mojang.brigadier.context.CommandContext;
 
 public final class ArenaActionRegistry {
     private ArenaActionRegistry() {}

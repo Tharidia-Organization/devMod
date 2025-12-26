@@ -1,18 +1,20 @@
 package com.devmod.collision.registry;
 
-import com.devmod.collision.bodypart.BodyPartHierarchy;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.core.registries.BuiltInRegistries;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+
+import com.devmod.collision.bodypart.BodyPartHierarchy;
 
 /**
  * Central registry mapping EntityType → BodyPartHierarchy.

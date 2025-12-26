@@ -1,11 +1,5 @@
 package com.devmod.actions;
 
-import com.devmod.DevMod;
-import com.devmod.telemetry.TelemetryJson;
-import com.devmod.telemetry.TelemetryService;
-import net.minecraft.network.chat.Component;
-
-import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,6 +9,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nullable;
+
+import net.minecraft.network.chat.Component;
+
+import com.devmod.DevMod;
+import com.devmod.telemetry.TelemetryJson;
+import com.devmod.telemetry.TelemetryService;
 
 public final class ActionRegistry {
     private static final Map<String, RadialAction> ACTIONS = new ConcurrentHashMap<>();

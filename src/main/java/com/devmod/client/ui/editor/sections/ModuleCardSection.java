@@ -1,16 +1,18 @@
 package com.devmod.client.ui.editor.sections;
 
-import com.devmod.client.ui.editor.EditorSection;
-import com.devmod.client.ui.editor.EditorStartTab;
-import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
+import java.util.Objects;
+import java.util.function.Consumer;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
-import java.util.function.Consumer;
+import com.devmod.client.ui.editor.EditorSection;
+import com.devmod.client.ui.editor.EditorStartTab;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.UIConstants;
 
 /**
  * Clickable card section for navigating to another editor module.

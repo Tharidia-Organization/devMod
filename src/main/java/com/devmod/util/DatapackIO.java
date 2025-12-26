@@ -1,18 +1,5 @@
 package com.devmod.util;
 
-import com.devmod.config.ArmorConfigManager;
-import com.devmod.stats.ArmorStats;
-import com.devmod.config.WeaponConfigManager;
-import com.devmod.stats.WeaponStats;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Item;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -20,6 +7,22 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+
+import com.devmod.config.ArmorConfigManager;
+import com.devmod.config.WeaponConfigManager;
+import com.devmod.stats.ArmorStats;
+import com.devmod.stats.WeaponStats;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 
 /**
  * Minimal datapack export/import utilities for DevMod overrides.

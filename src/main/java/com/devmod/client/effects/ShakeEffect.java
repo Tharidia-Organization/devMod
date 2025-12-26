@@ -1,12 +1,13 @@
 package com.devmod.client.effects;
 
+import java.util.UUID;
+import java.util.function.Supplier;
+
+import org.joml.Vector3f;
+
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Vector3f;
-
-import java.util.UUID;
-import java.util.function.Supplier;
 
 /**
  * Represents a screen shake effect with configurable parameters.

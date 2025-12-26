@@ -1,6 +1,7 @@
 package com.devmod.client.ui.testing.pages;
 
-import com.devmod.config.Config;
+import javax.annotation.Nonnull;
+
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
@@ -13,12 +14,11 @@ import com.devmod.client.ui.testing.panel.SectionPanel;
 import com.devmod.client.ui.testing.panel.SliderPanel;
 import com.devmod.client.ui.testing.panel.SpacerPanel;
 import com.devmod.client.ui.testing.panel.StatusPanel;
+import com.devmod.config.Config;
 
-import javax.annotation.Nonnull;
-
+import static com.devmod.client.ui.testing.pages.PageUtils.nonNullDouble;
 import static com.devmod.client.ui.testing.pages.PageUtils.safeGetBool;
 import static com.devmod.client.ui.testing.pages.PageUtils.safeGetDouble;
-import static com.devmod.client.ui.testing.pages.PageUtils.nonNullDouble;
 
 /**
  * Effects Page - Configuration for VFX and visual effects.

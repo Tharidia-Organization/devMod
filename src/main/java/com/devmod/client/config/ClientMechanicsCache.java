@@ -1,13 +1,15 @@
 package com.devmod.client.config;
 
-import net.minecraft.nbt.CompoundTag;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
-import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nullable;
+
+import net.minecraft.nbt.CompoundTag;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 /**
  * Client-side cache for synchronized GameMechanicsConfig values.

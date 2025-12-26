@@ -1,13 +1,14 @@
 package com.devmod.party;
 
+import java.util.Objects;
+import java.util.UUID;
+
+import javax.annotation.Nullable;
+
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-import javax.annotation.Nullable;
-import java.util.Objects;
-import java.util.UUID;
 
 /**
  * Unified payload for party actions (C2S).

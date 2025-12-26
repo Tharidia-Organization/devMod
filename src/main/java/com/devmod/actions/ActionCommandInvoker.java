@@ -1,7 +1,8 @@
 package com.devmod.actions;
 
-import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
+
+import com.mojang.brigadier.context.CommandContext;
 
 public final class ActionCommandInvoker {
     private ActionCommandInvoker() {}

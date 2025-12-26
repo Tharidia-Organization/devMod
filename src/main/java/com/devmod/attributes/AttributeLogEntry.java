@@ -1,8 +1,8 @@
 package com.devmod.attributes;
 
-import net.minecraft.world.phys.Vec3;
-
 import javax.annotation.Nullable;
+
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Voce del log per il sistema di monitoraggio attributi.

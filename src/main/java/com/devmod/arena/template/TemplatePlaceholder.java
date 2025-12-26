@@ -1,13 +1,13 @@
 package com.devmod.arena.template;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Template Placeholder System (DD9).

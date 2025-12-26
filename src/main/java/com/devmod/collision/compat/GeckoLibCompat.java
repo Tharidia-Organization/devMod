@@ -1,14 +1,16 @@
 package com.devmod.collision.compat;
 
-import net.minecraft.world.entity.LivingEntity;
+import java.lang.reflect.Method;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nonnull;
+
 import org.joml.Matrix4f;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
-import java.lang.reflect.Method;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.world.entity.LivingEntity;
 
 /**
  * Optional compatibility layer for GeckoLib entities.

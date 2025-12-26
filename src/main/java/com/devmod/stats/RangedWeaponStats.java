@@ -1,14 +1,14 @@
 package com.devmod.stats;
 
+import java.util.Objects;
+
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TridentItem;
 import net.minecraft.world.item.component.CustomData;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.resources.ResourceLocation;
-
-import java.util.Objects;
 
 /**
  * Ranged weapon stats data class and reader.

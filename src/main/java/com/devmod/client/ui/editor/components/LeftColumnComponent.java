@@ -1,17 +1,17 @@
 package com.devmod.client.ui.editor.components;
 
+import java.util.Objects;
+import java.util.function.Consumer;
+
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
+
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.EditorConstants;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.UIConstants;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.item.ItemStack;
-
-import java.util.Objects;
-
-import java.util.function.Consumer;
 
 /**
  * Left column containing preview, slot selector, and item info.

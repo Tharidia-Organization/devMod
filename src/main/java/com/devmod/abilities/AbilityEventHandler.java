@@ -1,16 +1,20 @@
 package com.devmod.abilities;
 
-import com.devmod.DevMod;
-import com.devmod.telemetry.player.AbilityTelemetryService;
-import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
+
 import net.minecraft.server.level.ServerPlayer;
+
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import org.slf4j.Logger;
+
+import com.devmod.DevMod;
+import com.devmod.telemetry.player.AbilityTelemetryService;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * Event handler for the ability systems (Stamina, Dash, Dodge).

@@ -1,11 +1,12 @@
 package com.devmod.integration;
 
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
+import java.lang.reflect.Method;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Method;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 
 /**
  * Soft dependency wrapper per Pehkui API.

@@ -1,15 +1,15 @@
 package com.devmod.client.testing;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import com.devmod.client.ui.editor.ItemEditorDataManager;
 import com.devmod.client.ui.editor.systems.ModpackDetector;
 import com.devmod.client.ui.editor.systems.PresetBridge;
 import com.devmod.client.ui.editor.systems.PresetRegistry;
 import com.devmod.client.ui.editor.systems.PresetScope;
 import com.devmod.testing.TestCase;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Test cases for the Preset System (Plan B - Full PresetRegistry Integration).

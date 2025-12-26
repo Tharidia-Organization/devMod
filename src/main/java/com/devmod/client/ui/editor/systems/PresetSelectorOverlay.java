@@ -1,20 +1,22 @@
 package com.devmod.client.ui.editor.systems;
 
-import com.devmod.client.ui.editor.ItemEditorDataManager;
-import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.components.VirtualizedList;
-import com.devmod.client.ui.editor.core.BaseOverlay;
-import com.devmod.client.ui.editor.core.UIConstants;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import org.lwjgl.glfw.GLFW;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
+import org.lwjgl.glfw.GLFW;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+
+import com.devmod.client.ui.editor.ItemEditorDataManager;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.components.VirtualizedList;
+import com.devmod.client.ui.editor.core.BaseOverlay;
+import com.devmod.client.ui.editor.core.UIConstants;
 
 /**
  * Overlay for selecting and managing presets with hierarchical display.

@@ -1,14 +1,5 @@
 package com.devmod.telemetry.spatial;
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
-
-import com.devmod.telemetry.TelemetryJson;
-import com.devmod.telemetry.room.RoomService;
-import com.devmod.telemetry.RoomDefinition;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,6 +7,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+
+import com.devmod.telemetry.RoomDefinition;
+import com.devmod.telemetry.TelemetryJson;
+import com.devmod.telemetry.room.RoomService;
 
 /**
  * Service for tracking spatial metrics and environmental hazards.

@@ -1,11 +1,27 @@
 package com.devmod.client.ui.screens;
 
-import com.devmod.client.input.KeyInputHandler;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.OptionInstance;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
 import com.devmod.actions.ActionContext;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.rendering.DebugRenderer;
 import com.devmod.client.rendering.HeatmapVisualizer;
 import com.devmod.client.rendering.LightLevelOverlay;
@@ -14,26 +30,13 @@ import com.devmod.client.rendering.PathfindingDebugger;
 import com.devmod.client.rendering.RoomBoundsVisualizer;
 import com.devmod.client.rendering.SafeSpotVisualizer;
 import com.devmod.client.rendering.VerticalLevelsVisualizer;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.testing.stats.EnvironmentalDamageStats;
 import com.devmod.testing.stats.HazardTypeRegistry.HazardType;
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.util.I18n;
-import net.minecraft.client.KeyMapping;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.OptionInstance;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 
 /**
  * Dashboard e Analytics Screen per la telemetria.

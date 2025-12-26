@@ -1,20 +1,22 @@
 package com.devmod.client.ui.unified.pages;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Nonnull;
+
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+
 import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.input.KeybindConflictDetector;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
-import net.minecraft.client.KeyMapping;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Keybinds settings page - displays all mod keybindings.

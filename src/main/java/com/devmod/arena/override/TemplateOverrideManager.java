@@ -1,16 +1,17 @@
 package com.devmod.arena.override;
 
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.nbt.CompoundTag;
-
-import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nullable;
+
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * DD29: forceTemplateId Persistence - session state + capability per relog

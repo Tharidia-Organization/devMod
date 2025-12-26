@@ -1,5 +1,9 @@
 package com.devmod.network;
 
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -7,9 +11,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-
-import javax.annotation.Nonnull;
-import java.util.Objects;
 
 /**
  * Typed armor stats payload (v2) that mirrors WeaponStatsPayload.

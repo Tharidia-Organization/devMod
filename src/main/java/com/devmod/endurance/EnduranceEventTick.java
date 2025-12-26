@@ -1,29 +1,31 @@
 package com.devmod.endurance;
 
-import com.devmod.arena.api.ArenaHandle;
-import com.devmod.telemetry.endurance.EnduranceTelemetryService;
-import com.devmod.util.I18n;
-import net.minecraft.ChatFormatting;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.Mob;
-import net.minecraft.sounds.SoundEvents;
-import net.neoforged.neoforge.network.PacketDistributor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.devmod.endurance.analytics.LiveAnalyticsHookManager;
-import com.devmod.party.QuestSequencePayload;
-import com.devmod.party.QuestStartSequence;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Mob;
+
+import net.neoforged.neoforge.network.PacketDistributor;
+
+import com.devmod.arena.api.ArenaHandle;
+import com.devmod.endurance.analytics.LiveAnalyticsHookManager;
+import com.devmod.party.QuestSequencePayload;
+import com.devmod.party.QuestStartSequence;
+import com.devmod.telemetry.endurance.EnduranceTelemetryService;
+import com.devmod.util.I18n;
 
 /**
  * Server tick handlers for EnduranceQuest system.

@@ -1,10 +1,11 @@
 package com.devmod.arena.event;
 
-import com.devmod.arena.registry.TemplateType;
-
-import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.UUID;
+
+import javax.annotation.Nullable;
+
+import com.devmod.arena.registry.TemplateType;
 
 /**
  * DD13: Sealed interface for template lifecycle events.

@@ -1,14 +1,17 @@
 package com.devmod.compat.mods.ironsspellbooks;
 
-import com.devmod.compat.Compat;
-import com.devmod.compat.CompatModule;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
+import java.lang.reflect.Method;
+
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-import java.lang.reflect.Method;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+
+import com.devmod.compat.Compat;
+import com.devmod.compat.CompatModule;
 
 /**
  * Compatibility module for Iron's Spells 'n Spellbooks.

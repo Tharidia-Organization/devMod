@@ -1,14 +1,17 @@
 package com.devmod.client.input;
 
-import com.mojang.blaze3d.platform.InputConstants;
+import java.util.Objects;
+
+import org.lwjgl.glfw.GLFW;
+
 import net.minecraft.client.KeyMapping;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
-import org.lwjgl.glfw.GLFW;
 
-import java.util.Objects;
+import com.mojang.blaze3d.platform.InputConstants;
 
 /**
  * Contains all keybind definitions for DevMod.

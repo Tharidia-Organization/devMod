@@ -1,5 +1,18 @@
 package com.devmod.gametest;
 
+import java.util.Objects;
+
+import net.minecraft.gametest.framework.AfterBatch;
+import net.minecraft.gametest.framework.BeforeBatch;
+import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.Items;
+
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+
 import com.devmod.DevMod;
 import com.devmod.config.MobConfigManager;
 import com.devmod.config.WeaponConfigManager;
@@ -11,17 +24,6 @@ import com.devmod.runtime.InstanceState;
 import com.devmod.runtime.PlayerInstanceSnapshot;
 import com.devmod.runtime.PlayerInstanceState;
 import com.devmod.runtime.RecoverySystem;
-import net.minecraft.gametest.framework.AfterBatch;
-import net.minecraft.gametest.framework.BeforeBatch;
-import net.minecraft.gametest.framework.GameTest;
-import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.item.Items;
-import net.neoforged.neoforge.gametest.GameTestHolder;
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
-
-import java.util.Objects;
 
 /**
  * L0 Boot Verification GameTests

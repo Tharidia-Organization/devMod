@@ -1,5 +1,19 @@
 package com.devmod.telemetry.endurance;
 
+import java.time.Instant;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.slf4j.Logger;
+
+import net.minecraft.core.BlockPos;
+
 import com.devmod.arena.api.ArenaHandle;
 import com.devmod.endurance.CombatTracker;
 import com.devmod.endurance.ComboSystem;
@@ -12,19 +26,8 @@ import com.devmod.endurance.WaveManager;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.duckdb.DuckDBConfig;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
-import com.mojang.logging.LogUtils;
-import net.minecraft.core.BlockPos;
-import org.slf4j.Logger;
 
-import java.time.Instant;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import com.mojang.logging.LogUtils;
 
 /**
  * Centralized telemetry service for Endurance Quest systems.

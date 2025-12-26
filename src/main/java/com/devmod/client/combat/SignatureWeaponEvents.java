@@ -1,15 +1,17 @@
 package com.devmod.client.combat;
 
-import com.devmod.DevMod;
-import com.devmod.combat.signature.SoulImprint;
+import java.util.List;
+
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 
-import java.util.List;
+import com.devmod.DevMod;
+import com.devmod.combat.signature.SoulImprint;
 
 /**
  * Client-side event handlers for Signature Weapon system.

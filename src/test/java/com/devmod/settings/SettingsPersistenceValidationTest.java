@@ -1,8 +1,16 @@
 package com.devmod.settings;
 
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
 import com.devmod.client.ui.unified.persistence.SettingsData;
-import com.devmod.client.ui.unified.persistence.SettingsData.*;
-import org.junit.jupiter.api.*;
+import com.devmod.client.ui.unified.persistence.SettingsData.CombatSettings;
+import com.devmod.client.ui.unified.persistence.SettingsData.DebugSettings;
+import com.devmod.client.ui.unified.persistence.SettingsData.GeneralSettings;
+import com.devmod.client.ui.unified.persistence.SettingsData.OnboardingSettings;
+import com.devmod.client.ui.unified.persistence.SettingsData.TelemetrySettings;
+import com.devmod.client.ui.unified.persistence.SettingsData.VisualizerSettings;
 
 import static org.junit.jupiter.api.Assertions.*;
 

@@ -1,9 +1,9 @@
 package com.devmod.arena.telemetry;
 
-import com.devmod.arena.metrics.ArenaMetricsContext;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import com.devmod.arena.metrics.ArenaMetricsContext;
 
 /**
  * Telemetry for arena build operations with contention tracking (DD62).

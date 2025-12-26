@@ -1,14 +1,14 @@
 package com.devmod.client.endurance;
 
-import com.devmod.endurance.ComboSystem;
-import com.devmod.endurance.EnduranceQuestState;
-import com.devmod.endurance.QuestSyncPayload;
-import com.devmod.endurance.WaveObjectiveState;
+import java.util.List;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import java.util.List;
+import com.devmod.endurance.ComboSystem;
+import com.devmod.endurance.EnduranceQuestState;
+import com.devmod.endurance.QuestSyncPayload;
+import com.devmod.endurance.WaveObjectiveState;
 
 /**
  * Client-side cache for quest data received from the server.

@@ -1,21 +1,24 @@
 package com.devmod.telemetry.duckdb.packets;
 
-import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
-import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload.CompressedEvent;
-import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload.EventType;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.mojang.logging.LogUtils;
-import net.minecraft.server.level.ServerPlayer;
-import org.slf4j.Logger;
-
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.slf4j.Logger;
+
+import net.minecraft.server.level.ServerPlayer;
+
+import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
+import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload.CompressedEvent;
+import com.devmod.telemetry.duckdb.packets.TelemetryBatchPayload.EventType;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.mojang.logging.LogUtils;
 
 /**
  * Server-side handler for telemetry batch packets.

@@ -1,5 +1,19 @@
 package com.devmod.debug;
 
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.Items;
+
+import net.neoforged.neoforge.network.PacketDistributor;
+
 import com.devmod.actions.ActionCategory;
 import com.devmod.actions.ActionCommandInvoker;
 import com.devmod.actions.ActionIds;
@@ -7,23 +21,12 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionPreconditions;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
+
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.minecraft.world.item.Items;
-
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.Objects;
 
 /**
  * Command handler for /devdebug command.

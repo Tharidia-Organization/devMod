@@ -1,17 +1,5 @@
 package com.devmod.party;
 
-import com.devmod.arena.api.ArenaHandle;
-import com.devmod.endurance.EnduranceQuestManager;
-import com.devmod.endurance.InstanceArenaManager;
-import com.devmod.endurance.QuestType;
-import com.devmod.util.I18n;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -21,6 +9,21 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+
+import net.neoforged.neoforge.network.PacketDistributor;
+
+import com.devmod.arena.api.ArenaHandle;
+import com.devmod.endurance.EnduranceQuestManager;
+import com.devmod.endurance.InstanceArenaManager;
+import com.devmod.endurance.QuestType;
+import com.devmod.util.I18n;
 
 /**
  * Manages the quest start sequence for party quests.

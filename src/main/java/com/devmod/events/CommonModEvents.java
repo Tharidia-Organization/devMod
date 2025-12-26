@@ -1,31 +1,18 @@
 package com.devmod.events;
 
-import com.devmod.stats.WeaponStats;
-import com.devmod.stats.ArmorStats;
-import com.devmod.config.WeaponConfigManager;
-import com.devmod.config.ArmorConfigManager;
-import com.devmod.config.FuelConfigManager;
-import com.devmod.components.WeaponComponents;
-import com.devmod.components.ArmorComponents;
+import java.util.Objects;
 
-import com.devmod.DevMod;
-import com.devmod.network.GameMechanicsSyncPayload;
+import org.slf4j.Logger;
 
-import static com.devmod.DevMod.MODID;
-
-import com.devmod.endurance.EnduranceQuestManager;
-import com.devmod.testing.stats.HazardTypeRegistry;
-import com.devmod.util.ConfigPaths;
-import com.devmod.util.DamageTypeConfig;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.LevelResource;
-import net.neoforged.neoforge.network.PacketDistributor;
+
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityAttributeModificationEvent;
@@ -34,11 +21,23 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 
-import org.slf4j.Logger;
+import com.devmod.DevMod;
+import com.devmod.components.ArmorComponents;
+import com.devmod.config.ArmorConfigManager;
+import com.devmod.config.FuelConfigManager;
+import com.devmod.config.WeaponConfigManager;
+import com.devmod.endurance.EnduranceQuestManager;
+import com.devmod.network.GameMechanicsSyncPayload;
+import com.devmod.stats.ArmorStats;
+import com.devmod.testing.stats.HazardTypeRegistry;
+import com.devmod.util.ConfigPaths;
+import com.devmod.util.DamageTypeConfig;
+
 import com.mojang.logging.LogUtils;
 
-import java.util.Objects;
+import static com.devmod.DevMod.MODID;
 
 @EventBusSubscriber(modid = MODID)
 public class CommonModEvents {

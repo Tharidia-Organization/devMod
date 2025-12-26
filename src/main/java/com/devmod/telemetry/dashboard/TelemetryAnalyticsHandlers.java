@@ -1,10 +1,10 @@
 package com.devmod.telemetry.dashboard;
 
-import com.google.gson.Gson;
-import com.sun.net.httpserver.HttpExchange;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import com.google.gson.Gson;
+import com.sun.net.httpserver.HttpExchange;
 
 /**
  * Analytics handlers for TelemetryDashboardServer.

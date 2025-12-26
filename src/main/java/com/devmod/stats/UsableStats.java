@@ -1,9 +1,10 @@
 package com.devmod.stats;
 
-import net.minecraft.nbt.CompoundTag;
-
 import java.util.Objects;
+
 import javax.annotation.Nonnull;
+
+import net.minecraft.nbt.CompoundTag;
 
 /**
  * Usable item statistics for items with cooldowns, use durations, and throwable properties.

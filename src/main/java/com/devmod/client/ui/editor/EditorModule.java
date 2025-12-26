@@ -1,13 +1,14 @@
 package com.devmod.client.ui.editor;
 
-import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import java.util.List;
+import java.util.function.BiConsumer;
+
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.List;
-import java.util.function.BiConsumer;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
 
 /**
  * Interface for editor content modules.

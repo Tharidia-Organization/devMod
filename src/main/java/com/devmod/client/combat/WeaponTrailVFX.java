@@ -1,28 +1,32 @@
 package com.devmod.client.combat;
 
-import com.devmod.DevMod;
-import com.devmod.client.rendering.TrigCache;
-import com.devmod.client.rendering.shader.VFXShaderRegistry;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Objects;
+
+import org.joml.Matrix4f;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SwordItem;
-import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.Tier;
-import net.minecraft.world.item.Tiers;
 import net.minecraft.world.item.TieredItem;
+import net.minecraft.world.item.Tiers;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.fml.ModList;
-import org.joml.Matrix4f;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Objects;
+import net.neoforged.fml.ModList;
+
+import com.devmod.DevMod;
+import com.devmod.client.rendering.TrigCache;
+import com.devmod.client.rendering.shader.VFXShaderRegistry;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 
 /**
  * Weapon Trail VFX System - Renders luminous trails following weapon swings.

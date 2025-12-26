@@ -1,13 +1,16 @@
 package com.devmod.client.overlay;
 
-import com.devmod.DevMod;
+import java.util.Objects;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
+
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
-import java.util.Objects;
+
+import com.devmod.DevMod;
 
 /**
  * Record Banner Overlay - shows "NEW RECORD!" banner when player beats personal record.

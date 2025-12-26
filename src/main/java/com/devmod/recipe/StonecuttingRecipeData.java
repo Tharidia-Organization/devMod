@@ -1,11 +1,13 @@
 package com.devmod.recipe;
 
-import com.google.gson.JsonObject;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.GsonHelper;
+import java.util.Objects;
+
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Objects;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.GsonHelper;
+
+import com.google.gson.JsonObject;
 
 /**
  * Data for stonecutting recipes.

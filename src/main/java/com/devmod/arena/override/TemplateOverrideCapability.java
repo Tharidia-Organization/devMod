@@ -1,14 +1,16 @@
 package com.devmod.arena.override;
 
-import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.attachment.AttachmentType;
-import net.neoforged.neoforge.registries.DeferredRegister;
-import net.neoforged.neoforge.registries.NeoForgeRegistries;
-
-import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
+
+import javax.annotation.Nullable;
+
+import net.minecraft.resources.ResourceLocation;
+
+import net.neoforged.neoforge.attachment.AttachmentType;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
 /**
  * DD29: TEMPLATE_OVERRIDE_CAP capability using NeoForge 1.21+ Data Attachments

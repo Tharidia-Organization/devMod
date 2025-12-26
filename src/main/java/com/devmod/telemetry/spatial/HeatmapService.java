@@ -1,10 +1,5 @@
 package com.devmod.telemetry.spatial;
 
-import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
-import com.mojang.logging.LogUtils;
-import net.minecraft.core.BlockPos;
-import org.slf4j.Logger;
-
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -12,6 +7,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
+
+import org.slf4j.Logger;
+
+import net.minecraft.core.BlockPos;
+
+import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * Centralized service for spatial heatmap management.

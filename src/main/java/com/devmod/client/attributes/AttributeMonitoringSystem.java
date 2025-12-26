@@ -1,17 +1,18 @@
 package com.devmod.client.attributes;
 
-import com.devmod.attributes.AttributeLogEntry;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.Vec3;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import com.devmod.attributes.AttributeLogEntry;
 
 /**
  * Attribute Monitoring System - Controller principale.

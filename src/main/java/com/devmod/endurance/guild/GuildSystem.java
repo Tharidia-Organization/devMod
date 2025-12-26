@@ -1,9 +1,5 @@
 package com.devmod.endurance.guild;
 
-import com.devmod.endurance.config.EnduranceConfigManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -14,6 +10,11 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.endurance.config.EnduranceConfigManager;
 
 /**
  * Guild/Clan system for Endurance Quest.

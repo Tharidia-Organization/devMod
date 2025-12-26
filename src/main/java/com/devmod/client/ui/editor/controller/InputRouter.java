@@ -1,6 +1,14 @@
 package com.devmod.client.ui.editor.controller;
 
+import javax.annotation.Nullable;
+
+import org.lwjgl.glfw.GLFW;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
 import com.devmod.DevMod;
+import com.devmod.client.ui.ConfirmDialog;
 import com.devmod.client.ui.editor.EditorModule;
 import com.devmod.client.ui.editor.components.FooterComponent;
 import com.devmod.client.ui.editor.components.HeaderComponent;
@@ -9,7 +17,6 @@ import com.devmod.client.ui.editor.components.ModeBadge;
 import com.devmod.client.ui.editor.components.ScrollableContentArea;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.editor.debug.DebugOverlay;
-import com.devmod.client.ui.ConfirmDialog;
 import com.devmod.client.ui.editor.systems.CraftingInfoPanel;
 import com.devmod.client.ui.editor.systems.DebugPanel;
 import com.devmod.client.ui.editor.systems.HelpOverlay;
@@ -18,15 +25,6 @@ import com.devmod.client.ui.editor.systems.MultiEditManager;
 import com.devmod.client.ui.editor.systems.MultiEditPanel;
 import com.devmod.client.ui.editor.systems.PresetSelectorOverlay;
 import com.devmod.client.ui.editor.systems.TemplateOverlay;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import org.lwjgl.glfw.GLFW;
-
-import javax.annotation.Nullable;
-import java.util.function.BiConsumer;
-import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * Routes input events (mouse, keyboard) to the appropriate handlers.

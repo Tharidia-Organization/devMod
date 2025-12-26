@@ -1,19 +1,20 @@
 package com.devmod.compat.mods.rpgseries;
 
-import com.devmod.compat.Compat;
-import com.devmod.compat.CompatModule;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+
+import com.devmod.compat.Compat;
+import com.devmod.compat.CompatModule;
 
 /**
  * Compatibility module for RpgSeries mods (Archers, Paladins, Wizards, etc.).

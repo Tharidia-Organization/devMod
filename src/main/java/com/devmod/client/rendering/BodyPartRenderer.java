@@ -1,20 +1,24 @@
 package com.devmod.client.rendering;
 
-import com.devmod.combat.HitHelper;
-import com.devmod.ModConfig;
-import com.devmod.config.WeaponConfigManager;
-import com.devmod.stats.WeaponStats;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
+import org.joml.Matrix4f;
+
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
+import com.devmod.ModConfig;
+import com.devmod.combat.HitHelper;
+import com.devmod.config.WeaponConfigManager;
+import com.devmod.stats.WeaponStats;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 
 /**
  * Sistema di rendering avanzato per body part hitboxes

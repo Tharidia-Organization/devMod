@@ -1,10 +1,10 @@
 package com.devmod.arena.alert;
 
-import com.devmod.arena.telemetry.ArenaTelemetry;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+
+import com.devmod.arena.telemetry.ArenaTelemetry;
 
 /**
  * Telemetry alert channel (emits arena.alert events).

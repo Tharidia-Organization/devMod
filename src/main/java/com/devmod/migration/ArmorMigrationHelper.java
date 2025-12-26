@@ -1,14 +1,15 @@
 package com.devmod.migration;
 
-import com.devmod.stats.ArmorStats;
-import com.devmod.config.ArmorConfigManager;
-import com.devmod.components.ArmorComponents;
+import java.util.Objects;
 
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
-import java.util.Objects;
+
+import com.devmod.components.ArmorComponents;
+import com.devmod.config.ArmorConfigManager;
+import com.devmod.stats.ArmorStats;
 
 /**
  * Helper for migrating armor stats from NBT to components.

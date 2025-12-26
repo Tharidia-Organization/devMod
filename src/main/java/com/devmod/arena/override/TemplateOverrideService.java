@@ -1,11 +1,5 @@
 package com.devmod.arena.override;
 
-import com.devmod.arena.telemetry.ArenaTelemetry;
-import net.minecraft.server.level.ServerPlayer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -17,6 +11,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.server.level.ServerPlayer;
+
+import com.devmod.arena.telemetry.ArenaTelemetry;
 
 /**
  * Unified template override service (DD5, DD29).

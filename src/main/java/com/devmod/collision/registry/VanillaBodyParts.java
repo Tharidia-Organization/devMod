@@ -1,11 +1,12 @@
 package com.devmod.collision.registry;
 
-import com.devmod.combat.HitHelper;
-import com.devmod.collision.bodypart.BodyPartDefinition;
-import com.devmod.collision.bodypart.BodyPartHierarchy;
+import javax.annotation.Nonnull;
+
 import net.minecraft.world.entity.EntityType;
 
-import javax.annotation.Nonnull;
+import com.devmod.collision.bodypart.BodyPartDefinition;
+import com.devmod.collision.bodypart.BodyPartHierarchy;
+import com.devmod.combat.HitHelper;
 
 /**
  * Pre-defined body part configurations for vanilla entities.

@@ -1,19 +1,20 @@
 package com.devmod.client.ui.editor.debug;
 
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.EditorSection;
-import com.devmod.client.ui.editor.core.EditorDimensions;
-import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.nbt.CompoundTag;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Locale;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.EditorSection;
+import com.devmod.client.ui.editor.core.EditorDimensions;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.UIConstants;
 
 /**
  * Custom section rendering the debug information panel.

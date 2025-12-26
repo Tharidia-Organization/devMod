@@ -1,15 +1,17 @@
 package com.devmod.endurance;
 
-import io.netty.buffer.ByteBuf;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import javax.annotation.Nonnull;
+import io.netty.buffer.ByteBuf;
 
 /**
  * Network payload to sync player wallet data from server to client.

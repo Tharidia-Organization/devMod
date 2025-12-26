@@ -1,11 +1,13 @@
 package com.devmod.client.ui.editor.core;
 
+import org.lwjgl.glfw.GLFW;
+
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.animation.UiAnimation;
 import com.devmod.client.ui.editor.overlay.EditorOverlay;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import org.lwjgl.glfw.GLFW;
 
 /**
  * Abstract base class for modal overlay panels.

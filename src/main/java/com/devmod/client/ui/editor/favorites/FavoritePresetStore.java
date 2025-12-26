@@ -1,10 +1,5 @@
 package com.devmod.client.ui.editor.favorites;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import com.devmod.DevMod;
-import com.devmod.util.ConfigPaths;
-
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
@@ -17,6 +12,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import com.devmod.DevMod;
+import com.devmod.util.ConfigPaths;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * Lightweight persistence for favorite presets per itemType.

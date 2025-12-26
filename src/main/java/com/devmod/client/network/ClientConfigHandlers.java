@@ -1,17 +1,20 @@
 package com.devmod.client.network;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
 import com.devmod.network.EditorApplyConfirmPayload;
 import com.devmod.network.GlobalConfigSyncPayload;
 import com.devmod.network.MobConfigConfirmPayload;
 import com.devmod.network.RecipeClientSyncPayload;
 import com.devmod.recipe.RecipeConfigManager;
 import com.devmod.util.I18n;
-import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Client-side handlers for config sync network packets.

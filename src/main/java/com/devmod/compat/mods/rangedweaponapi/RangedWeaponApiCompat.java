@@ -1,12 +1,14 @@
 package com.devmod.compat.mods.rangedweaponapi;
 
-import com.devmod.compat.Compat;
-import com.devmod.compat.CompatModule;
-import net.minecraft.world.item.ItemStack;
+import java.lang.reflect.Method;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Method;
+import net.minecraft.world.item.ItemStack;
+
+import com.devmod.compat.Compat;
+import com.devmod.compat.CompatModule;
 
 /**
  * Compatibility module for Ranged Weapon API by ZsoltMolnarrr.

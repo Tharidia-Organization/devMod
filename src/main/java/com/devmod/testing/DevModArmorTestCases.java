@@ -1,20 +1,21 @@
 package com.devmod.testing;
 
-import com.devmod.config.ArmorConfigManager;
-import com.devmod.components.ArmorComponents;
-import com.devmod.stats.ArmorStats;
-import com.devmod.testing.TestCase.TestPriority;
-import com.devmod.util.DatapackIO;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Objects;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.devmod.components.ArmorComponents;
+import com.devmod.config.ArmorConfigManager;
+import com.devmod.stats.ArmorStats;
+import com.devmod.testing.TestCase.TestPriority;
+import com.devmod.util.DatapackIO;
 
 /**
  * DevMod-specific test cases for armor functionality.

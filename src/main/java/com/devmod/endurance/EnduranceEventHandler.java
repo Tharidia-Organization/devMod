@@ -1,13 +1,22 @@
 package com.devmod.endurance;
 
-import com.devmod.arena.policy.ArenaPolicy;
-import com.devmod.util.I18n;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
@@ -16,22 +25,15 @@ import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.player.CriticalHitEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import com.devmod.arena.policy.ArenaPolicy;
 import com.devmod.endurance.analytics.LiveAnalyticsHookManager;
-import com.devmod.endurance.analytics.WaveSummary;
 import com.devmod.endurance.analytics.QuestResult;
+import com.devmod.endurance.analytics.WaveSummary;
 import com.devmod.party.QuestStartSequence;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.telemetry.player.PlayerAttributeTelemetryService;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import com.devmod.util.I18n;
 
 /**
  * Central Event Handler for the Endurance Quest system.

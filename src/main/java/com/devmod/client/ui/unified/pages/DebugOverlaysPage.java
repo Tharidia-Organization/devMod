@@ -1,6 +1,12 @@
 package com.devmod.client.ui.unified.pages;
 
-import com.devmod.debug.client.DebugRenderBools;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
@@ -11,15 +17,11 @@ import com.devmod.client.rendering.LineOfSightVisualizer;
 import com.devmod.client.rendering.PathfindingDebugger;
 import com.devmod.client.rendering.RoomBoundsVisualizer;
 import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-
-import javax.annotation.Nonnull;
-import java.util.Objects;
+import com.devmod.debug.client.DebugRenderBools;
 
 /**
  * Debug overlays settings page.

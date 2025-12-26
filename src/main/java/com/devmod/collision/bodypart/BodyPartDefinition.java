@@ -1,12 +1,14 @@
 package com.devmod.collision.bodypart;
 
-import com.devmod.combat.HitHelper;
-import com.devmod.collision.obb.OrientedBoundingBox;
-import net.minecraft.world.phys.Vec3;
+import java.util.Objects;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.Objects;
+
+import net.minecraft.world.phys.Vec3;
+
+import com.devmod.collision.obb.OrientedBoundingBox;
+import com.devmod.combat.HitHelper;
 
 /**
  * Immutable definition of a body part for an entity type.

@@ -1,12 +1,13 @@
 package com.devmod.party;
 
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-import javax.annotation.Nonnull;
-import java.util.Objects;
 
 /**
  * Payload sent from client to server to request the list of online players.

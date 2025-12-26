@@ -1,8 +1,8 @@
 package com.devmod.endurance;
 
-import net.minecraft.resources.ResourceLocation;
-
 import java.util.UUID;
+
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Represents a single Endurance Quest instance for a specific mob type.

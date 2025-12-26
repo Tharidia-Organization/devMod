@@ -1,7 +1,21 @@
 package com.devmod.client.ui.editor.modules;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
+
 import com.devmod.ammo.AmmoSystem;
-import com.devmod.network.RangedWeaponStatsPayload;
 import com.devmod.client.ui.editor.AbstractEditorModule;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.ModuleTab;
@@ -19,20 +33,7 @@ import com.devmod.client.ui.editor.debug.ValueComparison;
 import com.devmod.client.ui.editor.sections.InputSectionAdapter;
 import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
-
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.ArrayList;
+import com.devmod.network.RangedWeaponStatsPayload;
 
 /**
  * Editor module for ranged weapons (bow/crossbow).

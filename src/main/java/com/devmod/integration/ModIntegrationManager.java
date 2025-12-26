@@ -1,14 +1,18 @@
 package com.devmod.integration;
 
-import com.devmod.compat.Compat;
-import com.devmod.compat.CompatRegistry;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
 import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
+
+import com.devmod.compat.Compat;
+import com.devmod.compat.CompatRegistry;
 
 /**
  * Manages integrations with external mods (Pehkui, Better Combat, Distant Horizons, etc.)

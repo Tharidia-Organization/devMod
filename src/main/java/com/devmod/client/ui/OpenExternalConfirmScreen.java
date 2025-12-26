@@ -1,19 +1,22 @@
 package com.devmod.client.ui;
 
-import com.devmod.DevMod;
+import java.awt.Desktop;
+import java.net.URI;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.awt.Desktop;
-import java.net.URI;
-import java.util.Objects;
+import com.devmod.DevMod;
 
 /**
  * Confirmation screen for opening external URLs.

@@ -1,12 +1,14 @@
 package com.devmod.client;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
 import com.devmod.bridge.ClientUiBridge;
 import com.devmod.client.ui.editor.EditorStartTab;
 import com.devmod.client.ui.editor.ItemEditorScreen;
-import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 /**
  * Client-side implementation of {@link ClientUiBridge}.

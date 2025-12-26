@@ -1,11 +1,18 @@
 package com.devmod.debug;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.common.custom.PathfindingDebugPayload;
+import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
 import net.minecraft.network.protocol.common.custom.GoalDebugPayload;
+import net.minecraft.network.protocol.common.custom.PathfindingDebugPayload;
 import net.minecraft.network.protocol.common.custom.PoiAddedDebugPayload;
 import net.minecraft.network.protocol.common.custom.RaidsDebugPayload;
-import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
@@ -16,12 +23,6 @@ import net.minecraft.world.entity.raid.Raid;
 import net.minecraft.world.entity.raid.Raids;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 
 /**
  * Uses Minecraft's NATIVE debug payload system.

@@ -1,10 +1,10 @@
 package com.devmod.client.panels.types;
 
-import com.devmod.client.panels.core.FloatingPanel;
-import com.devmod.client.panels.core.PanelType;
-import com.devmod.client.panels.tracking.EntityTracker;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.mojang.blaze3d.vertex.PoseStack;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -16,9 +16,12 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.Objects;
+import com.devmod.client.panels.core.FloatingPanel;
+import com.devmod.client.panels.core.PanelType;
+import com.devmod.client.panels.tracking.EntityTracker;
+import com.devmod.client.ui.editor.core.UIConstants;
+
+import com.mojang.blaze3d.vertex.PoseStack;
 
 /**
  * Panel that shows detailed information about an entity.

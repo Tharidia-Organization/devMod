@@ -1,16 +1,19 @@
 package com.devmod.client.rendering.shield;
 
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.world.phys.Vec3;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import org.joml.Matrix4f;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import org.joml.Matrix4f;
+
+import net.minecraft.world.phys.Vec3;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
+import com.mojang.blaze3d.vertex.VertexConsumer;
 
 /**
  * Generates and caches geodesic sphere meshes from icosahedron subdivision.

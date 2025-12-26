@@ -1,18 +1,18 @@
 package com.devmod.endurance;
 
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.enchantment.Enchantments;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.core.Holder;
-import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.item.alchemy.Potions;
-import net.minecraft.world.item.alchemy.PotionContents;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.alchemy.Potions;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.Enchantments;
 
 /**
  * Predefined kit configurations for Endurance Quest testing and gameplay.

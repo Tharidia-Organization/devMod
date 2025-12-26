@@ -1,8 +1,14 @@
 package com.devmod.endurance;
 
-import com.devmod.arena.api.ArenaHandle;
-import com.devmod.combat.signature.SoulImprintManager;
-import com.devmod.endurance.challenges.DailyChallengeManager;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -11,16 +17,11 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import com.devmod.arena.api.ArenaHandle;
+import com.devmod.combat.signature.SoulImprintManager;
+import com.devmod.endurance.challenges.DailyChallengeManager;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
-
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Combat event processing for EnduranceQuest system.

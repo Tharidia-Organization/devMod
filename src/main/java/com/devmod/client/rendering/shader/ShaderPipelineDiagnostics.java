@@ -1,11 +1,13 @@
 package com.devmod.client.rendering.shader;
 
-import net.minecraft.client.renderer.RenderType;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
+import java.util.Arrays;
+
 import org.slf4j.Logger;
 
-import java.util.Arrays;
+import net.minecraft.client.renderer.RenderType;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 /**
  * Utility for logging shader pipeline readiness and fallback state.

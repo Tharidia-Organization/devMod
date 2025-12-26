@@ -1,7 +1,22 @@
 package com.devmod.arena.builder;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.devmod.arena.budget.BackpressureManager;
 import com.devmod.arena.budget.BuildBudget;
+import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.event.TemplateEventDispatcher;
 import com.devmod.arena.gate.InstanceOnlyGate;
 import com.devmod.arena.monitor.MsptMonitor;
@@ -9,23 +24,6 @@ import com.devmod.arena.performance.PerformanceBudgetEnforcer;
 import com.devmod.arena.performance.PerformanceBudgetEnforcer.PerformanceAction;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-import com.devmod.arena.config.ArenaTemplateConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Queue;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * Async arena builder with tick distribution (DD12).

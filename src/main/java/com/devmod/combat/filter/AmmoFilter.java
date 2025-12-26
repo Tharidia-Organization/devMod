@@ -1,5 +1,12 @@
 package com.devmod.combat.filter;
 
+import java.lang.reflect.Method;
+import java.util.Locale;
+import java.util.Objects;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -7,12 +14,6 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.lang.reflect.Method;
-import java.util.Locale;
-import java.util.Objects;
 
 /**
  * Filters ammo types for ranged weapons based on configured ammo filters.

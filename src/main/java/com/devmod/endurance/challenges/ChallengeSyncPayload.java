@@ -1,13 +1,15 @@
 package com.devmod.endurance.challenges;
 
-import com.devmod.DevMod;
-import io.netty.buffer.ByteBuf;
+import java.util.List;
+
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import java.util.List;
+import com.devmod.DevMod;
+
+import io.netty.buffer.ByteBuf;
 
 /**
  * Payload to sync daily challenges and progress to clients.

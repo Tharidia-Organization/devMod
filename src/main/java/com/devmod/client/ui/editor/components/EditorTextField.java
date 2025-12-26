@@ -1,16 +1,18 @@
 package com.devmod.client.ui.editor.components;
 
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.util.Mth;
-import org.lwjgl.glfw.GLFW;
-
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+
+import org.lwjgl.glfw.GLFW;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.util.Mth;
+
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.UIConstants;
 
 /**
  * Text input field component for the editor.

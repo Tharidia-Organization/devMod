@@ -1,9 +1,10 @@
 package com.devmod.client.rendering;
 
-import com.devmod.DevMod;
-import com.devmod.client.ui.unified.persistence.SettingsManager;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
+import java.util.List;
+import java.util.Objects;
+
+import org.joml.Matrix4f;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -14,14 +15,17 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
-import org.joml.Matrix4f;
 
-import java.util.List;
-import java.util.Objects;
+import com.devmod.DevMod;
+import com.devmod.client.ui.unified.persistence.SettingsManager;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 
 /**
  * VOXEL-LAB Debug Overlay: Aggro Range Spheres

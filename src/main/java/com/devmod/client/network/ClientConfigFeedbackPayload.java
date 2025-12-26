@@ -1,15 +1,16 @@
 package com.devmod.client.network;
 
-import com.devmod.network.MobConfigConfirmPayload;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
+import java.util.Objects;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 
-import java.util.Objects;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
+import com.devmod.network.MobConfigConfirmPayload;
 
 /**
  * Client-side handler for configuration confirmation feedback.

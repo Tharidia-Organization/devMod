@@ -1,19 +1,20 @@
 package com.devmod.client.events;
 
-import com.devmod.DevMod;
+import java.util.Objects;
 
-import com.devmod.client.panels.context.ContextDetector;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
-import java.util.Objects;
+import com.devmod.DevMod;
+import com.devmod.client.panels.context.ContextDetector;
 
 /**
  * Client-side combat event handler for ContextDetector notifications.

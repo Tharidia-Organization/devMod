@@ -1,12 +1,13 @@
 package com.devmod.arena.cleanup;
 
-import com.devmod.arena.config.ArenaTemplateConfig.AlertThresholds;
-import com.devmod.arena.telemetry.ArenaTelemetry;
+import java.util.Map;
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.UUID;
+import com.devmod.arena.config.ArenaTemplateConfig.AlertThresholds;
+import com.devmod.arena.telemetry.ArenaTelemetry;
 
 /**
  * Checks cleanup residuals against AlertThresholds and emits telemetry.

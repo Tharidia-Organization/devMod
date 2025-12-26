@@ -1,14 +1,15 @@
 package com.devmod.arena.builder;
 
+import java.util.Objects;
+
+import javax.annotation.Nullable;
+
 import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.policy.ArenaPolicy;
 import com.devmod.arena.policy.ResolvedArena;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.InstanceSettingsValidator;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-
-import javax.annotation.Nullable;
-import java.util.Objects;
 
 /**
  * Template-focused builder entrypoint.

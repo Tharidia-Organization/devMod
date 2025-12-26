@@ -1,13 +1,5 @@
 package com.devmod.arena.monitoring;
 
-import com.devmod.arena.alert.AlertRouter;
-import com.devmod.arena.alert.ErrorContext;
-import com.devmod.telemetry.duckdb.ArenaRecords;
-import com.devmod.telemetry.duckdb.DuckDBQueryAPI;
-import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -16,6 +8,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.arena.alert.AlertRouter;
+import com.devmod.arena.alert.ErrorContext;
+import com.devmod.telemetry.duckdb.ArenaRecords;
+import com.devmod.telemetry.duckdb.DuckDBQueryAPI;
+import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 
 /**
  * Dashboard Validation Job (DD69).

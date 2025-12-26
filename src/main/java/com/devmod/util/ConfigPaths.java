@@ -1,8 +1,8 @@
 package com.devmod.util;
 
-import net.neoforged.fml.loading.FMLPaths;
-
 import java.nio.file.Path;
+
+import net.neoforged.fml.loading.FMLPaths;
 
 /**
  * Centralized path management for all DevMod configuration files.

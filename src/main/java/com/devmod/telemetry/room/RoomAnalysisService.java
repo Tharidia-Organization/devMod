@@ -1,12 +1,12 @@
 package com.devmod.telemetry.room;
 
-import net.minecraft.core.BlockPos;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+
+import net.minecraft.core.BlockPos;
 
 /**
  * Service for room-based analysis including choke points, collision detection,

@@ -1,7 +1,5 @@
 package com.devmod.combat.signature;
 
-import static java.util.Objects.requireNonNull;
-
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashSet;
@@ -11,6 +9,9 @@ import java.util.UUID;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
@@ -22,8 +23,7 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Soul Imprint - Weapon history and accumulated achievements.

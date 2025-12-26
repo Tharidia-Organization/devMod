@@ -1,11 +1,13 @@
 package com.devmod.client.ui.testing.panel;
 
+import java.util.Objects;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
-import java.util.Objects;
-
-import static com.devmod.client.ui.testing.panel.PanelConstants.*;
+import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_HEADER_ACCENT;
+import static com.devmod.client.ui.testing.panel.PanelConstants.SEPARATOR_HEIGHT;
+import static com.devmod.client.ui.testing.panel.PanelConstants.TITLE_HEIGHT;
 
 /**
  * Simple header panel with title and optional separator line.

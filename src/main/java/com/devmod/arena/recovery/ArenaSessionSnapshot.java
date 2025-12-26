@@ -1,10 +1,11 @@
 package com.devmod.arena.recovery;
 
-import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import javax.annotation.Nullable;
 
 /**
  * Arena session snapshot with versioning for recovery (DD25).

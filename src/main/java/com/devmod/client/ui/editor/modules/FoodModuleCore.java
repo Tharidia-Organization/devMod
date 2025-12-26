@@ -1,14 +1,15 @@
 package com.devmod.client.ui.editor.modules;
 
-import com.devmod.DevMod;
-import com.devmod.stats.FoodStats;
-import com.devmod.config.FoodConfigManager;
-import com.devmod.client.ui.editor.components.SourceBadge;
+import java.util.Objects;
+
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.Objects;
+import com.devmod.DevMod;
+import com.devmod.client.ui.editor.components.SourceBadge;
+import com.devmod.config.FoodConfigManager;
+import com.devmod.stats.FoodStats;
 
 /**
  * Core logic for FoodModule: stats management, loading, saving.

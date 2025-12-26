@@ -1,20 +1,5 @@
 package com.devmod.arena.integration;
 
-import com.devmod.arena.api.ArenaHandle;
-import com.devmod.arena.builder.ArenaBuilder;
-import com.devmod.arena.builder.AsyncArenaBuilder;
-import com.devmod.arena.gate.InstanceOnlyGate;
-import com.devmod.arena.policy.ArenaPolicyRegistry;
-import com.devmod.arena.policy.PolicyResolver;
-import com.devmod.arena.policy.ResolveContext;
-import com.devmod.arena.policy.ResolvedArena;
-import com.devmod.arena.registry.ArenaTemplate;
-import com.devmod.arena.registry.ArenaTemplateRegistry;
-import com.devmod.arena.telemetry.ArenaTelemetry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -38,6 +23,23 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.arena.api.ArenaHandle;
+import com.devmod.arena.builder.ArenaBuilder;
+import com.devmod.arena.builder.AsyncArenaBuilder;
+import com.devmod.arena.gate.InstanceOnlyGate;
+import com.devmod.arena.policy.ArenaPolicyRegistry;
+import com.devmod.arena.policy.PolicyResolver;
+import com.devmod.arena.policy.ResolveContext;
+import com.devmod.arena.policy.ResolvedArena;
+import com.devmod.arena.registry.ArenaTemplate;
+import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.arena.telemetry.ArenaTelemetry;
 
 /**
  * Integration layer between Arena system and Quest system.

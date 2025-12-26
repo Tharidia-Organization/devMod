@@ -1,19 +1,22 @@
 package com.devmod.client.panels.types;
 
-import com.devmod.damage.DamageBreakdown;
-import com.devmod.client.overlay.ImpactData;
-import com.devmod.client.panels.core.FloatingPanel;
-import com.devmod.client.panels.core.PanelType;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.mojang.blaze3d.vertex.PoseStack;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.phys.Vec3;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
+import com.devmod.client.overlay.ImpactData;
+import com.devmod.client.panels.core.FloatingPanel;
+import com.devmod.client.panels.core.PanelType;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.damage.DamageBreakdown;
+
+import com.mojang.blaze3d.vertex.PoseStack;
 
 /**
  * Panel that shows combat information for an impact.

@@ -1,14 +1,15 @@
 package com.devmod.network;
 
-import net.minecraft.server.level.ServerPlayer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Security service for network packet validation and rate limiting.

@@ -1,10 +1,11 @@
 package com.devmod.client.ui.radial;
 
-import net.minecraft.world.item.ItemStack;
-
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.annotation.Nullable;
+
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Represents a category in the radial menu.

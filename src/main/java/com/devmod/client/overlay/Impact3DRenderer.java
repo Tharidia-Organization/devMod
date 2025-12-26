@@ -1,17 +1,19 @@
 package com.devmod.client.overlay;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
+import java.util.List;
+import java.util.Objects;
+
+import org.joml.Matrix4f;
+import org.joml.Quaternionf;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
-import org.joml.Quaternionf;
 
-import java.util.List;
-import java.util.Objects;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 
 /**
  * Manages the rendering of the Impact Analysis panel in 3D in the world.

@@ -1,5 +1,8 @@
 package com.devmod.client.network;
 
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
@@ -18,8 +21,6 @@ import com.devmod.endurance.ShopSyncPayload;
 import com.devmod.endurance.WaveDirectiveChoicesPayload;
 import com.devmod.endurance.challenges.ChallengeSyncPayload;
 import com.devmod.util.I18n;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 /**
  * Client-side handlers for Endurance network packets.

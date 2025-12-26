@@ -1,15 +1,18 @@
 package com.devmod.client.ui.components;
 
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.util.I18n;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
+import java.util.Objects;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.Objects;
+
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.util.I18n;
 
 /**
  * Reusable loading indicator component for screens.

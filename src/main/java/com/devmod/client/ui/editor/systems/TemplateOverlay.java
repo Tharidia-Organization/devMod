@@ -1,23 +1,25 @@
 package com.devmod.client.ui.editor.systems;
 
-import com.devmod.client.ui.editor.ItemEditorDataManager;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.function.Consumer;
+
+import org.lwjgl.glfw.GLFW;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.ItemEditorDataManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.VirtualizedList;
 import com.devmod.client.ui.editor.core.BaseOverlay;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.Typography;
 import com.devmod.client.ui.editor.core.UIConstants;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import org.lwjgl.glfw.GLFW;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.function.Consumer;
 
 /**
  * Templates overlay (MVP) with virtualized list and preview.

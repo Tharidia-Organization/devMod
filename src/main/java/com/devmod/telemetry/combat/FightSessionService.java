@@ -1,9 +1,5 @@
 package com.devmod.telemetry.combat;
 
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,6 +10,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 
 /**
  * Service for managing fight sessions.

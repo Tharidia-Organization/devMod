@@ -1,10 +1,9 @@
 package com.devmod.client.ui.screens;
 
-import com.devmod.network.EquipMobPayload;
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.util.I18n;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.GuiGraphics;
@@ -16,12 +15,16 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.ItemStack;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.network.EquipMobPayload;
+import com.devmod.util.I18n;
 
 /**
  * Screen per modificare l'equipaggiamento di un mob.

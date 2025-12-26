@@ -1,16 +1,19 @@
 package com.devmod.client.attributes;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
+import org.joml.Matrix4f;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 
 /**
  * 3D visualizer for Line of Sight rays for the attribute monitoring system.

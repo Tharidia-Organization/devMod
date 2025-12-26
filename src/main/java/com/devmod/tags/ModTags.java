@@ -1,10 +1,11 @@
 package com.devmod.tags;
 
-import com.devmod.DevMod;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
+
+import com.devmod.DevMod;
 
 /**
  * DevMod tag definitions for weapon detection and editor filters.

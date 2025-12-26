@@ -1,19 +1,21 @@
 package com.devmod.combat.tracking;
 
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.monster.EnderMan;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.phys.Vec3;
-import net.neoforged.fml.loading.FMLEnvironment;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.EnderMan;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
+
+import net.neoforged.fml.loading.FMLEnvironment;
 
 /**
  * Tracks melee attack attempts to detect when entities (e.g. Endermen) evade attacks.

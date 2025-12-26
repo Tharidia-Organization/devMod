@@ -1,16 +1,19 @@
 package com.devmod.compat.mods.spellengine;
 
-import com.devmod.compat.Compat;
-import com.devmod.compat.CompatModule;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.item.ItemStack;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
+
+import com.devmod.compat.Compat;
+import com.devmod.compat.CompatModule;
 
 /**
  * Compatibility module for Spell Engine by ZsoltMolnarrr.

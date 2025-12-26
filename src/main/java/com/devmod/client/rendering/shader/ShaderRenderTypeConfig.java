@@ -1,12 +1,14 @@
 package com.devmod.client.rendering.shader;
 
-import com.mojang.blaze3d.vertex.VertexFormat;
+import java.util.Objects;
+
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import java.util.Objects;
+import com.mojang.blaze3d.vertex.VertexFormat;
 
 /**
  * Immutable description of a RenderType pair (custom + fallback) used by a shader pipeline.

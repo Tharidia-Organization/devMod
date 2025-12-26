@@ -1,5 +1,12 @@
 package com.devmod.client.ui.editor.components;
 
+import java.util.Objects;
+import java.util.function.Consumer;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.util.Mth;
+
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.EditorSounds;
@@ -8,12 +15,6 @@ import com.devmod.client.ui.editor.core.FocusRing;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.SliderDescriptions;
 import com.devmod.client.ui.editor.core.UIConstants;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.util.Mth;
-
-import java.util.Objects;
-import java.util.function.Consumer;
 
 /**
  * Slider component for numeric value editing.

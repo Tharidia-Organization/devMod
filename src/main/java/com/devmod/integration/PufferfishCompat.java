@@ -1,16 +1,18 @@
 package com.devmod.integration;
 
-import com.devmod.DevMod;
-import net.minecraft.world.entity.ai.attributes.Attribute;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.Registry;
+import java.util.Map;
+import java.util.Objects;
+
 import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.registries.DeferredHolder;
 
-import java.util.Map;
-import java.util.Objects;
+import com.devmod.DevMod;
 
 /**
  * Optional Pufferfish Attributes compatibility.

@@ -1,7 +1,7 @@
 package com.devmod.network;
 
-import com.devmod.stats.ArmorStats;
-import com.devmod.stats.WeaponStats;
+import java.util.Objects;
+
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -9,7 +9,8 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import java.util.Objects;
+import com.devmod.stats.ArmorStats;
+import com.devmod.stats.WeaponStats;
 
 /**
  * Server-to-client payload for global config synchronization.

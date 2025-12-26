@@ -1,7 +1,12 @@
 package com.devmod.collision.integration;
 
-import com.devmod.config.Config;
-import com.devmod.combat.HitHelper;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.Vec3;
+
 import com.devmod.collision.bodypart.BodyPartHierarchy;
 import com.devmod.collision.bodypart.BodyPartInstance;
 import com.devmod.collision.obb.OBBRaycast;
@@ -9,11 +14,8 @@ import com.devmod.collision.obb.OrientedBoundingBox;
 import com.devmod.collision.registry.BodyPartRegistry;
 import com.devmod.collision.transform.AnimationSnapshot;
 import com.devmod.collision.transform.TransformProviderRegistry;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.phys.Vec3;
-
-import javax.annotation.Nonnull;
-import java.util.Objects;
+import com.devmod.combat.HitHelper;
+import com.devmod.config.Config;
 
 /**
  * Drop-in replacement/enhancement for HitHelper using OBB system.

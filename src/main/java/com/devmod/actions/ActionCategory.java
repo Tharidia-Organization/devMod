@@ -1,8 +1,8 @@
 package com.devmod.actions;
 
-import net.minecraft.network.chat.Component;
-
 import java.util.Objects;
+
+import net.minecraft.network.chat.Component;
 
 public enum ActionCategory {
     TOOLS("devmod.action.category.tools"),

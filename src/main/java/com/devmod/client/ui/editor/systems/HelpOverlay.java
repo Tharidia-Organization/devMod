@@ -1,16 +1,18 @@
 package com.devmod.client.ui.editor.systems;
 
+import java.util.List;
+import java.util.Objects;
+
+import org.lwjgl.glfw.GLFW;
+
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.BaseOverlay;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.Typography;
 import com.devmod.client.ui.editor.core.UIConstants;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import org.lwjgl.glfw.GLFW;
-
-import java.util.List;
-import java.util.Objects;
 
 /**
  * Help overlay showing keyboard shortcuts and controls.

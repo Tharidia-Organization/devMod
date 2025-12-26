@@ -1,15 +1,12 @@
 package com.devmod.client.ui.editor;
 
-import com.devmod.stats.ArmorStats;
-import com.devmod.DevMod;
-import com.devmod.client.ui.editor.ItemEditorDataManager;
-import com.devmod.stats.WeaponStats;
-import com.devmod.integration.PufferfishCompat;
-import com.devmod.client.ui.editor.core.EditorCache;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.client.ui.editor.modules.ArmorModule;
-import com.devmod.client.ui.editor.modules.WeaponModule;
-import com.devmod.util.DatapackIO;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.BiConsumer;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
@@ -25,13 +22,18 @@ import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.level.Level;
+
 import net.neoforged.fml.ModList;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.BiConsumer;
-import javax.annotation.Nonnull;
+import com.devmod.DevMod;
+import com.devmod.client.ui.editor.core.EditorCache;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.editor.modules.ArmorModule;
+import com.devmod.client.ui.editor.modules.WeaponModule;
+import com.devmod.integration.PufferfishCompat;
+import com.devmod.stats.ArmorStats;
+import com.devmod.stats.WeaponStats;
+import com.devmod.util.DatapackIO;
 
 /**
  * Handles data operations for ItemEditorScreen: export, import, presets, templates.

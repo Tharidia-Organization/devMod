@@ -1,16 +1,5 @@
 package com.devmod.endurance.contracts;
 
-import com.devmod.endurance.ComboSystem;
-import com.devmod.endurance.EnduranceEventCombat;
-import com.devmod.telemetry.endurance.EnduranceTelemetryService;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.damagesource.DamageSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -21,6 +10,19 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nonnull;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+
+import com.devmod.endurance.ComboSystem;
+import com.devmod.endurance.EnduranceEventCombat;
+import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 
 /**
  * Manages active Blood Contracts during Endurance Quest waves.

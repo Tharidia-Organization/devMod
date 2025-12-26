@@ -1,16 +1,17 @@
 package com.devmod.telemetry.progression;
 
-import com.devmod.telemetry.TelemetryJson;
-import com.devmod.telemetry.room.RoomService;
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
-import java.time.Instant;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import com.devmod.telemetry.TelemetryJson;
+import com.devmod.telemetry.room.RoomService;
 
 /**
  * Service for tracking player progression metrics.

@@ -1,10 +1,10 @@
 package com.devmod.arena.policy;
 
-import com.devmod.arena.registry.ArenaTemplate;
-
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
+
+import com.devmod.arena.registry.ArenaTemplate;
 
 /**
  * Result of policy resolution - the selected template and policy combination.

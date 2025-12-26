@@ -1,7 +1,7 @@
 package com.devmod.client.ui.editor.core;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Provides utility methods for calculating component layouts based on the design system.

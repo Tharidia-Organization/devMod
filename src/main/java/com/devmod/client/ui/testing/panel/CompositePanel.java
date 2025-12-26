@@ -1,11 +1,11 @@
 package com.devmod.client.ui.testing.panel;
 
-import net.minecraft.client.gui.GuiGraphics;
-
 import java.util.Arrays;
 import java.util.List;
 
-import static com.devmod.client.ui.testing.panel.PanelConstants.*;
+import net.minecraft.client.gui.GuiGraphics;
+
+import static com.devmod.client.ui.testing.panel.PanelConstants.PANEL_SPACING;
 
 /**
  * Composite panel containing multiple child panels stacked vertically.

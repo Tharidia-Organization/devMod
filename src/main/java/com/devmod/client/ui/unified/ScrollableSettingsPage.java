@@ -1,15 +1,17 @@
 package com.devmod.client.ui.unified;
 
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.client.ui.editor.core.ResponsiveLayout.Rect;
-import com.devmod.client.ui.scroll.ScrollManager;
-import com.devmod.client.ui.scroll.ScrollMetrics;
-import com.devmod.client.ui.scroll.ScrollMode;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
+import com.devmod.client.ui.editor.core.ResponsiveLayout.Rect;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.scroll.ScrollManager;
+import com.devmod.client.ui.scroll.ScrollMetrics;
+import com.devmod.client.ui.scroll.ScrollMode;
 
 /**
  * Abstract base class for settings pages that support scrolling.

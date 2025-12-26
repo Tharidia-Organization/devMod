@@ -1,14 +1,16 @@
 package com.devmod.components;
-import com.devmod.DevMod;
+import java.util.Objects;
 
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
+
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import com.mojang.serialization.Codec;
 
-import java.util.Objects;
+import com.devmod.DevMod;
+
+import com.mojang.serialization.Codec;
 
 /**
  * Data components for ranged weapons (doc 16).

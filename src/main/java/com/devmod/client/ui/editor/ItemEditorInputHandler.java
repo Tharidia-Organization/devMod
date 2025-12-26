@@ -1,5 +1,13 @@
 package com.devmod.client.ui.editor;
 
+import java.util.Objects;
+
+import org.lwjgl.glfw.GLFW;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.item.ItemStack;
+
+import com.devmod.client.ui.ConfirmDialog;
 import com.devmod.client.ui.editor.components.FooterComponent;
 import com.devmod.client.ui.editor.components.HeaderComponent;
 import com.devmod.client.ui.editor.components.LeftColumnComponent;
@@ -7,20 +15,14 @@ import com.devmod.client.ui.editor.components.ScrollableContentArea;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.editor.debug.DebugOverlay;
-import com.devmod.client.ui.ConfirmDialog;
+import com.devmod.client.ui.editor.systems.BatchEditResult;
 import com.devmod.client.ui.editor.systems.CraftingInfoPanel;
 import com.devmod.client.ui.editor.systems.DebugPanel;
 import com.devmod.client.ui.editor.systems.HelpOverlay;
-import com.devmod.client.ui.editor.systems.BatchEditResult;
 import com.devmod.client.ui.editor.systems.MultiEditManager;
 import com.devmod.client.ui.editor.systems.MultiEditPanel;
 import com.devmod.client.ui.editor.systems.PresetSelectorOverlay;
 import com.devmod.client.ui.editor.systems.TemplateOverlay;
-import net.minecraft.client.Minecraft;
-import net.minecraft.world.item.ItemStack;
-import org.lwjgl.glfw.GLFW;
-
-import java.util.Objects;
 
 /**
  * Handles all input logic for ItemEditorScreen.

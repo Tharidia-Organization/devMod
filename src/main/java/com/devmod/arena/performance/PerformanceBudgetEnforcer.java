@@ -1,10 +1,5 @@
 package com.devmod.arena.performance;
 
-import com.devmod.arena.monitor.MsptMonitor;
-import com.devmod.arena.monitor.MsptSample;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -14,6 +9,12 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.arena.monitor.MsptMonitor;
+import com.devmod.arena.monitor.MsptSample;
 
 /**
  * DD40: Performance Budget Enforcer with MSPT/TPS measurement and fail-fast.

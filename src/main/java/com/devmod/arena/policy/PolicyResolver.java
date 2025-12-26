@@ -1,14 +1,5 @@
 package com.devmod.arena.policy;
 
-import com.devmod.arena.config.ArenaTemplateConfig;
-import com.devmod.arena.override.OverrideManager;
-import com.devmod.arena.override.TemplateOverride;
-import com.devmod.arena.registry.ArenaTemplate;
-import com.devmod.arena.registry.ArenaTemplateRegistry;
-import com.devmod.arena.telemetry.ArenaTelemetry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -25,6 +16,16 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.arena.config.ArenaTemplateConfig;
+import com.devmod.arena.override.OverrideManager;
+import com.devmod.arena.override.TemplateOverride;
+import com.devmod.arena.registry.ArenaTemplate;
+import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.arena.telemetry.ArenaTelemetry;
 
 /**
  * Policy Resolver with weighted scoring, tie-break rules, and per-player locking.

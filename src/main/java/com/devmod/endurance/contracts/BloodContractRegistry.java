@@ -1,15 +1,5 @@
 package com.devmod.endurance.contracts;
 
-import com.devmod.DevMod;
-import com.devmod.config.gamedesign.GameDesignConfig;
-import com.devmod.config.gamedesign.GameDesignConfigManager;
-import com.devmod.endurance.ComboSystem;
-import net.minecraft.resources.ResourceLocation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -21,6 +11,19 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.resources.ResourceLocation;
+
+import com.devmod.DevMod;
+import com.devmod.config.gamedesign.GameDesignConfig;
+import com.devmod.config.gamedesign.GameDesignConfigManager;
+import com.devmod.endurance.ComboSystem;
 
 /**
  * Registry of all available Blood Contracts.

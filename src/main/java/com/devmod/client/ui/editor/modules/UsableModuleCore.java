@@ -1,15 +1,16 @@
 package com.devmod.client.ui.editor.modules;
 
-import com.devmod.DevMod;
-import com.devmod.stats.UsableStats;
-import com.devmod.client.ui.editor.components.SourceBadge;
+import java.util.Objects;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
-import java.util.Objects;
+import com.devmod.DevMod;
+import com.devmod.client.ui.editor.components.SourceBadge;
+import com.devmod.stats.UsableStats;
 
 /**
  * Core stats management for UsableModule.

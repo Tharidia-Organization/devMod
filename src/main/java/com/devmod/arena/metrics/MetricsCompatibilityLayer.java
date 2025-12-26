@@ -1,13 +1,14 @@
 package com.devmod.arena.metrics;
 
-import com.devmod.arena.builder.BuildTransaction;
-import net.minecraft.server.level.ServerLevel;
+import java.util.List;
 import java.util.Objects;
+
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
 
-import java.util.List;
+import com.devmod.arena.builder.BuildTransaction;
 
 /**
  * Ensures baseline metric definitions match legacy (build_ms, entities_residual, blocks_residual).

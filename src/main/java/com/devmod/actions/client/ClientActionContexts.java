@@ -1,10 +1,11 @@
 package com.devmod.actions.client;
 
-import com.devmod.actions.ActionContext;
-import com.devmod.actions.ActionOrigin;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
+
+import com.devmod.actions.ActionContext;
+import com.devmod.actions.ActionOrigin;
 
 public final class ClientActionContexts {
     private ClientActionContexts() {}

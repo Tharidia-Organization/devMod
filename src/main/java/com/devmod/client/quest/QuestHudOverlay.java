@@ -1,23 +1,24 @@
 package com.devmod.client.quest;
 
-import com.devmod.quest.QuestData;
-import com.devmod.quest.QuestManager;
-import com.devmod.quest.QuestTask;
+import java.util.Objects;
 
-import com.devmod.DevMod;
-import com.devmod.client.endurance.ClientQuestCache;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
-import java.util.Objects;
+import com.devmod.DevMod;
+import com.devmod.client.endurance.ClientQuestCache;
+import com.devmod.quest.QuestData;
+import com.devmod.quest.QuestManager;
+import com.devmod.quest.QuestTask;
 
 /**
  * Compact HUD Overlay to display quick tasks.

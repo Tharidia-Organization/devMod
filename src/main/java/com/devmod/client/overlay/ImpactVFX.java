@@ -1,21 +1,25 @@
 package com.devmod.client.overlay;
 
-import com.devmod.config.Config;
-import com.devmod.client.rendering.TrigCache;
-import com.devmod.client.rendering.shader.VFXShaderRegistry;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import javax.annotation.Nonnull;
+
+import org.joml.Matrix4f;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
-import javax.annotation.Nonnull;
+import com.devmod.client.rendering.TrigCache;
+import com.devmod.client.rendering.shader.VFXShaderRegistry;
+import com.devmod.config.Config;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 
 /**
  * Manages 3D impact visual effects:

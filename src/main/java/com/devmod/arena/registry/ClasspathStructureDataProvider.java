@@ -1,12 +1,13 @@
 package com.devmod.arena.registry;
 
-import net.minecraft.resources.ResourceLocation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Structure data provider that loads NBT bytes from the classpath/resources,

@@ -1,13 +1,6 @@
 package com.devmod.arena.registry;
 
-import com.devmod.arena.telemetry.ArenaTelemetry;
-import com.devmod.arena.config.ArenaTemplateConfig;
-import com.devmod.arena.config.InstanceLimitConfig;
-import com.devmod.arena.event.TemplateEventDispatcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,7 +18,16 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.nio.file.Path;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.arena.config.ArenaTemplateConfig;
+import com.devmod.arena.config.InstanceLimitConfig;
+import com.devmod.arena.event.TemplateEventDispatcher;
+import com.devmod.arena.telemetry.ArenaTelemetry;
 
 /**
  * Registry for Arena Templates with version handling (DD1) and inheritance resolution (DD2).

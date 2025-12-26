@@ -1,13 +1,14 @@
 package com.devmod.actions.client;
 
-import net.minecraft.client.KeyMapping;
-
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+
+import javax.annotation.Nullable;
+
+import net.minecraft.client.KeyMapping;
 
 public final class ActionKeybindRegistry {
     private static final Map<String, KeybindHint> KEYBINDS = new HashMap<>();

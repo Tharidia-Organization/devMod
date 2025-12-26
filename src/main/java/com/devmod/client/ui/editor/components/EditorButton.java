@@ -1,15 +1,16 @@
 package com.devmod.client.ui.editor.components;
 
+import java.util.Objects;
+import java.util.function.Consumer;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.core.EditorSounds;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.core.UIConstants;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-
-import java.util.Objects;
-import java.util.function.Consumer;
 
 /**
  * Custom button component per l'editor.

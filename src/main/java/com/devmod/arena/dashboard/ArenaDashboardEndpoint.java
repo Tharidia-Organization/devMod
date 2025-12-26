@@ -1,12 +1,5 @@
 package com.devmod.arena.dashboard;
 
-import com.devmod.arena.security.ArenaCommandAudit;
-import com.devmod.telemetry.duckdb.ArenaRecords;
-import com.devmod.telemetry.duckdb.DuckDBQueryAPI;
-import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -20,9 +13,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.arena.security.ArenaCommandAudit;
+import com.devmod.telemetry.duckdb.ArenaRecords;
+import com.devmod.telemetry.duckdb.DuckDBQueryAPI;
+import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 
 /**
  * DD35: Dashboard Auth - token + cache + background refresh

@@ -1,9 +1,9 @@
 package com.devmod.arena.metrics;
 
-import com.devmod.arena.telemetry.ArenaTelemetry;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import com.devmod.arena.telemetry.ArenaTelemetry;
 
 /**
  * Telemetry wrapper that enforces context in all events (DD13).

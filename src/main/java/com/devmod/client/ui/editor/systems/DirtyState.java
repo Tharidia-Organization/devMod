@@ -1,9 +1,9 @@
 package com.devmod.client.ui.editor.systems;
 
-import com.devmod.client.ui.editor.core.UIConstants;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import com.devmod.client.ui.editor.core.UIConstants;
 
 /**
  * Tracks unsaved changes for the editor.

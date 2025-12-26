@@ -1,18 +1,15 @@
 package com.devmod.client.events;
 
-import com.devmod.ModConfig;
-import com.devmod.util.I18n;
+import java.text.DecimalFormat;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
-import com.devmod.combat.HitHelper;
-import static com.devmod.DevMod.MODID;
-import com.devmod.client.overlay.Impact3DPanelManager;
-import com.devmod.client.overlay.WelcomeToastOverlay;
-import com.devmod.quest.QuestManager;
-import com.devmod.client.testing.QAEventTracker;
-import com.devmod.client.testing.QANotificationSystem;
-import com.devmod.testing.TesterProfile;
-import com.devmod.client.testing.TestingSession;
-import com.devmod.client.testing.TutorialManager;
+import javax.annotation.Nonnull;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -23,26 +20,32 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.text.DecimalFormat;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import javax.annotation.Nonnull;
-
+import com.devmod.ModConfig;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.client.overlay.Impact3DPanelManager;
+import com.devmod.client.overlay.WelcomeToastOverlay;
+import com.devmod.client.testing.QAEventTracker;
+import com.devmod.client.testing.QANotificationSystem;
+import com.devmod.client.testing.TestingSession;
+import com.devmod.client.testing.TutorialManager;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
+import com.devmod.combat.HitHelper;
+import com.devmod.quest.QuestManager;
+import com.devmod.testing.TesterProfile;
+import com.devmod.util.I18n;
+
+import static com.devmod.DevMod.MODID;
 
 @EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
 public class ClientModEvents {

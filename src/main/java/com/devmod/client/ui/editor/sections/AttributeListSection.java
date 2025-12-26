@@ -1,10 +1,10 @@
 package com.devmod.client.ui.editor.sections;
 
-import com.devmod.client.ui.editor.EditorSection;
-import com.devmod.client.ui.editor.components.EditorSlider;
-import com.devmod.client.ui.editor.core.EditorDimensions;
-import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -19,10 +19,11 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Consumer;
+import com.devmod.client.ui.editor.EditorSection;
+import com.devmod.client.ui.editor.components.EditorSlider;
+import com.devmod.client.ui.editor.core.EditorDimensions;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.UIConstants;
 
 /**
  * Section displaying and allowing editing of item attribute modifiers.

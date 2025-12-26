@@ -1,21 +1,5 @@
 package com.devmod.endurance.resonance;
 
-import com.devmod.endurance.ComboSystem;
-import com.devmod.telemetry.endurance.EnduranceTelemetryService;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.server.level.ServerLevel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.devmod.config.gamedesign.GameDesignConfig;
-import com.devmod.config.gamedesign.GameDesignConfigManager;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -24,6 +8,24 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.LivingEntity;
+
+import com.devmod.config.gamedesign.GameDesignConfig;
+import com.devmod.config.gamedesign.GameDesignConfigManager;
+import com.devmod.endurance.ComboSystem;
+import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 
 /**
  * Resonance Chain System - Party Combo Synergy.

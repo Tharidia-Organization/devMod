@@ -1,21 +1,21 @@
 package com.devmod.endurance.tide;
 
-import com.devmod.config.gamedesign.GameDesignConfig;
-import com.devmod.config.gamedesign.GameDesignConfigManager;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.nbt.CompoundTag;
+
+import com.devmod.config.gamedesign.GameDesignConfig;
+import com.devmod.config.gamedesign.GameDesignConfigManager;
 
 /**
  * Tide Manager - Tracks and manages the global threat level.

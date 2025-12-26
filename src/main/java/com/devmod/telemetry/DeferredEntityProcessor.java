@@ -1,19 +1,22 @@
 package com.devmod.telemetry;
 
-import com.devmod.config.MobConfigManager;
-import com.mojang.logging.LogUtils;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.ai.attributes.AttributeInstance;
-import net.minecraft.world.entity.ai.attributes.Attributes;
-import org.slf4j.Logger;
-
 import java.lang.ref.WeakReference;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.slf4j.Logger;
+
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+
+import com.devmod.config.MobConfigManager;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * Deferred Entity Processor - Queue-based system for heavy entity operations.

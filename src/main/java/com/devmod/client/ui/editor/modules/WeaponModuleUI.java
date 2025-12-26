@@ -1,7 +1,16 @@
 package com.devmod.client.ui.editor.modules;
 
-import com.devmod.config.WeaponConfigManager;
-import com.devmod.stats.WeaponStats;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.ItemStack;
+
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorTextField;
@@ -17,16 +26,8 @@ import com.devmod.client.ui.editor.sections.SimpleHeaderSection;
 import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.TextNoteSection;
 import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.item.ItemStack;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
+import com.devmod.config.WeaponConfigManager;
+import com.devmod.stats.WeaponStats;
 
 /**
  * UI components and section builders for WeaponModule.

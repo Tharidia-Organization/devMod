@@ -1,5 +1,13 @@
 package com.devmod.telemetry;
 
+import java.util.Objects;
+
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.Items;
+
 import com.devmod.actions.ActionCategory;
 import com.devmod.actions.ActionCommandInvoker;
 import com.devmod.actions.ActionContext;
@@ -9,16 +17,11 @@ import com.devmod.actions.ActionPreconditions;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
 import com.devmod.util.I18n;
+
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.item.Items;
-import java.util.Objects;
 
 /**
  * Simple admin command to reload telemetry room definitions without server restart.

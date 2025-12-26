@@ -1,32 +1,4 @@
 package com.devmod.client.ui;
-import com.devmod.client.ui.editor.core.UIConstants;
-
-import com.devmod.actions.ActionContext;
-import com.devmod.actions.ActionIds;
-import com.devmod.actions.ActionOrigin;
-import com.devmod.actions.ActionRegistry;
-import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.client.rendering.RoomBoundsVisualizer;
-import com.devmod.telemetry.RoomDefinition;
-import com.devmod.telemetry.TelemetryConfig;
-import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.util.ConfigPaths;
-import com.devmod.util.I18n;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
@@ -34,6 +6,38 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
+import com.devmod.actions.ActionContext;
+import com.devmod.actions.ActionIds;
+import com.devmod.actions.ActionOrigin;
+import com.devmod.actions.ActionRegistry;
+import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.client.rendering.RoomBoundsVisualizer;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.telemetry.RoomDefinition;
+import com.devmod.telemetry.TelemetryConfig;
+import com.devmod.util.ConfigPaths;
+import com.devmod.util.I18n;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 /**
  * In-game UI for defining Room Bounds.

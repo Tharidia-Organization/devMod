@@ -1,17 +1,5 @@
 package com.devmod.endurance;
 
-import com.devmod.arena.policy.ArenaPolicy;
-import com.devmod.endurance.config.EnduranceConfigManager;
-import com.devmod.telemetry.endurance.EnduranceTelemetryService;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.ai.attributes.Attributes;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,6 +13,20 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+
+import com.devmod.arena.policy.ArenaPolicy;
+import com.devmod.endurance.config.EnduranceConfigManager;
+import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 
 /**
  * Roguelike Perk System for Endurance Quests.

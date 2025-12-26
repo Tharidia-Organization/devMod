@@ -1,16 +1,19 @@
 package com.devmod.client.arena.hud;
 
-import com.devmod.arena.ArenaDebugState;
+import java.util.UUID;
 
-import com.mojang.blaze3d.platform.InputConstants;
-import net.minecraft.client.KeyMapping;
-import net.minecraft.client.Minecraft;
-import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.UUID;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+
+import net.neoforged.neoforge.client.settings.KeyConflictContext;
+
+import com.devmod.arena.ArenaDebugState;
+
+import com.mojang.blaze3d.platform.InputConstants;
 
 /**
  * DD30: Arena Debug HUD Keybind - F7 toggle for HUD visibility.

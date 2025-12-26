@@ -1,13 +1,5 @@
 package com.devmod.client.ui.editor.systems;
 
-import com.devmod.DevMod;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import net.neoforged.fml.ModList;
-import net.neoforged.fml.loading.FMLPaths;
-import net.neoforged.neoforgespi.language.IModInfo;
-
-import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -15,6 +7,17 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
+
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.neoforgespi.language.IModInfo;
+
+import com.devmod.DevMod;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 /**
  * Detects the current modpack using multiple strategies.

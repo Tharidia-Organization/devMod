@@ -1,14 +1,16 @@
 package com.devmod.collision.bodypart;
 
-import com.devmod.combat.HitHelper;
-import com.devmod.collision.obb.OrientedBoundingBox;
-import org.joml.Matrix4f;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import org.joml.Matrix4f;
+
+import com.devmod.collision.obb.OrientedBoundingBox;
+import com.devmod.combat.HitHelper;
 
 /**
  * Runtime instance of a body part with current world-space transform.

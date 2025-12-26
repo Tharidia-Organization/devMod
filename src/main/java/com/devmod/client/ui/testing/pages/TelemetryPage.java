@@ -1,6 +1,5 @@
 package com.devmod.client.ui.testing.pages;
 
-import com.devmod.config.Config;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
@@ -13,6 +12,7 @@ import com.devmod.client.ui.testing.panel.SectionPanel;
 import com.devmod.client.ui.testing.panel.SliderPanel;
 import com.devmod.client.ui.testing.panel.SpacerPanel;
 import com.devmod.client.ui.testing.panel.StatusPanel;
+import com.devmod.config.Config;
 
 import static com.devmod.client.ui.testing.pages.PageUtils.safeGetBool;
 import static com.devmod.client.ui.testing.pages.PageUtils.safeGetInt;

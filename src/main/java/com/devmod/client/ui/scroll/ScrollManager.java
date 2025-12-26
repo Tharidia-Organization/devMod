@@ -1,12 +1,15 @@
 package com.devmod.client.ui.scroll;
 
+import javax.annotation.Nonnull;
+
+import org.lwjgl.glfw.GLFW;
+
+import net.minecraft.client.gui.GuiGraphics;
+
 import com.devmod.client.ui.editor.core.ResponsiveLayout.Rect;
 import com.devmod.client.ui.scroll.impl.InstantScrollBehavior;
 import com.devmod.client.ui.scroll.impl.SmoothScrollBehavior;
-import net.minecraft.client.gui.GuiGraphics;
-import org.lwjgl.glfw.GLFW;
 
-import javax.annotation.Nonnull;
 /**
  * Unified scroll manager for all scrollable components.
  * Centralizes mouse wheel, scrollbar drag, and keyboard navigation.

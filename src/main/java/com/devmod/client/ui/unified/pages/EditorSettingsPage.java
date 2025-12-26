@@ -1,19 +1,21 @@
 package com.devmod.client.ui.unified.pages;
 
-import com.devmod.config.EditorClientConfig;
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.client.ui.editor.core.EditorConstants;
-import com.devmod.client.ui.editor.core.EditorScaleCalculator;
-import com.devmod.client.ui.editor.core.ScaledCoord;
-import com.devmod.client.ui.unified.SettingsCategory;
-import com.devmod.client.ui.unified.SettingsPage;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.EditorConstants;
+import com.devmod.client.ui.editor.core.EditorScaleCalculator;
+import com.devmod.client.ui.editor.core.ScaledCoord;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.unified.SettingsCategory;
+import com.devmod.client.ui.unified.SettingsPage;
+import com.devmod.config.EditorClientConfig;
 
 /**
  * Editor settings page for Item Editor UI configuration.

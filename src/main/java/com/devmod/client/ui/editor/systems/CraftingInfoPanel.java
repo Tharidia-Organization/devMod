@@ -1,14 +1,10 @@
 package com.devmod.client.ui.editor.systems;
 
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.actions.ActionIds;
-import com.devmod.actions.ActionOrigin;
-import com.devmod.actions.ActionRegistry;
-import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.BaseOverlay;
-import com.devmod.client.ui.editor.core.ScaledCoord;
-import com.devmod.client.ui.editor.core.UIConstants;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -23,10 +19,15 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import com.devmod.actions.ActionIds;
+import com.devmod.actions.ActionOrigin;
+import com.devmod.actions.ActionRegistry;
+import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.BaseOverlay;
+import com.devmod.client.ui.editor.core.ScaledCoord;
+import com.devmod.client.ui.editor.core.UIConstants;
 
 /**
  * Crafting recipe + value analysis overlay.

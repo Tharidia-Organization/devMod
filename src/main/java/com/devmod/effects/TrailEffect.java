@@ -1,11 +1,12 @@
 package com.devmod.effects;
 
-import net.minecraft.world.phys.Vec3;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
 import javax.annotation.Nonnull;
+
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Represents a trail effect that follows an entity or projectile.

@@ -1,9 +1,5 @@
 package com.devmod.telemetry.duckdb;
 
-import com.mojang.logging.LogUtils;
-import net.minecraft.server.MinecraftServer;
-import org.slf4j.Logger;
-
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -11,6 +7,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+
+import net.minecraft.server.MinecraftServer;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * Central DuckDB telemetry service.

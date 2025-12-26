@@ -1,19 +1,21 @@
 package com.devmod.client.events;
 
-import com.devmod.DevMod;
-
-import static com.devmod.DevMod.MODID;
-import com.devmod.actions.ActionIds;
-import com.devmod.actions.ActionOrigin;
-import com.devmod.actions.ActionRegistry;
-import com.devmod.actions.client.ClientActionContexts;
 import net.minecraft.world.InteractionHand; // <--- Important
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Mob;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+
+import com.devmod.DevMod;
+import com.devmod.actions.ActionIds;
+import com.devmod.actions.ActionOrigin;
+import com.devmod.actions.ActionRegistry;
+import com.devmod.actions.client.ClientActionContexts;
+
+import static com.devmod.DevMod.MODID;
 
 @EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
 public class InteractionEvents {

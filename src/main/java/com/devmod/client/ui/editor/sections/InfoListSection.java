@@ -1,15 +1,16 @@
 package com.devmod.client.ui.editor.sections;
 
-import com.devmod.client.ui.editor.EditorSection;
-import com.devmod.client.ui.editor.core.EditorDimensions;
-import com.devmod.client.ui.editor.core.ResponsiveLayout;
-import com.devmod.client.ui.editor.core.UIConstants;
+import java.util.List;
+import java.util.Objects;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
-import java.util.List;
-import java.util.Objects;
+import com.devmod.client.ui.editor.EditorSection;
+import com.devmod.client.ui.editor.core.EditorDimensions;
+import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.UIConstants;
 
 public final class InfoListSection implements EditorSection.CustomSection {
     private static final int LINE_HEIGHT = 12;

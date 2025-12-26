@@ -1,9 +1,9 @@
 package com.devmod.client.ui.editor.core;
 
+import java.util.Objects;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-
-import java.util.Objects;
 
 import static com.devmod.client.ui.editor.core.StringBuilderCache.acquire;
 import static com.devmod.client.ui.editor.core.StringBuilderCache.release;

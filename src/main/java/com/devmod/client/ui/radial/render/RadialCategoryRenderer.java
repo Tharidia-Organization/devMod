@@ -1,16 +1,18 @@
 package com.devmod.client.ui.radial.render;
 
-import com.devmod.client.ui.radial.RadialCategory;
-import com.devmod.client.ui.radial.RadialMenuConfig;
-import com.devmod.client.ui.radial.RadialMenuItem;
-import com.devmod.client.ui.radial.config.RadialMenuConstants;
+import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
 
-import javax.annotation.Nonnull;
-import java.util.List;
-import java.util.Objects;
+import com.devmod.client.ui.radial.RadialCategory;
+import com.devmod.client.ui.radial.RadialMenuConfig;
+import com.devmod.client.ui.radial.RadialMenuItem;
+import com.devmod.client.ui.radial.config.RadialMenuConstants;
 
 /**
  * Renders the outer category ring and category items for the Radial Menu.

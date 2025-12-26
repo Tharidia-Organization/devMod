@@ -1,16 +1,19 @@
 package com.devmod.collision.transform;
 
-import com.mojang.logging.LogUtils;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
-import org.slf4j.Logger;
-
-import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nonnull;
+
+import org.joml.Matrix4f;
+import org.slf4j.Logger;
+
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.Vec3;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * Server-side transform provider that computes simplified transforms

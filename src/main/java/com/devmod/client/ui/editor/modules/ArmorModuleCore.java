@@ -1,20 +1,22 @@
 package com.devmod.client.ui.editor.modules;
 
-import com.devmod.stats.ArmorStats;
-import com.devmod.config.ArmorConfigManager;
-import com.devmod.components.ArmorComponents;
-import com.devmod.DevMod;
-import com.devmod.client.ui.editor.components.SourceBadge;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import com.devmod.DevMod;
+import com.devmod.client.ui.editor.components.SourceBadge;
+import com.devmod.components.ArmorComponents;
+import com.devmod.config.ArmorConfigManager;
+import com.devmod.stats.ArmorStats;
 
 /**
  * Core stats management for ArmorModule.

@@ -1,15 +1,10 @@
 package com.devmod.client.ui.unified.pages;
 
-import com.devmod.config.MobConfigManager;
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.unified.SettingsCategory;
-import com.devmod.client.ui.unified.SettingsPage;
-import com.devmod.actions.ActionIds;
-import com.devmod.actions.ActionOrigin;
-import com.devmod.actions.ActionRegistry;
-import com.devmod.actions.client.ClientActionContexts;
+import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -18,9 +13,16 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.AABB;
 
-import javax.annotation.Nonnull;
-import java.util.List;
-import java.util.Objects;
+import com.devmod.actions.ActionIds;
+import com.devmod.actions.ActionOrigin;
+import com.devmod.actions.ActionRegistry;
+import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.client.ui.unified.SettingsCategory;
+import com.devmod.client.ui.unified.SettingsPage;
+import com.devmod.config.MobConfigManager;
 
 /**
  * Mob configuration page - shows nearby mobs and their custom stats.

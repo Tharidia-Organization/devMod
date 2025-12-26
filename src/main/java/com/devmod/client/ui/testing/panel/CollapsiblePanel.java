@@ -1,12 +1,16 @@
 package com.devmod.client.ui.testing.panel;
 
-import com.devmod.client.ui.editor.core.UIConstants;
+import java.util.Objects;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
-import java.util.Objects;
+import com.devmod.client.ui.editor.core.UIConstants;
 
-import static com.devmod.client.ui.testing.panel.PanelConstants.*;
+import static com.devmod.client.ui.testing.panel.PanelConstants.ANIMATION_SPEED;
+import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_HEADER_ACCENT;
+import static com.devmod.client.ui.testing.panel.PanelConstants.CONTENT_PADDING;
+import static com.devmod.client.ui.testing.panel.PanelConstants.HEADER_HEIGHT;
 
 /**
  * Collapsible wrapper panel with animated expand/collapse.

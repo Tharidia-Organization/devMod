@@ -1,13 +1,14 @@
 package com.devmod.actions;
 
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.ItemLike;
-
-import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+
+import javax.annotation.Nullable;
+
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ItemLike;
 
 public final class RadialAction {
     /**

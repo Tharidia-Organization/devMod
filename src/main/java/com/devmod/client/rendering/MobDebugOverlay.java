@@ -1,6 +1,7 @@
 package com.devmod.client.rendering;
 
-import com.devmod.config.MobConfigManager;
+import java.util.Objects;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -8,7 +9,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.Objects;
+import com.devmod.config.MobConfigManager;
 
 /**
  * Gestisce il rendering delle informazioni debug per i mob guardati dal player

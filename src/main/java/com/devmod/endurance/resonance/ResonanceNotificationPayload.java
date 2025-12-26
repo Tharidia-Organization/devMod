@@ -1,13 +1,15 @@
 package com.devmod.endurance.resonance;
 
-import io.netty.buffer.ByteBuf;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
+import io.netty.buffer.ByteBuf;
 
 /**
  * Server-to-client payload for resonance chain notifications.

@@ -1,9 +1,10 @@
 package com.devmod.client.ui.editor.systems;
 
-import javax.annotation.Nullable;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+
+import javax.annotation.Nullable;
 
 /**
  * Undo/Redo stack for editor actions.

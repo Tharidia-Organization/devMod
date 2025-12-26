@@ -1,15 +1,5 @@
 package com.devmod.arena.autosmoke;
 
-import com.devmod.arena.builder.ArenaBuilder;
-import com.devmod.arena.builder.TemplateArenaBuilder;
-import com.devmod.arena.cleanup.ArenaCleanupExecutor;
-import com.devmod.arena.cleanup.CleanupResult;
-import com.devmod.arena.override.ForceTemplateCapability;
-import com.devmod.arena.registry.ArenaTemplate;
-import com.devmod.arena.registry.ArenaTemplateRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -22,6 +12,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.arena.builder.ArenaBuilder;
+import com.devmod.arena.builder.TemplateArenaBuilder;
+import com.devmod.arena.cleanup.ArenaCleanupExecutor;
+import com.devmod.arena.cleanup.CleanupResult;
+import com.devmod.arena.override.ForceTemplateCapability;
+import com.devmod.arena.registry.ArenaTemplate;
+import com.devmod.arena.registry.ArenaTemplateRegistry;
 
 /**
  * DD32-34: Autosmoke test runner with guard, thresholds, and reporting.

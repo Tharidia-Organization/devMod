@@ -1,7 +1,15 @@
 package com.devmod.client.ui.unified.persistence;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.slf4j.Logger;
+
 import com.devmod.ModConfig;
-import com.devmod.util.ConfigPaths;
 import com.devmod.client.overlay.BossPhaseOverlay;
 import com.devmod.client.overlay.EntityDensityOverlay;
 import com.devmod.client.rendering.DebugRenderer;
@@ -11,17 +19,11 @@ import com.devmod.client.rendering.LightLevelOverlay;
 import com.devmod.client.rendering.LineOfSightVisualizer;
 import com.devmod.client.rendering.PathfindingDebugger;
 import com.devmod.client.rendering.RoomBoundsVisualizer;
+import com.devmod.util.ConfigPaths;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mojang.logging.LogUtils;
-import org.slf4j.Logger;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Singleton manager for loading and saving DevMod settings.

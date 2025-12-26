@@ -1,7 +1,8 @@
 package com.devmod.client.ui.editor.systems;
 
-import net.minecraft.world.item.ItemStack;
 import java.util.function.Predicate;
+
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Lightweight Preset abstraction used by the MultiEdit subsystem.

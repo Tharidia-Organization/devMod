@@ -2,9 +2,6 @@ package com.devmod.telemetry.dashboard;
 
 import java.util.Objects;
 
-import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.context.CommandContext;
-
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -18,6 +15,9 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionPreconditions;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
+
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.context.CommandContext;
 
 /**
  * Command to control the telemetry dashboard.

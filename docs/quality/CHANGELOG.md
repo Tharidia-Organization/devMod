@@ -304,6 +304,50 @@ Reviewed 10+ largest files (>1000 LOC) for documentation status:
 
 ---
 
+## Batch 15: Long Method Review (2025-12-26)
+
+### Methods Analyzed
+- `WaveManager.spawnWaveMobs` (145 LOC) - Already well-factored with helpers:
+  - `applyMobModifiers`, `applyMultiplayerHPScaling`, `applySpawnAffix`
+  - `applyEliteBuffs`, `finalizeMobSpawn`, `pickValidatedSpawnPosition`
+- `EnduranceQuestManager.prepareTemplateArenaForPartyAsync` (172 LOC) - Complex async callback chain
+- `WaveManager.startWave` (110 LOC) - Well-structured with good helper extraction
+
+### Conclusion
+Codebase follows good extraction patterns. No high-value extraction opportunities identified without risking async flow integrity.
+
+---
+
+## Quality Pass Summary (2025-12-25 to 2025-12-26)
+
+### Final Metrics
+- **Wildcard imports**: 149 → 15 (90% reduction)
+- **Files modified**: 50+ files across 15 batches
+- **Build status**: All changes compile successfully
+
+### Key Improvements
+1. Explicit imports for better IDE support and faster compilation
+2. Logging standardization (System.out → LOGGER)
+3. Null-safety annotations on critical nullable fields
+4. Class documentation for large undocumented files
+5. Endurance flow fixes for directive chains and rewards
+6. Test stability improvements (configurable thresholds)
+
+---
+
 ## Pending Batches
 
-None (Step 2 complete)
+None (Quality pass complete)
+
+---
+
+## Batch 16: Import Cleanup (2025-12-26)
+
+### Scope
+- Reordered imports to the standard order in main sources
+- Replaced non-static wildcard imports in test sources with explicit imports
+- Kept `import static org.junit.jupiter.api.Assertions.*;` as a standard exception for tests
+
+### Results
+- **Main wildcard imports**: 0
+- **Test wildcard imports (non-static)**: 126 → 0

@@ -1,12 +1,5 @@
 package com.devmod.arena.admin;
 
-import com.devmod.arena.config.ArenaTemplateConfig;
-import com.devmod.arena.registry.ArenaTemplateRegistry;
-import com.devmod.arena.security.ArenaCommandAudit;
-import com.devmod.arena.telemetry.ArenaTelemetry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -17,6 +10,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.arena.config.ArenaTemplateConfig;
+import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.arena.security.ArenaCommandAudit;
+import com.devmod.arena.telemetry.ArenaTelemetry;
 
 /**
  * DD36: Hot-reload admin endpoint for arena templates.

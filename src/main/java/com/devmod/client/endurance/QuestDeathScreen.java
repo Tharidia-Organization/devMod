@@ -1,24 +1,27 @@
 package com.devmod.client.endurance;
 
-import com.devmod.endurance.QuestActionPayload;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
+import org.lwjgl.glfw.GLFW;
+
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.client.ui.editor.core.UIConstants;
 import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.endurance.QuestActionPayload;
 import com.devmod.util.I18n;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.sounds.SoundEvents;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import org.lwjgl.glfw.GLFW;
-
-import javax.annotation.Nonnull;
-import java.util.Objects;
 
 /**
  * Death screen for Endurance Quest with respawn options.

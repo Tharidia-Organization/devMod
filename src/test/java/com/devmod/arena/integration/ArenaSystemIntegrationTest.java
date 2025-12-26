@@ -1,20 +1,24 @@
 package com.devmod.arena.integration;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import com.devmod.arena.BuildPhase;
 import com.devmod.arena.cleanup.ArenaCleanupExecutor;
 import com.devmod.arena.cleanup.CleanupResult;
 import com.devmod.arena.event.TemplateEvent;
 import com.devmod.arena.event.TemplateEventDispatcher;
 import com.devmod.arena.monitor.MsptMonitor;
-import com.devmod.arena.BuildPhase;
 import com.devmod.arena.network.BuildProgressPayload;
 import com.devmod.client.arena.ui.BuildProgressOverlay;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
-import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 

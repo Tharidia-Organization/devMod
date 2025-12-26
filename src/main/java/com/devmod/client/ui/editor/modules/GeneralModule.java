@@ -1,5 +1,28 @@
 package com.devmod.client.ui.editor.modules;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.BowItem;
+import net.minecraft.world.item.BrushItem;
+import net.minecraft.world.item.CrossbowItem;
+import net.minecraft.world.item.EggItem;
+import net.minecraft.world.item.EnderpearlItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ProjectileWeaponItem;
+import net.minecraft.world.item.ShieldItem;
+import net.minecraft.world.item.SnowballItem;
+import net.minecraft.world.item.SpyglassItem;
+import net.minecraft.world.item.SwordItem;
+import net.minecraft.world.item.ThrowablePotionItem;
+import net.minecraft.world.item.TieredItem;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
+
 import com.devmod.client.ui.editor.AbstractEditorModule;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.EditorStartTab;
@@ -14,28 +37,6 @@ import com.devmod.client.ui.editor.sections.ModuleCardSection;
 import com.devmod.client.ui.editor.sections.ModuleSummarySection;
 import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.world.item.ArmorItem;
-import net.minecraft.world.item.enchantment.ItemEnchantments;
-import net.minecraft.world.item.SwordItem;
-import net.minecraft.world.item.TieredItem;
-import net.minecraft.world.item.ProjectileWeaponItem;
-import net.minecraft.world.item.SnowballItem;
-import net.minecraft.world.item.EggItem;
-import net.minecraft.world.item.EnderpearlItem;
-import net.minecraft.world.item.ThrowablePotionItem;
-import net.minecraft.world.item.BowItem;
-import net.minecraft.world.item.CrossbowItem;
-import net.minecraft.world.item.ShieldItem;
-import net.minecraft.world.item.SpyglassItem;
-import net.minecraft.world.item.BrushItem;
-import net.minecraft.world.item.Item;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * General/Navigation Hub module for the Item Editor.

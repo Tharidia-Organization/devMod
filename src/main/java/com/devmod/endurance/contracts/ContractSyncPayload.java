@@ -1,14 +1,17 @@
 package com.devmod.endurance.contracts;
 
-import com.devmod.DevMod;
-import io.netty.buffer.ByteBuf;
+import java.util.List;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import javax.annotation.Nonnull;
-import java.util.List;
+import com.devmod.DevMod;
+
+import io.netty.buffer.ByteBuf;
 
 /**
  * Payload to sync active contracts to clients for HUD display.

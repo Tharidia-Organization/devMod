@@ -1,11 +1,11 @@
 package com.devmod.arena.registry;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Helper to wire structure manifest + provider into the registry.

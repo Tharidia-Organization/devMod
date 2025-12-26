@@ -1,15 +1,17 @@
 package com.devmod.telemetry;
 
-import com.devmod.util.ConfigPaths;
-import com.google.gson.Gson;
-import com.mojang.logging.LogUtils;
-import org.slf4j.Logger;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import org.slf4j.Logger;
+
+import com.devmod.util.ConfigPaths;
+
+import com.google.gson.Gson;
+import com.mojang.logging.LogUtils;
 
 public record TelemetrySettings(long stuckMs, long campingMs, int campingHits, long aggroDropMs, long outOfBoundsMs, double outOfBoundsDeltaY, double bossHpThreshold, boolean bossPhaseDetectionEnabled, boolean skillTrackingEnabled) {
     private static final Logger LOGGER = LogUtils.getLogger();

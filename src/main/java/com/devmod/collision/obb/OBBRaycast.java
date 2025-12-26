@@ -1,11 +1,12 @@
 package com.devmod.collision.obb;
 
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
+import java.util.Objects;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.Objects;
+
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Ray-OBB intersection using the Slab Method.

@@ -1,6 +1,9 @@
 package com.devmod.client.overlay;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -10,9 +13,7 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
+import com.mojang.blaze3d.vertex.PoseStack;
 
 /**
  * Singleton that manages all active Impact 3D panels.

@@ -1,11 +1,13 @@
 package com.devmod.attributes;
 
-import com.devmod.DevMod;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.RangedAttribute;
+
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
+
+import com.devmod.DevMod;
 
 /**
  * DevMod custom attributes (weapon-related).

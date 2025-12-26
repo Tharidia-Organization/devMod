@@ -1,14 +1,9 @@
 package com.devmod.gametest;
 
-import com.devmod.DevMod;
-import com.devmod.runtime.DynamicDimensionManager;
-import com.devmod.runtime.InstanceData;
-import com.devmod.runtime.InstanceManager;
-import com.devmod.runtime.InstanceRegistry;
-import com.devmod.runtime.InstanceState;
-import com.devmod.runtime.PlayerInstanceSnapshot;
-import com.devmod.runtime.PlayerInstanceState;
-import com.devmod.runtime.RecoverySystem;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.AfterBatch;
 import net.minecraft.gametest.framework.BeforeBatch;
@@ -18,12 +13,19 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import com.devmod.DevMod;
+import com.devmod.runtime.DynamicDimensionManager;
+import com.devmod.runtime.InstanceData;
+import com.devmod.runtime.InstanceManager;
+import com.devmod.runtime.InstanceRegistry;
+import com.devmod.runtime.InstanceState;
+import com.devmod.runtime.PlayerInstanceSnapshot;
+import com.devmod.runtime.PlayerInstanceState;
+import com.devmod.runtime.RecoverySystem;
 
 /**
  * GameTests for the Instance Dimension System.

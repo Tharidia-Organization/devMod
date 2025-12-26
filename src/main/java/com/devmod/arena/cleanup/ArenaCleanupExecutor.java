@@ -1,11 +1,11 @@
 package com.devmod.arena.cleanup;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Executes arena cleanup in 4 phases as per DD37.

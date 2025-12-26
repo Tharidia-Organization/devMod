@@ -1,12 +1,13 @@
 package com.devmod.client.ui.radial.render;
 
-import com.devmod.client.ui.radial.config.RadialMenuConstants;
-import com.devmod.client.ui.radial.model.MacroCategory;
+import java.util.Objects;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;
 
-import java.util.Objects;
+import com.devmod.client.ui.radial.config.RadialMenuConstants;
+import com.devmod.client.ui.radial.model.MacroCategory;
 
 /**
  * Renders the center hub of the Radial Menu.

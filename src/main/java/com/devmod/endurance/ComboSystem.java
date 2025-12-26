@@ -1,15 +1,5 @@
 package com.devmod.endurance;
 
-import com.devmod.endurance.challenges.DailyChallengeManager;
-import com.devmod.endurance.config.EnduranceConfigManager;
-import com.devmod.telemetry.endurance.EnduranceTelemetryService;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.LivingEntity;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -19,6 +9,18 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.LivingEntity;
+
+import com.devmod.endurance.challenges.DailyChallengeManager;
+import com.devmod.endurance.config.EnduranceConfigManager;
+import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 
 /**
  * Devil May Cry-inspired Combo and Style Scoring System.

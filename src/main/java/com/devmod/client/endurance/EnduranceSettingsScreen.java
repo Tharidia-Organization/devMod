@@ -1,19 +1,22 @@
 package com.devmod.client.endurance;
 
-import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
-import com.devmod.config.GameMechanicsConfig;
-import com.devmod.util.I18n;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.config.GameMechanicsConfig;
+import com.devmod.util.I18n;
 
 /**
  * Settings screen for configuring Endurance Quest game mechanics.

@@ -1,23 +1,24 @@
 package com.devmod.client.rendering;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import org.joml.Matrix4f;
+import org.slf4j.Logger;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
 
-import java.util.Objects;
-
-import com.devmod.config.Config;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
-import com.mojang.logging.LogUtils;
-import org.slf4j.Logger;
+import com.devmod.config.Config;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.logging.LogUtils;
 
 /**
  * Sistema centralizzato per rendering debug in-world con supporto completo

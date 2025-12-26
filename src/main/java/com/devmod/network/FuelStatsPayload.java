@@ -1,6 +1,7 @@
 package com.devmod.network;
 
-import com.devmod.DevMod;
+import java.util.Objects;
+
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -9,7 +10,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.Objects;
+import com.devmod.DevMod;
 
 /**
  * Network payload for fuel stats synchronization.

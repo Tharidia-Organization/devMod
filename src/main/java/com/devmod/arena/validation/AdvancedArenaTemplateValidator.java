@@ -1,12 +1,13 @@
 package com.devmod.arena.validation;
 
-import com.devmod.arena.registry.ValidationResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.arena.registry.ValidationResult;
 
 /**
  * DD40: Advanced Arena Template Validator with static + runtime preflight checks.

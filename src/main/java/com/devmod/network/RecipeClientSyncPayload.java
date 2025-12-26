@@ -6,10 +6,6 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -21,6 +17,11 @@ import com.devmod.recipe.RecipeData;
 import com.devmod.recipe.SmeltingRecipeData;
 import com.devmod.recipe.SmithingRecipeData;
 import com.devmod.recipe.StonecuttingRecipeData;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+
 /**
  * Payload for synchronizing recipe data from server to client.
  * This is the playToClient counterpart to RecipeSyncPayload.

@@ -1,15 +1,18 @@
 package com.devmod.client.ui.editor.state;
 
-import com.devmod.client.ui.editor.EditorModule;
-import com.devmod.client.ui.editor.components.SlotSelector;
-import net.minecraft.world.item.ItemStack;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+
+import javax.annotation.Nullable;
+
+import net.minecraft.world.item.ItemStack;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
+import com.devmod.client.ui.editor.EditorModule;
+import com.devmod.client.ui.editor.components.SlotSelector;
 
 /**
  * Centralized state object for ItemEditorScreen.

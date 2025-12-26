@@ -1,15 +1,20 @@
 package com.devmod.client.ui.testing.panel;
 
-import com.devmod.client.ui.editor.components.EditorButton;
-import com.devmod.client.ui.editor.core.UIConstants;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static com.devmod.client.ui.testing.panel.PanelConstants.*;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+
+import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.core.UIConstants;
+
+import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_SEPARATOR;
+import static com.devmod.client.ui.testing.panel.PanelConstants.DESCRIPTION_HEIGHT;
+import static com.devmod.client.ui.testing.panel.PanelConstants.ROW_SPACING;
+import static com.devmod.client.ui.testing.panel.PanelConstants.SEPARATOR_HEIGHT;
+import static com.devmod.client.ui.testing.panel.PanelConstants.TITLE_HEIGHT;
 
 /**
  * Section panel with title, optional description, and button rows.

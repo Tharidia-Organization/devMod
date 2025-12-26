@@ -1,11 +1,5 @@
 package com.devmod.arena.snapshot;
 
-import com.devmod.arena.api.ArenaHandle;
-import com.devmod.arena.telemetry.ArenaTelemetry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,6 +18,14 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.arena.api.ArenaHandle;
+import com.devmod.arena.telemetry.ArenaTelemetry;
 
 /**
  * Manages arena snapshots for recovery and drift detection.

@@ -1,5 +1,8 @@
 package com.devmod.client.ui.testing.pages;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.devmod.ModConfig;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
@@ -25,10 +28,6 @@ import com.devmod.client.ui.testing.panel.SliderPanel;
 import com.devmod.client.ui.testing.panel.SpacerPanel;
 import com.devmod.client.ui.testing.panel.StatusPanel;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
-
-import java.util.ArrayList;
-import java.util.List;
-
 
 /**
  * Debug Overlays Page - Configuration for all debug visualizers.

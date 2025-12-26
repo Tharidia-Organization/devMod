@@ -1,14 +1,17 @@
 package com.devmod.mixin.client;
 
-import com.devmod.client.collision.transform.ModelPartTransformCapture;
-import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.entity.LivingEntityRenderer;
-import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.entity.LivingEntityRenderer;
+import net.minecraft.world.entity.LivingEntity;
+
+import com.devmod.client.collision.transform.ModelPartTransformCapture;
+
+import com.mojang.blaze3d.vertex.PoseStack;
 
 /**
  * Mixin to capture ModelPart transforms during entity rendering.

@@ -1,11 +1,12 @@
 package com.devmod.endurance;
 
-import com.devmod.arena.api.ArenaHandle;
-import net.minecraft.core.BlockPos;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+
+import net.minecraft.core.BlockPos;
+
+import com.devmod.arena.api.ArenaHandle;
 
 /**
  * WaveDirector plans the "beat" of each wave (pacing + objective).

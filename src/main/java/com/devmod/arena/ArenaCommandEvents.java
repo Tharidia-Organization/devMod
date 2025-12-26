@@ -1,8 +1,31 @@
 package com.devmod.arena;
 
-import com.devmod.arena.autosmoke.AutosmokeReportWriter;
-import com.devmod.arena.autosmoke.AutosmokeRunner;
-import com.devmod.arena.autosmoke.AutosmokeScheduler;
+import java.nio.file.Path;
+import java.time.ZoneId;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
+
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
+
+import com.devmod.DevMod;
 import com.devmod.arena.alert.AlertRouter;
 import com.devmod.arena.alert.AlertRouterRegistry;
 import com.devmod.arena.alert.ConsoleAlertChannel;
@@ -10,13 +33,16 @@ import com.devmod.arena.alert.DiscordAlertChannel;
 import com.devmod.arena.alert.LogAlertChannel;
 import com.devmod.arena.alert.TelemetryAlertChannel;
 import com.devmod.arena.alert.WebhookAlertChannel;
+import com.devmod.arena.autosmoke.AutosmokeReportWriter;
+import com.devmod.arena.autosmoke.AutosmokeRunner;
+import com.devmod.arena.autosmoke.AutosmokeScheduler;
 import com.devmod.arena.builder.AsyncArenaBuildCoordinator;
 import com.devmod.arena.builder.AsyncArenaBuilder;
 import com.devmod.arena.builder.ChunkLoadingManager;
 import com.devmod.arena.builder.TemplateArenaBuilder;
+import com.devmod.arena.command.ArenaCommands;
 import com.devmod.arena.config.ArenaTemplateConfig;
 import com.devmod.arena.config.InstanceLimitConfig;
-import com.devmod.arena.command.ArenaCommands;
 import com.devmod.arena.integration.MinecraftBlockPlacer;
 import com.devmod.arena.integration.MinecraftEntitySpawner;
 import com.devmod.arena.logging.DuckDbDestination;
@@ -27,30 +53,7 @@ import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateRegistryBootstrap;
 import com.devmod.arena.security.ArenaCommandPermissions;
 import com.devmod.arena.telemetry.ArenaTelemetry;
-import com.devmod.DevMod;
 import com.devmod.endurance.EnduranceQuestManager;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.chunk.status.ChunkStatus;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
-import net.neoforged.neoforge.event.server.ServerStartedEvent;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.nio.file.Path;
-import java.time.ZoneId;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 
 @EventBusSubscriber(modid = DevMod.MODID)
 public final class ArenaCommandEvents {

@@ -1,17 +1,19 @@
 package com.devmod.client.ui;
-import com.devmod.client.telemetry.UiTelemetry;
-import com.devmod.client.ui.editor.core.UIConstants;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
+import com.devmod.client.telemetry.UiTelemetry;
+import com.devmod.client.ui.editor.core.UIConstants;
 
 /**
  * Base class for all DevMod screens providing consistent styling and behavior.

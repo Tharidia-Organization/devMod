@@ -1,23 +1,25 @@
 package com.devmod.client.attributes;
 
-import com.devmod.attributes.AttributeLogEntry;
-import com.devmod.util.I18n;
+import java.util.List;
+import java.util.Objects;
 
-import com.devmod.DevMod;
+import javax.annotation.Nonnull;
+
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
-import javax.annotation.Nonnull;
-import java.util.List;
-import java.util.Objects;
+import com.devmod.DevMod;
+import com.devmod.attributes.AttributeLogEntry;
+import com.devmod.util.I18n;
 
 /**
  * 2D HUD Overlay for the attribute monitoring system.

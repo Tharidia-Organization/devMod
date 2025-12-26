@@ -1,6 +1,12 @@
 package com.devmod.client.ui.testing.pages;
 
-import com.devmod.config.Config;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
@@ -14,11 +20,7 @@ import com.devmod.client.ui.testing.panel.HeaderPanel;
 import com.devmod.client.ui.testing.panel.SectionPanel;
 import com.devmod.client.ui.testing.panel.SpacerPanel;
 import com.devmod.client.ui.testing.panel.StatusPanel;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-
-import java.util.Objects;
-import javax.annotation.Nonnull;
+import com.devmod.config.Config;
 
 import static com.devmod.client.ui.testing.pages.PageUtils.safeGetBool;
 

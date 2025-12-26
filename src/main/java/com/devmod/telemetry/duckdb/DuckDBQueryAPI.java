@@ -1,8 +1,5 @@
 package com.devmod.telemetry.duckdb;
 
-import com.mojang.logging.LogUtils;
-import org.slf4j.Logger;
-
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -12,6 +9,10 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import org.slf4j.Logger;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * Query API for DuckDB telemetry analytics.

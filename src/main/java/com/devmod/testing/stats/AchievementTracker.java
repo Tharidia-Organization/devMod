@@ -1,8 +1,9 @@
 package com.devmod.testing.stats;
 
-import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.gson.JsonObject;
 
 /**
  * Tracks special achievements unlocked during testing.

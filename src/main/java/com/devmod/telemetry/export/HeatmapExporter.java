@@ -1,12 +1,5 @@
 package com.devmod.telemetry.export;
 
-import com.devmod.telemetry.spatial.HeatmapService;
-import com.devmod.util.ConfigPaths;
-import com.mojang.logging.LogUtils;
-import net.minecraft.core.BlockPos;
-import org.slf4j.Logger;
-
-import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
@@ -18,6 +11,17 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+
+import javax.imageio.ImageIO;
+
+import org.slf4j.Logger;
+
+import net.minecraft.core.BlockPos;
+
+import com.devmod.telemetry.spatial.HeatmapService;
+import com.devmod.util.ConfigPaths;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * VOXEL-LAB: Heatmap Export to PNG

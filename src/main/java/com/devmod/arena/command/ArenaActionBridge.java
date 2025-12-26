@@ -1,12 +1,14 @@
 package com.devmod.arena.command;
 
-import com.mojang.brigadier.context.CommandContext;
-import net.minecraft.commands.CommandSourceStack;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+
 import javax.annotation.Nullable;
+
+import net.minecraft.commands.CommandSourceStack;
+
+import com.mojang.brigadier.context.CommandContext;
 
 public final class ArenaActionBridge {
     private static final Map<String, Function<CommandContext<CommandSourceStack>, Integer>> HANDLERS =

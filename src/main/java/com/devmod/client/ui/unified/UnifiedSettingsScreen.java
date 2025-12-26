@@ -1,5 +1,22 @@
 package com.devmod.client.ui.unified;
 
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.OptionInstance;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
 import com.devmod.client.telemetry.UiTelemetry;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.ConfirmDialog;
@@ -14,21 +31,7 @@ import com.devmod.client.ui.unified.pages.MobConfigPage;
 import com.devmod.client.ui.unified.pages.TelemetryPage;
 import com.devmod.client.ui.unified.pages.VisualizersPage;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.OptionInstance;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import com.devmod.util.I18n;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 /**
  * Unified settings screen for all mod settings.

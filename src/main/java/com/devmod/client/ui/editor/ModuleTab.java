@@ -1,9 +1,9 @@
 package com.devmod.client.ui.editor;
 
-import net.minecraft.resources.ResourceLocation;
-
 import java.util.List;
 import java.util.function.Supplier;
+
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Tab definition for editor modules.

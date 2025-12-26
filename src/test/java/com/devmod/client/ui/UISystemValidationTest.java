@@ -1,9 +1,15 @@
 package com.devmod.client.ui;
 
-import com.devmod.client.ui.editor.core.UIConstants;
-import org.junit.jupiter.api.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
-import java.util.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+import com.devmod.client.ui.editor.core.UIConstants;
 
 import static org.junit.jupiter.api.Assertions.*;
 

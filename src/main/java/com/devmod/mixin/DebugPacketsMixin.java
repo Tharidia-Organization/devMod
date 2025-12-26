@@ -1,15 +1,24 @@
 package com.devmod.mixin;
 
-import com.devmod.debug.DebugFeature;
-import com.devmod.debug.DebugManager;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.common.custom.GoalDebugPayload;
 import net.minecraft.network.protocol.common.custom.NeighborUpdatesDebugPayload;
 import net.minecraft.network.protocol.common.custom.PathfindingDebugPayload;
 import net.minecraft.network.protocol.common.custom.PoiRemovedDebugPayload;
 import net.minecraft.network.protocol.common.custom.RaidsDebugPayload;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.game.DebugPackets;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -19,16 +28,9 @@ import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.raid.Raid;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.pathfinder.Path;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import com.devmod.debug.DebugFeature;
+import com.devmod.debug.DebugManager;
 
 /**
  * Mixin into Minecraft's DebugPackets class to actually send debug packets.

@@ -1,15 +1,16 @@
 package com.devmod.testing.config;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.devmod.testing.DynamicTestGenerator.TestTemplate;
 import com.devmod.testing.ModDiscoveryService.ModInfo;
 import com.devmod.testing.TestCase;
 import com.devmod.testing.TestCase.TestPriority;
 import com.devmod.testing.TesterProgress;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Test template that generates tests from JSON configuration.

@@ -1,10 +1,11 @@
 package com.devmod.client.ui.editor.core;
 
-import com.devmod.config.EditorClientConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+
+import com.devmod.config.EditorClientConfig;
 
 /**
  * Sound effects for editor interactions.

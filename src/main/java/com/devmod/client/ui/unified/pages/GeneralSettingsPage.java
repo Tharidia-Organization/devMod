@@ -1,5 +1,11 @@
 package com.devmod.client.ui.unified.pages;
 
+import javax.annotation.Nonnull;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+
 import com.devmod.ModConfig;
 import com.devmod.client.overlay.OnboardingOverlay;
 import com.devmod.client.ui.AxiomRenderer;
@@ -9,11 +15,6 @@ import com.devmod.client.ui.unified.SettingsCategory;
 import com.devmod.client.ui.unified.SettingsPage;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.util.I18n;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-
-import javax.annotation.Nonnull;
 
 /**
  * General settings page with toggle controls for overlay visibility, render mode, and colors.

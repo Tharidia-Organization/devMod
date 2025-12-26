@@ -1,12 +1,14 @@
 package com.devmod.client.debug;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
 import com.devmod.debug.DebugFeature;
 import com.devmod.debug.DebugSyncPayload;
 import com.devmod.debug.client.DebugRenderBools;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Client-side handler for debug sync packets.

@@ -1,8 +1,9 @@
 package com.devmod.client.ui.screens;
 
-import com.devmod.config.MobPresetManager;
-import com.devmod.network.UpdateMobStatsPayload;
-import com.devmod.client.ui.editor.core.UIConstants;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.Holder;
@@ -11,10 +12,12 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
+import com.devmod.client.ui.editor.core.UIConstants;
+import com.devmod.config.MobPresetManager;
+import com.devmod.network.UpdateMobStatsPayload;
 
 /**
  * State management for MobConfigScreen.

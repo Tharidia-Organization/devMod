@@ -1,14 +1,7 @@
 package com.devmod.gametest;
 
-import com.devmod.DevMod;
-import com.devmod.combat.HitHelper;
-import com.devmod.config.MobConfigManager;
-import com.devmod.network.UpdateMobStatsPayload;
-import com.devmod.network.UpdateWeaponPayload;
-import com.devmod.config.WeaponConfigManager;
-import com.devmod.stats.WeaponStats;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import java.util.Objects;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.AfterBatch;
 import net.minecraft.gametest.framework.BeforeBatch;
@@ -20,10 +13,20 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
-import java.util.Objects;
+import com.devmod.DevMod;
+import com.devmod.combat.HitHelper;
+import com.devmod.config.MobConfigManager;
+import com.devmod.config.WeaponConfigManager;
+import com.devmod.network.UpdateMobStatsPayload;
+import com.devmod.network.UpdateWeaponPayload;
+import com.devmod.stats.WeaponStats;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 /**
  * GameTests for DevMod critical features.

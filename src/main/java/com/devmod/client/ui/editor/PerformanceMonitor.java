@@ -1,12 +1,13 @@
 package com.devmod.client.ui.editor;
 
-import com.devmod.DevMod;
-import net.minecraft.client.Minecraft;
-
 import java.util.ArrayDeque;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+
+import net.minecraft.client.Minecraft;
+
+import com.devmod.DevMod;
 
 /**
  * Performance monitoring for editor UI.

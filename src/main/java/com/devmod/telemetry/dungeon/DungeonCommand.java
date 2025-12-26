@@ -1,5 +1,18 @@
 package com.devmod.telemetry.dungeon;
 
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+
+import org.slf4j.Logger;
+
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.Items;
+
 import com.devmod.actions.ActionCategory;
 import com.devmod.actions.ActionCommandInvoker;
 import com.devmod.actions.ActionContext;
@@ -8,6 +21,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionPreconditions;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
+
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -15,17 +29,6 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.mojang.logging.LogUtils;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.Items;
-import org.slf4j.Logger;
-
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * P2-B Debug command for dungeon run testing.

@@ -1,13 +1,15 @@
 package com.devmod.party;
 
-import com.devmod.endurance.QuestType;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
+import com.devmod.endurance.QuestType;
 
 /**
  * Payload sent from client to server to invite a player by name.

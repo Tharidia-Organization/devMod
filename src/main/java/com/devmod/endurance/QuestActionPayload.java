@@ -1,12 +1,12 @@
 package com.devmod.endurance;
 
+import java.util.Objects;
+
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-
-import java.util.Objects;
 
 /**
  * Payload sent from client to server for quest actions.

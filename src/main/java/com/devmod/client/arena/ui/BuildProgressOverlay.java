@@ -1,15 +1,15 @@
 package com.devmod.client.arena.ui;
 
-import com.devmod.arena.BuildPhase;
-import com.devmod.arena.ProgressFlags;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.devmod.arena.BuildPhase;
+import com.devmod.arena.ProgressFlags;
 
 /**
  * Server-side build progress overlay with rate limiting.

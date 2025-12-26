@@ -1,7 +1,8 @@
 package com.devmod.client.ui.components;
 
-import com.devmod.client.ui.editor.core.UIConstants;
 import net.minecraft.client.gui.GuiGraphics;
+
+import com.devmod.client.ui.editor.core.UIConstants;
 
 /**
  * Reusable scrollable area component for consistent scroll behavior across UI screens.

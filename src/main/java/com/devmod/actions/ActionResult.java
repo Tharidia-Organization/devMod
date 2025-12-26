@@ -1,7 +1,8 @@
 package com.devmod.actions;
 
-import javax.annotation.Nullable;
 import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 /**
  * Result of executing an action through ActionRegistry.

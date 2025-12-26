@@ -1,15 +1,17 @@
 package com.devmod.integration;
 
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.Level;
-import net.neoforged.fml.ModList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
+
+import net.neoforged.fml.ModList;
 
 /**
  * Integration with Distant Horizons mod for LOD (Level of Detail) rendering.

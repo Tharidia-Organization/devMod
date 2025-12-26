@@ -1,6 +1,9 @@
 package com.devmod.recipe;
 
-import com.google.gson.JsonObject;
+import java.util.Objects;
+
+import org.jetbrains.annotations.Nullable;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -8,9 +11,8 @@ import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.Objects;
+import com.google.gson.JsonObject;
 
 /**
  * Represents the result of a recipe.

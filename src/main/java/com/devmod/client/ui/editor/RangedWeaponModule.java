@@ -1,14 +1,14 @@
 package com.devmod.client.ui.editor;
 
+import java.util.Objects;
+
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
-import net.minecraft.resources.ResourceLocation;
-
-import java.util.Objects;
 
 public class RangedWeaponModule {
     public enum ValueSource {

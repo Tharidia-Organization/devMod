@@ -1,19 +1,22 @@
 package com.devmod.client.telemetry;
 
-import com.devmod.DevMod;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
-import java.util.Objects;
-import javax.annotation.Nonnull;
+import com.devmod.DevMod;
 
 /**
  * FPS Tracker con overlay HUD per monitoraggio performance.

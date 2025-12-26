@@ -1,35 +1,37 @@
 package com.devmod.client.overlay;
 
-import com.devmod.DevMod;
-import com.devmod.actions.ActionIds;
-import com.devmod.actions.ActionOrigin;
-import com.devmod.actions.ActionRegistry;
-import com.devmod.actions.client.ClientActionContexts;
-import com.devmod.client.endurance.ClientQuestCache;
-import com.devmod.endurance.ComboSystem;
-import com.devmod.endurance.EnduranceQuestState;
-import com.devmod.endurance.FlowStateTracker;
-import com.devmod.endurance.MomentumTracker;
-import com.devmod.client.endurance.EnduranceUiCache;
-import com.devmod.client.endurance.PerkSelectionScreen;
-import com.devmod.endurance.QuestSyncPayload;
-import com.devmod.client.endurance.WaveCheckpointScreen;
-import com.devmod.client.endurance.WaveDirectiveScreen;
-import com.devmod.endurance.WaveObjectiveState;
+import java.util.List;
+import java.util.Objects;
+
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
-import java.util.List;
-import java.util.Objects;
+import com.devmod.DevMod;
+import com.devmod.actions.ActionIds;
+import com.devmod.actions.ActionOrigin;
+import com.devmod.actions.ActionRegistry;
+import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.client.endurance.ClientQuestCache;
+import com.devmod.client.endurance.EnduranceUiCache;
+import com.devmod.client.endurance.PerkSelectionScreen;
+import com.devmod.client.endurance.WaveCheckpointScreen;
+import com.devmod.client.endurance.WaveDirectiveScreen;
+import com.devmod.endurance.ComboSystem;
+import com.devmod.endurance.EnduranceQuestState;
+import com.devmod.endurance.FlowStateTracker;
+import com.devmod.endurance.MomentumTracker;
+import com.devmod.endurance.QuestSyncPayload;
+import com.devmod.endurance.WaveObjectiveState;
 
 /**
  * HUD Overlay for Endurance Quest.

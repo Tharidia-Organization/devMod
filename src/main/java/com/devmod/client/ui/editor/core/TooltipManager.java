@@ -1,13 +1,14 @@
 package com.devmod.client.ui.editor.core;
 
-import com.devmod.client.ui.AxiomRenderer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import com.devmod.client.ui.AxiomRenderer;
 
 /**
  * Centralized tooltip rendering manager.

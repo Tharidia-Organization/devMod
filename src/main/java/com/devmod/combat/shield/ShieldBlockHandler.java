@@ -1,10 +1,10 @@
 package com.devmod.combat.shield;
 
-import com.devmod.config.ArmorConfigManager;
-import com.devmod.stats.ArmorStats;
-import com.devmod.combat.ShieldDeflector;
-import com.devmod.network.ShieldImpactPayload;
-import com.devmod.network.ShieldShatterPayload;
+import java.util.Objects;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.player.Player;
@@ -12,10 +12,12 @@ import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.phys.Vec3;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.Objects;
+import com.devmod.combat.ShieldDeflector;
+import com.devmod.config.ArmorConfigManager;
+import com.devmod.network.ShieldImpactPayload;
+import com.devmod.network.ShieldShatterPayload;
+import com.devmod.stats.ArmorStats;
 
 /**
  * Handles shield blocking mechanics including damage reduction,

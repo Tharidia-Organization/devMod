@@ -1,9 +1,13 @@
 package com.devmod.client.ui.editor.components;
 
-import com.devmod.client.ui.AxiomRenderer;
-import com.devmod.client.ui.editor.core.BaseOverlay;
-import com.devmod.client.ui.editor.core.ScaledCoord;
-import com.devmod.client.ui.editor.core.UIConstants;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.function.Consumer;
+
+import org.lwjgl.glfw.GLFW;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -13,13 +17,11 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import org.lwjgl.glfw.GLFW;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.function.Consumer;
+import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.editor.core.BaseOverlay;
+import com.devmod.client.ui.editor.core.ScaledCoord;
+import com.devmod.client.ui.editor.core.UIConstants;
 
 /**
  * Overlay for picking items from the creative inventory.

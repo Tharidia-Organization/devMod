@@ -1,15 +1,16 @@
 package com.devmod.client.ui.editor.systems;
 
-import com.devmod.config.ArmorConfigManager;
-import com.devmod.client.ui.editor.ItemEditorDataManager;
-import com.devmod.config.WeaponConfigManager;
-import com.devmod.stats.ArmorStats;
-import com.devmod.stats.WeaponStats;
-import net.minecraft.world.item.ItemStack;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiConsumer;
+
+import net.minecraft.world.item.ItemStack;
+
+import com.devmod.client.ui.editor.ItemEditorDataManager;
+import com.devmod.config.ArmorConfigManager;
+import com.devmod.config.WeaponConfigManager;
+import com.devmod.stats.ArmorStats;
+import com.devmod.stats.WeaponStats;
 
 /**
  * Adapter that applies Item Editor presets (from ItemEditorDataManager) to ItemStack instances

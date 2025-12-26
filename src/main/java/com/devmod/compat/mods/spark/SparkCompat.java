@@ -1,11 +1,12 @@
 package com.devmod.compat.mods.spark;
 
-import com.devmod.compat.Compat;
-import com.devmod.compat.CompatModule;
+import java.lang.reflect.Method;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Method;
+import com.devmod.compat.Compat;
+import com.devmod.compat.CompatModule;
 
 /**
  * Compatibility module for Spark Profiler.

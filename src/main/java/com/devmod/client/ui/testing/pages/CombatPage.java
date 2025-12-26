@@ -1,6 +1,7 @@
 package com.devmod.client.ui.testing.pages;
 
-import com.devmod.config.Config;
+import javax.annotation.Nonnull;
+
 import com.devmod.ModConfig;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
@@ -15,11 +16,10 @@ import com.devmod.client.ui.testing.panel.SectionPanel;
 import com.devmod.client.ui.testing.panel.SliderPanel;
 import com.devmod.client.ui.testing.panel.SpacerPanel;
 import com.devmod.client.ui.testing.panel.StatusPanel;
+import com.devmod.config.Config;
 
-import javax.annotation.Nonnull;
-
-import static com.devmod.client.ui.testing.pages.PageUtils.safeGetBool;
 import static com.devmod.client.ui.testing.pages.PageUtils.nonNullDouble;
+import static com.devmod.client.ui.testing.pages.PageUtils.safeGetBool;
 
 /**
  * Combat Page - Configuration for combat mechanics and damage systems.

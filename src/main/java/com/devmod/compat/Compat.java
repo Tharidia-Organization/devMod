@@ -1,13 +1,15 @@
 package com.devmod.compat;
 
-import net.neoforged.fml.ModList;
-import net.neoforged.fml.loading.FMLEnvironment;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.loading.FMLEnvironment;
 
 /**
  * Core utility class for mod compatibility detection.

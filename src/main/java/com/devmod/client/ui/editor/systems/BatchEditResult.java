@@ -2,6 +2,7 @@ package com.devmod.client.ui.editor.systems;
 
 import java.util.ArrayList;
 import java.util.List;
+
 /**
  * Result of a batch edit operation.
  * Keeps structured failure details while remaining backwards-compatible

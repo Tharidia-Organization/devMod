@@ -1,16 +1,17 @@
 package com.devmod.events;
-import com.devmod.stats.FuelStats;
-import com.devmod.config.FuelConfigManager;
-import com.devmod.components.FuelComponents;
+import org.slf4j.Logger;
 
-import com.devmod.DevMod;
-
-import com.mojang.logging.LogUtils;
 import net.minecraft.world.item.ItemStack;
+
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.furnace.FurnaceFuelBurnTimeEvent;
-import org.slf4j.Logger;
+
+import com.devmod.DevMod;
+import com.devmod.config.FuelConfigManager;
+import com.devmod.stats.FuelStats;
+
+import com.mojang.logging.LogUtils;
 
 /**
  * Event handlers for fuel item modifications.

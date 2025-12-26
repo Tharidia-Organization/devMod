@@ -1,7 +1,12 @@
 package com.devmod.client.ui.editor.modules;
 
-import com.devmod.stats.FuelStats;
-import com.devmod.config.FuelConfigManager;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.ItemStack;
+
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorToggle;
@@ -11,12 +16,8 @@ import com.devmod.client.ui.editor.sections.SimpleHeaderSection;
 import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.TextNoteSection;
 import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.world.item.ItemStack;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import com.devmod.config.FuelConfigManager;
+import com.devmod.stats.FuelStats;
 
 /**
  * UI components and section builders for FuelModule.

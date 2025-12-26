@@ -1,7 +1,10 @@
 package com.devmod.quest;
 
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
 import com.devmod.endurance.EnduranceQuestState;
-import org.junit.jupiter.api.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 

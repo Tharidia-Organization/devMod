@@ -1,13 +1,5 @@
 package com.devmod.telemetry.spatial;
 
-import com.devmod.telemetry.TelemetryJson;
-import com.devmod.telemetry.room.RoomService;
-import com.devmod.telemetry.util.BitPackedFlags;
-import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.phys.Vec3;
-
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -16,6 +8,15 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
+
+import com.devmod.telemetry.TelemetryJson;
+import com.devmod.telemetry.room.RoomService;
+import com.devmod.telemetry.util.BitPackedFlags;
 
 /**
  * Service for tracking and analyzing jump patterns (M18).

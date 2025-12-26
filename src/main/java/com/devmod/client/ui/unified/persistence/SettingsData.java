@@ -1,7 +1,8 @@
 package com.devmod.client.ui.unified.persistence;
 
-import com.devmod.client.rendering.HeatmapVisualizer.HeatmapType;
 import java.util.Map;
+
+import com.devmod.client.rendering.HeatmapVisualizer.HeatmapType;
 
 /**
  * POJO containing all persistent settings for DevMod.

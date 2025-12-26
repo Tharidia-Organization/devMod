@@ -1,6 +1,10 @@
 package com.devmod.client.attributes;
 
-import com.devmod.integration.ModIntegrationManager;
+import java.lang.ref.WeakReference;
+import java.util.Objects;
+
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -8,12 +12,11 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import javax.annotation.Nullable;
-import java.lang.ref.WeakReference;
-import java.util.Objects;
+import com.devmod.integration.ModIntegrationManager;
 
 /**
  * Represents an entity tracked by the attribute monitoring system.

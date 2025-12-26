@@ -1,13 +1,14 @@
 package com.devmod.client.overlay;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import java.util.Objects;
+
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.Objects;
+import com.mojang.blaze3d.vertex.PoseStack;
 
 /**
  * Represents a single 3D panel instance in the world.
