@@ -1,74 +1,53 @@
 # Core Critical Files Review
 
-**Date**: 2025-12-25
+**Date**: 2025-12-26
 **Reviewer**: Quality Pass Automation
 
 ## Summary
 
 | Severity | Count | Status |
 |----------|-------|--------|
-| P0 | 1 | FIXED |
-| P1 | 0 | N/A (false positives on analysis) |
+| P0 | 0 | N/A |
+| P1 | 0 | N/A |
+| P2 | 2 | 1 fixed, 1 open |
 
 ---
 
-## P0 Issues (Critical)
+## Fixes Applied
 
-### 1. Race Condition on pressureLevel Update
-**File**: `DuckDBBatchWriter.java:903-911`
+### 1. Nullable field access in template resolution
+**File**: `EnduranceQuestManager.java`
 
-**Issue**: `pressureLevel` is volatile but the compound check-then-set operation is not atomic. Multiple threads could race, causing inconsistent backpressure decisions.
-
-**Status**: ✅ FIXED - Added synchronized block around check-set sequence.
-
-```java
-// Before (race condition):
-if (totalPending >= PRESSURE_THRESHOLD_CRITICAL) {
-    pressureLevel = 2;
-} else if ...
-
-// After (synchronized):
-synchronized (this) {
-    if (totalPending >= PRESSURE_THRESHOLD_CRITICAL) {
-        pressureLevel = 2;
-    } else if ...
-}
-```
+**Issue**: `forceTemplateCapability` is annotated @Nullable and was accessed directly in `resolveArenaTemplate`.
+**Fix**: Copy to a local variable before the null check to avoid racy reads and satisfy null-safety guidance.
 
 ---
 
-## Analysis Notes
+## Open TODOs / Deferred
 
-## Additional Fixes Applied
-- EnduranceEventHandler: per-wave deaths for directive chains, cumulative totals for Perk Synergy Web discoveries, Devil's Bargain multiplier in wave rewards
-- EnduranceEventCombat: critical-kill tracking for daily challenges
-- RewardSystem: Devil's Bargain multiplier in quest rewards
+1. **ClientUiBridgeImpl.openEnduranceQuestScreen ignores templateId (P2)**
+   - The interface documents a template ID parameter, but the implementation does not use it.
+   - Recommendation: either pass the ID to the screen (if supported) or document that the ID is unused.
 
-Several items flagged during initial analysis were confirmed as **false positives**:
-
-| Issue | Reason Not A Problem |
-|-------|---------------------|
-| Resource leak on early return (DuckDBBatchWriter) | `finally` block always executes, closing connection |
-| Null wallet access (EnduranceNetworkHandler) | `getWallet()` uses `computeIfAbsent()`, never returns null |
-| Null quest dereference (EnduranceQuestManager) | `quest` field is `final` and always initialized in constructor |
-| Null recipes iteration (ConfigNetworkHandler) | Payload record guarantees non-null list |
+2. **ClientUiBridgeImpl.toggleDebugOverlay is a TODO (P2)**
+   - Debug overlay integration is stubbed out and should be implemented when the overlay is available.
 
 ---
 
 ## Files Reviewed
 
-| File | LOC | Real Issues Found |
-|------|-----|-------------------|
-| EnduranceQuestManager.java | 3027 | 0 |
-| ArenaBuilder.java | 1474 | 0 |
-| DuckDBBatchWriter.java | 1473 | 1 (P0 - fixed) |
-| EnduranceNetworkHandler.java | ~400 | 0 |
-| ConfigNetworkHandler.java | ~100 | 0 |
+| Area | Files |
+|------|-------|
+| Endurance core flow | `EnduranceQuestManager.java`, `WaveManager.java` |
+| Arena registry/builder/policy | `ArenaTemplateRegistry.java`, `TemplateRegistryBootstrap.java`, `ArenaPolicyRegistry.java`, `ArenaBuilder.java` |
+| Network handlers + validators | `NetworkHandler.java`, `EnduranceNetworkHandler.java`, `PacketValidator.java` |
+| Telemetry persistence | `DuckDBBatchWriter.java`, `DuckDBTelemetryService.java`, `DuckDbDestination.java` |
+| Radial action registry | `ActionRegistry.java` |
+| Client/server boundary | `ClientUiBridge.java`, `ClientUiBridgeImpl.java`, `ClientVFXProxy.java` |
 
 ---
 
-## Recommendations
+## Notes
 
-1. **Add @Nonnull annotations** to methods like `getWallet()` to document guarantees
-2. **Consider AtomicInteger** for `pressureLevel` instead of synchronized block
-3. **Add thread-safety documentation** to DuckDBBatchWriter Javadoc
+- `DuckDBBatchWriter` now uses `AtomicInteger` for `pressureLevel`; no atomicity issues found in the current update path.
+- No client-only imports observed in common/server packages for the reviewed files.

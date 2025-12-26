@@ -1,126 +1,77 @@
 # Quality Pass Final Report
 
-**Date**: 2025-12-25
-**Branch**: Banastaff
-**Duration**: ~2 hours
+Date: 2025-12-26
+Branch: Banastaff
+Duration: multi-session (2025-12-25 to 2025-12-26)
 
 ---
 
 ## Build Status
 
 ```
-✅ ./gradlew build --no-configuration-cache: SUCCESS (warnings: StatusConsoleListener advanced terminal features not available; [ArmorComponents] Using fallback armor_stats component (test-mode only))
-✅ ./gradlew test --no-configuration-cache: SUCCESS (warnings: StatusConsoleListener advanced terminal features not available; [ArmorComponents] Using fallback armor_stats component (test-mode only))
+OK ./gradlew build: SUCCESS (configuration cache reused; tasks mostly up-to-date)
+OK ./gradlew test: SUCCESS (configuration cache reused; tasks mostly up-to-date)
+OK ./gradlew compileJava --rerun-tasks: SUCCESS (100 warnings)
+OK ./gradlew compileTestJava --rerun-tasks: SUCCESS (100 warnings)
 ```
 
 ---
 
 ## Improvements Made
 
-### 1. Wildcard Imports Eliminated (10 files)
+1. Import ordering standardized across main sources to the project rule (java -> javax -> external -> net.minecraft -> net.neoforged -> com.devmod).
+2. Checkstyle import grouping fix and XML report enabled to enforce ordering in CI.
+3. Unused imports removed in targeted compat/ui/config classes and explicit static imports in StatusPanel.
+4. Null-safety cleanup in EnduranceQuestManager (local copy for @Nullable capability).
 
-| File | Before | After |
-|------|--------|-------|
-| FuelConfigManager.java | `java.nio.file.*` | Explicit imports |
-| FoodConfigManager.java | `java.nio.file.*` | Explicit imports |
-| HazardTypeRegistry.java | `java.io.*` | Explicit imports |
-| ArenaSnapshotManager.java | `java.io.*` | Explicit imports |
-| AutosmokeScheduler.java | `java.util.concurrent.*` | Explicit imports |
-| ArenaDashboardEndpoint.java | `java.util.concurrent.*` | Explicit imports |
-| LogAggregationPipeline.java | `java.util.concurrent.*` | Explicit imports |
-| PolicyResolver.java | Multiple wildcards | Explicit imports |
-| AnalyticsService.java | Multiple wildcards | Explicit imports |
-| EnduranceTelemetryService.java | Multiple wildcards | Explicit imports |
+See `docs/quality/CHANGELOG.md` for batch-by-batch details.
 
-### 2. Compiler Warnings Fixed (15 → 0)
+---
 
-| Warning | File | Fix |
-|---------|------|-----|
-| lossy-conversions | ContractHudOverlay.java:92 | Explicit cast |
-| deprecation (2) | SmartBrainLibCompat.java | @SuppressWarnings with justification |
-| deprecation (10) | SoulImprintManager.java | @SuppressWarnings with justification |
-| this-escape | ItemEditorScreen.java | @SuppressWarnings with justification |
-| this-escape | Guild.java | @SuppressWarnings with justification |
+## Remaining Warnings
 
-### 3. Thread Safety Fix (P0)
+Compiler warnings remain (ErrorProne/NullAway), observed in the rerun builds:
 
-**DuckDBBatchWriter.java**: Fixed race condition in `pressureLevel` update by adding synchronized block around the check-then-set operation.
+- 100 warnings in `compileJava` (NullAway, LongDoubleConversion, InvalidParam, UnusedMethod).
+- 100 warnings in `compileTestJava` (NullAway plus UnnecessaryAsync, CatchAndPrintStackTrace, ThreadPriorityCheck, ReturnValueIgnored, ModifiedButNotUsed).
 
-### 4. Unused Imports Removed (4)
+Primary hotspots:
+- `src/main/java/com/devmod/telemetry/duckdb/DuckDBQueryAPI.java` and `src/main/java/com/devmod/telemetry/duckdb/ArenaRecords.java`
+- `src/main/java/com/devmod/recipe/RecipeConfigManager.java` and `src/main/java/com/devmod/recipe/RecipeInjector.java`
+- `src/main/java/com/devmod/integration/PehkuiIntegration.java` and `src/main/java/com/devmod/integration/PufferfishCompat.java`
+- `src/main/java/com/devmod/network/PacketValidator.java`
+- `src/main/java/com/devmod/mixin/RecipeManagerMixin.java` and client mixins
+- Tests under `src/test/java/com/devmod/integration/` (L6* suites)
 
-- PolicyResolver.java: `HashMap`
-- AnalyticsService.java: `HashMap`, `Set`
-- EnduranceTelemetryService.java: `HashMap`
-
-### 5. Endurance Flow Fixes
-
-- EnduranceEventHandler: per-wave deaths for directive chains, cumulative totals for Perk Synergy Web discoveries
-- EnduranceEventCombat: tracked recent critical hits for critical-kill challenges
-- RewardSystem: applied Devil's Bargain reward multiplier to quest rewards
+See `build/reports/problems/problems-report.html` for the full list.
 
 ---
 
 ## Remaining Items (Not Fixed)
 
-### Wildcard Imports ✅ COMPLETED
-
-All `java.util.*` wildcard imports have been replaced with explicit imports across the entire codebase.
-
-**Fixed in subsequent sessions:**
-
-- 73 files total fixed (arena, compat, endurance, recipe, testing, client/ui modules)
-- Standard import ordering applied: java → javax → external → minecraft → neoforged → devmod
-- Build verified after each batch
-
 ### Large Files (>600 LOC)
-
-30+ files exceed 600 LOC. Top 5:
-- EnduranceQuestManager.java (3027)
-- DevModClientActions.java (2725)
-- ItemEditorScreen.java (2462)
-- ArenaBuilder.java (1474)
-- DuckDBBatchWriter.java (1473)
-
-**Recommendation**: These are intentionally large manager/screen classes. Refactoring would require architectural changes outside this quality pass scope.
+30+ files still exceed 600 LOC (see `docs/quality/INVENTORY.md`). The largest remain:
+- EnduranceQuestManager.java
+- DevModClientActions.java
+- ItemEditorScreen.java
+- ArenaBuilder.java
+- DuckDBBatchWriter.java
 
 ### Long Methods (>80 lines)
-
-22 methods exceed 80 lines, mostly in:
-- Telemetry services (batch write logic)
-- Challenge/Wave managers (complex game logic)
-- UI screens (render methods)
-
-**Recommendation**: Extract helpers only where it clearly improves readability without changing behavior.
+22 methods remain over 80 lines, primarily in telemetry, challenge/wave managers, and UI render paths. No refactor applied to avoid behavioral risk.
 
 ---
 
-## Future Recommendations (Top 10)
+## Future Recommendations (Top 8)
 
-1. **Add @Nonnull annotations** to public API methods that never return null (e.g., `getWallet()`)
-
-2. ~~**Consider AtomicInteger** for `pressureLevel` in DuckDBBatchWriter~~ ✅ Already implemented
-
-3. ~~**Add thread-safety Javadoc** to concurrent classes like DuckDBBatchWriter~~ ✅ Already documented
-
-4. **Create import ordering Checkstyle rule** to enforce:
-   - java.*
-   - javax.*
-   - external libs
-   - net.minecraft.*
-   - net.neoforged.*
-   - com.devmod.*
-
-5. ~~**Eliminate remaining wildcard imports**~~ ✅ COMPLETED (73 files fixed)
-
-6. **Add null-safety static analysis** via NullAway or Checker Framework
-
-7. **Create test for client/server separation** to catch cross-boundary imports
-
-8. **Document large classes** with architecture decision records (ADRs)
-
-9. **Consider splitting EnduranceQuestManager** (3000+ LOC) into focused subsystems
-
-10. **Add logging guidelines** to prevent debug-level spam in hot paths
+1. Triage NullAway warnings in telemetry/duckdb and recipe pipelines; formalize @Nullable/@Nonnull contracts.
+2. Normalize NullAway suppressions for mixin-only methods that are never called directly.
+3. Add dedicated client/server boundary lint (forbid client-only imports in common/server packages).
+4. Add small smoke tests around packet validation and recipe injection with explicit null cases.
+5. Document large manager classes with ADRs to justify scope.
+6. Add logging guidelines for high-frequency loops to avoid debug spam.
+7. Consider splitting EnduranceQuestManager into focused subsystems when behavior refactor is allowed.
+8. Keep Checkstyle import ordering rules in CI and treat violations as errors.
 
 ---
 
@@ -128,24 +79,19 @@ All `java.util.*` wildcard imports have been replaced with explicit imports acro
 
 | Document | Status |
 |----------|--------|
-| docs/quality/BASELINE.md | ✅ Created |
-| docs/quality/INVENTORY.md | ✅ Created |
-| docs/quality/CHANGELOG.md | ✅ Created |
-| docs/quality/CORE_REVIEW.md | ✅ Created |
-| docs/quality/FINAL_REPORT.md | ✅ Created |
+| docs/quality/BASELINE.md | OK |
+| docs/quality/INVENTORY.md | OK |
+| docs/quality/CHANGELOG.md | OK |
+| docs/quality/CORE_REVIEW.md | OK |
+| docs/quality/FINAL_REPORT.md | OK |
 
 ---
 
 ## Verification Commands
 
 ```bash
-# Verify build
-./gradlew build --no-configuration-cache
-
-# Run all tests
-./gradlew test --no-configuration-cache
-
-# Check for compiler warnings
-./gradlew compileJava --rerun-tasks --no-configuration-cache 2>&1 | grep -i warning
-# Expected: no compiler warnings; Gradle may emit a terminal capability warning.
+./gradlew build
+./gradlew test
+./gradlew compileJava --rerun-tasks
+./gradlew compileTestJava --rerun-tasks
 ```
