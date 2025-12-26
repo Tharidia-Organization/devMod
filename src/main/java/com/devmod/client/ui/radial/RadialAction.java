@@ -230,11 +230,12 @@ public abstract class RadialAction {
         private final String name;
         private final String description;
         private final String emoji;
+        @Nullable
         private final ItemStack icon;
         private final BooleanSupplier getter;
         private final Consumer<Boolean> setter;
 
-        ToggleAction(String name, String description, String emoji, ItemStack icon,
+        ToggleAction(String name, String description, String emoji, @Nullable ItemStack icon,
                      BooleanSupplier getter, Consumer<Boolean> setter) {
             this.name = name;
             this.description = description;
@@ -270,6 +271,7 @@ public abstract class RadialAction {
         }
 
         @Override
+        @Nullable
         public ItemStack getIconStack() {
             return icon;
         }
@@ -289,11 +291,11 @@ public abstract class RadialAction {
         @Deprecated private final String name;
         @Deprecated private final String description;
         @Deprecated private final String emoji;
-        @Deprecated private final ItemStack icon;
+        @Deprecated @Nullable private final ItemStack icon;
         @Deprecated private final String command;
 
         @Deprecated
-        CommandAction(String name, String description, String emoji, ItemStack icon, String command) {
+        CommandAction(String name, String description, String emoji, @Nullable ItemStack icon, String command) {
             this.name = name;
             this.description = description;
             this.emoji = emoji;
@@ -329,6 +331,7 @@ public abstract class RadialAction {
 
         @Deprecated
         @Override
+        @Nullable
         public ItemStack getIconStack() {
             return icon != null ? icon : new ItemStack(Objects.requireNonNull(Items.COMMAND_BLOCK));
         }
@@ -347,10 +350,11 @@ public abstract class RadialAction {
         private final String name;
         private final String description;
         private final String emoji;
+        @Nullable
         private final ItemStack icon;
         private final java.util.function.Supplier<net.minecraft.client.gui.screens.Screen> screenFactory;
 
-        ScreenAction(String name, String description, String emoji, ItemStack icon,
+        ScreenAction(String name, String description, String emoji, @Nullable ItemStack icon,
                      java.util.function.Supplier<net.minecraft.client.gui.screens.Screen> screenFactory) {
             this.name = name;
             this.description = description;
@@ -382,6 +386,7 @@ public abstract class RadialAction {
         }
 
         @Override
+        @Nullable
         public ItemStack getIconStack() {
             return icon;
         }
@@ -399,10 +404,11 @@ public abstract class RadialAction {
         private final String name;
         private final String description;
         private final String emoji;
+        @Nullable
         private final ItemStack icon;
         private final int keyCode;
 
-        KeybindAction(String name, String description, String emoji, ItemStack icon, int keyCode) {
+        KeybindAction(String name, String description, String emoji, @Nullable ItemStack icon, int keyCode) {
             this.name = name;
             this.description = description;
             this.emoji = emoji;
@@ -435,6 +441,7 @@ public abstract class RadialAction {
         }
 
         @Override
+        @Nullable
         public ItemStack getIconStack() {
             return icon;
         }
@@ -454,11 +461,11 @@ public abstract class RadialAction {
         @Deprecated private final String name;
         @Deprecated private final String description;
         @Deprecated private final String emoji;
-        @Deprecated private final ItemStack icon;
+        @Deprecated @Nullable private final ItemStack icon;
         @Deprecated private final Runnable action;
 
         @Deprecated
-        CustomAction(String name, String description, String emoji, ItemStack icon, Runnable action) {
+        CustomAction(String name, String description, String emoji, @Nullable ItemStack icon, Runnable action) {
             this.name = name;
             this.description = description;
             this.emoji = emoji;
@@ -486,6 +493,7 @@ public abstract class RadialAction {
 
         @Deprecated
         @Override
+        @Nullable
         public ItemStack getIconStack() {
             return icon;
         }
@@ -596,6 +604,7 @@ public abstract class RadialAction {
          * Uses the visibility predicate, NOT the execution precondition.
          * This implements Scenario 9: hidden actions for non-admins.
          */
+        @Override
         public boolean isVisible() {
             com.devmod.actions.RadialAction action = ActionRegistry.getAction(actionId);
             if (action == null) {
@@ -624,6 +633,7 @@ public abstract class RadialAction {
         /**
          * Check if precondition would pass (for grayed-out rendering).
          */
+        @Override
         public boolean canExecute() {
             com.devmod.actions.RadialAction action = ActionRegistry.getAction(actionId);
             if (action == null) {
@@ -648,6 +658,7 @@ public abstract class RadialAction {
         }
 
         @Override
+        @Nullable
         public ItemStack getIconStack() {
             com.devmod.actions.RadialAction action = ActionRegistry.getAction(actionId);
             if (action == null) {

@@ -19,6 +19,7 @@ public abstract class BaseOverlay implements EditorOverlay {
     /**
      * Show the overlay with animation.
      */
+    @Override
     public void show() {
         visible = true;
         animation.start();
@@ -27,6 +28,7 @@ public abstract class BaseOverlay implements EditorOverlay {
     /**
      * Hide the overlay with animation.
      */
+    @Override
     public void hide() {
         animation.reverse(() -> visible = false);
     }
@@ -42,6 +44,7 @@ public abstract class BaseOverlay implements EditorOverlay {
     /**
      * Toggle the overlay visibility.
      */
+    @Override
     public void toggle() {
         if (visible) {
             hide();
@@ -53,6 +56,7 @@ public abstract class BaseOverlay implements EditorOverlay {
     /**
      * Check if the overlay is currently visible (including during animations).
      */
+    @Override
     public boolean isVisible() {
         return visible || animation.isAnimating();
     }
@@ -75,6 +79,7 @@ public abstract class BaseOverlay implements EditorOverlay {
      * @param mouseX      Current mouse X position
      * @param mouseY      Current mouse Y position
      */
+    @Override
     public final void render(GuiGraphics graphics, Font font, int screenWidth, int screenHeight,
                              int mouseX, int mouseY) {
         if (!visible && !animation.isAnimating()) return;
@@ -178,6 +183,7 @@ public abstract class BaseOverlay implements EditorOverlay {
      * @param keyCode The key code
      * @return true if the event was consumed
      */
+    @Override
     public boolean keyPressed(int keyCode) {
         if (!visible) return false;
 
@@ -218,6 +224,7 @@ public abstract class BaseOverlay implements EditorOverlay {
      * @param screenHeight Screen height
      * @return true if the event was consumed
      */
+    @Override
     public boolean mouseClicked(double mouseX, double mouseY, int screenWidth, int screenHeight) {
         if (!visible) return false;
 
@@ -273,6 +280,7 @@ public abstract class BaseOverlay implements EditorOverlay {
      * @param screenHeight Screen height
      * @return true if the event was consumed
      */
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollDelta,
                                   int screenWidth, int screenHeight) {
         if (!visible) return false;
@@ -316,6 +324,7 @@ public abstract class BaseOverlay implements EditorOverlay {
      * @param modifiers Keyboard modifiers
      * @return true if the event was consumed
      */
+    @Override
     public boolean charTyped(char chr, int modifiers) {
         if (!visible) return false;
         return handleCharTyped(chr, modifiers);

@@ -3,6 +3,7 @@ package com.devmod.client.ui.animation;
 import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -42,6 +43,7 @@ public class UiAnimation {
     private boolean animating = false;
     private boolean forward = true;
     private float progress = 0f;
+    @Nullable
     private Runnable onComplete;
 
     private UiAnimation(Type type, int durationMs, Ease ease) {

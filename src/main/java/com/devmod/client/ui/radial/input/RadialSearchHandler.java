@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import com.devmod.client.ui.radial.RadialCategory;
 import com.devmod.client.ui.radial.RadialMenuItem;
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
@@ -223,6 +225,7 @@ public final class RadialSearchHandler {
      * @param categories the categories to search
      * @return the best match, or null if none found
      */
+    @Nullable
     public static SearchResult findBest(String query, Collection<RadialCategory> categories) {
         List<SearchResult> results = search(query, categories);
         return results.isEmpty() ? null : results.get(0);

@@ -322,7 +322,7 @@ Codebase follows good extraction patterns. No high-value extraction opportunitie
 
 ### Final Metrics
 - **Wildcard imports**: 149 → 0 (main/test; JUnit static wildcard retained)
-- **Files modified**: 900+ files across 19 batches
+- **Files modified**: 900+ files across 20 batches
 - **Build status**: All changes compile successfully; checkstyleMain clean
 
 ### Key Improvements
@@ -334,6 +334,7 @@ Codebase follows good extraction patterns. No high-value extraction opportunitie
 6. Test stability improvements (configurable thresholds)
 7. Import ordering enforced via Checkstyle (external-com grouping fix)
 8. Null-safety hardening in network handlers + mixin warning suppression
+9. Client UI/editor nullability annotations + override hygiene for radial menu components
 
 ---
 
@@ -392,3 +393,29 @@ None (Quality pass complete)
 ### Results
 - Reduced NullAway/UnusedMethod warnings in network + mixin paths
 - Validation error messaging is now always non-null for UI/reporting
+
+---
+
+## Batch 20: Client UI Null-Safety + Override Hygiene (2025-12-26)
+
+### Scope
+- Editor components: annotate optional fields and tooltip accessors as @Nullable
+- Radial menu: allow nullable icons/hover states; add missing @Override markers
+- Client UI: fix long math in keybind reveal, add @Override for overlay handlers
+- Events/animation: align nullable reflective method handle and on-complete callback
+
+### Files Modified
+- `BaseOverlay.java` - Added @Override markers for EditorOverlay methods
+- `WelcomeScreen.java` - Use long literal for keybind delay math
+- `FoodEvents.java` - Removed redundant requireNonNull for effect holder
+- `ArrowEvents.java` - Marked reflective method handle @Nullable
+- `RadialAction.java` - Nullable icon fields/params, @Override for visibility, @Nullable getIconStack
+- `RadialHubRenderer.java` - Marked hovered macro as @Nullable in records
+- `RadialSearchHandler.java` - Annotated nullable search result
+- `EditorButton.java` - Optional fields and tooltip getters annotated @Nullable
+- `EditorToggle.java` - Optional fields and tooltip/source accessors annotated @Nullable
+- `SourceBadge.java` - Annotated tooltip return as @Nullable
+- `UiAnimation.java` - Marked onComplete callback @Nullable
+
+### Results
+- Reduced NullAway/MissingOverride warnings in client UI/editor and radial menu paths

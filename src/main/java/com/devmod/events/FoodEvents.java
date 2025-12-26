@@ -100,7 +100,7 @@ public class FoodEvents {
             Optional<Holder.Reference<MobEffect>> effectHolder = getEffectHolder(effectData.effectId);
             if (effectHolder.isPresent()) {
                 MobEffectInstance instance = new MobEffectInstance(
-                    Objects.requireNonNull(effectHolder.get()),
+                    effectHolder.get(),
                     effectData.duration,
                     effectData.amplifier
                 );

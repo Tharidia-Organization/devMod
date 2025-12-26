@@ -2,6 +2,8 @@ package com.devmod.client.ui.radial.render;
 
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;
@@ -39,7 +41,7 @@ public final class RadialHubRenderer {
         int centerButtonRadius,
         int macroHubRadius,
         MacroCategory selectedMacro,
-        MacroCategory hoveredMacro,
+        @Nullable MacroCategory hoveredMacro,
         float[] segmentAnimations,
         float categoryHoverAnim,
         boolean searchMode,
@@ -57,7 +59,7 @@ public final class RadialHubRenderer {
      * @param hoveredMacro the macro being hovered (null if none)
      * @param centerHovered whether the center close button is hovered
      */
-    public record HoverResult(MacroCategory hoveredMacro, boolean centerHovered) {
+    public record HoverResult(@Nullable MacroCategory hoveredMacro, boolean centerHovered) {
         public static final HoverResult NONE = new HoverResult(null, false);
         public static final HoverResult CENTER = new HoverResult(null, true);
     }

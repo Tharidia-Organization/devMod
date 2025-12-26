@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -30,6 +31,7 @@ public class EditorToggle {
     // Configuration
     private final String id;
     private String label;
+    @Nullable
     private String tooltip = null;
     private boolean enabled = true;
     private boolean playSound = true;
@@ -44,9 +46,11 @@ public class EditorToggle {
     private ResponsiveLayout.Rect toggleBounds = ResponsiveLayout.Rect.EMPTY;
 
     // Callback
+    @Nullable
     private Consumer<Boolean> onChange;
 
     // Source badge (optional, shows value origin)
+    @Nullable
     private SourceBadge sourceBadge = null;
 
     // =========================================================================
@@ -126,16 +130,19 @@ public class EditorToggle {
      * Set the source badge source type directly.
      */
     public EditorToggle source(SourceBadge.Source source) {
-        if (this.sourceBadge == null) {
-            this.sourceBadge = new SourceBadge();
+        SourceBadge badge = this.sourceBadge;
+        if (badge == null) {
+            badge = new SourceBadge();
+            this.sourceBadge = badge;
         }
-        this.sourceBadge.setSource(source);
+        badge.setSource(source);
         return this;
     }
 
     /**
      * Get the current source badge (may be null).
      */
+    @Nullable
     public SourceBadge getSourceBadge() {
         return sourceBadge;
     }
@@ -176,10 +183,11 @@ public class EditorToggle {
         safeGraphics.drawString(font, safeLabel, x, y + TEXT_OFFSET_Y, labelColor, false);
 
         // Source badge (inline after label)
-        if (sourceBadge != null) {
+        SourceBadge badge = this.sourceBadge;
+        if (badge != null) {
             int badgeX = x + font.width(Objects.requireNonNull(safeLabel, "safeLabel")) + BADGE_GAP;
-            int badgeY = y + (height - sourceBadge.getHeight()) / 2;
-            sourceBadge.render(graphics, badgeX, badgeY, mouseX, mouseY);
+            int badgeY = y + (height - badge.getHeight()) / 2;
+            badge.render(graphics, badgeX, badgeY, mouseX, mouseY);
         }
 
         // Toggle on the right - centered vertically within TOGGLE_HEIGHT
@@ -288,6 +296,7 @@ public class EditorToggle {
         this.label = newLabel == null ? "" : newLabel;
     }
 
+    @Nullable
     public String getTooltip() {
         return tooltip;
     }

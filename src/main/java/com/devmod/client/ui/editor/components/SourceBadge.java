@@ -2,6 +2,8 @@ package com.devmod.client.ui.editor.components;
 
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -84,6 +86,7 @@ public class SourceBadge {
     /**
      * Get tooltip text for the current source.
      */
+    @Nullable
     public String getTooltipText() {
         return hovered ? source.getTooltip() : null;
     }

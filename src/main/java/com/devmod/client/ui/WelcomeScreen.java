@@ -373,7 +373,7 @@ public class WelcomeScreen extends Screen {
         // Keybinds
         int y = startY + 28;
         for (int i = 0; i < KEYBINDS.length; i++) {
-            long kbDelay = i * 120;
+            long kbDelay = i * 120L;
             if (keybindElapsed > kbDelay) {
                 float kbAlpha = Math.min(1.0f, (keybindElapsed - kbDelay) / 200.0f);
                 renderKeybindItem(g, KEYBINDS[i], centerX - 120, y, kbAlpha);

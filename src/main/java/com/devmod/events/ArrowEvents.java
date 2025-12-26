@@ -8,6 +8,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -171,6 +173,7 @@ public class ArrowEvents {
 
     // ========== Client-safe VFX helpers ==========
 
+    @Nullable
     private static Method spawnArrowEvasionMethod;
     private static boolean vfxMethodInitialized = false;
 

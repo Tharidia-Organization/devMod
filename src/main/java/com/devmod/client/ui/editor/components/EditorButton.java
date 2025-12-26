@@ -3,6 +3,8 @@ package com.devmod.client.ui.editor.components;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -92,9 +94,9 @@ public class EditorButton {
     private final String label;
     private Style style = Style.NORMAL;
     private Size size = Size.MEDIUM;
-    private String icon = null;
-    private String tooltip = null;
-    private String hotkeyHint = null;
+    @Nullable private String icon = null;
+    @Nullable private String tooltip = null;
+    @Nullable private String hotkeyHint = null;
     private boolean enabled = true;
     private boolean playSound = true;
     private boolean toggleable = false;
@@ -108,9 +110,9 @@ public class EditorButton {
     private ResponsiveLayout.Rect bounds = ResponsiveLayout.Rect.EMPTY;
 
     // Callback
-    private Runnable onClick;
-    private Consumer<Boolean> onToggle;
-    private Integer accentOverride = null;
+    @Nullable private Runnable onClick;
+    @Nullable private Consumer<Boolean> onToggle;
+    @Nullable private Integer accentOverride = null;
 
     // ═══════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -302,7 +304,7 @@ public class EditorButton {
         return palette.text;
     }
 
-    private Palette paletteFor(Style style, Integer accentOverride) {
+    private Palette paletteFor(Style style, @Nullable Integer accentOverride) {
         // Palette Impact HUD centralizzata in UIConstants
         int defaultBase = UIConstants.ImpactButton.DEFAULT_BASE;
         int ghostBase = UIConstants.ImpactButton.GHOST_BASE;
@@ -430,6 +432,7 @@ public class EditorButton {
         return style;
     }
 
+    @Nullable
     public String getTooltip() {
         return tooltip;
     }
@@ -469,6 +472,7 @@ public class EditorButton {
     /**
      * Ritorna un tooltip attivo (solo se hovered e presente).
      */
+    @Nullable
     public String activeTooltip() {
         return hovered ? tooltip : null;
     }
