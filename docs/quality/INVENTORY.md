@@ -1,65 +1,62 @@
 # Quality Inventory
 
-**Date**: 2025-12-25
-**Total Java Files**: 982
-**Total LOC**: ~150,000 (estimated)
+**Date**: 2025-12-26
+**Total Java Files**: 1159
+**Total LOC**: ~355,000 (estimated)
 
 ## Summary Statistics
 
 | Category | Count | Priority |
 |----------|-------|----------|
-| Wildcard imports | 191 | P1 |
-| Compiler warnings | 15 | P1 |
+| Wildcard imports | 108 (104 are `Assertions.*` in tests) | P1 |
+| Compiler warnings | Not collected (build failed) | P1 |
 | Methods >80 lines | 22+ | P2 |
-| Files >600 LOC | 30+ | P2 (report only) |
-| TODO/FIXME | 15 | P2 |
-| Minecraft.getInstance outside client | 0 | ✅ |
+| Files >600 LOC | 148 | P2 (report only) |
+| TODO/FIXME | 2 | P2 |
+| Minecraft.getInstance outside `com.devmod.client` | 0 (client-only packages) | ✅ |
+
+---
+
+## Inventory Table (Current Run)
+
+| File | Issue Category | Severity | Proposed Fix Type |
+|------|----------------|----------|-------------------|
+| `src/main/java/com/devmod/telemetry/duckdb/packets/TelemetryPacketHandler.java` | Compile error: missing `dimension` local in `processPlayerSnapshot` | P0 | Add local `dimension` with fallback and reuse |
+| `src/main/java/com/devmod/telemetry/duckdb/DuckDBBatchWriter.java` | Static init failure in tests (ExceptionInInitializerError at `TABLE_PRIORITY`) | P0 | Investigate initializer, add guard/test |
+| `src/main/java/com/devmod/telemetry/duckdb/packets/TelemetryPacketHandler.java` | Unused import (`TelemetryLVC`) | P1 | Remove unused import, reorder |
+| `build/test-results/test` | Test XML reports fail to write | P1 | Diagnose filesystem/permissions |
+| `src/test/java/com/devmod/client/ui/radial/RadialMenuMacroCategoryTest.java` | Wildcard imports (`java.nio.file.*`, `java.util.*`, `java.util.regex.*`, `org.junit.jupiter.api.*`) | P2 | Replace with explicit imports |
+| `src/main/java/com/devmod/actions/client/DevModClientActions.java` | `Minecraft.getInstance()` used outside `com.devmod.client` | P2 | Confirm client-only packaging |
+| `src/main/java/com/devmod/debug/client/DebugClientRenderer.java` | `Minecraft.getInstance()` used outside `com.devmod.client` | P2 | Confirm client-only packaging |
 
 ---
 
 ## P0 - Critical Issues
 
-None identified.
+1. **TelemetryPacketHandler compile error**: missing local `dimension` variable in player snapshot aggregation.
+2. **DuckDBBatchWriter init failure**: `ExceptionInInitializerError` during DuckDB telemetry integration tests.
 
 ---
 
 ## P1 - High Priority Issues
 
-### 1. Wildcard Imports (191 occurrences)
+### 1. Wildcard Imports (108 occurrences)
 
 | File | Import Pattern |
 |------|---------------|
-| `HitHelper.java` | `import com.devmod.*` (duplicate!) |
-| `FuelConfigManager.java` | `import java.nio.file.*` |
-| `FoodConfigManager.java` | `import java.nio.file.*` |
-| `InstanceSystemGameTests.java` | `import com.devmod.runtime.*` |
-| `L0BootVerificationTests.java` | `import com.devmod.runtime.*` |
-| `RecipeInjector.java` | `import net.minecraft.world.item.crafting.*` |
-| `RecipeManagerMixin.java` | `import net.minecraft.world.item.crafting.*` |
-| `HazardTypeRegistry.java` | `import java.io.*` |
-| `ArenaSnapshotManager.java` | `import java.io.*` |
-| `AutosmokeScheduler.java` | `import java.util.concurrent.*` |
-| `ArenaDashboardEndpoint.java` | `import java.util.concurrent.*` |
-| `LogAggregationPipeline.java` | `import java.util.concurrent.*` |
-| `PolicyResolver.java` | `import java.util.concurrent.*` |
-| `AnalyticsService.java` | `import java.util.concurrent.*` |
-| `EnduranceTelemetryService.java` | `import com.devmod.endurance.*` |
-| Panel classes (9) | `import static ...PanelConstants.*` |
-| `VoxelLabUiTestScreen.java` | `import ...panel.*` |
-| `DebugOverlaysPage.java` | `import com.devmod.client.rendering.*` |
+| `RadialMenuMacroCategoryTest.java` | `import java.nio.file.*` |
+| `RadialMenuMacroCategoryTest.java` | `import java.util.*` |
+| `RadialMenuMacroCategoryTest.java` | `import java.util.regex.*` |
+| `RadialMenuMacroCategoryTest.java` | `import org.junit.jupiter.api.*` |
+| Tests (104) | `import static org.junit.jupiter.api.Assertions.*` |
 
-**Fix**: Replace with explicit imports.
+**Fix**: Replace non-JUnit wildcard imports with explicit imports. Static JUnit wildcard imports are acceptable but optional to expand.
 
-### 2. Compiler Warnings (15 total)
+### 2. Compiler Warnings (current run)
 
 | File:Line | Warning | Fix |
 |-----------|---------|-----|
-| `SmartBrainLibCompat.java:177` | deprecation (getRunningBehaviors) | Add @SuppressWarnings or update API |
-| `SmartBrainLibCompat.java:190` | deprecation (getMemories) | Add @SuppressWarnings or update API |
-| `SoulImprintManager.java:313-331` | 10x deprecation (getCombinedEffect) | Migrate to new API |
-| `ItemEditorScreen.java:271` | this-escape | Defer callback registration |
-| `ContractHudOverlay.java:92` | lossy-conversions (double→float) | Explicit cast |
-| `Guild.java:56` | this-escape | Defer member addition |
+| `TelemetryPacketHandler.java:26` | unused import (`TelemetryLVC`) | Remove import |
 
 ### 3. Duplicate Import (Critical)
 
@@ -96,32 +93,27 @@ None identified.
 | `MutatorSystem.java` | 258 | 91 |
 | `PerkSynergySystem.java` | 147 | 220 |
 
-### Files >600 LOC (30+ files, top 10)
+### Files >600 LOC (148 files, top 10)
 
 | File | LOC |
 |------|-----|
-| `EnduranceQuestManager.java` | 3027 |
-| `DevModClientActions.java` | 2725 |
-| `ItemEditorScreen.java` | 2462 |
-| `ArenaBuilder.java` | 1474 |
-| `DuckDBBatchWriter.java` | 1473 |
-| `DuckDBQueryAPI.java` | 1392 |
-| `EnduranceTelemetryService.java` | 1364 |
-| `ArenaDashboardEndpoint.java` | 1338 |
-| `DuckDBTelemetryService.java` | 1337 |
-| `RadialMenuScreen.java` | 1329 |
+| `EnduranceQuestManager.java` | 3060 |
+| `DevModClientActions.java` | 2736 |
+| `ItemEditorScreen.java` | 2498 |
+| `DuckDBBatchWriter.java` | 1698 |
+| `L7CrossSystemIntegrationTest.java` | 1670 |
+| `ComboSystemTest.java` | 1551 |
+| `DuckDBTelemetryService.java` | 1527 |
+| `DuckDBQueryAPI.java` | 1513 |
+| `ArenaBuilder.java` | 1473 |
+| `RewardSystemTest.java` | 1418 |
 
 **Note**: Large files are informational only. No refactor in this pass.
 
-### TODO/FIXME (15)
+### TODO/FIXME (2)
 
-Most are documentation references to `TODO_ARENA_TEMPLATE.md`. 
-5 actual TODOs for future implementation:
-- `SpellEngineCompat.java:157` - Component access pending
-- `ClientUiBridgeImpl.java:95` - Debug overlay integration
-- `ComebackSystem.java:189` - Particle effects
-- `SeasonPassSystem.java:383` - Player notification
-- `GuildSystem.java:287,333` - Member notifications
+- `ClientUiBridgeImpl.java:106` - Debug overlay integration
+- `ComebackSystem.java:176` - Particle effects
 
 ---
 

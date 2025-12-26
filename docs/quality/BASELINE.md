@@ -1,36 +1,39 @@
 # Quality Pass Baseline
 
-**Date**: 2025-12-25
+**Date**: 2025-12-26
 **Branch**: Banastaff
 
 ## Build Status
 
 ```
-BUILD SUCCESSFUL
-Tests: 2800 passed, 0 failed, 2 skipped
+BUILD FAILED
 ```
 
-## Compiler Warnings (15 total)
+### Failures Observed (./gradlew build)
 
-| File | Warning Type | Count |
-|------|--------------|-------|
-| `SmartBrainLibCompat.java` | deprecation (Brain.getRunningBehaviors, getMemories) | 2 |
-| `SoulImprintManager.java` | deprecation (WeaponTraitRegistry.getCombinedEffect) | 10 |
-| `ItemEditorScreen.java:271` | this-escape | 1 |
-| `ContractHudOverlay.java:92` | lossy-conversions (double→float) | 1 |
-| `Guild.java:56` | this-escape | 1 |
+- Checkstyle: `TelemetryPacketHandler.java:26` unused import `TelemetryLVC`
+- Tests: `DuckDBTelemetryIntegrationTest` initializationError (NoClassDefFoundError; ExceptionInInitializerError at `DuckDBBatchWriter.java:88`)
+- Test reporting: multiple XML result files failed to write under `build/test-results/test`
 
-## Areas of Concern (Initial Assessment)
+### Failures Observed (./gradlew test)
 
-1. **Deprecation Usage**: SoulImprintManager uses deprecated API heavily (10 calls)
-2. **This-escape Warnings**: Two classes have potential initialization order issues
-3. **Type Conversion**: ContractHudOverlay has implicit lossy cast
+- Compile error: `TelemetryPacketHandler.java:314` cannot find symbol `dimension`
+
+## Compiler Warnings
+
+- Not collected in this run due to build/test failures. Prior run (2025-12-25) recorded 15 warnings.
+
+## Areas of Concern (Current Run)
+
+1. **TelemetryPacketHandler**: compile error + unused import (blocks build)
+2. **DuckDBTelemetryIntegrationTest**: class init failure from `DuckDBBatchWriter`
+3. **Test Report Writes**: repeated XML output failures (possible filesystem/permissions issue)
 
 ## Test Health
 
-- All 2800 tests passing
-- No flaky tests detected in this run
-- Test coverage via JaCoCo enabled
+- `./gradlew build` ran tests: 2855 completed, 5 failed, 2 skipped
+- `./gradlew test` failed at compile phase
+- JaCoCo configured, but outputs incomplete due to failures
 
 ## Next Steps
 

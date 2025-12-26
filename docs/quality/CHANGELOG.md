@@ -492,3 +492,31 @@ None (Quality pass complete)
 
 ### Results
 - Reduced remaining NullAway warnings in editor components without behavior changes
+
+---
+
+## Batch 25: DuckDB Logging Standardization (2025-12-26)
+
+### Scope
+- Ensure error/warn logs include exception context for DuckDB telemetry pipeline
+- Add table/error-type context for circuit breaker and flush failures
+
+### Files Modified
+- `DuckDBBatchWriter.java` - Include table context and exception stacks for rollback, reconnect, circuit breaker, and flush failures
+- `DuckDBMigrationService.java` - Include exceptions in import/migration failures and routing debug
+- `DuckDBTelemetryService.java` - Include exceptions for initialization and dashboard connection failures
+- `DuckDBConnectionManager.java` - Include exceptions for checkpoint, shutdown, connection tests, and validation failures
+- `DuckDBSchemaManager.java` - Include exception for schema version read failures
+
+### Results
+- DuckDB telemetry logs now preserve exception stack traces and consistent context IDs
+
+---
+
+## Batch 26: Import Hygiene (2025-12-26)
+
+### Files Modified
+- `RadialMenuMacroCategoryTest.java` - Replace wildcard imports with explicit java/junit imports
+
+### Results
+- Eliminated remaining non-JUnit wildcard imports in tests
