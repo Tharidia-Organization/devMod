@@ -1,6 +1,8 @@
 # Static State and Memory Leak Remediation
 
-**Last Updated:** 2025-12-24  
+> Last updated: 2025-12-24
+> Status: NEEDS_VERIFICATION
+
 **Priority:** P0 (Crash) + P2 (Leak)
 
 ## P0 - Client-Only Singletons (Crash Prevention)

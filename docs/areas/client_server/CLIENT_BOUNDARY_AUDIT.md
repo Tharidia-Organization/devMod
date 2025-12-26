@@ -1,10 +1,9 @@
 # Client Boundary Audit - DevMod
 
-> **Status**: ARCHIVED (superseded by `docs/areas/client_server/README.md`)
-> **Note**: This audit captures historical migration notes and legacy package paths.
+> Last updated: 2025-12-22
+> Status: ARCHIVED (superseded by `docs/areas/client_server/README.md`)
+> Note: This audit captures historical migration notes and legacy package paths.
 
-**Date:** 2025-12-22
-**Status:** Archived (legacy snapshot)
 **Goal:** Ensure all client-only code is properly isolated to prevent dedicated server crashes
 
 ---

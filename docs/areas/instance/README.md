@@ -1,8 +1,8 @@
 # Instance System
 
-> **Audit Date**: 2025-12-26
-> **Status**: CURRENT (code-aligned)
-> **Risk Level**: MEDIUM (async dimension creation, recovery IO)
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+> Risk Level: MEDIUM (async dimension creation, recovery IO)
 
 ---
 
@@ -130,4 +130,3 @@ Integration points:
 - `docs/areas/arena/README.md`
 - `docs/areas/endurance/README.md`
 - `docs/cross_cutting/CONCURRENCY.md`
-

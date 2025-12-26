@@ -1,6 +1,7 @@
 # Null-Suppression Audit Plan
 
-> **Status**: PLANNING (not active; excluded from validation)
+> Last updated: 2025-12-26
+> Status: PLANNING (not active; excluded from validation)
 
 Goal: remove `@SuppressWarnings("null")` (and similar unchecked-null issues) across the project with deterministic coverage and no regressions.
 

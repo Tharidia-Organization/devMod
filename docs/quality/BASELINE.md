@@ -1,5 +1,8 @@
 # Quality Pass Baseline
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (snapshot; build failed at capture time)
+
 **Date**: 2025-12-26
 **Branch**: Banastaff
 

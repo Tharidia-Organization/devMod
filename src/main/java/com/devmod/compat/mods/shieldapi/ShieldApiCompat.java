@@ -23,10 +23,7 @@ public class ShieldApiCompat implements CompatModule {
 
     // Cached reflection references
     private static Class<?> customShieldItemClass;
-    private static Class<?> shieldPropertiesClass;
     private static Method getShieldPropertiesMethod;
-    private static Method getBlockAngleMethod;
-    private static Method getCooldownMethod;
 
     @Override
     public String modId() {
@@ -77,21 +74,19 @@ public class ShieldApiCompat implements CompatModule {
                     customShieldItemClass = Class.forName(pkg + ".CustomShieldItem");
                     LOGGER.debug("[Compat:shieldapi] Found CustomShieldItem at {}", pkg);
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:shieldapi] CustomShieldItem not found in {}", pkg);
+                }
             }
-
-            // Try to find shield properties
-            try {
-                shieldPropertiesClass = Class.forName(
-                    "net.shield_api.api.ShieldProperties");
-            } catch (ClassNotFoundException ignored) {}
 
             if (customShieldItemClass != null) {
                 // Get methods
                 try {
                     getShieldPropertiesMethod = customShieldItemClass
                         .getMethod("getShieldProperties", ItemStack.class);
-                } catch (NoSuchMethodException ignored) {}
+                } catch (NoSuchMethodException e) {
+                    LOGGER.trace("[Compat:shieldapi] getShieldProperties not available", e);
+                }
 
                 apiAvailable = true;
                 LOGGER.info("[Compat:shieldapi] Shield API loaded");
@@ -197,7 +192,9 @@ public class ShieldApiCompat implements CompatModule {
                         if (angle instanceof Number) {
                             props.put("blockAngle", ((Number) angle).floatValue());
                         }
-                    } catch (NoSuchMethodException ignored) {}
+                    } catch (NoSuchMethodException e) {
+                        LOGGER.trace("[Compat:shieldapi] getBlockAngle not available", e);
+                    }
 
                     try {
                         Method getCooldownMethod = shieldProps.getClass().getMethod("getCooldown");
@@ -205,7 +202,9 @@ public class ShieldApiCompat implements CompatModule {
                         if (cooldown instanceof Number) {
                             props.put("cooldown", ((Number) cooldown).intValue());
                         }
-                    } catch (NoSuchMethodException ignored) {}
+                    } catch (NoSuchMethodException e) {
+                        LOGGER.trace("[Compat:shieldapi] getCooldown not available", e);
+                    }
 
                     try {
                         Method getDamageReductionMethod = shieldProps.getClass()
@@ -214,7 +213,9 @@ public class ShieldApiCompat implements CompatModule {
                         if (reduction instanceof Number) {
                             props.put("damageReduction", ((Number) reduction).floatValue());
                         }
-                    } catch (NoSuchMethodException ignored) {}
+                    } catch (NoSuchMethodException e) {
+                        LOGGER.trace("[Compat:shieldapi] getDamageReduction not available", e);
+                    }
                 }
             }
 

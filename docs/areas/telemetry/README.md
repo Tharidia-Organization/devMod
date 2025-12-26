@@ -1,8 +1,8 @@
 # Telemetry System
 
-> **Audit Date**: 2025-12-26
-> **Status**: CURRENT (code-aligned)
-> **Risk Level**: MEDIUM (DuckDB IO + async batching)
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+> Risk Level: MEDIUM (DuckDB IO + async batching)
 
 ---
 
@@ -82,4 +82,3 @@ Telemetry commands are also registered as actions via `ActionRegistry` (see `Act
 - `docs/telemetry/TELEMETRY_DOCUMENTATION.md`
 - `docs/telemetry/MISSING_TELEMETRY_HOOKS.md`
 - `docs/telemetry/dashboard/DASHBOARD_UPGRADE_PLAN.md`
-

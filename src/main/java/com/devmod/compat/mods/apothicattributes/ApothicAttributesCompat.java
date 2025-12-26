@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.StringTokenizer;
 
 import javax.annotation.Nullable;
 
@@ -391,9 +392,10 @@ public class ApothicAttributesCompat implements CompatModule {
         }
 
         // Convert snake_case to Title Case
-        String[] parts = name.split("_");
         StringBuilder sb = new StringBuilder();
-        for (String part : parts) {
+        StringTokenizer tokenizer = new StringTokenizer(name, "_");
+        while (tokenizer.hasMoreTokens()) {
+            String part = tokenizer.nextToken();
             if (part.isEmpty()) {
                 continue;
             }

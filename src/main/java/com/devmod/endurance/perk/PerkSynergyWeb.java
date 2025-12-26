@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,11 +36,6 @@ public class PerkSynergyWeb {
     private static final Logger LOGGER = LoggerFactory.getLogger(PerkSynergyWeb.class);
 
     public static final PerkSynergyWeb INSTANCE = new PerkSynergyWeb();
-
-    @Nonnull
-    private static <T> T requireNonNull(T value, String name) {
-        return Objects.requireNonNull(value, name);
-    }
 
     // Hidden perk definitions
     private final Map<String, HiddenPerk> hiddenPerks = new LinkedHashMap<>();
@@ -130,7 +126,7 @@ public class PerkSynergyWeb {
      * Persistent discovery data for a player.
      */
     public static class PlayerDiscoveries {
-        private final @Nonnull UUID playerId;
+        private final UUID playerId;
         private final Set<String> discoveredHiddenPerks = new HashSet<>();
         private final Set<String> discoveredSynergies = new HashSet<>();
         private int totalDiscoveryXp = 0;
@@ -146,7 +142,10 @@ public class PerkSynergyWeb {
         private final Map<String, Integer> perkUsageCounts = new HashMap<>();
 
         public PlayerDiscoveries(UUID playerId) {
-            this.playerId = requireNonNull(playerId, "playerId");
+            if (playerId == null) {
+                throw new IllegalArgumentException("playerId");
+            }
+            this.playerId = playerId;
         }
 
         public boolean hasDiscovered(String perkId) {
@@ -191,8 +190,12 @@ public class PerkSynergyWeb {
         }
 
         public void recordPerkUsage(String perkId) {
-            String safePerkId = requireNonNull(perkId, "perkId");
-            perkUsageCounts.compute(safePerkId, (key, current) -> current == null ? 1 : current + 1);
+            String safePerkId = normalizeId(perkId);
+            if (safePerkId == null) {
+                return;
+            }
+            Integer current = perkUsageCounts.get(safePerkId);
+            perkUsageCounts.put(safePerkId, current == null ? 1 : current + 1);
         }
 
         // Getters
@@ -212,17 +215,25 @@ public class PerkSynergyWeb {
         // NBT Serialization
         public CompoundTag save() {
             CompoundTag tag = new CompoundTag();
-            tag.putUUID("playerId", requireNonNull(playerId, "playerId"));
+            if (playerId != null) {
+                tag.putUUID("playerId", playerId);
+            }
 
             ListTag discovered = new ListTag();
             for (String perk : discoveredHiddenPerks) {
-                discovered.add(StringTag.valueOf(requireNonNull(perk, "perkId")));
+                String safePerk = normalizeId(perk);
+                if (safePerk != null) {
+                    discovered.add(StringTag.valueOf(safePerk));
+                }
             }
             tag.put("discoveredPerks", discovered);
 
             ListTag synergies = new ListTag();
             for (String syn : discoveredSynergies) {
-                synergies.add(StringTag.valueOf(requireNonNull(syn, "synergyId")));
+                String safeSyn = normalizeId(syn);
+                if (safeSyn != null) {
+                    synergies.add(StringTag.valueOf(safeSyn));
+                }
             }
             tag.put("discoveredSynergies", synergies);
 
@@ -237,7 +248,10 @@ public class PerkSynergyWeb {
 
             CompoundTag usages = new CompoundTag();
             for (Map.Entry<String, Integer> entry : perkUsageCounts.entrySet()) {
-                String key = requireNonNull(entry.getKey(), "perkUsageKey");
+                String key = normalizeId(entry.getKey());
+                if (key == null) {
+                    continue;
+                }
                 int count = entry.getValue() != null ? entry.getValue() : 0;
                 usages.putInt(key, count);
             }
@@ -246,20 +260,28 @@ public class PerkSynergyWeb {
             return tag;
         }
 
+        @Nullable
         public static PlayerDiscoveries load(CompoundTag tag) {
-            UUID playerId = requireNonNull(tag.getUUID("playerId"), "playerId");
+            if (!tag.hasUUID("playerId")) {
+                return null;
+            }
+            UUID playerId = tag.getUUID("playerId");
             PlayerDiscoveries discoveries = new PlayerDiscoveries(playerId);
 
             ListTag discovered = tag.getList("discoveredPerks", Tag.TAG_STRING);
             for (int i = 0; i < discovered.size(); i++) {
-                discoveries.discoveredHiddenPerks.add(
-                    requireNonNull(discovered.getString(i), "discoveredPerkId"));
+                String perkId = normalizeId(discovered.getString(i));
+                if (perkId != null) {
+                    discoveries.discoveredHiddenPerks.add(perkId);
+                }
             }
 
             ListTag synergies = tag.getList("discoveredSynergies", Tag.TAG_STRING);
             for (int i = 0; i < synergies.size(); i++) {
-                discoveries.discoveredSynergies.add(
-                    requireNonNull(synergies.getString(i), "discoveredSynergyId"));
+                String synergyId = normalizeId(synergies.getString(i));
+                if (synergyId != null) {
+                    discoveries.discoveredSynergies.add(synergyId);
+                }
             }
 
             discoveries.totalDiscoveryXp = tag.getInt("discoveryXp");
@@ -273,8 +295,10 @@ public class PerkSynergyWeb {
 
             CompoundTag usages = tag.getCompound("perkUsage");
             for (String key : usages.getAllKeys()) {
-                String safeKey = requireNonNull(key, "perkUsageKey");
-                discoveries.perkUsageCounts.put(safeKey, usages.getInt(safeKey));
+                String safeKey = normalizeId(key);
+                if (safeKey != null) {
+                    discoveries.perkUsageCounts.put(safeKey, usages.getInt(safeKey));
+                }
             }
 
             return discoveries;
@@ -301,7 +325,9 @@ public class PerkSynergyWeb {
             ListTag players = tag.getList("players", Tag.TAG_COMPOUND);
             for (int i = 0; i < players.size(); i++) {
                 PlayerDiscoveries pd = PlayerDiscoveries.load(players.getCompound(i));
-                data.discoveries.put(pd.getPlayerId(), pd);
+                if (pd != null) {
+                    data.discoveries.put(pd.getPlayerId(), pd);
+                }
             }
             return data;
         }
@@ -320,8 +346,10 @@ public class PerkSynergyWeb {
         }
 
         public PlayerDiscoveries getOrCreate(UUID playerId) {
-            UUID safePlayerId = requireNonNull(playerId, "playerId");
-            return discoveries.computeIfAbsent(safePlayerId, id -> new PlayerDiscoveries(id));
+            if (playerId == null) {
+                throw new IllegalArgumentException("playerId");
+            }
+            return discoveries.computeIfAbsent(playerId, id -> new PlayerDiscoveries(id));
         }
 
         public static DiscoverySavedData get(ServerLevel level) {
@@ -592,7 +620,7 @@ public class PerkSynergyWeb {
                 newlyDiscovered.add(hidden.perkId);
 
                 // Notify player
-                Component message = requireNonNull(
+                Component message = Objects.requireNonNull(
                     Component.literal("§d§l[DISCOVERY] §r§5" + getPerkName(hidden.perkId) +
                         " §r§7unlocked! §a+" + hidden.discoveryXp + " Discovery XP"),
                     "discoveryMessage"
@@ -643,7 +671,7 @@ public class PerkSynergyWeb {
         });
 
         // Visual feedback
-        Component message = requireNonNull(
+        Component message = Objects.requireNonNull(
             Component.literal("§4§l[SACRIFICE] §r§c" + recipe.description +
                 " §r§7→ §a" + getPerkName(recipe.resultPerkId)),
             "sacrificeMessage"
@@ -817,6 +845,17 @@ public class PerkSynergyWeb {
             .orElse("");
     }
 
+    private static String normalizeId(String value) {
+        if (isBlank(value)) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
     // ========== Condition Implementations ==========
 
     /**
@@ -928,9 +967,9 @@ public class PerkSynergyWeb {
         private final String progressText;
 
         public AchievementCondition(String achievementId, Predicate<DiscoveryContext> predicate, String progressText) {
-            this.achievementId = requireNonNull(achievementId, "achievementId");
-            this.predicate = requireNonNull(predicate, "predicate");
-            this.progressText = requireNonNull(progressText, "progressText");
+            this.achievementId = isBlank(achievementId) ? "unknown" : achievementId;
+            this.predicate = Objects.requireNonNull(predicate, "predicate");
+            this.progressText = progressText == null ? "" : progressText;
         }
 
         @Override
@@ -944,7 +983,8 @@ public class PerkSynergyWeb {
 
         @Override
         public String getProgressText(DiscoveryContext context) {
-            return progressText + (isMet(context) ? " [Complete]" : " [In Progress]");
+            String baseText = isBlank(progressText) ? achievementId : progressText;
+            return baseText + (isMet(context) ? " [Complete]" : " [In Progress]");
         }
     }
 }

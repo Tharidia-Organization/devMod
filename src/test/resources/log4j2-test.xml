@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="ERROR">
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%m%n"/>
+    </Console>
+  </Appenders>
+  <Loggers>
+    <Logger name="com.devmod" level="off" additivity="false"/>
+    <Logger name="ar.audit" level="off" additivity="false"/>
+    <Root level="error">
+      <AppenderRef ref="Console"/>
+    </Root>
+  </Loggers>
+</Configuration>

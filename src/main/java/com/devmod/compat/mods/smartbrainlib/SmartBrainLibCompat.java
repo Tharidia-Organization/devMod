@@ -80,7 +80,9 @@ public class SmartBrainLibCompat implements CompatModule {
                     smartBrainOwnerClass = Class.forName(pkg + ".SmartBrainOwner");
                     LOGGER.debug("[Compat:smartbrainlib] Found SmartBrainOwner at {}", pkg);
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:smartbrainlib] SmartBrainOwner not found in {}", pkg);
+                }
             }
 
             // Try to load additional classes (for logging only)
@@ -89,14 +91,18 @@ public class SmartBrainLibCompat implements CompatModule {
                     "net.tslat.smartbrainlib.api.core.SmartBrainProvider");
                 LOGGER.debug("[Compat:smartbrainlib] Found SmartBrainProvider at {}",
                     providerClass.getName());
-            } catch (ClassNotFoundException ignored) {}
+            } catch (ClassNotFoundException e) {
+                LOGGER.trace("[Compat:smartbrainlib] SmartBrainProvider not found");
+            }
 
             try {
                 Class<?> activityClass = Class.forName(
                     "net.tslat.smartbrainlib.api.core.BrainActivityGroup");
                 LOGGER.debug("[Compat:smartbrainlib] Found BrainActivityGroup at {}",
                     activityClass.getName());
-            } catch (ClassNotFoundException ignored) {}
+            } catch (ClassNotFoundException e) {
+                LOGGER.trace("[Compat:smartbrainlib] BrainActivityGroup not found");
+            }
 
             if (smartBrainOwnerClass != null) {
                 apiAvailable = true;

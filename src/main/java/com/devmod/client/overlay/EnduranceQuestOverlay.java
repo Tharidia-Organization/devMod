@@ -33,6 +33,7 @@ import com.devmod.endurance.FlowStateTracker;
 import com.devmod.endurance.MomentumTracker;
 import com.devmod.endurance.QuestSyncPayload;
 import com.devmod.endurance.WaveObjectiveState;
+import com.devmod.telemetry.network.LVCSyncPayload;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
@@ -371,51 +372,100 @@ public class EnduranceQuestOverlay {
             g.drawString(font, "Run Stats", textX, textY, TEXT_ACCENT, false);
             textY += LINE_HEIGHT;
 
-            // Session timer
+            // Session timer + Kills on same line
             long duration = data.sessionDurationMs();
             String timeText = formatDuration(duration);
             g.drawString(font, "Time: " + timeText, textX, textY, TEXT_DIM, false);
+            String killText = data.mobsKilled() + " kills";
+            int killWidth = font.width(killText);
+            g.drawString(font, killText, x + width - PANEL_PADDING - killWidth, textY, TEXT_SUCCESS, false);
             textY += LINE_HEIGHT;
 
-            // Kill count
-            String killText = "Kills: " + data.mobsKilled();
-            g.drawString(font, killText, textX, textY, TEXT_SUCCESS, false);
-
-            // Damage dealt/taken on the right
+            // Damage dealt/taken + Deaths (if any)
             String dmgText = "DMG: " + data.damageDealt() + "/" + data.damageTaken();
-            int dmgWidth = font.width(dmgText);
-            g.drawString(font, dmgText, x + width - PANEL_PADDING - dmgWidth, textY, TEXT_DIM, false);
+            g.drawString(font, dmgText, textX, textY, TEXT_DIM, false);
+            if (data.deaths() > 0) {
+                String deathText = "\u2620 " + data.deaths(); // Skull icon
+                int deathWidth = font.width(deathText);
+                g.drawString(font, deathText, x + width - PANEL_PADDING - deathWidth, textY, TEXT_DANGER, false);
+            }
             textY += LINE_HEIGHT;
 
-            // Derived metrics - prefer LVC real-time data if available
+            // Get LVC data for enhanced metrics
             ClientLVCCache lvcCache = ClientLVCCache.INSTANCE;
+            LVCSyncPayload lvcPayload = lvcCache.getCachedPayload();
+            boolean hasLvc = lvcCache.hasData() && !lvcCache.isStale() && lvcPayload != null;
+
+            // DPS metrics with Peak DPS
             double seconds = Math.max(1, data.sessionDurationMs() / 1000.0);
             double kps = data.mobsKilled() / seconds;
             double dtps = data.damageTaken() / seconds;
-
-            // Use LVC rolling DPS if available, otherwise calculate from totals
-            double dps = lvcCache.hasData() && !lvcCache.isStale()
-                ? lvcCache.getCurrentDPS()
-                : data.damageDealt() / seconds;
-
-            String metrics = String.format("KPS %.2f | DPS %.1f | DTPS %.1f", kps, dps, dtps);
-            g.drawString(font, metrics, textX, textY, TEXT_DIM, false);
-            textY += LINE_HEIGHT;
-
-            // Show LVC accuracy and critical hits if available
-            if (lvcCache.hasData() && !lvcCache.isStale()) {
-                double accuracy = lvcCache.getAccuracy() * 100;
-                var payload = lvcCache.getCachedPayload();
-                int critCount = payload != null ? payload.criticalHitCount() : 0;
-                String lvcMetrics = String.format("Accuracy %.0f%% | Crits %d", accuracy, critCount);
-                g.drawString(font, lvcMetrics, textX, textY, TEXT_DIM, false);
-                textY += LINE_HEIGHT;
+            double dps = data.damageDealt() / seconds;
+            double peakDps = 0;
+            if (hasLvc && lvcPayload != null) {
+                dps = lvcCache.getCurrentDPS();
+                peakDps = lvcPayload.peakDPS();
             }
 
-            // Deaths this session (if > 0)
-            if (data.deaths() > 0) {
-                g.drawString(font, "Deaths: " + data.deaths(), textX, textY, TEXT_DANGER, false);
+            String dpsMetrics;
+            if (hasLvc && peakDps > 0) {
+                dpsMetrics = String.format("DPS %.1f (peak %.1f) | DTPS %.1f", dps, peakDps, dtps);
+            } else {
+                dpsMetrics = String.format("KPS %.2f | DPS %.1f | DTPS %.1f", kps, dps, dtps);
+            }
+            g.drawString(font, dpsMetrics, textX, textY, TEXT_DIM, false);
+            textY += LINE_HEIGHT;
+
+            // LVC-specific stats (accuracy, crits, abilities, defense)
+            if (hasLvc && lvcPayload != null) {
+                LVCSyncPayload payload = lvcPayload;
+                // Accuracy & Crits
+                double accuracy = lvcCache.getAccuracy() * 100;
+                int critCount = payload.criticalHitCount();
+                String accCritText = String.format("Accuracy %.0f%% | \u2726 %d crits", accuracy, critCount); // Sparkle icon
+                g.drawString(font, accCritText, textX, textY, TEXT_DIM, false);
                 textY += LINE_HEIGHT;
+
+                // Ability usage (dash, dodge, perfect dodge) - only if any used
+                int dashCount = payload.dashCount();
+                int dodgeCount = payload.dodgeCount();
+                int perfectCount = payload.perfectDodgeCount();
+                if (dashCount > 0 || dodgeCount > 0 || perfectCount > 0) {
+                    StringBuilder abilityText = new StringBuilder("Abilities: ");
+                    if (dashCount > 0) {
+                        abilityText.append("\u26A1").append(dashCount); // Dash icon
+                    }
+                    if (dodgeCount > 0) {
+                        if (dashCount > 0) abilityText.append(" ");
+                        abilityText.append("\u21BA").append(dodgeCount); // Dodge icon
+                    }
+                    if (perfectCount > 0) {
+                        if (dashCount > 0 || dodgeCount > 0) abilityText.append(" ");
+                        abilityText.append("\u2605").append(perfectCount); // Perfect icon
+                    }
+                    g.drawString(font, abilityText.toString(), textX, textY, 0xFF64B5F6, false); // Light blue
+                    textY += LINE_HEIGHT;
+                }
+
+                // Defensive stats (damage negated, stamina spent) - only if meaningful
+                double damageNegated = payload.totalDamageNegated();
+                double staminaSpent = payload.totalStaminaSpent();
+                if (damageNegated > 0 || staminaSpent > 10) {
+                    String defenseText = String.format("\u2764 %.0f blocked | \u269B %.0f stamina",
+                        damageNegated, staminaSpent); // Blocked and stamina icons
+                    g.drawString(font, defenseText, textX, textY, 0xFF4CAF50, false); // Green
+                    textY += LINE_HEIGHT;
+                }
+
+                // Top weapons - compact display
+                String topWeapons = payload.topWeapons();
+                if (topWeapons != null && !topWeapons.isEmpty()) {
+                    String weaponsDisplay = formatTopWeapons(topWeapons);
+                    if (!weaponsDisplay.isEmpty()) {
+                        g.drawString(font, "\u2694 " + weaponsDisplay, textX, textY, 0xFFFFAB91, false); // Light orange
+                        textY += LINE_HEIGHT;
+                    }
+                }
             }
         }
 
@@ -643,14 +693,35 @@ public class EnduranceQuestOverlay {
             height += LINE_HEIGHT * lines + 2;
         }
 
-        if (showDetails) {
-            height += 4;  // Separator
-            height += LINE_HEIGHT * 4; // Run Stats + Time + Kills/DMG + metrics
+            if (showDetails) {
+                height += 4;  // Separator
+                height += LINE_HEIGHT * 4; // Run Stats + Time + Kills/DMG + metrics
 
-            // LVC accuracy/crit line if data available
-            if (ClientLVCCache.INSTANCE.hasData() && !ClientLVCCache.INSTANCE.isStale()) {
-                height += LINE_HEIGHT;
-            }
+                // LVC-specific lines if data available
+                ClientLVCCache lvcCache = ClientLVCCache.INSTANCE;
+                LVCSyncPayload lvcPayload = lvcCache.getCachedPayload();
+                boolean hasLvc = lvcCache.hasData() && !lvcCache.isStale() && lvcPayload != null;
+
+                if (hasLvc && lvcPayload != null) {
+                    LVCSyncPayload payload = lvcPayload;
+                    height += LINE_HEIGHT; // Accuracy & crits line
+
+                    // Ability usage line (if any abilities used)
+                    if (payload.dashCount() > 0 || payload.dodgeCount() > 0 || payload.perfectDodgeCount() > 0) {
+                        height += LINE_HEIGHT;
+                    }
+
+                    // Defensive stats line (if meaningful)
+                    if (payload.totalDamageNegated() > 0 || payload.totalStaminaSpent() > 10) {
+                        height += LINE_HEIGHT;
+                    }
+
+                    // Top weapons line (if any)
+                    String topWeapons = payload.topWeapons();
+                    if (topWeapons != null && !topWeapons.isEmpty()) {
+                        height += LINE_HEIGHT;
+                    }
+                }
 
             if (data.deaths() > 0) {
                 height += LINE_HEIGHT; // Deaths
@@ -784,6 +855,52 @@ public class EnduranceQuestOverlay {
             case ELITE_HUNT -> progress + " / " + target + " elite";
             case KILL_ALL -> progress + " / " + target + " mobs";
         };
+    }
+
+    /**
+     * Formats top weapons string for display.
+     * Input format: "weapon1:kills,weapon2:kills,..." (from LVCSyncPayload)
+     * Output format: "weapon1 (kills), weapon2 (kills)" - truncated to fit panel
+     */
+    private static String formatTopWeapons(String topWeapons) {
+        if (topWeapons == null || topWeapons.isEmpty()) {
+            return "";
+        }
+
+        String[] entries = topWeapons.split(",");
+        StringBuilder result = new StringBuilder();
+        int maxWeapons = 2; // Show at most 2 weapons to fit panel width
+        int count = 0;
+
+        for (String entry : entries) {
+            if (count >= maxWeapons) break;
+
+            String[] parts = entry.split(":");
+            if (parts.length != 2) continue;
+
+            String weapon = parts[0].trim();
+            String kills = parts[1].trim();
+
+            // Shorten weapon name (remove namespace, truncate if long)
+            int colonIdx = weapon.indexOf(':');
+            if (colonIdx >= 0 && colonIdx + 1 < weapon.length()) {
+                weapon = weapon.substring(colonIdx + 1);
+            }
+            // Convert snake_case to readable
+            weapon = weapon.replace("_", " ");
+            // Truncate long names
+            if (weapon.length() > 12) {
+                weapon = weapon.substring(0, 10) + "..";
+            }
+
+            if (!result.isEmpty()) {
+                result.append(", ");
+            }
+            result.append(weapon).append(":").append(kills);
+            count++;
+        }
+
+        return result.toString();
     }
 
     // === State Transition Handler ===

@@ -178,6 +178,26 @@ public class CommonModEvents {
         } catch (Exception e) {
             LOGGER.error("[DevMod] Failed to initialize LeaderboardSystem", e);
         }
+
+        // Initialize MailboxManager for in-game messaging system
+        try {
+            com.devmod.mailbox.MailboxManager.INSTANCE.initialize().join();
+
+            // Set up callback to notify clients of new messages
+            com.devmod.mailbox.MailboxManager.INSTANCE.setNewMessageCallback((recipientUuid, message) -> {
+                ServerPlayer recipient = event.getServer().getPlayerList().getPlayer(recipientUuid);
+                if (recipient != null) {
+                    // Get unread count and send notification
+                    com.devmod.mailbox.MailboxManager.INSTANCE.getUnreadCount(recipientUuid)
+                        .thenAccept(unreadCount ->
+                            com.devmod.mailbox.network.MailboxNetworkHandler.sendNotification(recipient, message, unreadCount));
+                }
+            });
+
+            LOGGER.info("[DevMod] MailboxManager initialized successfully");
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Failed to initialize MailboxManager", e);
+        }
     }
 
     /**
@@ -201,6 +221,14 @@ public class CommonModEvents {
         } catch (Exception e) {
             LOGGER.error("[DevMod] Error saving LeaderboardSystem", e);
         }
+
+        // Shutdown MailboxManager
+        try {
+            com.devmod.mailbox.MailboxManager.INSTANCE.shutdown().join();
+            LOGGER.info("[DevMod] MailboxManager shutdown complete");
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Error during MailboxManager shutdown", e);
+        }
     }
 
     /**
@@ -223,6 +251,15 @@ public class CommonModEvents {
             // Initialize telemetry aggregator for this player
             if (AggregationConfig.AGGREGATION_ENABLED) {
                 TelemetryAggregatorRegistry.INSTANCE.onPlayerJoin(player.getUUID());
+            }
+
+            // Sync mailbox to client
+            try {
+                com.devmod.mailbox.network.MailboxNetworkHandler.sendMailboxSync(player);
+                LOGGER.debug("[DevMod] Synced mailbox to {}", player.getName().getString());
+            } catch (Exception e) {
+                LOGGER.warn("[DevMod] Failed to sync mailbox to {}: {}",
+                    player.getName().getString(), e.getMessage());
             }
         }
     }

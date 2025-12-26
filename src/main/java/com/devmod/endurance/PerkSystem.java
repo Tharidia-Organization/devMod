@@ -585,16 +585,14 @@ public class PerkSystem {
             Set.of(), Set.of(),
             ctx -> {
                 // Remove knockback vulnerability
-                var attr = ctx.player.getAttribute(
-                    requireNonNull(Attributes.KNOCKBACK_RESISTANCE, "KNOCKBACK_RESISTANCE"));
+                var attr = ctx.player.getAttribute(Attributes.KNOCKBACK_RESISTANCE);
                 if (attr != null) {
-                    ResourceLocation modId = requireNonNull(
-                        ResourceLocation.fromNamespaceAndPath("devmod", "unstoppable_force"),
-                        "unstoppableForceId"
-                    );
-                    AttributeModifier modifier = new AttributeModifier(modId, 1.0, AttributeModifier.Operation.ADD_VALUE);
-                    attr.addTransientModifier(modifier);
-                    ctx.session.addAppliedModifier(modifier);
+                    ResourceLocation modId = ResourceLocation.fromNamespaceAndPath("devmod", "unstoppable_force");
+                    if (modId != null) {
+                        AttributeModifier modifier = new AttributeModifier(modId, 1.0, AttributeModifier.Operation.ADD_VALUE);
+                        attr.addTransientModifier(modifier);
+                        ctx.session.addAppliedModifier(modifier);
+                    }
                 }
             },
             null, null, null, null));

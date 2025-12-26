@@ -6,7 +6,6 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -291,37 +290,19 @@ public class ArenaHazardSystem {
     }
 
     private void tickWarning(ServerLevel level, ServerPlayer player, HazardSession session, ActiveHazard hazard) {
-        hazard.warningTicks--;
-
         // Warning effects
         if (hazard.warningTicks == 60) {
             // Initial warning
-            Component warningMessage = Objects.requireNonNull(
-                Component.literal("§c§l⚠ " + hazard.type.warningText),
-                "hazard warning message"
-            );
-            player.displayClientMessage(warningMessage, true);
-            BlockPos playerPos = Objects.requireNonNull(player.blockPosition(), "player.blockPosition()");
-            SoundEvent heartbeat = Objects.requireNonNull(
-                SoundEvents.WARDEN_HEARTBEAT,
-                "SoundEvents.WARDEN_HEARTBEAT"
-            );
-            level.playSound(null, playerPos, heartbeat, SoundSource.AMBIENT, 1.0f, 0.8f);
+            displayClientMessage(player, "§c§l⚠ " + hazard.type.warningText, true);
+            playSound(level, resolveBlockPos(player), SoundEvents.WARDEN_HEARTBEAT, SoundSource.AMBIENT, 1.0f, 0.8f);
         }
+
+        hazard.warningTicks--;
 
         if (hazard.warningTicks <= 0) {
             hazard.state = HazardState.ACTIVE;
-            Component startMessage = Objects.requireNonNull(
-                Component.literal("§4§l" + hazard.type.displayName.toUpperCase() + "!"),
-                "hazard start message"
-            );
-            player.displayClientMessage(startMessage, true);
-            BlockPos playerPos = Objects.requireNonNull(player.blockPosition(), "player.blockPosition()");
-            SoundEvent growl = Objects.requireNonNull(
-                SoundEvents.ENDER_DRAGON_GROWL,
-                "SoundEvents.ENDER_DRAGON_GROWL"
-            );
-            level.playSound(null, playerPos, growl, SoundSource.AMBIENT, 0.8f, 1.2f);
+            displayClientMessage(player, "§4§l" + hazard.type.displayName.toUpperCase() + "!", true);
+            playSound(level, resolveBlockPos(player), SoundEvents.ENDER_DRAGON_GROWL, SoundSource.AMBIENT, 0.8f, 1.2f);
 
             // Initialize hazard-specific state
             initializeHazard(level, session, hazard);
@@ -352,11 +333,7 @@ public class ArenaHazardSystem {
         if (hazard.ticksRemaining <= 0) {
             cleanupHazard(level, session, hazard);
             hazard.state = HazardState.INACTIVE;
-            Component endMessage = Objects.requireNonNull(
-                Component.literal("§a" + hazard.type.displayName + " subsides..."),
-                "hazard end message"
-            );
-            player.displayClientMessage(endMessage, true);
+            displayClientMessage(player, "§a" + hazard.type.displayName + " subsides...", true);
         }
     }
 
@@ -384,23 +361,23 @@ public class ArenaHazardSystem {
     private void initFloorCrumble(ServerLevel level, HazardSession session, ActiveHazard hazard) {
         if (session.arenaCenter == null) return;
 
-        RandomSource random = RandomSource.create();
+        RandomSource random = level.random;
         int crumbleCount = 5 + random.nextInt(5);
-        BlockPos arenaCenter = Objects.requireNonNull(session.arenaCenter, "arenaCenter");
+        BlockPos arenaCenter = session.arenaCenter;
 
         for (int i = 0; i < crumbleCount; i++) {
             int dx = random.nextInt(session.arenaRadius * 2) - session.arenaRadius;
             int dz = random.nextInt(session.arenaRadius * 2) - session.arenaRadius;
-            BlockPos pos = Objects.requireNonNull(arenaCenter.offset(dx, -1, dz), "initial pos");
+            BlockPos pos = arenaCenter.offset(dx, -1, dz);
 
             // Find ground level
-            while (Objects.requireNonNull(level.getBlockState(pos), "blockState").isAir()
-                && pos.getY() > arenaCenter.getY() - 10) {
-                pos = Objects.requireNonNull(pos.below(), "pos.below()");
+            BlockState state = level.getBlockState(pos);
+            while (state != null && state.isAir() && pos.getY() > arenaCenter.getY() - 10) {
+                pos = pos.below();
+                state = level.getBlockState(pos);
             }
 
-            BlockState groundState = Objects.requireNonNull(level.getBlockState(pos), "blockState");
-            if (!groundState.isAir()) {
+            if (state != null && !state.isAir()) {
                 hazard.affectedBlocks.add(pos);
             }
         }
@@ -408,12 +385,12 @@ public class ArenaHazardSystem {
 
     private void tickFloorCrumble(ServerLevel level, ServerPlayer player, HazardSession session, ActiveHazard hazard) {
         RandomSource random = level.random;
-        SimpleParticleType smokeParticles = Objects.requireNonNull(ParticleTypes.SMOKE, "ParticleTypes.SMOKE");
+        SimpleParticleType smokeParticles = ParticleTypes.SMOKE;
 
         // Crack particles on affected blocks
         for (BlockPos pos : hazard.affectedBlocks) {
             if (random.nextFloat() < 0.3f) {
-                level.sendParticles(smokeParticles,
+                sendParticles(level, smokeParticles,
                     pos.getX() + 0.5, pos.getY() + 1.1, pos.getZ() + 0.5,
                     2, 0.3, 0.1, 0.3, 0.02);
             }
@@ -422,32 +399,30 @@ public class ArenaHazardSystem {
         // Periodically collapse blocks
         if (hazard.ticksRemaining % 20 == 0 && !hazard.affectedBlocks.isEmpty()) {
             BlockPos collapsing = hazard.affectedBlocks.remove(random.nextInt(hazard.affectedBlocks.size()));
-            BlockPos playerPos = Objects.requireNonNull(player.blockPosition(), "player.blockPosition()");
+            BlockPos playerPos = resolveBlockPos(player);
 
             // Check if player is on this block
             if (playerPos.below().equals(collapsing) || playerPos.equals(collapsing)) {
                 // Damage player
-                DamageSource fallDamage = Objects.requireNonNull(player.damageSources().fall(), "fall damage source");
-                player.hurt(fallDamage, 4.0f);
+                DamageSource fallDamage = player.damageSources().fall();
+                if (fallDamage != null) {
+                    player.hurt(fallDamage, 4.0f);
+                }
             }
 
             // Visual effect
-            SimpleParticleType explosionParticles = Objects.requireNonNull(
-                ParticleTypes.EXPLOSION,
-                "ParticleTypes.EXPLOSION"
-            );
-            level.sendParticles(explosionParticles,
+            SimpleParticleType explosionParticles = ParticleTypes.EXPLOSION;
+            sendParticles(level, explosionParticles,
                 collapsing.getX() + 0.5, collapsing.getY() + 0.5, collapsing.getZ() + 0.5,
                 5, 0.5, 0.5, 0.5, 0.1);
-            SoundEvent explodeSound = Objects.requireNonNull(
-                SoundEvents.GENERIC_EXPLODE.value(),
-                "SoundEvents.GENERIC_EXPLODE"
-            );
-            level.playSound(null, collapsing, explodeSound, SoundSource.BLOCKS, 0.5f, 1.0f);
+            SoundEvent explodeSound = SoundEvents.GENERIC_EXPLODE.value();
+            playSound(level, collapsing, explodeSound, SoundSource.BLOCKS, 0.5f, 1.0f);
 
             // Temporarily replace with air (will restore later)
-            BlockState airState = Objects.requireNonNull(Blocks.AIR.defaultBlockState(), "Blocks.AIR.defaultBlockState()");
-            level.setBlock(collapsing, airState, 3);
+            BlockState airState = Blocks.AIR.defaultBlockState();
+            if (airState != null) {
+                level.setBlock(collapsing, airState, 3);
+            }
         }
     }
 
@@ -461,23 +436,23 @@ public class ArenaHazardSystem {
     private void tickBloodMoon(ServerLevel level, ServerPlayer player, HazardSession session, ActiveHazard hazard) {
         // Apply strength to nearby mobs
         if (hazard.ticksRemaining % 40 == 0) {
-            AABB playerBounds = Objects.requireNonNull(player.getBoundingBox(), "player.getBoundingBox()");
-            AABB area = Objects.requireNonNull(playerBounds.inflate(30), "area.inflate(30)");
+            AABB playerBounds = player.getBoundingBox();
+            if (playerBounds == null) {
+                return;
+            }
+            AABB area = playerBounds.inflate(30);
+            if (area == null) {
+                return;
+            }
             List<Mob> mobs = level.getEntitiesOfClass(Mob.class, area);
-            Holder<MobEffect> damageBoost = Objects.requireNonNull(
-                MobEffects.DAMAGE_BOOST,
-                "MobEffects.DAMAGE_BOOST"
-            );
-            Holder<MobEffect> speedBoost = Objects.requireNonNull(
-                MobEffects.MOVEMENT_SPEED,
-                "MobEffects.MOVEMENT_SPEED"
-            );
+            Holder<MobEffect> damageBoost = MobEffects.DAMAGE_BOOST;
+            Holder<MobEffect> speedBoost = MobEffects.MOVEMENT_SPEED;
 
             for (Mob mob : mobs) {
-                if (!mob.hasEffect(damageBoost)) {
+                if (damageBoost != null && !mob.hasEffect(damageBoost)) {
                     mob.addEffect(new MobEffectInstance(damageBoost, 100, 0, false, true));
                 }
-                if (!mob.hasEffect(speedBoost)) {
+                if (speedBoost != null && !mob.hasEffect(speedBoost)) {
                     mob.addEffect(new MobEffectInstance(speedBoost, 100, 0, false, true));
                 }
             }
@@ -486,15 +461,12 @@ public class ArenaHazardSystem {
         // Red particle ambiance
         if (hazard.ticksRemaining % 10 == 0) {
             RandomSource random = level.random;
-            SimpleParticleType crimsonSpores = Objects.requireNonNull(
-                ParticleTypes.CRIMSON_SPORE,
-                "ParticleTypes.CRIMSON_SPORE"
-            );
+            SimpleParticleType crimsonSpores = ParticleTypes.CRIMSON_SPORE;
             for (int i = 0; i < 5; i++) {
                 double x = player.getX() + (random.nextDouble() - 0.5) * 20;
                 double y = player.getY() + random.nextDouble() * 10;
                 double z = player.getZ() + (random.nextDouble() - 0.5) * 20;
-                level.sendParticles(crimsonSpores, x, y, z, 1, 0, -0.1, 0, 0);
+                sendParticles(level, crimsonSpores, x, y, z, 1, 0, -0.1, 0, 0);
             }
         }
     }
@@ -509,7 +481,7 @@ public class ArenaHazardSystem {
         if (session.arenaCenter == null) return;
 
         int radius = session.arenaRadius - (session.currentShrinkLevel * 5);
-        BlockPos center = Objects.requireNonNull(session.arenaCenter, "arenaCenter");
+        BlockPos center = session.arenaCenter;
         hazard.originalBounds = new AABB(
             center.getX() - radius, center.getY() - 5, center.getZ() - radius,
             center.getX() + radius, center.getY() + 20, center.getZ() + radius
@@ -526,14 +498,17 @@ public class ArenaHazardSystem {
 
     private void tickArenaShrink(ServerLevel level, ServerPlayer player, HazardSession session, ActiveHazard hazard) {
         if (hazard.shrinkBounds == null) return;
-        AABB shrinkBounds = Objects.requireNonNull(hazard.shrinkBounds, "shrinkBounds");
+        AABB shrinkBounds = hazard.shrinkBounds;
 
         // Check if player is outside bounds
-        Vec3 playerPos = Objects.requireNonNull(player.position(), "player.position()");
+        Vec3 playerPos = player.position();
+        if (playerPos == null) {
+            return;
+        }
         if (!shrinkBounds.contains(playerPos)) {
             // Push player toward center
-            if (session.arenaCenter != null) {
-                BlockPos arenaCenter = Objects.requireNonNull(session.arenaCenter, "arenaCenter");
+            BlockPos arenaCenter = session.arenaCenter;
+            if (arenaCenter != null) {
                 double dx = arenaCenter.getX() - player.getX();
                 double dz = arenaCenter.getZ() - player.getZ();
                 double dist = Math.sqrt(dx * dx + dz * dz);
@@ -544,26 +519,18 @@ public class ArenaHazardSystem {
 
             // Damage for being outside
             if (hazard.ticksRemaining % 20 == 0) {
-                DamageSource magicDamage = Objects.requireNonNull(
-                    player.damageSources().magic(),
-                    "magic damage source"
-                );
-                player.hurt(magicDamage, 2.0f);
-                Component shrinkWarning = Objects.requireNonNull(
-                    Component.literal("§c§lThe void consumes you!"),
-                    "arena shrink warning"
-                );
-                player.displayClientMessage(shrinkWarning, true);
+                DamageSource magicDamage = player.damageSources().magic();
+                if (magicDamage != null) {
+                    player.hurt(magicDamage, 2.0f);
+                }
+                displayClientMessage(player, "§c§lThe void consumes you!", true);
             }
         }
 
         // Visual boundary
         if (hazard.ticksRemaining % 5 == 0) {
             RandomSource random = level.random;
-            SimpleParticleType portalParticles = Objects.requireNonNull(
-                ParticleTypes.PORTAL,
-                "ParticleTypes.PORTAL"
-            );
+            SimpleParticleType portalParticles = ParticleTypes.PORTAL;
             for (int i = 0; i < 10; i++) {
                 double x = shrinkBounds.minX + random.nextDouble() * (shrinkBounds.maxX - shrinkBounds.minX);
                 double z = shrinkBounds.minZ + random.nextDouble() * (shrinkBounds.maxZ - shrinkBounds.minZ);
@@ -575,7 +542,7 @@ public class ArenaHazardSystem {
                     z = random.nextBoolean() ? shrinkBounds.minZ : shrinkBounds.maxZ;
                 }
 
-                level.sendParticles(portalParticles,
+                sendParticles(level, portalParticles,
                     x, player.getY() + random.nextDouble() * 3, z,
                     1, 0, 0, 0, 0.1);
             }
@@ -590,57 +557,49 @@ public class ArenaHazardSystem {
         // Random lightning strikes
         if (hazard.ticksRemaining % 40 == 0) {
             int strikeCount = 1 + random.nextInt(3);
-            SimpleParticleType sparkParticles = Objects.requireNonNull(
-                ParticleTypes.ELECTRIC_SPARK,
-                "ParticleTypes.ELECTRIC_SPARK"
-            );
-            SoundEvent thunderSound = Objects.requireNonNull(
-                SoundEvents.LIGHTNING_BOLT_THUNDER,
-                "SoundEvents.LIGHTNING_BOLT_THUNDER"
-            );
+            SimpleParticleType sparkParticles = ParticleTypes.ELECTRIC_SPARK;
+            SoundEvent thunderSound = SoundEvents.LIGHTNING_BOLT_THUNDER;
 
             for (int i = 0; i < strikeCount; i++) {
                 int dx = random.nextInt(session.arenaRadius * 2) - session.arenaRadius;
                 int dz = random.nextInt(session.arenaRadius * 2) - session.arenaRadius;
 
-                if (session.arenaCenter != null) {
-                    BlockPos arenaCenter = Objects.requireNonNull(session.arenaCenter, "arenaCenter");
+                BlockPos arenaCenter = session.arenaCenter;
+                if (arenaCenter != null) {
                     BlockPos strikePos = arenaCenter.offset(dx, 0, dz);
 
                     // Warning flash
-                    level.sendParticles(sparkParticles,
+                    sendParticles(level, sparkParticles,
                         strikePos.getX() + 0.5, strikePos.getY() + 5, strikePos.getZ() + 0.5,
                         20, 0.5, 3, 0.5, 0.5);
 
                     // Delayed strike effect
-                    level.playSound(null, strikePos, thunderSound, SoundSource.WEATHER, 0.5f, 1.0f);
+                    playSound(level, strikePos, thunderSound, SoundSource.WEATHER, 0.5f, 1.0f);
 
                     // Damage entities in area
-                    AABB strikeArea = Objects.requireNonNull(new AABB(strikePos).inflate(2), "strikeArea");
-                    level.getEntitiesOfClass(ServerPlayer.class, strikeArea).forEach(p -> {
-                        if (random.nextFloat() < 0.3f) { // 30% chance to hit
-                            DamageSource lightningDamage = Objects.requireNonNull(
-                                p.damageSources().lightningBolt(),
-                                "lightning damage source"
-                            );
-                            p.hurt(lightningDamage, 3.0f);
-                        }
-                    });
+                    AABB strikeArea = new AABB(strikePos).inflate(2);
+                    if (strikeArea != null) {
+                        level.getEntitiesOfClass(ServerPlayer.class, strikeArea).forEach(p -> {
+                            if (random.nextFloat() < 0.3f) { // 30% chance to hit
+                                DamageSource lightningDamage = p.damageSources().lightningBolt();
+                                if (lightningDamage != null) {
+                                    p.hurt(lightningDamage, 3.0f);
+                                }
+                            }
+                        });
+                    }
                 }
             }
         }
 
         // Ambient rain particles
         if (hazard.ticksRemaining % 2 == 0) {
-            SimpleParticleType rainParticles = Objects.requireNonNull(
-                ParticleTypes.RAIN,
-                "ParticleTypes.RAIN"
-            );
+            SimpleParticleType rainParticles = ParticleTypes.RAIN;
             for (int i = 0; i < 20; i++) {
                 double x = player.getX() + (random.nextDouble() - 0.5) * 30;
                 double y = player.getY() + 10 + random.nextDouble() * 5;
                 double z = player.getZ() + (random.nextDouble() - 0.5) * 30;
-                level.sendParticles(rainParticles, x, y, z, 1, 0, -1, 0, 0.5);
+                sendParticles(level, rainParticles, x, y, z, 1, 0, -1, 0, 0.5);
             }
         }
     }
@@ -651,15 +610,12 @@ public class ArenaHazardSystem {
         RandomSource random = level.random;
 
         // Spawn rift effect periodically
-        if (hazard.ticksRemaining % 100 == 0 && session.arenaCenter != null) {
+        BlockPos arenaCenter = session.arenaCenter;
+        if (hazard.ticksRemaining % 100 == 0 && arenaCenter != null) {
             int dx = random.nextInt(session.arenaRadius * 2) - session.arenaRadius;
             int dz = random.nextInt(session.arenaRadius * 2) - session.arenaRadius;
-            BlockPos arenaCenter = Objects.requireNonNull(session.arenaCenter, "arenaCenter");
-            BlockPos riftPos = Objects.requireNonNull(arenaCenter.offset(dx, 0, dz), "riftPos");
-            SimpleParticleType reversePortalParticles = Objects.requireNonNull(
-                ParticleTypes.REVERSE_PORTAL,
-                "ParticleTypes.REVERSE_PORTAL"
-            );
+            BlockPos riftPos = arenaCenter.offset(dx, 0, dz);
+            SimpleParticleType reversePortalParticles = ParticleTypes.REVERSE_PORTAL;
 
             // Rift visual
             for (int i = 0; i < 30; i++) {
@@ -667,36 +623,26 @@ public class ArenaHazardSystem {
                 double radius = random.nextDouble() * 2;
                 double rx = Math.cos(angle) * radius;
                 double rz = Math.sin(angle) * radius;
-                level.sendParticles(reversePortalParticles,
+                sendParticles(level, reversePortalParticles,
                     riftPos.getX() + 0.5 + rx, riftPos.getY() + 1, riftPos.getZ() + 0.5 + rz,
                     1, 0, 0.5, 0, 0.1);
             }
 
-            SoundEvent teleportSound = Objects.requireNonNull(
-                SoundEvents.ENDERMAN_TELEPORT,
-                "SoundEvents.ENDERMAN_TELEPORT"
-            );
-            level.playSound(null, riftPos, teleportSound, SoundSource.HOSTILE, 1.0f, 0.5f);
+            SoundEvent teleportSound = SoundEvents.ENDERMAN_TELEPORT;
+            playSound(level, riftPos, teleportSound, SoundSource.HOSTILE, 1.0f, 0.5f);
 
             // Signal to spawn system that extra mobs should spawn
             // This would integrate with WaveSpawnSystem
-            Component riftMessage = Objects.requireNonNull(
-                Component.literal("§5A void rift tears open!"),
-                "void rift message"
-            );
-            player.displayClientMessage(riftMessage, true);
+            displayClientMessage(player, "§5A void rift tears open!", true);
         }
 
         // Ambient void particles
-        SimpleParticleType portalParticles = Objects.requireNonNull(
-            ParticleTypes.PORTAL,
-            "ParticleTypes.PORTAL"
-        );
+        SimpleParticleType portalParticles = ParticleTypes.PORTAL;
         for (int i = 0; i < 5; i++) {
             double x = player.getX() + (random.nextDouble() - 0.5) * 20;
             double y = player.getY() + random.nextDouble() * 5;
             double z = player.getZ() + (random.nextDouble() - 0.5) * 20;
-            level.sendParticles(portalParticles, x, y, z, 1, 0, 0, 0, 0.5);
+            sendParticles(level, portalParticles, x, y, z, 1, 0, 0, 0, 0.5);
         }
     }
 
@@ -756,6 +702,37 @@ public class ArenaHazardSystem {
     public boolean isBloodMoonActive(UUID questId) {
         HazardSession session = sessions.get(questId);
         return session != null && session.hasActiveHazard(HazardType.BLOOD_MOON);
+    }
+
+    private static void displayClientMessage(ServerPlayer player, String message, boolean actionBar) {
+        if (player == null) {
+            return;
+        }
+        Component component = Component.literal(message == null ? "" : message);
+        if (component != null) {
+            player.displayClientMessage(component, actionBar);
+        }
+    }
+
+    private static BlockPos resolveBlockPos(ServerPlayer player) {
+        BlockPos pos = player.blockPosition();
+        return pos != null ? pos : BlockPos.containing(player.getX(), player.getY(), player.getZ());
+    }
+
+    private static void playSound(ServerLevel level, BlockPos pos, SoundEvent sound, SoundSource source,
+            float volume, float pitch) {
+        if (level == null || pos == null || sound == null || source == null) {
+            return;
+        }
+        level.playSound(null, pos, sound, source, volume, pitch);
+    }
+
+    private static void sendParticles(ServerLevel level, SimpleParticleType particle,
+            double x, double y, double z, int count, double dx, double dy, double dz, double speed) {
+        if (level == null || particle == null) {
+            return;
+        }
+        level.sendParticles(particle, x, y, z, count, dx, dy, dz, speed);
     }
 
     private ArenaHazardSystem() {}

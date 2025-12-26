@@ -1,8 +1,8 @@
 # Endurance System
 
-> **Audit Date**: 2024-12-23
-> **Status**: PARTIAL
-> **Risk Level**: MEDIUM (wave sync, session management)
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+> Risk Level: MEDIUM (wave sync, session management)
 
 ---
 

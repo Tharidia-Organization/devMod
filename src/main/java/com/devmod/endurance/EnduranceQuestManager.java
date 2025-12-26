@@ -21,8 +21,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import javax.annotation.Nonnull;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +78,7 @@ public class EnduranceQuestManager {
 
     public static final EnduranceQuestManager INSTANCE = new EnduranceQuestManager();
 
-    private static <T> @Nonnull T requireNonNull(T value, String name) {
+    private static <T> T requireNonNull(T value, String name) {
         return Objects.requireNonNull(value, name);
     }
 
@@ -2274,7 +2272,7 @@ public class EnduranceQuestManager {
             net.minecraft.nbt.CompoundTag overrideTag = serializeGameplayOverrides(overrides);
             GameMechanicsSyncPayload payload =
                 requireNonNull(GameMechanicsSyncPayload.forQuest(questId, overrideTag), "payload");
-            PacketDistributor.sendToPlayer(safePlayer, payload);
+            PacketDistributor.sendToPlayer(Objects.requireNonNull(safePlayer), Objects.requireNonNull(payload));
 
             LOGGER.debug("[EnduranceQuest] Applied arena config overrides for quest {} to player {}",
                 questId, safePlayer.getName().getString());

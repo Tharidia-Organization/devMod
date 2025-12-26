@@ -1,5 +1,8 @@
 # Refactor Plan
 
+> Last updated: 2025-12-26
+> Status: PLANNING
+
 ## Goals
 - Reduce method length and file complexity without behavior changes.
 - Preserve logging order, side effects, and client/server boundaries.

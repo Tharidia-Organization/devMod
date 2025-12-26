@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
@@ -21,6 +22,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
@@ -181,6 +183,7 @@ public class SoulImprint {
     /**
      * Generate the evolved display name for this weapon.
      */
+    @Nonnull
     public Component getEvolvedName(ItemStack stack) {
         Component hoverName = stack.getHoverName();
         String baseName = sanitizeName(hoverName != null ? hoverName.getString() : null, FALLBACK_WEAPON_NAME);
@@ -223,13 +226,15 @@ public class SoulImprint {
         };
     }
 
-    private static MutableComponent styledLiteral(String name, Style style) {
+    @Nonnull
+    private static MutableComponent styledLiteral(@Nullable String name, @Nullable Style style) {
         String safeName = name == null ? "" : name;
         Style safeStyle = style == null ? Style.EMPTY : style;
         return Component.literal(safeName).setStyle(safeStyle);
     }
 
-    private static String sanitizeName(@Nullable String value, String fallback) {
+    @Nonnull
+    private static String sanitizeName(@Nullable String value, @Nonnull String fallback) {
         if (value == null) {
             return fallback;
         }
@@ -237,7 +242,8 @@ public class SoulImprint {
         return trimmed.isEmpty() ? fallback : trimmed;
     }
 
-    private String resolvePrimaryAdjective(String fallback) {
+    @Nonnull
+    private String resolvePrimaryAdjective(@Nonnull String fallback) {
         WeaponTrait primaryTrait = getPrimaryTrait();
         if (primaryTrait == null) {
             return fallback;
@@ -245,6 +251,7 @@ public class SoulImprint {
         return sanitizeName(primaryTrait.getAdjective(), fallback);
     }
 
+    @Nonnull
     private String resolveCustomName() {
         if (customName == null) {
             return generateUniqueName();
@@ -264,7 +271,8 @@ public class SoulImprint {
     /**
      * Extract weapon type from name (e.g., "Diamond Sword" -> "Blade").
      */
-    private String getWeaponType(String baseName) {
+    @Nonnull
+    private String getWeaponType(@Nonnull String baseName) {
         String lower = baseName.toLowerCase(Locale.ROOT);
         if (lower.contains("sword")) return "Blade";
         if (lower.contains("axe")) return "Cleaver";
@@ -281,6 +289,7 @@ public class SoulImprint {
     /**
      * Generate a unique legendary name for stage 4 weapons.
      */
+    @Nonnull
     private String generateUniqueName() {
         // Generate based on primary stats
         List<String> prefixes = List.of(
@@ -298,6 +307,7 @@ public class SoulImprint {
     /**
      * Generate a title for stage 4 weapons based on dominant traits.
      */
+    @Nonnull
     private String generateTitle() {
         if (unlockedTraits.isEmpty()) return "Legend";
 
@@ -355,7 +365,7 @@ public class SoulImprint {
         // Save traits
         ListTag traitsList = new ListTag();
         for (WeaponTrait trait : unlockedTraits) {
-            var traitId = trait.getId();
+            ResourceLocation traitId = trait.getId();
             if (traitId != null) {
                 traitsList.add(StringTag.valueOf(traitId.toString()));
             }

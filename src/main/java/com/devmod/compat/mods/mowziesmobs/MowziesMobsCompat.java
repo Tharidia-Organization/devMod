@@ -31,9 +31,7 @@ public class MowziesMobsCompat implements CompatModule {
 
     // Cached reflection references
     private static Class<?> mowzieEntityClass;
-    private static Class<?> bossEntityClass;
     private static Class<?> abilityHandlerClass;
-    private static Method getAbilityHandlerMethod;
 
     // Known boss entity classes
     private static final List<String> BOSS_ENTITY_NAMES = Arrays.asList(
@@ -108,14 +106,18 @@ public class MowziesMobsCompat implements CompatModule {
                     mowzieEntityClass = Class.forName(pkg + ".MowzieEntity");
                     LOGGER.debug("[Compat:mowziesmobs] Found MowzieEntity at {}", pkg);
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:mowziesmobs] MowzieEntity not found in {}", pkg);
+                }
             }
 
             // Try to find ability handler
             try {
                 abilityHandlerClass = Class.forName(
                     "com.bobmowzie.mowziesmobs.server.ability.AbilityHandler");
-            } catch (ClassNotFoundException ignored) {}
+            } catch (ClassNotFoundException e) {
+                LOGGER.trace("[Compat:mowziesmobs] AbilityHandler not found", e);
+            }
 
             if (mowzieEntityClass != null) {
                 apiAvailable = true;
@@ -213,11 +215,9 @@ public class MowziesMobsCompat implements CompatModule {
         info.put("entityType", getMowzieEntityName(entity));
         info.put("isBoss", isMowzieBoss(entity));
 
-        if (entity instanceof LivingEntity living) {
-            info.put("health", living.getHealth());
-            info.put("maxHealth", living.getMaxHealth());
-            info.put("healthPercent", (living.getHealth() / living.getMaxHealth()) * 100);
-        }
+        info.put("health", entity.getHealth());
+        info.put("maxHealth", entity.getMaxHealth());
+        info.put("healthPercent", (entity.getHealth() / entity.getMaxHealth()) * 100);
 
         // Try to get ability handler info
         try {
@@ -240,7 +240,9 @@ public class MowziesMobsCompat implements CompatModule {
                                 if (name != null) {
                                     abilityNames.add(name.toString());
                                 }
-                            } catch (Exception ignored) {}
+                            } catch (Exception e) {
+                                LOGGER.trace("[Compat:mowziesmobs] Failed to read ability name", e);
+                            }
                         }
                         if (!abilityNames.isEmpty()) {
                             info.put("activeAbilities", abilityNames);

@@ -38,6 +38,7 @@ class ArenaCommandGateIntegrationTest {
             System.clearProperty("devmod.arena.allowLegacyOverworldArena");
 
             try (ArenaTemplateRegistry registry = new ArenaTemplateRegistry(new ArenaTelemetry())) {
+                registry.setLoggingEnabled(false);
                 registry.load(ArenaTemplate.defaultTemplate());
 
                 ArenaTemplateConfig.ConfigSnapshot snapshot = ArenaTemplateConfig.load().snapshot();

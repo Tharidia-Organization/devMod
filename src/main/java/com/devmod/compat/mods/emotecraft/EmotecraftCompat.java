@@ -29,9 +29,6 @@ public class EmotecraftCompat implements CompatModule {
     private static Class<?> emotePlayImplClass;
     private static Class<?> emoteDataClass;
     private static Class<?> clientEmoteAPIClass;
-    private static Method isPlayingEmoteMethod;
-    private static Method getCurrentEmoteMethod;
-    private static Method getEmoteNameMethod;
 
     @Override
     public String modId() {
@@ -83,29 +80,37 @@ public class EmotecraftCompat implements CompatModule {
                     emotePlayImplClass = Class.forName(pkg + ".EmotePlayImpl");
                     LOGGER.debug("[Compat:emotecraft] Found EmotePlayImpl at {}", pkg);
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:emotecraft] EmotePlayImpl not found in {}", pkg);
+                }
             }
 
             // Try to find client API
             try {
                 clientEmoteAPIClass = Class.forName(
                     "io.github.kosmx.emotes.api.proxy.IEmoteClientProxyAPI");
-            } catch (ClassNotFoundException ignored) {
+            } catch (ClassNotFoundException e) {
+                LOGGER.trace("[Compat:emotecraft] IEmoteClientProxyAPI not found", e);
                 try {
                     clientEmoteAPIClass = Class.forName(
                         "io.github.kosmx.emotes.main.EmoteHolder");
-                } catch (ClassNotFoundException ignored2) {}
+                } catch (ClassNotFoundException e2) {
+                    LOGGER.trace("[Compat:emotecraft] EmoteHolder not found", e2);
+                }
             }
 
             // Try to find emote data class
             try {
                 emoteDataClass = Class.forName(
                     "io.github.kosmx.emotes.api.EmoteData");
-            } catch (ClassNotFoundException ignored) {
+            } catch (ClassNotFoundException e) {
+                LOGGER.trace("[Compat:emotecraft] EmoteData not found in api package", e);
                 try {
                     emoteDataClass = Class.forName(
                         "io.github.kosmx.emotes.common.emote.EmoteData");
-                } catch (ClassNotFoundException ignored2) {}
+                } catch (ClassNotFoundException e2) {
+                    LOGGER.trace("[Compat:emotecraft] EmoteData not found in common package", e2);
+                }
             }
 
             if (emotePlayImplClass != null || clientEmoteAPIClass != null) {
@@ -184,7 +189,9 @@ public class EmotecraftCompat implements CompatModule {
         for (String name : methodNames) {
             try {
                 return player.getClass().getMethod(name);
-            } catch (NoSuchMethodException ignored) {}
+            } catch (NoSuchMethodException e) {
+                LOGGER.trace("[Compat:emotecraft] Emote tracker method not found: {}", name, e);
+            }
         }
 
         return null;
@@ -223,7 +230,9 @@ public class EmotecraftCompat implements CompatModule {
                                 Method getTitleMethod = emote.getClass().getMethod("getTitle");
                                 Object title = getTitleMethod.invoke(emote);
                                 if (title != null) return title.toString();
-                            } catch (NoSuchMethodException ignored) {}
+                            } catch (NoSuchMethodException e2) {
+                                LOGGER.trace("[Compat:emotecraft] Emote title method not available", e2);
+                            }
                         }
                     }
                 }
@@ -270,13 +279,17 @@ public class EmotecraftCompat implements CompatModule {
                             if (tick instanceof Number) {
                                 state.put("emoteTick", ((Number) tick).intValue());
                             }
-                        } catch (NoSuchMethodException ignored) {}
+                        } catch (NoSuchMethodException e) {
+                            LOGGER.trace("[Compat:emotecraft] getTick not available", e);
+                        }
 
                         // Try to check if looping
                         try {
                             Method isLoopingMethod = tracker.getClass().getMethod("isLooping");
                             state.put("isLooping", isLoopingMethod.invoke(tracker));
-                        } catch (NoSuchMethodException ignored) {}
+                        } catch (NoSuchMethodException e) {
+                            LOGGER.trace("[Compat:emotecraft] isLooping not available", e);
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -314,7 +327,9 @@ public class EmotecraftCompat implements CompatModule {
                             if (id != null) {
                                 emotes.add(id.toString());
                             }
-                        } catch (Exception ignored) {}
+                        } catch (Exception e) {
+                            LOGGER.trace("[Compat:emotecraft] Failed to read emote id", e);
+                        }
                     }
                 }
             }

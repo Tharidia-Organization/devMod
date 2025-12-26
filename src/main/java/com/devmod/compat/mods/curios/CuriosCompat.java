@@ -136,23 +136,25 @@ public class CuriosCompat implements CompatModule {
      * @return List of SlotResult objects (as Object), or empty list
      */
     public static List<Object> findCurios(LivingEntity entity, String slotType) {
+        List<Object> results = new ArrayList<>();
         if (!available || entity == null || slotType == null) {
-            return Collections.emptyList();
+            return results;
         }
 
         try {
             Object helper = getCuriosHelper();
-            if (helper == null) return Collections.emptyList();
+            if (helper == null) return results;
 
             Object result = findCuriosMethod.invoke(helper, entity, slotType);
             if (result instanceof List) {
-                return new ArrayList<>((List<?>) result);
+                results.addAll((List<?>) result);
+                return results;
             }
         } catch (Exception e) {
             LOGGER.debug("[Compat:curios] Failed to find curios: {}", e.getMessage());
         }
 
-        return Collections.emptyList();
+        return results;
     }
 
     /**
@@ -216,7 +218,7 @@ public class CuriosCompat implements CompatModule {
      */
     public static List<ItemStack> getAllEquippedCurios(LivingEntity entity) {
         if (!available || entity == null) {
-            return Collections.emptyList();
+            return new ArrayList<>();
         }
 
         List<ItemStack> result = new ArrayList<>();

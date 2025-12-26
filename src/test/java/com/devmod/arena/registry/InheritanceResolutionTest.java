@@ -23,6 +23,7 @@ class InheritanceResolutionTest {
         ArenaTemplate t0 = copyWith(base, "t0", "t1", List.of("t0"));
 
         try (ArenaTemplateRegistry registry = new ArenaTemplateRegistry(new ArenaTelemetry())) {
+            registry.setLoggingEnabled(false);
             ArenaTemplateRegistry.ReloadResult result = registry.hotReload(List.of(t0, t1, t2, t3, t4));
 
             assertFalse(result.success(), "Reload should fail when inheritance depth exceeds limit");
@@ -40,6 +41,7 @@ class InheritanceResolutionTest {
         ArenaTemplate c = copyWith(base, "c", "b", List.of("c"));
 
         try (ArenaTemplateRegistry registry = new ArenaTemplateRegistry(new ArenaTelemetry())) {
+            registry.setLoggingEnabled(false);
             ArenaTemplateRegistry.ReloadResult result = registry.hotReload(List.of(a, b, c));
 
             assertFalse(result.success(), "Reload should fail for diamond inheritance");
@@ -56,6 +58,7 @@ class InheritanceResolutionTest {
         ArenaTemplate child = copyWith(base, "child", "parent", List.of("child"));
 
         try (ArenaTemplateRegistry registry = new ArenaTemplateRegistry(new ArenaTelemetry())) {
+            registry.setLoggingEnabled(false);
             registry.load(parent);
             registry.load(child);
 

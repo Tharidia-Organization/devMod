@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -392,7 +393,7 @@ public class SeasonPassSystem {
         if (server == null) {
             return;
         }
-        ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+        ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(playerId));
         if (player == null) {
             return;
         }
@@ -426,10 +427,10 @@ public class SeasonPassSystem {
                 : hasFreeReward
                     ? "Free reward available."
                     : "Premium reward available.";
-            message.append(Component.literal(" " + rewardText).withStyle(ChatFormatting.YELLOW));
+            message.append(Objects.requireNonNull(Component.literal(" " + rewardText).withStyle(ChatFormatting.YELLOW)));
         }
 
-        player.sendSystemMessage(message);
+        player.sendSystemMessage(Objects.requireNonNull(message));
     }
 
     // === Progress Management ===

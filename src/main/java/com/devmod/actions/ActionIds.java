@@ -31,6 +31,7 @@ public final class ActionIds {
     public static final String UI_KEYBINDS_OPEN = "devmod.ui.keybinds.open";
     public static final String UI_PARTY_OPEN = "devmod.ui.party.open";
     public static final String UI_PARTY_INVITE_POPUP_OPEN = "devmod.ui.party_invite_popup.open";
+    public static final String UI_MAILBOX_OPEN = "devmod.ui.mailbox.open";
     public static final String UI_QUEST_EDITOR_OPEN = "devmod.ui.quest_editor.open";
     public static final String UI_ENDURANCE_EDITOR_OPEN = "devmod.ui.endurance_editor.open";
     public static final String UI_ENDURANCE_SCREEN_OPEN = "devmod.ui.endurance_screen.open";

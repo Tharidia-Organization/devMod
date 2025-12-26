@@ -186,14 +186,15 @@ public class ClientQuestCache {
     }
 
     public static float getWaveProgress() {
-        if (cachedData == null) return 0;
-        WaveObjectiveState.Type type = cachedData.getObjectiveType();
+        var data = cachedData;
+        if (data == null) return 0;
+        WaveObjectiveState.Type type = data.getObjectiveType();
         int target = type == WaveObjectiveState.Type.KILL_ALL
-            ? cachedData.totalMobsInWave()
-            : cachedData.objectiveTarget();
+            ? data.totalMobsInWave()
+            : data.objectiveTarget();
         int progress = type == WaveObjectiveState.Type.KILL_ALL
-            ? cachedData.mobsKilledInWave()
-            : cachedData.objectiveProgress();
+            ? data.mobsKilledInWave()
+            : data.objectiveProgress();
         if (target <= 0) return 0;
         return (float) progress / target;
     }

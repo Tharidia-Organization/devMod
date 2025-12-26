@@ -75,7 +75,9 @@ public class EntityCullingCompat implements CompatModule {
                     entityCullingModClass = Class.forName(className);
                     LOGGER.debug("[Compat:entityculling] Found main class at {}", className);
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:entityculling] Main class not found: {}", className);
+                }
             }
 
             // Try to find culling handler
@@ -93,10 +95,14 @@ public class EntityCullingCompat implements CompatModule {
                     try {
                         Field instanceField = cullingHandlerClass.getField("INSTANCE");
                         cullingHandlerInstance = instanceField.get(null);
-                    } catch (NoSuchFieldException ignored) {}
+                    } catch (NoSuchFieldException e) {
+                        LOGGER.trace("[Compat:entityculling] INSTANCE field missing on {}", className, e);
+                    }
 
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:entityculling] Handler class not found: {}", className);
+                }
             }
 
             if (entityCullingModClass != null) {
@@ -164,7 +170,9 @@ public class EntityCullingCompat implements CompatModule {
                     if (value instanceof Number) {
                         stats.put(fieldName, ((Number) value).intValue());
                     }
-                } catch (NoSuchFieldException | IllegalAccessException ignored) {}
+                } catch (NoSuchFieldException | IllegalAccessException e) {
+                    LOGGER.trace("[Compat:entityculling] Stat field unavailable: {}", fieldName, e);
+                }
             }
 
             // Try getter methods
@@ -174,7 +182,9 @@ public class EntityCullingCompat implements CompatModule {
                 if (culled instanceof Number) {
                     stats.put("culledCount", ((Number) culled).intValue());
                 }
-            } catch (NoSuchMethodException ignored) {}
+            } catch (NoSuchMethodException e) {
+                LOGGER.trace("[Compat:entityculling] getCulledCount not available", e);
+            }
 
         } catch (Exception e) {
             LOGGER.debug("[Compat:entityculling] Error getting stats: {}", e.getMessage());

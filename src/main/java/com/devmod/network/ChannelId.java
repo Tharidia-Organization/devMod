@@ -113,7 +113,19 @@ public enum ChannelId {
     // ============================================================================
     // SEASON PASS CHANNELS (92-99)
     // ============================================================================
-    SEASON_TIER_UP(92, Direction.SERVER_TO_CLIENT, "SeasonTierUpPayload");
+    SEASON_TIER_UP(92, Direction.SERVER_TO_CLIENT, "SeasonTierUpPayload"),
+
+    // ============================================================================
+    // MAILBOX SYSTEM CHANNELS (100-115)
+    // ============================================================================
+    MAILBOX_SYNC(100, Direction.SERVER_TO_CLIENT, "MailboxSyncPayload"),
+    MAILBOX_SEND(101, Direction.CLIENT_TO_SERVER, "MailboxSendPayload"),
+    MAILBOX_READ(102, Direction.CLIENT_TO_SERVER, "MailboxReadPayload"),
+    MAILBOX_DELETE(103, Direction.CLIENT_TO_SERVER, "MailboxDeletePayload"),
+    MAILBOX_CLAIM(104, Direction.CLIENT_TO_SERVER, "MailboxClaimPayload"),
+    MAILBOX_NOTIFY(105, Direction.SERVER_TO_CLIENT, "MailboxNotifyPayload"),
+    NEWS_SYNC(106, Direction.SERVER_TO_CLIENT, "NewsSyncPayload"),
+    NEWS_READ(107, Direction.CLIENT_TO_SERVER, "NewsReadPayload");
 
     // ============================================================================
     // ENUM INFRASTRUCTURE

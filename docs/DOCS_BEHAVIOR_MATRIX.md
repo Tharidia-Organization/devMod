@@ -7,13 +7,15 @@
 ---
 
 ## Scope Filters
-- Excluded by path: `docs/_deprecated/`, legacy duplicate dirs, legacy subsystem stubs, and `docs/testing/L*_REPORT.md`.
+- Excluded by path: `docs/_deprecated/` and `docs/testing/L*_REPORT.md`.
+- Excluded legacy stubs: `docs/editor-design-system/`, `docs/impact-hud-audit/`, `docs/prismatic-shield-integration/`, `docs/recipe-editor-spec/`.
 - Excluded by status keywords: planning, historical, archive, deprecated (English/Italian variants).
 - Note: any manual checklist docs will be converted to automated tests or archived.
 
 ---
 
 ## Coverage Summary
+Snapshot: 2025-12-26 (refresh counts after status normalization updates)
 - Active docs in scope: 146
 - Excluded by status: 11
 - Behaviors mapped: 44 (END-01..END-08, ARENA-01..ARENA-09, INST-01..INST-05, TEL-01..TEL-04, CS-01..CS-03, RAD-01..RAD-04, TOOL-01..TOOL-04, CFG-01..CFG-04, TEST-01..TEST-03)
@@ -57,16 +59,16 @@
 - `docs/adr/ADR-001-endurance-quest-manager.md` — status: : Accepted
 - `docs/adr/ADR-002-devmod-client-actions.md` — status: : Accepted
 - `docs/adr/ADR-003-item-editor-screen.md` — status: : Accepted
-- `docs/areas/arena/README.md` — status: : ✅ CURRENT - Arena Template v2.23 implementato
-- `docs/areas/client_server/README.md` — status: : ✅ CURRENT - client/server boundary aligned
-- `docs/areas/config/README.md` — status: : ✅ CURRENT - code-aligned
-- `docs/areas/endurance/README.md` — status: : PARTIAL
-- `docs/areas/instance/INSTANCE_DIMENSION_SYSTEM.md` — status: : ✅ CURRENT - implementation aligned
-- `docs/areas/instance/INSTANCE_SYSTEM_TEST_STRATEGY.md` — status: : ✅ CURRENT - automated coverage + gaps tracked
-- `docs/areas/instance/README.md` — status: : ✅ CURRENT - code-aligned
-- `docs/areas/radial/README.md` — status: : ✅ CURRENT - code-aligned
-- `docs/areas/telemetry/README.md` — status: : ✅ CURRENT - code-aligned
-- `docs/areas/tools/README.md` — status: : ✅ CURRENT - code-aligned
+- `docs/areas/arena/README.md` — status: NEEDS_VERIFICATION
+- `docs/areas/client_server/README.md` — status: NEEDS_VERIFICATION
+- `docs/areas/config/README.md` — status: NEEDS_VERIFICATION
+- `docs/areas/endurance/README.md` — status: NEEDS_VERIFICATION
+- `docs/areas/instance/INSTANCE_DIMENSION_SYSTEM.md` — status: NEEDS_VERIFICATION
+- `docs/areas/instance/INSTANCE_SYSTEM_TEST_STRATEGY.md` — status: NEEDS_VERIFICATION
+- `docs/areas/instance/README.md` — status: NEEDS_VERIFICATION
+- `docs/areas/radial/README.md` — status: NEEDS_VERIFICATION
+- `docs/areas/telemetry/README.md` — status: NEEDS_VERIFICATION
+- `docs/areas/tools/README.md` — status: NEEDS_VERIFICATION
 - `docs/compat/MOD_INVENTORY.md` — status: NO_STATUS
 - `docs/compat/README.md` — status: NO_STATUS
 - `docs/compat/clothconfig.md` — status: NO_STATUS
@@ -76,10 +78,10 @@
 - `docs/compat/spark.md` — status: NO_STATUS
 - `docs/compat/spell_engine.md` — status: NO_STATUS
 - `docs/compat/spell_power.md` — status: NO_STATUS
-- `docs/cross_cutting/CLIENT_SERVER.md` — status: NO_STATUS
-- `docs/cross_cutting/CONCURRENCY.md` — status: NO_STATUS
-- `docs/cross_cutting/ERROR_HANDLING.md` — status: NO_STATUS
-- `docs/cross_cutting/TELEMETRY_CONVENTIONS.md` — status: NO_STATUS
+- `docs/cross_cutting/CLIENT_SERVER.md` — status: NEEDS_VERIFICATION
+- `docs/cross_cutting/CONCURRENCY.md` — status: NEEDS_VERIFICATION
+- `docs/cross_cutting/ERROR_HANDLING.md` — status: NEEDS_VERIFICATION
+- `docs/cross_cutting/TELEMETRY_CONVENTIONS.md` — status: NEEDS_VERIFICATION
 - `docs/design/GAME_DESIGN_EVOLUTION.md` — status: ✅ COMPLETE - All Systems Implemented
 - `docs/design/GAME_DESIGN_ROADMAP.md` — status: NO_STATUS
 - `docs/gamedesign/ENDURANCE_IMPROVEMENTS.md` — status: 12/12 ALL TASKS COMPLETED** (P0 + P1 + P2 + P3 ALL Complete!)

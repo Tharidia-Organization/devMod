@@ -62,15 +62,9 @@ public class WelcomeScreen extends Screen {
     // === State ===
     private boolean dontShowAgain = false;
     @Nullable
-    private EditorToggle dontShowCheckbox;
-    @Nullable
     private Checkbox dontShowCheckboxWidget;
     @Nullable
-    private EditorButton tutorialButton;
-    @Nullable
     private Button tutorialButtonWidget;
-    @Nullable
-    private EditorButton skipButton;
     @Nullable
     private Button skipButtonWidget;
     private long openTime;
@@ -116,12 +110,12 @@ public class WelcomeScreen extends Screen {
         int buttonWidth = Math.min(170, (actualPanelWidth - 50) / 2);
         int buttonY = panelY + actualPanelHeight - 75;
         String tutorialLabel = Objects.requireNonNull(I18n.ui("start_tutorial").getString(), "tutorialLabel");
-        tutorialButton = new EditorButton("welcome-start-tutorial", tutorialLabel)
+        EditorButton localTutorialButton = new EditorButton("welcome-start-tutorial", tutorialLabel)
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.LARGE)
             .onClick(this::startTutorial);
-        @Nonnull Button safeTutorialButtonWidget = Objects.requireNonNull(
-            tutorialButton.asVanilla(panelX + 35, buttonY, buttonWidth, 28),
+        Button safeTutorialButtonWidget = Objects.requireNonNull(
+            localTutorialButton.asVanilla(panelX + 35, buttonY, buttonWidth, 28),
             "tutorialButtonWidget");
         tutorialButtonWidget = safeTutorialButtonWidget;
         safeTutorialButtonWidget.visible = false;
@@ -129,12 +123,12 @@ public class WelcomeScreen extends Screen {
 
         // Skip button - positioned relative to actual panel width
         String skipLabel = Objects.requireNonNull(I18n.ui("skip_know_this").getString(), "skipLabel");
-        skipButton = new EditorButton("welcome-skip", skipLabel)
+        EditorButton localSkipButton = new EditorButton("welcome-skip", skipLabel)
             .style(EditorButton.Style.NORMAL)
             .size(EditorButton.Size.LARGE)
             .onClick(this::skip);
-        @Nonnull Button safeSkipButtonWidget = Objects.requireNonNull(
-            skipButton.asVanilla(panelX + actualPanelWidth - buttonWidth - 35, buttonY, buttonWidth, 28),
+        Button safeSkipButtonWidget = Objects.requireNonNull(
+            localSkipButton.asVanilla(panelX + actualPanelWidth - buttonWidth - 35, buttonY, buttonWidth, 28),
             "skipButtonWidget");
         skipButtonWidget = safeSkipButtonWidget;
         safeSkipButtonWidget.visible = false;
@@ -142,10 +136,10 @@ public class WelcomeScreen extends Screen {
 
         // Checkbox (using EditorToggle for consistent theming)
         String dontShowLabel = Objects.requireNonNull(I18n.ui("dont_show_again").getString(), "dontShowLabel");
-        dontShowCheckbox = new EditorToggle("welcome-dont-show", dontShowLabel, false)
+        EditorToggle localDontShowCheckbox = new EditorToggle("welcome-dont-show", dontShowLabel, false)
             .onChange(value -> dontShowAgain = value);
-        @Nonnull Checkbox safeDontShowCheckboxWidget = (Checkbox) Objects.requireNonNull(
-            dontShowCheckbox.asVanilla(panelX + 35, panelY + PANEL_HEIGHT - 40, buttonWidth * 2, 18),
+        Checkbox safeDontShowCheckboxWidget = (Checkbox) Objects.requireNonNull(
+            localDontShowCheckbox.asVanilla(panelX + 35, panelY + PANEL_HEIGHT - 40, buttonWidth * 2, 18),
             "dontShowCheckboxWidget");
         dontShowCheckboxWidget = safeDontShowCheckboxWidget;
         safeDontShowCheckboxWidget.visible = false;
@@ -169,14 +163,17 @@ public class WelcomeScreen extends Screen {
 
         // Show widgets after delay
         if (elapsed > BUTTONS_REVEAL_DELAY) {
-            if (tutorialButtonWidget != null) {
-                tutorialButtonWidget.visible = true;
+            Button localTutorialWidget = tutorialButtonWidget;
+            if (localTutorialWidget != null) {
+                localTutorialWidget.visible = true;
             }
-            if (skipButtonWidget != null) {
-                skipButtonWidget.visible = true;
+            Button localSkipWidget = skipButtonWidget;
+            if (localSkipWidget != null) {
+                localSkipWidget.visible = true;
             }
-            if (dontShowCheckboxWidget != null) {
-                dontShowCheckboxWidget.visible = true;
+            Checkbox localCheckboxWidget = dontShowCheckboxWidget;
+            if (localCheckboxWidget != null) {
+                localCheckboxWidget.visible = true;
             }
         }
 

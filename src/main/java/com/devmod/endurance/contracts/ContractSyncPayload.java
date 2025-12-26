@@ -1,6 +1,7 @@
 package com.devmod.endurance.contracts;
 
 import java.util.List;
+import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
@@ -19,13 +20,13 @@ public record ContractSyncPayload(
 ) implements CustomPacketPayload {
 
     public static final Type<ContractSyncPayload> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "contract_sync"));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "contract_sync")));
 
     public static final StreamCodec<ByteBuf, ContractSyncPayload> STREAM_CODEC =
         StreamCodec.composite(
-            ContractData.LIST_CODEC, ContractSyncPayload::contracts,
-            ByteBufCodecs.FLOAT, ContractSyncPayload::totalMultiplier,
-            ContractSyncPayload::new
+            Objects.requireNonNull(ContractData.LIST_CODEC), ContractSyncPayload::contracts,
+            Objects.requireNonNull(ByteBufCodecs.FLOAT), ContractSyncPayload::totalMultiplier,
+            (contracts, multiplier) -> new ContractSyncPayload(Objects.requireNonNull(contracts), Objects.requireNonNull(multiplier))
         );
 
     @Override
@@ -54,8 +55,8 @@ public record ContractSyncPayload(
                 ByteBufCodecs.BOOL.encode(buf, data.violated);
             },
             buf -> new ContractData(
-                ByteBufCodecs.STRING_UTF8.decode(buf),
-                ByteBufCodecs.STRING_UTF8.decode(buf),
+                Objects.requireNonNull(ByteBufCodecs.STRING_UTF8.decode(buf)),
+                Objects.requireNonNull(ByteBufCodecs.STRING_UTF8.decode(buf)),
                 ByteBufCodecs.VAR_INT.decode(buf),
                 ByteBufCodecs.VAR_INT.decode(buf),
                 ByteBufCodecs.FLOAT.decode(buf),
@@ -64,7 +65,7 @@ public record ContractSyncPayload(
         );
 
         public static final StreamCodec<ByteBuf, List<ContractData>> LIST_CODEC =
-            ContractData.CODEC.apply(ByteBufCodecs.list());
+            ContractData.CODEC.apply(Objects.requireNonNull(ByteBufCodecs.list()));
 
         public BloodContract.ContractTier getTier() {
             return BloodContract.ContractTier.values()[tierOrdinal];
@@ -77,7 +78,7 @@ public record ContractSyncPayload(
     public static ContractSyncPayload forSession(ActiveContractManager.ContractSession session) {
         List<ContractData> data = session.getActiveContracts().stream()
             .map(contract -> new ContractData(
-                contract.getId().toString(),
+                Objects.requireNonNull(contract.getId().toString()),
                 contract.getNameKey(),
                 contract.getTier().ordinal(),
                 contract.getColor(),
@@ -86,6 +87,6 @@ public record ContractSyncPayload(
             ))
             .toList();
 
-        return new ContractSyncPayload(data, session.getRewardMultiplier());
+        return new ContractSyncPayload(Objects.requireNonNull(data), session.getRewardMultiplier());
     }
 }

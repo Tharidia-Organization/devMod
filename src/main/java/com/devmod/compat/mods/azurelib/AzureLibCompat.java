@@ -28,7 +28,6 @@ public class AzureLibCompat implements CompatModule {
     // Cached reflection references
     private static Class<?> geoAnimatableClass;
     private static Class<?> geoBoneClass;
-    private static Class<?> animatableManagerClass;
     private static Method getBoneRotationMethod;
     private static Method getBonePositionMethod;
 
@@ -78,12 +77,6 @@ public class AzureLibCompat implements CompatModule {
             // Get bone methods
             getBoneRotationMethod = geoBoneClass.getMethod("getRotation");
             getBonePositionMethod = geoBoneClass.getMethod("getPosition");
-
-            // Try animation manager
-            try {
-                animatableManagerClass = Class.forName(
-                    "mod.azure.azurelib.animatable.instance.AnimatableInstanceCache");
-            } catch (ClassNotFoundException ignored) {}
 
             apiAvailable = true;
             LOGGER.info("[Compat:azurelib] AzureLib API loaded");
@@ -175,6 +168,9 @@ public class AzureLibCompat implements CompatModule {
 
     private static Object getGeoModel(LivingEntity entity) {
         // Similar to GeckoLib - requires renderer hook
+        if (entity == null) {
+            return null;
+        }
         return null;
     }
 
@@ -185,7 +181,9 @@ public class AzureLibCompat implements CompatModule {
             if (result instanceof Collection<?> collection) {
                 return collection.toArray();
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            LOGGER.trace("[Compat:azurelib] Failed to get bones from model", e);
+        }
         return null;
     }
 
@@ -193,7 +191,9 @@ public class AzureLibCompat implements CompatModule {
         try {
             Method getNameMethod = bone.getClass().getMethod("getName");
             return (String) getNameMethod.invoke(bone);
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            LOGGER.trace("[Compat:azurelib] Failed to read bone name", e);
+        }
         return null;
     }
 
@@ -285,7 +285,9 @@ public class AzureLibCompat implements CompatModule {
                                         activeAnimations.add(name.toString());
                                     }
                                 }
-                            } catch (Exception ignored) {}
+                            } catch (Exception e) {
+                                LOGGER.trace("[Compat:azurelib] Failed to read controller animation", e);
+                            }
                         }
 
                         if (!activeAnimations.isEmpty()) {

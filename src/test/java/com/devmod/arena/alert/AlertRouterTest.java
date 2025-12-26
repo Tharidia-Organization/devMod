@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,6 +21,11 @@ import static org.junit.jupiter.api.Assertions.*;
 class AlertRouterTest {
 
     private AlertRouter router;
+
+    @BeforeAll
+    static void disableAlertLogging() {
+        AlertRouter.setLoggingEnabled(false);
+    }
 
     @BeforeEach
     void setUp() {

@@ -1,8 +1,8 @@
 # Client/Server Boundary
 
-> **Audit Date**: 2025-12-26
-> **Status**: CURRENT (code-aligned)
-> **Risk Level**: MEDIUM (client-only misuse can crash dedicated servers)
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+> Risk Level: MEDIUM (client-only misuse can crash dedicated servers)
 
 ---
 
@@ -54,4 +54,3 @@ Client-side handlers are accessed only through `NetworkHandler.withClientHooks`:
 
 - `docs/areas/client_server/CLIENT_BOUNDARY_AUDIT.md`
 - `docs/cross_cutting/CLIENT_SERVER.md`
-

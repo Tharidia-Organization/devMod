@@ -77,14 +77,18 @@ public class RelicsCompat implements CompatModule {
                     relicItemClass = Class.forName(pkg + ".RelicItem");
                     LOGGER.debug("[Compat:relics] Found RelicItem at {}", pkg);
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:relics] RelicItem class not found in {}", pkg);
+                }
             }
 
             // Get methods
             if (relicItemClass != null) {
                 try {
                     getRelicDataMethod = relicItemClass.getMethod("getRelicData");
-                } catch (NoSuchMethodException ignored) {}
+                } catch (NoSuchMethodException e) {
+                    LOGGER.trace("[Compat:relics] getRelicData not available", e);
+                }
 
                 apiAvailable = true;
                 LOGGER.info("[Compat:relics] Relics API loaded");
@@ -170,7 +174,7 @@ public class RelicsCompat implements CompatModule {
                     info.put("level", numLevel.intValue());
                 }
             } catch (Exception ignored) {
-                // Data component approach didn't work, try item-based methods
+                LOGGER.trace("[Compat:relics] Data component lookup failed", ignored);
             }
 
             // Try item-based level getter
@@ -180,7 +184,9 @@ public class RelicsCompat implements CompatModule {
                 if (level instanceof Number numLevel) {
                     info.put("level", numLevel.intValue());
                 }
-            } catch (NoSuchMethodException ignored) {}
+            } catch (NoSuchMethodException e) {
+                LOGGER.trace("[Compat:relics] getLevel method not available", e);
+            }
 
             // Try to get relic data via API
             if (getRelicDataMethod != null) {
@@ -193,7 +199,9 @@ public class RelicsCompat implements CompatModule {
                         if (id != null) {
                             info.put("relicId", id.toString());
                         }
-                    } catch (Exception ignored) {}
+                    } catch (Exception e) {
+                        LOGGER.trace("[Compat:relics] Failed to read relic id", e);
+                    }
                 }
             }
 

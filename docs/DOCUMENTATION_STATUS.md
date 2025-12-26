@@ -69,10 +69,10 @@
 | `docs/impact-hud-audit/` | ARCHIVE | Legacy stubs; use `docs/subsystems/impact-hud-audit/`. |
 | `docs/prismatic-shield-integration/` | ARCHIVE | Legacy stubs; use `docs/subsystems/prismatic-shield-integration/`. |
 | `docs/recipe-editor-spec/` | ARCHIVE | Legacy stubs; use `docs/subsystems/recipe-editor-spec/`. |
-| `docs/audit/` | ARCHIVE | Legacy duplicate; canonical copies in `docs/_deprecated/audit/`. |
-| `docs/quality/` | ARCHIVE | Legacy duplicate; canonical copies in `docs/_deprecated/quality/`. |
-| `docs/remediation/` | ARCHIVE | Legacy duplicate; canonical copies in `docs/_deprecated/remediation/`. |
-| `docs/reorg/` | ARCHIVE | Legacy duplicate; canonical copies in `docs/_deprecated/reorg/`. |
+| `docs/audit/` | NEEDS_VERIFICATION | Audit/remediation notes; content needs code re-check. |
+| `docs/quality/` | MIXED | Baseline/changelog snapshots plus active quality tracking; check per-doc status. |
+| `docs/remediation/` | MIXED | Runbook + reports; `VERIFY.md` is current, reports are historical. |
+| `docs/reorg/` | HISTORICAL | Re-architecture snapshots; not expected to match current behavior. |
 
 ---
 

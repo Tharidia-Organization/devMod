@@ -2,7 +2,6 @@ package com.devmod.client.ui.animation;
 
 import java.util.function.Consumer;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.client.gui.GuiGraphics;
@@ -169,7 +168,7 @@ public class UiAnimation {
      *
      * @param onComplete Callback when animation completes
      */
-    public void reverse(@Nonnull Runnable onComplete) {
+    public void reverse(Runnable onComplete) {
         this.onComplete = onComplete;
         startTime = System.currentTimeMillis();
         animating = true;

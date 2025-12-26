@@ -1,6 +1,7 @@
 package com.devmod.compat.mods.spellpower;
 
 import java.lang.reflect.Method;
+import java.util.Locale;
 
 import javax.annotation.Nullable;
 
@@ -142,7 +143,7 @@ public class SpellPowerCompat implements CompatModule {
             return null;
         }
 
-        return switch (schoolName.toLowerCase()) {
+        return switch (schoolName.toLowerCase(Locale.ROOT)) {
             case SCHOOL_ARCANE -> schoolArcane;
             case SCHOOL_FIRE -> schoolFire;
             case SCHOOL_FROST -> schoolFrost;
@@ -339,7 +340,7 @@ public class SpellPowerCompat implements CompatModule {
 
     private static String capitalize(String s) {
         if (s == null || s.isEmpty()) return s;
-        return s.substring(0, 1).toUpperCase() + s.substring(1);
+        return s.substring(0, 1).toUpperCase(Locale.ROOT) + s.substring(1);
     }
 
     /**

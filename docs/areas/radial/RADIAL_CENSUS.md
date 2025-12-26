@@ -1,6 +1,7 @@
 # Radial Census (DevMod)
 
-> **Status**: HISTORICAL (inventory snapshot; not guaranteed to match implementation)
+> Last updated: 2025-12-26
+> Status: HISTORICAL (inventory snapshot; not guaranteed to match implementation)
 
 Obiettivo: inventario completo delle azioni/funzionalita' accessibili e dei loro trigger attuali, con proposta di collocazione nel Radial.
 

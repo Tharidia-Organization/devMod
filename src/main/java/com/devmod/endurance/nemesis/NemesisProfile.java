@@ -6,11 +6,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +38,7 @@ public class NemesisProfile {
     private static final String NBT_WEAPON_TYPES = "WeaponTypes";
     private static final String NBT_ADAPTATIONS = "Adaptations";
     private static final String NBT_LAST_DEFEAT_TIME = "LastDefeatTime";
+    private static final String DEFAULT_WEAPON_TYPE = "unknown";
 
     // Boss identity
     private ResourceLocation bossId;
@@ -97,15 +94,18 @@ public class NemesisProfile {
         }
 
         // Track weapon type
-        String safeWeaponType = requireNonNull(weaponType, "weaponType");
-        int currentCount = weaponTypeUsage.getOrDefault(safeWeaponType, 0);
-        weaponTypeUsage.put(safeWeaponType, currentCount + 1);
+        String safeWeaponType = normalizeWeaponType(weaponType);
+        Integer currentCount = weaponTypeUsage.get(safeWeaponType);
+        weaponTypeUsage.put(safeWeaponType, currentCount == null ? 1 : currentCount + 1);
     }
 
     /**
      * Record a dodge by the player.
      */
     public void recordDodge(DodgeDirection direction) {
+        if (direction == null) {
+            return;
+        }
         totalDodges++;
         switch (direction) {
             case LEFT -> dodgeLeft++;
@@ -239,17 +239,29 @@ public class NemesisProfile {
         String dominant = null;
         int maxCount = 0;
         for (var entry : weaponTypeUsage.entrySet()) {
-            if (entry.getValue() > maxCount) {
-                maxCount = entry.getValue();
-                dominant = entry.getKey();
+            String key = entry.getKey();
+            Integer count = entry.getValue();
+            if (isBlank(key) || count == null) {
+                continue;
+            }
+            if (count > maxCount) {
+                maxCount = count;
+                dominant = key;
             }
         }
         return dominant;
     }
 
     public float getWeaponTypeRatio(String type) {
-        int typeCount = weaponTypeUsage.getOrDefault(type, 0);
-        int total = weaponTypeUsage.values().stream().mapToInt(Integer::intValue).sum();
+        String normalized = normalizeWeaponType(type);
+        Integer typeCountValue = weaponTypeUsage.get(normalized);
+        int typeCount = typeCountValue == null ? 0 : typeCountValue;
+        int total = 0;
+        for (Integer value : weaponTypeUsage.values()) {
+            if (value != null) {
+                total += value;
+            }
+        }
         return total > 0 ? (float) typeCount / total : 0f;
     }
 
@@ -291,12 +303,11 @@ public class NemesisProfile {
     /**
      * Save profile to NBT.
      */
-    @Nonnull
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
 
         if (bossId != null) {
-            tag.putString(NBT_BOSS_ID, requireNonNull(bossId.toString(), "bossId string"));
+            tag.putString(NBT_BOSS_ID, bossId.toString());
         }
         tag.putInt(NBT_DEFEAT_COUNT, defeatCount);
         tag.putInt(NBT_TOTAL_FIGHTS, totalFights);
@@ -313,9 +324,12 @@ public class NemesisProfile {
         // Save weapon types
         CompoundTag weaponTag = new CompoundTag();
         for (var entry : weaponTypeUsage.entrySet()) {
-            String key = requireNonNull(entry.getKey(), "weaponType key");
-            Integer value = requireNonNull(entry.getValue(), "weaponType count");
-            weaponTag.putInt(key, value);
+            String key = entry.getKey();
+            if (isBlank(key)) {
+                continue;
+            }
+            Integer value = entry.getValue();
+            weaponTag.putInt(key, value == null ? 0 : value);
         }
         tag.put(NBT_WEAPON_TYPES, weaponTag);
 
@@ -333,16 +347,19 @@ public class NemesisProfile {
                     timesList.add(LongTag.valueOf(time));
                 }
             }
-            String phaseKey = requireNonNull(String.valueOf(phase), "phase key");
-            phaseTag.put(phaseKey, timesList);
+            if (!timesList.isEmpty()) {
+                String phaseKey = Integer.toString(phase);
+                phaseTag.put(phaseKey, timesList);
+            }
         }
         tag.put(NBT_PHASE_TIMES, phaseTag);
 
         // Save adaptations
         ListTag adaptationsList = new ListTag();
         for (NemesisAdaptation adaptation : adaptations) {
-            String name = requireNonNull(adaptation.name(), "adaptation name");
-            adaptationsList.add(StringTag.valueOf(name));
+            if (adaptation != null) {
+                adaptationsList.add(StringTag.valueOf(adaptation.name()));
+            }
         }
         tag.put(NBT_ADAPTATIONS, adaptationsList);
 
@@ -356,8 +373,10 @@ public class NemesisProfile {
         NemesisProfile profile = new NemesisProfile();
 
         if (tag.contains(NBT_BOSS_ID)) {
-            String bossIdStr = requireNonNull(tag.getString(NBT_BOSS_ID), "bossId from tag");
-            profile.bossId = ResourceLocation.tryParse(bossIdStr);
+            String bossIdStr = tag.getString(NBT_BOSS_ID);
+            if (!bossIdStr.isEmpty()) {
+                profile.bossId = ResourceLocation.tryParse(bossIdStr);
+            }
         }
         profile.defeatCount = tag.getInt(NBT_DEFEAT_COUNT);
         profile.totalFights = tag.getInt(NBT_TOTAL_FIGHTS);
@@ -375,8 +394,10 @@ public class NemesisProfile {
         if (tag.contains(NBT_WEAPON_TYPES)) {
             CompoundTag weaponTag = tag.getCompound(NBT_WEAPON_TYPES);
             for (String key : weaponTag.getAllKeys()) {
-                String safeKey = requireNonNull(key, "weaponType key");
-                profile.weaponTypeUsage.put(safeKey, weaponTag.getInt(safeKey));
+                if (isBlank(key)) {
+                    continue;
+                }
+                profile.weaponTypeUsage.put(key, weaponTag.getInt(key));
             }
         }
 
@@ -384,10 +405,12 @@ public class NemesisProfile {
         if (tag.contains(NBT_PHASE_TIMES, Tag.TAG_COMPOUND)) {
             CompoundTag phaseTag = tag.getCompound(NBT_PHASE_TIMES);
             for (String key : phaseTag.getAllKeys()) {
-                String safeKey = requireNonNull(key, "phaseTime key");
+                if (isBlank(key)) {
+                    continue;
+                }
                 try {
-                    int phase = Integer.parseInt(safeKey);
-                    ListTag timesList = phaseTag.getList(safeKey, Tag.TAG_LONG);
+                    int phase = Integer.parseInt(key);
+                    ListTag timesList = phaseTag.getList(key, Tag.TAG_LONG);
                     List<Long> times = new ArrayList<>(timesList.size());
                     for (int i = 0; i < timesList.size(); i++) {
                         Tag timeTag = timesList.get(i);
@@ -395,7 +418,9 @@ public class NemesisProfile {
                             times.add(longTag.getAsLong());
                         }
                     }
-                    profile.phaseKillTimes.put(phase, times);
+                    if (!times.isEmpty()) {
+                        profile.phaseKillTimes.put(phase, times);
+                    }
                 } catch (NumberFormatException ignored) {
                     // Skip invalid phase keys
                 }
@@ -406,8 +431,12 @@ public class NemesisProfile {
         if (tag.contains(NBT_ADAPTATIONS)) {
             ListTag adaptationsList = tag.getList(NBT_ADAPTATIONS, Tag.TAG_STRING);
             for (int i = 0; i < adaptationsList.size(); i++) {
+                String name = adaptationsList.getString(i);
+                if (isBlank(name)) {
+                    continue;
+                }
                 try {
-                    profile.adaptations.add(NemesisAdaptation.valueOf(adaptationsList.getString(i)));
+                    profile.adaptations.add(NemesisAdaptation.valueOf(name));
                 } catch (IllegalArgumentException ignored) {
                     // Unknown adaptation, skip
                 }
@@ -426,8 +455,14 @@ public class NemesisProfile {
     public boolean hasAdaptation(NemesisAdaptation adaptation) { return adaptations.contains(adaptation); }
     public long getLastDefeatTime() { return lastDefeatTime; }
 
-    @Nonnull
-    private static <T> T requireNonNull(@Nullable T value, String label) {
-        return Objects.requireNonNull(value, label);
+    private static String normalizeWeaponType(String weaponType) {
+        if (isBlank(weaponType)) {
+            return DEFAULT_WEAPON_TYPE;
+        }
+        return weaponType.trim();
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }

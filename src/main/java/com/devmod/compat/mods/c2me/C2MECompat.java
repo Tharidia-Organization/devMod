@@ -79,7 +79,9 @@ public class C2MECompat implements CompatModule {
                     c2meModClass = Class.forName(pattern[0] + "." + pattern[1]);
                     LOGGER.debug("[Compat:c2me] Found {} at {}", pattern[1], pattern[0]);
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:c2me] Class {} not found in {}", pattern[1], pattern[0]);
+                }
             }
 
             // Try to find config class
@@ -98,15 +100,20 @@ public class C2MECompat implements CompatModule {
                     try {
                         Field instanceField = configClass.getField("INSTANCE");
                         configInstance = instanceField.get(null);
-                    } catch (NoSuchFieldException ignored) {
+                    } catch (NoSuchFieldException e) {
+                        LOGGER.trace("[Compat:c2me] INSTANCE field missing on {}", className, e);
                         try {
                             Method getInstanceMethod = configClass.getMethod("getInstance");
                             configInstance = getInstanceMethod.invoke(null);
-                        } catch (NoSuchMethodException ignored2) {}
+                        } catch (NoSuchMethodException e2) {
+                            LOGGER.trace("[Compat:c2me] getInstance method missing on {}", className, e2);
+                        }
                     }
 
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:c2me] Config class not found: {}", className);
+                }
             }
 
             if (c2meModClass != null || configClass != null) {
@@ -193,7 +200,9 @@ public class C2MECompat implements CompatModule {
                 if (value != null) {
                     target.put(key, value);
                 }
-            } catch (Exception ignored2) {}
+            } catch (Exception e) {
+                LOGGER.trace("[Compat:c2me] Getter invocation failed for {}", fieldName, e);
+            }
         }
     }
 

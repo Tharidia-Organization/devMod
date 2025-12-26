@@ -65,8 +65,8 @@ public class ClientModEvents {
         Objects.requireNonNull(event, "RegisterGuiLayersEvent");
         event.registerAboveAll(Objects.requireNonNull(MOB_STATS_ID), new MobStatsLayer());
         event.registerAboveAll(Objects.requireNonNull(QA_NOTIFICATIONS_ID), new QANotificationsLayer());
-        event.registerAboveAll(Objects.requireNonNull(RESONANCE_HUD_ID), com.devmod.client.overlay.ResonanceHudOverlay.INSTANCE);
-        event.registerAboveAll(Objects.requireNonNull(CONTRACT_HUD_ID), com.devmod.client.overlay.ContractHudOverlay.INSTANCE);
+        event.registerAboveAll(Objects.requireNonNull(RESONANCE_HUD_ID), Objects.requireNonNull(com.devmod.client.overlay.ResonanceHudOverlay.INSTANCE));
+        event.registerAboveAll(Objects.requireNonNull(CONTRACT_HUD_ID), Objects.requireNonNull(com.devmod.client.overlay.ContractHudOverlay.INSTANCE));
 
         // Register profile listener for notifications (once)
         if (!profileListenerRegistered) {
@@ -137,7 +137,7 @@ public class ClientModEvents {
         }
 
         // Run async to avoid blocking main thread during world load
-        CompletableFuture.runAsync(() -> {
+        CompletableFuture<Void> dynamicTestsLoad = CompletableFuture.runAsync(() -> {
             try {
                 // Small delay to let world finish loading
                 Thread.sleep(2000);
@@ -153,6 +153,10 @@ public class ClientModEvents {
             } catch (Exception e) {
                 LOGGER.error("Failed to load dynamic tests: {}", e.getMessage());
             }
+        });
+        dynamicTestsLoad.exceptionally(ex -> {
+            LOGGER.error("Dynamic test load task failed", ex);
+            return null;
         });
 
         // Check for Welcome Screen (first-time users)
@@ -218,7 +222,7 @@ public class ClientModEvents {
                         LOGGER.warn("Welcome screen could not be shown after {} attempts, showing chat notification",
                             WELCOME_MAX_RETRIES);
                         welcomeScreenShown = true;  // Prevent further attempts
-                        showWelcomeFallbackNotification(mc);
+                        showWelcomeFallbackNotification();
                     }
                 }
             });
@@ -229,7 +233,7 @@ public class ClientModEvents {
      * Shows a toast notification as fallback when welcome screen couldn't be displayed.
      * This ensures first-time users still learn about the mod with a proper UI overlay.
      */
-    private static void showWelcomeFallbackNotification(Minecraft mc) {
+    private static void showWelcomeFallbackNotification() {
         // Use proper toast overlay instead of chat messages (CRITICAL UI fix)
         WelcomeToastOverlay.show();
     }
@@ -271,6 +275,13 @@ public class ClientModEvents {
         com.devmod.client.endurance.ClientQuestCache.clear();
         com.devmod.endurance.ClientShopCache.clear();
         com.devmod.client.overlay.EnduranceQuestOverlay.resetStateWatcher();
+
+        // Clear LVC telemetry cache
+        com.devmod.client.telemetry.ClientLVCCache.INSTANCE.clear();
+
+        // Clear mailbox and news caches
+        com.devmod.mailbox.client.ClientMailboxCache.clear();
+        com.devmod.mailbox.client.ClientNewsCache.clear();
 
         // Clear ImpactData cache (MULTIPLAYER-SAFE: clears all player entries)
         com.devmod.client.overlay.ImpactData.clearAll();

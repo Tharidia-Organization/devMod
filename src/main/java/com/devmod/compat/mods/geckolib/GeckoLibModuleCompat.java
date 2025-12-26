@@ -26,7 +26,6 @@ public class GeckoLibModuleCompat implements CompatModule {
     // Cached reflection for additional features
     private static Class<?> animatableManagerClass;
     private static Class<?> animationControllerClass;
-    private static Method getAnimationStateMethod;
 
     @Override
     public String modId() {
@@ -186,7 +185,9 @@ public class GeckoLibModuleCompat implements CompatModule {
                                         activeAnimations.add(name.toString());
                                     }
                                 }
-                            } catch (Exception ignored) {}
+                            } catch (Exception e) {
+                                LOGGER.trace("[Compat:geckolib] Failed to read animation name", e);
+                            }
                         }
 
                         if (!activeAnimations.isEmpty()) {
@@ -233,7 +234,9 @@ public class GeckoLibModuleCompat implements CompatModule {
             if (model != null) {
                 return model.getClass().getSimpleName();
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            LOGGER.trace("[Compat:geckolib] Failed to get GeoModel", e);
+        }
 
         return entity.getClass().getSimpleName();
     }

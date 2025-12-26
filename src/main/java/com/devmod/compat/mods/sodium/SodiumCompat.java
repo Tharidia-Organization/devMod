@@ -75,7 +75,9 @@ public class SodiumCompat implements CompatModule {
                     sodiumClientModClass = Class.forName(className);
                     LOGGER.debug("[Compat:sodium] Found main class at {}", className);
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:sodium] Main class not found: {}", className);
+                }
             }
 
             // Try to find options class
@@ -95,16 +97,21 @@ public class SodiumCompat implements CompatModule {
                         try {
                             Method getOptionsMethod = sodiumClientModClass.getMethod("options");
                             optionsInstance = getOptionsMethod.invoke(null);
-                        } catch (NoSuchMethodException ignored) {
+                        } catch (NoSuchMethodException e) {
+                            LOGGER.trace("[Compat:sodium] options() not available", e);
                             try {
                                 Field optionsField = sodiumClientModClass.getField("options");
                                 optionsInstance = optionsField.get(null);
-                            } catch (NoSuchFieldException ignored2) {}
+                            } catch (NoSuchFieldException e2) {
+                                LOGGER.trace("[Compat:sodium] options field not available", e2);
+                            }
                         }
                     }
 
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:sodium] Options class not found: {}", className);
+                }
             }
 
             if (sodiumClientModClass != null || sodiumOptionsClass != null) {

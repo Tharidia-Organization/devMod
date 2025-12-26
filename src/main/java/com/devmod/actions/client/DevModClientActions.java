@@ -1,5 +1,7 @@
 package com.devmod.actions.client;
 
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 
 import net.minecraft.client.Minecraft;
@@ -99,6 +101,8 @@ import com.devmod.telemetry.TelemetryService;
 import com.devmod.util.I18n;
 
 public final class DevModClientActions {
+    private static final AtomicBoolean REGISTERED = new AtomicBoolean(false);
+
     private static final HeatmapVisualizer.HeatmapType[] HEATMAP_CYCLE = {
         HeatmapVisualizer.HeatmapType.DEATH,
         HeatmapVisualizer.HeatmapType.MOVEMENT,
@@ -112,6 +116,9 @@ public final class DevModClientActions {
     private DevModClientActions() {}
 
     public static void register() {
+        if (!REGISTERED.compareAndSet(false, true)) {
+            return;
+        }
         registerUiActions();
         registerDebugActions();
         registerConfigActions();
@@ -539,6 +546,16 @@ public final class DevModClientActions {
             .icon(Items.PLAYER_HEAD)
             .precondition(screenPrecondition())
             .handler(context -> Minecraft.getInstance().setScreen(new PartyScreen()))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.UI_MAILBOX_OPEN)
+            .labelKey("devmod.action.mailbox")
+            .descriptionKey("devmod.action.mailbox.desc")
+            .category(ActionCategory.PARTY)
+            .menuPath("Root/Play/Mailbox")
+            .icon(Items.WRITABLE_BOOK)
+            .precondition(screenPrecondition())
+            .handler(context -> com.devmod.mailbox.client.screen.MailboxScreen.open())
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_PARTY_INVITE_POPUP_OPEN)
@@ -1957,7 +1974,7 @@ public final class DevModClientActions {
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 var override = com.devmod.config.gamedesign.InstanceOverride.fromPreset("easy");
-                configMgr.setGlobalConfig(override.applyTo(configMgr.getGlobalConfig().copy()));
+                configMgr.setGlobalConfig(Objects.requireNonNull(override.applyTo(configMgr.getGlobalConfig().copy())));
                 configMgr.markDirty();
                 context.sendSuccess(I18n.translate("devmod.gamedesign.preset_applied", "Easy"), true);
             })
@@ -1972,7 +1989,7 @@ public final class DevModClientActions {
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 var override = com.devmod.config.gamedesign.InstanceOverride.fromPreset("hard");
-                configMgr.setGlobalConfig(override.applyTo(configMgr.getGlobalConfig().copy()));
+                configMgr.setGlobalConfig(Objects.requireNonNull(override.applyTo(configMgr.getGlobalConfig().copy())));
                 configMgr.markDirty();
                 context.sendSuccess(I18n.translate("devmod.gamedesign.preset_applied", "Hard"), true);
             })
@@ -1987,7 +2004,7 @@ public final class DevModClientActions {
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 var override = com.devmod.config.gamedesign.InstanceOverride.fromPreset("chaos");
-                configMgr.setGlobalConfig(override.applyTo(configMgr.getGlobalConfig().copy()));
+                configMgr.setGlobalConfig(Objects.requireNonNull(override.applyTo(configMgr.getGlobalConfig().copy())));
                 configMgr.markDirty();
                 context.sendSuccess(I18n.translate("devmod.gamedesign.preset_applied", "Chaos"), true);
             })
@@ -2002,7 +2019,7 @@ public final class DevModClientActions {
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 var override = com.devmod.config.gamedesign.InstanceOverride.fromPreset("tutorial");
-                configMgr.setGlobalConfig(override.applyTo(configMgr.getGlobalConfig().copy()));
+                configMgr.setGlobalConfig(Objects.requireNonNull(override.applyTo(configMgr.getGlobalConfig().copy())));
                 configMgr.markDirty();
                 context.sendSuccess(I18n.translate("devmod.gamedesign.preset_applied", "Tutorial"), true);
             })
@@ -2017,7 +2034,7 @@ public final class DevModClientActions {
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 var override = com.devmod.config.gamedesign.InstanceOverride.fromPreset("speedrun");
-                configMgr.setGlobalConfig(override.applyTo(configMgr.getGlobalConfig().copy()));
+                configMgr.setGlobalConfig(Objects.requireNonNull(override.applyTo(configMgr.getGlobalConfig().copy())));
                 configMgr.markDirty();
                 context.sendSuccess(I18n.translate("devmod.gamedesign.preset_applied", "Speedrun"), true);
             })
@@ -2291,6 +2308,7 @@ public final class DevModClientActions {
         ActionKeybindRegistry.register(ActionIds.ABILITY_DASH, KeyInputHandler.DASH_KEY);
         ActionKeybindRegistry.register(ActionIds.ABILITY_DODGE, KeyInputHandler.DODGE_KEY);
         ActionKeybindRegistry.register(ActionIds.UI_PARTY_OPEN, KeyInputHandler.OPEN_PARTY_KEY);
+        ActionKeybindRegistry.register(ActionIds.UI_MAILBOX_OPEN, KeyInputHandler.OPEN_MAILBOX_KEY);
     }
 
     private static void applyWelcomePreference(boolean dontShowAgain) {
@@ -2438,7 +2456,8 @@ public final class DevModClientActions {
             return;
         }
         com.devmod.client.arena.ui.ArenaTestWizard.open(registry, config -> {
-            if (config.playerCountOverride() != null && config.playerCountOverride() > 0) {
+            Integer playerCount = config.playerCountOverride();
+            if (playerCount != null && playerCount > 0) {
                 context.sendSuccess(Component.translatable("devmod.action.arena.quick_test_wizard.player_count_ignored"), true);
             }
             if (config.forceTemplate()) {

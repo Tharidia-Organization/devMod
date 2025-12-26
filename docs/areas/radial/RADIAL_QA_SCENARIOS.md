@@ -1,6 +1,7 @@
 # Radial Menu QA Scenarios
 
-> **Status**: ARCHIVED (manual checklist superseded by automated tests)
+> Last updated: 2025-12-26
+> Status: ARCHIVED (manual checklist superseded by automated tests)
 
 Manual test scenarios for validating radial menu behavior across different contexts.
 

@@ -315,6 +315,8 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 // Configure JUnit 5 testing
+def testOutputStoreDir = layout.buildDirectory.dir("test-results/test/binary")
+def fsOps = project.services.get(org.gradle.api.file.FileSystemOperations)
 test {
     dependsOn 'generateBuildProperties'
     useJUnitPlatform()
@@ -322,8 +324,18 @@ test {
         events "passed", "skipped", "failed"
         showStandardStreams = true
     }
+    // Clear test output store to avoid EOFException during XML report generation.
+    doFirst {
+        fsOps.delete {
+            delete(testOutputStoreDir)
+        }
+    }
     // Allow Byte Buddy to instrument Java 21 classes in Mockito inline mocks.
     jvmArgs '-Dnet.bytebuddy.experimental=true'
+    // Silence dynamic agent loading warnings from Byte Buddy in tests.
+    jvmArgs '-XX:+EnableDynamicAgentLoading'
+    // Silence JVM class data sharing warning in test output.
+    jvmArgs '-Xshare:off'
     // Reduce concurrency for JVM tests to avoid occasional XML write collisions
     // that may happen on some filesystems or CI environments.
     maxParallelForks = 1
@@ -372,33 +384,7 @@ tasks.withType(JavaCompile).configureEach {
         // NullAway - the main null-safety checker
         check("NullAway", net.ltgt.gradle.errorprone.CheckSeverity.WARN)
 
-        // Disable checks that conflict with Minecraft modding patterns
-        disable("MissingSummary")           // Many internal methods lack javadoc
-        disable("InlineMeSuggester")        // Suggests inlining that breaks mod APIs
-        disable("ImmutableEnumChecker")     // Minecraft enums are mutable by design
-        disable("JavaUtilDate")             // Minecraft uses Date extensively
-
-        // Disable checks for intentional patterns in compat modules
-        disable("EmptyCatch")               // Reflection in compat modules intentionally catches silently
-        disable("UnusedVariable")           // Reflection fields may be unused if mod isn't present
-        disable("SameNameButDifferent")     // Nested types with same name are intentional (e.g. Offset)
-        disable("StringSplitter")           // Not critical for this codebase
-        disable("StringCaseLocaleUsage")    // ASCII identifiers, locale doesn't matter
-        disable("LoopOverCharArray")        // Minor performance, not critical
-        disable("MixedMutabilityReturnType") // Reflection return types vary by availability
-        disable("ModifyCollectionInEnhancedForLoop") // ConcurrentHashMap handles this safely
-        disable("BadInstanceof")            // Map instanceof checks are intentional
-        disable("FutureReturnValueIgnored") // Async operations are fire-and-forget where intended
-        disable("SelfAssignment")           // Used for optional overrides in fluent builders
-        disable("JavaTimeDefaultTimeZone")  // Default timezone is acceptable for logging
-        disable("StreamResourceLeak")       // Stream resources are handled appropriately
-        disable("EqualsGetClass")           // getClass() equality is intentional in some cases
-        disable("AlreadyChecked")           // Redundant checks are for clarity
-        disable("OperatorPrecedence")       // Precedence is clear in context
-        disable("DefaultCharset")           // UTF-8 is the default in this environment
-        disable("ReferenceEquality")        // Reference equality is intentional for enums
-        disable("UnnecessaryCheckNotNull")  // Defensive null checks are acceptable
-        disable("NotJavadoc")               // Block comments styled like Javadoc are acceptable
+        // All Error Prone checks enabled; fix warnings instead of suppressing.
     }
 }
 

@@ -1,5 +1,6 @@
 # Piano Infrastruttura - Gestione Completa Server Minecraft OVH
 
+> **Last updated**: 2025-12-26
 > **Status**: PLANNING (roadmap; non validato)
 
 ## Obiettivo e principi

@@ -77,7 +77,9 @@ public class ModernFixCompat implements CompatModule {
                     modernFixClass = Class.forName(className);
                     LOGGER.debug("[Compat:modernfix] Found main class at {}", className);
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:modernfix] Main class not found: {}", className);
+                }
             }
 
             // Try to find config class
@@ -96,15 +98,20 @@ public class ModernFixCompat implements CompatModule {
                     try {
                         Field instanceField = configClass.getField("INSTANCE");
                         configInstance = instanceField.get(null);
-                    } catch (NoSuchFieldException ignored) {
+                    } catch (NoSuchFieldException e) {
+                        LOGGER.trace("[Compat:modernfix] INSTANCE field missing on {}", className, e);
                         try {
                             Method getMethod = configClass.getMethod("get");
                             configInstance = getMethod.invoke(null);
-                        } catch (NoSuchMethodException ignored2) {}
+                        } catch (NoSuchMethodException e2) {
+                            LOGGER.trace("[Compat:modernfix] get() method missing on {}", className, e2);
+                        }
                     }
 
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:modernfix] Config class not found: {}", className);
+                }
             }
 
             if (modernFixClass != null || configClass != null) {
@@ -171,7 +178,9 @@ public class ModernFixCompat implements CompatModule {
                     if (value instanceof Boolean && (Boolean) value) {
                         features.add(fieldName);
                     }
-                } catch (NoSuchFieldException | IllegalAccessException ignored) {}
+                } catch (NoSuchFieldException | IllegalAccessException e) {
+                    LOGGER.trace("[Compat:modernfix] Feature field unavailable: {}", fieldName, e);
+                }
             }
         } catch (Exception e) {
             LOGGER.debug("[Compat:modernfix] Error reading features: {}", e.getMessage());

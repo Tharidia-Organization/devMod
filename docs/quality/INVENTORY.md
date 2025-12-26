@@ -1,5 +1,8 @@
 # Quality Inventory
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (snapshot; refresh before use)
+
 **Date**: 2025-12-26
 **Total Java Files**: 1159
 **Total LOC**: ~355,000 (estimated)

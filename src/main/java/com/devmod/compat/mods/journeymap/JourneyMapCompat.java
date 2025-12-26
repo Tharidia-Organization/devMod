@@ -195,15 +195,17 @@ public class JourneyMapCompat implements CompatModule {
             try {
                 Method setColorMethod = waypointClass.getMethod("setColor", int.class);
                 setColorMethod.invoke(waypoint, color);
-            } catch (NoSuchMethodException ignored) {
-                // Color method may not exist in all versions
+            } catch (NoSuchMethodException e) {
+                LOGGER.trace("[Compat:journeymap] Waypoint color method not available", e);
             }
 
             // Enable the waypoint
             try {
                 Method setEnabledMethod = waypointClass.getMethod("setEnabled", boolean.class);
                 setEnabledMethod.invoke(waypoint, true);
-            } catch (NoSuchMethodException ignored) {}
+            } catch (NoSuchMethodException e) {
+                LOGGER.trace("[Compat:journeymap] Waypoint enabled method not available", e);
+            }
 
             // Add to JourneyMap
             addWaypointMethod.invoke(clientApiInstance, waypoint);

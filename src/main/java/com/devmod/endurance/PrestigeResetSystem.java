@@ -5,16 +5,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
-
-import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -402,16 +400,14 @@ public class PrestigeResetSystem {
         RewardSystem.INSTANCE.savePlayerWallet(wallet);
 
         // Visual/audio feedback
-        SoundEvent ascendSound = Objects.requireNonNull(
-            SoundEvents.UI_TOAST_CHALLENGE_COMPLETE,
-            "SoundEvents.UI_TOAST_CHALLENGE_COMPLETE"
-        );
-        SoundEvent levelUpSound = Objects.requireNonNull(
-            SoundEvents.PLAYER_LEVELUP,
-            "SoundEvents.PLAYER_LEVELUP"
-        );
-        player.playSound(ascendSound, 1.0f, 1.2f);
-        player.playSound(levelUpSound, 1.0f, 0.5f);
+        SoundEvent ascendSound = SoundEvents.UI_TOAST_CHALLENGE_COMPLETE;
+        if (ascendSound != null) {
+            player.playSound(ascendSound, 1.0f, 1.2f);
+        }
+        SoundEvent levelUpSound = SoundEvents.PLAYER_LEVELUP;
+        if (levelUpSound != null) {
+            player.playSound(levelUpSound, 1.0f, 0.5f);
+        }
 
         // Send messages
         player.sendSystemMessage(styledMessage("═══════════════════════════════════════", ChatFormatting.GOLD));
@@ -440,12 +436,13 @@ public class PrestigeResetSystem {
         return AscensionResult.success(newLevel, cost, newBonusDescriptions, newPerks, newTitle);
     }
 
-    @Nonnull
-    private static Component styledMessage(@Nonnull String text, @Nonnull ChatFormatting... styles) {
-        return Objects.requireNonNull(
-            Component.literal(text).withStyle(styles),
-            "prestige message"
-        );
+    private static Component styledMessage(String text, ChatFormatting... styles) {
+        String safeText = text == null ? "" : text;
+        MutableComponent component = Component.literal(safeText);
+        if (styles == null || styles.length == 0) {
+            return component;
+        }
+        return component.withStyle(styles);
     }
 
     /**

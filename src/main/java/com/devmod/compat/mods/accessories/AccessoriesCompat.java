@@ -98,7 +98,9 @@ public class AccessoriesCompat implements CompatModule {
                     accessoriesApiClass = Class.forName(pkg + ".AccessoriesAPI");
                     LOGGER.debug("[Compat:accessories] Found AccessoriesAPI at {}", pkg);
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:accessories] AccessoriesAPI not found in {}", pkg);
+                }
             }
 
             if (accessoriesApiClass != null) {
@@ -234,6 +236,7 @@ public class AccessoriesCompat implements CompatModule {
                             }
                         }
                     } catch (NoSuchMethodException ignored) {
+                        LOGGER.trace("[Compat:accessories] getAccessories method not found on container", ignored);
                         // Try alternative method
                         try {
                             Method sizeMethod = container.getClass().getMethod("getSize");
@@ -248,7 +251,9 @@ public class AccessoriesCompat implements CompatModule {
                                     result.add(itemStack);
                                 }
                             }
-                        } catch (Exception ignored2) {}
+                        } catch (Exception e) {
+                            LOGGER.trace("[Compat:accessories] Fallback container access failed", e);
+                        }
                     }
                 }
             }

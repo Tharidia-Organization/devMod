@@ -30,9 +30,11 @@ class PolicyResolverWeightTest {
         events = new CopyOnWriteArrayList<>();
         telemetry = new ArenaTelemetry(events::add);
         registry = new ArenaTemplateRegistry(telemetry);
+        registry.setLoggingEnabled(false);
         registry.load(ArenaTemplate.defaultTemplate());
         overrideManager = new OverrideManager(telemetry);
         resolver = new PolicyResolver(registry, telemetry, overrideManager, ArenaTemplateConfig.load());
+        resolver.setLoggingEnabled(false);
     }
 
     @AfterEach

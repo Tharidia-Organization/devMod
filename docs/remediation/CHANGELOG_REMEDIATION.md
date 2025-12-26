@@ -1,6 +1,8 @@
 # Remediation Changelog
 
-**Last Updated:** 2025-12-25  
+> Last updated: 2025-12-25
+> Status: HISTORICAL (snapshot)
+
 **Scope:** Dedicated Server Side-Safety
 
 ## Client/Server Separation

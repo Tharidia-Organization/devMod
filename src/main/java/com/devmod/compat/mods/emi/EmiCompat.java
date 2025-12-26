@@ -94,7 +94,9 @@ public class EmiCompat implements CompatModule {
             // Try to get cheat mode check
             try {
                 isCheatModeMethod = emiApiClass.getMethod("isCheatMode");
-            } catch (NoSuchMethodException ignored) {}
+            } catch (NoSuchMethodException e) {
+                LOGGER.trace("[Compat:emi] Cheat mode method not available", e);
+            }
 
             apiAvailable = true;
             LOGGER.debug("[Compat:emi] EMI API loaded successfully");

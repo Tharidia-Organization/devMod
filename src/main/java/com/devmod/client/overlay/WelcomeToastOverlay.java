@@ -50,7 +50,6 @@ public class WelcomeToastOverlay {
     private static final int BORDER_COLOR = 0xFF4CAF50;
     private static final int TITLE_COLOR = 0xFF81C784;
     private static final int TEXT_COLOR = 0xFFFFFFFF;
-    private static final int HINT_COLOR = 0xFFFFD54F;
     private static final int MUTED_COLOR = 0xFF888888;
 
     // State
@@ -165,10 +164,10 @@ public class WelcomeToastOverlay {
 
         // Play a subtle sound
         Minecraft mc = Minecraft.getInstance();
-        if (mc.getSoundManager() != null) {
-            mc.getSoundManager().play(Objects.requireNonNull(
-                SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_CHIME.value(), 1.2f, 0.5f)
-            ));
+        var soundManager = mc.getSoundManager();
+        var soundEvent = SoundEvents.NOTE_BLOCK_CHIME.value();
+        if (soundManager != null && soundEvent != null) {
+            soundManager.play(Objects.requireNonNull(SimpleSoundInstance.forUI(soundEvent, 1.2f, 0.5f)));
         }
 
         // Mark as seen

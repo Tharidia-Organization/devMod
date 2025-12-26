@@ -214,12 +214,13 @@ public class PartyScreen extends Screen {
         // Input background at: (membersPanelLeft + 5, inviteSectionY + 12) with size 140x20
         int inviteBoxX = membersPanelLeft + 5 + 3;   // 3px inside border
         int inviteBoxY = inviteSectionY + 12 + 3;    // 3px inside border
-        inviteBox = new EditBox(getFont(), inviteBoxX, inviteBoxY, 130, 14,
+        var box = new EditBox(getFont(), inviteBoxX, inviteBoxY, 130, 14,
                 Objects.requireNonNull(Component.literal("Player name...")));
-        inviteBox.setHint(Objects.requireNonNull(Component.literal("Enter name...")));
-        inviteBox.setMaxLength(16);
-        inviteBox.setBordered(false);
-        addRenderableWidget(Objects.requireNonNull(inviteBox));
+        box.setHint(Objects.requireNonNull(Component.literal("Enter name...")));
+        box.setMaxLength(16);
+        box.setBordered(false);
+        addRenderableWidget(box);
+        inviteBox = box;
 
         // Invite button - positioned right after the input background
         int inviteButtonX = membersPanelLeft + 5 + 140 + 3;  // After input bg (140 wide) + gap
@@ -238,13 +239,14 @@ public class PartyScreen extends Screen {
         int mobPanelLeft = panelX + 225;
         int mobPanelTop = panelY + 80;
         int mobSearchY = mobPanelTop + 28 + 3;  // 3px inside the search background
-        mobSearchBox = new EditBox(getFont(), mobPanelLeft + 8, mobSearchY, 140, 14,
+        var searchBox = new EditBox(getFont(), mobPanelLeft + 8, mobSearchY, 140, 14,
                 Objects.requireNonNull(Component.literal("Search...")));
-        mobSearchBox.setHint(Objects.requireNonNull(Component.literal("Search mobs...")));
-        mobSearchBox.setMaxLength(32);
-        mobSearchBox.setBordered(false);
-        mobSearchBox.setResponder(this::onMobSearchChanged);
-        addRenderableWidget(mobSearchBox);
+        searchBox.setHint(Objects.requireNonNull(Component.literal("Search mobs...")));
+        searchBox.setMaxLength(32);
+        searchBox.setBordered(false);
+        searchBox.setResponder(this::onMobSearchChanged);
+        addRenderableWidget(searchBox);
+        mobSearchBox = searchBox;
     }
 
     private void initActionButtons() {
@@ -436,12 +438,14 @@ public class PartyScreen extends Screen {
         if (createPartyButton != null) {
             createPartyButton.enabled(!isInParty);
         }
-        if (inviteBox != null) {
-            inviteBox.visible = isInParty;
-            inviteBox.setEditable(isLeader);
+        var localInviteBox = inviteBox;
+        if (localInviteBox != null) {
+            localInviteBox.visible = isInParty;
+            localInviteBox.setEditable(isLeader);
         }
-        if (mobSearchBox != null) {
-            mobSearchBox.visible = isInParty;
+        var localMobSearchBox = mobSearchBox;
+        if (localMobSearchBox != null) {
+            localMobSearchBox.visible = isInParty;
         }
     }
 
@@ -509,15 +513,16 @@ public class PartyScreen extends Screen {
     // === EVENT HANDLERS ===
 
     private void onInviteClicked() {
-        if (inviteBox == null) {
+        var box = inviteBox;
+        if (box == null) {
             return;
         }
-        String playerName = inviteBox.getValue().trim();
+        String playerName = box.getValue().trim();
         if (playerName.isEmpty()) return;
 
         LOGGER.info("[PartyScreen] Sending invite to: {}", playerName);
         PacketDistributor.sendToServer(Objects.requireNonNull(NamedInvitePayload.create(playerName, questType)));
-        inviteBox.setValue("");
+        box.setValue("");
         UIConstants.Sound.success();
     }
 
@@ -742,34 +747,48 @@ public class PartyScreen extends Screen {
 
     private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY) {
         if (isInParty) {
-            if (inviteButton != null && inviteButtonBounds != null) {
-                inviteButton.enabled(isInParty);
-                inviteButton.render(graphics, inviteButtonBounds.x, inviteButtonBounds.y,
-                    inviteButtonBounds.width, inviteButtonBounds.height, mouseX, mouseY);
+            var localInviteBtn = inviteButton;
+            var localInviteBounds = inviteButtonBounds;
+            if (localInviteBtn != null && localInviteBounds != null) {
+                localInviteBtn.enabled(isInParty);
+                localInviteBtn.render(graphics, localInviteBounds.x, localInviteBounds.y,
+                    localInviteBounds.width, localInviteBounds.height, mouseX, mouseY);
             }
-            if (readyButton != null && readyButtonBounds != null) {
-                readyButton.render(graphics, readyButtonBounds.x, readyButtonBounds.y,
-                    readyButtonBounds.width, readyButtonBounds.height, mouseX, mouseY);
+            var localReadyBtn = readyButton;
+            var localReadyBounds = readyButtonBounds;
+            if (localReadyBtn != null && localReadyBounds != null) {
+                localReadyBtn.render(graphics, localReadyBounds.x, localReadyBounds.y,
+                    localReadyBounds.width, localReadyBounds.height, mouseX, mouseY);
             }
-            if (leaveButton != null && leaveButtonBounds != null) {
-                leaveButton.enabled(isInParty);
-                leaveButton.render(graphics, leaveButtonBounds.x, leaveButtonBounds.y,
-                    leaveButtonBounds.width, leaveButtonBounds.height, mouseX, mouseY);
+            var localLeaveBtn = leaveButton;
+            var localLeaveBounds = leaveButtonBounds;
+            if (localLeaveBtn != null && localLeaveBounds != null) {
+                localLeaveBtn.enabled(isInParty);
+                localLeaveBtn.render(graphics, localLeaveBounds.x, localLeaveBounds.y,
+                    localLeaveBounds.width, localLeaveBounds.height, mouseX, mouseY);
             }
-            if (startButton != null && startButtonBounds != null) {
-                startButton.enabled(isLeader && canStartQuest());
-                startButton.render(graphics, startButtonBounds.x, startButtonBounds.y,
-                    startButtonBounds.width, startButtonBounds.height, mouseX, mouseY);
+            var localStartBtn = startButton;
+            var localStartBounds = startButtonBounds;
+            if (localStartBtn != null && localStartBounds != null) {
+                localStartBtn.enabled(isLeader && canStartQuest());
+                localStartBtn.render(graphics, localStartBounds.x, localStartBounds.y,
+                    localStartBounds.width, localStartBounds.height, mouseX, mouseY);
             }
-            if (disbandButton != null && disbandButtonBounds != null && isLeader) {
-                disbandButton.enabled(isLeader);
-                disbandButton.render(graphics, disbandButtonBounds.x, disbandButtonBounds.y,
-                    disbandButtonBounds.width, disbandButtonBounds.height, mouseX, mouseY);
+            var localDisbandBtn = disbandButton;
+            var localDisbandBounds = disbandButtonBounds;
+            if (localDisbandBtn != null && localDisbandBounds != null && isLeader) {
+                localDisbandBtn.enabled(isLeader);
+                localDisbandBtn.render(graphics, localDisbandBounds.x, localDisbandBounds.y,
+                    localDisbandBounds.width, localDisbandBounds.height, mouseX, mouseY);
             }
-        } else if (createPartyButton != null && createPartyButtonBounds != null) {
-            createPartyButton.enabled(!isInParty);
-            createPartyButton.render(graphics, createPartyButtonBounds.x, createPartyButtonBounds.y,
-                createPartyButtonBounds.width, createPartyButtonBounds.height, mouseX, mouseY);
+        } else {
+            var localCreateBtn = createPartyButton;
+            var localCreateBounds = createPartyButtonBounds;
+            if (localCreateBtn != null && localCreateBounds != null) {
+                localCreateBtn.enabled(!isInParty);
+                localCreateBtn.render(graphics, localCreateBounds.x, localCreateBounds.y,
+                    localCreateBounds.width, localCreateBounds.height, mouseX, mouseY);
+            }
         }
     }
 

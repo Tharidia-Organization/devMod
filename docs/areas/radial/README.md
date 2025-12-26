@@ -1,8 +1,8 @@
 # Radial Menu / UX System
 
-> **Audit Date**: 2025-12-26
-> **Status**: CURRENT (code-aligned)
-> **Risk Level**: MEDIUM (client-only UI + input routing)
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+> Risk Level: MEDIUM (client-only UI + input routing)
 
 ---
 
@@ -72,4 +72,3 @@ The radial menu is the primary in-game UI for DevMod actions:
 - `docs/areas/radial/RADIAL_BUTTON_CONTRACT.md`
 - `docs/areas/radial/RADIAL_NAV_MAP.md`
 - `docs/areas/radial/RADIAL_CENSUS.md`
-

@@ -204,8 +204,8 @@ public class ExecutionSystem {
         public boolean interrupted = false;
 
         public ExecutionState(@Nonnull UUID playerId, @Nonnull UUID targetId, int durationTicks) {
-            this.playerId = requireNonNull(playerId, "playerId");
-            this.targetId = requireNonNull(targetId, "targetId");
+            this.playerId = Objects.requireNonNull(playerId, "playerId");
+            this.targetId = Objects.requireNonNull(targetId, "targetId");
             this.startTime = System.currentTimeMillis();
             this.durationTicks = durationTicks;
             this.ticksRemaining = durationTicks;
@@ -277,14 +277,8 @@ public class ExecutionSystem {
     public Optional<Mob> getExecutableTarget(ServerPlayer player) {
         if (!canExecute(player)) return Optional.empty();
 
-        AABB bounds = player.getBoundingBox();
-        if (bounds == null) {
-            return Optional.empty();
-        }
+        AABB bounds = Objects.requireNonNull(player.getBoundingBox(), "player.getBoundingBox()");
         AABB searchBounds = bounds.inflate(getExecutionRange());
-        if (searchBounds == null) {
-            return Optional.empty();
-        }
 
         return player.level().getEntitiesOfClass(Mob.class, searchBounds)
             .stream()
@@ -332,21 +326,26 @@ public class ExecutionSystem {
         if (targetId == null) {
             return ExecutionResult.fail("Target missing identity!");
         }
-        ExecutionState state = new ExecutionState(playerId, targetId, durationTicks);
+        ExecutionState state = new ExecutionState(
+            playerId,
+            Objects.requireNonNull(targetId, "targetId"),
+            durationTicks
+        );
         activeExecutions.put(playerId, state);
 
         // Apply invincibility
-        Holder<MobEffect> resistance = MobEffects.DAMAGE_RESISTANCE;
-        if (resistance != null) {
-            player.addEffect(new MobEffectInstance(resistance, durationTicks, 4, false, false));
-        }
+        Holder<MobEffect> resistance = Objects.requireNonNull(
+            MobEffects.DAMAGE_RESISTANCE,
+            "MobEffects.DAMAGE_RESISTANCE"
+        );
+        player.addEffect(new MobEffectInstance(resistance, durationTicks, 4, false, false));
 
         // Lock target in place
         target.setNoAi(true);
 
         // Visual/audio feedback
         if (player.level() instanceof ServerLevel level) {
-            BlockPos playerPos = player.blockPosition();
+            BlockPos playerPos = Objects.requireNonNull(player.blockPosition(), "player.blockPosition()");
             playSound(level, playerPos, SoundEvents.WARDEN_SONIC_CHARGE, SoundSource.PLAYERS, 1.0f, 1.5f);
 
             // Initial particles
@@ -465,7 +464,7 @@ public class ExecutionSystem {
 
         // Visual/audio feedback
         if (player.level() instanceof ServerLevel level) {
-            BlockPos playerPos = player.blockPosition();
+            BlockPos playerPos = Objects.requireNonNull(player.blockPosition(), "player.blockPosition()");
             playSound(level, playerPos, SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 1.0f, 1.5f);
 
             // Explosion of particles
@@ -495,16 +494,15 @@ public class ExecutionSystem {
         if (state == null) return null;
 
         // Remove invincibility
-        Holder<MobEffect> resistance = MobEffects.DAMAGE_RESISTANCE;
-        if (resistance != null) {
-            player.removeEffect(resistance);
-        }
+        Holder<MobEffect> resistance = Objects.requireNonNull(
+            MobEffects.DAMAGE_RESISTANCE,
+            "MobEffects.DAMAGE_RESISTANCE"
+        );
+        player.removeEffect(resistance);
 
         // Apply vulnerability debuff
-        Holder<MobEffect> weakness = MobEffects.WEAKNESS;
-        if (weakness != null) {
-            player.addEffect(new MobEffectInstance(weakness, 60, 0, false, true));
-        }
+        Holder<MobEffect> weakness = Objects.requireNonNull(MobEffects.WEAKNESS, "MobEffects.WEAKNESS");
+        player.addEffect(new MobEffectInstance(weakness, 60, 0, false, true));
 
         // Mark player as vulnerable for damage calculation
         player.getPersistentData().putLong("execution_interrupted", System.currentTimeMillis() + 3000);
@@ -519,7 +517,7 @@ public class ExecutionSystem {
             }
 
             // Negative feedback
-            BlockPos playerPos = player.blockPosition();
+            BlockPos playerPos = Objects.requireNonNull(player.blockPosition(), "player.blockPosition()");
             playSound(level, playerPos, SoundEvents.SHIELD_BREAK, SoundSource.PLAYERS, 1.0f, 0.5f);
         }
 
@@ -617,20 +615,16 @@ public class ExecutionSystem {
         cooldowns.clear();
     }
 
-    @Nonnull
-    private static <T> T requireNonNull(@Nullable T value, String label) {
-        return Objects.requireNonNull(value, label);
-    }
-
-    private static void playSound(ServerLevel level, BlockPos pos, @Nullable SoundEvent sound,
+    private static void playSound(@Nonnull ServerLevel level, @Nonnull BlockPos pos, @Nullable SoundEvent sound,
                                   SoundSource source, float volume, float pitch) {
-        if (sound == null || pos == null) {
+        if (sound == null) {
             return;
         }
         level.playSound(null, pos, sound, source, volume, pitch);
     }
 
-    private static void spawnParticles(ServerLevel level, LivingEntity entity, @Nullable SimpleParticleType particle,
+    private static void spawnParticles(@Nonnull ServerLevel level, @Nonnull LivingEntity entity,
+                                       @Nullable SimpleParticleType particle,
                                        int count, double horizontalSpread, double verticalSpread, double speed) {
         if (particle == null) {
             return;

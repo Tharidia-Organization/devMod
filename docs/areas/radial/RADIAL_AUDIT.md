@@ -1,8 +1,8 @@
 # Radial Menu Audit
 
-> **Status**: HISTORICAL (legacy snapshot; superseded by `docs/areas/radial/README.md`)
+> Last updated: 2025-12-21
+> Status: HISTORICAL (legacy snapshot; superseded by `docs/areas/radial/README.md`)
 
-**Data**: 2025-12-21
 **Versione**: 1.0
 **Stato**: Architettura matura, miglioramenti incrementali richiesti
 

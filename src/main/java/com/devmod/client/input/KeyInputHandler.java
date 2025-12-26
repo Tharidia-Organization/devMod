@@ -286,6 +286,23 @@ public class KeyInputHandler {
     );
 
     // ═══════════════════════════════════════════════════════════════════════════
+    // MAILBOX & COMMUNICATION
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Opens the Mailbox screen for viewing messages and notifications.
+     *
+     * <p><b>Default key:</b> M</p>
+     */
+    public static final KeyMapping OPEN_MAILBOX_KEY = new KeyMapping(
+            "key.devmod.mailbox",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_M,
+            "key.categories.devmod"
+    );
+
+    // ═══════════════════════════════════════════════════════════════════════════
     // ECONOMY & MISC
     // ═══════════════════════════════════════════════════════════════════════════
 
@@ -384,6 +401,7 @@ public class KeyInputHandler {
         event.register(Objects.requireNonNull(QUEST_CONTINUE_KEY));
         event.register(Objects.requireNonNull(QUEST_EXIT_KEY));
         event.register(Objects.requireNonNull(OPEN_PARTY_KEY));
+        event.register(Objects.requireNonNull(OPEN_MAILBOX_KEY));
         event.register(Objects.requireNonNull(TOGGLE_HELP_KEY));
         event.register(Objects.requireNonNull(OPEN_RADIAL_MENU_KEY));
         event.register(Objects.requireNonNull(INSPECT_MOB_KEY));

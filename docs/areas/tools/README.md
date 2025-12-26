@@ -1,8 +1,8 @@
 # Tools / QA / Autosmoke
 
-> **Audit Date**: 2025-12-26
-> **Status**: CURRENT (code-aligned)
-> **Risk Level**: MEDIUM (mixed client/server test surfaces)
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION
+> Risk Level: MEDIUM (mixed client/server test surfaces)
 
 ---
 

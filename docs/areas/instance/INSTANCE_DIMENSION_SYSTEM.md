@@ -1,7 +1,7 @@
 # Instance Dimension System - Implementation Reference
 
-> **Status**: CURRENT (implementation-aligned)
-> **Last Verified**: 2025-12-26
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION (last verified 2025-12-26)
 
 ---
 
@@ -96,4 +96,3 @@ Recovery deletes the snapshot and unmaps the player from the registry.
 - `docs/areas/instance/README.md`
 - `docs/areas/endurance/README.md`
 - `docs/areas/arena/README.md`
-

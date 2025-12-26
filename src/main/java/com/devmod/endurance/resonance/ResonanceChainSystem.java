@@ -9,13 +9,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -51,15 +51,9 @@ public final class ResonanceChainSystem {
     private static final long RESONANCE_COOLDOWN_MS = 1500;
 
     // Empty participants list constant for null-safety
-    @Nonnull
-    private static final List<UUID> EMPTY_PARTICIPANTS = Objects.requireNonNull(List.of(), "emptyList");
+    private static final List<UUID> EMPTY_PARTICIPANTS = List.of();
 
     private ResonanceChainSystem() {}
-
-    @Nonnull
-    private static <T> T requireNonNull(T value, String name) {
-        return Objects.requireNonNull(value, name);
-    }
 
     /**
      * Get config for the given quest instance.
@@ -103,8 +97,8 @@ public final class ResonanceChainSystem {
      * Record of a single hit.
      */
     public record HitRecord(
-        @Nonnull UUID attackerId,
-        @Nonnull String attackerName,
+        UUID attackerId,
+        String attackerName,
         long timestamp,
         float damage,
         @Nullable UUID questId
@@ -114,10 +108,10 @@ public final class ResonanceChainSystem {
      * Result of a resonance check.
      */
     public record ResonanceResult(
-        @Nonnull ResonanceTier tier,
+        ResonanceTier tier,
         float damageMultiplier,
         int styleBonus,
-        @Nonnull List<UUID> participants,
+        List<UUID> participants,
         int entityId
     ) {
         public boolean triggered() {
@@ -134,7 +128,6 @@ public final class ResonanceChainSystem {
      * @param questId The quest ID (for filtering same-quest players)
      * @return ResonanceResult indicating if resonance was triggered
      */
-    @Nonnull
     public ResonanceResult recordHit(
         ServerPlayer attacker,
         LivingEntity target,
@@ -158,13 +151,12 @@ public final class ResonanceChainSystem {
         }
 
         // Create hit record
-        HitRecord record = new HitRecord(
-            requireNonNull(attacker.getUUID(), "attackerId"),
-            requireNonNull(attacker.getName().getString(), "attackerName"),
-            now,
-            damage,
-            questId
-        );
+        UUID attackerId = attacker.getUUID();
+        if (attackerId == null) {
+            return new ResonanceResult(ResonanceTier.NONE, 1.0f, 0, EMPTY_PARTICIPANTS, target.getId());
+        }
+        String attackerName = resolveAttackerName(attacker);
+        HitRecord record = new HitRecord(attackerId, attackerName, now, damage, questId);
 
         // Add to recent hits
         List<HitRecord> hits = recentHits.computeIfAbsent(entityId, k -> new ArrayList<>());
@@ -182,7 +174,6 @@ public final class ResonanceChainSystem {
     /**
      * Check if recent hits form a resonance chain.
      */
-    @Nonnull
     private ResonanceResult checkResonance(
         int entityId,
         @Nullable UUID questId,
@@ -210,7 +201,9 @@ public final class ResonanceChainSystem {
                 if (!Objects.equals(hit.questId, questId)) continue;
                 if (now - hit.timestamp > duoWindow) continue; // Outside widest window
 
-                uniqueAttackers.add(requireNonNull(hit.attackerId, "attackerId"));
+                if (hit.attackerId != null) {
+                    uniqueAttackers.add(hit.attackerId);
+                }
                 if (hit.timestamp < earliestTime) earliestTime = hit.timestamp;
                 if (hit.timestamp > latestTime) latestTime = hit.timestamp;
             }
@@ -252,9 +245,9 @@ public final class ResonanceChainSystem {
             hits.clear();
         }
 
-        List<UUID> participants = requireNonNull(List.copyOf(uniqueAttackers), "participants");
+        List<UUID> participants = List.copyOf(uniqueAttackers);
 
-        String tierName = requireNonNull(tier.name(), "tierName");
+        String tierName = tier.name();
         LOGGER.info("[Resonance] {} triggered on entity {} by {} players! Time span: {}ms, damage: {}x, style: +{}",
             tierName, entityId, playerCount, timeSpan, damageMultiplier, styleBonus);
 
@@ -280,7 +273,7 @@ public final class ResonanceChainSystem {
      * @param target The target entity
      * @param questId The quest ID for config lookup (nullable)
      */
-    private void applyResonanceEffects(ResonanceTier tier, int styleBonus, @Nonnull List<UUID> participants,
+    private void applyResonanceEffects(ResonanceTier tier, int styleBonus, List<UUID> participants,
                                         LivingEntity target, @Nullable UUID questId) {
         for (UUID playerId : participants) {
             // Add style bonus to combo session (using config value, not tier default)
@@ -299,7 +292,10 @@ public final class ResonanceChainSystem {
 
             // Get player and apply visual/audio feedback
             if (target.level() instanceof ServerLevel serverLevel && serverLevel.getServer() != null) {
-                ServerPlayer player = serverLevel.getServer().getPlayerList().getPlayer(requireNonNull(playerId, "playerId"));
+                if (playerId == null) {
+                    continue;
+                }
+                ServerPlayer player = serverLevel.getServer().getPlayerList().getPlayer(playerId);
                 if (player != null) {
                     // Sound effect
                     float pitch = switch (tier) {
@@ -308,19 +304,15 @@ public final class ResonanceChainSystem {
                         case APOCALYPSE -> 2.0f;
                         default -> 1.0f;
                     };
-                    player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                        requireNonNull(SoundEvents.PLAYER_LEVELUP, "PLAYER_LEVELUP"),
-                        SoundSource.PLAYERS, 1.0f, pitch);
+                    playSound(player, SoundEvents.PLAYER_LEVELUP, 1.0f, pitch);
 
                     // Additional sound for higher tiers
                     if (tier == ResonanceTier.TRINITY || tier == ResonanceTier.APOCALYPSE) {
-                        player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                            requireNonNull(SoundEvents.TOTEM_USE, "TOTEM_USE"),
-                            SoundSource.PLAYERS, 0.5f, pitch);
+                        playSound(player, SoundEvents.TOTEM_USE, 0.5f, pitch);
                     }
 
                     // Send network packet for HUD notification
-                    sendResonanceNotification(requireNonNull(player, "player"), tier, styleBonus);
+                    sendResonanceNotification(player, tier, styleBonus);
                 }
             }
         }
@@ -338,12 +330,12 @@ public final class ResonanceChainSystem {
                 default -> 0;
             };
 
-            serverLevel.sendParticles(requireNonNull(ParticleTypes.END_ROD, "END_ROD"), x, y, z,
+            sendParticles(serverLevel, ParticleTypes.END_ROD, x, y, z,
                 particleCount, 0.5, 0.5, 0.5, 0.1);
 
             // Extra particles for APOCALYPSE
             if (tier == ResonanceTier.APOCALYPSE) {
-                serverLevel.sendParticles(requireNonNull(ParticleTypes.EXPLOSION, "EXPLOSION"), x, y, z,
+                sendParticles(serverLevel, ParticleTypes.EXPLOSION, x, y, z,
                     5, 0.3, 0.3, 0.3, 0);
             }
 
@@ -366,7 +358,14 @@ public final class ResonanceChainSystem {
         float damage = tier == ResonanceTier.APOCALYPSE
             ? config.apocalypseShockwaveDamage : config.trinityShockwaveDamage;
 
-        var bounds = requireNonNull(center.getBoundingBox().inflate(radius), "shockwaveBounds");
+        var bounds = center.getBoundingBox();
+        if (bounds == null) {
+            return;
+        }
+        bounds = bounds.inflate(radius);
+        if (bounds == null) {
+            return;
+        }
         List<LivingEntity> nearby = level.getEntitiesOfClass(
             LivingEntity.class,
             bounds,
@@ -374,7 +373,10 @@ public final class ResonanceChainSystem {
         );
 
         for (LivingEntity entity : nearby) {
-            entity.hurt(requireNonNull(level.damageSources().magic(), "magicDamage"), damage);
+            var magicDamage = level.damageSources().magic();
+            if (magicDamage != null) {
+                entity.hurt(magicDamage, damage);
+            }
 
             // Knockback away from center
             double dx = entity.getX() - center.getX();
@@ -400,9 +402,12 @@ public final class ResonanceChainSystem {
      * @param tier The resonance tier achieved
      * @param styleBonus The style bonus from config (may differ from tier default)
      */
-    private void sendResonanceNotification(@Nonnull ServerPlayer player, ResonanceTier tier, int styleBonus) {
-        String tierName = requireNonNull(tier.name(), "tierName");
-        String announcement = requireNonNull(tier.announcement, "announcement");
+    private void sendResonanceNotification(ServerPlayer player, ResonanceTier tier, int styleBonus) {
+        if (player == null) {
+            return;
+        }
+        String tierName = tier.name();
+        String announcement = tier.announcement;
         // Create and send payload (use config styleBonus, not tier default)
         ResonanceNotificationPayload payload = new ResonanceNotificationPayload(
             tierName,
@@ -452,5 +457,31 @@ public final class ResonanceChainSystem {
     public int getHitCount(int entityId) {
         List<HitRecord> hits = recentHits.get(entityId);
         return hits != null ? hits.size() : 0;
+    }
+
+    private static String resolveAttackerName(ServerPlayer attacker) {
+        var nameComponent = attacker.getName();
+        String name = nameComponent != null ? nameComponent.getString() : null;
+        if (name == null || name.trim().isEmpty()) {
+            return "Unknown";
+        }
+        return name;
+    }
+
+    private static void playSound(ServerPlayer player, net.minecraft.sounds.SoundEvent sound,
+            float volume, float pitch) {
+        if (player == null || sound == null) {
+            return;
+        }
+        player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
+            sound, SoundSource.PLAYERS, volume, pitch);
+    }
+
+    private static void sendParticles(ServerLevel level, SimpleParticleType particle,
+            double x, double y, double z, int count, double dx, double dy, double dz, double speed) {
+        if (level == null || particle == null) {
+            return;
+        }
+        level.sendParticles(particle, x, y, z, count, dx, dy, dz, speed);
     }
 }

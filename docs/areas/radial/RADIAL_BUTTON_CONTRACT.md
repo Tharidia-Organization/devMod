@@ -1,6 +1,7 @@
 # Radial Button Contract
 
-> **Status**: HISTORICAL (spec snapshot; not enforced by current implementation)
+> Last updated: 2025-12-26
+> Status: HISTORICAL (spec snapshot; not enforced by current implementation)
 
 This document defines the behavioral contract for each action exposed via the Radial Menu.
 

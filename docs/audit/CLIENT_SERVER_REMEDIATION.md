@@ -1,7 +1,7 @@
 # Client/Server Separation Remediation
 
-**Last Updated:** 2025-12-24  
-**Status:** In Progress (P0 crash fixes applied)
+> Last updated: 2025-12-24
+> Status: NEEDS_VERIFICATION
 
 ## Scope
 

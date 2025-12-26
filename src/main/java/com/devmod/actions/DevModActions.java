@@ -1,5 +1,7 @@
 package com.devmod.actions;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import net.minecraft.world.item.Items;
 
 import com.devmod.arena.command.ArenaActionRegistry;
@@ -10,9 +12,14 @@ import com.devmod.telemetry.dashboard.DashboardCommand;
 import com.devmod.telemetry.dungeon.DungeonCommand;
 
 public final class DevModActions {
+    private static final AtomicBoolean REGISTERED = new AtomicBoolean(false);
+
     private DevModActions() {}
 
     public static void registerCommon() {
+        if (!REGISTERED.compareAndSet(false, true)) {
+            return;
+        }
         registerCommandActions();
         registerServerActions();
     }

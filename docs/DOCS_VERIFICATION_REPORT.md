@@ -2,7 +2,7 @@
 
 > Generated: 2025-12-26
 > Scope: Markdown files in repo (excluding build/log/run/etc.).
-> Skips: archived docs, legacy stub dirs, planning docs under recipe-editor-spec, and L*_REPORT stubs.
+> Skips: archived docs, legacy stub dirs (`docs/arena-template-rework/`, `docs/editor-design-system/`, `docs/impact-hud-audit/`, `docs/prismatic-shield-integration/`, `docs/recipe-editor-spec/`), planning docs under `docs/subsystems/recipe-editor-spec/`, and `docs/testing/L*_REPORT.md` stubs.
 > Path validation: explicit repo-root paths only (src/, docs/, scripts/, tools/).
 > Placeholders/wildcards (<, >, *, …) are excluded from validation.
 

@@ -2,7 +2,6 @@ package com.devmod.compat.mods.dummmmmmy;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -101,7 +100,9 @@ public class DummmmmmyCompat implements CompatModule {
                     dummyEntityClass = Class.forName(pkg + ".DummyEntity");
                     LOGGER.debug("[Compat:dummmmmmy] Found DummyEntity at {}", pkg);
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:dummmmmmy] DummyEntity not found in {}", pkg);
+                }
             }
 
             if (dummyEntityClass != null) {
@@ -112,7 +113,9 @@ public class DummmmmmyCompat implements CompatModule {
                     // Try alternative names
                     try {
                         getTotalDamageMethod = dummyEntityClass.getMethod("getDamageTaken");
-                    } catch (NoSuchMethodException ignored) {}
+                    } catch (NoSuchMethodException e2) {
+                        LOGGER.trace("[Compat:dummmmmmy] getDamageTaken not available", e2);
+                    }
                 }
 
                 try {
@@ -120,12 +123,16 @@ public class DummmmmmyCompat implements CompatModule {
                 } catch (NoSuchMethodException e) {
                     try {
                         resetDamageMethod = dummyEntityClass.getMethod("reset");
-                    } catch (NoSuchMethodException ignored) {}
+                    } catch (NoSuchMethodException e2) {
+                        LOGGER.trace("[Compat:dummmmmmy] reset not available", e2);
+                    }
                 }
 
                 try {
                     getDpsMethod = dummyEntityClass.getMethod("getDps");
-                } catch (NoSuchMethodException ignored) {}
+                } catch (NoSuchMethodException e) {
+                    LOGGER.trace("[Compat:dummmmmmy] getDps not available", e);
+                }
 
                 apiAvailable = true;
                 LOGGER.info("[Compat:dummmmmmy] Dummmmmmy API loaded");
@@ -407,7 +414,7 @@ public class DummmmmmyCompat implements CompatModule {
      */
     public static List<Entity> getArenaDummies(ServerLevel level) {
         if (level == null) {
-            return Collections.emptyList();
+            return new ArrayList<>();
         }
 
         List<Entity> result = new ArrayList<>();

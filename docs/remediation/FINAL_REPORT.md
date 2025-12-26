@@ -1,5 +1,8 @@
 # Agent 05 Final Audit Report
 
+> Last updated: 2025-12-25
+> Status: HISTORICAL (snapshot)
+
 **Date:** 2025-12-25
 **Project:** DevMod NeoForge 1.21.1
 **Scope:** Dedicated Server Side-Safety Remediation

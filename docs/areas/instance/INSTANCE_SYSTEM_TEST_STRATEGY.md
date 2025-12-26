@@ -1,7 +1,7 @@
 # Instance System - Test Strategy
 
-> **Status**: CURRENT (automated coverage; integration gaps tracked)
-> **Last Verified**: 2025-12-26
+> Last updated: 2025-12-26
+> Status: NEEDS_VERIFICATION (last verified 2025-12-26)
 
 ---
 
@@ -44,4 +44,3 @@ Run direct instance validations:
 
 - `docs/DOCS_BEHAVIOR_MATRIX.md`
 - `docs/areas/instance/README.md`
-

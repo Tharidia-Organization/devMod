@@ -1,6 +1,5 @@
 package com.devmod.compat.mods.lithium;
 
-import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -22,7 +21,6 @@ public class LithiumCompat implements CompatModule {
 
     // Cached reflection references
     private static Class<?> lithiumConfigClass;
-    private static Object configInstance;
 
     @Override
     public String modId() {
@@ -74,15 +72,11 @@ public class LithiumCompat implements CompatModule {
                     lithiumConfigClass = Class.forName(className);
                     LOGGER.debug("[Compat:lithium] Found config at {}", className);
 
-                    // Try to get config instance
-                    try {
-                        Field instanceField = lithiumConfigClass.getField("INSTANCE");
-                        configInstance = instanceField.get(null);
-                    } catch (NoSuchFieldException ignored) {}
-
                     apiAvailable = true;
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:lithium] Config class not found: {}", className);
+                }
             }
 
             if (apiAvailable) {

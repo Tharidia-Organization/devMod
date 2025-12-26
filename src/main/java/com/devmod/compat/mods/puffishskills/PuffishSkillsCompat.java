@@ -26,10 +26,6 @@ public class PuffishSkillsCompat implements CompatModule {
 
     // Cached reflection references
     private static Class<?> skillsApiClass;
-    private static Class<?> skillCategoryClass;
-    private static Method getExperienceMethod;
-    private static Method getPointsSpentMethod;
-    private static Method getUnlockedSkillsMethod;
 
     @Override
     public String modId() {
@@ -80,14 +76,10 @@ public class PuffishSkillsCompat implements CompatModule {
                     skillsApiClass = Class.forName(pkg + ".SkillsAPI");
                     LOGGER.debug("[Compat:puffishskills] Found SkillsAPI at {}", pkg);
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:puffishskills] SkillsAPI not found in {}", pkg);
+                }
             }
-
-            // Try to find category class
-            try {
-                skillCategoryClass = Class.forName(
-                    "net.puffish.skillsmod.api.Category");
-            } catch (ClassNotFoundException ignored) {}
 
             if (skillsApiClass != null) {
                 apiAvailable = true;
@@ -188,7 +180,9 @@ public class PuffishSkillsCompat implements CompatModule {
                     if (xp instanceof Number) {
                         info.put("experience", ((Number) xp).intValue());
                     }
-                } catch (NoSuchMethodException ignored) {}
+                } catch (NoSuchMethodException e) {
+                    LOGGER.trace("[Compat:puffishskills] getExperience not available", e);
+                }
 
                 // Get points spent
                 try {
@@ -198,7 +192,9 @@ public class PuffishSkillsCompat implements CompatModule {
                     if (points instanceof Number) {
                         info.put("pointsSpent", ((Number) points).intValue());
                     }
-                } catch (NoSuchMethodException ignored) {}
+                } catch (NoSuchMethodException e) {
+                    LOGGER.trace("[Compat:puffishskills] getPointsSpent not available", e);
+                }
 
                 // Get unlocked skills count
                 try {
@@ -208,7 +204,9 @@ public class PuffishSkillsCompat implements CompatModule {
                     if (unlocked instanceof Collection<?> unlockedSkills) {
                         info.put("unlockedCount", unlockedSkills.size());
                     }
-                } catch (NoSuchMethodException ignored) {}
+                } catch (NoSuchMethodException e) {
+                    LOGGER.trace("[Compat:puffishskills] getUnlockedSkills not available", e);
+                }
             }
 
         } catch (Exception e) {

@@ -1,7 +1,7 @@
 # Dedicated Server Readiness
 
-**Last Updated:** 2025-12-25  
-**Status:** IN PROGRESS (P0 fixes applied)
+> Last updated: 2025-12-25
+> Status: NEEDS_VERIFICATION (P0 fixes applied)
 
 ## Run Commands
 

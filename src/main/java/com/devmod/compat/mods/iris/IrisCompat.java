@@ -77,7 +77,9 @@ public class IrisCompat implements CompatModule {
                     irisApiClass = Class.forName(className);
                     LOGGER.debug("[Compat:iris] Found Iris API at {}", className);
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:iris] Iris API class not found: {}", className);
+                }
             }
 
             if (irisApiClass != null) {
@@ -87,7 +89,9 @@ public class IrisCompat implements CompatModule {
                 } catch (NoSuchMethodException e) {
                     try {
                         isShadersEnabledMethod = irisApiClass.getMethod("isShadersEnabled");
-                    } catch (NoSuchMethodException ignored) {}
+                    } catch (NoSuchMethodException e2) {
+                        LOGGER.trace("[Compat:iris] Shaders enabled method not found", e2);
+                    }
                 }
 
                 // Find current pack name method
@@ -96,13 +100,17 @@ public class IrisCompat implements CompatModule {
                 } catch (NoSuchMethodException e) {
                     try {
                         getCurrentPackNameMethod = irisApiClass.getMethod("getConfiguredPackName");
-                    } catch (NoSuchMethodException ignored) {}
+                    } catch (NoSuchMethodException e2) {
+                        LOGGER.trace("[Compat:iris] Pack name method not found", e2);
+                    }
                 }
 
                 // Find shadow pass method
                 try {
                     isRenderingShadowPassMethod = irisApiClass.getMethod("isRenderingShadowPass");
-                } catch (NoSuchMethodException ignored) {}
+                } catch (NoSuchMethodException e) {
+                    LOGGER.trace("[Compat:iris] Shadow pass method not found", e);
+                }
 
                 apiAvailable = true;
                 LOGGER.info("[Compat:iris] Iris API loaded");
@@ -126,7 +134,9 @@ public class IrisCompat implements CompatModule {
                 try {
                     var field = irisApiClass.getField("INSTANCE");
                     return field.get(null);
-                } catch (NoSuchFieldException ignored) {}
+                } catch (NoSuchFieldException e2) {
+                    LOGGER.trace("[Compat:iris] INSTANCE field not found on Iris API", e2);
+                }
             }
         } catch (Exception e) {
             LOGGER.debug("[Compat:iris] Could not get API instance: {}", e.getMessage());

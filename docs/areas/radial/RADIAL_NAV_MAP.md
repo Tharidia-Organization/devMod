@@ -1,6 +1,7 @@
 # Radial Navigation Map (DevMod)
 
-> **Status**: PLANNING (vision map; not guaranteed to match implementation)
+> Last updated: 2025-12-26
+> Status: PLANNING (vision map; not guaranteed to match implementation)
 
 Obiettivo: Radial come gateway unico. Max 6-8 categorie root, con sub-wheel contestuali, breadcrumb e search.
 

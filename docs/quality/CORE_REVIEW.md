@@ -1,5 +1,8 @@
 # Core Critical Files Review
 
+> Last updated: 2025-12-26
+> Status: HISTORICAL (snapshot)
+
 **Date**: 2025-12-26
 **Reviewer**: Quality Pass Automation
 

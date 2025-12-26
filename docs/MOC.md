@@ -70,14 +70,15 @@
 
 ## Audits, Quality, and Remediation
 - [[AUDIT_REPORT]]
-- [[_deprecated/audit/CLIENT_SERVER_REMEDIATION]]
-- [[_deprecated/audit/MIXIN_SIDE_SAFETY]]
-- [[_deprecated/audit/STATIC_STATE_AND_LEAKS]]
-- [[_deprecated/quality/BASELINE]]
-- [[_deprecated/quality/CORE_REVIEW]]
-- [[_deprecated/quality/REFACTOR_PLAN]]
-- [[_deprecated/remediation/VERIFY]]
-- [[_deprecated/remediation/FINAL_REPORT]]
+- [[audit/CLIENT_SERVER_REMEDIATION]]
+- [[audit/MIXIN_SIDE_SAFETY]]
+- [[audit/STATIC_STATE_AND_LEAKS]]
+- [[quality/BASELINE]]
+- [[quality/CORE_REVIEW]]
+- [[quality/REFACTOR_PLAN]]
+- [[quality/FINAL_REPORT]]
+- [[remediation/VERIFY]]
+- [[remediation/FINAL_REPORT]]
 
 ## Planning and Project Tracking
 - [[project/IMPLEMENTATION_STATUS]]
@@ -92,4 +93,4 @@
 
 ## Archive
 - [[_deprecated/]]
-- [[_deprecated/reorg/REORG_COMPLETE]]
+- [[reorg/REORG_COMPLETE]]

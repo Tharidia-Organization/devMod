@@ -25,6 +25,7 @@ class AutosmokeRunnerTest {
 
         Path originalMarker = guard.getProductionMarkerPath();
         try (ArenaTemplateRegistry registry = new ArenaTemplateRegistry(new ArenaTelemetry())) {
+            registry.setLoggingEnabled(false);
             Path tempDir = Files.createTempDirectory("autosmoke-runner");
             Path marker = tempDir.resolve("marker");
             guard.setProductionMarkerPath(marker);
@@ -56,6 +57,7 @@ class AutosmokeRunnerTest {
         AutosmokeGuard guard = AutosmokeGuard.getInstance();
         Path originalMarker = guard.getProductionMarkerPath();
         try (ArenaTemplateRegistry registry = new ArenaTemplateRegistry(new ArenaTelemetry())) {
+            registry.setLoggingEnabled(false);
             Path tempDir = Files.createTempDirectory("autosmoke-runner-block");
             Path marker = tempDir.resolve("marker");
             Files.createFile(marker);

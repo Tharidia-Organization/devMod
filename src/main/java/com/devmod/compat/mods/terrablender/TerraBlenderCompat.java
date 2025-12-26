@@ -75,16 +75,21 @@ public class TerraBlenderCompat implements CompatModule {
                     regionsClass = Class.forName(pkg + ".Regions", false, TerraBlenderCompat.class.getClassLoader());
                     LOGGER.debug("[Compat:terrablender] Found Regions at {}", pkg);
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:terrablender] Regions class not found in {}", pkg);
+                }
             }
 
             if (regionsClass != null) {
                 try {
                     getRegionsMethod = regionsClass.getMethod("getOverworldRegions");
-                } catch (NoSuchMethodException ignored) {
+                } catch (NoSuchMethodException e) {
+                    LOGGER.trace("[Compat:terrablender] getOverworldRegions not available", e);
                     try {
                         getRegionsMethod = regionsClass.getMethod("getRegions");
-                    } catch (NoSuchMethodException ignored2) {}
+                    } catch (NoSuchMethodException e2) {
+                        LOGGER.trace("[Compat:terrablender] getRegions not available", e2);
+                    }
                 }
 
                 apiAvailable = true;

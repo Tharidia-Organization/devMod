@@ -86,10 +86,16 @@ import static com.devmod.network.ChannelId.GLOBAL_CONFIG_SYNC;
 import static com.devmod.network.ChannelId.INSTANCE_LOADING;
 import static com.devmod.network.ChannelId.INVITE_RESPONSE;
 import static com.devmod.network.ChannelId.LVC_SYNC;
+import static com.devmod.network.ChannelId.MAILBOX_NOTIFY;
+import static com.devmod.network.ChannelId.MAILBOX_READ;
+import static com.devmod.network.ChannelId.MAILBOX_SEND;
+import static com.devmod.network.ChannelId.MAILBOX_SYNC;
 import static com.devmod.network.ChannelId.MOB_CONFIG_CONFIRM;
 import static com.devmod.network.ChannelId.MOB_STATS;
 import static com.devmod.network.ChannelId.MODIFY_ITEM;
 import static com.devmod.network.ChannelId.NAMED_INVITE;
+import static com.devmod.network.ChannelId.NEWS_READ;
+import static com.devmod.network.ChannelId.NEWS_SYNC;
 import static com.devmod.network.ChannelId.PARTY_ACTION;
 import static com.devmod.network.ChannelId.PARTY_NOTIFICATION;
 import static com.devmod.network.ChannelId.PARTY_SYNC;
@@ -665,6 +671,41 @@ public class NetworkHandler {
                     }
                 }
         );
+
+        // ===================================================================
+        // MAILBOX SYSTEM CHANNELS (100-115) - see ChannelId enum
+        // ===================================================================
+
+        event.registrar(MAILBOX_SYNC.asString()).playToClient(
+                nn(com.devmod.mailbox.network.payload.MailboxSyncPayload.TYPE),
+                nn(com.devmod.mailbox.network.payload.MailboxSyncPayload.STREAM_CODEC),
+                com.devmod.mailbox.network.MailboxNetworkHandler::handleMailboxSyncClient
+        );
+        event.registrar(MAILBOX_SEND.asString()).playToServer(
+                nn(com.devmod.mailbox.network.payload.MailboxSendPayload.TYPE),
+                nn(com.devmod.mailbox.network.payload.MailboxSendPayload.STREAM_CODEC),
+                com.devmod.mailbox.network.MailboxNetworkHandler::handleSend
+        );
+        event.registrar(MAILBOX_READ.asString()).playToServer(
+                nn(com.devmod.mailbox.network.payload.MailboxActionPayload.TYPE),
+                nn(com.devmod.mailbox.network.payload.MailboxActionPayload.STREAM_CODEC),
+                com.devmod.mailbox.network.MailboxNetworkHandler::handleAction
+        );
+        event.registrar(MAILBOX_NOTIFY.asString()).playToClient(
+                nn(com.devmod.mailbox.network.payload.MailboxNotifyPayload.TYPE),
+                nn(com.devmod.mailbox.network.payload.MailboxNotifyPayload.STREAM_CODEC),
+                com.devmod.mailbox.network.MailboxNetworkHandler::handleNotifyClient
+        );
+        event.registrar(NEWS_SYNC.asString()).playToClient(
+                nn(com.devmod.mailbox.network.payload.NewsSyncPayload.TYPE),
+                nn(com.devmod.mailbox.network.payload.NewsSyncPayload.STREAM_CODEC),
+                com.devmod.mailbox.network.MailboxNetworkHandler::handleNewsSyncClient
+        );
+        event.registrar(NEWS_READ.asString()).playToServer(
+                nn(com.devmod.mailbox.network.payload.NewsReadPayload.TYPE),
+                nn(com.devmod.mailbox.network.payload.NewsReadPayload.STREAM_CODEC),
+                com.devmod.mailbox.network.MailboxNetworkHandler::handleNewsRead
+        );
     }
 
     // ===================================================================
@@ -814,14 +855,16 @@ public class NetworkHandler {
      * Contains real-time combat stats for HUD display.
      */
     public static void sendLvcSync(ServerPlayer player, LVCSyncPayload payload) {
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+            Objects.requireNonNull(player), Objects.requireNonNull(payload));
     }
 
     /**
      * Send season pass tier-up notification to a player.
      */
     public static void sendSeasonTierUp(ServerPlayer player, SeasonTierUpPayload payload) {
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, Objects.requireNonNull(payload));
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+            Objects.requireNonNull(player), Objects.requireNonNull(payload));
     }
 
     // ===================================================================

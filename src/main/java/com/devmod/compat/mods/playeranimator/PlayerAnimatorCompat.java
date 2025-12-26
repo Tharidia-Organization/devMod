@@ -2,6 +2,7 @@ package com.devmod.compat.mods.playeranimator;
 
 import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -25,8 +26,6 @@ public class PlayerAnimatorCompat implements CompatModule {
     // Cached reflection references
     private static Class<?> playerAnimationAccessClass;
     private static Class<?> animationStackClass;
-    private static Class<?> animationDataClass;
-    private static Method getAnimationDataMethod;
     private static Method isPlayingMethod;
     private static Method getCurrentAnimationMethod;
 
@@ -82,20 +81,18 @@ public class PlayerAnimatorCompat implements CompatModule {
                     animationStackClass = Class.forName(pkg + ".AnimationStack");
                     LOGGER.debug("[Compat:playeranimator] Found AnimationStack at {}", pkg);
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:playeranimator] AnimationStack not found in {}", pkg);
+                }
 
                 try {
                     playerAnimationAccessClass = Class.forName(pkg + ".IPlayerAnimationAccess");
                     LOGGER.debug("[Compat:playeranimator] Found IPlayerAnimationAccess at {}", pkg);
                     break;
-                } catch (ClassNotFoundException ignored) {}
+                } catch (ClassNotFoundException e) {
+                    LOGGER.trace("[Compat:playeranimator] IPlayerAnimationAccess not found in {}", pkg);
+                }
             }
-
-            // Try to find animation data accessor
-            try {
-                animationDataClass = Class.forName(
-                    "dev.kosmx.playerAnim.api.layered.IAnimationAccess");
-            } catch (ClassNotFoundException ignored) {}
 
             if (animationStackClass != null || playerAnimationAccessClass != null) {
                 apiAvailable = true;
@@ -170,7 +167,9 @@ public class PlayerAnimatorCompat implements CompatModule {
                             return (Boolean) active;
                         }
                     }
-                } catch (NoSuchMethodException ignored) {}
+                } catch (NoSuchMethodException e) {
+                    LOGGER.trace("[Compat:playeranimator] getAnimationStack or isActive not available", e);
+                }
             }
 
         } catch (Exception e) {
@@ -247,7 +246,9 @@ public class PlayerAnimatorCompat implements CompatModule {
                         if (name != null) {
                             return name.toString();
                         }
-                    } catch (NoSuchMethodException ignored) {}
+                    } catch (NoSuchMethodException e) {
+                        LOGGER.trace("[Compat:playeranimator] getName not available on animation", e);
+                    }
 
                     // Try toString as fallback
                     return animation.getClass().getSimpleName();
@@ -298,7 +299,7 @@ public class PlayerAnimatorCompat implements CompatModule {
         }
 
         // Check for known features
-        switch (featureName.toLowerCase()) {
+        switch (featureName.toLowerCase(Locale.ROOT)) {
             case "layered":
                 return animationStackClass != null;
             case "blending":

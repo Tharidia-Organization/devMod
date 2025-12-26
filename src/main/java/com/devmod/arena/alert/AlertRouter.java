@@ -201,8 +201,10 @@ public class AlertRouter implements AutoCloseable {
     public AlertRouter registerChannel(AlertChannel channel) {
         Objects.requireNonNull(channel, "channel must not be null");
         channels.put(channel.getId(), channel);
-        LOGGER.info("Registered alert channel: " + channel.getId() +
-                    " (critical=" + channel.isCritical() + ")");
+        if (loggingEnabled) {
+            LOGGER.info("Registered alert channel: " + channel.getId() +
+                        " (critical=" + channel.isCritical() + ")");
+        }
         return this;
     }
 
@@ -234,7 +236,9 @@ public class AlertRouter implements AutoCloseable {
     public boolean unregisterChannel(String channelId) {
         AlertChannel removed = channels.remove(channelId);
         if (removed != null) {
-            LOGGER.info("Unregistered alert channel: " + channelId);
+            if (loggingEnabled) {
+                LOGGER.info("Unregistered alert channel: " + channelId);
+            }
             return true;
         }
         return false;
@@ -267,7 +271,9 @@ public class AlertRouter implements AutoCloseable {
                     success = channel.deliver(context);
                 } catch (Exception e) {
                     errorMessage = e.getMessage();
-                    LOGGER.log(Level.WARNING, "Exception delivering to " + channel.getId(), e);
+                    if (loggingEnabled) {
+                        LOGGER.log(Level.WARNING, "Exception delivering to " + channel.getId(), e);
+                    }
                 }
 
                 if (success) {
@@ -325,7 +331,9 @@ public class AlertRouter implements AutoCloseable {
         try {
             return route(context).get(timeout.toMillis(), TimeUnit.MILLISECONDS);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Sync route failed", e);
+            if (loggingEnabled) {
+                LOGGER.log(Level.WARNING, "Sync route failed", e);
+            }
             return new AlertDeliveryResult(context.errorId(), 0, channels.size(), Collections.emptyList());
         }
     }
@@ -342,7 +350,9 @@ public class AlertRouter implements AutoCloseable {
         );
 
         if (!retryQueue.offer(retryable)) {
-            LOGGER.warning("Retry queue full, dropping alert for channel: " + channelId);
+            if (loggingEnabled) {
+                LOGGER.warning("Retry queue full, dropping alert for channel: " + channelId);
+            }
             return null;
         }
         retriedCount.incrementAndGet();
@@ -380,26 +390,34 @@ public class AlertRouter implements AutoCloseable {
                     success = channel.deliver(alert.context());
                 } catch (Exception e) {
                     errorMessage = e.getMessage();
-                    LOGGER.log(Level.WARNING, "Retry delivery failed for " + alert.channelId(), e);
+                    if (loggingEnabled) {
+                        LOGGER.log(Level.WARNING, "Retry delivery failed for " + alert.channelId(), e);
+                    }
                 }
 
                 if (success) {
                     deliveredCount.incrementAndGet();
                     recordDelivery(alert.context(), channel, DeliveryStatus.DELIVERED, alert.attemptCount() + 1, null, errorMessage);
-                    LOGGER.fine("Retry succeeded for channel: " + alert.channelId());
+                    if (loggingEnabled) {
+                        LOGGER.fine("Retry succeeded for channel: " + alert.channelId());
+                    }
                 } else if (alert.hasRetriesRemaining()) {
                     // Re-queue with incremented attempt
                     RetryableAlert nextAttempt = alert.withIncrementedAttempt();
                     if (!retryQueue.offer(nextAttempt)) {
-                        LOGGER.warning("Retry queue full, dropping retry for: " + alert.channelId());
+                        if (loggingEnabled) {
+                            LOGGER.warning("Retry queue full, dropping retry for: " + alert.channelId());
+                        }
                         recordDelivery(alert.context(), channel, DeliveryStatus.FAILED, alert.attemptCount() + 1, null, errorMessage);
                     } else {
                         recordDelivery(alert.context(), channel, DeliveryStatus.RETRYING,
                             alert.attemptCount() + 1, nextAttempt.nextRetryAt(), errorMessage);
                     }
                 } else {
-                    LOGGER.severe("Max retries exceeded for channel: " + alert.channelId() +
-                                  ", error: " + alert.context().errorId());
+                    if (loggingEnabled) {
+                        LOGGER.severe("Max retries exceeded for channel: " + alert.channelId() +
+                                      ", error: " + alert.context().errorId());
+                    }
                     recordDelivery(alert.context(), channel, DeliveryStatus.FAILED, alert.attemptCount() + 1, null, errorMessage);
                 }
             }
@@ -419,7 +437,9 @@ public class AlertRouter implements AutoCloseable {
         try {
             recorder.record(context, channel, status, attemptCount, nextRetryAt, errorMessage);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Failed to record alert delivery for " + channel.getId(), e);
+            if (loggingEnabled) {
+                LOGGER.log(Level.WARNING, "Failed to record alert delivery for " + channel.getId(), e);
+            }
         }
     }
 
@@ -469,7 +489,9 @@ public class AlertRouter implements AutoCloseable {
             deliveryExecutor.shutdownNow();
         }
 
-        LOGGER.info("AlertRouter closed. Stats: " + getStats());
+        if (loggingEnabled) {
+            LOGGER.info("AlertRouter closed. Stats: " + getStats());
+        }
     }
 
     /**

@@ -59,9 +59,9 @@ rg --files docs
 - `docs/network/`
 
 ## Audits, Quality, and Remediation
-- `docs/_deprecated/audit/`
-- `docs/_deprecated/quality/`
-- `docs/_deprecated/remediation/`
+- `docs/audit/`
+- `docs/quality/`
+- `docs/remediation/`
 
 ## Planning and Project Tracking
 - `docs/project/`
@@ -71,6 +71,9 @@ rg --files docs
 
 ## Tools
 - `docs/tools/`
+
+## Historical (Completed Reorg)
+- `docs/reorg/`
 
 ## Archive
 - `docs/_deprecated/`
