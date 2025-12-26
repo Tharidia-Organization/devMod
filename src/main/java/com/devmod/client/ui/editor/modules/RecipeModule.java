@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -49,14 +50,14 @@ public class RecipeModule extends AbstractEditorModule {
     // STATE
     // ═══════════════════════════════════════════════════════════════
 
-    private CraftingRecipeData currentRecipe;
+    private @Nullable CraftingRecipeData currentRecipe;
     private CraftingType craftingType = CraftingType.SHAPED;
     private String recipeId = "";
     private String recipeGroup = "";
     private RecipeCategory category = RecipeCategory.MISC;
     private int resultQuantity = 1;
     private boolean replaceVanillaRecipe = false;
-    private ResourceLocation vanillaRecipeToReplace = null;
+    private @Nullable ResourceLocation vanillaRecipeToReplace = null;
 
     // ═══════════════════════════════════════════════════════════════
     // UI COMPONENTS
@@ -64,14 +65,14 @@ public class RecipeModule extends AbstractEditorModule {
 
     private final RecipeGridComponent recipeGrid = new RecipeGridComponent();
     private final ItemPickerOverlay itemPicker = new ItemPickerOverlay();
-    private EditorToggle shapedToggle;
-    private EditorToggle replaceVanillaToggle;
-    private EditorTextField idField;
-    private EditorTextField groupField;
-    private EditorSlider quantitySlider;
+    private @Nullable EditorToggle shapedToggle;
+    private @Nullable EditorToggle replaceVanillaToggle;
+    private @Nullable EditorTextField idField;
+    private @Nullable EditorTextField groupField;
+    private @Nullable EditorSlider quantitySlider;
 
     // Validation state
-    private RecipeValidator.ValidationResult lastValidation;
+    private @Nullable RecipeValidator.ValidationResult lastValidation;
     private boolean validationDirty = true;
 
     // Tracks if callbacks have been initialized
@@ -134,17 +135,18 @@ public class RecipeModule extends AbstractEditorModule {
         setupCallbacks();
 
         // Create empty recipe with current item as result
-        currentRecipe = CraftingRecipeData.empty(item);
+        CraftingRecipeData recipe = CraftingRecipeData.empty(item);
+        currentRecipe = recipe;
 
         // Initialize state from recipe
-        craftingType = currentRecipe.craftingType();
-        recipeId = currentRecipe.id().toString();
-        recipeGroup = currentRecipe.group() != null ? currentRecipe.group() : "";
-        category = currentRecipe.category();
-        resultQuantity = currentRecipe.result().count();
+        craftingType = recipe.craftingType();
+        recipeId = recipe.id().toString();
+        recipeGroup = recipe.group() != null ? recipe.group() : "";
+        category = recipe.category();
+        resultQuantity = recipe.result().count();
 
         // Load grid
-        recipeGrid.loadFromRecipe(currentRecipe);
+        recipeGrid.loadFromRecipe(recipe);
 
         // Mark validation as dirty
         validationDirty = true;
@@ -226,7 +228,7 @@ public class RecipeModule extends AbstractEditorModule {
      * Find a vanilla or modded recipe that produces this item.
      * Searches all recipe types: crafting, smelting, blasting, smoking, campfire, smithing, stonecutting.
      */
-    private ResourceLocation findVanillaRecipeForItem() {
+    private @Nullable ResourceLocation findVanillaRecipeForItem() {
         var mc = Minecraft.getInstance();
         var level = mc.level;
         if (level == null) return null;
@@ -347,7 +349,7 @@ public class RecipeModule extends AbstractEditorModule {
 
         // Type toggle section
         sections.add(new SimpleHeaderSection("type_header", "Recipe Type"));
-        sections.add(new ToggleSectionAdapter(shapedToggle));
+        sections.add(new ToggleSectionAdapter(Objects.requireNonNull(shapedToggle, "shapedToggle")));
 
         // Type info
         String typeInfo = craftingType == CraftingType.SHAPED
@@ -374,7 +376,7 @@ public class RecipeModule extends AbstractEditorModule {
 
         // Quantity slider
         sections.add(new SimpleHeaderSection("qty_header", "Quantity"));
-        sections.add(new SliderSectionAdapter(quantitySlider));
+        sections.add(new SliderSectionAdapter(Objects.requireNonNull(quantitySlider, "quantitySlider")));
 
         return sections;
     }
@@ -384,7 +386,7 @@ public class RecipeModule extends AbstractEditorModule {
 
         // Recipe ID
         sections.add(new SimpleHeaderSection("id_header", "Recipe ID"));
-        sections.add(new InputSectionAdapter(idField));
+        sections.add(new InputSectionAdapter(Objects.requireNonNull(idField, "idField")));
 
         // Category
         sections.add(new SimpleHeaderSection("cat_header", "Category"));
@@ -395,19 +397,20 @@ public class RecipeModule extends AbstractEditorModule {
 
         // Group
         sections.add(new SimpleHeaderSection("group_header", "Group (Optional)"));
-        sections.add(new InputSectionAdapter(groupField));
+        sections.add(new InputSectionAdapter(Objects.requireNonNull(groupField, "groupField")));
 
         // Spacer
         sections.add(new SimpleSpacer("spacer2", 16));
 
         // Replace vanilla toggle
         sections.add(new SimpleHeaderSection("replace_header", "Override"));
-        sections.add(new ToggleSectionAdapter(replaceVanillaToggle));
+        sections.add(new ToggleSectionAdapter(Objects.requireNonNull(replaceVanillaToggle, "replaceVanillaToggle")));
 
         // Show which recipe will be replaced (if any)
-        if (replaceVanillaRecipe && vanillaRecipeToReplace != null) {
+        ResourceLocation replaceTarget = vanillaRecipeToReplace;
+        if (replaceVanillaRecipe && replaceTarget != null) {
             sections.add(new TextNoteSection("replace_info",
-                "Will replace: " + vanillaRecipeToReplace.toString()));
+                "Will replace: " + replaceTarget.toString()));
         } else if (replaceVanillaRecipe) {
             sections.add(new TextNoteSection("replace_info",
                 "No vanilla recipe found for this item"));
@@ -433,7 +436,7 @@ public class RecipeModule extends AbstractEditorModule {
             lastValidation = RecipeValidator.validateCrafting(recipe);
             validationDirty = false;
         }
-        return lastValidation;
+        return Objects.requireNonNull(lastValidation, "lastValidation");
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -469,8 +472,9 @@ public class RecipeModule extends AbstractEditorModule {
         }
 
         // If replacing vanilla recipe, set the originalId
-        if (replaceVanillaRecipe && vanillaRecipeToReplace != null) {
-            recipe = recipe.withOriginalId(vanillaRecipeToReplace);
+        ResourceLocation replaceTarget = vanillaRecipeToReplace;
+        if (replaceVanillaRecipe && replaceTarget != null) {
+            recipe = recipe.withOriginalId(replaceTarget);
         }
 
         return recipe;

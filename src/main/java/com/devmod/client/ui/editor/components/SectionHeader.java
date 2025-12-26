@@ -2,6 +2,8 @@ package com.devmod.client.ui.editor.components;
 
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -33,7 +35,7 @@ public class SectionHeader {
     private final String title;
     private boolean collapsible = false;
     private boolean collapsed = false;
-    private String tooltip = null;
+    private @Nullable String tooltip = null;
 
     // State
     private boolean hovered = false;
@@ -42,7 +44,7 @@ public class SectionHeader {
     private ResponsiveLayout.Rect bounds = ResponsiveLayout.Rect.EMPTY;
 
     // Callback
-    private Runnable onToggle;
+    private @Nullable Runnable onToggle;
 
     // ═══════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -67,12 +69,12 @@ public class SectionHeader {
         return this;
     }
 
-    public SectionHeader tooltip(String tooltip) {
+    public SectionHeader tooltip(@Nullable String tooltip) {
         this.tooltip = tooltip;
         return this;
     }
 
-    public SectionHeader onToggle(Runnable callback) {
+    public SectionHeader onToggle(@Nullable Runnable callback) {
         this.onToggle = callback;
         return this;
     }
@@ -126,8 +128,9 @@ public class SectionHeader {
         if (collapsible && bounds.contains(mouseX, mouseY)) {
             collapsed = !collapsed;
             EditorSounds.playTabSwitch();
-            if (onToggle != null) {
-                onToggle.run();
+            Runnable toggle = onToggle;
+            if (toggle != null) {
+                toggle.run();
             }
             return true;
         }
@@ -159,7 +162,7 @@ public class SectionHeader {
         this.collapsed = collapsed;
     }
 
-    public String getTooltip() {
+    public @Nullable String getTooltip() {
         return tooltip;
     }
 

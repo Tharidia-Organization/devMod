@@ -2,7 +2,10 @@ package com.devmod.client.ui.editor.modules;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
+
+import javax.annotation.Nullable;
 
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -44,16 +47,16 @@ public class GeneralModule extends AbstractEditorModule {
     // MODULE SWITCHING
     // ═══════════════════════════════════════════════════════════════
 
-    private Consumer<EditorStartTab> moduleSwitchCallback;
+    private @Nullable Consumer<EditorStartTab> moduleSwitchCallback;
 
     // ═══════════════════════════════════════════════════════════════
     // UI COMPONENTS - Quick Settings Tab
     // ═══════════════════════════════════════════════════════════════
 
-    private EditorSlider stackSizeSlider;
-    private EditorToggle unbreakableToggle;
-    private EditorSlider durabilitySlider;
-    private EditorSlider repairCostSlider;
+    private @Nullable EditorSlider stackSizeSlider;
+    private @Nullable EditorToggle unbreakableToggle;
+    private @Nullable EditorSlider durabilitySlider;
+    private @Nullable EditorSlider repairCostSlider;
 
     // ═══════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -70,6 +73,13 @@ public class GeneralModule extends AbstractEditorModule {
     @Override
     public void setModuleSwitchCallback(Consumer<EditorStartTab> callback) {
         this.moduleSwitchCallback = callback;
+    }
+
+    private void switchModule(EditorStartTab tab) {
+        Consumer<EditorStartTab> callback = moduleSwitchCallback;
+        if (callback != null) {
+            callback.accept(tab);
+        }
     }
 
     @Override
@@ -222,39 +232,39 @@ public class GeneralModule extends AbstractEditorModule {
         // Module cards based on item capabilities
         if (isWeaponItem()) {
             sections.add(ModuleCardSection.weapon(
-                tab -> { if (moduleSwitchCallback != null) moduleSwitchCallback.accept(tab); }
+                this::switchModule
             ));
         }
 
         if (isArmorItem()) {
             sections.add(ModuleCardSection.armor(
-                tab -> { if (moduleSwitchCallback != null) moduleSwitchCallback.accept(tab); }
+                this::switchModule
             ));
         }
 
         // Recipe module (available for most items)
         sections.add(ModuleCardSection.recipe(
-            tab -> { if (moduleSwitchCallback != null) moduleSwitchCallback.accept(tab); }
+            this::switchModule
         ));
 
         // Usable module (for throwables, items with cooldown, etc.)
         if (isUsableItem()) {
             sections.add(ModuleCardSection.usable(
-                tab -> { if (moduleSwitchCallback != null) moduleSwitchCallback.accept(tab); }
+                this::switchModule
             ));
         }
 
         // Food module (for edible items)
         if (isFoodItem()) {
             sections.add(ModuleCardSection.food(
-                tab -> { if (moduleSwitchCallback != null) moduleSwitchCallback.accept(tab); }
+                this::switchModule
             ));
         }
 
         // Fuel module (for burnable items)
         if (isFuelItem()) {
             sections.add(ModuleCardSection.fuel(
-                tab -> { if (moduleSwitchCallback != null) moduleSwitchCallback.accept(tab); }
+                this::switchModule
             ));
         }
 
@@ -320,12 +330,12 @@ public class GeneralModule extends AbstractEditorModule {
     private List<EditorSection> getQuickSettingsSections() {
         List<EditorSection> sections = new ArrayList<>();
 
-        sections.add(new SliderSectionAdapter(stackSizeSlider));
-        sections.add(new ToggleSectionAdapter(unbreakableToggle));
+        sections.add(new SliderSectionAdapter(Objects.requireNonNull(stackSizeSlider, "stackSizeSlider")));
+        sections.add(new ToggleSectionAdapter(Objects.requireNonNull(unbreakableToggle, "unbreakableToggle")));
 
         if (item.isDamageableItem() && durabilitySlider != null) {
             sections.add(new SliderSectionAdapter(durabilitySlider));
-            sections.add(new SliderSectionAdapter(repairCostSlider));
+            sections.add(new SliderSectionAdapter(Objects.requireNonNull(repairCostSlider, "repairCostSlider")));
         }
 
         return sections;
@@ -475,7 +485,7 @@ public class GeneralModule extends AbstractEditorModule {
     // ═══════════════════════════════════════════════════════════════
 
     @Override
-    public CustomPacketPayload buildPayload(boolean isGlobal) {
+    public @Nullable CustomPacketPayload buildPayload(boolean isGlobal) {
         // GeneralModule uses generic item modification
         // Future: Could build a GenericItemPayload for stack size, durability, etc.
         return null;

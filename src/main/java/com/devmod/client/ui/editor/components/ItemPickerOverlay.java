@@ -6,6 +6,8 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import org.lwjgl.glfw.GLFW;
 
 import net.minecraft.client.gui.Font;
@@ -54,8 +56,8 @@ public class ItemPickerOverlay extends BaseOverlay {
     private boolean filterDirty = true;
 
     // Callback
-    private Consumer<ItemStack> onItemSelected;
-    private Consumer<TagKey<Item>> onTagSelected;
+    private @Nullable Consumer<ItemStack> onItemSelected;
+    private @Nullable Consumer<TagKey<Item>> onTagSelected;
 
     // ═══════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -72,7 +74,7 @@ public class ItemPickerOverlay extends BaseOverlay {
     /**
      * Set callback for item selection.
      */
-    public ItemPickerOverlay onItemSelected(Consumer<ItemStack> callback) {
+    public ItemPickerOverlay onItemSelected(@Nullable Consumer<ItemStack> callback) {
         this.onItemSelected = callback;
         return this;
     }
@@ -80,7 +82,7 @@ public class ItemPickerOverlay extends BaseOverlay {
     /**
      * Set callback for tag selection.
      */
-    public ItemPickerOverlay onTagSelected(Consumer<TagKey<Item>> callback) {
+    public ItemPickerOverlay onTagSelected(@Nullable Consumer<TagKey<Item>> callback) {
         this.onTagSelected = callback;
         return this;
     }
@@ -474,16 +476,12 @@ public class ItemPickerOverlay extends BaseOverlay {
         if (hoveredIndex >= 0) {
             if (currentTab == 0 && hoveredIndex < filteredItems.size()) {
                 ItemStack selected = Objects.requireNonNull(filteredItems.get(hoveredIndex), "selected item");
-                if (onItemSelected != null) {
-                    onItemSelected.accept(selected);
-                }
+                emitItemSelected(selected);
                 hide();
                 return true;
             } else if (currentTab == 1 && hoveredIndex < filteredTags.size()) {
                 TagKey<Item> selected = Objects.requireNonNull(filteredTags.get(hoveredIndex), "selected tag");
-                if (onTagSelected != null) {
-                    onTagSelected.accept(selected);
-                }
+                emitTagSelected(selected);
                 hide();
                 return true;
             }
@@ -528,14 +526,10 @@ public class ItemPickerOverlay extends BaseOverlay {
             if (keyCode == GLFW.GLFW_KEY_ENTER) {
                 // Select first result on enter
                 if (currentTab == 0 && !filteredItems.isEmpty()) {
-                    if (onItemSelected != null) {
-                        onItemSelected.accept(Objects.requireNonNull(filteredItems.get(0), "first item"));
-                    }
+                    emitItemSelected(Objects.requireNonNull(filteredItems.get(0), "first item"));
                     hide();
                 } else if (currentTab == 1 && !filteredTags.isEmpty()) {
-                    if (onTagSelected != null) {
-                        onTagSelected.accept(Objects.requireNonNull(filteredTags.get(0), "first tag"));
-                    }
+                    emitTagSelected(Objects.requireNonNull(filteredTags.get(0), "first tag"));
                     hide();
                 }
                 return true;
@@ -559,5 +553,19 @@ public class ItemPickerOverlay extends BaseOverlay {
             return true;
         }
         return false;
+    }
+
+    private void emitItemSelected(ItemStack selected) {
+        Consumer<ItemStack> callback = onItemSelected;
+        if (callback != null) {
+            callback.accept(selected);
+        }
+    }
+
+    private void emitTagSelected(TagKey<Item> selected) {
+        Consumer<TagKey<Item>> callback = onTagSelected;
+        if (callback != null) {
+            callback.accept(selected);
+        }
     }
 }

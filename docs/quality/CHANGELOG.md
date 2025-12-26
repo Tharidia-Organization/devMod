@@ -470,3 +470,25 @@ None (Quality pass complete)
 
 ### Results
 - Reduced NullAway warnings for editor module initialization and source label updates
+
+---
+
+## Batch 24: Editor Component Null-Safety (2025-12-26)
+
+### Scope
+- Stabilized nullable callback usage with local copies in editor components
+- Guarded nullable preset/modpack state reads before use
+
+### Files Modified
+- `PresetRegistry.java` - Use local modpack ID copy before resolving modpack presets
+- `ItemEditorDataService.java` - Use local callback copies and guard preset rename name access
+- `GeneralModule.java` - Route module switching through a local-copy callback helper
+- `RecipeModule.java` - Use local vanilla recipe replacement target before use
+- `DebugOverlay.java` - Use local perf line copy before adding to info panel
+- `SectionHeader.java` - Use local toggle callback copy before invocation
+- `HistoryPanel.java` - Use local clear callback copy before invocation
+- `RecipeGridComponent.java` - Use local slot/grid callback copies before invocation
+- `ItemPickerOverlay.java` - Centralize selection emitters with local callback copies
+
+### Results
+- Reduced remaining NullAway warnings in editor components without behavior changes

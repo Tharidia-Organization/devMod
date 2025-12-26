@@ -46,7 +46,7 @@ public final class PresetRegistry {
     private final List<RegistryPreset> allPresets = Collections.synchronizedList(new ArrayList<>());
 
     // Detected modpack (cached)
-    private String detectedModpack = null;
+    private @Nullable String detectedModpack = null;
 
     // Bundled presets resource path
     private static final String BUNDLED_PRESETS_PATH = "/data/devmod/presets/";
@@ -78,6 +78,7 @@ public final class PresetRegistry {
 
         // Detect modpack first
         detectedModpack = ModpackDetector.detect();
+        String modpackId = detectedModpack;
 
         try {
             // Ensure directory structure exists
@@ -99,10 +100,10 @@ public final class PresetRegistry {
             }
 
             // Load modpack presets (if modpack detected)
-            if (detectedModpack != null) {
-                Path modpackDir = presetsDir.resolve("modpack").resolve(detectedModpack);
+            if (modpackId != null) {
+                Path modpackDir = presetsDir.resolve("modpack").resolve(modpackId);
                 if (Files.exists(modpackDir)) {
-                    loadModpackPresets(modpackDir, detectedModpack);
+                    loadModpackPresets(modpackDir, modpackId);
                 }
             }
 

@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
@@ -35,8 +37,8 @@ public final class ItemEditorDataService {
     private static final String DEFAULT_DATAPACK_NAME = "devmod_balance_auto";
 
     // Callbacks
-    private BiConsumer<String, Integer> statusConsumer;
-    private Runnable onPresetListChanged;
+    private @Nullable BiConsumer<String, Integer> statusConsumer;
+    private @Nullable Runnable onPresetListChanged;
 
     // =========================================================================
     // CONFIGURATION
@@ -45,14 +47,14 @@ public final class ItemEditorDataService {
     /**
      * Set the status message consumer.
      */
-    public void setStatusConsumer(BiConsumer<String, Integer> consumer) {
+    public void setStatusConsumer(@Nullable BiConsumer<String, Integer> consumer) {
         this.statusConsumer = consumer;
     }
 
     /**
      * Set callback for when preset list changes (after save/delete/rename).
      */
-    public void setOnPresetListChanged(Runnable callback) {
+    public void setOnPresetListChanged(@Nullable Runnable callback) {
         this.onPresetListChanged = callback;
     }
 
@@ -310,7 +312,7 @@ public final class ItemEditorDataService {
      * @param activeModule The active editor module
      * @return The preset name if applied successfully, null otherwise
      */
-    public String applyPreset(ItemEditorDataManager.PresetData preset, EditorModule activeModule) {
+    public @Nullable String applyPreset(ItemEditorDataManager.PresetData preset, EditorModule activeModule) {
         if (preset == null) {
             showStatus("Preset not found", UIConstants.Accent.RED());
             return null;
@@ -347,12 +349,15 @@ public final class ItemEditorDataService {
      * @param itemName The item name for history
      * @return The new name if successful, null otherwise
      */
-    public String renamePreset(ItemEditorDataManager.PresetData preset, String newName, String itemName) {
-        if (preset == null || preset.name == null || newName == null || newName.isBlank()) {
+    public @Nullable String renamePreset(ItemEditorDataManager.PresetData preset, String newName, String itemName) {
+        if (preset == null || newName == null || newName.isBlank()) {
             return null;
         }
 
         String oldName = preset.name;
+        if (oldName == null) {
+            return null;
+        }
         preset.name = newName.trim();
 
         ItemEditorDataManager.INSTANCE.deletePreset(oldName);
@@ -373,7 +378,7 @@ public final class ItemEditorDataService {
      * @param isGlobalMode Whether in global mode
      * @return The preset name if saved successfully, null otherwise
      */
-    public String saveCurrentAsPreset(ItemStack item, EditorModule activeModule, boolean isGlobalMode) {
+    public @Nullable String saveCurrentAsPreset(ItemStack item, EditorModule activeModule, boolean isGlobalMode) {
         String itemType = getActiveItemType(activeModule);
         String presetName = buildPresetName(getItemId(item), itemType);
         ItemEditorDataManager.PresetData preset = buildPresetFromCurrent(presetName, itemType, activeModule, isGlobalMode);
@@ -453,14 +458,16 @@ public final class ItemEditorDataService {
     }
 
     private void showStatus(String message, int color) {
-        if (statusConsumer != null) {
-            statusConsumer.accept(message, color);
+        BiConsumer<String, Integer> consumer = statusConsumer;
+        if (consumer != null) {
+            consumer.accept(message, color);
         }
     }
 
     private void notifyPresetListChanged() {
-        if (onPresetListChanged != null) {
-            onPresetListChanged.run();
+        Runnable callback = onPresetListChanged;
+        if (callback != null) {
+            callback.run();
         }
     }
 }

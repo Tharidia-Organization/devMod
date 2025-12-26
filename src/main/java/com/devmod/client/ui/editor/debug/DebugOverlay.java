@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import org.lwjgl.glfw.GLFW;
 
 import net.minecraft.client.gui.Font;
@@ -19,6 +21,7 @@ public final class DebugOverlay {
     private static boolean showGrid = false;
     private static boolean showBounds = false;
     private static DetailLevel detailLevel = DetailLevel.MEDIUM;
+    @Nullable
     private static String perfLine = null;
     
     // Colors
@@ -334,8 +337,9 @@ public final class DebugOverlay {
         }
 
         // Add performance line if set
-        if (perfLine != null && !perfLine.isEmpty()) {
-            lines.add(perfLine);
+        String perf = perfLine;
+        if (perf != null && !perf.isEmpty()) {
+            lines.add(perf);
         }
 
         // Calculate panel size

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -53,7 +54,7 @@ public class HistoryPanel {
 
     // Data source - provides history entries
     private Supplier<List<String>> entriesSupplier = List::of;
-    private Runnable onClear;
+    private @Nullable Runnable onClear;
 
     // ═══════════════════════════════════════════════════════════════
     // CONFIGURATION
@@ -201,8 +202,9 @@ public class HistoryPanel {
 
         if (mouseX >= clearX && mouseX <= clearX + CLEAR_WIDTH &&
             mouseY >= clearY && mouseY <= clearY + CLEAR_HEIGHT) {
-            if (!entriesSupplier.get().isEmpty() && onClear != null) {
-                onClear.run();
+            Runnable clearAction = onClear;
+            if (!entriesSupplier.get().isEmpty() && clearAction != null) {
+                clearAction.run();
                 scrollOffset = 0;
             }
             return true;

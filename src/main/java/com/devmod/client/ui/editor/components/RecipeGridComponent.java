@@ -6,6 +6,8 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -49,9 +51,9 @@ public class RecipeGridComponent {
     // CALLBACKS
     // ═══════════════════════════════════════════════════════════════
 
-    private Consumer<Integer> onSlotClick;
-    private BiConsumer<Integer, IngredientData> onSlotChange;
-    private Runnable onGridChange;
+    private @Nullable Consumer<Integer> onSlotClick;
+    private @Nullable BiConsumer<Integer, IngredientData> onSlotChange;
+    private @Nullable Runnable onGridChange;
 
     // ═══════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -213,8 +215,9 @@ public class RecipeGridComponent {
         if (slot >= 0) {
             if (button == 0) { // Left click - select
                 selectedSlot = slot;
-                if (onSlotClick != null) {
-                    onSlotClick.accept(slot);
+                Consumer<Integer> slotClick = onSlotClick;
+                if (slotClick != null) {
+                    slotClick.accept(slot);
                 }
                 return true;
             } else if (button == 1) { // Right click - clear
@@ -404,27 +407,29 @@ public class RecipeGridComponent {
     // CALLBACKS
     // ═══════════════════════════════════════════════════════════════
 
-    public void setOnSlotClick(Consumer<Integer> callback) {
+    public void setOnSlotClick(@Nullable Consumer<Integer> callback) {
         this.onSlotClick = callback;
     }
 
-    public void setOnSlotChange(BiConsumer<Integer, IngredientData> callback) {
+    public void setOnSlotChange(@Nullable BiConsumer<Integer, IngredientData> callback) {
         this.onSlotChange = callback;
     }
 
-    public void setOnGridChange(Runnable callback) {
+    public void setOnGridChange(@Nullable Runnable callback) {
         this.onGridChange = callback;
     }
 
     private void notifyChange(int index) {
-        if (onSlotChange != null && index >= 0 && index < 9) {
-            onSlotChange.accept(index, slots[index].data());
+        BiConsumer<Integer, IngredientData> slotChange = onSlotChange;
+        if (slotChange != null && index >= 0 && index < 9) {
+            slotChange.accept(index, slots[index].data());
         }
     }
 
     private void notifyGridChange() {
-        if (onGridChange != null) {
-            onGridChange.run();
+        Runnable gridChange = onGridChange;
+        if (gridChange != null) {
+            gridChange.run();
         }
     }
 
