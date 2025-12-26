@@ -132,9 +132,11 @@ public final class DuckDBSchemaManager {
             // Arena tables (Fase 1)
             createArenaTemplateBuildsTable(stmt);
             createArenaTemplateUsageTable(stmt);
+            createArenaTemplateErrorsTable(stmt);
+            createArenaTemplateAlertsTable(stmt);
             createArenaSpatialEventsTable(stmt);
 
-            LOGGER.info("[DuckDB] Created 37 tables");
+            LOGGER.info("[DuckDB] Created 39 tables");
         }
     }
 
@@ -1020,6 +1022,52 @@ public final class DuckDBSchemaManager {
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_arena_template_usage_player ON arena_template_usage(player_id)");
     }
 
+    private static void createArenaTemplateErrorsTable(Statement stmt) throws SQLException {
+        stmt.execute("""
+            CREATE TABLE IF NOT EXISTS arena_template_errors (
+                id              BIGINT PRIMARY KEY,
+                ts              TIMESTAMP NOT NULL,
+                error_id        UUID NOT NULL,
+                severity        VARCHAR(16),
+                error_type      VARCHAR(256),
+                message         VARCHAR(512),
+                component       VARCHAR(128),
+                template_id     VARCHAR(128),
+                arena_id        UUID,
+                session_id      UUID,
+                stack_frames    JSON,
+                metadata        JSON
+            )
+            """);
+        stmt.execute("CREATE SEQUENCE IF NOT EXISTS seq_arena_template_errors START 1");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_arena_template_errors_ts ON arena_template_errors(ts)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_arena_template_errors_error ON arena_template_errors(error_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_arena_template_errors_severity ON arena_template_errors(severity)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_arena_template_errors_template ON arena_template_errors(template_id)");
+    }
+
+    private static void createArenaTemplateAlertsTable(Statement stmt) throws SQLException {
+        stmt.execute("""
+            CREATE TABLE IF NOT EXISTS arena_template_alerts (
+                id              BIGINT PRIMARY KEY,
+                ts              TIMESTAMP NOT NULL,
+                error_id        UUID NOT NULL,
+                channel_id      VARCHAR(128),
+                channel_type    VARCHAR(128),
+                is_critical     BOOLEAN,
+                delivery_status VARCHAR(32),
+                attempt_count   INTEGER,
+                next_retry_at   TIMESTAMP,
+                error_message   VARCHAR(512)
+            )
+            """);
+        stmt.execute("CREATE SEQUENCE IF NOT EXISTS seq_arena_template_alerts START 1");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_arena_template_alerts_ts ON arena_template_alerts(ts)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_arena_template_alerts_error ON arena_template_alerts(error_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_arena_template_alerts_status ON arena_template_alerts(delivery_status)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_arena_template_alerts_next_retry ON arena_template_alerts(next_retry_at)");
+    }
+
     private static void createArenaSpatialEventsTable(Statement stmt) throws SQLException {
         stmt.execute("""
             CREATE TABLE IF NOT EXISTS arena_spatial_events (
@@ -1199,6 +1247,15 @@ public final class DuckDBSchemaManager {
                 stmt.execute("ALTER TABLE arena_template_builds ADD COLUMN IF NOT EXISTS pause_count INTEGER");
                 stmt.execute("ALTER TABLE arena_template_builds ADD COLUMN IF NOT EXISTS throttle_count INTEGER");
                 stmt.execute("ALTER TABLE arena_template_builds ADD COLUMN IF NOT EXISTS perf_aborted BOOLEAN");
+            }
+        }
+
+        // Migration V8 -> V9: Add arena error/alert tables
+        if (oldVersion < 9) {
+            LOGGER.info("[DuckDB] Running migration V8 -> V9: Adding arena error/alert tables");
+            try (Statement stmt = conn.createStatement()) {
+                createArenaTemplateErrorsTable(stmt);
+                createArenaTemplateAlertsTable(stmt);
             }
         }
 

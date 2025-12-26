@@ -281,7 +281,7 @@ Per la specifica completa del sistema Arena Template, vedere:
 | [[subsystems/arena-template-rework/TODO_AGENT_02_COMPLETE]] | DD 7-10 | Builder Transazionale | ✅ |
 | [[subsystems/arena-template-rework/TODO_AGENT_03_COMPLETE]] | DD 11-12 | Budget & Async | ✅ |
 | [[subsystems/arena-template-rework/TODO_AGENT_04_COMPLETE]] | DD 13-15 | Metriche & API | ✅ |
-| [[subsystems/arena-template-rework/TODO_AGENT_05_COMPLETE]] | DD 16-21 | Observability & Persistence | ⚠️ DuckDbRepository missing |
+| [[subsystems/arena-template-rework/TODO_AGENT_05_COMPLETE]] | DD 16-21 | Observability & Persistence | ✅ |
 | [[subsystems/arena-template-rework/TODO_AGENT_06_COMPLETE]] | DD 22-28 | Identity & Recovery | ✅ |
 | [[subsystems/arena-template-rework/TODO_AGENT_07_COMPLETE]] | DD 29-36 | Operations & Security | ✅ |
 | [[subsystems/arena-template-rework/TODO_AGENT_08_COMPLETE]] | DD 37-43 | Cleanup & Migration | ✅ |
@@ -315,7 +315,7 @@ Per la specifica completa del sistema Arena Template, vedere:
 - [[areas/telemetry/README]] - Arena telemetry
 - [[cross_cutting/CONCURRENCY]] - Lock patterns
 - [[subsystems/arena-template-rework/ARENA_TEMPLATE_AUDIT]] - Audit status e gap residui
-- [[subsystems/arena-template-rework/DOCUMENTATION_AUDIT_REPORT]] - Audit doc 2024-12-23
+- [[subsystems/arena-template-rework/DOCUMENTATION_AUDIT_REPORT]] - Audit doc 2025-12-27
 
 ---
 

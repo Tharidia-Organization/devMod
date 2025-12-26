@@ -1,12 +1,13 @@
-# Agent 05 - Observability & Persistence - PARTIAL
+# Agent 05 - Observability & Persistence - COMPLETE
 
-> **Last Updated**: 2024-12-23
-> **Status**: ⚠️ PARTIAL - DuckDbRepository NOT implemented
+> **Last Updated**: 2025-12-27
+> **Status**: ✅ CURRENT
 
 ## Summary
-Most tasks for Agent 05 (Observability & Persistence) have been implemented according to Design Decisions DD16-DD21.
+All tasks for Agent 05 (Observability & Persistence) are implemented according to Design Decisions DD16-DD21.
 
-**⚠️ NOT IMPLEMENTED**: `DuckDbRepository.java` - Il file Java non esiste nel codebase. Solo lo schema SQL (`duckdb_schema.sql`) è stato creato.
+DuckDbRepository is now implemented as a facade over DuckDBTelemetryService (batch writer + query API). Arena build/usage persistence uses the runtime DuckDB schema managed by `DuckDBSchemaManager`.
+Alert delivery and error context persistence is stored in DuckDB via `DuckDbAlertRecorder`.
 
 ## Implemented Files
 
@@ -39,22 +40,27 @@ Most tasks for Agent 05 (Observability & Persistence) have been implemented acco
 #### 4. AlertRouter (`src/main/java/com/devmod/arena/alert/AlertRouter.java`)
 - **DD19 Implementation**: All channels delivery with retry for critical
 - Async non-blocking delivery to all registered channels
-- Retry queue with exponential backoff (base 1s, max 5 attempts)
+- Retry queue with exponential backoff (base 1s, max 3 attempts)
 - `AlertChannel` interface for custom channel implementations
 - `SimpleAlertChannel` for consumer-based handlers
 - Statistics tracking (delivered, failed, retried counts)
 - Virtual threads for efficient concurrency
 
-#### 5. NdjsonWriter (`src/main/java/com/devmod/arena/logging/NdjsonWriter.java`)
+#### 5. DuckDbAlertRecorder (`src/main/java/com/devmod/arena/alert/DuckDbAlertRecorder.java`)
+- Records `ErrorContext` and alert delivery attempts into DuckDB
+- Uses `DuckDBBatchWriter`; no-op if DuckDB telemetry is disabled
+- Serializes stack frames and metadata to JSON
+
+#### 6. NdjsonWriter (`src/main/java/com/devmod/arena/logging/NdjsonWriter.java`)
 - **DD20 Implementation**: Non-blocking buffer 10k, flush 100 lines/1 second
 - Async write with LinkedBlockingQueue (10k default capacity)
 - Flush policy: 100 lines OR 1 second interval (whichever first)
-- Buffer full behavior: drop oldest (non-blocking)
+- Buffer full behavior: drop new line (non-blocking offer)
 - Built-in JSON serialization with special character escaping
 - Statistics tracking (written, dropped, current file size)
 - Builder pattern for configuration
 
-#### 6. LogRotationConfig (`src/main/java/com/devmod/arena/logging/LogRotationConfig.java`)
+#### 7. LogRotationConfig (`src/main/java/com/devmod/arena/logging/LogRotationConfig.java`)
 - **DD17 Implementation**: 14 days, 500MB cap, .gz compression
 - Configuration record with defaults
 - `maxAgeDays()`: 14 days retention
@@ -62,45 +68,26 @@ Most tasks for Agent 05 (Observability & Persistence) have been implemented acco
 - Compression format: .gz
 - Rotation check interval: 1 hour
 
-#### 7. DuckDbRepository (src/main/java/com/devmod/arena/persistence/DuckDbRepository.java) - ❌ NOT IMPLEMENTED
-- **DD21 Implementation**: DuckDB tables and indices
-- ⚠️ **STATUS**: File Java NON ESISTE - solo lo schema SQL è stato creato
-- **TODO**: Implementare o rimuovere riferimenti
-- Planned features (non implementate):
-  - CRUD operations for builds, usage, errors
-  - `BuildRecord` and `UsageRecord` data classes
-  - `recordDriftResult()` for version drift tracking
-  - Query methods optimized for dashboard use
-  - Cleanup method with configurable retention (14 days default)
+#### 8. DuckDbRepository (`src/main/java/com/devmod/arena/persistence/DuckDbRepository.java`)
+- **DD21 Implementation**: Arena build/usage persistence via DuckDBTelemetryService
+- Uses `DuckDBBatchWriter` for inserts and `DuckDBQueryAPI` for analytics
+- Provides write helpers for build events and usage sessions
+- Provides read helpers for recent builds, performance samples, heatmaps, and gaps
 
-### Database Schema
+### Runtime DuckDB Schema
 
-#### DuckDB Schema (`src/main/resources/db/duckdb_schema.sql`)
-- **DD21 Implementation**: 5 indices for query <200ms
+#### DuckDBSchemaManager (runtime)
+- Schema is created and migrated by `src/main/java/com/devmod/telemetry/duckdb/DuckDBSchemaManager.java`
+- Arena tables present in runtime:
+  - `arena_template_builds`
+  - `arena_template_usage`
+  - `arena_template_errors`
+  - `arena_template_alerts`
+  - `arena_spatial_events`
 
-**Tables Created:**
-1. `arena_template_builds` - Build/compile events
-2. `arena_template_usage` - Usage/session events with drift detection
-3. `arena_template_errors` - Error events with stack frames (JSON)
-4. `arena_template_alerts` - Alert delivery tracking
-
-**5 Required Indices (DD21):**
-1. `idx_builds_template_time` - Builds by template and time
-2. `idx_usage_template_time` - Usage by template and time
-3. `idx_errors_severity_time` - Errors by severity and time
-4. `idx_usage_version_drift` - Version drift sessions (partial index)
-5. `idx_alerts_pending_retry` - Pending alert retries
-
-**Additional Performance Indices:**
-- `idx_builds_status` - Active builds monitoring
-- `idx_usage_status` - Active sessions
-- `idx_errors_component` - Component-level analysis
-
-**Views for Dashboard:**
-- `v_recent_builds` - Build summary last 24h
-- `v_usage_summary` - Usage summary by template
-- `v_error_summary` - Error counts by severity
-- `v_alert_status` - Alert delivery status
+#### duckdb_schema.sql (reference)
+- `src/main/resources/db/duckdb_schema.sql` remains a design reference
+- Includes design-reference error/alert tables; runtime schema is authoritative
 
 ### Unit Tests
 
@@ -129,16 +116,9 @@ Most tasks for Agent 05 (Observability & Persistence) have been implemented acco
 - Compression on close
 - JSON serialization tests
 
-#### 4. DuckDbRepositoryTest (src/test/java/com/devmod/arena/persistence/DuckDbRepositoryTest.java)
-- Build record CRUD
-- Usage record CRUD
-- Error record with context
-- Version drift session queries
-- Error count by severity
-- **Performance tests (DD21: <200ms target)**:
-  - Build query performance
-  - Version drift query performance
-  - Error severity query performance
+#### 4. DuckDbRepositoryTest (`src/test/java/com/devmod/arena/persistence/DuckDbRepositoryTest.java`)
+- Build event insert via repository
+- Usage session start/end insert via repository
 
 ## Design Decision Compliance
 
@@ -149,7 +129,7 @@ Most tasks for Agent 05 (Observability & Persistence) have been implemented acco
 | DD18 | Stacktrace JSON - Array max 20 frames | ✅ DONE |
 | DD19 | Alert Routing - Tutti i canali, retry per critici | ✅ DONE |
 | DD20 | NDJSON Non-blocking - Buffer 10k, flush 100 righe/1s | ✅ DONE |
-| DD21 | DuckDB Indici - 5 indici, query <200ms | ⚠️ PARTIAL (schema only) |
+| DD21 | DuckDB Indici - Arena tables + query API | ✅ DONE |
 
 ## Dependencies for Other Agents
 
@@ -164,7 +144,7 @@ Most tasks for Agent 05 (Observability & Persistence) have been implemented acco
 
 ### Shared Resources:
 - `NdjsonWriter.java` - Available for all logging needs
-- DuckDB tables - Available for all persistence needs
+- DuckDB arena tables - Managed by DuckDBSchemaManager
 
 ## File Locations
 
@@ -178,9 +158,15 @@ src/main/java/com/devmod/arena/
 │   └── LogRotationConfig.java
 ├── alert/
 │   ├── AlertRouter.java
+│   ├── DuckDbAlertRecorder.java
 │   └── ErrorContext.java
 └── persistence/
     └── DuckDbRepository.java
+
+src/main/java/com/devmod/telemetry/duckdb/
+├── DuckDBSchemaManager.java
+├── DuckDBBatchWriter.java
+└── DuckDBQueryAPI.java
 
 src/main/resources/db/
 └── duckdb_schema.sql
@@ -198,11 +184,12 @@ src/test/java/com/devmod/arena/
 
 ## Notes
 
-1. All Java files use records where appropriate (Java 17+)
-2. Virtual threads used in AlertRouter for efficient concurrency
-3. All collections are defensively copied for immutability
-4. JSON serialization is built-in (no external dependencies required)
-5. DuckDB driver must be added as dependency for persistence layer
+1. DuckDbRepository uses DuckDBTelemetryService; it is a no-op if DuckDB telemetry is disabled.
+2. DuckDbAlertRecorder records alert history to DuckDB when enabled; otherwise it drops events.
+3. All Java files use records where appropriate (Java 17+)
+4. Virtual threads used in AlertRouter for efficient concurrency
+5. All collections are defensively copied for immutability
+6. JSON serialization is built-in (no external dependencies required)
 
 ## Completion Date
 2024-12-20

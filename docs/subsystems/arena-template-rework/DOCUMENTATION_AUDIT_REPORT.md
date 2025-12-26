@@ -1,17 +1,22 @@
 # Arena Template Rework Documentation Audit Report
 
-**Audit Date**: 2025-12-23
-**Auditor**: Claude Code
+**Audit Date**: 2025-12-27
+**Auditor**: Codex CLI
 **Target Directory**: `docs/subsystems/arena-template-rework/`
-**Reference**: `docs/areas/arena/README.md` (current state document)
+**Reference**:
+- `docs/areas/arena/README.md` (overview and current-state doc)
+- `src/main/java/com/devmod/arena/` (implementation)
+- `src/main/resources/schemas/` (canonical schemas)
 
 ---
 
 ## Executive Summary
 
-Audited 20 files in `docs/subsystems/arena-template-rework/` against actual implementation in `src/main/java/com/devmod/arena/`. Most documentation is **CURRENT** and accurately reflects the codebase. The main `docs/areas/arena/README.md` has significant overlap with this folder's content and should be considered the authoritative reference going forward.
+Audited 20 files in `docs/subsystems/arena-template-rework/` against the current implementation. Most documents are **CURRENT** and aligned. The subsystem folder remains an active audit and implementation record, while `docs/areas/arena/README.md` serves as the high-level overview.
 
-**Recommendation**: Deprecate the agent-specific completion files (TODO_AGENT_*_COMPLETE.md) after consolidation into `docs/areas/arena/README.md`.
+Local schema files in this folder are **snapshots** of the canonical schemas under `src/main/resources/schemas/` and should be kept in sync rather than deleted. DuckDbRepository is now implemented on top of DuckDBTelemetryService, and DuckDbAlertRecorder persists alert history into DuckDB.
+
+**Recommendation**: Keep TODO_GAPS and MIGRATION_INVENTORY as active trackers, and treat schema copies as snapshots.
 
 ---
 
@@ -23,10 +28,10 @@ Audited 20 files in `docs/subsystems/arena-template-rework/` against actual impl
 |-----------|-------|
 | **File** | `docs/subsystems/arena-template-rework/README.md` |
 | **Status** | CURRENT |
-| **Issues** | None - accurate directory structure and flow description |
+| **Issues** | None |
 | **Action** | KEEP |
 
-**Details**: Serves as navigation index for the rework documentation. All referenced files exist. Agent file list (01-12) is accurate.
+**Details**: Navigation index for the rework documentation. References the canonical schemas in `src/main/resources/schemas/` and notes local copies are snapshots.
 
 ---
 
@@ -36,10 +41,10 @@ Audited 20 files in `docs/subsystems/arena-template-rework/` against actual impl
 |-----------|-------|
 | **File** | `docs/subsystems/arena-template-rework/ARENA_TEMPLATE_AUDIT.md` |
 | **Status** | CURRENT |
-| **Issues** | Minor: references `src/main/resources/schemas/` which exists and is aligned |
-| **Action** | MERGE_INTO:docs/areas/arena/README.md |
+| **Issues** | None |
+| **Action** | KEEP |
 
-**Details**: Contains audit history, source of truth definitions, and alignment notes. Content overlaps with `docs/areas/arena/README.md`. Should be merged into the main arena README as an "Audit History" section.
+**Details**: Audit history, source-of-truth definitions, and alignment notes. Updated to reflect WrapperAnalyzer tracking and prebuild pool default behavior.
 
 ---
 
@@ -49,10 +54,10 @@ Audited 20 files in `docs/subsystems/arena-template-rework/` against actual impl
 |-----------|-------|
 | **File** | `docs/subsystems/arena-template-rework/TODO_ARENA_TEMPLATE.md` |
 | **Status** | CURRENT |
-| **Issues** | File too large (284KB) - contains DD1-DD72 full specification |
-| **Action** | KEEP (reference specification) |
+| **Issues** | File is large (DD1-DD72 specification) |
+| **Action** | KEEP (canonical spec) |
 
-**Details**: This is the authoritative design decision document. All 72 DDs are referenced and implementation matches. Should remain as the canonical specification.
+**Details**: Authoritative design decision document.
 
 ---
 
@@ -62,10 +67,10 @@ Audited 20 files in `docs/subsystems/arena-template-rework/` against actual impl
 |-----------|-------|
 | **File** | `docs/subsystems/arena-template-rework/TODO_GAPS.md` |
 | **Status** | CURRENT |
-| **Issues** | Shows "No gaps open" - all items marked DONE |
-| **Action** | DEPRECATE |
+| **Issues** | None |
+| **Action** | KEEP (active gap register) |
 
-**Details**: Gap tracking file shows all gaps closed. No longer provides value as an active document.
+**Details**: Active gap tracking, including pending decisions such as prebuild pool enablement.
 
 ---
 
@@ -75,10 +80,10 @@ Audited 20 files in `docs/subsystems/arena-template-rework/` against actual impl
 |-----------|-------|
 | **File** | `docs/subsystems/arena-template-rework/MIGRATION_INVENTORY.md` |
 | **Status** | CURRENT |
-| **Issues** | None - accurately states no legacy call-sites remain |
-| **Action** | DEPRECATE |
+| **Issues** | None |
+| **Action** | KEEP (active inventory) |
 
-**Details**: Migration is complete. Document correctly states no `createArena()` call-sites found. Historical reference only.
+**Details**: Tracks legacy patterns via `com.devmod.arena.migration.WrapperAnalyzer`. No direct `ArenaManager` class exists in the codebase, and no call sites were found under `src/main/java`.
 
 ---
 
@@ -103,11 +108,11 @@ Audited 20 files in `docs/subsystems/arena-template-rework/` against actual impl
 | Attribute | Value |
 |-----------|-------|
 | **File** | `docs/subsystems/arena-template-rework/arena_template.schema.json` |
-| **Status** | CURRENT |
-| **Issues** | Duplicate of `src/main/resources/schemas/arena_template.schema.json` |
-| **Action** | DEPRECATE (keep only in src/main/resources/schemas/) |
+| **Status** | CURRENT (snapshot) |
+| **Issues** | Local copy of canonical schema in `src/main/resources/schemas/arena_template.schema.json` |
+| **Action** | KEEP (snapshot; sync as needed) |
 
-**Details**: Files are identical (verified via diff). The canonical location should be `src/main/resources/schemas/`. Remove the docs copy.
+**Details**: Treat as a documentation snapshot. Sync with the canonical schema when changes occur.
 
 ---
 
@@ -116,11 +121,11 @@ Audited 20 files in `docs/subsystems/arena-template-rework/` against actual impl
 | Attribute | Value |
 |-----------|-------|
 | **File** | `docs/subsystems/arena-template-rework/arena_policy.schema.json` |
-| **Status** | CURRENT |
-| **Issues** | Duplicate of `src/main/resources/schemas/arena_policy.schema.json` |
-| **Action** | DEPRECATE (keep only in src/main/resources/schemas/) |
+| **Status** | CURRENT (snapshot) |
+| **Issues** | Local copy of canonical schema in `src/main/resources/schemas/arena_policy.schema.json` |
+| **Action** | KEEP (snapshot; sync as needed) |
 
-**Details**: Files are identical. Remove the docs copy.
+**Details**: Treat as a documentation snapshot. Sync with the canonical schema when changes occur.
 
 ---
 
@@ -130,8 +135,8 @@ Audited 20 files in `docs/subsystems/arena-template-rework/` against actual impl
 |-----------|-------|
 | **File** | `docs/subsystems/arena-template-rework/TODO_AGENT_01_COMPLETE.md` |
 | **Status** | CURRENT |
-| **Issues** | None - all claimed implementations verified |
-| **Action** | MERGE_INTO:docs/areas/arena/README.md |
+| **Issues** | None |
+| **Action** | KEEP (implementation record) |
 
 **Verified Classes**:
 - `ArenaTemplateRegistry.java` - EXISTS
@@ -160,7 +165,7 @@ Audited 20 files in `docs/subsystems/arena-template-rework/` against actual impl
 | **File** | `docs/subsystems/arena-template-rework/TODO_AGENT_02_COMPLETE.md` |
 | **Status** | CURRENT |
 | **Issues** | None |
-| **Action** | MERGE_INTO:docs/areas/arena/README.md |
+| **Action** | KEEP (implementation record) |
 
 **Verified Classes**:
 - `ArenaBuilder.java` - EXISTS
@@ -178,7 +183,7 @@ Audited 20 files in `docs/subsystems/arena-template-rework/` against actual impl
 | **File** | `docs/subsystems/arena-template-rework/TODO_AGENT_03_COMPLETE.md` |
 | **Status** | CURRENT |
 | **Issues** | None |
-| **Action** | MERGE_INTO:docs/areas/arena/README.md |
+| **Action** | KEEP (implementation record) |
 
 **Verified Classes**:
 - `BuildBudget.java` - EXISTS
@@ -193,17 +198,15 @@ Audited 20 files in `docs/subsystems/arena-template-rework/` against actual impl
 | Attribute | Value |
 |-----------|-------|
 | **File** | `docs/subsystems/arena-template-rework/TODO_AGENT_04_COMPLETE.md` |
-| **Status** | OUTDATED |
-| **Issues** | References `ArenaHandle.java` in api package - file exists but as interface/class not fully documented |
-| **Action** | UPDATE |
+| **Status** | CURRENT |
+| **Issues** | None |
+| **Action** | KEEP (implementation record) |
 
 **Verified Classes**:
 - `ArenaMetricsContext.java` - EXISTS
 - `BuildTelemetry.java` - EXISTS
 - `ArenaHandle.java` - EXISTS
 - `ResolveOptions.java` - EXISTS
-
-**Minor Issue**: Document claims `ArenaHandle` has lifecycle management but implementation structure differs slightly.
 
 ---
 
@@ -212,20 +215,19 @@ Audited 20 files in `docs/subsystems/arena-template-rework/` against actual impl
 | Attribute | Value |
 |-----------|-------|
 | **File** | `docs/subsystems/arena-template-rework/TODO_AGENT_05_COMPLETE.md` |
-| **Status** | OUTDATED |
-| **Issues** | `DuckDbRepository.java` mentioned but NOT found in codebase |
-| **Action** | UPDATE |
+| **Status** | CURRENT |
+| **Issues** | None |
+| **Action** | KEEP (implementation record) |
 
 **Verified Classes**:
 - `ArenaTemplateSnapshot.java` - EXISTS
 - `VersionDriftDetector.java` - EXISTS
 - `ErrorContext.java` - EXISTS
 - `AlertRouter.java` - EXISTS
+- `DuckDbAlertRecorder.java` - EXISTS
 - `NdjsonWriter.java` - EXISTS
 - `LogRotationConfig.java` - EXISTS
-- `DuckDbRepository.java` - **NOT FOUND** (persistence layer not implemented)
-
-**Note**: `duckdb_schema.sql` exists at `src/main/resources/db/duckdb_schema.sql` but the Java repository class is missing.
+- `DuckDbRepository.java` - EXISTS
 
 ---
 
@@ -236,7 +238,7 @@ Audited 20 files in `docs/subsystems/arena-template-rework/` against actual impl
 | **File** | `docs/subsystems/arena-template-rework/TODO_AGENT_06_COMPLETE.md` |
 | **Status** | CURRENT |
 | **Issues** | None |
-| **Action** | MERGE_INTO:docs/areas/arena/README.md |
+| **Action** | KEEP (implementation record) |
 
 **Verified Classes**:
 - `ArenaIdempotencyCache.java` - EXISTS
@@ -254,12 +256,13 @@ Audited 20 files in `docs/subsystems/arena-template-rework/` against actual impl
 |-----------|-------|
 | **File** | `docs/subsystems/arena-template-rework/TODO_AGENT_07_COMPLETE.md` |
 | **Status** | CURRENT |
-| **Issues** | Minor naming inconsistency: mentions `AutosmokeThresholds.java` which is actually `AutosmokeSizeThresholds.java` |
-| **Action** | UPDATE |
+| **Issues** | None |
+| **Action** | KEEP (implementation record) |
 
 **Verified Classes**:
 - `TemplateOverrideManager.java` - EXISTS
-- `TemplateOverrideCapability.java` - EXISTS (as `ForceTemplateCapability.java`)
+- `TemplateOverrideCapability.java` - EXISTS
+- `ForceTemplateCapability.java` - EXISTS (additional)
 - `ArenaDebugHud.java` - EXISTS
 - `ArenaDebugState.java` - EXISTS
 - `ArenaCommandPermissions.java` - EXISTS
@@ -282,7 +285,7 @@ Audited 20 files in `docs/subsystems/arena-template-rework/` against actual impl
 | **File** | `docs/subsystems/arena-template-rework/TODO_AGENT_08_COMPLETE.md` |
 | **Status** | CURRENT |
 | **Issues** | None |
-| **Action** | MERGE_INTO:docs/areas/arena/README.md |
+| **Action** | KEEP (implementation record) |
 
 **Verified Classes**:
 - `ArenaCleanupExecutor.java` - EXISTS
@@ -306,7 +309,7 @@ Audited 20 files in `docs/subsystems/arena-template-rework/` against actual impl
 | **File** | `docs/subsystems/arena-template-rework/TODO_AGENT_09_COMPLETE.md` |
 | **Status** | CURRENT |
 | **Issues** | None |
-| **Action** | MERGE_INTO:docs/areas/arena/README.md |
+| **Action** | KEEP (implementation record) |
 
 **Verified Classes**:
 - `CircuitBreaker.java` - EXISTS
@@ -332,7 +335,7 @@ Audited 20 files in `docs/subsystems/arena-template-rework/` against actual impl
 | **File** | `docs/subsystems/arena-template-rework/TODO_AGENT_10_COMPLETE.md` |
 | **Status** | CURRENT |
 | **Issues** | None |
-| **Action** | MERGE_INTO:docs/areas/arena/README.md |
+| **Action** | KEEP (implementation record) |
 
 **Verified Classes**:
 - `PerkSuggestionEngine.java` - EXISTS
@@ -355,7 +358,7 @@ Audited 20 files in `docs/subsystems/arena-template-rework/` against actual impl
 | **File** | `docs/subsystems/arena-template-rework/TODO_AGENT_11_COMPLETE.md` |
 | **Status** | CURRENT |
 | **Issues** | None |
-| **Action** | MERGE_INTO:docs/areas/arena/README.md |
+| **Action** | KEEP (implementation record) |
 
 **Verified Classes**:
 - `TelemetryAuditJob.java` - EXISTS
@@ -375,8 +378,8 @@ Audited 20 files in `docs/subsystems/arena-template-rework/` against actual impl
 |-----------|-------|
 | **File** | `docs/subsystems/arena-template-rework/TODO_AGENT_12_COMPLETE.md` |
 | **Status** | CURRENT |
-| **Issues** | Minor: `WrapperAnalyzer.java` package differs from docs |
-| **Action** | MERGE_INTO:docs/areas/arena/README.md |
+| **Issues** | None |
+| **Action** | KEEP (implementation record) |
 
 **Verified Classes**:
 - `PoolState.java` - EXISTS
@@ -395,22 +398,11 @@ Audited 20 files in `docs/subsystems/arena-template-rework/` against actual impl
 
 ---
 
-## Overlap Analysis with docs/areas/arena/README.md
+## Relationship to docs/areas/arena/README.md
 
-The `docs/areas/arena/README.md` already contains:
-- Component structure (Registry, Builder, Policy, Command, Autosmoke packages)
-- Entry points and commands
-- End-to-end flow diagrams
-- Runtime sequence diagrams
-- Data and telemetry events
-- Failure modes
-- Gaps and risks
-- Next actions
+`docs/areas/arena/README.md` provides the system overview (architecture, flows, ops). The `docs/subsystems/arena-template-rework/` folder provides detailed audit trails, migration inventories, and implementation completion records.
 
-**Overlap with subsystems/arena-template-rework/**:
-- Agent completion files duplicate component listings
-- ARENA_TEMPLATE_AUDIT.md duplicates gap tracking
-- README.md in rework folder provides navigation but could be simplified
+**Decision**: Keep both. Use `docs/areas/arena/README.md` for onboarding and the subsystem folder for verification and change tracking.
 
 ---
 
@@ -419,57 +411,46 @@ The `docs/areas/arena/README.md` already contains:
 | File | Status | Action |
 |------|--------|--------|
 | README.md | CURRENT | KEEP |
-| ARENA_TEMPLATE_AUDIT.md | CURRENT | MERGE_INTO:docs/areas/arena/README.md |
+| ARENA_TEMPLATE_AUDIT.md | CURRENT | KEEP |
 | TODO_ARENA_TEMPLATE.md | CURRENT | KEEP (canonical spec) |
-| TODO_GAPS.md | CURRENT | DEPRECATE |
-| MIGRATION_INVENTORY.md | CURRENT | DEPRECATE |
+| TODO_GAPS.md | CURRENT | KEEP (active gap register) |
+| MIGRATION_INVENTORY.md | CURRENT | KEEP (active inventory) |
 | PRODUCTION_MARKER_README.md | CURRENT | KEEP |
-| arena_template.schema.json | CURRENT | DEPRECATE (use src/main/resources/schemas/) |
-| arena_policy.schema.json | CURRENT | DEPRECATE (use src/main/resources/schemas/) |
-| TODO_AGENT_01_COMPLETE.md | CURRENT | MERGE_INTO:docs/areas/arena/README.md |
-| TODO_AGENT_02_COMPLETE.md | CURRENT | MERGE_INTO:docs/areas/arena/README.md |
-| TODO_AGENT_03_COMPLETE.md | CURRENT | MERGE_INTO:docs/areas/arena/README.md |
-| TODO_AGENT_04_COMPLETE.md | OUTDATED | UPDATE |
-| TODO_AGENT_05_COMPLETE.md | OUTDATED | UPDATE |
-| TODO_AGENT_06_COMPLETE.md | CURRENT | MERGE_INTO:docs/areas/arena/README.md |
-| TODO_AGENT_07_COMPLETE.md | CURRENT | UPDATE (minor naming) |
-| TODO_AGENT_08_COMPLETE.md | CURRENT | MERGE_INTO:docs/areas/arena/README.md |
-| TODO_AGENT_09_COMPLETE.md | CURRENT | MERGE_INTO:docs/areas/arena/README.md |
-| TODO_AGENT_10_COMPLETE.md | CURRENT | MERGE_INTO:docs/areas/arena/README.md |
-| TODO_AGENT_11_COMPLETE.md | CURRENT | MERGE_INTO:docs/areas/arena/README.md |
-| TODO_AGENT_12_COMPLETE.md | CURRENT | MERGE_INTO:docs/areas/arena/README.md |
+| arena_template.schema.json | CURRENT (snapshot) | KEEP (sync as needed) |
+| arena_policy.schema.json | CURRENT (snapshot) | KEEP (sync as needed) |
+| TODO_AGENT_01_COMPLETE.md | CURRENT | KEEP (implementation record) |
+| TODO_AGENT_02_COMPLETE.md | CURRENT | KEEP (implementation record) |
+| TODO_AGENT_03_COMPLETE.md | CURRENT | KEEP (implementation record) |
+| TODO_AGENT_04_COMPLETE.md | CURRENT | KEEP (implementation record) |
+| TODO_AGENT_05_COMPLETE.md | CURRENT | KEEP (implementation record) |
+| TODO_AGENT_06_COMPLETE.md | CURRENT | KEEP (implementation record) |
+| TODO_AGENT_07_COMPLETE.md | CURRENT | KEEP (implementation record) |
+| TODO_AGENT_08_COMPLETE.md | CURRENT | KEEP (implementation record) |
+| TODO_AGENT_09_COMPLETE.md | CURRENT | KEEP (implementation record) |
+| TODO_AGENT_10_COMPLETE.md | CURRENT | KEEP (implementation record) |
+| TODO_AGENT_11_COMPLETE.md | CURRENT | KEEP (implementation record) |
+| TODO_AGENT_12_COMPLETE.md | CURRENT | KEEP (implementation record) |
 
 ---
 
 ## Critical Findings
 
-### Missing Implementation
-1. **DuckDbRepository.java** - Referenced in TODO_AGENT_05_COMPLETE.md but does NOT exist in codebase. The schema file `duckdb_schema.sql` exists but the Java repository class is not implemented.
-
-### Duplicate Files
-1. Schema files exist in both `docs/subsystems/arena-template-rework/` and `src/main/resources/schemas/` - should keep only the src version.
-
-### Documentation Consolidation Needed
-1. Agent completion files (TODO_AGENT_*_COMPLETE.md) should be consolidated into `docs/areas/arena/README.md` as historical implementation reference.
-2. `docs/areas/arena/README.md` is the more complete and current document.
+No critical findings in this audit.
 
 ---
 
 ## Recommended Actions
 
 ### Immediate (P0)
-1. Implement `DuckDbRepository.java` or remove references from documentation
-2. Delete duplicate schema files from `docs/subsystems/arena-template-rework/`
+1. None.
 
 ### Short-term (P1)
-1. Update TODO_AGENT_04_COMPLETE.md and TODO_AGENT_05_COMPLETE.md with correct file paths
-2. Add deprecation headers to TODO_GAPS.md and MIGRATION_INVENTORY.md
+1. Keep TODO_GAPS.md and MIGRATION_INVENTORY.md as active trackers and refresh them during each release.
+2. Add a periodic schema snapshot sync check between `docs/subsystems/arena-template-rework/` and `src/main/resources/schemas/`.
 
 ### Long-term (P2)
-1. Consolidate agent completion files into `docs/areas/arena/README.md` as appendix
-2. Keep `docs/subsystems/arena-template-rework/` as the canonical spec bundle; archive only if superseded
-3. Keep only `TODO_ARENA_TEMPLATE.md` and `PRODUCTION_MARKER_README.md` as active documents
+1. Re-evaluate consolidation only after the arena subsystem stabilizes; keep the subsystem folder as the audit trail until then.
 
 ---
 
-*Report generated by Claude Code - 2025-12-23*
+*Report generated by Codex CLI - 2025-12-26*

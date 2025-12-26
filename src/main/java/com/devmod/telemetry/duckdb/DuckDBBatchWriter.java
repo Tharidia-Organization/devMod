@@ -104,9 +104,11 @@ public class DuckDBBatchWriter {
         Map.entry("endurance_mutators", EventPriority.NORMAL),
         Map.entry("arena_spatial_events", EventPriority.NORMAL),
 
-        // ARENA (HIGH priority for builds/usage since they're session-level events)
+        // ARENA (builds/usage + alert/error telemetry)
         Map.entry("arena_template_builds", EventPriority.HIGH),
         Map.entry("arena_template_usage", EventPriority.HIGH),
+        Map.entry("arena_template_errors", EventPriority.CRITICAL),
+        Map.entry("arena_template_alerts", EventPriority.HIGH),
 
         // LOW - Drop first under any pressure
         Map.entry("player_snapshots", EventPriority.LOW),
@@ -718,6 +720,33 @@ public class DuckDBBatchWriter {
     }
 
     /**
+     * Queue an arena template error record.
+     */
+    public void queueArenaTemplateError(Instant ts, UUID errorId, @Nullable String severity,
+                                        @Nullable String errorType, @Nullable String message,
+                                        @Nullable String component, @Nullable String templateId,
+                                        @Nullable UUID arenaId, @Nullable UUID sessionId,
+                                        @Nullable String stackFramesJson, @Nullable String metadataJson) {
+        queueInsert("arena_template_errors", new Object[] {
+            ts, errorId, severity, errorType, message, component,
+            templateId, arenaId, sessionId, stackFramesJson, metadataJson
+        });
+    }
+
+    /**
+     * Queue an arena template alert delivery record.
+     */
+    public void queueArenaTemplateAlert(Instant ts, UUID errorId, @Nullable String channelId,
+                                        @Nullable String channelType, boolean isCritical,
+                                        @Nullable String deliveryStatus, int attemptCount,
+                                        @Nullable Instant nextRetryAt, @Nullable String errorMessage) {
+        queueInsert("arena_template_alerts", new Object[] {
+            ts, errorId, channelId, channelType, isCritical,
+            deliveryStatus, attemptCount, nextRetryAt, errorMessage
+        });
+    }
+
+    /**
      * Queue a spatial alert.
      */
     public void queueSpatialAlert(Instant ts, String alertType, @Nullable String playerName,
@@ -1309,7 +1338,7 @@ public class DuckDBBatchWriter {
             "grid_x, grid_z, world_x, world_y, world_z, player_uuid) " +
             "VALUES (nextval('seq_arena_spatial_events'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-        // Arena tables (builds & usage)
+        // Arena tables (builds, usage, errors, alerts)
         insertSqlCache.put("arena_template_builds",
             "INSERT INTO arena_template_builds (id, ts, arena_id, template_id, template_version, " +
             "policy_id, policy_version, origin_x, origin_y, origin_z, dimension, " +
@@ -1325,6 +1354,16 @@ public class DuckDBBatchWriter {
             "quest_type, mob_id, difficulty, player_count, session_id, " +
             "event_type, duration_ms, waves_completed, outcome) " +
             "VALUES (nextval('seq_arena_template_usage'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+        insertSqlCache.put("arena_template_errors",
+            "INSERT INTO arena_template_errors (id, ts, error_id, severity, error_type, message, component, " +
+            "template_id, arena_id, session_id, stack_frames, metadata) " +
+            "VALUES (nextval('seq_arena_template_errors'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSON, ?::JSON)");
+
+        insertSqlCache.put("arena_template_alerts",
+            "INSERT INTO arena_template_alerts (id, ts, error_id, channel_id, channel_type, is_critical, " +
+            "delivery_status, attempt_count, next_retry_at, error_message) " +
+            "VALUES (nextval('seq_arena_template_alerts'), ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         // System tables
         insertSqlCache.put("performance_samples",
